@@ -8,14 +8,26 @@ let globalApp: App | null = null;
 let globalContext: Context | null = null;
 
 /**
- * Create and run an application with declarative syntax
+ * Set the global app and context (used by test framework)
+ * @internal
  */
-export function app(options: AppOptions, builder: () => void): App {
+export function __setGlobalContext(app: App | null, context: Context | null): void {
+  globalApp = app;
+  globalContext = context;
+}
+
+/**
+ * Create and run an application with declarative syntax
+ * The builder receives the app instance for scoped declarative API (proper IoC/DI)
+ */
+export function app(options: AppOptions, builder: (app: App) => void): App {
   const appInstance = new App(options);
+
+  // For backward compatibility, also set global context
   globalApp = appInstance;
   globalContext = (appInstance as any).ctx;
 
-  builder();
+  builder(appInstance);
 
   appInstance.run();
 
@@ -438,5 +450,5 @@ export { Browser, createBrowser } from './browser';
 export type { BrowserContext, PageMenuItem } from './browser';
 
 // Export browser testing
-export { JyneBrowserTest, browserTest, describeBrowser } from './jyne-browser-test';
+export { JyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from './jyne-browser-test';
 export type { BrowserTestOptions, TestPage } from './jyne-browser-test';

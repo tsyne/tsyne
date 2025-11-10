@@ -65,7 +65,7 @@ export class Window {
     });
   }
 
-  setContent(builder: () => void): void {
+  async setContent(builder: () => void): Promise<void> {
     this.ctx.pushWindow(this.id);
     this.ctx.pushContainer();
 
@@ -77,6 +77,14 @@ export class Window {
     }
 
     this.ctx.popWindow();
+
+    // Actually send the new content to the window
+    if (this.contentId) {
+      await this.ctx.bridge.send('setContent', {
+        windowId: this.id,
+        widgetId: this.contentId
+      });
+    }
   }
 
   /**
@@ -225,7 +233,7 @@ export class Window {
         if (item.onSelected) {
           const callbackId = this.ctx.generateId('callback');
           menuItem.callbackId = callbackId;
-          this.ctx.bridge.registerEventHandler(callbackId, () => {
+          this.ctx.bridge.registerEventHandler(callbackId, (_data: any) => {
             item.onSelected!();
           });
         }

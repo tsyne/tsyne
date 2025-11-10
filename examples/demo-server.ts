@@ -1,0 +1,222 @@
+/**
+ * Demo Server - Simple HTTP server for manually testing Jyne Browser
+ *
+ * Run: npm run build && npx ts-node examples/demo-server.ts
+ */
+
+import http from 'http';
+
+const PORT = 3000;
+
+// Define the pages
+const pages: { [key: string]: string } = {
+  '/': `
+const { vbox, label, button, hyperlink } = jyne;
+vbox(() => {
+  label('🏠 Welcome to Jyne Browser Demo');
+  label('');
+  label('This is a demo server with several test pages.');
+  label('');
+
+  button('Go to Counter Demo', () => {
+    browserContext.changePage('/counter');
+  });
+
+  button('Go to Form Demo', () => {
+    browserContext.changePage('/form');
+  });
+
+  button('Go to Navigation Demo', () => {
+    browserContext.changePage('/nav');
+  });
+
+  label('');
+  label('Current URL: ' + browserContext.currentUrl);
+});
+  `,
+
+  '/counter': `
+const { vbox, label, button, hbox } = jyne;
+
+let count = 0;
+let countLabel;
+
+vbox(() => {
+  label('🔢 Counter Demo');
+  label('');
+
+  hbox(() => {
+    button('-', () => {
+      count--;
+      countLabel.setText('Count: ' + count);
+    });
+
+    countLabel = label('Count: 0');
+
+    button('+', () => {
+      count++;
+      countLabel.setText('Count: ' + count);
+    });
+  });
+
+  label('');
+  button('← Back to Home', () => {
+    browserContext.changePage('/');
+  });
+});
+  `,
+
+  '/form': `
+const { vbox, label, entry, button } = jyne;
+
+let nameEntry;
+let emailEntry;
+let resultLabel;
+
+vbox(() => {
+  label('📝 Form Demo');
+  label('');
+
+  label('Name:');
+  nameEntry = entry('Enter your name');
+
+  label('');
+  label('Email:');
+  emailEntry = entry('Enter your email');
+
+  label('');
+  button('Submit', async () => {
+    const name = await nameEntry.getText();
+    const email = await emailEntry.getText();
+    resultLabel.setText('Submitted: ' + name + ' (' + email + ')');
+  });
+
+  label('');
+  resultLabel = label('');
+
+  label('');
+  button('← Back to Home', () => {
+    browserContext.changePage('/');
+  });
+});
+  `,
+
+  '/nav': `
+const { vbox, label, button, hbox } = jyne;
+
+vbox(() => {
+  label('🧭 Navigation Demo');
+  label('');
+  label('This page demonstrates browser navigation.');
+  label('');
+
+  button('Go to Page 2', () => {
+    browserContext.changePage('/nav2');
+  });
+
+  label('');
+  label('Try using the browser back/forward buttons!');
+  label('');
+
+  button('← Back to Home', () => {
+    browserContext.changePage('/');
+  });
+});
+  `,
+
+  '/nav2': `
+const { vbox, label, button } = jyne;
+
+vbox(() => {
+  label('🧭 Navigation Demo - Page 2');
+  label('');
+  label('You made it to page 2!');
+  label('');
+
+  button('Go to Page 3', () => {
+    browserContext.changePage('/nav3');
+  });
+
+  label('');
+  button('← Back to Nav Home', () => {
+    browserContext.changePage('/nav');
+  });
+
+  label('');
+  button('← Back to Main Home', () => {
+    browserContext.changePage('/');
+  });
+});
+  `,
+
+  '/nav3': `
+const { vbox, label, button } = jyne;
+
+vbox(() => {
+  label('🧭 Navigation Demo - Page 3');
+  label('');
+  label('Final page! Use browser back/forward buttons.');
+  label('');
+
+  button('← Back to Page 2', () => {
+    browserContext.changePage('/nav2');
+  });
+
+  label('');
+  button('← Back to Main Home', () => {
+    browserContext.changePage('/');
+  });
+});
+  `
+};
+
+// Create HTTP server
+const server = http.createServer((req, res) => {
+  const url = req.url || '/';
+  console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
+
+  const pageCode = pages[url];
+
+  if (pageCode) {
+    res.writeHead(200, { 'Content-Type': 'text/typescript' });
+    res.end(pageCode);
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/typescript' });
+    res.end(`
+const { vbox, label, button } = jyne;
+vbox(() => {
+  label('404 - Page Not Found');
+  label('');
+  label('URL: ' + browserContext.currentUrl);
+  label('');
+  button('← Back to Home', () => {
+    browserContext.changePage('/');
+  });
+});
+    `);
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`
+╔════════════════════════════════════════════════════════════╗
+║  Jyne Browser Demo Server                                  ║
+╚════════════════════════════════════════════════════════════╝
+
+Server running at: http://localhost:${PORT}
+
+To browse:
+  1. Open another terminal
+  2. Run: npm run build && npx ts-node examples/run-browser.ts
+
+The browser will start and you can type the URL in the address bar.
+
+Available pages:
+  • http://localhost:${PORT}/         - Home page
+  • http://localhost:${PORT}/counter  - Counter demo
+  • http://localhost:${PORT}/form     - Form demo
+  • http://localhost:${PORT}/nav      - Navigation demo
+
+Press Ctrl+C to stop the server.
+  `);
+});

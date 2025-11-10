@@ -5,8 +5,17 @@ set -e
 echo "Building Jyne..."
 echo ""
 
+# Find Go binary
+GO_BINARY=""
+for go_path in "go" "/usr/local/go/bin/go" "/usr/bin/go" "$HOME/go/bin/go"; do
+    if command -v "$go_path" &> /dev/null; then
+        GO_BINARY="$go_path"
+        break
+    fi
+done
+
 # Check for Go
-if ! command -v go &> /dev/null; then
+if [ -z "$GO_BINARY" ]; then
     echo "Error: Go is not installed. Please install Go 1.21 or higher."
     exit 1
 fi
@@ -27,8 +36,8 @@ npm install
 echo ""
 echo "Step 2: Building Go bridge..."
 cd bridge
-go mod download
-go build -o ../bin/jyne-bridge
+$GO_BINARY mod download
+$GO_BINARY build -v -o ../bin/jyne-bridge
 cd ..
 
 echo ""

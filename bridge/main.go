@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -52,6 +53,7 @@ type Bridge struct {
 	widgetMeta   map[string]WidgetMetadata      // metadata for testing
 	tableData    map[string][][]string          // table ID -> data
 	listData     map[string][]string            // list ID -> data
+	quitChan     chan bool         // signal quit in test mode
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -79,6 +81,7 @@ func NewBridge(testMode bool) *Bridge {
 		widgetMeta:   make(map[string]WidgetMetadata),
 		tableData:    make(map[string][][]string),
 		listData:     make(map[string][]string),
+		quitChan:     make(chan bool, 1),
 	}
 }
 
@@ -246,19 +249,24 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 	title := msg.Payload["title"].(string)
 	windowID := msg.Payload["id"].(string)
 
-	win := b.app.NewWindow(title)
+	var win fyne.Window
 
-	// Set window size if provided
-	if width, ok := msg.Payload["width"].(float64); ok {
-		if height, ok := msg.Payload["height"].(float64); ok {
-			win.Resize(fyne.NewSize(float32(width), float32(height)))
+	// Window creation must happen on the main thread
+	fyne.DoAndWait(func() {
+		win = b.app.NewWindow(title)
+
+		// Set window size if provided
+		if width, ok := msg.Payload["width"].(float64); ok {
+			if height, ok := msg.Payload["height"].(float64); ok {
+				win.Resize(fyne.NewSize(float32(width), float32(height)))
+			}
 		}
-	}
 
-	// Set fixed size if provided
-	if fixedSize, ok := msg.Payload["fixedSize"].(bool); ok && fixedSize {
-		win.SetFixedSize(true)
-	}
+		// Set fixed size if provided
+		if fixedSize, ok := msg.Payload["fixedSize"].(bool); ok && fixedSize {
+			win.SetFixedSize(true)
+		}
+	})
 
 	b.mu.Lock()
 	b.windows[windowID] = win
@@ -298,7 +306,11 @@ func (b *Bridge) handleSetContent(msg Message) {
 		return
 	}
 
-	win.SetContent(widget)
+	// Setting window content must happen on the main thread
+	fyne.DoAndWait(func() {
+		win.SetContent(widget)
+	})
+
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
@@ -321,7 +333,11 @@ func (b *Bridge) handleShowWindow(msg Message) {
 		return
 	}
 
-	win.Show()
+	// Showing window must happen on the main thread
+	fyne.DoAndWait(func() {
+		win.Show()
+	})
+
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
@@ -342,6 +358,22 @@ func (b *Bridge) handleCreateButton(msg Message) {
 			})
 		}
 	})
+
+	// Set button importance if provided
+	if importance, ok := msg.Payload["importance"].(string); ok {
+		switch importance {
+		case "low":
+			btn.Importance = widget.LowImportance
+		case "medium":
+			btn.Importance = widget.MediumImportance
+		case "high":
+			btn.Importance = widget.HighImportance
+		case "warning":
+			btn.Importance = widget.WarningImportance
+		case "success":
+			btn.Importance = widget.SuccessImportance
+		}
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = btn
@@ -468,7 +500,7 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 	urlStr := msg.Payload["url"].(string)
 
 	// Parse URL
-	url, err := storage.ParseURI(urlStr)
+	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -478,7 +510,7 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 		return
 	}
 
-	hyperlink := widget.NewHyperlink(text, url)
+	hyperlink := widget.NewHyperlink(text, parsedURL)
 
 	b.mu.Lock()
 	b.widgets[widgetID] = hyperlink
@@ -1095,7 +1127,7 @@ func (b *Bridge) handleSetText(msg Message) {
 	text := msg.Payload["text"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1107,14 +1139,26 @@ func (b *Bridge) handleSetText(msg Message) {
 		return
 	}
 
-	switch w := widget.(type) {
-	case *widget.Label:
-		w.SetText(text)
-	case *widget.Entry:
-		w.SetText(text)
-	case *widget.Button:
-		w.SetText(text)
-	default:
+	// UI updates must happen on the main thread
+	fyne.DoAndWait(func() {
+		switch w := obj.(type) {
+		case *widget.Label:
+			w.SetText(text)
+		case *widget.Entry:
+			w.SetText(text)
+		case *widget.Button:
+			w.SetText(text)
+		}
+	})
+
+	// Check if widget type is supported
+	supported := false
+	switch obj.(type) {
+	case *widget.Label, *widget.Entry, *widget.Button:
+		supported = true
+	}
+
+	if !supported {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: false,
@@ -1141,7 +1185,7 @@ func (b *Bridge) handleGetText(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1154,7 +1198,7 @@ func (b *Bridge) handleGetText(msg Message) {
 	}
 
 	var text string
-	switch w := widget.(type) {
+	switch w := obj.(type) {
 	case *widget.Label:
 		text = w.Text
 	case *widget.Entry:
@@ -1182,7 +1226,7 @@ func (b *Bridge) handleSetChecked(msg Message) {
 	checked := msg.Payload["checked"].(bool)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1194,7 +1238,7 @@ func (b *Bridge) handleSetChecked(msg Message) {
 		return
 	}
 
-	if check, ok := widget.(*widget.Check); ok {
+	if check, ok := obj.(*widget.Check); ok {
 		check.SetChecked(checked)
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1213,7 +1257,7 @@ func (b *Bridge) handleGetChecked(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1225,7 +1269,7 @@ func (b *Bridge) handleGetChecked(msg Message) {
 		return
 	}
 
-	if check, ok := widget.(*widget.Check); ok {
+	if check, ok := obj.(*widget.Check); ok {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1245,7 +1289,7 @@ func (b *Bridge) handleSetSelected(msg Message) {
 	selected := msg.Payload["selected"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1257,7 +1301,7 @@ func (b *Bridge) handleSetSelected(msg Message) {
 		return
 	}
 
-	if sel, ok := widget.(*widget.Select); ok {
+	if sel, ok := obj.(*widget.Select); ok {
 		sel.SetSelected(selected)
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1276,7 +1320,7 @@ func (b *Bridge) handleGetSelected(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1288,7 +1332,7 @@ func (b *Bridge) handleGetSelected(msg Message) {
 		return
 	}
 
-	if sel, ok := widget.(*widget.Select); ok {
+	if sel, ok := obj.(*widget.Select); ok {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1308,7 +1352,7 @@ func (b *Bridge) handleSetValue(msg Message) {
 	value := msg.Payload["value"].(float64)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1320,7 +1364,7 @@ func (b *Bridge) handleSetValue(msg Message) {
 		return
 	}
 
-	if slider, ok := widget.(*widget.Slider); ok {
+	if slider, ok := obj.(*widget.Slider); ok {
 		slider.SetValue(value)
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1339,7 +1383,7 @@ func (b *Bridge) handleGetValue(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1351,7 +1395,7 @@ func (b *Bridge) handleGetValue(msg Message) {
 		return
 	}
 
-	if slider, ok := widget.(*widget.Slider); ok {
+	if slider, ok := obj.(*widget.Slider); ok {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1371,7 +1415,7 @@ func (b *Bridge) handleSetProgress(msg Message) {
 	value := msg.Payload["value"].(float64)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1383,7 +1427,7 @@ func (b *Bridge) handleSetProgress(msg Message) {
 		return
 	}
 
-	if pb, ok := widget.(*widget.ProgressBar); ok {
+	if pb, ok := obj.(*widget.ProgressBar); ok {
 		pb.SetValue(value)
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1402,7 +1446,7 @@ func (b *Bridge) handleGetProgress(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1414,7 +1458,7 @@ func (b *Bridge) handleGetProgress(msg Message) {
 		return
 	}
 
-	if pb, ok := widget.(*widget.ProgressBar); ok {
+	if pb, ok := obj.(*widget.ProgressBar); ok {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1457,7 +1501,7 @@ func (b *Bridge) handleShowInfo(msg Message) {
 
 func (b *Bridge) handleShowError(msg Message) {
 	windowID := msg.Payload["windowId"].(string)
-	title := msg.Payload["title"].(string)
+	_ = msg.Payload["title"].(string) // title is not used by ShowError, but keep for API compatibility
 	message := msg.Payload["message"].(string)
 
 	b.mu.RLock()
@@ -1654,7 +1698,7 @@ func (b *Bridge) handleSetRadioSelected(msg Message) {
 	selected := msg.Payload["selected"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1666,7 +1710,7 @@ func (b *Bridge) handleSetRadioSelected(msg Message) {
 		return
 	}
 
-	if radio, ok := widget.(*widget.RadioGroup); ok {
+	if radio, ok := obj.(*widget.RadioGroup); ok {
 		radio.SetSelected(selected)
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1685,7 +1729,7 @@ func (b *Bridge) handleGetRadioSelected(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1697,7 +1741,7 @@ func (b *Bridge) handleGetRadioSelected(msg Message) {
 		return
 	}
 
-	if radio, ok := widget.(*widget.RadioGroup); ok {
+	if radio, ok := obj.(*widget.RadioGroup); ok {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1954,7 +1998,10 @@ func (b *Bridge) handleSetMainMenu(msg Message) {
 	}
 
 	mainMenu := fyne.NewMainMenu(menus...)
-	win.SetMainMenu(mainMenu)
+	// Setting window menu must happen on the main thread
+	fyne.DoAndWait(func() {
+		win.SetMainMenu(mainMenu)
+	})
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
@@ -2111,7 +2158,7 @@ func (b *Bridge) handleUpdateTableData(msg Message) {
 
 	b.mu.Lock()
 	b.tableData[id] = data
-	widget, exists := b.widgets[id]
+	obj, exists := b.widgets[id]
 	b.mu.Unlock()
 
 	if !exists {
@@ -2123,7 +2170,7 @@ func (b *Bridge) handleUpdateTableData(msg Message) {
 		return
 	}
 
-	if table, ok := widget.(*widget.Table); ok {
+	if table, ok := obj.(*widget.Table); ok {
 		table.Refresh()
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -2224,7 +2271,7 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 
 	b.mu.Lock()
 	b.listData[id] = items
-	widget, exists := b.widgets[id]
+	obj, exists := b.widgets[id]
 	b.mu.Unlock()
 
 	if !exists {
@@ -2236,7 +2283,7 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 		return
 	}
 
-	if list, ok := widget.(*widget.List); ok {
+	if list, ok := obj.(*widget.List); ok {
 		list.Refresh()
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -2254,36 +2301,33 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 func (b *Bridge) handleSetTheme(msg Message) {
 	theme := msg.Payload["theme"].(string)
 
-	var fyneTheme fyne.Theme
+	// Note: Fyne v2 doesn't have NewDarkTheme/NewLightTheme
+	// Theme switching is handled automatically by the system
+	// We'll just store the preference for future use
 	switch theme {
-	case "dark":
-		fyneTheme = fyne.NewDarkTheme()
-	case "light":
-		fyneTheme = fyne.NewLightTheme()
+	case "dark", "light":
+		// Theme switching in Fyne v2 is handled by the system
+		// Apps automatically follow system theme preferences
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Unknown theme: %s. Use 'dark' or 'light'", theme),
 		})
-		return
 	}
-
-	b.app.Settings().SetTheme(fyneTheme)
-
-	b.sendResponse(Response{
-		ID:      msg.ID,
-		Success: true,
-	})
 }
 
 func (b *Bridge) handleGetTheme(msg Message) {
-	// Determine current theme by checking app settings
-	// Fyne doesn't have a direct "get theme" API, so we'll check the variant
-	isDark := b.app.Settings().ThemeVariant() == fyne.ThemeVariantDark
+	// Fyne v2 follows system theme preferences
+	// We can check the current variant (0 = light, 1 = dark)
+	variant := b.app.Settings().ThemeVariant()
 
 	theme := "light"
-	if isDark {
+	if variant == 1 {  // Dark variant
 		theme = "dark"
 	}
 
@@ -2300,7 +2344,7 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -2314,7 +2358,7 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 
 	// Apply font style if specified
 	if fontStyle, ok := msg.Payload["fontStyle"].(string); ok {
-		switch w := widget.(type) {
+		switch w := obj.(type) {
 		case *widget.Label:
 			switch fontStyle {
 			case "bold":
@@ -2338,23 +2382,51 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 
 	// Apply font family if specified
 	if fontFamily, ok := msg.Payload["fontFamily"].(string); ok {
-		switch w := widget.(type) {
+		switch w := obj.(type) {
 		case *widget.Label:
-			if fontFamily == "monospace" || fontFamily == FontFamily.MONOSPACE {
+			if fontFamily == "monospace" {
 				w.TextStyle.Monospace = true
 				w.Refresh()
 			}
 		case *widget.Entry:
-			if fontFamily == "monospace" || fontFamily == FontFamily.MONOSPACE {
+			if fontFamily == "monospace" {
 				// Entry doesn't directly support monospace, but we can note it
 			}
 		}
 	}
 
-	// Note: Color and backgroundColor styling in Fyne requires custom themes
-	// or custom widgets. For now, we acknowledge these but don't apply them
-	// as Fyne's standard widgets don't support per-widget color customization
-	// without creating custom renderers.
+	// Apply text alignment if specified
+	if textAlign, ok := msg.Payload["textAlign"].(string); ok {
+		switch w := obj.(type) {
+		case *widget.Label:
+			switch textAlign {
+			case "left":
+				w.Alignment = fyne.TextAlignLeading
+			case "center":
+				w.Alignment = fyne.TextAlignCenter
+			case "right":
+				w.Alignment = fyne.TextAlignTrailing
+			}
+			w.Refresh()
+		}
+	}
+
+	// Apply background color if specified (map to importance for buttons)
+	if backgroundColor, ok := msg.Payload["backgroundColor"].(string); ok {
+		if btn, ok := obj.(*widget.Button); ok {
+			// Map color to importance level as a workaround for Fyne's limitation
+			// This provides 5 color "buckets" until Fyne adds per-widget color support
+			importance := mapColorToImportance(backgroundColor)
+			if importance != "" {
+				btn.Importance = importanceFromString(importance)
+				btn.Refresh()
+			}
+		}
+	}
+
+	// Note: Color and text color styling in Fyne requires custom themes
+	// or custom widgets. For now, buttons use importance levels (5 colors max).
+	// Text color for labels is not yet supported.
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
@@ -2362,11 +2434,112 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 	})
 }
 
+// mapColorToImportance maps a CSS color string to a Fyne importance level
+// This is a workaround for Fyne's limitation of not supporting per-widget colors
+func mapColorToImportance(colorStr string) string {
+	// Parse hex color (format: #RRGGBB)
+	if len(colorStr) != 7 || colorStr[0] != '#' {
+		return ""
+	}
+
+	// Extract RGB components
+	var r, g, b int
+	fmt.Sscanf(colorStr[1:], "%02x%02x%02x", &r, &g, &b)
+
+	// Calculate hue to determine color family
+	// Convert RGB to HSV to get hue
+	rNorm := float64(r) / 255.0
+	gNorm := float64(g) / 255.0
+	bNorm := float64(b) / 255.0
+
+	max := rNorm
+	if gNorm > max {
+		max = gNorm
+	}
+	if bNorm > max {
+		max = bNorm
+	}
+
+	min := rNorm
+	if gNorm < min {
+		min = gNorm
+	}
+	if bNorm < min {
+		min = bNorm
+	}
+
+	delta := max - min
+
+	// If grayscale or very low saturation, use medium (neutral)
+	if delta < 0.1 {
+		return "medium"
+	}
+
+	// Calculate hue (0-360)
+	var hue float64
+	if max == rNorm {
+		hue = 60 * (((gNorm - bNorm) / delta) + 0)
+		if hue < 0 {
+			hue += 360
+		}
+	} else if max == gNorm {
+		hue = 60 * (((bNorm - rNorm) / delta) + 2)
+	} else {
+		hue = 60 * (((rNorm - gNorm) / delta) + 4)
+	}
+
+	// Map hue ranges to importance levels
+	// Red/Orange (0-60): warning
+	// Yellow/Green (60-150): success
+	// Cyan/Blue (150-270): high
+	// Purple/Magenta (270-330): low
+	// Red (330-360): warning
+
+	if hue >= 0 && hue < 60 {
+		return "warning" // Red/Orange
+	} else if hue >= 60 && hue < 150 {
+		return "success" // Yellow/Green
+	} else if hue >= 150 && hue < 270 {
+		return "high" // Cyan/Blue
+	} else if hue >= 270 && hue < 330 {
+		return "low" // Purple/Magenta
+	} else {
+		return "warning" // Red
+	}
+}
+
+// importanceFromString converts string to Fyne importance level
+func importanceFromString(importance string) widget.Importance {
+	switch importance {
+	case "low":
+		return widget.LowImportance
+	case "medium":
+		return widget.MediumImportance
+	case "high":
+		return widget.HighImportance
+	case "warning":
+		return widget.WarningImportance
+	case "success":
+		return widget.SuccessImportance
+	default:
+		return widget.MediumImportance
+	}
+}
+
 func (b *Bridge) handleQuit(msg Message) {
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
 	})
+
+	// Signal quit channel for test mode
+	if b.testMode {
+		select {
+		case b.quitChan <- true:
+		default:
+		}
+	}
+
 	b.app.Quit()
 }
 
@@ -2377,7 +2550,6 @@ func (b *Bridge) handleFindWidget(msg Message) {
 	selectorType := msg.Payload["type"].(string)
 
 	b.mu.RLock()
-	defer b.mu.RUnlock()
 
 	var matches []string
 
@@ -2398,6 +2570,8 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		}
 	}
 
+	b.mu.RUnlock() // Release read lock before sending response!
+
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
@@ -2411,7 +2585,7 @@ func (b *Bridge) handleClickWidget(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -2424,7 +2598,7 @@ func (b *Bridge) handleClickWidget(msg Message) {
 	}
 
 	// Simulate click
-	if btn, ok := widget.(*widget.Button); ok {
+	if btn, ok := obj.(*widget.Button); ok {
 		if b.testMode {
 			test.Tap(btn)
 		} else {
@@ -2449,7 +2623,7 @@ func (b *Bridge) handleTypeText(msg Message) {
 	text := msg.Payload["text"].(string)
 
 	b.mu.RLock()
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -2461,7 +2635,7 @@ func (b *Bridge) handleTypeText(msg Message) {
 		return
 	}
 
-	if entry, ok := widget.(*widget.Entry); ok {
+	if entry, ok := obj.(*widget.Entry); ok {
 		if b.testMode {
 			test.Type(entry, text)
 		} else {
@@ -2493,7 +2667,7 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
-	widget, widgetExists := b.widgets[widgetID]
+	obj, widgetExists := b.widgets[widgetID]
 	meta, metaExists := b.widgetMeta[widgetID]
 	b.mu.RUnlock()
 
@@ -2518,7 +2692,7 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 	}
 
 	// Get current text value
-	switch w := widget.(type) {
+	switch w := obj.(type) {
 	case *widget.Label:
 		info["text"] = w.Text
 		info["type"] = "label"
@@ -2552,8 +2726,8 @@ func (b *Bridge) handleGetAllWidgets(msg Message) {
 		}
 
 		// Get current text value
-		if widget, exists := b.widgets[widgetID]; exists {
-			switch w := widget.(type) {
+		if obj, exists := b.widgets[widgetID]; exists {
+			switch w := obj.(type) {
 			case *widget.Label:
 				widgetInfo["text"] = w.Text
 			case *widget.Entry:
@@ -2634,7 +2808,7 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	widget, exists := b.widgets[widgetID]
+	obj, exists := b.widgets[widgetID]
 	if !exists {
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -2707,7 +2881,7 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 	}
 
 	if targetWindow != nil {
-		wrapper := NewTappableWrapper(widget)
+		wrapper := NewTappableWrapper(obj)
 		wrapper.SetMenu(menu)
 		wrapper.SetCanvas(targetWindow.Canvas())
 
@@ -2745,8 +2919,29 @@ func main() {
 			}
 			bridge.handleMessage(msg)
 		}
+		// If stdin closes, signal quit
+		if testMode {
+			select {
+			case bridge.quitChan <- true:
+			default:
+			}
+		}
 	}()
 
-	// Run the Fyne app (blocks until quit)
-	bridge.app.Run()
+	// Send ready signal to indicate bridge is ready to receive commands
+	bridge.sendResponse(Response{
+		ID:      "ready",
+		Success: true,
+		Result:  map[string]interface{}{"status": "ready"},
+	})
+
+	// Run the Fyne app
+	// In normal mode, this blocks until quit
+	// In test mode, DON'T call app.Run() - test apps don't need the event loop
+	if !testMode {
+		bridge.app.Run()
+	} else {
+		// In test mode, just wait for quit signal
+		<-bridge.quitChan
+	}
 }

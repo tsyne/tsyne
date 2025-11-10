@@ -41,7 +41,7 @@ export abstract class Widget {
       }
 
       const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, item.onSelected);
+      this.ctx.bridge.registerEventHandler(callbackId, () => item.onSelected());
 
       return {
         label: item.label,
@@ -76,7 +76,7 @@ export abstract class Widget {
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, onClick?: () => void) {
+  constructor(ctx: Context, text: string, onClick?: () => void, classNames?: string) {
     const id = ctx.generateId('button');
     super(ctx, id);
 
@@ -85,14 +85,54 @@ export class Button extends Widget {
     if (onClick) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, onClick);
+      console.log(`Registering button "${text}" with callback ID: ${callbackId}`);
+      ctx.bridge.registerEventHandler(callbackId, () => {
+        console.log(`Button "${text}" clicked! Callback ID: ${callbackId}`);
+        onClick();
+      });
+    }
+
+    // Check stylesheet for importance mapping (Fyne limitation workaround)
+    if (classNames) {
+      const classes = classNames.split(/\s+/).filter(c => c.length > 0);
+      const importance = this.getImportanceFromStylesheet(classes);
+      if (importance) {
+        payload.importance = importance;
+      }
     }
 
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id);
 
-    // Apply styles from stylesheet (non-blocking)
-    this.applyStyles('button').catch(() => {});
+    // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'button'
+    if (classNames) {
+      this.applyStylesFromClasses(classNames.split(/\s+/).filter(c => c.length > 0)).catch(() => {});
+    } else {
+      this.applyStyles('button').catch(() => {});
+    }
+  }
+
+  private getImportanceFromStylesheet(classes: string[]): string | undefined {
+    const stylesheet = require('./styles').getStyleSheet();
+    if (!stylesheet) return undefined;
+
+    // Check each class for importance, return first match
+    for (const className of classes) {
+      const style = stylesheet.getStyle(className);
+      if (style?.importance) {
+        return style.importance;
+      }
+    }
+    return undefined;
+  }
+
+  private async applyStylesFromClasses(classes: string[]): Promise<void> {
+    // Apply styles from all classes, then fallback to 'button'
+    for (const className of classes) {
+      await this.applyStyles(className as any).catch(() => {});
+    }
+    // Also apply generic 'button' styles
+    await this.applyStyles('button').catch(() => {});
   }
 }
 
@@ -100,15 +140,28 @@ export class Button extends Widget {
  * Label widget
  */
 export class Label extends Widget {
-  constructor(ctx: Context, text: string) {
+  constructor(ctx: Context, text: string, classNames?: string) {
     const id = ctx.generateId('label');
     super(ctx, id);
 
     ctx.bridge.send('createLabel', { id, text });
     ctx.addToCurrentContainer(id);
 
-    // Apply styles from stylesheet (non-blocking)
-    this.applyStyles('label').catch(() => {});
+    // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'label'
+    if (classNames) {
+      this.applyStylesFromClasses(classNames.split(/\s+/).filter(c => c.length > 0)).catch(() => {});
+    } else {
+      this.applyStyles('label').catch(() => {});
+    }
+  }
+
+  private async applyStylesFromClasses(classes: string[]): Promise<void> {
+    // Apply styles from all classes, then fallback to 'label'
+    for (const className of classes) {
+      await this.applyStyles(className as any).catch(() => {});
+    }
+    // Also apply generic 'label' styles
+    await this.applyStyles('label').catch(() => {});
   }
 }
 
@@ -619,7 +672,7 @@ export class Toolbar {
       // Action item
       const callbackId = ctx.generateId('callback');
       if (item.onAction) {
-        ctx.bridge.registerEventHandler(callbackId, () => {
+        ctx.bridge.registerEventHandler(callbackId, (_data: any) => {
           item.onAction!();
         });
       }
@@ -831,7 +884,7 @@ export class Form {
     if (onSubmit) {
       const submitCallbackId = ctx.generateId('callback');
       payload.submitCallbackId = submitCallbackId;
-      ctx.bridge.registerEventHandler(submitCallbackId, () => {
+      ctx.bridge.registerEventHandler(submitCallbackId, (_data: any) => {
         onSubmit();
       });
     }
@@ -839,7 +892,7 @@ export class Form {
     if (onCancel) {
       const cancelCallbackId = ctx.generateId('callback');
       payload.cancelCallbackId = cancelCallbackId;
-      ctx.bridge.registerEventHandler(cancelCallbackId, () => {
+      ctx.bridge.registerEventHandler(cancelCallbackId, (_data: any) => {
         onCancel();
       });
     }

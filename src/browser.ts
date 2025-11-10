@@ -89,9 +89,16 @@ export class Browser {
   private currentRequest: any = null;
   private currentPageBuilder: (() => void) | null = null;
   private pageMenus: Map<string, PageMenuItem[]> = new Map();
+  private testMode: boolean = false;
+  private firstPageLoaded: boolean = false;
 
-  constructor(options?: { title?: string; width?: number; height?: number }) {
-    this.app = new App({ title: options?.title || 'Jyne Browser' });
+  constructor(options?: { title?: string; width?: number; height?: number; testMode?: boolean }) {
+    this.testMode = options?.testMode || false;
+    this.app = new App({ title: options?.title || 'Jyne Browser' }, this.testMode);
+
+    // Set global context for the browser's app so global API calls work
+    const { __setGlobalContext } = require('./index');
+    __setGlobalContext(this.app, (this.app as any).ctx);
 
     // Create ONE persistent browser window
     this.window = this.app.window(
@@ -104,18 +111,18 @@ export class Browser {
         this.initializeWindow(win);
       }
     );
+
+    // Set up browser menu bar after window is created
+    this.setupMenuBar();
   }
 
   /**
    * Initialize the browser window with chrome and content area
    */
-  private initializeWindow(win: Window): void {
-    win.setContent(() => {
+  private async initializeWindow(win: Window): Promise<void> {
+    await win.setContent(() => {
       this.buildWindowContent();
     });
-
-    // Set up browser menu bar
-    this.setupMenuBar();
   }
 
   /**
@@ -222,61 +229,77 @@ export class Browser {
    * Build the complete window content: browser chrome + page content
    */
   private buildWindowContent(): void {
-    const { vbox, hbox, button, entry, separator, scroll, label } = require('./index');
+    const { vbox, hbox, button, entry, separator, scroll, label, border } = require('./index');
 
-    vbox(() => {
-      // Browser chrome (address bar and navigation buttons)
-      hbox(() => {
-        button('←', () => {
-          this.back().catch(err => console.error('Back failed:', err));
-        });
-
-        button('→', () => {
-          this.forward().catch(err => console.error('Forward failed:', err));
-        });
-
-        button('⟳', () => {
-          this.reload().catch(err => console.error('Reload failed:', err));
-        });
-
-        // Stop button (only visible when loading)
-        if (this.loading) {
-          this.stopButton = button('✕', () => {
-            this.stop();
-          });
-        }
-
-        this.addressBarEntry = entry(this.currentUrl || 'http://');
-
-        button('Go', async () => {
-          if (this.addressBarEntry) {
-            const url = await this.addressBarEntry.getText();
-            await this.changePage(url);
-          }
-        });
-
-        // Loading indicator
-        if (this.loading) {
-          this.loadingLabel = label('Loading...');
-        }
-      });
-
-      separator();
-
-      // Page content area (scrollable)
-      scroll(() => {
+    // Use border layout at top level: chrome at top, content fills center
+    border({
+      top: () => {
         vbox(() => {
-          if (this.currentPageBuilder) {
-            // Render current page content
-            this.currentPageBuilder();
-          } else {
-            // Welcome message when no page loaded
-            label('Jyne Browser');
-            label('');
-            label('Enter a URL in the address bar and click Go to navigate.');
-          }
+          // Browser chrome (address bar and navigation buttons)
+          // Use border layout to make address bar expand
+          border({
+            left: () => {
+              hbox(() => {
+                button('←', () => {
+                  this.back().catch(err => console.error('Back failed:', err));
+                });
+
+                button('→', () => {
+                  this.forward().catch(err => console.error('Forward failed:', err));
+                });
+
+                button('⟳', () => {
+                  this.reload().catch(err => console.error('Reload failed:', err));
+                });
+
+                // Stop button (only visible when loading)
+                if (this.loading) {
+                  this.stopButton = button('✕', () => {
+                    this.stop();
+                  });
+                }
+              });
+            },
+            center: () => {
+              // Address bar expands to fill available space
+              this.addressBarEntry = entry(this.currentUrl || 'http://');
+            },
+            right: () => {
+              hbox(() => {
+                // Loading indicator
+                if (this.loading) {
+                  this.loadingLabel = label('Loading...');
+                }
+
+                button('Go', async () => {
+                  if (this.addressBarEntry) {
+                    const url = await this.addressBarEntry.getText();
+                    await this.changePage(url);
+                  }
+                });
+              });
+            }
+          });
+
+          separator();
         });
-      });
+      },
+      center: () => {
+        // Page content area (scrollable) - fills remaining space
+        scroll(() => {
+          vbox(() => {
+            if (this.currentPageBuilder) {
+              // Render current page content
+              this.currentPageBuilder();
+            } else {
+              // Welcome message when no page loaded
+              label('Jyne Browser');
+              label('');
+              label('Enter a URL in the address bar and click Go to navigate.');
+            }
+          });
+        });
+      }
     });
   }
 
@@ -284,21 +307,36 @@ export class Browser {
    * Navigate to a URL and load the Jyne page
    */
   async changePage(url: string): Promise<void> {
+    console.log('changePage called with URL:', url);
+
     if (this.loading) {
       console.log('Page already loading, ignoring navigation');
       return;
     }
 
+    // Handle relative URLs - convert to full URL using current URL's origin
+    if (url.startsWith('/') && this.currentUrl) {
+      try {
+        const currentUrlObj = new URL(this.currentUrl);
+        const fullUrl = `${currentUrlObj.protocol}//${currentUrlObj.host}${url}`;
+        console.log('Converted relative URL to full URL:', fullUrl);
+        url = fullUrl;
+      } catch (e) {
+        console.error('Failed to convert relative URL:', e);
+      }
+    }
+
     this.loading = true;
     this.currentUrl = url;
+    console.log('Starting navigation to:', url);
 
     // Update address bar
     if (this.addressBarEntry) {
       this.addressBarEntry.setText(url);
     }
 
-    // Update UI to show loading state
-    this.updateUI();
+    // Don't call updateUI() here - it would re-render the current page with new callback IDs,
+    // breaking the button that was just clicked
 
     try {
       // Fetch page code from server
@@ -320,21 +358,24 @@ export class Browser {
 
       // Render the page
       await this.renderPage(pageCode);
+
+      // Page rendered successfully - stop loading and update menu bar only
+      this.loading = false;
+      this.currentRequest = null;
+      await this.setupMenuBar();  // Update menu bar to reflect new history state
     } catch (error) {
       if (this.loading) {  // Only show error if not stopped
         await this.showError(url, error);
       }
-    } finally {
       this.loading = false;
       this.currentRequest = null;
-      this.updateUI();
     }
   }
 
   /**
    * Stop loading current page
    */
-  stop(): void {
+  async stop(): Promise<void> {
     if (!this.loading) {
       return;
     }
@@ -348,20 +389,20 @@ export class Browser {
       this.currentRequest = null;
     }
 
-    this.updateUI();
+    await this.updateUI();
   }
 
   /**
    * Update UI to reflect current state
    */
-  private updateUI(): void {
+  private async updateUI(): Promise<void> {
     // Re-render window to update stop button and loading indicator
-    this.window.setContent(() => {
+    await this.window.setContent(() => {
       this.buildWindowContent();
     });
 
     // Update menu bar to reflect current state
-    this.setupMenuBar();
+    await this.setupMenuBar();
   }
 
   /**
@@ -476,6 +517,9 @@ export class Browser {
    * Render a page from its code into the browser window
    */
   private async renderPage(pageCode: string): Promise<void> {
+    console.log('renderPage called with code length:', pageCode.length);
+    console.log('First 200 chars of page code:', pageCode.substring(0, 200));
+
     // Create browser context for the page
     const browserContext: BrowserContext = {
       back: () => this.back(),
@@ -494,20 +538,43 @@ export class Browser {
       // The page code directly builds widgets using jyne API
       const jyne = require('./index');
 
+      console.log('Creating page builder...');
+
       // Create a content builder that executes the page code
       this.currentPageBuilder = () => {
+        console.log('Executing page builder...');
         // Execute the page code - it will create widgets directly
         const pageFunction = new Function('browserContext', 'jyne', pageCode);
         pageFunction(browserContext, jyne);
+        console.log('Page builder executed');
       };
 
+      console.log('Setting window content...');
+
       // Re-render the entire window (chrome + new content)
-      this.window.setContent(() => {
+      await this.window.setContent(() => {
         this.buildWindowContent();
       });
 
-      await this.window.show();
+      console.log('Window content set');
+
+      // Only call show() on first page load (window needs initial show)
+      // After that, window is already shown
+      if (!this.firstPageLoaded) {
+        console.log('Showing window for first time...');
+        await this.window.show();
+        this.firstPageLoaded = true;
+        console.log('Window shown');
+      }
+
+      // In test mode, wait briefly for widgets to register
+      if (this.testMode) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      console.log('renderPage completed successfully');
     } catch (error) {
+      console.error('Error in renderPage:', error);
       await this.showError(this.currentUrl, error);
     }
   }
@@ -536,11 +603,21 @@ export class Browser {
     };
 
     // Re-render window with error content
-    this.window.setContent(() => {
+    await this.window.setContent(() => {
       this.buildWindowContent();
     });
 
-    await this.window.show();
+    // Only call show() on first page load (window needs initial show)
+    // After that, window is already shown
+    if (!this.firstPageLoaded) {
+      await this.window.show();
+      this.firstPageLoaded = true;
+    }
+
+    // In test mode, wait briefly for widgets to register
+    if (this.testMode) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
 
   /**

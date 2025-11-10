@@ -185,6 +185,38 @@ export class TestContext {
   }
 
   /**
+   * Wait for a condition to become true (polling like Selenium's waitFor)
+   * Checks condition repeatedly until true or timeout
+   * @param condition Function that returns true when condition is met
+   * @param options timeout (default 5000ms), interval (default 10ms), description
+   */
+  async waitForCondition(
+    condition: () => Promise<boolean> | boolean,
+    options: { timeout?: number; interval?: number; description?: string } = {}
+  ): Promise<void> {
+    const timeout = options.timeout ?? 5000;
+    const interval = options.interval ?? 10;
+    const description = options.description ?? 'condition';
+
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+      try {
+        const result = await condition();
+        if (result) {
+          return; // Condition met, return immediately
+        }
+      } catch (e) {
+        // Condition check failed, keep trying
+      }
+
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+
+    throw new Error(`Timeout waiting for ${description} after ${timeout}ms`);
+  }
+
+  /**
    * Create an assertion helper
    */
   expect(locator: Locator): Expect {

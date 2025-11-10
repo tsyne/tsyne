@@ -1,5 +1,6 @@
-import { app, window, vbox, hbox, button, label, App } from '../../src';
+import { app, App } from '../../src';
 import { CalculatorLogic } from './calculator-logic';
+import { styles, FontStyle } from '../../src/styles';
 
 /**
  * Calculator UI - Presentation layer
@@ -24,43 +25,60 @@ export class CalculatorUI {
    * Build the calculator UI
    */
   build(): void {
-    window({ title: "Calculator" }, () => {
-      vbox(() => {
-        // Display
-        this.display = label(this.logic.getDisplay());
+    // Define calculator stylesheet
+    styles({
+      display: {
+        text_align: 'right',
+        font_style: FontStyle.BOLD,
+        font_size: 18  // 20% bigger than default (~14-15)
+      },
+      // Button color mappings (Fyne limitation: must use importance levels)
+      operation: {
+        importance: 'high'  // Blue for operations (÷ × - +)
+      },
+      clear: {
+        importance: 'warning'  // Orange/red for clear
+      },
+      equals: {
+        importance: 'success'  // Green for equals
+      }
+      // numeral buttons get default styling (grey/neutral)
+    });
 
-        // Number pad and operators
-        hbox(() => {
-          button("7", () => this.handleNumberClick("7"));
-          button("8", () => this.handleNumberClick("8"));
-          button("9", () => this.handleNumberClick("9"));
-          button("÷", () => this.handleOperatorClick("÷"));
+    this.jyneApp.window({ title: "Calculator", width: 400, height: 500 }, () => {
+      this.jyneApp.vbox(() => {
+        // Display - right-aligned and bold
+        this.display = this.jyneApp.label(this.logic.getDisplay(), "display");
+
+        // Number pad and operators - use grid for even sizing with semantic class names
+        this.jyneApp.grid(4, () => {
+          // Row 1: 7 8 9 ÷
+          this.jyneApp.button("7", () => this.handleNumberClick("7"), "numeral");
+          this.jyneApp.button("8", () => this.handleNumberClick("8"), "numeral");
+          this.jyneApp.button("9", () => this.handleNumberClick("9"), "numeral");
+          this.jyneApp.button("÷", () => this.handleOperatorClick("÷"), "operation");
+
+          // Row 2: 4 5 6 ×
+          this.jyneApp.button("4", () => this.handleNumberClick("4"), "numeral");
+          this.jyneApp.button("5", () => this.handleNumberClick("5"), "numeral");
+          this.jyneApp.button("6", () => this.handleNumberClick("6"), "numeral");
+          this.jyneApp.button("×", () => this.handleOperatorClick("×"), "operation");
+
+          // Row 3: 1 2 3 -
+          this.jyneApp.button("1", () => this.handleNumberClick("1"), "numeral");
+          this.jyneApp.button("2", () => this.handleNumberClick("2"), "numeral");
+          this.jyneApp.button("3", () => this.handleNumberClick("3"), "numeral");
+          this.jyneApp.button("-", () => this.handleOperatorClick("-"), "operation");
+
+          // Row 4: 0 . Clr +
+          this.jyneApp.button("0", () => this.handleNumberClick("0"), "numeral");
+          this.jyneApp.button(".", () => this.handleDecimalClick(), "numeral");
+          this.jyneApp.button("Clr", () => this.handleClearClick(), "clear");
+          this.jyneApp.button("+", () => this.handleOperatorClick("+"), "operation");
         });
 
-        hbox(() => {
-          button("4", () => this.handleNumberClick("4"));
-          button("5", () => this.handleNumberClick("5"));
-          button("6", () => this.handleNumberClick("6"));
-          button("×", () => this.handleOperatorClick("×"));
-        });
-
-        hbox(() => {
-          button("1", () => this.handleNumberClick("1"));
-          button("2", () => this.handleNumberClick("2"));
-          button("3", () => this.handleNumberClick("3"));
-          button("-", () => this.handleOperatorClick("-"));
-        });
-
-        hbox(() => {
-          button("0", () => this.handleNumberClick("0"));
-          button(".", () => this.handleDecimalClick());
-          button("Clr", () => this.handleClearClick());
-          button("+", () => this.handleOperatorClick("+"));
-        });
-
-        hbox(() => {
-          button("=", () => this.handleEqualsClick());
-        });
+        // Equals button spans full width
+        this.jyneApp.button("=", () => this.handleEqualsClick(), "equals");
       });
     });
   }
@@ -113,8 +131,8 @@ export class CalculatorUI {
 
 // Main entry point for running the calculator
 if (require.main === module) {
-  const calculatorApp = app({ title: "Jyne Calculator" }, () => {
-    const calc = new CalculatorUI(calculatorApp as any);
+  app({ title: "Jyne Calculator" }, (appInstance) => {
+    const calc = new CalculatorUI(appInstance);
     calc.build();
   });
 }

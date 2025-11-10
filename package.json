@@ -13,13 +13,13 @@
     "example": "npm run build && node examples/calculator.js",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "jest",
-    "test:integration": "npm run test:calculator && npm run test:calculator-simple",
-    "test:calculator": "npm run build && node test-apps/calculator-advanced/calculator.test.js",
+    "test:integration": "npm run test:calculator && npm run test:single-script-calculator",
+    "test:calculator": "npm run build && jest test-apps/calculator-advanced/calculator.test.ts",
     "test:calculator:logic": "jest calculator-logic.test.ts",
-    "test:calculator:headed": "npm run build && JYNE_HEADED=1 node test-apps/calculator-advanced/calculator.test.js",
-    "test:calculator-simple": "npm run build && node test-apps/calculator-simple/calculator.test.js",
-    "run:calculator": "npm run build && node test-apps/calculator-advanced/calculator-ui.js",
-    "run:calculator-simple": "npm run build && node test-apps/calculator-simple/calculator.js",
+    "test:calculator:headed": "npm run build && JYNE_HEADED=1 jest test-apps/calculator-advanced/calculator.test.ts",
+    "test:single-script-calculator": "npm run build && jest test-apps/single-script-calculator/calculator.test.ts",
+    "run:calculator": "npm run build && npx ts-node test-apps/calculator-advanced/calculator-ui.ts",
+    "run:single-script-calculator": "npm run build && npx ts-node test-apps/single-script-calculator/calculator.ts",
     "clean": "rm -rf dist bin"
   },
   "keywords": [
@@ -38,9 +38,9 @@
     "@types/node": "^20.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=16.0.0"
   },

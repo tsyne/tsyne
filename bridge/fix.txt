@@ -1,0 +1,6 @@
+	mainMenu := fyne.NewMainMenu(menus...)
+	
+	// Setting window menu must happen on the main thread
+	fyne.DoAndWait(func() {
+		win.SetMainMenu(mainMenu)
+	})

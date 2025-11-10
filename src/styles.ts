@@ -42,10 +42,14 @@ export interface WidgetStyle {
 
   // Text properties
   text_align?: 'left' | 'center' | 'right';
+
+  // Button-specific properties (Fyne limitation workaround)
+  // Maps to Fyne's importance levels since Fyne doesn't support per-widget colors
+  importance?: 'low' | 'medium' | 'high' | 'warning' | 'success';
 }
 
 /**
- * Widget type selectors
+ * Widget type selectors (includes built-in types and custom class names)
  */
 export type WidgetSelector =
   | 'root'
@@ -62,7 +66,8 @@ export type WidgetSelector =
   | 'hyperlink'
   | 'separator'
   | 'table'
-  | 'list';
+  | 'list'
+  | string; // Allow custom class names
 
 /**
  * StyleSheet stores styles for different widget types
@@ -133,7 +138,9 @@ export function styles(styleDefinitions: Partial<Record<WidgetSelector, WidgetSt
 
   // Apply all style definitions
   for (const [selector, style] of Object.entries(styleDefinitions)) {
-    globalStyleSheet.style(selector as WidgetSelector, style);
+    if (style) {
+      globalStyleSheet.style(selector as WidgetSelector, style);
+    }
   }
 
   return globalStyleSheet;

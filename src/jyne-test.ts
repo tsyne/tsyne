@@ -8,6 +8,7 @@ export interface TestOptions {
 
 /**
  * JyneTest provides a testing framework for Jyne applications
+ * Uses proper IoC/DI - app instance is injected into builder
  */
 export class JyneTest {
   private app: App | null = null;
@@ -23,15 +24,20 @@ export class JyneTest {
 
   /**
    * Create an app in test mode
+   * Builder receives the app instance (proper IoC/DI)
+   * Returns a promise that resolves when the bridge is ready
    */
-  createApp(appBuilder: (app: App) => void): App {
+  async createApp(appBuilder: (app: App) => void): Promise<App> {
     const testMode = !this.options.headed;
     this.app = new App({}, testMode);
+
+    // Wait for bridge to be ready before building
+    await this.app.getBridge().waitUntilReady();
 
     // Create test context
     this.testContext = new TestContext(this.app.getBridge());
 
-    // Build the app
+    // Build the app - inject app instance for scoped declarative API
     appBuilder(this.app);
 
     return this.app;

@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label } from '../../src';
+import { app } from '../../src';
 
 /**
  * Simple Calculator - Monolithic Implementation
@@ -114,43 +114,50 @@ function clear() {
   updateDisplay("0");
 }
 
-// Build and run the calculator
-app({ title: "Simple Calculator" }, () => {
-  window({ title: "Calculator - Monolithic" }, () => {
-    vbox(() => {
-      display = label("0");
+// Build the calculator UI (exported for testing)
+export function buildCalculator(app: any) {
+  app.window({ title: "Calculator - Monolithic" }, () => {
+    app.vbox(() => {
+      display = app.label("0");
 
-      hbox(() => {
-        button("7", () => handleNumber("7"));
-        button("8", () => handleNumber("8"));
-        button("9", () => handleNumber("9"));
-        button("÷", () => handleOperator("÷"));
+      app.hbox(() => {
+        app.button("7", () => handleNumber("7"));
+        app.button("8", () => handleNumber("8"));
+        app.button("9", () => handleNumber("9"));
+        app.button("÷", () => handleOperator("÷"));
       });
 
-      hbox(() => {
-        button("4", () => handleNumber("4"));
-        button("5", () => handleNumber("5"));
-        button("6", () => handleNumber("6"));
-        button("×", () => handleOperator("×"));
+      app.hbox(() => {
+        app.button("4", () => handleNumber("4"));
+        app.button("5", () => handleNumber("5"));
+        app.button("6", () => handleNumber("6"));
+        app.button("×", () => handleOperator("×"));
       });
 
-      hbox(() => {
-        button("1", () => handleNumber("1"));
-        button("2", () => handleNumber("2"));
-        button("3", () => handleNumber("3"));
-        button("-", () => handleOperator("-"));
+      app.hbox(() => {
+        app.button("1", () => handleNumber("1"));
+        app.button("2", () => handleNumber("2"));
+        app.button("3", () => handleNumber("3"));
+        app.button("-", () => handleOperator("-"));
       });
 
-      hbox(() => {
-        button("0", () => handleNumber("0"));
-        button(".", () => handleDecimal());
-        button("Clr", () => clear());
-        button("+", () => handleOperator("+"));
+      app.hbox(() => {
+        app.button("0", () => handleNumber("0"));
+        app.button(".", () => handleDecimal());
+        app.button("Clr", () => clear());
+        app.button("+", () => handleOperator("+"));
       });
 
-      hbox(() => {
-        button("=", () => calculate());
+      app.hbox(() => {
+        app.button("=", () => calculate());
       });
     });
   });
-});
+}
+
+// Run directly when executed as main script
+if (require.main === module) {
+  app({ title: "Simple Calculator" }, (appInstance) => {
+    buildCalculator(appInstance);
+  });
+}

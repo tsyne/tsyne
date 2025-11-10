@@ -29,12 +29,19 @@ export class BridgeConnection {
     reject: (error: Error) => void;
   }>();
   private eventHandlers = new Map<string, (data: any) => void>();
+  private readyPromise: Promise<void>;
+  private readyResolve?: () => void;
 
   constructor(testMode: boolean = false) {
     const bridgePath = path.join(__dirname, '..', 'bin', 'jyne-bridge');
     const args = testMode ? ['--headless'] : [];
     this.process = spawn(bridgePath, args, {
       stdio: ['pipe', 'pipe', 'inherit']
+    });
+
+    // Create promise that resolves when bridge is ready
+    this.readyPromise = new Promise((resolve) => {
+      this.readyResolve = resolve;
     });
 
     const rl = readline.createInterface({
@@ -68,6 +75,12 @@ export class BridgeConnection {
   }
 
   private handleResponse(response: Response): void {
+    // Handle ready signal
+    if (response.id === 'ready' && this.readyResolve) {
+      this.readyResolve();
+      return;
+    }
+
     const pending = this.pendingRequests.get(response.id);
     if (pending) {
       this.pendingRequests.delete(response.id);
@@ -88,7 +101,17 @@ export class BridgeConnection {
     }
   }
 
+  /**
+   * Wait for the bridge to be ready to receive commands
+   */
+  async waitUntilReady(): Promise<void> {
+    return this.readyPromise;
+  }
+
   async send(type: string, payload: Record<string, any>): Promise<any> {
+    // Wait for bridge to be ready before sending commands
+    await this.readyPromise;
+
     const id = `msg_${this.messageId++}`;
     const message: Message = { id, type, payload };
 
@@ -98,7 +121,7 @@ export class BridgeConnection {
     });
   }
 
-  registerEventHandler(callbackId: string, handler: () => void): void {
+  registerEventHandler(callbackId: string, handler: (data: any) => void): void {
     this.eventHandlers.set(callbackId, handler);
   }
 

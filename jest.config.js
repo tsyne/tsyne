@@ -6,11 +6,9 @@ module.exports = {
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
   ],
-  // Exclude JyneTest integration tests (those need the bridge)
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/dist/',
-    'calculator.test.ts' // This is JyneTest, not Jest
+    '/dist/'
   ],
   collectCoverageFrom: [
     'test-apps/**/*.ts',

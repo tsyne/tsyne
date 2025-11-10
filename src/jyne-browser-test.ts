@@ -85,18 +85,20 @@ vbox(() => {
     // Start test server
     await this.startServer();
 
-    // Create browser instance (headless if not headed mode)
+    // Create browser instance in test mode (headless if not headed mode)
     const testMode = !this.options.headed;
-
-    // For now, create browser normally - we'd need to pass testMode to Browser constructor
     this.browser = new Browser({
       title: 'Jyne Browser Test',
       width: 800,
-      height: 600
+      height: 600,
+      testMode
     });
 
-    // Get test context from browser's app
+    // Get app and wait for bridge to be ready (like JyneTest does)
     const app = this.browser.getApp();
+    await app.getBridge().waitUntilReady();
+
+    // Create test context
     this.testContext = new TestContext(app.getBridge());
 
     // Navigate to initial URL if provided
@@ -174,15 +176,21 @@ vbox(() => {
     const timeout = timeoutMs ?? this.options.timeout ?? 5000;
     const startTime = Date.now();
 
+    // Wait for browser loading state to become false (polls every 50ms)
     while (Date.now() - startTime < timeout) {
-      // Check if browser is still loading
-      // For now, just wait a short time for page to render
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const isLoading = (this.browser as any).loading;
 
-      // In a real implementation, we'd check browser.loading state
-      // but that's not exposed currently
-      break;
+      if (!isLoading) {
+        // Page finished loading, minimal wait for widgets to register (100ms is enough)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
+
+    // Timeout - give widgets one more chance
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   /**
@@ -202,7 +210,14 @@ vbox(() => {
     if (!this.browser) {
       throw new Error('Browser not created. Call createBrowser() first.');
     }
-    return (this.browser as any).currentUrl;
+    const url = (this.browser as any).currentUrl;
+
+    // If it's a relative URL (starts with /), convert to full test URL
+    if (url.startsWith('/')) {
+      return this.getTestUrl(url);
+    }
+
+    return url;
   }
 
   /**
@@ -239,30 +254,24 @@ vbox(() => {
   }
 }
 
+// Collected tests to run sequentially
+const collectedTests: Array<{
+  name: string;
+  pages: TestPage[];
+  testFn: (browserTest: JyneBrowserTest) => Promise<void>;
+  options: BrowserTestOptions;
+}> = [];
+
 /**
- * Helper function to create a browser test
+ * Helper function to register a browser test (runs later)
  */
-export async function browserTest(
+export function browserTest(
   name: string,
   pages: TestPage[],
   testFn: (browserTest: JyneBrowserTest) => Promise<void>,
   options: BrowserTestOptions = {}
-): Promise<void> {
-  const jyneBrowserTest = new JyneBrowserTest(options);
-  jyneBrowserTest.addPages(pages);
-
-  console.log(`Running browser test: ${name}`);
-
-  try {
-    await testFn(jyneBrowserTest);
-    console.log(`✓ ${name}`);
-  } catch (error) {
-    console.error(`✗ ${name}`);
-    console.error(`  ${error instanceof Error ? error.message : String(error)}`);
-    throw error;
-  } finally {
-    await jyneBrowserTest.cleanup();
-  }
+): void {
+  collectedTests.push({ name, pages, testFn, options });
 }
 
 /**
@@ -271,4 +280,42 @@ export async function browserTest(
 export function describeBrowser(name: string, suiteFn: () => void): void {
   console.log(`\n${name}`);
   suiteFn();
+}
+
+/**
+ * Run all collected browser tests sequentially
+ */
+export async function runBrowserTests(): Promise<void> {
+  let passed = 0;
+  let failed = 0;
+
+  for (const test of collectedTests) {
+    const jyneBrowserTest = new JyneBrowserTest(test.options);
+    jyneBrowserTest.addPages(test.pages);
+
+    console.log(`Running browser test: ${test.name}`);
+    const startTime = Date.now();
+
+    try {
+      await test.testFn(jyneBrowserTest);
+      const duration = Date.now() - startTime;
+      console.log(`✓ ${test.name} (${duration}ms)`);
+      passed++;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`✗ ${test.name} (${duration}ms)`);
+      console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+      failed++;
+    } finally {
+      await jyneBrowserTest.cleanup();
+      // Wait a bit between tests to avoid global context conflicts
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+
+  console.log(`\nTests: ${passed} passed, ${failed} failed, ${passed + failed} total`);
+
+  if (failed > 0) {
+    process.exit(1);
+  }
 }

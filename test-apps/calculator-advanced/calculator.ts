@@ -1,9 +1,10 @@
-import { app, window, vbox, hbox, button, label, App } from '../../src';
+import { app, App } from '../../src';
 
 /**
  * Calculator application - Testable implementation
  *
  * This calculator demonstrates best practices for building testable Jyne apps:
+ * - Proper IoC/DI: App instance is injected
  * - All state is managed through widget references
  * - Widget text is the source of truth for display
  * - Operations are pure functions
@@ -20,45 +21,45 @@ export class Calculator {
   constructor(private jyneApp: App) {}
 
   /**
-   * Build the calculator UI
+   * Build the calculator UI using the injected app's scoped methods
    */
   build(): void {
-    window({ title: "Calculator" }, () => {
-      vbox(() => {
+    this.jyneApp.window({ title: "Calculator" }, () => {
+      this.jyneApp.vbox(() => {
         // Display
-        this.display = label("0");
+        this.display = this.jyneApp.label("0");
 
         // Number pad and operators
-        hbox(() => {
-          button("7", () => this.handleNumber("7"));
-          button("8", () => this.handleNumber("8"));
-          button("9", () => this.handleNumber("9"));
-          button("÷", () => this.handleOperator("÷"));
+        this.jyneApp.hbox(() => {
+          this.jyneApp.button("7", () => this.handleNumber("7"));
+          this.jyneApp.button("8", () => this.handleNumber("8"));
+          this.jyneApp.button("9", () => this.handleNumber("9"));
+          this.jyneApp.button("÷", () => this.handleOperator("÷"));
         });
 
-        hbox(() => {
-          button("4", () => this.handleNumber("4"));
-          button("5", () => this.handleNumber("5"));
-          button("6", () => this.handleNumber("6"));
-          button("×", () => this.handleOperator("×"));
+        this.jyneApp.hbox(() => {
+          this.jyneApp.button("4", () => this.handleNumber("4"));
+          this.jyneApp.button("5", () => this.handleNumber("5"));
+          this.jyneApp.button("6", () => this.handleNumber("6"));
+          this.jyneApp.button("×", () => this.handleOperator("×"));
         });
 
-        hbox(() => {
-          button("1", () => this.handleNumber("1"));
-          button("2", () => this.handleNumber("2"));
-          button("3", () => this.handleNumber("3"));
-          button("-", () => this.handleOperator("-"));
+        this.jyneApp.hbox(() => {
+          this.jyneApp.button("1", () => this.handleNumber("1"));
+          this.jyneApp.button("2", () => this.handleNumber("2"));
+          this.jyneApp.button("3", () => this.handleNumber("3"));
+          this.jyneApp.button("-", () => this.handleOperator("-"));
         });
 
-        hbox(() => {
-          button("0", () => this.handleNumber("0"));
-          button(".", () => this.handleDecimal());
-          button("Clr", () => this.clear());
-          button("+", () => this.handleOperator("+"));
+        this.jyneApp.hbox(() => {
+          this.jyneApp.button("0", () => this.handleNumber("0"));
+          this.jyneApp.button(".", () => this.handleDecimal());
+          this.jyneApp.button("Clr", () => this.clear());
+          this.jyneApp.button("+", () => this.handleOperator("+"));
         });
 
-        hbox(() => {
-          button("=", () => this.calculate());
+        this.jyneApp.hbox(() => {
+          this.jyneApp.button("=", () => this.calculate());
         });
       });
     });
@@ -158,9 +159,10 @@ export class Calculator {
 }
 
 // Main entry point for running the calculator
+// Demonstrates proper IoC: app instance is injected into builder
 if (require.main === module) {
-  const calculatorApp = app({ title: "Jyne Calculator" }, () => {
-    const calc = new Calculator(calculatorApp as any);
+  app({ title: "Jyne Calculator" }, (app) => {
+    const calc = new Calculator(app);
     calc.build();
   });
 }

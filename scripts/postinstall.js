@@ -72,13 +72,35 @@ function selectPrebuiltBinary() {
   }
 }
 
+function findGoBinary() {
+  // Common Go installation paths
+  const goPaths = [
+    'go', // Check PATH first
+    '/usr/local/go/bin/go',
+    '/usr/bin/go',
+    process.env.HOME + '/go/bin/go',
+    'C:\\Go\\bin\\go.exe',
+    'C:\\Program Files\\Go\\bin\\go.exe',
+  ];
+
+  for (const goPath of goPaths) {
+    try {
+      execSync(`${goPath} version`, { stdio: 'ignore' });
+      return goPath;
+    } catch (err) {
+      continue;
+    }
+  }
+
+  return null;
+}
+
 function buildFromSource() {
   console.log('Attempting to build Jyne bridge from source...');
 
-  try {
-    // Check if Go is installed
-    execSync('go version', { stdio: 'ignore' });
-  } catch (err) {
+  const goBinary = findGoBinary();
+
+  if (!goBinary) {
     console.error('');
     console.error('ERROR: Go is not installed or not in PATH');
     console.error('');
@@ -93,10 +115,11 @@ function buildFromSource() {
 
   try {
     console.log('Building Jyne bridge from source (this may take a minute)...');
+    console.log('Running: ' + goBinary + ' build -v');
 
     const buildCmd = platform === 'win32'
-      ? 'cd bridge && go build -o ..\\bin\\jyne-bridge.exe'
-      : 'cd bridge && go build -o ../bin/jyne-bridge';
+      ? `cd bridge && ${goBinary} build -v -o ..\\bin\\jyne-bridge.exe`
+      : `cd bridge && ${goBinary} build -v -o ../bin/jyne-bridge`;
 
     execSync(buildCmd, {
       stdio: 'inherit',

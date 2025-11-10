@@ -18,6 +18,7 @@
 
 import { app } from '../../src';
 import { JyneTest, TestContext } from '../../src/index-test';
+import { buildCalculator } from './calculator';
 
 describe('Simple Calculator Tests', () => {
   let jyneTest: JyneTest;
@@ -32,8 +33,8 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should display initial value of 0', async () => {
-    const testApp = jyneTest.createApp((app) => {
-      require('./calculator'); // Loads the monolithic app
+    const testApp = await jyneTest.createApp((app) => {
+      buildCalculator(app);
     });
 
     ctx = jyneTest.getContext();
@@ -44,8 +45,8 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should perform addition', async () => {
-    const testApp = jyneTest.createApp((app) => {
-      require('./calculator');
+    const testApp = await jyneTest.createApp((app) => {
+      buildCalculator(app);
     });
 
     ctx = jyneTest.getContext();
@@ -65,8 +66,8 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should perform subtraction', async () => {
-    const testApp = jyneTest.createApp((app) => {
-      require('./calculator');
+    const testApp = await jyneTest.createApp((app) => {
+      buildCalculator(app);
     });
 
     ctx = jyneTest.getContext();
@@ -86,8 +87,8 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should handle division by zero', async () => {
-    const testApp = jyneTest.createApp((app) => {
-      require('./calculator');
+    const testApp = await jyneTest.createApp((app) => {
+      buildCalculator(app);
     });
 
     ctx = jyneTest.getContext();
@@ -107,8 +108,8 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should clear display', async () => {
-    const testApp = jyneTest.createApp((app) => {
-      require('./calculator');
+    const testApp = await jyneTest.createApp((app) => {
+      buildCalculator(app);
     });
 
     ctx = jyneTest.getContext();
@@ -127,59 +128,3 @@ describe('Simple Calculator Tests', () => {
     await ctx.expect(display).toHaveText("0");
   });
 });
-
-// Simple test runner (since we can't mix with Jest)
-async function runTests() {
-  console.log('\n=== Simple Calculator Test Suite (JyneTest Only) ===\n');
-
-  const tests = [
-    { name: 'Initial display', fn: test1 },
-    { name: 'Addition', fn: test2 },
-    { name: 'Subtraction', fn: test3 },
-    { name: 'Division by zero', fn: test4 },
-    { name: 'Clear function', fn: test5 },
-  ];
-
-  let passed = 0;
-  let failed = 0;
-
-  const startTime = Date.now();
-
-  for (const test of tests) {
-    try {
-      await test.fn();
-      console.log(`✓ ${test.name}`);
-      passed++;
-    } catch (error) {
-      console.log(`✗ ${test.name}`);
-      console.log(`  ${error instanceof Error ? error.message : String(error)}`);
-      failed++;
-    }
-  }
-
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-
-  console.log(`\n${passed} passed, ${failed} failed`);
-  console.log(`Total time: ${elapsed}s (average ${(parseFloat(elapsed) / tests.length).toFixed(2)}s per test)`);
-  console.log('\nNote: All tests use JyneTest (no Jest unit tests)');
-  console.log('Each test spawns the bridge process (~500ms overhead)\n');
-
-  process.exit(failed > 0 ? 1 : 0);
-}
-
-// Individual test implementations
-async function test1() {
-  const jyneTest = new JyneTest({ headed: false });
-
-  // Note: We can't easily import the app here, so we'd need a different approach
-  // This is a limitation of the monolithic design!
-
-  await jyneTest.cleanup();
-}
-
-// ... (similar implementations for other tests)
-
-if (require.main === module) {
-  console.log('Note: Full test suite not yet implemented for monolithic design');
-  console.log('This demonstrates the difficulty of testing monolithic apps!');
-}
