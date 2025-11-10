@@ -74,6 +74,20 @@ vbox(() => {
       label('');
       separator();
       label('');
+      label('=== Advanced Web Features ===');
+      label('');
+
+      button('# URL Fragments (Anchors)', () => {
+        browserContext.changePage('/url-fragments');
+      });
+
+      button('⚠️  Alerts & Dialogs', () => {
+        browserContext.changePage('/alerts-demo');
+      });
+
+      label('');
+      separator();
+      label('');
       label('=== Desktop UI Features (Beyond HTML) ===');
       label('');
 
