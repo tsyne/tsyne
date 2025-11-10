@@ -123,11 +123,11 @@ app({ title: 'Input Widgets Demo' }, () => {
 
         label('Documentation Links:');
         hbox(() => {
-          hyperlink('Jyne Docs', 'https://github.com/your-repo/jyne');
+          hyperlink('Tsyne Docs', 'https://github.com/your-repo/tsyne');
           label('  •  ');
           hyperlink('Fyne Widgets', 'https://developer.fyne.io/widget/');
           label('  •  ');
-          hyperlink('Examples', 'https://github.com/your-repo/jyne/tree/main/examples');
+          hyperlink('Examples', 'https://github.com/your-repo/tsyne/tree/main/examples');
         });
 
         label('');

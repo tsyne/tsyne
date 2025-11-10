@@ -1,8 +1,8 @@
 /**
- * JyneTest Integration Tests for Simple Calculator
+ * TsyneTest Integration Tests for Simple Calculator
  *
  * Since the simple calculator mixes UI and logic, ALL tests
- * must use JyneTest (no Jest unit tests possible).
+ * must use TsyneTest (no Jest unit tests possible).
  *
  * PROS:
  * - Tests exactly what users see/do
@@ -17,27 +17,27 @@
  */
 
 import { app } from '../../src';
-import { JyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../src/index-test';
 import { buildCalculator } from './calculator';
 
 describe('Simple Calculator Tests', () => {
-  let jyneTest: JyneTest;
+  let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
   beforeEach(() => {
-    jyneTest = new JyneTest({ headed: false });
+    tsyneTest = new TsyneTest({ headed: false });
   });
 
   afterEach(async () => {
-    await jyneTest.cleanup();
+    await tsyneTest.cleanup();
   });
 
   test('should display initial value of 0', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       buildCalculator(app);
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     const display = ctx.getByExactText("0");
@@ -45,11 +45,11 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should perform addition', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       buildCalculator(app);
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     await ctx.getByExactText("5").click();
@@ -66,11 +66,11 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should perform subtraction', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       buildCalculator(app);
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     await ctx.getByExactText("9").click();
@@ -87,11 +87,11 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should handle division by zero', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       buildCalculator(app);
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     await ctx.getByExactText("5").click();
@@ -108,11 +108,11 @@ describe('Simple Calculator Tests', () => {
   });
 
   test('should clear display', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       buildCalculator(app);
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     await ctx.getByExactText("1").click();

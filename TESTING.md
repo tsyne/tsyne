@@ -1,18 +1,18 @@
-# JyneTest - Testing Framework for Jyne
+# TsyneTest - Testing Framework for Tsyne
 
-JyneTest is a Playwright-like testing framework for Jyne applications, providing both headed and headless testing modes.
+TsyneTest is a Playwright-like testing framework for Tsyne applications, providing both headed and headless testing modes.
 
 ## Quick Start
 
 ```typescript
-import { JyneTest } from 'jyne/test';
-import { app, window, button, label } from 'jyne';
+import { TsyneTest } from 'tsyne/test';
+import { app, window, button, label } from 'tsyne';
 
 // Create a test
-const jyneTest = new JyneTest({ headed: false });
+const tsyneTest = new TsyneTest({ headed: false });
 
 // Build your app
-const testApp = jyneTest.createApp((app) => {
+const testApp = tsyneTest.createApp((app) => {
   window({ title: "Test App" }, () => {
     vbox(() => {
       label("Counter: 0");
@@ -22,7 +22,7 @@ const testApp = jyneTest.createApp((app) => {
 });
 
 // Get test context
-const ctx = jyneTest.getContext();
+const ctx = tsyneTest.getContext();
 
 // Run the app
 await testApp.run();
@@ -35,15 +35,15 @@ const counter = ctx.getByText("Counter:");
 await ctx.expect(counter).toContainText("Counter: 1");
 
 // Clean up
-await jyneTest.cleanup();
+await tsyneTest.cleanup();
 ```
 
 ## Installation
 
-JyneTest is included with Jyne. Import from the test entry point:
+TsyneTest is included with Tsyne. Import from the test entry point:
 
 ```typescript
-import { JyneTest, TestContext } from 'jyne/test';
+import { TsyneTest, TestContext } from 'tsyne/test';
 ```
 
 ## Core Concepts
@@ -55,7 +55,7 @@ import { JyneTest, TestContext } from 'jyne/test';
 Tests run without displaying UI, using Fyne's test driver:
 
 ```typescript
-const jyneTest = new JyneTest({ headed: false });
+const tsyneTest = new TsyneTest({ headed: false });
 ```
 
 **Benefits:**
@@ -69,7 +69,7 @@ const jyneTest = new JyneTest({ headed: false });
 Tests run with visible UI windows:
 
 ```typescript
-const jyneTest = new JyneTest({ headed: true });
+const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 **Benefits:**
@@ -83,7 +83,7 @@ const jyneTest = new JyneTest({ headed: true });
 The `TestContext` is your main interface for interacting with the UI:
 
 ```typescript
-const ctx = jyneTest.getContext();
+const ctx = tsyneTest.getContext();
 ```
 
 ## Locators
@@ -238,16 +238,16 @@ widgets.forEach(w => {
 Here's a complete test for a counter application:
 
 ```typescript
-import { JyneTest } from 'jyne/test';
-import { app, window, vbox, hbox, button, label } from 'jyne';
+import { TsyneTest } from 'tsyne/test';
+import { app, window, vbox, hbox, button, label } from 'tsyne';
 
 async function testCounter() {
-  const jyneTest = new JyneTest({ headed: false });
+  const tsyneTest = new TsyneTest({ headed: false });
 
   let countLabel: any;
   let count = 0;
 
-  const testApp = jyneTest.createApp((app) => {
+  const testApp = tsyneTest.createApp((app) => {
     window({ title: "Counter" }, () => {
       vbox(() => {
         countLabel = label("Count: 0");
@@ -272,7 +272,7 @@ async function testCounter() {
     });
   });
 
-  const ctx = jyneTest.getContext();
+  const ctx = tsyneTest.getContext();
   await testApp.run();
 
   // Test initial state
@@ -303,7 +303,7 @@ async function testCounter() {
   await ctx.expect(ctx.getByExactText("-")).toBeVisible();
   await ctx.expect(ctx.getByExactText("Reset")).toBeVisible();
 
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
   console.log("✓ Counter test passed");
 }
 
@@ -317,7 +317,7 @@ testCounter().catch(console.error);
 Organize tests into suites:
 
 ```typescript
-import { describe, test } from 'jyne/test';
+import { describe, test } from 'tsyne/test';
 
 describe('Calculator Tests', () => {
   test('should add numbers', async (ctx) => {
@@ -335,15 +335,15 @@ describe('Calculator Tests', () => {
 Set up and tear down for each test:
 
 ```typescript
-let jyneTest: JyneTest;
+let tsyneTest: TsyneTest;
 let ctx: TestContext;
 
 beforeEach(() => {
-  jyneTest = new JyneTest({ headed: false });
+  tsyneTest = new TsyneTest({ headed: false });
 });
 
 afterEach(async () => {
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
 });
 ```
 
@@ -388,7 +388,7 @@ test('should do all math operations', async () => {
 try {
   await runTest();
 } finally {
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
 }
 ```
 
@@ -397,12 +397,12 @@ try {
 When a test fails, run it in headed mode to see what's happening:
 
 ```typescript
-const jyneTest = new JyneTest({ headed: true });
+const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 ## CI/CD Integration
 
-JyneTest works great in CI/CD pipelines:
+TsyneTest works great in CI/CD pipelines:
 
 ```yaml
 # .github/workflows/test.yml
@@ -439,7 +439,7 @@ jobs:
 ### Enable Headed Mode
 
 ```typescript
-const jyneTest = new JyneTest({ headed: true });
+const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 ### Add Longer Waits
@@ -503,7 +503,7 @@ async function waitForText(ctx: TestContext, text: string) {
 
 ## Future Enhancements
 
-Planned features for JyneTest:
+Planned features for TsyneTest:
 
 - Screenshot capture and comparison
 - Video recording of test runs

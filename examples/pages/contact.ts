@@ -1,7 +1,7 @@
-// Contact Page - TypeScript content for Jyne Browser
+// Contact Page - TypeScript content for Tsyne Browser
 // URL: http://localhost:3000/contact
 
-const { vbox, hbox, label, button, entry } = jyne;
+const { vbox, hbox, label, button, entry } = tsyne;
 
 let nameEntry;
 let emailEntry;

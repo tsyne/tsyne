@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Building Jyne..."
+echo "Building Tsyne..."
 echo ""
 
 # Find Go binary
@@ -37,7 +37,7 @@ echo ""
 echo "Step 2: Building Go bridge..."
 cd bridge
 $GO_BINARY mod download
-$GO_BINARY build -v -o ../bin/jyne-bridge
+$GO_BINARY build -v -o ../bin/tsyne-bridge
 cd ..
 
 echo ""

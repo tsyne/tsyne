@@ -1,10 +1,10 @@
 import { app, window, vbox, button, label } from '../src';
 
-// Simple Hello World example demonstrating Jyne's elegant declarative syntax
-app({ title: "Hello Jyne" }, () => {
+// Simple Hello World example demonstrating Tsyne's elegant declarative syntax
+app({ title: "Hello Tsyne" }, () => {
   window({ title: "Hello World" }, () => {
     vbox(() => {
-      label("Welcome to Jyne!");
+      label("Welcome to Tsyne!");
       label("A TypeScript wrapper for Fyne");
 
       button("Click Me", () => {

@@ -1,13 +1,13 @@
-// About Page - TypeScript content for Jyne Browser
+// About Page - TypeScript content for Tsyne Browser
 // URL: http://localhost:3000/about
 
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 vbox(() => {
-  label('About Jyne Browser');
+  label('About Tsyne Browser');
   separator();
   label('');
-  label('Jyne Browser is a Swiby-inspired browser that loads');
+  label('Tsyne Browser is a Swiby-inspired browser that loads');
   label('TypeScript pages from web servers dynamically.');
   label('');
   label('Features:');

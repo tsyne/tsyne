@@ -1,5 +1,5 @@
 /**
- * State Management Utilities for Jyne
+ * State Management Utilities for Tsyne
  *
  * Provides reactive state management, data binding, and state passing capabilities
  * for building applications with various architectural patterns (MVC, MVVM, MVP).

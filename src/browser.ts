@@ -1,7 +1,7 @@
 /**
- * Jyne Browser - Swiby-style browser for loading Jyne pages from web servers
+ * Tsyne Browser - Swiby-style browser for loading Tsyne pages from web servers
  *
- * Enables dynamic loading of Jyne TypeScript pages from HTTP servers,
+ * Enables dynamic loading of Tsyne TypeScript pages from HTTP servers,
  * similar to how Mosaic/Firefox/Chrome load HTML pages.
  *
  * Architecture:
@@ -69,7 +69,7 @@ interface HistoryEntry {
 }
 
 /**
- * Browser for loading and displaying Jyne pages from web servers
+ * Browser for loading and displaying Tsyne pages from web servers
  *
  * Similar to Swiby's browser concept - loads pages dynamically from servers
  * that can be implemented in any language (Spring, Sinatra, Flask, etc.)
@@ -94,7 +94,7 @@ export class Browser {
 
   constructor(options?: { title?: string; width?: number; height?: number; testMode?: boolean }) {
     this.testMode = options?.testMode || false;
-    this.app = new App({ title: options?.title || 'Jyne Browser' }, this.testMode);
+    this.app = new App({ title: options?.title || 'Tsyne Browser' }, this.testMode);
 
     // Set global context for the browser's app so global API calls work
     const { __setGlobalContext } = require('./index');
@@ -103,7 +103,7 @@ export class Browser {
     // Create ONE persistent browser window
     this.window = this.app.window(
       {
-        title: options?.title || 'Jyne Browser',
+        title: options?.title || 'Tsyne Browser',
         width: options?.width || 900,
         height: options?.height || 700
       },
@@ -197,11 +197,11 @@ export class Browser {
         label: 'Help',
         items: [
           {
-            label: 'About Jyne Browser',
+            label: 'About Tsyne Browser',
             onSelected: async () => {
               await this.window.showInfo(
-                'About Jyne Browser',
-                'Jyne Browser - Load TypeScript pages from web servers\n\nVersion 0.1.0'
+                'About Tsyne Browser',
+                'Tsyne Browser - Load TypeScript pages from web servers\n\nVersion 0.1.0'
               );
             }
           }
@@ -293,7 +293,7 @@ export class Browser {
               this.currentPageBuilder();
             } else {
               // Welcome message when no page loaded
-              label('Jyne Browser');
+              label('Tsyne Browser');
               label('');
               label('Enter a URL in the address bar and click Go to navigate.');
             }
@@ -304,7 +304,7 @@ export class Browser {
   }
 
   /**
-   * Navigate to a URL and load the Jyne page
+   * Navigate to a URL and load the Tsyne page
    */
   async changePage(url: string): Promise<void> {
     console.log('changePage called with URL:', url);
@@ -535,8 +535,8 @@ export class Browser {
 
     try {
       // Pages are now simple content builders - just execute the code
-      // The page code directly builds widgets using jyne API
-      const jyne = require('./index');
+      // The page code directly builds widgets using tsyne API
+      const tsyne = require('./index');
 
       console.log('Creating page builder...');
 
@@ -544,8 +544,8 @@ export class Browser {
       this.currentPageBuilder = () => {
         console.log('Executing page builder...');
         // Execute the page code - it will create widgets directly
-        const pageFunction = new Function('browserContext', 'jyne', pageCode);
-        pageFunction(browserContext, jyne);
+        const pageFunction = new Function('browserContext', 'tsyne', pageCode);
+        pageFunction(browserContext, tsyne);
         console.log('Page builder executed');
       };
 
@@ -632,6 +632,13 @@ export class Browser {
    */
   getApp(): App {
     return this.app;
+  }
+
+  /**
+   * Get the browser Window instance
+   */
+  getWindow(): Window {
+    return this.window;
   }
 }
 

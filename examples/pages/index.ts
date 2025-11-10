@@ -1,10 +1,10 @@
-// Home Page - TypeScript content for Jyne Browser
+// Home Page - TypeScript content for Tsyne Browser
 // URL: http://localhost:3000/
 
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 
 vbox(() => {
-  label('Welcome to Jyne Browser!');
+  label('Welcome to Tsyne Browser!');
   label('');
   label('This is a TypeScript page loaded from the server.');
   label('Current URL: ' + browserContext.currentUrl);

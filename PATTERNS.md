@@ -1,6 +1,6 @@
-# Architectural Patterns in Jyne
+# Architectural Patterns in Tsyne
 
-This document explains the various architectural patterns you can use when building Jyne applications, including state management strategies and best practices.
+This document explains the various architectural patterns you can use when building Tsyne applications, including state management strategies and best practices.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This document explains the various architectural patterns you can use when build
 
 ## Overview
 
-Jyne provides flexible state management utilities that enable you to build applications using various architectural patterns. These patterns help you:
+Tsyne provides flexible state management utilities that enable you to build applications using various architectural patterns. These patterns help you:
 
 - **Separate concerns**: Keep UI, business logic, and data separate
 - **Improve testability**: Test logic independently of UI
@@ -41,7 +41,7 @@ Jyne provides flexible state management utilities that enable you to build appli
 **Example:**
 
 ```typescript
-import { ObservableState } from 'jyne';
+import { ObservableState } from 'tsyne';
 
 const count = new ObservableState(0);
 
@@ -71,7 +71,7 @@ unsubscribe();
 **Example:**
 
 ```typescript
-import { ObservableState, ComputedState } from 'jyne';
+import { ObservableState, ComputedState } from 'tsyne';
 
 const firstName = new ObservableState('John');
 const lastName = new ObservableState('Doe');
@@ -105,7 +105,7 @@ firstName.set('Jane'); // Automatically updates fullName
 **Example:**
 
 ```typescript
-import { StateStore } from 'jyne';
+import { StateStore } from 'tsyne';
 
 interface AppState {
   user: string;
@@ -150,7 +150,7 @@ const state = store.getState();
 **Example:**
 
 ```typescript
-import { ObservableState, TwoWayBinding } from 'jyne';
+import { ObservableState, TwoWayBinding } from 'tsyne';
 
 const name = new ObservableState('');
 const nameEntry = entry('Enter name');
@@ -415,7 +415,7 @@ class LoginPresenter {
 
 ## Dialog State Passing
 
-Jyne supports passing state into dialogs/windows and retrieving results, similar to traditional desktop frameworks.
+Tsyne supports passing state into dialogs/windows and retrieving results, similar to traditional desktop frameworks.
 
 ### Dialog Pattern
 
@@ -427,7 +427,7 @@ Jyne supports passing state into dialogs/windows and retrieving results, similar
 **Example:**
 
 ```typescript
-import { StateStore, DialogResult } from 'jyne';
+import { StateStore, DialogResult } from 'tsyne';
 
 // Dialog manager
 class DialogManager<TInput, TOutput> {
@@ -493,7 +493,7 @@ if (result.confirmed) {
 **Don't use a pattern when:**
 - Application is very simple (< 3 screens)
 - Prototyping or proof-of-concept
-- Learning Jyne basics
+- Learning Tsyne basics
 
 ## Best Practices
 
@@ -577,6 +577,6 @@ All patterns include working examples:
 
 ## Further Reading
 
-- [README.md](README.md) - Getting started with Jyne
+- [README.md](README.md) - Getting started with Tsyne
 - [State Management API Documentation](src/state.ts)
 - [Martin Fowler - GUI Architectures](https://martinfowler.com/eaaDev/uiArchs.html)

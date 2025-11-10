@@ -1,7 +1,7 @@
-// Form Demo Page - TypeScript content for Jyne Browser
+// Form Demo Page - TypeScript content for Tsyne Browser
 // URL: http://localhost:3000/form
 
-const { vbox, hbox, label, button, entry, checkbox, select, slider } = jyne;
+const { vbox, hbox, label, button, entry, checkbox, select, slider } = tsyne;
 
 let nameEntry;
 let ageEntry;

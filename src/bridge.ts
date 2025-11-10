@@ -33,7 +33,7 @@ export class BridgeConnection {
   private readyResolve?: () => void;
 
   constructor(testMode: boolean = false) {
-    const bridgePath = path.join(__dirname, '..', 'bin', 'jyne-bridge');
+    const bridgePath = path.join(__dirname, '..', 'bin', 'tsyne-bridge');
     const args = testMode ? ['--headless'] : [];
     this.process = spawn(bridgePath, args, {
       stdio: ['pipe', 'pipe', 'inherit']

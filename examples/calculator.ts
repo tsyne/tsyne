@@ -69,7 +69,7 @@ function clear() {
 }
 
 // Build the calculator UI with elegant, terse syntax
-app({ title: "Jyne Calculator" }, () => {
+app({ title: "Tsyne Calculator" }, () => {
   window({ title: "Calculator" }, () => {
     vbox(() => {
       // Display

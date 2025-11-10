@@ -7,7 +7,7 @@ This calculator demonstrates a **two-tier testing approach** similar to Java tes
 ```
         /\
        /  \
-      / UI \          JyneTest (Integration)
+      / UI \          TsyneTest (Integration)
      /______\         - Full UI interaction tests
     /        \        - Headed/headless modes
    /  Logic  \       Jest (Unit)
@@ -61,25 +61,25 @@ jest calculator-logic.test.ts
 - ✓ Runs in CI/CD easily
 - ✓ Test-driven development friendly
 
-## 2. Integration Tests (JyneTest) - UI Layer
+## 2. Integration Tests (TsyneTest) - UI Layer
 
 **File**: `calculator.test.ts`
-**Runner**: JyneTest (requires bridge)
+**Runner**: TsyneTest (requires bridge)
 **Speed**: 🐌 Slower (~2-5s for all tests)
 
 Tests the full UI integration:
 
 ```typescript
-import { JyneTest } from '../../src/index-test';
+import { TsyneTest } from '../../src/index-test';
 import { CalculatorUI } from './calculator-ui';
 
 async function testAddition() {
-  const jyneTest = new JyneTest({ headed: false });
-  const testApp = jyneTest.createApp((app) => {
+  const tsyneTest = new TsyneTest({ headed: false });
+  const testApp = tsyneTest.createApp((app) => {
     const calc = new CalculatorUI(app);
     calc.build();
   });
-  const ctx = jyneTest.getContext();
+  const ctx = tsyneTest.getContext();
   await testApp.run();
 
   // Click buttons
@@ -139,7 +139,7 @@ export class CalculatorUI {
   private logic: CalculatorLogic;
 
   build() {
-    // Create Jyne widgets
+    // Create Tsyne widgets
     button("5", () => this.handleNumberClick("5"));
   }
 
@@ -150,7 +150,7 @@ export class CalculatorUI {
 }
 ```
 
-**Testable with:** JyneTest ✓
+**Testable with:** TsyneTest ✓
 
 ## When to Use Each
 
@@ -162,7 +162,7 @@ export class CalculatorUI {
 - ✓ Edge case handling
 - ✓ TDD/rapid iteration
 
-### Use JyneTest for:
+### Use TsyneTest for:
 - ✓ UI interaction flows
 - ✓ Widget behavior
 - ✓ Layout and display
@@ -189,7 +189,7 @@ CalculatorLogic
 Total: 34 tests in ~100ms
 ```
 
-### JyneTest Integration Tests
+### TsyneTest Integration Tests
 ```
 Calculator UI
   ✓ Display initial value
@@ -256,7 +256,7 @@ test('division by zero', () => {
 });
 ```
 
-### 3. Test UI Integration with JyneTest
+### 3. Test UI Integration with TsyneTest
 ```typescript
 // ✓ Full UI workflow test
 await ctx.getByExactText("5").click();
@@ -279,7 +279,7 @@ class CalculatorLogic {
 }
 ```
 
-### 5. Use JyneTest for UI Verification
+### 5. Use TsyneTest for UI Verification
 ```typescript
 // After logic works, verify UI integration
 test('calculator buttons work', async () => {
@@ -291,10 +291,10 @@ test('calculator buttons work', async () => {
 
 This is similar to Java Swing testing:
 
-| Java | Jyne | Purpose |
+| Java | Tsyne | Purpose |
 |------|------|---------|
 | JUnit | Jest | Unit test business logic |
-| Marathon/Abbot | JyneTest | UI integration testing |
+| Marathon/Abbot | TsyneTest | UI integration testing |
 | Model class | CalculatorLogic | Pure business logic |
 | JPanel/View | CalculatorUI | UI presentation |
 
@@ -302,12 +302,12 @@ This is similar to Java Swing testing:
 
 **Two-tier approach:**
 1. **Jest** - Fast unit tests for business logic (34 tests, ~100ms)
-2. **JyneTest** - Integration tests for UI (11 tests, ~3s)
+2. **TsyneTest** - Integration tests for UI (11 tests, ~3s)
 
 **Result:**
 - Fast feedback loop (Jest)
-- Complete coverage (Jest + JyneTest)
+- Complete coverage (Jest + TsyneTest)
 - Easy debugging (separated concerns)
 - Maintainable codebase (single responsibility)
 
-This is the recommended pattern for all Jyne applications!
+This is the recommended pattern for all Tsyne applications!

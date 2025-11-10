@@ -1,6 +1,6 @@
 import { app, window, vbox, hbox, button, label } from '../src';
 
-// Counter example demonstrating state management with Jyne
+// Counter example demonstrating state management with Tsyne
 let countLabel: any;
 let count = 0;
 

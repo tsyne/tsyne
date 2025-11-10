@@ -178,4 +178,8 @@ export class App {
     const result = await this.ctx.bridge.send('getTheme', {});
     return result.theme as 'dark' | 'light';
   }
+
+  getWindows(): Window[] {
+    return this.windows;
+  }
 }

@@ -1,5 +1,5 @@
 /**
- * Demo Server - Simple HTTP server for manually testing Jyne Browser
+ * Demo Server - Simple HTTP server for manually testing Tsyne Browser
  *
  * Run: npm run build && npx ts-node examples/demo-server.ts
  */
@@ -11,9 +11,9 @@ const PORT = 3000;
 // Define the pages
 const pages: { [key: string]: string } = {
   '/': `
-const { vbox, label, button, hyperlink } = jyne;
+const { vbox, label, button, hyperlink } = tsyne;
 vbox(() => {
-  label('🏠 Welcome to Jyne Browser Demo');
+  label('🏠 Welcome to Tsyne Browser Demo');
   label('');
   label('This is a demo server with several test pages.');
   label('');
@@ -36,7 +36,7 @@ vbox(() => {
   `,
 
   '/counter': `
-const { vbox, label, button, hbox } = jyne;
+const { vbox, label, button, hbox } = tsyne;
 
 let count = 0;
 let countLabel;
@@ -67,7 +67,7 @@ vbox(() => {
   `,
 
   '/form': `
-const { vbox, label, entry, button } = jyne;
+const { vbox, label, entry, button } = tsyne;
 
 let nameEntry;
 let emailEntry;
@@ -102,7 +102,7 @@ vbox(() => {
   `,
 
   '/nav': `
-const { vbox, label, button, hbox } = jyne;
+const { vbox, label, button, hbox } = tsyne;
 
 vbox(() => {
   label('🧭 Navigation Demo');
@@ -125,7 +125,7 @@ vbox(() => {
   `,
 
   '/nav2': `
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 
 vbox(() => {
   label('🧭 Navigation Demo - Page 2');
@@ -150,7 +150,7 @@ vbox(() => {
   `,
 
   '/nav3': `
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 
 vbox(() => {
   label('🧭 Navigation Demo - Page 3');
@@ -183,7 +183,7 @@ const server = http.createServer((req, res) => {
   } else {
     res.writeHead(404, { 'Content-Type': 'text/typescript' });
     res.end(`
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 vbox(() => {
   label('404 - Page Not Found');
   label('');
@@ -200,7 +200,7 @@ vbox(() => {
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║  Jyne Browser Demo Server                                  ║
+║  Tsyne Browser Demo Server                                  ║
 ╚════════════════════════════════════════════════════════════╝
 
 Server running at: http://localhost:${PORT}

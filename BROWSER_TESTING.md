@@ -1,6 +1,6 @@
-# Browser Testing with JyneBrowserTest
+# Browser Testing with TsyneBrowserTest
 
-**JyneBrowserTest** is a Playwright-inspired testing framework specifically designed for testing Jyne Browser pages. It provides automatic test server setup, Selenium/Playwright-like interaction APIs, and flexible integration with any assertion library or test runner.
+**TsyneBrowserTest** is a Playwright-inspired testing framework specifically designed for testing Tsyne Browser pages. It provides automatic test server setup, Selenium/Playwright-like interaction APIs, and flexible integration with any assertion library or test runner.
 
 ## Table of Contents
 
@@ -21,15 +21,15 @@
 
 ## Overview
 
-JyneBrowserTest combines the best of both worlds:
+TsyneBrowserTest combines the best of both worlds:
 
-1. **Automatic Test Server**: No need to run a separate HTTP server - JyneBrowserTest starts one automatically on a random port
+1. **Automatic Test Server**: No need to run a separate HTTP server - TsyneBrowserTest starts one automatically on a random port
 2. **Playwright-Style API**: Familiar locators, actions, and expectations for finding and interacting with widgets
 3. **Browser Navigation**: Built-in helpers for navigating, going back/forward, and reloading pages
 4. **Flexible**: Works with any assertion library (Jest, Chai, assert) and any test runner (Jest, Mocha, Vitest, plain Node.js)
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest(
   'should navigate between pages',
@@ -56,16 +56,16 @@ await browserTest(
 
 ### Installation
 
-JyneBrowserTest is included with Jyne:
+TsyneBrowserTest is included with Tsyne:
 
 ```bash
-npm install jyne
+npm install tsyne
 ```
 
 ### Basic Test
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 async function main() {
   await browserTest(
@@ -74,7 +74,7 @@ async function main() {
       {
         path: '/',
         code: `
-          const { vbox, label } = jyne;
+          const { vbox, label } = tsyne;
           vbox(() => {
             label('Welcome to Home Page');
           });
@@ -108,7 +108,7 @@ node my-browser-test.js
 
 ## Playwright-Inspired Features
 
-JyneBrowserTest uses **TestContext** (from JyneTest) which provides Playwright-style APIs for finding and interacting with widgets.
+TsyneBrowserTest uses **TestContext** (from TsyneTest) which provides Playwright-style APIs for finding and interacting with widgets.
 
 ### Locators (Finding Widgets)
 
@@ -203,10 +203,10 @@ await ctx.expect(locator).not.toBeVisible();
 
 ### Navigation
 
-JyneBrowserTest provides browser navigation helpers:
+TsyneBrowserTest provides browser navigation helpers:
 
 ```typescript
-const bt = new JyneBrowserTest();
+const bt = new TsyneBrowserTest();
 
 // Navigate to a path
 await bt.navigate('/about');
@@ -274,7 +274,7 @@ assert.strictEqual(bt.getCurrentUrl(), '/about');
 
 ## Assertion Libraries
 
-JyneBrowserTest is **assertion-library agnostic** - use any library you prefer:
+TsyneBrowserTest is **assertion-library agnostic** - use any library you prefer:
 
 ### 1. Built-in Assertions
 
@@ -290,7 +290,7 @@ await ctx.expect(locator).toBeVisible();
 ### 2. Jest
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest('test', pages, async (bt) => {
   await bt.createBrowser('/');
@@ -311,7 +311,7 @@ await browserTest('test', pages, async (bt) => {
 
 ```typescript
 import { expect } from 'chai';
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest('test', pages, async (bt) => {
   await bt.createBrowser('/');
@@ -332,7 +332,7 @@ await browserTest('test', pages, async (bt) => {
 
 ```typescript
 import assert from 'assert';
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest('test', pages, async (bt) => {
   await bt.createBrowser('/');
@@ -370,18 +370,18 @@ await browserTest('test', pages, async (bt) => {
 
 ## Test Runners
 
-JyneBrowserTest is **test-runner agnostic** - works with any runner:
+TsyneBrowserTest is **test-runner agnostic** - works with any runner:
 
 ### 1. Jest
 
 ```typescript
 // browser.test.ts
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 const homePage = {
   path: '/',
   code: `
-    const { vbox, label, button } = jyne;
+    const { vbox, label, button } = tsyne;
     vbox(() => {
       label('Home Page');
       button('Go to About', () => {
@@ -394,7 +394,7 @@ const homePage = {
 const aboutPage = {
   path: '/about',
   code: `
-    const { vbox, label } = jyne;
+    const { vbox, label } = tsyne;
     vbox(() => {
       label('About Page');
     });
@@ -447,7 +447,7 @@ npx jest browser.test.ts
 
 ```typescript
 // browser.test.ts
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 import { expect } from 'chai';
 
 const pages = [
@@ -495,7 +495,7 @@ npx mocha browser.test.ts
 ```typescript
 // browser.test.ts
 import { describe, test, expect } from 'vitest';
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 const pages = [
   { path: '/', code: `/* home page */` },
@@ -539,7 +539,7 @@ npx vitest browser.test.ts
 
 ```typescript
 // browser.test.ts
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 async function main() {
   console.log('Running browser tests...\n');
@@ -595,7 +595,7 @@ node browser.test.js
 ### Example 1: Form Submission Flow
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest(
   'should submit form and navigate to confirmation',
@@ -603,7 +603,7 @@ await browserTest(
     {
       path: '/',
       code: `
-        const { vbox, label, entry, button } = jyne;
+        const { vbox, label, entry, button } = tsyne;
         let nameEntry, emailEntry;
 
         vbox(() => {
@@ -621,7 +621,7 @@ await browserTest(
     {
       path: '/thanks',
       code: `
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         vbox(() => {
           label('Thank you for registering!');
         });
@@ -661,13 +661,13 @@ await browserTest(
 ### Example 2: Multi-Page Navigation
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 const pages = [
   {
     path: '/',
     code: `
-      const { vbox, label, button } = jyne;
+      const { vbox, label, button } = tsyne;
       vbox(() => {
         label('Home Page');
         button('Products', () => browserContext.changePage('/products'));
@@ -678,7 +678,7 @@ const pages = [
   {
     path: '/products',
     code: `
-      const { vbox, label, button } = jyne;
+      const { vbox, label, button } = tsyne;
       vbox(() => {
         label('Products Page');
         button('Home', () => browserContext.changePage('/'));
@@ -688,7 +688,7 @@ const pages = [
   {
     path: '/about',
     code: `
-      const { vbox, label, button } = jyne;
+      const { vbox, label, button } = tsyne;
       vbox(() => {
         label('About Page');
         button('Home', () => browserContext.changePage('/'));
@@ -745,7 +745,7 @@ await browserTest(
 ### Example 3: Reload and State
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest(
   'should update timestamp on reload',
@@ -753,7 +753,7 @@ await browserTest(
     {
       path: '/',
       code: `
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         vbox(() => {
           label('Current Time: ' + new Date().toISOString());
         });
@@ -792,19 +792,19 @@ await browserTest(
 
 ## Comparison to Playwright/Selenium
 
-JyneBrowserTest provides similar functionality to Playwright/Selenium, but for Jyne Browser pages instead of web browsers:
+TsyneBrowserTest provides similar functionality to Playwright/Selenium, but for Tsyne Browser pages instead of web browsers:
 
-| Feature | Playwright/Selenium | JyneBrowserTest |
+| Feature | Playwright/Selenium | TsyneBrowserTest |
 |---------|-------------------|-----------------|
-| **Target** | Web browsers (Chrome, Firefox, Safari) | Jyne Browser (desktop app) |
-| **Page Format** | HTML/CSS/JavaScript | TypeScript (Jyne API) |
+| **Target** | Web browsers (Chrome, Firefox, Safari) | Tsyne Browser (desktop app) |
+| **Page Format** | HTML/CSS/JavaScript | TypeScript (Tsyne API) |
 | **Locators** | CSS selectors, XPath, text | Widget text/type matching |
 | **Actions** | Click, type, hover, drag, etc. | Click, type, widget methods |
 | **Navigation** | `page.goto()`, `page.goBack()` | `navigate()`, `back()`, `forward()` |
 | **Assertions** | Built-in `expect()` | Built-in `expect()` + any library |
 | **Test Server** | External (you provide) | Built-in (automatic) |
 | **Test Runner** | Built-in (Playwright Test) | Any (Jest, Mocha, Vitest, etc.) |
-| **Headless Mode** | Yes | Yes (via JyneTest options) |
+| **Headless Mode** | Yes | Yes (via TsyneTest options) |
 | **Screenshots** | Yes | No (not yet implemented) |
 | **Network Intercept** | Yes | No (not applicable) |
 
@@ -819,9 +819,9 @@ await button.click();
 await expect(page).toHaveURL('/thanks');
 ```
 
-**JyneBrowserTest**:
+**TsyneBrowserTest**:
 ```typescript
-// JyneBrowserTest
+// TsyneBrowserTest
 await bt.navigate('/');
 const button = await ctx.findWidget({ text: 'Submit' });
 await ctx.clickWidget(button.id);
@@ -841,7 +841,7 @@ Quick helper for running browser tests.
 - **`pages`** (TestPage[]): Array of test pages
   - `path`: URL path (e.g., '/', '/about')
   - `code`: TypeScript code for the page
-- **`testFn`** (function): Test function receiving JyneBrowserTest instance
+- **`testFn`** (function): Test function receiving TsyneBrowserTest instance
 - **`options`** (BrowserTestOptions, optional):
   - `port`: Server port (default: random)
   - `headed`: Show browser UI (default: false)
@@ -861,12 +861,12 @@ await browserTest(
 );
 ```
 
-### JyneBrowserTest Class
+### TsyneBrowserTest Class
 
 #### Constructor
 
 ```typescript
-new JyneBrowserTest(options?: BrowserTestOptions)
+new TsyneBrowserTest(options?: BrowserTestOptions)
 ```
 
 **Options:**
@@ -884,7 +884,7 @@ Add test pages to be served by the test server.
 
 **Example:**
 ```typescript
-const bt = new JyneBrowserTest();
+const bt = new TsyneBrowserTest();
 bt.addPages([
   { path: '/', code: '/* home page */' },
   { path: '/about', code: '/* about page */' }
@@ -1011,7 +1011,7 @@ Stop the test server and quit the browser.
 await bt.cleanup();
 ```
 
-### TestContext (from JyneTest)
+### TestContext (from TsyneTest)
 
 The TestContext provides Playwright-style APIs for finding and interacting with widgets.
 
@@ -1087,7 +1087,7 @@ await browserTest('test 1', pages, ...);
 await browserTest('test', pages, async (bt) => { ... });
 
 // ✓ Good - manual cleanup
-const bt = new JyneBrowserTest();
+const bt = new TsyneBrowserTest();
 try {
   await bt.createBrowser('/');
   // ... test code
@@ -1114,7 +1114,7 @@ expect(text).toBe('Welcome');
 {
   path: '/',
   code: `
-    const { vbox, label, button } = jyne;
+    const { vbox, label, button } = tsyne;
     vbox(() => {
       label('Home');
       button('About', () => browserContext.changePage('/about'));
@@ -1126,7 +1126,7 @@ expect(text).toBe('Welcome');
 {
   path: '/',
   code: `
-    const { vbox, label, button } = jyne;
+    const { vbox, label, button } = tsyne;
     // 100 lines of complex business logic...
     vbox(() => { ... });
   `
@@ -1157,21 +1157,21 @@ const widget = await ctx.findWidget({ text: 'Submit' });
 
 ### Server port conflicts
 
-Let JyneBrowserTest choose a random port:
+Let TsyneBrowserTest choose a random port:
 ```typescript
 // ✓ Good - random port
-const bt = new JyneBrowserTest();
+const bt = new TsyneBrowserTest();
 
 // ✗ Bad - hardcoded port may conflict
-const bt = new JyneBrowserTest({ port: 3000 });
+const bt = new TsyneBrowserTest({ port: 3000 });
 ```
 
 ## Further Reading
 
 - **[examples/browser.test.ts](examples/browser.test.ts)** - Comprehensive browser test examples
-- **[TESTING.md](TESTING.md)** - JyneTest documentation (for non-browser apps)
+- **[TESTING.md](TESTING.md)** - TsyneTest documentation (for non-browser apps)
 - **[TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)** - Complete testing checklist
-- **[README.md](README.md)** - Main Jyne documentation
+- **[README.md](README.md)** - Main Tsyne documentation
 
 ## License
 

@@ -213,7 +213,7 @@ app({ title: 'MVVM Pattern Demo' }, () => {
     const view = new TodoView(viewModel);
 
     // Add some sample data
-    model.addTodo('Learn Jyne');
+    model.addTodo('Learn Tsyne');
     model.addTodo('Understand MVVM');
     model.addTodo('Build awesome apps');
     viewModel['updateFromModel'](); // Sync initial state

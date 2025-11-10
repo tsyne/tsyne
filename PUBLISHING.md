@@ -1,23 +1,23 @@
-# Publishing Jyne to npm
+# Publishing Tsyne to npm
 
-This guide explains how Jyne handles native binaries and how to publish to npm.
+This guide explains how Tsyne handles native binaries and how to publish to npm.
 
 ## How It Works
 
-Jyne uses the **same approach as Java JNI libraries** - all platform-specific binaries are bundled into a single npm package, similar to how JNI `.so`/`.dll`/`.dylib` files are bundled in a JAR and published to Maven Central.
+Tsyne uses the **same approach as Java JNI libraries** - all platform-specific binaries are bundled into a single npm package, similar to how JNI `.so`/`.dll`/`.dylib` files are bundled in a JAR and published to Maven Central.
 
 ### Package Contents
 
 When published to npm, the package contains:
 
 ```
-jyne/
+tsyne/
 ├── dist/                          # Compiled TypeScript
 ├── bin/
-│   ├── jyne-bridge-darwin-amd64   # macOS Intel
-│   ├── jyne-bridge-darwin-arm64   # macOS Apple Silicon
-│   ├── jyne-bridge-linux-amd64    # Linux x64
-│   └── jyne-bridge-windows-amd64.exe  # Windows x64
+│   ├── tsyne-bridge-darwin-amd64   # macOS Intel
+│   ├── tsyne-bridge-darwin-arm64   # macOS Apple Silicon
+│   ├── tsyne-bridge-linux-amd64    # Linux x64
+│   └── tsyne-bridge-windows-amd64.exe  # Windows x64
 ├── bridge/                        # Go source (for building from source)
 ├── scripts/
 │   └── postinstall.js            # Selects correct binary
@@ -26,11 +26,11 @@ jyne/
 
 ### Installation Flow
 
-When a user runs `npm install jyne`:
+When a user runs `npm install tsyne`:
 
 1. **npm downloads** the package (~50-100MB with all binaries)
 2. **postinstall runs** and detects platform (e.g., `darwin-arm64`)
-3. **Binary is copied** from `bin/jyne-bridge-darwin-arm64` to `bin/jyne-bridge`
+3. **Binary is copied** from `bin/tsyne-bridge-darwin-arm64` to `bin/tsyne-bridge`
 4. **Made executable** (Unix only)
 5. **Ready to use** - no compilation needed!
 
@@ -48,10 +48,10 @@ npm run build:bridge:all
 ```
 
 This creates:
-- `bin/jyne-bridge-darwin-amd64` (macOS Intel)
-- `bin/jyne-bridge-darwin-arm64` (macOS Apple Silicon)
-- `bin/jyne-bridge-linux-amd64` (Linux x64)
-- `bin/jyne-bridge-windows-amd64.exe` (Windows x64)
+- `bin/tsyne-bridge-darwin-amd64` (macOS Intel)
+- `bin/tsyne-bridge-darwin-arm64` (macOS Apple Silicon)
+- `bin/tsyne-bridge-linux-amd64` (Linux x64)
+- `bin/tsyne-bridge-windows-amd64.exe` (Windows x64)
 
 ### Platform Requirements for Building
 
@@ -84,8 +84,8 @@ npm run build
 
 # 4. Test the package locally
 npm pack
-# This creates jyne-X.Y.Z.tgz - install it elsewhere to test:
-# cd /tmp/test-project && npm install /path/to/jyne-X.Y.Z.tgz
+# This creates tsyne-X.Y.Z.tgz - install it elsewhere to test:
+# cd /tmp/test-project && npm install /path/to/tsyne-X.Y.Z.tgz
 
 # 5. Publish to npm
 npm publish
@@ -98,7 +98,7 @@ The `prepublishOnly` script automatically:
 - ✓ Compiles TypeScript to dist/
 
 Before publishing, verify:
-- [ ] All binaries exist in `bin/jyne-bridge-*`
+- [ ] All binaries exist in `bin/tsyne-bridge-*`
 - [ ] `dist/` contains compiled JavaScript
 - [ ] Version updated in `package.json`
 - [ ] CHANGELOG updated (if you have one)
@@ -112,7 +112,7 @@ The `.npmignore` file controls what's included:
 
 **Included:**
 - `dist/` - Compiled TypeScript
-- `bin/jyne-bridge-*` - All platform binaries
+- `bin/tsyne-bridge-*` - All platform binaries
 - `bridge/` - Go source (for fallback builds)
 - `scripts/postinstall.js` - Binary selection script
 - Documentation (README, QUICKSTART, TESTING, ARCHITECTURE)
@@ -156,7 +156,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: binaries
-          path: bin/jyne-bridge*
+          path: bin/tsyne-bridge*
 
   publish:
     needs: build-binaries
@@ -197,11 +197,11 @@ This is comparable to packages like:
 If package size is a concern, consider platform-specific packages:
 
 ```
-jyne                     # Meta-package
-jyne-darwin-x64         # macOS Intel binary
-jyne-darwin-arm64       # macOS Apple Silicon binary
-jyne-linux-x64          # Linux binary
-jyne-win32-x64          # Windows binary
+tsyne                     # Meta-package
+tsyne-darwin-x64         # macOS Intel binary
+tsyne-darwin-arm64       # macOS Apple Silicon binary
+tsyne-linux-x64          # Linux binary
+tsyne-win32-x64          # Windows binary
 ```
 
 This is how `esbuild` and `@swc/core` work. Each platform downloads only what it needs (~10-20 MB instead of ~50-80 MB).
@@ -211,7 +211,7 @@ However, this adds complexity:
 - More complex installation
 - Need `optionalDependencies` logic
 
-For Jyne, the **single package approach is recommended** for simplicity.
+For Tsyne, the **single package approach is recommended** for simplicity.
 
 ## Testing Installation
 
@@ -222,18 +222,18 @@ Test the full installation flow:
 npm pack
 
 # Install in a fresh project
-mkdir /tmp/test-jyne
-cd /tmp/test-jyne
+mkdir /tmp/test-tsyne
+cd /tmp/test-tsyne
 npm init -y
-npm install /path/to/jyne-0.1.0.tgz
+npm install /path/to/tsyne-0.1.0.tgz
 
 # Verify binary exists and runs
-ls -lh node_modules/jyne/bin/
-node_modules/jyne/bin/jyne-bridge --help
+ls -lh node_modules/tsyne/bin/
+node_modules/tsyne/bin/tsyne-bridge --help
 
 # Test a simple example
 cat > test.js << 'EOF'
-const { app, window, vbox, label, button } = require('jyne');
+const { app, window, vbox, label, button } = require('tsyne');
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -289,7 +289,7 @@ npm version major -m "Breaking: Change API structure"
 
 ## Summary
 
-Jyne's approach mirrors Java's JNI model:
+Tsyne's approach mirrors Java's JNI model:
 - ✓ All platform binaries in one package
 - ✓ Automatic platform detection
 - ✓ Easy npm install (no Go required for users)

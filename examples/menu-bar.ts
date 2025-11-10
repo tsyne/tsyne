@@ -182,8 +182,8 @@ app({ title: 'Menu Bar Demo' }, () => {
             label: 'About',
             onSelected: async () => {
               await win.showInfo(
-                'About Jyne',
-                'Jyne Menu Bar Demo\nVersion 1.0.0\n\nA demonstration of menu bar functionality.'
+                'About Tsyne',
+                'Tsyne Menu Bar Demo\nVersion 1.0.0\n\nA demonstration of menu bar functionality.'
               );
             }
           }

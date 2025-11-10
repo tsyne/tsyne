@@ -9,7 +9,7 @@ calculator.ts (150 lines)
 ├── Global state variables
 ├── Business logic functions
 ├── UI event handlers
-└── Jyne UI declaration
+└── Tsyne UI declaration
 ```
 
 Everything is in one file with global state.
@@ -64,7 +64,7 @@ npm run test:calculator-simple
 
 ### 3. **Slow Test Feedback**
 ```
-Simple Calculator Tests (JyneTest only):
+Simple Calculator Tests (TsyneTest only):
   5 tests in ~3 seconds
 
   Each test:
@@ -89,16 +89,16 @@ As the app grows:
 
 ## Testing Strategy
 
-**Only JyneTest integration tests possible:**
+**Only TsyneTest integration tests possible:**
 
 ```typescript
 // Every test must:
 test('addition', async () => {
   // 1. Spawn bridge process
-  const jyneTest = new JyneTest();
+  const tsyneTest = new TsyneTest();
 
   // 2. Build entire UI
-  const app = jyneTest.createApp(...);
+  const app = tsyneTest.createApp(...);
 
   // 3. Click buttons
   await ctx.getByExactText("5").click();
@@ -110,7 +110,7 @@ test('addition', async () => {
   await ctx.expect(display).toHaveText("8");
 
   // 5. Cleanup
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
 });
 ```
 
@@ -140,7 +140,7 @@ test('addition', async () => {
    - Scripts with UI
 
 4. **Educational Examples**
-   - Teaching Jyne basics
+   - Teaching Tsyne basics
    - Getting started guides
    - Simple demonstrations
 
@@ -173,8 +173,8 @@ test('addition', async () => {
 | **Files** | 1 file | 3+ files |
 | **Lines of code** | 150 lines | 200+ lines |
 | **Complexity** | Low | Medium |
-| **Test types** | JyneTest only | Jest + JyneTest |
-| **Test count** | 5 tests | 45 tests (34 Jest + 11 JyneTest) |
+| **Test types** | TsyneTest only | Jest + TsyneTest |
+| **Test count** | 5 tests | 45 tests (34 Jest + 11 TsyneTest) |
 | **Test speed** | ~3s | ~0.5s (unit) + ~3s (integration) |
 | **TDD-friendly** | ❌ No | ✅ Yes |
 | **Reusability** | ❌ No | ✅ Yes |
@@ -188,7 +188,7 @@ test('addition', async () => {
 # Run the app
 npm run run:calculator-simple
 
-# Run tests (JyneTest only)
+# Run tests (TsyneTest only)
 npm run test:calculator-simple
 
 # Note: No Jest tests available for this version
@@ -225,14 +225,14 @@ class CalculatorUI {
 
 Now you can:
 - ✓ Unit test logic with Jest
-- ✓ Test UI with JyneTest
+- ✓ Test UI with TsyneTest
 - ✓ Reuse logic elsewhere
 - ✓ Maintain easily
 
 ## Summary
 
 The **simple/monolithic approach** is perfect for:
-- Learning Jyne
+- Learning Tsyne
 - Quick prototypes
 - Small utilities
 

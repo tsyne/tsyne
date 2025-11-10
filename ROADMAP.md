@@ -1,6 +1,6 @@
-# Jyne Roadmap
+# Tsyne Roadmap
 
-This document tracks Fyne features that have been implemented in Jyne and what's still TODO.
+This document tracks Fyne features that have been implemented in Tsyne and what's still TODO.
 
 ## Implementation Status
 
@@ -24,7 +24,7 @@ This document tracks Fyne features that have been implemented in Jyne and what's
 - [x] HBox (horizontal box)
 
 #### Testing
-- [x] JyneTest framework (Playwright-like)
+- [x] TsyneTest framework (Playwright-like)
 - [x] Headed/headless modes
 - [x] Widget selectors (by text, type)
 - [x] Assertions (toHaveText, toBeVisible, etc.)
@@ -451,7 +451,7 @@ This document tracks Fyne features that have been implemented in Jyne and what's
 
 ### Testing Enhancements
 
-#### JyneTest Extensions
+#### TsyneTest Extensions
 - [ ] **Screenshot Capture**
   ```typescript
   await ctx.screenshot("test-result.png")
@@ -464,7 +464,7 @@ This document tracks Fyne features that have been implemented in Jyne and what's
 
 - [ ] **Video Recording**
   ```typescript
-  const test = new JyneTest({ record: true })
+  const test = new TsyneTest({ record: true })
   ```
 
 - [ ] **Accessibility Testing**
@@ -548,7 +548,7 @@ Want to help implement missing features? See [CONTRIBUTING.md](CONTRIBUTING.md) 
    - Add TypeScript types
 
 4. **Tests**:
-   - Add JyneTest integration tests
+   - Add TsyneTest integration tests
    - Update examples
 
 5. **Documentation**:
@@ -559,7 +559,7 @@ Want to help implement missing features? See [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 ## 📊 Feature Parity Tracking
 
-| Category | Fyne Features | Jyne Features | Coverage |
+| Category | Fyne Features | Tsyne Features | Coverage |
 |----------|---------------|---------------|----------|
 | **Basic Widgets** | 20+ | 3 | 15% |
 | **Containers** | 10+ | 2 | 20% |
@@ -572,7 +572,7 @@ Want to help implement missing features? See [CONTRIBUTING.md](CONTRIBUTING.md) 
 
 **Overall Coverage: ~15%**
 
-*(Jyne excels at testing with JyneTest, but has limited widget coverage)*
+*(Tsyne excels at testing with TsyneTest, but has limited widget coverage)*
 
 ---
 
@@ -583,18 +583,18 @@ To implement new features, refer to:
 - [Fyne Widget Documentation](https://developer.fyne.io/widget/)
 - [Fyne Container Documentation](https://developer.fyne.io/container/)
 - [Fyne Layout Documentation](https://developer.fyne.io/container/layouts)
-- [Jyne Architecture Guide](ARCHITECTURE.md)
+- [Tsyne Architecture Guide](ARCHITECTURE.md)
 - [Existing Widget Examples](src/widgets.ts)
 
 ---
 
 ## 📝 Notes
 
-- **Testing First**: JyneTest is actually more advanced than Fyne's built-in testing
+- **Testing First**: TsyneTest is actually more advanced than Fyne's built-in testing
 - **Focus on Common**: Implement commonly-used widgets first
 - **API Design**: Keep declarative, terse syntax
 - **Examples**: Each new widget should have an example
-- **Tests**: Each widget needs both Jest (if applicable) and JyneTest coverage
+- **Tests**: Each widget needs both Jest (if applicable) and TsyneTest coverage
 
 ---
 

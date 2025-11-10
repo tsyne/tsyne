@@ -1,5 +1,5 @@
 /**
- * Jyne Styling System
+ * Tsyne Styling System
  *
  * Provides CSS-like styling for widgets similar to Swiby's stylesheet approach.
  * Styles can be defined for widget types and are automatically applied when widgets are created.

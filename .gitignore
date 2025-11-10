@@ -8,3 +8,4 @@ bin/
 *~
 .vscode/
 .idea/
+test-failures/

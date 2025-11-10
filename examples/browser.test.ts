@@ -1,14 +1,14 @@
 /**
- * JyneBrowserTest Examples
+ * TsyneBrowserTest Examples
  *
- * Demonstrates testing Jyne Browser pages with automated tests
+ * Demonstrates testing Tsyne Browser pages with automated tests
  *
  * Run: npm run build && node examples/browser.test.js
  */
 
-import { browserTest, describeBrowser, runBrowserTests, JyneBrowserTest } from '../src';
+import { browserTest, describeBrowser, runBrowserTests, TsyneBrowserTest } from '../src';
 
-describeBrowser('Jyne Browser Tests', () => {
+describeBrowser('Tsyne Browser Tests', () => {
   // Test 1: Basic page navigation
   browserTest(
     'should navigate to home page',
@@ -16,14 +16,14 @@ describeBrowser('Jyne Browser Tests', () => {
       {
         path: '/',
         code: `
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('Welcome to Home Page');
 });
         `
       }
     ],
-    async (bt: JyneBrowserTest) => {
+    async (bt: TsyneBrowserTest) => {
       await bt.createBrowser('/');
 
       const ctx = bt.getContext();
@@ -43,7 +43,7 @@ vbox(() => {
       {
         path: '/',
         code: `
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 vbox(() => {
   label('Home Page');
   button('Go to About', () => {
@@ -55,14 +55,14 @@ vbox(() => {
       {
         path: '/about',
         code: `
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('About Page');
 });
         `
       }
     ],
-    async (bt: JyneBrowserTest) => {
+    async (bt: TsyneBrowserTest) => {
       await bt.createBrowser('/');
 
       const ctx = bt.getContext();
@@ -100,7 +100,7 @@ vbox(() => {
       {
         path: '/page1',
         code: `
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 vbox(() => {
   label('Page 1');
   button('Go to Page 2', () => {
@@ -112,14 +112,14 @@ vbox(() => {
       {
         path: '/page2',
         code: `
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('Page 2');
 });
         `
       }
     ],
-    async (bt: JyneBrowserTest) => {
+    async (bt: TsyneBrowserTest) => {
       await bt.createBrowser('/page1');
 
       const ctx = bt.getContext();
@@ -157,7 +157,7 @@ vbox(() => {
       {
         path: '/',
         code: `
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('Reloadable Page');
   label('Time: ' + Date.now());
@@ -165,7 +165,7 @@ vbox(() => {
         `
       }
     ],
-    async (bt: JyneBrowserTest) => {
+    async (bt: TsyneBrowserTest) => {
       await bt.createBrowser('/');
 
       const ctx = bt.getContext();
@@ -191,7 +191,7 @@ vbox(() => {
       {
         path: '/',
         code: `
-const { vbox, label, entry, button } = jyne;
+const { vbox, label, entry, button } = tsyne;
 
 let nameEntry;
 
@@ -210,14 +210,14 @@ vbox(() => {
       {
         path: '/thanks',
         code: `
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('Thank you!');
 });
         `
       }
     ],
-    async (bt: JyneBrowserTest) => {
+    async (bt: TsyneBrowserTest) => {
       await bt.createBrowser('/');
 
       const ctx = bt.getContext();
@@ -253,5 +253,5 @@ vbox(() => {
 
 // Run the tests sequentially
 // Tests must run sequentially because they share the same global context
-console.log('\n🧪 Running Jyne Browser Tests...\n');
+console.log('\n🧪 Running Tsyne Browser Tests...\n');
 runBrowserTests();

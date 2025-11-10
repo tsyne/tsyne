@@ -1,11 +1,11 @@
-# Jyne Quick Start Guide
+# Tsyne Quick Start Guide
 
-Get up and running with Jyne in 5 minutes!
+Get up and running with Tsyne in 5 minutes!
 
 ## Installation
 
 ```bash
-npm install jyne
+npm install tsyne
 ```
 
 ## Your First App
@@ -13,12 +13,12 @@ npm install jyne
 Create a file called `hello.js`:
 
 ```javascript
-const { app, window, vbox, button, label } = require('jyne');
+const { app, window, vbox, button, label } = require('tsyne');
 
-app({ title: "Hello Jyne" }, () => {
+app({ title: "Hello Tsyne" }, () => {
   window({ title: "Hello World" }, () => {
     vbox(() => {
-      label("Welcome to Jyne!");
+      label("Welcome to Tsyne!");
       button("Click Me", () => {
         console.log("Button clicked!");
       });
@@ -35,19 +35,19 @@ node hello.js
 
 ## Building from Source
 
-If you want to build Jyne from source:
+If you want to build Tsyne from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/paul-hammant/jyne.git
-cd jyne
+git clone https://github.com/paul-hammant/tsyne.git
+cd tsyne
 
 # Run the build script
 ./build.sh
 
 # Or manually:
 npm install
-cd bridge && go mod download && go build -o ../bin/jyne-bridge && cd ..
+cd bridge && go mod download && go build -o ../bin/tsyne-bridge && cd ..
 npm run build
 ```
 
@@ -56,7 +56,7 @@ npm run build
 ### Counter App
 
 ```javascript
-const { app, window, vbox, hbox, button, label } = require('jyne');
+const { app, window, vbox, hbox, button, label } = require('tsyne');
 
 let countLabel;
 let count = 0;
@@ -83,7 +83,7 @@ app({ title: "Counter" }, () => {
 ### Text Input
 
 ```javascript
-const { app, window, vbox, button, label, entry } = require('jyne');
+const { app, window, vbox, button, label, entry } = require('tsyne');
 
 let nameEntry;
 let greetingLabel;
@@ -127,13 +127,13 @@ app({ title: "Greeter" }, () => {
 
 - Check out the [examples/](examples/) directory for more complete examples
 - Read the [README.md](README.md) for full documentation
-- See [ARCHITECTURE.md](ARCHITECTURE.md) to understand how Jyne works
+- See [ARCHITECTURE.md](ARCHITECTURE.md) to understand how Tsyne works
 - Review [CONTRIBUTING.md](CONTRIBUTING.md) to contribute new features
 
 ## Troubleshooting
 
-**"Cannot find module 'jyne'"**
-- Make sure you've run `npm install jyne`
+**"Cannot find module 'tsyne'"**
+- Make sure you've run `npm install tsyne`
 - If building from source, run `npm run build`
 
 **Bridge executable not found**
@@ -171,4 +171,4 @@ sudo dnf install libXcursor-devel libXrandr-devel mesa-libGL-devel libXi-devel
 
 - **Documentation**: Check the README and ARCHITECTURE docs
 - **Examples**: Look at the example apps in `examples/`
-- **Issues**: Report bugs at https://github.com/paul-hammant/jyne/issues
+- **Issues**: Report bugs at https://github.com/paul-hammant/tsyne/issues

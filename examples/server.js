@@ -1,8 +1,8 @@
 /**
- * Jyne Page Server - Filesystem-based server for Jyne TypeScript pages
+ * Tsyne Page Server - Filesystem-based server for Tsyne TypeScript pages
  *
- * This server demonstrates serving Jyne pages from .ts files on the filesystem.
- * Pages are TypeScript code that use the Jyne API to build UI content.
+ * This server demonstrates serving Tsyne pages from .ts files on the filesystem.
+ * Pages are TypeScript code that use the Tsyne API to build UI content.
  *
  * URL Mapping:
  *   /           → pages/index.ts
@@ -16,7 +16,7 @@
  *   node examples/server.js
  *
  * Then in another terminal:
- *   node examples/jynebrowser.js http://localhost:3000/
+ *   npx tsyne-browser http://localhost:3000/
  */
 
 const http = require('http');
@@ -64,7 +64,7 @@ function urlToFilePath(url) {
 }
 
 /**
- * Serve a Jyne page
+ * Serve a Tsyne page
  */
 function servePage(filePath, res) {
   fs.readFile(filePath, 'utf8', (err, data) => {
@@ -93,7 +93,7 @@ function serve404(res) {
       // Fallback if 404.ts doesn't exist
       res.writeHead(404, { 'Content-Type': 'text/typescript' });
       res.end(`
-const { vbox, label, button } = jyne;
+const { vbox, label, button } = tsyne;
 
 vbox(() => {
   label('404 - Page Not Found');
@@ -147,7 +147,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log('╔════════════════════════════════════════════════════════╗');
   console.log('║                                                        ║');
-  console.log('║         Jyne Page Server - Serving TypeScript Pages   ║');
+  console.log('║         Tsyne Page Server - Serving TypeScript Pages   ║');
   console.log('║                                                        ║');
   console.log('╚════════════════════════════════════════════════════════╝');
   console.log('');
@@ -162,7 +162,7 @@ server.listen(PORT, () => {
   console.log('  http://localhost:3000/thanks   → pages/thanks.ts');
   console.log('');
   console.log('To browse these pages:');
-  console.log('  node examples/jynebrowser.js http://localhost:3000/');
+  console.log('  npx tsyne-browser http://localhost:3000/');
   console.log('');
   console.log('Press Ctrl+C to stop the server');
   console.log('');

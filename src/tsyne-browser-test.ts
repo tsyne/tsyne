@@ -15,11 +15,11 @@ export interface TestPage {
 }
 
 /**
- * JyneBrowserTest provides a testing framework for Jyne Browser pages
+ * TsyneBrowserTest provides a testing framework for Tsyne Browser pages
  *
- * Similar to JyneTest but for testing browser pages loaded from HTTP server
+ * Similar to TsyneTest but for testing browser pages loaded from HTTP server
  */
-export class JyneBrowserTest {
+export class TsyneBrowserTest {
   private browser: Browser | null = null;
   private testContext: TestContext | null = null;
   private server: http.Server | null = null;
@@ -59,7 +59,7 @@ export class JyneBrowserTest {
         } else {
           res.writeHead(404, { 'Content-Type': 'text/typescript' });
           res.end(`
-const { vbox, label } = jyne;
+const { vbox, label } = tsyne;
 vbox(() => {
   label('404 - Page Not Found');
   label('URL: ' + browserContext.currentUrl);
@@ -88,13 +88,13 @@ vbox(() => {
     // Create browser instance in test mode (headless if not headed mode)
     const testMode = !this.options.headed;
     this.browser = new Browser({
-      title: 'Jyne Browser Test',
+      title: 'Tsyne Browser Test',
       width: 800,
       height: 600,
       testMode
     });
 
-    // Get app and wait for bridge to be ready (like JyneTest does)
+    // Get app and wait for bridge to be ready (like TsyneTest does)
     const app = this.browser.getApp();
     await app.getBridge().waitUntilReady();
 
@@ -233,6 +233,29 @@ vbox(() => {
   }
 
   /**
+   * Capture a screenshot of the browser window
+   * @param filePath - Path where the screenshot will be saved as PNG
+   *
+   * Note: Screenshots in headless mode (default) will be blank/grey because
+   * Fyne's test mode doesn't render actual pixels. For meaningful screenshots,
+   * run tests in headed mode: new TsyneBrowserTest({ headed: true })
+   */
+  async screenshot(filePath: string): Promise<void> {
+    if (!this.browser) {
+      throw new Error('Browser not created. Call createBrowser() first.');
+    }
+
+    // Warn if in headless mode
+    if (!this.options.headed) {
+      console.warn('  ⚠️  Screenshot captured in headless mode - will be blank/grey');
+      console.warn('     For visual screenshots, use headed mode: new TsyneBrowserTest({ headed: true })');
+    }
+
+    const window = this.browser.getWindow();
+    await window.screenshot(filePath);
+  }
+
+  /**
    * Clean up: stop server and quit browser
    */
   async cleanup(): Promise<void> {
@@ -258,7 +281,7 @@ vbox(() => {
 const collectedTests: Array<{
   name: string;
   pages: TestPage[];
-  testFn: (browserTest: JyneBrowserTest) => Promise<void>;
+  testFn: (browserTest: TsyneBrowserTest) => Promise<void>;
   options: BrowserTestOptions;
 }> = [];
 
@@ -268,7 +291,7 @@ const collectedTests: Array<{
 export function browserTest(
   name: string,
   pages: TestPage[],
-  testFn: (browserTest: JyneBrowserTest) => Promise<void>,
+  testFn: (browserTest: TsyneBrowserTest) => Promise<void>,
   options: BrowserTestOptions = {}
 ): void {
   collectedTests.push({ name, pages, testFn, options });
@@ -290,14 +313,14 @@ export async function runBrowserTests(): Promise<void> {
   let failed = 0;
 
   for (const test of collectedTests) {
-    const jyneBrowserTest = new JyneBrowserTest(test.options);
-    jyneBrowserTest.addPages(test.pages);
+    const tsyneBrowserTest = new TsyneBrowserTest(test.options);
+    tsyneBrowserTest.addPages(test.pages);
 
     console.log(`Running browser test: ${test.name}`);
     const startTime = Date.now();
 
     try {
-      await test.testFn(jyneBrowserTest);
+      await test.testFn(tsyneBrowserTest);
       const duration = Date.now() - startTime;
       console.log(`✓ ${test.name} (${duration}ms)`);
       passed++;
@@ -306,8 +329,27 @@ export async function runBrowserTests(): Promise<void> {
       console.error(`✗ ${test.name} (${duration}ms)`);
       console.error(`  ${error instanceof Error ? error.message : String(error)}`);
       failed++;
+
+      // Capture screenshot on test failure
+      try {
+        const sanitizedName = test.name.replace(/[^a-zA-Z0-9]/g, '_');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const screenshotPath = `./test-failures/${sanitizedName}_${timestamp}.png`;
+
+        // Create test-failures directory if it doesn't exist
+        const fs = require('fs');
+        if (!fs.existsSync('./test-failures')) {
+          fs.mkdirSync('./test-failures', { recursive: true });
+        }
+
+        await tsyneBrowserTest.screenshot(screenshotPath);
+        console.error(`  Screenshot saved: ${screenshotPath}`);
+      } catch (screenshotError) {
+        // Don't fail the test if screenshot fails, just log it
+        console.error(`  Failed to capture screenshot: ${screenshotError instanceof Error ? screenshotError.message : String(screenshotError)}`);
+      }
     } finally {
-      await jyneBrowserTest.cleanup();
+      await tsyneBrowserTest.cleanup();
       // Wait a bit between tests to avoid global context conflicts
       await new Promise(resolve => setTimeout(resolve, 200));
     }

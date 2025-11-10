@@ -1,6 +1,6 @@
 # Calculator Test Application
 
-This is a fully testable calculator application built with Jyne and tested with JyneTest.
+This is a fully testable calculator application built with Tsyne and tested with TsyneTest.
 
 ## Features
 
@@ -62,7 +62,7 @@ The calculator has comprehensive test coverage including:
 
 ## Code Architecture
 
-The calculator follows best practices for testable Jyne applications:
+The calculator follows best practices for testable Tsyne applications:
 
 ### Separation of Concerns
 
@@ -74,7 +74,7 @@ export class Calculator {
   private previousValue = "0";
   private shouldResetDisplay = false;
 
-  constructor(private jyneApp: App) {}
+  constructor(private tsyneApp: App) {}
 
   build(): void {
     // UI construction
@@ -99,12 +99,12 @@ export class Calculator {
 
 ```typescript
 async function testAddition() {
-  const jyneTest = new JyneTest({ headed: false });
-  const testApp = jyneTest.createApp((app) => {
+  const tsyneTest = new TsyneTest({ headed: false });
+  const testApp = tsyneTest.createApp((app) => {
     const calc = new Calculator(app);
     calc.build();
   });
-  const ctx = jyneTest.getContext();
+  const ctx = tsyneTest.getContext();
   await testApp.run();
 
   // Perform: 5 + 3 = 8
@@ -117,13 +117,13 @@ async function testAddition() {
   const display = ctx.getByType("label");
   await ctx.expect(display).toHaveText("8");
 
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
 }
 ```
 
 ### Selector Types
 
-JyneTest supports multiple selector types:
+TsyneTest supports multiple selector types:
 
 - **By Exact Text**: `ctx.getByExactText("+")`
 - **By Partial Text**: `ctx.getByText("Cal")`
@@ -149,7 +149,7 @@ Available assertions:
 - Uses Fyne's test driver
 
 ```typescript
-const jyneTest = new JyneTest({ headed: false });
+const tsyneTest = new TsyneTest({ headed: false });
 ```
 
 ### Headed Mode
@@ -160,7 +160,7 @@ const jyneTest = new JyneTest({ headed: false });
 - Real Fyne window
 
 ```typescript
-const jyneTest = new JyneTest({ headed: true });
+const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 ## Best Practices

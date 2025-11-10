@@ -8,7 +8,10 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/dist/'
+    '/dist/',
+    '/src/test.ts',
+    '/src/tsyne-test.ts',
+    '/src/tsyne-browser-test.ts'
   ],
   collectCoverageFrom: [
     'test-apps/**/*.ts',

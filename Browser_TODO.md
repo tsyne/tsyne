@@ -1,6 +1,6 @@
-# Jyne Browser - TODO and Future Enhancements
+# Tsyne Browser - TODO and Future Enhancements
 
-This document catalogs potential improvements to the Jyne Browser system, inspired by 25+ years of web browser evolution from Web 1.0 through Web 2.0 and beyond.
+This document catalogs potential improvements to the Tsyne Browser system, inspired by 25+ years of web browser evolution from Web 1.0 through Web 2.0 and beyond.
 
 ## Critical Issues - ALL RESOLVED ✅
 
@@ -12,7 +12,7 @@ This document catalogs potential improvements to the Jyne Browser system, inspir
 - Pages render INTO the browser window (like web browsers)
 - Window size is controlled by user (900x700 default), not by individual pages
 - Pages define content only, not windows
-- No more `jyne.window()` calls in pages - just content builders
+- No more `tsyne.window()` calls in pages - just content builders
 
 ---
 
@@ -225,7 +225,7 @@ This document catalogs potential improvements to the Jyne Browser system, inspir
 
 ---
 
-## Jyne-Specific Considerations
+## Tsyne-Specific Considerations
 
 ### Page Format Evolution
 
@@ -255,7 +255,7 @@ This document catalogs potential improvements to the Jyne Browser system, inspir
 - [ ] **Source maps** - Debug original TypeScript, not compiled
 - [ ] **Module system** - Import/export between page modules
 - [ ] **NPM packages** - Use npm packages in pages (bundling?)
-- [ ] **Polyfills** - Support older Jyne API versions
+- [ ] **Polyfills** - Support older Tsyne API versions
 
 ### Security Model
 
@@ -283,7 +283,7 @@ This document catalogs potential improvements to the Jyne Browser system, inspir
 
 ```typescript
 // PROBLEM: Each page creates a new window
-jyne.window({ title: 'Page Title' }, (win) => {
+tsyne.window({ title: 'Page Title' }, (win) => {
   // This creates a NEW window, doesn't reuse browser window!
 });
 ```
@@ -328,7 +328,7 @@ class Browser {
 **Old API (current - creates window):**
 ```typescript
 // Server sends this:
-jyne.window({ title: 'My Page' }, (win) => {
+tsyne.window({ title: 'My Page' }, (win) => {
   win.setContent(() => {
     vbox(() => {
       label('Hello');
@@ -425,8 +425,8 @@ Pages should:
 6. **State sharing**: Can pages share state across navigations?
 7. **Background tabs**: How to handle multiple tabs efficiently?
 8. **Platform integration**: Deep links, file associations, default browser?
-9. **Jyne updates**: How to handle browser using older Jyne than pages expect?
-10. **Mixed content**: Can Jyne pages load from HTTP and HTTPS in same session?
+9. **Tsyne updates**: How to handle browser using older Tsyne than pages expect?
+10. **Mixed content**: Can Tsyne pages load from HTTP and HTTPS in same session?
 
 ---
 
@@ -435,7 +435,7 @@ Pages should:
 For existing examples:
 
 1. **Short term**: Document current limitation (creates new windows)
-2. **Medium term**: Introduce `content.build()` API alongside `jyne.window()`
+2. **Medium term**: Introduce `content.build()` API alongside `tsyne.window()`
 3. **Long term**: Deprecate window creation in pages, browser controls window
 
 Breaking changes can be minimized with compatibility layer.

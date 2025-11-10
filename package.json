@@ -1,12 +1,15 @@
 {
-  "name": "jyne",
+  "name": "tsyne",
   "version": "0.1.0",
   "description": "Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "tsyne-browser": "./dist/cli/tsynebrowser.js"
+  },
   "scripts": {
     "build": "tsc",
-    "build:bridge": "cd bridge && go build -o ../bin/jyne-bridge",
+    "build:bridge": "cd bridge && go build -o ../bin/tsyne-bridge",
     "build:bridge:all": "./scripts/build-all-platforms.sh",
     "postinstall": "node scripts/postinstall.js",
     "prepublishOnly": "npm run build:bridge:all && npm run build",
@@ -16,7 +19,7 @@
     "test:integration": "npm run test:calculator && npm run test:single-script-calculator",
     "test:calculator": "npm run build && jest test-apps/calculator-advanced/calculator.test.ts",
     "test:calculator:logic": "jest calculator-logic.test.ts",
-    "test:calculator:headed": "npm run build && JYNE_HEADED=1 jest test-apps/calculator-advanced/calculator.test.ts",
+    "test:calculator:headed": "npm run build && TSYNE_HEADED=1 jest test-apps/calculator-advanced/calculator.test.ts",
     "test:single-script-calculator": "npm run build && jest test-apps/single-script-calculator/calculator.test.ts",
     "run:calculator": "npm run build && npx ts-node test-apps/calculator-advanced/calculator-ui.ts",
     "run:single-script-calculator": "npm run build && npx ts-node test-apps/single-script-calculator/calculator.ts",
@@ -46,14 +49,16 @@
   },
   "files": [
     "dist",
-    "bin/jyne-bridge-*",
+    "bin/tsyne-bridge-*",
     "bridge",
+    "cli",
     "scripts/postinstall.js",
     "README.md",
     "LICENSE",
     "QUICKSTART.md",
     "TESTING.md",
     "ARCHITECTURE.md",
-    "PROS_AND_CONS.md"
+    "PROS_AND_CONS.md",
+    "SCREENSHOTS.md"
   ]
 }

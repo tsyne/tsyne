@@ -143,10 +143,10 @@ app({ title: 'Tabs Demo' }, () => {
               vbox(() => {
                 label('=== About ===');
                 label('');
-                label('Application Name: Jyne Tabs Demo');
+                label('Application Name: Tsyne Tabs Demo');
                 label('Version: 1.0.0');
                 label('');
-                label('Jyne is a TypeScript wrapper');
+                label('Tsyne is a TypeScript wrapper');
                 label('for the Fyne UI toolkit.');
                 label('');
                 label('Features:');
@@ -157,7 +157,7 @@ app({ title: 'Tabs Demo' }, () => {
                 label('');
                 button('Visit Website', () => {
                   statusLabel.setText('Opening website...');
-                  console.log('https://github.com/paul-hammant/jyne');
+                  console.log('https://github.com/paul-hammant/tsyne');
                 });
               });
             }

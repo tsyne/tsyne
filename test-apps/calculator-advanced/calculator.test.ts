@@ -1,11 +1,11 @@
 import { app } from '../../src';
-import { JyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../src/index-test';
 import { Calculator } from './calculator';
 
 /**
  * Comprehensive test suite for the Calculator application
  *
- * Demonstrates JyneTest features:
+ * Demonstrates TsyneTest features:
  * - Headless and headed testing modes
  * - Widget locators and selectors
  * - Assertions and expectations
@@ -14,25 +14,25 @@ import { Calculator } from './calculator';
  */
 
 describe('Calculator Tests', () => {
-  let jyneTest: JyneTest;
+  let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
   beforeEach(async () => {
     // Create test instance (headless by default)
-    jyneTest = new JyneTest({ headed: false });
+    tsyneTest = new TsyneTest({ headed: false });
   });
 
   afterEach(async () => {
-    await jyneTest.cleanup();
+    await tsyneTest.cleanup();
   });
 
   test('should display initial value of 0', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Find display label and verify it shows 0
@@ -41,12 +41,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should handle single digit input', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Click button "5"
@@ -59,12 +59,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should handle multiple digit input', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Click 1, 2, 3
@@ -81,12 +81,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should perform addition', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 5 + 3 = 8
@@ -105,12 +105,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should perform subtraction', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 9 - 4 = 5
@@ -128,12 +128,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should perform multiplication', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 6 × 7 = 42
@@ -151,12 +151,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should perform division', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 8 ÷ 2 = 4
@@ -174,12 +174,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should handle division by zero', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 5 ÷ 0 = Error
@@ -197,12 +197,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should handle decimal numbers', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Enter: 3.14
@@ -220,12 +220,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should clear display', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Enter 123, then clear
@@ -243,12 +243,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should handle chain operations', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Calculate: 2 + 3 + 4 = 9
@@ -270,12 +270,12 @@ describe('Calculator Tests', () => {
   });
 
   test('should have all buttons visible', async () => {
-    const testApp = await jyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app) => {
       const calc = new Calculator(app);
       calc.build();
     });
 
-    ctx = jyneTest.getContext();
+    ctx = tsyneTest.getContext();
     await testApp.run();
 
     // Verify all digit buttons exist

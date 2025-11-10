@@ -2,7 +2,7 @@
  * Pure Jest tests for Calculator Logic
  *
  * These tests run WITHOUT any UI - just pure JavaScript testing.
- * No Jyne, no Fyne, no bridge process needed.
+ * No Tsyne, no Fyne, no bridge process needed.
  *
  * Run with: npx jest calculator-logic.test.ts
  */

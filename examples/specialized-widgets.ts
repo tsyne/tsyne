@@ -22,7 +22,7 @@ app({ title: 'Specialized Widgets Demo' }, () => {
         // RichText example
         label('RichText Widget (Formatted Text):');
         richtext([
-          { text: 'Welcome to Jyne! ', bold: true },
+          { text: 'Welcome to Tsyne! ', bold: true },
           { text: 'This is ', italic: false },
           { text: 'formatted text ', italic: true },
           { text: 'with different ', bold: false },

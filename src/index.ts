@@ -450,5 +450,5 @@ export { Browser, createBrowser } from './browser';
 export type { BrowserContext, PageMenuItem } from './browser';
 
 // Export browser testing
-export { JyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from './jyne-browser-test';
-export type { BrowserTestOptions, TestPage } from './jyne-browser-test';
+export { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from './tsyne-browser-test';
+export type { BrowserTestOptions, TestPage } from './tsyne-browser-test';

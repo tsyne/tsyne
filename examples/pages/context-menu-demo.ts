@@ -1,7 +1,7 @@
 // Context Menu Demo Page - Right-click context menus on widgets
 // URL: http://localhost:3000/context-menu-demo
 
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 // Create some todo items with context menus
 const todoItems = [

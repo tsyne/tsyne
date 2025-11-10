@@ -13,7 +13,7 @@ import { app } from '../../src';
  * CONS:
  * - Business logic mixed with UI
  * - Cannot unit test logic separately
- * - Slower tests (must use JyneTest for everything)
+ * - Slower tests (must use TsyneTest for everything)
  * - Harder to maintain as it grows
  * - Cannot reuse logic in different UIs
  *

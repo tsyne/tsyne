@@ -1,7 +1,7 @@
 /**
  * Calculator Logic - Pure business logic with no UI dependencies
  *
- * This can be tested with pure Jest without any Jyne/UI involvement.
+ * This can be tested with pure Jest without any Tsyne/UI involvement.
  * Following the Model-View-Presenter pattern.
  */
 

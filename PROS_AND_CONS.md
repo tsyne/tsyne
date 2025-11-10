@@ -1,55 +1,39 @@
-# Jyne - Pros and Cons
+# Tsyne - Pros and Cons
 
-This document provides an honest assessment of Jyne's position in the JavaScript desktop UI landscape, comparing it to existing alternatives and helping you decide if it's the right choice for your project.
+This document provides an honest assessment of Tsyne's position in the JavaScript desktop UI landscape, comparing it to existing alternatives and helping you decide if it's the right choice for your project.
 
-## What is Jyne an Alternative To?
+## What is Tsyne an Alternative To?
 
 ### Primary Alternative: Electron
 
-**Jyne is most directly an alternative to Electron** (the technology behind VS Code, Slack, Discord, Figma, etc.)
+**Tsyne is most directly an alternative to Electron** (the technology behind VS Code, Slack, Discord, Figma, etc.)
 
-| Aspect | Electron | Jyne |
-|--------|----------|------|
-| **Bundle Size** | 100-300+ MB | ~10-20 MB |
-| **Memory Usage** | High (Chromium + Node) | Low (native widgets) |
-| **Startup Time** | Slower (browser engine) | Fast (native) |
-| **UI Technology** | HTML/CSS/DOM | Native Fyne widgets |
-| **Performance** | Web rendering overhead | True native performance |
-| **Learning Curve** | Familiar (web stack) | New (Fyne widget API) |
-| **Ecosystem** | Massive | Small/growing |
-| **Reuse Web Code** | ✅ Yes | ❌ No |
-| **Third-Party UI Libraries** | Thousands (React, Vue, Angular, Material-UI, Ant Design, etc.) | None (Fyne widgets only) |
-| **CSS Styling** | ✅ Full control | ❌ Limited theming |
-| **Community** | Huge | Small |
+| Aspect | Electron | Tauri | Tsyne |
+|--------|----------|-------|------|
+| **Bundle Size** | 100-300+ MB | 5-15 MB | ~10-20 MB |
+| **Memory Usage** | High (Chromium + Node) | Medium (WebView) | Low (native widgets) |
+| **Startup Time** | Slower (browser engine) | Medium (WebView) | Fast (native) |
+| **UI Technology** | HTML/CSS/DOM | HTML/CSS/WebView | Native Fyne widgets |
+| **Performance** | Web rendering overhead | WebView rendering | True native performance |
+| **Learning Curve** | Familiar (web stack) | Familiar (web stack) | New (Fyne widget API) |
+| **Ecosystem** | Massive | Massive | Small/growing |
+| **Reuse Web Code** | ✅ Yes | ✅ Yes | ❌ No |
+| **Third-Party UI Libraries** | Thousands (React, Vue, Angular, Material-UI, Ant Design, etc.) | Thousands (React, Vue, Angular, Material-UI, Ant Design, etc.) | Fyne widgets + styling system |
+| **CSS Styling** | ✅ Full control | ✅ Full control | ⚠️ CSS-like styling system |
+| **Community** | Huge | Growing | Small |
 
 ### Secondary Alternatives
-
-**Tauri** - Lighter Electron alternative (Rust + WebView)
-- Uses system WebView instead of bundled Chromium
-- ~5-10 MB bundles
-- Still HTML/CSS/DOM-based
-- Jyne is similar weight but truly native (no WebView)
-
-**NW.js** - Older Electron competitor
-- Similar architecture to Electron
-- Less popular, smaller community
-- Same web stack tradeoffs
-
-**Wails** - Go + Web (similar to Tauri)
-- Go backend with HTML/CSS frontend
-- Uses system WebView
-- Jyne uses native widgets instead
 
 **React Native Desktop** / **Proton Native**
 - Native rendering from React
 - Experimental/immature
-- Jyne's Fyne backend is more stable
+- Tsyne's Fyne backend is more stable
 
-## Jyne's Pros
+## Tsyne's Pros
 
 ### ✅ Small Bundle Size
 
-**Jyne apps are 10-20x smaller than Electron equivalents:**
+**Tsyne apps are 10-20x smaller than Electron equivalents:**
 
 ```
 Electron App:
@@ -58,10 +42,11 @@ Electron App:
 ├── Your code: ~1-5 MB
 └── Total: 150-300 MB
 
-Jyne App:
-├── Jyne bridge binary: ~5-10 MB
+Tsyne App:
+├── Tsyne bridge binary: ~5-10 MB
+├── Node.js runtime: ~50 MB (required, often pre-installed)
 ├── Your code: ~1 MB
-└── Total: 6-15 MB
+└── Total: 56-61 MB (or 6-11 MB if Node.js already installed)
 ```
 
 **Why this matters:**
@@ -73,7 +58,7 @@ Jyne App:
 ### ✅ Low Memory Usage
 
 **Electron apps consume 100-500+ MB RAM (per window!)**
-**Jyne apps consume 20-50 MB RAM**
+**Tsyne apps consume 20-50 MB RAM**
 
 Perfect for:
 - Resource-constrained systems
@@ -94,7 +79,7 @@ Perfect for:
 **Two-tier testing pyramid:**
 ```
         /\
-       /UI \          JyneTest - integration tests (~3s)
+       /UI \          TsyneTest - integration tests (~3s)
       /______\
      /        \
     /  Logic  \       Jest - unit tests (~100ms)
@@ -102,7 +87,7 @@ Perfect for:
 ```
 
 - **Fast TDD cycles** with Jest (100ms)
-- **Comprehensive UI testing** with JyneTest (Playwright-like API)
+- **Comprehensive UI testing** with TsyneTest (Playwright-like API)
 - **Headed/headless modes** for debugging and CI
 - Better than Electron's complex testing setup
 
@@ -151,13 +136,13 @@ Build once, deploy to:
 
 ---
 
-## Jyne's Cons
+## Tsyne's Cons
 
 ### ❌ No DOM Ecosystem
 
-**This is Jyne's biggest disadvantage.**
+**This is Tsyne's biggest disadvantage.**
 
-**DOM-centric technologies (Electron, Tauri, NW.js) have access to:**
+**DOM-centric technologies (Electron, Tauri) have access to:**
 - **Thousands of UI libraries**: React, Vue, Angular, Svelte, Solid
 - **Component libraries**: Material-UI, Ant Design, Chakra UI, Tailwind UI, Bootstrap
 - **CSS frameworks**: Tailwind, Bootstrap, Bulma, Foundation
@@ -171,26 +156,29 @@ Build once, deploy to:
 - **Icon libraries**: Font Awesome, Material Icons, Heroicons
 - **Infinite scrolling, virtual lists, carousels, modals, tooltips, etc.**
 
-**Jyne has:**
-- 3 widgets (Button, Label, Entry) - see [ROADMAP.md](ROADMAP.md)
-- Basic layouts (VBox, HBox)
+**Tsyne has:**
+- 17+ widgets (Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Separator, Hyperlink, RichText, Image, Tree) - see [ROADMAP.md](ROADMAP.md)
+- Advanced layouts (VBox, HBox, Grid, Split, Tabs, Scroll, Center, Card, Accordion, Border, GridWrap)
+- Toolbar and Menu support
+- CSS-like styling system (fonts, colors, text alignment)
 - No third-party component ecosystem
-- No CSS styling
 
 **Implication**: If you need rich, complex UIs with advanced components, use Electron.
 
 ### ❌ Limited Widget Library
 
 **Current state (v0.1.0):**
-- ✅ Button, Label, Entry
-- ✅ VBox, HBox layouts
-- ❌ No: Tables, Lists, Trees, Tabs, Dialogs, Menus, Canvas, etc.
+- ✅ 17+ widgets: Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Tree, etc.
+- ✅ Advanced layouts: VBox, HBox, Grid, Split, Tabs, Scroll, Center, Card, Accordion, Border, GridWrap
+- ✅ Toolbar, Menu system, Context menus
+- ✅ CSS-like styling system
+- ❌ No: Canvas, File pickers, Custom animations, Advanced data visualization
 
 **See [ROADMAP.md](ROADMAP.md) for implementation plan.**
 
-**Coverage: ~15% of Fyne's features**
+**Coverage: ~40% of Fyne's features**
 
-For production apps, you'll need to wait for more widgets or implement them yourself.
+For production apps with very complex UIs, you may still need additional widgets.
 
 ### ❌ Cannot Reuse Existing Web Code
 
@@ -200,9 +188,9 @@ For production apps, you'll need to wait for more widgets or implement them your
 - CSS stylesheets
 - HTML templates
 
-**You cannot use them with Jyne.** Full rewrite required.
+**You cannot use them with Tsyne.** Full rewrite required.
 
-### ❌ No CSS Styling
+### ⚠️ Limited CSS Styling
 
 **Electron:**
 ```css
@@ -215,12 +203,34 @@ For production apps, you'll need to wait for more widgets or implement them your
 }
 ```
 
-**Jyne:**
+**Tsyne:**
 ```typescript
-button("Click Me", onClick) // Uses Fyne's default styling
+// CSS-like styling system available
+styles({
+  root: {
+    font_family: FontFamily.SANS_SERIF,
+    font_size: 12
+  },
+  button: {
+    font_weight: 'bold',
+    color: 0x0000FF,
+    background_color: 0xEEEEEE
+  }
+});
+
+button("Click Me", onClick) // Styles auto-applied
 ```
 
-Limited theming options (dark/light mode). No fine-grained control.
+**Tsyne supports:**
+- Font properties (family, size, weight, style)
+- Colors (foreground, background)
+- Text alignment
+- Theming (dark/light mode)
+
+**Tsyne lacks:**
+- Borders, shadows, gradients
+- Padding, margins (controlled by layouts)
+- Advanced CSS features (animations, transforms, flexbox, grid)
 
 ### ❌ Small Community
 
@@ -230,7 +240,7 @@ Limited theming options (dark/light mode). No fine-grained control.
 - Active Stack Overflow community
 - Many companies using it in production
 
-**Jyne:**
+**Tsyne:**
 - New project
 - Small community
 - Limited resources and examples
@@ -248,14 +258,14 @@ Limited theming options (dark/light mode). No fine-grained control.
 - Web APIs (WebGL, WebRTC, WebSockets)
 - Native modules (C++ addons)
 
-**Jyne currently exposes:**
+**Tsyne currently exposes:**
 - Basic UI widgets
 - Event handling
 - Limited dialogs (planned)
 
 ### ❌ Immature Testing Ecosystem
 
-**JyneTest is powerful but new:**
+**TsyneTest is powerful but new:**
 - No visual regression testing yet
 - No browser dev tools
 - No time-travel debugging
@@ -268,7 +278,7 @@ Limited theming options (dark/light mode). No fine-grained control.
 
 ---
 
-## Who Should Use Jyne?
+## Who Should Use Tsyne?
 
 ### ✅ Good Fit For:
 
@@ -276,7 +286,7 @@ Limited theming options (dark/light mode). No fine-grained control.
 
 ```typescript
 // System monitor - needs to be small and fast!
-import { app, window, vbox, label } from 'jyne';
+import { app, window, vbox, label } from 'tsyne';
 
 app(() => {
   window({ title: "CPU Monitor" }, () => {
@@ -317,7 +327,7 @@ app(() => {
 
 - Don't need complex web layouts
 - Prefer declarative API over HTML/CSS
-- Want fast TDD with Jest + JyneTest
+- Want fast TDD with Jest + TsyneTest
 - Like Go's simplicity and type safety
 
 #### 5. **Prototypes & MVPs**
@@ -352,7 +362,7 @@ app(() => {
 
 #### 4. **Production Apps (Right Now)**
 
-Jyne is v0.1.0 with limited widgets. Wait for v0.3.0+ or be prepared to:
+Tsyne is v0.1.0 with limited widgets. Wait for v0.3.0+ or be prepared to:
 - Implement missing widgets yourself
 - Work around limitations
 - Be an early adopter (bugs, API changes)
@@ -361,7 +371,7 @@ Jyne is v0.1.0 with limited widgets. Wait for v0.3.0+ or be prepared to:
 
 ## Real-World Use Cases
 
-### 🟢 Where Jyne Excels
+### 🟢 Where Tsyne Excels
 
 **System Monitor:**
 ```typescript
@@ -392,7 +402,7 @@ app(() => {
 
 **Calculator/Converter:**
 ```typescript
-// Simple forms and buttons, perfect for Jyne
+// Simple forms and buttons, perfect for Tsyne
 // Users want instant startup and low memory
 ```
 
@@ -423,20 +433,20 @@ app(() => {
 
 ## Framework Comparison Table
 
-| Feature | Electron | Tauri | Jyne |
+| Feature | Electron | Tauri | Tsyne |
 |---------|----------|-------|------|
 | **UI Technology** | Chromium (HTML/CSS) | WebView (HTML/CSS) | Native widgets |
 | **Bundle Size** | 100-300 MB | 5-15 MB | 10-20 MB |
 | **Memory Usage** | High (100-500 MB) | Medium (50-150 MB) | Low (20-50 MB) |
 | **Startup Time** | Slow | Medium | Fast |
-| **UI Ecosystem** | Massive (React, Vue, etc.) | Massive (React, Vue, etc.) | Tiny (3 widgets) |
-| **CSS Styling** | ✅ Full control | ✅ Full control | ❌ Limited |
+| **UI Ecosystem** | Massive (React, Vue, etc.) | Massive (React, Vue, etc.) | Growing (17+ widgets) |
+| **CSS Styling** | ✅ Full control | ✅ Full control | ⚠️ CSS-like system |
 | **Third-Party Libraries** | Thousands | Thousands | None |
 | **Reuse Web Code** | ✅ Yes | ✅ Yes | ❌ No |
 | **Backend Language** | JavaScript/Node | Rust | Go |
 | **Learning Curve** | Low (web stack) | Medium (Rust) | Medium (Fyne) |
 | **Community** | Huge | Growing | Small |
-| **Testing** | Complex setup | Medium | Excellent (JyneTest) |
+| **Testing** | Complex setup | Medium | Excellent (TsyneTest) |
 | **Type Safety** | Optional (TS) | Strong (Rust) | Strong (TS + Go) |
 | **Production Ready** | ✅ Yes | ✅ Yes | ⚠️ Early (v0.1.0) |
 | **Cross-Platform** | ✅ Yes | ✅ Yes | ✅ Yes |
@@ -446,14 +456,14 @@ app(() => {
 
 ## Decision Matrix
 
-Use this to decide if Jyne is right for your project:
+Use this to decide if Tsyne is right for your project:
 
-### Choose Jyne If:
+### Choose Tsyne If:
 
 - [ ] App is a simple utility (< 500 lines of UI code)
 - [ ] Performance and bundle size are critical
 - [ ] UI is mostly forms, buttons, labels, simple layouts
-- [ ] You want fast TDD with Jest + JyneTest
+- [ ] You want fast TDD with Jest + TsyneTest
 - [ ] You're okay with limited widget library
 - [ ] You don't need to reuse web code
 - [ ] Native look & feel is important
@@ -485,7 +495,7 @@ Use this to decide if Jyne is right for your project:
 
 1. **Electron Dominance**: Massive mindshare, ecosystem, job market
 2. **Web Knowledge**: Developers already know HTML/CSS/React
-3. **Limited Widgets**: Jyne has 3 widgets vs unlimited web possibilities
+3. **Limited Widgets**: Tsyne has 3 widgets vs unlimited web possibilities
 4. **No UI Component Ecosystem**: Can't use Material-UI, Ant Design, Chakra, etc.
 5. **New API to Learn**: Fyne widgets, not familiar web components
 6. **Small Community**: Few tutorials, examples, Stack Overflow answers
@@ -496,7 +506,7 @@ Use this to decide if Jyne is right for your project:
 1. **Electron Fatigue**: Developers frustrated with bloated apps
 2. **Go Ecosystem**: Fyne has 20k+ GitHub stars, active development
 3. **TypeScript Trend**: Growing preference for type-safe development
-4. **Testing Story**: JyneTest + Jest is better than Electron's
+4. **Testing Story**: TsyneTest + Jest is better than Electron's
 5. **Resource Efficiency**: Perfect for containers, embedded systems
 6. **Native Performance**: Real demand for fast, lightweight tools
 7. **Developer Tools Niche**: Dev tools don't need complex UIs
@@ -505,13 +515,13 @@ Use this to decide if Jyne is right for your project:
 
 ## Bottom Line
 
-**Jyne targets a specific niche:** JavaScript developers who want **native desktop UIs without web overhead**.
+**Tsyne targets a specific niche:** JavaScript developers who want **native desktop UIs without web overhead**.
 
 ### Think of it like:
 
 - **Electron** = "Desktop apps using web technology"
 - **Tauri** = "Lightweight desktop apps using web technology"
-- **Jyne** = "Native desktop apps using TypeScript"
+- **Tsyne** = "Native desktop apps using TypeScript"
 
 ### Adoption Likelihood:
 
@@ -525,7 +535,7 @@ Use this to decide if Jyne is right for your project:
 
 **For production apps today:** Use Electron or Tauri (proven, stable, huge ecosystem)
 
-**For Jyne:** Wait for v0.3.0+ when more widgets are implemented, OR:
+**For Tsyne:** Wait for v0.3.0+ when more widgets are implemented, OR:
 - Use it now for simple utilities where it excels
 - Contribute to the widget library
 - Be an early adopter and help shape the project
@@ -536,7 +546,7 @@ Use this to decide if Jyne is right for your project:
 
 - **[README.md](README.md)** - Main documentation and getting started
 - **[ROADMAP.md](ROADMAP.md)** - Missing widgets and implementation plan
-- **[TESTING.md](TESTING.md)** - JyneTest testing framework guide
+- **[TESTING.md](TESTING.md)** - TsyneTest testing framework guide
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Internal design and architecture
 - **[test-apps/README.md](test-apps/README.md)** - Monolithic vs decomposed patterns
 
@@ -544,4 +554,4 @@ Use this to decide if Jyne is right for your project:
 
 **Last Updated:** 2025-11-09
 **Current Version:** 0.1.0
-**Target Audience:** JavaScript developers considering Jyne for desktop apps
+**Target Audience:** JavaScript developers considering Tsyne for desktop apps

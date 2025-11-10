@@ -1,7 +1,7 @@
-// 404 Error Page - TypeScript content for Jyne Browser
+// 404 Error Page - TypeScript content for Tsyne Browser
 // Served when a page is not found
 
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 vbox(() => {
   label('404 - Page Not Found');

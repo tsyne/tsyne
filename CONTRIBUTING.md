@@ -1,6 +1,6 @@
-# Contributing to Jyne
+# Contributing to Tsyne
 
-Thank you for considering contributing to Jyne! This document provides guidelines for contributing.
+Thank you for considering contributing to Tsyne! This document provides guidelines for contributing.
 
 ## Development Setup
 
@@ -24,8 +24,8 @@ Thank you for considering contributing to Jyne! This document provides guideline
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/paul-hammant/jyne.git
-   cd jyne
+   git clone https://github.com/paul-hammant/tsyne.git
+   cd tsyne
    ```
 
 2. Install Node.js dependencies:
@@ -37,7 +37,7 @@ Thank you for considering contributing to Jyne! This document provides guideline
    ```bash
    cd bridge
    go mod download
-   go build -o ../bin/jyne-bridge
+   go build -o ../bin/tsyne-bridge
    cd ..
    ```
 
@@ -54,7 +54,7 @@ Thank you for considering contributing to Jyne! This document provides guideline
 ## Project Structure
 
 ```
-jyne/
+tsyne/
 ├── src/              # TypeScript client library
 │   ├── index.ts      # Main entry point
 │   ├── app.ts        # App class

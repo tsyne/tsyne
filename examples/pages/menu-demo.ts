@@ -1,7 +1,7 @@
 // Menu Demo Page - Demonstrates custom page menus
 // URL: http://localhost:3000/menu-demo
 
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 // Add custom page menu
 browserContext.addPageMenu('Tools', [

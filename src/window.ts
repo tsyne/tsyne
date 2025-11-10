@@ -260,4 +260,15 @@ export class Window {
       menuItems
     });
   }
+
+  /**
+   * Captures a screenshot of the window and saves it to a file
+   * @param filePath - Path where the screenshot will be saved as PNG
+   */
+  async screenshot(filePath: string): Promise<void> {
+    await this.ctx.bridge.send('captureWindow', {
+      windowId: this.id,
+      filePath
+    });
+  }
 }

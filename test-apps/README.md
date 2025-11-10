@@ -1,10 +1,10 @@
 # Test Applications
 
-This directory contains example applications demonstrating different architectural patterns and testing strategies for Jyne.
+This directory contains example applications demonstrating different architectural patterns and testing strategies for Tsyne.
 
 ## Calculators - Two Approaches
 
-We provide **two calculator implementations** to demonstrate different approaches to building and testing Jyne applications:
+We provide **two calculator implementations** to demonstrate different approaches to building and testing Tsyne applications:
 
 ### 1. calculator-simple/ - Monolithic Approach
 
@@ -13,7 +13,7 @@ We provide **two calculator implementations** to demonstrate different approache
 ```
 calculator-simple/
 ├── calculator.ts           (150 lines - all in one)
-├── calculator.test.ts      (5 JyneTest tests only)
+├── calculator.test.ts      (5 TsyneTest tests only)
 └── README.md
 ```
 
@@ -52,7 +52,7 @@ calculator-advanced/
 ├── calculator-logic.ts         (Pure business logic)
 ├── calculator-logic.test.ts    (34 Jest unit tests)
 ├── calculator-ui.ts             (UI presentation)
-├── calculator.test.ts           (11 JyneTest integration tests)
+├── calculator.test.ts           (11 TsyneTest integration tests)
 ├── TESTING-STRATEGY.md
 └── README.md
 ```
@@ -92,7 +92,7 @@ npm test                        # All tests
 |--------|---------------------|----------------------|
 | **Files** | 1 file | 5+ files |
 | **Lines of code** | 150 | 300+ |
-| **Test frameworks** | JyneTest only | Jest + JyneTest |
+| **Test frameworks** | TsyneTest only | Jest + TsyneTest |
 | **Test count** | 5 tests | 45 tests (34 + 11) |
 | **Test speed** | ~3s total | ~0.5s unit + ~3s integration |
 | **TDD iteration** | ~3s | ~100ms |
@@ -106,7 +106,7 @@ npm test                        # All tests
 ### Simple Calculator (Flat)
 ```
 ┌────────────────────────┐
-│  JyneTest Integration  │  5 tests, ~3s
+│  TsyneTest Integration  │  5 tests, ~3s
 │  (Only option)         │
 └────────────────────────┘
 ```
@@ -114,7 +114,7 @@ npm test                        # All tests
 ### Advanced Calculator (Pyramid)
 ```
         /\
-       /UI \          JyneTest - 11 tests, ~3s
+       /UI \          TsyneTest - 11 tests, ~3s
       /______\        (Integration)
      /        \
     /  Logic  \       Jest - 34 tests, ~100ms
@@ -127,7 +127,7 @@ npm test                        # All tests
 - [ ] App is < 200 lines
 - [ ] It's a prototype or demo
 - [ ] Quick development is priority
-- [ ] You're learning Jyne
+- [ ] You're learning Tsyne
 - [ ] Logic is trivial
 - [ ] One-time use
 
@@ -170,9 +170,9 @@ npm run test:integration
 ## Learning Path
 
 1. **Start with Simple** (`calculator-simple/`)
-   - Learn Jyne basics
+   - Learn Tsyne basics
    - Understand UI building
-   - See JyneTest in action
+   - See TsyneTest in action
 
 2. **Graduate to Advanced** (`calculator-advanced/`)
    - Learn separation of concerns
@@ -232,13 +232,13 @@ test('input number', () => {
 ### For Simple Apps
 - Keep it under 200 lines
 - Use global state sparingly
-- Test with JyneTest only
+- Test with TsyneTest only
 - Refactor if it grows
 
 ### For Advanced Apps
 - Separate logic from UI
 - Unit test with Jest
-- Integration test with JyneTest
+- Integration test with TsyneTest
 - Follow Model-View-Presenter
 
 ### For Both

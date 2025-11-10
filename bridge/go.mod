@@ -1,4 +1,4 @@
-module github.com/paul-hammant/jyne/bridge
+module github.com/paul-hammant/tsyne/bridge
 
 go 1.21
 

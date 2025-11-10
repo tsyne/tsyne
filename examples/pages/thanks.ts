@@ -1,7 +1,7 @@
-// Thank You Page - TypeScript content for Jyne Browser
+// Thank You Page - TypeScript content for Tsyne Browser
 // URL: http://localhost:3000/thanks
 
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 vbox(() => {
   label('Thank You!');

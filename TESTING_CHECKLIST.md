@@ -1,11 +1,11 @@
-# Jyne Browser Testing Checklist
+# Tsyne Browser Testing Checklist
 
-Comprehensive testing checklist for Jyne Browser features.
+Comprehensive testing checklist for Tsyne Browser features.
 
 ## 🧪 Automated Tests
 
-### JyneBrowserTest Framework
-- [x] JyneBrowserTest class implemented
+### TsyneBrowserTest Framework
+- [x] TsyneBrowserTest class implemented
 - [x] Test server with page routing
 - [x] Browser test helpers (navigate, back, forward, reload)
 - [x] TestContext integration
@@ -66,7 +66,7 @@ Comprehensive testing checklist for Jyne Browser features.
 - [ ] HTTP GET requests
 - [ ] Page code execution
 - [ ] BrowserContext passed to pages
-- [ ] Jyne API available in pages
+- [ ] Tsyne API available in pages
 - [ ] Error handling for failed requests
 - [ ] Timeout handling
 
@@ -266,7 +266,7 @@ Comprehensive testing checklist for Jyne Browser features.
 - [ ] isLoading reflects state
 - [ ] browser reference available
 
-### Pages receive jyne with all API:
+### Pages receive tsyne with all API:
 - [ ] vbox() creates vertical box
 - [ ] hbox() creates horizontal box
 - [ ] label() creates labels
@@ -382,7 +382,7 @@ Comprehensive testing checklist for Jyne Browser features.
 
 ## 🚀 Pre-Release Checklist
 
-Before releasing Jyne Browser:
+Before releasing Tsyne Browser:
 - [ ] All P0 automated tests passing
 - [ ] All P0 manual tests passing
 - [ ] All P1 automated tests passing

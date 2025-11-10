@@ -143,7 +143,7 @@ export class Expect {
 }
 
 /**
- * Main test context for interacting with Jyne apps
+ * Main test context for interacting with Tsyne apps
  */
 export class TestContext {
   constructor(private bridge: BridgeConnection) {}

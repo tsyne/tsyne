@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"net/url"
 	"os"
@@ -236,6 +238,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleGetWidgetInfo(msg)
 	case "getAllWidgets":
 		b.handleGetAllWidgets(msg)
+	case "captureWindow":
+		b.handleCaptureWindow(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -2746,6 +2750,58 @@ func (b *Bridge) handleGetAllWidgets(msg Message) {
 		Result: map[string]interface{}{
 			"widgets": widgets,
 		},
+	})
+}
+
+func (b *Bridge) handleCaptureWindow(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	filePath := msg.Payload["filePath"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	var img image.Image
+
+	// Canvas capture must happen on main thread
+	fyne.DoAndWait(func() {
+		img = win.Canvas().Capture()
+	})
+
+	// Create file
+	f, err := os.Create(filePath)
+	if err != nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to create file: %v", err),
+		})
+		return
+	}
+	defer f.Close()
+
+	// Encode as PNG
+	if err := png.Encode(f, img); err != nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to encode PNG: %v", err),
+		})
+		return
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
 	})
 }
 

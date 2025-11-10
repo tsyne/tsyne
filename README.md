@@ -1,22 +1,22 @@
-# Jyne
+# Tsyne
 
 **Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js**
 
-Jyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, declarative API inspired by Ruby's Shoes DSL and QML.
+Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, declarative API inspired by Ruby's Shoes DSL and QML.
 
-## Why Jyne?
+## Why Tsyne?
 
 - **Elegant Syntax**: Declarative, terse UI markup with closures (inspired by Ruby/Groovy DSL patterns)
 - **Cross-Platform**: Build native apps for macOS, Windows, and Linux from a single codebase
 - **Type-Safe**: Full TypeScript support with complete type definitions
 - **Easy Integration**: Simple npm package that's quick to add to any Node.js project
 - **Powerful**: Full access to Fyne's rich widget library and layout system
-- **Testable**: Built-in testing framework (JyneTest) with Playwright-like API for headed/headless testing
+- **Testable**: Built-in testing framework (TsyneTest) with Playwright-like API for headed/headless testing
 
 ## Installation
 
 ```bash
-npm install jyne
+npm install tsyne
 ```
 
 **Prerequisites**:
@@ -28,12 +28,12 @@ npm install jyne
 ### TypeScript
 
 ```typescript
-import { app, window, vbox, button, label } from 'jyne';
+import { app, window, vbox, button, label } from 'tsyne';
 
-app({ title: "Hello Jyne" }, () => {
+app({ title: "Hello Tsyne" }, () => {
   window({ title: "Hello World" }, () => {
     vbox(() => {
-      label("Welcome to Jyne!");
+      label("Welcome to Tsyne!");
       button("Click Me", () => {
         console.log("Button clicked!");
       });
@@ -45,12 +45,12 @@ app({ title: "Hello Jyne" }, () => {
 ### JavaScript (CommonJS)
 
 ```javascript
-const { app, window, vbox, button, label } = require('jyne');
+const { app, window, vbox, button, label } = require('tsyne');
 
-app({ title: "Hello Jyne" }, () => {
+app({ title: "Hello Tsyne" }, () => {
   window({ title: "Hello World" }, () => {
     vbox(() => {
-      label("Welcome to Jyne!");
+      label("Welcome to Tsyne!");
       button("Click Me", () => {
         console.log("Button clicked!");
       });
@@ -62,12 +62,12 @@ app({ title: "Hello Jyne" }, () => {
 ### JavaScript (ES Modules)
 
 ```javascript
-import { app, window, vbox, button, label } from 'jyne';
+import { app, window, vbox, button, label } from 'tsyne';
 
-app({ title: "Hello Jyne" }, () => {
+app({ title: "Hello Tsyne" }, () => {
   window({ title: "Hello World" }, () => {
     vbox(() => {
-      label("Welcome to Jyne!");
+      label("Welcome to Tsyne!");
       button("Click Me", () => {
         console.log("Button clicked!");
       });
@@ -76,16 +76,16 @@ app({ title: "Hello Jyne" }, () => {
 });
 ```
 
-Jyne works seamlessly with both TypeScript and JavaScript!
+Tsyne works seamlessly with both TypeScript and JavaScript!
 
 ## Elegant Syntax
 
-Jyne's API is designed to be elegant and terse, following the pattern described in [this blog post](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature) about Ruby/Groovy DSLs. The syntax feels declarative while retaining full imperative power:
+Tsyne's API is designed to be elegant and terse, following the pattern described in [this blog post](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature) about Ruby/Groovy DSLs. The syntax feels declarative while retaining full imperative power:
 
 ### Calculator Example
 
 ```typescript
-import { app, window, vbox, hbox, button, label } from 'jyne';
+import { app, window, vbox, hbox, button, label } from 'tsyne';
 
 let display: any;
 let currentValue = "0";
@@ -130,7 +130,7 @@ app({ title: "Calculator" }, () => {
 ### Counter Example
 
 ```typescript
-import { app, window, vbox, hbox, button, label } from 'jyne';
+import { app, window, vbox, hbox, button, label } from 'tsyne';
 
 let countLabel: any;
 let count = 0;
@@ -154,26 +154,26 @@ app({ title: "Counter" }, () => {
 });
 ```
 
-## Testing with JyneTest
+## Testing with TsyneTest
 
-Jyne includes **JyneTest**, a Playwright-like testing framework for testing your UI applications in headed or headless mode.
+Tsyne includes **TsyneTest**, a Playwright-like testing framework for testing your UI applications in headed or headless mode.
 
 ### Quick Test Example
 
 ```typescript
-import { JyneTest } from 'jyne/test';
+import { TsyneTest } from 'tsyne/test';
 
 async function testCalculator() {
   // Create test instance (headless by default)
-  const jyneTest = new JyneTest({ headed: false });
+  const tsyneTest = new TsyneTest({ headed: false });
 
   // Build your app
-  const testApp = jyneTest.createApp((app) => {
+  const testApp = tsyneTest.createApp((app) => {
     // ... build calculator UI ...
   });
 
   // Get test context
-  const ctx = jyneTest.getContext();
+  const ctx = tsyneTest.getContext();
   await testApp.run();
 
   // Interact with the UI
@@ -187,7 +187,7 @@ async function testCalculator() {
   await ctx.expect(display).toHaveText("8");
 
   // Clean up
-  await jyneTest.cleanup();
+  await tsyneTest.cleanup();
 }
 ```
 
@@ -195,12 +195,12 @@ async function testCalculator() {
 
 **Headless (default)** - Fast, no UI, perfect for CI/CD:
 ```typescript
-const jyneTest = new JyneTest({ headed: false });
+const tsyneTest = new TsyneTest({ headed: false });
 ```
 
 **Headed** - Shows UI during testing, great for debugging:
 ```typescript
-const jyneTest = new JyneTest({ headed: true });
+const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 ### Locators and Assertions
@@ -239,14 +239,14 @@ npm run test:calculator:headed
 
 **See [TESTING.md](TESTING.md) for complete documentation and the [calculator test app](test-apps/calculator/) for a comprehensive example.**
 
-## Browser Testing with JyneBrowserTest
+## Browser Testing with TsyneBrowserTest
 
-Jyne includes **JyneBrowserTest**, a testing framework specifically designed for testing Jyne Browser pages. It automatically starts a test HTTP server and provides navigation helpers for testing multi-page browser applications.
+Tsyne includes **TsyneBrowserTest**, a testing framework specifically designed for testing Tsyne Browser pages. It automatically starts a test HTTP server and provides navigation helpers for testing multi-page browser applications.
 
 ### Quick Browser Test Example
 
 ```typescript
-import { browserTest } from 'jyne';
+import { browserTest } from 'tsyne';
 
 await browserTest(
   'should navigate between pages',
@@ -254,7 +254,7 @@ await browserTest(
     {
       path: '/',
       code: `
-        const { vbox, label, button } = jyne;
+        const { vbox, label, button } = tsyne;
         vbox(() => {
           label('Home Page');
           button('Go to About', () => {
@@ -266,7 +266,7 @@ await browserTest(
     {
       path: '/about',
       code: `
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         vbox(() => {
           label('About Page');
         });
@@ -288,7 +288,7 @@ await browserTest(
 );
 ```
 
-### JyneBrowserTest Features
+### TsyneBrowserTest Features
 
 **Automatic Test Server:**
 - Starts HTTP server on random port
@@ -319,7 +319,7 @@ await ctx.clickWidget(widget.id);
 ### Complete Test Example
 
 ```typescript
-import { browserTest, JyneBrowserTest } from 'jyne';
+import { browserTest, TsyneBrowserTest } from 'tsyne';
 
 // Test 1: Basic page navigation
 await browserTest(
@@ -328,14 +328,14 @@ await browserTest(
     {
       path: '/',
       code: `
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         vbox(() => {
           label('Welcome to Home Page');
         });
       `
     }
   ],
-  async (bt: JyneBrowserTest) => {
+  async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
     const ctx = bt.getContext();
 
@@ -354,7 +354,7 @@ await browserTest(
     {
       path: '/',
       code: `
-        const { vbox, entry, button } = jyne;
+        const { vbox, entry, button } = tsyne;
         let nameEntry;
         vbox(() => {
           nameEntry = entry('Enter name');
@@ -367,14 +367,14 @@ await browserTest(
     {
       path: '/thanks',
       code: `
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         vbox(() => {
           label('Thank you!');
         });
       `
     }
   ],
-  async (bt: JyneBrowserTest) => {
+  async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
     bt.assertUrl('/');
 
@@ -400,10 +400,10 @@ await browserTest(
 await browserTest(
   'should navigate back and forward',
   [
-    { path: '/', code: `const { vbox, label } = jyne; vbox(() => { label('Home'); });` },
-    { path: '/page2', code: `const { vbox, label } = jyne; vbox(() => { label('Page 2'); });` }
+    { path: '/', code: `const { vbox, label } = tsyne; vbox(() => { label('Home'); });` },
+    { path: '/page2', code: `const { vbox, label } = tsyne; vbox(() => { label('Page 2'); });` }
   ],
-  async (bt: JyneBrowserTest) => {
+  async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
 
     // Navigate to page 2
@@ -440,12 +440,12 @@ node examples/browser.test.js
 Parameters:
 - **`name`**: Test name/description
 - **`pages`**: Array of test pages with `path` and `code` properties
-- **`testFn`**: Test function receiving `JyneBrowserTest` instance
+- **`testFn`**: Test function receiving `TsyneBrowserTest` instance
 - **`options`**: Optional configuration (port, headed mode)
 
 Returns: `Promise<void>`
 
-### JyneBrowserTest Class API
+### TsyneBrowserTest Class API
 
 **Methods:**
 - **`addPages(pages)`**: Add test pages to be served
@@ -459,7 +459,7 @@ Returns: `Promise<void>`
 - **`getContext()`**: Get TestContext for widget interaction
 - **`cleanup()`**: Stop server and quit browser
 
-**See [BROWSER_TESTING.md](BROWSER_TESTING.md) for complete documentation on JyneBrowserTest, including:**
+**See [BROWSER_TESTING.md](BROWSER_TESTING.md) for complete documentation on TsyneBrowserTest, including:**
 - Playwright-inspired locators, actions, and expectations
 - Integration with Jest, Mocha, Vitest, and other test runners
 - Assertion library flexibility (Jest, Chai, assert, etc.)
@@ -653,7 +653,7 @@ Window methods:
 
 ### Dialogs
 
-Jyne provides common dialog methods on the Window class for user interactions:
+Tsyne provides common dialog methods on the Window class for user interactions:
 
 #### Information and Error Dialogs
 
@@ -800,12 +800,12 @@ Widget-specific methods:
 
 ## Theme Support
 
-Jyne supports light and dark themes that automatically apply to all widgets in your application.
+Tsyne supports light and dark themes that automatically apply to all widgets in your application.
 
 ### Setting the Theme
 
 ```typescript
-import { app, setTheme } from 'jyne';
+import { app, setTheme } from 'tsyne';
 
 app({ title: 'My App' }, () => {
   // Switch to dark theme
@@ -844,7 +844,7 @@ const theme = await myApp.getTheme();
 ### Example: Theme Switcher
 
 ```typescript
-import { app, window, vbox, button, label } from 'jyne';
+import { app, window, vbox, button, label } from 'tsyne';
 
 let themeLabel: any;
 
@@ -877,7 +877,7 @@ See `examples/theme.ts` for a complete theme demonstration with various widgets.
 
 ## Widget Styling System
 
-Jyne includes a CSS-like styling system inspired by [Swiby](https://github.com/jeanlazarou/swiby), allowing you to separate presentation from structure. Define styles once in a stylesheet module, and they automatically apply to widgets based on their type.
+Tsyne includes a CSS-like styling system inspired by [Swiby](https://github.com/jeanlazarou/swiby), allowing you to separate presentation from structure. Define styles once in a stylesheet module, and they automatically apply to widgets based on their type.
 
 ### Quick Start with Styling
 
@@ -885,7 +885,7 @@ The styling system works similarly to CSS - define styles for widget types, and 
 
 **Without styles** (`examples/form-unstyled.ts`):
 ```typescript
-import { app, window, vbox, label, button } from 'jyne';
+import { app, window, vbox, label, button } from 'tsyne';
 
 app({ title: 'My App' }, () => {
   window({ title: 'Form' }, (win) => {
@@ -902,7 +902,7 @@ app({ title: 'My App' }, () => {
 
 **With styles** (`examples/form-styled.ts`):
 ```typescript
-import { app, window, vbox, label, button } from 'jyne';
+import { app, window, vbox, label, button } from 'tsyne';
 import './form-styles';  // ← Only difference: import stylesheet!
 
 app({ title: 'My App' }, () => {
@@ -920,7 +920,7 @@ app({ title: 'My App' }, () => {
 
 **Stylesheet** (`examples/form-styles.ts`):
 ```typescript
-import { styles, FontFamily, FontStyle } from 'jyne';
+import { styles, FontFamily, FontStyle } from 'tsyne';
 
 styles({
   root: {
@@ -981,7 +981,7 @@ Swiby-style approach with separate stylesheet:
 
 **styles.ts** (stylesheet module):
 ```typescript
-import { styles, FontFamily, FontStyle } from 'jyne';
+import { styles, FontFamily, FontStyle } from 'tsyne';
 
 styles({
   root: {
@@ -1007,7 +1007,7 @@ styles({
 
 **main.ts** (application):
 ```typescript
-import { app, window, vbox, label, entry, button } from 'jyne';
+import { app, window, vbox, label, entry, button } from 'tsyne';
 import './styles';  // Import stylesheet - styles auto-apply!
 
 app({ title: 'Styled App' }, () => {
@@ -1051,7 +1051,7 @@ styles({
 Define styles for widget types.
 
 ```typescript
-import { styles, FontStyle } from 'jyne';
+import { styles, FontStyle } from 'tsyne';
 
 styles({
   label: { font_style: FontStyle.BOLD },
@@ -1063,7 +1063,7 @@ styles({
 Clear all defined styles.
 
 ```typescript
-import { clearStyles } from 'jyne';
+import { clearStyles } from 'tsyne';
 
 clearStyles();
 ```
@@ -1072,7 +1072,7 @@ clearStyles();
 Get the global stylesheet instance.
 
 ```typescript
-import { getStyleSheet } from 'jyne';
+import { getStyleSheet } from 'tsyne';
 
 const sheet = getStyleSheet();
 const labelStyle = sheet?.getComputedStyle('label');
@@ -1080,7 +1080,7 @@ const labelStyle = sheet?.getComputedStyle('label');
 
 ### Comparison with Swiby
 
-Jyne's styling system is inspired by Swiby's elegant stylesheet approach:
+Tsyne's styling system is inspired by Swiby's elegant stylesheet approach:
 
 **Swiby (Ruby/Swing)**:
 ```ruby
@@ -1096,7 +1096,7 @@ styles {
 }
 ```
 
-**Jyne (TypeScript/Fyne)**:
+**Tsyne (TypeScript/Fyne)**:
 ```typescript
 styles({
   root: {
@@ -1136,7 +1136,7 @@ node examples/form-styled.js     # With styles
 
 ## Context Menus
 
-All Jyne widgets support right-click context menus, enabling contextual actions based on what the user clicks.
+All Tsyne widgets support right-click context menus, enabling contextual actions based on what the user clicks.
 
 ### Usage
 
@@ -1257,43 +1257,43 @@ See **`examples/pages/context-menu-demo.ts`** for a complete todo list example w
 ```bash
 npm run build
 node examples/server.js
-node examples/jynebrowser.js http://localhost:3000/
+npx tsyne-browser http://localhost:3000/
 # Navigate to Context Menu Demo page and right-click on todo items
 ```
 
 ## Browser System
 
-Jyne includes a Swiby-inspired browser system that loads **Jyne TypeScript pages** from web servers dynamically, similar to how Mosaic, Firefox, or Chrome load HTML pages. This enables server-side page generation from any language or framework (Spring, Sinatra, Flask, Express, etc.).
+Tsyne includes a Swiby-inspired browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how Mosaic, Firefox, or Chrome load HTML pages. This enables server-side page generation from any language or framework (Spring, Sinatra, Flask, Express, etc.).
 
-**Important:** Jyne's page grammar is **TypeScript** (not JavaScript or HTML). Pages are TypeScript code that use the Jyne API.
+**Important:** Tsyne's page grammar is **TypeScript** (not JavaScript or HTML). Pages are TypeScript code that use the Tsyne API.
 
 ### Why a Browser?
 
-Unlike HTML+JavaScript which mixes declarative markup with imperative scripts, Jyne pages are seamless declarative TypeScript. The browser:
+Unlike HTML+JavaScript which mixes declarative markup with imperative scripts, Tsyne pages are seamless declarative TypeScript. The browser:
 
 - **Loads pages from HTTP/HTTPS servers** - Standard GET requests with 200, 302, 404 support
 - **Provides navigation functions** - `back()`, `forward()`, `changePage(url)`
-- **Server-agnostic** - Any language can serve Jyne pages (Node.js, Java, Ruby, Python, Go)
-- **Fully declarative** - Pages are pure TypeScript using the Jyne API
+- **Server-agnostic** - Any language can serve Tsyne pages (Node.js, Java, Ruby, Python, Go)
+- **Fully declarative** - Pages are pure TypeScript using the Tsyne API
 
 ### Quick Start
 
 **Run the browser:**
 ```bash
 # With a URL parameter
-node examples/jynebrowser.js http://localhost:3000/
+npx tsyne-browser http://localhost:3000/
 
-# Or any other URL serving Jyne TypeScript pages
-node examples/jynebrowser.js https://example.com/jyne/index
+# Or any other URL serving Tsyne TypeScript pages
+npx tsyne-browser https://example.com/tsyne/index
 ```
 
 **Create a browser in code:**
 ```typescript
-import { createBrowser } from 'jyne';
+import { createBrowser } from 'tsyne';
 
 async function main() {
   const browser = await createBrowser('http://localhost:3000/', {
-    title: 'Jyne Browser',
+    title: 'Tsyne Browser',
     width: 900,
     height: 700
   });
@@ -1336,11 +1336,11 @@ http.createServer((req, res) => {
 
 **Example page** (`pages/index.ts`):
 ```typescript
-// Home Page - TypeScript content for Jyne Browser
-const { vbox, label, button } = jyne;
+// Home Page - TypeScript content for Tsyne Browser
+const { vbox, label, button } = tsyne;
 
 vbox(() => {
-  label('Welcome to Jyne Browser!');
+  label('Welcome to Tsyne Browser!');
   label('');
   label('Current URL: ' + browserContext.currentUrl);
   label('');
@@ -1354,10 +1354,10 @@ vbox(() => {
 **Another page** (`pages/about.ts`):
 ```typescript
 // About Page
-const { vbox, label, button, separator } = jyne;
+const { vbox, label, button, separator } = tsyne;
 
 vbox(() => {
-  label('About Jyne Browser');
+  label('About Tsyne Browser');
   separator();
   label('');
   label('Pages are TypeScript code served from the server.');
@@ -1406,7 +1406,7 @@ Standard browser menus are provided:
 - **File** - Close Window
 - **View** - Reload, Stop, View Page Source
 - **History** - Back, Forward (disabled when not available)
-- **Help** - About Jyne Browser
+- **Help** - About Tsyne Browser
 - **[Page Menus]** - Custom menus added by pages
 
 **Factory Function:**
@@ -1470,19 +1470,19 @@ browserContext.addPageMenu('Tools', [
 
 Custom menus appear in the menu bar and are removed when navigating away from the page.
 
-Pages also receive a `jyne` object with all Jyne API functions.
+Pages also receive a `tsyne` object with all Tsyne API functions.
 
 ### Page Format
 
-**Jyne pages are TypeScript code** (not HTML or JavaScript) that execute in the browser context. They receive two parameters:
+**Tsyne pages are TypeScript code** (not HTML or JavaScript) that execute in the browser context. They receive two parameters:
 
 1. **`browserContext`** - Navigation and browser functions
-2. **`jyne`** - All Jyne API functions (window, vbox, label, button, etc.)
+2. **`tsyne`** - All Tsyne API functions (window, vbox, label, button, etc.)
 
 **Example page** (`pages/contact.ts`):
 ```typescript
-// Contact Page - TypeScript content for Jyne Browser
-const { vbox, hbox, label, button, entry } = jyne;
+// Contact Page - TypeScript content for Tsyne Browser
+const { vbox, hbox, label, button, entry } = tsyne;
 
 let nameEntry;
 let emailEntry;
@@ -1555,13 +1555,13 @@ pages/
 
 ### Server Implementation
 
-Servers can be implemented in any language. The only requirement is to serve TypeScript code that uses the Jyne API from `.ts` files.
+Servers can be implemented in any language. The only requirement is to serve TypeScript code that uses the Tsyne API from `.ts` files.
 
 **Node.js/Express:**
 ```javascript
 app.get('/page', (req, res) => {
   res.type('text/typescript');
-  res.send('const { vbox, label } = jyne; ...');
+  res.send('const { vbox, label } = tsyne; ...');
 });
 ```
 
@@ -1570,7 +1570,7 @@ app.get('/page', (req, res) => {
 @app.route('/page')
 def page():
     return '''
-        const { vbox, label } = jyne;
+        const { vbox, label } = tsyne;
         // ... page code
     ''', 200, {'Content-Type': 'text/typescript'}
 ```
@@ -1579,10 +1579,10 @@ def page():
 ```ruby
 get '/page' do
   content_type 'text/typescript'
-  <<~JYNE
-    const { vbox, label } = jyne;
+  <<~TSYNE
+    const { vbox, label } = tsyne;
     // ... page code
-  JYNE
+  TSYNE
 end
 ```
 
@@ -1592,7 +1592,7 @@ end
 public ResponseEntity<String> page() {
     return ResponseEntity.ok()
         .contentType(MediaType.valueOf("text/typescript"))
-        .body("const { vbox, label } = jyne; ...");
+        .body("const { vbox, label } = tsyne; ...");
 }
 ```
 
@@ -1600,8 +1600,8 @@ public ResponseEntity<String> page() {
 
 1. **Browser loads initial URL** via `createBrowser(url)`
 2. **Server returns TypeScript code** for the page
-3. **Browser executes code** with `browserContext` and `jyne` parameters
-4. **Page builds UI** using Jyne API
+3. **Browser executes code** with `browserContext` and `tsyne` parameters
+4. **Page builds UI** using Tsyne API
 5. **User clicks navigation** button calling `browserContext.changePage(url)`
 6. **Process repeats** for new page
 
@@ -1610,7 +1610,7 @@ History is maintained automatically with back/forward support.
 ### Examples
 
 **Browser Application:**
-- **`examples/jynebrowser.ts`** - Jyne Browser executable
+- **`cli/tsynebrowser.ts`** - Tsyne Browser executable
 
 **Sample Server:**
 - **`examples/server.js`** - Filesystem-based Node.js HTTP server
@@ -1634,14 +1634,14 @@ npm run build
 # Terminal 1: Start the sample server
 node examples/server.js
 
-# Terminal 2: Run Jyne Browser with URL parameter
-node examples/jynebrowser.js http://localhost:3000/
+# Terminal 2: Run Tsyne Browser with URL parameter
+npx tsyne-browser http://localhost:3000/
 ```
 
-The browser will connect to the specified URL and load the Jyne TypeScript page. The browser window includes:
+The browser will connect to the specified URL and load the Tsyne TypeScript page. The browser window includes:
 - **Address bar** - Shows current URL, type new URLs to navigate
 - **Navigation buttons** - Back (←), Forward (→), Reload (⟳)
-- **Content area** - Displays the loaded Jyne page (scrollable)
+- **Content area** - Displays the loaded Tsyne page (scrollable)
 
 Click navigation buttons or type URLs to explore different pages served by the server.
 
@@ -1655,23 +1655,23 @@ Click navigation buttons or type URLs to explore different pages served by the s
 
 ### Comparison to Web Browsers
 
-| Feature | Web Browsers (HTML) | Jyne Browser |
+| Feature | Web Browsers (HTML) | Tsyne Browser |
 |---------|-------------------|--------------|
-| **Content Format** | HTML + CSS + JS | **TypeScript** (Jyne API) |
+| **Content Format** | HTML + CSS + JS | **TypeScript** (Tsyne API) |
 | **Declarative/Imperative** | Mixed (HTML declarative, JS imperative) | **Seamless declarative TypeScript** |
 | **Navigation** | `<a>` tags, `window.location` | `browserContext.changePage()` |
 | **Back/Forward** | Browser built-in | `browserContext.back/forward()` |
 | **Server Language** | Any (serves HTML) | Any (serves TypeScript) |
-| **Rendering** | Browser engine (Blink, Gecko) | Jyne/Fyne (native widgets) |
+| **Rendering** | Browser engine (Blink, Gecko) | Tsyne/Fyne (native widgets) |
 | **Platform** | Web | Desktop (macOS, Windows, Linux) |
 
 ## State Management and Architectural Patterns
 
-Jyne provides powerful state management utilities and supports multiple architectural patterns (MVC, MVVM, MVP) for building scalable applications.
+Tsyne provides powerful state management utilities and supports multiple architectural patterns (MVC, MVVM, MVP) for building scalable applications.
 
 ### State Passing and Two-Way Communication
 
-Jyne supports:
+Tsyne supports:
 - **Passing state into components**: Initialize widgets with data from your application
 - **Retrieving state back**: Get data from dialogs and forms (dialog pattern)
 - **Two-way data binding**: Keep state synchronized with UI automatically
@@ -1682,7 +1682,7 @@ Jyne supports:
 #### Observable State
 
 ```typescript
-import { ObservableState } from 'jyne';
+import { ObservableState } from 'tsyne';
 
 const count = new ObservableState(0);
 let countLabel: any;
@@ -1705,7 +1705,7 @@ app({ title: "State Demo" }, () => {
 #### State Store (Centralized State)
 
 ```typescript
-import { StateStore } from 'jyne';
+import { StateStore } from 'tsyne';
 
 interface AppState {
   user: string;
@@ -1745,7 +1745,7 @@ if (result.confirmed) {
 
 ### Architectural Patterns
 
-Jyne supports standard UI architectural patterns:
+Tsyne supports standard UI architectural patterns:
 
 | Pattern | Best For | Example |
 |---------|----------|---------|
@@ -1830,7 +1830,7 @@ node examples/mvvm-todo.js
 
 ## Architecture
 
-Jyne uses a unique architecture to bridge TypeScript and Go:
+Tsyne uses a unique architecture to bridge TypeScript and Go:
 
 ```
 ┌─────────────────────┐
@@ -1840,13 +1840,13 @@ Jyne uses a unique architecture to bridge TypeScript and Go:
            │
            ▼
 ┌─────────────────────┐
-│   Jyne Client       │
+│   Tsyne Client       │
 │   (TypeScript)      │
 └──────────┬──────────┘
            │ JSON-RPC via stdio
            ▼
 ┌─────────────────────┐
-│   Jyne Bridge       │
+│   Tsyne Bridge       │
 │   (Go + Fyne)       │
 └──────────┬──────────┘
            │
@@ -1857,8 +1857,8 @@ Jyne uses a unique architecture to bridge TypeScript and Go:
 └─────────────────────┘
 ```
 
-1. **Jyne Client** (TypeScript): Provides the declarative API and spawns the bridge process
-2. **Jyne Bridge** (Go): Manages Fyne widgets and communicates via JSON messages over stdio
+1. **Tsyne Client** (TypeScript): Provides the declarative API and spawns the bridge process
+2. **Tsyne Bridge** (Go): Manages Fyne widgets and communicates via JSON messages over stdio
 3. **Message Protocol**: Bidirectional JSON-RPC for commands and events
 
 ## Examples
@@ -1913,8 +1913,8 @@ Check out the `examples/` directory:
 - `form-styles.ts` - Stylesheet module defining visual styles
 
 **Browser Examples:**
-- `jynebrowser.ts` - Jyne Browser that loads TypeScript pages from web servers
-- `server.js` - Sample Node.js HTTP server serving multiple Jyne TypeScript pages
+- `tsynebrowser.ts` - Tsyne Browser that loads TypeScript pages from web servers
+- `server.js` - Sample Node.js HTTP server serving multiple Tsyne TypeScript pages
 
 Run an example:
 
@@ -1957,7 +1957,7 @@ We provide **two calculator implementations** demonstrating different approaches
 ```
 test-apps/calculator-simple/
 ├── calculator.ts (150 lines - all in one file)
-├── calculator.test.ts (JyneTest only)
+├── calculator.test.ts (TsyneTest only)
 └── README.md
 ```
 
@@ -1965,7 +1965,7 @@ test-apps/calculator-simple/
 - All code in one place
 - Simple and straightforward
 - Quick to prototype
-- JyneTest integration tests only
+- TsyneTest integration tests only
 
 **Trade-offs:**
 - Cannot unit test logic separately
@@ -1986,7 +1986,7 @@ test-apps/calculator-advanced/
 ├── calculator-logic.ts (Pure business logic)
 ├── calculator-logic.test.ts (34 Jest unit tests)
 ├── calculator-ui.ts (UI presentation)
-├── calculator.test.ts (11 JyneTest integration tests)
+├── calculator.test.ts (11 TsyneTest integration tests)
 └── README.md + TESTING-STRATEGY.md
 ```
 
@@ -2014,12 +2014,12 @@ npm test                        # All tests
 
 ### Monolithic (Simple) vs Decomposed (Advanced)
 
-Jyne supports two architectural patterns for building applications:
+Tsyne supports two architectural patterns for building applications:
 
 | Pattern | When to Use | Testing Approach |
 |---------|-------------|------------------|
-| **Monolithic** | Demos, prototypes, < 200 lines | JyneTest integration tests only |
-| **Decomposed** | Production, teams, complex logic | Jest unit tests + JyneTest integration |
+| **Monolithic** | Demos, prototypes, < 200 lines | TsyneTest integration tests only |
+| **Decomposed** | Production, teams, complex logic | Jest unit tests + TsyneTest integration |
 
 **Monolithic Example:**
 ```typescript
@@ -2087,7 +2087,7 @@ test('increment', () => {
 
 ## Design Philosophy
 
-Jyne follows these design principles:
+Tsyne follows these design principles:
 
 1. **Declarative where possible**: UI structure is defined using nested function calls
 2. **Imperative when needed**: Full JavaScript for event handlers and state management
@@ -2138,7 +2138,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 ### Getting Started
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 - **[README.md](README.md)** - You are here! Main documentation
-- **[PROS_AND_CONS.md](PROS_AND_CONS.md)** - Jyne vs Electron/Tauri comparison and decision guide
+- **[PROS_AND_CONS.md](PROS_AND_CONS.md)** - Tsyne vs Electron/Tauri comparison and decision guide
 - **[LLM.md](LLM.md)** - Quick reference guide for LLMs
 
 ### State Management and Patterns
@@ -2150,8 +2150,8 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **[examples/dialog-state.ts](examples/dialog-state.ts)** - Dialog state passing pattern
 
 ### Testing
-- **[TESTING.md](TESTING.md)** - Complete guide to JyneTest testing framework (for apps/components)
-- **[BROWSER_TESTING.md](BROWSER_TESTING.md)** - Complete guide to JyneBrowserTest (for browser pages)
+- **[TESTING.md](TESTING.md)** - Complete guide to TsyneTest testing framework (for apps/components)
+- **[BROWSER_TESTING.md](BROWSER_TESTING.md)** - Complete guide to TsyneBrowserTest (for browser pages)
 - **[TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)** - Comprehensive testing checklist for browser features
 - **[test-apps/README.md](test-apps/README.md)** - Two architectural patterns comparison
 - **[calculator-simple/README.md](test-apps/calculator-simple/README.md)** - Monolithic pattern
@@ -2166,7 +2166,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
-- [Fyne](https://fyne.io/) - The fantastic Go UI toolkit that powers Jyne
+- [Fyne](https://fyne.io/) - The fantastic Go UI toolkit that powers Tsyne
 - Paul Hammant's [blog posts](https://paulhammant.com) on elegant DSL design
 - The Ruby/Groovy communities for inspiring declarative UI patterns
-- [Playwright](https://playwright.dev/) - Inspiration for JyneTest's API design
+- [Playwright](https://playwright.dev/) - Inspiration for TsyneTest's API design

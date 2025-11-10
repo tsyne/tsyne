@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Post-install script for Jyne
+ * Post-install script for Tsyne
  *
  * This script runs after npm install and does the following:
  * 1. Detects the current platform (OS + architecture)
- * 2. Copies the appropriate pre-built binary to bin/jyne-bridge
+ * 2. Copies the appropriate pre-built binary to bin/tsyne-bridge
  * 3. Makes it executable (on Unix systems)
  *
  * If no pre-built binary is found, it falls back to building from source
@@ -22,10 +22,10 @@ const arch = process.arch;
 // Map Node.js platform/arch to our binary naming
 function getBinaryName() {
   const mapping = {
-    'darwin-x64': 'jyne-bridge-darwin-amd64',
-    'darwin-arm64': 'jyne-bridge-darwin-arm64',
-    'linux-x64': 'jyne-bridge-linux-amd64',
-    'win32-x64': 'jyne-bridge-windows-amd64.exe',
+    'darwin-x64': 'tsyne-bridge-darwin-amd64',
+    'darwin-arm64': 'tsyne-bridge-darwin-arm64',
+    'linux-x64': 'tsyne-bridge-linux-amd64',
+    'win32-x64': 'tsyne-bridge-windows-amd64.exe',
   };
 
   const key = `${platform}-${arch}`;
@@ -42,7 +42,7 @@ function selectPrebuiltBinary() {
 
   const binDir = path.join(__dirname, '..', 'bin');
   const sourcePath = path.join(binDir, binaryName);
-  const targetName = platform === 'win32' ? 'jyne-bridge.exe' : 'jyne-bridge';
+  const targetName = platform === 'win32' ? 'tsyne-bridge.exe' : 'tsyne-bridge';
   const targetPath = path.join(binDir, targetName);
 
   if (!fs.existsSync(sourcePath)) {
@@ -64,7 +64,7 @@ function selectPrebuiltBinary() {
       fs.chmodSync(targetPath, 0o755);
     }
 
-    console.log(`✓ Installed Jyne bridge for ${platform}-${arch}`);
+    console.log(`✓ Installed Tsyne bridge for ${platform}-${arch}`);
     return true;
   } catch (err) {
     console.error(`Failed to copy binary: ${err.message}`);
@@ -96,7 +96,7 @@ function findGoBinary() {
 }
 
 function buildFromSource() {
-  console.log('Attempting to build Jyne bridge from source...');
+  console.log('Attempting to build Tsyne bridge from source...');
 
   const goBinary = findGoBinary();
 
@@ -104,7 +104,7 @@ function buildFromSource() {
     console.error('');
     console.error('ERROR: Go is not installed or not in PATH');
     console.error('');
-    console.error('To use Jyne, you need either:');
+    console.error('To use Tsyne, you need either:');
     console.error('  1. A supported platform with pre-built binaries (macOS, Linux, Windows x64)');
     console.error('  2. Go 1.21+ installed to build from source');
     console.error('');
@@ -114,23 +114,23 @@ function buildFromSource() {
   }
 
   try {
-    console.log('Building Jyne bridge from source (this may take a minute)...');
+    console.log('Building Tsyne bridge from source (this may take a minute)...');
     console.log('Running: ' + goBinary + ' build -v');
 
     const buildCmd = platform === 'win32'
-      ? `cd bridge && ${goBinary} build -v -o ..\\bin\\jyne-bridge.exe`
-      : `cd bridge && ${goBinary} build -v -o ../bin/jyne-bridge`;
+      ? `cd bridge && ${goBinary} build -v -o ..\\bin\\tsyne-bridge.exe`
+      : `cd bridge && ${goBinary} build -v -o ../bin/tsyne-bridge`;
 
     execSync(buildCmd, {
       stdio: 'inherit',
       cwd: path.join(__dirname, '..')
     });
 
-    console.log('✓ Built Jyne bridge from source');
+    console.log('✓ Built Tsyne bridge from source');
     return true;
   } catch (err) {
     console.error('');
-    console.error('ERROR: Failed to build Jyne bridge from source');
+    console.error('ERROR: Failed to build Tsyne bridge from source');
     console.error('');
     console.error('This may be due to missing platform dependencies.');
     console.error('On Linux, you may need: libgl1-mesa-dev xorg-dev');
@@ -143,7 +143,7 @@ function buildFromSource() {
 
 // Main installation logic
 function install() {
-  console.log('Installing Jyne...');
+  console.log('Installing Tsyne...');
 
   // Try pre-built binary first
   if (selectPrebuiltBinary()) {
@@ -161,7 +161,7 @@ try {
   install();
 } catch (err) {
   console.error('');
-  console.error('ERROR: Jyne installation failed');
+  console.error('ERROR: Tsyne installation failed');
   console.error(err.message);
   console.error('');
   process.exit(1);

@@ -7,10 +7,10 @@ export interface TestOptions {
 }
 
 /**
- * JyneTest provides a testing framework for Jyne applications
+ * TsyneTest provides a testing framework for Tsyne applications
  * Uses proper IoC/DI - app instance is injected into builder
  */
-export class JyneTest {
+export class TsyneTest {
   private app: App | null = null;
   private testContext: TestContext | null = null;
   private options: TestOptions;
@@ -72,6 +72,34 @@ export class JyneTest {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
+
+  /**
+   * Capture a screenshot of the application window
+   * @param filePath - Path where the screenshot will be saved as PNG
+   *
+   * Note: Screenshots in headless mode (default) will be blank/grey because
+   * Fyne's test mode doesn't render actual pixels. For meaningful screenshots,
+   * run tests in headed mode: new TsyneTest({ headed: true })
+   */
+  async screenshot(filePath: string): Promise<void> {
+    if (!this.app) {
+      throw new Error('App not created. Call createApp() first.');
+    }
+
+    // Get the first window from the app
+    const windows = this.app.getWindows();
+    if (windows.length === 0) {
+      throw new Error('No windows available to screenshot');
+    }
+
+    // Warn if in headless mode
+    if (!this.options.headed) {
+      console.warn('  ⚠️  Screenshot captured in headless mode - will be blank/grey');
+      console.warn('     For visual screenshots, use headed mode: new TsyneTest({ headed: true })');
+    }
+
+    await windows[0].screenshot(filePath);
+  }
 }
 
 /**
@@ -82,19 +110,39 @@ export async function test(
   testFn: (context: TestContext) => Promise<void>,
   options: TestOptions = {}
 ): Promise<void> {
-  const jyneTest = new JyneTest(options);
+  const tsyneTest = new TsyneTest(options);
 
   console.log(`Running test: ${name}`);
 
   try {
-    await testFn(jyneTest.getContext());
+    await testFn(tsyneTest.getContext());
     console.log(`✓ ${name}`);
   } catch (error) {
     console.error(`✗ ${name}`);
     console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+
+    // Capture screenshot on test failure
+    try {
+      const sanitizedName = name.replace(/[^a-zA-Z0-9]/g, '_');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const screenshotPath = `./test-failures/${sanitizedName}_${timestamp}.png`;
+
+      // Create test-failures directory if it doesn't exist
+      const fs = require('fs');
+      if (!fs.existsSync('./test-failures')) {
+        fs.mkdirSync('./test-failures', { recursive: true });
+      }
+
+      await tsyneTest.screenshot(screenshotPath);
+      console.error(`  Screenshot saved: ${screenshotPath}`);
+    } catch (screenshotError) {
+      // Don't fail the test if screenshot fails, just log it
+      console.error(`  Failed to capture screenshot: ${screenshotError instanceof Error ? screenshotError.message : String(screenshotError)}`);
+    }
+
     throw error;
   } finally {
-    await jyneTest.cleanup();
+    await tsyneTest.cleanup();
   }
 }
 

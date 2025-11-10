@@ -1,6 +1,6 @@
-# Jyne - Quick Reference for LLMs
+# Tsyne - Quick Reference for LLMs
 
-## What is Jyne?
+## What is Tsyne?
 TypeScript wrapper for Go's Fyne UI toolkit. JSON-RPC bridge over stdio. Declarative API for desktop apps.
 
 ## Architecture
@@ -11,7 +11,7 @@ TypeScript wrapper for Go's Fyne UI toolkit. JSON-RPC bridge over stdio. Declara
 ## Basic App Structure
 
 ```typescript
-import { app, window, vbox, button, label } from 'jyne';
+import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: 'App' }, () => {
   window({ title: 'Window', width: 400, height: 300 }, (win) => {
@@ -138,4 +138,4 @@ npm run example:data-binding
 - README.md - Getting started
 - PATTERNS.md - Detailed pattern guide
 - ROADMAP.md - Feature tracking
-- PROS_AND_CONS.md - Jyne vs Electron/Tauri
+- PROS_AND_CONS.md - Tsyne vs Electron/Tauri
