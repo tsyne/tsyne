@@ -517,8 +517,17 @@ export class Browser {
    * Render a page from its code into the browser window
    */
   private async renderPage(pageCode: string): Promise<void> {
-    console.log('renderPage called with code length:', pageCode.length);
-    console.log('First 200 chars of page code:', pageCode.substring(0, 200));
+    // Extract path from URL for logging
+    let pagePath = this.currentUrl;
+    try {
+      const urlObj = new URL(this.currentUrl);
+      pagePath = urlObj.pathname;
+    } catch {
+      // If URL parsing fails, use as-is
+    }
+
+    console.log('renderPage called for path:', pagePath);
+    console.log('Code length:', pageCode.length, 'chars');
 
     // Create browser context for the page
     const browserContext: BrowserContext = {

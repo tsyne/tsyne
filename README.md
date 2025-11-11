@@ -237,7 +237,7 @@ npm test
 npm run test:calculator:headed
 ```
 
-**See [TESTING.md](TESTING.md) for complete documentation and the [calculator test app](test-apps/calculator/) for a comprehensive example.**
+**See [docs/TESTING.md](docs/TESTING.md) for complete documentation and the [calculator test app](test-apps/calculator/) for a comprehensive example.**
 
 ## Browser Testing with TsyneBrowserTest
 
@@ -248,8 +248,8 @@ Tsyne includes **TsyneBrowserTest**, a testing framework specifically designed f
 ```typescript
 import { browserTest } from 'tsyne';
 
-await browserTest(
-  'should navigate between pages',
+browserTest(
+  'Test /home',  // Use path-based names
   [
     {
       path: '/',
@@ -276,14 +276,30 @@ await browserTest(
   async (bt) => {
     await bt.createBrowser('/');
     const ctx = bt.getContext();
+    bt.assertUrl('/');
 
-    // Click navigation button
+    // Verify page content
+    const heading = await ctx.findWidget({ text: 'Home Page' });
+    if (!heading) {
+      throw new Error('Page heading not found');
+    }
+
+    // Find and click navigation button
     const aboutButton = await ctx.findWidget({ text: 'Go to About' });
+    if (!aboutButton) {
+      throw new Error('Navigation button not found');
+    }
     await ctx.clickWidget(aboutButton.id);
 
     // Verify navigation occurred
     await new Promise(resolve => setTimeout(resolve, 200));
     bt.assertUrl('/about');
+
+    // Verify About page loaded
+    const aboutHeading = await ctx.findWidget({ text: 'About Page' });
+    if (!aboutHeading) {
+      throw new Error('About page not loaded');
+    }
   }
 );
 ```
@@ -321,9 +337,9 @@ await ctx.clickWidget(widget.id);
 ```typescript
 import { browserTest, TsyneBrowserTest } from 'tsyne';
 
-// Test 1: Basic page navigation
-await browserTest(
-  'should load home page',
+// Test 1: Basic page content verification
+browserTest(
+  'Test /',  // Use path-based test names
   [
     {
       path: '/',
@@ -331,6 +347,7 @@ await browserTest(
         const { vbox, label } = tsyne;
         vbox(() => {
           label('Welcome to Home Page');
+          label('This is the main content');
         });
       `
     }
@@ -338,18 +355,27 @@ await browserTest(
   async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
     const ctx = bt.getContext();
+    bt.assertUrl('/');
 
-    // Find and verify widget
+    // Verify heading
     const welcomeLabel = await ctx.findWidget({ text: 'Welcome to Home Page' });
     if (!welcomeLabel) {
       throw new Error('Welcome label not found');
     }
+    console.log('✓ Page heading found');
+
+    // Verify content
+    const content = await ctx.findWidget({ text: 'This is the main content' });
+    if (!content) {
+      throw new Error('Page content not found');
+    }
+    console.log('✓ Page content verified');
   }
 );
 
 // Test 2: Form submission and navigation
-await browserTest(
-  'should submit form and navigate',
+browserTest(
+  'Test /form',
   [
     {
       path: '/',
@@ -376,49 +402,75 @@ await browserTest(
   ],
   async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
+    const ctx = bt.getContext();
     bt.assertUrl('/');
 
-    const ctx = bt.getContext();
-
-    // Fill form and submit
+    // Find and verify submit button
     const submitButton = await ctx.findWidget({ text: 'Submit' });
-    await ctx.clickWidget(submitButton.id);
+    if (!submitButton) {
+      throw new Error('Submit button not found');
+    }
+    console.log('✓ Submit button found');
 
-    // Wait for navigation
+    // Click submit and navigate
+    await ctx.clickWidget(submitButton.id);
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Verify navigation
+    // Verify navigation and content
     bt.assertUrl('/thanks');
     const thanksLabel = await ctx.findWidget({ text: 'Thank you!' });
     if (!thanksLabel) {
       throw new Error('Thanks page not loaded');
     }
+    console.log('✓ Navigation successful, thanks page loaded');
   }
 );
 
 // Test 3: Back/Forward navigation
-await browserTest(
-  'should navigate back and forward',
+browserTest(
+  'Test /navigation',
   [
-    { path: '/', code: `const { vbox, label } = tsyne; vbox(() => { label('Home'); });` },
-    { path: '/page2', code: `const { vbox, label } = tsyne; vbox(() => { label('Page 2'); });` }
+    {
+      path: '/',
+      code: `const { vbox, label } = tsyne; vbox(() => { label('Home'); });`
+    },
+    {
+      path: '/page2',
+      code: `const { vbox, label } = tsyne; vbox(() => { label('Page 2'); });`
+    }
   ],
   async (bt: TsyneBrowserTest) => {
     await bt.createBrowser('/');
+    const ctx = bt.getContext();
+    bt.assertUrl('/');
+
+    // Verify home page
+    const homeLabel = await ctx.findWidget({ text: 'Home' });
+    if (!homeLabel) {
+      throw new Error('Home page not loaded');
+    }
 
     // Navigate to page 2
     await bt.navigate('/page2');
+    await new Promise(resolve => setTimeout(resolve, 200));
     bt.assertUrl('/page2');
 
-    // Go back
+    // Verify page 2 content
+    const page2Label = await ctx.findWidget({ text: 'Page 2' });
+    if (!page2Label) {
+      throw new Error('Page 2 not loaded');
+    }
+
+    // Test back navigation
     await bt.back();
     await new Promise(resolve => setTimeout(resolve, 200));
     bt.assertUrl('/');
 
-    // Go forward
+    // Test forward navigation
     await bt.forward();
     await new Promise(resolve => setTimeout(resolve, 200));
     bt.assertUrl('/page2');
+    console.log('✓ Back/forward navigation works correctly');
   }
 );
 ```
@@ -429,21 +481,48 @@ await browserTest(
 # Build the project
 npm run build
 
-# Run browser tests
-node examples/browser.test.js
+# Run browser tests (headless by default)
+node examples/web-features.test.js
+
+# Run with visible browser windows
+TSYNE_HEADED=1 node examples/web-features.test.js
+```
+
+**Test Runner Pattern:**
+```javascript
+const { browserTest, runBrowserTests } = require('tsyne');
+
+// Register tests using browserTest()
+browserTest('Test /page1', [...], async (bt) => { ... });
+browserTest('Test /page2', [...], async (bt) => { ... });
+
+// Run all registered tests sequentially
+(async () => {
+  await runBrowserTests();
+})();
 ```
 
 ### Helper Function API
 
 **`browserTest(name, pages, testFn, options?)`**
 
+Registers a browser test to run later (tests execute when `runBrowserTests()` is called).
+
 Parameters:
-- **`name`**: Test name/description
+- **`name`**: Test name - use path-based naming like "Test /images" or "Test /home"
 - **`pages`**: Array of test pages with `path` and `code` properties
 - **`testFn`**: Test function receiving `TsyneBrowserTest` instance
 - **`options`**: Optional configuration (port, headed mode)
 
-Returns: `Promise<void>`
+**`runBrowserTests()`**
+
+Runs all registered browser tests sequentially. Returns `Promise<void>`.
+
+**Best Practices:**
+- Use path-based test names: "Test /images" not "should load images page"
+- Add multiple assertions per test to verify actual content
+- Verify headings, sections, buttons, and specific text present
+- Test interactive features (clicks, navigation) not just page loads
 
 ### TsyneBrowserTest Class API
 
@@ -459,12 +538,12 @@ Returns: `Promise<void>`
 - **`getContext()`**: Get TestContext for widget interaction
 - **`cleanup()`**: Stop server and quit browser
 
-**See [BROWSER_TESTING.md](BROWSER_TESTING.md) for complete documentation on TsyneBrowserTest, including:**
+**See [docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md) for complete documentation on TsyneBrowserTest, including:**
 - Playwright-inspired locators, actions, and expectations
 - Integration with Jest, Mocha, Vitest, and other test runners
 - Assertion library flexibility (Jest, Chai, assert, etc.)
 - Complete API reference and best practices
-- **[examples/browser.test.ts](examples/browser.test.ts)** for comprehensive examples
+- **[examples/web-features.test.js](examples/web-features.test.js)** and **[examples/widget-interactions.test.js](examples/widget-interactions.test.js)** for comprehensive examples
 
 ## API Reference
 
@@ -1807,7 +1886,7 @@ class TodoView {
 }
 ```
 
-**See [PATTERNS.md](PATTERNS.md) for complete documentation on all architectural patterns, data binding, and state management.**
+**See [docs/PATTERNS.md](docs/PATTERNS.md) for complete documentation on all architectural patterns, data binding, and state management.**
 
 ### State Management Examples
 
@@ -1913,8 +1992,10 @@ Check out the `examples/` directory:
 - `form-styles.ts` - Stylesheet module defining visual styles
 
 **Browser Examples:**
-- `tsynebrowser.ts` - Tsyne Browser that loads TypeScript pages from web servers
+- `run-browser.ts` - Example of creating a browser programmatically
 - `server.js` - Sample Node.js HTTP server serving multiple Tsyne TypeScript pages
+- `web-features.test.js` - Comprehensive browser testing examples
+- `widget-interactions.test.js` - Widget interaction testing examples
 
 Run an example:
 
@@ -2136,13 +2217,13 @@ MIT License - see [LICENSE](LICENSE) file for details
 ## Documentation
 
 ### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Get started in 5 minutes
 - **[README.md](README.md)** - You are here! Main documentation
-- **[PROS_AND_CONS.md](PROS_AND_CONS.md)** - Tsyne vs Electron/Tauri comparison and decision guide
-- **[LLM.md](LLM.md)** - Quick reference guide for LLMs
+- **[docs/PROS_AND_CONS.md](docs/PROS_AND_CONS.md)** - Tsyne vs Electron/Tauri comparison and decision guide
+- **[docs/LLM.md](docs/LLM.md)** - Quick reference guide for LLMs
 
 ### State Management and Patterns
-- **[PATTERNS.md](PATTERNS.md)** - Complete guide to architectural patterns (MVC, MVVM, MVP), state management, and data binding
+- **[docs/PATTERNS.md](docs/PATTERNS.md)** - Complete guide to architectural patterns (MVC, MVVM, MVP), state management, and data binding
 - **[examples/data-binding.ts](examples/data-binding.ts)** - Observable state and computed state examples
 - **[examples/mvc-counter.ts](examples/mvc-counter.ts)** - MVC pattern implementation
 - **[examples/mvvm-todo.ts](examples/mvvm-todo.ts)** - MVVM pattern with ViewModels
@@ -2150,19 +2231,19 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **[examples/dialog-state.ts](examples/dialog-state.ts)** - Dialog state passing pattern
 
 ### Testing
-- **[TESTING.md](TESTING.md)** - Complete guide to TsyneTest testing framework (for apps/components)
-- **[BROWSER_TESTING.md](BROWSER_TESTING.md)** - Complete guide to TsyneBrowserTest (for browser pages)
-- **[TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)** - Comprehensive testing checklist for browser features
+- **[docs/TESTING.md](docs/TESTING.md)** - Complete guide to TsyneTest testing framework (for apps/components)
+- **[docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md)** - Complete guide to TsyneBrowserTest (for browser pages)
+- **[docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md)** - Comprehensive testing checklist for browser features
 - **[test-apps/README.md](test-apps/README.md)** - Two architectural patterns comparison
-- **[calculator-simple/README.md](test-apps/calculator-simple/README.md)** - Monolithic pattern
-- **[calculator-advanced/README.md](test-apps/calculator-advanced/README.md)** - Decomposed pattern
-- **[calculator-advanced/TESTING-STRATEGY.md](test-apps/calculator-advanced/TESTING-STRATEGY.md)** - Two-tier testing
+- **[test-apps/calculator-simple/README.md](test-apps/calculator-simple/README.md)** - Monolithic pattern
+- **[test-apps/calculator-advanced/README.md](test-apps/calculator-advanced/README.md)** - Decomposed pattern
+- **[test-apps/calculator-advanced/TESTING-STRATEGY.md](test-apps/calculator-advanced/TESTING-STRATEGY.md)** - Two-tier testing
 
 ### Development
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Internal design and architecture
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Internal design and architecture
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guide for contributors
-- **[PUBLISHING.md](PUBLISHING.md)** - Publishing to npm with bundled binaries
-- **[ROADMAP.md](ROADMAP.md)** - Feature roadmap and TODO list
+- **[docs/PUBLISHING.md](docs/PUBLISHING.md)** - Publishing to npm with bundled binaries
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** - Feature roadmap and TODO list
 
 ## Acknowledgments
 
