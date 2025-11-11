@@ -42,9 +42,13 @@ export class BridgeConnection {
       const execDir = path.dirname(process.execPath);
       bridgePath = path.join(execDir, 'tsyne-bridge');
     } else {
-      // Normal mode: look in bin/ directory relative to project root
-      // __dirname will be dist/src, so go up two levels to get to project root
-      bridgePath = path.join(__dirname, '..', '..', 'bin', 'tsyne-bridge');
+      // Find project root by detecting if running from compiled code or ts-node
+      // __dirname could be either dist/src (compiled) or src (ts-node)
+      const isCompiled = __dirname.includes(path.sep + 'dist' + path.sep);
+      const projectRoot = isCompiled
+        ? path.join(__dirname, '..', '..') // dist/src -> up 2 levels
+        : path.join(__dirname, '..'); // src -> up 1 level
+      bridgePath = path.join(projectRoot, 'bin', 'tsyne-bridge');
     }
 
     const args = testMode ? ['--headless'] : [];

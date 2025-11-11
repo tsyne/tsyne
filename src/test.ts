@@ -1,4 +1,4 @@
-import { BridgeConnection } from './bridge';
+import { BridgeConnection } from './fynebridge';
 
 /**
  * Widget information returned from inspections
@@ -17,7 +17,7 @@ export class Locator {
   constructor(
     private bridge: BridgeConnection,
     private selector: string,
-    private selectorType: 'text' | 'exactText' | 'type'
+    private selectorType: 'text' | 'exactText' | 'type' | 'id'
   ) {}
 
   /**
@@ -167,6 +167,19 @@ export class TestContext {
    */
   getByType(type: 'button' | 'label' | 'entry'): Locator {
     return new Locator(this.bridge, type, 'type');
+  }
+
+  /**
+   * Get a locator for a widget by ID (like Selenium's findElement)
+   * Returns a locator that finds a single widget with the specified ID
+   *
+   * @example
+   * const submitButton = ctx.getByID('submit-btn');
+   * await submitButton.click();
+   * await ctx.expect(submitButton).toBeVisible();
+   */
+  getByID(id: string): Locator {
+    return new Locator(this.bridge, id, 'id');
   }
 
   /**

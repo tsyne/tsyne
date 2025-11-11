@@ -2,11 +2,11 @@
 
 **Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js**
 
-Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, declarative API inspired by Ruby's Shoes DSL and QML.
+Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API inspired by Ruby's Shoes DSL and QML.
 
 ## Why Tsyne?
 
-- **Elegant Syntax**: Declarative, terse UI markup with closures (inspired by Ruby/Groovy DSL patterns)
+- **Elegant Syntax**: Pseudo-declarative, terse UI markup with closures (inspired by Ruby/Groovy DSL patterns)
 - **Cross-Platform**: Build native apps for macOS, Windows, and Linux from a single codebase
 - **Type-Safe**: Full TypeScript support with complete type definitions
 - **Easy Integration**: Simple npm package that's quick to add to any Node.js project
@@ -80,7 +80,7 @@ Tsyne works seamlessly with both TypeScript and JavaScript!
 
 ## Elegant Syntax
 
-Tsyne's API is designed to be elegant and terse, following the pattern described in [this blog post](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature) about Ruby/Groovy DSLs. The syntax feels declarative while retaining full imperative power:
+Tsyne's API is designed to be elegant and terse, following the pattern described in [this blog post](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature) about Ruby/Groovy DSLs. The syntax feels pseudo-declarative while retaining full imperative power:
 
 ### Calculator Example
 
@@ -126,6 +126,8 @@ app({ title: "Calculator" }, () => {
   });
 });
 ```
+
+**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (109 lines, monolithic pattern)
 
 ### Counter Example
 
@@ -1348,12 +1350,12 @@ Tsyne includes a Swiby-inspired browser system that loads **Tsyne TypeScript pag
 
 ### Why a Browser?
 
-Unlike HTML+JavaScript which mixes declarative markup with imperative scripts, Tsyne pages are seamless declarative TypeScript. The browser:
+Unlike HTML+JavaScript which mixes declarative markup with imperative scripts, Tsyne pages are seamless pseudo-declarative TypeScript. The browser:
 
 - **Loads pages from HTTP/HTTPS servers** - Standard GET requests with 200, 302, 404 support
 - **Provides navigation functions** - `back()`, `forward()`, `changePage(url)`
 - **Server-agnostic** - Any language can serve Tsyne pages (Node.js, Java, Ruby, Python, Go)
-- **Fully declarative** - Pages are pure TypeScript using the Tsyne API
+- **Pseudo-declarative** - Pages are pure TypeScript using the Tsyne API
 
 ### Quick Start
 
@@ -1737,7 +1739,7 @@ Click navigation buttons or type URLs to explore different pages served by the s
 | Feature | Web Browsers (HTML) | Tsyne Browser |
 |---------|-------------------|--------------|
 | **Content Format** | HTML + CSS + JS | **TypeScript** (Tsyne API) |
-| **Declarative/Imperative** | Mixed (HTML declarative, JS imperative) | **Seamless declarative TypeScript** |
+| **Declarative/Imperative** | Mixed (HTML declarative, JS imperative) | **Seamless pseudo-declarative TypeScript** |
 | **Navigation** | `<a>` tags, `window.location` | `browserContext.changePage()` |
 | **Back/Forward** | Browser built-in | `browserContext.back/forward()` |
 | **Server Language** | Any (serves HTML) | Any (serves TypeScript) |
@@ -1936,7 +1938,7 @@ Tsyne uses a unique architecture to bridge TypeScript and Go:
 └─────────────────────┘
 ```
 
-1. **Tsyne Client** (TypeScript): Provides the declarative API and spawns the bridge process
+1. **Tsyne Client** (TypeScript): Provides the pseudo-declarative API and spawns the bridge process
 2. **Tsyne Bridge** (Go): Manages Fyne widgets and communicates via JSON messages over stdio
 3. **Message Protocol**: Bidirectional JSON-RPC for commands and events
 
@@ -2170,7 +2172,7 @@ test('increment', () => {
 
 Tsyne follows these design principles:
 
-1. **Declarative where possible**: UI structure is defined using nested function calls
+1. **Pseudo-declarative where possible**: UI structure is defined using nested function calls
 2. **Imperative when needed**: Full JavaScript for event handlers and state management
 3. **Terse and elegant**: Minimal boilerplate, maximum expressiveness
 4. **Type-safe**: Complete TypeScript definitions for IDE support

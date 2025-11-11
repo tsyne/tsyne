@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/test-apps', '<rootDir>/src'],
+  roots: ['<rootDir>/test-apps', '<rootDir>/src', '<rootDir>/examples'],
   testMatch: [
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
@@ -11,7 +11,8 @@ module.exports = {
     '/dist/',
     '/src/test.ts',
     '/src/tsyne-test.ts',
-    '/src/tsyne-browser-test.ts'
+    '/src/tsyne-browser-test.ts',
+    '/examples/browser.test.ts'
   ],
   collectCoverageFrom: [
     'test-apps/**/*.ts',

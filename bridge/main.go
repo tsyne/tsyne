@@ -2571,6 +2571,10 @@ func (b *Bridge) handleFindWidget(msg Message) {
 			if meta.Type == selector {
 				matches = append(matches, widgetID)
 			}
+		case "id":
+			if widgetID == selector {
+				matches = append(matches, widgetID)
+			}
 		}
 	}
 

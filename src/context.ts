@@ -1,4 +1,4 @@
-import { BridgeConnection } from './bridge';
+import { BridgeConnection } from './fynebridge';
 
 /**
  * Context holds the current state during declarative UI building
