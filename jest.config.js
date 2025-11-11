@@ -12,7 +12,9 @@ module.exports = {
     '/src/test.ts',
     '/src/tsyne-test.ts',
     '/src/tsyne-browser-test.ts',
-    '/examples/browser.test.ts'
+    '/examples/browser.test.ts',
+    '/examples/fluent-api.test.ts',
+    '/examples/fluent-properties.test.ts'
   ],
   collectCoverageFrom: [
     'test-apps/**/*.ts',

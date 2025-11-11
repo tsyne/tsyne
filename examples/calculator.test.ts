@@ -40,8 +40,8 @@ describe('Simple Calculator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const display = ctx.getByExactText("0");
-    await ctx.expect(display).toHaveText("0");
+    // Use fluent-selenium style assertion
+    await ctx.getByExactText("0").shouldBe("0");
   });
 
   test('should perform addition', async () => {
@@ -52,17 +52,14 @@ describe('Simple Calculator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
+    // Use fluent-selenium style - clicks without manual waits
     await ctx.getByExactText("5").click();
-    await ctx.wait(50);
     await ctx.getByExactText("+").click();
-    await ctx.wait(50);
     await ctx.getByExactText("3").click();
-    await ctx.wait(50);
     await ctx.getByExactText("=").click();
-    await ctx.wait(50);
 
-    const display = ctx.getByType("label");
-    await ctx.expect(display).toHaveText("8");
+    // Fluent assertion waits for the expected value
+    await ctx.getByType("label").shouldBe("8");
   });
 
   test('should perform subtraction', async () => {
@@ -73,17 +70,14 @@ describe('Simple Calculator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
+    // Clean fluent-selenium style - no manual waits
     await ctx.getByExactText("9").click();
-    await ctx.wait(50);
     await ctx.getByExactText("-").click();
-    await ctx.wait(50);
     await ctx.getByExactText("4").click();
-    await ctx.wait(50);
     await ctx.getByExactText("=").click();
-    await ctx.wait(50);
 
-    const display = ctx.getByType("label");
-    await ctx.expect(display).toHaveText("5");
+    // Assertion automatically waits for expected value
+    await ctx.getByType("label").shouldBe("5");
   });
 
   test('should handle division by zero', async () => {
@@ -94,17 +88,14 @@ describe('Simple Calculator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
+    // Fluent clicks without delays
     await ctx.getByExactText("5").click();
-    await ctx.wait(50);
     await ctx.getByExactText("÷").click();
-    await ctx.wait(50);
     await ctx.getByExactText("0").click();
-    await ctx.wait(50);
     await ctx.getByExactText("=").click();
-    await ctx.wait(50);
 
-    const display = ctx.getByType("label");
-    await ctx.expect(display).toHaveText("Error");
+    // Fluent assertion - waits for "Error" to appear
+    await ctx.getByType("label").shouldBe("Error");
   });
 
   test('should clear display', async () => {
@@ -115,16 +106,13 @@ describe('Simple Calculator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
+    // Fluent-selenium style - smooth sequence without delays
     await ctx.getByExactText("1").click();
-    await ctx.wait(50);
     await ctx.getByExactText("2").click();
-    await ctx.wait(50);
     await ctx.getByExactText("3").click();
-    await ctx.wait(50);
     await ctx.getByExactText("Clr").click();
-    await ctx.wait(50);
 
-    const display = ctx.getByType("label");
-    await ctx.expect(display).toHaveText("0");
+    // Fluent assertion ensures "0" appears
+    await ctx.getByType("label").shouldBe("0");
   });
 });

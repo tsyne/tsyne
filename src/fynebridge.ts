@@ -87,7 +87,10 @@ export class BridgeConnection {
     });
 
     this.process.on('exit', (code) => {
-      console.log(`Bridge process exited with code ${code}`);
+      // Only log non-zero exit codes (errors)
+      if (code !== 0) {
+        console.error(`Bridge process exited with code ${code}`);
+      }
     });
   }
 
