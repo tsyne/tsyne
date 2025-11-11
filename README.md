@@ -235,6 +235,7 @@ const tsyneTest = new TsyneTest({ headed: true });
 // Find widgets by text
 ctx.getByExactText("Submit")
 ctx.getByText("Counter:") // partial match
+ctx.getByID("widget-id")   // by ID
 
 // Find by type
 ctx.getByType("button")
@@ -246,11 +247,24 @@ await locator.click()
 await locator.type("text")
 await locator.getText()
 
-// Assertions
+// Fluent-Selenium Style API
+await ctx.getByText("Submit").within(5000).click()  // Retry for 5 seconds
+await ctx.getByText("Loading...").without(3000)     // Wait for disappearance
+await ctx.getByID("status").shouldBe("Success")     // Fluent assertion
+await ctx.getByID("message").shouldContain("error") // Partial match
+await ctx.getByID("email").shouldMatch(/^.+@.+$/)   // Regex match
+
+// Assertions (Traditional style)
 await ctx.expect(locator).toHaveText("exact text")
 await ctx.expect(locator).toContainText("partial")
 await ctx.expect(locator).toBeVisible()
 await ctx.expect(locator).toExist()
+await ctx.expect(locator).toMatchText(/pattern/)
+
+// Negative assertions
+await ctx.expect(locator).toNotHaveText("wrong")
+await ctx.expect(locator).toNotBeVisible()
+await ctx.expect(locator).toNotExist()
 ```
 
 ### Running Tests
@@ -339,10 +353,11 @@ browserTest(
 
 **Navigation Helpers:**
 ```typescript
-await bt.navigate('/about');    // Navigate to a path
-await bt.back();                 // Go back in history
-await bt.forward();              // Go forward in history
-await bt.reload();               // Reload current page
+await bt.navigate('/about');        // Navigate to a path
+await bt.back();                    // Go back in history
+await bt.forward();                 // Go forward in history
+await bt.reload();                  // Reload current page
+await bt.waitForNavigation();       // Wait for navigation to complete (after clicks)
 ```
 
 **Assertions:**
@@ -564,12 +579,42 @@ Runs all registered browser tests sequentially. Returns `Promise<void>`.
 - **`getContext()`**: Get TestContext for widget interaction
 - **`cleanup()`**: Stop server and quit browser
 
+**Fluent-Selenium Style API:**
+
+TsyneBrowserTest includes a complete fluent-selenium inspired API for elegant test writing:
+
+```typescript
+// Retry element location with within()
+await ctx.getByText("Submit").within(5000).click();
+
+// Wait for elements to disappear with without()
+await ctx.getByID("loading").without(3000);
+
+// Fluent assertions that return locator for chaining
+await ctx.getByID("status").shouldBe("Success");
+await ctx.getByID("message").shouldContain("error");
+await ctx.getByID("email").shouldMatch(/^.+@.+$/);
+await ctx.getByID("status").shouldNotBe("Error");
+
+// Wait for navigation after clicks
+await ctx.getByText("Next Page").click();
+await bt.waitForNavigation();
+
+// Enhanced expect assertions
+await ctx.expect(locator).toMatchText(/pattern/);
+await ctx.expect(locator).toNotHaveText("wrong");
+await ctx.expect(locator).toNotBeVisible();
+await ctx.expect(locator).toHaveCountGreaterThan(3);
+await ctx.expect(locator).toHaveCountLessThan(10);
+```
+
 **See [docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md) for complete documentation on TsyneBrowserTest, including:**
 - Playwright-inspired locators, actions, and expectations
+- Fluent-selenium style API (within, without, shouldBe, shouldContain, shouldMatch)
 - Integration with Jest, Mocha, Vitest, and other test runners
 - Assertion library flexibility (Jest, Chai, assert, etc.)
 - Complete API reference and best practices
-- **[examples/web-features.test.js](examples/web-features.test.js)** and **[examples/widget-interactions.test.js](examples/widget-interactions.test.js)** for comprehensive examples
+- **[examples/web-features.test.js](examples/web-features.test.js)**, **[examples/widget-interactions.test.js](examples/widget-interactions.test.js)**, and **[examples/fluent-api.test.ts](examples/fluent-api.test.ts)** for comprehensive examples
 
 ## API Reference
 

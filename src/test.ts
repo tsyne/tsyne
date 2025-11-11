@@ -12,8 +12,12 @@ export interface WidgetInfo {
 
 /**
  * Locator represents a way to find widgets in the UI
+ * Supports fluent-selenium style method chaining
  */
 export class Locator {
+  private withinTimeout?: number;
+  private withoutTimeout?: number;
+
   constructor(
     private bridge: BridgeConnection,
     private selector: string,
@@ -41,9 +45,10 @@ export class Locator {
 
   /**
    * Click the first widget matching this locator
+   * Respects within() timeout if set
    */
   async click(): Promise<void> {
-    const widgetId = await this.find();
+    const widgetId = await this.findWithRetry();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -52,9 +57,10 @@ export class Locator {
 
   /**
    * Type text into the first widget matching this locator
+   * Respects within() timeout if set
    */
   async type(text: string): Promise<void> {
-    const widgetId = await this.find();
+    const widgetId = await this.findWithRetry();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -98,10 +104,143 @@ export class Locator {
     }
     throw new Error(`Timeout waiting for widget with ${this.selectorType}: ${this.selector}`);
   }
+
+  /**
+   * Fluent API: Set timeout for retrying element location (like fluent-selenium's within)
+   * Returns this locator for chaining
+   * @param timeoutMs - Time in milliseconds to retry finding the element
+   * @example
+   * await ctx.getByText("Submit").within(5000).click();
+   */
+  within(timeoutMs: number): Locator {
+    this.withinTimeout = timeoutMs;
+    return this;
+  }
+
+  /**
+   * Fluent API: Wait for element to disappear from DOM (like fluent-selenium's without)
+   * Returns a promise that resolves when element is no longer found
+   * @param timeoutMs - Time in milliseconds to wait for element to disappear
+   * @example
+   * await ctx.getByText("Loading...").without(5000);
+   */
+  async without(timeoutMs: number): Promise<void> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      const widget = await this.find();
+      if (!widget) {
+        return; // Element not found = disappeared
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    throw new Error(`Timeout waiting for widget to disappear with ${this.selectorType}: ${this.selector}`);
+  }
+
+  /**
+   * Fluent API: Assert text equals expected value (like fluent-selenium's shouldBe)
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("status").getText().then(t => expect(t).toBe("Success"));
+   * // Or use shouldBe for fluent style:
+   * await ctx.getByID("status").shouldBe("Success");
+   */
+  async shouldBe(expected: string): Promise<Locator> {
+    const actual = await this.getTextWithRetry();
+    if (actual !== expected) {
+      throw new Error(`Expected text to be "${expected}" but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert text contains expected substring (like fluent-selenium's shouldContain)
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("message").shouldContain("success");
+   */
+  async shouldContain(expected: string): Promise<Locator> {
+    const actual = await this.getTextWithRetry();
+    if (!actual.includes(expected)) {
+      throw new Error(`Expected text to contain "${expected}" but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert text matches regex pattern (like fluent-selenium's shouldMatch)
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("email").shouldMatch(/^[a-z]+@[a-z]+\.[a-z]+$/);
+   */
+  async shouldMatch(pattern: RegExp): Promise<Locator> {
+    const actual = await this.getTextWithRetry();
+    if (!pattern.test(actual)) {
+      throw new Error(`Expected text to match ${pattern} but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert text does not equal expected value
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("status").shouldNotBe("Error");
+   */
+  async shouldNotBe(expected: string): Promise<Locator> {
+    const actual = await this.getTextWithRetry();
+    if (actual === expected) {
+      throw new Error(`Expected text to not be "${expected}" but it was`);
+    }
+    return this;
+  }
+
+  /**
+   * Get text with retry support (respects withinTimeout)
+   */
+  private async getTextWithRetry(): Promise<string> {
+    if (!this.withinTimeout) {
+      return await this.getText();
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        return await this.getText();
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get text');
+  }
+
+  /**
+   * Enhanced find with retry support (respects withinTimeout)
+   */
+  private async findWithRetry(): Promise<string | null> {
+    if (!this.withinTimeout) {
+      return await this.find();
+    }
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < this.withinTimeout) {
+      const widget = await this.find();
+      if (widget) {
+        return widget;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return null; // Timeout
+  }
 }
 
 /**
  * Assertion helpers for testing
+ * Enhanced with fluent-selenium style assertions
  */
 export class Expect {
   constructor(private locator: Locator) {}
@@ -120,10 +259,45 @@ export class Expect {
     }
   }
 
+  async toNotHaveText(expectedText: string): Promise<void> {
+    const actualText = await this.locator.getText();
+    if (actualText === expectedText) {
+      throw new Error(`Expected text to not be "${expectedText}" but it was`);
+    }
+  }
+
+  async toNotContainText(expectedText: string): Promise<void> {
+    const actualText = await this.locator.getText();
+    if (actualText.includes(expectedText)) {
+      throw new Error(`Expected text to not contain "${expectedText}" but got "${actualText}"`);
+    }
+  }
+
+  async toMatchText(pattern: RegExp): Promise<void> {
+    const actualText = await this.locator.getText();
+    if (!pattern.test(actualText)) {
+      throw new Error(`Expected text to match ${pattern} but got "${actualText}"`);
+    }
+  }
+
+  async toNotMatchText(pattern: RegExp): Promise<void> {
+    const actualText = await this.locator.getText();
+    if (pattern.test(actualText)) {
+      throw new Error(`Expected text to not match ${pattern} but got "${actualText}"`);
+    }
+  }
+
   async toBeVisible(): Promise<void> {
     const widget = await this.locator.find();
     if (!widget) {
       throw new Error('Expected widget to be visible but it was not found');
+    }
+  }
+
+  async toNotBeVisible(): Promise<void> {
+    const widget = await this.locator.find();
+    if (widget) {
+      throw new Error('Expected widget to not be visible but it was found');
     }
   }
 
@@ -134,10 +308,31 @@ export class Expect {
     }
   }
 
+  async toNotExist(): Promise<void> {
+    const widgets = await this.locator.findAll();
+    if (widgets.length > 0) {
+      throw new Error('Expected widget to not exist but found ' + widgets.length);
+    }
+  }
+
   async toHaveCount(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
     if (widgets.length !== count) {
       throw new Error(`Expected ${count} widgets but found ${widgets.length}`);
+    }
+  }
+
+  async toHaveCountGreaterThan(count: number): Promise<void> {
+    const widgets = await this.locator.findAll();
+    if (widgets.length <= count) {
+      throw new Error(`Expected more than ${count} widgets but found ${widgets.length}`);
+    }
+  }
+
+  async toHaveCountLessThan(count: number): Promise<void> {
+    const widgets = await this.locator.findAll();
+    if (widgets.length >= count) {
+      throw new Error(`Expected less than ${count} widgets but found ${widgets.length}`);
     }
   }
 }
