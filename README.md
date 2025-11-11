@@ -148,7 +148,7 @@ app({ title: "Calculator" }, (app) => {
 });
 ```
 
-**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (69 substantive lines, monolithic pattern)
+**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (69 substantive lines, monolithic pattern) with **[test suite](examples/calculator.test.ts)**
 
 ### Counter Example
 
@@ -285,6 +285,12 @@ npm run test:calculator:headed
 ```
 
 **See [docs/TESTING.md](docs/TESTING.md) for complete documentation and the [calculator test app](test-apps/calculator/) for a comprehensive example.**
+
+**Testing examples:**
+- **[examples/calculator.test.ts](examples/calculator.test.ts)** - Simple calculator tests (integration tests using TsyneTest)
+- **[examples/locators.test.ts](examples/locators.test.ts)** - Comprehensive locator and assertion examples
+- **[test-apps/calculator-advanced/calculator.test.ts](test-apps/calculator-advanced/calculator.test.ts)** - Advanced calculator integration tests
+- **[test-apps/calculator-advanced/calculator-logic.test.ts](test-apps/calculator-advanced/calculator-logic.test.ts)** - Fast Jest unit tests for business logic
 
 ## Browser Testing with TsyneBrowserTest
 

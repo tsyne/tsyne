@@ -29,6 +29,48 @@ This document provides an honest assessment of Tsyne's position in the JavaScrip
 - Experimental/immature
 - Tsyne's Fyne backend is more stable
 
+### Historical Context: Lotus Notes
+
+**Lotus Notes** (1989-2010s) was a pioneering application server that offered a page-based UI paradigm for internal enterprise applications:
+
+**What Notes Got Right:**
+- Page-based navigation (not quite web-like, but page-ish)
+- Client-server architecture with local replication
+- Rich forms and document management
+- Powerful database sync technology
+- Dominated enterprise collaboration before the web
+
+**Why the Web Beat Notes:**
+- Open standards vs proprietary platform
+- Universal browser access (no client installation)
+- Massive ecosystem of web technologies
+- Lower costs and easier deployment
+- HTML/CSS/JavaScript was more flexible
+
+**TsyneBrowser vs Lotus Notes:**
+
+TsyneBrowser hints at similar possibilities for internal applications:
+- ✅ Page-based navigation (TypeScript pages, not HTML)
+- ✅ Server-agnostic (any language can serve Tsyne pages)
+- ✅ Native desktop experience (better performance than web)
+- ❌ **Does NOT have database sync technology** (Notes' killer feature)
+- ❌ No replication/offline capabilities (Notes excelled here)
+- ⚠️ Different target: lightweight internal tools, not enterprise collaboration platform
+
+**Key Lesson:** Notes was beaten by the web's openness and ubiquity. TsyneBrowser targets a narrower niche (internal tools where native performance matters) rather than trying to replace the web entirely.
+
+**Use TsyneBrowser for:**
+- Internal admin dashboards
+- Corporate utilities (where users have Node.js)
+- Developer tools with server-generated UI
+- Applications where native widgets are preferred over HTML
+
+**Don't compete with the web for:**
+- Public-facing applications
+- Applications requiring browser access
+- Complex web-style UIs
+- Scenarios where Notes' database sync would have been essential
+
 ## Tsyne's Pros
 
 ### ✅ Small Bundle Size
