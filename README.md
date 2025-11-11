@@ -247,12 +247,19 @@ await locator.click()
 await locator.type("text")
 await locator.getText()
 
-// Fluent-Selenium Style API
+// Fluent-Selenium Style API - Text Assertions
 await ctx.getByText("Submit").within(5000).click()  // Retry for 5 seconds
 await ctx.getByText("Loading...").without(3000)     // Wait for disappearance
 await ctx.getByID("status").shouldBe("Success")     // Fluent assertion
 await ctx.getByID("message").shouldContain("error") // Partial match
 await ctx.getByID("email").shouldMatch(/^.+@.+$/)   // Regex match
+
+// Fluent-Selenium Style API - Property Assertions
+await ctx.getByID("agree").shouldBeChecked()        // Checkbox state
+await ctx.getByID("volume").shouldHaveValue(75)     // Slider/entry value
+await ctx.getByID("submit").shouldBeEnabled()       // Enabled state
+await ctx.getByID("myWidget").shouldHaveType("button") // Widget type
+await ctx.getByID("modal").shouldBeVisible()        // Visibility
 
 // Assertions (Traditional style)
 await ctx.expect(locator).toHaveText("exact text")

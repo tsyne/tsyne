@@ -336,6 +336,161 @@ await ctx.getByID("status").shouldNotBe("Pending");
 await ctx.getByID("loading").within(5000).shouldNotBe("Loading...");
 ```
 
+### Property Assertions
+
+Beyond text, you can assert widget properties like checked state, values, enabled/disabled state, and more:
+
+#### Checkbox State
+
+```typescript
+// Assert checkbox is checked
+await ctx.getByID("agree").shouldBeChecked();
+
+// Assert checkbox is not checked
+await ctx.getByID("agree").shouldNotBeChecked();
+
+// With retry for delayed state changes
+await ctx.getByID("terms").within(5000).shouldBeChecked();
+```
+
+#### Values (Entry, Slider, Select)
+
+```typescript
+// Assert entry has specific text value
+await ctx.getByID("username").shouldHaveValue("john_doe");
+
+// Assert slider has specific numeric value
+await ctx.getByID("volume").shouldHaveValue(75);
+
+// Assert select has specific selected value
+await ctx.getByID("country").shouldHaveValue("US");
+
+// With retry for async updates
+await ctx.getByID("result").within(3000).shouldHaveValue("success");
+```
+
+#### Selected Text (Select/RadioGroup)
+
+```typescript
+// Assert select has specific selected text (display text, not value)
+await ctx.getByID("country").shouldHaveSelected("United States");
+
+// Assert radiogroup selection
+await ctx.getByID("payment").shouldHaveSelected("Credit Card");
+```
+
+#### Enabled/Disabled State
+
+```typescript
+// Assert widget is enabled
+await ctx.getByText("Submit").shouldBeEnabled();
+
+// Assert widget is disabled
+await ctx.getByText("Submit").shouldBeDisabled();
+
+// With retry - wait for button to become enabled
+await ctx.getByText("Submit").within(5000).shouldBeEnabled();
+```
+
+#### Widget Type
+
+```typescript
+// Assert widget has specific type
+await ctx.getByID("myWidget").shouldHaveType("button");
+await ctx.getByID("input").shouldHaveType("entry");
+await ctx.getByID("agree").shouldHaveType("checkbox");
+```
+
+#### Visibility (Fluent Style)
+
+```typescript
+// Assert widget is visible
+await ctx.getByID("modal").shouldBeVisible();
+
+// Assert widget is not visible
+await ctx.getByID("modal").shouldNotBeVisible();
+
+// With retry - wait for element to appear
+await ctx.getByID("notification").within(3000).shouldBeVisible();
+```
+
+### Complete Property Assertion Example
+
+```typescript
+import { browserTest } from 'tsyne';
+
+await browserTest(
+  'property assertions demo',
+  [
+    {
+      path: '/',
+      code: `
+        const { vbox, checkbox, slider, button, entry, label } = tsyne;
+
+        const agreeCheckbox = checkbox("I agree");
+        agreeCheckbox.id = "agree";
+
+        const volumeSlider = slider(0, 100);
+        volumeSlider.id = "volume";
+        volumeSlider.value = 50;
+
+        const nameEntry = entry("Your name");
+        nameEntry.id = "name";
+
+        const submitButton = button("Submit");
+        submitButton.id = "submit";
+        submitButton.disable();
+
+        const statusLabel = label("Disabled");
+        statusLabel.id = "status";
+
+        vbox(() => {
+          agreeCheckbox.onChange(() => {
+            if (agreeCheckbox.checked) {
+              submitButton.enable();
+              statusLabel.setText("Enabled");
+            } else {
+              submitButton.disable();
+              statusLabel.setText("Disabled");
+            }
+          });
+        });
+      `
+    }
+  ],
+  async (bt) => {
+    await bt.createBrowser('/');
+    const ctx = bt.getContext();
+
+    // Check initial states
+    await ctx.getByID("agree").shouldNotBeChecked();
+    await ctx.getByID("volume").shouldHaveValue(50);
+    await ctx.getByID("submit").shouldBeDisabled();
+    await ctx.getByID("status").shouldBe("Disabled");
+
+    // Type in entry
+    await ctx.getByID("name").type("John");
+    await ctx.getByID("name").shouldHaveValue("John");
+
+    // Check the checkbox
+    await ctx.getByID("agree").click();
+    await ctx.wait(50);
+
+    // Verify state changes
+    await ctx.getByID("agree").shouldBeChecked();
+    await ctx.getByID("submit").shouldBeEnabled();
+    await ctx.getByID("status").shouldBe("Enabled");
+
+    // Verify widget types
+    await ctx.getByID("agree").shouldHaveType("checkbox");
+    await ctx.getByID("submit").shouldHaveType("button");
+    await ctx.getByID("name").shouldHaveType("entry");
+
+    console.log('✓ Property assertions test passed');
+  }
+);
+```
+
 ### Complete Fluent Example
 
 Here's a comprehensive example using all fluent-selenium features:
@@ -536,13 +691,24 @@ This is the same approach used by fluent-selenium and is standard practice in UI
 
 ### Complete API Reference
 
-**Locator Methods:**
+**Locator Methods (Text Assertions):**
 - `within(timeout)` - Set retry timeout for subsequent actions
 - `without(timeout)` - Wait for element to disappear
 - `shouldBe(expected)` - Assert exact text match
 - `shouldContain(expected)` - Assert partial text match
 - `shouldMatch(pattern)` - Assert regex match
 - `shouldNotBe(expected)` - Assert text does not match
+
+**Locator Methods (Property Assertions):**
+- `shouldBeChecked()` - Assert checkbox is checked
+- `shouldNotBeChecked()` - Assert checkbox is not checked
+- `shouldHaveValue(value)` - Assert widget value (entry, slider, select)
+- `shouldHaveSelected(text)` - Assert selected text (select, radiogroup)
+- `shouldBeEnabled()` - Assert widget is enabled
+- `shouldBeDisabled()` - Assert widget is disabled
+- `shouldHaveType(type)` - Assert widget type
+- `shouldBeVisible()` - Assert widget is visible
+- `shouldNotBeVisible()` - Assert widget is not visible
 
 **Expect Methods:**
 - `toMatchText(pattern)` - Assert text matches regex
@@ -559,7 +725,7 @@ This is the same approach used by fluent-selenium and is standard practice in UI
 
 ### Examples
 
-See **[examples/fluent-api.test.ts](../examples/fluent-api.test.ts)** for comprehensive examples demonstrating all fluent-selenium features.
+See **[examples/fluent-api.test.ts](../examples/fluent-api.test.ts)** for comprehensive examples demonstrating text assertions and **[examples/fluent-properties.test.ts](../examples/fluent-properties.test.ts)** for property assertion examples.
 
 ## Browser-Specific Features
 

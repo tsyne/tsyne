@@ -195,6 +195,135 @@ export class Locator {
   }
 
   /**
+   * Fluent API: Assert checkbox is checked
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("agree").shouldBeChecked();
+   * await ctx.getByID("agree").within(5000).shouldBeChecked();
+   */
+  async shouldBeChecked(): Promise<Locator> {
+    const checked = await this.getCheckedWithRetry();
+    if (!checked) {
+      throw new Error('Expected checkbox to be checked but it was not');
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert checkbox is not checked
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("agree").shouldNotBeChecked();
+   */
+  async shouldNotBeChecked(): Promise<Locator> {
+    const checked = await this.getCheckedWithRetry();
+    if (checked) {
+      throw new Error('Expected checkbox to not be checked but it was');
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget has specific value (for entry, slider, select)
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("volume").shouldHaveValue(75);
+   * await ctx.getByID("country").shouldHaveValue("US");
+   */
+  async shouldHaveValue(expected: string | number): Promise<Locator> {
+    const actual = await this.getValueWithRetry();
+    const expectedStr = String(expected);
+    if (actual !== expectedStr) {
+      throw new Error(`Expected value to be "${expectedStr}" but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert select/radiogroup has specific selected text
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("country").shouldHaveSelected("United States");
+   */
+  async shouldHaveSelected(expected: string): Promise<Locator> {
+    const actual = await this.getSelectedWithRetry();
+    if (actual !== expected) {
+      throw new Error(`Expected selected value to be "${expected}" but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget is enabled (not disabled)
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByText("Submit").shouldBeEnabled();
+   */
+  async shouldBeEnabled(): Promise<Locator> {
+    const disabled = await this.getDisabledWithRetry();
+    if (disabled) {
+      throw new Error('Expected widget to be enabled but it was disabled');
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget is disabled
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByText("Submit").shouldBeDisabled();
+   */
+  async shouldBeDisabled(): Promise<Locator> {
+    const disabled = await this.getDisabledWithRetry();
+    if (!disabled) {
+      throw new Error('Expected widget to be disabled but it was enabled');
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget has specific type
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("myWidget").shouldHaveType("button");
+   */
+  async shouldHaveType(expected: string): Promise<Locator> {
+    const actual = await this.getTypeWithRetry();
+    if (actual !== expected) {
+      throw new Error(`Expected widget type to be "${expected}" but got "${actual}"`);
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget is visible
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("modal").shouldBeVisible();
+   */
+  async shouldBeVisible(): Promise<Locator> {
+    const widget = await this.findWithRetry();
+    if (!widget) {
+      throw new Error('Expected widget to be visible but it was not found');
+    }
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget is not visible
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("modal").shouldNotBeVisible();
+   */
+  async shouldNotBeVisible(): Promise<Locator> {
+    const widget = await this.findWithRetry();
+    if (widget) {
+      throw new Error('Expected widget to not be visible but it was found');
+    }
+    return this;
+  }
+
+  /**
    * Get text with retry support (respects withinTimeout)
    */
   private async getTextWithRetry(): Promise<string> {
@@ -235,6 +364,171 @@ export class Locator {
     }
 
     return null; // Timeout
+  }
+
+  /**
+   * Get checked state with retry support (respects withinTimeout)
+   */
+  private async getCheckedWithRetry(): Promise<boolean> {
+    if (!this.withinTimeout) {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      }
+      const response = await this.bridge.send('getWidgetState', { widgetId });
+      return response.checked || false;
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        const widgetId = await this.find();
+        if (!widgetId) {
+          throw new Error('Widget not found');
+        }
+        const response = await this.bridge.send('getWidgetState', { widgetId });
+        return response.checked || false;
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get checked state');
+  }
+
+  /**
+   * Get value with retry support (respects withinTimeout)
+   */
+  private async getValueWithRetry(): Promise<string> {
+    if (!this.withinTimeout) {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      }
+      const response = await this.bridge.send('getWidgetState', { widgetId });
+      return String(response.value || response.text || '');
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        const widgetId = await this.find();
+        if (!widgetId) {
+          throw new Error('Widget not found');
+        }
+        const response = await this.bridge.send('getWidgetState', { widgetId });
+        return String(response.value || response.text || '');
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get value');
+  }
+
+  /**
+   * Get selected value with retry support (respects withinTimeout)
+   */
+  private async getSelectedWithRetry(): Promise<string> {
+    if (!this.withinTimeout) {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      }
+      const response = await this.bridge.send('getWidgetState', { widgetId });
+      return response.selected || '';
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        const widgetId = await this.find();
+        if (!widgetId) {
+          throw new Error('Widget not found');
+        }
+        const response = await this.bridge.send('getWidgetState', { widgetId });
+        return response.selected || '';
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get selected value');
+  }
+
+  /**
+   * Get disabled state with retry support (respects withinTimeout)
+   */
+  private async getDisabledWithRetry(): Promise<boolean> {
+    if (!this.withinTimeout) {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      }
+      const response = await this.bridge.send('getWidgetState', { widgetId });
+      return response.disabled || false;
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        const widgetId = await this.find();
+        if (!widgetId) {
+          throw new Error('Widget not found');
+        }
+        const response = await this.bridge.send('getWidgetState', { widgetId });
+        return response.disabled || false;
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get disabled state');
+  }
+
+  /**
+   * Get widget type with retry support (respects withinTimeout)
+   */
+  private async getTypeWithRetry(): Promise<string> {
+    if (!this.withinTimeout) {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      }
+      const response = await this.bridge.send('getWidgetState', { widgetId });
+      return response.type || '';
+    }
+
+    const startTime = Date.now();
+    let lastError: Error | null = null;
+
+    while (Date.now() - startTime < this.withinTimeout) {
+      try {
+        const widgetId = await this.find();
+        if (!widgetId) {
+          throw new Error('Widget not found');
+        }
+        const response = await this.bridge.send('getWidgetState', { widgetId });
+        return response.type || '';
+      } catch (error) {
+        lastError = error as Error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    throw lastError || new Error('Failed to get widget type');
   }
 }
 
