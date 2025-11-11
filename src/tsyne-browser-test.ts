@@ -194,6 +194,20 @@ vbox(() => {
   }
 
   /**
+   * Wait for navigation to complete (like Selenium's waitForNavigation)
+   * Useful after clicking links or buttons that trigger page navigation
+   *
+   * @param timeoutMs - Maximum time to wait for navigation (default: test timeout)
+   * @example
+   * await ctx.getByText("Submit").click();
+   * await browserTest.waitForNavigation();
+   * await ctx.expect(ctx.getByText("Success")).toBeVisible();
+   */
+  async waitForNavigation(timeoutMs?: number): Promise<void> {
+    await this.waitForPageLoad(timeoutMs);
+  }
+
+  /**
    * Get the test context for interacting with widgets
    */
   getContext(): TestContext {
