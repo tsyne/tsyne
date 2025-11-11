@@ -85,9 +85,7 @@ export class Button extends Widget {
     if (onClick) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      console.log(`Registering button "${text}" with callback ID: ${callbackId}`);
       ctx.bridge.registerEventHandler(callbackId, () => {
-        console.log(`Button "${text}" clicked! Callback ID: ${callbackId}`);
         onClick();
       });
     }

@@ -33,7 +33,20 @@ export class BridgeConnection {
   private readyResolve?: () => void;
 
   constructor(testMode: boolean = false) {
-    const bridgePath = path.join(__dirname, '..', 'bin', 'tsyne-bridge');
+    // Detect if running from pkg
+    const isPkg = typeof (process as any).pkg !== 'undefined';
+
+    let bridgePath: string;
+    if (isPkg) {
+      // When running from pkg, look for bridge next to the executable
+      const execDir = path.dirname(process.execPath);
+      bridgePath = path.join(execDir, 'tsyne-bridge');
+    } else {
+      // Normal mode: look in bin/ directory relative to project root
+      // __dirname will be dist/src, so go up two levels to get to project root
+      bridgePath = path.join(__dirname, '..', '..', 'bin', 'tsyne-bridge');
+    }
+
     const args = testMode ? ['--headless'] : [];
     this.process = spawn(bridgePath, args, {
       stdio: ['pipe', 'pipe', 'inherit']

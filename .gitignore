@@ -9,3 +9,4 @@ bin/
 .vscode/
 .idea/
 test-failures/
+pkg/

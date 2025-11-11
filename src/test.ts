@@ -222,4 +222,24 @@ export class TestContext {
   expect(locator: Locator): Expect {
     return new Expect(locator);
   }
+
+  /**
+   * Find a widget by text (convenience method for backward compatibility)
+   * Returns widget info or null if not found
+   */
+  async findWidget(options: { text: string }): Promise<WidgetInfo | null> {
+    const locator = this.getByText(options.text);
+    const widgetId = await locator.find();
+    if (!widgetId) {
+      return null;
+    }
+    return await locator.getInfo();
+  }
+
+  /**
+   * Click a widget by ID (convenience method for backward compatibility)
+   */
+  async clickWidget(widgetId: string): Promise<void> {
+    await this.bridge.send('clickWidget', { widgetId });
+  }
 }

@@ -5,7 +5,7 @@
  * Run with: npm run build && node examples/web-features.test.js
  */
 
-const { browserTest } = require('../dist/index.js');
+const { browserTest, runBrowserTests } = require('../dist/src/index.js');
 
 console.log('Starting Web Features Browser Tests...\n');
 
@@ -448,4 +448,13 @@ browserTest(
   }
 );
 
-console.log('\n✅ All Web Features Browser Tests Passed!\n');
+// Run all collected tests
+(async () => {
+  try {
+    await runBrowserTests();
+    console.log('\n✅ All Web Features Browser Tests Passed!\n');
+  } catch (error) {
+    console.error('\n❌ Browser tests failed:', error);
+    process.exit(1);
+  }
+})();

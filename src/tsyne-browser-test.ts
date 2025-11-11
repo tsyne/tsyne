@@ -312,8 +312,20 @@ export async function runBrowserTests(): Promise<void> {
   let passed = 0;
   let failed = 0;
 
+  // Check for TSYNE_HEADED environment variable
+  const headed = process.env.TSYNE_HEADED === '1';
+
+  if (headed) {
+    console.log('Running in HEADED mode - browser windows will be visible\n');
+  }
+
   for (const test of collectedTests) {
-    const tsyneBrowserTest = new TsyneBrowserTest(test.options);
+    // Merge environment variable with test options (env var takes precedence)
+    const options: BrowserTestOptions = {
+      ...test.options,
+      headed: headed || test.options.headed
+    };
+    const tsyneBrowserTest = new TsyneBrowserTest(options);
     tsyneBrowserTest.addPages(test.pages);
 
     console.log(`Running browser test: ${test.name}`);
@@ -349,6 +361,11 @@ export async function runBrowserTests(): Promise<void> {
         console.error(`  Failed to capture screenshot: ${screenshotError instanceof Error ? screenshotError.message : String(screenshotError)}`);
       }
     } finally {
+      // In headed mode, wait before cleanup so user can see the result
+      if (options.headed) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
       await tsyneBrowserTest.cleanup();
       // Wait a bit between tests to avoid global context conflicts
       await new Promise(resolve => setTimeout(resolve, 200));
