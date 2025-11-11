@@ -85,14 +85,17 @@ Tsyne's API is designed to be elegant and terse, following the pattern described
 ### Calculator Example
 
 ```typescript
-import { app, window, vbox, hbox, button, label } from 'tsyne';
+// Calculator example demonstrating Tsyne's pseudo-declarative DSL
+import { app } from 'tsyne';
 
 let display: any;
 let currentValue = "0";
+let operator: string | null = null;
+let previousValue = "0";
 
 function updateDisplay(value: string) {
   currentValue = value;
-  display.setText(value);
+  if (display) display.setText(value);
 }
 
 function handleNumber(num: string) {
@@ -100,34 +103,43 @@ function handleNumber(num: string) {
   updateDisplay(newValue);
 }
 
-app({ title: "Calculator" }, () => {
-  window({ title: "Calculator" }, () => {
-    vbox(() => {
-      display = label("0");
+function handleOperator(op: string) {
+  previousValue = currentValue;
+  operator = op;
+}
 
-      hbox(() => {
-        button("7", () => handleNumber("7"));
-        button("8", () => handleNumber("8"));
-        button("9", () => handleNumber("9"));
-      });
+function calculate() {
+  if (!operator) return;
+  const result = eval(`${parseFloat(previousValue)} ${operator} ${parseFloat(currentValue)}`);
+  updateDisplay(isFinite(result) ? result.toString() : "Error");
+  operator = null;
+}
 
-      hbox(() => {
-        button("4", () => handleNumber("4"));
-        button("5", () => handleNumber("5"));
-        button("6", () => handleNumber("6"));
-      });
+app({ title: "Calculator" }, (app) => {
+  app.window({ title: "Calculator" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        display = app.label("0");
 
-      hbox(() => {
-        button("1", () => handleNumber("1"));
-        button("2", () => handleNumber("2"));
-        button("3", () => handleNumber("3"));
+        app.grid(4, () => {
+          [..."789"].forEach(n => app.button(n, () => handleNumber(n)));
+          app.button("÷", () => handleOperator("/"));
+          [..."456"].forEach(n => app.button(n, () => handleNumber(n)));
+          app.button("×", () => handleOperator("*"));
+          [..."123"].forEach(n => app.button(n, () => handleNumber(n)));
+          app.button("-", () => handleOperator("-"));
+          app.button("0", () => handleNumber("0"));
+          app.button("=", () => calculate());
+          app.button("+", () => handleOperator("+"));
+        });
       });
     });
+    win.show();
   });
 });
 ```
 
-**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (109 lines, monolithic pattern)
+**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (69 substantive lines, monolithic pattern)
 
 ### Counter Example
 

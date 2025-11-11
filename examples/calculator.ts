@@ -1,7 +1,7 @@
 import { app, window, vbox, grid, button, label, styles, FontStyle } from '../src';
 // In production: import { app, window, vbox, grid, button, label, styles, FontStyle } from 'tsyne';
 
-// Calculator example demonstrating Tsyne's declarative DSL
+// Calculator example demonstrating Tsyne's pseudo-declarative DSL
 // Pattern described at https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature/
 
 // Define calculator styles
@@ -52,17 +52,8 @@ function calculate() {
   const current = parseFloat(currentValue);
   if (!operator) return;
 
-  // Handle division by zero
-  if (operator === '/' && current === 0) {
-    updateDisplay("Error");
-    operator = null;
-    shouldResetDisplay = true;
-    return;
-  }
-
   const result = eval(`${prev} ${operator} ${current}`);
-
-  updateDisplay(result.toString());
+  updateDisplay(isFinite(result) ? result.toString() : "Error");
   operator = null;
   shouldResetDisplay = true;
 }
@@ -84,17 +75,11 @@ export function buildCalculator(app: any) {
 
       // Number pad and operators - 4x4 grid for even button sizing
       app.grid(4, () => {
-        app.button("7", () => handleNumber("7"));
-        app.button("8", () => handleNumber("8"));
-        app.button("9", () => handleNumber("9"));
+        [..."789"].forEach(n => app.button(n, () => handleNumber(n)));
         app.button("÷", () => handleOperator("/"));
-        app.button("4", () => handleNumber("4"));
-        app.button("5", () => handleNumber("5"));
-        app.button("6", () => handleNumber("6"));
+        [..."456"].forEach(n => app.button(n, () => handleNumber(n)));
         app.button("×", () => handleOperator("*"));
-        app.button("1", () => handleNumber("1"));
-        app.button("2", () => handleNumber("2"));
-        app.button("3", () => handleNumber("3"));
+        [..."123"].forEach(n => app.button(n, () => handleNumber(n)));
         app.button("-", () => handleOperator("-"));
         app.button("0", () => handleNumber("0"));
         app.button("Clr", () => clear());
