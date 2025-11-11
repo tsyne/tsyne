@@ -28,16 +28,19 @@ npm install tsyne
 ### TypeScript
 
 ```typescript
-import { app, window, vbox, button, label } from 'tsyne';
+import { app } from 'tsyne';
 
-app({ title: "Hello Tsyne" }, () => {
-  window({ title: "Hello World" }, () => {
-    vbox(() => {
-      label("Welcome to Tsyne!");
-      button("Click Me", () => {
-        console.log("Button clicked!");
+app({ title: "Hello Tsyne" }, (app) => {
+  app.window({ title: "Hello Tsyne" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        app.label("Welcome to Tsyne!");
+        app.button("Click Me", () => {
+          console.log("Button clicked!");
+        });
       });
     });
+    win.show();
   });
 });
 ```
@@ -45,16 +48,19 @@ app({ title: "Hello Tsyne" }, () => {
 ### JavaScript (CommonJS)
 
 ```javascript
-const { app, window, vbox, button, label } = require('tsyne');
+const { app } = require('tsyne');
 
-app({ title: "Hello Tsyne" }, () => {
-  window({ title: "Hello World" }, () => {
-    vbox(() => {
-      label("Welcome to Tsyne!");
-      button("Click Me", () => {
-        console.log("Button clicked!");
+app({ title: "Hello Tsyne" }, (app) => {
+  app.window({ title: "Hello Tsyne" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        app.label("Welcome to Tsyne!");
+        app.button("Click Me", () => {
+          console.log("Button clicked!");
+        });
       });
     });
+    win.show();
   });
 });
 ```
@@ -62,16 +68,19 @@ app({ title: "Hello Tsyne" }, () => {
 ### JavaScript (ES Modules)
 
 ```javascript
-import { app, window, vbox, button, label } from 'tsyne';
+import { app } from 'tsyne';
 
-app({ title: "Hello Tsyne" }, () => {
-  window({ title: "Hello World" }, () => {
-    vbox(() => {
-      label("Welcome to Tsyne!");
-      button("Click Me", () => {
-        console.log("Button clicked!");
+app({ title: "Hello Tsyne" }, (app) => {
+  app.window({ title: "Hello Tsyne" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        app.label("Welcome to Tsyne!");
+        app.button("Click Me", () => {
+          console.log("Button clicked!");
+        });
       });
     });
+    win.show();
   });
 });
 ```
@@ -144,7 +153,7 @@ app({ title: "Calculator" }, (app) => {
 ### Counter Example
 
 ```typescript
-import { app, window, vbox, hbox, button, label } from 'tsyne';
+import { app } from 'tsyne';
 
 let countLabel: any;
 let count = 0;
@@ -153,17 +162,20 @@ function updateCounter() {
   countLabel.setText(`Count: ${count}`);
 }
 
-app({ title: "Counter" }, () => {
-  window({ title: "Simple Counter" }, () => {
-    vbox(() => {
-      countLabel = label("Count: 0");
+app({ title: "Counter" }, (app) => {
+  app.window({ title: "Counter" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        countLabel = app.label("Count: 0");
 
-      hbox(() => {
-        button("-", () => { count--; updateCounter(); });
-        button("Reset", () => { count = 0; updateCounter(); });
-        button("+", () => { count++; updateCounter(); });
+        app.hbox(() => {
+          app.button("-", () => { count--; updateCounter(); });
+          app.button("Reset", () => { count = 0; updateCounter(); });
+          app.button("+", () => { count++; updateCounter(); });
+        });
       });
     });
+    win.show();
   });
 });
 ```
@@ -937,23 +949,23 @@ const theme = await myApp.getTheme();
 ### Example: Theme Switcher
 
 ```typescript
-import { app, window, vbox, button, label } from 'tsyne';
+import { app } from 'tsyne';
 
 let themeLabel: any;
 
-app({ title: 'Theme Demo' }, () => {
-  window({ title: 'Theme Switcher' }, (win) => {
+app({ title: 'Theme Demo' }, (app) => {
+  app.window({ title: 'Theme Demo' }, (win) => {
     win.setContent(() => {
-      vbox(() => {
-        themeLabel = label('Current Theme: Light');
+      app.vbox(() => {
+        themeLabel = app.label('Current Theme: Light');
 
-        button('Dark Theme', async () => {
+        app.button('Dark Theme', async () => {
           const myApp = (win as any).ctx.bridge;
           await myApp.send('setTheme', { theme: 'dark' });
           themeLabel.setText('Current Theme: Dark');
         });
 
-        button('Light Theme', async () => {
+        app.button('Light Theme', async () => {
           const myApp = (win as any).ctx.bridge;
           await myApp.send('setTheme', { theme: 'light' });
           themeLabel.setText('Current Theme: Light');
@@ -978,14 +990,14 @@ The styling system works similarly to CSS - define styles for widget types, and 
 
 **Without styles** (`examples/form-unstyled.ts`):
 ```typescript
-import { app, window, vbox, label, button } from 'tsyne';
+import { app } from 'tsyne';
 
-app({ title: 'My App' }, () => {
-  window({ title: 'Form' }, (win) => {
+app({ title: 'Form Demo' }, (app) => {
+  app.window({ title: 'Form Demo' }, (win) => {
     win.setContent(() => {
-      vbox(() => {
-        label('Registration Form');
-        button('Submit', () => {});
+      app.vbox(() => {
+        app.label('Registration Form');
+        app.button('Submit', () => {});
       });
     });
     win.show();
@@ -995,15 +1007,15 @@ app({ title: 'My App' }, () => {
 
 **With styles** (`examples/form-styled.ts`):
 ```typescript
-import { app, window, vbox, label, button } from 'tsyne';
+import { app } from 'tsyne';
 import './form-styles';  // ← Only difference: import stylesheet!
 
-app({ title: 'My App' }, () => {
-  window({ title: 'Form' }, (win) => {
+app({ title: 'Form Demo' }, (app) => {
+  app.window({ title: 'Form Demo' }, (win) => {
     win.setContent(() => {
-      vbox(() => {
-        label('Registration Form');  // Automatically styled!
-        button('Submit', () => {});  // Automatically styled!
+      app.vbox(() => {
+        app.label('Registration Form');  // Automatically styled!
+        app.button('Submit', () => {});  // Automatically styled!
       });
     });
     win.show();
@@ -1100,17 +1112,17 @@ styles({
 
 **main.ts** (application):
 ```typescript
-import { app, window, vbox, label, entry, button } from 'tsyne';
+import { app } from 'tsyne';
 import './styles';  // Import stylesheet - styles auto-apply!
 
-app({ title: 'Styled App' }, () => {
-  window({ title: 'My Form' }, (win) => {
+app({ title: 'Styled App' }, (app) => {
+  app.window({ title: 'Styled App' }, (win) => {
     win.setContent(() => {
-      vbox(() => {
-        label('Enter your details:');
-        entry('Name');
-        entry('Email');
-        button('Submit', () => {});
+      app.vbox(() => {
+        app.label('Enter your details:');
+        app.entry('Name');
+        app.entry('Email');
+        app.button('Submit', () => {});
       });
     });
     win.show();
@@ -1775,7 +1787,7 @@ Tsyne supports:
 #### Observable State
 
 ```typescript
-import { ObservableState } from 'tsyne';
+import { app, ObservableState } from 'tsyne';
 
 const count = new ObservableState(0);
 let countLabel: any;
@@ -1785,12 +1797,15 @@ count.subscribe((newValue) => {
   countLabel?.setText(`Count: ${newValue}`);
 });
 
-app({ title: "State Demo" }, () => {
-  window({ title: "Observable State" }, () => {
-    vbox(() => {
-      countLabel = label("Count: 0");
-      button("Increment", () => count.set(count.get() + 1));
+app({ title: "State Demo" }, (app) => {
+  app.window({ title: "State Demo" }, (win) => {
+    win.setContent(() => {
+      app.vbox(() => {
+        countLabel = app.label("Count: 0");
+        app.button("Increment", () => count.set(count.get() + 1));
+      });
     });
+    win.show();
   });
 });
 ```
