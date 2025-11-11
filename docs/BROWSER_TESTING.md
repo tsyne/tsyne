@@ -199,6 +199,368 @@ await ctx.expect(locator).not.toBeVisible();
 - **`toExist()`**: Assert widget exists
 - **`not`**: Negate any expectation
 
+## Fluent-Selenium Style API
+
+TsyneBrowserTest includes a complete [fluent-selenium](https://github.com/SeleniumHQ/fluent-selenium) inspired API for elegant, expressive test writing. This API provides retry mechanisms, fluent assertions, and method chaining that reads like natural language.
+
+### Overview
+
+Fluent-selenium style methods allow you to write tests that are:
+- **Self-documenting**: Read like English sentences
+- **Robust**: Automatic retry logic handles timing issues
+- **Concise**: Chain methods for compact test code
+- **Expressive**: Clear intent without boilerplate
+
+```typescript
+// Traditional style
+const locator = ctx.getByID("status");
+await new Promise(resolve => setTimeout(resolve, 5000));
+const text = await locator.getText();
+if (text !== "Success") throw new Error("Wrong text");
+
+// Fluent-selenium style
+await ctx.getByID("status").within(5000).shouldBe("Success");
+```
+
+### Retry with within()
+
+The `within()` method retries element location for a specified period. This is essential for handling delayed UI updates, animations, or async operations.
+
+```typescript
+// Wait up to 5 seconds for element to appear and become clickable
+await ctx.getByText("Submit").within(5000).click();
+
+// Wait for text to update after async operation
+await ctx.getByID("status").within(3000).shouldBe("Complete");
+
+// Combine with type action
+await ctx.getByID("search").within(2000).type("query");
+```
+
+**How it works:**
+- Polls every 100ms for the element
+- Returns immediately when element is found
+- Throws error if timeout is reached
+- Applies to all subsequent actions (click, type, getText, etc.)
+
+**Use cases:**
+- Elements that appear after async data loading
+- UI updates triggered by user actions
+- Animations or transitions
+- Delayed rendering
+
+### Wait for Disappearance with without()
+
+The `without()` method waits for an element to disappear from the DOM. Perfect for loading indicators, modals, or temporary messages.
+
+```typescript
+// Wait for loading spinner to disappear
+await ctx.getByText("Loading...").without(5000);
+
+// Wait for modal to close
+await ctx.getByID("modal").without(3000);
+
+// Wait for error message to fade out
+await ctx.getByText("Error").without(2000);
+```
+
+**How it works:**
+- Polls every 100ms checking if element still exists
+- Returns immediately when element is not found
+- Throws error if element is still visible after timeout
+
+**Use cases:**
+- Loading indicators
+- Modal dialogs
+- Toast notifications
+- Temporary status messages
+
+### Fluent Assertions
+
+Fluent assertions allow you to assert text content directly on locators, with automatic retry support. All fluent assertions return the locator for further chaining.
+
+#### shouldBe() - Exact Text Match
+
+```typescript
+// Assert exact text (retries automatically if within() was used)
+await ctx.getByID("status").shouldBe("Success");
+
+// With retry
+await ctx.getByID("counter").within(5000).shouldBe("Count: 10");
+
+// Chain multiple assertions
+await ctx.getByID("message")
+  .within(3000)
+  .shouldBe("Processing complete")
+  .then(async (loc) => {
+    // Continue with more actions
+  });
+```
+
+#### shouldContain() - Partial Text Match
+
+```typescript
+// Assert text contains substring
+await ctx.getByID("message").shouldContain("success");
+
+// With retry for delayed content
+await ctx.getByID("result").within(5000).shouldContain("found 10 items");
+
+// Case-sensitive substring matching
+await ctx.getByID("error").shouldContain("404");
+```
+
+#### shouldMatch() - Regex Pattern Match
+
+```typescript
+// Assert text matches regex pattern
+await ctx.getByID("email").shouldMatch(/^.+@.+\..+$/);
+
+// Validate numeric formats
+await ctx.getByID("price").shouldMatch(/^\$\d+\.\d{2}$/);
+
+// With retry
+await ctx.getByID("timestamp").within(3000).shouldMatch(/^\d{4}-\d{2}-\d{2}/);
+```
+
+#### shouldNotBe() - Negative Assertion
+
+```typescript
+// Assert text does NOT equal value
+await ctx.getByID("status").shouldNotBe("Error");
+
+// Verify state changed
+await ctx.getByID("status").shouldNotBe("Pending");
+
+// With retry
+await ctx.getByID("loading").within(5000).shouldNotBe("Loading...");
+```
+
+### Complete Fluent Example
+
+Here's a comprehensive example using all fluent-selenium features:
+
+```typescript
+import { browserTest } from 'tsyne';
+
+await browserTest(
+  'fluent API demonstration',
+  [
+    {
+      path: '/',
+      code: `
+        const { vbox, button, label } = tsyne;
+
+        const statusLabel = label("Ready");
+        statusLabel.id = "status";
+
+        const loadingLabel = label("");
+        loadingLabel.id = "loading";
+
+        vbox(() => {
+          button("Process Data", () => {
+            loadingLabel.setText("Loading...");
+            statusLabel.setText("Processing");
+
+            setTimeout(() => {
+              loadingLabel.setText("");
+              statusLabel.setText("Complete: 10 items processed");
+            }, 2000);
+          });
+        });
+      `
+    }
+  ],
+  async (bt) => {
+    await bt.createBrowser('/');
+    const ctx = bt.getContext();
+
+    // Initial state check
+    await ctx.getByID("status").shouldBe("Ready");
+
+    // Click button to start processing
+    await ctx.getByText("Process Data").click();
+
+    // Wait for loading indicator to appear
+    await ctx.getByID("loading").within(1000).shouldBe("Loading...");
+
+    // Wait for loading to disappear (up to 5 seconds)
+    await ctx.getByID("loading").without(5000);
+
+    // Verify final status with multiple assertion styles
+    await ctx.getByID("status").within(1000).shouldContain("Complete");
+    await ctx.getByID("status").shouldMatch(/\d+ items processed/);
+    await ctx.getByID("status").shouldNotBe("Ready");
+
+    console.log('✓ Fluent API test passed');
+  }
+);
+```
+
+### Enhanced Expect Assertions
+
+In addition to fluent assertions, TestContext provides enhanced `expect()` methods for traditional assertion style:
+
+```typescript
+const ctx = bt.getContext();
+const locator = ctx.getByID("status");
+
+// Positive assertions
+await ctx.expect(locator).toHaveText("Success");
+await ctx.expect(locator).toContainText("Success");
+await ctx.expect(locator).toMatchText(/^Success/);
+await ctx.expect(locator).toBeVisible();
+await ctx.expect(locator).toExist();
+
+// Negative assertions
+await ctx.expect(locator).toNotHaveText("Error");
+await ctx.expect(locator).toNotContainText("fail");
+await ctx.expect(locator).toNotMatchText(/^Error/);
+await ctx.expect(locator).toNotBeVisible();
+await ctx.expect(locator).toNotExist();
+
+// Count assertions
+await ctx.expect(ctx.getByType("button")).toHaveCount(3);
+await ctx.expect(ctx.getByType("button")).toHaveCountGreaterThan(2);
+await ctx.expect(ctx.getByType("button")).toHaveCountLessThan(10);
+```
+
+### Navigation Waiting
+
+Use `waitForNavigation()` after clicks that trigger page navigation:
+
+```typescript
+// Traditional approach - manual delay
+await ctx.getByText("Next Page").click();
+await new Promise(resolve => setTimeout(resolve, 200));
+bt.assertUrl('/next');
+
+// Fluent approach - semantic waiting
+await ctx.getByText("Next Page").click();
+await bt.waitForNavigation();
+bt.assertUrl('/next');
+
+// With custom timeout
+await ctx.getByText("Slow Page").click();
+await bt.waitForNavigation(10000); // Wait up to 10 seconds
+```
+
+### Fluent vs Traditional Style
+
+Both styles are supported - choose based on your preference and team conventions:
+
+**Fluent Style** (fluent-selenium inspired):
+```typescript
+// Concise, reads like English
+await ctx.getByID("status").within(5000).shouldBe("Success");
+await ctx.getByText("Loading...").without(3000);
+await ctx.getByID("email").shouldMatch(/^.+@.+$/);
+```
+
+**Traditional Style** (Playwright/Jest inspired):
+```typescript
+// More explicit, familiar to Playwright users
+await ctx.expect(ctx.getByID("status")).toHaveText("Success");
+await ctx.expect(ctx.getByText("Loading...")).toNotBeVisible();
+await ctx.expect(ctx.getByID("email")).toMatchText(/^.+@.+$/);
+```
+
+**When to use each:**
+- **Fluent**: Quick tests, chaining actions, expressive intent
+- **Traditional**: Complex assertions, external assertion libraries, team preference
+
+### Best Practices
+
+#### 1. Use within() for Delayed Content
+
+```typescript
+// ✓ Good - handles async updates
+await ctx.getByID("status").within(5000).shouldBe("Complete");
+
+// ✗ Bad - may fail on slow machines
+await ctx.getByID("status").shouldBe("Complete");
+```
+
+#### 2. Use without() for Loading States
+
+```typescript
+// ✓ Good - waits for loading to finish
+await ctx.getByText("Loading...").without(5000);
+await ctx.getByID("results").shouldContain("10 items");
+
+// ✗ Bad - may check results while still loading
+await new Promise(resolve => setTimeout(resolve, 2000));
+await ctx.getByID("results").shouldContain("10 items");
+```
+
+#### 3. Chain Fluent Methods
+
+```typescript
+// ✓ Good - concise and readable
+await ctx.getByID("status")
+  .within(5000)
+  .shouldContain("Complete")
+  .then(async () => {
+    await bt.waitForNavigation();
+  });
+
+// ✗ Verbose - multiple statements
+const locator = ctx.getByID("status").within(5000);
+await locator.shouldContain("Complete");
+await bt.waitForNavigation();
+```
+
+#### 4. Use Appropriate Timeouts
+
+```typescript
+// ✓ Good - reasonable timeouts for operations
+await ctx.getByText("Submit").within(3000).click();    // 3s for form
+await ctx.getByID("loading").without(10000);           // 10s for API call
+await ctx.getByID("result").within(2000).shouldBe("OK"); // 2s for update
+
+// ✗ Bad - too short or too long
+await ctx.getByText("Submit").within(100).click();     // Too short
+await ctx.getByID("loading").without(60000);           // Too long
+```
+
+### Implementation Note
+
+The fluent-selenium API uses **busy-wait loops** internally (polling every 100ms). While this approach is not recommended for production web-scale code, it's perfectly appropriate for testing on the same machine or over a trusted network. The implementation prioritizes:
+
+1. **Test reliability**: Automatic retry handles timing issues
+2. **Expressiveness**: Clear, readable test code
+3. **Simplicity**: Easy to understand and maintain
+4. **Familiarity**: Matches fluent-selenium patterns
+
+This is the same approach used by fluent-selenium and is standard practice in UI testing frameworks.
+
+### Complete API Reference
+
+**Locator Methods:**
+- `within(timeout)` - Set retry timeout for subsequent actions
+- `without(timeout)` - Wait for element to disappear
+- `shouldBe(expected)` - Assert exact text match
+- `shouldContain(expected)` - Assert partial text match
+- `shouldMatch(pattern)` - Assert regex match
+- `shouldNotBe(expected)` - Assert text does not match
+
+**Expect Methods:**
+- `toMatchText(pattern)` - Assert text matches regex
+- `toNotHaveText(text)` - Assert text does not equal
+- `toNotContainText(text)` - Assert text does not contain
+- `toNotMatchText(pattern)` - Assert text does not match regex
+- `toNotBeVisible()` - Assert element is not visible
+- `toNotExist()` - Assert element does not exist
+- `toHaveCountGreaterThan(count)` - Assert count comparison
+- `toHaveCountLessThan(count)` - Assert count comparison
+
+**Browser Methods:**
+- `waitForNavigation(timeout?)` - Wait for page navigation to complete
+
+### Examples
+
+See **[examples/fluent-api.test.ts](../examples/fluent-api.test.ts)** for comprehensive examples demonstrating all fluent-selenium features.
+
 ## Browser-Specific Features
 
 ### Navigation
