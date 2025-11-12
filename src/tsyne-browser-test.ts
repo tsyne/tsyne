@@ -2,6 +2,8 @@ import { Browser } from './browser';
 import { TestContext } from './test';
 import http from 'http';
 import { AddressInfo } from 'net';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface BrowserTestOptions {
   headed?: boolean;
@@ -46,26 +48,63 @@ export class TsyneBrowserTest {
 
   /**
    * Start the test HTTP server
+   * Serves both TypeScript pages and static assets (images, etc.)
    */
   private async startServer(): Promise<number> {
     return new Promise((resolve, reject) => {
       this.server = http.createServer((req, res) => {
         const url = req.url || '/';
-        const pageCode = this.pages.get(url);
 
+        // First, check if it's a registered page
+        const pageCode = this.pages.get(url);
         if (pageCode) {
           res.writeHead(200, { 'Content-Type': 'text/typescript' });
           res.end(pageCode);
-        } else {
-          res.writeHead(404, { 'Content-Type': 'text/typescript' });
-          res.end(`
+          return;
+        }
+
+        // Try to serve as static file from examples directory
+        // URLs like /assets/test-image.svg map to examples/assets/test-image.svg
+        const filePath = path.join(process.cwd(), 'examples', url);
+
+        // Check if file exists
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          // Determine MIME type based on file extension
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes: Record<string, string> = {
+            '.svg': 'image/svg+xml',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.bmp': 'image/bmp',
+            '.webp': 'image/webp',
+            '.ico': 'image/x-icon'
+          };
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+          // Read and serve the file
+          fs.readFile(filePath, (err, data) => {
+            if (err) {
+              res.writeHead(500, { 'Content-Type': 'text/plain' });
+              res.end('Error reading file');
+            } else {
+              res.writeHead(200, { 'Content-Type': contentType });
+              res.end(data);
+            }
+          });
+          return;
+        }
+
+        // Neither page nor file found - return 404
+        res.writeHead(404, { 'Content-Type': 'text/typescript' });
+        res.end(`
 const { vbox, label } = tsyne;
 vbox(() => {
   label('404 - Page Not Found');
   label('URL: ' + browserContext.currentUrl);
 });
-          `);
-        }
+        `);
       });
 
       this.server.listen(this.options.port, () => {
@@ -297,6 +336,7 @@ const collectedTests: Array<{
   pages: TestPage[];
   testFn: (browserTest: TsyneBrowserTest) => Promise<void>;
   options: BrowserTestOptions;
+  only?: boolean;
 }> = [];
 
 /**
@@ -308,8 +348,21 @@ export function browserTest(
   testFn: (browserTest: TsyneBrowserTest) => Promise<void>,
   options: BrowserTestOptions = {}
 ): void {
-  collectedTests.push({ name, pages, testFn, options });
+  collectedTests.push({ name, pages, testFn, options, only: false });
 }
+
+/**
+ * Register a browser test to run exclusively (skips other tests)
+ * Use this like browserTest.only() to run a single test during development
+ */
+browserTest.only = function(
+  name: string,
+  pages: TestPage[],
+  testFn: (browserTest: TsyneBrowserTest) => Promise<void>,
+  options: BrowserTestOptions = {}
+): void {
+  collectedTests.push({ name, pages, testFn, options, only: true });
+};
 
 /**
  * Helper to describe a browser test suite
@@ -333,7 +386,43 @@ export async function runBrowserTests(): Promise<void> {
     console.log('Running in HEADED mode - browser windows will be visible\n');
   }
 
-  for (const test of collectedTests) {
+  // Filter tests based on .only() or TSYNE_TEST_FILTER environment variable
+  let testsToRun = collectedTests;
+
+  // Check if any tests have .only flag - if so, only run those
+  const onlyTests = collectedTests.filter(t => t.only);
+  if (onlyTests.length > 0) {
+    testsToRun = onlyTests;
+    console.log(`Running ${onlyTests.length} test(s) marked with .only()\n`);
+  } else {
+    // Check for TSYNE_TEST_FILTER environment variable
+    const testFilter = process.env.TSYNE_TEST_FILTER;
+    if (testFilter) {
+      testsToRun = collectedTests.filter(t => {
+        // Support both substring match and regex
+        try {
+          const regex = new RegExp(testFilter, 'i');
+          return regex.test(t.name);
+        } catch {
+          // If not a valid regex, do substring match
+          return t.name.toLowerCase().includes(testFilter.toLowerCase());
+        }
+      });
+
+      if (testsToRun.length === 0) {
+        console.error(`No tests match filter: "${testFilter}"`);
+        process.exit(1);
+      }
+
+      console.log(`Running ${testsToRun.length} test(s) matching filter: "${testFilter}"\n`);
+      testsToRun.forEach(t => console.log(`  - ${t.name}`));
+      console.log('');
+    }
+  }
+
+  const skipped = collectedTests.length - testsToRun.length;
+
+  for (const test of testsToRun) {
     // Merge environment variable with test options (env var takes precedence)
     const options: BrowserTestOptions = {
       ...test.options,
@@ -386,7 +475,14 @@ export async function runBrowserTests(): Promise<void> {
     }
   }
 
-  console.log(`\nTests: ${passed} passed, ${failed} failed, ${passed + failed} total`);
+  const total = passed + failed;
+  const summary = [`${passed} passed`, `${failed} failed`];
+  if (skipped > 0) {
+    summary.push(`${skipped} skipped`);
+  }
+  summary.push(`${total} run`);
+
+  console.log(`\nTests: ${summary.join(', ')}`);
 
   if (failed > 0) {
     process.exit(1);

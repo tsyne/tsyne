@@ -189,6 +189,16 @@ export class Window {
   }
 
   /**
+   * Set the window title
+   */
+  setTitle(title: string): void {
+    this.ctx.bridge.send('setWindowTitle', {
+      windowId: this.id,
+      title
+    });
+  }
+
+  /**
    * Center the window on the screen
    */
   async centerOnScreen(): Promise<void> {

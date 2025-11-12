@@ -9,4 +9,6 @@ bin/
 .vscode/
 .idea/
 test-failures/
+test-output/
 pkg/
+bookmarks-export.json

@@ -27,35 +27,38 @@ browserTest(
     const ctx = bt.getContext();
     bt.assertUrl('/text-features');
 
-    // Verify heading present
     const heading = await ctx.findWidget({ text: 'Text Features Demo' });
     if (!heading) {
       throw new Error('Page heading not found');
     }
     console.log('✓ Page heading found: Text Features Demo');
 
-    // Verify comparison section exists
-    const comparison = await ctx.findWidget({ text: '=== Comparison to HTML ===' });
-    if (!comparison) {
-      throw new Error('Comparison section not found');
+    // Verify richtext widgets exist and count (demonstrates formatted text capability)
+    const allWidgets = await ctx.getAllWidgets();
+    const richtextWidgets = allWidgets.filter(w => w.type === 'richtext');
+    if (richtextWidgets.length !== 2) {
+      throw new Error(`Expected 2 richtext widgets (bold/italic and monospace), found ${richtextWidgets.length}`);
     }
-    console.log('✓ HTML comparison section found');
+    console.log('✓ Found 2 richtext widgets (bold/italic + monospace formatting)');
 
-    // Verify specific formatting examples present
-    const htmlLabel = await ctx.findWidget({ text: 'HTML: <strong>Bold</strong>' });
-    if (!htmlLabel) {
-      throw new Error('Bold text HTML example not found');
+    // Verify separator widgets exist (demonstrates visual separation)
+    const separatorWidgets = allWidgets.filter(w => w.type === 'separator');
+    if (separatorWidgets.length < 5) {
+      throw new Error(`Expected at least 5 separators for section breaks, found ${separatorWidgets.length}`);
     }
-    console.log('✓ Rich text formatting examples found');
+    console.log(`✓ Found ${separatorWidgets.length} separator widgets for section breaks`);
 
-    // Verify paragraphs section exists
-    const paragraphsSection = await ctx.findWidget({ text: '=== Paragraphs ===' });
-    if (!paragraphsSection) {
-      throw new Error('Paragraphs section not found');
+    // Test Back to Home button
+    const backButton = await ctx.findWidget({ text: 'Back to Home' });
+    if (!backButton) {
+      throw new Error('Back to Home button not found');
     }
-    console.log('✓ Paragraphs section found');
+    await ctx.clickWidget(backButton.id);
+    await ctx.wait(200);
+    bt.assertUrl('/');
+    console.log('✓ Back to Home button navigates correctly');
 
-    console.log('✓ /text-features test passed\n');
+    console.log('✓ /text-features test passed - all text content verified!\n');
   }
 );
 
@@ -152,31 +155,66 @@ browserTest(
     bt.assertUrl('/about');
     console.log('✓ Button click navigates to /about');
 
-    // Verify About page content loaded
-    const aboutHeading = await ctx.findWidget({ text: 'About Page' });
+    // Verify About page content loaded - check actual content, not just heading
+    const aboutHeading = await ctx.findWidget({ text: 'About Tsyne Browser' });
     if (!aboutHeading) {
-      throw new Error('About page content not loaded');
+      throw new Error('About page heading not found');
     }
-    console.log('✓ About page content verified');
+    console.log('✓ About page heading found: "About Tsyne Browser"');
 
-    // Test back navigation
-    await bt.back();
+    // Verify About page description
+    const description = await ctx.findWidget({ text: 'Tsyne Browser is a Swiby-inspired browser that loads' });
+    if (!description) {
+      throw new Error('About page description not found');
+    }
+    console.log('✓ About page description verified');
+
+    // Verify features list items
+    const featuresList = [
+      '• Pages are TypeScript code (not HTML)',
+      '• Server-side rendering from any language',
+      '• Native desktop widgets via Fyne',
+      '• Browser chrome with address bar and navigation'
+    ];
+    for (const feature of featuresList) {
+      const featureWidget = await ctx.findWidget({ text: feature });
+      if (!featureWidget) {
+        throw new Error(`Feature not found: ${feature}`);
+      }
+    }
+    console.log('✓ All 4 features listed on About page');
+
+    // Test "Browser Back" button (different from bt.back() - this is a button click)
+    const browserBackButton = await ctx.findWidget({ text: 'Browser Back' });
+    if (!browserBackButton) {
+      throw new Error('Browser Back button not found on About page');
+    }
+    await ctx.clickWidget(browserBackButton.id);
     await new Promise(resolve => setTimeout(resolve, 200));
     bt.assertUrl('/hyperlinks');
-    console.log('✓ Back navigation returns to /hyperlinks');
+    console.log('✓ "Browser Back" button on About page navigates back to /hyperlinks');
 
     // Verify we're back on hyperlinks page
     const backHeading = await ctx.findWidget({ text: 'Hyperlinks & Navigation Demo' });
     if (!backHeading) {
-      throw new Error('Hyperlinks page not restored after back()');
+      throw new Error('Hyperlinks page not restored after Browser Back button click');
     }
-    console.log('✓ Hyperlinks page content restored');
+    console.log('✓ Hyperlinks page content restored after button click');
+
+    // Now test browser chrome back button navigation
+    await ctx.clickWidget(aboutButton.id);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    bt.assertUrl('/about');
+    await bt.back();
+    await new Promise(resolve => setTimeout(resolve, 200));
+    bt.assertUrl('/hyperlinks');
+    console.log('✓ Browser chrome back button also works (bt.back())');
 
     console.log('✓ /hyperlinks test passed\n');
   }
 );
 
-// Test 4: /images - Verify image API documentation
+// Test 4: /images - Verify HTTP image loading with dual-execution discovery
 browserTest(
   'Test /images',
   [
@@ -188,40 +226,112 @@ browserTest(
       path: '/',
       code: require('fs').readFileSync(__dirname + '/pages/index.ts', 'utf8')
     }
+    // Note: /assets/test-image.svg is NOT registered as a page
+    // The test server automatically serves static files from examples/assets/
   ],
   async (bt) => {
     await bt.createBrowser('/images');
     const ctx = bt.getContext();
     bt.assertUrl('/images');
 
-    // Verify heading
-    const heading = await ctx.findWidget({ text: 'Images Demo' });
-    if (!heading) {
-      throw new Error('Page heading not found');
+    // Verify page loaded by checking for image widgets
+    // ACTUAL TEST: Find all image widgets in the page
+    const allWidgets = await ctx.getAllWidgets();
+    console.log(`DEBUG: Total widgets in tree: ${allWidgets.length}`);
+
+    // DEBUG: Show widget type breakdown
+    const widgetTypes = {};
+    allWidgets.forEach(w => {
+      widgetTypes[w.type] = (widgetTypes[w.type] || 0) + 1;
+    });
+    console.log('DEBUG: Widget types:', JSON.stringify(widgetTypes, null, 2));
+
+    const imageWidgets = allWidgets.filter(w => w.type === 'image');
+
+    // Assert 3 images exist (contain, stretch, original modes)
+    if (imageWidgets.length !== 3) {
+      console.error('DEBUG: Image widgets found:', imageWidgets);
+      throw new Error(`Expected 3 image widgets, found ${imageWidgets.length}`);
     }
-    console.log('✓ Page heading found: Images Demo');
+    console.log('✓ Found 3 image widgets');
 
-    // Verify all three image modes are documented
-    const containMode = await ctx.findWidget({ text: '1. Contain mode (default) - fits image inside bounds:' });
-    const stretchMode = await ctx.findWidget({ text: '2. Stretch mode - stretches to fill bounds:' });
-    const originalMode = await ctx.findWidget({ text: '3. Original mode - displays at original size:' });
+    // Fluent assertions on first image widget (order doesn't matter)
+    await ctx.getByID(imageWidgets[0].id).shouldHaveType('image');
+    console.log('✓ Image widgets have correct type');
 
-    if (!containMode || !stretchMode || !originalMode) {
-      throw new Error('Not all image modes documented (contain, stretch, original)');
+    // Verify first image has width and height properties
+    const firstImageInfo = await ctx.getByID(imageWidgets[0].id).getInfo();
+    if (typeof firstImageInfo.width !== 'number' || firstImageInfo.width <= 0) {
+      throw new Error(`Image widget missing or invalid width: ${firstImageInfo.width}`);
     }
-    console.log('✓ All three image modes documented: contain, stretch, original');
-
-    // Verify supported formats section
-    const pngFormat = await ctx.findWidget({ text: '  • PNG (.png)' });
-    const jpegFormat = await ctx.findWidget({ text: '  • JPEG (.jpg, .jpeg)' });
-    const svgFormat = await ctx.findWidget({ text: '  • SVG (.svg)' });
-
-    if (!pngFormat || !jpegFormat || !svgFormat) {
-      throw new Error('Not all supported formats documented');
+    if (typeof firstImageInfo.height !== 'number' || firstImageInfo.height <= 0) {
+      throw new Error(`Image widget missing or invalid height: ${firstImageInfo.height}`);
     }
-    console.log('✓ Supported image formats documented: PNG, JPEG, GIF, BMP, SVG');
+    console.log(`✓ Images have valid dimensions (${firstImageInfo.width}x${firstImageInfo.height})`);
 
-    console.log('✓ /images test passed\n');
+    // Verify each image widget has valid properties
+    const expectedFillModes = ['contain', 'stretch', 'original'];
+    const foundFillModes = new Set();
+
+    for (let i = 0; i < imageWidgets.length; i++) {
+      const img = imageWidgets[i];
+      if (!img.id || !img.type) {
+        throw new Error(`Image widget ${i} missing required properties`);
+      }
+
+      // Query widget info to verify it's properly initialized
+      const info = await ctx.getByID(img.id).getInfo();
+      if (info.type !== 'image') {
+        throw new Error(`Image widget ${i} has incorrect type: ${info.type}`);
+      }
+
+      // Verify image path (will be a cached path in /tmp/tsyne-resource-cache/)
+      if (!info.path || !info.path.endsWith('.svg')) {
+        throw new Error(`Image widget ${i} has unexpected path: ${info.path}`);
+      }
+
+      // Verify dimensions
+      if (typeof info.width !== 'number' || info.width <= 0) {
+        throw new Error(`Image widget ${i} has invalid width: ${info.width}`);
+      }
+      if (typeof info.height !== 'number' || info.height <= 0) {
+        throw new Error(`Image widget ${i} has invalid height: ${info.height}`);
+      }
+
+      // Verify fillMode is one of the expected values
+      if (!expectedFillModes.includes(info.fillMode)) {
+        throw new Error(`Image widget ${i} has unexpected fillMode: ${info.fillMode}`);
+      }
+      foundFillModes.add(info.fillMode);
+    }
+
+    // Verify all three fillModes are present
+    if (foundFillModes.size !== 3) {
+      throw new Error(`Expected all 3 fillModes (contain, stretch, original), but found: ${Array.from(foundFillModes).join(', ')}`);
+    }
+    console.log('✓ All 3 image widgets have valid properties and all fillModes (contain, stretch, original) are present');
+
+    // Save screenshot for visual inspection
+    const path = require('path');
+    const fs = require('fs');
+    const screenshotPath = path.join(__dirname, '../test-output/images-test.png');
+    const outputDir = path.dirname(screenshotPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Wait a moment for any pending renders to complete
+    await ctx.wait(500);
+    console.log('DEBUG: About to capture screenshot...');
+
+    await bt.screenshot(screenshotPath);
+    console.log(`✓ Screenshot saved: ${screenshotPath}`);
+
+    // DEBUG: Verify screenshot file size
+    const screenshotStats = fs.statSync(screenshotPath);
+    console.log(`DEBUG: Screenshot file size: ${screenshotStats.size} bytes`);
+
+    console.log('✓ /images test passed - HTTP images verified in widget tree!\n');
   }
 );
 
@@ -249,14 +359,46 @@ browserTest(
     }
     console.log('✓ Page heading found: Table Demo');
 
-    // Verify page description present
-    const description = await ctx.findWidget({ text: 'This page demonstrates tables, similar to HTML <table> elements' });
-    if (!description) {
-      throw new Error('Table description not found');
-    }
-    console.log('✓ Table page content verified');
+    // Find all table widgets
+    const allWidgets = await ctx.getAllWidgets();
+    const tableWidgets = allWidgets.filter(w => w.type === 'table');
 
-    console.log('✓ /table-demo test passed\n');
+    if (tableWidgets.length !== 2) {
+      throw new Error(`Expected 2 table widgets, found ${tableWidgets.length}`);
+    }
+    console.log('✓ Found 2 table widgets (Simple Table + Product Table)');
+
+    // Verify Product Table data (first table in widget tree) - 5 products
+    const productTableData = await ctx.getTableData(tableWidgets[0].id);
+    if (productTableData.length !== 5) {
+      throw new Error(`Product Table should have 5 rows, found ${productTableData.length}`);
+    }
+    // Check for Laptop (first product)
+    if (!productTableData.some(row => row[0] === 'Laptop' && row[1] === '$999' && row[3] === 'Electronics')) {
+      throw new Error('Product Table missing Laptop row');
+    }
+    // Check for Headphones (last product)
+    if (!productTableData.some(row => row[0] === 'Headphones' && row[1] === '$120' && row[3] === 'Audio')) {
+      throw new Error('Product Table missing Headphones row');
+    }
+    console.log('✓ Product Table has 5 rows with correct product data (Laptop...Headphones)');
+
+    // Verify Simple Table data (second table in widget tree) - 5 people
+    const simpleTableData = await ctx.getTableData(tableWidgets[1].id);
+    if (simpleTableData.length !== 5) {
+      throw new Error(`Simple Table should have 5 rows, found ${simpleTableData.length}`);
+    }
+    // Check for Alice (first person)
+    if (!simpleTableData.some(row => row[0] === 'Alice' && row[1] === '25' && row[2] === 'New York')) {
+      throw new Error('Simple Table missing Alice row');
+    }
+    // Check for Eve (last person)
+    if (!simpleTableData.some(row => row[0] === 'Eve' && row[1] === '32' && row[2] === 'Austin')) {
+      throw new Error('Simple Table missing Eve row');
+    }
+    console.log('✓ Simple Table has 5 rows with correct people data (Alice...Eve)');
+
+    console.log('✓ /table-demo test passed - tables fully verified!\n');
   }
 );
 
@@ -284,18 +426,47 @@ browserTest(
     }
     console.log('✓ Page heading found: List Demo');
 
-    // Verify page description present
-    const description = await ctx.findWidget({ text: 'This page demonstrates lists, similar to HTML <ul> and <ol> elements' });
-    if (!description) {
-      throw new Error('List description not found');
-    }
-    console.log('✓ List page content verified');
+    // Find all list widgets
+    const allWidgets = await ctx.getAllWidgets();
+    const listWidgets = allWidgets.filter(w => w.type === 'list');
 
-    console.log('✓ /list-demo test passed\n');
+    if (listWidgets.length !== 2) {
+      throw new Error(`Expected 2 list widgets (Simple List + Task List), found ${listWidgets.length}`);
+    }
+    console.log('✓ Found 2 list widgets (Simple List with 7 fruits + Task List with 6 tasks)');
+
+    // Verify list widgets have correct type
+    await ctx.getByID(listWidgets[0].id).shouldHaveType('list');
+    await ctx.getByID(listWidgets[1].id).shouldHaveType('list');
+    console.log('✓ Both widgets have correct type: list');
+
+    // Verify selection label exists (proves Simple List has selection callback)
+    const selectionLabel = await ctx.findWidget({ text: 'Selected: (none)' });
+    if (!selectionLabel) {
+      throw new Error('Selection label not found - Simple List may not have selection callback');
+    }
+    console.log('✓ Selection label exists (proves Simple List has callback for item selection)');
+
+    // Note: List item interaction not supported in test API yet
+    // In headed mode with TSYNE_HEADED=1, lists are fully interactive:
+    //   - Clicking items triggers selection callback
+    //   - Selection label updates to show "Selected: Apple (index 0)", etc.
+
+    // Test Back to Home button
+    const backButton = await ctx.findWidget({ text: 'Back to Home' });
+    if (!backButton) {
+      throw new Error('Back to Home button not found');
+    }
+    await ctx.clickWidget(backButton.id);
+    await ctx.wait(200);
+    bt.assertUrl('/');
+    console.log('✓ Back to Home button navigates correctly');
+
+    console.log('✓ /list-demo test passed - list widgets and structure verified!\n');
   }
 );
 
-// Test 7: /dynamic-demo - Verify counter and control buttons
+// Test 7: /dynamic-demo - Test dynamic counter updates (AJAX-like)
 browserTest(
   'Test /dynamic-demo',
   [
@@ -320,23 +491,63 @@ browserTest(
     console.log('✓ Page heading found: Dynamic Updates Demo (AJAX-like)');
 
     // Verify counter display at initial value
-    const counterLabel = await ctx.findWidget({ text: 'Count: 0' });
+    let counterLabel = await ctx.findWidget({ text: 'Count: 0' });
     if (!counterLabel) {
       throw new Error('Counter label not found or not at initial value (0)');
     }
     console.log('✓ Counter display found: Count: 0');
 
-    // Verify all control buttons present
-    const incrementButton = await ctx.findWidget({ text: '+' });
-    const decrementButton = await ctx.findWidget({ text: '-' });
-    const resetButton = await ctx.findWidget({ text: 'Reset' });
-
-    if (!incrementButton || !decrementButton || !resetButton) {
-      throw new Error('Not all counter control buttons found');
+    // Test increment button - find it fresh each time
+    let incrementButton = await ctx.findWidget({ text: '+' });
+    if (!incrementButton) {
+      throw new Error('Increment button not found');
     }
-    console.log('✓ All control buttons found: +, -, Reset');
+    await ctx.clickWidget(incrementButton.id);
+    await ctx.wait(150);
+    counterLabel = await ctx.findWidget({ text: 'Count: 1' });
+    if (!counterLabel) {
+      throw new Error('Counter did not increment to 1');
+    }
+    console.log('✓ Increment button works: Count: 1');
 
-    console.log('✓ /dynamic-demo test passed\n');
+    // Click increment again - re-find the button
+    incrementButton = await ctx.findWidget({ text: '+' });
+    await ctx.clickWidget(incrementButton.id);
+    await ctx.wait(150);
+    counterLabel = await ctx.findWidget({ text: 'Count: 2' });
+    if (!counterLabel) {
+      throw new Error('Counter did not increment to 2');
+    }
+    console.log('✓ Increment button works again: Count: 2');
+
+    // Test decrement button - find it fresh
+    // Use exact text match to avoid matching labels with '-' in them (like "/post-demo")
+    const decrementButtonId = await ctx.getByExactText('-').find();
+    if (!decrementButtonId) {
+      throw new Error('Decrement button not found');
+    }
+    await ctx.clickWidget(decrementButtonId);
+    await ctx.wait(150);
+    counterLabel = await ctx.findWidget({ text: 'Count: 1' });
+    if (!counterLabel) {
+      throw new Error('Counter did not decrement to 1');
+    }
+    console.log('✓ Decrement button works: Count: 1');
+
+    // Test reset button - find it fresh
+    const resetButton = await ctx.findWidget({ text: 'Reset' });
+    if (!resetButton) {
+      throw new Error('Reset button not found');
+    }
+    await ctx.clickWidget(resetButton.id);
+    await ctx.wait(150);
+    counterLabel = await ctx.findWidget({ text: 'Count: 0' });
+    if (!counterLabel) {
+      throw new Error('Counter did not reset to 0');
+    }
+    console.log('✓ Reset button works: Count: 0');
+
+    console.log('✓ /dynamic-demo test passed - dynamic updates work!\n');
   }
 );
 
@@ -375,14 +586,57 @@ browserTest(
     }
     console.log('✓ POST-Redirect-GET pattern documented');
 
-    // Verify form elements present
+    // Find and fill in the form fields
+    const allWidgets = await ctx.getAllWidgets();
+    const entryWidgets = allWidgets.filter(w => w.type === 'entry');
+
+    // Filter out browser chrome entry widgets (search box, URL bar)
+    // Form entry widgets are the last ones in the widget tree
+    const formEntryWidgets = entryWidgets.filter(e => !e.text.startsWith('http://') && !e.text.startsWith('https://'));
+
+    if (formEntryWidgets.length < 2) {
+      throw new Error(`Expected at least 2 form entry fields (name, email), found ${formEntryWidgets.length}`);
+    }
+    console.log(`✓ Found ${formEntryWidgets.length} form entry fields`);
+
+    // Fill in name field (first form entry widget)
+    const nameEntry = formEntryWidgets[0];
+    await ctx.getByID(nameEntry.id).type('John Doe');
+    console.log('✓ Filled in name field: John Doe');
+
+    // Fill in email field (second form entry widget)
+    const emailEntry = formEntryWidgets[1];
+    await ctx.getByID(emailEntry.id).type('john@example.com');
+    console.log('✓ Filled in email field: john@example.com');
+
+    // Verify checkbox widget exists
+    const checkboxWidgets = allWidgets.filter(w => w.type === 'checkbox');
+    if (checkboxWidgets.length === 0) {
+      throw new Error('Terms and conditions checkbox not found');
+    }
+    const checkbox = checkboxWidgets[0];
+    await ctx.getByID(checkbox.id).shouldHaveType('checkbox');
+    console.log('✓ Terms and conditions checkbox present (checkbox interaction not yet supported in test API)');
+
+    // Verify submit button exists
     const submitButton = await ctx.findWidget({ text: 'Submit Registration' });
     if (!submitButton) {
       throw new Error('Submit Registration button not found');
     }
-    console.log('✓ Form submit button found');
+    console.log('✓ Submit Registration button found');
 
-    console.log('✓ /post-demo test passed\n');
+    // Verify form structure complete
+    console.log('✓ Form structure verified: 2 entry fields (name, email), 1 checkbox (terms), 1 submit button');
+
+    // Note: Cannot test full POST-Redirect-GET flow because checkbox widgets are not clickable in test API yet
+    // Form validation requires checkbox to be checked before allowing navigation to success page
+    // When checkbox interaction is supported, this test should:
+    //   1. Check the checkbox
+    //   2. Click submit button
+    //   3. Verify navigation to /post-success?name=John%20Doe
+    //   4. Verify success page shows "Thank you, John Doe!"
+
+    console.log('✓ /post-demo test passed - form structure and field interaction verified!\n');
   }
 );
 
@@ -410,36 +664,80 @@ browserTest(
     }
     console.log('✓ Page heading found: Fyne-Specific Widgets Demo');
 
-    // Verify glass ceiling concept section
-    const glassCeiling = await ctx.findWidget({ text: '=== The Glass Ceiling Concept ===' });
-    if (!glassCeiling) {
-      throw new Error('Glass ceiling concept section not found');
-    }
-    console.log('✓ Glass ceiling concept section found');
+    // Verify all Fyne-specific widget types are present on the page
+    const allWidgets = await ctx.getAllWidgets();
 
-    // Test interactive buttons - click Start button
+    const accordionWidgets = allWidgets.filter(w => w.type === 'accordion');
+    if (accordionWidgets.length !== 1) {
+      throw new Error(`Expected 1 accordion widget, found ${accordionWidgets.length}`);
+    }
+    console.log('✓ Accordion widget present (collapsible sections)');
+
+    const cardWidgets = allWidgets.filter(w => w.type === 'card');
+    if (cardWidgets.length !== 1) {
+      throw new Error(`Expected 1 card widget (User Profile), found ${cardWidgets.length}`);
+    }
+    console.log('✓ Card widget present (User Profile with title/subtitle/content)');
+
+    const toolbarWidgets = allWidgets.filter(w => w.type === 'toolbar');
+    if (toolbarWidgets.length !== 1) {
+      throw new Error(`Expected 1 toolbar widget, found ${toolbarWidgets.length}`);
+    }
+    console.log('✓ Toolbar widget present (New/Open/Save/Help actions)');
+
+    const tabsWidgets = allWidgets.filter(w => w.type === 'tabs');
+    if (tabsWidgets.length !== 1) {
+      throw new Error(`Expected 1 tabs widget, found ${tabsWidgets.length}`);
+    }
+    console.log('✓ Tabs widget present (Tab 1/2/3 for view switching)');
+
+    const richtextWidgets = allWidgets.filter(w => w.type === 'richtext');
+    if (richtextWidgets.length !== 1) {
+      throw new Error(`Expected 1 richtext widget, found ${richtextWidgets.length}`);
+    }
+    console.log('✓ Richtext widget present (bold/italic/monospace formatting)');
+
+    const progressWidgets = allWidgets.filter(w => w.type === 'progressbar');
+    if (progressWidgets.length !== 2) {
+      throw new Error(`Expected 2 progress bars (determinate + indeterminate), found ${progressWidgets.length}`);
+    }
+    console.log('✓ Found 2 progress bar widgets (determinate + indeterminate spinner)');
+
+    // Test progress bar interactivity
     const startButton = await ctx.findWidget({ text: 'Start' });
-    if (!startButton) {
-      throw new Error('Start button not found');
-    }
-    console.log('✓ Start button found');
-
-    await ctx.clickWidget(startButton.id);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    console.log('✓ Clicked Start button');
-
-    // Click Reset button
     const resetButton = await ctx.findWidget({ text: 'Reset' });
-    if (!resetButton) {
-      throw new Error('Reset button not found');
+    if (!startButton || !resetButton) {
+      throw new Error('Progress bar control buttons (Start/Reset) not found');
     }
-    console.log('✓ Reset button found');
+    console.log('✓ Progress bar control buttons found (Start + Reset)');
 
+    // Click Start to begin progress animation
+    await ctx.clickWidget(startButton.id);
+    await ctx.wait(500); // Wait for animation to run (animates 0-100% over 2 seconds)
+    console.log('✓ Start button clicked - progress animation running');
+
+    // Click Reset to stop and reset progress
     await ctx.clickWidget(resetButton.id);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    console.log('✓ Clicked Reset button');
+    await ctx.wait(100);
+    console.log('✓ Reset button clicked - progress reset to 0');
 
-    console.log('✓ /fyne-widgets test passed\n');
+    // Note: Progress bar value property not exposed in test API yet
+    // In headed mode (TSYNE_HEADED=1), you can visually verify:
+    //   - Start button animates progress from 0% to 100% over 2 seconds
+    //   - Reset button immediately stops animation and resets to 0%
+    //   - Indeterminate spinner continuously animates
+
+    // Test Back to Home button navigation
+    const backButton = await ctx.findWidget({ text: 'Back to Home' });
+    if (!backButton) {
+      throw new Error('Back to Home button not found');
+    }
+    await ctx.clickWidget(backButton.id);
+    await ctx.wait(200);
+    bt.assertUrl('/');
+    console.log('✓ Back to Home button navigates correctly');
+
+    console.log('✓ /fyne-widgets test passed - all Fyne widgets verified with interactions!\n');
   }
 );
 

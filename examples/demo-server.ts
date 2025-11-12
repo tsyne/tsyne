@@ -5,6 +5,8 @@
  */
 
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 
 const PORT = 3000;
 
@@ -175,6 +177,43 @@ const server = http.createServer((req, res) => {
   const url = req.url || '/';
   console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
 
+  // Serve static assets from /assets/ directory
+  if (url.startsWith('/assets/')) {
+    const assetPath = path.join(__dirname, url);
+
+    // Check if file exists
+    if (fs.existsSync(assetPath)) {
+      const ext = path.extname(assetPath).toLowerCase();
+      const contentTypes: { [key: string]: string } = {
+        '.svg': 'image/svg+xml',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.bmp': 'image/bmp'
+      };
+
+      const contentType = contentTypes[ext] || 'application/octet-stream';
+
+      fs.readFile(assetPath, (err, data) => {
+        if (err) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Error reading asset file');
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(data);
+      });
+      return;
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Asset not found');
+      return;
+    }
+  }
+
+  // Serve page code
   const pageCode = pages[url];
 
   if (pageCode) {

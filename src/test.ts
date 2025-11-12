@@ -375,7 +375,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetState', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId });
       return response.checked || false;
     }
 
@@ -388,7 +388,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetState', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId });
         return response.checked || false;
       } catch (error) {
         lastError = error as Error;
@@ -408,7 +408,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetState', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId });
       return String(response.value || response.text || '');
     }
 
@@ -421,7 +421,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetState', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId });
         return String(response.value || response.text || '');
       } catch (error) {
         lastError = error as Error;
@@ -441,7 +441,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetState', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId });
       return response.selected || '';
     }
 
@@ -454,7 +454,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetState', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId });
         return response.selected || '';
       } catch (error) {
         lastError = error as Error;
@@ -474,7 +474,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetState', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId });
       return response.disabled || false;
     }
 
@@ -487,7 +487,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetState', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId });
         return response.disabled || false;
       } catch (error) {
         lastError = error as Error;
@@ -507,7 +507,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetState', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId });
       return response.type || '';
     }
 
@@ -520,7 +520,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetState', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId });
         return response.type || '';
       } catch (error) {
         lastError = error as Error;
@@ -743,5 +743,106 @@ export class TestContext {
    */
   async clickWidget(widgetId: string): Promise<void> {
     await this.bridge.send('clickWidget', { widgetId });
+  }
+
+  /**
+   * Get table data for a table widget
+   * Returns the raw table data (array of rows)
+   */
+  async getTableData(tableId: string): Promise<string[][]> {
+    const result = await this.bridge.send('getTableData', { id: tableId });
+    return result.data || [];
+  }
+
+  /**
+   * Get list data for a list widget
+   * Returns the list items as an array
+   */
+  async getListData(listId: string): Promise<string[]> {
+    const result = await this.bridge.send('getListData', { id: listId });
+    return result.data || [];
+  }
+
+  /**
+   * Get all text from all widgets on the page
+   * Useful for debugging and quick text verification
+   *
+   * @returns Array of text values from all widgets (includes empty strings)
+   * @example
+   * const allText = await ctx.getAllText();
+   * console.log('All text on page:', allText);
+   */
+  async getAllText(): Promise<string[]> {
+    const widgets = await this.getAllWidgets();
+    return widgets.map(w => w.text || '');
+  }
+
+  /**
+   * Get all text from all widgets as a single string
+   * Each widget's text is on a new line
+   * Useful for debugging what's actually rendered on the page
+   *
+   * @returns All text joined with newlines
+   * @example
+   * const pageText = await ctx.getAllTextAsString();
+   * console.log('Page content:\n', pageText);
+   */
+  async getAllTextAsString(): Promise<string> {
+    const textArray = await this.getAllText();
+    return textArray.join('\n');
+  }
+
+  /**
+   * Check if any widget on the page contains the specified text (case-sensitive)
+   * Uses getAllWidgets() internally
+   *
+   * @param text - Text to search for (case-sensitive)
+   * @returns true if any widget contains the text
+   * @example
+   * if (await ctx.hasText('Success')) {
+   *   console.log('Success message found somewhere on page');
+   * }
+   */
+  async hasText(text: string): Promise<boolean> {
+    const widgets = await this.getAllWidgets();
+    return widgets.some(w => w.text && w.text.includes(text));
+  }
+
+  /**
+   * Check if any widget on the page contains the specified text (case-insensitive)
+   * Uses getAllWidgets() internally
+   *
+   * @param text - Text to search for (case-insensitive)
+   * @returns true if any widget contains the text
+   * @example
+   * if (await ctx.hasTextIgnoreCase('error')) {
+   *   throw new Error('Error message found on page');
+   * }
+   */
+  async hasTextIgnoreCase(text: string): Promise<boolean> {
+    const widgets = await this.getAllWidgets();
+    const lowerText = text.toLowerCase();
+    return widgets.some(w => w.text && w.text.toLowerCase().includes(lowerText));
+  }
+
+  /**
+   * Assert that the page contains specific text somewhere
+   * Throws an error if text is not found
+   *
+   * @param text - Text that must be present on the page
+   * @param options - Optional case-insensitive flag
+   * @throws Error if text is not found
+   * @example
+   * await ctx.assertHasText('Welcome');
+   * await ctx.assertHasText('success', { ignoreCase: true });
+   */
+  async assertHasText(text: string, options: { ignoreCase?: boolean } = {}): Promise<void> {
+    const hasIt = options.ignoreCase
+      ? await this.hasTextIgnoreCase(text)
+      : await this.hasText(text);
+
+    if (!hasIt) {
+      throw new Error(`Expected to find text "${text}" on page but it was not found`);
+    }
   }
 }

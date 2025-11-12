@@ -6,49 +6,51 @@ const { vbox, scroll, label, button, separator, image } = tsyne;
 
 vbox(() => {
   label('Images Demo');
-  label('This page demonstrates image display, similar to HTML <img> tags');
+  label('This page demonstrates HTTP image loading with dual-execution discovery');
   separator();
 
   scroll(() => {
     vbox(() => {
       label('');
-      label('Image display modes:');
+      label('Test Image (SVG) - Contain mode:');
       label('');
 
-      // Note: These images would need to exist in the filesystem
-      // For demonstration, we show what the API looks like
-      label('1. Contain mode (default) - fits image inside bounds:');
-      label('   image(\'/path/to/image.png\', \'contain\')');
-      label('');
+      // Display test image in contain mode
+      image('/assets/test-image.svg', 'contain');
 
-      label('2. Stretch mode - stretches to fill bounds:');
-      label('   image(\'/path/to/image.png\', \'stretch\')');
       label('');
-
-      label('3. Original mode - displays at original size:');
-      label('   image(\'/path/to/image.png\', \'original\')');
-      label('');
-
       separator();
       label('');
-      label('Image formats supported:');
-      label('  • PNG (.png)');
-      label('  • JPEG (.jpg, .jpeg)');
-      label('  • GIF (.gif)');
-      label('  • BMP (.bmp)');
-      label('  • SVG (.svg)');
+
+      label('Test Image (SVG) - Stretch mode:');
       label('');
 
+      // Display test image in stretch mode
+      image('/assets/test-image.svg', 'stretch');
+
+      label('');
       separator();
       label('');
-      label('Example usage in Tsyne pages:');
-      label('');
-      label('const { image } = tsyne;');
-      label('image(\'/assets/logo.png\', \'contain\');');
+
+      label('Test Image (SVG) - Original mode:');
       label('');
 
-      label('This is equivalent to HTML:');
-      label('<img src="/assets/logo.png" style="object-fit: contain">');
+      // Display test image in original mode
+      image('/assets/test-image.svg', 'original');
+
+      label('');
+      separator();
+      label('');
+
+      label('How it works:');
+      label('1. Page executes once in discovery context');
+      label('2. All image() calls are recorded');
+      label('3. Browser fetches images via HTTP');
+      label('4. Page executes again with local cached images');
+      label('5. Fyne displays the cached images');
+      label('');
+
+      label('Supported formats: PNG, JPEG, GIF, BMP, SVG');
       label('');
     });
   });

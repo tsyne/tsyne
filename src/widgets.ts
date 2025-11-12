@@ -167,11 +167,21 @@ export class Label extends Widget {
  * Entry (text input) widget
  */
 export class Entry extends Widget {
-  constructor(ctx: Context, placeholder?: string) {
+  constructor(ctx: Context, placeholder?: string, onSubmit?: () => void) {
     const id = ctx.generateId('entry');
     super(ctx, id);
 
-    ctx.bridge.send('createEntry', { id, placeholder: placeholder || '' });
+    const payload: any = { id, placeholder: placeholder || '' };
+
+    if (onSubmit) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, () => {
+        onSubmit();
+      });
+    }
+
+    ctx.bridge.send('createEntry', payload);
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking)
@@ -956,9 +966,12 @@ export class Image {
     this.ctx = ctx;
     this.id = ctx.generateId('image');
 
+    // Resolve path using resource map (for HTTP-fetched images)
+    const resolvedPath = ctx.resolveResourcePath(path);
+
     const payload: any = {
       id: this.id,
-      path
+      path: resolvedPath  // Use resolved path (local cached file if from HTTP)
     };
 
     if (fillMode) {

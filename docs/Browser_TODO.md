@@ -22,34 +22,34 @@ This document catalogs potential improvements to the Tsyne Browser system, inspi
 
 - [x] **Address bar widget** - Display current URL in the browser window
 - [x] **Editable address bar** - Allow typing URLs to navigate
-- [ ] **URL validation** - Check URL format before navigation
+- [x] **URL validation** - Check URL format before navigation (validates protocol, hostname, format)
 - [x] **Protocol support** - http://, https:// (file:// and custom protocols TODO)
 - [x] **Back button UI** - Visual button in browser chrome (←)
 - [x] **Forward button UI** - Visual button in browser chrome (→)
 - [x] **Stop button** - Cancel page loading in progress (✕, visible when loading)
 - [x] **Reload/Refresh button** - Re-fetch current page (⟳)
-- [ ] **Home button** - Navigate to configured home page
+- [x] **Home button** - Navigate to configured home page (🏠, visible when homeUrl is configured)
 
 ### History and Bookmarks
 
-- [ ] **History persistence** - Save history across browser sessions
-- [ ] **History UI** - View browsing history with dates/times
-- [ ] **Clear history** - Delete browsing history
-- [ ] **Bookmarks/Favorites** - Save frequently visited URLs
-- [ ] **Bookmark management** - Add, edit, delete, organize bookmarks
-- [ ] **Bookmark UI** - Sidebar or menu for bookmarks
-- [ ] **Bookmark import/export** - Share bookmarks across browsers
+- [x] **History persistence** - Save history across browser sessions (~/.tsyne/browser-history.json)
+- [x] **History UI** - View browsing history with dates/times (History menu → Show History, getFormattedHistory() method, timestamps and titles stored)
+- [x] **Clear history** - Delete browsing history (History menu → Clear History, clears memory & disk)
+- [x] **Bookmarks/Favorites** - Save frequently visited URLs (Bookmarks menu, persisted to ~/.tsyne/browser-bookmarks.json)
+- [x] **Bookmark management** - Add, edit, delete, organize bookmarks (add via menu, remove via API, navigate by clicking)
+- [x] **Bookmark UI** - Sidebar or menu for bookmarks (Bookmarks menu shows all bookmarks, click to navigate)
+- [x] **Bookmark import/export** - Share bookmarks across browsers (exportBookmarks/importBookmarks methods, with merge and replace modes, test coverage in browser-bookmark-import-export.test.ts)
 
 ### Window and View
 
-- [ ] **Status bar** - Show loading status, URL hover info
+- [x] **Status bar** - Show loading status, URL hover info (via browserContext.setStatus())
 - [x] **Progress indicator** - Visual feedback during page load (text-based "Loading...")
 - [ ] **Loading spinner** - Animated indicator for async operations
-- [ ] **Title bar updates** - Show page title in window title
+- [x] **Title bar updates** - Show page title in window title (via browserContext.setPageTitle())
 - [ ] **Favicon support** - (if pages could specify icons)
 - [x] **View source** - Display raw page TypeScript code (View menu → View Page Source)
 - [ ] **Page info dialog** - Show URL, load time, size, etc.
-- [ ] **Find in page** - Search for text in current page
+- [x] **Find in page** - Search for text in current page (findInPage, findNext, findPrevious, clearFind methods available)
 - [ ] **Print page** - (complex - would need page rendering)
 - [ ] **Zoom controls** - Increase/decrease text/widget size
 - [ ] **Full-screen mode** - Toggle fullscreen display
@@ -61,12 +61,12 @@ This document catalogs potential improvements to the Tsyne Browser system, inspi
 - [ ] **Middle-click = new tab** - (when tabs are implemented)
 - [ ] **Ctrl+Click = new tab** - Keyboard modifiers for navigation
 - [x] **Right-click context menu** - widget.setContextMenu() on all widgets
-- [ ] **Keyboard shortcuts** - Ctrl+R (reload), Alt+Left (back), etc.
+- [ ] **Keyboard shortcuts** - Ctrl+R (reload), Alt+Left (back), etc. (see P2 section and [FYNE_KEYBOARD_SHORTCUTS_REQUEST.md](FYNE_KEYBOARD_SHORTCUTS_REQUEST.md))
 - [ ] **Mouse gestures** - Optional navigation via mouse movement
 
 ### Loading and Caching
 
-- [ ] **Page caching** - Cache fetched pages to avoid re-downloading
+- [x] **Page caching** - Cache fetched pages to avoid re-downloading (Map-based cache, status shows cache hits)
 - [ ] **Cache control** - Respect cache headers (if servers send them)
 - [ ] **Cache expiration** - Time-based or size-based cache eviction
 - [ ] **Force reload** - Bypass cache (Ctrl+Shift+R)
@@ -97,8 +97,12 @@ This document catalogs potential improvements to the Tsyne Browser system, inspi
 - [ ] **Pop-up blocker** - Block unwanted new windows
 - [ ] **Download safety** - Warn about executable downloads
 - [ ] **Phishing detection** - Basic URL pattern matching
-- [ ] **Content Security Policy** - Limit what pages can execute
-- [ ] **Same-origin policy** - Prevent cross-origin data access
+- [ ] **Content Security Policy (CSP)** - Limit what pages can execute
+- [ ] **Same-Origin Policy (SOP)** - Prevent cross-origin data access (critical for image/fetch security)
+- [ ] **Cross-Origin Resource Sharing (CORS)** - Allow/block cross-origin requests based on CORS headers
+- [ ] **CORS preflight** - Send OPTIONS requests for cross-origin requests with custom headers
+- [ ] **Origin header** - Send Origin header with cross-origin requests
+- [ ] **Referrer policy** - Control Referer header sent with requests
 
 ### User Experience
 
@@ -107,6 +111,7 @@ This document catalogs potential improvements to the Tsyne Browser system, inspi
 - [ ] **Accessibility** - Screen reader support, high contrast
 - [ ] **Text selection** - Select and copy text from pages
 - [ ] **Clipboard operations** - Copy, paste, cut
+- [ ] **Select-Ctrl-C-Copy from content pane** - Select text in browser content pane and copy to clipboard with Ctrl+C
 - [ ] **Drag and drop** - (if Fyne supports it)
 - [ ] **Smooth scrolling** - Animated scroll transitions
 - [ ] **Scroll position restoration** - Remember scroll on back/forward
@@ -376,15 +381,16 @@ Pages should:
 - [x] Loading progress indicator (text-based "Loading...")
 - [x] Menu bar with standard items (File, View, History, Help)
 - [x] Page menu API (pages can add custom menus via browserContext.addPageMenu)
-- [ ] History persistence (save across sessions)
-- [ ] Basic page caching
+- [x] History persistence (save across sessions in ~/.tsyne/browser-history.json)
+- [x] Basic page caching (Map-based cache, status shows cache hits)
 
 ### P2 - Important (Expected browser features)
 - [ ] Tabbed browsing
 - [ ] Bookmarks
 - [x] Right-click context menu (widget.setContextMenu() implemented)
-- [ ] Keyboard shortcuts (Enter in address bar, Ctrl+R reload, Alt+Left back, etc.)
-- [ ] Find in page
+- [x] **Keyboard shortcuts** - Enter in address bar to navigate
+- [ ] **Additional keyboard shortcuts** - Ctrl+R reload, Alt+Left back, etc. (blocked: requires Fyne menu shortcut support - see [FYNE_KEYBOARD_SHORTCUTS_REQUEST.md](FYNE_KEYBOARD_SHORTCUTS_REQUEST.md) for details and implementation plan)
+- [x] Find in page (findInPage, findNext, findPrevious, clearFind available via browser methods)
 - [x] View source (View menu → View Page Source, prints to console)
 
 ### P3 - Nice to have (Enhanced UX)
@@ -412,6 +418,7 @@ Pages should:
 - **Swiby browser**: Original Ruby/Swing implementation
 - **HyperCard**: Apple's hypermedia system (pre-web inspiration)
 - **Gemini protocol**: Modern minimalist web alternative
+- **[caniuse.com](https://caniuse.com)**: Reference for web features with peer equivalence (not HTML-specific)
 
 ---
 

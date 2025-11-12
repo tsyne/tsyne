@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150">
+  <!-- Background -->
+  <rect width="200" height="150" fill="#4A90E2"/>
+
+  <!-- Centered circle -->
+  <circle cx="100" cy="75" r="40" fill="#FFFFFF"/>
+
+  <!-- Text label -->
+  <text x="100" y="130" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="16" font-weight="bold">Test Image</text>
+</svg>

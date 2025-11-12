@@ -8,9 +8,29 @@ export class Context {
   private idCounter = 0;
   private windowStack: string[] = [];
   private containerStack: string[][] = [];
+  private resourceMap: Map<string, string> = new Map();
 
-  constructor(bridge: BridgeConnection) {
+  constructor(bridge: BridgeConnection, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
+    if (resourceMap) {
+      this.resourceMap = resourceMap;
+    }
+  }
+
+  /**
+   * Resolve a resource path using the resource map
+   * Returns the local cached path if available, otherwise returns the original path
+   */
+  resolveResourcePath(path: string): string {
+    return this.resourceMap.get(path) || path;
+  }
+
+  /**
+   * Update the resource map with new resources
+   * This allows updating resources without creating a new Context
+   */
+  setResourceMap(resourceMap: Map<string, string>): void {
+    this.resourceMap = resourceMap;
   }
 
   generateId(prefix: string): string {

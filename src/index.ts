@@ -87,11 +87,11 @@ export function label(text: string): Label {
 /**
  * Create an entry (text input) widget
  */
-export function entry(placeholder?: string): Entry {
+export function entry(placeholder?: string, onSubmit?: () => void): Entry {
   if (!globalContext) {
     throw new Error('entry() must be called within an app context');
   }
-  return new Entry(globalContext, placeholder);
+  return new Entry(globalContext, placeholder, onSubmit);
 }
 
 /**
