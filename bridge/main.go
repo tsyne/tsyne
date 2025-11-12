@@ -2736,7 +2736,10 @@ func (b *Bridge) handleQuit(msg Message) {
 		}
 	}
 
-	b.app.Quit()
+	// UI operations must be called on the main thread
+	fyne.Do(func() {
+		b.app.Quit()
+	})
 }
 
 // Testing methods
@@ -2841,7 +2844,10 @@ func (b *Bridge) handleTypeText(msg Message) {
 		if b.testMode {
 			test.Type(entry, text)
 		} else {
-			entry.SetText(text)
+			// UI operations must be called on the main thread
+			fyne.DoAndWait(func() {
+				entry.SetText(text)
+			})
 		}
 
 		// Update metadata
