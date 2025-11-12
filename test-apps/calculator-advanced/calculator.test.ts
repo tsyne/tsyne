@@ -11,6 +11,10 @@ import { Calculator } from './calculator';
  * - Assertions and expectations
  * - UI interaction simulation
  * - State verification
+ *
+ * USAGE:
+ * - Headless mode (default): npm test
+ * - Visual debugging mode: TSYNE_HEADED=1 npm test
  */
 
 describe('Calculator Tests', () => {
@@ -18,8 +22,9 @@ describe('Calculator Tests', () => {
   let ctx: TestContext;
 
   beforeEach(async () => {
-    // Create test instance (headless by default)
-    tsyneTest = new TsyneTest({ headed: false });
+    // Support TSYNE_HEADED=1 environment variable for visual debugging
+    const headed = process.env.TSYNE_HEADED === '1';
+    tsyneTest = new TsyneTest({ headed });
   });
 
   afterEach(async () => {

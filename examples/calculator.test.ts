@@ -14,6 +14,10 @@
  * - Harder to debug failures
  * - Cannot test edge cases quickly
  * - Must spawn bridge for every test
+ *
+ * USAGE:
+ * - Headless mode (default): npm run test:calculator
+ * - Visual debugging mode: TSYNE_HEADED=1 npm run test:calculator
  */
 
 import { app } from '../src';
@@ -25,7 +29,9 @@ describe('Simple Calculator Tests', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
-    tsyneTest = new TsyneTest({ headed: false });
+    // Support TSYNE_HEADED=1 environment variable for visual debugging
+    const headed = process.env.TSYNE_HEADED === '1';
+    tsyneTest = new TsyneTest({ headed });
   });
 
   afterEach(async () => {

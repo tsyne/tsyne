@@ -24,6 +24,8 @@ class NullWidget {
 class NullLabel extends NullWidget {}
 class NullButton extends NullWidget {}
 class NullEntry extends NullWidget {}
+class NullMultiLineEntry extends NullWidget {}
+class NullPasswordEntry extends NullWidget {}
 class NullCheckbox extends NullWidget {}
 class NullSelect extends NullWidget {}
 class NullSlider extends NullWidget {}
@@ -32,10 +34,21 @@ class NullRadioGroup extends NullWidget {}
 class NullVBox extends NullWidget {}
 class NullHBox extends NullWidget {}
 class NullScroll extends NullWidget {}
+class NullGrid extends NullWidget {}
 class NullSeparator extends NullWidget {}
+class NullHyperlink extends NullWidget {}
+class NullSplit extends NullWidget {}
+class NullTabs extends NullWidget {}
+class NullToolbar extends NullWidget {}
 class NullCard extends NullWidget {}
+class NullAccordion extends NullWidget {}
+class NullForm extends NullWidget {}
+class NullTree extends NullWidget {}
+class NullRichText extends NullWidget {}
 class NullCenter extends NullWidget {}
 class NullImage extends NullWidget {}
+class NullBorder extends NullWidget {}
+class NullGridWrap extends NullWidget {}
 class NullTable extends NullWidget {}
 class NullList extends NullWidget {}
 
@@ -113,6 +126,10 @@ export class ResourceDiscoveryContext {
     return new NullSeparator();
   }
 
+  hyperlink(text: string, url: string): NullHyperlink {
+    return new NullHyperlink();
+  }
+
   /**
    * Image widget - RECORDS the image path for fetching
    */
@@ -172,6 +189,113 @@ export class ResourceDiscoveryContext {
     this.containerStack.pop();
     return container;
   }
+
+  accordion(items: Array<{title: string, builder: () => void}>): NullAccordion {
+    const container = new NullAccordion();
+    // Execute each item's builder to discover resources
+    for (const item of items) {
+      this.containerStack.push(container);
+      item.builder();
+      this.containerStack.pop();
+    }
+    return container;
+  }
+
+  richtext(segments: Array<{text: string; bold?: boolean; italic?: boolean; monospace?: boolean}>): NullRichText {
+    return new NullRichText();
+  }
+
+  tabs(tabDefinitions: Array<{title: string, builder: () => void}>, location?: 'top' | 'bottom' | 'leading' | 'trailing'): NullTabs {
+    const container = new NullTabs();
+    // Execute each tab's builder to discover resources
+    for (const tabDef of tabDefinitions) {
+      this.containerStack.push(container);
+      tabDef.builder();
+      this.containerStack.pop();
+    }
+    return container;
+  }
+
+  toolbar(toolbarItems: Array<{type: 'action' | 'separator' | 'spacer'; label?: string; onAction?: () => void}>): NullToolbar {
+    return new NullToolbar();
+  }
+
+  grid(columns: number, builder: () => void): NullGrid {
+    const container = new NullGrid();
+    this.containerStack.push(container);
+    builder();
+    this.containerStack.pop();
+    return container;
+  }
+
+  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): NullSplit {
+    const container = new NullSplit();
+    this.containerStack.push(container);
+    leadingBuilder();
+    this.containerStack.pop();
+    this.containerStack.push(container);
+    trailingBuilder();
+    this.containerStack.pop();
+    return container;
+  }
+
+  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): NullSplit {
+    const container = new NullSplit();
+    this.containerStack.push(container);
+    leadingBuilder();
+    this.containerStack.pop();
+    this.containerStack.push(container);
+    trailingBuilder();
+    this.containerStack.pop();
+    return container;
+  }
+
+  form(items: Array<{label: string, widget: any}>, onSubmit?: () => void, onCancel?: () => void): NullForm {
+    return new NullForm();
+  }
+
+  tree(rootLabel: string): NullTree {
+    return new NullTree();
+  }
+
+  border(config: {top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void}): NullBorder {
+    const container = new NullBorder();
+    // Execute each section's builder to discover resources
+    if (config.top) {
+      this.containerStack.push(container);
+      config.top();
+      this.containerStack.pop();
+    }
+    if (config.bottom) {
+      this.containerStack.push(container);
+      config.bottom();
+      this.containerStack.pop();
+    }
+    if (config.left) {
+      this.containerStack.push(container);
+      config.left();
+      this.containerStack.pop();
+    }
+    if (config.right) {
+      this.containerStack.push(container);
+      config.right();
+      this.containerStack.pop();
+    }
+    if (config.center) {
+      this.containerStack.push(container);
+      config.center();
+      this.containerStack.pop();
+    }
+    return container;
+  }
+
+  gridwrap(itemWidth: number, itemHeight: number, builder: () => void): NullGridWrap {
+    const container = new NullGridWrap();
+    this.containerStack.push(container);
+    builder();
+    this.containerStack.pop();
+    return container;
+  }
 }
 
 /**
@@ -198,6 +322,7 @@ export function createDiscoveryAPI(context: ResourceDiscoveryContext) {
     radiogroup: (options: string[], selected?: string, onChange?: (selected: string) => void) =>
       context.radiogroup(options, selected, onChange),
     separator: () => context.separator(),
+    hyperlink: (text: string, url: string) => context.hyperlink(text, url),
     image: (path: string, mode?: 'contain' | 'stretch' | 'original') => context.image(path, mode),
     table: (headers: string[], data: string[][]) => context.table(headers, data),
     list: (items: string[], onSelected?: (index: number, item: string) => void) =>
@@ -207,6 +332,26 @@ export function createDiscoveryAPI(context: ResourceDiscoveryContext) {
     scroll: (builder: () => void) => context.scroll(builder),
     center: (builder: () => void) => context.center(builder),
     card: (title: string, subtitle: string, builder: () => void) =>
-      context.card(title, subtitle, builder)
+      context.card(title, subtitle, builder),
+    accordion: (items: Array<{title: string, builder: () => void}>) =>
+      context.accordion(items),
+    richtext: (segments: Array<{text: string; bold?: boolean; italic?: boolean; monospace?: boolean}>) =>
+      context.richtext(segments),
+    tabs: (tabDefinitions: Array<{title: string, builder: () => void}>, location?: 'top' | 'bottom' | 'leading' | 'trailing') =>
+      context.tabs(tabDefinitions, location),
+    toolbar: (toolbarItems: Array<{type: 'action' | 'separator' | 'spacer'; label?: string; onAction?: () => void}>) =>
+      context.toolbar(toolbarItems),
+    grid: (columns: number, builder: () => void) => context.grid(columns, builder),
+    hsplit: (leadingBuilder: () => void, trailingBuilder: () => void, offset?: number) =>
+      context.hsplit(leadingBuilder, trailingBuilder, offset),
+    vsplit: (leadingBuilder: () => void, trailingBuilder: () => void, offset?: number) =>
+      context.vsplit(leadingBuilder, trailingBuilder, offset),
+    form: (items: Array<{label: string, widget: any}>, onSubmit?: () => void, onCancel?: () => void) =>
+      context.form(items, onSubmit, onCancel),
+    tree: (rootLabel: string) => context.tree(rootLabel),
+    border: (config: {top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void}) =>
+      context.border(config),
+    gridwrap: (itemWidth: number, itemHeight: number, builder: () => void) =>
+      context.gridwrap(itemWidth, itemHeight, builder)
   };
 }

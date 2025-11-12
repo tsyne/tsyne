@@ -149,6 +149,31 @@ browserTest(
     }
     console.log('✓ Navigation button found: → Go to About Page');
 
+    // Verify hyperlink widgets exist
+    const allWidgets = await ctx.getAllWidgets();
+    const hyperlinkWidgets = allWidgets.filter(w => w.type === 'hyperlink');
+    if (hyperlinkWidgets.length !== 3) {
+      throw new Error(`Expected 3 hyperlink widgets, found ${hyperlinkWidgets.length}`);
+    }
+    console.log('✓ Found 3 hyperlink widgets (GitHub, Fyne, TypeScript)');
+
+    // Verify hyperlink widget texts
+    const expectedHyperlinks = [
+      'Visit Tsyne GitHub Repository',
+      'Visit Fyne (Go UI Toolkit)',
+      'Learn TypeScript'
+    ];
+    for (const linkText of expectedHyperlinks) {
+      const linkWidget = await ctx.findWidget({ text: linkText });
+      if (!linkWidget) {
+        throw new Error(`Hyperlink not found: ${linkText}`);
+      }
+      if (linkWidget.type !== 'hyperlink') {
+        throw new Error(`Widget "${linkText}" has incorrect type: ${linkWidget.type}, expected: hyperlink`);
+      }
+    }
+    console.log('✓ All hyperlink widgets have correct text and type');
+
     // Click button and verify navigation
     await ctx.clickWidget(aboutButton.id);
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -741,7 +766,182 @@ browserTest(
   }
 );
 
-// Test 10: / (home page) - Verify all navigation links present
+// Test 10: /widget-interactions - Test all interactive widgets (select, slider, radiogroup, etc.)
+browserTest(
+  'Test /widget-interactions',
+  [
+    {
+      path: '/widget-interactions',
+      code: require('fs').readFileSync(__dirname + '/pages/widget-interactions.ts', 'utf8')
+    },
+    {
+      path: '/',
+      code: require('fs').readFileSync(__dirname + '/pages/index.ts', 'utf8')
+    }
+  ],
+  async (bt) => {
+    await bt.createBrowser('/widget-interactions');
+    const ctx = bt.getContext();
+    bt.assertUrl('/widget-interactions');
+
+    const heading = await ctx.findWidget({ text: 'Widget Interactions Test Page' });
+    if (!heading) {
+      throw new Error('Page heading not found');
+    }
+    console.log('✓ Page heading found: Widget Interactions Test Page');
+
+    // Verify all widget types present
+    const allWidgets = await ctx.getAllWidgets();
+
+    // Test Select (dropdown) widget
+    const selectWidgets = allWidgets.filter(w => w.type === 'select');
+    if (selectWidgets.length !== 1) {
+      throw new Error(`Expected 1 select widget, found ${selectWidgets.length}`);
+    }
+    console.log('✓ Select (dropdown) widget present');
+
+    // Test Slider widget
+    const sliderWidgets = allWidgets.filter(w => w.type === 'slider');
+    if (sliderWidgets.length !== 1) {
+      throw new Error(`Expected 1 slider widget, found ${sliderWidgets.length}`);
+    }
+    console.log('✓ Slider widget present');
+
+    // Test RadioGroup widget
+    const radiogroupWidgets = allWidgets.filter(w => w.type === 'radiogroup');
+    if (radiogroupWidgets.length !== 1) {
+      throw new Error(`Expected 1 radiogroup widget, found ${radiogroupWidgets.length}`);
+    }
+    console.log('✓ RadioGroup widget present');
+
+    // Test MultiLineEntry widget
+    const multilineWidgets = allWidgets.filter(w => w.type === 'multilineentry');
+    if (multilineWidgets.length !== 1) {
+      throw new Error(`Expected 1 multilineentry widget, found ${multilineWidgets.length}`);
+    }
+    console.log('✓ MultiLineEntry widget present');
+
+    // Test PasswordEntry widget
+    const passwordWidgets = allWidgets.filter(w => w.type === 'passwordentry');
+    if (passwordWidgets.length !== 1) {
+      throw new Error(`Expected 1 passwordentry widget, found ${passwordWidgets.length}`);
+    }
+    console.log('✓ PasswordEntry widget present');
+
+    // Test ProgressBar widget interaction
+    const set25Button = await ctx.findWidget({ text: 'Set 25%' });
+    if (!set25Button) {
+      throw new Error('Progress bar control button not found');
+    }
+    await ctx.clickWidget(set25Button.id);
+    await ctx.wait(100);
+    console.log('✓ ProgressBar widget interactive (Set 25% button clicked)');
+
+    // Test Back to Home button
+    const backButton = await ctx.findWidget({ text: 'Back to Home' });
+    if (!backButton) {
+      throw new Error('Back to Home button not found');
+    }
+    await ctx.clickWidget(backButton.id);
+    await ctx.wait(200);
+    bt.assertUrl('/');
+    console.log('✓ Back to Home button navigates correctly');
+
+    console.log('✓ /widget-interactions test passed - all interactive widgets verified!\n');
+  }
+);
+
+// Test 11: /layout-demo - Test layout containers (Grid, GridWrap, Border, Center, Split, Form, Tree)
+browserTest(
+  'Test /layout-demo',
+  [
+    {
+      path: '/layout-demo',
+      code: require('fs').readFileSync(__dirname + '/pages/layout-demo.ts', 'utf8')
+    },
+    {
+      path: '/',
+      code: require('fs').readFileSync(__dirname + '/pages/index.ts', 'utf8')
+    }
+  ],
+  async (bt) => {
+    await bt.createBrowser('/layout-demo');
+    const ctx = bt.getContext();
+    bt.assertUrl('/layout-demo');
+
+    const heading = await ctx.findWidget({ text: 'Layout & Container Demo' });
+    if (!heading) {
+      throw new Error('Page heading not found');
+    }
+    console.log('✓ Page heading found: Layout & Container Demo');
+
+    // Verify all layout container types present
+    const allWidgets = await ctx.getAllWidgets();
+
+    // Test Grid layout
+    const gridWidgets = allWidgets.filter(w => w.type === 'grid');
+    if (gridWidgets.length !== 1) {
+      throw new Error(`Expected 1 grid widget, found ${gridWidgets.length}`);
+    }
+    console.log('✓ Grid layout present (2-column grid with 6 cells)');
+
+    // Test GridWrap layout
+    const gridwrapWidgets = allWidgets.filter(w => w.type === 'gridwrap');
+    if (gridwrapWidgets.length !== 1) {
+      throw new Error(`Expected 1 gridwrap widget, found ${gridwrapWidgets.length}`);
+    }
+    console.log('✓ GridWrap layout present (wrapping grid with fixed item sizes)');
+
+    // Test Center layout
+    const centerWidgets = allWidgets.filter(w => w.type === 'center');
+    if (centerWidgets.length !== 1) {
+      throw new Error(`Expected 1 center widget, found ${centerWidgets.length}`);
+    }
+    console.log('✓ Center layout present (centered card container)');
+
+    // Test Border layout (browser chrome also uses border, so we expect at least 1)
+    const borderWidgets = allWidgets.filter(w => w.type === 'border');
+    if (borderWidgets.length < 1) {
+      throw new Error(`Expected at least 1 border widget, found ${borderWidgets.length}`);
+    }
+    console.log(`✓ Border layout present (${borderWidgets.length} border widgets including browser chrome)`);
+
+    // Test Split widgets (hsplit and vsplit)
+    const splitWidgets = allWidgets.filter(w => w.type === 'split');
+    if (splitWidgets.length !== 2) {
+      throw new Error(`Expected 2 split widgets (hsplit + vsplit), found ${splitWidgets.length}`);
+    }
+    console.log('✓ Split layouts present (horizontal and vertical split panes)');
+
+    // Test Form widget
+    const formWidgets = allWidgets.filter(w => w.type === 'form');
+    if (formWidgets.length !== 1) {
+      throw new Error(`Expected 1 form widget, found ${formWidgets.length}`);
+    }
+    console.log('✓ Form widget present (labeled fields with submit/cancel)');
+
+    // Test Tree widget
+    const treeWidgets = allWidgets.filter(w => w.type === 'tree');
+    if (treeWidgets.length !== 1) {
+      throw new Error(`Expected 1 tree widget, found ${treeWidgets.length}`);
+    }
+    console.log('✓ Tree widget present (hierarchical tree structure)');
+
+    // Test Back to Home button
+    const backButton = await ctx.findWidget({ text: 'Back to Home' });
+    if (!backButton) {
+      throw new Error('Back to Home button not found');
+    }
+    await ctx.clickWidget(backButton.id);
+    await ctx.wait(200);
+    bt.assertUrl('/');
+    console.log('✓ Back to Home button navigates correctly');
+
+    console.log('✓ /layout-demo test passed - all layout containers verified!\n');
+  }
+);
+
+// Test 12: / (home page) - Verify all navigation links present
 browserTest(
   'Test /',
   [
