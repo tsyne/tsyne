@@ -15,16 +15,29 @@ These examples are designed to:
 
 ## 📸 Generating Screenshots
 
-To capture screenshots of all examples for documentation:
+All 11 showcase examples support automated screenshot capture via the `TAKE_SCREENSHOTS=1` environment variable:
 
 ```bash
-# Run the screenshot capture script
-npx ts-node examples/capture-screenshots.ts
+# Capture screenshot for a single example
+TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm test examples/01-hello-world.test.ts
+# Screenshot saved to examples/screenshots/01-hello-world.png
 
-# Screenshots will be saved to examples/screenshots/
+# Capture all screenshots (run each test individually)
+for test in examples/{01..13}-*.test.ts; do
+  TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm test "$test"
+done
 ```
 
-**Note:** Screenshots require a display (X11) to render properly.
+**How it works:**
+- Each test file includes screenshot capture logic at the most representative visual state
+- Screenshots are captured after the UI is rendered and verified visible
+- A 500ms wait ensures proper rendering before capture
+- Screenshots are saved to `examples/screenshots/` with matching filenames
+
+**Requirements:**
+- A display (X11 on Linux, native on Mac/Windows)
+- Both `TSYNE_HEADED=1` (show GUI) and `TAKE_SCREENSHOTS=1` (capture) must be set
+- Screenshots directory will be created automatically if it doesn't exist
 
 ## Running Examples
 

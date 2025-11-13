@@ -1,5 +1,6 @@
 // Test for multiplication-table example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Multiplication Table Example', () => {
   let tsyneTest: TsyneTest;
@@ -53,6 +54,14 @@ describe('Multiplication Table Example', () => {
     await ctx.expect(ctx.getByExactText('1')).toBeVisible();
     await ctx.expect(ctx.getByExactText('25')).toBeVisible();
     await ctx.expect(ctx.getByExactText('100')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '10-multiplication-table.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should calculate products correctly', async () => {

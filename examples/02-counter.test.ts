@@ -1,5 +1,6 @@
 // Test for counter example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Counter Example', () => {
   let tsyneTest: TsyneTest;
@@ -51,6 +52,14 @@ describe('Counter Example', () => {
 
     // Initial count should be 0
     await ctx.expect(ctx.getByExactText('Count: 0')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '02-counter.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
 
     // Click increment
     await ctx.getByExactText('Increment').click();

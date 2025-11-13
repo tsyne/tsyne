@@ -1,5 +1,6 @@
 // Test for percentage-clock example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Percentage Clock Example', () => {
   let tsyneTest: TsyneTest;
@@ -67,6 +68,14 @@ describe('Percentage Clock Example', () => {
     await ctx.expect(ctx.getByExactText("Today's hours:")).toBeVisible();
     await ctx.expect(ctx.getByExactText('Minutes:')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Seconds:')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '11-percentage-clock.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
 
     // Cleanup
     clearInterval(intervalId);
