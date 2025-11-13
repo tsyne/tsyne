@@ -15,16 +15,26 @@ These examples are designed to:
 
 ## 📸 Generating Screenshots
 
-To capture screenshots of all examples for documentation:
+To capture screenshots of examples for documentation, use the manual approach:
 
 ```bash
-# Run the screenshot capture script
-npx ts-node examples/capture-screenshots.ts
+# Method 1: Run tests in headed mode and screenshot manually
+TSYNE_HEADED=1 npm test examples/01-hello-world.test.ts
+# Take screenshot with your OS tool (Shift+PrtScn on Linux, Cmd+Shift+4 on Mac)
+# Save to examples/screenshots/01-hello-world.png
 
-# Screenshots will be saved to examples/screenshots/
+# Method 2: Run example directly (after building)
+npm run build
+node examples/01-hello-world.js
+# Take screenshot and save to examples/screenshots/
+
+# Method 3: Use system screenshot automation (Linux example)
+TSYNE_HEADED=1 npm test examples/01-hello-world.test.ts &
+sleep 2
+scrot -u examples/screenshots/01-hello-world.png
 ```
 
-**Note:** Screenshots require a display (X11) to render properly.
+**Note:** Screenshots require a display (X11 on Linux) to render. The `capture-screenshots.ts` script is a template for future automation but currently requires manual screenshots or refactoring examples to be programmatically callable.
 
 ## Running Examples
 

@@ -31,24 +31,22 @@ const examples: ExampleInfo[] = [
 async function captureScreenshot(exampleFile: string, name: string) {
   console.log(`\n📸 Capturing ${name}...`);
 
-  const tsyneTest = new TsyneTest({ headed: true });
-
   try {
-    // Import and run the example
-    const exampleModule = require(`./${exampleFile}`);
+    // Dynamic import to get the example's createApp function
+    const exampleModule = await import(`./${exampleFile}.js`);
 
-    // Give it time to render
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Each example exports a createApp or similar function
+    // For now, we'll need to handle each differently
+    // This is a placeholder - actual implementation would need per-example logic
 
-    // Capture screenshot
-    const screenshotPath = path.join(__dirname, 'screenshots', `${exampleFile}.png`);
-    await tsyneTest.screenshot(screenshotPath);
+    const tsyneTest = new TsyneTest({ headed: true });
 
-    console.log(`✅ Saved: ${screenshotPath}`);
+    // Note: This requires each example to export its app creation logic
+    // as a function that can be called in test mode
+    console.warn(`⚠️  Screenshot capture requires examples to be refactored for programmatic use`);
+    console.warn(`   Currently examples use top-level app() calls which execute immediately`);
 
-    // Cleanup
     await tsyneTest.cleanup();
-    await new Promise(resolve => setTimeout(resolve, 500));
 
   } catch (error) {
     console.error(`❌ Failed to capture ${name}:`, error);
