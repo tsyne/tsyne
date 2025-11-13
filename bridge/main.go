@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -63,6 +65,47 @@ type Bridge struct {
 type WidgetMetadata struct {
 	Type string
 	Text string
+}
+
+// TappableContainer wraps a widget to add double-click support
+type TappableContainer struct {
+	widget.BaseWidget
+	content             fyne.CanvasObject
+	DoubleClickCallback func()
+	lastTapTime         int64
+}
+
+// NewTappableContainer creates a new tappable container
+func NewTappableContainer(content fyne.CanvasObject, callback func()) *TappableContainer {
+	t := &TappableContainer{
+		content:             content,
+		DoubleClickCallback: callback,
+	}
+	t.ExtendBaseWidget(t)
+	return t
+}
+
+// Tapped handles tap events for double-click detection
+func (t *TappableContainer) Tapped(e *fyne.PointEvent) {
+	now := time.Now().UnixMilli()
+	log.Printf("DEBUG: TappableContainer tapped, lastTapTime=%d, now=%d, diff=%d", t.lastTapTime, now, now-t.lastTapTime)
+	if now-t.lastTapTime < 500 { // 500ms for double-click
+		log.Printf("DEBUG: Double-click detected! Firing callback")
+		if t.DoubleClickCallback != nil {
+			t.DoubleClickCallback()
+		}
+	}
+	t.lastTapTime = now
+
+	// Also tap the content if it's tappable
+	if tappable, ok := t.content.(fyne.Tappable); ok {
+		tappable.Tapped(e)
+	}
+}
+
+// CreateRenderer for the tappable container
+func (t *TappableContainer) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(t.content)
 }
 
 func NewBridge(testMode bool) *Bridge {
@@ -250,6 +293,22 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleGetAllWidgets(msg)
 	case "captureWindow":
 		b.handleCaptureWindow(msg)
+	case "containerAdd":
+		b.handleContainerAdd(msg)
+	case "containerRemoveAll":
+		b.handleContainerRemoveAll(msg)
+	case "containerRefresh":
+		b.handleContainerRefresh(msg)
+	case "disableWidget":
+		b.handleDisableWidget(msg)
+	case "enableWidget":
+		b.handleEnableWidget(msg)
+	case "focusWidget":
+		b.handleFocusWidget(msg)
+	case "hideWidget":
+		b.handleHideWidget(msg)
+	case "showWidget":
+		b.handleShowWidget(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -509,8 +568,43 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 		}
 	}
 
+	// Set minimum width if provided
+	var widgetToStore fyne.CanvasObject = entry
+	var needsEntryRef bool = false
+
+	if minWidth, ok := msg.Payload["minWidth"].(float64); ok && minWidth > 0 {
+		// Create a sized container with the entry
+		sizedEntry := canvas.NewRectangle(color.Transparent)
+		sizedEntry.SetMinSize(fyne.NewSize(float32(minWidth), entry.MinSize().Height))
+		widgetToStore = container.NewMax(sizedEntry, entry)
+		needsEntryRef = true // Entry is now wrapped, so we need a separate reference
+	}
+
+	// If double-click callback is provided, wrap in a tappable container
+	if doubleClickCallbackID, ok := msg.Payload["doubleClickCallbackId"].(string); ok {
+		callback := func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": doubleClickCallbackID,
+				},
+			})
+		}
+
+		// Wrap whatever we have so far (entry or sized container) in tappable container
+		widgetToStore = NewTappableContainer(widgetToStore, callback)
+		needsEntryRef = true // We need entry reference for operations
+	}
+
+	// Store the actual entry widget separately if it's wrapped
+	if needsEntryRef {
+		b.mu.Lock()
+		b.widgets[widgetID+"_entry"] = entry
+		b.mu.Unlock()
+	}
+
 	b.mu.Lock()
-	b.widgets[widgetID] = entry
+	b.widgets[widgetID] = widgetToStore
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "entry", Text: ""}
 	b.mu.Unlock()
 
@@ -1222,6 +1316,8 @@ func (b *Bridge) handleSetText(msg Message) {
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1233,22 +1329,30 @@ func (b *Bridge) handleSetText(msg Message) {
 		return
 	}
 
+	// If we have a separate entry reference, use that
+	actualWidget := obj
+	if hasEntry {
+		actualWidget = entryObj
+	}
+
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
-		switch w := obj.(type) {
+		switch w := actualWidget.(type) {
 		case *widget.Label:
 			w.SetText(text)
 		case *widget.Entry:
 			w.SetText(text)
 		case *widget.Button:
 			w.SetText(text)
+		case *widget.Check:
+			w.SetText(text)
 		}
 	})
 
 	// Check if widget type is supported
 	supported := false
-	switch obj.(type) {
-	case *widget.Label, *widget.Entry, *widget.Button:
+	switch actualWidget.(type) {
+	case *widget.Label, *widget.Entry, *widget.Button, *widget.Check:
 		supported = true
 	}
 
@@ -1280,6 +1384,8 @@ func (b *Bridge) handleGetText(msg Message) {
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -1291,13 +1397,21 @@ func (b *Bridge) handleGetText(msg Message) {
 		return
 	}
 
+	// If we have a separate entry reference, use that
+	actualWidget := obj
+	if hasEntry {
+		actualWidget = entryObj
+	}
+
 	var text string
-	switch w := obj.(type) {
+	switch w := actualWidget.(type) {
 	case *widget.Label:
 		text = w.Text
 	case *widget.Entry:
 		text = w.Text
 	case *widget.Button:
+		text = w.Text
+	case *widget.Check:
 		text = w.Text
 	default:
 		b.sendResponse(Response{
@@ -1334,8 +1448,12 @@ func (b *Bridge) handleSetChecked(msg Message) {
 
 	if check, ok := obj.(*widget.Check); ok {
 		// UI updates must happen on the main thread
+		// Temporarily disable OnChanged to prevent infinite loops when setting initial state
 		fyne.DoAndWait(func() {
+			originalCallback := check.OnChanged
+			check.OnChanged = nil
 			check.SetChecked(checked)
+			check.OnChanged = originalCallback
 		})
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1379,6 +1497,226 @@ func (b *Bridge) handleGetChecked(msg Message) {
 			Error:   "Widget is not a checkbox",
 		})
 	}
+}
+
+func (b *Bridge) handleDisableWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// If we have a separate entry reference (from TappableEntry), use that
+	if hasEntry {
+		if entry, ok := entryObj.(*widget.Entry); ok {
+			fyne.DoAndWait(func() {
+				entry.Disable()
+			})
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+			return
+		}
+	}
+
+	// Try to disable the widget directly
+	if disableable, ok := obj.(fyne.Disableable); ok {
+		fyne.DoAndWait(func() {
+			disableable.Disable()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget does not support disabling",
+		})
+	}
+}
+
+func (b *Bridge) handleEnableWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// If we have a separate entry reference (from TappableEntry), use that
+	if hasEntry {
+		if entry, ok := entryObj.(*widget.Entry); ok {
+			fyne.DoAndWait(func() {
+				entry.Enable()
+			})
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+			return
+		}
+	}
+
+	// Try to enable the widget directly
+	if disableable, ok := obj.(fyne.Disableable); ok {
+		fyne.DoAndWait(func() {
+			disableable.Enable()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget does not support enabling",
+		})
+	}
+}
+
+func (b *Bridge) handleFocusWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// If we have a separate entry reference (from TappableEntry), use that
+	if hasEntry {
+		if entry, ok := entryObj.(*widget.Entry); ok {
+			// Find the canvas for this widget
+			for _, win := range b.windows {
+				canvas := win.Canvas()
+				if canvas != nil {
+					fyne.DoAndWait(func() {
+						canvas.Focus(entry)
+					})
+					b.sendResponse(Response{
+						ID:      msg.ID,
+						Success: true,
+					})
+					return
+				}
+			}
+		}
+	}
+
+	// Try to focus the widget directly
+	if focusable, ok := obj.(fyne.Focusable); ok {
+		// Find the canvas for this widget
+		for _, win := range b.windows {
+			canvas := win.Canvas()
+			if canvas != nil {
+				fyne.DoAndWait(func() {
+					canvas.Focus(focusable)
+				})
+				b.sendResponse(Response{
+					ID:      msg.ID,
+					Success: true,
+				})
+				return
+			}
+		}
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Could not find canvas for widget",
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not focusable",
+		})
+	}
+}
+
+func (b *Bridge) handleHideWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	fyne.DoAndWait(func() {
+		obj.Hide()
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleShowWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	fyne.DoAndWait(func() {
+		obj.Show()
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
 }
 
 func (b *Bridge) handleSetSelected(msg Message) {
@@ -2750,30 +3088,37 @@ func (b *Bridge) handleFindWidget(msg Message) {
 
 	b.mu.RLock()
 
-	var matches []string
+	var visibleMatches []string
+	var hiddenMatches []string
 
 	for widgetID, meta := range b.widgetMeta {
+		var isMatch bool
 		switch selectorType {
 		case "text":
-			if strings.Contains(meta.Text, selector) {
-				matches = append(matches, widgetID)
-			}
+			isMatch = strings.Contains(meta.Text, selector)
 		case "exactText":
-			if meta.Text == selector {
-				matches = append(matches, widgetID)
-			}
+			isMatch = meta.Text == selector
 		case "type":
-			if meta.Type == selector {
-				matches = append(matches, widgetID)
-			}
+			isMatch = meta.Type == selector
 		case "id":
-			if widgetID == selector {
-				matches = append(matches, widgetID)
+			isMatch = widgetID == selector
+		}
+
+		if isMatch {
+			// Check if widget is visible
+			obj, exists := b.widgets[widgetID]
+			if exists && obj.Visible() {
+				visibleMatches = append(visibleMatches, widgetID)
+			} else {
+				hiddenMatches = append(hiddenMatches, widgetID)
 			}
 		}
 	}
 
 	b.mu.RUnlock() // Release read lock before sending response!
+
+	// Prioritize visible widgets - return visible first, then hidden
+	matches := append(visibleMatches, hiddenMatches...)
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
@@ -2812,6 +3157,31 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			ID:      msg.ID,
 			Success: true,
 		})
+	} else if check, ok := obj.(*widget.Check); ok {
+		// Handle checkbox clicks
+		if b.testMode {
+			test.Tap(check)
+		} else {
+			// Toggle the checkbox state and trigger the callback manually
+			newState := !check.Checked
+			var callback func(bool)
+
+			// Update UI on main thread
+			fyne.DoAndWait(func() {
+				check.SetChecked(newState)
+				// Capture callback reference (don't call it here - would block main thread)
+				callback = check.OnChanged
+			})
+
+			// Call callback AFTER DoAndWait to avoid blocking main thread
+			if callback != nil {
+				callback(newState)
+			}
+		}
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
 	} else {
 		// Get widget type for debugging
 		widgetType := fmt.Sprintf("%T", obj)
@@ -2829,6 +3199,8 @@ func (b *Bridge) handleTypeText(msg Message) {
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
 	b.mu.RUnlock()
 
 	if !exists {
@@ -2840,7 +3212,17 @@ func (b *Bridge) handleTypeText(msg Message) {
 		return
 	}
 
-	if entry, ok := obj.(*widget.Entry); ok {
+	// If we have a separate entry reference (from TappableEntry), use that
+	var entry *widget.Entry
+	if hasEntry {
+		if e, ok := entryObj.(*widget.Entry); ok {
+			entry = e
+		}
+	} else if e, ok := obj.(*widget.Entry); ok {
+		entry = e
+	}
+
+	if entry != nil {
 		if b.testMode {
 			test.Type(entry, text)
 		} else {
@@ -3194,6 +3576,125 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 		ID:      msg.ID,
 		Success: true,
 	})
+}
+
+func (b *Bridge) handleContainerAdd(msg Message) {
+	containerID := msg.Payload["containerId"].(string)
+	childID := msg.Payload["childId"].(string)
+
+	b.mu.RLock()
+	containerObj, containerExists := b.widgets[containerID]
+	childObj, childExists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !containerExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Container not found",
+		})
+		return
+	}
+
+	if !childExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		})
+		return
+	}
+
+	// Cast to container and add the child
+	if cont, ok := containerObj.(*fyne.Container); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			cont.Add(childObj)
+		})
+
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a container",
+		})
+	}
+}
+
+func (b *Bridge) handleContainerRemoveAll(msg Message) {
+	containerID := msg.Payload["containerId"].(string)
+
+	b.mu.RLock()
+	containerObj, exists := b.widgets[containerID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Container not found",
+		})
+		return
+	}
+
+	// Cast to container and remove all children
+	if cont, ok := containerObj.(*fyne.Container); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			cont.Objects = nil
+		})
+
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a container",
+		})
+	}
+}
+
+func (b *Bridge) handleContainerRefresh(msg Message) {
+	containerID := msg.Payload["containerId"].(string)
+
+	b.mu.RLock()
+	containerObj, exists := b.widgets[containerID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Container not found",
+		})
+		return
+	}
+
+	// Cast to container and refresh
+	if cont, ok := containerObj.(*fyne.Container); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			cont.Refresh()
+		})
+
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a container",
+		})
+	}
 }
 
 func main() {

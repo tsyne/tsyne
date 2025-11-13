@@ -252,8 +252,8 @@ describe('TodoMVC Tests', () => {
     await ctx.getByExactText("Active").click();
     await ctx.wait(100);
 
-    // Switch back to all filter
-    await ctx.getByExactText("[All]").click();
+    // Switch back to all filter (button text is now "All" without brackets)
+    await ctx.getByExactText("All").click();
     await ctx.wait(100);
 
     // Should show both tasks

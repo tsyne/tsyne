@@ -51,8 +51,8 @@ export class App {
     return new Label(this.ctx, text, classNames);
   }
 
-  entry(placeholder?: string): Entry {
-    return new Entry(this.ctx, placeholder);
+  entry(placeholder?: string, onSubmit?: () => void, minWidth?: number, onDoubleClick?: () => void): Entry {
+    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick);
   }
 
   multilineentry(placeholder?: string, wrapping?: 'off' | 'word' | 'break'): MultiLineEntry {

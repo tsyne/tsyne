@@ -70,6 +70,18 @@ export abstract class Widget {
     });
     return result.text;
   }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
 }
 
 /**
@@ -167,7 +179,7 @@ export class Label extends Widget {
  * Entry (text input) widget
  */
 export class Entry extends Widget {
-  constructor(ctx: Context, placeholder?: string, onSubmit?: () => void) {
+  constructor(ctx: Context, placeholder?: string, onSubmit?: () => void, minWidth?: number, onDoubleClick?: () => void) {
     const id = ctx.generateId('entry');
     super(ctx, id);
 
@@ -181,11 +193,41 @@ export class Entry extends Widget {
       });
     }
 
+    if (onDoubleClick) {
+      const doubleClickCallbackId = ctx.generateId('callback');
+      payload.doubleClickCallbackId = doubleClickCallbackId;
+      ctx.bridge.registerEventHandler(doubleClickCallbackId, () => {
+        onDoubleClick();
+      });
+    }
+
+    if (minWidth !== undefined) {
+      payload.minWidth = minWidth;
+    }
+
     ctx.bridge.send('createEntry', payload);
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking)
     this.applyStyles('entry').catch(() => {});
+  }
+
+  async disable(): Promise<void> {
+    await this.ctx.bridge.send('disableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async enable(): Promise<void> {
+    await this.ctx.bridge.send('enableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async focus(): Promise<void> {
+    await this.ctx.bridge.send('focusWidget', {
+      widgetId: this.id
+    });
   }
 }
 
@@ -282,6 +324,47 @@ export class VBox {
     ctx.bridge.send('createVBox', { id: this.id, children });
     ctx.addToCurrentContainer(this.id);
   }
+
+  /**
+   * Dynamically add a widget to this container (Fyne container.Add)
+   * @param builder Function that creates the widget to add
+   */
+  add(builder: () => void): void {
+    // Push this container as the current context
+    this.ctx.pushContainer();
+
+    // Execute builder to create the widget
+    builder();
+
+    // Get the widget IDs that were just created
+    const newChildren = this.ctx.popContainer();
+
+    // Send add command to bridge for each child
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container (Fyne container.Objects = nil)
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display (Fyne container.Refresh)
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
+  }
 }
 
 /**
@@ -307,6 +390,47 @@ export class HBox {
     // Create the HBox with the children
     ctx.bridge.send('createHBox', { id: this.id, children });
     ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Dynamically add a widget to this container (Fyne container.Add)
+   * @param builder Function that creates the widget to add
+   */
+  add(builder: () => void): void {
+    // Push this container as the current context
+    this.ctx.pushContainer();
+
+    // Execute builder to create the widget
+    builder();
+
+    // Get the widget IDs that were just created
+    const newChildren = this.ctx.popContainer();
+
+    // Send add command to bridge for each child
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container (Fyne container.Objects = nil)
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display (Fyne container.Refresh)
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
   }
 }
 
