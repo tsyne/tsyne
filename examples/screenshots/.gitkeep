@@ -1,0 +1,36 @@
+# Screenshots directory
+
+This directory contains screenshots of all Tsyne examples for documentation purposes.
+
+## Generating Screenshots
+
+To generate screenshots, run:
+
+```bash
+npx ts-node examples/capture-screenshots.ts
+```
+
+Screenshots will be saved as PNG files with names matching the example files.
+
+## Requirements
+
+- X11 display (for GUI rendering)
+- All examples must be built: `npm run build`
+
+## Screenshot List
+
+Expected screenshots:
+- 01-hello-world.png
+- 02-counter.png
+- 03-button-spacer.png
+- 04-feedback-form.png
+- 05-live-clock.png
+- 07-signup-form.png
+- 09-players-list.png
+- 10-multiplication-table.png
+- 11-percentage-clock.png
+- 12-shopping-list.png
+- 13-tabbed-settings.png
+- calculator.png
+- todomvc.png
+- todomvc-ngshow.png
