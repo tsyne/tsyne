@@ -29,11 +29,13 @@ import * as path from 'path';
 // Observable System - Pseudo-declarative automatic updates
 // ============================================================================
 
-type ChangeListener = () => void;
+type ChangeType = 'filter' | 'add' | 'delete' | 'toggle' | 'update' | 'clear' | 'load';
+type StoreChangeListener = (changeType: ChangeType) => void;
+type SimpleChangeListener = () => void;
 
 class Observable<T> {
   private value: T;
-  private listeners: ChangeListener[] = [];
+  private listeners: SimpleChangeListener[] = [];
 
   constructor(initialValue: T) {
     this.value = initialValue;
@@ -48,7 +50,7 @@ class Observable<T> {
     this.notify();
   }
 
-  subscribe(listener: ChangeListener): () => void {
+  subscribe(listener: SimpleChangeListener): () => void {
     this.listeners.push(listener);
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
@@ -81,22 +83,22 @@ class TodoStore {
   private nextId: number = 1;
   private currentFilter: FilterType = 'all';
   private filePath: string;
-  private changeListeners: ChangeListener[] = [];
+  private changeListeners: StoreChangeListener[] = [];
 
   constructor(filePath?: string) {
     this.filePath = filePath || path.join(process.cwd(), 'todos.json');
     this.load();
   }
 
-  subscribe(listener: ChangeListener): () => void {
+  subscribe(listener: StoreChangeListener): () => void {
     this.changeListeners.push(listener);
     return () => {
       this.changeListeners = this.changeListeners.filter(l => l !== listener);
     };
   }
 
-  private notifyChange(): void {
-    this.changeListeners.forEach(listener => listener());
+  private notifyChange(changeType: ChangeType): void {
+    this.changeListeners.forEach(listener => listener(changeType));
   }
 
   load(): void {
@@ -115,7 +117,7 @@ class TodoStore {
       this.todos = [];
       this.nextId = 1;
     }
-    this.notifyChange();
+    this.notifyChange('load');
   }
 
   save(): void {
@@ -139,7 +141,7 @@ class TodoStore {
     };
     this.todos.push(todo);
     this.save();
-    this.notifyChange();
+    this.notifyChange('add');
     return todo;
   }
 
@@ -148,7 +150,7 @@ class TodoStore {
     if (todo) {
       todo.completed = !todo.completed;
       this.save();
-      this.notifyChange();
+      this.notifyChange('toggle');
     }
   }
 
@@ -157,20 +159,20 @@ class TodoStore {
     if (todo) {
       todo.text = newText.trim();
       this.save();
-      this.notifyChange();
+      this.notifyChange('update');
     }
   }
 
   deleteTodo(id: number): void {
     this.todos = this.todos.filter(t => t.id !== id);
     this.save();
-    this.notifyChange();
+    this.notifyChange('delete');
   }
 
   clearCompleted(): void {
     this.todos = this.todos.filter(t => !t.completed);
     this.save();
-    this.notifyChange();
+    this.notifyChange('clear');
   }
 
   getFilteredTodos(): TodoItem[] {
@@ -190,7 +192,7 @@ class TodoStore {
 
   setFilter(filter: FilterType): void {
     this.currentFilter = filter;
-    this.notifyChange();
+    this.notifyChange('filter');
   }
 
   getFilter(): FilterType {
@@ -223,8 +225,7 @@ export function createTodoApp(a: any, storePath?: string) {
   let filterAllButton: any;
   let filterActiveButton: any;
   let filterCompletedButton: any;
-
-  const todoViews = new Map<number, { container: any; checkbox: any; textEntry: any; deleteButton: any }>();
+  let listBinding: any;
 
   async function updateStatusLabel() {
     const activeCount = store.getActiveCount();
@@ -240,125 +241,95 @@ export function createTodoApp(a: any, storePath?: string) {
     await filterCompletedButton.setText(currentFilter === 'completed' ? '[Completed]' : 'Completed');
   }
 
-  function addTodoView(todo: TodoItem) {
-    let todoHBox: any;
-    let checkbox: any;
-    let textEntry: any;
-    let deleteButton: any;
-    let originalText = todo.text;
-    let isEditing = false;
-
-    const saveEdit = async () => {
-      const newText = await textEntry.getText();
-      if (newText && newText.trim()) {
-        store.updateTodo(todo.id, newText);
-        originalText = newText.trim();
-        await checkbox.setText(originalText);
-      } else {
-        await textEntry.setText(originalText);
-      }
-      await textEntry.hide();
-      await checkbox.show();
-      isEditing = false;
-    };
-
-    const startEdit = async () => {
-      isEditing = true;
-      originalText = await checkbox.getText();
-      await textEntry.setText(originalText);
-      await checkbox.hide();
-      await textEntry.show();
-      await textEntry.focus();
-    };
-
-    const ifEditingSaveEdit = async () => {
-      if (isEditing) await saveEdit();
-    };
-
-    const ifNotEditingStartEdit = async () => {
-      if (!isEditing) await startEdit();
-    };
-
-    // Helper function to check if this todo should be visible based on current filter
-    // Looks up current state from store to handle completion status changes
-    const shouldShowTodo = () => {
-      const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
-      if (!currentTodo) return false; // Todo was deleted
-
-      const filter = store.getFilter();
-      if (filter === 'all') return true;
-      if (filter === 'active') return !currentTodo.completed;
-      if (filter === 'completed') return currentTodo.completed;
-      return true;
-    };
-
-    // Pseudo-declarative todo item - event handlers just update model
-    todoContainer.add(() => {
-      todoHBox = a.hbox(() => {
-        checkbox = a.checkbox(todo.text, async (checked: boolean) => {
-          store.toggleTodo(todo.id);
-        });
-
-        textEntry = a.entry('', ifEditingSaveEdit, 300);
-
-        a.button('Edit', ifNotEditingStartEdit);
-
-        deleteButton = a.button('Delete', async () => {
-          store.deleteTodo(todo.id);
-        });
-      });
-    });
-
-    (async () => {
-      await checkbox.setChecked(todo.completed);
-      await checkbox.setText(todo.text);
-      await textEntry.setText('');
-      await textEntry.hide();
-
-      // Apply ngShow for declarative visibility based on filter
-      todoHBox.ngShow(shouldShowTodo);
-    })();
-
-    todoViews.set(todo.id, { container: todoHBox, checkbox, textEntry, deleteButton });
-  }
-
-  function removeTodoView(todoId: number) {
-    const view = todoViews.get(todoId);
-    if (view) {
-      todoViews.delete(todoId);
-      rebuildTodoList();
-    }
-  }
-
   function showEmptyState() {
     const currentFilter = store.getFilter();
+    todoContainer.removeAll();
     todoContainer.add(() => {
       a.label(currentFilter === 'all' ? 'No todos yet. Add one above!' : `No ${currentFilter} todos`);
     });
     todoContainer.refresh();
   }
 
-  function rebuildTodoList() {
-    const allTodos = store.getAllTodos();
-    todoViews.clear();
-    todoContainer.removeAll();
+  // Pseudo-declarative todo item builder (AngularJS ng-repeat style)
+  function createTodoItemBuilder() {
+    return (todo: TodoItem) => {
+      let todoHBox: any;
+      let checkbox: any;
+      let textEntry: any;
+      let originalText = todo.text;
+      let isEditing = false;
 
-    if (allTodos.length === 0) {
-      showEmptyState();
-    } else {
-      allTodos.forEach((todo) => {
-        addTodoView(todo);
+      const saveEdit = async () => {
+        const newText = await textEntry.getText();
+        if (newText && newText.trim()) {
+          store.updateTodo(todo.id, newText);
+          originalText = newText.trim();
+          await checkbox.setText(originalText);
+        } else {
+          await textEntry.setText(originalText);
+        }
+        isEditing = false;
+        await todoHBox.refreshVisibility();
+      };
+
+      const startEdit = async () => {
+        isEditing = true;
+        originalText = await checkbox.getText();
+        await textEntry.setText(originalText);
+        await todoHBox.refreshVisibility();
+        await textEntry.focus();
+      };
+
+      const ifEditingSaveEdit = async () => {
+        if (isEditing) await saveEdit();
+      };
+
+      const ifNotEditingStartEdit = async () => {
+        if (!isEditing) await startEdit();
+      };
+
+      // ngShow-style visibility predicate
+      const shouldShowTodo = () => {
+        const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
+        if (!currentTodo) return false;
+
+        const filter = store.getFilter();
+        if (filter === 'all') return true;
+        if (filter === 'active') return !currentTodo.completed;
+        if (filter === 'completed') return currentTodo.completed;
+        return true;
+      };
+
+      // Pseudo-declarative todo item construction
+      todoContainer.add(() => {
+        todoHBox = a.hbox(() => {
+          checkbox = a.checkbox(todo.text, async (checked: boolean) => {
+            store.toggleTodo(todo.id);
+          });
+
+          textEntry = a.entry('', ifEditingSaveEdit, 300);
+
+          a.button('Edit', ifNotEditingStartEdit);
+
+          a.button('Delete', async () => {
+            store.deleteTodo(todo.id);
+          });
+        });
       });
-    }
 
-    todoContainer.refresh();
-  }
+      // Apply ngShow directives for declarative visibility
+      (async () => {
+        await checkbox.setChecked(todo.completed);
+        await checkbox.setText(todo.text);
+        await textEntry.setText('');
 
-  // Refresh visibility of all todo items without rebuilding
-  async function refreshTodoVisibility() {
-    for (const view of todoViews.values()) {
-      await view.container.refreshVisibility();
-    }
+        checkbox.ngShow(() => !isEditing);
+        textEntry.ngShow(() => isEditing);
+        todoHBox.ngShow(shouldShowTodo);
+      })();
+
+      return todoHBox;
+    };
   }
 
   // Pseudo-declarative UI construction
@@ -401,6 +372,7 @@ export function createTodoApp(a: any, storePath?: string) {
         statusLabel = a.label('');
         a.label('');
 
+        // Pseudo-declarative model-bound list - AngularJS ng-repeat style
         todoContainer = a.vbox(() => a.label('Loading...'));
 
         a.label('');
@@ -419,14 +391,48 @@ export function createTodoApp(a: any, storePath?: string) {
     win.centerOnScreen();
 
     // Pseudo-declarative binding - model changes auto-update view
-    store.subscribe(() => {
-      rebuildTodoList();
-      updateStatusLabel();
-      updateFilterButtons();
+    store.subscribe((changeType) => {
+      (async () => {
+        const allTodos = store.getAllTodos();
+
+        if (allTodos.length === 0) {
+          showEmptyState();
+          listBinding = null;  // Clear binding when empty
+        } else {
+          if (!listBinding) {
+            // Create pseudo-declarative list binding with trackBy (like ng-repeat track by)
+            listBinding = todoContainer
+              .model(allTodos)
+              .trackBy((todo: TodoItem) => todo.id)
+              .each(createTodoItemBuilder());
+          } else if (changeType === 'filter') {
+            // Optimization: filter changes only toggle visibility!
+            await listBinding.refreshVisibility();
+          } else {
+            // Declarative update - diff and patch (add/delete/toggle/clear/load/update)
+            listBinding.update(allTodos);
+          }
+        }
+
+        await updateStatusLabel();
+        await updateFilterButtons();
+      })();
     });
 
+    // Initial render - trigger list creation for preloaded data
     (async () => {
-      rebuildTodoList();
+      const allTodos = store.getAllTodos();
+
+      if (allTodos.length === 0) {
+        showEmptyState();
+      } else {
+        // Create pseudo-declarative list binding with trackBy (like ng-repeat track by)
+        listBinding = todoContainer
+          .model(allTodos)
+          .trackBy((todo: TodoItem) => todo.id)
+          .each(createTodoItemBuilder());
+      }
+
       await updateStatusLabel();
       await updateFilterButtons();
     })();

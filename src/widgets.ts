@@ -435,6 +435,17 @@ export class ModelBoundList<T> {
     this.items = newItems;
   }
 
+  /**
+   * Refresh visibility of all items (re-evaluates ngShow conditions)
+   */
+  async refreshVisibility(): Promise<void> {
+    for (const widget of this.trackedItems.values()) {
+      if (widget && widget.refreshVisibility) {
+        await widget.refreshVisibility();
+      }
+    }
+  }
+
   private createItemView(item: T): any {
     let widget: any;
     this.container.add(() => {

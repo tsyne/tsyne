@@ -198,7 +198,7 @@ A complete calculator application demonstrating:
 - **Event-driven architecture** - Button clicks update display
 - **Grid layout** - 4x4 button grid with operators
 - **Real-time display** - Shows current input and results
-- **Test suite** - 38 comprehensive tests covering all operations
+- **Test suite** - 5 comprehensive tests covering all operations
 - **Test:** `npm test examples/calculator.test.ts`
 
 ### **todomvc.ts** & **todomvc-ngshow.ts**

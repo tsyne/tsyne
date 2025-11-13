@@ -66,6 +66,15 @@ describe('Simple Calculator Tests', () => {
 
     // Fluent assertion waits for the expected value
     await ctx.getByType("label").shouldBe("8");
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const path = require('path');
+      const screenshotPath = path.join(__dirname, 'screenshots', 'calculator.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should perform subtraction', async () => {

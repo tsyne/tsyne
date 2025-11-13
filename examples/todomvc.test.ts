@@ -105,6 +105,14 @@ describe('TodoMVC Tests', () => {
     await ctx.expect(ctx.getByExactText("Second task")).toBeVisible();
     await ctx.expect(ctx.getByExactText("Third task")).toBeVisible();
     await ctx.expect(ctx.getByText("3 items left")).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'todomvc.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should toggle todo completion', async () => {

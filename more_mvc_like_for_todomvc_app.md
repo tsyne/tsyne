@@ -381,11 +381,11 @@ label.ngText(() => `${store.getActiveCount()} items left`);
 5. ✅ **TodoMVC uses ngShow** - Filter visibility now declarative
 
 ### Future Work 🚀
-1. ⏳ **Full ModelBoundList integration** - Use update() for incremental add/delete
-2. ⏳ **Optimize store subscription** - Detect change types (filter vs add/delete)
-3. ⏳ **Use refreshVisibility() on filter changes** - Avoid full rebuild
+1. ✅ **Full ModelBoundList integration** - Use update() for incremental add/delete (completed in todomvc-ngshow.ts)
+2. ✅ **Optimize store subscription** - Detect change types (filter vs add/delete) (completed in todomvc-ngshow.ts)
+3. ✅ **Use refreshVisibility() on filter changes** - Avoid full rebuild (completed in todomvc-ngshow.ts)
 4. ⏳ **Performance benchmarks** - Measure improvement vs original
-5. ⏳ **Edit mode with ngShow** - Replace hide()/show() with ngShow()
+5. ✅ **Edit mode with ngShow** - Replace hide()/show() with ngShow() (completed in todomvc-ngshow.ts)
 
 ## How to Use the New APIs
 
