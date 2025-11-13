@@ -1,22 +1,24 @@
 /**
- * TodoMVC Example Application
+ * TodoMVC Example Application (ngShow version)
  *
- * A fully-functional TodoMVC implementation with:
+ * A fully-functional TodoMVC implementation with ngShow directive:
  * - Add/delete/toggle todos
- * - Filter by All/Active/Completed
+ * - Filter by All/Active/Completed using ngShow for declarative visibility
  * - Clear completed todos
  * - Persistent storage to filesystem
  * - Comprehensive TsyneTest suite
  *
+ * This version demonstrates the ngShow directive added in the MVC refactor.
+ * Each todo item uses ngShow(shouldShowTodo) for declarative visibility control.
+ *
  * Usage:
- *   npm run build && npm start examples/todomvc.ts [filepath]
+ *   npm run build && npm start examples/todomvc-ngshow.ts [filepath]
  *
  * Arguments:
  *   filepath - Optional path to save file (default: todos.json relative to exe)
  *
  * Testing:
- *   Add to package.json scripts:
- *   "test:todomvc": "jest examples/todomvc.test.ts"
+ *   "test:todomvc-ngshow": "jest examples/todomvc-ngshow.test.ts"
  */
 
 import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../src';
