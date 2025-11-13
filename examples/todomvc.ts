@@ -277,6 +277,19 @@ export function createTodoApp(a: any, storePath?: string) {
       if (!isEditing) await startEdit();
     };
 
+    // Helper function to check if this todo should be visible based on current filter
+    // Looks up current state from store to handle completion status changes
+    const shouldShowTodo = () => {
+      const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
+      if (!currentTodo) return false; // Todo was deleted
+
+      const filter = store.getFilter();
+      if (filter === 'all') return true;
+      if (filter === 'active') return !currentTodo.completed;
+      if (filter === 'completed') return currentTodo.completed;
+      return true;
+    };
+
     // Pseudo-declarative todo item - event handlers just update model
     todoContainer.add(() => {
       todoHBox = a.hbox(() => {
@@ -299,6 +312,9 @@ export function createTodoApp(a: any, storePath?: string) {
       await checkbox.setText(todo.text);
       await textEntry.setText('');
       await textEntry.hide();
+
+      // Apply ngShow for declarative visibility based on filter
+      todoHBox.ngShow(shouldShowTodo);
     })();
 
     todoViews.set(todo.id, { container: todoHBox, checkbox, textEntry, deleteButton });
@@ -321,19 +337,26 @@ export function createTodoApp(a: any, storePath?: string) {
   }
 
   function rebuildTodoList() {
-    const filtered = store.getFilteredTodos();
+    const allTodos = store.getAllTodos();
     todoViews.clear();
     todoContainer.removeAll();
 
-    if (filtered.length === 0) {
+    if (allTodos.length === 0) {
       showEmptyState();
     } else {
-      filtered.forEach((todo) => {
+      allTodos.forEach((todo) => {
         addTodoView(todo);
       });
     }
 
     todoContainer.refresh();
+  }
+
+  // Refresh visibility of all todo items without rebuilding
+  async function refreshTodoVisibility() {
+    for (const view of todoViews.values()) {
+      await view.container.refreshVisibility();
+    }
   }
 
   // Pseudo-declarative UI construction
