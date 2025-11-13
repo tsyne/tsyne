@@ -104,22 +104,39 @@ When adding new widgets:
 
 ### Testing
 
-Currently, testing is manual. To test your changes:
+Tsyne has automated testing using Jest with TsyneTest (for widget mode) or TsyneBrowserTest (for browser/page mode):
 
-1. Build the bridge and TypeScript: `npm run build && npm run build:bridge`
+1. Run all tests:
+   ```bash
+   npm test
+   ```
+
+2. Run specific test file:
+   ```bash
+   npm test examples/todomvc.test.ts
+   ```
+
+3. Visual debugging (headed mode):
+   ```bash
+   TSYNE_HEADED=1 npm test examples/todomvc.test.ts
+   ```
+
+**When adding features or fixing bugs, please include tests.** AI use to help you make good terse/elegant tests is just fine.
+
+For manual testing:
+1. Build: `npm run build && npm run build:bridge`
 2. Create a test example in `examples/`
 3. Run it: `node examples/your-test.js`
-
-Future: We plan to add automated testing with headless Fyne.
 
 ## Code Style
 
 ### TypeScript
 
 - Use TypeScript strict mode
-- Follow the existing declarative API style
+- Follow the existing pseudo-declarative API style
 - Add JSDoc comments for public APIs
 - Use meaningful variable names
+- AI-assisted development is welcome and encouraged
 
 ### Go
 
@@ -208,19 +225,33 @@ To add a new layout (e.g., Grid):
 
 When contributing, keep these principles in mind:
 
-1. **Elegant Syntax**: API should be terse and declarative
-2. **Type Safety**: Full TypeScript support
-3. **Performance**: Minimize IPC overhead
-4. **Simplicity**: Easy to understand and use
-5. **Compatibility**: Work across macOS, Windows, Linux
+1. **Pseudo-declarative MVC**: This project explores pseudo-declarative MVC patterns inspired by AngularJS 1.0 and other prior technologies. The goal is declarative UI definition where model changes automatically update the view.
+2. **Elegant Syntax**: API should be terse and declarative (e.g., using `a` for app instance)
+3. **Type Safety**: Full TypeScript support
+4. **Performance**: Minimize IPC overhead, avoid unnecessary full rebuilds
+5. **Simplicity**: Easy to understand and use
+6. **Compatibility**: Work across macOS, Windows, Linux
 
-## Questions?
+Understand the architectural goals before proposing major changes. That said, we are open to "Tsyne could also have..." modes that don't take out existing modes. If you want to take the project in a different direction, consider forking - no hard feelings!
+
+## Questions and Issues?
 
 If you have questions:
 
 - Check the [ARCHITECTURE.md](ARCHITECTURE.md) documentation
 - Review existing examples in `examples/`
 - Open an issue for discussion
+
+### Filing Issues
+
+Issues should be filed if your google, stackoverflow (etc) research has not yielded an answer:
+
+- **Say what you searched for** that didn't solve your problem
+- **Include what AI tools said** if you consulted them (ChatGPT, Claude, etc.)
+- **Provide reproduction steps** for bugs - clear and actionable
+- Don't be upset if you're asked to make a failing test in a PR
+
+There are no stupid questions, only opportunities to improve our docs!
 
 ## License
 
