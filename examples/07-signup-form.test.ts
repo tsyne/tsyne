@@ -1,6 +1,7 @@
 // Test for signup-form example
 import { TsyneTest, TestContext } from '../src/index-test';
 import { dialog } from '../src';
+import * as path from 'path';
 
 describe('Signup Form Example', () => {
   let tsyneTest: TsyneTest;
@@ -65,6 +66,14 @@ describe('Signup Form Example', () => {
     await ctx.expect(ctx.getByExactText('Create Account')).toBeVisible();
     await ctx.expect(ctx.getByExactText('I fully agree')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Sign up')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '07-signup-form.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should enable button when terms are agreed', async () => {

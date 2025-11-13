@@ -1,5 +1,6 @@
 // Test for players-list example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 interface Player {
   name: string;
@@ -56,6 +57,14 @@ describe('Players List Example', () => {
     await ctx.expect(ctx.getByExactText('5210')).toBeVisible();
     await ctx.expect(ctx.getByExactText('MadBob')).toBeVisible();
     await ctx.expect(ctx.getByExactText('4991')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '09-players-list.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should display all players in order', async () => {

@@ -1,5 +1,6 @@
 // Test for shopping-list example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 interface ShoppingItem {
   id: number;
@@ -83,6 +84,14 @@ describe('Shopping List Example', () => {
     await ctx.expect(ctx.getByExactText('Cheese')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Eggs')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Bread')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '12-shopping-list.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should add new item to list', async () => {

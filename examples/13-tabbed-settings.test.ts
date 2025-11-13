@@ -1,5 +1,6 @@
 // Test for tabbed-settings example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Tabbed Settings Example', () => {
   let tsyneTest: TsyneTest;
@@ -56,6 +57,14 @@ describe('Tabbed Settings Example', () => {
     await ctx.expect(ctx.getByExactText('Audio Settings')).toBeVisible();
     await ctx.expect(ctx.getByExactText('75%')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Enable notifications')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '13-tabbed-settings.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should switch between tabs', async () => {
