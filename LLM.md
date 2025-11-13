@@ -55,6 +55,15 @@ app({ title: 'My App' }, (a) => {
 **Display:** label, hyperlink, separator, progressbar, image, richtext, table, list, tree, toolbar
 **Browser:** browser (embedded webview/page)
 
+**All widgets support:**
+- `hide()` / `show()` - Imperative visibility control
+- `ngShow(() => boolean)` - Declarative visibility (returns `this` for chaining)
+- `refresh()` - Re-evaluate visibility conditions
+
+**VBox/HBox containers also support:**
+- `model<T>(items: T[])` - Create ModelBoundList for smart list rendering
+- `refreshVisibility()` - Update visibility of all children
+
 ## Testing
 
 **Widget mode (TsyneTest):**
@@ -88,7 +97,7 @@ const test = new TsyneBrowserTest({ headed: false });
 **View:** Widget references (don't rebuild, just update)
 **Controller:** Event handlers that update model only
 
-**Example (TodoMVC):**
+**Example (TodoMVC with ngShow):**
 ```typescript
 class TodoStore {
   private changeListeners: ChangeListener[] = [];
@@ -102,18 +111,81 @@ class TodoStore {
   }
 }
 
-// Pseudo-declarative binding
+// Declarative visibility with ngShow (AngularJS-style)
+todoHBox.ngShow(() => {
+  const filter = store.getFilter();
+  if (filter === 'all') return true;
+  if (filter === 'active') return !todo.completed;
+  if (filter === 'completed') return todo.completed;
+  return true;
+});
+
+// Store subscription triggers view updates
 store.subscribe(() => {
-  rebuildTodoList(); // TODO: Make incremental (ng-repeat style)
+  rebuildTodoList();  // Can be optimized with ModelBoundList
   updateStatusLabel();
+  updateFilterButtons();
 });
 ```
 
-## Current Limitations
+**New declarative APIs (AngularJS 1.0-inspired):**
+- `widget.ngShow(() => boolean)` - Declarative visibility control
+- `container.model(items).trackBy(fn).each(builder)` - Smart list binding (ng-repeat)
+- `widget.refresh()` - Re-evaluate visibility conditions
+- `container.refreshVisibility()` - Update visibility without rebuild
 
-1. **Full rebuild on change** - TodoMVC rebuilds entire list instead of smart diff (see `more_mvc_like_for_todomvc_app.md` for planned ng-repeat + ng-show)
+## Current Capabilities & Limitations
+
+**✅ Implemented:**
+1. **ngShow directive** - Declarative visibility control (AngularJS ng-show style)
+2. **ModelBoundList** - Smart list binding with diffing (AngularJS ng-repeat style)
+3. **Observable pattern** - Store with change listeners for reactive updates
+
+**⏳ Current Limitations:**
+1. **Still rebuilds on change** - TodoMVC rebuilds entire list (ModelBoundList.update() ready to use)
 2. **No two-way binding** - Manual setText/getText instead of ng-model
 3. **No computed properties** - Manual label updates instead of reactive expressions
+4. **ngShow optimization** - Infrastructure in place, not yet used for filter changes
+
+See `more_mvc_like_for_todomvc_app.md` for implementation status and next steps.
+
+## Declarative Patterns (AngularJS-Inspired)
+
+**ngShow for conditional visibility:**
+```typescript
+// Single condition
+checkbox.ngShow(() => !isEditing);
+textEntry.ngShow(() => isEditing);
+
+// Complex condition with store lookup
+todoHBox.ngShow(() => {
+  const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
+  if (!currentTodo) return false;
+  const filter = store.getFilter();
+  return filter === 'all' ||
+         (filter === 'active' && !currentTodo.completed) ||
+         (filter === 'completed' && currentTodo.completed);
+});
+```
+
+**ModelBoundList for smart lists (ng-repeat):**
+```typescript
+// Future: Smart list with incremental updates
+const listBinding = todoContainer
+  .model(store.getAllTodos())
+  .trackBy((todo) => todo.id)
+  .each((todo) => {
+    a.hbox(() => {
+      a.checkbox(todo.text, () => store.toggleTodo(todo.id));
+      a.button('Delete', () => store.deleteTodo(todo.id));
+    });
+  });
+
+// Update with smart diffing
+store.subscribe(() => {
+  listBinding.update(store.getAllTodos());
+});
+```
 
 ## Adding Features
 
@@ -201,7 +273,13 @@ go build -o ../bin/tsyne-bridge .
 
 ## References
 
-- `examples/todomvc.ts` - Full MVC example (16 tests)
-- `more_mvc_like_for_todomvc_app.md` - Plan for ng-repeat/ng-show
+- `examples/todomvc.ts` - Full MVC example with ngShow (16 tests, 15/16 passing)
+- `examples/todomvc-ngshow.ts` - Preserved ngShow implementation variant
+- `more_mvc_like_for_todomvc_app.md` - Implementation status: Phase 1 & 2 complete!
+- `src/widgets.ts` - Widget base class, ModelBoundList, ngShow implementation
 - `CODE_OF_CONDUCT.md` - Community guidelines
 - `CONTRIBUTING.md` - Developer guide
+
+**Key commits:**
+- `fa35224` - Added ngShow directive and ModelBoundList infrastructure
+- `b75ab38` - Added todomvc-ngshow variants to preserve implementation
