@@ -157,6 +157,48 @@ node examples/hello.js
 npm test
 ```
 
+## Troubleshooting
+
+### Can't Access storage.googleapis.com for Fyne Dependencies
+
+**Problem:** Go tries to fetch Fyne v2.7.0 from `https://storage.googleapis.com/proxy-golang-org-prod` and fails with DNS or connection errors.
+
+**Solution:** Fetch directly from GitHub instead of using Google's proxy:
+
+```bash
+# Use GOPROXY=direct to bypass Google's proxy
+cd bridge
+env GOPROXY=direct go build -o ../bin/tsyne-bridge .
+```
+
+**If you get C library errors** (X11, OpenGL headers missing):
+
+```bash
+# Install required development libraries (Ubuntu/Debian)
+apt-get update
+apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
+
+# Then rebuild
+cd bridge
+env GOPROXY=direct go build -o ../bin/tsyne-bridge .
+```
+
+**What these packages provide:**
+- `libgl1-mesa-dev` - OpenGL development headers
+- `xorg-dev` - X11 development libraries (metapackage)
+- `libxrandr-dev` - X11 RandR extension (screen resolution/rotation)
+
+**Why GOPROXY=direct works:**
+- Tells Go to fetch modules directly from their source repositories (GitHub)
+- Bypasses Google's module proxy entirely
+- Uses the version tags directly from `fyne.io/fyne/v2@v2.7.0` → GitHub release
+
+**Alternative:** Set globally in environment:
+```bash
+export GOPROXY=direct
+go build -o ../bin/tsyne-bridge .
+```
+
 ## References
 
 - `examples/todomvc.ts` - Full MVC example (16 tests)
