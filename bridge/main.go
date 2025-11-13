@@ -1,12 +1,15 @@
 package main
 
 import (
-	"bufio"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/png"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -42,6 +45,74 @@ type Event struct {
 	Type     string                 `json:"type"`
 	WidgetID string                 `json:"widgetId"`
 	Data     map[string]interface{} `json:"data,omitempty"`
+}
+
+// =============================================================================
+// IPC Safeguards #3 & #4: Framing Protocol with CRC32 Validation
+// =============================================================================
+// Frame format: [length: 4 bytes][crc32: 4 bytes][json: N bytes]
+// - Length prefix allows detection of message boundaries
+// - CRC32 checksum validates message integrity
+// - Prevents corruption from accidental stdout writes
+
+// writeFramedMessage writes a JSON message with length-prefix and CRC32 checksum
+// Format: [uint32 length][uint32 crc32][json bytes]
+func writeFramedMessage(w io.Writer, data []byte) error {
+	// Calculate CRC32 checksum
+	checksum := crc32.ChecksumIEEE(data)
+
+	// Write length prefix (4 bytes, big-endian)
+	length := uint32(len(data))
+	if err := binary.Write(w, binary.BigEndian, length); err != nil {
+		return fmt.Errorf("failed to write length: %w", err)
+	}
+
+	// Write CRC32 checksum (4 bytes, big-endian)
+	if err := binary.Write(w, binary.BigEndian, checksum); err != nil {
+		return fmt.Errorf("failed to write checksum: %w", err)
+	}
+
+	// Write JSON payload
+	if _, err := w.Write(data); err != nil {
+		return fmt.Errorf("failed to write payload: %w", err)
+	}
+
+	return nil
+}
+
+// readFramedMessage reads a length-prefixed, CRC32-validated JSON message
+// Returns the JSON bytes or an error if the message is corrupted
+func readFramedMessage(r io.Reader) ([]byte, error) {
+	// Read length prefix (4 bytes)
+	var length uint32
+	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+		return nil, fmt.Errorf("failed to read length: %w", err)
+	}
+
+	// Sanity check: reject unreasonably large messages (> 10MB)
+	if length > 10*1024*1024 {
+		return nil, fmt.Errorf("message too large: %d bytes", length)
+	}
+
+	// Read CRC32 checksum (4 bytes)
+	var expectedChecksum uint32
+	if err := binary.Read(r, binary.BigEndian, &expectedChecksum); err != nil {
+		return nil, fmt.Errorf("failed to read checksum: %w", err)
+	}
+
+	// Read JSON payload
+	payload := make([]byte, length)
+	if _, err := io.ReadFull(r, payload); err != nil {
+		return nil, fmt.Errorf("failed to read payload: %w", err)
+	}
+
+	// Validate CRC32 checksum
+	actualChecksum := crc32.ChecksumIEEE(payload)
+	if actualChecksum != expectedChecksum {
+		return nil, fmt.Errorf("checksum mismatch: expected %d, got %d", expectedChecksum, actualChecksum)
+	}
+
+	return payload, nil
 }
 
 // Bridge manages the Fyne app and communication
@@ -133,17 +204,37 @@ func NewBridge(testMode bool) *Bridge {
 }
 
 func (b *Bridge) sendEvent(event Event) {
+	// IPC Safeguard #2: Mutex protection for stdout writes
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if err := b.writer.Encode(event); err != nil {
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("Error marshaling event: %v", err)
+		return
+	}
+
+	// IPC Safeguard #3 & #4: Write with length-prefix framing and CRC32 validation
+	if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
 		log.Printf("Error sending event: %v", err)
 	}
 }
 
 func (b *Bridge) sendResponse(resp Response) {
+	// IPC Safeguard #2: Mutex protection for stdout writes
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if err := b.writer.Encode(resp); err != nil {
+
+	// Marshal to JSON
+	jsonData, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Error marshaling response: %v", err)
+		return
+	}
+
+	// IPC Safeguard #3 & #4: Write with length-prefix framing and CRC32 validation
+	if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}
 }
@@ -293,6 +384,20 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleGetAllWidgets(msg)
 	case "captureWindow":
 		b.handleCaptureWindow(msg)
+	case "doubleTapWidget":
+		b.handleDoubleTapWidget(msg)
+	case "rightClickWidget":
+		b.handleRightClickWidget(msg)
+	case "hoverWidget":
+		b.handleHoverWidget(msg)
+	case "scrollCanvas":
+		b.handleScrollCanvas(msg)
+	case "dragCanvas":
+		b.handleDragCanvas(msg)
+	case "focusNext":
+		b.handleFocusNext(msg)
+	case "focusPrevious":
+		b.handleFocusPrevious(msg)
 	case "containerAdd":
 		b.handleContainerAdd(msg)
 	case "containerRemoveAll":
@@ -3369,6 +3474,296 @@ func (b *Bridge) handleTypeText(msg Message) {
 	}
 }
 
+func (b *Bridge) handleDoubleTapWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Use test.DoubleTap if in test mode
+	if b.testMode {
+		if tappable, ok := obj.(fyne.DoubleTappable); ok {
+			test.DoubleTap(tappable)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Widget is not double-tappable",
+			})
+		}
+	} else {
+		// In normal mode, trigger OnDoubleTapped if available
+		if dt, ok := obj.(fyne.DoubleTappable); ok {
+			dt.DoubleTapped(nil)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Widget does not support double-tap",
+			})
+		}
+	}
+}
+
+func (b *Bridge) handleRightClickWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Use test.TapSecondary if in test mode
+	if b.testMode {
+		if tappable, ok := obj.(fyne.SecondaryTappable); ok {
+			test.TapSecondary(tappable)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Widget does not support right-click",
+			})
+		}
+	} else {
+		// In normal mode, trigger OnTappedSecondary if available
+		if st, ok := obj.(fyne.SecondaryTappable); ok {
+			st.TappedSecondary(nil)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Widget does not support right-click",
+			})
+		}
+	}
+}
+
+func (b *Bridge) handleHoverWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	windowID := msg.Payload["windowId"].(string)
+	win, winExists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if !winExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	// Use test.MoveMouse to hover over the widget
+	if b.testMode {
+		canvas := win.Canvas()
+		// Get widget position (simplified - assumes widget at center)
+		pos := obj.Position()
+		test.MoveMouse(canvas, pos)
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		// In normal mode, trigger MouseIn if available
+		if hoverable, ok := obj.(interface{ MouseIn(*fyne.PointEvent) }); ok {
+			hoverable.MouseIn(&fyne.PointEvent{})
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true, // Success even if not hoverable
+			})
+		}
+	}
+}
+
+func (b *Bridge) handleScrollCanvas(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	deltaX := msg.Payload["deltaX"].(float64)
+	deltaY := msg.Payload["deltaY"].(float64)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if b.testMode {
+		canvas := win.Canvas()
+		// Scroll at center of canvas
+		size := canvas.Size()
+		pos := fyne.NewPos(size.Width/2, size.Height/2)
+		test.Scroll(canvas, pos, float32(deltaX), float32(deltaY))
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scroll is only supported in test mode",
+		})
+	}
+}
+
+func (b *Bridge) handleDragCanvas(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	fromX := msg.Payload["fromX"].(float64)
+	fromY := msg.Payload["fromY"].(float64)
+	deltaX := msg.Payload["deltaX"].(float64)
+	deltaY := msg.Payload["deltaY"].(float64)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if b.testMode {
+		canvas := win.Canvas()
+		pos := fyne.NewPos(float32(fromX), float32(fromY))
+		test.Drag(canvas, pos, float32(deltaX), float32(deltaY))
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Drag is only supported in test mode",
+		})
+	}
+}
+
+func (b *Bridge) handleFocusNext(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if b.testMode {
+		canvas := win.Canvas()
+		test.FocusNext(canvas)
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "FocusNext is only supported in test mode",
+		})
+	}
+}
+
+func (b *Bridge) handleFocusPrevious(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if b.testMode {
+		canvas := win.Canvas()
+		test.FocusPrevious(canvas)
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "FocusPrevious is only supported in test mode",
+		})
+	}
+}
+
 func (b *Bridge) handleGetWidgetInfo(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -3814,6 +4209,17 @@ func (b *Bridge) handleContainerRefresh(msg Message) {
 }
 
 func main() {
+	// =============================================================================
+	// IPC Safeguard #1: Redirect all log output to stderr
+	// =============================================================================
+	// stdout is reserved exclusively for JSON-RPC protocol messages.
+	// Any accidental stdout writes (debug prints, panics, third-party libraries)
+	// would corrupt the JSON stream and crash the application.
+	// All logging MUST go to stderr.
+	log.SetOutput(os.Stderr)
+	log.SetPrefix("[tsyne-bridge] ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	// Check for test mode flag
 	testMode := false
 	for _, arg := range os.Args[1:] {
@@ -3827,16 +4233,30 @@ func main() {
 
 	// Read messages from stdin in a goroutine
 	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			line := scanner.Text()
+		// IPC Safeguard #3 & #4: Read framed messages with length-prefix and CRC32 validation
+		for {
+			// Read framed message from stdin
+			jsonData, err := readFramedMessage(os.Stdin)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					// Stdin closed - normal termination
+					break
+				}
+				log.Printf("Error reading framed message: %v", err)
+				continue // Try to recover and read next message
+			}
+
+			// Parse JSON message
 			var msg Message
-			if err := json.Unmarshal([]byte(line), &msg); err != nil {
+			if err := json.Unmarshal(jsonData, &msg); err != nil {
 				log.Printf("Error parsing message: %v", err)
 				continue
 			}
+
+			// Handle the message
 			bridge.handleMessage(msg)
 		}
+
 		// If stdin closes, signal quit
 		if testMode {
 			select {

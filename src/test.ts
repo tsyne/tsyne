@@ -68,6 +68,45 @@ export class Locator {
   }
 
   /**
+   * Double-click the first widget matching this locator
+   * Respects within() timeout if set
+   */
+  async doubleClick(): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    await this.bridge.send('doubleTapWidget', { widgetId });
+  }
+
+  /**
+   * Right-click (secondary tap) the first widget matching this locator
+   * Respects within() timeout if set
+   */
+  async rightClick(): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    await this.bridge.send('rightClickWidget', { widgetId });
+  }
+
+  /**
+   * Hover over the first widget matching this locator (moves mouse to widget position)
+   * Respects within() timeout if set
+   * Note: Requires windowId to be available (automatically determined from bridge)
+   */
+  async hover(): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    // Get first window ID from bridge (assumes single window for now)
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('hoverWidget', { widgetId, windowId });
+  }
+
+  /**
    * Get the text of the first widget matching this locator
    */
   async getText(): Promise<string> {
@@ -844,5 +883,56 @@ export class TestContext {
     if (!hasIt) {
       throw new Error(`Expected to find text "${text}" on page but it was not found`);
     }
+  }
+
+  /**
+   * Scroll the canvas by delta X and Y
+   * Uses Fyne's test.Scroll in test mode
+   * @param deltaX - Horizontal scroll distance (positive = right, negative = left)
+   * @param deltaY - Vertical scroll distance (positive = down, negative = up)
+   * @example
+   * await ctx.scroll(0, 100); // Scroll down 100 pixels
+   * await ctx.scroll(-50, 0); // Scroll left 50 pixels
+   */
+  async scroll(deltaX: number, deltaY: number): Promise<void> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('scrollCanvas', { windowId, deltaX, deltaY });
+  }
+
+  /**
+   * Drag from a position by delta X and Y
+   * Uses Fyne's test.Drag in test mode
+   * @param fromX - Starting X position
+   * @param fromY - Starting Y position
+   * @param deltaX - Horizontal drag distance
+   * @param deltaY - Vertical drag distance
+   * @example
+   * await ctx.drag(100, 100, 50, 0); // Drag right from (100,100) by 50px
+   */
+  async drag(fromX: number, fromY: number, deltaX: number, deltaY: number): Promise<void> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('dragCanvas', { windowId, fromX, fromY, deltaX, deltaY });
+  }
+
+  /**
+   * Focus the next focusable widget (tab navigation)
+   * Uses Fyne's test.FocusNext in test mode
+   * @example
+   * await ctx.focusNext(); // Simulate pressing Tab
+   */
+  async focusNext(): Promise<void> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('focusNext', { windowId });
+  }
+
+  /**
+   * Focus the previous focusable widget (shift-tab navigation)
+   * Uses Fyne's test.FocusPrevious in test mode
+   * @example
+   * await ctx.focusPrevious(); // Simulate pressing Shift+Tab
+   */
+  async focusPrevious(): Promise<void> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('focusPrevious', { windowId });
   }
 }

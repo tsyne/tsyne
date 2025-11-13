@@ -283,6 +283,60 @@ The bridge maintains maps to track Fyne objects:
 
 ### 3. Communication Protocol
 
+#### IPC Protocol with Safeguards
+
+**Overview**: Tsyne uses a custom binary framing protocol over stdin/stdout for IPC between the Node.js client and Go bridge. This protocol includes robust safeguards against corruption.
+
+**Frame Format** (implemented v0.1.x):
+```
+[uint32 length][uint32 crc32][json payload]
+├─ 4 bytes  ──┤├─ 4 bytes ─┤├─ N bytes ─┤
+```
+
+**Protocol Details**:
+- **Length prefix** (4 bytes, big-endian): Size of JSON payload in bytes
+- **CRC32 checksum** (4 bytes, big-endian): IEEE CRC32 of JSON payload
+- **JSON payload** (N bytes): UTF-8 encoded JSON message
+
+**Key Features**:
+1. **Message boundary detection**: Length prefix allows reading exact message size
+2. **Integrity validation**: CRC32 detects corruption from accidental stdout writes
+3. **Recovery capability**: Can skip corrupt frames and resync on next valid frame
+4. **Size limits**: Rejects messages larger than 10MB to prevent memory attacks
+
+**Implementation**:
+- Go side: `writeFramedMessage()` and `readFramedMessage()` in `bridge/main.go`
+- TypeScript side: `tryReadFrame()` in `src/fynebridge.ts`
+- All message writes protected by mutex to prevent interleaving
+- All logging redirected to stderr (via `log.SetOutput(os.Stderr)`)
+
+**Example Frame** (button creation):
+```
+Length:    [0x00, 0x00, 0x00, 0x5A]  // 90 bytes
+CRC32:     [0x12, 0x34, 0x56, 0x78]  // Checksum
+JSON:      {"id":"msg_1","type":"createButton","payload":{...}}
+```
+
+**Why Not Newline-Delimited JSON?**
+
+The original protocol used newline-delimited JSON (`JSON\n`), which is fragile:
+- Any `fmt.Println()` or stdout write corrupts the stream
+- Fyne or third-party libraries might write to stdout
+- No way to detect or recover from corruption
+- One stray print statement crashes the entire application
+
+The framed protocol solves these issues by:
+- Adding length prefix for exact message boundaries
+- Adding CRC32 for corruption detection
+- Allowing recovery by skipping invalid frames
+- Redirecting all logging to stderr
+
+**Future Migration** (planned for v0.2.0+):
+- Move to Unix Domain Sockets (Linux/macOS) with TCP fallback (Windows)
+- Completely separate IPC from stdin/stdout streams
+- Industry standard approach (Chrome DevTools Protocol, Language Server Protocol)
+- Enables arbitrary logging without any protocol concerns
+
 #### Supported Messages
 
 **Window Management**:

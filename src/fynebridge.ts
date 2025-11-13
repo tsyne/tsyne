@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
-import * as readline from 'readline';
+import * as crc32 from 'buffer-crc32';
 
 export interface Message {
   id: string;
@@ -31,6 +31,8 @@ export class BridgeConnection {
   private eventHandlers = new Map<string, (data: any) => void>();
   private readyPromise: Promise<void>;
   private readyResolve?: () => void;
+  private buffer = Buffer.alloc(0); // Accumulate incoming data
+  private readingFrame = false;
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -61,24 +63,15 @@ export class BridgeConnection {
       this.readyResolve = resolve;
     });
 
-    const rl = readline.createInterface({
-      input: this.process.stdout!,
-      crlfDelay: Infinity
-    });
+    // IPC Safeguard: Read framed messages with length-prefix and CRC32 validation
+    // Frame format: [uint32 length][uint32 crc32][json bytes]
+    this.process.stdout!.on('data', (chunk: Buffer) => {
+      // Accumulate data in buffer
+      this.buffer = Buffer.concat([this.buffer, chunk]);
 
-    rl.on('line', (line) => {
-      try {
-        const data = JSON.parse(line);
-
-        if ('type' in data && data.type === 'callback') {
-          // This is an event
-          this.handleEvent(data as Event);
-        } else {
-          // This is a response
-          this.handleResponse(data as Response);
-        }
-      } catch (err) {
-        console.error('Error parsing bridge message:', err);
+      // Try to read complete frames
+      while (this.tryReadFrame()) {
+        // Keep reading frames until buffer is exhausted
       }
     });
 
@@ -92,6 +85,70 @@ export class BridgeConnection {
         console.error(`Bridge process exited with code ${code}`);
       }
     });
+  }
+
+  /**
+   * Try to read one complete framed message from the buffer
+   * Returns true if a message was read, false if more data is needed
+   */
+  private tryReadFrame(): boolean {
+    // Need at least 8 bytes for length + crc32
+    if (this.buffer.length < 8) {
+      return false;
+    }
+
+    // Read length prefix (4 bytes, big-endian)
+    const length = this.buffer.readUInt32BE(0);
+
+    // Sanity check: reject unreasonably large messages (> 10MB)
+    if (length > 10 * 1024 * 1024) {
+      console.error(`Message too large: ${length} bytes`);
+      // Skip the corrupt frame by discarding buffer
+      this.buffer = Buffer.alloc(0);
+      return false;
+    }
+
+    // Check if we have the complete frame
+    const frameSize = 8 + length; // 4 bytes length + 4 bytes crc32 + payload
+    if (this.buffer.length < frameSize) {
+      return false; // Wait for more data
+    }
+
+    // Read CRC32 checksum (4 bytes, big-endian)
+    const expectedChecksum = this.buffer.readUInt32BE(4);
+
+    // Read JSON payload
+    const payload = this.buffer.slice(8, 8 + length);
+
+    // Validate CRC32 checksum
+    const actualChecksum = crc32.unsigned(payload);
+    if (actualChecksum !== expectedChecksum) {
+      console.error(`Checksum mismatch: expected ${expectedChecksum}, got ${actualChecksum}`);
+      // Try to recover by skipping this frame
+      this.buffer = this.buffer.slice(frameSize);
+      return false;
+    }
+
+    // Parse JSON message
+    try {
+      const jsonString = payload.toString('utf8');
+      const data = JSON.parse(jsonString);
+
+      if ('type' in data && data.type === 'callback') {
+        // This is an event
+        this.handleEvent(data as Event);
+      } else {
+        // This is a response
+        this.handleResponse(data as Response);
+      }
+    } catch (err) {
+      console.error('Error parsing bridge message:', err);
+    }
+
+    // Remove the frame from buffer
+    this.buffer = this.buffer.slice(frameSize);
+
+    return true; // Successfully read a frame
   }
 
   private handleResponse(response: Response): void {
@@ -137,7 +194,19 @@ export class BridgeConnection {
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(id, { resolve, reject });
-      this.process.stdin!.write(JSON.stringify(message) + '\n');
+
+      // IPC Safeguard: Write framed message with length-prefix and CRC32 validation
+      // Frame format: [uint32 length][uint32 crc32][json bytes]
+      const jsonBuffer = Buffer.from(JSON.stringify(message), 'utf8');
+      const checksum = crc32.unsigned(jsonBuffer);
+
+      // Create frame buffer: length (4 bytes) + crc32 (4 bytes) + json
+      const frame = Buffer.alloc(8 + jsonBuffer.length);
+      frame.writeUInt32BE(jsonBuffer.length, 0); // Write length
+      frame.writeUInt32BE(checksum, 4); // Write CRC32
+      jsonBuffer.copy(frame, 8); // Copy JSON payload
+
+      this.process.stdin!.write(frame);
     });
   }
 
