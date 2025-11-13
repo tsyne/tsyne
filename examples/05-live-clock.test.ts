@@ -1,5 +1,6 @@
 // Test for live-clock example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Live Clock Example', () => {
   let tsyneTest: TsyneTest;
@@ -41,6 +42,14 @@ describe('Live Clock Example', () => {
     // Get initial time text
     const initialText = await timeLabel.getText();
     expect(initialText).toMatch(/\d{4}/); // Should contain a year
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '05-live-clock.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
 
     // Wait for update (600ms to ensure at least one update)
     await ctx.wait(600);

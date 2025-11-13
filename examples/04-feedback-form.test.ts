@@ -1,6 +1,7 @@
 // Test for feedback-form example
 import { TsyneTest, TestContext } from '../src/index-test';
 import { dialog } from '../src';
+import * as path from 'path';
 
 describe('Feedback Form Example', () => {
   let tsyneTest: TsyneTest;
@@ -55,6 +56,14 @@ describe('Feedback Form Example', () => {
     await ctx.expect(ctx.getByExactText('How are you feeling?')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Tell us more:')).toBeVisible();
     await ctx.expect(ctx.getByExactText('Send')).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '04-feedback-form.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should submit feedback', async () => {

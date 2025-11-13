@@ -1,5 +1,6 @@
 // Test for button-spacer example
 import { TsyneTest, TestContext } from '../src/index-test';
+import * as path from 'path';
 
 describe('Button Spacer Example', () => {
   let tsyneTest: TsyneTest;
@@ -37,6 +38,14 @@ describe('Button Spacer Example', () => {
 
     // Initially shows "I'm Waiting ..."
     await ctx.expect(ctx.getByExactText("I'm Waiting ...")).toBeVisible();
+
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', '03-button-spacer.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
 
     // Click the button
     await ctx.getByExactText('Click here').click();
