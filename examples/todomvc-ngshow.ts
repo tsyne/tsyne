@@ -1,0 +1,453 @@
+/**
+ * TodoMVC Example Application (ngShow version)
+ *
+ * A fully-functional TodoMVC implementation with ngShow directive:
+ * - Add/delete/toggle todos
+ * - Filter by All/Active/Completed using ngShow for declarative visibility
+ * - Clear completed todos
+ * - Persistent storage to filesystem
+ * - Comprehensive TsyneTest suite
+ *
+ * This version demonstrates the ngShow directive added in the MVC refactor.
+ * Each todo item uses ngShow(shouldShowTodo) for declarative visibility control.
+ *
+ * Usage:
+ *   npm run build && npm start examples/todomvc-ngshow.ts [filepath]
+ *
+ * Arguments:
+ *   filepath - Optional path to save file (default: todos.json relative to exe)
+ *
+ * Testing:
+ *   "test:todomvc-ngshow": "jest examples/todomvc-ngshow.test.ts"
+ */
+
+import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../src';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// ============================================================================
+// Observable System - Pseudo-declarative automatic updates
+// ============================================================================
+
+type ChangeListener = () => void;
+
+class Observable<T> {
+  private value: T;
+  private listeners: ChangeListener[] = [];
+
+  constructor(initialValue: T) {
+    this.value = initialValue;
+  }
+
+  get(): T {
+    return this.value;
+  }
+
+  set(newValue: T): void {
+    this.value = newValue;
+    this.notify();
+  }
+
+  subscribe(listener: ChangeListener): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
+  }
+
+  private notify(): void {
+    this.listeners.forEach(listener => listener());
+  }
+}
+
+// ============================================================================
+// Data Models
+// ============================================================================
+
+interface TodoItem {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+type FilterType = 'all' | 'active' | 'completed';
+
+// ============================================================================
+// Application State
+// ============================================================================
+
+class TodoStore {
+  private todos: TodoItem[] = [];
+  private nextId: number = 1;
+  private currentFilter: FilterType = 'all';
+  private filePath: string;
+  private changeListeners: ChangeListener[] = [];
+
+  constructor(filePath?: string) {
+    this.filePath = filePath || path.join(process.cwd(), 'todos.json');
+    this.load();
+  }
+
+  subscribe(listener: ChangeListener): () => void {
+    this.changeListeners.push(listener);
+    return () => {
+      this.changeListeners = this.changeListeners.filter(l => l !== listener);
+    };
+  }
+
+  private notifyChange(): void {
+    this.changeListeners.forEach(listener => listener());
+  }
+
+  load(): void {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const data = fs.readFileSync(this.filePath, 'utf8');
+        const parsed = JSON.parse(data);
+        this.todos = parsed.todos || [];
+        this.nextId = parsed.nextId || 1;
+        console.log(`Loaded ${this.todos.length} todos from ${this.filePath}`);
+      } else {
+        console.log(`No existing file at ${this.filePath}, starting fresh`);
+      }
+    } catch (error) {
+      console.error(`Error loading todos: ${error}`);
+      this.todos = [];
+      this.nextId = 1;
+    }
+    this.notifyChange();
+  }
+
+  save(): void {
+    try {
+      const data = JSON.stringify({
+        todos: this.todos,
+        nextId: this.nextId
+      }, null, 2);
+      fs.writeFileSync(this.filePath, data, 'utf8');
+      console.log(`Saved ${this.todos.length} todos to ${this.filePath}`);
+    } catch (error) {
+      console.error(`Error saving todos: ${error}`);
+    }
+  }
+
+  addTodo(text: string): TodoItem {
+    const todo: TodoItem = {
+      id: this.nextId++,
+      text: text.trim(),
+      completed: false
+    };
+    this.todos.push(todo);
+    this.save();
+    this.notifyChange();
+    return todo;
+  }
+
+  toggleTodo(id: number): void {
+    const todo = this.todos.find(t => t.id === id);
+    if (todo) {
+      todo.completed = !todo.completed;
+      this.save();
+      this.notifyChange();
+    }
+  }
+
+  updateTodo(id: number, newText: string): void {
+    const todo = this.todos.find(t => t.id === id);
+    if (todo) {
+      todo.text = newText.trim();
+      this.save();
+      this.notifyChange();
+    }
+  }
+
+  deleteTodo(id: number): void {
+    this.todos = this.todos.filter(t => t.id !== id);
+    this.save();
+    this.notifyChange();
+  }
+
+  clearCompleted(): void {
+    this.todos = this.todos.filter(t => !t.completed);
+    this.save();
+    this.notifyChange();
+  }
+
+  getFilteredTodos(): TodoItem[] {
+    switch (this.currentFilter) {
+      case 'active':
+        return this.todos.filter(t => !t.completed);
+      case 'completed':
+        return this.todos.filter(t => t.completed);
+      default:
+        return this.todos;
+    }
+  }
+
+  getAllTodos(): TodoItem[] {
+    return this.todos;
+  }
+
+  setFilter(filter: FilterType): void {
+    this.currentFilter = filter;
+    this.notifyChange();
+  }
+
+  getFilter(): FilterType {
+    return this.currentFilter;
+  }
+
+  getActiveCount(): number {
+    return this.todos.filter(t => !t.completed).length;
+  }
+
+  getCompletedCount(): number {
+    return this.todos.filter(t => t.completed).length;
+  }
+
+  getFilePath(): string {
+    return this.filePath;
+  }
+}
+
+// ============================================================================
+// UI Application
+// ============================================================================
+
+export function createTodoApp(a: any, storePath?: string) {
+  const store = new TodoStore(storePath);
+
+  let newTodoEntry: any;
+  let todoContainer: any;
+  let statusLabel: any;
+  let filterAllButton: any;
+  let filterActiveButton: any;
+  let filterCompletedButton: any;
+
+  const todoViews = new Map<number, { container: any; checkbox: any; textEntry: any; deleteButton: any }>();
+
+  async function updateStatusLabel() {
+    const activeCount = store.getActiveCount();
+    const currentFilter = store.getFilter();
+    const itemText = activeCount === 1 ? 'item' : 'items';
+    await statusLabel.setText(`${activeCount} ${itemText} left | Filter: ${currentFilter} | File: ${path.basename(store.getFilePath())}`);
+  }
+
+  async function updateFilterButtons() {
+    const currentFilter = store.getFilter();
+    await filterAllButton.setText(currentFilter === 'all' ? '[All]' : 'All');
+    await filterActiveButton.setText(currentFilter === 'active' ? '[Active]' : 'Active');
+    await filterCompletedButton.setText(currentFilter === 'completed' ? '[Completed]' : 'Completed');
+  }
+
+  function addTodoView(todo: TodoItem) {
+    let todoHBox: any;
+    let checkbox: any;
+    let textEntry: any;
+    let deleteButton: any;
+    let originalText = todo.text;
+    let isEditing = false;
+
+    const saveEdit = async () => {
+      const newText = await textEntry.getText();
+      if (newText && newText.trim()) {
+        store.updateTodo(todo.id, newText);
+        originalText = newText.trim();
+        await checkbox.setText(originalText);
+      } else {
+        await textEntry.setText(originalText);
+      }
+      await textEntry.hide();
+      await checkbox.show();
+      isEditing = false;
+    };
+
+    const startEdit = async () => {
+      isEditing = true;
+      originalText = await checkbox.getText();
+      await textEntry.setText(originalText);
+      await checkbox.hide();
+      await textEntry.show();
+      await textEntry.focus();
+    };
+
+    const ifEditingSaveEdit = async () => {
+      if (isEditing) await saveEdit();
+    };
+
+    const ifNotEditingStartEdit = async () => {
+      if (!isEditing) await startEdit();
+    };
+
+    // Helper function to check if this todo should be visible based on current filter
+    // Looks up current state from store to handle completion status changes
+    const shouldShowTodo = () => {
+      const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
+      if (!currentTodo) return false; // Todo was deleted
+
+      const filter = store.getFilter();
+      if (filter === 'all') return true;
+      if (filter === 'active') return !currentTodo.completed;
+      if (filter === 'completed') return currentTodo.completed;
+      return true;
+    };
+
+    // Pseudo-declarative todo item - event handlers just update model
+    todoContainer.add(() => {
+      todoHBox = a.hbox(() => {
+        checkbox = a.checkbox(todo.text, async (checked: boolean) => {
+          store.toggleTodo(todo.id);
+        });
+
+        textEntry = a.entry('', ifEditingSaveEdit, 300);
+
+        a.button('Edit', ifNotEditingStartEdit);
+
+        deleteButton = a.button('Delete', async () => {
+          store.deleteTodo(todo.id);
+        });
+      });
+    });
+
+    (async () => {
+      await checkbox.setChecked(todo.completed);
+      await checkbox.setText(todo.text);
+      await textEntry.setText('');
+      await textEntry.hide();
+
+      // Apply ngShow for declarative visibility based on filter
+      todoHBox.ngShow(shouldShowTodo);
+    })();
+
+    todoViews.set(todo.id, { container: todoHBox, checkbox, textEntry, deleteButton });
+  }
+
+  function removeTodoView(todoId: number) {
+    const view = todoViews.get(todoId);
+    if (view) {
+      todoViews.delete(todoId);
+      rebuildTodoList();
+    }
+  }
+
+  function showEmptyState() {
+    const currentFilter = store.getFilter();
+    todoContainer.add(() => {
+      a.label(currentFilter === 'all' ? 'No todos yet. Add one above!' : `No ${currentFilter} todos`);
+    });
+    todoContainer.refresh();
+  }
+
+  function rebuildTodoList() {
+    const allTodos = store.getAllTodos();
+    todoViews.clear();
+    todoContainer.removeAll();
+
+    if (allTodos.length === 0) {
+      showEmptyState();
+    } else {
+      allTodos.forEach((todo) => {
+        addTodoView(todo);
+      });
+    }
+
+    todoContainer.refresh();
+  }
+
+  // Refresh visibility of all todo items without rebuilding
+  async function refreshTodoVisibility() {
+    for (const view of todoViews.values()) {
+      await view.container.refreshVisibility();
+    }
+  }
+
+  // Pseudo-declarative UI construction
+  a.window({ title: 'TodoMVC', width: 700, height: 600 }, (win: Window) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label('TodoMVC');
+        a.separator();
+        a.label('');
+
+        a.label('Add New Todo:');
+        // Pseudo-declarative event handler - just update model
+        a.hbox(() => {
+          newTodoEntry = a.entry('What needs to be done?', undefined, 400);
+          a.button('Add', async () => {
+            const text = await newTodoEntry.getText();
+            if (text && text.trim()) {
+              store.addTodo(text);
+              await newTodoEntry.setText('');
+            }
+          });
+        });
+
+        a.label('');
+        a.separator();
+        a.label('');
+
+        a.label('Filter:');
+        // Pseudo-declarative filters - just update model
+        a.hbox(() => {
+          filterAllButton = a.button('[All]', async () => store.setFilter('all'));
+          filterActiveButton = a.button('Active', async () => store.setFilter('active'));
+          filterCompletedButton = a.button('Completed', async () => store.setFilter('completed'));
+          a.button('Clear Completed', async () => {
+            if (store.getCompletedCount() > 0) store.clearCompleted();
+          });
+        });
+
+        a.label('');
+        statusLabel = a.label('');
+        a.label('');
+
+        todoContainer = a.vbox(() => a.label('Loading...'));
+
+        a.label('');
+        a.separator();
+        a.label('');
+
+        // Pseudo-declarative file operations - just update model
+        a.hbox(() => {
+          a.button('Reload from File', async () => store.load());
+          a.button('Save to File', async () => store.save());
+        });
+      });
+    });
+
+    win.show();
+    win.centerOnScreen();
+
+    // Pseudo-declarative binding - model changes auto-update view
+    store.subscribe(() => {
+      rebuildTodoList();
+      updateStatusLabel();
+      updateFilterButtons();
+    });
+
+    (async () => {
+      rebuildTodoList();
+      await updateStatusLabel();
+      await updateFilterButtons();
+    })();
+  });
+}
+
+// ============================================================================
+// Main Application Entry Point
+// ============================================================================
+
+if (require.main === module) {
+  // Get file path from command line args
+  const args = process.argv.slice(2);
+  const filePath = args[0];
+
+  app({ title: 'TodoMVC' }, (a) => {
+    createTodoApp(a, filePath);
+  });
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+// See examples/todomvc.test.ts for the comprehensive test suite
