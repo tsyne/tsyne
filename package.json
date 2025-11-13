@@ -29,6 +29,12 @@
     "test:browser:headed": "npm run build && TSYNE_HEADED=1 node examples/web-features.test.js",
     "test:widgets": "npm run build && node examples/widget-interactions.test.js",
     "test:widgets:headed": "npm run build && TSYNE_HEADED=1 node examples/widget-interactions.test.js",
+    "test:screenshots": "npm run build && TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm run test:screenshots:all",
+    "test:screenshots:all": "npm run test:screenshots:examples && npm run test:screenshots:browser",
+    "test:screenshots:examples": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/01-hello-world.test.ts examples/02-counter.test.ts examples/03-button-spacer.test.ts examples/04-feedback-form.test.ts examples/05-live-clock.test.ts examples/07-signup-form.test.ts examples/09-players-list.test.ts examples/10-multiplication-table.test.ts examples/11-percentage-clock.test.ts examples/12-shopping-list.test.ts examples/13-tabbed-settings.test.ts",
+    "test:screenshots:browser": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/browser.test.ts examples/browser-enter-key.test.ts examples/browser-home.test.ts examples/browser-page-title.test.ts examples/browser-status-bar.test.ts",
+    "test:screenshots:todomvc": "npm run build && TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/todomvc.test.ts",
+    "test:screenshots:calculator": "npm run build && TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/calculator.test.ts",
     "run:calculator": "npm run build && npx ts-node test-apps/calculator-advanced/calculator-ui.ts",
     "run:single-script-calculator": "npm run build && npx ts-node examples/calculator.ts",
     "clean": "rm -rf dist bin pkg"

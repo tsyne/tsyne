@@ -29,15 +29,15 @@ describe('Shopping List Example', () => {
       { id: nextId++, text: 'Bread', checked: false },
     ];
 
-    let listContainer: any;
+    let listVBox: any;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Shopping List', width: 300, height: 400 }, (win) => {
         const renderList = () => {
-          listContainer.removeAll();
+          listVBox.removeAll();
 
           items.forEach((item) => {
-            listContainer.add(() => {
+            listVBox.add(() => {
               app.hbox(() => {
                 const checkbox = app.checkbox(item.text, async (checked: boolean) => {
                   item.checked = checked;
@@ -57,15 +57,15 @@ describe('Shopping List Example', () => {
             });
           });
 
-          listContainer.refresh();
+          listVBox.refresh();
         };
 
         win.setContent(() => {
           app.vbox(() => {
             app.label('Shopping List');
 
-            listContainer = app.scroll(() => {
-              app.vbox(() => {
+            app.scroll(() => {
+              listVBox = app.vbox(() => {
                 // Items will be added here
               });
             });
@@ -98,15 +98,15 @@ describe('Shopping List Example', () => {
     let nextId = 1;
     const items: ShoppingItem[] = [];
     let inputEntry: any;
-    let listContainer: any;
+    let listVBox: any;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Shopping List', width: 300, height: 400 }, (win) => {
         const renderList = () => {
-          listContainer.removeAll();
+          listVBox.removeAll();
 
           items.forEach((item) => {
-            listContainer.add(() => {
+            listVBox.add(() => {
               app.hbox(() => {
                 app.checkbox(item.text, async (checked: boolean) => {
                   item.checked = checked;
@@ -116,7 +116,7 @@ describe('Shopping List Example', () => {
             });
           });
 
-          listContainer.refresh();
+          listVBox.refresh();
         };
 
         win.setContent(() => {
@@ -130,8 +130,8 @@ describe('Shopping List Example', () => {
               }
             }, 250);
 
-            listContainer = app.scroll(() => {
-              app.vbox(() => {});
+            app.scroll(() => {
+              listVBox = app.vbox(() => {});
             });
           });
         });

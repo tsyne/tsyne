@@ -303,8 +303,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleDisableWidget(msg)
 	case "enableWidget":
 		b.handleEnableWidget(msg)
+	case "isEnabled":
+		b.handleIsEnabled(msg)
 	case "focusWidget":
 		b.handleFocusWidget(msg)
+	case "submitEntry":
+		b.handleSubmitEntry(msg)
 	case "hideWidget":
 		b.handleHideWidget(msg)
 	case "showWidget":
@@ -1599,6 +1603,61 @@ func (b *Bridge) handleEnableWidget(msg Message) {
 	}
 }
 
+func (b *Bridge) handleIsEnabled(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	// Check if this is a TappableEntry with a separate entry reference
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// If we have a separate entry reference (from TappableEntry), use that
+	if hasEntry {
+		if entry, ok := entryObj.(*widget.Entry); ok {
+			enabled := !entry.Disabled()
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+				Result: map[string]interface{}{
+					"enabled": enabled,
+				},
+			})
+			return
+		}
+	}
+
+	// Try to check if the widget is enabled
+	if disableable, ok := obj.(fyne.Disableable); ok {
+		enabled := !disableable.Disabled()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+			Result: map[string]interface{}{
+				"enabled": enabled,
+			},
+		})
+	} else {
+		// Widget doesn't implement Disableable, so it's always "enabled"
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+			Result: map[string]interface{}{
+				"enabled": true,
+			},
+		})
+	}
+}
+
 func (b *Bridge) handleFocusWidget(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -1665,6 +1724,63 @@ func (b *Bridge) handleFocusWidget(msg Message) {
 			Error:   "Widget is not focusable",
 		})
 	}
+}
+
+func (b *Bridge) handleSubmitEntry(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	// Check if this is an Entry wrapped in a container (from minWidth)
+	entryObj, hasEntry := b.widgets[widgetID+"_entry"]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// If we have a separate entry reference (from minWidth wrapping), use that
+	if hasEntry {
+		if entry, ok := entryObj.(*widget.Entry); ok {
+			if entry.OnSubmitted != nil {
+				// Trigger the OnSubmitted callback
+				fyne.DoAndWait(func() {
+					entry.OnSubmitted(entry.Text)
+				})
+				b.sendResponse(Response{
+					ID:      msg.ID,
+					Success: true,
+				})
+				return
+			}
+		}
+	}
+
+	// Check if it's an Entry widget with OnSubmitted callback
+	if entry, ok := obj.(*widget.Entry); ok {
+		if entry.OnSubmitted != nil {
+			// Trigger the OnSubmitted callback
+			fyne.DoAndWait(func() {
+				entry.OnSubmitted(entry.Text)
+			})
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+			return
+		}
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: false,
+		Error:   "Widget is not an Entry or has no OnSubmitted callback",
+	})
 }
 
 func (b *Bridge) handleHideWidget(msg Message) {

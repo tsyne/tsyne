@@ -176,6 +176,25 @@ export class Button extends Widget {
     // Also apply generic 'button' styles
     await this.applyStyles('button').catch(() => {});
   }
+
+  async disable(): Promise<void> {
+    await this.ctx.bridge.send('disableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async enable(): Promise<void> {
+    await this.ctx.bridge.send('enableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async isEnabled(): Promise<boolean> {
+    const result = await this.ctx.bridge.send('isEnabled', {
+      widgetId: this.id
+    });
+    return result.enabled;
+  }
 }
 
 /**
@@ -258,6 +277,12 @@ export class Entry extends Widget {
 
   async focus(): Promise<void> {
     await this.ctx.bridge.send('focusWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async submit(): Promise<void> {
+    await this.ctx.bridge.send('submitEntry', {
       widgetId: this.id
     });
   }
@@ -801,6 +826,15 @@ export class ProgressBar extends Widget {
       widgetId: this.id
     });
     return result.value;
+  }
+
+  // Aliases to match Slider API naming convention
+  async setValue(value: number): Promise<void> {
+    await this.setProgress(value);
+  }
+
+  async getValue(): Promise<number> {
+    return await this.getProgress();
   }
 }
 

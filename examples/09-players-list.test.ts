@@ -36,8 +36,8 @@ describe('Players List Example', () => {
             // Simple version without list widget - just display players
             players.forEach(player => {
               app.hbox(() => {
-                app.label(player.name, 120);
-                app.label(player.score.toString(), 80);
+                app.label(player.name);
+                app.label(player.score.toString());
               });
             });
           });
