@@ -486,9 +486,10 @@ class ImageViewerUI {
 
 /**
  * Create and run the image viewer application
+ * @param appInstance - Optional app instance (for testing)
  */
-async function createImageViewerApp(): Promise<void> {
-  const a = app('Image Viewer', 1200, 800);
+export async function createImageViewerApp(appInstance?: App): Promise<void> {
+  const a = appInstance || app('Image Viewer', 1200, 800);
 
   const viewer = new ImageViewer();
   const ui = new ImageViewerUI(a, viewer);
@@ -497,17 +498,22 @@ async function createImageViewerApp(): Promise<void> {
   win.setContent(() => {
     a.border({
       top: () => ui['buildToolbar'](),
-      center: () => ui.build()
+      center: () => ui.build(),
+      bottom: () => {
+        // Status bar with zoom level
+        const zoomLabel = a.label('Zoom: 100%');
+        viewer.registerZoomStatus(zoomLabel);
+      }
     });
   });
 
-  // Status bar at bottom
-  a.border({}).id = 'status-border';  // Placeholder for future status bar
-  const zoomLabel = a.label('Zoom: 100%');
-  viewer.registerZoomStatus(zoomLabel);
-
-  await a.run();
+  // Only run if not provided (standalone mode)
+  if (!appInstance) {
+    await a.run();
+  }
 }
 
 // Run the application
-createImageViewerApp().catch(console.error);
+if (require.main === module) {
+  createImageViewerApp().catch(console.error);
+}
