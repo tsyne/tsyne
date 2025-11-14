@@ -20,6 +20,7 @@ import * as os from 'os';
 import { App } from './app';
 import { Window } from './window';
 import { Entry } from './widgets';
+import { setBrowserGlobals, TsyneLocation, TsyneHistory } from './globals';
 
 /**
  * Custom menu item that pages can define
@@ -639,6 +640,9 @@ export class Browser {
       this.currentRequest = null;
       this.statusText = fromCache ? 'Loaded from cache' : 'Done';
       await this.setupMenuBar();  // Update menu bar to reflect new history state
+
+      // Update browser globals
+      this.updateBrowserGlobals();
     } catch (error) {
       if (this.loading) {  // Only show error if not stopped
         await this.showError(url, error);
@@ -713,6 +717,9 @@ export class Browser {
 
     this.statusText = 'Navigated back';
     await this.renderPage(entry.pageCode);
+
+    // Update browser globals
+    this.updateBrowserGlobals();
   }
 
   /**
@@ -738,6 +745,9 @@ export class Browser {
 
     this.statusText = 'Navigated forward';
     await this.renderPage(entry.pageCode);
+
+    // Update browser globals
+    this.updateBrowserGlobals();
   }
 
   /**
@@ -749,6 +759,9 @@ export class Browser {
       this.statusText = 'Reloading page...';
       await this.renderPage(entry.pageCode);
       this.statusText = 'Done';
+
+      // Update browser globals
+      this.updateBrowserGlobals();
     }
   }
 
@@ -760,6 +773,87 @@ export class Browser {
       await this.changePage(this.homeUrl);
     } else {
       console.log('No home URL configured');
+    }
+  }
+
+  /**
+   * Update browser globals (location and history) for browser compatibility
+   * This allows npm packages designed for browsers to work in Tsyne browser mode
+   */
+  private updateBrowserGlobals(): void {
+    if (!this.currentUrl) {
+      return;
+    }
+
+    try {
+      const urlObj = new URL(this.currentUrl);
+
+      // Create location object
+      const location: TsyneLocation = {
+        href: urlObj.href,
+        protocol: urlObj.protocol,
+        host: urlObj.host,
+        hostname: urlObj.hostname,
+        port: urlObj.port,
+        pathname: urlObj.pathname,
+        search: urlObj.search,
+        hash: urlObj.hash,
+        origin: urlObj.origin,
+        reload: () => {
+          this.reload();
+        },
+        replace: (url: string) => {
+          // Replace current history entry
+          if (this.historyIndex >= 0 && this.history[this.historyIndex]) {
+            this.history[this.historyIndex].url = url;
+            this.saveHistory();
+          }
+          this.changePage(url);
+        },
+        assign: (url: string) => {
+          this.changePage(url);
+        }
+      };
+
+      // Create history object
+      const history: TsyneHistory = {
+        length: this.history.length,
+        state: null,
+        back: () => {
+          this.back();
+        },
+        forward: () => {
+          this.forward();
+        },
+        go: (delta?: number) => {
+          if (delta === undefined || delta === 0) {
+            this.reload();
+          } else if (delta < 0) {
+            // Go back
+            for (let i = 0; i < Math.abs(delta); i++) {
+              this.back();
+            }
+          } else {
+            // Go forward
+            for (let i = 0; i < delta; i++) {
+              this.forward();
+            }
+          }
+        },
+        pushState: (state: any, title: string, url?: string) => {
+          // For now, we don't support pushState fully
+          console.log('[Browser] pushState not fully implemented:', { state, title, url });
+        },
+        replaceState: (state: any, title: string, url?: string) => {
+          // For now, we don't support replaceState fully
+          console.log('[Browser] replaceState not fully implemented:', { state, title, url });
+        }
+      };
+
+      // Set browser globals
+      setBrowserGlobals(location, history);
+    } catch (e) {
+      console.error('Failed to update browser globals:', e);
     }
   }
 

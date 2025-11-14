@@ -2,6 +2,7 @@ import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap } from './widgets';
+import { initializeGlobals } from './globals';
 
 export interface AppOptions {
   title?: string;
@@ -16,6 +17,9 @@ export class App {
   private bridge: BridgeConnection;
 
   constructor(options?: AppOptions, testMode: boolean = false) {
+    // Initialize browser compatibility globals
+    initializeGlobals();
+
     this.bridge = new BridgeConnection(testMode);
     this.ctx = new Context(this.bridge);
   }

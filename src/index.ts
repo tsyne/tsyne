@@ -452,3 +452,12 @@ export type { BrowserContext, PageMenuItem } from './browser';
 // Export browser testing
 export { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from './tsyne-browser-test';
 export type { BrowserTestOptions, TestPage } from './tsyne-browser-test';
+
+// Export browser compatibility globals
+export {
+  initializeGlobals,
+  setBrowserGlobals,
+  registerDialogHandlers,
+  TsyneStorage
+} from './globals';
+export type { TsyneLocation, TsyneHistory, TsyneNavigator } from './globals';
