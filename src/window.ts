@@ -1,4 +1,5 @@
 import { Context } from './context';
+import { registerDialogHandlers } from './globals';
 
 export interface WindowOptions {
   title: string;
@@ -35,6 +36,22 @@ export class Window {
     }
 
     ctx.bridge.send('createWindow', payload);
+
+    // Register dialog handlers for browser compatibility globals
+    registerDialogHandlers({
+      alert: (message: string) => {
+        this.showInfo('Alert', message);
+      },
+      confirm: async (message: string): Promise<boolean> => {
+        return await this.showConfirm('Confirm', message);
+      },
+      prompt: async (message: string, defaultValue?: string): Promise<string | null> => {
+        // For now, we don't have a prompt dialog in Fyne, so we return null
+        // This can be implemented later with a custom dialog
+        console.log('[PROMPT]', message, defaultValue);
+        return null;
+      }
+    });
 
     if (builder) {
       ctx.pushWindow(this.id);
