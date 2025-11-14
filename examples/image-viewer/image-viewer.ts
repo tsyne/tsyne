@@ -22,7 +22,7 @@ import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
 import type { Image as ImageWidget } from '../../src/widgets';
-import { Jimp } from 'jimp';
+import { Jimp, type JimpInstance } from 'jimp';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -53,7 +53,7 @@ interface EditParams {
  */
 class ImageViewer {
   private currentImage: ImageInfo | null = null;
-  private sourceImage: Jimp | null = null;  // Original unedited image
+  private sourceImage: Awaited<ReturnType<typeof Jimp.read>> | null = null;  // Original unedited image
   private editParams: EditParams = {
     brightness: 0,
     contrast: 0,
@@ -340,15 +340,28 @@ class ImageViewerUI {
   }
 
   /**
-   * Build the complete UI
+   * Build the complete UI (called from createImageViewerApp)
    */
-  build(): void {
-    // HSplit: image area (70%) | side panel (30%)
-    this.a.hsplit(
-      () => this.buildImageArea(),
-      () => this.buildSidePanel(),
-      0.7
-    );
+  buildUI(win: Window): void {
+    this.a.border({
+      top: () => {
+        // Toolbar
+        this.buildToolbar();
+      },
+      center: () => {
+        // HSplit: image area (70%) | side panel (30%)
+        this.a.hsplit(
+          () => this.buildImageArea(),
+          () => this.buildSidePanel(),
+          0.7
+        );
+      },
+      bottom: () => {
+        // Status bar with zoom level
+        const zoomLabel = this.a.label('Zoom: 100%');
+        this.viewer.registerZoomStatus(zoomLabel);
+      }
+    });
   }
 
   /**
@@ -356,12 +369,12 @@ class ImageViewerUI {
    */
   private buildToolbar(): void {
     this.a.toolbar([
-      { label: 'Open', action: () => this.openImage() },
-      { label: 'Reset Edits', action: () => this.viewer.resetEdits() },
+      { type: 'action', label: 'Open', onAction: () => this.openImage() },
+      { type: 'action', label: 'Reset Edits', onAction: () => this.viewer.resetEdits() },
       { type: 'separator' },
-      { label: 'Zoom In', action: () => this.viewer.zoomIn() },
-      { label: 'Zoom Out', action: () => this.viewer.zoomOut() },
-      { label: 'Reset Zoom', action: () => this.viewer.resetZoom() }
+      { type: 'action', label: 'Zoom In', onAction: () => this.viewer.zoomIn() },
+      { type: 'action', label: 'Zoom Out', onAction: () => this.viewer.zoomOut() },
+      { type: 'action', label: 'Reset Zoom', onAction: () => this.viewer.resetZoom() }
     ]);
   }
 
@@ -423,7 +436,9 @@ class ImageViewerUI {
    */
   private buildEditorTab(): void {
     this.a.vbox(() => {
-      this.a.label('Edit Controls:');
+      this.a.label('Editing Controls:');
+      this.a.separator();
+      this.a.label('General:');
       this.a.separator();
 
       // Brightness control
@@ -441,27 +456,27 @@ class ImageViewerUI {
   }
 
   /**
-   * Build an edit control with +/- buttons
+   * Build an edit control with increase/decrease buttons
    */
   private buildEditControl(
     type: 'brightness' | 'contrast' | 'saturation' | 'hue',
     labelText: string,
     getSetter: () => (value: number) => void
   ): void {
-    this.a.hbox(() => {
+    this.a.vbox(() => {
       const label = this.a.label(`${labelText}: 0`);
       this.viewer.registerEditSlider(type, label);
 
-      this.a.button('-', () => {
-        const setter = getSetter.call(this.viewer);
-        const currentValue = this.getCurrentValue(type);
-        setter.call(this.viewer, currentValue - 10);
-      });
-
-      this.a.button('+', () => {
+      this.a.button(`Increase ${labelText}`, () => {
         const setter = getSetter.call(this.viewer);
         const currentValue = this.getCurrentValue(type);
         setter.call(this.viewer, currentValue + 10);
+      });
+
+      this.a.button(`Decrease ${labelText}`, () => {
+        const setter = getSetter.call(this.viewer);
+        const currentValue = this.getCurrentValue(type);
+        setter.call(this.viewer, currentValue - 10);
       });
     });
   }
@@ -486,34 +501,25 @@ class ImageViewerUI {
 
 /**
  * Create and run the image viewer application
- * @param appInstance - Optional app instance (for testing)
+ * Based on: main.go
  */
-export async function createImageViewerApp(appInstance?: App): Promise<void> {
-  const a = appInstance || app('Image Viewer', 1200, 800);
-
+export function createImageViewerApp(a: App): void {
   const viewer = new ImageViewer();
   const ui = new ImageViewerUI(a, viewer);
 
-  const win = a.window('Image Viewer with Real Editing (Jimp)', 1200, 800);
-  win.setContent(() => {
-    a.border({
-      top: () => ui['buildToolbar'](),
-      center: () => ui.build(),
-      bottom: () => {
-        // Status bar with zoom level
-        const zoomLabel = a.label('Zoom: 100%');
-        viewer.registerZoomStatus(zoomLabel);
-      }
+  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
+    win.setContent(() => {
+      ui.buildUI(win);
     });
+    win.show();
   });
-
-  // Only run if not provided (standalone mode)
-  if (!appInstance) {
-    await a.run();
-  }
 }
 
-// Run the application
+/**
+ * Main application entry point
+ */
 if (require.main === module) {
-  createImageViewerApp().catch(console.error);
+  app({ title: 'Image Viewer' }, (a: App) => {
+    createImageViewerApp(a);
+  });
 }
