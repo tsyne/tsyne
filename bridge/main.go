@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -296,6 +298,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateRichText(msg)
 	case "createImage":
 		b.handleCreateImage(msg)
+	case "updateImage":
+		b.handleUpdateImage(msg)
 	case "createBorder":
 		b.handleCreateBorder(msg)
 	case "createGridWrap":
@@ -1346,6 +1350,79 @@ func (b *Bridge) handleCreateImage(msg Message) {
 	b.widgets[widgetID] = img
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "image", Text: path}
 	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleUpdateImage(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	imageData := msg.Payload["imageData"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Parse the data URL format: "data:image/png;base64,..."
+	var base64Data string
+	if strings.HasPrefix(imageData, "data:") {
+		// Split on comma to separate header from data
+		parts := strings.SplitN(imageData, ",", 2)
+		if len(parts) != 2 {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Invalid data URL format",
+			})
+			return
+		}
+		base64Data = parts[1]
+	} else {
+		// Assume it's already base64 without the data URL prefix
+		base64Data = imageData
+	}
+
+	// Decode base64
+	imgBytes, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to decode base64: %v", err),
+		})
+		return
+	}
+
+	// Decode image bytes
+	decodedImg, _, err := image.Decode(bytes.NewReader(imgBytes))
+	if err != nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to decode image: %v", err),
+		})
+		return
+	}
+
+	// UI updates must happen on the main thread
+	fyne.DoAndWait(func() {
+		if imgWidget, ok := obj.(*canvas.Image); ok {
+			imgWidget.Image = decodedImg
+			imgWidget.Refresh()
+		}
+	})
 
 	b.sendResponse(Response{
 		ID:      msg.ID,

@@ -89,6 +89,7 @@
     "outputPath": "pkg"
   },
   "dependencies": {
-    "buffer-crc32": "^1.0.0"
+    "buffer-crc32": "^1.0.0",
+    "jimp": "^1.6.0"
   }
 }

@@ -1382,6 +1382,17 @@ export class Image {
     ctx.bridge.send('createImage', payload);
     ctx.addToCurrentContainer(this.id);
   }
+
+  /**
+   * Updates the image widget with new image data
+   * @param imageData - Base64-encoded image data (with or without data URL prefix)
+   */
+  async updateImage(imageData: string): Promise<void> {
+    await this.ctx.bridge.send('updateImage', {
+      widgetId: this.id,
+      imageData: imageData
+    });
+  }
 }
 
 /**
