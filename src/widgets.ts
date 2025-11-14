@@ -85,6 +85,22 @@ export abstract class Widget {
   }
 
   /**
+   * Register a custom ID for this widget (for test framework getByID)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   * @example
+   * const statusLabel = a.label('').withId('statusLabel');
+   * // In tests: ctx.getByID('statusLabel')
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+
+  /**
    * AngularJS-style ng-show directive for declarative visibility
    * @param conditionFn Function that returns whether widget should be visible
    * @returns this for method chaining

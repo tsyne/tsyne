@@ -1,6 +1,8 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Note: Some tests (especially todomvc.test.ts and todomvc-ngshow.test.ts) can be flaky
+  // when run in parallel. If you encounter flakiness, run with --runInBand flag.
   roots: ['<rootDir>/test-apps', '<rootDir>/src', '<rootDir>/examples'],
   testMatch: [
     '**/__tests__/**/*.ts',

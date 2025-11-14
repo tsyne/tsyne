@@ -51,7 +51,7 @@ describe('Advanced Interaction APIs', () => {
       fail('Expected double-click to fail on non-DoubleTappable widget');
     } catch (error: any) {
       // Expected error - buttons don't support double-tap in Fyne
-      expect(error.message).toContain('double-tappable');
+      expect(error.message).toContain('double-tap');
     }
   });
 

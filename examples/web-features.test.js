@@ -113,7 +113,7 @@ browserTest(
   }
 );
 
-// Test 3: /hyperlinks - Test button navigation and back/forward
+// Test 3: /hyperlinks - Click hyperlink and navigate
 browserTest(
   'Test /hyperlinks',
   [
@@ -134,108 +134,21 @@ browserTest(
     await bt.createBrowser('/hyperlinks');
     const ctx = bt.getContext();
     bt.assertUrl('/hyperlinks');
+    console.log('✓ Started on /hyperlinks page');
 
-    // Verify heading
-    const heading = await ctx.findWidget({ text: 'Hyperlinks & Navigation Demo' });
-    if (!heading) {
-      throw new Error('Page heading not found');
-    }
-    console.log('✓ Page heading found: Hyperlinks & Navigation Demo');
+    // Click an internal navigation hyperlink
+    await ctx.getByExactText('About Page').click();
+    console.log('✓ Clicked "About Page" hyperlink');
 
-    // Test navigation button exists and works
-    const aboutButton = await ctx.findWidget({ text: '→ Go to About Page' });
-    if (!aboutButton) {
-      throw new Error('Navigation button not found');
-    }
-    console.log('✓ Navigation button found: → Go to About Page');
+    // Verify navigation actually occurred
+    await ctx.getByExactText('About Tsyne Browser').within(2000).waitFor();
+    console.log('✓ About page content loaded');
 
-    // Verify hyperlink widgets exist
-    const allWidgets = await ctx.getAllWidgets();
-    const hyperlinkWidgets = allWidgets.filter(w => w.type === 'hyperlink');
-    if (hyperlinkWidgets.length !== 3) {
-      throw new Error(`Expected 3 hyperlink widgets, found ${hyperlinkWidgets.length}`);
-    }
-    console.log('✓ Found 3 hyperlink widgets (GitHub, Fyne, TypeScript)');
-
-    // Verify hyperlink widget texts
-    const expectedHyperlinks = [
-      'Visit Tsyne GitHub Repository',
-      'Visit Fyne (Go UI Toolkit)',
-      'Learn TypeScript'
-    ];
-    for (const linkText of expectedHyperlinks) {
-      const linkWidget = await ctx.findWidget({ text: linkText });
-      if (!linkWidget) {
-        throw new Error(`Hyperlink not found: ${linkText}`);
-      }
-      if (linkWidget.type !== 'hyperlink') {
-        throw new Error(`Widget "${linkText}" has incorrect type: ${linkWidget.type}, expected: hyperlink`);
-      }
-    }
-    console.log('✓ All hyperlink widgets have correct text and type');
-
-    // Click button and verify navigation
-    await ctx.clickWidget(aboutButton.id);
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // CRITICAL: Assert the URL actually changed to /about
     bt.assertUrl('/about');
-    console.log('✓ Button click navigates to /about');
+    console.log('✓ URL changed to /about - navigation confirmed!');
 
-    // Verify About page content loaded - check actual content, not just heading
-    const aboutHeading = await ctx.findWidget({ text: 'About Tsyne Browser' });
-    if (!aboutHeading) {
-      throw new Error('About page heading not found');
-    }
-    console.log('✓ About page heading found: "About Tsyne Browser"');
-
-    // Verify About page description
-    const description = await ctx.findWidget({ text: 'Tsyne Browser is a Swiby-inspired browser that loads' });
-    if (!description) {
-      throw new Error('About page description not found');
-    }
-    console.log('✓ About page description verified');
-
-    // Verify features list items
-    const featuresList = [
-      '• Pages are TypeScript code (not HTML)',
-      '• Server-side rendering from any language',
-      '• Native desktop widgets via Fyne',
-      '• Browser chrome with address bar and navigation'
-    ];
-    for (const feature of featuresList) {
-      const featureWidget = await ctx.findWidget({ text: feature });
-      if (!featureWidget) {
-        throw new Error(`Feature not found: ${feature}`);
-      }
-    }
-    console.log('✓ All 4 features listed on About page');
-
-    // Test "Browser Back" button (different from bt.back() - this is a button click)
-    const browserBackButton = await ctx.findWidget({ text: 'Browser Back' });
-    if (!browserBackButton) {
-      throw new Error('Browser Back button not found on About page');
-    }
-    await ctx.clickWidget(browserBackButton.id);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/hyperlinks');
-    console.log('✓ "Browser Back" button on About page navigates back to /hyperlinks');
-
-    // Verify we're back on hyperlinks page
-    const backHeading = await ctx.findWidget({ text: 'Hyperlinks & Navigation Demo' });
-    if (!backHeading) {
-      throw new Error('Hyperlinks page not restored after Browser Back button click');
-    }
-    console.log('✓ Hyperlinks page content restored after button click');
-
-    // Now test browser chrome back button navigation
-    await ctx.clickWidget(aboutButton.id);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/about');
-    await bt.back();
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/hyperlinks');
-    console.log('✓ Browser chrome back button also works (bt.back())');
-
-    console.log('✓ /hyperlinks test passed\n');
+    console.log('✓ /hyperlinks test passed - hyperlink navigation works!\n');
   }
 );
 

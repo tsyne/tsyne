@@ -184,10 +184,32 @@ export class Locator {
    * await ctx.getByID("status").shouldBe("Success");
    */
   async shouldBe(expected: string): Promise<Locator> {
-    const actual = await this.getTextWithRetry();
-    if (actual !== expected) {
-      throw new Error(`Expected text to be "${expected}" but got "${actual}"`);
+    // If within() was called, poll for the value to match
+    if (this.withinTimeout) {
+      const startTime = Date.now();
+      let lastActual = '';
+
+      while (Date.now() - startTime < this.withinTimeout) {
+        try {
+          const actual = await this.getText();
+          if (actual === expected) {
+            return this; // Success!
+          }
+          lastActual = actual;
+        } catch (error) {
+          // Widget not found yet, keep trying
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Timeout - use Jest assertion for better error formatting
+      expect(lastActual).toBe(expected);
+      return this; // Won't reach here, but TypeScript needs it
     }
+
+    // No polling - just check once
+    const actual = await this.getText();
+    expect(actual).toBe(expected);
     return this;
   }
 
@@ -198,10 +220,32 @@ export class Locator {
    * await ctx.getByID("message").shouldContain("success");
    */
   async shouldContain(expected: string): Promise<Locator> {
-    const actual = await this.getTextWithRetry();
-    if (!actual.includes(expected)) {
-      throw new Error(`Expected text to contain "${expected}" but got "${actual}"`);
+    // If within() was called, poll for the value to match
+    if (this.withinTimeout) {
+      const startTime = Date.now();
+      let lastActual = '';
+
+      while (Date.now() - startTime < this.withinTimeout) {
+        try {
+          const actual = await this.getText();
+          if (actual.includes(expected)) {
+            return this; // Success!
+          }
+          lastActual = actual;
+        } catch (error) {
+          // Widget not found yet, keep trying
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Timeout - use Jest assertion for better error formatting
+      expect(lastActual).toContain(expected);
+      return this; // Won't reach here, but TypeScript needs it
     }
+
+    // No polling - just check once
+    const actual = await this.getText();
+    expect(actual).toContain(expected);
     return this;
   }
 
@@ -213,9 +257,7 @@ export class Locator {
    */
   async shouldMatch(pattern: RegExp): Promise<Locator> {
     const actual = await this.getTextWithRetry();
-    if (!pattern.test(actual)) {
-      throw new Error(`Expected text to match ${pattern} but got "${actual}"`);
-    }
+    expect(actual).toMatch(pattern);
     return this;
   }
 
@@ -227,9 +269,7 @@ export class Locator {
    */
   async shouldNotBe(expected: string): Promise<Locator> {
     const actual = await this.getTextWithRetry();
-    if (actual === expected) {
-      throw new Error(`Expected text to not be "${expected}" but it was`);
-    }
+    expect(actual).not.toBe(expected);
     return this;
   }
 
@@ -242,9 +282,7 @@ export class Locator {
    */
   async shouldBeChecked(): Promise<Locator> {
     const checked = await this.getCheckedWithRetry();
-    if (!checked) {
-      throw new Error('Expected checkbox to be checked but it was not');
-    }
+    expect(checked).toBe(true);
     return this;
   }
 
@@ -256,9 +294,7 @@ export class Locator {
    */
   async shouldNotBeChecked(): Promise<Locator> {
     const checked = await this.getCheckedWithRetry();
-    if (checked) {
-      throw new Error('Expected checkbox to not be checked but it was');
-    }
+    expect(checked).toBe(false);
     return this;
   }
 
@@ -272,9 +308,7 @@ export class Locator {
   async shouldHaveValue(expected: string | number): Promise<Locator> {
     const actual = await this.getValueWithRetry();
     const expectedStr = String(expected);
-    if (actual !== expectedStr) {
-      throw new Error(`Expected value to be "${expectedStr}" but got "${actual}"`);
-    }
+    expect(actual).toBe(expectedStr);
     return this;
   }
 
@@ -286,9 +320,7 @@ export class Locator {
    */
   async shouldHaveSelected(expected: string): Promise<Locator> {
     const actual = await this.getSelectedWithRetry();
-    if (actual !== expected) {
-      throw new Error(`Expected selected value to be "${expected}" but got "${actual}"`);
-    }
+    expect(actual).toBe(expected);
     return this;
   }
 
@@ -300,9 +332,7 @@ export class Locator {
    */
   async shouldBeEnabled(): Promise<Locator> {
     const disabled = await this.getDisabledWithRetry();
-    if (disabled) {
-      throw new Error('Expected widget to be enabled but it was disabled');
-    }
+    expect(disabled).toBe(false);
     return this;
   }
 
@@ -314,9 +344,7 @@ export class Locator {
    */
   async shouldBeDisabled(): Promise<Locator> {
     const disabled = await this.getDisabledWithRetry();
-    if (!disabled) {
-      throw new Error('Expected widget to be disabled but it was enabled');
-    }
+    expect(disabled).toBe(true);
     return this;
   }
 
@@ -328,9 +356,7 @@ export class Locator {
    */
   async shouldHaveType(expected: string): Promise<Locator> {
     const actual = await this.getTypeWithRetry();
-    if (actual !== expected) {
-      throw new Error(`Expected widget type to be "${expected}" but got "${actual}"`);
-    }
+    expect(actual).toBe(expected);
     return this;
   }
 
@@ -342,9 +368,7 @@ export class Locator {
    */
   async shouldBeVisible(): Promise<Locator> {
     const widget = await this.findWithRetry();
-    if (!widget) {
-      throw new Error('Expected widget to be visible but it was not found');
-    }
+    expect(widget).toBeTruthy();
     return this;
   }
 
@@ -356,9 +380,7 @@ export class Locator {
    */
   async shouldNotBeVisible(): Promise<Locator> {
     const widget = await this.findWithRetry();
-    if (widget) {
-      throw new Error('Expected widget to not be visible but it was found');
-    }
+    expect(widget).toBeFalsy();
     return this;
   }
 
@@ -580,93 +602,67 @@ export class Expect {
 
   async toHaveText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    if (actualText !== expectedText) {
-      throw new Error(`Expected text to be "${expectedText}" but got "${actualText}"`);
-    }
+    expect(actualText).toBe(expectedText);
   }
 
   async toContainText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    if (!actualText.includes(expectedText)) {
-      throw new Error(`Expected text to contain "${expectedText}" but got "${actualText}"`);
-    }
+    expect(actualText).toContain(expectedText);
   }
 
   async toNotHaveText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    if (actualText === expectedText) {
-      throw new Error(`Expected text to not be "${expectedText}" but it was`);
-    }
+    expect(actualText).not.toBe(expectedText);
   }
 
   async toNotContainText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    if (actualText.includes(expectedText)) {
-      throw new Error(`Expected text to not contain "${expectedText}" but got "${actualText}"`);
-    }
+    expect(actualText).not.toContain(expectedText);
   }
 
   async toMatchText(pattern: RegExp): Promise<void> {
     const actualText = await this.locator.getText();
-    if (!pattern.test(actualText)) {
-      throw new Error(`Expected text to match ${pattern} but got "${actualText}"`);
-    }
+    expect(actualText).toMatch(pattern);
   }
 
   async toNotMatchText(pattern: RegExp): Promise<void> {
     const actualText = await this.locator.getText();
-    if (pattern.test(actualText)) {
-      throw new Error(`Expected text to not match ${pattern} but got "${actualText}"`);
-    }
+    expect(actualText).not.toMatch(pattern);
   }
 
   async toBeVisible(): Promise<void> {
     const widget = await this.locator.find();
-    if (!widget) {
-      throw new Error('Expected widget to be visible but it was not found');
-    }
+    expect(widget).toBeTruthy();
   }
 
   async toNotBeVisible(): Promise<void> {
     const widget = await this.locator.find();
-    if (widget) {
-      throw new Error('Expected widget to not be visible but it was found');
-    }
+    expect(widget).toBeFalsy();
   }
 
   async toExist(): Promise<void> {
     const widgets = await this.locator.findAll();
-    if (widgets.length === 0) {
-      throw new Error('Expected widget to exist but none were found');
-    }
+    expect(widgets.length).toBeGreaterThan(0);
   }
 
   async toNotExist(): Promise<void> {
     const widgets = await this.locator.findAll();
-    if (widgets.length > 0) {
-      throw new Error('Expected widget to not exist but found ' + widgets.length);
-    }
+    expect(widgets.length).toBe(0);
   }
 
   async toHaveCount(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    if (widgets.length !== count) {
-      throw new Error(`Expected ${count} widgets but found ${widgets.length}`);
-    }
+    expect(widgets.length).toBe(count);
   }
 
   async toHaveCountGreaterThan(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    if (widgets.length <= count) {
-      throw new Error(`Expected more than ${count} widgets but found ${widgets.length}`);
-    }
+    expect(widgets.length).toBeGreaterThan(count);
   }
 
   async toHaveCountLessThan(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    if (widgets.length >= count) {
-      throw new Error(`Expected less than ${count} widgets but found ${widgets.length}`);
-    }
+    expect(widgets.length).toBeLessThan(count);
   }
 }
 
@@ -880,9 +876,7 @@ export class TestContext {
       ? await this.hasTextIgnoreCase(text)
       : await this.hasText(text);
 
-    if (!hasIt) {
-      throw new Error(`Expected to find text "${text}" on page but it was not found`);
-    }
+    expect(hasIt).toBe(true);
   }
 
   /**

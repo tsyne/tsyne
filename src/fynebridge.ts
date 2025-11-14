@@ -134,7 +134,10 @@ export class BridgeConnection {
       const jsonString = payload.toString('utf8');
       const data = JSON.parse(jsonString);
 
-      if ('type' in data && data.type === 'callback') {
+      // Distinguish between Event (has 'type') and Response (has 'id')
+      // Events have a 'type' field but no 'id' field
+      // Responses have an 'id' field but no 'type' field
+      if ('type' in data && !('id' in data)) {
         // This is an event
         this.handleEvent(data as Event);
       } else {
@@ -172,6 +175,12 @@ export class BridgeConnection {
   private handleEvent(event: Event): void {
     if (event.type === 'callback' && event.data?.callbackId) {
       const handler = this.eventHandlers.get(event.data.callbackId);
+      if (handler) {
+        handler(event.data);
+      }
+    } else {
+      // Handle other event types (e.g., hyperlinkNavigation)
+      const handler = this.eventHandlers.get(event.type);
       if (handler) {
         handler(event.data);
       }

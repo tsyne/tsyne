@@ -12,28 +12,20 @@ vbox(() => {
   scroll(() => {
     vbox(() => {
       label('');
-      label('=== Navigation Buttons ===');
-      label('Button-based navigation (like clickable links):');
+      label('=== Internal Navigation Hyperlinks ===');
+      label('Hyperlinks for navigating within the app (blue & underlined):');
       label('');
 
-      button('→ Go to About Page', () => {
-        browserContext.changePage('/about');
-      });
-
-      button('→ Go to Contact Page', () => {
-        browserContext.changePage('/contact');
-      });
-
-      button('→ Go to Form Demo', () => {
-        browserContext.changePage('/form');
-      });
+      hyperlink('About Page', '/about');
+      hyperlink('Text Features', '/text-features');
+      hyperlink('Form Demo', '/form');
 
       label('');
       separator();
       label('');
 
-      label('=== Hyperlink Widgets ===');
-      label('True hyperlink widgets (opens in external browser):');
+      label('=== External Hyperlinks ===');
+      label('Hyperlinks that open in external browser:');
       label('');
 
       hyperlink('Visit Tsyne GitHub Repository', 'https://github.com/anthropics/tsyne');

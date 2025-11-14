@@ -135,17 +135,15 @@ describe('TodoMVC Tests', () => {
     // Click checkbox to complete
     const checkbox = ctx.getByExactText("Test task");
     await checkbox.click();
-    await ctx.wait(100);
 
-    // Should show 0 active items
-    await ctx.expect(ctx.getByText("0 items left")).toBeVisible();
+    // Should show 0 active items (retry up to 1 second for async updates)
+    await ctx.expect(ctx.getByText("0 items left").within(1000)).toBeVisible();
 
     // Click again to uncomplete
     await checkbox.click();
-    await ctx.wait(100);
 
     // Should show 1 active item again
-    await ctx.expect(ctx.getByText("1 item left")).toBeVisible();
+    await ctx.expect(ctx.getByText("1 item left").within(1000)).toBeVisible();
   });
 
   test('should delete a todo', async () => {
@@ -194,7 +192,6 @@ describe('TodoMVC Tests', () => {
     // Complete second task
     const completedCheckbox = ctx.getByExactText("Completed task");
     await completedCheckbox.click();
-    await ctx.wait(100);
 
     // Filter by Active
     await ctx.getByExactText("Active").click();
@@ -202,7 +199,7 @@ describe('TodoMVC Tests', () => {
 
     // Should only show active task
     await ctx.expect(ctx.getByExactText("Active task")).toBeVisible();
-    await ctx.expect(ctx.getByText("Filter: active")).toBeVisible();
+    await ctx.expect(ctx.getByText("Filter: active").within(1000)).toBeVisible();
   });
 
   test('should filter completed todos', async () => {
@@ -222,7 +219,6 @@ describe('TodoMVC Tests', () => {
 
     const checkbox = ctx.getByExactText("Done task");
     await checkbox.click();
-    await ctx.wait(100);
 
     // Filter by Completed
     await ctx.getByExactText("Completed").click();
@@ -230,7 +226,7 @@ describe('TodoMVC Tests', () => {
 
     // Should show completed task
     await ctx.expect(ctx.getByExactText("Done task")).toBeVisible();
-    await ctx.expect(ctx.getByText("Filter: completed")).toBeVisible();
+    await ctx.expect(ctx.getByText("Filter: completed").within(1000)).toBeVisible();
   });
 
   test('should show all todos when filter is all', async () => {
@@ -256,7 +252,6 @@ describe('TodoMVC Tests', () => {
     // Complete second task
     const completedCheckbox = ctx.getByExactText("Completed task");
     await completedCheckbox.click();
-    await ctx.wait(100);
 
     // Switch to active filter
     await ctx.getByExactText("Active").click();
@@ -295,7 +290,6 @@ describe('TodoMVC Tests', () => {
     // Complete second task
     const completedCheckbox = ctx.getByExactText("Clear this");
     await completedCheckbox.click();
-    await ctx.wait(100);
 
     // Clear completed
     await ctx.getByExactText("Clear Completed").click();
@@ -303,7 +297,7 @@ describe('TodoMVC Tests', () => {
 
     // Only active task should remain
     await ctx.expect(ctx.getByExactText("Keep this")).toBeVisible();
-    await ctx.expect(ctx.getByText("1 item left")).toBeVisible();
+    await ctx.expect(ctx.getByText("1 item left").within(1000)).toBeVisible();
   });
 
   test('should not add empty todos', async () => {
@@ -384,7 +378,7 @@ describe('TodoMVC Tests', () => {
 
     const checkbox = ctx.getByExactText("Complete me");
     await checkbox.click();
-    await ctx.wait(100);
+    await ctx.wait(200); // Wait for checkbox callback and file write
 
     // Verify file persisted the completed state
     const data = JSON.parse(fs.readFileSync(testFilePath, 'utf8'));
@@ -419,12 +413,10 @@ describe('TodoMVC Tests', () => {
 
     // Complete first and third
     await ctx.getByExactText("Task 1").click();
-    await ctx.wait(100);
     await ctx.getByExactText("Task 3").click();
-    await ctx.wait(100);
 
-    // Should show 1 item left
-    await ctx.expect(ctx.getByText("1 item left")).toBeVisible();
+    // Should show 1 item left (retry for async updates)
+    await ctx.expect(ctx.getByText("1 item left").within(1000)).toBeVisible();
 
     // Clear completed
     await ctx.getByExactText("Clear Completed").click();

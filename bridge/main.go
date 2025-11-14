@@ -129,6 +129,7 @@ type Bridge struct {
 	tableData     map[string][][]string          // table ID -> data
 	listData      map[string][]string            // list ID -> data
 	windowContent map[string]string              // window ID -> current content widget ID
+	customIds     map[string]string              // custom ID -> widget ID (for test framework)
 	quitChan      chan bool                      // signal quit in test mode
 }
 
@@ -136,6 +137,7 @@ type Bridge struct {
 type WidgetMetadata struct {
 	Type string
 	Text string
+	URL  string // For hyperlinks - store original URL to check if relative
 }
 
 // TappableContainer wraps a widget to add double-click support
@@ -199,6 +201,7 @@ func NewBridge(testMode bool) *Bridge {
 		tableData:     make(map[string][][]string),
 		listData:      make(map[string][]string),
 		windowContent: make(map[string]string),
+		customIds:     make(map[string]string),
 		quitChan:      make(chan bool, 1),
 	}
 }
@@ -418,6 +421,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleHideWidget(msg)
 	case "showWidget":
 		b.handleShowWidget(msg)
+	case "registerCustomId":
+		b.handleRegisterCustomId(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -811,7 +816,7 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 
 	b.mu.Lock()
 	b.widgets[widgetID] = hyperlink
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "hyperlink", Text: text}
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "hyperlink", Text: text, URL: urlStr}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1933,6 +1938,20 @@ func (b *Bridge) handleShowWidget(msg Message) {
 	fyne.DoAndWait(func() {
 		obj.Show()
 	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleRegisterCustomId(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	customID := msg.Payload["customId"].(string)
+
+	b.mu.Lock()
+	b.customIds[customID] = widgetID
+	b.mu.Unlock()
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
@@ -3309,6 +3328,14 @@ func (b *Bridge) handleFindWidget(msg Message) {
 
 	b.mu.RLock()
 
+	// Resolve custom ID to real widget ID if needed
+	resolvedSelector := selector
+	if selectorType == "id" {
+		if realID, exists := b.customIds[selector]; exists {
+			resolvedSelector = realID
+		}
+	}
+
 	var visibleMatches []string
 	var hiddenMatches []string
 
@@ -3322,7 +3349,7 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		case "type":
 			isMatch = meta.Type == selector
 		case "id":
-			isMatch = widgetID == selector
+			isMatch = widgetID == resolvedSelector
 		}
 
 		if isMatch {
@@ -3399,6 +3426,39 @@ func (b *Bridge) handleClickWidget(msg Message) {
 				callback(newState)
 			}
 		}
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else if hyperlink, ok := obj.(*widget.Hyperlink); ok {
+		// Handle hyperlink clicks
+
+		// Check if this is a browser navigation hyperlink (relative URL)
+		b.mu.RLock()
+		meta, hasMeta := b.widgetMeta[widgetID]
+		b.mu.RUnlock()
+
+		isRelativeURL := hasMeta && meta.URL != "" && !strings.Contains(meta.URL, "://") && strings.HasPrefix(meta.URL, "/")
+
+		if isRelativeURL {
+			// This is a relative URL - trigger browser navigation instead of opening externally
+			b.sendEvent(Event{
+				Type:     "hyperlinkNavigation",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"url": meta.URL},
+			})
+		} else {
+			// External URL - use normal hyperlink behavior
+			if b.testMode {
+				test.Tap(hyperlink)
+			} else {
+				// Trigger hyperlink tap on main thread
+				fyne.DoAndWait(func() {
+					hyperlink.Tapped(&fyne.PointEvent{})
+				})
+			}
+		}
+
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,

@@ -235,7 +235,7 @@ npm test
 
 **Problem:** Go tries to fetch Fyne v2.7.0 from `https://storage.googleapis.com/proxy-golang-org-prod` and fails with DNS or connection errors.
 
-**Solution:** Fetch directly from GitHub instead of using Google's proxy:
+**Solution:** Fetch directly from GitHub tag download - https://github.com/fyne-io/fyne/archive/refs/tags/v2.7.0.zip instead of using Google's proxy:
 
 ```bash
 # Use GOPROXY=direct to bypass Google's proxy

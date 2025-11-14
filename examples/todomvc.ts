@@ -83,6 +83,7 @@ class TodoStore {
 
   constructor(filePath?: string) {
     this.filePath = filePath || path.join(process.cwd(), 'todos.json');
+    // Load asynchronously - initial load doesn't need to await notifyChange since no listeners yet
     this.load();
   }
 
@@ -93,11 +94,13 @@ class TodoStore {
     };
   }
 
-  private notifyChange(): void {
-    this.changeListeners.forEach(listener => listener());
+  private async notifyChange(): Promise<void> {
+    for (const listener of this.changeListeners) {
+      await listener();
+    }
   }
 
-  load(): void {
+  async load(): Promise<void> {
     try {
       if (fs.existsSync(this.filePath)) {
         const data = fs.readFileSync(this.filePath, 'utf8');
@@ -113,7 +116,7 @@ class TodoStore {
       this.todos = [];
       this.nextId = 1;
     }
-    this.notifyChange();
+    await this.notifyChange();
   }
 
   save(): void {
@@ -129,7 +132,7 @@ class TodoStore {
     }
   }
 
-  addTodo(text: string): TodoItem {
+  async addTodo(text: string): Promise<TodoItem> {
     const todo: TodoItem = {
       id: this.nextId++,
       text: text.trim(),
@@ -137,38 +140,38 @@ class TodoStore {
     };
     this.todos.push(todo);
     this.save();
-    this.notifyChange();
+    await this.notifyChange();
     return todo;
   }
 
-  toggleTodo(id: number): void {
+  async toggleTodo(id: number): Promise<void> {
     const todo = this.todos.find(t => t.id === id);
     if (todo) {
       todo.completed = !todo.completed;
       this.save();
-      this.notifyChange();
+      await this.notifyChange();
     }
   }
 
-  updateTodo(id: number, newText: string): void {
+  async updateTodo(id: number, newText: string): Promise<void> {
     const todo = this.todos.find(t => t.id === id);
     if (todo) {
       todo.text = newText.trim();
       this.save();
-      this.notifyChange();
+      await this.notifyChange();
     }
   }
 
-  deleteTodo(id: number): void {
+  async deleteTodo(id: number): Promise<void> {
     this.todos = this.todos.filter(t => t.id !== id);
     this.save();
-    this.notifyChange();
+    await this.notifyChange();
   }
 
-  clearCompleted(): void {
+  async clearCompleted(): Promise<void> {
     this.todos = this.todos.filter(t => !t.completed);
     this.save();
-    this.notifyChange();
+    await this.notifyChange();
   }
 
   getFilteredTodos(): TodoItem[] {
@@ -186,9 +189,9 @@ class TodoStore {
     return this.todos;
   }
 
-  setFilter(filter: FilterType): void {
+  async setFilter(filter: FilterType): Promise<void> {
     this.currentFilter = filter;
-    this.notifyChange();
+    await this.notifyChange();
   }
 
   getFilter(): FilterType {
@@ -249,7 +252,7 @@ export function createTodoApp(a: any, storePath?: string) {
     const saveEdit = async () => {
       const newText = await textEntry.getText();
       if (newText && newText.trim()) {
-        store.updateTodo(todo.id, newText);
+        await store.updateTodo(todo.id, newText);
         originalText = newText.trim();
         await checkbox.setText(originalText);
       } else {
@@ -294,15 +297,15 @@ export function createTodoApp(a: any, storePath?: string) {
     todoContainer.add(() => {
       todoHBox = a.hbox(() => {
         checkbox = a.checkbox(todo.text, async (checked: boolean) => {
-          store.toggleTodo(todo.id);
-        });
+          await store.toggleTodo(todo.id);
+        }).withId(`todo-checkbox-${todo.id}`);
 
         textEntry = a.entry('', ifEditingSaveEdit, 300);
 
         a.button('Edit', ifNotEditingStartEdit);
 
         deleteButton = a.button('Delete', async () => {
-          store.deleteTodo(todo.id);
+          await store.deleteTodo(todo.id);
         });
       });
     });
@@ -370,11 +373,11 @@ export function createTodoApp(a: any, storePath?: string) {
         a.label('Add New Todo:');
         // Pseudo-declarative event handler - just update model
         a.hbox(() => {
-          newTodoEntry = a.entry('What needs to be done?', undefined, 400);
+          newTodoEntry = a.entry('What needs to be done?', undefined, 400).withId('newTodoEntry');
           a.button('Add', async () => {
             const text = await newTodoEntry.getText();
             if (text && text.trim()) {
-              store.addTodo(text);
+              await store.addTodo(text);
               await newTodoEntry.setText('');
             }
           });
@@ -387,16 +390,16 @@ export function createTodoApp(a: any, storePath?: string) {
         a.label('Filter:');
         // Pseudo-declarative filters - just update model
         a.hbox(() => {
-          filterAllButton = a.button('[All]', async () => store.setFilter('all'));
-          filterActiveButton = a.button('Active', async () => store.setFilter('active'));
-          filterCompletedButton = a.button('Completed', async () => store.setFilter('completed'));
+          filterAllButton = a.button('[All]', async () => await store.setFilter('all'));
+          filterActiveButton = a.button('Active', async () => await store.setFilter('active'));
+          filterCompletedButton = a.button('Completed', async () => await store.setFilter('completed'));
           a.button('Clear Completed', async () => {
-            if (store.getCompletedCount() > 0) store.clearCompleted();
+            if (store.getCompletedCount() > 0) await store.clearCompleted();
           });
         });
 
         a.label('');
-        statusLabel = a.label('');
+        statusLabel = a.label('').withId('statusLabel');
         a.label('');
 
         todoContainer = a.vbox(() => a.label('Loading...'));
@@ -407,7 +410,7 @@ export function createTodoApp(a: any, storePath?: string) {
 
         // Pseudo-declarative file operations - just update model
         a.hbox(() => {
-          a.button('Reload from File', async () => store.load());
+          a.button('Reload from File', async () => await store.load());
           a.button('Save to File', async () => store.save());
         });
       });
@@ -417,10 +420,10 @@ export function createTodoApp(a: any, storePath?: string) {
     win.centerOnScreen();
 
     // Pseudo-declarative binding - model changes auto-update view
-    store.subscribe(() => {
+    store.subscribe(async () => {
       rebuildTodoList();
-      updateStatusLabel();
-      updateFilterButtons();
+      await updateStatusLabel();
+      await updateFilterButtons();
     });
 
     (async () => {

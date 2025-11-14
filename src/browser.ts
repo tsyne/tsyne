@@ -152,6 +152,14 @@ export class Browser {
     this.baseTitle = options?.title || 'Tsyne Browser';
     this.app = new App({ title: this.baseTitle }, this.testMode);
 
+    // Register hyperlink navigation event handler
+    const appBridge = (this.app as any).ctx.bridge;
+    appBridge.registerEventHandler('hyperlinkNavigation', (data: any) => {
+      if (data && data.url) {
+        this.changePage(data.url).catch(err => console.error('Hyperlink navigation failed:', err));
+      }
+    });
+
     // Set global context for the browser's app so global API calls work
     const { __setGlobalContext } = require('./index');
     __setGlobalContext(this.app, (this.app as any).ctx);
