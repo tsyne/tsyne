@@ -13,6 +13,7 @@ export interface WidgetInfo {
   absoluteY?: number;
   width?: number;
   height?: number;
+  fillMode?: 'contain' | 'stretch' | 'original';
 }
 
 /**
@@ -398,6 +399,18 @@ export class Locator {
   async shouldNotBeVisible(): Promise<Locator> {
     const widget = await this.findWithRetry();
     expect(widget).toBeFalsy();
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget exists
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("myWidget").shouldExist();
+   */
+  async shouldExist(): Promise<Locator> {
+    const widget = await this.findWithRetry();
+    expect(widget).toBeTruthy();
     return this;
   }
 
