@@ -47,12 +47,12 @@ export class App {
     return new HBox(this.ctx, builder);
   }
 
-  button(text: string, onClick?: () => void, importance?: 'low' | 'medium' | 'high' | 'warning' | 'success'): Button {
-    return new Button(this.ctx, text, onClick, importance);
+  button(text: string, onClick?: () => void, className?: string): Button {
+    return new Button(this.ctx, text, onClick, className);
   }
 
-  label(text: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }, classNames?: string): Label {
-    return new Label(this.ctx, text, alignment, wrapping, textStyle, classNames);
+  label(text: string, className?: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }): Label {
+    return new Label(this.ctx, text, className, alignment, wrapping, textStyle);
   }
 
   entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): Entry {

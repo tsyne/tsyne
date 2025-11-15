@@ -136,7 +136,7 @@ export abstract class Widget {
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, onClick?: () => void, importance?: 'low' | 'medium' | 'high' | 'warning' | 'success') {
+  constructor(ctx: Context, text: string, onClick?: () => void, className?: string) {
     const id = ctx.generateId('button');
     super(ctx, id);
 
@@ -150,14 +150,14 @@ export class Button extends Widget {
       });
     }
 
-    if (importance) {
-      payload.importance = importance;
-    }
-
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id);
 
-    this.applyStyles('button').catch(() => {});
+    if (className) {
+      this.applyStyles(className).catch(() => {});
+    } else {
+      this.applyStyles('button').catch(() => {});
+    }
   }
 
   async disable(): Promise<void> {
@@ -184,7 +184,7 @@ export class Button extends Widget {
  * Label widget
  */
 export class Label extends Widget {
-  constructor(ctx: Context, text: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }, classNames?: string) {
+  constructor(ctx: Context, text: string, className?: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }) {
     const id = ctx.generateId('label');
     super(ctx, id);
 
@@ -206,20 +206,11 @@ export class Label extends Widget {
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'label'
-    if (classNames) {
-      this.applyStylesFromClasses(classNames.split(/\s+/).filter(c => c.length > 0)).catch(() => {});
+    if (className) {
+      this.applyStyles(className).catch(() => {});
     } else {
       this.applyStyles('label').catch(() => {});
     }
-  }
-
-  private async applyStylesFromClasses(classes: string[]): Promise<void> {
-    // Apply styles from all classes, then fallback to 'label'
-    for (const className of classes) {
-      await this.applyStyles(className as any).catch(() => {});
-    }
-    // Also apply generic 'label' styles
-    await this.applyStyles('label').catch(() => {});
   }
 }
 

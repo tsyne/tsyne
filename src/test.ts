@@ -979,4 +979,9 @@ export class TestContext {
     const windowId = 'window_1'; // TODO: Make this dynamic
     await this.bridge.send('focusPrevious', { windowId });
   }
+
+  async captureScreenshot(filePath: string): Promise<void> {
+    const windowId = 'window_0'; // TODO: Make this dynamic
+    await this.bridge.send('captureWindow', { windowId, filePath });
+  }
 }
