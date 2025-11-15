@@ -216,7 +216,7 @@ func (b *Bridge) handleCreateMyWidget(msg Message) {
 - **Terse**: Use single letters where clear (`a` for app)
 - **Declarative**: Describe UI structure, not imperative steps
 - **Type-safe**: Full TypeScript types
-- **Test-driven**: Include Jest tests for new features
+- **Test-driven**: Include Jest tests for new features (npx jest to execute)
 - **AI-friendly**: AI assistance encouraged for tests, code
 
 ## Quick Start
@@ -228,6 +228,8 @@ npm run build
 node examples/hello.js
 npm test
 ```
+
+IMPORTANT: DO NOT BUILD `tsyne-bridge` anywhere else - it goes into bin/ only.
 
 ## Troubleshooting
 

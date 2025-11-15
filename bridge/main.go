@@ -24,7 +24,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 )
@@ -132,6 +131,7 @@ type Bridge struct {
 	listData      map[string][]string            // list ID -> data
 	windowContent map[string]string              // window ID -> current content widget ID
 	customIds     map[string]string              // custom ID -> widget ID (for test framework)
+	childToParent map[string]string              // child ID -> parent ID
 	quitChan      chan bool                      // signal quit in test mode
 }
 
@@ -183,6 +183,100 @@ func (t *TappableContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.content)
 }
 
+// ClickableContainer wraps a canvas object to add single-click support
+type ClickableContainer struct {
+	widget.BaseWidget
+	content       fyne.CanvasObject
+	ClickCallback func()
+}
+
+// NewClickableContainer creates a new clickable container
+func NewClickableContainer(content fyne.CanvasObject, callback func()) *ClickableContainer {
+	c := &ClickableContainer{
+		content:       content,
+		ClickCallback: callback,
+	}
+	c.ExtendBaseWidget(c)
+	return c
+}
+
+// Tapped handles single-click events
+func (c *ClickableContainer) Tapped(e *fyne.PointEvent) {
+	log.Printf("[ClickableContainer] Tapped, firing callback")
+	if c.ClickCallback != nil {
+		c.ClickCallback()
+	}
+
+	// Also tap the content if it's tappable
+	if tappable, ok := c.content.(fyne.Tappable); ok {
+		tappable.Tapped(e)
+	}
+}
+
+// CreateRenderer for the clickable container
+func (c *ClickableContainer) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(c.content)
+}
+
+// DraggableContainer wraps a canvas object to add drag support
+type DraggableContainer struct {
+	widget.BaseWidget
+	content          fyne.CanvasObject
+	DragCallback     func(x, y float32)
+	DragEndCallback  func(x, y float32)
+	ClickCallback    func()
+	lastPos          fyne.Position
+	isDragging       bool
+}
+
+// NewDraggableContainer creates a new draggable container
+func NewDraggableContainer(content fyne.CanvasObject, dragCallback func(x, y float32), dragEndCallback func(x, y float32), clickCallback func()) *DraggableContainer {
+	d := &DraggableContainer{
+		content:         content,
+		DragCallback:    dragCallback,
+		DragEndCallback: dragEndCallback,
+		ClickCallback:   clickCallback,
+	}
+	d.ExtendBaseWidget(d)
+	return d
+}
+
+// Dragged handles drag events
+func (d *DraggableContainer) Dragged(e *fyne.DragEvent) {
+	d.isDragging = true
+	d.lastPos = e.Position
+	log.Printf("[DraggableContainer] Dragged to position: (%f, %f)", e.Position.X, e.Position.Y)
+	if d.DragCallback != nil {
+		d.DragCallback(e.Position.X, e.Position.Y)
+	}
+}
+
+// DragEnd handles drag end events
+func (d *DraggableContainer) DragEnd() {
+	if d.isDragging {
+		log.Printf("[DraggableContainer] DragEnd at position: (%f, %f)", d.lastPos.X, d.lastPos.Y)
+		if d.DragEndCallback != nil {
+			d.DragEndCallback(d.lastPos.X, d.lastPos.Y)
+		}
+		d.isDragging = false
+	}
+}
+
+// Tapped handles single-click events (for cards that can be clicked OR dragged)
+func (d *DraggableContainer) Tapped(e *fyne.PointEvent) {
+	if !d.isDragging {
+		log.Printf("[DraggableContainer] Tapped (no drag detected)")
+		if d.ClickCallback != nil {
+			d.ClickCallback()
+		}
+	}
+}
+
+// CreateRenderer for the draggable container
+func (d *DraggableContainer) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(d.content)
+}
+
 func NewBridge(testMode bool) *Bridge {
 	var fyneApp fyne.App
 	if testMode {
@@ -204,6 +298,7 @@ func NewBridge(testMode bool) *Bridge {
 		listData:      make(map[string][]string),
 		windowContent: make(map[string]string),
 		customIds:     make(map[string]string),
+		childToParent: make(map[string]string),
 		quitChan:      make(chan bool, 1),
 	}
 }
@@ -427,6 +522,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowWidget(msg)
 	case "registerCustomId":
 		b.handleRegisterCustomId(msg)
+	case "getParent":
+		b.handleGetParent(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -457,6 +554,22 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 		if fixedSize, ok := msg.Payload["fixedSize"].(bool); ok && fixedSize {
 			win.SetFixedSize(true)
 		}
+
+		// Handle window close - quit app when last window is closed
+		win.SetCloseIntercept(func() {
+			b.mu.Lock()
+			delete(b.windows, windowID)
+			windowCount := len(b.windows)
+			b.mu.Unlock()
+
+			// Close this window
+			win.Close()
+
+			// If no more windows, quit the application
+			if windowCount == 0 {
+				b.app.Quit()
+			}
+		})
 	})
 
 	b.mu.Lock()
@@ -473,6 +586,7 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 func (b *Bridge) handleSetContent(msg Message) {
 	windowID := msg.Payload["windowId"].(string)
 	widgetID := msg.Payload["widgetId"].(string)
+	log.Printf("[DEBUG] handleSetContent called for windowId: %s, widgetId: %s", windowID, widgetID)
 
 	// First, check if window and widget exist (read lock)
 	b.mu.RLock()
@@ -526,6 +640,7 @@ func (b *Bridge) handleSetContent(msg Message) {
 // from the widgets and widgetMeta maps
 // NOTE: Caller must hold b.mu.Lock() before calling this function
 func (b *Bridge) removeWidgetTree(widgetID string) {
+	log.Printf("[DEBUG] removeWidgetTree called for widgetID: %s", widgetID)
 	// Get the widget object
 	obj, exists := b.widgets[widgetID]
 	if !exists {
@@ -559,6 +674,15 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 	delete(b.contextMenus, widgetID)
 	delete(b.tableData, widgetID)
 	delete(b.listData, widgetID)
+	delete(b.childToParent, widgetID)
+
+	// Also remove from customIDs map if it exists
+	for customID, id := range b.customIds {
+		if id == widgetID {
+			delete(b.customIds, customID)
+			break // Assuming one custom ID per widget ID
+		}
+	}
 }
 
 func (b *Bridge) handleClearWidgets(msg Message) {
@@ -833,6 +957,7 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 func (b *Bridge) handleCreateVBox(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
+	log.Printf("[DEBUG] handleCreateVBox called for widgetId: %s with children: %v", widgetID, childIDs)
 
 	var children []fyne.CanvasObject
 	b.mu.RLock()
@@ -847,6 +972,9 @@ func (b *Bridge) handleCreateVBox(msg Message) {
 
 	b.mu.Lock()
 	b.widgets[widgetID] = vbox
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -859,6 +987,7 @@ func (b *Bridge) handleCreateVBox(msg Message) {
 func (b *Bridge) handleCreateHBox(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
+	log.Printf("[DEBUG] handleCreateHBox called for widgetId: %s with children: %v", widgetID, childIDs)
 
 	var children []fyne.CanvasObject
 	b.mu.RLock()
@@ -873,6 +1002,9 @@ func (b *Bridge) handleCreateHBox(msg Message) {
 
 	b.mu.Lock()
 	b.widgets[widgetID] = hbox
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1037,6 +1169,7 @@ func (b *Bridge) handleCreateScroll(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = scroll
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "scroll", Text: ""}
+	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1065,6 +1198,9 @@ func (b *Bridge) handleCreateGrid(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = grid
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "grid", Text: ""}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1096,6 +1232,7 @@ func (b *Bridge) handleCreateCenter(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = centered
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "center", Text: ""}
+	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1129,6 +1266,7 @@ func (b *Bridge) handleCreateCard(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = card
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "card", Text: title}
+	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1164,6 +1302,16 @@ func (b *Bridge) handleCreateAccordion(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = accordion
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "accordion", Text: ""}
+	for _, item := range accordionItems {
+		// Find the content widget ID for this accordion item
+		for _, itemData := range itemsInterface {
+			if itemData.(map[string]interface{})["title"].(string) == item.Title {
+				contentID := itemData.(map[string]interface{})["contentId"].(string)
+				b.childToParent[contentID] = widgetID
+				break
+			}
+		}
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1232,6 +1380,15 @@ func (b *Bridge) handleCreateForm(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = form
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "form", Text: ""}
+	for _, item := range formItems {
+		// item.Widget is the actual widget object, we need its ID
+		for id, w := range b.widgets {
+			if w == item.Widget {
+				b.childToParent[id] = widgetID
+				break
+			}
+		}
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1327,10 +1484,79 @@ func (b *Bridge) handleCreateRichText(msg Message) {
 func (b *Bridge) handleCreateImage(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	path := msg.Payload["path"].(string)
+	// Log only widgetID, not the full base64 path
+	pathType := "file"
+	if len(path) > 11 && path[:11] == "data:image/" {
+		pathType = "data:image/*"
+	}
+	log.Printf("[DEBUG] handleCreateImage called for widgetId: %s, pathType: %s", widgetID, pathType)
 
-	// Load image from file
-	uri := storage.NewFileURI(path)
-	img := canvas.NewImageFromURI(uri)
+	var img *canvas.Image
+
+	// If path is empty, create a blank image (will be updated with base64 later)
+	if path == "" {
+		log.Printf("[Image] Creating blank image widget %s (will be updated with base64)", widgetID)
+		img = canvas.NewImageFromImage(nil)
+	} else if strings.HasPrefix(path, "data:") {
+		// Handle base64 data URI directly
+		// Parse the data URL format: "data:image/png;base64,..."
+		parts := strings.SplitN(path, ",", 2)
+		if len(parts) != 2 {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Invalid data URL format",
+			})
+			return
+		}
+
+		base64Data := parts[1]
+		imageData, err := base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			log.Printf("[Image] Error decoding base64: %v", err)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
+			})
+			return
+		}
+
+		// Decode image data
+		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
+		if err != nil {
+			log.Printf("[Image] Error decoding image: %v", err)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image: %v", err),
+			})
+			return
+		}
+
+		bounds := decodedImg.Bounds()
+		width, height := bounds.Dx(), bounds.Dy()
+
+		img = canvas.NewImageFromImage(decodedImg)
+		// Set MinSize to ensure proper layout - this is critical for display!
+		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+	} else {
+		// Load image from file - use file reading for better SVG support
+		data, err := os.ReadFile(path)
+		if err != nil {
+			log.Printf("[Image] Error reading file %s: %v", path, err)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to read image file: %v", err),
+			})
+			return
+		}
+
+		// Create a static resource from the file data
+		resource := fyne.NewStaticResource(path, data)
+		img = canvas.NewImageFromResource(resource)
+	}
 
 	// Set fill mode if provided
 	if fillMode, ok := msg.Payload["fillMode"].(string); ok {
@@ -1343,11 +1569,80 @@ func (b *Bridge) handleCreateImage(msg Message) {
 			img.FillMode = canvas.ImageFillOriginal
 		}
 	} else {
-		img.FillMode = canvas.ImageFillContain // Default
+		img.FillMode = canvas.ImageFillOriginal // Use original size to preserve image quality
+	}
+
+	// Force refresh to ensure the image renders
+	img.Refresh()
+
+	// Check if we need to wrap the image for click and/or drag support
+	var widgetToStore fyne.CanvasObject = img
+	dragCallbackID, hasDragCallback := msg.Payload["onDragCallbackId"].(string)
+	dragEndCallbackID, hasDragEndCallback := msg.Payload["onDragEndCallbackId"].(string)
+	clickCallbackID, hasClickCallback := msg.Payload["callbackId"].(string)
+
+	if hasDragCallback || hasDragEndCallback {
+		// Wrap image in a draggable container for drag support
+		var dragCallback func(x, y float32)
+		var dragEndCallback func(x, y float32)
+		var clickCallback func()
+
+		if hasDragCallback {
+			dragCallback = func(x, y float32) {
+				log.Printf("[Image] Dragging image widget %s at (%f, %f), sending callback %s", widgetID, x, y, dragCallbackID)
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": dragCallbackID,
+						"x":          x,
+						"y":          y,
+					},
+				})
+			}
+		}
+
+		if hasDragEndCallback {
+			dragEndCallback = func(x, y float32) {
+				log.Printf("[Image] DragEnd for image widget %s at (%f, %f), sending callback %s", widgetID, x, y, dragEndCallbackID)
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": dragEndCallbackID,
+						"x":          x,
+						"y":          y,
+					},
+				})
+			}
+		}
+
+		if hasClickCallback {
+			clickCallback = func() {
+				log.Printf("[Image] Clicked image widget %s, sending callback %s", widgetID, clickCallbackID)
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": clickCallbackID,
+					},
+				})
+			}
+		}
+
+		widgetToStore = NewDraggableContainer(img, dragCallback, dragEndCallback, clickCallback)
+	} else if hasClickCallback {
+		// Wrap image in a clickable container for single-click support only
+		callback := func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": clickCallbackID,
+				},
+			})
+		}
+		widgetToStore = NewClickableContainer(img, callback)
 	}
 
 	b.mu.Lock()
-	b.widgets[widgetID] = img
+	b.widgets[widgetID] = widgetToStore
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "image", Text: path}
 	b.mu.Unlock()
 
@@ -1460,6 +1755,21 @@ func (b *Bridge) handleCreateBorder(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = border
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "border", Text: ""}
+	if topID, ok := msg.Payload["topId"].(string); ok {
+		b.childToParent[topID] = widgetID
+	}
+	if bottomID, ok := msg.Payload["bottomId"].(string); ok {
+		b.childToParent[bottomID] = widgetID
+	}
+	if leftID, ok := msg.Payload["leftId"].(string); ok {
+		b.childToParent[leftID] = widgetID
+	}
+	if rightID, ok := msg.Payload["rightId"].(string); ok {
+		b.childToParent[rightID] = widgetID
+	}
+	if centerID, ok := msg.Payload["centerId"].(string); ok {
+		b.childToParent[centerID] = widgetID
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -1492,6 +1802,9 @@ func (b *Bridge) handleCreateGridWrap(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = gridWrap
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "gridwrap", Text: ""}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -2036,6 +2349,29 @@ func (b *Bridge) handleRegisterCustomId(msg Message) {
 	})
 }
 
+func (b *Bridge) handleGetParent(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	parentID, exists := b.childToParent[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+			Result:  map[string]interface{}{"parentId": ""}, // No parent found
+		})
+		return
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"parentId": parentID},
+	})
+}
+
 func (b *Bridge) handleSetSelected(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 	selected := msg.Payload["selected"].(string)
@@ -2558,6 +2894,8 @@ func (b *Bridge) handleCreateSplit(msg Message) {
 		Type: "split",
 		Text: "",
 	}
+	b.childToParent[leadingID] = id
+	b.childToParent[trailingID] = id
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
@@ -2614,6 +2952,17 @@ func (b *Bridge) handleCreateTabs(msg Message) {
 	b.widgetMeta[id] = WidgetMetadata{
 		Type: "tabs",
 		Text: "",
+	}
+	for _, tabItem := range tabItems {
+		// Find the content widget ID for this tab item
+		for _, t := range tabsInterface {
+			tabData := t.(map[string]interface{})
+			if tabData["title"].(string) == tabItem.Text {
+				contentID := tabData["contentId"].(string)
+				b.childToParent[contentID] = id
+				break
+			}
+		}
 	}
 	b.mu.Unlock()
 
@@ -3540,6 +3889,34 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			ID:      msg.ID,
 			Success: true,
 		})
+	} else if draggable, ok := obj.(*DraggableContainer); ok {
+		// Handle DraggableContainer clicks (images with both onClick and onDrag)
+		if b.testMode {
+			test.Tap(draggable)
+		} else {
+			// Trigger tap on main thread
+			fyne.DoAndWait(func() {
+				draggable.Tapped(&fyne.PointEvent{})
+			})
+		}
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else if clickable, ok := obj.(*ClickableContainer); ok {
+		// Handle ClickableContainer clicks (images with onClick only)
+		if b.testMode {
+			test.Tap(clickable)
+		} else {
+			// Trigger tap on main thread
+			fyne.DoAndWait(func() {
+				clickable.Tapped(&fyne.PointEvent{})
+			})
+		}
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
 	} else {
 		// Get widget type for debugging
 		widgetType := fmt.Sprintf("%T", obj)
@@ -3931,6 +4308,20 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 
 	// Get current widget properties - must happen on main thread
 	fyne.DoAndWait(func() {
+		pos := obj.Position()
+		size := obj.Size()
+
+		// Get absolute position
+		absPos := b.app.Driver().AbsolutePositionForObject(obj)
+
+		log.Printf("[DEBUG] handleGetWidgetInfo: widgetId=%s, pos=(%f, %f), absPos=(%f, %f), size=(%f, %f)", widgetID, pos.X, pos.Y, absPos.X, absPos.Y, size.Width, size.Height)
+		info["x"] = pos.X
+		info["y"] = pos.Y
+		info["absoluteX"] = absPos.X
+		info["absoluteY"] = absPos.Y
+		info["width"] = size.Width
+		info["height"] = size.Height
+
 		switch w := obj.(type) {
 		case *widget.Label:
 			info["text"] = w.Text
@@ -4229,6 +4620,7 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 func (b *Bridge) handleContainerAdd(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
 	childID := msg.Payload["childId"].(string)
+	log.Printf("[DEBUG] handleContainerAdd called for containerId: %s, childId: %s", containerID, childID)
 
 	b.mu.RLock()
 	containerObj, containerExists := b.widgets[containerID]
@@ -4260,6 +4652,10 @@ func (b *Bridge) handleContainerAdd(msg Message) {
 			cont.Add(childObj)
 		})
 
+		b.mu.Lock()
+		b.childToParent[childID] = containerID
+		b.mu.Unlock()
+
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -4275,6 +4671,7 @@ func (b *Bridge) handleContainerAdd(msg Message) {
 
 func (b *Bridge) handleContainerRemoveAll(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
+	log.Printf("[DEBUG] handleContainerRemoveAll called for containerId: %s", containerID)
 
 	b.mu.RLock()
 	containerObj, exists := b.widgets[containerID]
@@ -4311,6 +4708,7 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) {
 
 func (b *Bridge) handleContainerRefresh(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
+	log.Printf("[DEBUG] handleContainerRefresh called for containerId: %s", containerID)
 
 	b.mu.RLock()
 	containerObj, exists := b.widgets[containerID]

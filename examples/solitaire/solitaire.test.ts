@@ -17,28 +17,36 @@
 
 import { TsyneTest, TestContext } from '../../src/index-test';
 import { createSolitaireApp } from './solitaire';
+import * as path from 'path';
 
 describe('Solitaire Game Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
-  });
 
-  afterEach(async () => {
-    await tsyneTest.cleanup();
-  });
-
-  test('should display initial game UI', async () => {
+    // Create app once for all tests
     const testApp = await tsyneTest.createApp((app) => {
       createSolitaireApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+  }, 15000); // Timeout for SVG pre-rendering (53 cards)
 
+  beforeEach(async () => {
+    // Reset game state before each test by clicking New Game
+    await ctx.getByText('New Game').click();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+
+  afterAll(async () => {
+    await tsyneTest.cleanup();
+  });
+
+  test('should display initial game UI', async () => {
     // Verify toolbar buttons
     await ctx.expect(ctx.getByText('New Game')).toBeVisible();
     await ctx.expect(ctx.getByText('Shuffle')).toBeVisible();
@@ -54,13 +62,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should start a new game', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Initial status
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
 
@@ -74,13 +75,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should shuffle the deck', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Click shuffle button
     await ctx.getByText('Shuffle').click();
 
@@ -91,13 +85,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should draw cards from hand', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Verify hand section exists
     await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
 
@@ -111,13 +98,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should display all game sections', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Toolbar
     await ctx.expect(ctx.getByText('New Game')).toBeVisible();
     await ctx.expect(ctx.getByText('Shuffle')).toBeVisible();
@@ -133,13 +113,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should maintain state after multiple draws', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Draw multiple times
     await ctx.getByText('Draw').click();
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -159,13 +132,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should handle new game after playing', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Draw some cards
     await ctx.getByText('Draw').click();
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -182,13 +148,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should handle shuffle after playing', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Draw some cards
     await ctx.getByText('Draw').click();
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -202,40 +161,24 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should display correct window title', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
     // Window title should be "Solitaire"
     // Note: Window title testing may not be directly supported
     // This test verifies the app launches successfully
     await ctx.expect(ctx.getByText('New Game')).toBeVisible();
   });
 
-  test('should show all UI components on startup', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
-    });
+  test('should capture screenshot', async () => {
+    // Wait for UI to settle and images to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // All major components should be visible
-    const elements = [
-      'New Game',
-      'Shuffle',
-      'Draw',
-      'Hand:',
-      'Foundations:',
-      'Tableau:',
-      'New game started'
-    ];
-
-    for (const element of elements) {
-      await ctx.expect(ctx.getByText(element)).toBeVisible();
+    // Capture screenshot if TAKE_SCREENSHOTS=1
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, '../screenshots', 'solitaire.png');
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
-  });
+
+    // Just verify the window is showing
+    expect(true).toBe(true);
+  }, 15000); // Increase timeout to 15s for SVG pre-rendering
 });

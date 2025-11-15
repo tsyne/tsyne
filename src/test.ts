@@ -6,8 +6,13 @@ import { BridgeConnection } from './fynebridge';
 export interface WidgetInfo {
   id: string;
   type: string;
-  text: string;
-  placeholder?: string;
+  text?: string;
+  x?: number;
+  y?: number;
+  absoluteX?: number;
+  absoluteY?: number;
+  width?: number;
+  height?: number;
 }
 
 /**
@@ -127,6 +132,18 @@ export class Locator {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
     return await this.bridge.send('getWidgetInfo', { widgetId });
+  }
+
+  async getParent(): Promise<Locator> {
+    const widgetId = await this.find();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    const parentId = await this.bridge.getParent(widgetId);
+    if (!parentId) {
+      throw new Error(`Widget with ID ${widgetId} has no parent.`);
+    }
+    return new Locator(this.bridge, parentId, 'id');
   }
 
   /**

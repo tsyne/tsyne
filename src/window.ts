@@ -15,6 +15,7 @@ export class Window {
   private ctx: Context;
   public id: string;
   private contentId?: string;
+  private contentSent: boolean = false; // Track if content has been sent to bridge
 
   constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void) {
     this.ctx = ctx;
@@ -70,11 +71,13 @@ export class Window {
   }
 
   async show(): Promise<void> {
-    if (this.contentId) {
+    // Only send setContent if we haven't already sent it
+    if (this.contentId && !this.contentSent) {
       await this.ctx.bridge.send('setContent', {
         windowId: this.id,
         widgetId: this.contentId
       });
+      this.contentSent = true;
     }
 
     await this.ctx.bridge.send('showWindow', {
@@ -83,6 +86,9 @@ export class Window {
   }
 
   async setContent(builder: () => void): Promise<void> {
+    // Mark as sent immediately (synchronously) to prevent duplicate calls
+    this.contentSent = true;
+
     this.ctx.pushWindow(this.id);
     this.ctx.pushContainer();
 

@@ -1363,7 +1363,14 @@ export class Image {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, path: string, fillMode?: 'contain' | 'stretch' | 'original') {
+  constructor(
+    ctx: Context,
+    path: string,
+    fillMode?: 'contain' | 'stretch' | 'original',
+    onClick?: () => void,
+    onDrag?: (x: number, y: number) => void,
+    onDragEnd?: (x: number, y: number) => void
+  ) {
     this.ctx = ctx;
     this.id = ctx.generateId('image');
 
@@ -1379,6 +1386,30 @@ export class Image {
       payload.fillMode = fillMode;
     }
 
+    if (onClick) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, () => {
+        onClick();
+      });
+    }
+
+    if (onDrag) {
+      const dragCallbackId = ctx.generateId('callback');
+      payload.onDragCallbackId = dragCallbackId;
+      ctx.bridge.registerEventHandler(dragCallbackId, (data: any) => {
+        onDrag(data.x, data.y);
+      });
+    }
+
+    if (onDragEnd) {
+      const dragEndCallbackId = ctx.generateId('callback');
+      payload.onDragEndCallbackId = dragEndCallbackId;
+      ctx.bridge.registerEventHandler(dragEndCallbackId, (data: any) => {
+        onDragEnd(data.x, data.y);
+      });
+    }
+
     ctx.bridge.send('createImage', payload);
     ctx.addToCurrentContainer(this.id);
   }
@@ -1392,6 +1423,22 @@ export class Image {
       widgetId: this.id,
       imageData: imageData
     });
+  }
+
+  /**
+   * Register a custom ID for this image widget (for test framework getByID)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   * @example
+   * const cardImage = a.image('card.png').withId('draw3-card');
+   * // In tests: ctx.getByID('draw3-card').click()
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
   }
 }
 

@@ -151,8 +151,14 @@ export class App {
     return new RichText(this.ctx, segments);
   }
 
-  image(path: string, fillMode?: 'contain' | 'stretch' | 'original'): Image {
-    return new Image(this.ctx, path, fillMode);
+  image(
+    path: string,
+    fillMode?: 'contain' | 'stretch' | 'original',
+    onClick?: () => void,
+    onDrag?: (x: number, y: number) => void,
+    onDragEnd?: (x: number, y: number) => void
+  ): Image {
+    return new Image(this.ctx, path, fillMode, onClick, onDrag, onDragEnd);
   }
 
   border(config: { top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void; }): Border {

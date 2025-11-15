@@ -13,6 +13,19 @@ import path from 'path';
 const version = require('../package.json').version;
 
 /**
+ * Storage interface (subset of browser Storage API)
+ */
+export interface Storage {
+  readonly length: number;
+  clear(): void;
+  getItem(key: string): string | null;
+  key(index: number): string | null;
+  removeItem(key: string): void;
+  setItem(key: string, value: string): void;
+  [key: string]: any;
+}
+
+/**
  * Storage implementation that can be backed by filesystem or memory
  */
 class TsyneStorage implements Storage {
@@ -255,7 +268,7 @@ export function registerDialogHandlers(handlers: {
   }
 }
 
-// Export storage classes for testing and advanced usage
+// Export storage class for testing and advanced usage
 export { TsyneStorage };
 
 // Declare global types for TypeScript

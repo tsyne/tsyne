@@ -223,6 +223,15 @@ export class BridgeConnection {
     this.eventHandlers.set(callbackId, handler);
   }
 
+  async registerCustomId(widgetId: string, customId: string): Promise<any> {
+    return this.send('registerCustomId', { widgetId, customId });
+  }
+
+  async getParent(widgetId: string): Promise<string> {
+    const result = await this.send('getParent', { widgetId });
+    return result.parentId;
+  }
+
   quit(): void {
     this.send('quit', {});
     setTimeout(() => {
