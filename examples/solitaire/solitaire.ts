@@ -1023,8 +1023,9 @@ class SolitaireUI {
             const draws = this.game.getDrawCards();
 
             // Draw pile - show face-down cards or empty
+            // Make it clickable to draw cards
             const handPileImg = this.game.getHandCount() > 0 ? backCardImage : emptySlotImage;
-            this.handPileImage = this.a.image(handPileImg, 'original');
+            this.handPileImage = this.a.image(handPileImg, 'original', () => this.draw()).withId('hand-pile');
 
             // Draw slots - show drawn cards or empty slots
             const draw1Img = draws.draw1 ? this.getCardImage(draws.draw1.imageFilename()) : emptySlotImage;
