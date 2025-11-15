@@ -315,10 +315,22 @@ go build -o ../bin/tsyne-bridge .
 
 ## References
 
+### Documentation
+- **[docs/reference.md](docs/reference.md)** - **Comprehensive reference** with complete API, examples, and guides
+- **[docs/README.md](docs/README.md)** - Documentation index and navigation
+- `docs/ARCHITECTURE.md` - Deep dive into internal architecture
+- `docs/TESTING.md` - TsyneTest framework guide
+- `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
+- `docs/ROADMAP.md` - Feature roadmap (~15% Fyne coverage)
+- `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
+
+### Example Code
 - `examples/todomvc.ts` - Full MVC example with ngShow (16 tests, 15/16 passing)
 - `examples/todomvc-ngshow.ts` - Preserved ngShow implementation variant
 - `more_mvc_like_for_todomvc_app.md` - Implementation status: Phase 1 & 2 complete!
 - `src/widgets.ts` - Widget base class, ModelBoundList, ngShow implementation
+
+### Community
 - `CODE_OF_CONDUCT.md` - Community guidelines
 - `CONTRIBUTING.md` - Developer guide
 
