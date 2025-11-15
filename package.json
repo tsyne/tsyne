@@ -91,6 +91,7 @@
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "buffer-crc32": "^1.0.0",
+    "chess.js": "^1.4.0",
     "jimp": "^1.6.0"
   }
 }
