@@ -248,7 +248,6 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 func (b *Bridge) handleCreateVBox(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
-	log.Printf("[DEBUG] handleCreateVBox called for widgetId: %s with children: %v", widgetID, childIDs)
 
 	var children []fyne.CanvasObject
 	b.mu.RLock()
@@ -278,7 +277,6 @@ func (b *Bridge) handleCreateVBox(msg Message) {
 func (b *Bridge) handleCreateHBox(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
-	log.Printf("[DEBUG] handleCreateHBox called for widgetId: %s with children: %v", widgetID, childIDs)
 
 	var children []fyne.CanvasObject
 	b.mu.RLock()
@@ -775,12 +773,6 @@ func (b *Bridge) handleCreateRichText(msg Message) {
 func (b *Bridge) handleCreateImage(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	path := msg.Payload["path"].(string)
-	// Log only widgetID, not the full base64 path
-	pathType := "file"
-	if len(path) > 11 && path[:11] == "data:image/" {
-		pathType = "data:image/*"
-	}
-	log.Printf("[DEBUG] handleCreateImage called for widgetId: %s, pathType: %s", widgetID, pathType)
 
 	var img *canvas.Image
 
@@ -1202,6 +1194,7 @@ func (b *Bridge) handleCreateToolbar(msg Message) {
 	itemsInterface := msg.Payload["items"].([]interface{})
 
 	var toolbarItems []widget.ToolbarItem
+	var itemLabels []string // Track labels for testing/traversal
 
 	for _, itemInterface := range itemsInterface {
 		itemData := itemInterface.(map[string]interface{})
@@ -1223,15 +1216,16 @@ func (b *Bridge) handleCreateToolbar(msg Message) {
 					})
 				},
 			)
-			// Store label for reference (Fyne toolbar actions don't show text by default)
-			_ = label
 			toolbarItems = append(toolbarItems, action)
+			itemLabels = append(itemLabels, label)
 
 		case "separator":
 			toolbarItems = append(toolbarItems, widget.NewToolbarSeparator())
+			itemLabels = append(itemLabels, "") // Empty label for separator
 
 		case "spacer":
 			toolbarItems = append(toolbarItems, widget.NewToolbarSpacer())
+			itemLabels = append(itemLabels, "") // Empty label for spacer
 		}
 	}
 
@@ -1242,6 +1236,11 @@ func (b *Bridge) handleCreateToolbar(msg Message) {
 	b.widgetMeta[id] = WidgetMetadata{
 		Type: "toolbar",
 		Text: "",
+	}
+	// Store item labels in the toolbarItems map for traversal
+	b.toolbarItems[id] = &ToolbarItemsMetadata{
+		Labels: itemLabels,
+		Items:  toolbarItems,
 	}
 	b.mu.Unlock()
 

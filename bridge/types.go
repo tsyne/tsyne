@@ -38,18 +38,19 @@ type Bridge struct {
 	app           fyne.App
 	windows       map[string]fyne.Window
 	widgets       map[string]fyne.CanvasObject
-	callbacks     map[string]string     // widget ID -> callback ID
-	contextMenus  map[string]*fyne.Menu // widget ID -> context menu
-	testMode      bool                  // true for headless testing
+	callbacks     map[string]string              // widget ID -> callback ID
+	contextMenus  map[string]*fyne.Menu          // widget ID -> context menu
+	testMode      bool                           // true for headless testing
 	mu            sync.RWMutex
 	writer        *json.Encoder
-	widgetMeta    map[string]WidgetMetadata // metadata for testing
-	tableData     map[string][][]string     // table ID -> data
-	listData      map[string][]string       // list ID -> data
-	windowContent map[string]string         // window ID -> current content widget ID
-	customIds     map[string]string         // custom ID -> widget ID (for test framework)
-	childToParent map[string]string         // child ID -> parent ID
-	quitChan      chan bool                 // signal quit in test mode
+	widgetMeta    map[string]WidgetMetadata      // metadata for testing
+	tableData     map[string][][]string          // table ID -> data
+	listData      map[string][]string            // list ID -> data
+	toolbarItems  map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
+	windowContent map[string]string              // window ID -> current content widget ID
+	customIds     map[string]string              // custom ID -> widget ID (for test framework)
+	childToParent map[string]string              // child ID -> parent ID
+	quitChan      chan bool                      // signal quit in test mode
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -57,6 +58,12 @@ type WidgetMetadata struct {
 	Type string
 	Text string
 	URL  string // For hyperlinks - store original URL to check if relative
+}
+
+// ToolbarItemsMetadata stores metadata about toolbar items for traversal
+type ToolbarItemsMetadata struct {
+	Labels []string
+	Items  []widget.ToolbarItem
 }
 
 // TappableContainer wraps a widget to add double-click support
@@ -248,6 +255,7 @@ func NewBridge(testMode bool) *Bridge {
 		widgetMeta:    make(map[string]WidgetMetadata),
 		tableData:     make(map[string][][]string),
 		listData:      make(map[string][]string),
+		toolbarItems:  make(map[string]*ToolbarItemsMetadata),
 		windowContent: make(map[string]string),
 		customIds:     make(map[string]string),
 		childToParent: make(map[string]string),

@@ -792,6 +792,28 @@ func (b *Bridge) handleGetAllWidgets(msg Message) {
 				widgetInfo["text"] = w.Text
 			case *widget.Button:
 				widgetInfo["text"] = w.Text
+			case *widget.Toolbar:
+				// Traverse Toolbar.Items to extract toolbar action labels
+				b.mu.RLock()
+				if toolbarMeta, exists := b.toolbarItems[wd.id]; exists {
+					widgetInfo["items"] = toolbarMeta.Labels
+				}
+				b.mu.RUnlock()
+			case *fyne.Container:
+				// Traverse Container.Objects to get child widget IDs
+				var childIDs []string
+				for _, childObj := range w.Objects {
+					// Find the widget ID for this object (reverse lookup)
+					b.mu.RLock()
+					for childID, widgetObj := range b.widgets {
+						if widgetObj == childObj {
+							childIDs = append(childIDs, childID)
+							break
+						}
+					}
+					b.mu.RUnlock()
+				}
+				widgetInfo["objects"] = childIDs
 			}
 
 			widgets = append(widgets, widgetInfo)
