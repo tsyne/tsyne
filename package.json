@@ -90,8 +90,13 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@types/marked": "^5.0.2",
     "buffer-crc32": "^1.0.0",
     "chess.js": "^1.4.0",
-    "jimp": "^1.6.0"
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.11.1",
+    "jimp": "^1.6.0",
+    "marked": "^4.3.0",
+    "toml": "^3.0.0"
   }
 }
