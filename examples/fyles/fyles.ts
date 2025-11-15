@@ -11,6 +11,11 @@
  * - Toolbar with home button, new folder, current path
  * - Hidden file filtering
  * - File/folder icons
+ *
+ * Implementation notes:
+ * - Uses incremental updates like solitaire (no full rebuild on every change)
+ * - Only rebuilds when directory changes
+ * - Updates path label directly when just toggling hidden files
  */
 
 import { app } from '../../src';
@@ -32,13 +37,17 @@ class FylesUI {
   private pathLabel: any = null;
   private app: App;
 
+  // Track last directory to detect when we need a full rebuild
+  private lastDirectory: string = '';
+
   constructor(app: App, initialDir?: string) {
     this.app = app;
     this.store = new FylesStore(initialDir);
+    this.lastDirectory = this.store.getCurrentDir();
 
-    // Subscribe to store changes → rebuild UI
+    // Subscribe to store changes → incremental updates
     this.store.subscribe(() => {
-      this.refreshUI();
+      this.handleStoreChange();
     });
   }
 
@@ -209,17 +218,45 @@ class FylesUI {
   }
 
   /**
-   * Refresh UI after store changes
+   * Handle store changes with incremental updates (like solitaire)
+   * - Only rebuild when directory changes
+   * - Just update path label when toggling hidden files
    */
-  private refreshUI(): void {
+  private handleStoreChange(): void {
+    const currentDir = this.store.getCurrentDir();
+    const dirChanged = currentDir !== this.lastDirectory;
+
+    if (dirChanged) {
+      // Directory changed - need full rebuild
+      this.lastDirectory = currentDir;
+      this.rebuildUI();
+    } else {
+      // Same directory, just hidden files toggled - incremental update
+      // Update path label (even though it's same path, good to refresh)
+      this.updatePathLabel();
+
+      // For now, rebuild to show/hide hidden files
+      // TODO: Could be more incremental with ModelBoundList pattern
+      this.rebuildUI();
+    }
+  }
+
+  /**
+   * Update path label incrementally (like solitaire's updateStatus)
+   */
+  private async updatePathLabel(): Promise<void> {
+    if (this.pathLabel) {
+      await this.pathLabel.setText(this.store.getCurrentDir());
+    }
+  }
+
+  /**
+   * Rebuild the entire UI (like solitaire's rebuildUI)
+   * Only called when directory changes or files visibility changes
+   */
+  private rebuildUI(): void {
     if (!this.window) return;
 
-    // Update path label
-    if (this.pathLabel) {
-      this.pathLabel.setText(this.store.getCurrentDir());
-    }
-
-    // Rebuild content
     this.window.setContent(() => {
       this.buildUI(this.window!);
     });
