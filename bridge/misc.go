@@ -1,0 +1,445 @@
+package main
+
+import (
+	"fmt"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
+)
+
+func (b *Bridge) handleSetMainMenu(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	menuItemsInterface := msg.Payload["menuItems"].([]interface{})
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	// Build menu structure
+	var menus []*fyne.Menu
+	for _, menuInterface := range menuItemsInterface {
+		menuData := menuInterface.(map[string]interface{})
+		label := menuData["label"].(string)
+		itemsInterface := menuData["items"].([]interface{})
+
+		var items []*fyne.MenuItem
+		for _, itemInterface := range itemsInterface {
+			itemData := itemInterface.(map[string]interface{})
+			itemLabel := itemData["label"].(string)
+
+			// Check if this is a separator
+			if isSeparator, ok := itemData["isSeparator"].(bool); ok && isSeparator {
+				items = append(items, fyne.NewMenuItemSeparator())
+				continue
+			}
+
+			// Regular menu item with callback
+			if callbackID, ok := itemData["callbackId"].(string); ok {
+				menuItem := fyne.NewMenuItem(itemLabel, func() {
+					b.sendEvent(Event{
+						Type: "callback",
+						Data: map[string]interface{}{
+							"callbackId": callbackID,
+						},
+					})
+				})
+
+				// Set disabled state if provided
+				if disabled, ok := itemData["disabled"].(bool); ok {
+					menuItem.Disabled = disabled
+				}
+
+				// Set checked state if provided
+				if checked, ok := itemData["checked"].(bool); ok {
+					menuItem.Checked = checked
+				}
+
+				items = append(items, menuItem)
+			}
+		}
+
+		menus = append(menus, fyne.NewMenu(label, items...))
+	}
+
+	mainMenu := fyne.NewMainMenu(menus...)
+	// Setting window menu must happen on the main thread
+	fyne.DoAndWait(func() {
+		win.SetMainMenu(mainMenu)
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
+	widgetID, ok := msg.Payload["widgetId"].(string)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "widgetId is required",
+		})
+		return
+	}
+
+	items, ok := msg.Payload["items"].([]interface{})
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "items array is required",
+		})
+		return
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	obj, exists := b.widgets[widgetID]
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Build menu items
+	var menuItems []*fyne.MenuItem
+	for _, item := range items {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		label, ok := itemMap["label"].(string)
+		if !ok {
+			continue
+		}
+
+		// Check if it's a separator
+		if isSep, ok := itemMap["isSeparator"].(bool); ok && isSep {
+			menuItems = append(menuItems, fyne.NewMenuItemSeparator())
+			continue
+		}
+
+		// Get callback ID
+		callbackID, _ := itemMap["callbackId"].(string)
+
+		// Check if disabled
+		disabled := false
+		if d, ok := itemMap["disabled"].(bool); ok {
+			disabled = d
+		}
+
+		// Check if checked
+		checked := false
+		if c, ok := itemMap["checked"].(bool); ok {
+			checked = c
+		}
+
+		menuItem := fyne.NewMenuItem(label, func(cid string) func() {
+			return func() {
+				// Send callback event
+				b.sendEvent(Event{
+					Type:     "callback",
+					WidgetID: cid,
+				})
+			}
+		}(callbackID))
+
+		menuItem.Disabled = disabled
+		menuItem.Checked = checked
+
+		menuItems = append(menuItems, menuItem)
+	}
+
+	// Create menu
+	menu := fyne.NewMenu("", menuItems...)
+	b.contextMenus[widgetID] = menu
+
+	// Wrap the widget to add context menu support
+	// We need to find which window this widget belongs to
+	var targetWindow fyne.Window
+	for _, win := range b.windows {
+		targetWindow = win
+		break // Use first window for now
+	}
+
+	if targetWindow != nil {
+		wrapper := NewTappableWrapper(obj)
+		wrapper.SetMenu(menu)
+		wrapper.SetCanvas(targetWindow.Canvas())
+
+		// Replace the widget with the wrapper
+		b.widgets[widgetID] = wrapper
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetWidgetStyle(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// UI updates must happen on the main thread
+	fyne.DoAndWait(func() {
+		// Apply font style if specified
+		if fontStyle, ok := msg.Payload["fontStyle"].(string); ok {
+			switch w := obj.(type) {
+			case *widget.Label:
+				switch fontStyle {
+				case "bold":
+					w.TextStyle = fyne.TextStyle{Bold: true}
+				case "italic":
+					w.TextStyle = fyne.TextStyle{Italic: true}
+				case "bold-italic":
+					w.TextStyle = fyne.TextStyle{Bold: true, Italic: true}
+				case "normal":
+					w.TextStyle = fyne.TextStyle{}
+				}
+				w.Refresh()
+			case *widget.Button:
+				switch fontStyle {
+				case "bold":
+					w.Importance = widget.HighImportance
+				}
+				w.Refresh()
+			}
+		}
+
+		// Apply font family if specified
+		if fontFamily, ok := msg.Payload["fontFamily"].(string); ok {
+			switch w := obj.(type) {
+			case *widget.Label:
+				if fontFamily == "monospace" {
+					w.TextStyle.Monospace = true
+					w.Refresh()
+				}
+			case *widget.Entry:
+				if fontFamily == "monospace" {
+					// Entry doesn't directly support monospace, but we can note it
+				}
+			}
+		}
+
+		// Apply text alignment if specified
+		if textAlign, ok := msg.Payload["textAlign"].(string); ok {
+			switch w := obj.(type) {
+			case *widget.Label:
+				switch textAlign {
+				case "left":
+					w.Alignment = fyne.TextAlignLeading
+				case "center":
+					w.Alignment = fyne.TextAlignCenter
+				case "right":
+					w.Alignment = fyne.TextAlignTrailing
+				}
+				w.Refresh()
+			}
+		}
+
+		// Apply background color if specified (map to importance for buttons)
+		if backgroundColor, ok := msg.Payload["backgroundColor"].(string); ok {
+			if btn, ok := obj.(*widget.Button); ok {
+				// Map color to importance level as a workaround for Fyne's limitation
+				// This provides 5 color "buckets" until Fyne adds per-widget color support
+				importance := mapColorToImportance(backgroundColor)
+				if importance != "" {
+					btn.Importance = importanceFromString(importance)
+					btn.Refresh()
+				}
+			}
+		}
+	})
+
+	// Note: Color and text color styling in Fyne requires custom themes
+	// or custom widgets. For now, buttons use importance levels (5 colors max).
+	// Text color for labels is not yet supported.
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// mapColorToImportance maps a CSS color string to a Fyne importance level
+// This is a workaround for Fyne's limitation of not supporting per-widget colors
+func mapColorToImportance(colorStr string) string {
+	// Parse hex color (format: #RRGGBB)
+	if len(colorStr) != 7 || colorStr[0] != '#' {
+		return ""
+	}
+
+	// Extract RGB components
+	var r, g, b int
+	fmt.Sscanf(colorStr[1:], "%02x%02x%02x", &r, &g, &b)
+
+	// Calculate hue to determine color family
+	// Convert RGB to HSV to get hue
+	rNorm := float64(r) / 255.0
+	gNorm := float64(g) / 255.0
+	bNorm := float64(b) / 255.0
+
+	max := rNorm
+	if gNorm > max {
+		max = gNorm
+	}
+	if bNorm > max {
+		max = bNorm
+	}
+
+	min := rNorm
+	if gNorm < min {
+		min = gNorm
+	}
+	if bNorm < min {
+		min = bNorm
+	}
+
+	delta := max - min
+
+	// If grayscale or very low saturation, use medium (neutral)
+	if delta < 0.1 {
+		return "medium"
+	}
+
+	// Calculate hue (0-360)
+	var hue float64
+	if max == rNorm {
+		hue = 60 * (((gNorm - bNorm) / delta) + 0)
+		if hue < 0 {
+			hue += 360
+		}
+	} else if max == gNorm {
+		hue = 60 * (((bNorm - rNorm) / delta) + 2)
+	} else {
+		hue = 60 * (((rNorm - gNorm) / delta) + 4)
+	}
+
+	// Map hue ranges to importance levels
+	// Red/Orange (0-60): warning
+	// Yellow/Green (60-150): success
+	// Cyan/Blue (150-270): high
+	// Purple/Magenta (270-330): low
+	// Red (330-360): warning
+
+	if hue >= 0 && hue < 60 {
+		return "warning" // Red/Orange
+	} else if hue >= 60 && hue < 150 {
+		return "success" // Yellow/Green
+	} else if hue >= 150 && hue < 270 {
+		return "high" // Cyan/Blue
+	} else if hue >= 270 && hue < 330 {
+		return "low" // Purple/Magenta
+	} else {
+		return "warning" // Red
+	}
+}
+
+// importanceFromString converts string to Fyne importance level
+func importanceFromString(importance string) widget.Importance {
+	switch importance {
+	case "low":
+		return widget.LowImportance
+	case "medium":
+		return widget.MediumImportance
+	case "high":
+		return widget.HighImportance
+	case "warning":
+		return widget.WarningImportance
+	case "success":
+		return widget.SuccessImportance
+	default:
+		return widget.MediumImportance
+	}
+}
+
+func (b *Bridge) handleSetTheme(msg Message) {
+	theme := msg.Payload["theme"].(string)
+
+	// Note: Fyne v2 doesn't have NewDarkTheme/NewLightTheme
+	// Theme switching is handled automatically by the system
+	// We'll just store the preference for future use
+	switch theme {
+	case "dark", "light":
+		// Theme switching in Fyne v2 is handled by the system
+		// Apps automatically follow system theme preferences
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	default:
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Unknown theme: %s. Use 'dark' or 'light'", theme),
+		})
+	}
+}
+
+func (b *Bridge) handleGetTheme(msg Message) {
+	// Fyne v2 follows system theme preferences
+	// We can check the current variant (0 = light, 1 = dark)
+	variant := b.app.Settings().ThemeVariant()
+
+	theme := "light"
+	if variant == 1 { // Dark variant
+		theme = "dark"
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"theme": theme,
+		},
+	})
+}
+
+func (b *Bridge) handleQuit(msg Message) {
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+
+	// Signal quit channel for test mode
+	if b.testMode {
+		select {
+		case b.quitChan <- true:
+		default:
+		}
+	}
+
+	// UI operations must be called on the main thread
+	fyne.Do(func() {
+		b.app.Quit()
+	})
+}
