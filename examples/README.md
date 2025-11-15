@@ -2,7 +2,7 @@
 
 A comprehensive collection of showcase applications demonstrating Tsyne's capabilities, ranging from simple "Hello World" to complex multi-feature applications.
 
-![Examples Banner](https://img.shields.io/badge/Examples-11-blue) ![Tests](https://img.shields.io/badge/Tests-13-green) ![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)
+![Examples Banner](https://img.shields.io/badge/Examples-21-blue) ![Tests](https://img.shields.io/badge/Tests-21-green) ![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)
 
 ## Overview
 
@@ -15,7 +15,7 @@ These examples are designed to:
 
 ## 📸 Generating Screenshots
 
-All 11 showcase examples support automated screenshot capture via the `TAKE_SCREENSHOTS=1` environment variable:
+All 21 showcase examples support automated screenshot capture via the `TAKE_SCREENSHOTS=1` environment variable:
 
 ```bash
 # Capture screenshot for a single example
@@ -187,6 +187,208 @@ app({ title: 'Hello' }, (a) => {
 - **Attribution:** Portions copyright Ryelang developers (Apache 2.0)
 - **Test:** `npm test examples/13-tabbed-settings.test.ts`
 
+## Interactive Example Apps
+
+The following examples (14-21) demonstrate complete, single-file interactive applications showcasing Tsyne's pseudo-declarative syntax with various features:
+
+#### **14-color-mixer.ts**
+
+- **What it demonstrates:** RGB color mixing with real-time updates
+- **Widgets used:** Label, Slider, Button, VBox, HBox, Separator
+- **Concepts:** Slider interaction, color calculations, hex/RGB conversion, random generation
+- **Features:**
+  - Three RGB sliders (0-255) for color mixing
+  - Real-time hex and RGB value display
+  - Random color generation button
+  - Reset to default gray
+- **Test:** `npm test examples/14-color-mixer.test.ts`
+
+```typescript
+// Example: Color mixer with RGB sliders
+a.slider(0, 255, 128, (value) => {
+  red = Math.round(value);
+  redLabel.setText(`Red: ${red}`);
+  updateColor();
+});
+```
+
+#### **15-tip-calculator.ts**
+
+- **What it demonstrates:** Financial calculations with multiple inputs
+- **Widgets used:** Label, Entry, RadioGroup, Button, VBox, HBox, Separator
+- **Concepts:** Entry validation, radio button selection, bill splitting, real-time calculation
+- **Features:**
+  - Bill amount input with validation
+  - Tip percentage selector (10%, 15%, 18%, 20%, 25%)
+  - Split bill among multiple people
+  - Shows tip amount, total, and per-person cost
+- **Test:** `npm test examples/15-tip-calculator.test.ts`
+
+```typescript
+// Example: Tip calculation
+function calculate() {
+  const tip = billAmount * (tipPercent / 100);
+  const total = billAmount + tip;
+  const perPerson = total / numPeople;
+  // Update labels...
+}
+```
+
+#### **16-password-generator.ts**
+
+- **What it demonstrates:** Random generation with configurable options
+- **Widgets used:** Label, Slider, Checkbox, Button, VBox, Separator
+- **Concepts:** Random string generation, checkbox state, slider for length, validation
+- **Features:**
+  - Adjustable password length (4-32 characters)
+  - Character type toggles (uppercase, lowercase, numbers, symbols)
+  - Password strength tips
+  - Error handling for invalid configurations
+- **Test:** `npm test examples/16-password-generator.test.ts`
+
+```typescript
+// Example: Password generation logic
+let chars = '';
+if (useUppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+if (useLowercase) chars += 'abcdefghijklmnopqrstuvwxyz';
+if (useNumbers) chars += '0123456789';
+if (useSymbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+```
+
+#### **17-stopwatch.ts**
+
+- **What it demonstrates:** Precise time tracking with intervals
+- **Widgets used:** Label, Button, Scroll, VBox, HBox, Separator
+- **Concepts:** setInterval, clearInterval, time formatting, dynamic list building
+- **Features:**
+  - Start/Stop/Reset controls
+  - Millisecond precision display (MM:SS.ms)
+  - Lap time recording
+  - Scrollable lap history
+- **Test:** `npm test examples/17-stopwatch.test.ts`
+
+```typescript
+// Example: Time formatting
+function formatTime(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const milliseconds = Math.floor((ms % 1000) / 10);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+}
+```
+
+#### **18-dice-roller.ts**
+
+- **What it demonstrates:** Random number generation with configurable options
+- **Widgets used:** Label, Button, Select, RadioGroup, Scroll, VBox, Separator
+- **Concepts:** Select dropdown, radiogroup for options, array manipulation, history tracking
+- **Features:**
+  - Configurable number of dice (1-10)
+  - Multiple dice types (d4, d6, d8, d10, d12, d20, d100)
+  - Total calculation
+  - Rolling history (last 10 rolls)
+- **Test:** `npm test examples/18-dice-roller.test.ts`
+
+```typescript
+// Example: Dice rolling
+function rollDice() {
+  results = [];
+  for (let i = 0; i < numDice; i++) {
+    results.push(Math.floor(Math.random() * numSides) + 1);
+  }
+  const total = results.reduce((a, b) => a + b, 0);
+}
+```
+
+#### **19-bmi-calculator.ts**
+
+- **What it demonstrates:** Health calculations with unit conversion
+- **Widgets used:** Label, Slider, Button, VBox, Separator
+- **Concepts:** BMI calculation, unit conversion (metric/imperial), conditional display
+- **Features:**
+  - Height and weight sliders
+  - Toggle between metric (cm/kg) and imperial (ft/in/lbs) units
+  - BMI calculation with category (Underweight/Normal/Overweight/Obese)
+  - Visual category indicators with emojis
+  - BMI reference chart
+- **Test:** `npm test examples/19-bmi-calculator.test.ts`
+
+```typescript
+// Example: BMI calculation and categorization
+const bmi = weightKg / (heightM * heightM);
+if (bmi < 18.5) {
+  category = 'Underweight';
+  emoji = '⚠️';
+} else if (bmi < 25) {
+  category = 'Normal weight';
+  emoji = '✅';
+}
+```
+
+#### **20-rock-paper-scissors.ts**
+
+- **What it demonstrates:** Game logic with score tracking
+- **Widgets used:** Label, Button, VBox, HBox, Separator
+- **Concepts:** Game state management, win/loss logic, score persistence
+- **Features:**
+  - Play against computer
+  - Win/loss/tie detection
+  - Score tracking (player, computer, ties)
+  - Visual feedback with emojis
+  - Game rules reference
+- **Test:** `npm test examples/20-rock-paper-scissors.test.ts`
+
+```typescript
+// Example: Game logic
+if (playerChoice === computerChoice) {
+  result = "It's a tie!";
+  ties++;
+} else if (
+  (playerChoice === 'Rock' && computerChoice === 'Scissors') ||
+  (playerChoice === 'Paper' && computerChoice === 'Rock') ||
+  (playerChoice === 'Scissors' && computerChoice === 'Paper')
+) {
+  result = 'You win!';
+  playerScore++;
+} else {
+  result = 'Computer wins!';
+  computerScore++;
+}
+```
+
+#### **21-quiz-app.ts**
+
+- **What it demonstrates:** Multi-screen navigation and quiz logic
+- **Widgets used:** Label, Button, RadioGroup, VBox, Separator
+- **Concepts:** State machines, screen transitions, score calculation, percentage math
+- **Features:**
+  - 5 programming trivia questions
+  - Multiple choice answers with radiogroup
+  - Answer explanations
+  - Score tracking and final results
+  - Performance-based feedback messages
+  - Restart functionality
+- **Test:** `npm test examples/21-quiz-app.test.ts`
+
+```typescript
+// Example: Quiz navigation
+function showQuestion() {
+  const q = questions[currentQuestion];
+  win.setContent(() => {
+    app.vbox(() => {
+      app.label(q.question);
+      app.radiogroup(q.options, -1, (selected) => {
+        selectedAnswer = selected;
+      });
+      app.button('Submit Answer', () => {
+        if (selectedAnswer === q.correct) score++;
+        showResult();
+      });
+    });
+  });
+}
+```
+
 ## Comprehensive Examples
 
 ### **calculator.ts**
@@ -290,7 +492,7 @@ describe('Example Tests', () => {
 
 Examples 01, 03, 04, 05, 07, 09, 10, 11, 12, and 13 are inspired by and ported from the [Rye-Fyne project](https://github.com/refaktor/rye-fyne) licensed under Apache 2.0. Each file includes proper attribution in single-line comments at the top.
 
-Example 02 (counter) is an original Tsyne example.
+Examples 02 (counter), 14-21 (interactive apps), calculator, and TodoMVC variants are original Tsyne examples.
 
 ## Contributing
 
@@ -310,8 +512,8 @@ When adding new examples:
 
 ## Example Statistics
 
-- **Total Examples:** 11 + 2 (TodoMVC variants)
-- **Total Test Files:** 13
+- **Total Examples:** 21 + 2 (TodoMVC variants)
+- **Total Test Files:** 21
 - **Widget Types Demonstrated:** 20+
-- **Lines of Code:** ~1,500 (examples + tests)
+- **Lines of Code:** ~4,600 (examples + tests)
 - **Test Coverage:** 100% (all examples tested)
