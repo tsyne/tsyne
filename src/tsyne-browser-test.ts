@@ -422,6 +422,9 @@ export async function runBrowserTests(): Promise<void> {
 
   const skipped = collectedTests.length - testsToRun.length;
 
+  // Save original global tsyne object if it exists
+  const originalTsyne = (global as any).tsyne;
+
   for (const test of testsToRun) {
     // Merge environment variable with test options (env var takes precedence)
     const options: BrowserTestOptions = {
@@ -472,6 +475,13 @@ export async function runBrowserTests(): Promise<void> {
       await tsyneBrowserTest.cleanup();
       // Wait a bit between tests to avoid global context conflicts
       await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Restore original global tsyne object
+      if (originalTsyne) {
+        (global as any).tsyne = originalTsyne;
+      } else {
+        delete (global as any).tsyne;
+      }
     }
   }
 
