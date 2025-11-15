@@ -32,15 +32,15 @@ export class CalculatorUI {
         font_style: FontStyle.BOLD,
         font_size: 18  // 20% bigger than default (~14-15)
       },
-      // Button color mappings (Fyne limitation: must use importance levels)
+      // Button color mappings using the Tsyne styling system
       operation: {
-        importance: 'high'  // Blue for operations (÷ × - +)
+        background_color: '#2196F3'  // A nice blue for operations
       },
       clear: {
-        importance: 'warning'  // Orange/red for clear
+        background_color: '#f44336'  // A standard red for clear
       },
       equals: {
-        importance: 'success'  // Green for equals
+        background_color: '#4CAF50'  // A standard green for equals
       }
       // numeral buttons get default styling (grey/neutral)
     });
