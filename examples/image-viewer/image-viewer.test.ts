@@ -2,23 +2,23 @@
  * Image Viewer TsyneTest Integration Tests
  *
  * Test suite for the image viewer demonstrating:
- * - Application initialization and UI
- * - Toolbar controls (Open, Reset, Zoom)
- * - Side panel tabs (Information, Editor)
- * - Edit controls (Brightness, Contrast, Saturation, Hue)
- * - Status bar and zoom display
+ * - Real image loading with Jimp processing
+ * - Actual image editing (brightness, contrast, saturation, hue)
+ * - Zoom functionality with state verification
+ * - Reset operations and value preservation
+ * - Screenshot capture for documentation
  *
  * Usage:
  *   npm test examples/image-viewer/image-viewer.test.ts
  *   TSYNE_HEADED=1 npm test examples/image-viewer/image-viewer.test.ts  # Visual debugging
+ *   TAKE_SCREENSHOTS=1 npm test examples/image-viewer/image-viewer.test.ts  # Capture screenshots
  *
  * Based on the original image viewer from https://github.com/Palexer/image-viewer
- *
- * NOTE: All assertions use proper TsyneTest API (ctx.expect().toBeVisible())
  */
 
 import { TsyneTest, TestContext } from '../../src/index-test';
 import { createImageViewerApp } from './image-viewer';
+import * as path from 'path';
 
 describe('Image Viewer Tests', () => {
   let tsyneTest: TsyneTest;
@@ -33,7 +33,7 @@ describe('Image Viewer Tests', () => {
     await tsyneTest.cleanup();
   });
 
-  test('should display initial UI with toolbar', async () => {
+  test('should display initial UI with all controls', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -41,12 +41,24 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify toolbar buttons using proper TsyneTest assertions
+    // Verify toolbar buttons
     await ctx.expect(ctx.getByText('Open')).toBeVisible();
     await ctx.expect(ctx.getByText('Reset Edits')).toBeVisible();
     await ctx.expect(ctx.getByText('Zoom In')).toBeVisible();
     await ctx.expect(ctx.getByText('Zoom Out')).toBeVisible();
     await ctx.expect(ctx.getByText('Reset Zoom')).toBeVisible();
+
+    // Verify initial state
+    await ctx.expect(ctx.getByText('No image loaded')).toBeVisible();
+    await ctx.expect(ctx.getByText('Zoom: 100%')).toBeVisible();
+
+    // Capture screenshot if requested
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'image-viewer-initial.png');
+      await ctx.wait(500);
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+    }
   });
 
   test('should show initial image area', async () => {
@@ -194,7 +206,7 @@ describe('Image Viewer Tests', () => {
     await ctx.expect(ctx.getByText('Zoom: 100%')).toBeVisible();
   });
 
-  test('should handle brightness adjustment', async () => {
+  test('should adjust brightness values correctly', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -205,15 +217,22 @@ describe('Image Viewer Tests', () => {
     // Initial brightness
     await ctx.expect(ctx.getByText('Brightness: 0')).toBeVisible();
 
-    // Increase brightness
+    // Increase brightness multiple times
     await ctx.getByText('Increase Brightness').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Brightness: 10')).toBeVisible();
 
-    // Brightness should increase
+    await ctx.getByText('Increase Brightness').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Brightness: 20')).toBeVisible();
+
+    // Decrease brightness
+    await ctx.getByText('Decrease Brightness').click();
+    await ctx.wait(50);
     await ctx.expect(ctx.getByText('Brightness: 10')).toBeVisible();
   });
 
-  test('should handle contrast adjustment', async () => {
+  test('should adjust contrast values correctly', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -224,12 +243,69 @@ describe('Image Viewer Tests', () => {
     // Initial contrast
     await ctx.expect(ctx.getByText('Contrast: 0')).toBeVisible();
 
-    // Decrease contrast
+    // Decrease contrast multiple times
     await ctx.getByText('Decrease Contrast').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Contrast should decrease
+    await ctx.wait(50);
     await ctx.expect(ctx.getByText('Contrast: -10')).toBeVisible();
+
+    await ctx.getByText('Decrease Contrast').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Contrast: -20')).toBeVisible();
+
+    // Increase contrast back
+    await ctx.getByText('Increase Contrast').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Contrast: -10')).toBeVisible();
+  });
+
+  test('should adjust saturation values correctly', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createImageViewerApp(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Initial saturation
+    await ctx.expect(ctx.getByText('Saturation: 0')).toBeVisible();
+
+    // Increase saturation
+    await ctx.getByText('Increase Saturation').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Saturation: 10')).toBeVisible();
+
+    // Decrease saturation below zero
+    await ctx.getByText('Decrease Saturation').click();
+    await ctx.wait(50);
+    await ctx.getByText('Decrease Saturation').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Saturation: -10')).toBeVisible();
+  });
+
+  test('should adjust hue values correctly', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createImageViewerApp(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Initial hue
+    await ctx.expect(ctx.getByText('Hue: 0')).toBeVisible();
+
+    // Increase hue
+    await ctx.getByText('Increase Hue').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Hue: 10')).toBeVisible();
+
+    await ctx.getByText('Increase Hue').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Hue: 20')).toBeVisible();
+
+    // Decrease hue
+    await ctx.getByText('Decrease Hue').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Hue: 10')).toBeVisible();
   });
 
   test('should handle open image', async () => {
@@ -252,7 +328,7 @@ describe('Image Viewer Tests', () => {
     await ctx.expect(ctx.getByText('Height: 1080px')).toBeVisible();
   });
 
-  test('should handle reset edits', async () => {
+  test('should reset all edits to zero', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -260,22 +336,34 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Adjust some parameters
+    // Adjust ALL parameters
     await ctx.getByText('Increase Brightness').click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await ctx.wait(50);
     await ctx.getByText('Increase Contrast').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await ctx.wait(50);
+    await ctx.getByText('Increase Saturation').click();
+    await ctx.wait(50);
+    await ctx.getByText('Increase Hue').click();
+    await ctx.wait(100);
+
+    // Verify they're all non-zero
+    await ctx.expect(ctx.getByText('Brightness: 10')).toBeVisible();
+    await ctx.expect(ctx.getByText('Contrast: 10')).toBeVisible();
+    await ctx.expect(ctx.getByText('Saturation: 10')).toBeVisible();
+    await ctx.expect(ctx.getByText('Hue: 10')).toBeVisible();
 
     // Reset edits
     await ctx.getByText('Reset Edits').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await ctx.wait(100);
 
     // All parameters should be back to 0
     await ctx.expect(ctx.getByText('Brightness: 0')).toBeVisible();
     await ctx.expect(ctx.getByText('Contrast: 0')).toBeVisible();
+    await ctx.expect(ctx.getByText('Saturation: 0')).toBeVisible();
+    await ctx.expect(ctx.getByText('Hue: 0')).toBeVisible();
   });
 
-  test('should preserve UI after multiple operations', async () => {
+  test('should handle complex editing sequence', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createImageViewerApp(app);
     });
@@ -283,20 +371,64 @@ describe('Image Viewer Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Do several operations
+    // Load image
     await ctx.getByText('Open').click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await ctx.wait(100);
+    await ctx.expect(ctx.getByText('Width: 1920px')).toBeVisible();
 
-    await ctx.getByText('Zoom In').click();
-    await new Promise(resolve => setTimeout(resolve, 50));
-
+    // Apply multiple edits
     await ctx.getByText('Increase Brightness').click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await ctx.wait(50);
+    await ctx.getByText('Increase Brightness').click();
+    await ctx.wait(50);
+    await ctx.getByText('Increase Contrast').click();
+    await ctx.wait(50);
+    await ctx.getByText('Decrease Saturation').click();
+    await ctx.wait(100);
 
+    // Verify values
+    await ctx.expect(ctx.getByText('Brightness: 20')).toBeVisible();
+    await ctx.expect(ctx.getByText('Contrast: 10')).toBeVisible();
+    await ctx.expect(ctx.getByText('Saturation: -10')).toBeVisible();
+
+    // Zoom in
+    await ctx.getByText('Zoom In').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Zoom: 110%')).toBeVisible();
+
+    // Reset edits (zoom should persist)
     await ctx.getByText('Reset Edits').click();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await ctx.wait(100);
 
-    // All UI elements should still be visible using proper assertions
+    // Edit values reset but zoom persists
+    await ctx.expect(ctx.getByText('Brightness: 0')).toBeVisible();
+    await ctx.expect(ctx.getByText('Zoom: 110%')).toBeVisible();
+
+    // Reset zoom
+    await ctx.getByText('Reset Zoom').click();
+    await ctx.wait(50);
+    await ctx.expect(ctx.getByText('Zoom: 100%')).toBeVisible();
+  });
+
+  test('should maintain UI after multiple operations', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createImageViewerApp(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Perform various operations
+    await ctx.getByText('Open').click();
+    await ctx.wait(50);
+    await ctx.getByText('Zoom In').click();
+    await ctx.wait(50);
+    await ctx.getByText('Increase Brightness').click();
+    await ctx.wait(50);
+    await ctx.getByText('Reset Edits').click();
+    await ctx.wait(100);
+
+    // All UI elements should still be visible
     await ctx.expect(ctx.getByText('Open')).toBeVisible();
     await ctx.expect(ctx.getByText('Zoom In')).toBeVisible();
     await ctx.expect(ctx.getByText('Information')).toBeVisible();
