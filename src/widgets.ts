@@ -136,7 +136,7 @@ export abstract class Widget {
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, onClick?: () => void, classNames?: string) {
+  constructor(ctx: Context, text: string, onClick?: () => void, importance?: 'low' | 'medium' | 'high' | 'warning' | 'success') {
     const id = ctx.generateId('button');
     super(ctx, id);
 
@@ -150,47 +150,14 @@ export class Button extends Widget {
       });
     }
 
-    // Check stylesheet for importance mapping (Fyne limitation workaround)
-    if (classNames) {
-      const classes = classNames.split(/\s+/).filter(c => c.length > 0);
-      const importance = this.getImportanceFromStylesheet(classes);
-      if (importance) {
-        payload.importance = importance;
-      }
+    if (importance) {
+      payload.importance = importance;
     }
 
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id);
 
-    // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'button'
-    if (classNames) {
-      this.applyStylesFromClasses(classNames.split(/\s+/).filter(c => c.length > 0)).catch(() => {});
-    } else {
-      this.applyStyles('button').catch(() => {});
-    }
-  }
-
-  private getImportanceFromStylesheet(classes: string[]): string | undefined {
-    const stylesheet = require('./styles').getStyleSheet();
-    if (!stylesheet) return undefined;
-
-    // Check each class for importance, return first match
-    for (const className of classes) {
-      const style = stylesheet.getStyle(className);
-      if (style?.importance) {
-        return style.importance;
-      }
-    }
-    return undefined;
-  }
-
-  private async applyStylesFromClasses(classes: string[]): Promise<void> {
-    // Apply styles from all classes, then fallback to 'button'
-    for (const className of classes) {
-      await this.applyStyles(className as any).catch(() => {});
-    }
-    // Also apply generic 'button' styles
-    await this.applyStyles('button').catch(() => {});
+    this.applyStyles('button').catch(() => {});
   }
 
   async disable(): Promise<void> {
@@ -217,11 +184,25 @@ export class Button extends Widget {
  * Label widget
  */
 export class Label extends Widget {
-  constructor(ctx: Context, text: string, classNames?: string) {
+  constructor(ctx: Context, text: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }, classNames?: string) {
     const id = ctx.generateId('label');
     super(ctx, id);
 
-    ctx.bridge.send('createLabel', { id, text });
+    const payload: any = { id, text };
+
+    if (alignment) {
+      payload.alignment = alignment;
+    }
+
+    if (wrapping) {
+      payload.wrapping = wrapping;
+    }
+
+    if (textStyle) {
+      payload.textStyle = textStyle;
+    }
+
+    ctx.bridge.send('createLabel', payload);
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'label'
@@ -246,7 +227,7 @@ export class Label extends Widget {
  * Entry (text input) widget
  */
 export class Entry extends Widget {
-  constructor(ctx: Context, placeholder?: string, onSubmit?: () => void, minWidth?: number, onDoubleClick?: () => void) {
+  constructor(ctx: Context, placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void) {
     const id = ctx.generateId('entry');
     super(ctx, id);
 
@@ -255,8 +236,8 @@ export class Entry extends Widget {
     if (onSubmit) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, () => {
-        onSubmit();
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onSubmit(data.text);
       });
     }
 
@@ -329,11 +310,21 @@ export class MultiLineEntry extends Widget {
  * Password entry widget (text is masked)
  */
 export class PasswordEntry extends Widget {
-  constructor(ctx: Context, placeholder?: string) {
+  constructor(ctx: Context, placeholder?: string, onSubmit?: (text: string) => void) {
     const id = ctx.generateId('passwordentry');
     super(ctx, id);
 
-    ctx.bridge.send('createPasswordEntry', { id, placeholder: placeholder || '' });
+    const payload: any = { id, placeholder: placeholder || '' };
+
+    if (onSubmit) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onSubmit(data.text);
+      });
+    }
+
+    ctx.bridge.send('createPasswordEntry', payload);
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking)

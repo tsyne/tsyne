@@ -27,7 +27,7 @@ export class Locator {
   constructor(
     private bridge: BridgeConnection,
     private selector: string,
-    private selectorType: 'text' | 'exactText' | 'type' | 'id'
+    private selectorType: 'text' | 'exactText' | 'type' | 'id' | 'placeholder'
   ) {}
 
   /**
@@ -83,6 +83,22 @@ export class Locator {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
     await this.bridge.send('doubleTapWidget', { widgetId });
+  }
+
+  async submit(): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    await this.bridge.send('submitEntry', { widgetId });
+  }
+
+  async drag(x: number, y: number): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    await this.bridge.send('dragWidget', { widgetId, x, y });
   }
 
   /**
@@ -709,6 +725,10 @@ export class TestContext {
     return new Locator(this.bridge, text, 'text');
   }
 
+  getByPlaceholder(text: string): Locator {
+    return new Locator(this.bridge, text, 'placeholder');
+  }
+
   /**
    * Get a locator for widgets with exact text match
    */
@@ -719,7 +739,7 @@ export class TestContext {
   /**
    * Get a locator for widgets of a specific type
    */
-  getByType(type: 'button' | 'label' | 'entry'): Locator {
+  getByType(type: 'button' | 'label' | 'entry' | 'image' | 'passwordentry' | 'entry'): Locator {
     return new Locator(this.bridge, type, 'type');
   }
 

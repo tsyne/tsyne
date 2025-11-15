@@ -55,9 +55,10 @@ type Bridge struct {
 
 // WidgetMetadata stores metadata about widgets for testing
 type WidgetMetadata struct {
-	Type string
-	Text string
-	URL  string // For hyperlinks - store original URL to check if relative
+	Type        string
+	Text        string
+	URL         string // For hyperlinks
+	Placeholder string // For entry widgets
 }
 
 // ToolbarItemsMetadata stores metadata about toolbar items for traversal
@@ -142,64 +143,6 @@ func (c *ClickableContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c.content)
 }
 
-// DraggableContainer wraps a canvas object to add drag support
-type DraggableContainer struct {
-	widget.BaseWidget
-	content         fyne.CanvasObject
-	DragCallback    func(x, y float32)
-	DragEndCallback func(x, y float32)
-	ClickCallback   func()
-	lastPos         fyne.Position
-	isDragging      bool
-}
-
-// NewDraggableContainer creates a new draggable container
-func NewDraggableContainer(content fyne.CanvasObject, dragCallback func(x, y float32), dragEndCallback func(x, y float32), clickCallback func()) *DraggableContainer {
-	d := &DraggableContainer{
-		content:         content,
-		DragCallback:    dragCallback,
-		DragEndCallback: dragEndCallback,
-		ClickCallback:   clickCallback,
-	}
-	d.ExtendBaseWidget(d)
-	return d
-}
-
-// Dragged handles drag events
-func (d *DraggableContainer) Dragged(e *fyne.DragEvent) {
-	d.isDragging = true
-	d.lastPos = e.Position
-	log.Printf("[DraggableContainer] Dragged to position: (%f, %f)", e.Position.X, e.Position.Y)
-	if d.DragCallback != nil {
-		d.DragCallback(e.Position.X, e.Position.Y)
-	}
-}
-
-// DragEnd handles drag end events
-func (d *DraggableContainer) DragEnd() {
-	if d.isDragging {
-		log.Printf("[DraggableContainer] DragEnd at position: (%f, %f)", d.lastPos.X, d.lastPos.Y)
-		if d.DragEndCallback != nil {
-			d.DragEndCallback(d.lastPos.X, d.lastPos.Y)
-		}
-		d.isDragging = false
-	}
-}
-
-// Tapped handles single-click events (for cards that can be clicked OR dragged)
-func (d *DraggableContainer) Tapped(e *fyne.PointEvent) {
-	if !d.isDragging {
-		log.Printf("[DraggableContainer] Tapped (no drag detected)")
-		if d.ClickCallback != nil {
-			d.ClickCallback()
-		}
-	}
-}
-
-// CreateRenderer for the draggable container
-func (d *DraggableContainer) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(d.content)
-}
 
 // TappableWrapper wraps a widget and adds context menu support via right-click
 type TappableWrapper struct {

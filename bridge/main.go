@@ -164,6 +164,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleDoubleTapWidget(msg)
 	case "rightClickWidget":
 		b.handleRightClickWidget(msg)
+	case "dragWidget":
+		b.handleDragWidget(msg)
 	case "hoverWidget":
 		b.handleHoverWidget(msg)
 	case "scrollCanvas":

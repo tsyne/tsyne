@@ -47,15 +47,15 @@ export class App {
     return new HBox(this.ctx, builder);
   }
 
-  button(text: string, onClick?: () => void, classNames?: string): Button {
-    return new Button(this.ctx, text, onClick, classNames);
+  button(text: string, onClick?: () => void, importance?: 'low' | 'medium' | 'high' | 'warning' | 'success'): Button {
+    return new Button(this.ctx, text, onClick, importance);
   }
 
-  label(text: string, classNames?: string): Label {
-    return new Label(this.ctx, text, classNames);
+  label(text: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }, classNames?: string): Label {
+    return new Label(this.ctx, text, alignment, wrapping, textStyle, classNames);
   }
 
-  entry(placeholder?: string, onSubmit?: () => void, minWidth?: number, onDoubleClick?: () => void): Entry {
+  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): Entry {
     return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick);
   }
 
@@ -63,8 +63,8 @@ export class App {
     return new MultiLineEntry(this.ctx, placeholder, wrapping);
   }
 
-  passwordentry(placeholder?: string): PasswordEntry {
-    return new PasswordEntry(this.ctx, placeholder);
+  passwordentry(placeholder?: string, onSubmit?: (text: string) => void): PasswordEntry {
+    return new PasswordEntry(this.ctx, placeholder, onSubmit);
   }
 
   separator(): Separator {
