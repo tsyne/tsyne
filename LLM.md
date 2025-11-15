@@ -233,7 +233,50 @@ IMPORTANT: DO NOT BUILD `tsyne-bridge` anywhere else - it goes into bin/ only.
 
 ## Troubleshooting
 
-### Can't Access storage.googleapis.com for Fyne Dependencies
+### Cloud/LLM Environment Setup (Restricted Network Access)
+
+**Problem:** Working in containerized/cloud environments (e.g., Claude Code, Codespaces) where network access is restricted and you can't access `storage.googleapis.com`, `fyne.io`, or other dependency hosts.
+
+**Complete Solution:**
+
+```bash
+# Step 1: Install system dependencies first
+apt-get update -qq
+apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
+
+# Step 2: Download fyne.io/systray manually (it's not on Google's proxy)
+cd /tmp
+wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
+tar -xzf systray-master.tar.gz
+
+# Step 3: Use go mod replace to point to local systray
+cd /home/user/tsyne/bridge
+go mod edit -replace=fyne.io/systray=/tmp/systray-master
+
+# Step 4: Build bridge with GOPROXY=direct
+env GOPROXY=direct go build -o ../bin/tsyne-bridge .
+
+# Step 5: Install npm dependencies without running postinstall (it will try to rebuild)
+cd /home/user/tsyne
+npm install --ignore-scripts
+
+# Step 6: Now you can run tests
+npx jest examples/solitaire/draw-regression.test.ts --runInBand
+```
+
+**What this fixes:**
+- ✅ Bypasses `storage.googleapis.com` (Google's Go module proxy)
+- ✅ Bypasses `fyne.io/systray` direct fetch (503 errors)
+- ✅ Installs required X11/OpenGL headers for Fyne
+- ✅ Skips npm postinstall script that would fail without network
+- ✅ Allows running tests in restricted environments
+
+**System packages required:**
+- `libgl1-mesa-dev` - OpenGL development headers
+- `xorg-dev` - X11 development libraries (metapackage)
+- `libxrandr-dev` - X11 RandR extension (screen resolution/rotation)
+
+### Can't Access storage.googleapis.com for Fyne Dependencies (Standard Setup)
 
 **Problem:** Go tries to fetch Fyne v2.7.0 from `https://storage.googleapis.com/proxy-golang-org-prod` and fails with DNS or connection errors.
 
@@ -257,10 +300,7 @@ cd bridge
 env GOPROXY=direct go build -o ../bin/tsyne-bridge .
 ```
 
-**What these packages provide:**
-- `libgl1-mesa-dev` - OpenGL development headers
-- `xorg-dev` - X11 development libraries (metapackage)
-- `libxrandr-dev` - X11 RandR extension (screen resolution/rotation)
+**Note:** If you still get `fyne.io/systray: 503 Service Unavailable` errors, use the Cloud/LLM Environment Setup above.
 
 **Why GOPROXY=direct works:**
 - Tells Go to fetch modules directly from their source repositories (GitHub)

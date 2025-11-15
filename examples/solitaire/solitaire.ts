@@ -711,6 +711,12 @@ class SolitaireUI {
   private draggedCard: { type: 'draw' | 'stack' | 'build', index: number } | null = null;
   private window: Window | null = null;
 
+  // Widget references for incremental updates (avoid full rebuilds)
+  private handPileImage: any = null;
+  private draw1Image: any = null;
+  private draw2Image: any = null;
+  private draw3Image: any = null;
+
   constructor(private a: App) {
     this.game = new Game();
 
@@ -1017,23 +1023,20 @@ class SolitaireUI {
             const draws = this.game.getDrawCards();
 
             // Draw pile - show face-down cards or empty
-            if (this.game.getHandCount() > 0) {
-              this.a.image(backCardImage, 'original');
-            } else {
-              this.a.image(emptySlotImage, 'original');
-            }
+            const handPileImg = this.game.getHandCount() > 0 ? backCardImage : emptySlotImage;
+            this.handPileImage = this.a.image(handPileImg, 'original');
 
             // Draw slots - show drawn cards or empty slots
             const draw1Img = draws.draw1 ? this.getCardImage(draws.draw1.imageFilename()) : emptySlotImage;
             const draw2Img = draws.draw2 ? this.getCardImage(draws.draw2.imageFilename()) : emptySlotImage;
             const draw3Img = draws.draw3 ? this.getCardImage(draws.draw3.imageFilename()) : emptySlotImage;
 
-            this.a.image(draw1Img, 'original');
-            this.a.image(draw2Img, 'original');
+            this.draw1Image = this.a.image(draw1Img, 'original');
+            this.draw2Image = this.a.image(draw2Img, 'original');
             // pseudo-declarative lines: imperative if/else for conditional rendering
             // Make draw3 clickable and draggable if there's a card there
             if (draws.draw3) {
-              this.a.image(
+              this.draw3Image = this.a.image(
                 draw3Img,
                 'original',
                 () => this.handleCardClick('draw', 0),
@@ -1041,7 +1044,7 @@ class SolitaireUI {
                 (x: number, y: number) => this.handleCardDragEnd(x, y)
               ).withId('draw3');
             } else {
-              this.a.image(draw3Img, 'original');
+              this.draw3Image = this.a.image(draw3Img, 'original');
             }
           });
 
@@ -1106,6 +1109,38 @@ class SolitaireUI {
     });
   }
 
+  /**
+   * Update only the draw pile widgets without rebuilding the entire UI
+   * Kent Beck approach: update what changes, not everything
+   */
+  private async updateDrawPileUI(): Promise<void> {
+    const emptySlotImage = this.getCardImage('back.svg');
+    const backCardImage = this.getCardImage('back.svg');
+    const draws = this.game.getDrawCards();
+
+    // Update hand pile image
+    if (this.handPileImage) {
+      const handPileImg = this.game.getHandCount() > 0 ? backCardImage : emptySlotImage;
+      await this.handPileImage.updateImage(handPileImg);
+    }
+
+    // Update draw slot images
+    if (this.draw1Image) {
+      const draw1Img = draws.draw1 ? this.getCardImage(draws.draw1.imageFilename()) : emptySlotImage;
+      await this.draw1Image.updateImage(draw1Img);
+    }
+
+    if (this.draw2Image) {
+      const draw2Img = draws.draw2 ? this.getCardImage(draws.draw2.imageFilename()) : emptySlotImage;
+      await this.draw2Image.updateImage(draw2Img);
+    }
+
+    if (this.draw3Image) {
+      const draw3Img = draws.draw3 ? this.getCardImage(draws.draw3.imageFilename()) : emptySlotImage;
+      await this.draw3Image.updateImage(draw3Img);
+    }
+  }
+
   private newGame(): void {
     this.game.newGame();
     this.selectedCard = null;
@@ -1122,12 +1157,12 @@ class SolitaireUI {
     this.updateStatus('Deck shuffled');
   }
 
-  private draw(): void {
+  private async draw(): Promise<void> {
     this.game.drawThree();
-    this.rebuildUI();
-    this.updateStatus('Drew cards');
+    await this.updateDrawPileUI(); // Incremental update instead of full rebuild
+    await this.updateStatus('Drew cards');
     if (this.game.hasWon()) {
-      this.updateStatus('Congratulations! You won!');
+      await this.updateStatus('Congratulations! You won!');
     }
   }
 
