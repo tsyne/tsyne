@@ -676,3 +676,97 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		Result:  map[string]interface{}{"widgetId": widgetID},
 	})
 }
+
+func (b *Bridge) handleGetToolbarItems(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	toolbarMeta, hasItemsMeta := b.toolbarItems[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Verify it's a toolbar
+	if _, ok := obj.(*widget.Toolbar); !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a toolbar",
+		})
+		return
+	}
+
+	// Get toolbar items metadata
+	var items []string
+	if hasItemsMeta {
+		items = toolbarMeta.Labels
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"items": items,
+		},
+	})
+}
+
+func (b *Bridge) handleGetContainerObjects(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Verify it's a container
+	container, ok := obj.(*fyne.Container)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a container",
+		})
+		return
+	}
+
+	// Get container objects (child widget IDs)
+	var childIDs []string
+	fyne.DoAndWait(func() {
+		for _, childObj := range container.Objects {
+			// Find the widget ID for this object (reverse lookup)
+			b.mu.RLock()
+			for childID, widgetObj := range b.widgets {
+				if widgetObj == childObj {
+					childIDs = append(childIDs, childID)
+					break
+				}
+			}
+			b.mu.RUnlock()
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"objects": childIDs,
+		},
+	})
+}

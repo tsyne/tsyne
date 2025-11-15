@@ -7,8 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-
-	"fyne.io/fyne/v2"
 )
 
 func (b *Bridge) handleMessage(msg Message) {
@@ -135,6 +133,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleGetTableData(msg)
 	case "getListData":
 		b.handleGetListData(msg)
+	case "getToolbarItems":
+		b.handleGetToolbarItems(msg)
+	case "getContainerObjects":
+		b.handleGetContainerObjects(msg)
 	case "setTheme":
 		b.handleSetTheme(msg)
 	case "getTheme":
