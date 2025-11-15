@@ -113,7 +113,7 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 		needsEntryRef = true // Entry is now wrapped, so we need a separate reference
 	}
 
-	// If double-click callback is provided, wrap in a tappable container
+	// If double-click callback is provided, wrap in a double-tappable container
 	if doubleClickCallbackID, ok := msg.Payload["doubleClickCallbackId"].(string); ok {
 		callback := func() {
 			b.sendEvent(Event{
@@ -124,8 +124,8 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 			})
 		}
 
-		// Wrap whatever we have so far (entry or sized container) in tappable container
-		widgetToStore = NewTappableContainer(widgetToStore, callback)
+		// Wrap whatever we have so far (entry or sized container) in double-tappable container
+		widgetToStore = NewDoubleTappableContainer(widgetToStore, callback)
 		needsEntryRef = true // We need entry reference for operations
 	}
 

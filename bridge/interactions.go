@@ -865,3 +865,42 @@ func (b *Bridge) handleRegisterCustomId(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleDragWidget(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	x := msg.Payload["x"].(float64)
+	y := msg.Payload["y"].(float64)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if draggable, ok := obj.(fyne.Draggable); ok {
+		// In normal mode, trigger the drag events
+		draggable.Dragged(&fyne.DragEvent{
+			PointEvent: fyne.PointEvent{
+				Position: fyne.NewPos(float32(x), float32(y)),
+			},
+		})
+		draggable.DragEnd()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not draggable",
+		})
+	}
+}
