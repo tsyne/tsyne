@@ -232,6 +232,10 @@ export class BridgeConnection {
     return result.parentId;
   }
 
+  async clickToolbarAction(toolbarId: string, actionLabel: string): Promise<any> {
+    return this.send('clickToolbarAction', { toolbarId, actionLabel });
+  }
+
   quit(): void {
     this.send('quit', {});
     setTimeout(() => {

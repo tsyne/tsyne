@@ -58,6 +58,14 @@ export class Locator {
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
+
+    // Check for special toolbar action prefix
+    if (widgetId.startsWith('toolbar_action:')) {
+      const customId = widgetId.substring('toolbar_action:'.length);
+      await this.bridge.send('clickToolbarAction', { customId });
+      return;
+    }
+
     await this.bridge.send('clickWidget', { widgetId });
   }
 
@@ -110,6 +118,18 @@ export class Locator {
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
+
+    // Check if this is a synthetic toolbar button
+    if (widgetId.includes('_action_')) {
+      const info = await this.getInfo();
+      const parentToolbarId = await this.bridge.getParent(widgetId);
+
+      if (parentToolbarId) {
+        await this.bridge.clickToolbarAction(parentToolbarId, info.text || '');
+        return;
+      }
+    }
+
     await this.bridge.send('rightClickWidget', { widgetId });
   }
 

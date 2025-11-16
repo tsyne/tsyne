@@ -46,9 +46,10 @@ type Bridge struct {
 	widgetMeta    map[string]WidgetMetadata      // metadata for testing
 	tableData     map[string][][]string          // table ID -> data
 	listData      map[string][]string            // list ID -> data
-	toolbarItems  map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
-	windowContent map[string]string              // window ID -> current content widget ID
-	customIds     map[string]string              // custom ID -> widget ID (for test framework)
+	toolbarItems   map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
+	toolbarActions map[string]*widget.ToolbarAction // custom ID -> toolbar action
+	windowContent  map[string]string                // window ID -> current content widget ID
+	customIds      map[string]string                // custom ID -> widget ID (for test framework)
 	childToParent map[string]string              // child ID -> parent ID
 	quitChan      chan bool                      // signal quit in test mode
 }
@@ -197,10 +198,11 @@ func NewBridge(testMode bool) *Bridge {
 		writer:        json.NewEncoder(os.Stdout),
 		widgetMeta:    make(map[string]WidgetMetadata),
 		tableData:     make(map[string][][]string),
-		listData:      make(map[string][]string),
-		toolbarItems:  make(map[string]*ToolbarItemsMetadata),
-		windowContent: make(map[string]string),
-		customIds:     make(map[string]string),
+		listData:       make(map[string][]string),
+		toolbarItems:   make(map[string]*ToolbarItemsMetadata),
+		toolbarActions: make(map[string]*widget.ToolbarAction),
+		windowContent:  make(map[string]string),
+		customIds:      make(map[string]string),
 		childToParent: make(map[string]string),
 		quitChan:      make(chan bool, 1),
 	}

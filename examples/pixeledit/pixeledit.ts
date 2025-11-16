@@ -291,21 +291,9 @@ class PixelEditor {
    */
   private buildToolbar(): void {
     this.a.toolbar([
-      {
-        type: 'action',
-        label: 'Open',
-        onAction: () => this.fileOpen()
-      },
-      {
-        type: 'action',
-        label: 'Reset',
-        onAction: () => this.fileReset()
-      },
-      {
-        type: 'action',
-        label: 'Save',
-        onAction: () => this.save()
-      }
+      this.a.toolbarAction('Open', () => this.fileOpen()),
+      this.a.toolbarAction('Reset', () => this.fileReset()),
+      this.a.toolbarAction('Save', () => this.save())
     ]);
   }
 
@@ -350,9 +338,11 @@ class PixelEditor {
   private buildCanvas(): void {
     this.a.scroll(() => {
       this.a.center(() => {
-        this.a.label('Pixel canvas will be rendered here');
-        this.a.label('(Custom raster widget needed for full functionality)');
-        // TODO: Implement custom raster widget or use Image with click handling
+        this.a.vbox(() => {
+          this.a.label('Pixel canvas will be rendered here');
+          this.a.label('(Custom raster widget needed for full functionality)');
+          // TODO: Implement custom raster widget or use Image with click handling
+        });
       });
     });
   }

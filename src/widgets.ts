@@ -1037,41 +1037,58 @@ export class Tabs {
 }
 
 /**
+ * Represents a clickable action item in a Toolbar
+ */
+export class ToolbarAction {
+  private _id?: string;
+
+  constructor(public label: string, public onAction?: () => void) {}
+
+  /**
+   * Assign a unique ID to this toolbar action for testing
+   * @param id Custom ID for the action
+   * @returns this for method chaining
+   */
+  withId(id: string): this {
+    this._id = id;
+    return this;
+  }
+
+  get id(): string | undefined {
+    return this._id;
+  }
+}
+
+/**
  * Toolbar widget
  */
 export class Toolbar {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, toolbarItems: Array<{
-    type: 'action' | 'separator' | 'spacer';
-    label?: string;
-    onAction?: () => void;
-  }>) {
+  constructor(ctx: Context, toolbarItems: Array<ToolbarAction | { type: 'separator' | 'spacer' }>) {
     this.ctx = ctx;
     this.id = ctx.generateId('toolbar');
 
     const items = toolbarItems.map(item => {
-      if (item.type === 'separator') {
-        return { type: 'separator' };
-      }
-
-      if (item.type === 'spacer') {
-        return { type: 'spacer' };
+      if ('type' in item) { // Separator or Spacer
+        return { type: item.type };
       }
 
       // Action item
+      const action = item as ToolbarAction;
       const callbackId = ctx.generateId('callback');
-      if (item.onAction) {
+      if (action.onAction) {
         ctx.bridge.registerEventHandler(callbackId, (_data: any) => {
-          item.onAction!();
+          action.onAction!();
         });
       }
 
       return {
         type: 'action',
-        label: item.label || 'Action',
-        callbackId
+        label: action.label,
+        callbackId,
+        customId: action.id, // Pass custom ID to the bridge
       };
     });
 

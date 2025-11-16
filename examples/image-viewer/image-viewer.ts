@@ -369,12 +369,12 @@ class ImageViewerUI {
    */
   private buildToolbar(): void {
     this.a.toolbar([
-      { type: 'action', label: 'Open', onAction: () => this.openImage() },
-      { type: 'action', label: 'Reset Edits', onAction: () => this.viewer.resetEdits() },
+      this.a.toolbarAction('Open', () => this.openImage()),
+      this.a.toolbarAction('Reset Edits', () => this.viewer.resetEdits()),
       { type: 'separator' },
-      { type: 'action', label: 'Zoom In', onAction: () => this.viewer.zoomIn() },
-      { type: 'action', label: 'Zoom Out', onAction: () => this.viewer.zoomOut() },
-      { type: 'action', label: 'Reset Zoom', onAction: () => this.viewer.resetZoom() }
+      this.a.toolbarAction('Zoom In', () => this.viewer.zoomIn()),
+      this.a.toolbarAction('Zoom Out', () => this.viewer.zoomOut()),
+      this.a.toolbarAction('Reset Zoom', () => this.viewer.resetZoom())
     ]);
   }
 

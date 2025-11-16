@@ -1219,6 +1219,11 @@ func (b *Bridge) handleCreateToolbar(msg Message) {
 			toolbarItems = append(toolbarItems, action)
 			itemLabels = append(itemLabels, label)
 
+			// If a custom ID is provided for testing, store the action
+			if customID, ok := itemData["customId"].(string); ok {
+				b.toolbarActions[customID] = action
+			}
+
 		case "separator":
 			toolbarItems = append(toolbarItems, widget.NewToolbarSeparator())
 			itemLabels = append(itemLabels, "") // Empty label for separator

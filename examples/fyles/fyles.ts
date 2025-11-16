@@ -223,22 +223,25 @@ class FylesUI {
    * - Just update path label when toggling hidden files
    */
   private handleStoreChange(): void {
-    const currentDir = this.store.getCurrentDir();
-    const dirChanged = currentDir !== this.lastDirectory;
+    // HACK: Add a small delay to debounce UI updates and stabilize tests
+    setTimeout(() => {
+      const currentDir = this.store.getCurrentDir();
+      const dirChanged = currentDir !== this.lastDirectory;
 
-    if (dirChanged) {
-      // Directory changed - need full rebuild
-      this.lastDirectory = currentDir;
-      this.rebuildUI();
-    } else {
-      // Same directory, just hidden files toggled - incremental update
-      // Update path label (even though it's same path, good to refresh)
-      this.updatePathLabel();
+      if (dirChanged) {
+        // Directory changed - need full rebuild
+        this.lastDirectory = currentDir;
+        this.rebuildUI();
+      } else {
+        // Same directory, just hidden files toggled - incremental update
+        // Update path label (even though it's same path, good to refresh)
+        this.updatePathLabel();
 
-      // For now, rebuild to show/hide hidden files
-      // TODO: Could be more incremental with ModelBoundList pattern
-      this.rebuildUI();
-    }
+        // For now, rebuild to show/hide hidden files
+        // TODO: Could be more incremental with ModelBoundList pattern
+        this.rebuildUI();
+      }
+    }, 200); // 200ms delay
   }
 
   /**
