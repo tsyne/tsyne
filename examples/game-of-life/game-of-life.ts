@@ -367,31 +367,11 @@ class GameOfLifeUI {
     this.a.vbox(() => {
       // Toolbar
       this.a.toolbar([
-        {
-          type: 'action',
-          label: 'Start',
-          onAction: () => this.start()
-        },
-        {
-          type: 'action',
-          label: 'Pause',
-          onAction: () => this.pause()
-        },
-        {
-          type: 'action',
-          label: 'Step',
-          onAction: () => this.step()
-        },
-        {
-          type: 'action',
-          label: 'Reset',
-          onAction: () => this.reset()
-        },
-        {
-          type: 'action',
-          label: 'Clear',
-          onAction: () => this.clear()
-        }
+        this.a.toolbarAction('Start', () => this.start()),
+        this.a.toolbarAction('Pause', () => this.pause()),
+        this.a.toolbarAction('Step', () => this.step()),
+        this.a.toolbarAction('Reset', () => this.reset()),
+        this.a.toolbarAction('Clear', () => this.clear())
       ]);
 
       // Status

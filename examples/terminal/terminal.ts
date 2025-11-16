@@ -206,16 +206,8 @@ class TerminalUI {
     this.a.vbox(() => {
       // Toolbar
       this.a.toolbar([
-        {
-          type: 'action',
-          label: 'Clear',
-          onAction: () => this.clear()
-        },
-        {
-          type: 'action',
-          label: 'Help',
-          onAction: () => this.showHelp()
-        }
+        this.a.toolbarAction('Clear', () => this.clear()),
+        this.a.toolbarAction('Help', () => this.showHelp())
       ]);
 
       // Terminal output area

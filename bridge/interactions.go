@@ -136,6 +136,33 @@ func (b *Bridge) handleClickWidget(msg Message) {
 	}
 }
 
+func (b *Bridge) handleClickToolbarAction(msg Message) {
+	customID := msg.Payload["customId"].(string)
+
+	b.mu.RLock()
+	action, exists := b.toolbarActions[customID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Toolbar action not found",
+		})
+		return
+	}
+
+	// Simulate tap on the toolbar action
+	if action.OnActivated != nil {
+		action.OnActivated()
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
 func (b *Bridge) handleDoubleTapWidget(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -654,8 +681,26 @@ func (b *Bridge) handleFindWidget(msg Message) {
 
 	b.mu.RUnlock() // Release read lock before sending response!
 
+	// Additionally, check for toolbar actions if selecting by ID
+	if selectorType == "id" {
+		if _, exists := b.toolbarActions[selector]; exists {
+			// Use a special prefix to identify toolbar actions, as they are not real widgets
+			visibleMatches = append(visibleMatches, fmt.Sprintf("toolbar_action:%s", selector))
+		}
+	}
+
 	// Prioritize visible widgets - return visible first, then hidden
 	matches := append(visibleMatches, hiddenMatches...)
+
+	// Remove duplicates before sending
+	uniqueMatches := make([]string, 0, len(matches))
+	seen := make(map[string]bool)
+	for _, match := range matches {
+		if _, ok := seen[match]; !ok {
+			uniqueMatches = append(uniqueMatches, match)
+			seen[match] = true
+		}
+	}
 
 	b.sendResponse(Response{
 		ID:      msg.ID,

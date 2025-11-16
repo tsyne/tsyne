@@ -152,6 +152,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleFindWidget(msg)
 	case "clickWidget":
 		b.handleClickWidget(msg)
+	case "clickToolbarAction":
+		b.handleClickToolbarAction(msg)
 	case "typeText":
 		b.handleTypeText(msg)
 	case "getWidgetInfo":

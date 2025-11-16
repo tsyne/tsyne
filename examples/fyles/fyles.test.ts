@@ -48,6 +48,9 @@ describe('Fyles File Browser Tests', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+
+    // Wait a bit for the initial UI to render
+    await ctx.wait(500);
   }, 15000);
 
   afterAll(async () => {

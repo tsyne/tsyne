@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap } from './widgets';
 import { Window, WindowOptions } from './window';
 
 // Global context for the declarative API
@@ -267,7 +267,16 @@ export function toolbar(
   if (!globalContext) {
     throw new Error('toolbar() must be called within an app context');
   }
-  return new Toolbar(globalContext, toolbarItems);
+
+  // Convert plain action objects to ToolbarAction instances
+  const processedItems = toolbarItems.map(item => {
+    if (item.type === 'action') {
+      return new ToolbarAction(item.label || '', item.onAction);
+    }
+    return item;
+  });
+
+  return new Toolbar(globalContext, processedItems as (ToolbarAction | { type: "separator" | "spacer"})[]);
 }
 
 /**
