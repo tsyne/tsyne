@@ -1364,7 +1364,7 @@ export class Image {
 
   constructor(
     ctx: Context,
-    path: string,
+    pathOrOptions: string | { path?: string; resource?: string; fillMode?: 'contain' | 'stretch' | 'original'; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; },
     fillMode?: 'contain' | 'stretch' | 'original',
     onClick?: () => void,
     onDrag?: (x: number, y: number) => void,
@@ -1373,16 +1373,38 @@ export class Image {
     this.ctx = ctx;
     this.id = ctx.generateId('image');
 
-    // Resolve path using resource map (for HTTP-fetched images)
-    const resolvedPath = ctx.resolveResourcePath(path);
-
     const payload: any = {
-      id: this.id,
-      path: resolvedPath  // Use resolved path (local cached file if from HTTP)
+      id: this.id
     };
 
-    if (fillMode) {
-      payload.fillMode = fillMode;
+    // Support both string path (legacy) and options object (new)
+    if (typeof pathOrOptions === 'string') {
+      // Legacy: path as first parameter
+      const resolvedPath = ctx.resolveResourcePath(pathOrOptions);
+      payload.path = resolvedPath;
+
+      if (fillMode) {
+        payload.fillMode = fillMode;
+      }
+    } else {
+      // New: options object
+      const options = pathOrOptions;
+
+      if (options.resource) {
+        payload.resource = options.resource;
+      } else if (options.path) {
+        const resolvedPath = ctx.resolveResourcePath(options.path);
+        payload.path = resolvedPath;
+      }
+
+      if (options.fillMode) {
+        payload.fillMode = options.fillMode;
+      }
+
+      // Override with options if provided
+      onClick = options.onClick || onClick;
+      onDrag = options.onDrag || onDrag;
+      onDragEnd = options.onDragEnd || onDragEnd;
     }
 
     if (onClick) {

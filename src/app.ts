@@ -3,6 +3,7 @@ import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap } from './widgets';
 import { initializeGlobals } from './globals';
+import { ResourceManager } from './resources';
 
 export interface AppOptions {
   title?: string;
@@ -15,6 +16,7 @@ export class App {
   private ctx: Context;
   private windows: Window[] = [];
   private bridge: BridgeConnection;
+  public resources: ResourceManager;
 
   constructor(options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
@@ -22,6 +24,7 @@ export class App {
 
     this.bridge = new BridgeConnection(testMode);
     this.ctx = new Context(this.bridge);
+    this.resources = new ResourceManager(this.bridge);
   }
 
   getContext(): Context {
@@ -156,13 +159,13 @@ export class App {
   }
 
   image(
-    path: string,
+    pathOrOptions: string | { path?: string; resource?: string; fillMode?: 'contain' | 'stretch' | 'original'; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; },
     fillMode?: 'contain' | 'stretch' | 'original',
     onClick?: () => void,
     onDrag?: (x: number, y: number) => void,
     onDragEnd?: (x: number, y: number) => void
   ): Image {
-    return new Image(this.ctx, path, fillMode, onClick, onDrag, onDragEnd);
+    return new Image(this.ctx, pathOrOptions, fillMode, onClick, onDrag, onDragEnd);
   }
 
   border(config: { top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void; }): Border {

@@ -52,6 +52,7 @@ type Bridge struct {
 	customIds      map[string]string                // custom ID -> widget ID (for test framework)
 	childToParent map[string]string              // child ID -> parent ID
 	quitChan      chan bool                      // signal quit in test mode
+	resources     map[string][]byte              // resource name -> decoded image data
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -205,6 +206,7 @@ func NewBridge(testMode bool) *Bridge {
 		customIds:      make(map[string]string),
 		childToParent: make(map[string]string),
 		quitChan:      make(chan bool, 1),
+		resources:     make(map[string][]byte),
 	}
 }
 
