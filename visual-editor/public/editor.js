@@ -94,14 +94,41 @@ function createTreeItem(widget) {
 // Get widget icon
 function getWidgetIcon(type) {
   const icons = {
+    // Containers
     'window': '□',
     'vbox': '⬍',
     'hbox': '⬌',
+    'scroll': '⤓',
+    'grid': '⊞',
+    'gridwrap': '⊟',
+    'center': '⊙',
+    'hsplit': '⫴',
+    'vsplit': '⫵',
+    'tabs': '⊟',
+    'card': '▢',
+    'accordion': '≡',
+    'form': '▦',
+    'border': '▭',
+    // Input widgets
     'button': '▭',
     'label': 'T',
     'entry': '⎕',
+    'multilineentry': '▭',
+    'passwordentry': '◆',
     'checkbox': '☑',
-    'select': '▼'
+    'select': '▼',
+    'radiogroup': '◉',
+    'slider': '◧',
+    'progressbar': '▬',
+    // Display widgets
+    'separator': '─',
+    'hyperlink': '⎙',
+    'image': '⛶',
+    'richtext': '⚑',
+    'table': '▦',
+    'list': '☰',
+    'tree': '⌲',
+    'toolbar': '▭'
   };
   return icons[type] || '○';
 }
@@ -174,6 +201,10 @@ function renderProperties() {
         ${renderEventHandlers(widget.eventHandlers)}
       </div>
     ` : ''}
+
+    <div class="property-section">
+      <button class="delete-button" onclick="deleteWidget('${widget.id}')">Delete Widget</button>
+    </div>
   `;
 }
 
@@ -304,17 +335,52 @@ function createPreviewWidget(widget) {
   const element = document.createElement('div');
   element.className = 'preview-widget';
 
-  const isContainer = ['vbox', 'hbox', 'window', 'scroll', 'grid'].includes(widget.widgetType);
+  const containerTypes = [
+    'vbox', 'hbox', 'window', 'scroll', 'grid', 'gridwrap', 'center',
+    'hsplit', 'vsplit', 'tabs', 'card', 'accordion', 'form', 'border'
+  ];
+  const isContainer = containerTypes.includes(widget.widgetType);
   if (isContainer) {
     element.classList.add('container');
   }
 
+  // Helper to render children
+  const renderChildren = () => {
+    const children = metadata.widgets.filter(w => w.parent === widget.id);
+    if (children.length > 0) {
+      const childContainer = document.createElement('div');
+      childContainer.style.paddingLeft = '10px';
+      children.forEach(child => {
+        childContainer.appendChild(createPreviewWidget(child));
+      });
+      element.appendChild(childContainer);
+    }
+  };
+
   switch (widget.widgetType) {
+    // Display widgets
     case 'label':
       element.className = 'preview-label';
       element.textContent = widget.properties.text || 'Label';
       break;
 
+    case 'hyperlink':
+      element.innerHTML = `<a href="#" style="color: #4ec9b0; text-decoration: underline;">${widget.properties.text || 'Link'}</a>`;
+      break;
+
+    case 'separator':
+      element.innerHTML = `<hr style="border: none; border-top: 1px solid #5e5e5e; margin: 8px 0;">`;
+      break;
+
+    case 'richtext':
+      element.innerHTML = `<div style="color: #d4d4d4; font-style: italic;">${widget.properties.text || 'Rich text'}</div>`;
+      break;
+
+    case 'image':
+      element.innerHTML = `<div style="background: #3c3c3c; padding: 20px; text-align: center; border: 1px solid #5e5e5e; border-radius: 3px;">⛶ Image: ${widget.properties.path || widget.properties.resource || 'none'}</div>`;
+      break;
+
+    // Input widgets
     case 'button':
       element.className = 'preview-button';
       element.textContent = widget.properties.text || 'Button';
@@ -324,21 +390,88 @@ function createPreviewWidget(widget) {
       element.innerHTML = `<input type="text" placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
       break;
 
+    case 'multilineentry':
+      element.innerHTML = `<textarea placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px; min-height: 60px;"></textarea>`;
+      break;
+
+    case 'passwordentry':
+      element.innerHTML = `<input type="password" placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
+      break;
+
+    case 'checkbox':
+      element.innerHTML = `<label style="color: #d4d4d4;"><input type="checkbox" style="margin-right: 6px;">${widget.properties.text || 'Checkbox'}</label>`;
+      break;
+
+    case 'select':
+      element.innerHTML = `<select style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;"><option>${widget.properties.options || 'Options'}</option></select>`;
+      break;
+
+    case 'radiogroup':
+      element.innerHTML = `<div style="color: #858585;">Radio: ${widget.properties.options || 'Options'}</div>`;
+      break;
+
+    case 'slider':
+      element.innerHTML = `<input type="range" min="${widget.properties.min || 0}" max="${widget.properties.max || 100}" value="${widget.properties.initialValue || 50}" style="width: 100%;">`;
+      break;
+
+    case 'progressbar':
+      element.innerHTML = `<div style="background: #3c3c3c; border-radius: 3px; overflow: hidden;"><div style="background: #0e639c; height: 10px; width: ${widget.properties.initialValue || 50}%;"></div></div>`;
+      break;
+
+    // Data widgets
+    case 'table':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px;">Table: ${widget.properties.headers || ''} (${widget.properties.rows || 0} rows)</div>`;
+      break;
+
+    case 'list':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px;">List: ${widget.properties.items || 'Items'}</div>`;
+      break;
+
+    case 'tree':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px;">Tree: ${widget.properties.rootLabel || 'Root'}</div>`;
+      break;
+
+    case 'toolbar':
+      element.innerHTML = `<div style="background: #2d2d2d; padding: 6px; border-radius: 3px; color: #858585; font-size: 11px;">Toolbar: ${widget.properties.items || 'Actions'}</div>`;
+      break;
+
+    // Container widgets
     case 'vbox':
     case 'hbox':
+    case 'scroll':
+    case 'center':
+    case 'grid':
+    case 'gridwrap':
+    case 'hsplit':
+    case 'vsplit':
+    case 'border':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">${widget.widgetType}${widget.properties.columns ? ` (${widget.properties.columns} cols)` : ''}${widget.properties.regions ? ` (${widget.properties.regions})` : ''}</div>`;
+      renderChildren();
+      break;
+
     case 'window':
-      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">${widget.widgetType}${widget.properties.title ? `: ${widget.properties.title}` : ''}</div>`;
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">window${widget.properties.title ? `: ${widget.properties.title}` : ''}</div>`;
+      renderChildren();
+      break;
 
-      // Add children
-      const children = metadata.widgets.filter(w => w.parent === widget.id);
-      const childContainer = document.createElement('div');
-      childContainer.style.paddingLeft = '10px';
+    case 'tabs':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">tabs: ${widget.properties.tabs || 'Tabs'}</div>`;
+      renderChildren();
+      break;
 
-      children.forEach(child => {
-        childContainer.appendChild(createPreviewWidget(child));
-      });
+    case 'card':
+      element.innerHTML = `<div style="border: 1px solid #5e5e5e; border-radius: 3px; padding: 10px; margin-bottom: 5px;"><div style="font-weight: bold; color: #d4d4d4;">${widget.properties.title || 'Card'}</div><div style="color: #858585; font-size: 11px;">${widget.properties.subtitle || ''}</div></div>`;
+      renderChildren();
+      break;
 
-      element.appendChild(childContainer);
+    case 'accordion':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">accordion: ${widget.properties.items || 'Items'}</div>`;
+      renderChildren();
+      break;
+
+    case 'form':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">form: ${widget.properties.fields || 'Fields'}</div>`;
+      renderChildren();
       break;
 
     default:
@@ -354,6 +487,67 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Add widget
+async function addWidget(widgetType) {
+  if (!selectedWidgetId) {
+    alert('Please select a parent widget first (must be a container like vbox, hbox, etc.)');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/add-widget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentId: selectedWidgetId,
+        widgetType
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Reload metadata
+      await loadFile();
+      console.log('Widget added successfully');
+    } else {
+      alert('Error adding widget: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error adding widget:', error);
+    alert('Error adding widget: ' + error.message);
+  }
+}
+
+// Delete widget
+async function deleteWidget(widgetId) {
+  if (!confirm('Are you sure you want to delete this widget?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/delete-widget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ widgetId })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Clear selection and reload
+      selectedWidgetId = null;
+      await loadFile();
+      console.log('Widget deleted successfully');
+    } else {
+      alert('Error deleting widget: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error deleting widget:', error);
+    alert('Error deleting widget: ' + error.message);
+  }
 }
 
 // Auto-load on start

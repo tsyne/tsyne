@@ -249,6 +249,66 @@
       padding: 40px 20px;
     }
 
+    .widget-palette {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #3e3e3e;
+    }
+
+    .widget-palette h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #858585;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .palette-item {
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      border-radius: 3px;
+      padding: 8px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 11px;
+      color: #d4d4d4;
+      transition: all 0.2s;
+    }
+
+    .palette-item:hover {
+      background: #4a4a4a;
+      border-color: #0e639c;
+    }
+
+    .palette-item .icon {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+      color: #75beff;
+    }
+
+    .delete-button {
+      background: #d73a49;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .delete-button:hover {
+      background: #cb2431;
+    }
+
     .status-bar {
       grid-column: 1 / -1;
       background: #007acc;
@@ -284,6 +344,31 @@
     </div>
 
     <div class="property-inspector">
+      <h2>Add Widgets</h2>
+      <div class="widget-palette">
+        <h3>Containers</h3>
+        <div class="palette-grid">
+          <div class="palette-item" onclick="addWidget('vbox')"><span class="icon">⬍</span>VBox</div>
+          <div class="palette-item" onclick="addWidget('hbox')"><span class="icon">⬌</span>HBox</div>
+          <div class="palette-item" onclick="addWidget('scroll')"><span class="icon">⤓</span>Scroll</div>
+          <div class="palette-item" onclick="addWidget('grid')"><span class="icon">⊞</span>Grid</div>
+        </div>
+        <h3 style="margin-top: 15px;">Inputs</h3>
+        <div class="palette-grid">
+          <div class="palette-item" onclick="addWidget('button')"><span class="icon">▭</span>Button</div>
+          <div class="palette-item" onclick="addWidget('entry')"><span class="icon">⎕</span>Entry</div>
+          <div class="palette-item" onclick="addWidget('checkbox')"><span class="icon">☑</span>Checkbox</div>
+          <div class="palette-item" onclick="addWidget('select')"><span class="icon">▼</span>Select</div>
+        </div>
+        <h3 style="margin-top: 15px;">Display</h3>
+        <div class="palette-grid">
+          <div class="palette-item" onclick="addWidget('label')"><span class="icon">T</span>Label</div>
+          <div class="palette-item" onclick="addWidget('separator')"><span class="icon">─</span>Separator</div>
+          <div class="palette-item" onclick="addWidget('image')"><span class="icon">⛶</span>Image</div>
+          <div class="palette-item" onclick="addWidget('hyperlink')"><span class="icon">⎙</span>Link</div>
+        </div>
+      </div>
+
       <h2>Properties</h2>
       <div id="propertiesContent">
         <div class="no-selection">Select a widget to edit properties</div>
