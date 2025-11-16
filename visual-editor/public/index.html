@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tsyne WYSIWYG Editor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+
+    .editor-container {
+      display: grid;
+      grid-template-columns: 300px 1fr 350px;
+      grid-template-rows: 50px 1fr;
+      height: 100vh;
+    }
+
+    .toolbar {
+      grid-column: 1 / -1;
+      background: #2d2d2d;
+      border-bottom: 1px solid #3e3e3e;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .toolbar h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .toolbar button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .toolbar button:hover {
+      background: #1177bb;
+    }
+
+    .toolbar .file-path {
+      color: #858585;
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    .widget-tree {
+      background: #252526;
+      border-right: 1px solid #3e3e3e;
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .widget-tree h2 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tree-item {
+      padding: 6px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 13px;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tree-item:hover {
+      background: #2a2d2e;
+    }
+
+    .tree-item.selected {
+      background: #094771;
+      color: #fff;
+    }
+
+    .tree-item .icon {
+      color: #75beff;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .tree-item .widget-type {
+      color: #4ec9b0;
+      font-weight: 500;
+    }
+
+    .tree-item .widget-props {
+      color: #858585;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+
+    .tree-children {
+      margin-left: 20px;
+    }
+
+    .preview-panel {
+      background: #1e1e1e;
+      border-right: 1px solid #3e3e3e;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .preview-panel h2 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .preview-content {
+      background: #2d2d2d;
+      border: 1px solid #3e3e3e;
+      border-radius: 5px;
+      padding: 20px;
+      min-height: 400px;
+    }
+
+    .preview-widget {
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #383838;
+      border-radius: 3px;
+      border: 1px solid #4e4e4e;
+    }
+
+    .preview-widget.container {
+      border-left: 3px solid #0e639c;
+      padding-left: 15px;
+    }
+
+    .preview-label {
+      color: #d4d4d4;
+      font-size: 13px;
+    }
+
+    .preview-button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 3px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .property-inspector {
+      background: #252526;
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    .property-inspector h2 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .property-section {
+      margin-bottom: 20px;
+    }
+
+    .property-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #858585;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .property-row {
+      margin-bottom: 12px;
+    }
+
+    .property-label {
+      font-size: 12px;
+      color: #9d9d9d;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .property-input {
+      width: 100%;
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      color: #d4d4d4;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .property-input:focus {
+      outline: none;
+      border-color: #0e639c;
+    }
+
+    .property-value {
+      color: #ce9178;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+    }
+
+    .location-info {
+      background: #2d2d2d;
+      border: 1px solid #3e3e3e;
+      border-radius: 3px;
+      padding: 8px;
+      font-size: 11px;
+      color: #858585;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .no-selection {
+      color: #858585;
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .status-bar {
+      grid-column: 1 / -1;
+      background: #007acc;
+      color: white;
+      padding: 4px 15px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-container">
+    <div class="toolbar">
+      <h1>Tsyne WYSIWYG Editor</h1>
+      <button onclick="loadFile()">Load File</button>
+      <button onclick="saveChanges()">Save Changes</button>
+      <button onclick="refreshPreview()">Refresh</button>
+      <span class="file-path" id="filePath">No file loaded</span>
+    </div>
+
+    <div class="widget-tree">
+      <h2>Widget Tree</h2>
+      <div id="treeRoot"></div>
+    </div>
+
+    <div class="preview-panel">
+      <h2>Preview</h2>
+      <div class="preview-content" id="previewContent">
+        <div class="no-selection">Load a file to see preview</div>
+      </div>
+    </div>
+
+    <div class="property-inspector">
+      <h2>Properties</h2>
+      <div id="propertiesContent">
+        <div class="no-selection">Select a widget to edit properties</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="editor.js"></script>
+</body>
+</html>
