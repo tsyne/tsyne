@@ -50,6 +50,7 @@ Create a WYSIWYG interface builder for Tsyne that:
 │     - Property inspector                                    │
 │     - Add/remove widgets                                    │
 |     - pick new widgets from palette                         |
+|     - State preview toggles (isEditing: [false] [true])     |
 |     - theoretical use of real Tsyne (Fyne) widgets and container, though that may not work |
 │     ↓                                                       │
 │  6. Source Code Update (Text-based!)                        │
@@ -677,7 +678,143 @@ There's a theoretical approach to use real Tsyne (Fyne) widgets and containers d
    ```
 4. Re-execute to update preview
 
-### 3.4 Code Region Preservation
+### 3.4 Design-Time State Preview (ngShow / Conditional Visibility)
+
+**Inspired by**: [Paul Hammant's AngularJS Design Mode (2012)](https://paulhammant.com/2012/03/12/the-importance-of-design-mode-for-client-side-mvc/)
+
+**Challenge**: UI has conditional states (ngShow directives, editing modes, filters). Designer needs to preview different states without running app logic.
+
+**AngularJS Design Mode Approach (2012)**:
+- Showcase displayed **all states simultaneously** (passed AND failed icons, all sort states)
+- Good for documentation, but impractical for design tools
+
+**Tsyne WYSIWYG Approach**: Toggle between states in ribbon/palette
+
+#### State Toggle UI
+```
+┌─────────────────────────────────────────────────────────┐
+│ Tsyne WYSIWYG Editor                 [Design Mode]      │
+├─────────────────────────────────────────────────────────┤
+│ State Preview Controls:                                 │
+│   isEditing: [○ false] [● true]    ← Toggle buttons    │
+│   filter: [● all] [○ active] [○ completed]              │
+│   todos.length: [○ 0 (empty)] [● 3 (sample data)]       │
+├─────────────────────────────────────────────────────────┤
+│  Widget Tree       │  Live Preview                      │
+│  ...               │  ...                               │
+└─────────────────────────────────────────────────────────┘
+```
+
+**How It Works**:
+1. **Detect state variables** from ngShow predicates:
+   ```typescript
+   checkbox.ngShow(() => !isEditing);  // Detects: isEditing (boolean)
+   textEntry.ngShow(() => isEditing);
+   todoHBox.ngShow(shouldShowTodo);    // Detects: filter state
+   ```
+
+2. **Extract state variables** from designer library execution:
+   ```typescript
+   // Designer runtime tracks ngShow predicates
+   class DesignerWidget {
+     ngShow(predicate: () => boolean) {
+       // Parse predicate source to extract variables
+       const source = predicate.toString();
+       // "() => !isEditing" → extract "isEditing"
+       const variables = parsePredicateVariables(source);
+
+       this.metadata.stateVariables = variables;
+     }
+   }
+   ```
+
+3. **Provide state toggle controls** in designer UI:
+   - Auto-detect boolean state variables (isEditing, isLoading, etc.)
+   - Auto-detect filter enums (filter: 'all' | 'active' | 'completed')
+   - Let user toggle state to preview different UI configurations
+
+4. **Override state at design time**:
+   ```typescript
+   // Designer mode: override runtime state variables
+   const designerState = {
+     isEditing: false,  // User toggles this in ribbon
+     filter: 'all',     // User toggles this in ribbon
+   };
+
+   // When evaluating ngShow predicate:
+   const shouldShow = predicate.call({ ...runtimeContext, ...designerState });
+   ```
+
+#### Designer State Comments (Inline Approach)
+**Alternative**: Use inline comments to set default design-time states
+
+```typescript
+// In todomvc-ngshow.ts:
+
+// @designer-state: isEditing = false
+let isEditing = false;
+
+// @designer-state: filter = "active"
+const filter = store.getFilter();
+
+// Designer parses comments and shows toggles in UI
+```
+
+**Benefits**:
+- State defaults persisted in source code
+- Designer auto-configures preview to useful state
+- Developer controls what states to expose in designer
+
+#### Example: TodoMVC Edit Mode Toggle
+
+**Runtime Code**:
+```typescript
+let isEditing = false;
+
+checkbox.ngShow(() => !isEditing);   // Visible when NOT editing
+textEntry.ngShow(() => isEditing);   // Visible when editing
+```
+
+**Designer UI**:
+```
+┌────────────────────────────────┐
+│ isEditing: [● false] [○ true] │  ← Click to toggle
+└────────────────────────────────┘
+```
+
+**User clicks `true`**:
+- Designer re-evaluates ngShow predicates with `isEditing = true`
+- Checkbox hides, Entry shows
+- User can now edit Entry properties visually
+
+**User clicks `false`**:
+- Checkbox shows, Entry hides
+- User can edit Checkbox properties visually
+
+#### Implementation Strategy
+
+**Phase 1: Auto-detection**
+- Parse ngShow predicate source code
+- Extract variable names (isEditing, filter, etc.)
+- Infer types (boolean, enum, number)
+
+**Phase 2: Toggle UI**
+- Generate ribbon controls automatically
+- Boolean: radio buttons [false] [true]
+- Enum: radio buttons for each value
+- Number: slider or input
+
+**Phase 3: State Override**
+- When evaluating ngShow, inject designer state
+- Re-render preview when state toggled
+- Highlight widgets affected by state change
+
+**Phase 4: State Persistence**
+- Save designer state to `.tsyne-meta.json`
+- Remember user's preferred preview state per file
+- Restore state when reopening file in designer
+
+### 3.5 Code Region Preservation
 **Critical**: Preserve imperative code that isn't UI construction.
 
 **Preserve These Regions** (don't allow visual editing):
@@ -1293,11 +1430,11 @@ index 1234567..89abcdef 100644
 - [ ] State management preservation (class definitions, variables)
 - [ ] Function preservation (utility functions)
 - [ ] Import preservation
-- [ ] Mock data provision for loops
+- [ ] Mock data provision for simple loops
 
 **Test Cases**:
-- `examples/todomvc-ngshow.ts` (complex app with state, handlers, bindings, loops)
-- `test-apps/calculator-advanced/calculator-ui.ts` (clean MVC separation, good example)
+- `test-apps/calculator-advanced/calculator-ui.ts` (clean MVC separation with CalculatorLogic class)
+- Simple apps with basic event handlers and state
 
 ### Milestone 4: Live Preview & Testing (10-12 weeks)
 **Goal**: Live preview mode, test integration. Hot reload is stretch goal.
@@ -1312,16 +1449,32 @@ index 1234567..89abcdef 100644
 - `examples/calculator.ts` with test harness
 - `test-apps/calculator-advanced/calculator.test.ts` (TsyneTest integration tests)
 
-### Milestone 5: Advanced Features (12-16 weeks)
-**Goal**: Component extraction, templates, diff view.
+### Milestone 5: Ultimate Validation (12-16 weeks)
+**Goal**: Handle the most complex Tsyne application - TodoMVC with full ng-repeat, ngShow, observables, and state management. Plus advanced features.
 
 **Deliverables**:
+- [ ] Advanced mock data provision (Observable system, TodoStore)
+- [ ] ng-repeat style binding support (`.model().trackBy().each()`)
+- [ ] ngShow directive handling (visibility predicates)
+- [ ] **Design-time state preview** - toggle isEditing, filter, etc. in ribbon/palette
+- [ ] Auto-detect state variables from ngShow predicates
+- [ ] State toggle UI (boolean radio buttons, enum selectors)
 - [ ] Component extraction
 - [ ] Template/snippet library
 - [ ] Diff view (Git integration)
 - [ ] State graph visualization
 
-**Test Case**: Real-world Tsyne application (Chess, Solitaire, etc.)
+**Test Case**: `examples/todomvc-ngshow.ts` - The ultimate test!
+- Observable system with change listeners
+- TodoStore class with file I/O (needs mocking)
+- ng-repeat style loops: `.model(allTodos).trackBy().each()`
+- ngShow visibility directives
+- Complex event handlers with closures
+- Edit mode toggle state (isEditing)
+- Filter state management
+- Round-trip editing must preserve ALL imperative logic
+
+**Success Criteria**: Load todomvc-ngshow.ts → Edit UI visually → Save → App runs identically
 
 ---
 
@@ -1423,6 +1576,15 @@ index 1234567..89abcdef 100644
 - ✅ Fully dynamic (modify while running)
 - ❌ Binary formats? No!
 
+### AngularJS Design Mode (2012) - Paul Hammant
+- ✅ Show all UI states for documentation
+- ✅ All conditional branches visible simultaneously
+- ✅ Template syntax visible (Mustache/Handlebars)
+- ✅ No JavaScript execution needed
+- ⚠️  All states shown at once (not toggleable)
+- 📝 Blog: [The Importance of Design Mode for Client-Side MVC](https://paulhammant.com/2012/03/12/the-importance-of-design-mode-for-client-side-mvc/)
+- 📝 Showcase: [Story Navigator](https://paul-hammant-fork.github.io/StoryNavigator/navigator.html)
+
 ### NeXT Interface Builder (1988) - .nib
 - ❌ Saved in binary resource forks (.nib)
 - ❌ Not source-control compatible (binary)
@@ -1442,8 +1604,14 @@ index 1234567..89abcdef 100644
 - ✅ Visual editing (WYSIWYG)
 - ✅ Preserves imperative code (pseudo-declarative nature)
 - ✅ Execute into design context (like Action!)
+- ✅ **State preview toggles** (like AngularJS design mode, but toggleable!)
+- ✅ Toggle between UI states: isEditing, filter, etc.
+- ✅ Designer comments for state defaults (`@designer-state`)
 
-**Tsyne WYSIWYG is the spiritual successor to Action! for the TypeScript/desktop UI era.**
+**Tsyne WYSIWYG combines**:
+- **Action!'s execution-based editing** (execute into design context)
+- **AngularJS design mode's state preview** (but with toggles, not simultaneous display)
+- **Modern TypeScript tooling** (Monaco editor, hot reload, LLM assistance)
 
 ---
 
