@@ -128,6 +128,8 @@ class ChessUI {
   private readonly SELECTED_COLOR = '#7fc97f';
   private readonly VALID_MOVE_COLOR = '#9fdf9f';
 
+  private resourcesRegistered: boolean = false;
+
   constructor(private a: App) {
     this.game = new Chess();
 
@@ -142,6 +144,42 @@ class ChessUI {
     const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
 
     this.renderedPieces = preRenderAllPieces(piecesDir, 80);
+  }
+
+  /**
+   * Register all chess resources (squares and pieces) with the app
+   * This should be called once before building the UI
+   */
+  private async registerChessResources(): Promise<void> {
+    if (this.resourcesRegistered) {
+      return; // Already registered
+    }
+
+    console.log('Registering chess resources...');
+
+    // Register empty light and dark squares (100x100px)
+    const lightSquare = this.createSquareImage(this.LIGHT_SQUARE_COLOR);
+    const darkSquare = this.createSquareImage(this.DARK_SQUARE_COLOR);
+
+    await this.a.resources.registerResource('chess-square-light', lightSquare);
+    await this.a.resources.registerResource('chess-square-dark', darkSquare);
+
+    // Register all 12 piece types (white and black)
+    const pieceTypes: Array<{ color: Color; type: PieceSymbol }> = [
+      { color: 'w', type: 'k' }, { color: 'w', type: 'q' }, { color: 'w', type: 'r' },
+      { color: 'w', type: 'b' }, { color: 'w', type: 'n' }, { color: 'w', type: 'p' },
+      { color: 'b', type: 'k' }, { color: 'b', type: 'q' }, { color: 'b', type: 'r' },
+      { color: 'b', type: 'b' }, { color: 'b', type: 'n' }, { color: 'b', type: 'p' },
+    ];
+
+    for (const { color, type } of pieceTypes) {
+      const pieceImage = this.getPieceImage(color, type);
+      const resourceName = `chess-piece-${color}-${type}`;
+      await this.a.resources.registerResource(resourceName, pieceImage);
+    }
+
+    this.resourcesRegistered = true;
+    console.log('Chess resources registered (14 total: 2 squares + 12 pieces)');
   }
 
   /**
@@ -532,40 +570,65 @@ class ChessUI {
           for (let file = 0; file < 8; file++) {
             const square = this.coordsToSquare(file, rank);
             const squareData = board[rank][file];
-            const baseColor = this.getSquareColor(file, rank);
-
-            // Highlight selected square
-            let squareColor = baseColor;
-            if (this.selectedSquare === square) {
-              squareColor = this.SELECTED_COLOR;
-            }
-
-            // Get piece image if there's a piece on this square
-            let pieceImage: string | undefined;
-            if (squareData) {
-              pieceImage = this.getPieceImage(squareData.color, squareData.type);
-            }
-
-            // Create the square image
-            const squareImage = this.createSquareImage(squareColor, pieceImage);
+            const isLight = (file + rank) % 2 === 0;
 
             // Make square clickable and draggable if it has a piece
             let imageWidget;
+
+            // Determine which resource to use
+            let resourceOrImage: string | { resource?: string; path?: string; fillMode?: string; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; };
+
+            if (this.selectedSquare === square) {
+              // Highlighted square - need to render inline
+              const pieceImage = squareData ? this.getPieceImage(squareData.color, squareData.type) : undefined;
+              const squareImage = this.createSquareImage(this.SELECTED_COLOR, pieceImage);
+              resourceOrImage = squareImage;
+            } else if (squareData) {
+              // Square with piece - render inline (combines square + piece)
+              const baseColor = this.getSquareColor(file, rank);
+              const pieceImage = this.getPieceImage(squareData.color, squareData.type);
+              const squareImage = this.createSquareImage(baseColor, pieceImage);
+              resourceOrImage = squareImage;
+            } else {
+              // Empty square - use registered resource!
+              const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
+              resourceOrImage = { resource: resourceName };
+            }
+
             if (squareData && squareData.color === this.playerColor) {
-              imageWidget = this.a.image(
-                squareImage,
-                'original',
-                () => this.handleSquareClick(file, rank),
-                (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
-                (x: number, y: number) => this.handleSquareDragEnd(x, y)
-              ).withId(`square-${square}`);
+              // Player's piece - clickable and draggable
+              if (typeof resourceOrImage === 'string') {
+                imageWidget = this.a.image(
+                  resourceOrImage,
+                  'original',
+                  () => this.handleSquareClick(file, rank),
+                  (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
+                  (x: number, y: number) => this.handleSquareDragEnd(x, y)
+                ).withId(`square-${square}`);
+              } else {
+                imageWidget = this.a.image({
+                  ...resourceOrImage,
+                  fillMode: 'original',
+                  onClick: () => this.handleSquareClick(file, rank),
+                  onDrag: (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
+                  onDragEnd: (x: number, y: number) => this.handleSquareDragEnd(x, y)
+                }).withId(`square-${square}`);
+              }
             } else {
               // Empty square or opponent's piece - still clickable for moves
-              imageWidget = this.a.image(
-                squareImage,
-                'original',
-                () => this.handleSquareClick(file, rank)
-              ).withId(`square-${square}`);
+              if (typeof resourceOrImage === 'string') {
+                imageWidget = this.a.image(
+                  resourceOrImage,
+                  'original',
+                  () => this.handleSquareClick(file, rank)
+                ).withId(`square-${square}`);
+              } else {
+                imageWidget = this.a.image({
+                  ...resourceOrImage,
+                  fillMode: 'original',
+                  onClick: () => this.handleSquareClick(file, rank)
+                }).withId(`square-${square}`);
+              }
             }
 
             // Store reference to the image widget for incremental updates
@@ -614,8 +677,11 @@ class ChessUI {
 /**
  * Create the chess app
  */
-export function createChessApp(a: App): ChessUI {
+export async function createChessApp(a: App): Promise<ChessUI> {
   const ui = new ChessUI(a);
+
+  // Register chess resources before building UI
+  await ui['registerChessResources']();
 
   a.window({ title: 'Chess', width: 800, height: 880 }, (win: Window) => {
     win.setContent(() => {
@@ -631,7 +697,7 @@ export function createChessApp(a: App): ChessUI {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Chess' }, (a: App) => {
-    createChessApp(a);
+  app({ title: 'Chess' }, async (a: App) => {
+    await createChessApp(a);
   });
 }

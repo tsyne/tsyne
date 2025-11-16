@@ -772,12 +772,44 @@ func (b *Bridge) handleCreateRichText(msg Message) {
 
 func (b *Bridge) handleCreateImage(msg Message) {
 	widgetID := msg.Payload["id"].(string)
-	path := msg.Payload["path"].(string)
+	path, hasPath := msg.Payload["path"].(string)
+	resourceName, hasResource := msg.Payload["resource"].(string)
 
 	var img *canvas.Image
 
-	// If path is empty, create a blank image (will be updated with base64 later)
-	if path == "" {
+	// Check if using resource reference (new approach)
+	if hasResource && resourceName != "" {
+		log.Printf("[Image] Creating image from resource: %s", resourceName)
+		imageData, exists := b.getResource(resourceName)
+		if !exists {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Resource not found: %s", resourceName),
+			})
+			return
+		}
+
+		// Decode image data
+		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
+		if err != nil {
+			log.Printf("[Image] Error decoding resource image: %v", err)
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode resource image: %v", err),
+			})
+			return
+		}
+
+		bounds := decodedImg.Bounds()
+		width, height := bounds.Dx(), bounds.Dy()
+
+		img = canvas.NewImageFromImage(decodedImg)
+		// Set MinSize to ensure proper layout - this is critical for display!
+		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+	} else if !hasPath || path == "" {
+		// If path is empty, create a blank image (will be updated with base64 later)
 		log.Printf("[Image] Creating blank image widget %s (will be updated with base64)", widgetID)
 		img = canvas.NewImageFromImage(nil)
 	} else if strings.HasPrefix(path, "data:") {

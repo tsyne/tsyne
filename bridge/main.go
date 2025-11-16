@@ -65,6 +65,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateImage(msg)
 	case "updateImage":
 		b.handleUpdateImage(msg)
+	case "registerResource":
+		b.handleRegisterResource(msg)
+	case "unregisterResource":
+		b.handleUnregisterResource(msg)
 	case "createBorder":
 		b.handleCreateBorder(msg)
 	case "createGridWrap":
