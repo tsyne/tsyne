@@ -1,15 +1,12 @@
 package main
 
 import (
-	"log"
-
 	"fyne.io/fyne/v2"
 )
 
 func (b *Bridge) handleSetContent(msg Message) {
 	windowID := msg.Payload["windowId"].(string)
 	widgetID := msg.Payload["widgetId"].(string)
-	log.Printf("[DEBUG] handleSetContent called for windowId: %s, widgetId: %s", windowID, widgetID)
 
 	// First, check if window and widget exist (read lock)
 	b.mu.RLock()
@@ -63,7 +60,6 @@ func (b *Bridge) handleSetContent(msg Message) {
 // from the widgets and widgetMeta maps
 // NOTE: Caller must hold b.mu.Lock() before calling this function
 func (b *Bridge) removeWidgetTree(widgetID string) {
-	log.Printf("[DEBUG] removeWidgetTree called for widgetID: %s", widgetID)
 	// Get the widget object
 	obj, exists := b.widgets[widgetID]
 	if !exists {
@@ -111,7 +107,6 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 func (b *Bridge) handleContainerAdd(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
 	childID := msg.Payload["childId"].(string)
-	log.Printf("[DEBUG] handleContainerAdd called for containerId: %s, childId: %s", containerID, childID)
 
 	b.mu.RLock()
 	containerObj, containerExists := b.widgets[containerID]
@@ -162,7 +157,6 @@ func (b *Bridge) handleContainerAdd(msg Message) {
 
 func (b *Bridge) handleContainerRemoveAll(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
-	log.Printf("[DEBUG] handleContainerRemoveAll called for containerId: %s", containerID)
 
 	b.mu.RLock()
 	containerObj, exists := b.widgets[containerID]
@@ -199,7 +193,6 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) {
 
 func (b *Bridge) handleContainerRefresh(msg Message) {
 	containerID := msg.Payload["containerId"].(string)
-	log.Printf("[DEBUG] handleContainerRefresh called for containerId: %s", containerID)
 
 	b.mu.RLock()
 	containerObj, exists := b.widgets[containerID]

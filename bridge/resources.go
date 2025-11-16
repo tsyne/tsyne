@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 )
 
 // handleRegisterResource registers a reusable image resource
@@ -27,8 +26,6 @@ func (b *Bridge) handleRegisterResource(msg Message) {
 		})
 		return
 	}
-
-	log.Printf("[DEBUG] handleRegisterResource: name=%s, dataLen=%d", resourceName, len(resourceData))
 
 	// Decode base64 image data
 	// Expected format: "data:image/png;base64,..." or just base64 data
@@ -60,8 +57,6 @@ func (b *Bridge) handleRegisterResource(msg Message) {
 	b.resources[resourceName] = imgData
 	b.mu.Unlock()
 
-	log.Printf("[DEBUG] Resource registered: %s (%d bytes)", resourceName, len(imgData))
-
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
@@ -83,8 +78,6 @@ func (b *Bridge) handleUnregisterResource(msg Message) {
 	b.mu.Lock()
 	delete(b.resources, resourceName)
 	b.mu.Unlock()
-
-	log.Printf("[DEBUG] Resource unregistered: %s", resourceName)
 
 	b.sendResponse(Response{
 		ID:      msg.ID,

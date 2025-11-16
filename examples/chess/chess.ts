@@ -81,12 +81,8 @@ function preRenderAllPieces(
   piecesDir: string,
   pieceSize: number = 80
 ): Map<string, string> {
-  console.time('[PERF] preRenderAllPieces');
-
   // Return cached pieces if already rendered
   if (pieceFacesCache) {
-    console.log('[PERF] Using cached pieces');
-    console.timeEnd('[PERF] preRenderAllPieces');
     return pieceFacesCache;
   }
 
@@ -94,20 +90,16 @@ function preRenderAllPieces(
 
   // Get all SVG files
   const files = fs.readdirSync(piecesDir).filter(f => f.endsWith('.svg'));
-  console.log(`[PERF] Rendering ${files.length} SVG files...`);
 
   for (const file of files) {
-    console.time(`[PERF]   ${file}`);
     const svgPath = path.join(piecesDir, file);
     const base64 = renderSVGToBase64(svgPath, pieceSize, pieceSize);
     renderedPieces.set(file, base64);
-    console.timeEnd(`[PERF]   ${file}`);
   }
 
   // Cache for future instances
   pieceFacesCache = renderedPieces;
 
-  console.timeEnd('[PERF] preRenderAllPieces');
   return renderedPieces;
 }
 
@@ -141,7 +133,6 @@ class ChessUI {
   private resourcesRegistered: boolean = false;
 
   constructor(private a: App) {
-    console.time('[PERF] ChessUI constructor');
     this.game = new Chess();
 
     // Pre-render all piece SVGs to PNG
@@ -155,7 +146,6 @@ class ChessUI {
     const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
 
     this.renderedPieces = preRenderAllPieces(piecesDir, 80);
-    console.timeEnd('[PERF] ChessUI constructor');
   }
 
   /**
@@ -167,19 +157,12 @@ class ChessUI {
       return; // Already registered
     }
 
-    console.time('[PERF] registerChessResources');
-    console.log('Registering chess resources...');
-
     // Register empty light and dark squares (100x100px)
-    console.time('[PERF] Create square images');
     const lightSquare = this.createSquareImage(this.LIGHT_SQUARE_COLOR);
     const darkSquare = this.createSquareImage(this.DARK_SQUARE_COLOR);
-    console.timeEnd('[PERF] Create square images');
 
-    console.time('[PERF] Register square resources');
     await this.a.resources.registerResource('chess-square-light', lightSquare);
     await this.a.resources.registerResource('chess-square-dark', darkSquare);
-    console.timeEnd('[PERF] Register square resources');
 
     // Register all 12 piece types (white and black)
     const pieceTypes: Array<{ color: Color; type: PieceSymbol }> = [
@@ -189,17 +172,13 @@ class ChessUI {
       { color: 'b', type: 'b' }, { color: 'b', type: 'n' }, { color: 'b', type: 'p' },
     ];
 
-    console.time('[PERF] Register 12 piece resources');
     for (const { color, type } of pieceTypes) {
       const pieceImage = this.getPieceImage(color, type);
       const resourceName = `chess-piece-${color}-${type}`;
       await this.a.resources.registerResource(resourceName, pieceImage);
     }
-    console.timeEnd('[PERF] Register 12 piece resources');
 
     this.resourcesRegistered = true;
-    console.log('Chess resources registered (14 total: 2 squares + 12 pieces)');
-    console.timeEnd('[PERF] registerChessResources');
   }
 
   /**
@@ -350,9 +329,9 @@ class ChessUI {
     this.draggedSquare = null;
 
     // Determine which square was dropped on
-    // Window is 800x800, board starts at y=80 (after buttons/status)
+    // Board starts after status label
     // Each square is 100x100
-    const boardStartY = 80;
+    const boardStartY = 20;  // Account for status label
     const squareSize = 100;
 
     const boardX = x;
@@ -577,7 +556,6 @@ class ChessUI {
   }
 
   buildUI(win: Window): void {
-    console.time('[PERF] buildUI');
     this.window = win;
 
     // Clear old widget references before rebuild
@@ -587,20 +565,9 @@ class ChessUI {
 
     const board = this.game.board();
 
-    let squareImageCreations = 0;
-    console.time('[PERF] buildUI - vbox creation');
-
     this.a.vbox(() => {
-      // Action buttons
-      this.a.hbox(() => {
-        this.a.button('New Game', () => this.newGame());
-      });
-
       // Status
       this.statusLabel = this.a.label(this.currentStatus);
-
-      console.timeEnd('[PERF] buildUI - vbox creation');
-      console.time('[PERF] buildUI - board squares');
 
       // Chess board - 8x8 grid
       for (let rank = 0; rank < 8; rank++) {
@@ -671,10 +638,7 @@ class ChessUI {
           }
         });
       }
-      console.timeEnd('[PERF] buildUI - board squares');
     });
-    console.log(`[PERF] buildUI created ${squareImageCreations} square+piece composite images`);
-    console.timeEnd('[PERF] buildUI');
   }
 
   private async newGame(): Promise<void> {
@@ -716,25 +680,18 @@ class ChessUI {
  * Create the chess app
  */
 export async function createChessApp(a: App): Promise<ChessUI> {
-  console.time('[PERF] createChessApp TOTAL');
-
-  console.time('[PERF] ChessUI instantiation');
   const ui = new ChessUI(a);
-  console.timeEnd('[PERF] ChessUI instantiation');
 
   // Register chess resources before building UI
   await ui['registerChessResources']();
 
-  console.time('[PERF] Create window and build UI');
-  a.window({ title: 'Chess', width: 800, height: 880 }, (win: Window) => {
+  a.window({ title: 'Chess', width: 800, height: 820 }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
     win.show();
   });
-  console.timeEnd('[PERF] Create window and build UI');
 
-  console.timeEnd('[PERF] createChessApp TOTAL');
   return ui;
 }
 

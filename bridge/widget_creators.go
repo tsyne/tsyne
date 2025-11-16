@@ -836,7 +836,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 
 	// Check if using resource reference (new approach)
 	if hasResource && resourceName != "" {
-		log.Printf("[Image] Creating image from resource: %s", resourceName)
 		imageData, exists := b.getResource(resourceName)
 		if !exists {
 			b.sendResponse(Response{
@@ -850,7 +849,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 		// Decode image data
 		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
 		if err != nil {
-			log.Printf("[Image] Error decoding resource image: %v", err)
 			b.sendResponse(Response{
 				ID:      msg.ID,
 				Success: false,
