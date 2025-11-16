@@ -89,7 +89,9 @@ Tsyne works seamlessly with both TypeScript and JavaScript!
 
 ## Elegant Syntax
 
-Tsyne's API is designed to be elegant and terse, following the pattern described in [this blog post](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature) about Ruby/Groovy DSLs. The syntax feels pseudo-declarative while retaining full imperative power:
+Tsyne's API is designed to be elegant and terse, inspired by Ruby Shoes and Groovy DSL patterns. The syntax feels pseudo-declarative while retaining full imperative power:
+
+**See [HISTORICAL.md](HISTORICAL.md) for the historical context and influences behind Tsyne's design.**
 
 ### Calculator Example
 
@@ -1241,37 +1243,7 @@ const sheet = getStyleSheet();
 const labelStyle = sheet?.getComputedStyle('label');
 ```
 
-### Comparison with Swiby
-
-Tsyne's styling system is inspired by Swiby's elegant stylesheet approach:
-
-**Swiby (Ruby/Swing)**:
-```ruby
-styles {
-  root(
-    :font_family => Styles::VERDANA,
-    :font_size => 10
-  )
-  label(
-    :font_style => :italic,
-    :color => 0xAA0000
-  )
-}
-```
-
-**Tsyne (TypeScript/Fyne)**:
-```typescript
-styles({
-  root: {
-    font_family: FontFamily.SANS_SERIF,
-    font_size: 10
-  },
-  label: {
-    font_style: FontStyle.ITALIC,
-    color: 0xAA0000
-  }
-});
-```
+**See [HISTORICAL.md](HISTORICAL.md) for comparison with Swiby, the Ruby/Swing framework that inspired Tsyne's styling system.**
 
 ### Limitations
 
@@ -2263,10 +2235,7 @@ Tsyne follows these design principles:
 4. **Type-safe**: Complete TypeScript definitions for IDE support
 5. **Easy to use**: Simple npm install, straightforward API
 
-Inspired by:
-- [Ruby Shoes DSL](https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature)
-- [QML with inline JavaScript](https://doc.qt.io/qt-6/qml-tutorial.html)
-- [Pseudo-declarative Swing testing](https://github.com/paul-hammant/swing_component_testing)
+**See [HISTORICAL.md](HISTORICAL.md) for the frameworks and patterns that inspired Tsyne's design.**
 
 ## Building from Source
 
@@ -2301,6 +2270,67 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 MIT License - see [LICENSE](LICENSE) file for details
 
+## Credits and Acknowledgments
+
+### Core Technology
+
+- **[Fyne](https://fyne.io/)** - The fantastic Go UI toolkit that powers Tsyne's native rendering
+  - Created by Andrew Williams and the Fyne.io team
+  - Provides cross-platform native widgets, Material Design theming, and excellent performance
+
+### Example Applications
+
+Several example applications in this repository are ports or adaptations from other projects:
+
+- **Chess** (`examples/chess/`) - Ported from [andydotxyz/chess](https://github.com/andydotxyz/chess)
+  - Original author: Andy Williams (andydotxyz)
+  - Adapted to Tsyne's TypeScript API with chess.js game engine
+
+- **Solitaire** (`examples/solitaire/`) - Ported from [fyne-io/solitaire](https://github.com/fyne-io/solitaire)
+  - Original authors: Fyne.io contributors
+  - Adapted to Tsyne with simplified drag-and-drop interactions
+
+- **Game of Life** (`examples/game-of-life/`) - Ported from [fyne-io/life](https://github.com/fyne-io/life)
+  - Original authors: Fyne.io contributors
+  - Conway's cellular automaton adapted to Tsyne's declarative API
+
+- **TodoMVC** (`examples/todomvc.ts`) - Inspired by [TodoMVC](https://todomvc.com/)
+  - Standard todo application specification
+  - Demonstrates state management and persistence patterns
+
+All ported applications maintain attribution to their original authors and licenses. See individual example directories for detailed attribution and licensing information.
+
+### Inspirations and Design Influences
+
+Tsyne's design draws from several influential frameworks and patterns:
+
+- **Ruby Shoes** - Created by _why the lucky stiff - Pioneer of elegant DSL design for desktop GUIs
+- **Swiby** - Ruby/Swing integration by jeanlazarou - CSS-like styling separate from UI structure
+- **QML** - Qt's declarative UI language - Seamless declarative/imperative integration
+- **Playwright** - Microsoft's testing framework - Elegant, fluent testing API
+- **Java Swing** - Proven desktop UI patterns (MVC, widgets, event-driven architecture)
+
+**See [HISTORICAL.md](HISTORICAL.md) for detailed discussion of these influences and how they shaped Tsyne's design.**
+
+### Key Contributors
+
+- **Paul Hammant** - Creator of Tsyne, blog posts on elegant DSL design and Swing testing patterns
+- **Andrew Williams (andydotxyz)** - Creator of Fyne toolkit and example applications
+- **Fyne.io contributors** - Developers of the Fyne toolkit and example applications
+- **The Ruby/Groovy communities** - Inspiration for declarative UI patterns and DSL techniques
+- **Playwright team** - Inspiration for TsyneTest's fluent testing API
+- **_why the lucky stiff** - Creator of Ruby Shoes, pioneer of pseudo-declarative UI programming
+
+### Dependencies and Libraries
+
+Special thanks to the open source libraries that make Tsyne possible:
+
+- **chess.js** (jhlywa) - Chess game logic and move validation
+- **@resvg/resvg-js** - SVG to PNG rendering for image assets
+- **TypeScript** - Type-safe JavaScript that powers Tsyne's API
+- **Node.js** - Runtime environment for Tsyne applications
+- **Go** - Systems language that powers the Fyne bridge
+
 ## Documentation
 
 ### Getting Started
@@ -2331,10 +2361,4 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guide for contributors
 - **[docs/PUBLISHING.md](docs/PUBLISHING.md)** - Publishing to npm with bundled binaries
 - **[docs/ROADMAP.md](docs/ROADMAP.md)** - Feature roadmap and TODO list
-
-## Acknowledgments
-
-- [Fyne](https://fyne.io/) - The fantastic Go UI toolkit that powers Tsyne
-- Paul Hammant's [blog posts](https://paulhammant.com) on elegant DSL design
-- The Ruby/Groovy communities for inspiring declarative UI patterns
-- [Playwright](https://playwright.dev/) - Inspiration for TsyneTest's API design
+- **[HISTORICAL.md](HISTORICAL.md)** - Historical context, influences, and acknowledgments
