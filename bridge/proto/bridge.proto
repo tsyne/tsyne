@@ -1,0 +1,319 @@
+syntax = "proto3";
+
+package bridge;
+
+option go_package = "github.com/paul-hammant/tsyne/bridge/proto";
+
+// BridgeService provides high-performance binary protocol for Tsyne bridge
+service BridgeService {
+  // Window operations
+  rpc CreateWindow(CreateWindowRequest) returns (Response);
+  rpc ShowWindow(ShowWindowRequest) returns (Response);
+  rpc SetContent(SetContentRequest) returns (Response);
+  rpc ResizeWindow(ResizeWindowRequest) returns (Response);
+  rpc SetWindowTitle(SetWindowTitleRequest) returns (Response);
+  rpc CenterWindow(CenterWindowRequest) returns (Response);
+  rpc SetWindowFullScreen(SetWindowFullScreenRequest) returns (Response);
+
+  // Widget creation
+  rpc CreateImage(CreateImageRequest) returns (Response);
+  rpc CreateLabel(CreateLabelRequest) returns (Response);
+  rpc CreateButton(CreateButtonRequest) returns (Response);
+  rpc CreateEntry(CreateEntryRequest) returns (Response);
+  rpc CreateVBox(CreateVBoxRequest) returns (Response);
+  rpc CreateHBox(CreateHBoxRequest) returns (Response);
+  rpc CreateCheckbox(CreateCheckboxRequest) returns (Response);
+  rpc CreateSelect(CreateSelectRequest) returns (Response);
+
+  // Resources
+  rpc RegisterResource(RegisterResourceRequest) returns (Response);
+  rpc UnregisterResource(UnregisterResourceRequest) returns (Response);
+
+  // Widget updates
+  rpc UpdateImage(UpdateImageRequest) returns (Response);
+  rpc SetText(SetTextRequest) returns (Response);
+  rpc GetText(GetTextRequest) returns (GetTextResponse);
+  rpc SetProgress(SetProgressRequest) returns (Response);
+  rpc GetProgress(GetProgressRequest) returns (GetProgressResponse);
+  rpc SetChecked(SetCheckedRequest) returns (Response);
+  rpc GetChecked(GetCheckedRequest) returns (GetCheckedResponse);
+
+  // Interactions
+  rpc ClickWidget(ClickWidgetRequest) returns (Response);
+  rpc TypeText(TypeTextRequest) returns (Response);
+  rpc DoubleTapWidget(DoubleTapWidgetRequest) returns (Response);
+  rpc RightClickWidget(RightClickWidgetRequest) returns (Response);
+  rpc DragWidget(DragWidgetRequest) returns (Response);
+
+  // Custom IDs
+  rpc RegisterCustomId(RegisterCustomIdRequest) returns (Response);
+
+  // Queries
+  rpc FindWidget(FindWidgetRequest) returns (FindWidgetResponse);
+  rpc GetWidgetInfo(GetWidgetInfoRequest) returns (WidgetInfoResponse);
+  rpc GetAllWidgets(GetAllWidgetsRequest) returns (GetAllWidgetsResponse);
+
+  // Events (streaming)
+  rpc SubscribeEvents(EventSubscription) returns (stream Event);
+
+  // Lifecycle
+  rpc Quit(QuitRequest) returns (Response);
+}
+
+// Common response message
+message Response {
+  bool success = 1;
+  string error = 2;
+  map<string, string> result = 3;
+}
+
+// Window operations
+message CreateWindowRequest {
+  string window_id = 1;
+  string title = 2;
+  int32 width = 3;
+  int32 height = 4;
+  bool fixed_size = 5;
+}
+
+message ShowWindowRequest {
+  string window_id = 1;
+}
+
+message SetContentRequest {
+  string window_id = 1;
+  string widget_id = 2;
+}
+
+message ResizeWindowRequest {
+  string window_id = 1;
+  int32 width = 2;
+  int32 height = 3;
+}
+
+message SetWindowTitleRequest {
+  string window_id = 1;
+  string title = 2;
+}
+
+message CenterWindowRequest {
+  string window_id = 1;
+}
+
+message SetWindowFullScreenRequest {
+  string window_id = 1;
+  bool fullscreen = 2;
+}
+
+// Widget creation messages
+message CreateImageRequest {
+  string widget_id = 1;
+  oneof source {
+    bytes inline_data = 2;      // Raw PNG/JPEG bytes
+    string resource_name = 3;   // Reference to registered resource
+  }
+  int32 width = 4;
+  int32 height = 5;
+  string callback_id = 6;       // Click callback
+  string drag_callback_id = 7;  // Drag callback
+  string double_tap_callback_id = 8; // Double tap callback
+}
+
+message CreateLabelRequest {
+  string widget_id = 1;
+  string text = 2;
+  bool bold = 3;
+  int32 alignment = 4;
+}
+
+message CreateButtonRequest {
+  string widget_id = 1;
+  string text = 2;
+  string callback_id = 3;
+  bool important = 4;
+}
+
+message CreateEntryRequest {
+  string widget_id = 1;
+  string placeholder = 2;
+  string callback_id = 3; // Submit callback
+  int32 width = 4;
+  bool multiline = 5;
+  bool password = 6;
+}
+
+message CreateVBoxRequest {
+  string widget_id = 1;
+}
+
+message CreateHBoxRequest {
+  string widget_id = 1;
+}
+
+message CreateCheckboxRequest {
+  string widget_id = 1;
+  string text = 2;
+  bool checked = 3;
+  string callback_id = 4;
+}
+
+message CreateSelectRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+  int32 selected = 3;
+  string callback_id = 4;
+}
+
+// Resource messages
+message RegisterResourceRequest {
+  string name = 1;
+  bytes data = 2;  // Raw image bytes (not base64!)
+}
+
+message UnregisterResourceRequest {
+  string name = 1;
+}
+
+// Widget update messages
+message UpdateImageRequest {
+  string widget_id = 1;
+  oneof source {
+    bytes inline_data = 2;
+    string resource_name = 3;
+  }
+}
+
+message SetTextRequest {
+  string widget_id = 1;
+  string text = 2;
+}
+
+message GetTextRequest {
+  string widget_id = 1;
+}
+
+message GetTextResponse {
+  bool success = 1;
+  string error = 2;
+  string text = 3;
+}
+
+message SetProgressRequest {
+  string widget_id = 1;
+  double value = 2;
+}
+
+message GetProgressRequest {
+  string widget_id = 1;
+}
+
+message GetProgressResponse {
+  bool success = 1;
+  string error = 2;
+  double value = 3;
+}
+
+message SetCheckedRequest {
+  string widget_id = 1;
+  bool checked = 2;
+}
+
+message GetCheckedRequest {
+  string widget_id = 1;
+}
+
+message GetCheckedResponse {
+  bool success = 1;
+  string error = 2;
+  bool checked = 3;
+}
+
+// Interaction messages
+message ClickWidgetRequest {
+  string widget_id = 1;
+}
+
+message TypeTextRequest {
+  string widget_id = 1;
+  string text = 2;
+}
+
+message DoubleTapWidgetRequest {
+  string widget_id = 1;
+}
+
+message RightClickWidgetRequest {
+  string widget_id = 1;
+}
+
+message DragWidgetRequest {
+  string widget_id = 1;
+  int32 delta_x = 2;
+  int32 delta_y = 3;
+}
+
+// Custom ID messages
+message RegisterCustomIdRequest {
+  string custom_id = 1;
+  string widget_id = 2;
+}
+
+// Query messages
+message FindWidgetRequest {
+  string selector = 1;
+  string type = 2;  // "text", "id", "type", "exactText"
+}
+
+message FindWidgetResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string widget_ids = 3;
+}
+
+message GetWidgetInfoRequest {
+  string widget_id = 1;
+}
+
+message WidgetInfoResponse {
+  bool success = 1;
+  string error = 2;
+  string id = 3;
+  string type = 4;
+  string text = 5;
+  float x = 6;
+  float y = 7;
+  float width = 8;
+  float height = 9;
+  bool visible = 10;
+  bool enabled = 11;
+}
+
+message GetAllWidgetsRequest {
+}
+
+message GetAllWidgetsResponse {
+  bool success = 1;
+  string error = 2;
+  repeated WidgetInfo widgets = 3;
+}
+
+message WidgetInfo {
+  string id = 1;
+  string type = 2;
+  string text = 3;
+}
+
+// Event streaming
+message Event {
+  string type = 1;        // "callback", "windowClosed", etc.
+  string widget_id = 2;
+  map<string, string> data = 3;
+}
+
+message EventSubscription {
+  repeated string event_types = 1;  // Which events to subscribe to
+}
+
+// Lifecycle
+message QuitRequest {
+}
