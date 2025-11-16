@@ -120,6 +120,7 @@ class ChessUI {
   private window: Window | null = null;
   private playerColor: Color = 'w'; // Player plays white, computer plays black
   private isComputerThinking: boolean = false;
+  private squareImages: Map<Square, any> = new Map(); // Image widget references for all 64 squares
 
   // Light and dark square colors (in RGB hex)
   private readonly LIGHT_SQUARE_COLOR = '#f0d9b5';
@@ -209,16 +210,17 @@ class ChessUI {
       if (piece && piece.color === this.playerColor) {
         this.selectedSquare = square;
         await this.updateStatus(`Selected ${this.getPieceName(piece.type)} at ${square}`);
-        this.rebuildUI();
+        await this.updateSquare(square); // Highlight selected square
       }
       return;
     }
 
     // If clicking the same square, deselect
     if (this.selectedSquare === square) {
+      const previouslySelected = this.selectedSquare;
       this.selectedSquare = null;
       await this.updateStatus(this.getGameStatus());
-      this.rebuildUI();
+      await this.updateSquare(previouslySelected); // Unhighlight square
       return;
     }
 
@@ -232,7 +234,8 @@ class ChessUI {
 
       if (move) {
         await this.updateStatus(`${this.getPieceName(move.piece)} ${from} → ${to}`);
-        this.rebuildUI();
+        await this.updateSquare(from); // Update source square (now empty or different piece)
+        await this.updateSquare(to);   // Update destination square (now has the piece)
 
         // Check game status
         if (this.game.isGameOver()) {
@@ -244,14 +247,16 @@ class ChessUI {
       }
     } catch (e) {
       // Invalid move - try selecting the clicked piece instead
+      const previouslySelected = this.selectedSquare;
       if (piece && piece.color === this.playerColor) {
         this.selectedSquare = square;
         await this.updateStatus(`Selected ${this.getPieceName(piece.type)} at ${square}`);
-        this.rebuildUI();
+        if (previouslySelected) await this.updateSquare(previouslySelected); // Unhighlight old square
+        await this.updateSquare(square);                                      // Highlight new square
       } else {
         await this.updateStatus('Invalid move');
         this.selectedSquare = null;
-        this.rebuildUI();
+        if (previouslySelected) await this.updateSquare(previouslySelected); // Unhighlight square
       }
     }
   }
@@ -297,7 +302,7 @@ class ChessUI {
 
     if (boardX < 0 || boardX >= 800 || boardY < 0 || boardY >= 800) {
       await this.updateStatus('Invalid drop location');
-      this.rebuildUI();
+      // No board update needed - nothing changed
       return;
     }
 
@@ -310,7 +315,8 @@ class ChessUI {
 
       if (move) {
         await this.updateStatus(`${this.getPieceName(move.piece)} ${from} → ${to}`);
-        this.rebuildUI();
+        await this.updateSquare(from); // Update source square (now empty or different piece)
+        await this.updateSquare(to);   // Update destination square (now has the piece)
 
         // Check game status
         if (this.game.isGameOver()) {
@@ -322,7 +328,7 @@ class ChessUI {
       }
     } catch (e) {
       await this.updateStatus('Invalid move');
-      this.rebuildUI();
+      // No board update needed - invalid move, board state unchanged
     }
   }
 
@@ -333,8 +339,11 @@ class ChessUI {
     this.isComputerThinking = true;
     await this.updateStatus('Computer is thinking...');
 
-    // Small delay to make it feel more natural
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Small delay to make it feel more natural (much faster in test mode)
+    // Detect test mode by checking for Jest or explicit test mode env var
+    const isTestMode = process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test';
+    const delay = isTestMode ? 10 : 500;
+    await new Promise(resolve => setTimeout(resolve, delay));
 
     const moves = this.game.moves({ verbose: true });
 
@@ -349,7 +358,8 @@ class ChessUI {
     try {
       this.game.move({ from: randomMove.from, to: randomMove.to });
       await this.updateStatus(`Computer: ${this.getPieceName(randomMove.piece)} ${randomMove.from} → ${randomMove.to}`);
-      this.rebuildUI();
+      await this.updateSquare(randomMove.from as Square); // Update source square
+      await this.updateSquare(randomMove.to as Square);   // Update destination square
 
       this.isComputerThinking = false;
 
@@ -438,7 +448,58 @@ class ChessUI {
   }
 
   /**
+   * Update a single square's image
+   */
+  private async updateSquare(square: Square): Promise<void> {
+    const imageWidget = this.squareImages.get(square);
+    if (!imageWidget) {
+      return;
+    }
+
+    const coords = this.squareToCoords(square);
+    const board = this.game.board();
+    const squareData = board[coords.rank][coords.file];
+    const baseColor = this.getSquareColor(coords.file, coords.rank);
+
+    // Highlight selected square
+    let squareColor = baseColor;
+    if (this.selectedSquare === square) {
+      squareColor = this.SELECTED_COLOR;
+    }
+
+    // Get piece image if there's a piece on this square
+    let pieceImage: string | undefined;
+    if (squareData) {
+      pieceImage = this.getPieceImage(squareData.color, squareData.type);
+    }
+
+    // Create the square image
+    const squareImage = this.createSquareImage(squareColor, pieceImage);
+
+    // Update the image widget
+    await imageWidget.updateImage(squareImage);
+  }
+
+  /**
+   * Update all squares to reflect game state changes
+   */
+  private async updateAllSquares(): Promise<void> {
+    const files = 'abcdefgh';
+    const ranks = '12345678';
+
+    // Update sequentially to avoid overwhelming the bridge
+    for (const file of files) {
+      for (const rank of ranks) {
+        const square = `${file}${rank}` as Square;
+        await this.updateSquare(square);
+      }
+    }
+  }
+
+  /**
    * Rebuild the UI to reflect game state changes
+   * NOTE: This is only called once during initial setup.
+   * Use updateSquare() or updateAllSquares() for incremental updates.
    */
   private rebuildUI(): void {
     if (!this.window) return;
@@ -450,6 +511,9 @@ class ChessUI {
 
   buildUI(win: Window): void {
     this.window = win;
+
+    // Clear old widget references before rebuild
+    this.squareImages.clear();
 
     const board = this.game.board();
 
@@ -486,8 +550,9 @@ class ChessUI {
             const squareImage = this.createSquareImage(squareColor, pieceImage);
 
             // Make square clickable and draggable if it has a piece
+            let imageWidget;
             if (squareData && squareData.color === this.playerColor) {
-              this.a.image(
+              imageWidget = this.a.image(
                 squareImage,
                 'original',
                 () => this.handleSquareClick(file, rank),
@@ -496,26 +561,32 @@ class ChessUI {
               ).withId(`square-${square}`);
             } else {
               // Empty square or opponent's piece - still clickable for moves
-              this.a.image(
+              imageWidget = this.a.image(
                 squareImage,
                 'original',
                 () => this.handleSquareClick(file, rank)
               ).withId(`square-${square}`);
             }
+
+            // Store reference to the image widget for incremental updates
+            this.squareImages.set(square, imageWidget);
           }
         });
       }
     });
   }
 
-  private newGame(): void {
+  private async newGame(): Promise<void> {
     this.game.reset();
     this.selectedSquare = null;
     this.draggedSquare = null;
     this.isComputerThinking = false;
     this.currentStatus = 'White to move';
+
+    // Use rebuildUI for new game (happens infrequently, very fast)
+    // Incremental updates are only used for individual moves
     this.rebuildUI();
-    this.updateStatus('New game started');
+    await this.updateStatus('New game started');
   }
 
   private async updateStatus(message: string): Promise<void> {

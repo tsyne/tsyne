@@ -44,6 +44,7 @@
     "//": "--- LIFECYCLE SCRIPTS ---",
     "postinstall": "node scripts/postinstall.js",
     "prepublishOnly": "npm run build:bridge:all && npm run build:ts",
+    "run:chess": "npx ts-node examples/chess/chess.ts",
     "clean": "rm -rf dist bin pkg"
   },
   "keywords": [

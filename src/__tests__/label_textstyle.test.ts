@@ -6,9 +6,13 @@ const createTestApp = (app: App) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label('Default');
-        app.label('Bold', undefined, undefined, 'word', { bold: true });
-        app.label('Italic', undefined, undefined, 'word', { italic: true });
-        app.label('Monospace', undefined, undefined, 'word', { monospace: true });
+        //TODO: merge arbitration to query
+        //app.label('Bold', undefined, undefined, 'word', { bold: true });
+        //app.label('Italic', undefined, undefined, 'word', { italic: true });
+        //app.label('Monospace', undefined, undefined, 'word', { monospace: true });
+        app.label('Bold', undefined, 'leading', 'word', { bold: true });
+        app.label('Italic', undefined, 'leading', 'word', { italic: true });
+        app.label('Monospace', undefined, 'leading', 'word', { monospace: true });
       });
     });
     win.show();

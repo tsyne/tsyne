@@ -5,9 +5,9 @@
  * to enable npm packages designed for browsers to work in Tsyne applications.
  */
 
-import os from 'os';
-import fs from 'fs';
-import path from 'path';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Version imported from package.json
 const version = require('../package.json').version;
