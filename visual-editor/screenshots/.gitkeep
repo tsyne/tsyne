@@ -1,0 +1,9 @@
+This directory stores screenshots of the Visual Editor for documentation.
+
+To regenerate screenshots:
+1. Ensure Puppeteer is installed: npm install --save-dev puppeteer
+2. Start the server: node visual-editor/server.js
+3. Run: TAKE_SCREENSHOTS=1 node visual-editor/capture-screenshots.js
+
+Note: Puppeteer requires a browser environment. Screenshots should be captured
+in a local development environment, not in CI/CD.

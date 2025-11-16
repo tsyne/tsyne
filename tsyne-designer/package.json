@@ -1,0 +1,22 @@
+{
+  "name": "tsyne-designer",
+  "version": "0.1.0",
+  "description": "Design-time library for Tsyne WYSIWYG editor",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "tsyne",
+    "designer",
+    "wysiwyg"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.0.0"
+  }
+}
