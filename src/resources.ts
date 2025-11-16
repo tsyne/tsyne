@@ -1,14 +1,14 @@
-import type { FyneBridge } from './fynebridge';
+import type { BridgeConnection } from './fynebridge';
 
 /**
  * Manages reusable image resources to reduce data transfer
  * Resources are registered once on the Go/Fyne side and can be referenced multiple times
  */
 export class ResourceManager {
-  private bridge: FyneBridge;
+  private bridge: BridgeConnection;
   private registeredResources: Set<string> = new Set();
 
-  constructor(bridge: FyneBridge) {
+  constructor(bridge: BridgeConnection) {
     this.bridge = bridge;
   }
 
