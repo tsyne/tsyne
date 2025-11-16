@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+	"io"
+	"net/http"
+	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -606,7 +609,13 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 
 func (b *Bridge) handleUpdateImage(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
-	imageData := msg.Payload["imageData"].(string)
+
+	// Check which type of image source is provided
+	imageData, hasImageData := msg.Payload["imageData"].(string)
+	path, hasPath := msg.Payload["path"].(string)
+	resourceName, hasResource := msg.Payload["resource"].(string)
+	svgString, hasSVG := msg.Payload["svg"].(string)
+	urlString, hasURL := msg.Payload["url"].(string)
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
@@ -621,43 +630,150 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		return
 	}
 
-	// Parse the data URL format: "data:image/png;base64,..."
-	var base64Data string
-	if strings.HasPrefix(imageData, "data:") {
-		// Split on comma to separate header from data
-		parts := strings.SplitN(imageData, ",", 2)
-		if len(parts) != 2 {
+	var decodedImg image.Image
+	var err error
+
+	// Handle different image source types
+	if hasResource && resourceName != "" {
+		// Resource-based image
+		resourceData, exists := b.getResource(resourceName)
+		if !exists {
 			b.sendResponse(Response{
 				ID:      msg.ID,
 				Success: false,
-				Error:   "Invalid data URL format",
+				Error:   fmt.Sprintf("Resource not found: %s", resourceName),
 			})
 			return
 		}
-		base64Data = parts[1]
+
+		decodedImg, _, err = image.Decode(bytes.NewReader(resourceData))
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode resource image: %v", err),
+			})
+			return
+		}
+	} else if hasPath && path != "" {
+		// File path-based image
+		data, err := os.ReadFile(path)
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to read image file: %v", err),
+			})
+			return
+		}
+
+		decodedImg, _, err = image.Decode(bytes.NewReader(data))
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image file: %v", err),
+			})
+			return
+		}
+	} else if hasSVG && svgString != "" {
+		// Raw SVG string - convert to image
+		decodedImg, _, err = image.Decode(strings.NewReader(svgString))
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode SVG: %v", err),
+			})
+			return
+		}
+	} else if hasURL && urlString != "" {
+		// Remote URL - fetch and decode
+		resp, err := http.Get(urlString)
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to fetch URL: %v", err),
+			})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("HTTP error: %d %s", resp.StatusCode, resp.Status),
+			})
+			return
+		}
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to read response body: %v", err),
+			})
+			return
+		}
+
+		decodedImg, _, err = image.Decode(bytes.NewReader(data))
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image from URL: %v", err),
+			})
+			return
+		}
+	} else if hasImageData && imageData != "" {
+		// Base64 data URI (backwards compatible)
+		var base64Data string
+		if strings.HasPrefix(imageData, "data:") {
+			// Split on comma to separate header from data
+			parts := strings.SplitN(imageData, ",", 2)
+			if len(parts) != 2 {
+				b.sendResponse(Response{
+					ID:      msg.ID,
+					Success: false,
+					Error:   "Invalid data URL format",
+				})
+				return
+			}
+			base64Data = parts[1]
+		} else {
+			// Assume it's already base64 without the data URL prefix
+			base64Data = imageData
+		}
+
+		// Decode base64
+		imgBytes, err := base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
+			})
+			return
+		}
+
+		// Decode image bytes
+		decodedImg, _, err = image.Decode(bytes.NewReader(imgBytes))
+		if err != nil {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image: %v", err),
+			})
+			return
+		}
 	} else {
-		// Assume it's already base64 without the data URL prefix
-		base64Data = imageData
-	}
-
-	// Decode base64
-	imgBytes, err := base64.StdEncoding.DecodeString(base64Data)
-	if err != nil {
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   fmt.Sprintf("Failed to decode base64: %v", err),
-		})
-		return
-	}
-
-	// Decode image bytes
-	decodedImg, _, err := image.Decode(bytes.NewReader(imgBytes))
-	if err != nil {
-		b.sendResponse(Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   fmt.Sprintf("Failed to decode image: %v", err),
+			Error:   "No image source provided (expected imageData, path, resource, svg, or url)",
 		})
 		return
 	}

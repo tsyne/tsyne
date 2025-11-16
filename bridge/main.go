@@ -62,6 +62,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateGrid(msg)
 	case "createCenter":
 		b.handleCreateCenter(msg)
+	case "createMax":
+		b.handleCreateMax(msg)
 	case "createCard":
 		b.handleCreateCard(msg)
 	case "createAccordion":

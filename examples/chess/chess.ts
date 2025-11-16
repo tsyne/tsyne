@@ -81,8 +81,12 @@ function preRenderAllPieces(
   piecesDir: string,
   pieceSize: number = 80
 ): Map<string, string> {
+  console.time('[PERF] preRenderAllPieces');
+
   // Return cached pieces if already rendered
   if (pieceFacesCache) {
+    console.log('[PERF] Using cached pieces');
+    console.timeEnd('[PERF] preRenderAllPieces');
     return pieceFacesCache;
   }
 
@@ -90,16 +94,20 @@ function preRenderAllPieces(
 
   // Get all SVG files
   const files = fs.readdirSync(piecesDir).filter(f => f.endsWith('.svg'));
+  console.log(`[PERF] Rendering ${files.length} SVG files...`);
 
   for (const file of files) {
+    console.time(`[PERF]   ${file}`);
     const svgPath = path.join(piecesDir, file);
     const base64 = renderSVGToBase64(svgPath, pieceSize, pieceSize);
     renderedPieces.set(file, base64);
+    console.timeEnd(`[PERF]   ${file}`);
   }
 
   // Cache for future instances
   pieceFacesCache = renderedPieces;
 
+  console.timeEnd('[PERF] preRenderAllPieces');
   return renderedPieces;
 }
 
@@ -120,7 +128,9 @@ class ChessUI {
   private window: Window | null = null;
   private playerColor: Color = 'w'; // Player plays white, computer plays black
   private isComputerThinking: boolean = false;
-  private squareImages: Map<Square, any> = new Map(); // Image widget references for all 64 squares
+  private squareImages: Map<Square, any> = new Map(); // Max container references for all 64 squares
+  private squareBackgrounds: Map<Square, any> = new Map(); // Background image widgets
+  private pieceForegrounds: Map<Square, any> = new Map(); // Piece image widgets
 
   // Light and dark square colors (in RGB hex)
   private readonly LIGHT_SQUARE_COLOR = '#f0d9b5';
@@ -131,6 +141,7 @@ class ChessUI {
   private resourcesRegistered: boolean = false;
 
   constructor(private a: App) {
+    console.time('[PERF] ChessUI constructor');
     this.game = new Chess();
 
     // Pre-render all piece SVGs to PNG
@@ -144,6 +155,7 @@ class ChessUI {
     const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
 
     this.renderedPieces = preRenderAllPieces(piecesDir, 80);
+    console.timeEnd('[PERF] ChessUI constructor');
   }
 
   /**
@@ -155,14 +167,19 @@ class ChessUI {
       return; // Already registered
     }
 
+    console.time('[PERF] registerChessResources');
     console.log('Registering chess resources...');
 
     // Register empty light and dark squares (100x100px)
+    console.time('[PERF] Create square images');
     const lightSquare = this.createSquareImage(this.LIGHT_SQUARE_COLOR);
     const darkSquare = this.createSquareImage(this.DARK_SQUARE_COLOR);
+    console.timeEnd('[PERF] Create square images');
 
+    console.time('[PERF] Register square resources');
     await this.a.resources.registerResource('chess-square-light', lightSquare);
     await this.a.resources.registerResource('chess-square-dark', darkSquare);
+    console.timeEnd('[PERF] Register square resources');
 
     // Register all 12 piece types (white and black)
     const pieceTypes: Array<{ color: Color; type: PieceSymbol }> = [
@@ -172,14 +189,17 @@ class ChessUI {
       { color: 'b', type: 'b' }, { color: 'b', type: 'n' }, { color: 'b', type: 'p' },
     ];
 
+    console.time('[PERF] Register 12 piece resources');
     for (const { color, type } of pieceTypes) {
       const pieceImage = this.getPieceImage(color, type);
       const resourceName = `chess-piece-${color}-${type}`;
       await this.a.resources.registerResource(resourceName, pieceImage);
     }
+    console.timeEnd('[PERF] Register 12 piece resources');
 
     this.resourcesRegistered = true;
     console.log('Chess resources registered (14 total: 2 squares + 12 pieces)');
+    console.timeEnd('[PERF] registerChessResources');
   }
 
   /**
@@ -486,11 +506,14 @@ class ChessUI {
   }
 
   /**
-   * Update a single square's image
+   * Update a single square's image by updating the child widgets in the Max container
+   * This updates the background and foreground images separately without rebuilding
    */
   private async updateSquare(square: Square): Promise<void> {
-    const imageWidget = this.squareImages.get(square);
-    if (!imageWidget) {
+    const squareBackground = this.squareBackgrounds.get(square);
+    const pieceForeground = this.pieceForegrounds.get(square);
+
+    if (!squareBackground || !pieceForeground) {
       return;
     }
 
@@ -498,24 +521,30 @@ class ChessUI {
     const board = this.game.board();
     const squareData = board[coords.rank][coords.file];
     const baseColor = this.getSquareColor(coords.file, coords.rank);
+    const isLight = (coords.file + coords.rank) % 2 === 0;
 
-    // Highlight selected square
+    // Update background square
     let squareColor = baseColor;
     if (this.selectedSquare === square) {
       squareColor = this.SELECTED_COLOR;
+      // Create highlighted square image
+      const squareImage = this.createSquareImage(squareColor);
+      await squareBackground.updateImage(squareImage);
+    } else {
+      // Use resource for normal square
+      const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
+      await squareBackground.updateImage({ resource: resourceName });
     }
 
-    // Get piece image if there's a piece on this square
-    let pieceImage: string | undefined;
+    // Update foreground piece
     if (squareData) {
-      pieceImage = this.getPieceImage(squareData.color, squareData.type);
+      const resourceName = `chess-piece-${squareData.color}-${squareData.type}`;
+      await pieceForeground.updateImage({ resource: resourceName });
+    } else {
+      // Empty square - make piece invisible by using transparent square
+      const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
+      await pieceForeground.updateImage({ resource: resourceName });
     }
-
-    // Create the square image
-    const squareImage = this.createSquareImage(squareColor, pieceImage);
-
-    // Update the image widget
-    await imageWidget.updateImage(squareImage);
   }
 
   /**
@@ -548,12 +577,18 @@ class ChessUI {
   }
 
   buildUI(win: Window): void {
+    console.time('[PERF] buildUI');
     this.window = win;
 
     // Clear old widget references before rebuild
     this.squareImages.clear();
+    this.squareBackgrounds.clear();
+    this.pieceForegrounds.clear();
 
     const board = this.game.board();
+
+    let squareImageCreations = 0;
+    console.time('[PERF] buildUI - vbox creation');
 
     this.a.vbox(() => {
       // Action buttons
@@ -563,6 +598,9 @@ class ChessUI {
 
       // Status
       this.statusLabel = this.a.label(this.currentStatus);
+
+      console.timeEnd('[PERF] buildUI - vbox creation');
+      console.time('[PERF] buildUI - board squares');
 
       // Chess board - 8x8 grid
       for (let rank = 0; rank < 8; rank++) {
@@ -575,68 +613,68 @@ class ChessUI {
             // Make square clickable and draggable if it has a piece
             let imageWidget;
 
-            // Determine which resource to use
-            let resourceOrImage: string | { resource?: string; path?: string; fillMode?: string; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; };
+            // Use Max container for Z-layering square + piece
+            // This avoids expensive SVG compositing (90ms per square)
+            let squareBackground: any;
+            let pieceForeground: any;
 
-            if (this.selectedSquare === square) {
-              // Highlighted square - need to render inline
-              const pieceImage = squareData ? this.getPieceImage(squareData.color, squareData.type) : undefined;
-              const squareImage = this.createSquareImage(this.SELECTED_COLOR, pieceImage);
-              resourceOrImage = squareImage;
-            } else if (squareData) {
-              // Square with piece - render inline (combines square + piece)
-              const baseColor = this.getSquareColor(file, rank);
-              const pieceImage = this.getPieceImage(squareData.color, squareData.type);
-              const squareImage = this.createSquareImage(baseColor, pieceImage);
-              resourceOrImage = squareImage;
-            } else {
-              // Empty square - use registered resource!
-              const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
-              resourceOrImage = { resource: resourceName };
-            }
+            imageWidget = this.a.max(() => {
+              // Bottom layer: Square background
+              const squareColor = this.selectedSquare === square ? this.SELECTED_COLOR : this.getSquareColor(file, rank);
 
-            if (squareData && squareData.color === this.playerColor) {
-              // Player's piece - clickable and draggable
-              if (typeof resourceOrImage === 'string') {
-                imageWidget = this.a.image(
-                  resourceOrImage,
-                  'original',
-                  () => this.handleSquareClick(file, rank),
-                  (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
-                  (x: number, y: number) => this.handleSquareDragEnd(x, y)
-                ).withId(`square-${square}`);
+              if (this.selectedSquare === square) {
+                // Highlighted square - need inline image
+                const squareImage = this.createSquareImage(squareColor);
+                squareBackground = this.a.image(squareImage, 'original').withId(`bg-${square}`);
               } else {
-                imageWidget = this.a.image({
-                  ...resourceOrImage,
-                  fillMode: 'original',
-                  onClick: () => this.handleSquareClick(file, rank),
-                  onDrag: (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
-                  onDragEnd: (x: number, y: number) => this.handleSquareDragEnd(x, y)
-                }).withId(`square-${square}`);
+                // Normal square - use resource
+                const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
+                squareBackground = this.a.image({ resource: resourceName, fillMode: 'original' }).withId(`bg-${square}`);
               }
-            } else {
-              // Empty square or opponent's piece - still clickable for moves
-              if (typeof resourceOrImage === 'string') {
-                imageWidget = this.a.image(
-                  resourceOrImage,
-                  'original',
-                  () => this.handleSquareClick(file, rank)
-                ).withId(`square-${square}`);
+
+              // Top layer: Piece (if present)
+              if (squareData) {
+                const resourceName = `chess-piece-${squareData.color}-${squareData.type}`;
+
+                // Add click and drag handlers to the piece layer
+                if (squareData.color === this.playerColor) {
+                  // Player's piece - clickable and draggable
+                  pieceForeground = this.a.image({
+                    resource: resourceName,
+                    fillMode: 'original',
+                    onClick: () => this.handleSquareClick(file, rank),
+                    onDrag: (x: number, y: number) => this.handleSquareDrag(file, rank, x, y),
+                    onDragEnd: (x: number, y: number) => this.handleSquareDragEnd(x, y)
+                  }).withId(`piece-${square}`);
+                } else {
+                  // Opponent's piece - clickable only
+                  pieceForeground = this.a.image({
+                    resource: resourceName,
+                    fillMode: 'original',
+                    onClick: () => this.handleSquareClick(file, rank)
+                  }).withId(`piece-${square}`);
+                }
               } else {
-                imageWidget = this.a.image({
-                  ...resourceOrImage,
+                // Empty square - still need click handler, add invisible overlay
+                pieceForeground = this.a.image({
+                  resource: isLight ? 'chess-square-dark' : 'chess-square-light',
                   fillMode: 'original',
                   onClick: () => this.handleSquareClick(file, rank)
-                }).withId(`square-${square}`);
+                }).withId(`piece-${square}`);
               }
-            }
+            }).withId(`square-${square}`);
 
-            // Store reference to the image widget for incremental updates
+            // Store references for incremental updates
             this.squareImages.set(square, imageWidget);
+            this.squareBackgrounds.set(square, squareBackground);
+            this.pieceForegrounds.set(square, pieceForeground);
           }
         });
       }
+      console.timeEnd('[PERF] buildUI - board squares');
     });
+    console.log(`[PERF] buildUI created ${squareImageCreations} square+piece composite images`);
+    console.timeEnd('[PERF] buildUI');
   }
 
   private async newGame(): Promise<void> {
@@ -678,18 +716,25 @@ class ChessUI {
  * Create the chess app
  */
 export async function createChessApp(a: App): Promise<ChessUI> {
+  console.time('[PERF] createChessApp TOTAL');
+
+  console.time('[PERF] ChessUI instantiation');
   const ui = new ChessUI(a);
+  console.timeEnd('[PERF] ChessUI instantiation');
 
   // Register chess resources before building UI
   await ui['registerChessResources']();
 
+  console.time('[PERF] Create window and build UI');
   a.window({ title: 'Chess', width: 800, height: 880 }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
     win.show();
   });
+  console.timeEnd('[PERF] Create window and build UI');
 
+  console.timeEnd('[PERF] createChessApp TOTAL');
   return ui;
 }
 

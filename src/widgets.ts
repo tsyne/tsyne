@@ -1195,6 +1195,50 @@ export class Center {
 }
 
 /**
+ * Max layout - stacks widgets on top of each other (Z-layering)
+ * All widgets expand to fill the container (like CSS position: absolute with 100% width/height)
+ * Useful for layering backgrounds and foregrounds, like a chess square + piece
+ */
+export class Max {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('max');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length === 0) {
+      throw new Error('Max must have at least one child');
+    }
+
+    ctx.bridge.send('createMax', {
+      id: this.id,
+      childIds: children
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this widget (for testing/debugging)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+}
+
+/**
  * Card container with title, subtitle, and content
  */
 export class Card {
@@ -1439,11 +1483,32 @@ export class Image {
    * Updates the image widget with new image data
    * @param imageData - Base64-encoded image data (with or without data URL prefix)
    */
-  async updateImage(imageData: string): Promise<void> {
-    await this.ctx.bridge.send('updateImage', {
-      widgetId: this.id,
-      imageData: imageData
-    });
+  /**
+   * Update the image displayed in this widget
+   * @param imageSource - Image source, can be:
+   *   - String: Base64 data URI (e.g., 'data:image/png;base64,...')
+   *   - Object with path: File path to image (e.g., { path: '/path/to/image.svg' })
+   *   - Object with resource: Resource name (e.g., { resource: 'my-resource' })
+   *   - Object with svg: Raw SVG string (e.g., { svg: '<svg>...</svg>' })
+   *   - Object with url: Remote image URL (e.g., { url: 'https://example.com/image.png' })
+   */
+  async updateImage(imageSource: string | { path?: string; resource?: string; svg?: string; url?: string }): Promise<void> {
+    if (typeof imageSource === 'string') {
+      // Backwards compatible: string is base64 data URI
+      await this.ctx.bridge.send('updateImage', {
+        widgetId: this.id,
+        imageData: imageSource
+      });
+    } else {
+      // New object-based API
+      await this.ctx.bridge.send('updateImage', {
+        widgetId: this.id,
+        path: imageSource.path,
+        resource: imageSource.resource,
+        svg: imageSource.svg,
+        url: imageSource.url
+      });
+    }
   }
 
   /**
