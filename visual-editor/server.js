@@ -23,7 +23,11 @@ function parseStackTrace(stack) {
   const lines = stack.split('\n');
   for (let i = 2; i < lines.length; i++) {
     const line = lines[i];
-    const match = line.match(/\((.+):(\d+):(\d+)\)/);
+    // Try two formats: "at (file:line:col)" and "at file:line:col"
+    let match = line.match(/\((.+):(\d+):(\d+)\)/);
+    if (!match) {
+      match = line.match(/at\s+(.+):(\d+):(\d+)/);
+    }
     if (match && !match[1].includes('node_modules') && !match[1].includes('server.js')) {
       return { file: match[1], line: parseInt(match[2]), column: parseInt(match[3]) };
     }
@@ -314,23 +318,46 @@ function loadFileInDesignerMode(filePath) {
 
   console.log(`[Designer] Loading file: ${filePath}`);
 
-  // Execute the code with designer API
-  // For examples/hello.ts, we'll simulate it directly
-  if (filePath.includes('hello.ts')) {
-    designer.app({ title: "Hello Tsyne" }, (a) => {
-      a.window({ title: "Hello World" }, (w) => {
-        a.vbox(() => {
-          a.label("Welcome to Tsyne!");
-          a.label("A TypeScript wrapper for Fyne");
-          a.button("Click Me", () => {
-            console.log("Button clicked!");
-          });
-          a.button("Exit", () => {
-            process.exit(0);
-          });
-        });
-      });
-    });
+  // Create temp file with similar name to preserve line numbers in stack traces
+  // Use the same directory structure so line numbers match
+  const tempDir = path.join('/tmp', 'tsyne-designer-' + Date.now());
+  fs.mkdirSync(tempDir, { recursive: true });
+  const tempPath = path.join(tempDir, path.basename(filePath, '.ts') + '.js');
+
+  try {
+    // Make designer available globally BEFORE writing/executing the file
+    global.designer = designer;
+
+    // REPLACE import statement with destructuring from global.designer
+    // This preserves line numbers!
+    const executableCode = currentSourceCode.replace(
+      /import\s+{\s*([^}]+)\s*}\s*from\s+['"][^'"]+['"]\s*;?/g,
+      'const { app, window, vbox, hbox, button, label, entry, checkbox, scroll, grid, separator, hyperlink, image, select } = global.designer;'
+    );
+
+    fs.writeFileSync(tempPath, executableCode, 'utf8');
+
+    // Clear module cache
+    delete require.cache[require.resolve(tempPath)];
+
+    // Execute by requiring the file - this gives us proper stack traces with line numbers!
+    require(tempPath);
+
+    delete global.designer;
+
+  } finally{
+    // Clean up temp files
+    try {
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+      if (fs.existsSync(tempDir)) {
+        fs.rmdirSync(tempDir);
+      }
+    } catch (err) {
+      // Ignore cleanup errors
+      console.warn('[Cleanup] Could not remove temp files:', err.message);
+    }
   }
 
   // Build metadata response
@@ -357,6 +384,151 @@ class SourceCodeEditor {
       }
     }
     return found;
+  }
+
+  addWidget(parentMetadata, widgetType, properties) {
+    const parentLine = parentMetadata.sourceLocation.line - 1;
+
+    // Find the closing brace of the parent container's builder function
+    const closingBraceLine = this.findClosingBrace(parentLine);
+
+    if (closingBraceLine === -1) {
+      console.warn('[Editor] Could not find closing brace for parent');
+      return false;
+    }
+
+    // Get indentation from parent line
+    const indentation = this.getIndentation(parentLine);
+    const childIndentation = indentation + '      '; // Match existing indentation in examples
+
+    // Generate widget code
+    const widgetCode = this.generateWidgetCode(widgetType, properties, childIndentation);
+
+    // Insert before closing brace
+    this.lines.splice(closingBraceLine, 0, widgetCode);
+
+    console.log(`[Editor] Added ${widgetType} at line ${closingBraceLine + 1}`);
+    return true;
+  }
+
+  removeWidget(metadata) {
+    const lineIndex = metadata.sourceLocation.line - 1;
+
+    if (lineIndex < 0 || lineIndex >= this.lines.length) {
+      console.warn('[Editor] Invalid line index for widget removal');
+      return false;
+    }
+
+    // Check if this is a multi-line widget (e.g., button with callback)
+    const firstLine = this.lines[lineIndex];
+    const linesToRemove = [lineIndex];
+
+    // If the line contains an opening brace but no closing brace/semicolon, it's multi-line
+    if (firstLine.includes('{') && !firstLine.includes('});')) {
+      let braceCount = (firstLine.match(/{/g) || []).length - (firstLine.match(/}/g) || []).length;
+
+      // Continue until we find the closing braces
+      for (let i = lineIndex + 1; i < this.lines.length && braceCount > 0; i++) {
+        const line = this.lines[i];
+        braceCount += (line.match(/{/g) || []).length;
+        braceCount -= (line.match(/}/g) || []).length;
+        linesToRemove.push(i);
+
+        // Stop if we've closed all braces and found the semicolon
+        if (braceCount === 0) {
+          break;
+        }
+      }
+    }
+
+    // Remove all lines in reverse order to avoid index shifting
+    for (let i = linesToRemove.length - 1; i >= 0; i--) {
+      this.lines.splice(linesToRemove[i], 1);
+    }
+
+    console.log(`[Editor] Removed widget at lines ${lineIndex + 1} to ${lineIndex + linesToRemove.length}: ${firstLine.trim()}`);
+    return true;
+  }
+
+  getIndentation(lineIndex) {
+    if (lineIndex < 0 || lineIndex >= this.lines.length) {
+      return '';
+    }
+
+    const line = this.lines[lineIndex];
+    const match = line.match(/^(\s*)/);
+    return match ? match[1] : '';
+  }
+
+  findClosingBrace(startLine) {
+    let braceCount = 0;
+    let foundOpenBrace = false;
+
+    for (let i = startLine; i < this.lines.length; i++) {
+      const line = this.lines[i];
+
+      // Count opening braces
+      const openBraces = (line.match(/{/g) || []).length;
+      const closeBraces = (line.match(/}/g) || []).length;
+
+      braceCount += openBraces;
+      braceCount -= closeBraces;
+
+      if (openBraces > 0) {
+        foundOpenBrace = true;
+      }
+
+      // When we've found an opening brace and count returns to 0, we found the closing brace
+      if (foundOpenBrace && braceCount === 0) {
+        // Return the line before the closing brace (where we want to insert)
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  generateWidgetCode(widgetType, properties, indentation) {
+    switch (widgetType) {
+      case 'label':
+        return `${indentation}label("${properties.text || 'New Label'}");`;
+
+      case 'button':
+        return `${indentation}button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
+
+      case 'entry':
+        return `${indentation}entry("${properties.placeholder || ''}");`;
+
+      case 'checkbox':
+        return `${indentation}checkbox("${properties.text || 'New Checkbox'}", false, () => {});`;
+
+      case 'vbox':
+        return `${indentation}vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+
+      case 'hbox':
+        return `${indentation}hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+
+      case 'scroll':
+        return `${indentation}scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+
+      case 'separator':
+        return `${indentation}separator();`;
+
+      case 'hyperlink':
+        return `${indentation}hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
+
+      case 'image':
+        return `${indentation}image("${properties.path || 'image.png'}");`;
+
+      case 'select':
+        return `${indentation}select(["Option 1", "Option 2"], () => {});`;
+
+      case 'grid':
+        return `${indentation}grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
+
+      default:
+        return `${indentation}${widgetType}();`;
+    }
   }
 
   getSourceCode() {
@@ -436,8 +608,34 @@ const apiHandlers = {
 
       const editor = new SourceCodeEditor(currentSourceCode);
 
-      // Apply all pending edits
-      for (const edit of pendingEdits) {
+      // Process edits in order: delete first (to avoid line number shifts), then add, then property updates
+      const deleteEdits = pendingEdits.filter(e => e.type === 'delete');
+      const addEdits = pendingEdits.filter(e => e.type === 'add');
+      const propertyEdits = pendingEdits.filter(e => !e.type);
+
+      // Apply delete operations first (sort by line number descending to avoid line shift issues)
+      deleteEdits.sort((a, b) => {
+        const lineA = a.widget.sourceLocation.line;
+        const lineB = b.widget.sourceLocation.line;
+        return lineB - lineA; // Descending order
+      });
+
+      for (const edit of deleteEdits) {
+        console.log(`[Editor] Deleting ${edit.widget.widgetType} at line ${edit.widget.sourceLocation.line}`);
+        editor.removeWidget(edit.widget);
+      }
+
+      // Apply add operations
+      for (const edit of addEdits) {
+        const parent = metadataStore.get(edit.parentId);
+        if (parent) {
+          console.log(`[Editor] Adding ${edit.widgetType} to ${parent.widgetType}`);
+          editor.addWidget(parent, edit.widgetType, edit.properties);
+        }
+      }
+
+      // Apply property updates
+      for (const edit of propertyEdits) {
         const searchText = `"${edit.oldValue}"`;
         const replaceText = `"${edit.newValue}"`;
         editor.findAndReplace(searchText, replaceText);
@@ -450,7 +648,7 @@ const apiHandlers = {
       fs.writeFileSync(fullOutputPath, editor.getSourceCode(), 'utf8');
 
       console.log(`[Editor] Saved changes to: ${outputPath}`);
-      console.log(`[Editor] Applied ${pendingEdits.length} edits`);
+      console.log(`[Editor] Applied ${pendingEdits.length} edits (${deleteEdits.length} deletes, ${addEdits.length} adds, ${propertyEdits.length} updates)`);
 
       pendingEdits = [];
 
