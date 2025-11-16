@@ -662,12 +662,39 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		return
 	}
 
+	// Find the actual canvas.Image widget
+	// It might be wrapped in a ClickableContainer or DraggableContainer
+	var imgWidget *canvas.Image
+
+	switch container := obj.(type) {
+	case *canvas.Image:
+		// Direct image widget
+		imgWidget = container
+	case *ClickableContainer:
+		// Image wrapped in clickable container
+		if img, ok := container.content.(*canvas.Image); ok {
+			imgWidget = img
+		}
+	case *DraggableContainer:
+		// Image wrapped in draggable container
+		if img, ok := container.content.(*canvas.Image); ok {
+			imgWidget = img
+		}
+	}
+
+	if imgWidget == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an image",
+		})
+		return
+	}
+
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
-		if imgWidget, ok := obj.(*canvas.Image); ok {
-			imgWidget.Image = decodedImg
-			imgWidget.Refresh()
-		}
+		imgWidget.Image = decodedImg
+		imgWidget.Refresh()
 	})
 
 	b.sendResponse(Response{

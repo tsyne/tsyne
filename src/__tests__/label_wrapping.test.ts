@@ -6,9 +6,9 @@ const createTestApp = (app: App) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label('Default');
-        app.label('Off', 'leading', 'off');
-        app.label('Break', 'leading', 'break');
-        app.label('Word', 'leading', 'word');
+        app.label('Off', undefined, 'leading', 'off');
+        app.label('Break', undefined, 'leading', 'break');
+        app.label('Word', undefined, 'leading', 'word');
       });
     });
     win.show();

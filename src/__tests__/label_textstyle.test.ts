@@ -6,9 +6,9 @@ const createTestApp = (app: App) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label('Default');
-        app.label('Bold', 'leading', 'word', { bold: true });
-        app.label('Italic', 'leading', 'word', { italic: true });
-        app.label('Monospace', 'leading', 'word', { monospace: true });
+        app.label('Bold', undefined, 'leading', 'word', { bold: true });
+        app.label('Italic', undefined, 'leading', 'word', { italic: true });
+        app.label('Monospace', undefined, 'leading', 'word', { monospace: true });
       });
     });
     win.show();

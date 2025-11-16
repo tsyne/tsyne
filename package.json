@@ -41,6 +41,7 @@
     "test:screenshots:calculator": "npm run build && TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/calculator.test.ts",
     "run:calculator": "npm run build && npx ts-node test-apps/calculator-advanced/calculator-ui.ts",
     "run:single-script-calculator": "npm run build && npx ts-node examples/calculator.ts",
+    "run:chess": "npx ts-node examples/chess/chess.ts",
     "clean": "rm -rf dist bin pkg"
   },
   "keywords": [
