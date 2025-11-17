@@ -3,6 +3,7 @@
 let metadata = null;
 let selectedWidgetId = null;
 let currentFilePath = null;
+let currentStyles = null;
 
 // Context menu state
 let contextMenuTarget = null;
@@ -225,13 +226,23 @@ async function loadFile() {
     const data = await response.json();
     metadata = data.metadata;
     currentFilePath = data.filePath;
+    currentStyles = data.styles;
 
     document.getElementById('filePath').textContent = currentFilePath;
+
+    // Show CSS Editor button if styles exist
+    const cssEditorBtn = document.getElementById('cssEditorBtn');
+    if (currentStyles && Object.keys(currentStyles).length > 0) {
+      cssEditorBtn.style.display = 'inline-block';
+    } else {
+      cssEditorBtn.style.display = 'none';
+    }
 
     renderWidgetTree();
     renderPreview();
 
     console.log('Loaded metadata:', metadata);
+    console.log('Loaded styles:', currentStyles);
   } catch (error) {
     console.error('Error loading file:', error);
     alert('Error loading file: ' + error.message);
@@ -1047,6 +1058,129 @@ async function deleteWidget(widgetId) {
   } catch (error) {
     console.error('Error deleting widget:', error);
     alert('Error deleting widget: ' + error.message);
+  }
+}
+
+// CSS Editor Functions
+function openCssEditor() {
+  const modal = document.getElementById('cssEditorModal');
+  modal.classList.add('visible');
+  renderCssEditor();
+}
+
+function closeCssEditor() {
+  const modal = document.getElementById('cssEditorModal');
+  modal.classList.remove('visible');
+}
+
+function renderCssEditor() {
+  const body = document.getElementById('cssEditorBody');
+
+  if (!currentStyles || Object.keys(currentStyles).length === 0) {
+    body.innerHTML = '<div class="no-selection">No CSS classes defined</div>';
+    return;
+  }
+
+  let html = '';
+
+  for (const [className, properties] of Object.entries(currentStyles)) {
+    html += `
+      <div class="css-class-editor" data-class="${className}">
+        <div class="css-class-header">
+          <div class="css-class-name">.${className}</div>
+          <button class="css-class-delete" onclick="deleteClass('${className}')">Delete Class</button>
+        </div>
+        <div class="css-properties" id="props-${className}">
+    `;
+
+    for (const [prop, value] of Object.entries(properties)) {
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      html += `
+        <div class="css-property-row">
+          <input type="text" class="css-property-input" value="${prop}"
+                 onchange="updateCssProperty('${className}', '${prop}', 'name', this.value)">
+          <input type="text" class="css-property-input" value="${escapeHtml(valueStr)}"
+                 onchange="updateCssProperty('${className}', '${prop}', 'value', this.value)">
+          <button class="css-property-delete" onclick="deleteCssProperty('${className}', '${prop}')">×</button>
+        </div>
+      `;
+    }
+
+    html += `
+        </div>
+        <button class="add-property-btn" onclick="addCssProperty('${className}')">+ Add Property</button>
+      </div>
+    `;
+  }
+
+  body.innerHTML = html;
+}
+
+function updateCssProperty(className, oldPropName, field, newValue) {
+  if (!currentStyles || !currentStyles[className]) return;
+
+  if (field === 'name' && oldPropName !== newValue) {
+    // Rename property
+    const value = currentStyles[className][oldPropName];
+    delete currentStyles[className][oldPropName];
+    currentStyles[className][newValue] = value;
+  } else if (field === 'value') {
+    // Update value - try to parse as JSON for numbers/booleans
+    try {
+      currentStyles[className][oldPropName] = JSON.parse(newValue);
+    } catch {
+      currentStyles[className][oldPropName] = newValue;
+    }
+  }
+
+  renderCssEditor();
+}
+
+function deleteCssProperty(className, propName) {
+  if (!currentStyles || !currentStyles[className]) return;
+  delete currentStyles[className][propName];
+  renderCssEditor();
+}
+
+function addCssProperty(className) {
+  if (!currentStyles || !currentStyles[className]) return;
+
+  const propName = prompt('Enter property name:', 'newProp');
+  if (!propName) return;
+
+  currentStyles[className][propName] = '';
+  renderCssEditor();
+}
+
+function deleteClass(className) {
+  if (!currentStyles) return;
+
+  if (!confirm(`Delete class "${className}"?`)) return;
+
+  delete currentStyles[className];
+  renderCssEditor();
+}
+
+async function saveCssChanges() {
+  try {
+    const response = await fetch('/api/update-styles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ styles: currentStyles })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('CSS classes updated successfully');
+      closeCssEditor();
+      alert('CSS classes updated! Remember to click "Save Changes" to write to file.');
+    } else {
+      alert('Error updating CSS classes: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error updating CSS classes:', error);
+    alert('Error updating CSS classes: ' + error.message);
   }
 }
 

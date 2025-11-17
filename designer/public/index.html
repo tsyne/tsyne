@@ -382,6 +382,170 @@
     .context-menu-submenu:hover .context-submenu {
       display: block;
     }
+
+    /* CSS Editor Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: #252526;
+      border: 1px solid #5e5e5e;
+      border-radius: 5px;
+      width: 800px;
+      max-width: 90vw;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #3e3e3e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h2 {
+      font-size: 16px;
+      color: #fff;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #d4d4d4;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .css-class-editor {
+      margin-bottom: 20px;
+      background: #1e1e1e;
+      border: 1px solid #3e3e3e;
+      border-radius: 3px;
+      padding: 15px;
+    }
+
+    .css-class-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .css-class-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4ec9b0;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .css-class-delete {
+      background: #d73a49;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .css-property-row {
+      display: grid;
+      grid-template-columns: 150px 1fr auto;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .css-property-input {
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      color: #d4d4d4;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .css-property-delete {
+      background: #6e6e6e;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .add-property-btn {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #3e3e3e;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-footer button {
+      padding: 8px 16px;
+      border-radius: 3px;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-cancel {
+      background: #6e6e6e;
+      color: white;
+    }
+
+    .btn-save {
+      background: #0e639c;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -391,6 +555,7 @@
       <button onclick="loadFile()">load testfile</button>
       <button onclick="saveChanges()">Save Changes</button>
       <button onclick="refreshPreview()">Refresh</button>
+      <button onclick="openCssEditor()" id="cssEditorBtn" style="display:none">CSS Classes</button>
       <span class="file-path" id="filePath">No file loaded</span>
     </div>
 
@@ -441,6 +606,23 @@
 
   <!-- Context Menu -->
   <div id="contextMenu" class="context-menu"></div>
+
+  <!-- CSS Editor Modal -->
+  <div id="cssEditorModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>CSS Classes Editor</h2>
+        <button class="modal-close" onclick="closeCssEditor()">×</button>
+      </div>
+      <div class="modal-body" id="cssEditorBody">
+        <!-- CSS classes will be rendered here -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeCssEditor()">Cancel</button>
+        <button class="btn-save" onclick="saveCssChanges()">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script src="editor.js"></script>
 </body>

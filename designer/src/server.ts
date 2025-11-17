@@ -12,6 +12,7 @@ import { WidgetMetadata, SourceLocation } from './metadata';
 let currentMetadata: { widgets: any[] } | null = null;
 let currentFilePath: string | null = null;
 let currentSourceCode: string | null = null;
+let currentStyles: Record<string, any> | null = null;
 let pendingEdits: any[] = [];
 
 // Simple metadata store (using the POC approach)
@@ -306,6 +307,34 @@ const designer = {
   }
 };
 
+// Extract CSS styles from source code
+function extractStyles(sourceCode: string): Record<string, any> | null {
+  // Look for "const styles = { ... }" pattern
+  const stylesMatch = sourceCode.match(/const\s+styles\s*=\s*\{([^]*?)\};/);
+  if (!stylesMatch) {
+    return null;
+  }
+
+  try {
+    // Extract the styles object content and convert to JSON format
+    let stylesContent = stylesMatch[1];
+
+    // Replace unquoted property names with quoted ones
+    stylesContent = stylesContent.replace(/(\w+):/g, '"$1":');
+    // Replace single quotes with double quotes
+    stylesContent = stylesContent.replace(/'/g, '"');
+    // Remove trailing commas before closing braces
+    stylesContent = stylesContent.replace(/,(\s*[}\]])/g, '$1');
+
+    // Parse as JSON
+    const stylesObj = JSON.parse('{' + stylesContent + '}');
+    return stylesObj;
+  } catch (error) {
+    console.warn('[Designer] Could not parse styles:', error);
+    return null;
+  }
+}
+
 // Load and execute a file in designer mode
 function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   const fullPath = path.join(__dirname, '..', '..', filePath);
@@ -317,6 +346,12 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   // Read source code
   currentSourceCode = fs.readFileSync(fullPath, 'utf8');
   currentFilePath = filePath;
+
+  // Extract CSS styles
+  currentStyles = extractStyles(currentSourceCode);
+  if (currentStyles) {
+    console.log('[Designer] Found styles:', Object.keys(currentStyles));
+  }
 
   // Reset state
   metadataStore.clear();
@@ -548,6 +583,55 @@ class SourceCodeEditor {
     }
   }
 
+  updateStyles(styles: Record<string, any>): boolean {
+    // Find the styles object in the source code
+    let stylesStartLine = -1;
+    let stylesEndLine = -1;
+
+    for (let i = 0; i < this.lines.length; i++) {
+      if (this.lines[i].match(/const\s+styles\s*=\s*\{/)) {
+        stylesStartLine = i;
+        // Find the closing brace
+        let braceCount = 0;
+        for (let j = i; j < this.lines.length; j++) {
+          const line = this.lines[j];
+          braceCount += (line.match(/{/g) || []).length;
+          braceCount -= (line.match(/}/g) || []).length;
+          if (braceCount === 0 && line.includes('}')) {
+            stylesEndLine = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    if (stylesStartLine === -1 || stylesEndLine === -1) {
+      console.warn('[Editor] Could not find styles object in source');
+      return false;
+    }
+
+    // Generate new styles code
+    const indent = '  ';
+    const newStylesLines = ['const styles = {'];
+
+    for (const [className, styleProps] of Object.entries(styles)) {
+      newStylesLines.push(`${indent}${className}: {`);
+      for (const [prop, value] of Object.entries(styleProps as any)) {
+        const valueStr = typeof value === 'string' ? `'${value}'` : value;
+        newStylesLines.push(`${indent}${indent}${prop}: ${valueStr},`);
+      }
+      newStylesLines.push(`${indent}},`);
+    }
+    newStylesLines.push('};');
+
+    // Replace the old styles with new ones
+    this.lines.splice(stylesStartLine, stylesEndLine - stylesStartLine + 1, ...newStylesLines);
+
+    console.log(`[Editor] Updated styles object (lines ${stylesStartLine}-${stylesEndLine})`);
+    return true;
+  }
+
   getSourceCode(): string {
     return this.lines.join('\n');
   }
@@ -567,6 +651,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         res.end(JSON.stringify({
           success: true,
           metadata,
+          styles: currentStyles,
           filePath: currentFilePath
         }));
       } catch (error: any) {
@@ -625,10 +710,11 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
       const editor = new SourceCodeEditor(currentSourceCode!);
 
-      // Process edits in order: delete first (to avoid line number shifts), then add, then property updates
+      // Process edits in order: delete first (to avoid line number shifts), then add, then property updates, then style updates
       const deleteEdits = pendingEdits.filter(e => e.type === 'delete');
       const addEdits = pendingEdits.filter(e => e.type === 'add');
       const propertyEdits = pendingEdits.filter(e => !e.type);
+      const styleEdits = pendingEdits.filter(e => e.type === 'update-styles');
 
       // Apply delete operations first (sort by line number descending to avoid line shift issues)
       deleteEdits.sort((a, b) => {
@@ -657,6 +743,12 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         const oldValueStr = typeof edit.oldValue === 'string' ? `"${edit.oldValue}"` : edit.oldValue;
         const newValueStr = typeof edit.newValue === 'string' ? `"${edit.newValue}"` : edit.newValue;
         editor.findAndReplace(String(oldValueStr), String(newValueStr));
+      }
+
+      // Apply style updates
+      for (const edit of styleEdits) {
+        console.log(`[Editor] Updating styles object`);
+        editor.updateStyles(edit.styles);
       }
 
       // Save to .edited.ts file
@@ -736,6 +828,47 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           widgetId: newWidgetId,
           metadata: currentMetadata  // Return updated metadata
         }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
+  '/api/get-styles': (req, res) => {
+    try {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        styles: currentStyles || {},
+        sourceCode: currentSourceCode
+      }));
+    } catch (error: any) {
+      console.error('[API Error]', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  },
+
+  '/api/update-styles': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { styles } = JSON.parse(body);
+
+        currentStyles = styles;
+        console.log('[Designer] Updated styles:', Object.keys(styles));
+
+        // Record as a pending edit
+        pendingEdits.push({
+          type: 'update-styles',
+          styles
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, styles: currentStyles }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
