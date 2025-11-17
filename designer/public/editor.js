@@ -224,7 +224,19 @@ function renderPropertyInputs(widget) {
               type="text"
               class="property-input"
               value="${escapeHtml(value)}"
-              onchange="updateProperty('${widget.id}', '${key}', this.value)"
+              onchange="updateProperty('${widget.id}', '${key}', this.value, 'string')"
+            />
+          </div>
+        `;
+      } else if (typeof value === 'number') {
+        return `
+          <div class="property-row">
+            <label class="property-label">${key}</label>
+            <input
+              type="number"
+              class="property-input"
+              value="${value}"
+              onchange="updateProperty('${widget.id}', '${key}', this.value, 'number')"
             />
           </div>
         `;
@@ -253,15 +265,25 @@ function renderEventHandlers(handlers) {
 }
 
 // Update property
-async function updateProperty(widgetId, propertyName, newValue) {
+async function updateProperty(widgetId, propertyName, newValue, valueType) {
   try {
+    // Convert value based on type
+    let convertedValue = newValue;
+    if (valueType === 'number') {
+      convertedValue = parseFloat(newValue);
+      if (isNaN(convertedValue)) {
+        alert('Invalid number value');
+        return;
+      }
+    }
+
     const response = await fetch('/api/update-property', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         widgetId,
         propertyName,
-        newValue
+        newValue: convertedValue
       })
     });
 
@@ -271,7 +293,7 @@ async function updateProperty(widgetId, propertyName, newValue) {
       // Update local metadata
       const widget = metadata.widgets.find(w => w.id === widgetId);
       if (widget) {
-        widget.properties[propertyName] = newValue;
+        widget.properties[propertyName] = convertedValue;
       }
 
       renderWidgetTree();
@@ -334,6 +356,19 @@ function renderPreview() {
 function createPreviewWidget(widget) {
   const element = document.createElement('div');
   element.className = 'preview-widget';
+  element.dataset.widgetId = widget.id;
+
+  // Add click handler to select widget
+  element.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectWidget(widget.id);
+  });
+
+  // Add visual highlight if selected
+  if (selectedWidgetId === widget.id) {
+    element.style.outline = '2px solid #0e639c';
+    element.style.outlineOffset = '2px';
+  }
 
   const containerTypes = [
     'vbox', 'hbox', 'window', 'scroll', 'grid', 'gridwrap', 'center',
