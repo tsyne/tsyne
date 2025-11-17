@@ -337,10 +337,18 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
 
     // REPLACE import statement with destructuring from global.designer
     // This preserves line numbers!
-    const executableCode = currentSourceCode.replace(
+    let executableCode = currentSourceCode.replace(
       /import\s+{\s*([^}]+)\s*}\s*from\s+['"][^'"]+['"]\s*;?/g,
       'const { $1 } = global.designer;'
     );
+
+    // Strip TypeScript type annotations (simple approach)
+    // Only remove after variable declarations (let/const/var), not after object properties
+    // Match patterns like: let foo: any = ...
+    executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*\w+(\[\])?\s*([;=,])/g, '$1 $2$4');
+    executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*any\s*([;=,])/g, '$1 $2$3');
+    // Remove type annotations from function parameters: (value: string) → (value)
+    executableCode = executableCode.replace(/(\w+)\s*:\s*\w+(\s*\)|\s*,)/g, '$1$2');
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
@@ -644,9 +652,10 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
       // Apply property updates
       for (const edit of propertyEdits) {
-        const searchText = `"${edit.oldValue}"`;
-        const replaceText = `"${edit.newValue}"`;
-        editor.findAndReplace(searchText, replaceText);
+        // Handle string vs numeric values
+        const oldValueStr = typeof edit.oldValue === 'string' ? `"${edit.oldValue}"` : edit.oldValue;
+        const newValueStr = typeof edit.newValue === 'string' ? `"${edit.newValue}"` : edit.newValue;
+        editor.findAndReplace(String(oldValueStr), String(newValueStr));
       }
 
       // Save to .edited.ts file
