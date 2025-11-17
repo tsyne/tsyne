@@ -188,5 +188,109 @@ describe('Property Editing', () => {
 
       expect(updateResponse.success).toBe(true);
     }, 10000);
+
+    test('should update grid columns through multiple values (context menu simulation)', async () => {
+      // Load grid example
+      const loadResponse = await apiRequest('/api/load', 'POST', {
+        filePath: 'examples/grid.ts'
+      });
+
+      const gridWidget = loadResponse.metadata.widgets.find((w: any) => w.widgetType === 'grid');
+      expect(gridWidget).toBeDefined();
+
+      // Simulate context menu selecting different column values
+      const columnValues = [1, 2, 3, 4, 5, 6];
+
+      for (const cols of columnValues) {
+        const updateResponse = await apiRequest('/api/update-property', 'POST', {
+          widgetId: gridWidget.id,
+          propertyName: 'columns',
+          newValue: cols
+        });
+
+        expect(updateResponse.success).toBe(true);
+        expect(updateResponse.metadata.widgets.find((w: any) => w.id === gridWidget.id).properties.columns).toBe(cols);
+      }
+    }, 15000);
+  });
+
+  describe('Context Menu Property Editing', () => {
+    test('should edit gridwrap itemWidth and itemHeight properties', async () => {
+      // Load hello.ts and add a gridwrap
+      const loadResponse = await apiRequest('/api/load', 'POST', {
+        filePath: 'examples/hello.ts'
+      });
+
+      const vboxWidget = loadResponse.metadata.widgets.find((w: any) => w.widgetType === 'vbox');
+      expect(vboxWidget).toBeDefined();
+
+      // Add a gridwrap to the vbox
+      const addResponse = await apiRequest('/api/add-widget', 'POST', {
+        parentId: vboxWidget.id,
+        widgetType: 'gridwrap'
+      });
+
+      expect(addResponse.success).toBe(true);
+      const gridwrapWidget = addResponse.metadata.widgets.find(
+        (w: any) => w.id === addResponse.widgetId
+      );
+
+      expect(gridwrapWidget).toBeDefined();
+      expect(gridwrapWidget.widgetType).toBe('gridwrap');
+
+      // Update itemWidth
+      const widthResponse = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridwrapWidget.id,
+        propertyName: 'itemWidth',
+        newValue: 150
+      });
+
+      expect(widthResponse.success).toBe(true);
+
+      // Update itemHeight
+      const heightResponse = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridwrapWidget.id,
+        propertyName: 'itemHeight',
+        newValue: 100
+      });
+
+      expect(heightResponse.success).toBe(true);
+
+      // Verify both properties are updated
+      const finalWidget = heightResponse.metadata.widgets.find(
+        (w: any) => w.id === gridwrapWidget.id
+      );
+      expect(finalWidget.properties.itemWidth).toBe(150);
+      expect(finalWidget.properties.itemHeight).toBe(100);
+    }, 10000);
+
+    test('should validate numeric property values', async () => {
+      // Load grid example
+      const loadResponse = await apiRequest('/api/load', 'POST', {
+        filePath: 'examples/grid.ts'
+      });
+
+      const gridWidget = loadResponse.metadata.widgets.find((w: any) => w.widgetType === 'grid');
+      expect(gridWidget).toBeDefined();
+
+      // Try to set columns to 0 (should work, but may not be practical)
+      const zeroResponse = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridWidget.id,
+        propertyName: 'columns',
+        newValue: 0
+      });
+
+      // The API should accept it (validation happens on client side)
+      expect(zeroResponse.success).toBe(true);
+
+      // Try to set columns to a large number
+      const largeResponse = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridWidget.id,
+        propertyName: 'columns',
+        newValue: 100
+      });
+
+      expect(largeResponse.success).toBe(true);
+    }, 10000);
   });
 });
