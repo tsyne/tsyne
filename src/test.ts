@@ -764,6 +764,23 @@ export class TestContext {
   }
 
   /**
+   * Get all widgets of a specific type
+   * Returns an array of Locators, one for each widget of the specified type
+   *
+   * @example
+   * const labels = await ctx.getAllByType('label');
+   * for (const label of labels) {
+   *   const text = await label.getText();
+   *   console.log(text);
+   * }
+   */
+  async getAllByType(type: 'button' | 'label' | 'entry' | 'image' | 'passwordentry' | 'entry'): Promise<Locator[]> {
+    const typeLocator = new Locator(this.bridge, type, 'type');
+    const widgetIds = await typeLocator.findAll();
+    return widgetIds.map(id => new Locator(this.bridge, id, 'id'));
+  }
+
+  /**
    * Get a locator for a widget by ID (like Selenium's findElement)
    * Returns a locator that finds a single widget with the specified ID
    *
