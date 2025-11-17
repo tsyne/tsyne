@@ -509,8 +509,13 @@ async function addWidget(widgetType) {
     const result = await response.json();
 
     if (result.success) {
-      // Reload metadata
-      await loadFile();
+      // Update metadata from server response (don't reload file!)
+      if (result.metadata) {
+        metadata = result.metadata;
+      }
+      renderWidgetTree();
+      renderPreview();
+      renderProperties();
       console.log('Widget added successfully');
     } else {
       alert('Error adding widget: ' + result.error);

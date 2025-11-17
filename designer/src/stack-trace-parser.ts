@@ -72,11 +72,11 @@ export class StackTraceParser {
   }
 
   /**
-   * Check if a file is internal (tsyne or tsyne-designer)
+   * Check if a file is internal (tsyne or designer)
    * We want to skip these and find the user's code
    */
   private static isInternalFile(file: string): boolean {
-    return file.includes('tsyne-designer') ||
+    return file.includes('designer') ||
            file.includes('node_modules') ||
            (file.includes('tsyne') && !file.includes('examples'));
   }
