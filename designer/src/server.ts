@@ -38,20 +38,62 @@ function parseStackTrace(stack: string): SourceLocation {
   return { file: 'unknown', line: 0, column: 0 };
 }
 
+// Extract widget ID from .withId('...') in source line
+function extractWidgetId(sourceLocation: SourceLocation): string | null {
+  if (!currentSourceCode || sourceLocation.file === 'unknown') {
+    return null;
+  }
+
+  const lines = currentSourceCode.split('\n');
+  const lineIndex = sourceLocation.line - 1;
+
+  if (lineIndex < 0 || lineIndex >= lines.length) {
+    return null;
+  }
+
+  let line = lines[lineIndex];
+
+  // Check following lines if statement continues (look for .withId on next lines)
+  let fullStatement = line;
+  for (let i = lineIndex + 1; i < Math.min(lineIndex + 5, lines.length); i++) {
+    const nextLine = lines[i];
+    fullStatement += ' ' + nextLine.trim();
+    // Stop if we hit a semicolon (end of statement)
+    if (nextLine.includes(';')) {
+      break;
+    }
+  }
+
+  // Match patterns like: .withId('myId') or .withId("myId")
+  const match = fullStatement.match(/\.withId\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+  if (match) {
+    return match[1];
+  }
+
+  return null;
+}
+
 // Capture widget
 function captureWidget(type: string, props: any): string {
-  const widgetId = `widget-${widgetIdCounter++}`;
   const location = parseStackTrace(new Error().stack || '');
+
+  // Extract widget ID from .withId('...') in source code (if exists)
+  const widgetId = extractWidgetId(location);
+
+  // Use internal auto-ID for tracking (needed for tree structure)
+  const internalId = `widget-${widgetIdCounter++}`;
+
   const metadata = {
-    id: widgetId,
+    id: internalId,  // Internal tracking ID
+    widgetId: widgetId || null,  // User-defined ID from .withId('...')
     widgetType: type,
     sourceLocation: location,
     properties: props,
     eventHandlers: {},
     parent: currentParent
   };
-  metadataStore.set(widgetId, metadata);
-  return widgetId;
+  metadataStore.set(internalId, metadata);
+  return internalId;
 }
 
 // Helper for container widgets
@@ -610,6 +652,69 @@ class SourceCodeEditor {
     }
   }
 
+  updateWidgetId(metadata: any, oldWidgetId: string | null, newWidgetId: string | null): boolean {
+    const lineIndex = metadata.sourceLocation.line - 1;
+
+    if (lineIndex < 0 || lineIndex >= this.lines.length) {
+      console.warn('[Editor] Invalid line index for widget ID update');
+      return false;
+    }
+
+    // Find the full statement (may span multiple lines)
+    let statementLines = [lineIndex];
+    let fullStatement = this.lines[lineIndex];
+
+    // Look ahead for continuation lines (until we find semicolon or closing paren + semicolon)
+    for (let i = lineIndex + 1; i < Math.min(lineIndex + 10, this.lines.length); i++) {
+      statementLines.push(i);
+      fullStatement += '\n' + this.lines[i];
+      if (this.lines[i].includes(';')) {
+        break;
+      }
+    }
+
+    const firstLine = this.lines[lineIndex];
+    const indent = firstLine.substring(0, firstLine.length - firstLine.trimStart().length);
+
+    // Case 1: Update existing .withId('oldId') to .withId('newId')
+    if (oldWidgetId && newWidgetId) {
+      const withIdPattern = new RegExp(`\\.withId\\s*\\(\\s*['"]${oldWidgetId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*\\)`);
+      if (withIdPattern.test(fullStatement)) {
+        const updatedStatement = fullStatement.replace(withIdPattern, `.withId('${newWidgetId}')`);
+        this.replaceLines(statementLines, updatedStatement);
+        console.log(`[Editor] Line ${lineIndex + 1}: Updated .withId('${oldWidgetId}') → .withId('${newWidgetId}')`);
+        return true;
+      }
+    }
+
+    // Case 2: Add .withId('newId') (no old ID, has new ID)
+    if (!oldWidgetId && newWidgetId) {
+      // Add .withId before the semicolon
+      const updatedStatement = fullStatement.replace(/;/, `.withId('${newWidgetId}');`);
+      this.replaceLines(statementLines, updatedStatement);
+      console.log(`[Editor] Line ${lineIndex + 1}: Added .withId('${newWidgetId}')`);
+      return true;
+    }
+
+    // Case 3: Remove .withId('oldId') (has old ID, no new ID)
+    if (oldWidgetId && !newWidgetId) {
+      const withIdPattern = new RegExp(`\\.withId\\s*\\(\\s*['"]${oldWidgetId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*\\)`, 'g');
+      const updatedStatement = fullStatement.replace(withIdPattern, '');
+      this.replaceLines(statementLines, updatedStatement);
+      console.log(`[Editor] Line ${lineIndex + 1}: Removed .withId('${oldWidgetId}')`);
+      return true;
+    }
+
+    console.warn(`[Editor] Could not apply widget ID update for line ${lineIndex + 1}`);
+    return false;
+  }
+
+  private replaceLines(lineIndices: number[], newText: string): void {
+    const newLines = newText.split('\n');
+    // Remove old lines
+    this.lines.splice(lineIndices[0], lineIndices.length, ...newLines);
+  }
+
   updateStyles(styles: Record<string, any>): boolean {
     // Find the styles object in the source code
     let stylesStartLine = -1;
@@ -737,10 +842,11 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
       const editor = new SourceCodeEditor(currentSourceCode!);
 
-      // Process edits in order: delete first (to avoid line number shifts), then add, then property updates, then style updates
+      // Process edits in order: delete first (to avoid line number shifts), then add, then property updates, then widget ID updates, then style updates
       const deleteEdits = pendingEdits.filter(e => e.type === 'delete');
       const addEdits = pendingEdits.filter(e => e.type === 'add');
       const propertyEdits = pendingEdits.filter(e => !e.type);
+      const widgetIdEdits = pendingEdits.filter(e => e.type === 'update-widget-id');
       const styleEdits = pendingEdits.filter(e => e.type === 'update-styles');
 
       // Apply delete operations first (sort by line number descending to avoid line shift issues)
@@ -772,6 +878,12 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         editor.findAndReplace(String(oldValueStr), String(newValueStr));
       }
 
+      // Apply widget ID edits
+      for (const edit of widgetIdEdits) {
+        console.log(`[Editor] Updating widget ID: "${edit.oldWidgetId || '(none)'}" → "${edit.newWidgetId || '(none)'}"`);
+        editor.updateWidgetId(edit.widget, edit.oldWidgetId, edit.newWidgetId);
+      }
+
       // Apply style updates
       for (const edit of styleEdits) {
         console.log(`[Editor] Updating styles object`);
@@ -785,7 +897,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       fs.writeFileSync(fullOutputPath, editor.getSourceCode(), 'utf8');
 
       console.log(`[Editor] Saved changes to: ${outputPath}`);
-      console.log(`[Editor] Applied ${pendingEdits.length} edits (${deleteEdits.length} deletes, ${addEdits.length} adds, ${propertyEdits.length} updates)`);
+      console.log(`[Editor] Applied ${pendingEdits.length} edits (${deleteEdits.length} deletes, ${addEdits.length} adds, ${propertyEdits.length} property updates, ${widgetIdEdits.length} widget ID updates)`);
 
       pendingEdits = [];
 
@@ -896,6 +1008,60 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, styles: currentStyles }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
+  '/api/update-widget-id': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { internalId, oldWidgetId, newWidgetId } = JSON.parse(body);
+
+        // Check if widget exists
+        const widget = metadataStore.get(internalId);
+        if (!widget) {
+          throw new Error('Widget not found');
+        }
+
+        // Validate new widget ID if provided
+        if (newWidgetId && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newWidgetId)) {
+          throw new Error('Invalid widget ID');
+        }
+
+        // Check if new widget ID already exists
+        if (newWidgetId) {
+          for (const [id, w] of metadataStore.entries()) {
+            if (id !== internalId && w.widgetId === newWidgetId) {
+              throw new Error('A widget with this ID already exists');
+            }
+          }
+        }
+
+        // Update the widget's ID
+        widget.widgetId = newWidgetId || null;
+
+        // Update current metadata
+        currentMetadata!.widgets = Array.from(metadataStore.values());
+
+        console.log(`[Editor] Updated widget ID: "${oldWidgetId || '(none)'}" → "${newWidgetId || '(none)'}"`);
+
+        // Record as a pending edit (for save operation)
+        pendingEdits.push({
+          type: 'update-widget-id',
+          internalId,
+          widget,
+          oldWidgetId,
+          newWidgetId
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, metadata: currentMetadata }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });

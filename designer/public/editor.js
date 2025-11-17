@@ -434,8 +434,14 @@ function renderProperties() {
         <div class="property-value">${widget.widgetType}</div>
       </div>
       <div class="property-row">
-        <span class="property-label">ID</span>
-        <div class="property-value">${widget.id}</div>
+        <label class="property-label">ID</label>
+        <input
+          type="text"
+          class="property-input"
+          value="${widget.widgetId ? escapeHtml(widget.widgetId) : ''}"
+          placeholder="${widget.widgetId ? '' : '(no ID)'}"
+          onchange="updateWidgetId('${widget.id}', this.value)"
+        />
       </div>
     </div>
 
@@ -586,6 +592,73 @@ function renderEventHandlers(handlers) {
       </div>
     `)
     .join('');
+}
+
+// Update widget ID
+async function updateWidgetId(internalId, newWidgetId) {
+  newWidgetId = newWidgetId.trim();
+
+  const widget = metadata.widgets.find(w => w.id === internalId);
+  if (!widget) {
+    alert('Widget not found');
+    renderProperties();
+    return;
+  }
+
+  const oldWidgetId = widget.widgetId || null;
+
+  // Check if there's actually a change
+  if (oldWidgetId === newWidgetId || (!oldWidgetId && !newWidgetId)) {
+    return;
+  }
+
+  // Validate new widget ID if not empty
+  if (newWidgetId && !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newWidgetId)) {
+    alert('Invalid widget ID. Must start with letter or underscore, and contain only letters, numbers, and underscores.');
+    renderProperties();
+    return;
+  }
+
+  // Check if new widget ID already exists
+  if (newWidgetId && metadata.widgets.find(w => w.widgetId === newWidgetId)) {
+    alert('A widget with this ID already exists');
+    renderProperties();
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/update-widget-id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        internalId,
+        oldWidgetId,
+        newWidgetId: newWidgetId || null
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Update local metadata
+      if (result.metadata) {
+        metadata = result.metadata;
+      }
+
+      renderWidgetTree();
+      renderProperties();
+      renderPreview();
+
+      console.log('Widget ID updated successfully');
+    } else {
+      alert('Error updating widget ID: ' + result.error);
+      renderProperties();
+    }
+  } catch (error) {
+    console.error('Error updating widget ID:', error);
+    alert('Error updating widget ID: ' + error.message);
+    renderProperties();
+  }
 }
 
 // Update property
