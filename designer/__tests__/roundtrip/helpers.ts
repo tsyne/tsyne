@@ -55,10 +55,18 @@ export function loadFile(filePath: string): Promise<any> {
 }
 
 /**
- * Save changes back to source
+ * Load inline source code in designer mode (XStream-style)
  */
-export function save(): Promise<any> {
-  return apiRequest('/api/save');
+export function loadFromString(sourceCode: string, virtualPath: string = 'inline.ts'): Promise<any> {
+  return apiRequest('/api/load-string', { sourceCode, virtualPath });
+}
+
+/**
+ * Save changes back to source
+ * @param writer - 'disk' (default) writes to file system, 'memory' captures to memory only
+ */
+export function save(writer: 'disk' | 'memory' = 'disk'): Promise<any> {
+  return apiRequest('/api/save', { writer });
 }
 
 /**

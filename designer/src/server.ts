@@ -403,17 +403,10 @@ function extractStyles(sourceCode: string): Record<string, any> | null {
   }
 }
 
-// Load and execute a file in designer mode
-function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
-  const fullPath = path.join(__dirname, '..', '..', filePath);
-
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`File not found: ${fullPath}`);
-  }
-
-  // Read source code
-  currentSourceCode = fs.readFileSync(fullPath, 'utf8');
-  currentFilePath = filePath;
+// Load and execute source code in designer mode
+function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): { widgets: any[] } {
+  currentSourceCode = sourceCode;
+  currentFilePath = virtualPath;
 
   // Extract CSS styles
   currentStyles = extractStyles(currentSourceCode);
@@ -427,12 +420,12 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   currentParent = null;
   pendingEdits = [];
 
-  console.log(`[Designer] Loading file: ${filePath}`);
+  console.log(`[Designer] Loading source: ${virtualPath}`);
 
   // Create temp file with similar name to preserve line numbers in stack traces
   const tempDir = path.join('/tmp', 'tsyne-designer-' + Date.now());
   fs.mkdirSync(tempDir, { recursive: true });
-  const tempPath = path.join(tempDir, path.basename(filePath, '.ts') + '.js');
+  const tempPath = path.join(tempDir, path.basename(virtualPath, '.ts') + '.js');
 
   try {
     // Make designer available globally BEFORE writing/executing the file
@@ -494,6 +487,19 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   };
 
   return currentMetadata;
+}
+
+// Load and execute a file in designer mode
+function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
+  const fullPath = path.join(__dirname, '..', '..', filePath);
+
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`File not found: ${fullPath}`);
+  }
+
+  // Read source code and load it
+  const sourceCode = fs.readFileSync(fullPath, 'utf8');
+  return loadSourceInDesignerMode(sourceCode, filePath);
 }
 
 // Source code editor
@@ -803,6 +809,29 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
     });
   },
 
+  '/api/load-string': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { sourceCode, virtualPath = 'inline.ts' } = JSON.parse(body);
+        const metadata = loadSourceInDesignerMode(sourceCode, virtualPath);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          metadata,
+          styles: currentStyles,
+          filePath: currentFilePath
+        }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
   '/api/update-property': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -842,12 +871,18 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
   },
 
   '/api/save': async (req, res) => {
-    try {
-      if (pendingEdits.length === 0) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'No changes to save' }));
-        return;
-      }
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        // Parse writer strategy from request (default: 'disk')
+        const { writer = 'disk' } = body ? JSON.parse(body) : {};
+
+        if (pendingEdits.length === 0) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'No changes to save', content: currentSourceCode }));
+          return;
+        }
 
       const editor = new SourceCodeEditor(currentSourceCode!);
 
@@ -926,24 +961,32 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         });
       }
 
-      // Save to .edited.ts file
+      // Prepare output path
       const outputPath = currentFilePath!.replace('.ts', '.edited.ts');
       const fullOutputPath = path.join(__dirname, '..', '..', outputPath);
 
-      fs.writeFileSync(fullOutputPath, transformResult.source, 'utf8');
+      // Apply writer strategy
+      if (writer === 'disk') {
+        // Write to file system
+        fs.writeFileSync(fullOutputPath, transformResult.source, 'utf8');
+        console.log(`[Editor] Saved changes to: ${outputPath}`);
+      } else if (writer === 'memory') {
+        // Memory only - no file write
+        console.log(`[Editor] Captured changes to memory (no file written)`);
+      }
 
-      console.log(`[Editor] Saved changes to: ${outputPath}`);
       console.log(`[Editor] Applied ${pendingEdits.length} edits (${deleteEdits.length} deletes, ${addEdits.length} adds, ${propertyEdits.length} property updates, ${widgetIdEdits.length} widget ID updates)`);
 
       pendingEdits = [];
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, outputPath, transformed: transformResult.transformed }));
-    } catch (error: any) {
-      console.error('[API Error]', error);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: false, error: error.message }));
-    }
+      res.end(JSON.stringify({ success: true, outputPath, transformed: transformResult.transformed, content: transformResult.source }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
   },
 
   '/api/add-widget': (req, res) => {

@@ -13,16 +13,31 @@ These tests ensure that:
 2. Editing in the designer produces correct source modifications
 3. Saving back produces clean, diff-able code without unintended changes
 
+## XStream-Style Testing
+
+Like XStream, these tests use:
+- **Inline code fragments** - No external files, code embedded in tests
+- **Exact equality assertions** - `.toBe()` instead of `.toContain()`
+- **Self-contained examples** - Each test is fully readable in isolation
+
 ## Test Structure
 
 Each test file focuses on a specific **code pattern** or **example application**:
 
-### Passing Tests (Expected to Succeed)
+### XStream-Style Tests (Inline Code, Exact Assertions)
+- **inline-exact.test.ts** - Self-contained tests with inline code fragments - 9 tests
+  - Uses `loadFromString()` instead of `loadFile()`
+  - Uses `expect().toBe()` for exact equality instead of `.toContain()`
+  - Uses `save('memory')` - no filesystem I/O
+  - Each test is fully self-documenting
+
+### File-Based Tests (Expected to Succeed)
 - **simple-vbox-with-button.test.ts** - Tests basic layout (hello.ts) - 15 tests
 - **counter-with-state.test.ts** - Tests state management with multiple buttons (02-counter.ts) - 4 tests
 - **nested-containers.test.ts** - Tests nested layout containers (03-button-spacer.ts) - 4 tests
 - **hbox-layout.test.ts** - Tests horizontal layouts (hbox-example.ts) - 15 tests
 - **grid-layout.test.ts** - Tests grid layouts with multiple columns (grid-example.ts) - 19 tests
+- **property-edits.test.ts** - Tests property changes (text, className, etc.) - 15 tests
 
 ### Known Limitations (Expected to Fail)
 - **known-limitations.test.ts** - Documents code patterns that DON'T survive round-trip - 11 tests
@@ -50,8 +65,10 @@ All tests verify four core operations:
 
 The `helpers.ts` module provides shared utilities:
 
+- `loadFromString(code)` - Load inline code into designer (XStream-style)
 - `loadFile(path)` - Load a file into the designer
-- `save()` - Save changes back to source
+- `save(writer)` - Save changes: `'memory'` (no disk) or `'disk'` (default)
+- `updateProperty(id, property, value)` - Modify widget properties
 - `updateWidgetId(id, oldId, newId)` - Modify widget IDs
 - `getDiff(original, edited)` - Compute file differences
 - `findWidget(metadata, type, property)` - Locate widgets in metadata
@@ -59,7 +76,43 @@ The `helpers.ts` module provides shared utilities:
 
 ## Adding New Tests
 
-To add a new RoundTrip test:
+### XStream-Style (Recommended)
+
+```typescript
+test('round-trip: description', async () => {
+  const original = `import { app, window, vbox, button } from '../src';
+
+app({ title: "Test" }, () => {
+  window({ title: "Test" }, () => {
+    vbox(() => {
+      button("Click", () => {});
+    });
+  });
+});`;
+
+  const result = await loadFromString(original);
+
+  // Make edits...
+  const buttonWidget = findWidget(result.metadata, 'button');
+  await updateProperty(buttonWidget.id, 'text', 'Updated');
+
+  const saveResult = await save('memory');
+
+  const expected = `import { app, window, vbox, button } from '../src';
+
+app({ title: "Test" }, () => {
+  window({ title: "Test" }, () => {
+    vbox(() => {
+      button("Updated", () => {});
+    });
+  });
+});`;
+
+  expect(saveResult.content).toBe(expected);  // Exact match!
+});
+```
+
+### File-Based (Legacy)
 
 1. Choose an example file that demonstrates a specific pattern
 2. Create a descriptive test file: `pattern-description.test.ts`
