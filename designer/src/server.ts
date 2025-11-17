@@ -48,7 +48,7 @@ function captureWidget(type: string, props: any): any {
 
   const metadata = {
     id: internalId,  // Internal tracking ID
-    widgetId: null,  // User-defined ID (set via .withId())
+    widgetId: null as string | null,  // User-defined ID (set via .withId())
     widgetType: type,
     sourceLocation: location,
     properties: props,
@@ -74,7 +74,7 @@ function containerWidget(type: string, props: any, builder: () => void): any {
 
   const metadata = {
     id: internalId,
-    widgetId: null,
+    widgetId: null as string | null,
     widgetType: type,
     sourceLocation: location,
     properties: props,

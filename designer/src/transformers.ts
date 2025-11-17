@@ -263,6 +263,64 @@ export class CommentPreserver implements SourceTransformer {
 }
 
 /**
+ * ESLint transformer - automatically lints and fixes code on save
+ */
+export class ESLintTransformer implements SourceTransformer {
+  name = 'ESLintTransformer';
+
+  async transform(context: TransformContext): Promise<TransformResult> {
+    try {
+      // Dynamically import ESLint
+      const { ESLint } = await import('eslint');
+
+      // Create ESLint instance (ESLint 9+ doesn't need useEslintrc)
+      const eslint = new ESLint({
+        fix: true
+      });
+
+      // Lint the candidate source
+      const results = await eslint.lintText(context.candidateSource, {
+        filePath: context.filePath
+      });
+
+      const warnings: string[] = [];
+
+      // Check if there were any issues
+      if (results[0].messages.length > 0) {
+        for (const message of results[0].messages) {
+          warnings.push(
+            `[ESLint] ${message.severity === 2 ? 'Error' : 'Warning'} at line ${message.line}: ${message.message}`
+          );
+        }
+      }
+
+      // If ESLint fixed anything, use the fixed code
+      if (results[0].output) {
+        return {
+          source: results[0].output,
+          transformed: true,
+          warnings: warnings.length > 0 ? warnings : undefined
+        };
+      }
+
+      // No fixes applied, but log warnings if any
+      return {
+        source: context.candidateSource,
+        transformed: false,
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    } catch (error: any) {
+      // If ESLint fails, just pass through the code
+      return {
+        source: context.candidateSource,
+        transformed: false,
+        warnings: [`ESLint failed: ${error.message}`]
+      };
+    }
+  }
+}
+
+/**
  * Future: LLM-based transformer
  * Uses an LLM to arbitrate source differences and make intelligent corrections
  */
