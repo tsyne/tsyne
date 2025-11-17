@@ -348,7 +348,8 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
     executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*\w+(\[\])?\s*([;=,])/g, '$1 $2$4');
     executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*any\s*([;=,])/g, '$1 $2$3');
     // Remove type annotations from function parameters: (value: string) → (value)
-    executableCode = executableCode.replace(/(\w+)\s*:\s*\w+(\s*\)|\s*,)/g, '$1$2');
+    // Only match type identifiers (not numbers like :300), types start with letters
+    executableCode = executableCode.replace(/(\(|,\s*)(\w+)\s*:\s*[A-Za-z_][\w<>[\]|&]*(\s*\)|\s*,|\s*=)/g, '$1$2$3');
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
@@ -605,7 +606,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         currentMetadata!.widgets = Array.from(metadataStore.values());
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
+        res.end(JSON.stringify({ success: true, metadata: currentMetadata }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
