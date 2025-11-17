@@ -8,6 +8,28 @@ let currentStyles = null;
 // Context menu state
 let contextMenuTarget = null;
 
+// Known CSS properties (categorized)
+const knownCssProperties = {
+  'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
+  'Size': ['fontSize', 'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight'],
+  'Spacing': ['margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+              'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'],
+  'Border': ['border', 'borderWidth', 'borderStyle', 'borderRadius', 'borderTop', 'borderRight', 'borderBottom', 'borderLeft'],
+  'Layout': ['display', 'position', 'top', 'right', 'bottom', 'left', 'float', 'clear', 'overflow', 'overflowX', 'overflowY'],
+  'Text': ['fontFamily', 'fontWeight', 'fontStyle', 'textAlign', 'textDecoration', 'lineHeight', 'letterSpacing'],
+  'Flexbox': ['flexDirection', 'justifyContent', 'alignItems', 'alignContent', 'flexWrap', 'flex', 'flexGrow', 'flexShrink'],
+  'Other': ['opacity', 'cursor', 'zIndex', 'boxShadow', 'textShadow', 'transform', 'transition']
+};
+
+// Flatten all known properties
+const allKnownProperties = Object.values(knownCssProperties).flat();
+
+// Helper: Check if a property is color-related
+function isColorProperty(propName) {
+  const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'background', 'fill', 'stroke'];
+  return colorProps.some(cp => propName.toLowerCase().includes(cp.toLowerCase()));
+}
+
 // Property schemas for each widget type
 const widgetPropertySchemas = {
   label: {
@@ -214,13 +236,20 @@ function promptPropertyValue(widgetId, propertyName, promptText) {
   hideContextMenu();
 }
 
+// Load selected file from dropdown
+async function loadSelectedFile() {
+  const select = document.getElementById('fileSelect');
+  const filePath = select.value;
+  await loadFile(filePath);
+}
+
 // Load file and metadata
-async function loadFile() {
+async function loadFile(filePath = 'examples/hello.ts') {
   try {
     const response = await fetch('/api/load', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filePath: 'examples/hello.ts' })
+      body: JSON.stringify({ filePath })
     });
 
     const data = await response.json();
@@ -240,6 +269,7 @@ async function loadFile() {
 
     renderWidgetTree();
     renderPreview();
+    applyStylesToPreview();
 
     console.log('Loaded metadata:', metadata);
     console.log('Loaded styles:', currentStyles);
@@ -638,9 +668,46 @@ async function saveChanges() {
   }
 }
 
+// Apply styles to preview
+function applyStylesToPreview() {
+  if (!currentStyles) return;
+
+  // Remove existing style tag if any
+  const existingStyle = document.getElementById('previewStyles');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  // Create new style tag
+  const styleTag = document.createElement('style');
+  styleTag.id = 'previewStyles';
+
+  // Convert camelCase to kebab-case
+  const camelToKebab = (str) => {
+    return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+  };
+
+  // Generate CSS
+  let cssText = '';
+  for (const [className, properties] of Object.entries(currentStyles)) {
+    cssText += `.${className} {\n`;
+    for (const [prop, value] of Object.entries(properties)) {
+      const cssProp = camelToKebab(prop);
+      cssText += `  ${cssProp}: ${value};\n`;
+    }
+    cssText += '}\n\n';
+  }
+
+  styleTag.textContent = cssText;
+  document.head.appendChild(styleTag);
+
+  console.log('[Preview] Applied styles:', cssText);
+}
+
 // Refresh preview
 function refreshPreview() {
   renderPreview();
+  applyStylesToPreview();
 }
 
 // Render preview
@@ -666,6 +733,11 @@ function createPreviewWidget(widget) {
   const element = document.createElement('div');
   element.className = 'preview-widget';
   element.dataset.widgetId = widget.id;
+
+  // Apply CSS class if widget has className property
+  if (widget.properties && widget.properties.className) {
+    element.classList.add(widget.properties.className);
+  }
 
   // Add click handler to select widget
   element.addEventListener('click', (e) => {
@@ -1095,12 +1167,21 @@ function renderCssEditor() {
 
     for (const [prop, value] of Object.entries(properties)) {
       const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      const isColor = isColorProperty(prop);
+
       html += `
         <div class="css-property-row">
           <input type="text" class="css-property-input" value="${prop}"
                  onchange="updateCssProperty('${className}', '${prop}', 'name', this.value)">
-          <input type="text" class="css-property-input" value="${escapeHtml(valueStr)}"
-                 onchange="updateCssProperty('${className}', '${prop}', 'value', this.value)">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${isColor ? `
+              <input type="color" class="css-color-picker" value="${valueStr.startsWith('#') ? valueStr : '#000000'}"
+                     onchange="updateCssProperty('${className}', '${prop}', 'value', this.value)">
+            ` : ''}
+            <input type="text" class="css-property-input" value="${escapeHtml(valueStr)}"
+                   onchange="updateCssProperty('${className}', '${prop}', 'value', this.value)"
+                   style="flex: 1;">
+          </div>
           <button class="css-property-delete" onclick="deleteCssProperty('${className}', '${prop}')">×</button>
         </div>
       `;
@@ -1134,22 +1215,110 @@ function updateCssProperty(className, oldPropName, field, newValue) {
   }
 
   renderCssEditor();
+  applyStylesToPreview();
 }
 
 function deleteCssProperty(className, propName) {
   if (!currentStyles || !currentStyles[className]) return;
   delete currentStyles[className][propName];
   renderCssEditor();
+  applyStylesToPreview();
 }
 
 function addCssProperty(className) {
   if (!currentStyles || !currentStyles[className]) return;
 
-  const propName = prompt('Enter property name:', 'newProp');
-  if (!propName) return;
+  // Create a modal dialog with property selection
+  const existingModal = document.getElementById('propertyPickerModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
 
-  currentStyles[className][propName] = '';
+  const modal = document.createElement('div');
+  modal.id = 'propertyPickerModal';
+  modal.className = 'modal-overlay visible';
+
+  let optionsHtml = '';
+  for (const [category, props] of Object.entries(knownCssProperties)) {
+    optionsHtml += `<optgroup label="${category}">`;
+    for (const prop of props) {
+      optionsHtml += `<option value="${prop}">${prop}</option>`;
+    }
+    optionsHtml += `</optgroup>`;
+  }
+
+  modal.innerHTML = `
+    <div class="modal" style="width: 500px;">
+      <div class="modal-header">
+        <h2>Add CSS Property</h2>
+        <button class="modal-close" onclick="closePropertyPicker()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 8px; color: #d4d4d4; font-size: 13px;">
+            Select a property or enter a custom one:
+          </label>
+          <select id="propertySelect" class="property-input" style="width: 100%; margin-bottom: 10px;">
+            <option value="">-- Select Property --</option>
+            ${optionsHtml}
+          </select>
+          <div style="margin-top: 10px;">
+            <label style="display: block; margin-bottom: 8px; color: #d4d4d4; font-size: 13px;">
+              Or enter custom property name:
+            </label>
+            <input type="text" id="customPropertyInput" class="property-input"
+                   placeholder="e.g., customProperty" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closePropertyPicker()">Cancel</button>
+        <button class="btn-save" onclick="confirmAddProperty('${className}')">Add Property</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Focus on select
+  setTimeout(() => {
+    document.getElementById('propertySelect').focus();
+  }, 100);
+}
+
+function closePropertyPicker() {
+  const modal = document.getElementById('propertyPickerModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function confirmAddProperty(className) {
+  const select = document.getElementById('propertySelect');
+  const customInput = document.getElementById('customPropertyInput');
+
+  const propName = customInput.value.trim() || select.value;
+
+  if (!propName) {
+    alert('Please select or enter a property name');
+    return;
+  }
+
+  if (currentStyles[className][propName] !== undefined) {
+    alert(`Property "${propName}" already exists`);
+    return;
+  }
+
+  // Set default value based on property type
+  let defaultValue = '';
+  if (isColorProperty(propName)) {
+    defaultValue = '#000000';
+  }
+
+  currentStyles[className][propName] = defaultValue;
+  closePropertyPicker();
   renderCssEditor();
+  applyStylesToPreview();
 }
 
 function deleteClass(className) {
@@ -1159,6 +1328,7 @@ function deleteClass(className) {
 
   delete currentStyles[className];
   renderCssEditor();
+  applyStylesToPreview();
 }
 
 async function saveCssChanges() {

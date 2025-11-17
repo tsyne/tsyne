@@ -490,6 +490,16 @@
       align-items: center;
     }
 
+    .css-color-picker {
+      width: 40px;
+      height: 32px;
+      border: 1px solid #5e5e5e;
+      border-radius: 3px;
+      cursor: pointer;
+      background: #3c3c3c;
+      padding: 2px;
+    }
+
     .css-property-input {
       background: #3c3c3c;
       border: 1px solid #5e5e5e;
@@ -552,7 +562,12 @@
   <div class="editor-container">
     <div class="toolbar">
       <h1>Tsyne WYSIWYG Designer</h1>
-      <button onclick="loadFile()">load testfile</button>
+      <select id="fileSelect" style="background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; padding: 6px 8px; border-radius: 3px; font-size: 13px;">
+        <option value="examples/hello.ts">Hello (testfile)</option>
+        <option value="examples/calculator.ts">Calculator</option>
+        <option value="examples/todomvc.ts">TodoMVC</option>
+      </select>
+      <button onclick="loadSelectedFile()">Load</button>
       <button onclick="saveChanges()">Save Changes</button>
       <button onclick="refreshPreview()">Refresh</button>
       <button onclick="openCssEditor()" id="cssEditorBtn" style="display:none">CSS Classes</button>
