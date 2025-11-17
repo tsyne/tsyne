@@ -8,8 +8,9 @@
     "watch": "tsc --watch",
     "start": "node dist/server.js",
     "dev": "tsc && node dist/server.js",
-    "test": "npm run test:unit && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:roundtrip && npm run test:e2e",
     "test:unit": "jest --testMatch='**/__tests__/unit/**/*.test.ts'",
+    "test:roundtrip": "jest --testMatch='**/__tests__/roundtrip/**/*.test.ts'",
     "test:e2e": "jest --testMatch='**/__tests__/e2e/**/*.test.ts'",
     "test:watch": "jest --watch"
   },

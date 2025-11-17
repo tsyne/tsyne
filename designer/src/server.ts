@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 import { WidgetMetadata, SourceLocation } from './metadata';
+import { transformerRegistry, TransformContext } from './transformers';
 
 // State
 let currentMetadata: { widgets: any[] } | null = null;
@@ -38,54 +39,16 @@ function parseStackTrace(stack: string): SourceLocation {
   return { file: 'unknown', line: 0, column: 0 };
 }
 
-// Extract widget ID from .withId('...') in source line
-function extractWidgetId(sourceLocation: SourceLocation): string | null {
-  if (!currentSourceCode || sourceLocation.file === 'unknown') {
-    return null;
-  }
-
-  const lines = currentSourceCode.split('\n');
-  const lineIndex = sourceLocation.line - 1;
-
-  if (lineIndex < 0 || lineIndex >= lines.length) {
-    return null;
-  }
-
-  let line = lines[lineIndex];
-
-  // Check following lines if statement continues (look for .withId on next lines)
-  let fullStatement = line;
-  for (let i = lineIndex + 1; i < Math.min(lineIndex + 5, lines.length); i++) {
-    const nextLine = lines[i];
-    fullStatement += ' ' + nextLine.trim();
-    // Stop if we hit a semicolon (end of statement)
-    if (nextLine.includes(';')) {
-      break;
-    }
-  }
-
-  // Match patterns like: .withId('myId') or .withId("myId")
-  const match = fullStatement.match(/\.withId\s*\(\s*['"]([^'"]+)['"]\s*\)/);
-  if (match) {
-    return match[1];
-  }
-
-  return null;
-}
-
-// Capture widget
-function captureWidget(type: string, props: any): string {
+// Capture widget - returns chainable object with .withId()
+function captureWidget(type: string, props: any): any {
   const location = parseStackTrace(new Error().stack || '');
-
-  // Extract widget ID from .withId('...') in source code (if exists)
-  const widgetId = extractWidgetId(location);
 
   // Use internal auto-ID for tracking (needed for tree structure)
   const internalId = `widget-${widgetIdCounter++}`;
 
   const metadata = {
     id: internalId,  // Internal tracking ID
-    widgetId: widgetId || null,  // User-defined ID from .withId('...')
+    widgetId: null,  // User-defined ID (set via .withId())
     widgetType: type,
     sourceLocation: location,
     properties: props,
@@ -93,17 +56,47 @@ function captureWidget(type: string, props: any): string {
     parent: currentParent
   };
   metadataStore.set(internalId, metadata);
-  return internalId;
+
+  // Return chainable object with .withId() method
+  return {
+    __internalId: internalId,  // For accessing metadata
+    withId: (id: string) => {
+      metadata.widgetId = id;
+      return { withId: () => {}, __internalId: internalId }; // Allow chaining
+    }
+  };
 }
 
 // Helper for container widgets
-function containerWidget(type: string, props: any, builder: () => void): string {
-  const widgetId = captureWidget(type, props);
+function containerWidget(type: string, props: any, builder: () => void): any {
+  const location = parseStackTrace(new Error().stack || '');
+  const internalId = `widget-${widgetIdCounter++}`;
+
+  const metadata = {
+    id: internalId,
+    widgetId: null,
+    widgetType: type,
+    sourceLocation: location,
+    properties: props,
+    eventHandlers: {},
+    parent: currentParent
+  };
+  metadataStore.set(internalId, metadata);
+
+  // Execute builder with this widget as parent
   const prev = currentParent;
-  currentParent = widgetId;
+  currentParent = internalId;
   builder();
   currentParent = prev;
-  return widgetId;
+
+  // Return chainable object with .withId()
+  return {
+    __internalId: internalId,
+    withId: (id: string) => {
+      metadata.widgetId = id;
+      return { withId: () => {}, __internalId: internalId };
+    }
+  };
 }
 
 // Designer API - Complete widget support (emulates Tsyne ABI)
@@ -129,10 +122,10 @@ const designer = {
     MONOSPACE: 4
   },
 
-  window(options: any, builder: (win: any) => void) {
-    const widgetId = captureWidget('window', options);
+  window(options: any, builder: (win: any) => void): any {
+    const result = captureWidget('window', options);
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     const windowObj = {
       setContent: (contentBuilder: () => void) => {
         contentBuilder();
@@ -141,224 +134,240 @@ const designer = {
     };
     builder(windowObj);
     currentParent = prev;
+    return result;
   },
 
   // Containers
-  vbox(builder: () => void): string { return containerWidget('vbox', {}, builder); },
-  hbox(builder: () => void): string { return containerWidget('hbox', {}, builder); },
-  scroll(builder: () => void): string { return containerWidget('scroll', {}, builder); },
-  center(builder: () => void): string { return containerWidget('center', {}, builder); },
+  vbox(builder: () => void): any { return containerWidget('vbox', {}, builder); },
+  hbox(builder: () => void): any { return containerWidget('hbox', {}, builder); },
+  scroll(builder: () => void): any { return containerWidget('scroll', {}, builder); },
+  center(builder: () => void): any { return containerWidget('center', {}, builder); },
 
-  grid(columns: number, builder: () => void): string {
+  grid(columns: number, builder: () => void): any {
     return containerWidget('grid', { columns }, builder);
   },
 
-  gridwrap(itemWidth: number, itemHeight: number, builder: () => void): string {
+  gridwrap(itemWidth: number, itemHeight: number, builder: () => void): any {
     return containerWidget('gridwrap', { itemWidth, itemHeight }, builder);
   },
 
-  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): void {
-    const widgetId = captureWidget('hsplit', { offset });
+  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): any {
+    const result = captureWidget('hsplit', { offset });
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     leadingBuilder();
     trailingBuilder();
     currentParent = prev;
+    return result;
   },
 
-  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): void {
-    const widgetId = captureWidget('vsplit', { offset });
+  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): any {
+    const result = captureWidget('vsplit', { offset });
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     leadingBuilder();
     trailingBuilder();
     currentParent = prev;
+    return result;
   },
 
-  tabs(tabDefinitions: any[], location?: string): void {
-    const widgetId = captureWidget('tabs', {
+  tabs(tabDefinitions: any[], location?: string): any {
+    const result = captureWidget('tabs', {
       tabs: tabDefinitions.map(t => t.title).join(', '),
       location
     });
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     tabDefinitions.forEach(tab => tab.builder());
     currentParent = prev;
+    return result;
   },
 
-  card(title: string, subtitle: string, builder: () => void): string {
+  card(title: string, subtitle: string, builder: () => void): any {
     return containerWidget('card', { title, subtitle }, builder);
   },
 
-  accordion(items: any[]): void {
-    const widgetId = captureWidget('accordion', {
+  accordion(items: any[]): any {
+    const result = captureWidget('accordion', {
       items: items.map(i => i.title).join(', ')
     });
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     items.forEach(item => item.builder());
     currentParent = prev;
+    return result;
   },
 
-  form(items: any[], onSubmit?: () => void, onCancel?: () => void): void {
-    const widgetId = captureWidget('form', {
+  form(items: any[], onSubmit?: () => void, onCancel?: () => void): any {
+    const result = captureWidget('form', {
       fields: items.map(i => i.label).join(', ')
     });
     if (onSubmit || onCancel) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) {
         if (onSubmit) widget.eventHandlers.onSubmit = onSubmit.toString();
         if (onCancel) widget.eventHandlers.onCancel = onCancel.toString();
       }
     }
+    return result;
   },
 
-  border(config: any): void {
-    const widgetId = captureWidget('border', {
+  border(config: any): any {
+    const result = captureWidget('border', {
       regions: Object.keys(config).join(', ')
     });
     const prev = currentParent;
-    currentParent = widgetId;
+    currentParent = result.__internalId;
     if (config.top) config.top();
     if (config.bottom) config.bottom();
     if (config.left) config.left();
     if (config.right) config.right();
     if (config.center) config.center();
     currentParent = prev;
+    return result;
   },
 
   // Input widgets
-  button(text: string, onClick?: () => void, className?: string): void {
-    const widgetId = captureWidget('button', { text, className });
+  button(text: string, onClick?: () => void, className?: string): any {
+    const result = captureWidget('button', { text, className });
     if (onClick) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onClick = onClick.toString();
     }
+    return result;
   },
 
-  label(text: string, className?: string, alignment?: string, wrapping?: string, textStyle?: any): void {
-    captureWidget('label', { text, className, alignment, wrapping, textStyle });
+  label(text: string, className?: string, alignment?: string, wrapping?: string, textStyle?: any): any {
+    return captureWidget('label', { text, className, alignment, wrapping, textStyle });
   },
 
-  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): void {
-    const widgetId = captureWidget('entry', { placeholder, minWidth });
+  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): any {
+    const result = captureWidget('entry', { placeholder, minWidth });
     if (onSubmit || onDoubleClick) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) {
         if (onSubmit) widget.eventHandlers.onSubmit = onSubmit.toString();
         if (onDoubleClick) widget.eventHandlers.onDoubleClick = onDoubleClick.toString();
       }
     }
+    return result;
   },
 
-  multilineentry(placeholder?: string, wrapping?: string): void {
-    captureWidget('multilineentry', { placeholder, wrapping });
+  multilineentry(placeholder?: string, wrapping?: string): any {
+    return captureWidget('multilineentry', { placeholder, wrapping });
   },
 
-  passwordentry(placeholder?: string, onSubmit?: (text: string) => void): void {
-    const widgetId = captureWidget('passwordentry', { placeholder });
+  passwordentry(placeholder?: string, onSubmit?: (text: string) => void): any {
+    const result = captureWidget('passwordentry', { placeholder });
     if (onSubmit) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onSubmit = onSubmit.toString();
     }
+    return result;
   },
 
-  checkbox(text: string, onChanged?: (checked: boolean) => void): void {
-    const widgetId = captureWidget('checkbox', { text });
+  checkbox(text: string, onChanged?: (checked: boolean) => void): any {
+    const result = captureWidget('checkbox', { text });
     if (onChanged) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onChanged = onChanged.toString();
     }
+    return result;
   },
 
-  select(options: string[], onSelected?: (option: string) => void): void {
-    const widgetId = captureWidget('select', { options: options.join(', ') });
+  select(options: string[], onSelected?: (option: string) => void): any {
+    const result = captureWidget('select', { options: options.join(', ') });
     if (onSelected) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onSelected = onSelected.toString();
     }
+    return result;
   },
 
-  radiogroup(options: string[], initialSelected?: string, onSelected?: (option: string) => void): void {
-    const widgetId = captureWidget('radiogroup', {
+  radiogroup(options: string[], initialSelected?: string, onSelected?: (option: string) => void): any {
+    const result = captureWidget('radiogroup', {
       options: options.join(', '),
       initialSelected
     });
     if (onSelected) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onSelected = onSelected.toString();
     }
+    return result;
   },
 
-  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void): void {
-    const widgetId = captureWidget('slider', { min, max, initialValue });
+  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void): any {
+    const result = captureWidget('slider', { min, max, initialValue });
     if (onChanged) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onChanged = onChanged.toString();
     }
+    return result;
   },
 
-  progressbar(initialValue?: number, infinite?: boolean): void {
-    captureWidget('progressbar', { initialValue, infinite });
+  progressbar(initialValue?: number, infinite?: boolean): any {
+    return captureWidget('progressbar', { initialValue, infinite });
   },
 
   // Display widgets
-  separator(): void {
-    captureWidget('separator', {});
+  separator(): any {
+    return captureWidget('separator', {});
   },
 
-  hyperlink(text: string, url: string): void {
-    captureWidget('hyperlink', { text, url });
+  hyperlink(text: string, url: string): any {
+    return captureWidget('hyperlink', { text, url });
   },
 
-  image(pathOrOptions: string | any, fillMode?: string, onClick?: () => void, onDrag?: () => void, onDragEnd?: () => void): void {
+  image(pathOrOptions: string | any, fillMode?: string, onClick?: () => void, onDrag?: () => void, onDragEnd?: () => void): any {
     const props = typeof pathOrOptions === 'string'
       ? { path: pathOrOptions, fillMode }
       : pathOrOptions;
-    const widgetId = captureWidget('image', props);
+    const result = captureWidget('image', props);
     if (onClick || onDrag || onDragEnd) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) {
         if (onClick) widget.eventHandlers.onClick = onClick.toString();
         if (onDrag) widget.eventHandlers.onDrag = onDrag.toString();
         if (onDragEnd) widget.eventHandlers.onDragEnd = onDragEnd.toString();
       }
     }
+    return result;
   },
 
-  richtext(segments: any[]): void {
-    captureWidget('richtext', {
+  richtext(segments: any[]): any {
+    return captureWidget('richtext', {
       text: segments.map(s => s.text).join(' ')
     });
   },
 
-  table(headers: string[], data: any[][]): void {
-    captureWidget('table', {
+  table(headers: string[], data: any[][]): any {
+    return captureWidget('table', {
       headers: headers.join(', '),
       rows: data.length
     });
   },
 
-  list(items: string[], onSelected?: (item: string) => void): void {
-    const widgetId = captureWidget('list', {
+  list(items: string[], onSelected?: (item: string) => void): any {
+    const result = captureWidget('list', {
       items: items.slice(0, 3).join(', ') + (items.length > 3 ? '...' : '')
     });
     if (onSelected) {
-      const widget = metadataStore.get(widgetId);
+      const widget = metadataStore.get(result.__internalId);
       if (widget) widget.eventHandlers.onSelected = onSelected.toString();
     }
+    return result;
   },
 
-  tree(rootLabel: string): void {
-    captureWidget('tree', { rootLabel });
+  tree(rootLabel: string): any {
+    return captureWidget('tree', { rootLabel });
   },
 
-  toolbar(toolbarItems: any[]): void {
+  toolbar(toolbarItems: any[]): any {
     const items = toolbarItems
       .filter(i => i.type !== 'separator' && i.type !== 'spacer')
       .map(i => i.label || i.type)
       .join(', ');
-    captureWidget('toolbar', { items });
+    return captureWidget('toolbar', { items });
   },
 
   toolbarAction(label: string, onAction: () => void) {
@@ -832,7 +841,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
     });
   },
 
-  '/api/save': (req, res) => {
+  '/api/save': async (req, res) => {
     try {
       if (pendingEdits.length === 0) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -890,11 +899,38 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         editor.updateStyles(edit.styles);
       }
 
+      // Get candidate source (after all edits)
+      const candidateSource = editor.getSourceCode();
+
+      // Apply source transformer (pluggable last-minute corrections)
+      const transformer = transformerRegistry.getTransformer();
+      console.log(`[Transformer] Using transformer: ${transformer.name}`);
+
+      const transformContext: TransformContext = {
+        originalSource: currentSourceCode!,
+        candidateSource,
+        filePath: currentFilePath!,
+        metadata: currentMetadata,
+        edits: pendingEdits
+      };
+
+      const transformResult = await transformer.transform(transformContext);
+
+      if (transformResult.transformed) {
+        console.log(`[Transformer] Applied transformations`);
+      }
+
+      if (transformResult.warnings) {
+        transformResult.warnings.forEach(warning => {
+          console.warn(`[Transformer] ${warning}`);
+        });
+      }
+
       // Save to .edited.ts file
       const outputPath = currentFilePath!.replace('.ts', '.edited.ts');
       const fullOutputPath = path.join(__dirname, '..', '..', outputPath);
 
-      fs.writeFileSync(fullOutputPath, editor.getSourceCode(), 'utf8');
+      fs.writeFileSync(fullOutputPath, transformResult.source, 'utf8');
 
       console.log(`[Editor] Saved changes to: ${outputPath}`);
       console.log(`[Editor] Applied ${pendingEdits.length} edits (${deleteEdits.length} deletes, ${addEdits.length} adds, ${propertyEdits.length} property updates, ${widgetIdEdits.length} widget ID updates)`);
@@ -902,7 +938,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       pendingEdits = [];
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, outputPath }));
+      res.end(JSON.stringify({ success: true, outputPath, transformed: transformResult.transformed }));
     } catch (error: any) {
       console.error('[API Error]', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
