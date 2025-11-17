@@ -697,11 +697,29 @@ export class Expect {
   }
 
   async toBeVisible(): Promise<void> {
-    const widget = await this.locator.find();
-    expect(widget).toBeTruthy();
+    // Use findWithRetry to respect within() timeout
+    // If no explicit timeout set, use a sensible default of 5000ms
+    const locator = this.locator as any;
+    const hasTimeout = locator.withinTimeout !== undefined;
+
+    if (!hasTimeout) {
+      // Temporarily set default timeout for this assertion
+      locator.withinTimeout = 5000;
+    }
+
+    try {
+      const widget = await locator.findWithRetry();
+      expect(widget).toBeTruthy();
+    } finally {
+      // Clean up temporary timeout if we set it
+      if (!hasTimeout) {
+        locator.withinTimeout = undefined;
+      }
+    }
   }
 
   async toNotBeVisible(): Promise<void> {
+    // For "not visible", we want immediate check (no retry)
     const widget = await this.locator.find();
     expect(widget).toBeFalsy();
   }
