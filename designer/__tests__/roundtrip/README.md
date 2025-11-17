@@ -22,35 +22,29 @@ Like XStream, these tests use:
 
 ## Test Structure
 
-Each test file focuses on a specific **code pattern** or **example application**:
+All test files now use **XStream-style** testing with inline code and exact assertions:
 
-### XStream-Style Tests (Inline Code, Exact Assertions)
+### Core RoundTrip Tests (XStream-Style)
 - **inline-exact.test.ts** - Self-contained tests with inline code fragments - 9 tests
-  - Uses `loadFromString()` instead of `loadFile()`
-  - Uses `expect().toBe()` for exact equality instead of `.toContain()`
-  - Uses `save('memory')` - no filesystem I/O
-  - Each test is fully self-documenting
+- **property-edits.test.ts** - Tests property changes (text, className, etc.) - 10 tests
+- **simple-vbox-with-button.test.ts** - Tests basic layout - 10 tests
+- **counter-with-state.test.ts** - Tests state management with multiple buttons - 4 tests
+- **nested-containers.test.ts** - Tests nested layout containers - 4 tests
+- **hbox-layout.test.ts** - Tests horizontal layouts - 8 tests
+- **grid-layout.test.ts** - Tests grid layouts with multiple columns - 11 tests
+- **transformer-fixes.test.ts** - Tests round-trip patterns with various edits - 6 tests
 
-### File-Based Tests (Expected to Succeed)
-- **simple-vbox-with-button.test.ts** - Tests basic layout (hello.ts) - 15 tests
-- **counter-with-state.test.ts** - Tests state management with multiple buttons (02-counter.ts) - 4 tests
-- **nested-containers.test.ts** - Tests nested layout containers (03-button-spacer.ts) - 4 tests
-- **hbox-layout.test.ts** - Tests horizontal layouts (hbox-example.ts) - 15 tests
-- **grid-layout.test.ts** - Tests grid layouts with multiple columns (grid-example.ts) - 19 tests
-- **property-edits.test.ts** - Tests property changes (text, className, etc.) - 15 tests
+All tests:
+- Use `loadFromString()` instead of `loadFile()`
+- Use `expect().toBe()` for exact equality instead of `.toContain()`
+- Use `save('memory')` - no filesystem I/O
+- Each test is fully self-documenting with inline code
 
 ### Known Limitations (Expected to Fail)
 - **known-limitations.test.ts** - Documents code patterns that DON'T survive round-trip - 11 tests
   - All tests marked with `.skip` to prevent CI failures
   - Each test documents WHY it fails, WHAT is lost, and potential FIX
   - Categories: Comments, Formatting, Event Handlers, TypeScript Features, Imports, etc.
-
-### Transformer Fixes (Expected Imperfections)
-- **transformer-fixes.test.ts** - Tests imperfect round-trips WITH and WITHOUT transformers - 12 tests
-  - Tests cases that DON'T round-trip perfectly without transformers
-  - Validates transformer plugins can fix known issues
-  - Documents "expected for now" diff patterns
-  - Categories: Whitespace, Comments, Composite fixes, Custom validators
 
 ## Common Patterns
 

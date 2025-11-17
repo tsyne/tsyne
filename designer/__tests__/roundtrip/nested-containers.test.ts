@@ -1,104 +1,162 @@
 /**
  * RoundTrip Test: Nested containers (vbox + hbox)
- * Tests 03-button-spacer.ts - demonstrates nested layout containers
+ * XStream-style: inline code, exact assertions
  */
 
-import * as fs from 'fs';
-import { loadFile, save, updateWidgetId, getDiff, examplePath, editedPath, cleanupEdited, findWidget } from './helpers';
+import {
+  loadFromString,
+  save,
+  updateWidgetId,
+  findWidget
+} from './helpers';
 
-describe('RoundTrip: Nested containers (03-button-spacer.ts)', () => {
-  afterEach(() => {
-    cleanupEdited('03-button-spacer.ts');
+describe('RoundTrip: Nested containers', () => {
+  test('load and save with no edits', async () => {
+    const code = `// Portions copyright Ryelang developers (Apache 2.0)
+// Demonstrates button interaction and spacer layout
+
+import { app } from '../src';
+
+app({ title: 'Button Demo' }, (a) => {
+  a.window({ title: 'Button', width: 200, height: 100 }, (win) => {
+    let label: any;
+
+    win.setContent(() => {
+      a.vbox(() => {
+        label = a.label("I'm Waiting ...");
+        a.label(''); // Spacer equivalent
+        a.button('Click here', async () => {
+          await label.setText('Finally ...');
+        });
+      });
+    });
+    win.show();
   });
+});`;
 
-  test('load and save with no edits produces no diff', async () => {
-    const result = await loadFile('tsyne/examples/03-button-spacer.ts');
+    const result = await loadFromString(code);
     expect(result.success).toBe(true);
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const originalFile = examplePath('03-button-spacer.ts');
-    const editedFile = editedPath('03-button-spacer.ts');
-
-    expect(fs.existsSync(editedFile)).toBe(true);
-
-    const diff = getDiff(originalFile, editedFile);
-    expect(diff).toBe('');
+    expect(saveResult.content).toBe(code);
   });
 
   test('adding .withId() to container and widgets', async () => {
-    const result = await loadFile('tsyne/examples/03-button-spacer.ts');
-    expect(result.success).toBe(true);
+    const original = `import { app } from '../src';
 
-    // Find the vbox container
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Waiting");
+        a.button('Click', async () => {});
+      });
+    });
+    win.show();
+  });
+});`;
+
+    const result = await loadFromString(original);
+
     const vboxWidget = findWidget(result.metadata, 'vbox');
-    expect(vboxWidget).toBeDefined();
-
-    // Find the button
     const buttonWidget = findWidget(result.metadata, 'button');
-    expect(buttonWidget).toBeDefined();
 
-    // Add IDs to both container and widget
     await updateWidgetId(vboxWidget.id, null, 'mainContainer');
     await updateWidgetId(buttonWidget.id, null, 'clickButton');
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const editedFile = editedPath('03-button-spacer.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const expected = `import { app } from '../src';
 
-    expect(editedContent).toContain(".withId('mainContainer')");
-    expect(editedContent).toContain(".withId('clickButton')");
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Waiting");
+        a.button('Click', async () => {}).withId('clickButton');
+      }).withId('mainContainer');
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 
   test('renaming .withId() on nested widgets', async () => {
-    // First add IDs
-    const result1 = await loadFile('tsyne/examples/03-button-spacer.ts');
-    const labels = result1.metadata.widgets.filter((w: any) => w.widgetType === 'label');
+    const original = `import { app } from '../src';
 
-    // Add ID to the first label
-    await updateWidgetId(labels[0].id, null, 'statusLabel');
-    await save();
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Status").withId('statusLabel');
+        a.label("Message");
+      });
+    });
+    win.show();
+  });
+});`;
 
-    // Now rename it
-    const result2 = await loadFile('tsyne/examples/03-button-spacer.edited.ts');
-    const statusLabel = result2.metadata.widgets.find((w: any) => w.widgetId === 'statusLabel');
-    expect(statusLabel).toBeDefined();
+    const result = await loadFromString(original);
+    const statusLabel = result.metadata.widgets.find((w: any) => w.widgetId === 'statusLabel');
 
     await updateWidgetId(statusLabel.id, 'statusLabel', 'messageLabel');
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const editedFile = editedPath('03-button-spacer.edited.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const expected = `import { app } from '../src';
 
-    expect(editedContent).toContain(".withId('messageLabel')");
-    expect(editedContent).not.toContain(".withId('statusLabel')");
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Status").withId('messageLabel');
+        a.label("Message");
+      });
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 
   test('removing .withId() from container', async () => {
-    // First add ID to the vbox
-    const result1 = await loadFile('tsyne/examples/03-button-spacer.ts');
-    const vboxWidget = findWidget(result1.metadata, 'vbox');
-    await updateWidgetId(vboxWidget.id, null, 'containerBox');
-    await save();
+    const original = `import { app } from '../src';
 
-    // Now remove it
-    const result2 = await loadFile('tsyne/examples/03-button-spacer.edited.ts');
-    const containerBox = result2.metadata.widgets.find((w: any) => w.widgetId === 'containerBox');
-    expect(containerBox).toBeDefined();
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Test");
+      }).withId('containerBox');
+    });
+    win.show();
+  });
+});`;
+
+    const result = await loadFromString(original);
+    const containerBox = result.metadata.widgets.find((w: any) => w.widgetId === 'containerBox');
 
     await updateWidgetId(containerBox.id, 'containerBox', null);
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const editedFile = editedPath('03-button-spacer.edited.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const expected = `import { app } from '../src';
 
-    expect(editedContent).not.toContain(".withId('containerBox')");
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("Test");
+      });
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 });

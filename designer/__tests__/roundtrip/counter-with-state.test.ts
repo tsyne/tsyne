@@ -1,108 +1,182 @@
 /**
  * RoundTrip Test: Counter with state management
- * Tests 02-counter.ts - demonstrates state management with multiple buttons
+ * XStream-style: inline code, exact assertions
  */
 
-import * as fs from 'fs';
-import { loadFile, save, updateWidgetId, getDiff, examplePath, editedPath, cleanupEdited, findWidget } from './helpers';
+import {
+  loadFromString,
+  save,
+  updateWidgetId,
+  findWidget
+} from './helpers';
 
-describe('RoundTrip: Counter with state (02-counter.ts)', () => {
-  afterEach(() => {
-    cleanupEdited('02-counter.ts');
+describe('RoundTrip: Counter with state', () => {
+  test('load and save with no edits', async () => {
+    const code = `// Simple counter example demonstrating state management
+
+import { app } from '../src';
+
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter', width: 300, height: 150 }, (win) => {
+    let count = 0;
+    let countLabel: any;
+
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label('Counter Example');
+        a.separator();
+
+        countLabel = a.label(\`Count: \${count}\`);
+
+        a.hbox(() => {
+          a.button('Decrement', async () => {
+            count--;
+            await countLabel.setText(\`Count: \${count}\`);
+          });
+
+          a.button('Reset', async () => {
+            count = 0;
+            await countLabel.setText(\`Count: \${count}\`);
+          });
+
+          a.button('Increment', async () => {
+            count++;
+            await countLabel.setText(\`Count: \${count}\`);
+          });
+        });
+      });
+    });
+    win.show();
   });
+});`;
 
-  test('load and save with no edits produces no diff', async () => {
-    const result = await loadFile('tsyne/examples/02-counter.ts');
+    const result = await loadFromString(code);
     expect(result.success).toBe(true);
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const originalFile = examplePath('02-counter.ts');
-    const editedFile = editedPath('02-counter.ts');
-
-    expect(fs.existsSync(editedFile)).toBe(true);
-
-    const diff = getDiff(originalFile, editedFile);
-    expect(diff).toBe('');
+    expect(saveResult.content).toBe(code);
   });
 
   test('adding .withId() to multiple buttons', async () => {
-    const result = await loadFile('tsyne/examples/02-counter.ts');
-    expect(result.success).toBe(true);
+    const original = `import { app } from '../src';
 
-    // Find the increment button
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Decrement', async () => {});
+        a.button('Reset', async () => {});
+        a.button('Increment', async () => {});
+      });
+    });
+    win.show();
+  });
+});`;
+
+    const result = await loadFromString(original);
+
     const incrementBtn = findWidget(result.metadata, 'button', { name: 'text', value: 'Increment' });
-    expect(incrementBtn).toBeDefined();
-
-    // Find the decrement button
     const decrementBtn = findWidget(result.metadata, 'button', { name: 'text', value: 'Decrement' });
-    expect(decrementBtn).toBeDefined();
 
-    // Add IDs to both
     await updateWidgetId(incrementBtn.id, null, 'incrementBtn');
     await updateWidgetId(decrementBtn.id, null, 'decrementBtn');
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const editedFile = editedPath('02-counter.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const expected = `import { app } from '../src';
 
-    expect(editedContent).toContain(".withId('incrementBtn')");
-    expect(editedContent).toContain(".withId('decrementBtn')");
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Decrement', async () => {}).withId('decrementBtn');
+        a.button('Reset', async () => {});
+        a.button('Increment', async () => {}).withId('incrementBtn');
+      });
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 
   test('renaming .withId() on specific button', async () => {
-    // First add IDs
-    const result1 = await loadFile('tsyne/examples/02-counter.ts');
-    const resetBtn1 = findWidget(result1.metadata, 'button', { name: 'text', value: 'Reset' });
-    await updateWidgetId(resetBtn1.id, null, 'resetButton');
-    await save();
+    const original = `import { app } from '../src';
 
-    // Now rename it
-    const result2 = await loadFile('tsyne/examples/02-counter.edited.ts');
-    const resetBtn2 = result2.metadata.widgets.find((w: any) => w.widgetId === 'resetButton');
-    expect(resetBtn2).toBeDefined();
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Reset', async () => {}).withId('resetButton');
+      });
+    });
+    win.show();
+  });
+});`;
 
-    await updateWidgetId(resetBtn2.id, 'resetButton', 'clearButton');
+    const result = await loadFromString(original);
+    const resetBtn = result.metadata.widgets.find((w: any) => w.widgetId === 'resetButton');
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    await updateWidgetId(resetBtn.id, 'resetButton', 'clearButton');
 
-    const editedFile = editedPath('02-counter.edited.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const saveResult = await save('memory');
 
-    expect(editedContent).toContain(".withId('clearButton')");
-    expect(editedContent).not.toContain(".withId('resetButton')");
+    const expected = `import { app } from '../src';
+
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Reset', async () => {}).withId('clearButton');
+      });
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 
   test('removing .withId() from one of many buttons', async () => {
-    // First add IDs to all buttons
-    const result1 = await loadFile('tsyne/examples/02-counter.ts');
-    const buttons = result1.metadata.widgets.filter((w: any) => w.widgetType === 'button');
+    const original = `import { app } from '../src';
 
-    await updateWidgetId(buttons[0].id, null, 'btn1');
-    await updateWidgetId(buttons[1].id, null, 'btn2');
-    await updateWidgetId(buttons[2].id, null, 'btn3');
-    await save();
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Decrement', async () => {}).withId('btn1');
+        a.button('Reset', async () => {}).withId('btn2');
+        a.button('Increment', async () => {}).withId('btn3');
+      });
+    });
+    win.show();
+  });
+});`;
 
-    // Now remove one ID
-    const result2 = await loadFile('tsyne/examples/02-counter.edited.ts');
-    const btn2 = result2.metadata.widgets.find((w: any) => w.widgetId === 'btn2');
-    expect(btn2).toBeDefined();
+    const result = await loadFromString(original);
+    const btn2 = result.metadata.widgets.find((w: any) => w.widgetId === 'btn2');
 
     await updateWidgetId(btn2.id, 'btn2', null);
 
-    const saveResult = await save();
-    expect(saveResult.success).toBe(true);
+    const saveResult = await save('memory');
 
-    const editedFile = editedPath('02-counter.edited.ts');
-    const editedContent = fs.readFileSync(editedFile, 'utf-8');
+    const expected = `import { app } from '../src';
 
-    // btn1 and btn3 should remain, btn2 should be gone
-    expect(editedContent).toContain(".withId('btn1')");
-    expect(editedContent).not.toContain(".withId('btn2')");
-    expect(editedContent).toContain(".withId('btn3')");
+app({ title: 'Counter' }, (a) => {
+  a.window({ title: 'Counter' }, (win) => {
+    win.setContent(() => {
+      a.hbox(() => {
+        a.button('Decrement', async () => {}).withId('btn1');
+        a.button('Reset', async () => {});
+        a.button('Increment', async () => {}).withId('btn3');
+      });
+    });
+    win.show();
+  });
+});`;
+
+    expect(saveResult.content).toBe(expected);
   });
 });
