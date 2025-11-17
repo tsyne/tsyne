@@ -73,7 +73,8 @@ const designer = {
 
   // Styles API - capture but don't process
   styles(styleDefinitions: any) {
-    // In designer mode, we just capture styles but don't apply them
+    // In designer mode, capture styles for the CSS editor
+    currentStyles = styleDefinitions;
     console.log('[Designer] Loaded styles:', Object.keys(styleDefinitions));
   },
 
@@ -989,8 +990,8 @@ server.listen(PORT, () => {
   console.log('');
   console.log(`  Server running at: http://localhost:${PORT}`);
   console.log('');
-  console.log('  Open your browser and click "load testfile"');
-  console.log('  to start editing examples/hello.ts');
+  console.log('  Open your browser and select a file from the dropdown');
+  console.log('  (hello.ts, calculator.ts, or todomvc.ts)');
   console.log('');
   console.log('  Press Ctrl+C to stop');
   console.log('');
