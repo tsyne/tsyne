@@ -61,10 +61,10 @@ open http://localhost:3000
 
 ## Usage
 
-1. Click **"load testfile"** to load `examples/hello.ts`
+1. Select a file from the dropdown (hello.ts, calculator.ts, or todomvc.ts) and click **"Load"**
 2. Select widgets in the tree to view/edit properties
 3. Use the widget palette to add new widgets
-4. Click **"Save Changes"** to save to `hello.edited.ts`
+4. Click **"Save Changes"** to save to `[filename].edited.ts`
 
 ## Testing
 
@@ -226,7 +226,8 @@ The designer emulates the complete Tsyne ABI and supports all widget types:
 This consolidated version includes fixes for:
 
 1. **Widget Addition Bug** - Adding widgets to containers now correctly updates the UI without reloading the file from disk
-2. **UI Text** - Changed "Load File" button to "load testfile" as requested
+2. **File Selector** - Provides dropdown to select from available example files (hello.ts, calculator.ts, todomvc.ts)
+3. **TypeScript Transpilation** - Uses proper TypeScript compiler API instead of regex for accurate type stripping
 
 ## Design Principles
 

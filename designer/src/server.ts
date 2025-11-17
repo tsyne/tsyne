@@ -6,6 +6,7 @@
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as ts from 'typescript';
 import { WidgetMetadata, SourceLocation } from './metadata';
 
 // State
@@ -68,6 +69,22 @@ const designer = {
   app(options: any, builder: (a: any) => void) {
     console.log('[Designer] Loading app...');
     builder(designer);
+  },
+
+  // Styles API - capture but don't process
+  styles(styleDefinitions: any) {
+    // In designer mode, capture styles for the CSS editor
+    currentStyles = styleDefinitions;
+    console.log('[Designer] Loaded styles:', Object.keys(styleDefinitions));
+  },
+
+  // FontStyle enum (from src/widgets.ts)
+  FontStyle: {
+    NORMAL: 0,
+    BOLD: 1,
+    ITALIC: 2,
+    BOLD_ITALIC: 3,
+    MONOSPACE: 4
   },
 
   window(options: any, builder: (win: any) => void) {
@@ -370,21 +387,31 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
     // Make designer available globally BEFORE writing/executing the file
     (global as any).designer = designer;
 
-    // REPLACE import statement with destructuring from global.designer
-    // This preserves line numbers!
-    let executableCode = currentSourceCode.replace(
-      /import\s+{\s*([^}]+)\s*}\s*from\s+['"][^'"]+['"]\s*;?/g,
-      'const { $1 } = global.designer;'
-    );
+    // Use TypeScript compiler to properly transpile the code
+    // This handles all TypeScript syntax correctly: type aliases, interfaces, union types, generics, etc.
+    const transpileResult = ts.transpileModule(currentSourceCode, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+        removeComments: false,
+        // Preserve line numbers for accurate stack traces
+        inlineSourceMap: false,
+        sourceMap: false
+      }
+    });
 
-    // Strip TypeScript type annotations (simple approach)
-    // Only remove after variable declarations (let/const/var), not after object properties
-    // Match patterns like: let foo: any = ...
-    executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*\w+(\[\])?\s*([;=,])/g, '$1 $2$4');
-    executableCode = executableCode.replace(/\b(let|const|var)\s+(\w+)\s*:\s*any\s*([;=,])/g, '$1 $2$3');
-    // Remove type annotations from function parameters: (value: string) → (value)
-    // Only match type identifiers (not numbers like :300), types start with letters
-    executableCode = executableCode.replace(/(\(|,\s*)(\w+)\s*:\s*[A-Za-z_][\w<>[\]|&]*(\s*\)|\s*,|\s*=)/g, '$1$2$3');
+    // REPLACE import statement with global.designer
+    // TypeScript transpiles: import { foo } from 'bar' → const bar_1 = require('bar'); (0, bar_1.foo)()
+    // We need to replace the module reference with global.designer
+    let executableCode = transpileResult.outputText
+      // Replace: const src_1 = require("../src"); → (nothing, we'll use global.designer)
+      .replace(/(?:var|const|let)\s+(\w+)\s*=\s*require\(['"]\.\.\/src['"]\);?\s*\n?/g, '')
+      // Replace: (0, src_1.foo) → global.designer.foo
+      .replace(/\(0,\s*\w+\.(\w+)\)/g, 'global.designer.$1')
+      // Replace standalone: src_1.foo → global.designer.foo
+      .replace(/\b\w+_\d+\.(\w+)/g, 'global.designer.$1')
+      // Handle Object.defineProperty exports line
+      .replace(/Object\.defineProperty\(exports,\s*"__esModule",\s*\{\s*value:\s*true\s*\}\);?\s*\n?/g, '');
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
@@ -963,8 +990,8 @@ server.listen(PORT, () => {
   console.log('');
   console.log(`  Server running at: http://localhost:${PORT}`);
   console.log('');
-  console.log('  Open your browser and click "load testfile"');
-  console.log('  to start editing examples/hello.ts');
+  console.log('  Open your browser and select a file from the dropdown');
+  console.log('  (hello.ts, calculator.ts, or todomvc.ts)');
   console.log('');
   console.log('  Press Ctrl+C to stop');
   console.log('');

@@ -1344,7 +1344,7 @@ async function saveCssChanges() {
     if (result.success) {
       console.log('CSS classes updated successfully');
       closeCssEditor();
-      alert('CSS classes updated! Remember to click "Save Changes" to write to file.');
+      // Styles are already applied to preview, no need for alert
     } else {
       alert('Error updating CSS classes: ' + result.error);
     }

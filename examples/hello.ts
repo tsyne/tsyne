@@ -1,7 +1,7 @@
-import { app, window, vbox, button, label } from '../src';
+import { app, window, vbox, button, label, styles } from '../src';
 
 // CSS Classes for styling widgets
-const styles = {
+styles({
   title: {
     fontSize: 20,
     bold: true,
@@ -20,7 +20,7 @@ const styles = {
     color: '#f44336',
     padding: 10
   }
-};
+});
 
 // Simple Hello World example demonstrating Tsyne's elegant declarative syntax
 app({ title: "Hello Tsyne" }, () => {
