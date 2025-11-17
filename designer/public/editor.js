@@ -3,9 +3,99 @@
 let metadata = null;
 let selectedWidgetId = null;
 let currentFilePath = null;
+let currentStyles = null;
 
 // Context menu state
 let contextMenuTarget = null;
+
+// Property schemas for each widget type
+const widgetPropertySchemas = {
+  label: {
+    text: { type: 'string', description: 'Label text' },
+    className: { type: 'string', description: 'CSS class name' },
+    alignment: { type: 'string', description: 'Text alignment (leading, center, trailing)' },
+    wrapping: { type: 'string', description: 'Text wrapping mode' },
+    textStyle: { type: 'object', description: 'Text styling options' }
+  },
+  button: {
+    text: { type: 'string', description: 'Button text' },
+    className: { type: 'string', description: 'CSS class name' }
+  },
+  entry: {
+    placeholder: { type: 'string', description: 'Placeholder text' },
+    minWidth: { type: 'number', description: 'Minimum width in pixels' }
+  },
+  checkbox: {
+    text: { type: 'string', description: 'Checkbox label text' }
+  },
+  grid: {
+    columns: { type: 'number', description: 'Number of columns' }
+  },
+  gridwrap: {
+    itemWidth: { type: 'number', description: 'Item width' },
+    itemHeight: { type: 'number', description: 'Item height' }
+  },
+  hsplit: {
+    offset: { type: 'number', description: 'Split offset' }
+  },
+  vsplit: {
+    offset: { type: 'number', description: 'Split offset' }
+  },
+  hyperlink: {
+    text: { type: 'string', description: 'Link text' },
+    url: { type: 'string', description: 'Link URL' }
+  },
+  image: {
+    path: { type: 'string', description: 'Image path' },
+    resource: { type: 'string', description: 'Resource name' },
+    fillMode: { type: 'string', description: 'Fill mode' }
+  },
+  multilineentry: {
+    placeholder: { type: 'string', description: 'Placeholder text' },
+    wrapping: { type: 'string', description: 'Text wrapping mode' }
+  },
+  passwordentry: {
+    placeholder: { type: 'string', description: 'Placeholder text' }
+  },
+  select: {
+    options: { type: 'string', description: 'Comma-separated options' }
+  },
+  radiogroup: {
+    options: { type: 'string', description: 'Comma-separated options' },
+    initialSelected: { type: 'string', description: 'Initially selected option' }
+  },
+  slider: {
+    min: { type: 'number', description: 'Minimum value' },
+    max: { type: 'number', description: 'Maximum value' },
+    initialValue: { type: 'number', description: 'Initial value' }
+  },
+  progressbar: {
+    initialValue: { type: 'number', description: 'Initial value (0-100)' },
+    infinite: { type: 'boolean', description: 'Infinite progress mode' }
+  },
+  table: {
+    headers: { type: 'string', description: 'Comma-separated headers' },
+    rows: { type: 'number', description: 'Number of rows' }
+  },
+  list: {
+    items: { type: 'string', description: 'Comma-separated items' }
+  },
+  tree: {
+    rootLabel: { type: 'string', description: 'Root node label' }
+  },
+  toolbar: {
+    items: { type: 'string', description: 'Comma-separated toolbar items' }
+  },
+  window: {
+    title: { type: 'string', description: 'Window title' },
+    width: { type: 'number', description: 'Window width' },
+    height: { type: 'number', description: 'Window height' }
+  },
+  card: {
+    title: { type: 'string', description: 'Card title' },
+    subtitle: { type: 'string', description: 'Card subtitle' }
+  }
+};
 
 // Hide context menu when clicking elsewhere
 document.addEventListener('click', () => {
@@ -103,18 +193,8 @@ function buildContextMenuContent(widget) {
 // Set widget property from context menu (generic)
 async function setWidgetProperty(widgetId, propertyName, value) {
   await updateProperty(widgetId, propertyName, value, 'number');
-
-  // Refresh the UI
-  const response = await fetch('/api/load', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filePath: currentFilePath })
-  });
-  const data = await response.json();
-  metadata = data.metadata;
-  renderWidgetTree();
-  renderPreview();
-  renderProperties();
+  // Note: updateProperty already updates metadata and re-renders the UI
+  // No need to reload from disk - that would discard the property change!
 }
 
 // Prompt for property value (generic)
@@ -146,13 +226,23 @@ async function loadFile() {
     const data = await response.json();
     metadata = data.metadata;
     currentFilePath = data.filePath;
+    currentStyles = data.styles;
 
     document.getElementById('filePath').textContent = currentFilePath;
+
+    // Show CSS Editor button if styles exist
+    const cssEditorBtn = document.getElementById('cssEditorBtn');
+    if (currentStyles && Object.keys(currentStyles).length > 0) {
+      cssEditorBtn.style.display = 'inline-block';
+    } else {
+      cssEditorBtn.style.display = 'none';
+    }
 
     renderWidgetTree();
     renderPreview();
 
     console.log('Loaded metadata:', metadata);
+    console.log('Loaded styles:', currentStyles);
   } catch (error) {
     console.error('Error loading file:', error);
     alert('Error loading file: ' + error.message);
@@ -346,46 +436,114 @@ function renderProperties() {
 
 // Render property inputs
 function renderPropertyInputs(widget) {
-  if (!widget.properties || Object.keys(widget.properties).length === 0) {
+  const schema = widgetPropertySchemas[widget.widgetType] || {};
+  const schemaKeys = Object.keys(schema);
+
+  // If no schema and no properties, show message
+  if (schemaKeys.length === 0 && (!widget.properties || Object.keys(widget.properties).length === 0)) {
     return '<div class="no-selection">No editable properties</div>';
   }
 
-  return Object.entries(widget.properties)
-    .map(([key, value]) => {
-      if (typeof value === 'string') {
-        return `
+  let html = '';
+
+  // Render all properties from schema (whether they exist or not)
+  schemaKeys.forEach(key => {
+    const propSchema = schema[key];
+    const value = widget.properties?.[key];
+    const hasValue = value !== undefined && value !== null && value !== '';
+
+    if (propSchema.type === 'string') {
+      html += `
+        <div class="property-row">
+          <label class="property-label" title="${propSchema.description}">${key}</label>
+          <input
+            type="text"
+            class="property-input"
+            value="${hasValue ? escapeHtml(String(value)) : ''}"
+            placeholder="${hasValue ? '' : 'Not set'}"
+            onchange="updateProperty('${widget.id}', '${key}', this.value, 'string')"
+          />
+        </div>
+      `;
+    } else if (propSchema.type === 'number') {
+      html += `
+        <div class="property-row">
+          <label class="property-label" title="${propSchema.description}">${key}</label>
+          <input
+            type="number"
+            class="property-input"
+            value="${hasValue ? value : ''}"
+            placeholder="${hasValue ? '' : 'Not set'}"
+            onchange="updateProperty('${widget.id}', '${key}', this.value, 'number')"
+          />
+        </div>
+      `;
+    } else if (propSchema.type === 'boolean') {
+      html += `
+        <div class="property-row">
+          <label class="property-label" title="${propSchema.description}">${key}</label>
+          <input
+            type="checkbox"
+            class="property-checkbox"
+            ${value ? 'checked' : ''}
+            onchange="updateProperty('${widget.id}', '${key}', this.checked, 'boolean')"
+          />
+        </div>
+      `;
+    } else {
+      // For complex types (object, etc.), show as JSON if they have a value
+      if (hasValue) {
+        html += `
           <div class="property-row">
-            <label class="property-label">${key}</label>
-            <input
-              type="text"
-              class="property-input"
-              value="${escapeHtml(value)}"
-              onchange="updateProperty('${widget.id}', '${key}', this.value, 'string')"
-            />
-          </div>
-        `;
-      } else if (typeof value === 'number') {
-        return `
-          <div class="property-row">
-            <label class="property-label">${key}</label>
-            <input
-              type="number"
-              class="property-input"
-              value="${value}"
-              onchange="updateProperty('${widget.id}', '${key}', this.value, 'number')"
-            />
-          </div>
-        `;
-      } else {
-        return `
-          <div class="property-row">
-            <span class="property-label">${key}</span>
+            <span class="property-label" title="${propSchema.description}">${key}</span>
             <div class="property-value">${JSON.stringify(value)}</div>
           </div>
         `;
       }
-    })
-    .join('');
+    }
+  });
+
+  // Also show any properties that exist but aren't in the schema
+  if (widget.properties) {
+    Object.entries(widget.properties).forEach(([key, value]) => {
+      if (!schema[key]) {
+        if (typeof value === 'string') {
+          html += `
+            <div class="property-row">
+              <label class="property-label">${key}</label>
+              <input
+                type="text"
+                class="property-input"
+                value="${escapeHtml(value)}"
+                onchange="updateProperty('${widget.id}', '${key}', this.value, 'string')"
+              />
+            </div>
+          `;
+        } else if (typeof value === 'number') {
+          html += `
+            <div class="property-row">
+              <label class="property-label">${key}</label>
+              <input
+                type="number"
+                class="property-input"
+                value="${value}"
+                onchange="updateProperty('${widget.id}', '${key}', this.value, 'number')"
+              />
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="property-row">
+              <span class="property-label">${key}</span>
+              <div class="property-value">${JSON.stringify(value)}</div>
+            </div>
+          `;
+        }
+      }
+    });
+  }
+
+  return html || '<div class="no-selection">No editable properties</div>';
 }
 
 // Render event handlers
@@ -406,11 +564,21 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
     // Convert value based on type
     let convertedValue = newValue;
     if (valueType === 'number') {
-      convertedValue = parseFloat(newValue);
-      if (isNaN(convertedValue)) {
-        alert('Invalid number value');
-        return;
+      // Allow empty strings to clear the property
+      if (newValue === '' || newValue === null || newValue === undefined) {
+        convertedValue = undefined;
+      } else {
+        convertedValue = parseFloat(newValue);
+        if (isNaN(convertedValue)) {
+          alert('Invalid number value');
+          return;
+        }
       }
+    } else if (valueType === 'boolean') {
+      convertedValue = Boolean(newValue);
+    } else if (valueType === 'string') {
+      // Keep empty strings as empty strings
+      convertedValue = String(newValue);
     }
 
     const response = await fetch('/api/update-property', {
@@ -426,10 +594,15 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
     const result = await response.json();
 
     if (result.success) {
-      // Update local metadata
-      const widget = metadata.widgets.find(w => w.id === widgetId);
-      if (widget) {
-        widget.properties[propertyName] = convertedValue;
+      // Update local metadata from server response (if provided)
+      if (result.metadata) {
+        metadata = result.metadata;
+      } else {
+        // Fallback: update manually (for backward compatibility)
+        const widget = metadata.widgets.find(w => w.id === widgetId);
+        if (widget) {
+          widget.properties[propertyName] = convertedValue;
+        }
       }
 
       renderWidgetTree();
@@ -885,6 +1058,129 @@ async function deleteWidget(widgetId) {
   } catch (error) {
     console.error('Error deleting widget:', error);
     alert('Error deleting widget: ' + error.message);
+  }
+}
+
+// CSS Editor Functions
+function openCssEditor() {
+  const modal = document.getElementById('cssEditorModal');
+  modal.classList.add('visible');
+  renderCssEditor();
+}
+
+function closeCssEditor() {
+  const modal = document.getElementById('cssEditorModal');
+  modal.classList.remove('visible');
+}
+
+function renderCssEditor() {
+  const body = document.getElementById('cssEditorBody');
+
+  if (!currentStyles || Object.keys(currentStyles).length === 0) {
+    body.innerHTML = '<div class="no-selection">No CSS classes defined</div>';
+    return;
+  }
+
+  let html = '';
+
+  for (const [className, properties] of Object.entries(currentStyles)) {
+    html += `
+      <div class="css-class-editor" data-class="${className}">
+        <div class="css-class-header">
+          <div class="css-class-name">.${className}</div>
+          <button class="css-class-delete" onclick="deleteClass('${className}')">Delete Class</button>
+        </div>
+        <div class="css-properties" id="props-${className}">
+    `;
+
+    for (const [prop, value] of Object.entries(properties)) {
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      html += `
+        <div class="css-property-row">
+          <input type="text" class="css-property-input" value="${prop}"
+                 onchange="updateCssProperty('${className}', '${prop}', 'name', this.value)">
+          <input type="text" class="css-property-input" value="${escapeHtml(valueStr)}"
+                 onchange="updateCssProperty('${className}', '${prop}', 'value', this.value)">
+          <button class="css-property-delete" onclick="deleteCssProperty('${className}', '${prop}')">×</button>
+        </div>
+      `;
+    }
+
+    html += `
+        </div>
+        <button class="add-property-btn" onclick="addCssProperty('${className}')">+ Add Property</button>
+      </div>
+    `;
+  }
+
+  body.innerHTML = html;
+}
+
+function updateCssProperty(className, oldPropName, field, newValue) {
+  if (!currentStyles || !currentStyles[className]) return;
+
+  if (field === 'name' && oldPropName !== newValue) {
+    // Rename property
+    const value = currentStyles[className][oldPropName];
+    delete currentStyles[className][oldPropName];
+    currentStyles[className][newValue] = value;
+  } else if (field === 'value') {
+    // Update value - try to parse as JSON for numbers/booleans
+    try {
+      currentStyles[className][oldPropName] = JSON.parse(newValue);
+    } catch {
+      currentStyles[className][oldPropName] = newValue;
+    }
+  }
+
+  renderCssEditor();
+}
+
+function deleteCssProperty(className, propName) {
+  if (!currentStyles || !currentStyles[className]) return;
+  delete currentStyles[className][propName];
+  renderCssEditor();
+}
+
+function addCssProperty(className) {
+  if (!currentStyles || !currentStyles[className]) return;
+
+  const propName = prompt('Enter property name:', 'newProp');
+  if (!propName) return;
+
+  currentStyles[className][propName] = '';
+  renderCssEditor();
+}
+
+function deleteClass(className) {
+  if (!currentStyles) return;
+
+  if (!confirm(`Delete class "${className}"?`)) return;
+
+  delete currentStyles[className];
+  renderCssEditor();
+}
+
+async function saveCssChanges() {
+  try {
+    const response = await fetch('/api/update-styles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ styles: currentStyles })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('CSS classes updated successfully');
+      closeCssEditor();
+      alert('CSS classes updated! Remember to click "Save Changes" to write to file.');
+    } else {
+      alert('Error updating CSS classes: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error updating CSS classes:', error);
+    alert('Error updating CSS classes: ' + error.message);
   }
 }
 

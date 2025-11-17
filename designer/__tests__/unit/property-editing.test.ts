@@ -212,6 +212,67 @@ describe('Property Editing', () => {
         expect(updateResponse.metadata.widgets.find((w: any) => w.id === gridWidget.id).properties.columns).toBe(cols);
       }
     }, 15000);
+
+    test('should NOT delete grid when changing columns property (regression test)', async () => {
+      // This test ensures that changing a grid's columns property via context menu
+      // doesn't delete the grid (bug that was fixed)
+
+      // Load hello.ts which has a vbox
+      const loadResponse = await apiRequest('/api/load', 'POST', {
+        filePath: 'examples/hello.ts'
+      });
+
+      const vboxWidget = loadResponse.metadata.widgets.find((w: any) => w.widgetType === 'vbox');
+      expect(vboxWidget).toBeDefined();
+
+      // Add a grid to the vbox
+      const addResponse = await apiRequest('/api/add-widget', 'POST', {
+        parentId: vboxWidget.id,
+        widgetType: 'grid'
+      });
+
+      expect(addResponse.success).toBe(true);
+      const gridId = addResponse.widgetId;
+      const initialMetadata = addResponse.metadata;
+
+      // Verify the grid exists
+      let gridWidget = initialMetadata.widgets.find((w: any) => w.id === gridId);
+      expect(gridWidget).toBeDefined();
+      expect(gridWidget.widgetType).toBe('grid');
+      expect(gridWidget.parent).toBe(vboxWidget.id);
+
+      // Now change the columns property (simulating context menu "Set Columns" action)
+      const updateResponse = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridId,
+        propertyName: 'columns',
+        newValue: 4
+      });
+
+      expect(updateResponse.success).toBe(true);
+      expect(updateResponse.metadata).toBeDefined();
+
+      // CRITICAL: Verify the grid still exists and wasn't deleted
+      gridWidget = updateResponse.metadata.widgets.find((w: any) => w.id === gridId);
+      expect(gridWidget).toBeDefined();
+      expect(gridWidget.widgetType).toBe('grid');
+      expect(gridWidget.parent).toBe(vboxWidget.id);
+      expect(gridWidget.properties.columns).toBe(4);
+
+      // Try changing columns again to a different value
+      const updateResponse2 = await apiRequest('/api/update-property', 'POST', {
+        widgetId: gridId,
+        propertyName: 'columns',
+        newValue: 2
+      });
+
+      expect(updateResponse2.success).toBe(true);
+
+      // Verify the grid STILL exists
+      gridWidget = updateResponse2.metadata.widgets.find((w: any) => w.id === gridId);
+      expect(gridWidget).toBeDefined();
+      expect(gridWidget.widgetType).toBe('grid');
+      expect(gridWidget.properties.columns).toBe(2);
+    }, 15000);
   });
 
   describe('Context Menu Property Editing', () => {
