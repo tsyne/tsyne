@@ -1,25 +1,26 @@
 /**
- * Visual Editor Server
- * Serves the UI and provides API for loading/editing Tsyne files
+ * Tsyne WYSIWYG Designer Server
+ * Self-contained server providing design-time API for Tsyne applications
  */
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
+import { WidgetMetadata, SourceLocation } from './metadata';
 
 // State
-let currentMetadata = null;
-let currentFilePath = null;
-let currentSourceCode = null;
-let pendingEdits = [];
+let currentMetadata: { widgets: any[] } | null = null;
+let currentFilePath: string | null = null;
+let currentSourceCode: string | null = null;
+let pendingEdits: any[] = [];
 
 // Simple metadata store (using the POC approach)
-const metadataStore = new Map();
-let currentParent = null;
+const metadataStore = new Map<string, any>();
+let currentParent: string | null = null;
 let widgetIdCounter = 0;
 
 // Parse stack trace
-function parseStackTrace(stack) {
+function parseStackTrace(stack: string): SourceLocation {
   const lines = stack.split('\n');
   for (let i = 2; i < lines.length; i++) {
     const line = lines[i];
@@ -28,7 +29,7 @@ function parseStackTrace(stack) {
     if (!match) {
       match = line.match(/at\s+(.+):(\d+):(\d+)/);
     }
-    if (match && !match[1].includes('node_modules') && !match[1].includes('server.js')) {
+    if (match && !match[1].includes('node_modules') && !match[1].includes('server')) {
       return { file: match[1], line: parseInt(match[2]), column: parseInt(match[3]) };
     }
   }
@@ -36,7 +37,7 @@ function parseStackTrace(stack) {
 }
 
 // Capture widget
-function captureWidget(type, props) {
+function captureWidget(type: string, props: any): string {
   const widgetId = `widget-${widgetIdCounter++}`;
   const location = parseStackTrace(new Error().stack || '');
   const metadata = {
@@ -52,7 +53,7 @@ function captureWidget(type, props) {
 }
 
 // Helper for container widgets
-function containerWidget(type, props, builder) {
+function containerWidget(type: string, props: any, builder: () => void): string {
   const widgetId = captureWidget(type, props);
   const prev = currentParent;
   currentParent = widgetId;
@@ -61,36 +62,42 @@ function containerWidget(type, props, builder) {
   return widgetId;
 }
 
-// Designer API - Complete widget support
+// Designer API - Complete widget support (emulates Tsyne ABI)
 const designer = {
-  app(options, builder) {
+  app(options: any, builder: (a: any) => void) {
     console.log('[Designer] Loading app...');
     builder(designer);
   },
 
-  window(options, builder) {
+  window(options: any, builder: (win: any) => void) {
     const widgetId = captureWidget('window', options);
     const prev = currentParent;
     currentParent = widgetId;
-    builder(designer);
+    const windowObj = {
+      setContent: (contentBuilder: () => void) => {
+        contentBuilder();
+      },
+      show: () => {}
+    };
+    builder(windowObj);
     currentParent = prev;
   },
 
   // Containers
-  vbox(builder) { return containerWidget('vbox', {}, builder); },
-  hbox(builder) { return containerWidget('hbox', {}, builder); },
-  scroll(builder) { return containerWidget('scroll', {}, builder); },
-  center(builder) { return containerWidget('center', {}, builder); },
+  vbox(builder: () => void): string { return containerWidget('vbox', {}, builder); },
+  hbox(builder: () => void): string { return containerWidget('hbox', {}, builder); },
+  scroll(builder: () => void): string { return containerWidget('scroll', {}, builder); },
+  center(builder: () => void): string { return containerWidget('center', {}, builder); },
 
-  grid(columns, builder) {
+  grid(columns: number, builder: () => void): string {
     return containerWidget('grid', { columns }, builder);
   },
 
-  gridwrap(itemWidth, itemHeight, builder) {
+  gridwrap(itemWidth: number, itemHeight: number, builder: () => void): string {
     return containerWidget('gridwrap', { itemWidth, itemHeight }, builder);
   },
 
-  hsplit(leadingBuilder, trailingBuilder, offset) {
+  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): void {
     const widgetId = captureWidget('hsplit', { offset });
     const prev = currentParent;
     currentParent = widgetId;
@@ -99,7 +106,7 @@ const designer = {
     currentParent = prev;
   },
 
-  vsplit(leadingBuilder, trailingBuilder, offset) {
+  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): void {
     const widgetId = captureWidget('vsplit', { offset });
     const prev = currentParent;
     currentParent = widgetId;
@@ -108,7 +115,7 @@ const designer = {
     currentParent = prev;
   },
 
-  tabs(tabDefinitions, location) {
+  tabs(tabDefinitions: any[], location?: string): void {
     const widgetId = captureWidget('tabs', {
       tabs: tabDefinitions.map(t => t.title).join(', '),
       location
@@ -119,11 +126,11 @@ const designer = {
     currentParent = prev;
   },
 
-  card(title, subtitle, builder) {
+  card(title: string, subtitle: string, builder: () => void): string {
     return containerWidget('card', { title, subtitle }, builder);
   },
 
-  accordion(items) {
+  accordion(items: any[]): void {
     const widgetId = captureWidget('accordion', {
       items: items.map(i => i.title).join(', ')
     });
@@ -133,7 +140,7 @@ const designer = {
     currentParent = prev;
   },
 
-  form(items, onSubmit, onCancel) {
+  form(items: any[], onSubmit?: () => void, onCancel?: () => void): void {
     const widgetId = captureWidget('form', {
       fields: items.map(i => i.label).join(', ')
     });
@@ -146,7 +153,7 @@ const designer = {
     }
   },
 
-  border(config) {
+  border(config: any): void {
     const widgetId = captureWidget('border', {
       regions: Object.keys(config).join(', ')
     });
@@ -161,19 +168,19 @@ const designer = {
   },
 
   // Input widgets
-  button(text, onClick) {
-    const widgetId = captureWidget('button', { text });
+  button(text: string, onClick?: () => void, className?: string): void {
+    const widgetId = captureWidget('button', { text, className });
     if (onClick) {
       const widget = metadataStore.get(widgetId);
       if (widget) widget.eventHandlers.onClick = onClick.toString();
     }
   },
 
-  label(text, className, alignment, wrapping, textStyle) {
+  label(text: string, className?: string, alignment?: string, wrapping?: string, textStyle?: any): void {
     captureWidget('label', { text, className, alignment, wrapping, textStyle });
   },
 
-  entry(placeholder, onSubmit, minWidth, onDoubleClick) {
+  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): void {
     const widgetId = captureWidget('entry', { placeholder, minWidth });
     if (onSubmit || onDoubleClick) {
       const widget = metadataStore.get(widgetId);
@@ -184,11 +191,11 @@ const designer = {
     }
   },
 
-  multilineentry(placeholder, wrapping) {
+  multilineentry(placeholder?: string, wrapping?: string): void {
     captureWidget('multilineentry', { placeholder, wrapping });
   },
 
-  passwordentry(placeholder, onSubmit) {
+  passwordentry(placeholder?: string, onSubmit?: (text: string) => void): void {
     const widgetId = captureWidget('passwordentry', { placeholder });
     if (onSubmit) {
       const widget = metadataStore.get(widgetId);
@@ -196,7 +203,7 @@ const designer = {
     }
   },
 
-  checkbox(text, onChanged) {
+  checkbox(text: string, onChanged?: (checked: boolean) => void): void {
     const widgetId = captureWidget('checkbox', { text });
     if (onChanged) {
       const widget = metadataStore.get(widgetId);
@@ -204,7 +211,7 @@ const designer = {
     }
   },
 
-  select(options, onSelected) {
+  select(options: string[], onSelected?: (option: string) => void): void {
     const widgetId = captureWidget('select', { options: options.join(', ') });
     if (onSelected) {
       const widget = metadataStore.get(widgetId);
@@ -212,7 +219,7 @@ const designer = {
     }
   },
 
-  radiogroup(options, initialSelected, onSelected) {
+  radiogroup(options: string[], initialSelected?: string, onSelected?: (option: string) => void): void {
     const widgetId = captureWidget('radiogroup', {
       options: options.join(', '),
       initialSelected
@@ -223,7 +230,7 @@ const designer = {
     }
   },
 
-  slider(min, max, initialValue, onChanged) {
+  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void): void {
     const widgetId = captureWidget('slider', { min, max, initialValue });
     if (onChanged) {
       const widget = metadataStore.get(widgetId);
@@ -231,20 +238,20 @@ const designer = {
     }
   },
 
-  progressbar(initialValue, infinite) {
+  progressbar(initialValue?: number, infinite?: boolean): void {
     captureWidget('progressbar', { initialValue, infinite });
   },
 
   // Display widgets
-  separator() {
+  separator(): void {
     captureWidget('separator', {});
   },
 
-  hyperlink(text, url) {
+  hyperlink(text: string, url: string): void {
     captureWidget('hyperlink', { text, url });
   },
 
-  image(pathOrOptions, fillMode, onClick, onDrag, onDragEnd) {
+  image(pathOrOptions: string | any, fillMode?: string, onClick?: () => void, onDrag?: () => void, onDragEnd?: () => void): void {
     const props = typeof pathOrOptions === 'string'
       ? { path: pathOrOptions, fillMode }
       : pathOrOptions;
@@ -259,20 +266,20 @@ const designer = {
     }
   },
 
-  richtext(segments) {
+  richtext(segments: any[]): void {
     captureWidget('richtext', {
       text: segments.map(s => s.text).join(' ')
     });
   },
 
-  table(headers, data) {
+  table(headers: string[], data: any[][]): void {
     captureWidget('table', {
       headers: headers.join(', '),
       rows: data.length
     });
   },
 
-  list(items, onSelected) {
+  list(items: string[], onSelected?: (item: string) => void): void {
     const widgetId = captureWidget('list', {
       items: items.slice(0, 3).join(', ') + (items.length > 3 ? '...' : '')
     });
@@ -282,11 +289,11 @@ const designer = {
     }
   },
 
-  tree(rootLabel) {
+  tree(rootLabel: string): void {
     captureWidget('tree', { rootLabel });
   },
 
-  toolbar(toolbarItems) {
+  toolbar(toolbarItems: any[]): void {
     const items = toolbarItems
       .filter(i => i.type !== 'separator' && i.type !== 'spacer')
       .map(i => i.label || i.type)
@@ -294,14 +301,14 @@ const designer = {
     captureWidget('toolbar', { items });
   },
 
-  toolbarAction(label, onAction) {
+  toolbarAction(label: string, onAction: () => void) {
     return { label, onAction, type: 'action' };
   }
 };
 
 // Load and execute a file in designer mode
-function loadFileInDesignerMode(filePath) {
-  const fullPath = path.join(__dirname, '..', filePath);
+function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
+  const fullPath = path.join(__dirname, '..', '..', filePath);
 
   if (!fs.existsSync(fullPath)) {
     throw new Error(`File not found: ${fullPath}`);
@@ -315,24 +322,24 @@ function loadFileInDesignerMode(filePath) {
   metadataStore.clear();
   widgetIdCounter = 0;
   currentParent = null;
+  pendingEdits = [];
 
   console.log(`[Designer] Loading file: ${filePath}`);
 
   // Create temp file with similar name to preserve line numbers in stack traces
-  // Use the same directory structure so line numbers match
   const tempDir = path.join('/tmp', 'tsyne-designer-' + Date.now());
   fs.mkdirSync(tempDir, { recursive: true });
   const tempPath = path.join(tempDir, path.basename(filePath, '.ts') + '.js');
 
   try {
     // Make designer available globally BEFORE writing/executing the file
-    global.designer = designer;
+    (global as any).designer = designer;
 
     // REPLACE import statement with destructuring from global.designer
     // This preserves line numbers!
     const executableCode = currentSourceCode.replace(
       /import\s+{\s*([^}]+)\s*}\s*from\s+['"][^'"]+['"]\s*;?/g,
-      'const { app, window, vbox, hbox, button, label, entry, checkbox, scroll, grid, separator, hyperlink, image, select } = global.designer;'
+      'const { $1 } = global.designer;'
     );
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
@@ -343,9 +350,9 @@ function loadFileInDesignerMode(filePath) {
     // Execute by requiring the file - this gives us proper stack traces with line numbers!
     require(tempPath);
 
-    delete global.designer;
+    delete (global as any).designer;
 
-  } finally{
+  } finally {
     // Clean up temp files
     try {
       if (fs.existsSync(tempPath)) {
@@ -354,8 +361,7 @@ function loadFileInDesignerMode(filePath) {
       if (fs.existsSync(tempDir)) {
         fs.rmdirSync(tempDir);
       }
-    } catch (err) {
-      // Ignore cleanup errors
+    } catch (err: any) {
       console.warn('[Cleanup] Could not remove temp files:', err.message);
     }
   }
@@ -370,11 +376,13 @@ function loadFileInDesignerMode(filePath) {
 
 // Source code editor
 class SourceCodeEditor {
-  constructor(sourceCode) {
+  private lines: string[];
+
+  constructor(sourceCode: string) {
     this.lines = sourceCode.split('\n');
   }
 
-  findAndReplace(searchText, replaceText) {
+  findAndReplace(searchText: string, replaceText: string): boolean {
     let found = false;
     for (let i = 0; i < this.lines.length; i++) {
       if (this.lines[i].includes(searchText)) {
@@ -386,7 +394,7 @@ class SourceCodeEditor {
     return found;
   }
 
-  addWidget(parentMetadata, widgetType, properties) {
+  addWidget(parentMetadata: any, widgetType: string, properties: any): boolean {
     const parentLine = parentMetadata.sourceLocation.line - 1;
 
     // Find the closing brace of the parent container's builder function
@@ -411,7 +419,7 @@ class SourceCodeEditor {
     return true;
   }
 
-  removeWidget(metadata) {
+  removeWidget(metadata: any): boolean {
     const lineIndex = metadata.sourceLocation.line - 1;
 
     if (lineIndex < 0 || lineIndex >= this.lines.length) {
@@ -450,7 +458,7 @@ class SourceCodeEditor {
     return true;
   }
 
-  getIndentation(lineIndex) {
+  private getIndentation(lineIndex: number): string {
     if (lineIndex < 0 || lineIndex >= this.lines.length) {
       return '';
     }
@@ -460,7 +468,7 @@ class SourceCodeEditor {
     return match ? match[1] : '';
   }
 
-  findClosingBrace(startLine) {
+  private findClosingBrace(startLine: number): number {
     let braceCount = 0;
     let foundOpenBrace = false;
 
@@ -488,7 +496,7 @@ class SourceCodeEditor {
     return -1;
   }
 
-  generateWidgetCode(widgetType, properties, indentation) {
+  private generateWidgetCode(widgetType: string, properties: any, indentation: string): string {
     switch (widgetType) {
       case 'label':
         return `${indentation}label("${properties.text || 'New Label'}");`;
@@ -500,7 +508,7 @@ class SourceCodeEditor {
         return `${indentation}entry("${properties.placeholder || ''}");`;
 
       case 'checkbox':
-        return `${indentation}checkbox("${properties.text || 'New Checkbox'}", false, () => {});`;
+        return `${indentation}checkbox("${properties.text || 'New Checkbox'}");`;
 
       case 'vbox':
         return `${indentation}vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
@@ -521,7 +529,7 @@ class SourceCodeEditor {
         return `${indentation}image("${properties.path || 'image.png'}");`;
 
       case 'select':
-        return `${indentation}select(["Option 1", "Option 2"], () => {});`;
+        return `${indentation}select(["Option 1", "Option 2"]);`;
 
       case 'grid':
         return `${indentation}grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
@@ -531,13 +539,13 @@ class SourceCodeEditor {
     }
   }
 
-  getSourceCode() {
+  getSourceCode(): string {
     return this.lines.join('\n');
   }
 }
 
 // API handlers
-const apiHandlers = {
+const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerResponse) => void> = {
   '/api/load': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -552,7 +560,7 @@ const apiHandlers = {
           metadata,
           filePath: currentFilePath
         }));
-      } catch (error) {
+      } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: error.message }));
@@ -586,11 +594,11 @@ const apiHandlers = {
 
         // Update metadata
         widget.properties[propertyName] = newValue;
-        currentMetadata.widgets = Array.from(metadataStore.values());
+        currentMetadata!.widgets = Array.from(metadataStore.values());
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
-      } catch (error) {
+      } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: error.message }));
@@ -606,7 +614,7 @@ const apiHandlers = {
         return;
       }
 
-      const editor = new SourceCodeEditor(currentSourceCode);
+      const editor = new SourceCodeEditor(currentSourceCode!);
 
       // Process edits in order: delete first (to avoid line number shifts), then add, then property updates
       const deleteEdits = pendingEdits.filter(e => e.type === 'delete');
@@ -642,8 +650,8 @@ const apiHandlers = {
       }
 
       // Save to .edited.ts file
-      const outputPath = currentFilePath.replace('.ts', '.edited.ts');
-      const fullOutputPath = path.join(__dirname, '..', outputPath);
+      const outputPath = currentFilePath!.replace('.ts', '.edited.ts');
+      const fullOutputPath = path.join(__dirname, '..', '..', outputPath);
 
       fs.writeFileSync(fullOutputPath, editor.getSourceCode(), 'utf8');
 
@@ -654,7 +662,7 @@ const apiHandlers = {
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, outputPath }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('[API Error]', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: error.message }));
@@ -683,7 +691,7 @@ const apiHandlers = {
         }
 
         // Generate default properties based on widget type
-        const defaultProps = {
+        const defaultProps: Record<string, any> = {
           'label': { text: 'New Label' },
           'button': { text: 'New Button' },
           'entry': { placeholder: 'Enter text...' },
@@ -694,17 +702,17 @@ const apiHandlers = {
 
         const props = defaultProps[widgetType] || {};
 
-        // Add the widget
+        // Add the widget to metadata (don't reload file!)
         currentParent = parentId;
         const newWidgetId = captureWidget(widgetType, props);
         currentParent = null;
 
         // Update metadata
-        currentMetadata.widgets = Array.from(metadataStore.values());
+        currentMetadata!.widgets = Array.from(metadataStore.values());
 
         console.log(`[Editor] Added ${widgetType} to ${parentId}`);
 
-        // Record as a pending edit (we'll need to implement source code insertion)
+        // Record as a pending edit
         pendingEdits.push({
           type: 'add',
           parentId,
@@ -713,8 +721,12 @@ const apiHandlers = {
         });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, widgetId: newWidgetId }));
-      } catch (error) {
+        res.end(JSON.stringify({
+          success: true,
+          widgetId: newWidgetId,
+          metadata: currentMetadata  // Return updated metadata
+        }));
+      } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: error.message }));
@@ -743,7 +755,7 @@ const apiHandlers = {
         metadataStore.delete(widgetId);
 
         // Update metadata
-        currentMetadata.widgets = Array.from(metadataStore.values());
+        currentMetadata!.widgets = Array.from(metadataStore.values());
 
         console.log(`[Editor] Deleted widget ${widgetId} (${widget.widgetType})`);
 
@@ -756,7 +768,7 @@ const apiHandlers = {
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
-      } catch (error) {
+      } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: error.message }));
@@ -770,16 +782,17 @@ const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
 
   // API routes
-  if (apiHandlers[req.url]) {
+  if (req.url && apiHandlers[req.url]) {
     apiHandlers[req.url](req, res);
     return;
   }
 
   // Static files
-  let filePath = path.join(__dirname, 'public', req.url === '/' ? 'index.html' : req.url);
+  const publicDir = path.join(__dirname, '..', 'public');
+  let filePath = path.join(publicDir, req.url === '/' ? 'index.html' : req.url || '');
 
   const extname = path.extname(filePath);
-  const contentTypes = {
+  const contentTypes: Record<string, string> = {
     '.html': 'text/html',
     '.js': 'text/javascript',
     '.css': 'text/css'
@@ -802,12 +815,12 @@ const server = http.createServer((req, res) => {
 const PORT = 3000;
 server.listen(PORT, () => {
   console.log('╔══════════════════════════════════════════════╗');
-  console.log('║  Tsyne WYSIWYG Editor Server                ║');
+  console.log('║  Tsyne WYSIWYG Designer                     ║');
   console.log('╚══════════════════════════════════════════════╝');
   console.log('');
   console.log(`  Server running at: http://localhost:${PORT}`);
   console.log('');
-  console.log('  Open your browser and click "Load File"');
+  console.log('  Open your browser and click "load testfile"');
   console.log('  to start editing examples/hello.ts');
   console.log('');
   console.log('  Press Ctrl+C to stop');
