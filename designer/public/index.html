@@ -318,6 +318,70 @@
       align-items: center;
       gap: 10px;
     }
+
+    /* Context Menu Styles */
+    .context-menu {
+      position: fixed;
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      border-radius: 3px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      padding: 4px 0;
+      z-index: 1000;
+      display: none;
+      min-width: 180px;
+    }
+
+    .context-menu.visible {
+      display: block;
+    }
+
+    .context-menu-item {
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #d4d4d4;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .context-menu-item:hover {
+      background: #094771;
+    }
+
+    .context-menu-separator {
+      height: 1px;
+      background: #5e5e5e;
+      margin: 4px 0;
+    }
+
+    .context-menu-submenu {
+      position: relative;
+    }
+
+    .context-menu-submenu-arrow {
+      margin-left: auto;
+      font-size: 10px;
+    }
+
+    .context-submenu {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      border-radius: 3px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      padding: 4px 0;
+      display: none;
+      min-width: 120px;
+    }
+
+    .context-menu-submenu:hover .context-submenu {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -374,6 +438,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Context Menu -->
+  <div id="contextMenu" class="context-menu"></div>
 
   <script src="editor.js"></script>
 </body>

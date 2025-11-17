@@ -4,6 +4,136 @@ let metadata = null;
 let selectedWidgetId = null;
 let currentFilePath = null;
 
+// Context menu state
+let contextMenuTarget = null;
+
+// Hide context menu when clicking elsewhere
+document.addEventListener('click', () => {
+  hideContextMenu();
+});
+
+// Hide context menu
+function hideContextMenu() {
+  const menu = document.getElementById('contextMenu');
+  menu.classList.remove('visible');
+  contextMenuTarget = null;
+}
+
+// Show context menu
+function showContextMenu(event, widget) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const menu = document.getElementById('contextMenu');
+  contextMenuTarget = widget;
+
+  // Build menu content based on widget type
+  menu.innerHTML = buildContextMenuContent(widget);
+
+  // Position menu at cursor
+  menu.style.left = event.pageX + 'px';
+  menu.style.top = event.pageY + 'px';
+  menu.classList.add('visible');
+}
+
+// Build context menu content based on widget type
+function buildContextMenuContent(widget) {
+  let menuItems = [];
+
+  // Widget-specific menu items
+  if (widget.widgetType === 'grid') {
+    menuItems.push(`
+      <div class="context-menu-submenu">
+        <div class="context-menu-item">
+          <span>Set Columns</span>
+          <span class="context-menu-submenu-arrow">▶</span>
+        </div>
+        <div class="context-submenu">
+          ${[1, 2, 3, 4, 5, 6].map(cols => `
+            <div class="context-menu-item" onclick="setWidgetProperty('${widget.id}', 'columns', ${cols}); hideContextMenu();">
+              ${cols} Column${cols > 1 ? 's' : ''}
+            </div>
+          `).join('')}
+          <div class="context-menu-separator"></div>
+          <div class="context-menu-item" onclick="promptPropertyValue('${widget.id}', 'columns', 'Enter number of columns');">
+            Custom...
+          </div>
+        </div>
+      </div>
+    `);
+  } else if (widget.widgetType === 'gridwrap') {
+    menuItems.push(`
+      <div class="context-menu-item" onclick="promptPropertyValue('${widget.id}', 'itemWidth', 'Enter item width');">
+        Set Item Width
+      </div>
+      <div class="context-menu-item" onclick="promptPropertyValue('${widget.id}', 'itemHeight', 'Enter item height');">
+        Set Item Height
+      </div>
+    `);
+  } else if (widget.widgetType === 'hsplit' || widget.widgetType === 'vsplit') {
+    if (widget.properties.offset !== undefined) {
+      menuItems.push(`
+        <div class="context-menu-item" onclick="promptPropertyValue('${widget.id}', 'offset', 'Enter split offset');">
+          Set Offset
+        </div>
+      `);
+    }
+  }
+
+  // Common menu items for all widgets
+  if (menuItems.length > 0) {
+    menuItems.push('<div class="context-menu-separator"></div>');
+  }
+
+  menuItems.push(`
+    <div class="context-menu-item" onclick="selectWidget('${widget.id}'); hideContextMenu();">
+      <span>⚙</span> Edit Properties
+    </div>
+  `);
+
+  menuItems.push(`
+    <div class="context-menu-item" onclick="deleteWidget('${widget.id}'); hideContextMenu();">
+      <span>🗑</span> Delete Widget
+    </div>
+  `);
+
+  return menuItems.join('');
+}
+
+// Set widget property from context menu (generic)
+async function setWidgetProperty(widgetId, propertyName, value) {
+  await updateProperty(widgetId, propertyName, value, 'number');
+
+  // Refresh the UI
+  const response = await fetch('/api/load', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filePath: currentFilePath })
+  });
+  const data = await response.json();
+  metadata = data.metadata;
+  renderWidgetTree();
+  renderPreview();
+  renderProperties();
+}
+
+// Prompt for property value (generic)
+function promptPropertyValue(widgetId, propertyName, promptText) {
+  const widget = metadata.widgets.find(w => w.id === widgetId);
+  const currentValue = widget.properties[propertyName] || '';
+
+  const newValue = prompt(promptText + ':', currentValue);
+  if (newValue !== null) {
+    const numValue = parseFloat(newValue);
+    if (!isNaN(numValue) && numValue > 0) {
+      setWidgetProperty(widgetId, propertyName, numValue);
+    } else {
+      alert('Please enter a valid positive number');
+    }
+  }
+  hideContextMenu();
+}
+
 // Load file and metadata
 async function loadFile() {
   try {
@@ -71,6 +201,12 @@ function createTreeItem(widget) {
   item.onclick = (e) => {
     e.stopPropagation();
     selectWidget(widget.id);
+  };
+
+  // Add right-click context menu
+  item.oncontextmenu = (e) => {
+    e.stopPropagation();
+    showContextMenu(e, widget);
   };
 
   // Add children if any
