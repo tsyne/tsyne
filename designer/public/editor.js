@@ -344,12 +344,15 @@ function createPreviewWidget(widget) {
     element.classList.add('container');
   }
 
-  // Helper to render children
-  const renderChildren = () => {
+  // Helper to render children with proper layout
+  const renderChildren = (layoutStyle = {}) => {
     const children = metadata.widgets.filter(w => w.parent === widget.id);
     if (children.length > 0) {
       const childContainer = document.createElement('div');
-      childContainer.style.paddingLeft = '10px';
+
+      // Apply layout styles
+      Object.assign(childContainer.style, layoutStyle);
+
       children.forEach(child => {
         childContainer.appendChild(createPreviewWidget(child));
       });
@@ -361,61 +364,85 @@ function createPreviewWidget(widget) {
     // Display widgets
     case 'label':
       element.className = 'preview-label';
+      element.style.padding = '4px 8px';
       element.textContent = widget.properties.text || 'Label';
       break;
 
     case 'hyperlink':
+      element.style.padding = '4px 8px';
       element.innerHTML = `<a href="#" style="color: #4ec9b0; text-decoration: underline;">${widget.properties.text || 'Link'}</a>`;
       break;
 
     case 'separator':
-      element.innerHTML = `<hr style="border: none; border-top: 1px solid #5e5e5e; margin: 8px 0;">`;
+      element.style.border = 'none';
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.innerHTML = `<hr style="border: none; border-top: 1px solid #5e5e5e; margin: 4px 0; width: 100%;">`;
       break;
 
     case 'richtext':
+      element.style.padding = '4px 8px';
       element.innerHTML = `<div style="color: #d4d4d4; font-style: italic;">${widget.properties.text || 'Rich text'}</div>`;
       break;
 
     case 'image':
+      element.style.padding = '8px';
       element.innerHTML = `<div style="background: #3c3c3c; padding: 20px; text-align: center; border: 1px solid #5e5e5e; border-radius: 3px;">⛶ Image: ${widget.properties.path || widget.properties.resource || 'none'}</div>`;
       break;
 
     // Input widgets
     case 'button':
       element.className = 'preview-button';
+      element.style.flexShrink = '0';
       element.textContent = widget.properties.text || 'Button';
       break;
 
     case 'entry':
-      element.innerHTML = `<input type="text" placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.border = 'none';
+      element.innerHTML = `<input type="text" placeholder="${widget.properties.placeholder || ''}" style="min-width: ${widget.properties.minWidth || 150}px; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
       break;
 
     case 'multilineentry':
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.border = 'none';
       element.innerHTML = `<textarea placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px; min-height: 60px;"></textarea>`;
       break;
 
     case 'passwordentry':
-      element.innerHTML = `<input type="password" placeholder="${widget.properties.placeholder || ''}" style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.border = 'none';
+      element.innerHTML = `<input type="password" placeholder="${widget.properties.placeholder || ''}" style="min-width: 150px; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;">`;
       break;
 
     case 'checkbox':
-      element.innerHTML = `<label style="color: #d4d4d4;"><input type="checkbox" style="margin-right: 6px;">${widget.properties.text || 'Checkbox'}</label>`;
+      element.style.padding = '4px 8px';
+      element.innerHTML = `<label style="color: #d4d4d4; display: flex; align-items: center; white-space: nowrap;"><input type="checkbox" style="margin-right: 6px;">${widget.properties.text || 'Checkbox'}</label>`;
       break;
 
     case 'select':
-      element.innerHTML = `<select style="width: 100%; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;"><option>${widget.properties.options || 'Options'}</option></select>`;
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.border = 'none';
+      element.innerHTML = `<select style="min-width: 150px; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 3px;"><option>${widget.properties.options || 'Options'}</option></select>`;
       break;
 
     case 'radiogroup':
+      element.style.padding = '4px 8px';
       element.innerHTML = `<div style="color: #858585;">Radio: ${widget.properties.options || 'Options'}</div>`;
       break;
 
     case 'slider':
-      element.innerHTML = `<input type="range" min="${widget.properties.min || 0}" max="${widget.properties.max || 100}" value="${widget.properties.initialValue || 50}" style="width: 100%;">`;
+      element.style.padding = '4px 8px';
+      element.innerHTML = `<input type="range" min="${widget.properties.min || 0}" max="${widget.properties.max || 100}" value="${widget.properties.initialValue || 50}" style="min-width: 150px;">`;
       break;
 
     case 'progressbar':
-      element.innerHTML = `<div style="background: #3c3c3c; border-radius: 3px; overflow: hidden;"><div style="background: #0e639c; height: 10px; width: ${widget.properties.initialValue || 50}%;"></div></div>`;
+      element.style.padding = '4px 8px';
+      element.innerHTML = `<div style="background: #3c3c3c; border-radius: 3px; overflow: hidden; min-width: 150px;"><div style="background: #0e639c; height: 10px; width: ${widget.properties.initialValue || 50}%;"></div></div>`;
       break;
 
     // Data widgets
@@ -437,41 +464,176 @@ function createPreviewWidget(widget) {
 
     // Container widgets
     case 'vbox':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">vbox</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
     case 'hbox':
-    case 'scroll':
-    case 'center':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">hbox</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px',
+        alignItems: 'flex-start'
+      });
+      break;
+
     case 'grid':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">grid (${widget.properties.columns || 2} cols)</div>`;
+      renderChildren({
+        display: 'grid',
+        gridTemplateColumns: `repeat(${widget.properties.columns || 2}, 1fr)`,
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
+    case 'scroll':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">scroll</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px',
+        maxHeight: '200px',
+        overflow: 'auto'
+      });
+      break;
+
+    case 'center':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">center</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px',
+        alignItems: 'center',
+        justifyContent: 'center'
+      });
+      break;
+
     case 'gridwrap':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">gridwrap</div>`;
+      renderChildren({
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
     case 'hsplit':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">hsplit</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '4px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
     case 'vsplit':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">vsplit</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
     case 'border':
-      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">${widget.widgetType}${widget.properties.columns ? ` (${widget.properties.columns} cols)` : ''}${widget.properties.regions ? ` (${widget.properties.regions})` : ''}</div>`;
-      renderChildren();
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">border${widget.properties.regions ? ` (${widget.properties.regions})` : ''}</div>`;
+      renderChildren({
+        display: 'grid',
+        gridTemplateAreas: '"top" "center" "bottom"',
+        gridTemplateRows: 'auto 1fr auto',
+        gap: '4px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
       break;
 
     case 'window':
       element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">window${widget.properties.title ? `: ${widget.properties.title}` : ''}</div>`;
-      renderChildren();
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '2px solid #0e639c',
+        borderRadius: '5px',
+        background: '#2d2d2d'
+      });
       break;
 
     case 'tabs':
       element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">tabs: ${widget.properties.tabs || 'Tabs'}</div>`;
-      renderChildren();
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
       break;
 
     case 'card':
       element.innerHTML = `<div style="border: 1px solid #5e5e5e; border-radius: 3px; padding: 10px; margin-bottom: 5px;"><div style="font-weight: bold; color: #d4d4d4;">${widget.properties.title || 'Card'}</div><div style="color: #858585; font-size: 11px;">${widget.properties.subtitle || ''}</div></div>`;
-      renderChildren();
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        paddingTop: '8px'
+      });
       break;
 
     case 'accordion':
       element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">accordion: ${widget.properties.items || 'Items'}</div>`;
-      renderChildren();
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
       break;
 
     case 'form':
       element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">form: ${widget.properties.fields || 'Fields'}</div>`;
-      renderChildren();
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
       break;
 
     default:
