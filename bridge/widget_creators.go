@@ -186,6 +186,19 @@ func (b *Bridge) handleCreatePasswordEntry(msg Message) {
 	entry := widget.NewPasswordEntry()
 	entry.SetPlaceHolder(placeholder)
 
+	// Set onSubmit callback if provided (triggered on Enter key)
+	if callbackID, ok := msg.Payload["callbackId"].(string); ok {
+		entry.OnSubmitted = func(text string) {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"text":       text,
+				},
+			})
+		}
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = entry
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "passwordentry", Text: ""}

@@ -434,11 +434,7 @@ func main() {
 	log.SetPrefix("[tsyne-bridge] ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	// Parse command-line flags
-	mode := flag.String("mode", "stdio", "Communication mode: stdio or grpc")
-	flag.Parse()
-
-	// Check for test mode flag
+	// Check for test mode flag BEFORE parsing
 	testMode := false
 	for _, arg := range os.Args[1:] {
 		if arg == "--test" || arg == "--headless" {
@@ -446,6 +442,17 @@ func main() {
 			break
 		}
 	}
+
+	// Parse command-line flags
+	mode := flag.String("mode", "stdio", "Communication mode: stdio or grpc")
+	// Filter out --headless and --test flags before parsing, as they're not recognized by flag package
+	filteredArgs := []string{}
+	for _, arg := range os.Args[1:] {
+		if arg != "--headless" && arg != "--test" {
+			filteredArgs = append(filteredArgs, arg)
+		}
+	}
+	flag.CommandLine.Parse(filteredArgs)
 
 	log.Printf("[main] Starting in mode: %s (testMode: %v)", *mode, testMode)
 

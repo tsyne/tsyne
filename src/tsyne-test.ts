@@ -68,8 +68,26 @@ export class TsyneTest {
    */
   async cleanup(): Promise<void> {
     if (this.app) {
-      this.app.getBridge().quit();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const bridge = this.app.getBridge();
+
+      // Graceful quit first (triggers shutdown via timeout)
+      try {
+        bridge.quit?.();
+      } catch (err) {
+        // Quit may fail if bridge is already shutting down, that's OK
+      }
+
+      // Immediately call shutdown to clean up all resources
+      // This removes event listeners, clears handlers, and kills the process
+      // This ensures Node.js event loop can exit properly
+      try {
+        (bridge as any).shutdown?.();
+      } catch (err) {
+        // Shutdown may fail, that's OK
+      }
+
+      // Brief wait to ensure process has exited
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
 

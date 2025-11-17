@@ -5,7 +5,7 @@ const createTestApp = (app: App, onSubmit: (text: string) => void) => {
   app.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       app.vbox(() => {
-        app.passwordentry('placeholder', onSubmit);
+        app.passwordentry('password', onSubmit);
       });
     });
     win.show();

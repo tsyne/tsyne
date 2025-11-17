@@ -33,6 +33,7 @@ export class BridgeConnection {
   private readyResolve?: () => void;
   private buffer = Buffer.alloc(0); // Accumulate incoming data
   private readingFrame = false;
+  private quitTimeout?: NodeJS.Timeout;
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -238,10 +239,53 @@ export class BridgeConnection {
 
   quit(): void {
     this.send('quit', {});
-    setTimeout(() => {
-      if (!this.process.killed) {
-        this.process.kill();
-      }
+    this.quitTimeout = setTimeout(() => {
+      this.shutdown();
     }, 1000);
+  }
+
+  /**
+   * Forcefully shutdown the bridge and clean up all resources
+   * This removes all event listeners, clears handlers, and kills the process
+   */
+  shutdown(): void {
+    // Clear the timeout if it's still pending
+    if (this.quitTimeout) {
+      clearTimeout(this.quitTimeout);
+      this.quitTimeout = undefined;
+    }
+
+    // Remove all event listeners from the process to allow it to be GC'd
+    if (this.process) {
+      this.process.removeAllListeners();
+      this.process.stdout?.removeAllListeners();
+      this.process.stderr?.removeAllListeners();
+      this.process.stdin?.removeAllListeners();
+    }
+
+    // Clear all pending requests and reject them silently
+    // (these are expected to fail during cleanup)
+    for (const [id, { reject }] of this.pendingRequests.entries()) {
+      const err = new Error('Bridge shutting down');
+      // Mark as expected shutdown error so it doesn't get logged
+      (err as any).isShutdownError = true;
+      reject(err);
+    }
+    this.pendingRequests.clear();
+
+    // Clear all registered event handlers
+    this.eventHandlers.clear();
+
+    // Clear the buffer
+    this.buffer = Buffer.alloc(0);
+
+    // Kill the process if still alive
+    if (this.process && !this.process.killed) {
+      try {
+        this.process.kill();
+      } catch (err) {
+        // Process might already be dead
+      }
+    }
   }
 }

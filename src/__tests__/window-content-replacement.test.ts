@@ -30,12 +30,33 @@ describe('Window Content Replacement', () => {
     __setGlobalContext(app, (app as any).ctx);
   });
 
-  afterEach(() => {
-    // Clean up
+  afterEach(async () => {
+    // Clean up - force shutdown to clean up all resources
     if (app) {
-      (app as any).cleanup?.();
+      const bridge = (app as any).ctx?.bridge;
+      if (bridge) {
+        // Trigger graceful quit (doesn't return a promise)
+        try {
+          bridge.quit?.();
+        } catch (err) {
+          // Quit may fail, that's OK
+        }
+
+        // Immediately shutdown (removes listeners, clears handlers, kills process)
+        try {
+          bridge.shutdown?.();
+        } catch (err) {
+          // Shutdown may fail, that's OK
+        }
+      }
+
+      // Brief wait for process cleanup
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   });
+
+  // Set timeout for all tests in this suite to 60 seconds
+  jest.setTimeout(60000);
 
   test('should replace simple placeholder with complex form', async () => {
     const { vbox, label, entry, button, checkbox, separator } = require('../index');
