@@ -57,7 +57,7 @@ app({ title: 'My App' }, (a) => {
 
 **All widgets support:**
 - `hide()` / `show()` - Imperative visibility control
-- `ngShow(() => boolean)` - Declarative visibility (returns `this` for chaining)
+- `when(() => boolean)` - Declarative visibility (returns `this` for chaining)
 - `refresh()` - Re-evaluate visibility conditions
 
 **VBox/HBox containers also support:**
@@ -97,7 +97,7 @@ const test = new TsyneBrowserTest({ headed: false });
 **View:** Widget references (don't rebuild, just update)
 **Controller:** Event handlers that update model only
 
-**Example (TodoMVC with ngShow):**
+**Example (TodoMVC with when()):**
 ```typescript
 class TodoStore {
   private changeListeners: ChangeListener[] = [];
@@ -111,8 +111,8 @@ class TodoStore {
   }
 }
 
-// Declarative visibility with ngShow (AngularJS-style)
-todoHBox.ngShow(() => {
+// Declarative visibility with when()
+todoHBox.when(() => {
   const filter = store.getFilter();
   if (filter === 'all') return true;
   if (filter === 'active') return !todo.completed;
@@ -128,37 +128,37 @@ store.subscribe(() => {
 });
 ```
 
-**New declarative APIs (AngularJS 1.0-inspired):**
-- `widget.ngShow(() => boolean)` - Declarative visibility control
-- `container.model(items).trackBy(fn).each(builder)` - Smart list binding (ng-repeat)
+**Declarative APIs:**
+- `widget.when(() => boolean)` - Declarative visibility control
+- `container.model(items).trackBy(fn).each(builder)` - Smart list binding
 - `widget.refresh()` - Re-evaluate visibility conditions
 - `container.refreshVisibility()` - Update visibility without rebuild
 
 ## Current Capabilities & Limitations
 
 **✅ Implemented:**
-1. **ngShow directive** - Declarative visibility control (AngularJS ng-show style)
-2. **ModelBoundList** - Smart list binding with diffing (AngularJS ng-repeat style)
+1. **when() method** - Declarative visibility control
+2. **ModelBoundList** - Smart list binding with diffing
 3. **Observable pattern** - Store with change listeners for reactive updates
 
 **⏳ Current Limitations:**
 1. **Still rebuilds on change** - TodoMVC rebuilds entire list (ModelBoundList.update() ready to use)
-2. **No two-way binding** - Manual setText/getText instead of ng-model
+2. **No two-way binding** - Manual setText/getText
 3. **No computed properties** - Manual label updates instead of reactive expressions
-4. **ngShow optimization** - Infrastructure in place, not yet used for filter changes
+4. **when() optimization** - Infrastructure in place, not yet used for filter changes
 
 See `more_mvc_like_for_todomvc_app.md` for implementation status and next steps.
 
-## Declarative Patterns (AngularJS-Inspired)
+## Declarative Patterns
 
-**ngShow for conditional visibility:**
+**when() for conditional visibility:**
 ```typescript
 // Single condition
-checkbox.ngShow(() => !isEditing);
-textEntry.ngShow(() => isEditing);
+checkbox.when(() => !isEditing);
+textEntry.when(() => isEditing);
 
 // Complex condition with store lookup
-todoHBox.ngShow(() => {
+todoHBox.when(() => {
   const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
   if (!currentTodo) return false;
   const filter = store.getFilter();
@@ -325,15 +325,15 @@ go build -o ../bin/tsyne-bridge .
 - `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
 
 ### Example Code
-- `examples/todomvc.ts` - Full MVC example with ngShow (16 tests, 15/16 passing)
-- `examples/todomvc-ngshow.ts` - Preserved ngShow implementation variant
+- `examples/todomvc.ts` - Full MVC example with when() (16 tests, 15/16 passing)
+- `examples/todomvc-when.ts` - Preserved when() implementation variant
 - `more_mvc_like_for_todomvc_app.md` - Implementation status: Phase 1 & 2 complete!
-- `src/widgets.ts` - Widget base class, ModelBoundList, ngShow implementation
+- `src/widgets.ts` - Widget base class, ModelBoundList, when() implementation
 
 ### Community
 - `CODE_OF_CONDUCT.md` - Community guidelines
 - `CONTRIBUTING.md` - Developer guide
 
 **Key commits:**
-- `fa35224` - Added ngShow directive and ModelBoundList infrastructure
-- `b75ab38` - Added todomvc-ngshow variants to preserve implementation
+- `fa35224` - Added when() method and ModelBoundList infrastructure
+- `b75ab38` - Added todomvc-when variants to preserve implementation

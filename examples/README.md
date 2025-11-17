@@ -405,13 +405,13 @@ A complete calculator application demonstrating:
 
 ### **todomvc.ts** & **todomvc-ngshow.ts**
 
-![TodoMVC Screenshot](./screenshots/todomvc.png) ![TodoMVC ngShow Screenshot](./screenshots/todomvc-ngshow.png)
+![TodoMVC Screenshot](./screenshots/todomvc.png) ![TodoMVC when() Screenshot](./screenshots/todomvc-ngshow.png)
 
 The TodoMVC applications are the most complete examples, demonstrating:
 - **Full MVC architecture** - Observable store with change listeners
 - **File persistence** - Save/load to JSON
 - **Multiple filters** - All/Active/Completed with smart visibility
-- **ngShow directive** - Declarative visibility control (ngShow variant)
+- **when() method** - Declarative visibility control (when() variant)
 - **Edit mode** - Inline editing with save/cancel
 - **CRUD operations** - Add, update, delete, toggle todos
 - **Comprehensive test suite** - 16 tests per variant

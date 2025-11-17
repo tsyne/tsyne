@@ -210,7 +210,7 @@ The Context:
 
 **All widgets support:**
 - `hide()` / `show()` - Imperative visibility control
-- `ngShow(() => boolean)` - Declarative visibility (returns `this` for chaining)
+- `when(() => boolean)` - Declarative visibility (returns `this` for chaining)
 - `refresh()` - Re-evaluate visibility conditions
 
 **VBox/HBox containers also support:**
@@ -394,10 +394,10 @@ class TodoController {
 }
 ```
 
-### Declarative Visibility with ngShow (AngularJS-Style)
+### Declarative Visibility with when()
 
 ```typescript
-todoHBox.ngShow(() => {
+todoHBox.when(() => {
   const filter = store.getFilter();
   if (filter === 'all') return true;
   if (filter === 'active') return !todo.completed;
@@ -429,7 +429,7 @@ store.subscribe(() => {
 ### Current Capabilities & Limitations
 
 **✅ Implemented:**
-1. **ngShow directive** - Declarative visibility control (AngularJS ng-show style)
+1. **when() method** - Declarative visibility control (AngularJS when() style)
 2. **ModelBoundList** - Smart list binding with diffing (AngularJS ng-repeat style)
 3. **Observable pattern** - Store with change listeners for reactive updates
 
@@ -437,7 +437,7 @@ store.subscribe(() => {
 1. **Still rebuilds on change** - TodoMVC rebuilds entire list (ModelBoundList.update() ready to use)
 2. **No two-way binding** - Manual setText/getText instead of ng-model
 3. **No computed properties** - Manual label updates instead of reactive expressions
-4. **ngShow optimization** - Infrastructure in place, not yet used for filter changes
+4. **when() optimization** - Infrastructure in place, not yet used for filter changes
 
 ---
 
@@ -823,7 +823,7 @@ app.tabs(items: { title: string, builder: () => void }[]): Tabs
 // All widgets
 widget.hide(): void
 widget.show(): void
-widget.ngShow(condition: () => boolean): Widget  // Chainable
+widget.when(condition: () => boolean): Widget  // Chainable
 widget.refresh(): void
 
 // Containers
@@ -919,8 +919,8 @@ ctx.getAllWidgets(): Promise<WidgetInfo[]>
 
 ### Example Applications
 
-- `examples/todomvc.ts` - Full MVC example with ngShow (16 tests, 15/16 passing)
-- `examples/todomvc-ngshow.ts` - Preserved ngShow implementation variant
+- `examples/todomvc.ts` - Full MVC example with when() (16 tests, 15/16 passing)
+- `examples/todomvc-when.ts` - Preserved when() implementation variant
 - `examples/hello.ts` - Simple hello world
 - `examples/calculator.ts` - Calculator with business logic tests
 
@@ -937,8 +937,8 @@ ctx.getAllWidgets(): Promise<WidgetInfo[]>
 
 ### Key Commits
 
-- `fa35224` - Added ngShow directive and ModelBoundList infrastructure
-- `b75ab38` - Added todomvc-ngshow variants to preserve implementation
+- `fa35224` - Added when() method and ModelBoundList infrastructure
+- `b75ab38` - Added todomvc-when variants to preserve implementation
 - `6c5ac7c` - Forked chess example into Tsyne
 - `dfc2379` - Fork andydotxyz/chess into Tsyne as idiomatic TypeScript solution
 
@@ -952,7 +952,7 @@ ctx.getAllWidgets(): Promise<WidgetInfo[]>
 - Advanced layouts (VBox, HBox, Grid, Split, Tabs, etc.)
 - TsyneTest framework with Playwright-like API
 - Browser mode with navigation
-- MVC pattern with ngShow and ModelBoundList
+- MVC pattern with when() and ModelBoundList
 - Jest integration for business logic tests
 - CSS-like styling system
 - Menu and toolbar support

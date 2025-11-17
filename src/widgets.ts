@@ -101,11 +101,11 @@ export abstract class Widget {
   }
 
   /**
-   * AngularJS-style ng-show directive for declarative visibility
+   * Declarative visibility control - show widget when condition is true
    * @param conditionFn Function that returns whether widget should be visible
    * @returns this for method chaining
    */
-  ngShow(conditionFn: () => boolean): this {
+  when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
       const shouldShow = conditionFn();
       if (shouldShow) {
@@ -434,7 +434,7 @@ export class ModelBoundList<T> {
   }
 
   /**
-   * Refresh visibility of all items (re-evaluates ngShow conditions)
+   * Refresh visibility of all items (re-evaluates when() conditions)
    */
   async refreshVisibility(): Promise<void> {
     for (const widget of this.trackedItems.values()) {
@@ -542,11 +542,11 @@ export class VBox {
   }
 
   /**
-   * AngularJS-style ng-show directive for declarative visibility
+   * Declarative visibility control - show container when condition is true
    * @param conditionFn Function that returns whether container should be visible
    * @returns this for method chaining
    */
-  ngShow(conditionFn: () => boolean): this {
+  when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
       const shouldShow = conditionFn();
       if (shouldShow) {
@@ -653,11 +653,11 @@ export class HBox {
   }
 
   /**
-   * AngularJS-style ng-show directive for declarative visibility
+   * Declarative visibility control - show container when condition is true
    * @param conditionFn Function that returns whether container should be visible
    * @returns this for method chaining
    */
-  ngShow(conditionFn: () => boolean): this {
+  when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
       const shouldShow = conditionFn();
       if (shouldShow) {

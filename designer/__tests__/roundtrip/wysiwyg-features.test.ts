@@ -2,7 +2,7 @@
  * RoundTrip Test: WYSIWYG Designer Features
  *
  * Tests for features that DreamWeaver/Interface Builder users expect:
- * - ngShow/ngHide for conditional visibility
+ * - when() for conditional visibility
  * - Style classes and CSS-like styling
  * - Widget properties (colors, fonts, alignment)
  * - Multiple event handlers on same widget
@@ -19,8 +19,8 @@ import {
 } from './helpers';
 
 describe('RoundTrip: WYSIWYG Features', () => {
-  describe('ngShow/ngHide Preservation', () => {
-    test('simple ngShow is preserved', async () => {
+  describe('when() Preservation', () => {
+    test('simple when() is preserved', async () => {
       const code = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -29,7 +29,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.label('Conditional Widget').ngShow(() => isVisible);
+        a.label('Conditional Widget').when(() => isVisible);
       });
     });
     win.show();
@@ -43,7 +43,7 @@ app({ title: 'Test' }, (a) => {
       expect(saveResult.content).toBe(code);
     });
 
-    test('ngShow with complex condition is preserved', async () => {
+    test('when() with complex condition is preserved', async () => {
       const code = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -52,7 +52,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.label('Active Items').ngShow(() => {
+        a.label('Active Items').when(() => {
           const items = store.getItems();
           return items.length > 0 && !store.isLoading();
         });
@@ -69,7 +69,7 @@ app({ title: 'Test' }, (a) => {
       expect(saveResult.content).toBe(code);
     });
 
-    test('ngShow chained with withId is preserved', async () => {
+    test('when() chained with withId is preserved', async () => {
       const code = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -78,7 +78,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Edit Mode', () => {}).ngShow(() => !isEditing).withId('editBtn');
+        a.button('Edit Mode', () => {}).when(() => !isEditing).withId('editBtn');
       });
     });
     win.show();
@@ -92,7 +92,7 @@ app({ title: 'Test' }, (a) => {
       expect(saveResult.content).toBe(code);
     });
 
-    test('multiple widgets with different ngShow conditions are preserved', async () => {
+    test('multiple widgets with different when() conditions are preserved', async () => {
       const code = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -101,9 +101,9 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.label('Welcome').ngShow(() => state.isLoggedIn);
-        a.button('Admin Panel', () => {}).ngShow(() => state.isAdmin);
-        a.button('Login', () => {}).ngShow(() => !state.isLoggedIn);
+        a.label('Welcome').when(() => state.isLoggedIn);
+        a.button('Admin Panel', () => {}).when(() => state.isAdmin);
+        a.button('Login', () => {}).when(() => !state.isLoggedIn);
       });
     });
     win.show();
@@ -351,7 +351,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   describe('Mixed Features', () => {
-    test('button with onClick, ngShow, style, and withId all preserved', async () => {
+    test('button with onClick, when(), style, and withId all preserved', async () => {
       const code = `import { app, styles } from '../src';
 
 styles({
@@ -369,7 +369,7 @@ app({ title: 'Test' }, (a) => {
         a.button('Submit', () => {
           console.log('Submitting...');
           performSubmit();
-        }, 'primary').ngShow(() => isEnabled).withId('submitBtn');
+        }, 'primary').when(() => isEnabled).withId('submitBtn');
       });
     });
     win.show();
@@ -417,7 +417,7 @@ app({ title: 'Test' }, (a) => {
           if (formData.agree) {
             await submitForm(formData);
           }
-        }).ngShow(() => formData.agree).withId('submitBtn');
+        }).when(() => formData.agree).withId('submitBtn');
       });
     });
     win.show();

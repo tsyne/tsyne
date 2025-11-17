@@ -243,7 +243,7 @@ app({ title: 'Test' }, (a) => {
       expect(saveResult.content).toContain('.withId(\'myButton\')');
     });
 
-    test('layout transformation preserves ngShow conditions', async () => {
+    test('layout transformation preserves when() conditions', async () => {
       const original = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -253,7 +253,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Always Shown');
-        a.button('Conditional', () => {}).ngShow(() => isVisible);
+        a.button('Conditional', () => {}).when(() => isVisible);
       });
     });
     win.show();
@@ -268,9 +268,9 @@ app({ title: 'Test' }, (a) => {
 
       const saveResult = await save('memory');
 
-      // Should preserve ngShow
+      // Should preserve when()
       expect(saveResult.content).toContain('a.hbox(() => {');
-      expect(saveResult.content).toContain('.ngShow(() => isVisible)');
+      expect(saveResult.content).toContain('.when(() => isVisible)');
     });
 
     test('layout transformation preserves style classes', async () => {

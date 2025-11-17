@@ -389,7 +389,7 @@ app({ title: 'Test' }, (a) => {
       expect(saveResult.content).toContain('a.button(');
     });
 
-    test('delete widget preserves ngShow on other widgets', async () => {
+    test('delete widget preserves when() on other widgets', async () => {
       const original = `import { app } from '../src';
 
 app({ title: 'Test' }, (a) => {
@@ -399,9 +399,9 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.label('First').ngShow(() => showFirst);
+        a.label('First').when(() => showFirst);
         a.label('Delete Me');
-        a.label('Second').ngShow(() => showSecond);
+        a.label('Second').when(() => showSecond);
       });
     });
     win.show();
@@ -416,9 +416,9 @@ app({ title: 'Test' }, (a) => {
 
       const saveResult = await save('memory');
 
-      // ngShow should be preserved on remaining widgets
-      expect(saveResult.content).toContain('.ngShow(() => showFirst)');
-      expect(saveResult.content).toContain('.ngShow(() => showSecond)');
+      // when() should be preserved on remaining widgets
+      expect(saveResult.content).toContain('.when(() => showFirst)');
+      expect(saveResult.content).toContain('.when(() => showSecond)');
       expect(saveResult.content).not.toContain('Delete Me');
     });
   });

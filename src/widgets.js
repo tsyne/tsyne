@@ -1,65 +1,173 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GridWrap = exports.Border = exports.Image = exports.RichText = exports.Tree = exports.Form = exports.Accordion = exports.Card = exports.Center = exports.List = exports.Table = exports.Toolbar = exports.ToolbarAction = exports.Tabs = exports.Split = exports.RadioGroup = exports.Grid = exports.Scroll = exports.ProgressBar = exports.Slider = exports.Select = exports.Checkbox = exports.HBox = exports.VBox = exports.ModelBoundList = exports.Hyperlink = exports.Separator = exports.PasswordEntry = exports.MultiLineEntry = exports.Entry = exports.Label = exports.Button = exports.Widget = void 0;
-const styles_1 = require("./styles");
+exports.GridWrap = exports.Border = exports.Image = exports.RichText = exports.Tree = exports.Form = exports.Accordion = exports.Card = exports.Max = exports.Center = exports.List = exports.Table = exports.Toolbar = exports.ToolbarAction = exports.Tabs = exports.Split = exports.RadioGroup = exports.Grid = exports.Scroll = exports.ProgressBar = exports.Slider = exports.Select = exports.Checkbox = exports.HBox = exports.VBox = exports.ModelBoundList = exports.Hyperlink = exports.Separator = exports.PasswordEntry = exports.MultiLineEntry = exports.Entry = exports.Label = exports.Button = exports.Widget = void 0;
+var styles_1 = require("./styles");
 /**
  * Base class for all widgets
  */
-class Widget {
-    constructor(ctx, id) {
+var Widget = /** @class */ (function () {
+    function Widget(ctx, id) {
         this.ctx = ctx;
         this.id = id;
     }
     /**
      * Apply styles from the global stylesheet to this widget
      */
-    async applyStyles(widgetType) {
-        await (0, styles_1.applyStyleForWidget)(this.ctx, this.id, widgetType);
-    }
+    Widget.prototype.applyStyles = function (widgetType) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, styles_1.applyStyleForWidget)(this.ctx, this.id, widgetType)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     /**
      * Set context menu for this widget (shown on right-click)
      */
-    async setContextMenu(items) {
-        const menuItems = items.map(item => {
-            if (item.isSeparator) {
-                return { isSeparator: true };
-            }
-            const callbackId = this.ctx.generateId('callback');
-            this.ctx.bridge.registerEventHandler(callbackId, () => item.onSelected());
-            return {
-                label: item.label,
-                callbackId,
-                disabled: item.disabled,
-                checked: item.checked
-            };
+    Widget.prototype.setContextMenu = function (items) {
+        return __awaiter(this, void 0, void 0, function () {
+            var menuItems;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        menuItems = items.map(function (item) {
+                            if (item.isSeparator) {
+                                return { isSeparator: true };
+                            }
+                            var callbackId = _this.ctx.generateId('callback');
+                            _this.ctx.bridge.registerEventHandler(callbackId, function () { return item.onSelected(); });
+                            return {
+                                label: item.label,
+                                callbackId: callbackId,
+                                disabled: item.disabled,
+                                checked: item.checked
+                            };
+                        });
+                        return [4 /*yield*/, this.ctx.bridge.send('setWidgetContextMenu', {
+                                widgetId: this.id,
+                                items: menuItems
+                            })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-        await this.ctx.bridge.send('setWidgetContextMenu', {
-            widgetId: this.id,
-            items: menuItems
+    };
+    Widget.prototype.setText = function (text) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setText', {
+                            widgetId: this.id,
+                            text: text
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async setText(text) {
-        await this.ctx.bridge.send('setText', {
-            widgetId: this.id,
-            text
+    };
+    Widget.prototype.getText = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getText', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.text];
+                }
+            });
         });
-    }
-    async getText() {
-        const result = await this.ctx.bridge.send('getText', {
-            widgetId: this.id
+    };
+    Widget.prototype.hide = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('hideWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-        return result.text;
-    }
-    async hide() {
-        await this.ctx.bridge.send('hideWidget', {
-            widgetId: this.id
+    };
+    Widget.prototype.show = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('showWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async show() {
-        await this.ctx.bridge.send('showWidget', {
-            widgetId: this.id
-        });
-    }
+    };
     /**
      * Register a custom ID for this widget (for test framework getByID)
      * @param customId Custom ID to register
@@ -68,93 +176,148 @@ class Widget {
      * const statusLabel = a.label('').withId('statusLabel');
      * // In tests: ctx.getByID('statusLabel')
      */
-    withId(customId) {
+    Widget.prototype.withId = function (customId) {
         this.ctx.bridge.send('registerCustomId', {
             widgetId: this.id,
-            customId
+            customId: customId
         });
         return this;
-    }
+    };
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show widget when condition is true
      * @param conditionFn Function that returns whether widget should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn) {
-        const updateVisibility = async () => {
-            const shouldShow = conditionFn();
-            if (shouldShow) {
-                await this.show();
-            }
-            else {
-                await this.hide();
-            }
-        };
+    Widget.prototype.when = function (conditionFn) {
+        var _this = this;
+        var updateVisibility = function () { return __awaiter(_this, void 0, void 0, function () {
+            var shouldShow;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        shouldShow = conditionFn();
+                        if (!shouldShow) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.show()];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, this.hide()];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        }); };
         // Store for reactive re-evaluation
         this.visibilityCondition = updateVisibility;
         updateVisibility(); // Initial evaluation
         return this;
-    }
+    };
     /**
      * Refresh the widget - re-evaluates visibility conditions
      */
-    async refresh() {
-        if (this.visibilityCondition) {
-            await this.visibilityCondition();
-        }
-    }
-}
+    Widget.prototype.refresh = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.visibilityCondition) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.visibilityCondition()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return Widget;
+}());
 exports.Widget = Widget;
 /**
  * Button widget
  */
-class Button extends Widget {
-    constructor(ctx, text, onClick, className) {
-        const id = ctx.generateId('button');
-        super(ctx, id);
-        const payload = { id, text };
+var Button = /** @class */ (function (_super) {
+    __extends(Button, _super);
+    function Button(ctx, text, onClick, className) {
+        var _this = this;
+        var id = ctx.generateId('button');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, text: text };
         if (onClick) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, () => {
+            ctx.bridge.registerEventHandler(callbackId, function () {
                 onClick();
             });
         }
         ctx.bridge.send('createButton', payload);
         ctx.addToCurrentContainer(id);
         if (className) {
-            this.applyStyles(className).catch(() => { });
+            _this.applyStyles(className).catch(function () { });
         }
         else {
-            this.applyStyles('button').catch(() => { });
+            _this.applyStyles('button').catch(function () { });
         }
+        return _this;
     }
-    async disable() {
-        await this.ctx.bridge.send('disableWidget', {
-            widgetId: this.id
+    Button.prototype.disable = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('disableWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async enable() {
-        await this.ctx.bridge.send('enableWidget', {
-            widgetId: this.id
+    };
+    Button.prototype.enable = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('enableWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async isEnabled() {
-        const result = await this.ctx.bridge.send('isEnabled', {
-            widgetId: this.id
+    };
+    Button.prototype.isEnabled = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('isEnabled', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.enabled];
+                }
+            });
         });
-        return result.enabled;
-    }
-}
+    };
+    return Button;
+}(Widget));
 exports.Button = Button;
 /**
  * Label widget
  */
-class Label extends Widget {
-    constructor(ctx, text, className, alignment, wrapping, textStyle) {
-        const id = ctx.generateId('label');
-        super(ctx, id);
-        const payload = { id, text };
+var Label = /** @class */ (function (_super) {
+    __extends(Label, _super);
+    function Label(ctx, text, className, alignment, wrapping, textStyle) {
+        var _this = this;
+        var id = ctx.generateId('label');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, text: text };
         if (alignment) {
             payload.alignment = alignment;
         }
@@ -168,33 +331,37 @@ class Label extends Widget {
         ctx.addToCurrentContainer(id);
         // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'label'
         if (className) {
-            this.applyStyles(className).catch(() => { });
+            _this.applyStyles(className).catch(function () { });
         }
         else {
-            this.applyStyles('label').catch(() => { });
+            _this.applyStyles('label').catch(function () { });
         }
+        return _this;
     }
-}
+    return Label;
+}(Widget));
 exports.Label = Label;
 /**
  * Entry (text input) widget
  */
-class Entry extends Widget {
-    constructor(ctx, placeholder, onSubmit, minWidth, onDoubleClick) {
-        const id = ctx.generateId('entry');
-        super(ctx, id);
-        const payload = { id, placeholder: placeholder || '' };
+var Entry = /** @class */ (function (_super) {
+    __extends(Entry, _super);
+    function Entry(ctx, placeholder, onSubmit, minWidth, onDoubleClick) {
+        var _this = this;
+        var id = ctx.generateId('entry');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, placeholder: placeholder || '' };
         if (onSubmit) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onSubmit(data.text);
             });
         }
         if (onDoubleClick) {
-            const doubleClickCallbackId = ctx.generateId('callback');
+            var doubleClickCallbackId = ctx.generateId('callback');
             payload.doubleClickCallbackId = doubleClickCallbackId;
-            ctx.bridge.registerEventHandler(doubleClickCallbackId, () => {
+            ctx.bridge.registerEventHandler(doubleClickCallbackId, function () {
                 onDoubleClick();
             });
         }
@@ -204,101 +371,149 @@ class Entry extends Widget {
         ctx.bridge.send('createEntry', payload);
         ctx.addToCurrentContainer(id);
         // Apply styles from stylesheet (non-blocking)
-        this.applyStyles('entry').catch(() => { });
+        _this.applyStyles('entry').catch(function () { });
+        return _this;
     }
-    async disable() {
-        await this.ctx.bridge.send('disableWidget', {
-            widgetId: this.id
+    Entry.prototype.disable = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('disableWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async enable() {
-        await this.ctx.bridge.send('enableWidget', {
-            widgetId: this.id
+    };
+    Entry.prototype.enable = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('enableWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async focus() {
-        await this.ctx.bridge.send('focusWidget', {
-            widgetId: this.id
+    };
+    Entry.prototype.focus = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('focusWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async submit() {
-        await this.ctx.bridge.send('submitEntry', {
-            widgetId: this.id
+    };
+    Entry.prototype.submit = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('submitEntry', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-}
+    };
+    return Entry;
+}(Widget));
 exports.Entry = Entry;
 /**
  * Multi-line text entry widget
  */
-class MultiLineEntry extends Widget {
-    constructor(ctx, placeholder, wrapping) {
-        const id = ctx.generateId('multilineentry');
-        super(ctx, id);
-        const payload = { id, placeholder: placeholder || '' };
+var MultiLineEntry = /** @class */ (function (_super) {
+    __extends(MultiLineEntry, _super);
+    function MultiLineEntry(ctx, placeholder, wrapping) {
+        var _this = this;
+        var id = ctx.generateId('multilineentry');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, placeholder: placeholder || '' };
         if (wrapping) {
             payload.wrapping = wrapping;
         }
         ctx.bridge.send('createMultiLineEntry', payload);
         ctx.addToCurrentContainer(id);
         // Apply styles from stylesheet (non-blocking)
-        this.applyStyles('multilineentry').catch(() => { });
+        _this.applyStyles('multilineentry').catch(function () { });
+        return _this;
     }
-}
+    return MultiLineEntry;
+}(Widget));
 exports.MultiLineEntry = MultiLineEntry;
 /**
  * Password entry widget (text is masked)
  */
-class PasswordEntry extends Widget {
-    constructor(ctx, placeholder, onSubmit) {
-        const id = ctx.generateId('passwordentry');
-        super(ctx, id);
-        const payload = { id, placeholder: placeholder || '' };
+var PasswordEntry = /** @class */ (function (_super) {
+    __extends(PasswordEntry, _super);
+    function PasswordEntry(ctx, placeholder, onSubmit) {
+        var _this = this;
+        var id = ctx.generateId('passwordentry');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, placeholder: placeholder || '' };
         if (onSubmit) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onSubmit(data.text);
             });
         }
         ctx.bridge.send('createPasswordEntry', payload);
         ctx.addToCurrentContainer(id);
         // Apply styles from stylesheet (non-blocking)
-        this.applyStyles('passwordentry').catch(() => { });
+        _this.applyStyles('passwordentry').catch(function () { });
+        return _this;
     }
-}
+    return PasswordEntry;
+}(Widget));
 exports.PasswordEntry = PasswordEntry;
 /**
  * Separator widget (horizontal or vertical line)
  */
-class Separator {
-    constructor(ctx) {
+var Separator = /** @class */ (function () {
+    function Separator(ctx) {
         this.ctx = ctx;
         this.id = ctx.generateId('separator');
         ctx.bridge.send('createSeparator', { id: this.id });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Separator;
+}());
 exports.Separator = Separator;
 /**
  * Hyperlink widget (clickable URL)
  */
-class Hyperlink {
-    constructor(ctx, text, url) {
+var Hyperlink = /** @class */ (function () {
+    function Hyperlink(ctx, text, url) {
         this.ctx = ctx;
         this.id = ctx.generateId('hyperlink');
-        ctx.bridge.send('createHyperlink', { id: this.id, text, url });
+        ctx.bridge.send('createHyperlink', { id: this.id, text: text, url: url });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Hyperlink;
+}());
 exports.Hyperlink = Hyperlink;
 /**
  * ModelBoundList - Smart list binding for containers (inspired by AngularJS ng-repeat)
  * Efficiently manages a list of items with intelligent diffing to avoid full rebuilds
  */
-class ModelBoundList {
-    constructor(ctx, container, items) {
-        this.keyFn = (item) => item;
+var ModelBoundList = /** @class */ (function () {
+    function ModelBoundList(ctx, container, items) {
+        this.keyFn = function (item) { return item; };
         this.trackedItems = new Map();
         this.ctx = ctx;
         this.container = container;
@@ -308,75 +523,97 @@ class ModelBoundList {
      * Track items by key (like ng-repeat track by)
      * @param fn Function to extract unique key from item
      */
-    trackBy(fn) {
+    ModelBoundList.prototype.trackBy = function (fn) {
         this.keyFn = fn;
         return this;
-    }
+    };
     /**
      * Builder function for each item (called once per item)
      * @param builder Function that creates the view for an item
      */
-    each(builder) {
+    ModelBoundList.prototype.each = function (builder) {
         this.builderFn = builder;
         // Initial render - create views for all items
-        for (const item of this.items) {
-            const key = this.keyFn(item);
-            const widget = this.createItemView(item);
+        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
+            var item = _a[_i];
+            var key = this.keyFn(item);
+            var widget = this.createItemView(item);
             this.trackedItems.set(key, widget);
         }
-    }
+    };
     /**
      * Update the model - performs smart diff and only updates changed items
      * @param newItems New list of items
      */
-    update(newItems) {
+    ModelBoundList.prototype.update = function (newItems) {
+        var _this = this;
         if (!this.builderFn) {
             throw new Error('Must call each() before update()');
         }
-        const newKeys = new Set(newItems.map(item => this.keyFn(item)));
-        const oldKeys = new Set(this.trackedItems.keys());
+        var newKeys = new Set(newItems.map(function (item) { return _this.keyFn(item); }));
+        var oldKeys = new Set(this.trackedItems.keys());
         // Find items to remove (in old but not in new)
-        const toRemove = Array.from(oldKeys).filter(key => !newKeys.has(key));
+        var toRemove = Array.from(oldKeys).filter(function (key) { return !newKeys.has(key); });
         // Find items to add (in new but not in old)
-        const toAdd = newItems.filter(item => !oldKeys.has(this.keyFn(item)));
+        var toAdd = newItems.filter(function (item) { return !oldKeys.has(_this.keyFn(item)); });
         // If there are changes, rebuild the list
         // Future optimization: only add/remove changed items instead of full rebuild
         if (toRemove.length > 0 || toAdd.length > 0) {
             this.trackedItems.clear();
             this.container.removeAll();
-            for (const item of newItems) {
-                const key = this.keyFn(item);
-                const widget = this.createItemView(item);
+            for (var _i = 0, newItems_1 = newItems; _i < newItems_1.length; _i++) {
+                var item = newItems_1[_i];
+                var key = this.keyFn(item);
+                var widget = this.createItemView(item);
                 this.trackedItems.set(key, widget);
             }
             this.container.refresh();
         }
         this.items = newItems;
-    }
+    };
     /**
-     * Refresh visibility of all items (re-evaluates ngShow conditions)
+     * Refresh visibility of all items (re-evaluates when() conditions)
      */
-    async refreshVisibility() {
-        for (const widget of this.trackedItems.values()) {
-            if (widget && widget.refreshVisibility) {
-                await widget.refreshVisibility();
-            }
-        }
-    }
-    createItemView(item) {
-        let widget;
-        this.container.add(() => {
-            widget = this.builderFn(item);
+    ModelBoundList.prototype.refreshVisibility = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _i, _a, widget;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _i = 0, _a = this.trackedItems.values();
+                        _b.label = 1;
+                    case 1:
+                        if (!(_i < _a.length)) return [3 /*break*/, 4];
+                        widget = _a[_i];
+                        if (!(widget && widget.refreshVisibility)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, widget.refreshVisibility()];
+                    case 2:
+                        _b.sent();
+                        _b.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ModelBoundList.prototype.createItemView = function (item) {
+        var _this = this;
+        var widget;
+        this.container.add(function () {
+            widget = _this.builderFn(item);
         });
         return widget;
-    }
-}
+    };
+    return ModelBoundList;
+}());
 exports.ModelBoundList = ModelBoundList;
 /**
  * VBox container (vertical box layout)
  */
-class VBox {
-    constructor(ctx, builder) {
+var VBox = /** @class */ (function () {
+    function VBox(ctx, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('vbox');
         // Push a new container context
@@ -384,99 +621,140 @@ class VBox {
         // Execute the builder function to collect children
         builder();
         // Pop the container and get the children
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         // Create the VBox with the children
-        ctx.bridge.send('createVBox', { id: this.id, children });
+        ctx.bridge.send('createVBox', { id: this.id, children: children });
         ctx.addToCurrentContainer(this.id);
     }
     /**
      * Dynamically add a widget to this container (Fyne container.Add)
      * @param builder Function that creates the widget to add
      */
-    add(builder) {
+    VBox.prototype.add = function (builder) {
         // Push this container as the current context
         this.ctx.pushContainer();
         // Execute builder to create the widget
         builder();
         // Get the widget IDs that were just created
-        const newChildren = this.ctx.popContainer();
+        var newChildren = this.ctx.popContainer();
         // Send add command to bridge for each child
-        for (const childId of newChildren) {
+        for (var _i = 0, newChildren_1 = newChildren; _i < newChildren_1.length; _i++) {
+            var childId = newChildren_1[_i];
             this.ctx.bridge.send('containerAdd', {
                 containerId: this.id,
-                childId
+                childId: childId
             });
         }
-    }
+    };
     /**
      * Remove all widgets from this container (Fyne container.Objects = nil)
      */
-    removeAll() {
+    VBox.prototype.removeAll = function () {
         this.ctx.bridge.send('containerRemoveAll', {
             containerId: this.id
         });
-    }
+    };
     /**
      * Refresh the container display (Fyne container.Refresh)
      */
-    refresh() {
+    VBox.prototype.refresh = function () {
         this.ctx.bridge.send('containerRefresh', {
             containerId: this.id
         });
-    }
+    };
     /**
      * Create a model-bound list for smart list rendering (AngularJS ng-repeat style)
      * @param items Initial array of items
      * @returns ModelBoundList instance for chaining trackBy() and each()
      */
-    model(items) {
+    VBox.prototype.model = function (items) {
         return new ModelBoundList(this.ctx, this, items);
-    }
-    async hide() {
-        await this.ctx.bridge.send('hideWidget', {
-            widgetId: this.id
+    };
+    VBox.prototype.hide = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('hideWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async show() {
-        await this.ctx.bridge.send('showWidget', {
-            widgetId: this.id
+    };
+    VBox.prototype.show = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('showWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
+    };
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show container when condition is true
      * @param conditionFn Function that returns whether container should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn) {
-        const updateVisibility = async () => {
-            const shouldShow = conditionFn();
-            if (shouldShow) {
-                await this.show();
-            }
-            else {
-                await this.hide();
-            }
-        };
+    VBox.prototype.when = function (conditionFn) {
+        var _this = this;
+        var updateVisibility = function () { return __awaiter(_this, void 0, void 0, function () {
+            var shouldShow;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        shouldShow = conditionFn();
+                        if (!shouldShow) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.show()];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, this.hide()];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        }); };
         // Store for reactive re-evaluation
         this.visibilityCondition = updateVisibility;
         updateVisibility(); // Initial evaluation
         return this;
-    }
+    };
     /**
      * Refresh the container - re-evaluates visibility conditions
      */
-    async refreshVisibility() {
-        if (this.visibilityCondition) {
-            await this.visibilityCondition();
-        }
-    }
-}
+    VBox.prototype.refreshVisibility = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.visibilityCondition) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.visibilityCondition()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return VBox;
+}());
 exports.VBox = VBox;
 /**
  * HBox container (horizontal box layout)
  */
-class HBox {
-    constructor(ctx, builder) {
+var HBox = /** @class */ (function () {
+    function HBox(ctx, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('hbox');
         // Push a new container context
@@ -484,225 +762,370 @@ class HBox {
         // Execute the builder function to collect children
         builder();
         // Pop the container and get the children
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         // Create the HBox with the children
-        ctx.bridge.send('createHBox', { id: this.id, children });
+        ctx.bridge.send('createHBox', { id: this.id, children: children });
         ctx.addToCurrentContainer(this.id);
     }
     /**
      * Dynamically add a widget to this container (Fyne container.Add)
      * @param builder Function that creates the widget to add
      */
-    add(builder) {
+    HBox.prototype.add = function (builder) {
         // Push this container as the current context
         this.ctx.pushContainer();
         // Execute builder to create the widget
         builder();
         // Get the widget IDs that were just created
-        const newChildren = this.ctx.popContainer();
+        var newChildren = this.ctx.popContainer();
         // Send add command to bridge for each child
-        for (const childId of newChildren) {
+        for (var _i = 0, newChildren_2 = newChildren; _i < newChildren_2.length; _i++) {
+            var childId = newChildren_2[_i];
             this.ctx.bridge.send('containerAdd', {
                 containerId: this.id,
-                childId
+                childId: childId
             });
         }
-    }
+    };
     /**
      * Remove all widgets from this container (Fyne container.Objects = nil)
      */
-    removeAll() {
+    HBox.prototype.removeAll = function () {
         this.ctx.bridge.send('containerRemoveAll', {
             containerId: this.id
         });
-    }
+    };
     /**
      * Refresh the container display (Fyne container.Refresh)
      */
-    refresh() {
+    HBox.prototype.refresh = function () {
         this.ctx.bridge.send('containerRefresh', {
             containerId: this.id
         });
-    }
-    async hide() {
-        await this.ctx.bridge.send('hideWidget', {
-            widgetId: this.id
+    };
+    HBox.prototype.hide = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('hideWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async show() {
-        await this.ctx.bridge.send('showWidget', {
-            widgetId: this.id
+    };
+    HBox.prototype.show = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('showWidget', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
+    };
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show container when condition is true
      * @param conditionFn Function that returns whether container should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn) {
-        const updateVisibility = async () => {
-            const shouldShow = conditionFn();
-            if (shouldShow) {
-                await this.show();
-            }
-            else {
-                await this.hide();
-            }
-        };
+    HBox.prototype.when = function (conditionFn) {
+        var _this = this;
+        var updateVisibility = function () { return __awaiter(_this, void 0, void 0, function () {
+            var shouldShow;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        shouldShow = conditionFn();
+                        if (!shouldShow) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.show()];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, this.hide()];
+                    case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        }); };
         // Store for reactive re-evaluation
         this.visibilityCondition = updateVisibility;
         updateVisibility(); // Initial evaluation
         return this;
-    }
+    };
     /**
      * Refresh the container - re-evaluates visibility conditions
      */
-    async refreshVisibility() {
-        if (this.visibilityCondition) {
-            await this.visibilityCondition();
-        }
-    }
-}
+    HBox.prototype.refreshVisibility = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.visibilityCondition) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.visibilityCondition()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return HBox;
+}());
 exports.HBox = HBox;
 /**
  * Checkbox widget
  */
-class Checkbox extends Widget {
-    constructor(ctx, text, onChanged) {
-        const id = ctx.generateId('checkbox');
-        super(ctx, id);
-        const payload = { id, text };
+var Checkbox = /** @class */ (function (_super) {
+    __extends(Checkbox, _super);
+    function Checkbox(ctx, text, onChanged) {
+        var _this = this;
+        var id = ctx.generateId('checkbox');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, text: text };
         if (onChanged) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onChanged(data.checked);
             });
         }
         ctx.bridge.send('createCheckbox', payload);
         ctx.addToCurrentContainer(id);
+        return _this;
     }
-    async setChecked(checked) {
-        await this.ctx.bridge.send('setChecked', {
-            widgetId: this.id,
-            checked
+    Checkbox.prototype.setChecked = function (checked) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setChecked', {
+                            widgetId: this.id,
+                            checked: checked
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async getChecked() {
-        const result = await this.ctx.bridge.send('getChecked', {
-            widgetId: this.id
+    };
+    Checkbox.prototype.getChecked = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getChecked', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.checked];
+                }
+            });
         });
-        return result.checked;
-    }
-}
+    };
+    return Checkbox;
+}(Widget));
 exports.Checkbox = Checkbox;
 /**
  * Select (dropdown) widget
  */
-class Select extends Widget {
-    constructor(ctx, options, onSelected) {
-        const id = ctx.generateId('select');
-        super(ctx, id);
-        const payload = { id, options };
+var Select = /** @class */ (function (_super) {
+    __extends(Select, _super);
+    function Select(ctx, options, onSelected) {
+        var _this = this;
+        var id = ctx.generateId('select');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, options: options };
         if (onSelected) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onSelected(data.selected);
             });
         }
         ctx.bridge.send('createSelect', payload);
         ctx.addToCurrentContainer(id);
+        return _this;
     }
-    async setSelected(selected) {
-        await this.ctx.bridge.send('setSelected', {
-            widgetId: this.id,
-            selected
+    Select.prototype.setSelected = function (selected) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setSelected', {
+                            widgetId: this.id,
+                            selected: selected
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async getSelected() {
-        const result = await this.ctx.bridge.send('getSelected', {
-            widgetId: this.id
+    };
+    Select.prototype.getSelected = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getSelected', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.selected];
+                }
+            });
         });
-        return result.selected;
-    }
-}
+    };
+    return Select;
+}(Widget));
 exports.Select = Select;
 /**
  * Slider widget
  */
-class Slider extends Widget {
-    constructor(ctx, min, max, initialValue, onChanged) {
-        const id = ctx.generateId('slider');
-        super(ctx, id);
-        const payload = { id, min, max };
+var Slider = /** @class */ (function (_super) {
+    __extends(Slider, _super);
+    function Slider(ctx, min, max, initialValue, onChanged) {
+        var _this = this;
+        var id = ctx.generateId('slider');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, min: min, max: max };
         if (initialValue !== undefined) {
             payload.value = initialValue;
         }
         if (onChanged) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onChanged(data.value);
             });
         }
         ctx.bridge.send('createSlider', payload);
         ctx.addToCurrentContainer(id);
+        return _this;
     }
-    async setValue(value) {
-        await this.ctx.bridge.send('setValue', {
-            widgetId: this.id,
-            value
+    Slider.prototype.setValue = function (value) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setValue', {
+                            widgetId: this.id,
+                            value: value
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async getValue() {
-        const result = await this.ctx.bridge.send('getValue', {
-            widgetId: this.id
+    };
+    Slider.prototype.getValue = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getValue', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.value];
+                }
+            });
         });
-        return result.value;
-    }
-}
+    };
+    return Slider;
+}(Widget));
 exports.Slider = Slider;
 /**
  * ProgressBar widget
  */
-class ProgressBar extends Widget {
-    constructor(ctx, initialValue, infinite) {
-        const id = ctx.generateId('progressbar');
-        super(ctx, id);
-        const payload = { id, infinite: infinite || false };
+var ProgressBar = /** @class */ (function (_super) {
+    __extends(ProgressBar, _super);
+    function ProgressBar(ctx, initialValue, infinite) {
+        var _this = this;
+        var id = ctx.generateId('progressbar');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, infinite: infinite || false };
         if (!infinite && initialValue !== undefined) {
             payload.value = initialValue;
         }
         ctx.bridge.send('createProgressBar', payload);
         ctx.addToCurrentContainer(id);
+        return _this;
     }
-    async setProgress(value) {
-        await this.ctx.bridge.send('setProgress', {
-            widgetId: this.id,
-            value
+    ProgressBar.prototype.setProgress = function (value) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setProgress', {
+                            widgetId: this.id,
+                            value: value
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async getProgress() {
-        const result = await this.ctx.bridge.send('getProgress', {
-            widgetId: this.id
+    };
+    ProgressBar.prototype.getProgress = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getProgress', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.value];
+                }
+            });
         });
-        return result.value;
-    }
+    };
     // Aliases to match Slider API naming convention
-    async setValue(value) {
-        await this.setProgress(value);
-    }
-    async getValue() {
-        return await this.getProgress();
-    }
-}
+    ProgressBar.prototype.setValue = function (value) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.setProgress(value)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ProgressBar.prototype.getValue = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.getProgress()];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    return ProgressBar;
+}(Widget));
 exports.ProgressBar = ProgressBar;
 /**
  * Scroll container
  */
-class Scroll {
-    constructor(ctx, builder) {
+var Scroll = /** @class */ (function () {
+    function Scroll(ctx, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('scroll');
         // Push a new container context
@@ -710,22 +1133,23 @@ class Scroll {
         // Execute the builder function to collect content
         builder();
         // Pop the container and get the single child (content)
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         if (children.length !== 1) {
             throw new Error('Scroll container must have exactly one child');
         }
-        const contentId = children[0];
+        var contentId = children[0];
         // Create the Scroll with the content
-        ctx.bridge.send('createScroll', { id: this.id, contentId });
+        ctx.bridge.send('createScroll', { id: this.id, contentId: contentId });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Scroll;
+}());
 exports.Scroll = Scroll;
 /**
  * Grid layout container
  */
-class Grid {
-    constructor(ctx, columns, builder) {
+var Grid = /** @class */ (function () {
+    function Grid(ctx, columns, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('grid');
         // Push a new container context
@@ -733,77 +1157,100 @@ class Grid {
         // Execute the builder function to collect children
         builder();
         // Pop the container and get the children
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         // Create the Grid with the children
-        ctx.bridge.send('createGrid', { id: this.id, columns, children });
+        ctx.bridge.send('createGrid', { id: this.id, columns: columns, children: children });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Grid;
+}());
 exports.Grid = Grid;
 /**
  * RadioGroup widget
  */
-class RadioGroup extends Widget {
-    constructor(ctx, options, initialSelected, onSelected) {
-        const id = ctx.generateId('radiogroup');
-        super(ctx, id);
-        const payload = { id, options };
+var RadioGroup = /** @class */ (function (_super) {
+    __extends(RadioGroup, _super);
+    function RadioGroup(ctx, options, initialSelected, onSelected) {
+        var _this = this;
+        var id = ctx.generateId('radiogroup');
+        _this = _super.call(this, ctx, id) || this;
+        var payload = { id: id, options: options };
         if (initialSelected !== undefined) {
             payload.selected = initialSelected;
         }
         if (onSelected) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onSelected(data.selected);
             });
         }
         ctx.bridge.send('createRadioGroup', payload);
         ctx.addToCurrentContainer(id);
+        return _this;
     }
-    async setSelected(selected) {
-        await this.ctx.bridge.send('setRadioSelected', {
-            widgetId: this.id,
-            selected
+    RadioGroup.prototype.setSelected = function (selected) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('setRadioSelected', {
+                            widgetId: this.id,
+                            selected: selected
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-    async getSelected() {
-        const result = await this.ctx.bridge.send('getRadioSelected', {
-            widgetId: this.id
+    };
+    RadioGroup.prototype.getSelected = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('getRadioSelected', {
+                            widgetId: this.id
+                        })];
+                    case 1:
+                        result = _a.sent();
+                        return [2 /*return*/, result.selected];
+                }
+            });
         });
-        return result.selected;
-    }
-}
+    };
+    return RadioGroup;
+}(Widget));
 exports.RadioGroup = RadioGroup;
 /**
  * Split container (horizontal or vertical)
  */
-class Split {
-    constructor(ctx, orientation, leadingBuilder, trailingBuilder, offset) {
+var Split = /** @class */ (function () {
+    function Split(ctx, orientation, leadingBuilder, trailingBuilder, offset) {
         this.ctx = ctx;
         this.id = ctx.generateId('split');
         // Build leading content
         ctx.pushContainer();
         leadingBuilder();
-        const leadingChildren = ctx.popContainer();
+        var leadingChildren = ctx.popContainer();
         if (leadingChildren.length !== 1) {
             throw new Error('Split leading section must have exactly one child');
         }
-        const leadingId = leadingChildren[0];
+        var leadingId = leadingChildren[0];
         // Build trailing content
         ctx.pushContainer();
         trailingBuilder();
-        const trailingChildren = ctx.popContainer();
+        var trailingChildren = ctx.popContainer();
         if (trailingChildren.length !== 1) {
             throw new Error('Split trailing section must have exactly one child');
         }
-        const trailingId = trailingChildren[0];
+        var trailingId = trailingChildren[0];
         // Create the split container
-        const payload = {
+        var payload = {
             id: this.id,
-            orientation,
-            leadingId,
-            trailingId
+            orientation: orientation,
+            leadingId: leadingId,
+            trailingId: trailingId
         };
         if (offset !== undefined) {
             payload.offset = offset;
@@ -811,23 +1258,25 @@ class Split {
         ctx.bridge.send('createSplit', payload);
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Split;
+}());
 exports.Split = Split;
 /**
  * Tabs container (AppTabs)
  */
-class Tabs {
-    constructor(ctx, tabDefinitions, location) {
+var Tabs = /** @class */ (function () {
+    function Tabs(ctx, tabDefinitions, location) {
         this.ctx = ctx;
         this.id = ctx.generateId('tabs');
         // Build each tab's content
-        const tabs = [];
-        for (const tabDef of tabDefinitions) {
+        var tabs = [];
+        for (var _i = 0, tabDefinitions_1 = tabDefinitions; _i < tabDefinitions_1.length; _i++) {
+            var tabDef = tabDefinitions_1[_i];
             ctx.pushContainer();
             tabDef.builder();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length !== 1) {
-                throw new Error(`Tab "${tabDef.title}" must have exactly one child widget`);
+                throw new Error("Tab \"".concat(tabDef.title, "\" must have exactly one child widget"));
             }
             tabs.push({
                 title: tabDef.title,
@@ -835,9 +1284,9 @@ class Tabs {
             });
         }
         // Create the tabs container
-        const payload = {
+        var payload = {
             id: this.id,
-            tabs
+            tabs: tabs
         };
         if (location) {
             payload.location = location;
@@ -845,13 +1294,14 @@ class Tabs {
         ctx.bridge.send('createTabs', payload);
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Tabs;
+}());
 exports.Tabs = Tabs;
 /**
  * Represents a clickable action item in a Toolbar
  */
-class ToolbarAction {
-    constructor(label, onAction) {
+var ToolbarAction = /** @class */ (function () {
+    function ToolbarAction(label, onAction) {
         this.label = label;
         this.onAction = onAction;
     }
@@ -860,111 +1310,137 @@ class ToolbarAction {
      * @param id Custom ID for the action
      * @returns this for method chaining
      */
-    withId(id) {
+    ToolbarAction.prototype.withId = function (id) {
         this._id = id;
         return this;
-    }
-    get id() {
-        return this._id;
-    }
-}
+    };
+    Object.defineProperty(ToolbarAction.prototype, "id", {
+        get: function () {
+            return this._id;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return ToolbarAction;
+}());
 exports.ToolbarAction = ToolbarAction;
 /**
  * Toolbar widget
  */
-class Toolbar {
-    constructor(ctx, toolbarItems) {
+var Toolbar = /** @class */ (function () {
+    function Toolbar(ctx, toolbarItems) {
         this.ctx = ctx;
         this.id = ctx.generateId('toolbar');
-        const items = toolbarItems.map(item => {
+        var items = toolbarItems.map(function (item) {
             if ('type' in item) { // Separator or Spacer
                 return { type: item.type };
             }
             // Action item
-            const action = item;
-            const callbackId = ctx.generateId('callback');
+            var action = item;
+            var callbackId = ctx.generateId('callback');
             if (action.onAction) {
-                ctx.bridge.registerEventHandler(callbackId, (_data) => {
+                ctx.bridge.registerEventHandler(callbackId, function (_data) {
                     action.onAction();
                 });
             }
             return {
                 type: 'action',
                 label: action.label,
-                callbackId,
+                callbackId: callbackId,
                 customId: action.id, // Pass custom ID to the bridge
             };
         });
         ctx.bridge.send('createToolbar', {
             id: this.id,
-            items
+            items: items
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Toolbar;
+}());
 exports.Toolbar = Toolbar;
 /**
  * Table widget
  */
-class Table {
-    constructor(ctx, headers, data) {
+var Table = /** @class */ (function () {
+    function Table(ctx, headers, data) {
         this.ctx = ctx;
         this.id = ctx.generateId('table');
         ctx.bridge.send('createTable', {
             id: this.id,
-            headers,
-            data
+            headers: headers,
+            data: data
         });
         ctx.addToCurrentContainer(this.id);
     }
-    async updateData(data) {
-        await this.ctx.bridge.send('updateTableData', {
-            id: this.id,
-            data
+    Table.prototype.updateData = function (data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('updateTableData', {
+                            id: this.id,
+                            data: data
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-}
+    };
+    return Table;
+}());
 exports.Table = Table;
 /**
  * List widget
  */
-class List {
-    constructor(ctx, items, onSelected) {
+var List = /** @class */ (function () {
+    function List(ctx, items, onSelected) {
         this.ctx = ctx;
         this.id = ctx.generateId('list');
-        const payload = {
+        var payload = {
             id: this.id,
-            items
+            items: items
         };
         if (onSelected) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, (data) => {
+            ctx.bridge.registerEventHandler(callbackId, function (data) {
                 onSelected(data.index, data.item);
             });
         }
         ctx.bridge.send('createList', payload);
         ctx.addToCurrentContainer(this.id);
     }
-    async updateItems(items) {
-        await this.ctx.bridge.send('updateListData', {
-            id: this.id,
-            items
+    List.prototype.updateItems = function (items) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.ctx.bridge.send('updateListData', {
+                            id: this.id,
+                            items: items
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }
-}
+    };
+    return List;
+}());
 exports.List = List;
 /**
  * Center layout - centers content in the available space
  */
-class Center {
-    constructor(ctx, builder) {
+var Center = /** @class */ (function () {
+    function Center(ctx, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('center');
         // Build child content
         ctx.pushContainer();
         builder();
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         if (children.length !== 1) {
             throw new Error('Center must have exactly one child');
         }
@@ -974,47 +1450,87 @@ class Center {
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Center;
+}());
 exports.Center = Center;
+/**
+ * Max layout - stacks widgets on top of each other (Z-layering)
+ * All widgets expand to fill the container (like CSS position: absolute with 100% width/height)
+ * Useful for layering backgrounds and foregrounds, like a chess square + piece
+ */
+var Max = /** @class */ (function () {
+    function Max(ctx, builder) {
+        this.ctx = ctx;
+        this.id = ctx.generateId('max');
+        // Build child content
+        ctx.pushContainer();
+        builder();
+        var children = ctx.popContainer();
+        if (children.length === 0) {
+            throw new Error('Max must have at least one child');
+        }
+        ctx.bridge.send('createMax', {
+            id: this.id,
+            childIds: children
+        });
+        ctx.addToCurrentContainer(this.id);
+    }
+    /**
+     * Register a custom ID for this widget (for testing/debugging)
+     * @param customId Custom ID to register
+     * @returns this for method chaining
+     */
+    Max.prototype.withId = function (customId) {
+        this.ctx.bridge.send('registerCustomId', {
+            widgetId: this.id,
+            customId: customId
+        });
+        return this;
+    };
+    return Max;
+}());
+exports.Max = Max;
 /**
  * Card container with title, subtitle, and content
  */
-class Card {
-    constructor(ctx, title, subtitle, builder) {
+var Card = /** @class */ (function () {
+    function Card(ctx, title, subtitle, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('card');
         // Build card content
         ctx.pushContainer();
         builder();
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         if (children.length !== 1) {
             throw new Error('Card must have exactly one child');
         }
         ctx.bridge.send('createCard', {
             id: this.id,
-            title,
-            subtitle,
+            title: title,
+            subtitle: subtitle,
             contentId: children[0]
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Card;
+}());
 exports.Card = Card;
 /**
  * Accordion - collapsible sections
  */
-class Accordion {
-    constructor(ctx, items) {
+var Accordion = /** @class */ (function () {
+    function Accordion(ctx, items) {
         this.ctx = ctx;
         this.id = ctx.generateId('accordion');
         // Build each accordion item's content
-        const accordionItems = [];
-        for (const item of items) {
+        var accordionItems = [];
+        for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
+            var item = items_1[_i];
             ctx.pushContainer();
             item.builder();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length !== 1) {
-                throw new Error(`Accordion item "${item.title}" must have exactly one child`);
+                throw new Error("Accordion item \"".concat(item.title, "\" must have exactly one child"));
             }
             accordionItems.push({
                 title: item.title,
@@ -1027,86 +1543,90 @@ class Accordion {
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Accordion;
+}());
 exports.Accordion = Accordion;
 /**
  * Form widget with labeled fields and submit/cancel buttons
  */
-class Form {
-    constructor(ctx, items, onSubmit, onCancel) {
+var Form = /** @class */ (function () {
+    function Form(ctx, items, onSubmit, onCancel) {
         this.ctx = ctx;
         this.id = ctx.generateId('form');
-        const formItems = items.map(item => ({
+        var formItems = items.map(function (item) { return ({
             label: item.label,
             widgetId: item.widget.id
-        }));
-        const payload = {
+        }); });
+        var payload = {
             id: this.id,
             items: formItems
         };
         if (onSubmit) {
-            const submitCallbackId = ctx.generateId('callback');
+            var submitCallbackId = ctx.generateId('callback');
             payload.submitCallbackId = submitCallbackId;
-            ctx.bridge.registerEventHandler(submitCallbackId, (_data) => {
+            ctx.bridge.registerEventHandler(submitCallbackId, function (_data) {
                 onSubmit();
             });
         }
         if (onCancel) {
-            const cancelCallbackId = ctx.generateId('callback');
+            var cancelCallbackId = ctx.generateId('callback');
             payload.cancelCallbackId = cancelCallbackId;
-            ctx.bridge.registerEventHandler(cancelCallbackId, (_data) => {
+            ctx.bridge.registerEventHandler(cancelCallbackId, function (_data) {
                 onCancel();
             });
         }
         ctx.bridge.send('createForm', payload);
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Form;
+}());
 exports.Form = Form;
 /**
  * Tree widget for hierarchical data
  */
-class Tree {
-    constructor(ctx, rootLabel) {
+var Tree = /** @class */ (function () {
+    function Tree(ctx, rootLabel) {
         this.ctx = ctx;
         this.id = ctx.generateId('tree');
         ctx.bridge.send('createTree', {
             id: this.id,
-            rootLabel
+            rootLabel: rootLabel
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Tree;
+}());
 exports.Tree = Tree;
 /**
  * RichText widget for formatted text
  */
-class RichText {
-    constructor(ctx, segments) {
+var RichText = /** @class */ (function () {
+    function RichText(ctx, segments) {
         this.ctx = ctx;
         this.id = ctx.generateId('richtext');
         ctx.bridge.send('createRichText', {
             id: this.id,
-            segments
+            segments: segments
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return RichText;
+}());
 exports.RichText = RichText;
 /**
  * Image widget for displaying images
  */
-class Image {
-    constructor(ctx, pathOrOptions, fillMode, onClick, onDrag, onDragEnd) {
+var Image = /** @class */ (function () {
+    function Image(ctx, pathOrOptions, fillMode, onClick, onDrag, onDragEnd) {
         this.ctx = ctx;
         this.id = ctx.generateId('image');
-        const payload = {
+        var payload = {
             id: this.id
         };
         // Support both string path (legacy) and options object (new)
         if (typeof pathOrOptions === 'string') {
             // Legacy: path as first parameter
-            const resolvedPath = ctx.resolveResourcePath(pathOrOptions);
+            var resolvedPath = ctx.resolveResourcePath(pathOrOptions);
             payload.path = resolvedPath;
             if (fillMode) {
                 payload.fillMode = fillMode;
@@ -1114,12 +1634,12 @@ class Image {
         }
         else {
             // New: options object
-            const options = pathOrOptions;
+            var options = pathOrOptions;
             if (options.resource) {
                 payload.resource = options.resource;
             }
             else if (options.path) {
-                const resolvedPath = ctx.resolveResourcePath(options.path);
+                var resolvedPath = ctx.resolveResourcePath(options.path);
                 payload.path = resolvedPath;
             }
             if (options.fillMode) {
@@ -1131,23 +1651,23 @@ class Image {
             onDragEnd = options.onDragEnd || onDragEnd;
         }
         if (onClick) {
-            const callbackId = ctx.generateId('callback');
+            var callbackId = ctx.generateId('callback');
             payload.callbackId = callbackId;
-            ctx.bridge.registerEventHandler(callbackId, () => {
+            ctx.bridge.registerEventHandler(callbackId, function () {
                 onClick();
             });
         }
         if (onDrag) {
-            const dragCallbackId = ctx.generateId('callback');
+            var dragCallbackId = ctx.generateId('callback');
             payload.onDragCallbackId = dragCallbackId;
-            ctx.bridge.registerEventHandler(dragCallbackId, (data) => {
+            ctx.bridge.registerEventHandler(dragCallbackId, function (data) {
                 onDrag(data.x, data.y);
             });
         }
         if (onDragEnd) {
-            const dragEndCallbackId = ctx.generateId('callback');
+            var dragEndCallbackId = ctx.generateId('callback');
             payload.onDragEndCallbackId = dragEndCallbackId;
-            ctx.bridge.registerEventHandler(dragEndCallbackId, (data) => {
+            ctx.bridge.registerEventHandler(dragEndCallbackId, function (data) {
                 onDragEnd(data.x, data.y);
             });
         }
@@ -1158,12 +1678,48 @@ class Image {
      * Updates the image widget with new image data
      * @param imageData - Base64-encoded image data (with or without data URL prefix)
      */
-    async updateImage(imageData) {
-        await this.ctx.bridge.send('updateImage', {
-            widgetId: this.id,
-            imageData: imageData
+    /**
+     * Update the image displayed in this widget
+     * @param imageSource - Image source, can be:
+     *   - String: Base64 data URI (e.g., 'data:image/png;base64,...')
+     *   - Object with path: File path to image (e.g., { path: '/path/to/image.svg' })
+     *   - Object with resource: Resource name (e.g., { resource: 'my-resource' })
+     *   - Object with svg: Raw SVG string (e.g., { svg: '<svg>...</svg>' })
+     *   - Object with url: Remote image URL (e.g., { url: 'https://example.com/image.png' })
+     */
+    Image.prototype.updateImage = function (imageSource) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(typeof imageSource === 'string')) return [3 /*break*/, 2];
+                        // Backwards compatible: string is base64 data URI
+                        return [4 /*yield*/, this.ctx.bridge.send('updateImage', {
+                                widgetId: this.id,
+                                imageData: imageSource
+                            })];
+                    case 1:
+                        // Backwards compatible: string is base64 data URI
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: 
+                    // New object-based API
+                    return [4 /*yield*/, this.ctx.bridge.send('updateImage', {
+                            widgetId: this.id,
+                            path: imageSource.path,
+                            resource: imageSource.resource,
+                            svg: imageSource.svg,
+                            url: imageSource.url
+                        })];
+                    case 3:
+                        // New object-based API
+                        _a.sent();
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
+                }
+            });
         });
-    }
+    };
     /**
      * Register a custom ID for this image widget (for test framework getByID)
      * @param customId Custom ID to register
@@ -1172,28 +1728,29 @@ class Image {
      * const cardImage = a.image('card.png').withId('draw3-card');
      * // In tests: ctx.getByID('draw3-card').click()
      */
-    withId(customId) {
+    Image.prototype.withId = function (customId) {
         this.ctx.bridge.send('registerCustomId', {
             widgetId: this.id,
-            customId
+            customId: customId
         });
         return this;
-    }
-}
+    };
+    return Image;
+}());
 exports.Image = Image;
 /**
  * Border layout - positions widgets at edges and center
  */
-class Border {
-    constructor(ctx, config) {
+var Border = /** @class */ (function () {
+    function Border(ctx, config) {
         this.ctx = ctx;
         this.id = ctx.generateId('border');
-        const payload = { id: this.id };
+        var payload = { id: this.id };
         // Build each optional section
         if (config.top) {
             ctx.pushContainer();
             config.top();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length === 1) {
                 payload.topId = children[0];
             }
@@ -1201,7 +1758,7 @@ class Border {
         if (config.bottom) {
             ctx.pushContainer();
             config.bottom();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length === 1) {
                 payload.bottomId = children[0];
             }
@@ -1209,7 +1766,7 @@ class Border {
         if (config.left) {
             ctx.pushContainer();
             config.left();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length === 1) {
                 payload.leftId = children[0];
             }
@@ -1217,7 +1774,7 @@ class Border {
         if (config.right) {
             ctx.pushContainer();
             config.right();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length === 1) {
                 payload.rightId = children[0];
             }
@@ -1225,7 +1782,7 @@ class Border {
         if (config.center) {
             ctx.pushContainer();
             config.center();
-            const children = ctx.popContainer();
+            var children = ctx.popContainer();
             if (children.length === 1) {
                 payload.centerId = children[0];
             }
@@ -1233,26 +1790,28 @@ class Border {
         ctx.bridge.send('createBorder', payload);
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return Border;
+}());
 exports.Border = Border;
 /**
  * GridWrap layout - wrapping grid with fixed item sizes
  */
-class GridWrap {
-    constructor(ctx, itemWidth, itemHeight, builder) {
+var GridWrap = /** @class */ (function () {
+    function GridWrap(ctx, itemWidth, itemHeight, builder) {
         this.ctx = ctx;
         this.id = ctx.generateId('gridwrap');
         // Build children
         ctx.pushContainer();
         builder();
-        const children = ctx.popContainer();
+        var children = ctx.popContainer();
         ctx.bridge.send('createGridWrap', {
             id: this.id,
-            itemWidth,
-            itemHeight,
-            children
+            itemWidth: itemWidth,
+            itemHeight: itemHeight,
+            children: children
         });
         ctx.addToCurrentContainer(this.id);
     }
-}
+    return GridWrap;
+}());
 exports.GridWrap = GridWrap;

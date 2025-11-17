@@ -191,7 +191,7 @@ Clean diffs that are easy to review:
 5. **State Management** (Milestone 4)
    - Mock data provision
    - ng-repeat loop support
-   - ngShow directive handling
+   - when() method handling
 
 6. **Advanced Features** (Milestone 5)
    - Design-time state preview (toggle isEditing, filters, etc.)

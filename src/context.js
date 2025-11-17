@@ -4,8 +4,8 @@ exports.Context = void 0;
 /**
  * Context holds the current state during declarative UI building
  */
-class Context {
-    constructor(bridge, resourceMap) {
+var Context = /** @class */ (function () {
+    function Context(bridge, resourceMap) {
         this.idCounter = 0;
         this.windowStack = [];
         this.containerStack = [];
@@ -19,42 +19,43 @@ class Context {
      * Resolve a resource path using the resource map
      * Returns the local cached path if available, otherwise returns the original path
      */
-    resolveResourcePath(path) {
+    Context.prototype.resolveResourcePath = function (path) {
         return this.resourceMap.get(path) || path;
-    }
+    };
     /**
      * Update the resource map with new resources
      * This allows updating resources without creating a new Context
      */
-    setResourceMap(resourceMap) {
+    Context.prototype.setResourceMap = function (resourceMap) {
         this.resourceMap = resourceMap;
-    }
-    generateId(prefix) {
-        return `${prefix}_${this.idCounter++}`;
-    }
-    pushWindow(windowId) {
+    };
+    Context.prototype.generateId = function (prefix) {
+        return "".concat(prefix, "_").concat(this.idCounter++);
+    };
+    Context.prototype.pushWindow = function (windowId) {
         this.windowStack.push(windowId);
-    }
-    popWindow() {
+    };
+    Context.prototype.popWindow = function () {
         return this.windowStack.pop();
-    }
-    getCurrentWindow() {
+    };
+    Context.prototype.getCurrentWindow = function () {
         return this.windowStack[this.windowStack.length - 1];
-    }
-    pushContainer() {
+    };
+    Context.prototype.pushContainer = function () {
         this.containerStack.push([]);
-    }
-    popContainer() {
+    };
+    Context.prototype.popContainer = function () {
         return this.containerStack.pop() || [];
-    }
-    addToCurrentContainer(widgetId) {
-        const current = this.containerStack[this.containerStack.length - 1];
+    };
+    Context.prototype.addToCurrentContainer = function (widgetId) {
+        var current = this.containerStack[this.containerStack.length - 1];
         if (current) {
             current.push(widgetId);
         }
-    }
-    getCurrentContainer() {
+    };
+    Context.prototype.getCurrentContainer = function () {
         return this.containerStack[this.containerStack.length - 1];
-    }
-}
+    };
+    return Context;
+}());
 exports.Context = Context;
