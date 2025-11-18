@@ -729,9 +729,21 @@ class SourceCodeEditor {
     const lineIndex = metadata.sourceLocation.line - 1;
     const widgetType = metadata.widgetType;
 
-    // Search for the widget on the exact line, or nearby lines (±2)
-    // Build pattern to match the widget call: a.button( or button( or label(
-    const widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(`);
+    // Build a more specific pattern by including the first property value if available
+    // For label("A"), button("Click", ...), etc.
+    let widgetPattern: RegExp;
+    const firstPropKey = Object.keys(metadata.properties)[0];
+    const firstPropValue = firstPropKey ? metadata.properties[firstPropKey] : null;
+
+    if (firstPropValue && typeof firstPropValue === 'string') {
+      // Escape special regex characters in the property value
+      const escapedValue = firstPropValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Match: label("A") or a.label("A") or label('A') or a.label('A')
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(\\s*['"]${escapedValue}['"]`);
+    } else {
+      // Fallback to basic pattern if no string property
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(`);
+    }
 
     let targetLineIndex = -1;
     for (let offset = 0; offset <= 2; offset++) {
@@ -756,27 +768,55 @@ class SourceCodeEditor {
     let statementLines = [targetLineIndex];
     let fullStatement = this.lines[targetLineIndex];
 
+    // Check if this is a container widget (needs to include closing });)
+    const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
+    const isContainer = containerTypes.includes(widgetType);
+
     // Look ahead for continuation lines
-    // Stop when we find a line that ends with semicolon AND has proper indentation
-    // This prevents us from including parent container's closing braces
     const startIndent = this.lines[targetLineIndex].search(/\S/);
 
-    for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
-      const line = this.lines[i];
-      const lineIndent = line.search(/\S/);
+    if (isContainer) {
+      // For containers, use brace counting to find the matching closing
+      let braceCount = 0;
 
-      // If we hit a line with less or equal indentation that ends with ;, stop
-      // This means we've finished this statement and hit a parent's closing
-      if (lineIndent <= startIndent && line.trim().endsWith(';')) {
-        break;
+      for (let i = targetLineIndex; i < Math.min(targetLineIndex + 20, this.lines.length); i++) {
+        const line = this.lines[i];
+
+        // Count braces in this line
+        for (const char of line) {
+          if (char === '{') braceCount++;
+          else if (char === '}') braceCount--;
+        }
+
+        // Add this line if it's not the first one
+        if (i > targetLineIndex) {
+          statementLines.push(i);
+          fullStatement += '\n' + line;
+        }
+
+        // If braces balanced and line ends with });, we're done
+        if (braceCount === 0 && line.trim().endsWith('});')) {
+          break;
+        }
       }
+    } else {
+      // For simple widgets, stop when we find a line that ends with semicolon
+      for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
+        const line = this.lines[i];
+        const lineIndent = line.search(/\S/);
 
-      statementLines.push(i);
-      fullStatement += '\n' + line;
+        // If we hit a line with less or equal indentation that ends with ;, stop
+        if (lineIndent <= startIndent && line.trim().endsWith(';')) {
+          break;
+        }
 
-      // If this line ends with semicolon and has greater indentation, include it and stop
-      if (line.includes(';') && lineIndent > startIndent) {
-        break;
+        statementLines.push(i);
+        fullStatement += '\n' + line;
+
+        // If this line ends with semicolon and has greater indentation, include it and stop
+        if (line.includes(';') && lineIndent > startIndent) {
+          break;
+        }
       }
     }
 
@@ -802,16 +842,39 @@ class SourceCodeEditor {
 
       let updatedStatement: string;
       if (isContainer) {
-        // For container widgets, replace the closing }); with }).withId('id');
-        // Find the LAST occurrence of });
-        const lastClosingIndex = fullStatement.lastIndexOf('});');
-        if (lastClosingIndex !== -1) {
+        // For container widgets, we need to find the matching closing brace
+        // Count braces to find the correct closing }); for THIS container
+        let braceCount = 0;
+        let foundOpening = false;
+        let closingIndex = -1;
+
+        for (let i = 0; i < fullStatement.length; i++) {
+          const char = fullStatement[i];
+
+          if (char === '{') {
+            braceCount++;
+            foundOpening = true;
+          } else if (char === '}') {
+            braceCount--;
+
+            // When braceCount returns to 0, we've found the matching closing brace
+            if (foundOpening && braceCount === 0) {
+              // Check if this is followed by );
+              if (fullStatement.substring(i, i + 3) === '});') {
+                closingIndex = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (closingIndex !== -1) {
           updatedStatement =
-            fullStatement.substring(0, lastClosingIndex) +
+            fullStatement.substring(0, closingIndex) +
             `}).withId('${newWidgetId}');` +
-            fullStatement.substring(lastClosingIndex + 3);
+            fullStatement.substring(closingIndex + 3);
         } else {
-          console.warn(`[Editor] Could not find closing }); for container ${widgetType}`);
+          console.warn(`[Editor] Could not find matching closing }); for container ${widgetType}`);
           return false;
         }
       } else {
@@ -1143,7 +1206,13 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         editor.findAndReplace(String(oldValueStr), String(newValueStr));
       }
 
-      // Apply widget ID edits
+      // Apply widget ID edits (sort descending by line number to avoid line shift issues)
+      widgetIdEdits.sort((a, b) => {
+        const lineA = a.widget.sourceLocation.line;
+        const lineB = b.widget.sourceLocation.line;
+        return lineB - lineA; // Descending order
+      });
+
       for (const edit of widgetIdEdits) {
         console.log(`[Editor] Updating widget ID: "${edit.oldWidgetId || '(none)'}" → "${edit.newWidgetId || '(none)'}"`);
         editor.updateWidgetId(edit.widget, edit.oldWidgetId, edit.newWidgetId);
