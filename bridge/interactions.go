@@ -688,6 +688,8 @@ func (b *Bridge) handleFindWidget(msg Message) {
 			isMatch = meta.Type == selector
 		case "id":
 			isMatch = widgetID == resolvedSelector
+		case "placeholder":
+			isMatch = meta.Placeholder == selector
 		}
 
 		if isMatch {

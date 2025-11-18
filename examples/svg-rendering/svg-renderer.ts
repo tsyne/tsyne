@@ -115,7 +115,11 @@ export function batchRenderSVGs(
 
   for (const file of files) {
     const base64 = renderSVGToBase64(file.path, file.width, file.height);
-    results.set(file.path, base64);
+    // Create unique key including dimensions to avoid overwriting cached entries
+    const key = file.width || file.height
+      ? `${file.path}@${file.width || 'auto'}x${file.height || 'auto'}`
+      : file.path;
+    results.set(key, base64);
   }
 
   return results;

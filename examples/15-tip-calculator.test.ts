@@ -111,6 +111,7 @@ describe('Tip Calculator Example', () => {
     // Enter bill amount
     const entry = ctx.getByPlaceholder('Enter amount');
     await entry.type('50');
+    await entry.submit(); // Trigger the onSubmit callback
     await ctx.wait(200);
 
     // Should calculate 15% tip on $50

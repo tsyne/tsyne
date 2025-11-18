@@ -138,7 +138,7 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 
 	b.mu.Lock()
 	b.widgets[widgetID] = widgetToStore
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "entry", Text: ""}
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "entry", Text: "", Placeholder: placeholder}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{
