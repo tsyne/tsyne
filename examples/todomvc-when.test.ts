@@ -1,23 +1,23 @@
 /**
- * TodoMVC TsyneTest Integration Tests (ngShow version)
+ * TodoMVC TsyneTest Integration Tests (when() version)
  *
  * Comprehensive test suite demonstrating:
  * - Adding todos
  * - Toggling completion
  * - Deleting todos
- * - Filtering (All/Active/Completed) using ngShow directive
+ * - Filtering (All/Active/Completed) using when() method
  * - Clearing completed
  * - File persistence
  *
- * This tests the ngShow implementation of TodoMVC.
+ * This tests the when() implementation of TodoMVC.
  *
  * Usage:
- *   npm test examples/todomvc-ngshow.test.ts
- *   TSYNE_HEADED=1 npm test examples/todomvc-ngshow.test.ts  # Visual debugging
+ *   npm test examples/todomvc-when.test.ts
+ *   TSYNE_HEADED=1 npm test examples/todomvc-when.test.ts  # Visual debugging
  */
 
 import { TsyneTest, TestContext } from '../src/index-test';
-import { createTodoApp } from './todomvc-ngshow';
+import { createTodoApp } from './todomvc-when';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -110,7 +110,7 @@ describe('TodoMVC Tests', () => {
 
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshotPath = path.join(__dirname, 'screenshots', 'todomvc-ngshow.png');
+      const screenshotPath = path.join(__dirname, 'screenshots', 'todomvc-when.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);

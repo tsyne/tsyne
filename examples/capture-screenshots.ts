@@ -25,7 +25,7 @@ const examples: ExampleInfo[] = [
   // Comprehensive examples
   { file: 'calculator', name: 'Calculator', title: 'Calculator' },
   { file: 'todomvc', name: 'TodoMVC', title: 'TodoMVC' },
-  { file: 'todomvc-ngshow', name: 'TodoMVC ngShow', title: 'TodoMVC' },
+  { file: 'todomvc-when', name: 'TodoMVC when()', title: 'TodoMVC' },
 ];
 
 async function captureScreenshot(exampleFile: string, name: string) {

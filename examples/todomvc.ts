@@ -316,8 +316,8 @@ export function createTodoApp(a: any, storePath?: string) {
       await textEntry.setText('');
       await textEntry.hide();
 
-      // Apply ngShow for declarative visibility based on filter
-      todoHBox.ngShow(shouldShowTodo);
+      // Apply when() for declarative visibility based on filter
+      todoHBox.when(shouldShowTodo);
     })();
 
     todoViews.set(todo.id, { container: todoHBox, checkbox, textEntry, deleteButton });

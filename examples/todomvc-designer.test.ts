@@ -111,7 +111,7 @@ const designer = {
   hbox(builder: () => void): any {
     const widgetId = containerWidget('hbox', {}, builder);
     return {
-      ngShow: () => {}
+      when: () => {}
     };
   },
 

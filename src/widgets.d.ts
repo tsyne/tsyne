@@ -40,11 +40,11 @@ export declare abstract class Widget {
      */
     withId(customId: string): this;
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show widget when condition is true
      * @param conditionFn Function that returns whether widget should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn: () => boolean): this;
+    when(conditionFn: () => boolean): this;
     /**
      * Refresh the widget - re-evaluates visibility conditions
      */
@@ -135,7 +135,7 @@ export declare class ModelBoundList<T> {
      */
     update(newItems: T[]): void;
     /**
-     * Refresh visibility of all items (re-evaluates ngShow conditions)
+     * Refresh visibility of all items (re-evaluates when() conditions)
      */
     refreshVisibility(): Promise<void>;
     private createItemView;
@@ -170,11 +170,11 @@ export declare class VBox {
     hide(): Promise<void>;
     show(): Promise<void>;
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show container when condition is true
      * @param conditionFn Function that returns whether container should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn: () => boolean): this;
+    when(conditionFn: () => boolean): this;
     /**
      * Refresh the container - re-evaluates visibility conditions
      */
@@ -204,11 +204,11 @@ export declare class HBox {
     hide(): Promise<void>;
     show(): Promise<void>;
     /**
-     * AngularJS-style ng-show directive for declarative visibility
+     * Declarative visibility control - show container when condition is true
      * @param conditionFn Function that returns whether container should be visible
      * @returns this for method chaining
      */
-    ngShow(conditionFn: () => boolean): this;
+    when(conditionFn: () => boolean): this;
     /**
      * Refresh the container - re-evaluates visibility conditions
      */

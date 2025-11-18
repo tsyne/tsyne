@@ -599,7 +599,7 @@ interface PropertyInspector {
   onChange: CodeEditor;
 
   // Computed/derived → read-only or special handling
-  ngShow: FunctionEditor;      // Edit predicate function
+  when(): FunctionEditor;      // Edit predicate function
 }
 ```
 
@@ -678,11 +678,11 @@ There's a theoretical approach to use real Tsyne (Fyne) widgets and containers d
    ```
 4. Re-execute to update preview
 
-### 3.4 Design-Time State Preview (ngShow / Conditional Visibility)
+### 3.4 Design-Time State Preview (when() / Conditional Visibility)
 
 **Inspired by**: [Paul Hammant's AngularJS Design Mode (2012)](https://paulhammant.com/2012/03/12/the-importance-of-design-mode-for-client-side-mvc/)
 
-**Challenge**: UI has conditional states (ngShow directives, editing modes, filters). Designer needs to preview different states without running app logic.
+**Challenge**: UI has conditional states (when() methods, editing modes, filters). Designer needs to preview different states without running app logic.
 
 **AngularJS Design Mode Approach (2012)**:
 - Showcase displayed **all states simultaneously** (passed AND failed icons, all sort states)
@@ -706,18 +706,18 @@ There's a theoretical approach to use real Tsyne (Fyne) widgets and containers d
 ```
 
 **How It Works**:
-1. **Detect state variables** from ngShow predicates:
+1. **Detect state variables** from when() predicates:
    ```typescript
-   checkbox.ngShow(() => !isEditing);  // Detects: isEditing (boolean)
-   textEntry.ngShow(() => isEditing);
-   todoHBox.ngShow(shouldShowTodo);    // Detects: filter state
+   checkbox.when(() => !isEditing);  // Detects: isEditing (boolean)
+   textEntry.when(() => isEditing);
+   todoHBox.when(shouldShowTodo);    // Detects: filter state
    ```
 
 2. **Extract state variables** from designer library execution:
    ```typescript
-   // Designer runtime tracks ngShow predicates
+   // Designer runtime tracks when() predicates
    class DesignerWidget {
-     ngShow(predicate: () => boolean) {
+     when(predicate: () => boolean) {
        // Parse predicate source to extract variables
        const source = predicate.toString();
        // "() => !isEditing" → extract "isEditing"
@@ -741,7 +741,7 @@ There's a theoretical approach to use real Tsyne (Fyne) widgets and containers d
      filter: 'all',     // User toggles this in ribbon
    };
 
-   // When evaluating ngShow predicate:
+   // When evaluating when() predicate:
    const shouldShow = predicate.call({ ...runtimeContext, ...designerState });
    ```
 
@@ -771,8 +771,8 @@ const filter = store.getFilter();
 ```typescript
 let isEditing = false;
 
-checkbox.ngShow(() => !isEditing);   // Visible when NOT editing
-textEntry.ngShow(() => isEditing);   // Visible when editing
+checkbox.when(() => !isEditing);   // Visible when NOT editing
+textEntry.when(() => isEditing);   // Visible when editing
 ```
 
 **Designer UI**:
@@ -783,7 +783,7 @@ textEntry.ngShow(() => isEditing);   // Visible when editing
 ```
 
 **User clicks `true`**:
-- Designer re-evaluates ngShow predicates with `isEditing = true`
+- Designer re-evaluates when() predicates with `isEditing = true`
 - Checkbox hides, Entry shows
 - User can now edit Entry properties visually
 
@@ -794,7 +794,7 @@ textEntry.ngShow(() => isEditing);   // Visible when editing
 #### Implementation Strategy
 
 **Phase 1: Auto-detection**
-- Parse ngShow predicate source code
+- Parse when() predicate source code
 - Extract variable names (isEditing, filter, etc.)
 - Infer types (boolean, enum, number)
 
@@ -805,7 +805,7 @@ textEntry.ngShow(() => isEditing);   // Visible when editing
 - Number: slider or input
 
 **Phase 3: State Override**
-- When evaluating ngShow, inject designer state
+- When evaluating when(), inject designer state
 - Re-render preview when state toggled
 - Highlight widgets affected by state change
 
@@ -1450,14 +1450,14 @@ index 1234567..89abcdef 100644
 - `test-apps/calculator-advanced/calculator.test.ts` (TsyneTest integration tests)
 
 ### Milestone 5: Ultimate Validation (12-16 weeks)
-**Goal**: Handle the most complex Tsyne application - TodoMVC with full ng-repeat, ngShow, observables, and state management. Plus advanced features.
+**Goal**: Handle the most complex Tsyne application - TodoMVC with full ng-repeat, when(), observables, and state management. Plus advanced features.
 
 **Deliverables**:
 - [ ] Advanced mock data provision (Observable system, TodoStore)
 - [ ] ng-repeat style binding support (`.model().trackBy().each()`)
-- [ ] ngShow directive handling (visibility predicates)
+- [ ] when() method handling (visibility predicates)
 - [ ] **Design-time state preview** - toggle isEditing, filter, etc. in ribbon/palette
-- [ ] Auto-detect state variables from ngShow predicates
+- [ ] Auto-detect state variables from when() predicates
 - [ ] State toggle UI (boolean radio buttons, enum selectors)
 - [ ] Component extraction
 - [ ] Template/snippet library
@@ -1468,7 +1468,7 @@ index 1234567..89abcdef 100644
 - Observable system with change listeners
 - TodoStore class with file I/O (needs mocking)
 - ng-repeat style loops: `.model(allTodos).trackBy().each()`
-- ngShow visibility directives
+- when() visibility directives
 - Complex event handlers with closures
 - Edit mode toggle state (isEditing)
 - Filter state management

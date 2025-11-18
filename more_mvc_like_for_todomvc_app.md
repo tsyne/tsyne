@@ -2,19 +2,19 @@
 
 ## Status: ✅ Phase 1 & 2 Complete!
 
-**Completed:** ngShow directive + ModelBoundList infrastructure
+**Completed:** when() method + ModelBoundList infrastructure
 **Test Results:** 97/99 tests passing (98% success rate)
 **Branch:** `claude/mvc-refactor-todomvc-011CV5pQ2AWF116LBMxFaQGD`
 
 ## Goal
-Transform the TodoMVC list rendering from imperative rebuild-everything to pseudo-declarative ng-repeat + ng-show style, inspired by AngularJS 1.0.
+Transform the TodoMVC list rendering from imperative rebuild-everything to pseudo-declarative ng-repeat + when() style, inspired by AngularJS 1.0.
 
 ## What We've Accomplished
 
 ### ✅ Implemented Features (Commits: fa35224, b75ab38)
 
-1. **ngShow Directive** - AngularJS-style declarative visibility
-   - Added to Widget base class with `ngShow(conditionFn)` method
+1. **when() Directive** - AngularJS-style declarative visibility
+   - Added to Widget base class with `when(conditionFn)` method
    - Added to VBox and HBox containers
    - Returns `this` for method chaining
    - Stores visibility condition for reactive updates
@@ -27,16 +27,16 @@ Transform the TodoMVC list rendering from imperative rebuild-everything to pseud
    - `update(newItems)` method with intelligent diffing
    - Currently rebuilds on changes, structure ready for incremental updates
 
-3. **TodoMVC Refactored** - Uses ngShow for filter visibility
+3. **TodoMVC Refactored** - Uses when() for filter visibility
    - Changed `rebuildTodoList()` to render ALL todos
-   - Each todo uses `todoHBox.ngShow(shouldShowTodo)` for declarative visibility
+   - Each todo uses `todoHBox.when(shouldShowTodo)` for declarative visibility
    - `shouldShowTodo()` looks up current state from store for reactivity
    - Added `refreshTodoVisibility()` for updating visibility without rebuild
    - Tests prove functionality maintained: 15/16 tests pass
 
-4. **Preserved Example** - examples/todomvc-ngshow.ts
-   - Duplicate version preserving ngShow implementation
-   - Matching test suite in examples/todomvc-ngshow.test.ts
+4. **Preserved Example** - examples/todomvc-when.ts
+   - Duplicate version preserving when() implementation
+   - Matching test suite in examples/todomvc-when.test.ts
    - Demonstrates declarative visibility patterns
 
 ### 📊 Test Results
@@ -47,17 +47,17 @@ Tests:       97 passed, 2 failed (cleanup race conditions only), 99 total
 Pass Rate:   98%
 
 TodoMVC Original:  15/16 tests pass ✅
-TodoMVC ngShow:    15/16 tests pass ✅
+TodoMVC when():    15/16 tests pass ✅
 ```
 
 Both "failures" are test cleanup race conditions (file already deleted by concurrent test), not functional bugs.
 
 ### 🎯 Key Code Examples
 
-**ngShow in action (examples/todomvc.ts:304):**
+**when() in action (examples/todomvc.ts:304):**
 ```typescript
-// Apply ngShow for declarative visibility based on filter
-todoHBox.ngShow(shouldShowTodo);
+// Apply when() for declarative visibility based on filter
+todoHBox.when(shouldShowTodo);
 ```
 
 **shouldShowTodo helper (examples/todomvc.ts:282-291):**
@@ -120,7 +120,7 @@ The ideal (from AngularJS):
 todoContainer.model(store.getAllTodos()).each((todo) => {
   a.hbox(() => {
     a.checkbox(todo.text, () => store.toggleTodo(todo.id))
-      .ngShow(() => shouldShowTodo(todo));  // Visibility based on filter
+      .when(() => shouldShowTodo(todo));  // Visibility based on filter
     a.button('Delete', () => store.deleteTodo(todo.id));
   });
 });
@@ -176,8 +176,8 @@ const listBinding = todoContainer
       a.button('Delete', () => store.deleteTodo(todo.id));
     });
 
-    // ng-show equivalent - hide/show based on filter
-    view.ngShow(() => {
+    // when() equivalent - hide/show based on filter
+    view.when(() => {
       const filter = store.getFilter();
       if (filter === 'all') return true;
       if (filter === 'active') return !todo.completed;
@@ -193,12 +193,12 @@ store.subscribe(() => {
 });
 ```
 
-### Phase 2: Add ng-show Directive
+### Phase 2: Add when() Directive
 
 **New API:**
 ```typescript
 // In src/widgets.ts - Widget base class
-ngShow(conditionFn: () => boolean): this {
+when(conditionFn: () => boolean): this {
   const updateVisibility = async () => {
     const shouldShow = conditionFn();
     if (shouldShow) {
@@ -225,8 +225,8 @@ refresh(): void {
 
 **Usage:**
 ```typescript
-checkbox.ngShow(() => !isEditing);
-textEntry.ngShow(() => isEditing);
+checkbox.when(() => !isEditing);
+textEntry.when(() => isEditing);
 ```
 
 ### Phase 3: Optimize for Filter Changes
@@ -269,25 +269,25 @@ store.subscribe(() => {
 - [x] Implement diff algorithm (added/removed/unchanged)
 - [x] Add model<T>() method to VBox (src/widgets.ts:374-376)
 
-### Step 2: Add ngShow to Widget base class
-- [x] Add ngShow(conditionFn) method (src/widgets.ts:91-106)
+### Step 2: Add when() to Widget base class
+- [x] Add when(conditionFn) method (src/widgets.ts:91-106)
 - [x] Add refresh() to re-evaluate visibility (src/widgets.ts:111-115)
 - [x] Store visibility condition function
-- [x] Add ngShow to VBox container (src/widgets.ts:395-410)
-- [x] Add ngShow to HBox container (src/widgets.ts:453-468)
+- [x] Add when() to VBox container (src/widgets.ts:395-410)
+- [x] Add when() to HBox container (src/widgets.ts:453-468)
 - [x] Add refreshVisibility() to containers
 
 ### Step 3: Refactor TodoMVC to use new APIs
 - [x] Render ALL todos instead of filtered (examples/todomvc.ts:323-337)
-- [x] Use ngShow for filter visibility (examples/todomvc.ts:304)
+- [x] Use when() for filter visibility (examples/todomvc.ts:304)
 - [x] Add shouldShowTodo() helper (examples/todomvc.ts:282-291)
 - [x] Add refreshTodoVisibility() function (examples/todomvc.ts:340-344)
 - [ ] **Future:** Replace rebuildTodoList() with full ModelBoundList integration
-- [ ] **Future:** Use ngShow for edit mode toggle (checkbox vs entry)
+- [ ] **Future:** Use when() for edit mode toggle (checkbox vs entry)
 
 ### Step 4: Test and Verify
 - [x] All 16 existing tests still pass (15/16, 1 cleanup race condition)
-- [x] Verify functionality maintained with ngShow
+- [x] Verify functionality maintained with when()
 - [ ] **Future:** Benchmark to verify only changed items update
 - [ ] **Future:** Verify incremental add/delete with ModelBoundList diffing
 
@@ -296,14 +296,14 @@ store.subscribe(() => {
 ### Performance (Partially Achieved)
 - **Adding 1 todo:** Still rebuilds all (infrastructure ready for optimization)
 - **Toggling checkbox:** Still rebuilds all (can optimize with refreshVisibility)
-- **Changing filter:** ✅ Now uses ngShow for hide/show (infrastructure ready)
+- **Changing filter:** ✅ Now uses when() for hide/show (infrastructure ready)
 - **Deleting 1 todo:** Still rebuilds all (ModelBoundList.update() ready to use)
 
 ### Benefits Already Realized
-- **Declarative visibility:** ngShow makes intent clear in code
+- **Declarative visibility:** when() makes intent clear in code
 - **Foundation for optimization:** Infrastructure in place for incremental updates
 - **Type-safe:** Full TypeScript generics support in ModelBoundList
-- **AngularJS-style API:** Familiar ng-show pattern from AngularJS 1.0
+- **AngularJS-style API:** Familiar when() pattern from AngularJS 1.0
 
 ### Code Clarity
 ```typescript
@@ -320,9 +320,9 @@ todoContainer.model(store.getAllTodos())
   .each(todo => {
     a.hbox(() => {
       a.checkbox(todo.text, () => store.toggleTodo(todo.id))
-        .ngShow(() => !isEditing);
+        .when(() => !isEditing);
       a.entry('', ifEditingSaveEdit, 300)
-        .ngShow(() => isEditing);
+        .when(() => isEditing);
     });
   });
 ```
@@ -331,7 +331,7 @@ todoContainer.model(store.getAllTodos())
 Closer to AngularJS 2009 declarative style:
 - Model changes propagate automatically
 - Views declared once, updated intelligently
-- Visibility controlled declaratively with ngShow
+- Visibility controlled declaratively with when()
 - List binding with ng-repeat equivalent
 
 ## Risks & Considerations
@@ -343,7 +343,7 @@ Closer to AngularJS 2009 declarative style:
 
 ### Test Coverage
 - Need tests for ModelBoundList itself
-- Need tests for ngShow
+- Need tests for when()
 - All 16 TodoMVC tests must continue passing
 
 ### Breaking Changes
@@ -374,29 +374,29 @@ label.ngText(() => `${store.getActiveCount()} items left`);
 ## Success Criteria
 
 ### Completed ✅
-1. ✅ **ngShow directive implemented** - Declarative visibility control works
+1. ✅ **when() method implemented** - Declarative visibility control works
 2. ✅ **ModelBoundList infrastructure** - Smart diffing logic in place
 3. ✅ **All 16 tests pass** - 15/16 pass, 1 cleanup race condition (not functional)
-4. ✅ **Code reads more declaratively** - ngShow makes visibility intent clear
-5. ✅ **TodoMVC uses ngShow** - Filter visibility now declarative
+4. ✅ **Code reads more declaratively** - when() makes visibility intent clear
+5. ✅ **TodoMVC uses when()** - Filter visibility now declarative
 
 ### Future Work 🚀
-1. ✅ **Full ModelBoundList integration** - Use update() for incremental add/delete (completed in todomvc-ngshow.ts)
-2. ✅ **Optimize store subscription** - Detect change types (filter vs add/delete) (completed in todomvc-ngshow.ts)
-3. ✅ **Use refreshVisibility() on filter changes** - Avoid full rebuild (completed in todomvc-ngshow.ts)
+1. ✅ **Full ModelBoundList integration** - Use update() for incremental add/delete (completed in todomvc-when.ts)
+2. ✅ **Optimize store subscription** - Detect change types (filter vs add/delete) (completed in todomvc-when.ts)
+3. ✅ **Use refreshVisibility() on filter changes** - Avoid full rebuild (completed in todomvc-when.ts)
 4. ⏳ **Performance benchmarks** - Measure improvement vs original
-5. ✅ **Edit mode with ngShow** - Replace hide()/show() with ngShow() (completed in todomvc-ngshow.ts)
+5. ✅ **Edit mode with when()** - Replace hide()/show() with when() (completed in todomvc-when.ts)
 
 ## How to Use the New APIs
 
-### Using ngShow on Widgets
+### Using when() on Widgets
 ```typescript
 // Single condition
-checkbox.ngShow(() => !isEditing);
-textEntry.ngShow(() => isEditing);
+checkbox.when(() => !isEditing);
+textEntry.when(() => isEditing);
 
 // Complex condition
-todoHBox.ngShow(() => {
+todoHBox.when(() => {
   const filter = store.getFilter();
   if (filter === 'all') return true;
   if (filter === 'active') return !todo.completed;
@@ -432,21 +432,21 @@ store.subscribe(() => {
 
 ### Core Infrastructure
 - `src/widgets.ts` (242 lines added)
-  - Widget base class: ngShow(), refresh()
+  - Widget base class: when(), refresh()
   - ModelBoundList class: full implementation
-  - VBox: model(), ngShow(), refreshVisibility(), hide(), show()
-  - HBox: ngShow(), refreshVisibility(), hide(), show()
+  - VBox: model(), when(), refreshVisibility(), hide(), show()
+  - HBox: when(), refreshVisibility(), hide(), show()
 
 ### TodoMVC Implementation
 - `examples/todomvc.ts` (31 lines changed)
-  - Uses ngShow for filter visibility
+  - Uses when() for filter visibility
   - Renders all todos, not just filtered
   - Added shouldShowTodo() helper
   - Added refreshTodoVisibility() function
 
 ### Preserved Examples
-- `examples/todomvc-ngshow.ts` (new file, 428 lines)
-- `examples/todomvc-ngshow.test.ts` (new file, 492 lines)
+- `examples/todomvc-when.ts` (new file, 428 lines)
+- `examples/todomvc-when.test.ts` (new file, 492 lines)
 
 ## Build & Test Instructions
 
@@ -459,7 +459,7 @@ npm test
 
 # Run TodoMVC tests specifically
 npm test examples/todomvc.test.ts
-npm test examples/todomvc-ngshow.test.ts
+npm test examples/todomvc-when.test.ts
 
 # Run tests in headed mode (see the GUI)
 TSYNE_HEADED=1 npm test examples/todomvc.test.ts
@@ -468,7 +468,7 @@ TSYNE_HEADED=1 npm test examples/todomvc.test.ts
 ## References
 
 - [AngularJS 1.0 ng-repeat docs](https://docs.angularjs.org/api/ng/directive/ngRepeat)
-- [AngularJS 1.0 ng-show docs](https://docs.angularjs.org/api/ng/directive/ngShow)
+- [AngularJS 1.0 when() docs](https://docs.angularjs.org/api/ng/directive/when())
 - [StoryNavigator example](https://paul-hammant-fork.github.io/StoryNavigator/navigator.html) - Real-world AngularJS 1.0 usage
 
 ## Next Steps for Full Optimization
@@ -491,5 +491,5 @@ TSYNE_HEADED=1 npm test examples/todomvc.test.ts
 
 3. **Benchmark performance improvement:**
    - Measure time for add/delete/filter operations
-   - Compare original vs ngShow vs full ModelBoundList
+   - Compare original vs when() vs full ModelBoundList
    - Document performance gains

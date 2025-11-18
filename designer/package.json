@@ -10,9 +10,13 @@
     "dev": "tsc && node dist/server.js",
     "test": "npm run test:unit && npm run test:roundtrip && npm run test:e2e",
     "test:unit": "jest --testMatch='**/__tests__/unit/**/*.test.ts'",
-    "test:roundtrip": "jest --testMatch='**/__tests__/roundtrip/**/*.test.ts'",
+    "test:roundtrip": "jest --runInBand --testMatch='**/__tests__/roundtrip/**/*.test.ts'",
     "test:e2e": "jest --testMatch='**/__tests__/e2e/**/*.test.ts'",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:icon": "tauri icon"
   },
   "keywords": [
     "tsyne",
@@ -26,8 +30,13 @@
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/cli": "^2.9.4",
     "@types/jest": "^29.5.0",
     "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.0"
   }

@@ -1,24 +1,24 @@
 /**
- * TodoMVC Example Application (ngShow version)
+ * TodoMVC Example Application (when() version)
  *
- * A fully-functional TodoMVC implementation with ngShow directive:
+ * A fully-functional TodoMVC implementation with when() method:
  * - Add/delete/toggle todos
- * - Filter by All/Active/Completed using ngShow for declarative visibility
+ * - Filter by All/Active/Completed using when() for declarative visibility
  * - Clear completed todos
  * - Persistent storage to filesystem
  * - Comprehensive TsyneTest suite
  *
- * This version demonstrates the ngShow directive added in the MVC refactor.
- * Each todo item uses ngShow(shouldShowTodo) for declarative visibility control.
+ * This version demonstrates the when() method added in the MVC refactor.
+ * Each todo item uses when(shouldShowTodo) for declarative visibility control.
  *
  * Usage:
- *   npm run build && npm start examples/todomvc-ngshow.ts [filepath]
+ *   npm run build && npm start examples/todomvc-when.ts [filepath]
  *
  * Arguments:
  *   filepath - Optional path to save file (default: todos.json relative to exe)
  *
  * Testing:
- *   "test:todomvc-ngshow": "jest examples/todomvc-ngshow.test.ts"
+ *   "test:todomvc-when": "jest examples/todomvc-when.test.ts"
  */
 
 import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../src';
@@ -288,7 +288,7 @@ export function createTodoApp(a: any, storePath?: string) {
         if (!isEditing) await startEdit();
       };
 
-      // ngShow-style visibility predicate
+      // when()-style visibility predicate
       const shouldShowTodo = () => {
         const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
         if (!currentTodo) return false;
@@ -317,15 +317,15 @@ export function createTodoApp(a: any, storePath?: string) {
         });
       });
 
-      // Apply ngShow directives for declarative visibility
+      // Apply when() methods for declarative visibility
       (async () => {
         await checkbox.setChecked(todo.completed);
         await checkbox.setText(todo.text);
         await textEntry.setText('');
 
-        checkbox.ngShow(() => !isEditing);
-        textEntry.ngShow(() => isEditing);
-        todoHBox.ngShow(shouldShowTodo);
+        checkbox.when(() => !isEditing);
+        textEntry.when(() => isEditing);
+        todoHBox.when(shouldShowTodo);
       })();
 
       return todoHBox;

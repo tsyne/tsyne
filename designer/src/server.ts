@@ -33,22 +33,27 @@ function parseStackTrace(stack: string): SourceLocation {
       match = line.match(/at\s+(.+):(\d+):(\d+)/);
     }
     if (match && !match[1].includes('node_modules') && !match[1].includes('server')) {
-      return { file: match[1], line: parseInt(match[2]), column: parseInt(match[3]) };
+      // Line numbers from stack trace are from transpiled JS
+      // Transpiler removes import+blank (2 lines) and adds "use strict" (1 line)
+      // Net shift: original = transpiled + 2
+      const transpiledLine = parseInt(match[2]);
+      const originalLine = transpiledLine + 2;
+      return { file: match[1], line: originalLine, column: parseInt(match[3]) };
     }
   }
   return { file: 'unknown', line: 0, column: 0 };
 }
 
-// Capture widget - returns chainable object with .withId()
+// Capture widget - returns chainable object with .withId(), .when(), .refresh()
 function captureWidget(type: string, props: any): any {
   const location = parseStackTrace(new Error().stack || '');
 
   // Use internal auto-ID for tracking (needed for tree structure)
   const internalId = `widget-${widgetIdCounter++}`;
 
-  const metadata = {
+  const metadata: any = {
     id: internalId,  // Internal tracking ID
-    widgetId: null,  // User-defined ID (set via .withId())
+    widgetId: null as string | null,  // User-defined ID (set via .withId())
     widgetType: type,
     sourceLocation: location,
     properties: props,
@@ -57,14 +62,33 @@ function captureWidget(type: string, props: any): any {
   };
   metadataStore.set(internalId, metadata);
 
-  // Return chainable object with .withId() method
-  return {
+  // Return chainable object with full Tsyne widget API
+  const chainableApi = {
     __internalId: internalId,  // For accessing metadata
     withId: (id: string) => {
       metadata.widgetId = id;
-      return { withId: () => {}, __internalId: internalId }; // Allow chaining
+      return chainableApi; // Return self for chaining
+    },
+    when: (conditionFn: () => boolean) => {
+      // Store visibility condition in metadata
+      if (conditionFn) {
+        metadata.eventHandlers.whenCondition = conditionFn.toString();
+      }
+      return chainableApi; // Return self for chaining
+    },
+    refresh: async () => {
+      // No-op in designer mode
+      return Promise.resolve();
+    },
+    hide: async () => {
+      return Promise.resolve();
+    },
+    show: async () => {
+      return Promise.resolve();
     }
   };
+
+  return chainableApi;
 }
 
 // Helper for container widgets
@@ -72,9 +96,9 @@ function containerWidget(type: string, props: any, builder: () => void): any {
   const location = parseStackTrace(new Error().stack || '');
   const internalId = `widget-${widgetIdCounter++}`;
 
-  const metadata = {
+  const metadata: any = {
     id: internalId,
-    widgetId: null,
+    widgetId: null as string | null,
     widgetType: type,
     sourceLocation: location,
     properties: props,
@@ -89,14 +113,53 @@ function containerWidget(type: string, props: any, builder: () => void): any {
   builder();
   currentParent = prev;
 
-  // Return chainable object with .withId()
-  return {
+  // Return chainable object with full container API
+  const chainableApi = {
     __internalId: internalId,
     withId: (id: string) => {
       metadata.widgetId = id;
-      return { withId: () => {}, __internalId: internalId };
+      return chainableApi; // Return self for chaining
+    },
+    when: (conditionFn: () => boolean) => {
+      // Store visibility condition in metadata
+      if (conditionFn) {
+        metadata.eventHandlers.whenCondition = conditionFn.toString();
+      }
+      return chainableApi; // Return self for chaining
+    },
+    model: (items: any[]) => {
+      // Return ModelBoundList-like API for method chaining
+      return {
+        trackBy: (fn: (item: any) => any) => {
+          return {
+            each: (builderFn: (item: any) => void) => {
+              // In designer mode, just record the binding
+              metadata.eventHandlers.modelBinding = {
+                items: items.length,
+                trackBy: fn.toString(),
+                builder: builderFn.toString()
+              };
+              return chainableApi;
+            }
+          };
+        }
+      };
+    },
+    refresh: async () => {
+      return Promise.resolve();
+    },
+    refreshVisibility: async () => {
+      return Promise.resolve();
+    },
+    hide: async () => {
+      return Promise.resolve();
+    },
+    show: async () => {
+      return Promise.resolve();
     }
   };
+
+  return chainableApi;
 }
 
 // Designer API - Complete widget support (emulates Tsyne ABI)
@@ -463,7 +526,13 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
     delete require.cache[require.resolve(tempPath)];
 
     // Execute by requiring the file - this gives us proper stack traces with line numbers!
-    require(tempPath);
+    // Catch errors but still return captured metadata (e.g., for code with undefined dependencies)
+    try {
+      require(tempPath);
+    } catch (error: any) {
+      console.warn(`[Designer] Code execution error (metadata still captured): ${error.message}`);
+      // Continue to return metadata that was captured before the error
+    }
 
     delete (global as any).designer;
 
@@ -523,7 +592,62 @@ class SourceCodeEditor {
   }
 
   addWidget(parentMetadata: any, widgetType: string, properties: any): boolean {
-    const parentLine = parentMetadata.sourceLocation.line - 1;
+    let parentLine = parentMetadata.sourceLocation.line - 1;
+
+    // Find the actual parent line (sourceLocation might be slightly off due to transpilation)
+    // Match both "a.vbox(" and "vbox(" (for different import styles)
+    const parentType = parentMetadata.widgetType;
+    const parentPattern = new RegExp(`(a\\.)?${parentType}\\(`);
+    let actualParentLine = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue;
+        const checkIndex = parentLine + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (parentPattern.test(line)) {
+            actualParentLine = checkIndex;
+            break;
+          }
+        }
+      }
+      if (actualParentLine !== -1) break;
+    }
+
+    if (actualParentLine !== -1) {
+      if (actualParentLine !== parentLine) {
+        console.log(`[Editor] Adjusted parent line from ${parentLine + 1} to ${actualParentLine + 1}`);
+      }
+      parentLine = actualParentLine;
+    }
+
+    // Check if parent is on a single line (empty container like "a.vbox(() => {});" )
+    const parentLineContent = this.lines[parentLine];
+    const isEmptySingleLine = parentLineContent.includes('() => {}');
+
+    if (isEmptySingleLine) {
+      // Expand empty container to multi-line format
+      const match = parentLineContent.match(/^(\s*)(a\.)?([\w]+)\(\(\) => \{\}\);/);
+      if (match) {
+        const indent = match[1];
+        const prefix = match[2] || '';
+        const containerType = match[3];
+        const childIndent = indent + '  ';
+
+        // Generate widget code with proper prefix
+        const widgetCode = this.generateWidgetCode(widgetType, properties, childIndent);
+
+        // Replace single-line container with multi-line version
+        this.lines[parentLine] = `${indent}${prefix}${containerType}(() => {`;
+        this.lines.splice(parentLine + 1, 0, widgetCode);
+        this.lines.splice(parentLine + 2, 0, `${indent}});`);
+
+        console.log(`[Editor] Expanded empty container and added ${widgetType}`);
+        return true;
+      }
+    }
 
     // Find the closing brace of the parent container's builder function
     const closingBraceLine = this.findClosingBrace(parentLine);
@@ -533,12 +657,11 @@ class SourceCodeEditor {
       return false;
     }
 
-    // Get indentation from parent line
-    const indentation = this.getIndentation(parentLine);
-    const childIndentation = indentation + '      '; // Match existing indentation in examples
+    // Get indentation from the line just before the closing brace
+    const indentation = this.getIndentation(closingBraceLine);
 
     // Generate widget code
-    const widgetCode = this.generateWidgetCode(widgetType, properties, childIndentation);
+    const widgetCode = this.generateWidgetCode(widgetType, properties, indentation);
 
     // Insert before closing brace
     this.lines.splice(closingBraceLine, 0, widgetCode);
@@ -548,12 +671,54 @@ class SourceCodeEditor {
   }
 
   removeWidget(metadata: any): boolean {
-    const lineIndex = metadata.sourceLocation.line - 1;
+    let lineIndex = metadata.sourceLocation.line - 1;
 
     if (lineIndex < 0 || lineIndex >= this.lines.length) {
       console.warn('[Editor] Invalid line index for widget removal');
       return false;
     }
+
+    // Find the actual widget line (sourceLocation might be slightly off due to transpilation)
+    // Search nearby lines for the widget call pattern
+    // Match both "a.button(" and "button(" (for different import styles)
+    const widgetType = metadata.widgetType;
+    const widgetPattern = new RegExp(`(a\\.)?${widgetType}\\(`);
+    let actualLineIndex = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      // Try the exact line first, then above, then below
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue; // Skip 0 after first iteration
+        const checkIndex = lineIndex + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (widgetPattern.test(line)) {
+            // For widgets with text property, verify it matches
+            if (metadata.properties && metadata.properties.text) {
+              const textPattern = new RegExp(`${metadata.widgetType}\\(['"](${metadata.properties.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+              if (textPattern.test(line)) {
+                actualLineIndex = checkIndex;
+                break;
+              }
+            } else {
+              actualLineIndex = checkIndex;
+              break;
+            }
+          }
+        }
+      }
+      if (actualLineIndex !== -1) break;
+    }
+
+    if (actualLineIndex === -1) {
+      console.warn(`[Editor] Could not find ${widgetType} widget near line ${lineIndex + 1}`);
+      actualLineIndex = lineIndex; // Fall back to original line
+    } else if (actualLineIndex !== lineIndex) {
+      console.log(`[Editor] Adjusted line from ${lineIndex + 1} to ${actualLineIndex + 1} for ${widgetType}`);
+    }
+
+    lineIndex = actualLineIndex;
 
     // Check if this is a multi-line widget (e.g., button with callback)
     const firstLine = this.lines[lineIndex];
@@ -583,7 +748,35 @@ class SourceCodeEditor {
     }
 
     console.log(`[Editor] Removed widget at lines ${lineIndex + 1} to ${lineIndex + linesToRemove.length}: ${firstLine.trim()}`);
+
+    // After deletion, check if parent container is now empty and collapse it
+    this.collapseEmptyContainers();
+
     return true;
+  }
+
+  private collapseEmptyContainers(): void {
+    // Find and collapse empty multi-line containers to single-line format
+    // Pattern: line with "a.something(() => {" followed by line with just "});" and whitespace
+    for (let i = 0; i < this.lines.length - 1; i++) {
+      const currentLine = this.lines[i];
+      const nextLine = this.lines[i + 1];
+
+      // Check if current line is a container opening: "a.vbox(() => {" etc.
+      const containerMatch = currentLine.match(/^(\s*)(a\.)?(\w+)\(\(\) => \{\s*$/);
+      if (containerMatch && nextLine.match(/^\s*\}\);?\s*$/)) {
+        // Found empty container - collapse to single line
+        const indent = containerMatch[1];
+        const prefix = containerMatch[2] || '';
+        const containerType = containerMatch[3];
+
+        // Replace two lines with single line
+        this.lines[i] = `${indent}${prefix}${containerType}(() => {});`;
+        this.lines.splice(i + 1, 1);
+
+        console.log(`[Editor] Collapsed empty ${containerType} at line ${i + 1}`);
+      }
+    }
   }
 
   private getIndentation(lineIndex: number): string {
@@ -627,68 +820,143 @@ class SourceCodeEditor {
   private generateWidgetCode(widgetType: string, properties: any, indentation: string): string {
     switch (widgetType) {
       case 'label':
-        return `${indentation}label("${properties.text || 'New Label'}");`;
+        return `${indentation}a.label("${properties.text || 'New Label'}");`;
 
       case 'button':
-        return `${indentation}button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
+        return `${indentation}a.button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
 
       case 'entry':
-        return `${indentation}entry("${properties.placeholder || ''}");`;
+        return `${indentation}a.entry("${properties.placeholder || ''}");`;
 
       case 'checkbox':
-        return `${indentation}checkbox("${properties.text || 'New Checkbox'}");`;
+        return `${indentation}a.checkbox("${properties.text || 'New Checkbox'}");`;
 
       case 'vbox':
-        return `${indentation}vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'hbox':
-        return `${indentation}hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'scroll':
-        return `${indentation}scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'separator':
-        return `${indentation}separator();`;
+        return `${indentation}a.separator();`;
 
       case 'hyperlink':
-        return `${indentation}hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
+        return `${indentation}a.hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
 
       case 'image':
-        return `${indentation}image("${properties.path || 'image.png'}");`;
+        return `${indentation}a.image("${properties.path || 'image.png'}");`;
 
       case 'select':
-        return `${indentation}select(["Option 1", "Option 2"]);`;
+        return `${indentation}a.select(["Option 1", "Option 2"]);`;
 
       case 'grid':
-        return `${indentation}grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       default:
-        return `${indentation}${widgetType}();`;
+        return `${indentation}a.${widgetType}();`;
     }
   }
 
   updateWidgetId(metadata: any, oldWidgetId: string | null, newWidgetId: string | null): boolean {
     const lineIndex = metadata.sourceLocation.line - 1;
+    const widgetType = metadata.widgetType;
 
-    if (lineIndex < 0 || lineIndex >= this.lines.length) {
-      console.warn('[Editor] Invalid line index for widget ID update');
-      return false;
+    // Build a more specific pattern by including the first property value if available
+    // For label("A"), button("Click", ...), etc.
+    let widgetPattern: RegExp;
+    const firstPropKey = Object.keys(metadata.properties)[0];
+    const firstPropValue = firstPropKey ? metadata.properties[firstPropKey] : null;
+
+    if (firstPropValue && typeof firstPropValue === 'string') {
+      // Escape special regex characters in the property value
+      const escapedValue = firstPropValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Match: label("A") or a.label("A") or label('A') or a.label('A')
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(\\s*['"]${escapedValue}['"]`);
+    } else {
+      // Fallback to basic pattern if no string property
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(`);
     }
 
-    // Find the full statement (may span multiple lines)
-    let statementLines = [lineIndex];
-    let fullStatement = this.lines[lineIndex];
-
-    // Look ahead for continuation lines (until we find semicolon or closing paren + semicolon)
-    for (let i = lineIndex + 1; i < Math.min(lineIndex + 10, this.lines.length); i++) {
-      statementLines.push(i);
-      fullStatement += '\n' + this.lines[i];
-      if (this.lines[i].includes(';')) {
+    let targetLineIndex = -1;
+    for (let offset = 0; offset <= 2; offset++) {
+      const checkIndex = lineIndex + offset;
+      if (checkIndex >= 0 && checkIndex < this.lines.length && widgetPattern.test(this.lines[checkIndex])) {
+        targetLineIndex = checkIndex;
+        break;
+      }
+      const checkIndexBefore = lineIndex - offset;
+      if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < this.lines.length && widgetPattern.test(this.lines[checkIndexBefore])) {
+        targetLineIndex = checkIndexBefore;
         break;
       }
     }
 
-    const firstLine = this.lines[lineIndex];
+    if (targetLineIndex === -1) {
+      console.warn(`[Editor] Could not find widget type '${widgetType}' near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    // Find the full statement (may span multiple lines)
+    let statementLines = [targetLineIndex];
+    let fullStatement = this.lines[targetLineIndex];
+
+    // Check if this is a container widget OR a widget with event handlers (both need closing });)
+    const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
+    const hasEventHandlers = metadata.eventHandlers && Object.keys(metadata.eventHandlers).length > 0;
+    const isContainer = containerTypes.includes(widgetType) || hasEventHandlers;
+
+    // Look ahead for continuation lines
+    const startIndent = this.lines[targetLineIndex].search(/\S/);
+
+    if (isContainer) {
+      // For containers, use brace counting to find the matching closing
+      let braceCount = 0;
+
+      for (let i = targetLineIndex; i < Math.min(targetLineIndex + 20, this.lines.length); i++) {
+        const line = this.lines[i];
+
+        // Count braces in this line
+        for (const char of line) {
+          if (char === '{') braceCount++;
+          else if (char === '}') braceCount--;
+        }
+
+        // Add this line if it's not the first one
+        if (i > targetLineIndex) {
+          statementLines.push(i);
+          fullStatement += '\n' + line;
+        }
+
+        // If braces balanced and line ends with });, we're done
+        if (braceCount === 0 && line.trim().endsWith('});')) {
+          break;
+        }
+      }
+    } else {
+      // For simple widgets, stop when we find a line that ends with semicolon
+      for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
+        const line = this.lines[i];
+        const lineIndent = line.search(/\S/);
+
+        // If we hit a line with less or equal indentation that ends with ;, stop
+        if (lineIndent <= startIndent && line.trim().endsWith(';')) {
+          break;
+        }
+
+        statementLines.push(i);
+        fullStatement += '\n' + line;
+
+        // If this line ends with semicolon and has greater indentation, include it and stop
+        if (line.includes(';') && lineIndent > startIndent) {
+          break;
+        }
+      }
+    }
+
+    const firstLine = this.lines[targetLineIndex];
     const indent = firstLine.substring(0, firstLine.length - firstLine.trimStart().length);
 
     // Case 1: Update existing .withId('oldId') to .withId('newId')
@@ -697,17 +965,70 @@ class SourceCodeEditor {
       if (withIdPattern.test(fullStatement)) {
         const updatedStatement = fullStatement.replace(withIdPattern, `.withId('${newWidgetId}')`);
         this.replaceLines(statementLines, updatedStatement);
-        console.log(`[Editor] Line ${lineIndex + 1}: Updated .withId('${oldWidgetId}') → .withId('${newWidgetId}')`);
+        console.log(`[Editor] Line ${targetLineIndex + 1}: Updated .withId('${oldWidgetId}') → .withId('${newWidgetId}')`);
         return true;
       }
     }
 
     // Case 2: Add .withId('newId') (no old ID, has new ID)
     if (!oldWidgetId && newWidgetId) {
-      // Add .withId before the semicolon
-      const updatedStatement = fullStatement.replace(/;/, `.withId('${newWidgetId}');`);
+      // Check if this is a container widget based on the widget type
+      const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
+      const isContainer = containerTypes.includes(widgetType);
+
+      let updatedStatement: string;
+      if (isContainer) {
+        // For container widgets, we need to find the matching closing brace
+        // Count braces to find the correct closing }); for THIS container
+        let braceCount = 0;
+        let foundOpening = false;
+        let closingIndex = -1;
+
+        for (let i = 0; i < fullStatement.length; i++) {
+          const char = fullStatement[i];
+
+          if (char === '{') {
+            braceCount++;
+            foundOpening = true;
+          } else if (char === '}') {
+            braceCount--;
+
+            // When braceCount returns to 0, we've found the matching closing brace
+            if (foundOpening && braceCount === 0) {
+              // Check if this is followed by );
+              if (fullStatement.substring(i, i + 3) === '});') {
+                closingIndex = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (closingIndex !== -1) {
+          updatedStatement =
+            fullStatement.substring(0, closingIndex) +
+            `}).withId('${newWidgetId}');` +
+            fullStatement.substring(closingIndex + 3);
+        } else {
+          console.warn(`[Editor] Could not find matching closing }); for container ${widgetType}`);
+          return false;
+        }
+      } else {
+        // For simple widgets, add .withId before the last semicolon
+        const lastSemicolonIndex = fullStatement.lastIndexOf(';');
+        if (lastSemicolonIndex !== -1) {
+          updatedStatement =
+            fullStatement.substring(0, lastSemicolonIndex) +
+            `.withId('${newWidgetId}');` +
+            fullStatement.substring(lastSemicolonIndex + 1);
+        } else {
+          console.warn(`[Editor] Could not find semicolon for ${widgetType}`);
+          return false;
+        }
+      }
+
       this.replaceLines(statementLines, updatedStatement);
-      console.log(`[Editor] Line ${lineIndex + 1}: Added .withId('${newWidgetId}')`);
+      console.log(`[Editor] Line ${targetLineIndex + 1}: Added .withId('${newWidgetId}') to ${widgetType}`);
       return true;
     }
 
@@ -716,11 +1037,11 @@ class SourceCodeEditor {
       const withIdPattern = new RegExp(`\\.withId\\s*\\(\\s*['"]${oldWidgetId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*\\)`, 'g');
       const updatedStatement = fullStatement.replace(withIdPattern, '');
       this.replaceLines(statementLines, updatedStatement);
-      console.log(`[Editor] Line ${lineIndex + 1}: Removed .withId('${oldWidgetId}')`);
+      console.log(`[Editor] Line ${targetLineIndex + 1}: Removed .withId('${oldWidgetId}')`);
       return true;
     }
 
-    console.warn(`[Editor] Could not apply widget ID update for line ${lineIndex + 1}`);
+    console.warn(`[Editor] Could not apply widget ID update for line ${targetLineIndex + 1}`);
     return false;
   }
 
@@ -776,6 +1097,122 @@ class SourceCodeEditor {
     this.lines.splice(stylesStartLine, stylesEndLine - stylesStartLine + 1, ...newStylesLines);
 
     console.log(`[Editor] Updated styles object (lines ${stylesStartLine}-${stylesEndLine})`);
+    return true;
+  }
+
+  updateWidgetProperty(metadata: any, propertyName: string, oldValue: any, newValue: any): boolean {
+    let lineIndex = metadata.sourceLocation.line - 1;
+    const widgetType = metadata.widgetType;
+
+    // Find the actual widget line using fuzzy search
+    // Match both "a.button(" and "button(" (for different import styles)
+    const widgetPattern = new RegExp(`(a\\.)?${widgetType}\\(`);
+    let actualLineIndex = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue;
+        const checkIndex = lineIndex + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (widgetPattern.test(line)) {
+            actualLineIndex = checkIndex;
+            break;
+          }
+        }
+      }
+      if (actualLineIndex !== -1) break;
+    }
+
+    if (actualLineIndex === -1) {
+      console.warn(`[Editor] Could not find ${widgetType} widget near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    lineIndex = actualLineIndex;
+
+    // For text property (and other string properties in the first argument position)
+    if (propertyName === 'text') {
+      const line = this.lines[lineIndex];
+
+      // Try to replace with both single and double quotes
+      const patterns = [
+        { old: `'${oldValue}'`, new: `'${newValue}'` },
+        { old: `"${oldValue}"`, new: `"${newValue}"` }
+      ];
+
+      for (const {old, new: newVal} of patterns) {
+        if (line.includes(old)) {
+          this.lines[lineIndex] = line.replace(old, newVal);
+          console.log(`[Editor] Updated ${widgetType}.${propertyName} on line ${lineIndex + 1}: "${oldValue}" → "${newValue}"`);
+          return true;
+        }
+      }
+
+      console.warn(`[Editor] Could not find property value "${oldValue}" on line ${lineIndex + 1}`);
+      return false;
+    }
+
+    // For other properties, use the generic find and replace
+    const oldValueStr = typeof oldValue === 'string' ? `"${oldValue}"` : oldValue;
+    const newValueStr = typeof newValue === 'string' ? `"${newValue}"` : newValue;
+    return this.findAndReplace(String(oldValueStr), String(newValueStr));
+  }
+
+  transformLayout(metadata: any, newLayout: string): boolean {
+    const lineIndex = metadata.sourceLocation.line - 1;
+    const oldType = metadata.widgetType;
+
+    // Search for the widget on the exact line, or nearby lines (±2)
+    let targetLineIndex = -1;
+    const searchPattern = new RegExp(`\\ba\\.${oldType}\\(`);
+
+    for (let offset = 0; offset <= 2; offset++) {
+      const checkIndex = lineIndex + offset;
+      if (checkIndex >= 0 && checkIndex < this.lines.length && searchPattern.test(this.lines[checkIndex])) {
+        targetLineIndex = checkIndex;
+        break;
+      }
+      const checkIndexBefore = lineIndex - offset;
+      if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < this.lines.length && searchPattern.test(this.lines[checkIndexBefore])) {
+        targetLineIndex = checkIndexBefore;
+        break;
+      }
+    }
+
+    if (targetLineIndex === -1) {
+      console.warn(`[Editor] Could not find widget type '${oldType}' near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    const line = this.lines[targetLineIndex];
+    let newLine: string;
+
+    // For grid, we need to add or update the column count parameter
+    if (newLayout === 'grid') {
+      const columns = metadata.properties._gridColumns || 2;
+      // Replace: a.vbox(() => with a.grid(2, () =>
+      const pattern = new RegExp(`(\\s*a\\.)${oldType}\\(`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(${columns}, `);
+    } else if (oldType === 'grid') {
+      // Replace: a.grid(2, () => with a.vbox(() =>
+      // Remove the column count parameter
+      const pattern = new RegExp(`(\\s*a\\.)grid\\(\\d+,\\s*`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(`);
+    } else {
+      // Simple container type transformation: vbox ↔ hbox, etc.
+      const pattern = new RegExp(`(\\s*a\\.)${oldType}\\(`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(`);
+    }
+
+    if (newLine === line) {
+      console.warn(`[Editor] Pattern match failed for ${oldType} on line ${targetLineIndex + 1}: ${line.trim()}`);
+      return false;
+    }
+
+    this.lines[targetLineIndex] = newLine;
+    console.log(`[Editor] Transformed ${oldType} → ${newLayout} on line ${targetLineIndex + 1}`);
     return true;
   }
 
@@ -916,13 +1353,62 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
       // Apply property updates
       for (const edit of propertyEdits) {
-        // Handle string vs numeric values
-        const oldValueStr = typeof edit.oldValue === 'string' ? `"${edit.oldValue}"` : edit.oldValue;
-        const newValueStr = typeof edit.newValue === 'string' ? `"${edit.newValue}"` : edit.newValue;
-        editor.findAndReplace(String(oldValueStr), String(newValueStr));
+        // Handle layout transformation pseudo-property
+        if (edit.propertyName === '_layout') {
+          const widget = metadataStore.get(edit.widgetId);
+          if (widget) {
+            editor.transformLayout(widget, edit.newValue);
+          }
+          continue;
+        }
+
+        // Handle grid column count changes
+        if (edit.propertyName === '_gridColumns') {
+          const widget = metadataStore.get(edit.widgetId);
+          if (widget && widget.widgetType === 'grid') {
+            // Search for the grid line (accounting for off-by-one errors)
+            const lineIndex = widget.sourceLocation.line - 1;
+            let targetLineIndex = -1;
+            const searchPattern = /\ba\.grid\(\d+,/;
+
+            for (let offset = 0; offset <= 2; offset++) {
+              const checkIndex = lineIndex + offset;
+              if (checkIndex >= 0 && checkIndex < editor['lines'].length && searchPattern.test(editor['lines'][checkIndex])) {
+                targetLineIndex = checkIndex;
+                break;
+              }
+              const checkIndexBefore = lineIndex - offset;
+              if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < editor['lines'].length && searchPattern.test(editor['lines'][checkIndexBefore])) {
+                targetLineIndex = checkIndexBefore;
+                break;
+              }
+            }
+
+            if (targetLineIndex !== -1) {
+              const line = editor['lines'][targetLineIndex];
+              // Replace grid(oldCount, with grid(newCount,
+              const newLine = line.replace(/grid\(\d+,/, `grid(${edit.newValue},`);
+              editor['lines'][targetLineIndex] = newLine;
+              console.log(`[Editor] Updated grid column count to ${edit.newValue} on line ${targetLineIndex + 1}`);
+            }
+          }
+          continue;
+        }
+
+        // Regular property updates
+        const widget = metadataStore.get(edit.widgetId);
+        if (widget) {
+          editor.updateWidgetProperty(widget, edit.propertyName, edit.oldValue, edit.newValue);
+        }
       }
 
-      // Apply widget ID edits
+      // Apply widget ID edits (sort descending by line number to avoid line shift issues)
+      widgetIdEdits.sort((a, b) => {
+        const lineA = a.widget.sourceLocation.line;
+        const lineB = b.widget.sourceLocation.line;
+        return lineB - lineA; // Descending order
+      });
+
       for (const edit of widgetIdEdits) {
         console.log(`[Editor] Updating widget ID: "${edit.oldWidgetId || '(none)'}" → "${edit.newWidgetId || '(none)'}"`);
         editor.updateWidgetId(edit.widget, edit.oldWidgetId, edit.newWidgetId);

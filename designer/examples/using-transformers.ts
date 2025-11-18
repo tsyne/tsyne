@@ -9,7 +9,8 @@ import {
   NoOpTransformer,
   WhitespaceNormalizer,
   CommentPreserver,
-  CompositeTransformer
+  CompositeTransformer,
+  ESLintTransformer
 } from '../src/transformers';
 
 // Example 1: Default (NoOp) - No transformations
@@ -96,6 +97,24 @@ class PrettierTransformer implements SourceTransformer {
 }
 
 transformerRegistry.setTransformer(new PrettierTransformer());
+
+// Example 7: ESLint Transformer - Automatic linting on save
+console.log('\n=== Example 7: ESLint Transformer ===');
+transformerRegistry.setTransformer(new ESLintTransformer());
+// Designer will automatically lint and fix code style issues on save
+// Uses the .eslintrc.json configuration in the designer directory
+
+// Example 8: Production Setup - Combined Transformers with ESLint
+console.log('\n=== Example 8: Production Setup ===');
+const productionTransformer = new CompositeTransformer([
+  new WhitespaceNormalizer(),
+  new CommentPreserver(),
+  new ESLintTransformer()
+]);
+transformerRegistry.setTransformer(productionTransformer);
+// 1. Normalizes whitespace to match original
+// 2. Attempts to restore comments
+// 3. Runs ESLint to fix style issues
 
 console.log('\nTransformer examples configured!');
 console.log('The active transformer will be used when saving files from the designer.');
