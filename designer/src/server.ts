@@ -727,18 +727,37 @@ class SourceCodeEditor {
 
   updateWidgetId(metadata: any, oldWidgetId: string | null, newWidgetId: string | null): boolean {
     const lineIndex = metadata.sourceLocation.line - 1;
+    const widgetType = metadata.widgetType;
 
-    if (lineIndex < 0 || lineIndex >= this.lines.length) {
-      console.warn('[Editor] Invalid line index for widget ID update');
+    // Search for the widget on the exact line, or nearby lines (±2)
+    // Build pattern to match the widget call: a.button( or button( or label(
+    const widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(`);
+
+    let targetLineIndex = -1;
+    for (let offset = 0; offset <= 2; offset++) {
+      const checkIndex = lineIndex + offset;
+      if (checkIndex >= 0 && checkIndex < this.lines.length && widgetPattern.test(this.lines[checkIndex])) {
+        targetLineIndex = checkIndex;
+        break;
+      }
+      const checkIndexBefore = lineIndex - offset;
+      if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < this.lines.length && widgetPattern.test(this.lines[checkIndexBefore])) {
+        targetLineIndex = checkIndexBefore;
+        break;
+      }
+    }
+
+    if (targetLineIndex === -1) {
+      console.warn(`[Editor] Could not find widget type '${widgetType}' near line ${lineIndex + 1}`);
       return false;
     }
 
     // Find the full statement (may span multiple lines)
-    let statementLines = [lineIndex];
-    let fullStatement = this.lines[lineIndex];
+    let statementLines = [targetLineIndex];
+    let fullStatement = this.lines[targetLineIndex];
 
     // Look ahead for continuation lines (until we find semicolon or closing paren + semicolon)
-    for (let i = lineIndex + 1; i < Math.min(lineIndex + 10, this.lines.length); i++) {
+    for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
       statementLines.push(i);
       fullStatement += '\n' + this.lines[i];
       if (this.lines[i].includes(';')) {
@@ -746,7 +765,7 @@ class SourceCodeEditor {
       }
     }
 
-    const firstLine = this.lines[lineIndex];
+    const firstLine = this.lines[targetLineIndex];
     const indent = firstLine.substring(0, firstLine.length - firstLine.trimStart().length);
 
     // Case 1: Update existing .withId('oldId') to .withId('newId')
@@ -755,17 +774,47 @@ class SourceCodeEditor {
       if (withIdPattern.test(fullStatement)) {
         const updatedStatement = fullStatement.replace(withIdPattern, `.withId('${newWidgetId}')`);
         this.replaceLines(statementLines, updatedStatement);
-        console.log(`[Editor] Line ${lineIndex + 1}: Updated .withId('${oldWidgetId}') → .withId('${newWidgetId}')`);
+        console.log(`[Editor] Line ${targetLineIndex + 1}: Updated .withId('${oldWidgetId}') → .withId('${newWidgetId}')`);
         return true;
       }
     }
 
     // Case 2: Add .withId('newId') (no old ID, has new ID)
     if (!oldWidgetId && newWidgetId) {
-      // Add .withId before the semicolon
-      const updatedStatement = fullStatement.replace(/;/, `.withId('${newWidgetId}');`);
+      // Check if this is a container widget based on the widget type
+      const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
+      const isContainer = containerTypes.includes(widgetType);
+
+      let updatedStatement: string;
+      if (isContainer) {
+        // For container widgets, replace the closing }); with }).withId('id');
+        // Find the LAST occurrence of });
+        const lastClosingIndex = fullStatement.lastIndexOf('});');
+        if (lastClosingIndex !== -1) {
+          updatedStatement =
+            fullStatement.substring(0, lastClosingIndex) +
+            `}).withId('${newWidgetId}');` +
+            fullStatement.substring(lastClosingIndex + 3);
+        } else {
+          console.warn(`[Editor] Could not find closing }); for container ${widgetType}`);
+          return false;
+        }
+      } else {
+        // For simple widgets, add .withId before the last semicolon
+        const lastSemicolonIndex = fullStatement.lastIndexOf(';');
+        if (lastSemicolonIndex !== -1) {
+          updatedStatement =
+            fullStatement.substring(0, lastSemicolonIndex) +
+            `.withId('${newWidgetId}');` +
+            fullStatement.substring(lastSemicolonIndex + 1);
+        } else {
+          console.warn(`[Editor] Could not find semicolon for ${widgetType}`);
+          return false;
+        }
+      }
+
       this.replaceLines(statementLines, updatedStatement);
-      console.log(`[Editor] Line ${lineIndex + 1}: Added .withId('${newWidgetId}')`);
+      console.log(`[Editor] Line ${targetLineIndex + 1}: Added .withId('${newWidgetId}') to ${widgetType}`);
       return true;
     }
 
@@ -774,11 +823,11 @@ class SourceCodeEditor {
       const withIdPattern = new RegExp(`\\.withId\\s*\\(\\s*['"]${oldWidgetId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*\\)`, 'g');
       const updatedStatement = fullStatement.replace(withIdPattern, '');
       this.replaceLines(statementLines, updatedStatement);
-      console.log(`[Editor] Line ${lineIndex + 1}: Removed .withId('${oldWidgetId}')`);
+      console.log(`[Editor] Line ${targetLineIndex + 1}: Removed .withId('${oldWidgetId}')`);
       return true;
     }
 
-    console.warn(`[Editor] Could not apply widget ID update for line ${lineIndex + 1}`);
+    console.warn(`[Editor] Could not apply widget ID update for line ${targetLineIndex + 1}`);
     return false;
   }
 
