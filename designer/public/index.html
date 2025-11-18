@@ -76,6 +76,25 @@
       color: #fff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree-header-copy {
+      background: none;
+      border: none;
+      color: #858585;
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .tree-header-copy:hover {
+      color: #0e639c;
     }
 
     .tree-item {
@@ -109,10 +128,66 @@
       font-weight: 500;
     }
 
+    .tree-item .widget-id {
+      color: #dcdcaa;
+      font-weight: 600;
+    }
+
+    .tree-item .widget-type-parens {
+      color: #858585;
+      font-weight: 400;
+      font-size: 12px;
+    }
+
     .tree-item .widget-props {
       color: #858585;
       font-size: 11px;
       margin-left: 4px;
+    }
+
+    .tree-item.dragging {
+      opacity: 0.5;
+      cursor: move;
+    }
+
+    .drop-indicator {
+      height: 3px;
+      background: #f44336;
+      margin: 2px 0;
+      border-radius: 2px;
+      position: relative;
+      animation: pulse 0.5s ease-in-out infinite alternate;
+    }
+
+    .drop-indicator::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: -3px;
+      width: 9px;
+      height: 9px;
+      background: #f44336;
+      border-radius: 50%;
+    }
+
+    .drop-indicator::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: -3px;
+      width: 9px;
+      height: 9px;
+      background: #f44336;
+      border-radius: 50%;
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: 0.7;
+      }
+      to {
+        opacity: 1;
+      }
     }
 
     .tree-children {
@@ -124,6 +199,8 @@
       border-right: 1px solid #3e3e3e;
       padding: 20px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
     .preview-panel h2 {
@@ -133,6 +210,47 @@
       color: #fff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+
+    .preview-tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #3e3e3e;
+    }
+
+    .preview-tab {
+      background: #2d2d2d;
+      color: #858585;
+      border: none;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 12px;
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .preview-tab:hover {
+      background: #3c3c3c;
+      color: #d4d4d4;
+    }
+
+    .preview-tab.active {
+      background: #1e1e1e;
+      color: #fff;
+      border-bottom-color: #0e639c;
+    }
+
+    .preview-tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .preview-tab-content.active {
+      display: block;
     }
 
     .preview-content {
@@ -168,6 +286,49 @@
       border-radius: 3px;
       font-size: 13px;
       cursor: pointer;
+    }
+
+    .source-view {
+      background: #1e1e1e;
+      border: 1px solid #3e3e3e;
+      border-radius: 5px;
+      padding: 15px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      color: #d4d4d4;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .diff-view {
+      background: #1e1e1e;
+      border: 1px solid #3e3e3e;
+      border-radius: 5px;
+      padding: 15px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .diff-line {
+      display: block;
+    }
+
+    .diff-line.added {
+      background: rgba(46, 160, 67, 0.2);
+      color: #4ec9b0;
+    }
+
+    .diff-line.removed {
+      background: rgba(248, 81, 73, 0.2);
+      color: #f48771;
+    }
+
+    .diff-line.context {
+      color: #858585;
     }
 
     .property-inspector {
@@ -575,14 +736,31 @@
     </div>
 
     <div class="widget-tree">
-      <h2>Widget Tree</h2>
+      <h2>Widget Tree <button class="tree-header-copy" onclick="copyTreeToClipboard()" title="Copy tree to clipboard">📋</button></h2>
       <div id="treeRoot"></div>
     </div>
 
     <div class="preview-panel">
       <h2>Preview</h2>
-      <div class="preview-content" id="previewContent">
-        <div class="no-selection">Load a file to see preview</div>
+      <div class="preview-tabs">
+        <button class="preview-tab active" onclick="switchPreviewTab('preview')">Preview</button>
+        <button class="preview-tab" onclick="switchPreviewTab('source')">Source</button>
+        <button class="preview-tab" onclick="switchPreviewTab('original')">Original Source</button>
+        <button class="preview-tab" onclick="switchPreviewTab('diff')">Source Diffs</button>
+      </div>
+      <div id="previewTabPreview" class="preview-tab-content active">
+        <div class="preview-content" id="previewContent">
+          <div class="no-selection">Load a file to see preview</div>
+        </div>
+      </div>
+      <div id="previewTabSource" class="preview-tab-content">
+        <div class="source-view" id="sourceContent">No source available</div>
+      </div>
+      <div id="previewTabOriginal" class="preview-tab-content">
+        <div class="source-view" id="originalSourceContent">No original source available</div>
+      </div>
+      <div id="previewTabDiff" class="preview-tab-content">
+        <div class="diff-view" id="diffContent">No changes to display</div>
       </div>
     </div>
 

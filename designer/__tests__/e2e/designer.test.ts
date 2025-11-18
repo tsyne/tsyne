@@ -68,6 +68,9 @@ describe('Tsyne Designer E2E', () => {
       expect(response.metadata.widgets).toBeDefined();
       expect(response.metadata.widgets.length).toBeGreaterThan(0);
       expect(response.filePath).toBe('examples/hello.ts');
+      expect(response.originalSource).toBeDefined();
+      expect(typeof response.originalSource).toBe('string');
+      expect(response.originalSource.length).toBeGreaterThan(0);
     }, 10000);
 
     test('should capture widget hierarchy correctly', async () => {
@@ -117,7 +120,7 @@ describe('Tsyne Designer E2E', () => {
       expect(newWidget.parent).toBe(vboxWidget.id);
     }, 10000);
 
-    test('should update widget property', async () => {
+    test('should update widget property and reflect in save', async () => {
       // Load file
       const loadResponse = await apiRequest('/api/load', 'POST', {
         filePath: 'examples/hello.ts'
@@ -133,6 +136,13 @@ describe('Tsyne Designer E2E', () => {
       });
 
       expect(updateResponse.success).toBe(true);
+
+      // Save to get the transformed source
+      const saveResponse = await apiRequest('/api/save', 'POST', { writer: 'memory' });
+      expect(saveResponse.success).toBe(true);
+      expect(saveResponse.content).toBeDefined();
+      expect(typeof saveResponse.content).toBe('string');
+      expect(saveResponse.content).toContain('Updated Text');
     }, 10000);
 
     test('should delete widget', async () => {

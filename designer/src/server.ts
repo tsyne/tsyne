@@ -1160,6 +1160,107 @@ class SourceCodeEditor {
     return this.findAndReplace(String(oldValueStr), String(newValueStr));
   }
 
+  reorderWidget(draggedWidget: any, targetWidget: any): boolean {
+    // Find the line ranges for both widgets
+    const draggedLineStart = this.findWidgetLine(draggedWidget);
+    const targetLineStart = this.findWidgetLine(targetWidget);
+
+    if (draggedLineStart === -1 || targetLineStart === -1) {
+      console.warn('[Editor] Could not find widget lines for reordering');
+      return false;
+    }
+
+    // Extract the full widget statement (may span multiple lines)
+    const draggedLines = this.extractWidgetLines(draggedWidget, draggedLineStart);
+    const targetLines = this.extractWidgetLines(targetWidget, targetLineStart);
+
+    if (!draggedLines || !targetLines) {
+      console.warn('[Editor] Could not extract widget statements for reordering');
+      return false;
+    }
+
+    console.log(`[Editor] Reordering ${draggedWidget.widgetType} (lines ${draggedLines.start + 1}-${draggedLines.end + 1}) to position BEFORE ${targetWidget.widgetType} (lines ${targetLines.start + 1}-${targetLines.end + 1})`);
+
+    // Extract the dragged widget code
+    const draggedCode = this.lines.slice(draggedLines.start, draggedLines.end + 1);
+
+    // Remove dragged widget from its current position
+    this.lines.splice(draggedLines.start, draggedLines.end - draggedLines.start + 1);
+
+    // Recalculate target position after removal (if dragged was before target)
+    let newTargetPosition: number;
+    if (draggedLines.start < targetLines.start) {
+      // Dragged was before target, so target position shifts up
+      const linesRemoved = draggedLines.end - draggedLines.start + 1;
+      newTargetPosition = targetLines.start - linesRemoved;
+    } else {
+      // Dragged was after target, position stays the same
+      newTargetPosition = targetLines.start;
+    }
+
+    // Insert dragged widget before target
+    this.lines.splice(newTargetPosition, 0, ...draggedCode);
+
+    console.log(`[Editor] Successfully reordered widgets - inserted at line ${newTargetPosition + 1}`);
+    return true;
+  }
+
+  private findWidgetLine(widget: any): number {
+    let lineIndex = widget.sourceLocation.line - 1;
+    const widgetType = widget.widgetType;
+    const widgetPattern = new RegExp(`(a\\.)?${widgetType}\\(`);
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue;
+        const checkIndex = lineIndex + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (widgetPattern.test(line)) {
+            // For widgets with text property, verify it matches
+            if (widget.properties && widget.properties.text) {
+              const textPattern = new RegExp(`${widgetType}\\(['"](${widget.properties.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+              if (textPattern.test(line)) {
+                return checkIndex;
+              }
+            } else {
+              return checkIndex;
+            }
+          }
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  private extractWidgetLines(widget: any, startLine: number): { start: number; end: number } | null {
+    // Check if this is a multi-line widget
+    const firstLine = this.lines[startLine];
+    let endLine = startLine;
+
+    // If the line contains an opening brace but no closing brace/semicolon, it's multi-line
+    if (firstLine.includes('{') && !firstLine.includes('});')) {
+      let braceCount = (firstLine.match(/{/g) || []).length - (firstLine.match(/}/g) || []).length;
+
+      // Continue until we find the closing braces
+      for (let i = startLine + 1; i < this.lines.length && braceCount > 0; i++) {
+        const line = this.lines[i];
+        braceCount += (line.match(/{/g) || []).length;
+        braceCount -= (line.match(/}/g) || []).length;
+        endLine = i;
+
+        // Stop if we've closed all braces and found the semicolon
+        if (braceCount === 0 && line.includes(');')) {
+          break;
+        }
+      }
+    }
+
+    return { start: startLine, end: endLine };
+  }
+
   transformLayout(metadata: any, newLayout: string): boolean {
     const lineIndex = metadata.sourceLocation.line - 1;
     const oldType = metadata.widgetType;
@@ -1236,7 +1337,8 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           success: true,
           metadata,
           styles: currentStyles,
-          filePath: currentFilePath
+          filePath: currentFilePath,
+          originalSource: currentSourceCode
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -1259,7 +1361,8 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           success: true,
           metadata,
           styles: currentStyles,
-          filePath: currentFilePath
+          filePath: currentFilePath,
+          originalSource: currentSourceCode
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -1297,8 +1400,23 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         widget.properties[propertyName] = newValue;
         currentMetadata!.widgets = Array.from(metadataStore.values());
 
+        // Generate current source by applying all pending edits
+        const editor = new SourceCodeEditor(currentSourceCode!);
+        const propertyEdits = pendingEdits.filter(e => !e.type);
+        for (const edit of propertyEdits) {
+          const w = metadataStore.get(edit.widgetId);
+          if (w) {
+            editor.updateWidgetProperty(w, edit.propertyName, edit.oldValue, edit.newValue);
+          }
+        }
+        const updatedSource = editor.getSourceCode();
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, metadata: currentMetadata }));
+        res.end(JSON.stringify({
+          success: true,
+          metadata: currentMetadata,
+          currentSource: updatedSource
+        }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -1669,6 +1787,99 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
+  '/api/reorder-widget': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { draggedWidgetId, targetWidgetId } = JSON.parse(body);
+
+        const draggedWidget = metadataStore.get(draggedWidgetId);
+        const targetWidget = metadataStore.get(targetWidgetId);
+
+        if (!draggedWidget || !targetWidget) {
+          throw new Error('Widget not found');
+        }
+
+        // Only allow reordering widgets that share the same parent
+        if (draggedWidget.parent !== targetWidget.parent) {
+          throw new Error('Can only reorder widgets within the same parent container');
+        }
+
+        console.log(`[Editor] Reordering ${draggedWidget.widgetType} relative to ${targetWidget.widgetType}`);
+
+        // Get all siblings to understand the current order
+        const siblings = Array.from(metadataStore.values()).filter(w => w.parent === draggedWidget.parent);
+        console.log('[REORDER] Siblings before reorder:');
+        siblings.forEach((s, i) => {
+          console.log(`[REORDER]   ${i}: ${s.id} - ${s.widgetType} "${s.properties?.text || ''}"`);
+        });
+
+        const draggedIndex = siblings.findIndex(w => w.id === draggedWidgetId);
+        const targetIndex = siblings.findIndex(w => w.id === targetWidgetId);
+        console.log(`[REORDER] draggedIndex=${draggedIndex}, targetIndex=${targetIndex}`);
+        console.log(`[REORDER] Want to insert BEFORE target (position ${targetIndex})`);
+
+        // Record as a pending edit
+        pendingEdits.push({
+          type: 'reorder',
+          draggedWidget,
+          targetWidget
+        });
+
+        // Update metadata order (just swap positions in the array for preview)
+        const widgets = Array.from(metadataStore.values());
+        const draggedIndexGlobal = widgets.findIndex(w => w.id === draggedWidgetId);
+        const targetIndexGlobal = widgets.findIndex(w => w.id === targetWidgetId);
+
+        if (draggedIndexGlobal !== -1 && targetIndexGlobal !== -1) {
+          // Remove dragged widget
+          const [removed] = widgets.splice(draggedIndexGlobal, 1);
+
+          // Calculate new insertion position
+          // We want to insert BEFORE the target, accounting for the removal
+          let newTargetIndex;
+          if (draggedIndexGlobal < targetIndexGlobal) {
+            // Dragging down: target shifts up by 1 after removal, so insert at targetIndex-1
+            newTargetIndex = targetIndexGlobal - 1;
+          } else {
+            // Dragging up: target position unchanged, insert at targetIndex
+            newTargetIndex = targetIndexGlobal;
+          }
+
+          console.log(`[REORDER] Inserting at metadata index ${newTargetIndex}`);
+          widgets.splice(newTargetIndex, 0, removed);
+        }
+
+        // Update metadata store to reflect new order
+        currentMetadata!.widgets = widgets;
+
+        // Generate current source by applying only the LATEST reorder edit
+        // (not all accumulated edits - that causes cascading reorders)
+        const editor = new SourceCodeEditor(currentSourceCode!);
+
+        // Apply only the current/latest reorder (the one we just added)
+        const latestReorderEdit = pendingEdits[pendingEdits.length - 1];
+        if (latestReorderEdit && latestReorderEdit.type === 'reorder') {
+          editor.reorderWidget(latestReorderEdit.draggedWidget, latestReorderEdit.targetWidget);
+        }
+
+        const updatedSource = editor.getSourceCode();
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          metadata: currentMetadata,
+          currentSource: updatedSource
+        }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });

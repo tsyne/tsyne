@@ -4,6 +4,8 @@ let metadata = null;
 let selectedWidgetId = null;
 let currentFilePath = null;
 let currentStyles = null;
+let currentSource = null;
+let originalSource = null;
 
 // Context menu state
 let contextMenuTarget = null;
@@ -257,6 +259,10 @@ async function loadFile(filePath = 'examples/hello.ts') {
     currentFilePath = data.filePath;
     currentStyles = data.styles;
 
+    // Store original source
+    originalSource = data.originalSource || null;
+    currentSource = data.originalSource || null;
+
     document.getElementById('filePath').textContent = currentFilePath;
 
     // Show CSS Editor button if styles exist
@@ -277,6 +283,209 @@ async function loadFile(filePath = 'examples/hello.ts') {
     console.error('Error loading file:', error);
     alert('Error loading file: ' + error.message);
   }
+}
+
+// Switch preview tab
+function switchPreviewTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.preview-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Update tab content
+  document.querySelectorAll('.preview-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+
+  const contentId = 'previewTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+  const contentElement = document.getElementById(contentId);
+  if (contentElement) {
+    contentElement.classList.add('active');
+  }
+
+  // Render content for the selected tab
+  if (tabName === 'source') {
+    renderSourceTab();
+  } else if (tabName === 'original') {
+    renderOriginalSourceTab();
+  } else if (tabName === 'diff') {
+    renderDiffTab();
+  }
+}
+
+// Render source tab
+function renderSourceTab() {
+  const sourceContent = document.getElementById('sourceContent');
+  if (currentSource) {
+    sourceContent.textContent = currentSource;
+  } else {
+    sourceContent.textContent = 'No source available';
+  }
+}
+
+// Render original source tab
+function renderOriginalSourceTab() {
+  const originalSourceContent = document.getElementById('originalSourceContent');
+  if (originalSource) {
+    originalSourceContent.textContent = originalSource;
+  } else {
+    originalSourceContent.textContent = 'No original source available';
+  }
+}
+
+// Render diff tab
+function renderDiffTab() {
+  const diffContent = document.getElementById('diffContent');
+
+  if (!originalSource || !currentSource) {
+    diffContent.textContent = 'No changes to display';
+    return;
+  }
+
+  if (originalSource === currentSource) {
+    diffContent.textContent = 'No changes - source matches original';
+    return;
+  }
+
+  // Simple line-by-line diff
+  const originalLines = originalSource.split('\n');
+  const currentLines = currentSource.split('\n');
+
+  let diffHtml = '';
+  const maxLines = Math.max(originalLines.length, currentLines.length);
+
+  for (let i = 0; i < maxLines; i++) {
+    const origLine = originalLines[i];
+    const currLine = currentLines[i];
+
+    if (origLine === currLine) {
+      // Context line (unchanged)
+      if (currLine !== undefined) {
+        diffHtml += `<span class="diff-line context">  ${escapeHtml(currLine)}</span>\n`;
+      }
+    } else {
+      // Show removed line
+      if (origLine !== undefined) {
+        diffHtml += `<span class="diff-line removed">- ${escapeHtml(origLine)}</span>\n`;
+      }
+      // Show added line
+      if (currLine !== undefined) {
+        diffHtml += `<span class="diff-line added">+ ${escapeHtml(currLine)}</span>\n`;
+      }
+    }
+  }
+
+  diffContent.innerHTML = diffHtml || 'No changes to display';
+}
+
+// Copy widget tree to clipboard as outlined text
+function copyTreeToClipboard() {
+  if (!metadata || !metadata.widgets) {
+    alert('No widget tree to copy');
+    return;
+  }
+
+  const rootWidgets = metadata.widgets.filter(w => !w.parent);
+  let treeText = '';
+
+  function widgetToText(widget, indent = '') {
+    const hasId = widget.widgetId && widget.widgetId.trim() !== '';
+    const displayName = hasId ? `${widget.widgetId} (${widget.widgetType})` : widget.widgetType;
+    const propsText = getPropsPreview(widget.properties);
+
+    treeText += indent + displayName;
+    if (propsText) {
+      treeText += ' ' + propsText;
+    }
+    treeText += '\n';
+
+    const children = metadata.widgets.filter(w => w.parent === widget.id);
+    children.forEach((child, index) => {
+      const isLast = index === children.length - 1;
+      const childIndent = indent + (isLast ? '└─ ' : '├─ ');
+      const continuationIndent = indent + (isLast ? '   ' : '│  ');
+
+      widgetToText(child, childIndent);
+
+      // Update indent for next iteration
+      if (index < children.length - 1) {
+        const nextChildren = metadata.widgets.filter(w => w.parent === child.id);
+        if (nextChildren.length > 0) {
+          // This child has children, so we need proper indentation
+          treeText = treeText.trimEnd() + '\n';
+        }
+      }
+    });
+  }
+
+  rootWidgets.forEach(widget => {
+    widgetToText(widget);
+    treeText += '\n';
+  });
+
+  navigator.clipboard.writeText(treeText.trim()).then(() => {
+    // Visual feedback
+    const btn = document.querySelector('.tree-header-copy');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '✓';
+    btn.style.color = '#0e639c';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.color = '';
+    }, 1500);
+  }).catch(err => {
+    alert('Failed to copy to clipboard: ' + err.message);
+  });
+}
+
+// Show drop indicator before a tree item
+function showDropIndicator(beforeElement) {
+  // Remove any existing indicator
+  removeDropIndicator();
+
+  // Create new indicator
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+
+  // Find the correct insertion point:
+  // If the element's parent has the tree-item class, this element is wrapped
+  // We need to insert before the wrapper, not before the tree-item itself
+  let insertionPoint = beforeElement;
+
+  // Get the widget ID from the tree item
+  const widgetId = beforeElement.dataset.widgetId;
+  const widget = metadata.widgets.find(w => w.id === widgetId);
+
+  console.log('[DROP INDICATOR] Showing for widget:', widgetId, widget?.widgetType, widget?.properties?.text);
+  console.log('[DROP INDICATOR] beforeElement:', beforeElement);
+  console.log('[DROP INDICATOR] beforeElement.parentNode:', beforeElement.parentNode);
+  console.log('[DROP INDICATOR] Has .tree-children sibling?', beforeElement.parentNode.querySelector('.tree-children') !== null);
+
+  // Check if the parent node is a wrapper (contains both tree-item and tree-children)
+  if (beforeElement.parentNode && beforeElement.parentNode.querySelector &&
+      beforeElement.parentNode.querySelector('.tree-item') === beforeElement &&
+      beforeElement.parentNode.querySelector('.tree-children')) {
+    // This is a wrapped tree item (has children), insert before the wrapper
+    console.log('[DROP INDICATOR] Wrapped item detected, inserting before wrapper');
+    insertionPoint = beforeElement.parentNode;
+  } else {
+    console.log('[DROP INDICATOR] Not wrapped, inserting before tree-item directly');
+  }
+
+  console.log('[DROP INDICATOR] Final insertionPoint:', insertionPoint);
+  console.log('[DROP INDICATOR] Will insert before:', insertionPoint);
+
+  // Insert before the insertion point
+  insertionPoint.parentNode.insertBefore(indicator, insertionPoint);
+
+  console.log('[DROP INDICATOR] Indicator inserted');
+}
+
+// Remove drop indicator
+function removeDropIndicator() {
+  const existing = document.querySelectorAll('.drop-indicator');
+  existing.forEach(el => el.remove());
 }
 
 // Render widget tree
@@ -306,15 +515,117 @@ function createTreeItem(widget) {
     item.classList.add('selected');
   }
 
+  // Make item draggable (but not window widgets)
+  if (widget.widgetType !== 'window') {
+    item.draggable = true;
+    item.dataset.widgetId = widget.id;
+
+    // Drag start
+    item.ondragstart = (e) => {
+      e.stopPropagation();
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', widget.id);
+      item.classList.add('dragging');
+    };
+
+    // Drag end
+    item.ondragend = (e) => {
+      e.stopPropagation();
+      item.classList.remove('dragging');
+      // Remove all drop indicators
+      removeDropIndicator();
+    };
+
+    // Drag over - show drop indicator
+    item.ondragover = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+
+      const draggingId = e.dataTransfer.getData('text/plain');
+      if (draggingId !== widget.id) {
+        // Show drop indicator after this item
+        showDropIndicator(item);
+      }
+    };
+
+    // Drag leave
+    item.ondragleave = (e) => {
+      e.stopPropagation();
+      // Check if we're leaving to a child or to outside
+      if (!e.relatedTarget || !item.contains(e.relatedTarget)) {
+        // Only remove if we're truly leaving this item
+        const indicator = document.querySelector('.drop-indicator');
+        if (indicator && indicator.previousElementSibling === item) {
+          removeDropIndicator();
+        }
+      }
+    };
+
+    // Drop
+    item.ondrop = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      removeDropIndicator();
+
+      const draggedId = e.dataTransfer.getData('text/plain');
+      const targetId = widget.id;
+
+      console.log('[DROP] ========== DROP EVENT ==========');
+      console.log('[DROP] draggedId:', draggedId, 'targetId:', targetId);
+
+      if (draggedId !== targetId) {
+        // Find the dragged and target widgets in metadata to determine drag direction
+        const draggedWidget = metadata.widgets.find(w => w.id === draggedId);
+        const targetWidget = metadata.widgets.find(w => w.id === targetId);
+
+        console.log('[DROP] Dragged widget:', draggedWidget?.widgetType, draggedWidget?.properties?.text);
+        console.log('[DROP] Target widget:', targetWidget?.widgetType, targetWidget?.properties?.text);
+
+        // Check if they're siblings (have the same parent)
+        if (draggedWidget && targetWidget && draggedWidget.parent === targetWidget.parent) {
+          // Get all siblings
+          const siblings = metadata.widgets.filter(w => w.parent === draggedWidget.parent);
+
+          console.log('[DROP] All siblings in order:');
+          siblings.forEach((s, i) => {
+            console.log(`[DROP]   ${i}: ${s.id} - ${s.widgetType} "${s.properties?.text || ''}"`);
+          });
+
+          const draggedIndex = siblings.findIndex(w => w.id === draggedId);
+          const targetIndex = siblings.findIndex(w => w.id === targetId);
+
+          console.log('[DROP] Dragged index:', draggedIndex, 'Target index:', targetIndex);
+          console.log('[DROP] Direction:', draggedIndex > targetIndex ? 'UP' : 'DOWN');
+
+          // Always insert after the target (where the visual indicator shows)
+          console.log('[DROP] Inserting after target widget');
+          await reorderWidget(draggedId, targetId);
+        } else {
+          // Different parents or not found - use normal reorder
+          console.log('[DROP] Different parents or widgets not found - using normal reorder');
+          await reorderWidget(draggedId, targetId);
+        }
+      }
+      console.log('[DROP] ========== END DROP EVENT ==========');
+    };
+  }
+
   // Icon based on widget type
   const icon = getWidgetIcon(widget.widgetType);
 
   // Properties preview
   const propsText = getPropsPreview(widget.properties);
 
+  // Format display: if widget has ID, show "ID (type)", else show "type"
+  const hasId = widget.widgetId && widget.widgetId.trim() !== '';
+  const displayText = hasId
+    ? `<span class="widget-id">${widget.widgetId}</span> <span class="widget-type-parens">(${widget.widgetType})</span>`
+    : `<span class="widget-type">${widget.widgetType}</span>`;
+
   item.innerHTML = `
     <span class="icon">${icon}</span>
-    <span class="widget-type">${widget.widgetType}</span>
+    ${displayText}
     ${propsText ? `<span class="widget-props">${propsText}</span>` : ''}
   `;
 
@@ -731,6 +1042,10 @@ async function saveChanges() {
     const result = await response.json();
 
     if (result.success) {
+      // Update current source with the saved (transformed) source
+      if (result.content) {
+        currentSource = result.content;
+      }
       alert('Changes saved successfully to: ' + result.outputPath);
     } else {
       alert('Error saving: ' + result.error);
@@ -812,10 +1127,39 @@ function createPreviewWidget(widget) {
     element.classList.add(widget.properties.className);
   }
 
+  // Build tooltip text
+  let tooltipParts = [];
+  tooltipParts.push(`Type: ${widget.widgetType}`);
+  if (widget.widgetId) {
+    tooltipParts.push(`ID: ${widget.widgetId}`);
+  }
+  if (widget.properties && Object.keys(widget.properties).length > 0) {
+    const propsList = Object.entries(widget.properties)
+      .filter(([key, val]) => val !== undefined && val !== null && val !== '')
+      .map(([key, val]) => {
+        const valStr = typeof val === 'string' && val.length > 30
+          ? val.substring(0, 30) + '...'
+          : String(val);
+        return `${key}: ${valStr}`;
+      })
+      .slice(0, 3); // Show max 3 properties in tooltip
+    if (propsList.length > 0) {
+      tooltipParts.push('---');
+      tooltipParts.push(...propsList);
+    }
+  }
+  element.title = tooltipParts.join('\n');
+
   // Add click handler to select widget
   element.addEventListener('click', (e) => {
     e.stopPropagation();
     selectWidget(widget.id);
+  });
+
+  // Add right-click context menu to preview (same as tree)
+  element.addEventListener('contextmenu', (e) => {
+    e.stopPropagation();
+    showContextMenu(e, widget);
   });
 
   // Add visual highlight if selected
@@ -1203,6 +1547,49 @@ async function deleteWidget(widgetId) {
   } catch (error) {
     console.error('Error deleting widget:', error);
     alert('Error deleting widget: ' + error.message);
+  }
+}
+
+// Reorder widget (drag and drop)
+async function reorderWidget(draggedWidgetId, targetWidgetId) {
+  const draggedWidget = metadata.widgets.find(w => w.id === draggedWidgetId);
+  const targetWidget = metadata.widgets.find(w => w.id === targetWidgetId);
+
+  console.log('[REORDER] Dragged widget:', draggedWidgetId, draggedWidget?.widgetType, draggedWidget?.properties?.text);
+  console.log('[REORDER] Target widget:', targetWidgetId, targetWidget?.widgetType, targetWidget?.properties?.text);
+
+  try {
+    const response = await fetch('/api/reorder-widget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        draggedWidgetId,
+        targetWidgetId
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Update local metadata
+      if (result.metadata) {
+        metadata = result.metadata;
+      }
+
+      // Update current source if provided
+      if (result.currentSource) {
+        currentSource = result.currentSource;
+      }
+
+      renderWidgetTree();
+      renderPreview();
+      console.log('[REORDER] Widget reordered successfully');
+    } else {
+      alert('Error reordering widget: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error reordering widget:', error);
+    alert('Error reordering widget: ' + error.message);
   }
 }
 
