@@ -526,7 +526,13 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
     delete require.cache[require.resolve(tempPath)];
 
     // Execute by requiring the file - this gives us proper stack traces with line numbers!
-    require(tempPath);
+    // Catch errors but still return captured metadata (e.g., for code with undefined dependencies)
+    try {
+      require(tempPath);
+    } catch (error: any) {
+      console.warn(`[Designer] Code execution error (metadata still captured): ${error.message}`);
+      // Continue to return metadata that was captured before the error
+    }
 
     delete (global as any).designer;
 
@@ -589,8 +595,9 @@ class SourceCodeEditor {
     let parentLine = parentMetadata.sourceLocation.line - 1;
 
     // Find the actual parent line (sourceLocation might be slightly off due to transpilation)
+    // Match both "a.vbox(" and "vbox(" (for different import styles)
     const parentType = parentMetadata.widgetType;
-    const parentPattern = new RegExp(`a\\.${parentType}\\(`);
+    const parentPattern = new RegExp(`(a\\.)?${parentType}\\(`);
     let actualParentLine = -1;
 
     // Search within a range of ±3 lines
@@ -673,8 +680,9 @@ class SourceCodeEditor {
 
     // Find the actual widget line (sourceLocation might be slightly off due to transpilation)
     // Search nearby lines for the widget call pattern
+    // Match both "a.button(" and "button(" (for different import styles)
     const widgetType = metadata.widgetType;
-    const widgetPattern = new RegExp(`a\\.${widgetType}\\(`);
+    const widgetPattern = new RegExp(`(a\\.)?${widgetType}\\(`);
     let actualLineIndex = -1;
 
     // Search within a range of ±3 lines
@@ -1092,6 +1100,66 @@ class SourceCodeEditor {
     return true;
   }
 
+  updateWidgetProperty(metadata: any, propertyName: string, oldValue: any, newValue: any): boolean {
+    let lineIndex = metadata.sourceLocation.line - 1;
+    const widgetType = metadata.widgetType;
+
+    // Find the actual widget line using fuzzy search
+    // Match both "a.button(" and "button(" (for different import styles)
+    const widgetPattern = new RegExp(`(a\\.)?${widgetType}\\(`);
+    let actualLineIndex = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue;
+        const checkIndex = lineIndex + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (widgetPattern.test(line)) {
+            actualLineIndex = checkIndex;
+            break;
+          }
+        }
+      }
+      if (actualLineIndex !== -1) break;
+    }
+
+    if (actualLineIndex === -1) {
+      console.warn(`[Editor] Could not find ${widgetType} widget near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    lineIndex = actualLineIndex;
+
+    // For text property (and other string properties in the first argument position)
+    if (propertyName === 'text') {
+      const line = this.lines[lineIndex];
+
+      // Try to replace with both single and double quotes
+      const patterns = [
+        { old: `'${oldValue}'`, new: `'${newValue}'` },
+        { old: `"${oldValue}"`, new: `"${newValue}"` }
+      ];
+
+      for (const {old, new: newVal} of patterns) {
+        if (line.includes(old)) {
+          this.lines[lineIndex] = line.replace(old, newVal);
+          console.log(`[Editor] Updated ${widgetType}.${propertyName} on line ${lineIndex + 1}: "${oldValue}" → "${newValue}"`);
+          return true;
+        }
+      }
+
+      console.warn(`[Editor] Could not find property value "${oldValue}" on line ${lineIndex + 1}`);
+      return false;
+    }
+
+    // For other properties, use the generic find and replace
+    const oldValueStr = typeof oldValue === 'string' ? `"${oldValue}"` : oldValue;
+    const newValueStr = typeof newValue === 'string' ? `"${newValue}"` : newValue;
+    return this.findAndReplace(String(oldValueStr), String(newValueStr));
+  }
+
   transformLayout(metadata: any, newLayout: string): boolean {
     const lineIndex = metadata.sourceLocation.line - 1;
     const oldType = metadata.widgetType;
@@ -1328,10 +1396,10 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         }
 
         // Regular property updates
-        // Handle string vs numeric values
-        const oldValueStr = typeof edit.oldValue === 'string' ? `"${edit.oldValue}"` : edit.oldValue;
-        const newValueStr = typeof edit.newValue === 'string' ? `"${edit.newValue}"` : edit.newValue;
-        editor.findAndReplace(String(oldValueStr), String(newValueStr));
+        const widget = metadataStore.get(edit.widgetId);
+        if (widget) {
+          editor.updateWidgetProperty(widget, edit.propertyName, edit.oldValue, edit.newValue);
+        }
       }
 
       // Apply widget ID edits (sort descending by line number to avoid line shift issues)
