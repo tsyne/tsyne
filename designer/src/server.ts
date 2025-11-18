@@ -768,9 +768,10 @@ class SourceCodeEditor {
     let statementLines = [targetLineIndex];
     let fullStatement = this.lines[targetLineIndex];
 
-    // Check if this is a container widget (needs to include closing });)
+    // Check if this is a container widget OR a widget with event handlers (both need closing });)
     const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
-    const isContainer = containerTypes.includes(widgetType);
+    const hasEventHandlers = metadata.eventHandlers && Object.keys(metadata.eventHandlers).length > 0;
+    const isContainer = containerTypes.includes(widgetType) || hasEventHandlers;
 
     // Look ahead for continuation lines
     const startIndent = this.lines[targetLineIndex].search(/\S/);
