@@ -125,6 +125,30 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			ID:      msg.ID,
 			Success: true,
 		})
+	} else if container, ok := obj.(*fyne.Container); ok {
+		// Handle regular Fyne containers by finding and clicking tappable children
+		// This allows tests to click on container IDs and have clicks propagate to interactive content
+		tappable := b.findFirstTappableChild(container)
+		if tappable != nil {
+			if b.testMode {
+				test.Tap(tappable)
+			} else {
+				// Trigger tap on main thread
+				fyne.DoAndWait(func() {
+					tappable.Tapped(&fyne.PointEvent{})
+				})
+			}
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Container has no tappable children (id: %s)", widgetID),
+			})
+		}
 	} else {
 		// Get widget type for debugging
 		widgetType := fmt.Sprintf("%T", obj)
@@ -134,6 +158,26 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			Error:   fmt.Sprintf("Widget is not clickable (type: %s, id: %s)", widgetType, widgetID),
 		})
 	}
+}
+
+// findFirstTappableChild recursively searches a container for tappable children
+// Returns the first tappable object found (depth-first search)
+func (b *Bridge) findFirstTappableChild(obj fyne.CanvasObject) fyne.Tappable {
+	// Check if this object itself is tappable
+	if tappable, ok := obj.(fyne.Tappable); ok {
+		return tappable
+	}
+
+	// If it's a container, recursively search its children
+	if container, ok := obj.(*fyne.Container); ok {
+		for _, child := range container.Objects {
+			if found := b.findFirstTappableChild(child); found != nil {
+				return found
+			}
+		}
+	}
+
+	return nil
 }
 
 func (b *Bridge) handleClickToolbarAction(msg Message) {
