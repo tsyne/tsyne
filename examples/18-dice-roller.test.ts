@@ -43,10 +43,8 @@ describe('Dice Roller Example', () => {
             app.label('Number of Dice:');
             app.select(
               ['1', '2', '3', '4', '5', '6', '8', '10'],
-              1,
               (selected) => {
-                const nums = [1, 2, 3, 4, 5, 6, 8, 10];
-                numDice = nums[selected];
+                numDice = parseInt(selected, 10) || 1;
               }
             );
 
@@ -55,10 +53,18 @@ describe('Dice Roller Example', () => {
             app.label('Dice Type:');
             app.radiogroup(
               ['d4 (4-sided)', 'd6 (6-sided)', 'd8 (8-sided)', 'd10 (10-sided)', 'd12 (12-sided)', 'd20 (20-sided)', 'd100 (100-sided)'],
-              1,
+              'd6 (6-sided)',
               (selected) => {
-                const sides = [4, 6, 8, 10, 12, 20, 100];
-                numSides = sides[selected];
+                const sideMap: { [key: string]: number } = {
+                  'd4 (4-sided)': 4,
+                  'd6 (6-sided)': 6,
+                  'd8 (8-sided)': 8,
+                  'd10 (10-sided)': 10,
+                  'd12 (12-sided)': 12,
+                  'd20 (20-sided)': 20,
+                  'd100 (100-sided)': 100
+                };
+                numSides = sideMap[selected] || 6;
               }
             );
 

@@ -697,11 +697,30 @@ export class Expect {
   }
 
   async toBeVisible(): Promise<void> {
-    const widget = await this.locator.find();
-    expect(widget).toBeTruthy();
+    // Use findWithRetry to respect within() timeout
+    // If no explicit timeout set, use a sensible default of 2000ms
+    // (reduced from 5000ms to prevent Jest test timeouts when multiple assertions fail)
+    const locator = this.locator as any;
+    const hasTimeout = locator.withinTimeout !== undefined;
+
+    if (!hasTimeout) {
+      // Temporarily set default timeout for this assertion
+      locator.withinTimeout = 2000;
+    }
+
+    try {
+      const widget = await locator.findWithRetry();
+      expect(widget).toBeTruthy();
+    } finally {
+      // Clean up temporary timeout if we set it
+      if (!hasTimeout) {
+        locator.withinTimeout = undefined;
+      }
+    }
   }
 
   async toNotBeVisible(): Promise<void> {
+    // For "not visible", we want immediate check (no retry)
     const widget = await this.locator.find();
     expect(widget).toBeFalsy();
   }
@@ -761,6 +780,23 @@ export class TestContext {
    */
   getByType(type: 'button' | 'label' | 'entry' | 'image' | 'passwordentry' | 'entry'): Locator {
     return new Locator(this.bridge, type, 'type');
+  }
+
+  /**
+   * Get all widgets of a specific type
+   * Returns an array of Locators, one for each widget of the specified type
+   *
+   * @example
+   * const labels = await ctx.getAllByType('label');
+   * for (const label of labels) {
+   *   const text = await label.getText();
+   *   console.log(text);
+   * }
+   */
+  async getAllByType(type: 'button' | 'label' | 'entry' | 'image' | 'passwordentry' | 'entry'): Promise<Locator[]> {
+    const typeLocator = new Locator(this.bridge, type, 'type');
+    const widgetIds = await typeLocator.findAll();
+    return widgetIds.map(id => new Locator(this.bridge, id, 'id'));
   }
 
   /**

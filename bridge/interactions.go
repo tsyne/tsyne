@@ -125,6 +125,30 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			ID:      msg.ID,
 			Success: true,
 		})
+	} else if container, ok := obj.(*fyne.Container); ok {
+		// Handle regular Fyne containers by finding and clicking tappable children
+		// This allows tests to click on container IDs and have clicks propagate to interactive content
+		tappable := b.findFirstTappableChild(container)
+		if tappable != nil {
+			if b.testMode {
+				test.Tap(tappable)
+			} else {
+				// Trigger tap on main thread
+				fyne.DoAndWait(func() {
+					tappable.Tapped(&fyne.PointEvent{})
+				})
+			}
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: true,
+			})
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Container has no tappable children (id: %s)", widgetID),
+			})
+		}
 	} else {
 		// Get widget type for debugging
 		widgetType := fmt.Sprintf("%T", obj)
@@ -136,11 +160,53 @@ func (b *Bridge) handleClickWidget(msg Message) {
 	}
 }
 
+// findFirstTappableChild recursively searches a container for tappable children
+// Returns the first tappable object found (depth-first search)
+func (b *Bridge) findFirstTappableChild(obj fyne.CanvasObject) fyne.Tappable {
+	// Check if this object itself is tappable
+	if tappable, ok := obj.(fyne.Tappable); ok {
+		return tappable
+	}
+
+	// If it's a container, recursively search its children
+	if container, ok := obj.(*fyne.Container); ok {
+		for _, child := range container.Objects {
+			if found := b.findFirstTappableChild(child); found != nil {
+				return found
+			}
+		}
+	}
+
+	return nil
+}
+
 func (b *Bridge) handleClickToolbarAction(msg Message) {
 	customID := msg.Payload["customId"].(string)
 
 	b.mu.RLock()
 	action, exists := b.toolbarActions[customID]
+
+	// If not found by custom ID, search by label in toolbar items
+	if !exists {
+		for _, toolbarMeta := range b.toolbarItems {
+			for i, label := range toolbarMeta.Labels {
+				if label == customID {
+					// Found matching label, get the corresponding toolbar item
+					if i < len(toolbarMeta.Items) {
+						if toolbarAction, ok := toolbarMeta.Items[i].(*widget.ToolbarAction); ok {
+							action = toolbarAction
+							exists = true
+							break
+						}
+					}
+				}
+			}
+			if exists {
+				break
+			}
+		}
+	}
+
 	b.mu.RUnlock()
 
 	if !exists {
@@ -666,6 +732,8 @@ func (b *Bridge) handleFindWidget(msg Message) {
 			isMatch = meta.Type == selector
 		case "id":
 			isMatch = widgetID == resolvedSelector
+		case "placeholder":
+			isMatch = meta.Placeholder == selector
 		}
 
 		if isMatch {
@@ -679,15 +747,35 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		}
 	}
 
-	b.mu.RUnlock() // Release read lock before sending response!
-
-	// Additionally, check for toolbar actions if selecting by ID
+	// Additionally, check for toolbar actions when selecting by ID or text
+	// Keep read lock to access toolbar data
 	if selectorType == "id" {
 		if _, exists := b.toolbarActions[selector]; exists {
 			// Use a special prefix to identify toolbar actions, as they are not real widgets
 			visibleMatches = append(visibleMatches, fmt.Sprintf("toolbar_action:%s", selector))
 		}
+	} else if selectorType == "text" || selectorType == "exactText" {
+		// Search toolbar items by their label text
+		for _, toolbarMeta := range b.toolbarItems {
+			for _, label := range toolbarMeta.Labels {
+				if label == "" {
+					continue // Skip separators and spacers
+				}
+				var isMatch bool
+				if selectorType == "text" {
+					isMatch = strings.Contains(label, selector)
+				} else { // exactText
+					isMatch = label == selector
+				}
+				if isMatch {
+					// Return the label as a toolbar action identifier
+					visibleMatches = append(visibleMatches, fmt.Sprintf("toolbar_action:%s", label))
+				}
+			}
+		}
 	}
+
+	b.mu.RUnlock() // Release read lock before sending response!
 
 	// Prioritize visible widgets - return visible first, then hidden
 	matches := append(visibleMatches, hiddenMatches...)

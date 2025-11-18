@@ -94,7 +94,7 @@ describe('Rock Paper Scissors Example', () => {
 
         function play(playerChoice: string) {
           // Fixed computer choice for testing
-          const computerChoice = 'Scissors';
+          const computerChoice = 'Scissors' as 'Rock' | 'Paper' | 'Scissors';
 
           let result = '';
           let resultEmoji = '';
@@ -181,7 +181,7 @@ describe('Rock Paper Scissors Example', () => {
 
         function play(playerChoice: string) {
           // Fixed computer choice for testing
-          const computerChoice = 'Paper';
+          const computerChoice = 'Paper' as 'Rock' | 'Paper' | 'Scissors';
 
           let result = '';
           let resultEmoji = '';

@@ -77,6 +77,21 @@ export class TsyneTest {
         // Quit may fail if bridge is already shutting down, that's OK
       }
 
+      // Wait for pending requests to complete before shutdown
+      // This prevents "Bridge shutting down" errors from pending polling operations
+      try {
+        const pendingCount = (bridge as any).pendingRequests?.size || 0;
+        if (pendingCount > 0) {
+          const completed = await (bridge as any).waitForPendingRequests?.(2000);
+          if (!completed) {
+            // Still have pending requests after wait - this is expected in some cases
+            // They will be rejected with "Bridge shutting down" but marked as shutdown errors
+          }
+        }
+      } catch (err) {
+        // If waitForPendingRequests doesn't exist or fails, continue anyway
+      }
+
       // Immediately call shutdown to clean up all resources
       // This removes event listeners, clears handlers, and kills the process
       // This ensures Node.js event loop can exit properly

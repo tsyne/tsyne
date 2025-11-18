@@ -56,9 +56,9 @@ describe('Tip Calculator Example', () => {
             app.separator();
 
             app.label('Tip Percentage:');
-            app.radiogroup(['10%', '15%', '18%', '20%', '25%'], 1, (selected) => {
-              const percentages = [10, 15, 18, 20, 25];
-              tipPercent = percentages[selected];
+            app.radiogroup(['10%', '15%', '18%', '20%', '25%'], '15%', (selected) => {
+              const percentageMap: { [key: string]: number } = { '10%': 10, '15%': 15, '18%': 18, '20%': 20, '25%': 25 };
+              tipPercent = percentageMap[selected] || 15;
               calculate();
             });
 
@@ -110,7 +110,8 @@ describe('Tip Calculator Example', () => {
 
     // Enter bill amount
     const entry = ctx.getByPlaceholder('Enter amount');
-    await entry.fill('50');
+    await entry.type('50');
+    await entry.submit(); // Trigger the onSubmit callback
     await ctx.wait(200);
 
     // Should calculate 15% tip on $50
@@ -224,9 +225,9 @@ describe('Tip Calculator Example', () => {
 
         win.setContent(() => {
           app.vbox(() => {
-            app.radiogroup(['10%', '15%', '18%', '20%', '25%'], 1, (selected) => {
-              const percentages = [10, 15, 18, 20, 25];
-              tipPercent = percentages[selected];
+            app.radiogroup(['10%', '15%', '18%', '20%', '25%'], '15%', (selected) => {
+              const percentageMap: { [key: string]: number } = { '10%': 10, '15%': 15, '18%': 18, '20%': 20, '25%': 25 };
+              tipPercent = percentageMap[selected] || 15;
               calculate();
             });
 

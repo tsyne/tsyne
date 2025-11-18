@@ -69,16 +69,16 @@ describe('Password Generator Example', () => {
             app.separator();
 
             app.label('Include:');
-            app.checkbox('Uppercase (A-Z)', useUppercase, (checked) => {
+            app.checkbox('Uppercase (A-Z)', (checked) => {
               useUppercase = checked;
             });
-            app.checkbox('Lowercase (a-z)', useLowercase, (checked) => {
+            app.checkbox('Lowercase (a-z)', (checked) => {
               useLowercase = checked;
             });
-            app.checkbox('Numbers (0-9)', useNumbers, (checked) => {
+            app.checkbox('Numbers (0-9)', (checked) => {
               useNumbers = checked;
             });
-            app.checkbox('Symbols (!@#$...)', useSymbols, (checked) => {
+            app.checkbox('Symbols (!@#$...)', (checked) => {
               useSymbols = checked;
             });
 
