@@ -101,12 +101,12 @@ describe('Terminal Emulator Tests', () => {
     await testApp.run();
 
     // Execute help to add content
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click(); // Use exact text to match toolbar action, not help output
     await ctx.wait(100);
     await ctx.expect(ctx.getByText('Available commands:')).toBeVisible();
 
-    // Click Clear button
-    await ctx.getByText('Clear').click();
+    // Click Clear button - use exact text since help output contains "clear"
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(100);
 
     // Welcome message and help content should be gone after clear
@@ -117,8 +117,8 @@ describe('Terminal Emulator Tests', () => {
     expect(hasHelp).toBe(false);
 
     // UI controls should still be visible
-    await ctx.expect(ctx.getByText('Clear')).toBeVisible();
-    await ctx.expect(ctx.getByText('Help')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Clear')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Help')).toBeVisible();
     await ctx.expect(ctx.getByText('$')).toBeVisible();
   });
 
@@ -130,12 +130,12 @@ describe('Terminal Emulator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Execute help multiple times
-    await ctx.getByText('Help').click();
+    // Execute help multiple times - use exact text to avoid matching help output labels
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
 
     // Help text should still be visible
@@ -155,19 +155,19 @@ describe('Terminal Emulator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Clear first
-    await ctx.getByText('Clear').click();
+    // Clear first - use exact text for toolbar actions
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(100);
 
     // Then help
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
 
     // Help should be visible
     await ctx.expect(ctx.getByText('Available commands:')).toBeVisible();
 
     // All UI elements should still work
-    await ctx.expect(ctx.getByText('Clear')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Clear')).toBeVisible();
     await ctx.expect(ctx.getByText('$')).toBeVisible();
   });
 
@@ -179,21 +179,21 @@ describe('Terminal Emulator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Rapid clicking
-    await ctx.getByText('Help').click();
+    // Rapid clicking - use exact text to match toolbar actions only
+    await ctx.getByExactText('Help').click();
     await ctx.wait(30);
-    await ctx.getByText('Clear').click();
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(30);
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(30);
-    await ctx.getByText('Clear').click();
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(30);
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
 
     // UI should still be functional
-    await ctx.expect(ctx.getByText('Clear')).toBeVisible();
-    await ctx.expect(ctx.getByText('Help')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Clear')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Help')).toBeVisible();
     await ctx.expect(ctx.getByText('Available commands:')).toBeVisible();
   });
 
@@ -205,17 +205,17 @@ describe('Terminal Emulator Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Perform various operations
-    await ctx.getByText('Help').click();
+    // Perform various operations - use exact text for toolbar actions
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
-    await ctx.getByText('Clear').click();
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(100);
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
 
     // All essential UI elements should be visible
-    await ctx.expect(ctx.getByText('Clear')).toBeVisible();
-    await ctx.expect(ctx.getByText('Help')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Clear')).toBeVisible();
+    await ctx.expect(ctx.getByExactText('Help')).toBeVisible();
     await ctx.expect(ctx.getByText('$')).toBeVisible();
     await ctx.expect(ctx.getByText('Simplified terminal demo - Type "help" for commands')).toBeVisible();
   });
@@ -231,18 +231,18 @@ describe('Terminal Emulator Tests', () => {
     // Check initial state
     await ctx.expect(ctx.getByText('$')).toBeVisible();
 
-    // After help
-    await ctx.getByText('Help').click();
+    // After help - use exact text for toolbar actions
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
     await ctx.expect(ctx.getByText('$')).toBeVisible();
 
     // After clear
-    await ctx.getByText('Clear').click();
+    await ctx.getByExactText('Clear').click();
     await ctx.wait(100);
     await ctx.expect(ctx.getByText('$')).toBeVisible();
 
     // After another help
-    await ctx.getByText('Help').click();
+    await ctx.getByExactText('Help').click();
     await ctx.wait(100);
     await ctx.expect(ctx.getByText('$')).toBeVisible();
   });
