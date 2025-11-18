@@ -210,6 +210,33 @@
       color: #fff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-mode-toggle {
+      background: #3c3c3c;
+      border: 1px solid #5e5e5e;
+      color: #858585;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: normal;
+      text-transform: none;
+      transition: all 0.2s;
+    }
+
+    .preview-mode-toggle:hover {
+      background: #4a4a4a;
+      border-color: #0e639c;
+    }
+
+    .preview-mode-toggle.active {
+      background: #0e639c;
+      border-color: #0e639c;
+      color: #fff;
     }
 
     .preview-tabs {
@@ -271,6 +298,27 @@
       background: transparent;
       border: none;
       padding: 0;
+    }
+
+    /* Production Preview Mode - removes designer chrome */
+    .preview-content.production-mode .preview-widget {
+      background: transparent;
+      border: none;
+    }
+
+    .preview-content.production-mode .preview-label {
+      padding: 0;
+    }
+
+    .preview-content.production-mode .container-label {
+      display: none;
+    }
+
+    .preview-content.production-mode vbox,
+    .preview-content.production-mode hbox,
+    .preview-content.production-mode .container {
+      border: none !important;
+      padding: 0 !important;
     }
 
     .preview-label {
@@ -741,7 +789,12 @@
     </div>
 
     <div class="preview-panel">
-      <h2>Preview</h2>
+      <h2>
+        Preview
+        <button class="preview-mode-toggle" onclick="toggleProductionMode()" id="productionModeBtn" title="Toggle production preview (removes designer styling)">
+          Production Preview
+        </button>
+      </h2>
       <div class="preview-tabs">
         <button class="preview-tab active" onclick="switchPreviewTab('preview')">Preview</button>
         <button class="preview-tab" onclick="switchPreviewTab('source')">Source</button>

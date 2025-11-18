@@ -959,6 +959,7 @@ async function updateWidgetId(internalId, newWidgetId) {
       renderWidgetTree();
       renderProperties();
       renderPreview();
+      applyStylesToPreview();
 
       console.log('Widget ID updated successfully');
     } else {
@@ -1021,6 +1022,7 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
 
       renderWidgetTree();
       renderPreview();
+      applyStylesToPreview();
 
       console.log('Property updated successfully');
     } else {
@@ -1075,13 +1077,48 @@ function applyStylesToPreview() {
     return str.replace(/([A-Z])/g, '-$1').toLowerCase();
   };
 
+  // Convert Fyne-specific properties to CSS
+  const fyneToCSS = (prop, value) => {
+    // Handle Fyne-specific boolean properties
+    if (prop === 'bold' && value === true) {
+      return { prop: 'font-weight', value: 'bold' };
+    }
+    if (prop === 'italic' && value === true) {
+      return { prop: 'font-style', value: 'italic' };
+    }
+    if (prop === 'monospace' && value === true) {
+      return { prop: 'font-family', value: 'monospace' };
+    }
+
+    // Handle numeric properties that need units
+    if (prop === 'fontSize' && typeof value === 'number') {
+      return { prop: 'font-size', value: `${value}px` };
+    }
+    if (prop === 'padding' && typeof value === 'number') {
+      return { prop: 'padding', value: `${value}px` };
+    }
+    if (prop === 'margin' && typeof value === 'number') {
+      return { prop: 'margin', value: `${value}px` };
+    }
+
+    // Handle color properties (pass through)
+    if (prop === 'color' || prop === 'backgroundColor') {
+      return { prop: camelToKebab(prop), value };
+    }
+
+    // Default: convert camelCase to kebab-case and pass through
+    return { prop: camelToKebab(prop), value };
+  };
+
   // Generate CSS
   let cssText = '';
   for (const [className, properties] of Object.entries(currentStyles)) {
     cssText += `.${className} {\n`;
     for (const [prop, value] of Object.entries(properties)) {
-      const cssProp = camelToKebab(prop);
-      cssText += `  ${cssProp}: ${value};\n`;
+      const converted = fyneToCSS(prop, value);
+      if (converted) {
+        cssText += `  ${converted.prop}: ${converted.value};\n`;
+      }
     }
     cssText += '}\n\n';
   }
@@ -1196,7 +1233,7 @@ function createPreviewWidget(widget) {
   switch (widget.widgetType) {
     // Display widgets
     case 'label':
-      element.className = 'preview-label';
+      element.classList.add('preview-label');
       element.style.padding = '4px 8px';
       element.textContent = widget.properties.text || 'Label';
       break;
@@ -1225,7 +1262,7 @@ function createPreviewWidget(widget) {
 
     // Input widgets
     case 'button':
-      element.className = 'preview-button';
+      element.classList.add('preview-button');
       element.style.flexShrink = '0';
       element.textContent = widget.properties.text || 'Button';
       break;
@@ -1297,7 +1334,7 @@ function createPreviewWidget(widget) {
 
     // Container widgets
     case 'vbox':
-      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">vbox</div>`;
+      element.innerHTML = `<div class="container-label" style="color: #858585; font-size: 11px; margin-bottom: 5px;">vbox</div>`;
       renderChildren({
         display: 'flex',
         flexDirection: 'column',
@@ -1309,7 +1346,7 @@ function createPreviewWidget(widget) {
       break;
 
     case 'hbox':
-      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">hbox</div>`;
+      element.innerHTML = `<div class="container-label" style="color: #858585; font-size: 11px; margin-bottom: 5px;">hbox</div>`;
       renderChildren({
         display: 'flex',
         flexDirection: 'row',
@@ -1510,6 +1547,7 @@ async function addWidget(widgetType) {
       }
       renderWidgetTree();
       renderPreview();
+      applyStylesToPreview();
       renderProperties();
       console.log('Widget added successfully');
     } else {
@@ -1583,6 +1621,7 @@ async function reorderWidget(draggedWidgetId, targetWidgetId) {
 
       renderWidgetTree();
       renderPreview();
+      applyStylesToPreview();
       console.log('[REORDER] Widget reordered successfully');
     } else {
       alert('Error reordering widget: ' + result.error);
@@ -1812,6 +1851,18 @@ async function saveCssChanges() {
     console.error('Error updating CSS classes:', error);
     alert('Error updating CSS classes: ' + error.message);
   }
+}
+
+// Toggle production preview mode
+function toggleProductionMode() {
+  const previewContent = document.getElementById('previewContent');
+  const toggleBtn = document.getElementById('productionModeBtn');
+
+  previewContent.classList.toggle('production-mode');
+  toggleBtn.classList.toggle('active');
+
+  const isProductionMode = previewContent.classList.contains('production-mode');
+  console.log('[Preview] Production mode:', isProductionMode ? 'ON' : 'OFF');
 }
 
 // Auto-load on start
