@@ -756,11 +756,26 @@ class SourceCodeEditor {
     let statementLines = [targetLineIndex];
     let fullStatement = this.lines[targetLineIndex];
 
-    // Look ahead for continuation lines (until we find semicolon or closing paren + semicolon)
+    // Look ahead for continuation lines
+    // Stop when we find a line that ends with semicolon AND has proper indentation
+    // This prevents us from including parent container's closing braces
+    const startIndent = this.lines[targetLineIndex].search(/\S/);
+
     for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
+      const line = this.lines[i];
+      const lineIndent = line.search(/\S/);
+
+      // If we hit a line with less or equal indentation that ends with ;, stop
+      // This means we've finished this statement and hit a parent's closing
+      if (lineIndent <= startIndent && line.trim().endsWith(';')) {
+        break;
+      }
+
       statementLines.push(i);
-      fullStatement += '\n' + this.lines[i];
-      if (this.lines[i].includes(';')) {
+      fullStatement += '\n' + line;
+
+      // If this line ends with semicolon and has greater indentation, include it and stop
+      if (line.includes(';') && lineIndent > startIndent) {
         break;
       }
     }
