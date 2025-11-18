@@ -33,10 +33,11 @@ function parseStackTrace(stack: string): SourceLocation {
       match = line.match(/at\s+(.+):(\d+):(\d+)/);
     }
     if (match && !match[1].includes('node_modules') && !match[1].includes('server')) {
-      // Line numbers from stack trace are from transpiled JS which has "use strict"; at line 1
-      // Subtract 1 to get the correct line number in the original TypeScript source
+      // Line numbers from stack trace are from transpiled JS
+      // Transpiler removes import+blank (2 lines) and adds "use strict" (1 line)
+      // Net shift: original = transpiled + 2
       const transpiledLine = parseInt(match[2]);
-      const originalLine = transpiledLine - 1;
+      const originalLine = transpiledLine + 2;
       return { file: match[1], line: originalLine, column: parseInt(match[3]) };
     }
   }
@@ -46,7 +47,6 @@ function parseStackTrace(stack: string): SourceLocation {
 // Capture widget - returns chainable object with .withId(), .when(), .refresh()
 function captureWidget(type: string, props: any): any {
   const location = parseStackTrace(new Error().stack || '');
-  console.log(`[Capture] ${type} at line ${location.line}`);
 
   // Use internal auto-ID for tracking (needed for tree structure)
   const internalId = `widget-${widgetIdCounter++}`;
@@ -586,7 +586,35 @@ class SourceCodeEditor {
   }
 
   addWidget(parentMetadata: any, widgetType: string, properties: any): boolean {
-    const parentLine = parentMetadata.sourceLocation.line - 1;
+    let parentLine = parentMetadata.sourceLocation.line - 1;
+
+    // Find the actual parent line (sourceLocation might be slightly off due to transpilation)
+    const parentType = parentMetadata.widgetType;
+    const parentPattern = new RegExp(`a\\.${parentType}\\(`);
+    let actualParentLine = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue;
+        const checkIndex = parentLine + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (parentPattern.test(line)) {
+            actualParentLine = checkIndex;
+            break;
+          }
+        }
+      }
+      if (actualParentLine !== -1) break;
+    }
+
+    if (actualParentLine !== -1) {
+      if (actualParentLine !== parentLine) {
+        console.log(`[Editor] Adjusted parent line from ${parentLine + 1} to ${actualParentLine + 1}`);
+      }
+      parentLine = actualParentLine;
+    }
 
     // Check if parent is on a single line (empty container like "a.vbox(() => {});" )
     const parentLineContent = this.lines[parentLine];
@@ -636,12 +664,53 @@ class SourceCodeEditor {
   }
 
   removeWidget(metadata: any): boolean {
-    const lineIndex = metadata.sourceLocation.line - 1;
+    let lineIndex = metadata.sourceLocation.line - 1;
 
     if (lineIndex < 0 || lineIndex >= this.lines.length) {
       console.warn('[Editor] Invalid line index for widget removal');
       return false;
     }
+
+    // Find the actual widget line (sourceLocation might be slightly off due to transpilation)
+    // Search nearby lines for the widget call pattern
+    const widgetType = metadata.widgetType;
+    const widgetPattern = new RegExp(`a\\.${widgetType}\\(`);
+    let actualLineIndex = -1;
+
+    // Search within a range of ±3 lines
+    for (let offset = 0; offset <= 3; offset++) {
+      // Try the exact line first, then above, then below
+      for (const dir of [0, -offset, offset]) {
+        if (dir === 0 && offset > 0) continue; // Skip 0 after first iteration
+        const checkIndex = lineIndex + dir;
+        if (checkIndex >= 0 && checkIndex < this.lines.length) {
+          const line = this.lines[checkIndex];
+          if (widgetPattern.test(line)) {
+            // For widgets with text property, verify it matches
+            if (metadata.properties && metadata.properties.text) {
+              const textPattern = new RegExp(`${metadata.widgetType}\\(['"](${metadata.properties.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+              if (textPattern.test(line)) {
+                actualLineIndex = checkIndex;
+                break;
+              }
+            } else {
+              actualLineIndex = checkIndex;
+              break;
+            }
+          }
+        }
+      }
+      if (actualLineIndex !== -1) break;
+    }
+
+    if (actualLineIndex === -1) {
+      console.warn(`[Editor] Could not find ${widgetType} widget near line ${lineIndex + 1}`);
+      actualLineIndex = lineIndex; // Fall back to original line
+    } else if (actualLineIndex !== lineIndex) {
+      console.log(`[Editor] Adjusted line from ${lineIndex + 1} to ${actualLineIndex + 1} for ${widgetType}`);
+    }
+
+    lineIndex = actualLineIndex;
 
     // Check if this is a multi-line widget (e.g., button with callback)
     const firstLine = this.lines[lineIndex];
@@ -671,7 +740,35 @@ class SourceCodeEditor {
     }
 
     console.log(`[Editor] Removed widget at lines ${lineIndex + 1} to ${lineIndex + linesToRemove.length}: ${firstLine.trim()}`);
+
+    // After deletion, check if parent container is now empty and collapse it
+    this.collapseEmptyContainers();
+
     return true;
+  }
+
+  private collapseEmptyContainers(): void {
+    // Find and collapse empty multi-line containers to single-line format
+    // Pattern: line with "a.something(() => {" followed by line with just "});" and whitespace
+    for (let i = 0; i < this.lines.length - 1; i++) {
+      const currentLine = this.lines[i];
+      const nextLine = this.lines[i + 1];
+
+      // Check if current line is a container opening: "a.vbox(() => {" etc.
+      const containerMatch = currentLine.match(/^(\s*)(a\.)?(\w+)\(\(\) => \{\s*$/);
+      if (containerMatch && nextLine.match(/^\s*\}\);?\s*$/)) {
+        // Found empty container - collapse to single line
+        const indent = containerMatch[1];
+        const prefix = containerMatch[2] || '';
+        const containerType = containerMatch[3];
+
+        // Replace two lines with single line
+        this.lines[i] = `${indent}${prefix}${containerType}(() => {});`;
+        this.lines.splice(i + 1, 1);
+
+        console.log(`[Editor] Collapsed empty ${containerType} at line ${i + 1}`);
+      }
+    }
   }
 
   private getIndentation(lineIndex: number): string {
