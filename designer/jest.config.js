@@ -9,5 +9,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
-  }
+  },
+  testTimeout: 10000, // 10 seconds for HTTP requests
+  maxWorkers: 1 // Run tests serially to avoid global state conflicts
 };

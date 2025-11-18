@@ -39,14 +39,14 @@ function parseStackTrace(stack: string): SourceLocation {
   return { file: 'unknown', line: 0, column: 0 };
 }
 
-// Capture widget - returns chainable object with .withId()
+// Capture widget - returns chainable object with .withId(), .when(), .refresh()
 function captureWidget(type: string, props: any): any {
   const location = parseStackTrace(new Error().stack || '');
 
   // Use internal auto-ID for tracking (needed for tree structure)
   const internalId = `widget-${widgetIdCounter++}`;
 
-  const metadata = {
+  const metadata: any = {
     id: internalId,  // Internal tracking ID
     widgetId: null as string | null,  // User-defined ID (set via .withId())
     widgetType: type,
@@ -57,14 +57,33 @@ function captureWidget(type: string, props: any): any {
   };
   metadataStore.set(internalId, metadata);
 
-  // Return chainable object with .withId() method
-  return {
+  // Return chainable object with full Tsyne widget API
+  const chainableApi = {
     __internalId: internalId,  // For accessing metadata
     withId: (id: string) => {
       metadata.widgetId = id;
-      return { withId: () => {}, __internalId: internalId }; // Allow chaining
+      return chainableApi; // Return self for chaining
+    },
+    when: (conditionFn: () => boolean) => {
+      // Store visibility condition in metadata
+      if (conditionFn) {
+        metadata.eventHandlers.whenCondition = conditionFn.toString();
+      }
+      return chainableApi; // Return self for chaining
+    },
+    refresh: async () => {
+      // No-op in designer mode
+      return Promise.resolve();
+    },
+    hide: async () => {
+      return Promise.resolve();
+    },
+    show: async () => {
+      return Promise.resolve();
     }
   };
+
+  return chainableApi;
 }
 
 // Helper for container widgets
@@ -72,7 +91,7 @@ function containerWidget(type: string, props: any, builder: () => void): any {
   const location = parseStackTrace(new Error().stack || '');
   const internalId = `widget-${widgetIdCounter++}`;
 
-  const metadata = {
+  const metadata: any = {
     id: internalId,
     widgetId: null as string | null,
     widgetType: type,
@@ -89,14 +108,53 @@ function containerWidget(type: string, props: any, builder: () => void): any {
   builder();
   currentParent = prev;
 
-  // Return chainable object with .withId()
-  return {
+  // Return chainable object with full container API
+  const chainableApi = {
     __internalId: internalId,
     withId: (id: string) => {
       metadata.widgetId = id;
-      return { withId: () => {}, __internalId: internalId };
+      return chainableApi; // Return self for chaining
+    },
+    when: (conditionFn: () => boolean) => {
+      // Store visibility condition in metadata
+      if (conditionFn) {
+        metadata.eventHandlers.whenCondition = conditionFn.toString();
+      }
+      return chainableApi; // Return self for chaining
+    },
+    model: (items: any[]) => {
+      // Return ModelBoundList-like API for method chaining
+      return {
+        trackBy: (fn: (item: any) => any) => {
+          return {
+            each: (builderFn: (item: any) => void) => {
+              // In designer mode, just record the binding
+              metadata.eventHandlers.modelBinding = {
+                items: items.length,
+                trackBy: fn.toString(),
+                builder: builderFn.toString()
+              };
+              return chainableApi;
+            }
+          };
+        }
+      };
+    },
+    refresh: async () => {
+      return Promise.resolve();
+    },
+    refreshVisibility: async () => {
+      return Promise.resolve();
+    },
+    hide: async () => {
+      return Promise.resolve();
+    },
+    show: async () => {
+      return Promise.resolve();
     }
   };
+
+  return chainableApi;
 }
 
 // Designer API - Complete widget support (emulates Tsyne ABI)
@@ -779,6 +837,62 @@ class SourceCodeEditor {
     return true;
   }
 
+  transformLayout(metadata: any, newLayout: string): boolean {
+    const lineIndex = metadata.sourceLocation.line - 1;
+    const oldType = metadata.widgetType;
+
+    // Search for the widget on the exact line, or nearby lines (±2)
+    let targetLineIndex = -1;
+    const searchPattern = new RegExp(`\\ba\\.${oldType}\\(`);
+
+    for (let offset = 0; offset <= 2; offset++) {
+      const checkIndex = lineIndex + offset;
+      if (checkIndex >= 0 && checkIndex < this.lines.length && searchPattern.test(this.lines[checkIndex])) {
+        targetLineIndex = checkIndex;
+        break;
+      }
+      const checkIndexBefore = lineIndex - offset;
+      if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < this.lines.length && searchPattern.test(this.lines[checkIndexBefore])) {
+        targetLineIndex = checkIndexBefore;
+        break;
+      }
+    }
+
+    if (targetLineIndex === -1) {
+      console.warn(`[Editor] Could not find widget type '${oldType}' near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    const line = this.lines[targetLineIndex];
+    let newLine: string;
+
+    // For grid, we need to add or update the column count parameter
+    if (newLayout === 'grid') {
+      const columns = metadata.properties._gridColumns || 2;
+      // Replace: a.vbox(() => with a.grid(2, () =>
+      const pattern = new RegExp(`(\\s*a\\.)${oldType}\\(`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(${columns}, `);
+    } else if (oldType === 'grid') {
+      // Replace: a.grid(2, () => with a.vbox(() =>
+      // Remove the column count parameter
+      const pattern = new RegExp(`(\\s*a\\.)grid\\(\\d+,\\s*`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(`);
+    } else {
+      // Simple container type transformation: vbox ↔ hbox, etc.
+      const pattern = new RegExp(`(\\s*a\\.)${oldType}\\(`, 'g');
+      newLine = line.replace(pattern, `$1${newLayout}(`);
+    }
+
+    if (newLine === line) {
+      console.warn(`[Editor] Pattern match failed for ${oldType} on line ${targetLineIndex + 1}: ${line.trim()}`);
+      return false;
+    }
+
+    this.lines[targetLineIndex] = newLine;
+    console.log(`[Editor] Transformed ${oldType} → ${newLayout} on line ${targetLineIndex + 1}`);
+    return true;
+  }
+
   getSourceCode(): string {
     return this.lines.join('\n');
   }
@@ -916,6 +1030,49 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
       // Apply property updates
       for (const edit of propertyEdits) {
+        // Handle layout transformation pseudo-property
+        if (edit.propertyName === '_layout') {
+          const widget = metadataStore.get(edit.widgetId);
+          if (widget) {
+            editor.transformLayout(widget, edit.newValue);
+          }
+          continue;
+        }
+
+        // Handle grid column count changes
+        if (edit.propertyName === '_gridColumns') {
+          const widget = metadataStore.get(edit.widgetId);
+          if (widget && widget.widgetType === 'grid') {
+            // Search for the grid line (accounting for off-by-one errors)
+            const lineIndex = widget.sourceLocation.line - 1;
+            let targetLineIndex = -1;
+            const searchPattern = /\ba\.grid\(\d+,/;
+
+            for (let offset = 0; offset <= 2; offset++) {
+              const checkIndex = lineIndex + offset;
+              if (checkIndex >= 0 && checkIndex < editor['lines'].length && searchPattern.test(editor['lines'][checkIndex])) {
+                targetLineIndex = checkIndex;
+                break;
+              }
+              const checkIndexBefore = lineIndex - offset;
+              if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < editor['lines'].length && searchPattern.test(editor['lines'][checkIndexBefore])) {
+                targetLineIndex = checkIndexBefore;
+                break;
+              }
+            }
+
+            if (targetLineIndex !== -1) {
+              const line = editor['lines'][targetLineIndex];
+              // Replace grid(oldCount, with grid(newCount,
+              const newLine = line.replace(/grid\(\d+,/, `grid(${edit.newValue},`);
+              editor['lines'][targetLineIndex] = newLine;
+              console.log(`[Editor] Updated grid column count to ${edit.newValue} on line ${targetLineIndex + 1}`);
+            }
+          }
+          continue;
+        }
+
+        // Regular property updates
         // Handle string vs numeric values
         const oldValueStr = typeof edit.oldValue === 'string' ? `"${edit.oldValue}"` : edit.oldValue;
         const newValueStr = typeof edit.newValue === 'string' ? `"${edit.newValue}"` : edit.newValue;
