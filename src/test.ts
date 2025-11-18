@@ -698,13 +698,14 @@ export class Expect {
 
   async toBeVisible(): Promise<void> {
     // Use findWithRetry to respect within() timeout
-    // If no explicit timeout set, use a sensible default of 5000ms
+    // If no explicit timeout set, use a sensible default of 2000ms
+    // (reduced from 5000ms to prevent Jest test timeouts when multiple assertions fail)
     const locator = this.locator as any;
     const hasTimeout = locator.withinTimeout !== undefined;
 
     if (!hasTimeout) {
       // Temporarily set default timeout for this assertion
-      locator.withinTimeout = 5000;
+      locator.withinTimeout = 2000;
     }
 
     try {

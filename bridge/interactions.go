@@ -141,6 +141,28 @@ func (b *Bridge) handleClickToolbarAction(msg Message) {
 
 	b.mu.RLock()
 	action, exists := b.toolbarActions[customID]
+
+	// If not found by custom ID, search by label in toolbar items
+	if !exists {
+		for _, toolbarMeta := range b.toolbarItems {
+			for i, label := range toolbarMeta.Labels {
+				if label == customID {
+					// Found matching label, get the corresponding toolbar item
+					if i < len(toolbarMeta.Items) {
+						if toolbarAction, ok := toolbarMeta.Items[i].(*widget.ToolbarAction); ok {
+							action = toolbarAction
+							exists = true
+							break
+						}
+					}
+				}
+			}
+			if exists {
+				break
+			}
+		}
+	}
+
 	b.mu.RUnlock()
 
 	if !exists {
@@ -679,15 +701,35 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		}
 	}
 
-	b.mu.RUnlock() // Release read lock before sending response!
-
-	// Additionally, check for toolbar actions if selecting by ID
+	// Additionally, check for toolbar actions when selecting by ID or text
+	// Keep read lock to access toolbar data
 	if selectorType == "id" {
 		if _, exists := b.toolbarActions[selector]; exists {
 			// Use a special prefix to identify toolbar actions, as they are not real widgets
 			visibleMatches = append(visibleMatches, fmt.Sprintf("toolbar_action:%s", selector))
 		}
+	} else if selectorType == "text" || selectorType == "exactText" {
+		// Search toolbar items by their label text
+		for _, toolbarMeta := range b.toolbarItems {
+			for _, label := range toolbarMeta.Labels {
+				if label == "" {
+					continue // Skip separators and spacers
+				}
+				var isMatch bool
+				if selectorType == "text" {
+					isMatch = strings.Contains(label, selector)
+				} else { // exactText
+					isMatch = label == selector
+				}
+				if isMatch {
+					// Return the label as a toolbar action identifier
+					visibleMatches = append(visibleMatches, fmt.Sprintf("toolbar_action:%s", label))
+				}
+			}
+		}
 	}
+
+	b.mu.RUnlock() // Release read lock before sending response!
 
 	// Prioritize visible widgets - return visible first, then hidden
 	matches := append(visibleMatches, hiddenMatches...)
