@@ -33,7 +33,11 @@ function parseStackTrace(stack: string): SourceLocation {
       match = line.match(/at\s+(.+):(\d+):(\d+)/);
     }
     if (match && !match[1].includes('node_modules') && !match[1].includes('server')) {
-      return { file: match[1], line: parseInt(match[2]), column: parseInt(match[3]) };
+      // Line numbers from stack trace are from transpiled JS which has "use strict"; at line 1
+      // Subtract 1 to get the correct line number in the original TypeScript source
+      const transpiledLine = parseInt(match[2]);
+      const originalLine = transpiledLine - 1;
+      return { file: match[1], line: originalLine, column: parseInt(match[3]) };
     }
   }
   return { file: 'unknown', line: 0, column: 0 };
@@ -42,6 +46,7 @@ function parseStackTrace(stack: string): SourceLocation {
 // Capture widget - returns chainable object with .withId(), .when(), .refresh()
 function captureWidget(type: string, props: any): any {
   const location = parseStackTrace(new Error().stack || '');
+  console.log(`[Capture] ${type} at line ${location.line}`);
 
   // Use internal auto-ID for tracking (needed for tree structure)
   const internalId = `widget-${widgetIdCounter++}`;
@@ -583,6 +588,32 @@ class SourceCodeEditor {
   addWidget(parentMetadata: any, widgetType: string, properties: any): boolean {
     const parentLine = parentMetadata.sourceLocation.line - 1;
 
+    // Check if parent is on a single line (empty container like "a.vbox(() => {});" )
+    const parentLineContent = this.lines[parentLine];
+    const isEmptySingleLine = parentLineContent.includes('() => {}');
+
+    if (isEmptySingleLine) {
+      // Expand empty container to multi-line format
+      const match = parentLineContent.match(/^(\s*)(a\.)?([\w]+)\(\(\) => \{\}\);/);
+      if (match) {
+        const indent = match[1];
+        const prefix = match[2] || '';
+        const containerType = match[3];
+        const childIndent = indent + '  ';
+
+        // Generate widget code with proper prefix
+        const widgetCode = this.generateWidgetCode(widgetType, properties, childIndent);
+
+        // Replace single-line container with multi-line version
+        this.lines[parentLine] = `${indent}${prefix}${containerType}(() => {`;
+        this.lines.splice(parentLine + 1, 0, widgetCode);
+        this.lines.splice(parentLine + 2, 0, `${indent}});`);
+
+        console.log(`[Editor] Expanded empty container and added ${widgetType}`);
+        return true;
+      }
+    }
+
     // Find the closing brace of the parent container's builder function
     const closingBraceLine = this.findClosingBrace(parentLine);
 
@@ -591,12 +622,11 @@ class SourceCodeEditor {
       return false;
     }
 
-    // Get indentation from parent line
-    const indentation = this.getIndentation(parentLine);
-    const childIndentation = indentation + '      '; // Match existing indentation in examples
+    // Get indentation from the line just before the closing brace
+    const indentation = this.getIndentation(closingBraceLine);
 
     // Generate widget code
-    const widgetCode = this.generateWidgetCode(widgetType, properties, childIndentation);
+    const widgetCode = this.generateWidgetCode(widgetType, properties, indentation);
 
     // Insert before closing brace
     this.lines.splice(closingBraceLine, 0, widgetCode);
@@ -685,43 +715,43 @@ class SourceCodeEditor {
   private generateWidgetCode(widgetType: string, properties: any, indentation: string): string {
     switch (widgetType) {
       case 'label':
-        return `${indentation}label("${properties.text || 'New Label'}");`;
+        return `${indentation}a.label("${properties.text || 'New Label'}");`;
 
       case 'button':
-        return `${indentation}button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
+        return `${indentation}a.button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
 
       case 'entry':
-        return `${indentation}entry("${properties.placeholder || ''}");`;
+        return `${indentation}a.entry("${properties.placeholder || ''}");`;
 
       case 'checkbox':
-        return `${indentation}checkbox("${properties.text || 'New Checkbox'}");`;
+        return `${indentation}a.checkbox("${properties.text || 'New Checkbox'}");`;
 
       case 'vbox':
-        return `${indentation}vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.vbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'hbox':
-        return `${indentation}hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'scroll':
-        return `${indentation}scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'separator':
-        return `${indentation}separator();`;
+        return `${indentation}a.separator();`;
 
       case 'hyperlink':
-        return `${indentation}hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
+        return `${indentation}a.hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
 
       case 'image':
-        return `${indentation}image("${properties.path || 'image.png'}");`;
+        return `${indentation}a.image("${properties.path || 'image.png'}");`;
 
       case 'select':
-        return `${indentation}select(["Option 1", "Option 2"]);`;
+        return `${indentation}a.select(["Option 1", "Option 2"]);`;
 
       case 'grid':
-        return `${indentation}grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
+        return `${indentation}a.grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       default:
-        return `${indentation}${widgetType}();`;
+        return `${indentation}a.${widgetType}();`;
     }
   }
 
