@@ -1744,8 +1744,21 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           styles
         });
 
+        // Generate updated source code with new styles
+        const editor = new SourceCodeEditor(currentSourceCode!);
+        editor.updateStyles(styles);
+        const updatedSource = editor.getSourceCode();
+
+        // Update currentSource so the "source" tab shows the updated CSS
+        currentSource = updatedSource;
+        console.log('[Designer] Updated currentSource with new styles');
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, styles: currentStyles }));
+        res.end(JSON.stringify({
+          success: true,
+          styles: currentStyles,
+          currentSource: updatedSource
+        }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });

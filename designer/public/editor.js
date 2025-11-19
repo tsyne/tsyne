@@ -1983,7 +1983,11 @@ async function saveCssChanges() {
     const result = await response.json();
 
     if (result.success) {
-      console.log('CSS classes updated successfully');
+      // Update currentSource with the new CSS class definitions
+      if (result.currentSource) {
+        currentSource = result.currentSource;
+        console.log('CSS classes updated successfully - source tab updated');
+      }
       closeCssEditor();
     } else {
       alert('Error updating CSS classes: ' + result.error);
