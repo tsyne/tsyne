@@ -18,6 +18,10 @@ let commandHistory = [];
 let historyIndex = -1;
 const MAX_HISTORY = 50;
 
+// Find/Search state
+let findResults = [];
+let currentFindIndex = -1;
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
@@ -1784,6 +1788,231 @@ function handleKeyboardShortcut(e) {
     deleteWidget(selectedWidgetId);
     return;
   }
+
+  // Ctrl+F or Cmd+F: Find
+  if (cmdOrCtrl && e.key === 'f') {
+    e.preventDefault();
+    openFindModal();
+    return;
+  }
+}
+
+// Find/Search functionality
+function openFindModal() {
+  const modal = document.getElementById('findModal');
+  modal.classList.add('visible');
+
+  // Focus the search input
+  setTimeout(() => {
+    const input = document.getElementById('findInput');
+    input.focus();
+    input.select();
+  }, 100);
+
+  console.log('[Find] Search dialog opened');
+}
+
+function closeFindModal() {
+  const modal = document.getElementById('findModal');
+  modal.classList.remove('visible');
+
+  // Clear highlights from preview
+  clearFindHighlights();
+
+  console.log('[Find] Search dialog closed');
+}
+
+function performSearch() {
+  const searchTerm = document.getElementById('findInput').value.trim();
+  const findInWidgets = document.getElementById('findInWidgets').checked;
+  const findInSource = document.getElementById('findInSource').checked;
+  const caseSensitive = document.getElementById('findCaseSensitive').checked;
+
+  if (!searchTerm) {
+    alert('Please enter a search term');
+    return;
+  }
+
+  console.log(`[Find] Searching for: "${searchTerm}" (widgets: ${findInWidgets}, source: ${findInSource}, caseSensitive: ${caseSensitive})`);
+
+  findResults = [];
+  currentFindIndex = -1;
+
+  const searchTermLower = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+
+  // Search in widgets
+  if (findInWidgets && metadata && metadata.widgets) {
+    metadata.widgets.forEach(widget => {
+      const matches = [];
+
+      // Check widget type
+      const widgetType = caseSensitive ? widget.widgetType : widget.widgetType.toLowerCase();
+      if (widgetType.includes(searchTermLower)) {
+        matches.push(`type: ${widget.widgetType}`);
+      }
+
+      // Check widget ID
+      if (widget.widgetId) {
+        const widgetId = caseSensitive ? widget.widgetId : widget.widgetId.toLowerCase();
+        if (widgetId.includes(searchTermLower)) {
+          matches.push(`id: ${widget.widgetId}`);
+        }
+      }
+
+      // Check properties
+      if (widget.properties) {
+        Object.entries(widget.properties).forEach(([key, value]) => {
+          const valueStr = caseSensitive ? String(value) : String(value).toLowerCase();
+          if (valueStr.includes(searchTermLower)) {
+            matches.push(`${key}: ${value}`);
+          }
+        });
+      }
+
+      if (matches.length > 0) {
+        findResults.push({
+          type: 'widget',
+          widget: widget,
+          matches: matches,
+          description: `${widget.widgetType}${widget.widgetId ? ' #' + widget.widgetId : ''}`
+        });
+      }
+    });
+  }
+
+  // Search in source code
+  if (findInSource && currentSource) {
+    const lines = currentSource.split('\n');
+    lines.forEach((line, index) => {
+      const lineToSearch = caseSensitive ? line : line.toLowerCase();
+      if (lineToSearch.includes(searchTermLower)) {
+        findResults.push({
+          type: 'source',
+          lineNumber: index + 1,
+          lineContent: line.trim(),
+          description: `Line ${index + 1}`
+        });
+      }
+    });
+  }
+
+  // Display results
+  displayFindResults();
+
+  console.log(`[Find] Found ${findResults.length} results`);
+}
+
+function displayFindResults() {
+  const resultsContainer = document.getElementById('findResults');
+  const navigationDiv = document.getElementById('findNavigation');
+
+  if (findResults.length === 0) {
+    resultsContainer.innerHTML = '<div style="color: #858585; font-size: 12px; text-align: center; padding: 20px;">No results found</div>';
+    navigationDiv.style.display = 'none';
+    return;
+  }
+
+  let html = '<div style="font-size: 12px;">';
+
+  findResults.forEach((result, index) => {
+    const isActive = index === currentFindIndex;
+    const bgColor = isActive ? '#094771' : 'transparent';
+
+    if (result.type === 'widget') {
+      html += `
+        <div style="padding: 10px; margin-bottom: 8px; background: ${bgColor}; border: 1px solid #3e3e3e; border-radius: 3px; cursor: pointer;"
+             onclick="selectFindResult(${index})">
+          <div style="color: #4ec9b0; font-weight: 600; margin-bottom: 4px;">${result.description}</div>
+          <div style="color: #858585; font-size: 11px;">
+            ${result.matches.map(m => `<div>• ${m}</div>`).join('')}
+          </div>
+        </div>
+      `;
+    } else if (result.type === 'source') {
+      html += `
+        <div style="padding: 10px; margin-bottom: 8px; background: ${bgColor}; border: 1px solid #3e3e3e; border-radius: 3px; cursor: pointer;"
+             onclick="selectFindResult(${index})">
+          <div style="color: #dcdcaa; font-weight: 600; margin-bottom: 4px;">${result.description}</div>
+          <div style="color: #d4d4d4; font-size: 11px; font-family: 'Consolas', 'Monaco', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${escapeHtml(result.lineContent)}
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  html += '</div>';
+  resultsContainer.innerHTML = html;
+
+  // Show navigation
+  navigationDiv.style.display = 'flex';
+  updateFindCounter();
+}
+
+function selectFindResult(index) {
+  currentFindIndex = index;
+  const result = findResults[index];
+
+  console.log(`[Find] Selected result ${index + 1}/${findResults.length}:`, result);
+
+  if (result.type === 'widget') {
+    // Switch to preview tab
+    switchPreviewTab('preview');
+
+    // Select the widget
+    selectWidget(result.widget.id);
+
+    // Scroll widget into view if possible
+    const widgetElement = document.querySelector(`[data-widget-id="${result.widget.id}"]`);
+    if (widgetElement) {
+      widgetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  } else if (result.type === 'source') {
+    // Switch to source tab
+    switchPreviewTab('source');
+
+    // Try to scroll to the line (limited support without a code editor)
+    // Just switch to source view for now
+  }
+
+  // Re-render results to highlight current selection
+  displayFindResults();
+}
+
+function navigateFindResults(direction) {
+  if (findResults.length === 0) return;
+
+  currentFindIndex += direction;
+
+  // Wrap around
+  if (currentFindIndex < 0) {
+    currentFindIndex = findResults.length - 1;
+  } else if (currentFindIndex >= findResults.length) {
+    currentFindIndex = 0;
+  }
+
+  selectFindResult(currentFindIndex);
+}
+
+function updateFindCounter() {
+  const counter = document.getElementById('findCounter');
+  if (findResults.length > 0) {
+    counter.textContent = `Result ${currentFindIndex + 1} of ${findResults.length}`;
+  } else {
+    counter.textContent = 'No results';
+  }
+}
+
+function clearFindHighlights() {
+  // Clear any highlighting from preview
+  // This would be more sophisticated with actual highlight overlays
+  console.log('[Find] Cleared highlights');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Reorder widget (drag and drop)
