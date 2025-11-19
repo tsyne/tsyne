@@ -1180,6 +1180,9 @@ function createPreviewWidget(widget) {
   if (widget.widgetId) {
     tooltipParts.push(`ID: ${widget.widgetId}`);
   }
+  if (widget.properties && widget.properties.className) {
+    tooltipParts.push(`Class: ${widget.properties.className}`);
+  }
   if (widget.properties && Object.keys(widget.properties).length > 0) {
     const propsList = Object.entries(widget.properties)
       .filter(([key, val]) => val !== undefined && val !== null && val !== '')
