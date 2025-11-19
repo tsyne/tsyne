@@ -56,6 +56,17 @@
       background: #1177bb;
     }
 
+    .toolbar button:disabled {
+      background: #4a4a4a;
+      color: #858585;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .toolbar button:disabled:hover {
+      background: #4a4a4a;
+    }
+
     .toolbar .file-path {
       color: #858585;
       font-size: 12px;
@@ -777,7 +788,9 @@
         <option value="examples/todomvc.ts">todomvc.ts</option>
       </select>
       <button onclick="loadSelectedFile()">Load</button>
-      <button onclick="saveChanges()">Save Changes</button>
+      <button onclick="undo()" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+      <button onclick="redo()" id="redoBtn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
+      <button onclick="saveChanges()">💾 Save</button>
       <button onclick="refreshPreview()">Refresh</button>
       <button onclick="openCssEditor()" id="cssEditorBtn" style="display:none">CSS Classes</button>
       <span class="file-path" id="filePath">No file loaded</span>

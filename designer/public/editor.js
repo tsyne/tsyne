@@ -13,6 +13,11 @@ let editingStyles = null;
 // Context menu state
 let contextMenuTarget = null;
 
+// Undo/Redo history
+let commandHistory = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
@@ -1601,6 +1606,186 @@ async function deleteWidget(widgetId) {
   }
 }
 
+// Duplicate selected widget
+async function duplicateWidget(widgetId) {
+  if (!widgetId) {
+    alert('No widget selected to duplicate');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/duplicate-widget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ widgetId })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Reload to show duplicated widget
+      await loadFile();
+      // Select the newly created widget
+      if (result.newWidgetId) {
+        selectWidget(result.newWidgetId);
+      }
+      console.log('Widget duplicated successfully');
+    } else {
+      alert('Error duplicating widget: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error duplicating widget:', error);
+    alert('Error duplicating widget: ' + error.message);
+  }
+}
+
+// Command pattern for undo/redo
+class Command {
+  constructor(execute, undo, description) {
+    this.execute = execute;
+    this.undo = undo;
+    this.description = description;
+  }
+}
+
+// Add command to history
+function addCommand(command) {
+  // Clear any commands after current index (when doing new action after undo)
+  commandHistory = commandHistory.slice(0, historyIndex + 1);
+
+  // Add new command
+  commandHistory.push(command);
+  historyIndex++;
+
+  // Keep history within limit
+  if (commandHistory.length > MAX_HISTORY) {
+    commandHistory.shift();
+    historyIndex--;
+  }
+
+  console.log(`[History] Added command: ${command.description} (${historyIndex + 1}/${commandHistory.length})`);
+  updateMenuState();
+}
+
+// Undo last command
+async function undo() {
+  if (historyIndex < 0) {
+    console.log('[History] Nothing to undo');
+    return;
+  }
+
+  const command = commandHistory[historyIndex];
+  console.log(`[History] Undoing: ${command.description}`);
+
+  try {
+    await command.undo();
+    historyIndex--;
+    await loadFile(); // Reload to reflect changes
+    updateMenuState();
+  } catch (error) {
+    console.error('[History] Undo failed:', error);
+    alert('Undo failed: ' + error.message);
+  }
+}
+
+// Redo next command
+async function redo() {
+  if (historyIndex >= commandHistory.length - 1) {
+    console.log('[History] Nothing to redo');
+    return;
+  }
+
+  const command = commandHistory[historyIndex + 1];
+  console.log(`[History] Redoing: ${command.description}`);
+
+  try {
+    await command.execute();
+    historyIndex++;
+    await loadFile(); // Reload to reflect changes
+    updateMenuState();
+  } catch (error) {
+    console.error('[History] Redo failed:', error);
+    alert('Redo failed: ' + error.message);
+  }
+}
+
+// Update menu button states
+function updateMenuState() {
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+
+  if (undoBtn) {
+    undoBtn.disabled = historyIndex < 0;
+    undoBtn.title = historyIndex >= 0
+      ? `Undo: ${commandHistory[historyIndex].description} (Ctrl+Z)`
+      : 'Nothing to undo (Ctrl+Z)';
+  }
+
+  if (redoBtn) {
+    redoBtn.disabled = historyIndex >= commandHistory.length - 1;
+    redoBtn.title = historyIndex < commandHistory.length - 1
+      ? `Redo: ${commandHistory[historyIndex + 1].description} (Ctrl+Y)`
+      : 'Nothing to redo (Ctrl+Y)';
+  }
+}
+
+// Global keyboard shortcuts handler
+function handleKeyboardShortcut(e) {
+  // Check for modifier keys
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+  // Ignore shortcuts when typing in input fields
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+    // Except for Ctrl+S which should work everywhere
+    if (cmdOrCtrl && e.key === 's') {
+      e.preventDefault();
+      saveChanges();
+      return;
+    }
+    return;
+  }
+
+  // Ctrl+Z or Cmd+Z: Undo
+  if (cmdOrCtrl && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
+  // Ctrl+Y or Cmd+Shift+Z: Redo
+  if ((cmdOrCtrl && e.key === 'y') || (cmdOrCtrl && e.shiftKey && e.key === 'z')) {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
+  // Ctrl+S or Cmd+S: Save
+  if (cmdOrCtrl && e.key === 's') {
+    e.preventDefault();
+    saveChanges();
+    return;
+  }
+
+  // Ctrl+D or Cmd+D: Duplicate
+  if (cmdOrCtrl && e.key === 'd') {
+    e.preventDefault();
+    if (selectedWidgetId) {
+      duplicateWidget(selectedWidgetId);
+    } else {
+      alert('No widget selected to duplicate');
+    }
+    return;
+  }
+
+  // Delete or Backspace: Delete selected widget
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWidgetId) {
+    e.preventDefault();
+    deleteWidget(selectedWidgetId);
+    return;
+  }
+}
+
 // Reorder widget (drag and drop)
 async function reorderWidget(draggedWidgetId, targetWidgetId) {
   const draggedWidget = metadata.widgets.find(w => w.id === draggedWidgetId);
@@ -2016,4 +2201,10 @@ function toggleProductionMode() {
 // Auto-load on start
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Tsyne WYSIWYG Editor loaded');
+
+  // Register global keyboard shortcuts
+  document.addEventListener('keydown', handleKeyboardShortcut);
+
+  // Initialize menu state
+  updateMenuState();
 });

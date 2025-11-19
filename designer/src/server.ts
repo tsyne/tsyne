@@ -1863,6 +1863,102 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
     });
   },
 
+  '/api/duplicate-widget': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { widgetId } = JSON.parse(body);
+
+        const widget = metadataStore.get(widgetId);
+        if (!widget) {
+          throw new Error('Widget not found');
+        }
+
+        // Don't allow duplicating window widgets
+        if (widget.widgetType === 'window') {
+          throw new Error('Cannot duplicate window widget');
+        }
+
+        // Generate new ID for duplicated widget
+        let duplicateCounter = 1;
+        let newId: string;
+        do {
+          newId = `${widgetId}_copy${duplicateCounter}`;
+          duplicateCounter++;
+        } while (metadataStore.has(newId));
+
+        // Deep copy the widget
+        const newWidget: WidgetMetadata = {
+          id: newId,
+          widgetType: widget.widgetType,
+          parent: widget.parent,
+          properties: widget.properties ? { ...widget.properties } : undefined,
+          children: widget.children ? [...widget.children] : undefined,
+          widgetId: widget.widgetId ? `${widget.widgetId}_copy` : undefined
+        };
+
+        // Helper function to recursively duplicate children
+        function duplicateChildren(originalParentId: string, newParentId: string) {
+          const children = Array.from(metadataStore.values()).filter(w => w.parent === originalParentId);
+          const newChildIds: string[] = [];
+
+          for (const child of children) {
+            let childCounter = 1;
+            let newChildId: string;
+            do {
+              newChildId = `${child.id}_copy${childCounter}`;
+              childCounter++;
+            } while (metadataStore.has(newChildId));
+
+            const newChild: WidgetMetadata = {
+              id: newChildId,
+              widgetType: child.widgetType,
+              parent: newParentId,
+              properties: child.properties ? { ...child.properties } : undefined,
+              children: child.children ? [...child.children] : undefined,
+              widgetId: child.widgetId ? `${child.widgetId}_copy` : undefined
+            };
+
+            metadataStore.set(newChildId, newChild);
+            newChildIds.push(newChildId);
+
+            // Recursively duplicate grandchildren
+            duplicateChildren(child.id, newChildId);
+          }
+
+          return newChildIds;
+        }
+
+        // Add duplicated widget to metadata store
+        metadataStore.set(newId, newWidget);
+
+        // Duplicate children recursively
+        duplicateChildren(widgetId, newId);
+
+        // Update metadata
+        currentMetadata!.widgets = Array.from(metadataStore.values());
+
+        console.log(`[Editor] Duplicated widget ${widgetId} -> ${newId} (${widget.widgetType})`);
+
+        // Record as a pending edit
+        pendingEdits.push({
+          type: 'duplicate',
+          widgetId,
+          newWidgetId: newId,
+          widget: newWidget
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, newWidgetId: newId }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
   '/api/reorder-widget': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
