@@ -13,6 +13,16 @@ let editingStyles = null;
 // Context menu state
 let contextMenuTarget = null;
 
+// Undo/Redo history
+let commandHistory = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
+
+// Find/Search state
+let findResults = [];
+let currentFindIndex = -1;
+let matchedWidgetIds = new Set(); // Track which widgets have matches for tree highlighting
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
@@ -626,10 +636,15 @@ function createTreeItem(widget) {
     ? `<span class="widget-id">${widget.widgetId}</span> <span class="widget-type-parens">(${widget.widgetType})</span>`
     : `<span class="widget-type">${widget.widgetType}</span>`;
 
+  // Add search match indicator
+  const isMatched = matchedWidgetIds.has(widget.id);
+  const matchIndicator = isMatched ? '<span style="color: #f9826c; font-weight: bold; margin-left: 6px;" title="Search match">🔍</span>' : '';
+
   item.innerHTML = `
     <span class="icon">${icon}</span>
     ${displayText}
     ${propsText ? `<span class="widget-props">${propsText}</span>` : ''}
+    ${matchIndicator}
   `;
 
   item.onclick = (e) => {
@@ -1180,6 +1195,9 @@ function createPreviewWidget(widget) {
   if (widget.widgetId) {
     tooltipParts.push(`ID: ${widget.widgetId}`);
   }
+  if (widget.properties && widget.properties.className) {
+    tooltipParts.push(`Class: ${widget.properties.className}`);
+  }
   if (widget.properties && Object.keys(widget.properties).length > 0) {
     const propsList = Object.entries(widget.properties)
       .filter(([key, val]) => val !== undefined && val !== null && val !== '')
@@ -1598,6 +1616,456 @@ async function deleteWidget(widgetId) {
   }
 }
 
+// Duplicate selected widget
+async function duplicateWidget(widgetId) {
+  if (!widgetId) {
+    alert('No widget selected to duplicate');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/duplicate-widget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ widgetId })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Reload to show duplicated widget
+      await loadFile();
+      // Select the newly created widget
+      if (result.newWidgetId) {
+        selectWidget(result.newWidgetId);
+      }
+      console.log('Widget duplicated successfully');
+    } else {
+      alert('Error duplicating widget: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error duplicating widget:', error);
+    alert('Error duplicating widget: ' + error.message);
+  }
+}
+
+// Command pattern for undo/redo
+class Command {
+  constructor(execute, undo, description) {
+    this.execute = execute;
+    this.undo = undo;
+    this.description = description;
+  }
+}
+
+// Add command to history
+function addCommand(command) {
+  // Clear any commands after current index (when doing new action after undo)
+  commandHistory = commandHistory.slice(0, historyIndex + 1);
+
+  // Add new command
+  commandHistory.push(command);
+  historyIndex++;
+
+  // Keep history within limit
+  if (commandHistory.length > MAX_HISTORY) {
+    commandHistory.shift();
+    historyIndex--;
+  }
+
+  console.log(`[History] Added command: ${command.description} (${historyIndex + 1}/${commandHistory.length})`);
+  updateMenuState();
+}
+
+// Undo last command
+async function undo() {
+  if (historyIndex < 0) {
+    console.log('[History] Nothing to undo');
+    return;
+  }
+
+  const command = commandHistory[historyIndex];
+  console.log(`[History] Undoing: ${command.description}`);
+
+  try {
+    await command.undo();
+    historyIndex--;
+    await loadFile(); // Reload to reflect changes
+    updateMenuState();
+  } catch (error) {
+    console.error('[History] Undo failed:', error);
+    alert('Undo failed: ' + error.message);
+  }
+}
+
+// Redo next command
+async function redo() {
+  if (historyIndex >= commandHistory.length - 1) {
+    console.log('[History] Nothing to redo');
+    return;
+  }
+
+  const command = commandHistory[historyIndex + 1];
+  console.log(`[History] Redoing: ${command.description}`);
+
+  try {
+    await command.execute();
+    historyIndex++;
+    await loadFile(); // Reload to reflect changes
+    updateMenuState();
+  } catch (error) {
+    console.error('[History] Redo failed:', error);
+    alert('Redo failed: ' + error.message);
+  }
+}
+
+// Update menu button states
+function updateMenuState() {
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+
+  if (undoBtn) {
+    undoBtn.disabled = historyIndex < 0;
+    undoBtn.title = historyIndex >= 0
+      ? `Undo: ${commandHistory[historyIndex].description} (Ctrl+Z)`
+      : 'Nothing to undo (Ctrl+Z)';
+  }
+
+  if (redoBtn) {
+    redoBtn.disabled = historyIndex >= commandHistory.length - 1;
+    redoBtn.title = historyIndex < commandHistory.length - 1
+      ? `Redo: ${commandHistory[historyIndex + 1].description} (Ctrl+Y)`
+      : 'Nothing to redo (Ctrl+Y)';
+  }
+}
+
+// Global keyboard shortcuts handler
+function handleKeyboardShortcut(e) {
+  // Check for modifier keys
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+  // Ignore shortcuts when typing in input fields
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+    // Except for Ctrl+S which should work everywhere
+    if (cmdOrCtrl && e.key === 's') {
+      e.preventDefault();
+      saveChanges();
+      return;
+    }
+    return;
+  }
+
+  // Ctrl+Z or Cmd+Z: Undo
+  if (cmdOrCtrl && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
+  // Ctrl+Y or Cmd+Shift+Z: Redo
+  if ((cmdOrCtrl && e.key === 'y') || (cmdOrCtrl && e.shiftKey && e.key === 'z')) {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
+  // Ctrl+S or Cmd+S: Save
+  if (cmdOrCtrl && e.key === 's') {
+    e.preventDefault();
+    saveChanges();
+    return;
+  }
+
+  // Ctrl+D or Cmd+D: Duplicate
+  if (cmdOrCtrl && e.key === 'd') {
+    e.preventDefault();
+    if (selectedWidgetId) {
+      duplicateWidget(selectedWidgetId);
+    } else {
+      alert('No widget selected to duplicate');
+    }
+    return;
+  }
+
+  // Delete or Backspace: Delete selected widget
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedWidgetId) {
+    e.preventDefault();
+    deleteWidget(selectedWidgetId);
+    return;
+  }
+
+  // Ctrl+F or Cmd+F: Find
+  if (cmdOrCtrl && e.key === 'f') {
+    e.preventDefault();
+    openFindModal();
+    return;
+  }
+}
+
+// Find/Search functionality
+function openFindModal() {
+  const modal = document.getElementById('findModal');
+  modal.classList.add('visible');
+
+  // Focus the search input
+  setTimeout(() => {
+    const input = document.getElementById('findInput');
+    input.focus();
+    input.select();
+  }, 100);
+
+  console.log('[Find] Search dialog opened');
+}
+
+function closeFindModal() {
+  const modal = document.getElementById('findModal');
+  modal.classList.remove('visible');
+
+  // Clear matches and re-render tree to remove indicators
+  matchedWidgetIds.clear();
+  renderWidgetTree();
+
+  // Clear highlights from preview
+  clearFindHighlights();
+
+  console.log('[Find] Search dialog closed');
+}
+
+function performSearch() {
+  const searchTerm = document.getElementById('findInput').value.trim();
+  const findInWidgets = document.getElementById('findInWidgets').checked;
+  const findInSource = document.getElementById('findInSource').checked;
+  const caseSensitive = document.getElementById('findCaseSensitive').checked;
+
+  if (!searchTerm) {
+    alert('Please enter a search term');
+    return;
+  }
+
+  console.log(`[Find] Searching for: "${searchTerm}" (widgets: ${findInWidgets}, source: ${findInSource}, caseSensitive: ${caseSensitive})`);
+
+  findResults = [];
+  currentFindIndex = -1;
+  matchedWidgetIds.clear(); // Clear previous matches
+
+  const searchTermLower = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+
+  // Search in widgets
+  if (findInWidgets && metadata && metadata.widgets) {
+    metadata.widgets.forEach(widget => {
+      const matches = [];
+
+      // Check widget type
+      const widgetType = caseSensitive ? widget.widgetType : widget.widgetType.toLowerCase();
+      if (widgetType.includes(searchTermLower)) {
+        matches.push({ field: 'type', value: widget.widgetType, priority: 1 });
+      }
+
+      // Check widget ID (high priority)
+      if (widget.widgetId) {
+        const widgetId = caseSensitive ? widget.widgetId : widget.widgetId.toLowerCase();
+        if (widgetId.includes(searchTermLower)) {
+          matches.push({ field: 'ID', value: widget.widgetId, priority: 3 });
+        }
+      }
+
+      // Check properties with special attention to text and className
+      if (widget.properties) {
+        // Prioritize text property
+        if (widget.properties.text !== undefined && widget.properties.text !== null) {
+          const text = caseSensitive ? String(widget.properties.text) : String(widget.properties.text).toLowerCase();
+          if (text.includes(searchTermLower)) {
+            matches.push({ field: 'text', value: widget.properties.text, priority: 3 });
+          }
+        }
+
+        // Prioritize className property
+        if (widget.properties.className) {
+          const className = caseSensitive ? widget.properties.className : widget.properties.className.toLowerCase();
+          if (className.includes(searchTermLower)) {
+            matches.push({ field: 'className', value: widget.properties.className, priority: 3 });
+          }
+        }
+
+        // Check other properties
+        Object.entries(widget.properties).forEach(([key, value]) => {
+          // Skip text and className as we already checked them
+          if (key === 'text' || key === 'className') return;
+
+          const valueStr = caseSensitive ? String(value) : String(value).toLowerCase();
+          if (valueStr.includes(searchTermLower)) {
+            matches.push({ field: key, value: value, priority: 2 });
+          }
+        });
+      }
+
+      if (matches.length > 0) {
+        // Sort matches by priority (highest first)
+        matches.sort((a, b) => b.priority - a.priority);
+
+        // Track this widget as matched for tree highlighting
+        matchedWidgetIds.add(widget.id);
+
+        findResults.push({
+          type: 'widget',
+          widget: widget,
+          matches: matches,
+          matchCount: matches.length,
+          description: `${widget.widgetType}${widget.widgetId ? ' #' + widget.widgetId : ''}`
+        });
+      }
+    });
+  }
+
+  // Search in source code
+  if (findInSource && currentSource) {
+    const lines = currentSource.split('\n');
+    lines.forEach((line, index) => {
+      const lineToSearch = caseSensitive ? line : line.toLowerCase();
+      if (lineToSearch.includes(searchTermLower)) {
+        findResults.push({
+          type: 'source',
+          lineNumber: index + 1,
+          lineContent: line.trim(),
+          description: `Line ${index + 1}`
+        });
+      }
+    });
+  }
+
+  // Display results
+  displayFindResults();
+
+  // Re-render tree to show match indicators
+  renderWidgetTree();
+
+  console.log(`[Find] Found ${findResults.length} results`);
+}
+
+function displayFindResults() {
+  const resultsContainer = document.getElementById('findResults');
+  const navigationDiv = document.getElementById('findNavigation');
+
+  if (findResults.length === 0) {
+    resultsContainer.innerHTML = '<div style="color: #858585; font-size: 12px; text-align: center; padding: 20px;">No results found</div>';
+    navigationDiv.style.display = 'none';
+    return;
+  }
+
+  let html = '<div style="font-size: 12px;">';
+
+  findResults.forEach((result, index) => {
+    const isActive = index === currentFindIndex;
+    const bgColor = isActive ? '#094771' : 'transparent';
+
+    if (result.type === 'widget') {
+      const matchesHtml = result.matches.map(m => {
+        const color = m.priority === 3 ? '#4ec9b0' : '#858585'; // Highlight text, ID, className
+        const icon = m.priority === 3 ? '⭐' : '•';
+        return `<div style="color: ${color};">${icon} <strong>${m.field}:</strong> ${escapeHtml(String(m.value))}</div>`;
+      }).join('');
+
+      const matchBadge = result.matchCount > 1 ? `<span style="background: #0e639c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 8px;">${result.matchCount} matches</span>` : '';
+
+      html += `
+        <div style="padding: 10px; margin-bottom: 8px; background: ${bgColor}; border: 1px solid #3e3e3e; border-radius: 3px; cursor: pointer;"
+             onclick="selectFindResult(${index})">
+          <div style="color: #4ec9b0; font-weight: 600; margin-bottom: 6px;">
+            ${result.description}${matchBadge}
+          </div>
+          <div style="font-size: 11px;">
+            ${matchesHtml}
+          </div>
+        </div>
+      `;
+    } else if (result.type === 'source') {
+      html += `
+        <div style="padding: 10px; margin-bottom: 8px; background: ${bgColor}; border: 1px solid #3e3e3e; border-radius: 3px; cursor: pointer;"
+             onclick="selectFindResult(${index})">
+          <div style="color: #dcdcaa; font-weight: 600; margin-bottom: 4px;">${result.description}</div>
+          <div style="color: #d4d4d4; font-size: 11px; font-family: 'Consolas', 'Monaco', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${escapeHtml(result.lineContent)}
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  html += '</div>';
+  resultsContainer.innerHTML = html;
+
+  // Show navigation
+  navigationDiv.style.display = 'flex';
+  updateFindCounter();
+}
+
+function selectFindResult(index) {
+  currentFindIndex = index;
+  const result = findResults[index];
+
+  console.log(`[Find] Selected result ${index + 1}/${findResults.length}:`, result);
+
+  if (result.type === 'widget') {
+    // Switch to preview tab
+    switchPreviewTab('preview');
+
+    // Select the widget
+    selectWidget(result.widget.id);
+
+    // Scroll widget into view if possible
+    const widgetElement = document.querySelector(`[data-widget-id="${result.widget.id}"]`);
+    if (widgetElement) {
+      widgetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  } else if (result.type === 'source') {
+    // Switch to source tab
+    switchPreviewTab('source');
+
+    // Try to scroll to the line (limited support without a code editor)
+    // Just switch to source view for now
+  }
+
+  // Re-render results to highlight current selection
+  displayFindResults();
+}
+
+function navigateFindResults(direction) {
+  if (findResults.length === 0) return;
+
+  currentFindIndex += direction;
+
+  // Wrap around
+  if (currentFindIndex < 0) {
+    currentFindIndex = findResults.length - 1;
+  } else if (currentFindIndex >= findResults.length) {
+    currentFindIndex = 0;
+  }
+
+  selectFindResult(currentFindIndex);
+}
+
+function updateFindCounter() {
+  const counter = document.getElementById('findCounter');
+  if (findResults.length > 0) {
+    counter.textContent = `Result ${currentFindIndex + 1} of ${findResults.length}`;
+  } else {
+    counter.textContent = 'No results';
+  }
+}
+
+function clearFindHighlights() {
+  // Clear any highlighting from preview
+  // This would be more sophisticated with actual highlight overlays
+  console.log('[Find] Cleared highlights');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Reorder widget (drag and drop)
 async function reorderWidget(draggedWidgetId, targetWidgetId) {
   const draggedWidget = metadata.widgets.find(w => w.id === draggedWidgetId);
@@ -2013,4 +2481,10 @@ function toggleProductionMode() {
 // Auto-load on start
 window.addEventListener('DOMContentLoaded', () => {
   console.log('Tsyne WYSIWYG Editor loaded');
+
+  // Register global keyboard shortcuts
+  document.addEventListener('keydown', handleKeyboardShortcut);
+
+  // Initialize menu state
+  updateMenuState();
 });

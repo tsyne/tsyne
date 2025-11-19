@@ -56,6 +56,17 @@
       background: #1177bb;
     }
 
+    .toolbar button:disabled {
+      background: #4a4a4a;
+      color: #858585;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .toolbar button:disabled:hover {
+      background: #4a4a4a;
+    }
+
     .toolbar .file-path {
       color: #858585;
       font-size: 12px;
@@ -777,7 +788,9 @@
         <option value="examples/todomvc.ts">todomvc.ts</option>
       </select>
       <button onclick="loadSelectedFile()">Load</button>
-      <button onclick="saveChanges()">Save Changes</button>
+      <button onclick="undo()" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+      <button onclick="redo()" id="redoBtn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
+      <button onclick="saveChanges()">💾 Save</button>
       <button onclick="refreshPreview()">Refresh</button>
       <button onclick="openCssEditor()" id="cssEditorBtn" style="display:none">CSS Classes</button>
       <span class="file-path" id="filePath">No file loaded</span>
@@ -866,6 +879,64 @@
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeCssEditor()">Cancel</button>
         <button class="btn-save" onclick="saveCssChanges()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Find/Search Modal -->
+  <div id="findModal" class="modal-overlay">
+    <div class="modal" style="width: 600px;">
+      <div class="modal-header">
+        <h2>🔍 Find</h2>
+        <button class="modal-close" onclick="closeFindModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-size: 12px; color: #9d9d9d;">Search for:</label>
+          <input type="text" id="findInput" placeholder="Widget type, ID, property value, or source text..."
+                 style="width: 100%; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; padding: 8px 12px; border-radius: 3px; font-size: 13px;"
+                 onkeyup="if(event.key==='Enter') performSearch()">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-size: 12px; color: #9d9d9d;">Search in:</label>
+          <div style="display: flex; gap: 15px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+              <input type="checkbox" id="findInWidgets" checked style="cursor: pointer;">
+              <span>Widgets</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+              <input type="checkbox" id="findInSource" checked style="cursor: pointer;">
+              <span>Source Code</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+              <input type="checkbox" id="findCaseSensitive" style="cursor: pointer;">
+              <span>Case Sensitive</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="performSearch()" style="background: #0e639c; color: white; border: none; padding: 8px 16px; border-radius: 3px; cursor: pointer; font-size: 13px; width: 100%; margin-bottom: 15px;">
+          Search
+        </button>
+
+        <div id="findResults" style="max-height: 300px; overflow-y: auto;">
+          <div style="color: #858585; font-size: 12px; text-align: center; padding: 20px;">
+            Enter a search term and click Search
+          </div>
+        </div>
+
+        <div id="findNavigation" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #3e3e3e; display: flex; justify-content: space-between; align-items: center;">
+          <span id="findCounter" style="font-size: 12px; color: #858585;"></span>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="navigateFindResults(-1)" style="background: #6e6e6e; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+              ← Previous
+            </button>
+            <button onclick="navigateFindResults(1)" style="background: #6e6e6e; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 12px;">
+              Next →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
