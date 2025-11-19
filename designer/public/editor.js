@@ -21,6 +21,7 @@ const MAX_HISTORY = 50;
 // Find/Search state
 let findResults = [];
 let currentFindIndex = -1;
+let matchedWidgetIds = new Set(); // Track which widgets have matches for tree highlighting
 
 // Known CSS properties (categorized)
 const knownCssProperties = {
@@ -635,10 +636,15 @@ function createTreeItem(widget) {
     ? `<span class="widget-id">${widget.widgetId}</span> <span class="widget-type-parens">(${widget.widgetType})</span>`
     : `<span class="widget-type">${widget.widgetType}</span>`;
 
+  // Add search match indicator
+  const isMatched = matchedWidgetIds.has(widget.id);
+  const matchIndicator = isMatched ? '<span style="color: #f9826c; font-weight: bold; margin-left: 6px;" title="Search match">🔍</span>' : '';
+
   item.innerHTML = `
     <span class="icon">${icon}</span>
     ${displayText}
     ${propsText ? `<span class="widget-props">${propsText}</span>` : ''}
+    ${matchIndicator}
   `;
 
   item.onclick = (e) => {
@@ -1816,6 +1822,10 @@ function closeFindModal() {
   const modal = document.getElementById('findModal');
   modal.classList.remove('visible');
 
+  // Clear matches and re-render tree to remove indicators
+  matchedWidgetIds.clear();
+  renderWidgetTree();
+
   // Clear highlights from preview
   clearFindHighlights();
 
@@ -1837,6 +1847,7 @@ function performSearch() {
 
   findResults = [];
   currentFindIndex = -1;
+  matchedWidgetIds.clear(); // Clear previous matches
 
   const searchTermLower = caseSensitive ? searchTerm : searchTerm.toLowerCase();
 
@@ -1848,32 +1859,59 @@ function performSearch() {
       // Check widget type
       const widgetType = caseSensitive ? widget.widgetType : widget.widgetType.toLowerCase();
       if (widgetType.includes(searchTermLower)) {
-        matches.push(`type: ${widget.widgetType}`);
+        matches.push({ field: 'type', value: widget.widgetType, priority: 1 });
       }
 
-      // Check widget ID
+      // Check widget ID (high priority)
       if (widget.widgetId) {
         const widgetId = caseSensitive ? widget.widgetId : widget.widgetId.toLowerCase();
         if (widgetId.includes(searchTermLower)) {
-          matches.push(`id: ${widget.widgetId}`);
+          matches.push({ field: 'ID', value: widget.widgetId, priority: 3 });
         }
       }
 
-      // Check properties
+      // Check properties with special attention to text and className
       if (widget.properties) {
+        // Prioritize text property
+        if (widget.properties.text !== undefined && widget.properties.text !== null) {
+          const text = caseSensitive ? String(widget.properties.text) : String(widget.properties.text).toLowerCase();
+          if (text.includes(searchTermLower)) {
+            matches.push({ field: 'text', value: widget.properties.text, priority: 3 });
+          }
+        }
+
+        // Prioritize className property
+        if (widget.properties.className) {
+          const className = caseSensitive ? widget.properties.className : widget.properties.className.toLowerCase();
+          if (className.includes(searchTermLower)) {
+            matches.push({ field: 'className', value: widget.properties.className, priority: 3 });
+          }
+        }
+
+        // Check other properties
         Object.entries(widget.properties).forEach(([key, value]) => {
+          // Skip text and className as we already checked them
+          if (key === 'text' || key === 'className') return;
+
           const valueStr = caseSensitive ? String(value) : String(value).toLowerCase();
           if (valueStr.includes(searchTermLower)) {
-            matches.push(`${key}: ${value}`);
+            matches.push({ field: key, value: value, priority: 2 });
           }
         });
       }
 
       if (matches.length > 0) {
+        // Sort matches by priority (highest first)
+        matches.sort((a, b) => b.priority - a.priority);
+
+        // Track this widget as matched for tree highlighting
+        matchedWidgetIds.add(widget.id);
+
         findResults.push({
           type: 'widget',
           widget: widget,
           matches: matches,
+          matchCount: matches.length,
           description: `${widget.widgetType}${widget.widgetId ? ' #' + widget.widgetId : ''}`
         });
       }
@@ -1899,6 +1937,9 @@ function performSearch() {
   // Display results
   displayFindResults();
 
+  // Re-render tree to show match indicators
+  renderWidgetTree();
+
   console.log(`[Find] Found ${findResults.length} results`);
 }
 
@@ -1919,12 +1960,22 @@ function displayFindResults() {
     const bgColor = isActive ? '#094771' : 'transparent';
 
     if (result.type === 'widget') {
+      const matchesHtml = result.matches.map(m => {
+        const color = m.priority === 3 ? '#4ec9b0' : '#858585'; // Highlight text, ID, className
+        const icon = m.priority === 3 ? '⭐' : '•';
+        return `<div style="color: ${color};">${icon} <strong>${m.field}:</strong> ${escapeHtml(String(m.value))}</div>`;
+      }).join('');
+
+      const matchBadge = result.matchCount > 1 ? `<span style="background: #0e639c; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 8px;">${result.matchCount} matches</span>` : '';
+
       html += `
         <div style="padding: 10px; margin-bottom: 8px; background: ${bgColor}; border: 1px solid #3e3e3e; border-radius: 3px; cursor: pointer;"
              onclick="selectFindResult(${index})">
-          <div style="color: #4ec9b0; font-weight: 600; margin-bottom: 4px;">${result.description}</div>
-          <div style="color: #858585; font-size: 11px;">
-            ${result.matches.map(m => `<div>• ${m}</div>`).join('')}
+          <div style="color: #4ec9b0; font-weight: 600; margin-bottom: 6px;">
+            ${result.description}${matchBadge}
+          </div>
+          <div style="font-size: 11px;">
+            ${matchesHtml}
           </div>
         </div>
       `;
