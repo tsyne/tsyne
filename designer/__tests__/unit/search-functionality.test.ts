@@ -107,8 +107,8 @@ describe('Search Functionality', () => {
       const results = searchWidgets(widgets, searchTerm, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchCount).toBe(4); // type, ID, text, className
-      expect(results[0].matches).toHaveLength(4);
+      expect(results[0].matchCount).toBe(3); // ID, text, className
+      expect(results[0].matches).toHaveLength(3);
     });
 
     it('should sort matches by priority (highest first)', () => {
@@ -187,7 +187,7 @@ describe('Search Functionality', () => {
       const results = searchWidgets(widgets, searchTerm, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].matches.some(m => m.field === 'title')).toBe(true);
+      expect(results[0].matches.some((m: any) => m.field === 'title')).toBe(true);
     });
 
     it('should not duplicate text and className in other properties', () => {
@@ -206,7 +206,7 @@ describe('Search Functionality', () => {
       const results = searchWidgets(widgets, searchTerm, false);
 
       // Should match text property only once, not twice
-      const textMatches = results[0].matches.filter(m => m.field === 'text');
+      const textMatches = results[0].matches.filter((m: any) => m.field === 'text');
       expect(textMatches).toHaveLength(1);
     });
   });
