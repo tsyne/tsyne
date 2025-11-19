@@ -1697,12 +1697,10 @@ function openCssEditor() {
 }
 
 function closeCssEditor() {
-  // Discard editing copy and revert preview to current saved styles
+  // Discard editing copy (garbage collected)
   editingStyles = null;
 
-  // Reapply original styles to revert any preview changes
-  applyStylesToPreview();
-
+  // No need to "revert" - preview should only ever show currentStyles
   const modal = document.getElementById('cssEditorModal');
   modal.classList.remove('visible');
 }
