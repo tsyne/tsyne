@@ -1127,7 +1127,7 @@ function applyStylesToPreview() {
     for (const [prop, value] of Object.entries(properties)) {
       const converted = fyneToCSS(prop, value);
       if (converted) {
-        cssText += `  ${converted.prop}: ${converted.value} !important;\n`;
+        cssText += `  ${converted.prop}: ${converted.value};\n`;
       }
     }
     cssText += '}\n\n';
