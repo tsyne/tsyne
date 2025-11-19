@@ -1638,6 +1638,50 @@ async function reorderWidget(draggedWidgetId, targetWidgetId) {
 }
 
 // CSS Editor Functions
+
+// Get a readable path/identifier for a widget
+function getWidgetPath(widget) {
+  // If widget has an ID, use it
+  if (widget.widgetId) {
+    return `#${widget.widgetId} (${widget.widgetType})`;
+  }
+
+  // Build a path from root to this widget
+  const path = [];
+  let current = widget;
+
+  while (current) {
+    // Add widget type (and text/title if available for disambiguation)
+    let label = current.widgetType;
+    if (current.properties) {
+      if (current.properties.text && current.properties.text.length <= 20) {
+        label += ` "${current.properties.text}"`;
+      } else if (current.properties.title && current.properties.title.length <= 20) {
+        label += ` "${current.properties.title}"`;
+      }
+    }
+    path.unshift(label);
+
+    // Move to parent
+    if (current.parent) {
+      current = metadata.widgets.find(w => w.id === current.parent);
+    } else {
+      current = null;
+    }
+  }
+
+  return path.join(' > ');
+}
+
+// Find all widgets using a specific CSS class
+function findWidgetsUsingClass(className) {
+  if (!metadata || !metadata.widgets) return [];
+
+  return metadata.widgets.filter(w => {
+    return w.properties && w.properties.className === className;
+  });
+}
+
 function openCssEditor() {
   const modal = document.getElementById('cssEditorModal');
   modal.classList.add('visible');
@@ -1660,11 +1704,25 @@ function renderCssEditor() {
   let html = '';
 
   for (const [className, properties] of Object.entries(currentStyles)) {
+    // Find widgets using this class
+    const widgetsUsingClass = findWidgetsUsingClass(className);
+    const usageInfo = widgetsUsingClass.length > 0
+      ? widgetsUsingClass.map(w => `
+          <a href="#" onclick="selectWidget('${w.id}'); return false;" style="color: #4ec9b0; text-decoration: none;">
+            ${escapeHtml(getWidgetPath(w))}
+          </a>
+        `).join('<br>')
+      : '<span style="color: #858585; font-style: italic;">No widgets using this class</span>';
+
     html += `
       <div class="css-class-editor" data-class="${className}">
         <div class="css-class-header">
           <div class="css-class-name">.${className}</div>
           <button class="css-class-delete" onclick="deleteClass('${className}')">Delete Class</button>
+        </div>
+        <div style="margin: 8px 0; padding: 8px; background: #2d2d2d; border-radius: 3px; font-size: 11px;">
+          <div style="color: #858585; margin-bottom: 4px;">Used by ${widgetsUsingClass.length} widget${widgetsUsingClass.length !== 1 ? 's' : ''}:</div>
+          <div style="color: #d4d4d4; line-height: 1.6;">${usageInfo}</div>
         </div>
         <div class="css-properties" id="props-${className}">
     `;
