@@ -76,6 +76,11 @@ function captureWidget(type: string, props: any): any {
       }
       return chainableApi; // Return self for chaining
     },
+    accessibility: (options: any) => {
+      // Store accessibility options in metadata
+      metadata.accessibility = options;
+      return chainableApi; // Return self for chaining
+    },
     refresh: async () => {
       // No-op in designer mode
       return Promise.resolve();
@@ -125,6 +130,11 @@ function containerWidget(type: string, props: any, builder: () => void): any {
       if (conditionFn) {
         metadata.eventHandlers.whenCondition = conditionFn.toString();
       }
+      return chainableApi; // Return self for chaining
+    },
+    accessibility: (options: any) => {
+      // Store accessibility options in metadata
+      metadata.accessibility = options;
       return chainableApi; // Return self for chaining
     },
     model: (items: any[]) => {
@@ -1149,6 +1159,129 @@ class SourceCodeEditor {
     return true;
   }
 
+  updateAccessibility(metadata: any, accessibility: any): boolean {
+    const lineIndex = metadata.sourceLocation.line - 1;
+    const widgetType = metadata.widgetType;
+
+    // Build widget pattern
+    let widgetPattern: RegExp;
+    const firstPropKey = Object.keys(metadata.properties || {})[0];
+    const firstPropValue = firstPropKey ? metadata.properties[firstPropKey] : null;
+
+    if (firstPropValue && typeof firstPropValue === 'string') {
+      const escapedValue = firstPropValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(\\s*['"]${escapedValue}['"]`);
+    } else {
+      widgetPattern = new RegExp(`\\b(a\\.)?${widgetType}\\s*\\(`);
+    }
+
+    // Find the widget line
+    let targetLineIndex = -1;
+    for (let offset = 0; offset <= 2; offset++) {
+      const checkIndex = lineIndex + offset;
+      if (checkIndex >= 0 && checkIndex < this.lines.length && widgetPattern.test(this.lines[checkIndex])) {
+        targetLineIndex = checkIndex;
+        break;
+      }
+      const checkIndexBefore = lineIndex - offset;
+      if (offset > 0 && checkIndexBefore >= 0 && checkIndexBefore < this.lines.length && widgetPattern.test(this.lines[checkIndexBefore])) {
+        targetLineIndex = checkIndexBefore;
+        break;
+      }
+    }
+
+    if (targetLineIndex === -1) {
+      console.warn(`[Editor] Could not find widget type '${widgetType}' near line ${lineIndex + 1}`);
+      return false;
+    }
+
+    // Find the full statement (may span multiple lines)
+    let statementLines = [targetLineIndex];
+    let fullStatement = this.lines[targetLineIndex];
+
+    const containerTypes = ['vbox', 'hbox', 'grid', 'scroll', 'border', 'tabs', 'form', 'split'];
+    const isContainer = containerTypes.includes(widgetType);
+
+    // Look ahead for continuation lines
+    if (isContainer) {
+      let braceCount = 0;
+      for (let i = targetLineIndex; i < Math.min(targetLineIndex + 20, this.lines.length); i++) {
+        const line = this.lines[i];
+        for (const char of line) {
+          if (char === '{') braceCount++;
+          else if (char === '}') braceCount--;
+        }
+        if (i > targetLineIndex) {
+          statementLines.push(i);
+          fullStatement += '\n' + line;
+        }
+        if (braceCount === 0 && line.trim().endsWith('});')) {
+          break;
+        }
+      }
+    } else {
+      const startIndent = this.lines[targetLineIndex].search(/\S/);
+      for (let i = targetLineIndex + 1; i < Math.min(targetLineIndex + 10, this.lines.length); i++) {
+        const line = this.lines[i];
+        const lineIndent = line.search(/\S/);
+        if (lineIndent <= startIndent && line.trim().endsWith(';')) {
+          break;
+        }
+        statementLines.push(i);
+        fullStatement += '\n' + line;
+        if (line.includes(';') && lineIndent > startIndent) {
+          break;
+        }
+      }
+    }
+
+    // Generate accessibility call
+    const accessibilityStr = JSON.stringify(accessibility, null, 2).split('\n').join('\n    ');
+    const accessibilityCall = `.accessibility(${accessibilityStr})`;
+
+    // Check if .accessibility() already exists
+    const accessibilityPattern = /\.accessibility\s*\([^)]*\)/s;
+    let updatedStatement: string;
+
+    if (accessibilityPattern.test(fullStatement)) {
+      // Update existing .accessibility()
+      updatedStatement = fullStatement.replace(accessibilityPattern, accessibilityCall);
+    } else {
+      // Add new .accessibility()
+      if (isContainer) {
+        // For containers, add before the closing });
+        const closingPattern = /\}\);/;
+        const match = closingPattern.exec(fullStatement);
+        if (match && match.index !== undefined) {
+          updatedStatement =
+            fullStatement.substring(0, match.index) +
+            `})${accessibilityCall};` +
+            fullStatement.substring(match.index + 3);
+        } else {
+          console.warn(`[Editor] Could not find closing }); for container ${widgetType}`);
+          return false;
+        }
+      } else {
+        // For simple widgets, add before the last semicolon
+        const lastSemicolonIndex = fullStatement.lastIndexOf(';');
+        if (lastSemicolonIndex !== -1) {
+          updatedStatement =
+            fullStatement.substring(0, lastSemicolonIndex) +
+            accessibilityCall +
+            ';' +
+            fullStatement.substring(lastSemicolonIndex + 1);
+        } else {
+          console.warn(`[Editor] Could not find semicolon for ${widgetType}`);
+          return false;
+        }
+      }
+    }
+
+    this.replaceLines(statementLines, updatedStatement);
+    console.log(`[Editor] Line ${targetLineIndex + 1}: Updated accessibility for ${widgetType}`);
+    return true;
+  }
+
   updateWidgetProperty(metadata: any, propertyName: string, oldValue: any, newValue: any): boolean {
     let lineIndex = metadata.sourceLocation.line - 1;
     const widgetType = metadata.widgetType;
@@ -1585,6 +1718,13 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       for (const edit of styleEdits) {
         console.log(`[Editor] Updating styles object`);
         editor.updateStyles(edit.styles);
+      }
+
+      // Apply accessibility updates
+      const accessibilityEdits = pendingEdits.filter(e => e.type === 'update-accessibility');
+      for (const edit of accessibilityEdits) {
+        console.log(`[Editor] Updating accessibility for ${edit.widgetId}`);
+        editor.updateAccessibility(edit.widget, edit.accessibility);
       }
 
       // Get candidate source (after all edits)
@@ -2044,6 +2184,42 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           metadata: currentMetadata,
           currentSource: updatedSource
         }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
+  '/api/update-accessibility': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { widgetId, accessibility } = JSON.parse(body);
+
+        const widget = metadataStore.get(widgetId);
+        if (!widget) {
+          throw new Error('Widget not found');
+        }
+
+        console.log(`[Editor] Updating accessibility for ${widgetId}:`, accessibility);
+
+        // Update metadata
+        widget.accessibility = accessibility;
+        currentMetadata!.widgets = Array.from(metadataStore.values());
+
+        // Record as a pending edit
+        pendingEdits.push({
+          type: 'update-accessibility',
+          widgetId,
+          widget,
+          accessibility
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, metadata: currentMetadata }));
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });

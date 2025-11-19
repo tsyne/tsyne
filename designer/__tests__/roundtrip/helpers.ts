@@ -98,6 +98,13 @@ export function deleteWidget(widgetId: string): Promise<any> {
 }
 
 /**
+ * Update widget accessibility options
+ */
+export function updateAccessibility(widgetId: string, accessibility: any): Promise<any> {
+  return apiRequest('/api/update-accessibility', { widgetId, accessibility });
+}
+
+/**
  * Compute diff between original and edited files
  */
 export function getDiff(originalPath: string, editedPath: string): string {

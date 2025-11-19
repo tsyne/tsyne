@@ -16,6 +16,12 @@ export interface WidgetMetadata {
   eventHandlers: Record<string, string>;
   children: string[];  // Child widget IDs
   parent: string | null;  // Parent widget ID
+  accessibility?: {  // Accessibility options
+    label?: string;
+    description?: string;
+    role?: string;
+    hint?: string;
+  };
 }
 
 export class MetadataStore {
