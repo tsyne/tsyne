@@ -1697,8 +1697,11 @@ function openCssEditor() {
 }
 
 function closeCssEditor() {
-  // Discard editing copy
+  // Discard editing copy and revert preview to current saved styles
   editingStyles = null;
+
+  // Reapply original styles to revert any preview changes
+  applyStylesToPreview();
 
   const modal = document.getElementById('cssEditorModal');
   modal.classList.remove('visible');
@@ -1831,7 +1834,8 @@ function addCssProperty(className) {
           <label style="display: block; margin-bottom: 8px; color: #d4d4d4; font-size: 13px;">
             Select a property or enter a custom one:
           </label>
-          <select id="propertySelect" class="property-input" style="width: 100%; margin-bottom: 10px;">
+          <select id="propertySelect" class="property-input" style="width: 100%; margin-bottom: 10px;"
+                  onchange="updatePropertyValueInput()">
             <option value="">-- Select Property --</option>
             ${optionsHtml}
           </select>
@@ -1840,7 +1844,17 @@ function addCssProperty(className) {
               Or enter custom property name:
             </label>
             <input type="text" id="customPropertyInput" class="property-input"
-                   placeholder="e.g., customProperty" style="width: 100%;">
+                   placeholder="e.g., customProperty" style="width: 100%;"
+                   oninput="updatePropertyValueInput()">
+          </div>
+          <div id="propertyValueSection" style="margin-top: 15px; display: none;">
+            <label style="display: block; margin-bottom: 8px; color: #d4d4d4; font-size: 13px;">
+              Value:
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="color" id="propertyColorPicker" class="css-color-picker" value="#000000" style="display: none;">
+              <input type="text" id="propertyValueInput" class="property-input" placeholder="Enter value" style="flex: 1;">
+            </div>
           </div>
         </div>
       </div>
@@ -1859,6 +1873,42 @@ function addCssProperty(className) {
   }, 100);
 }
 
+function updatePropertyValueInput() {
+  const select = document.getElementById('propertySelect');
+  const customInput = document.getElementById('customPropertyInput');
+  const valueSection = document.getElementById('propertyValueSection');
+  const colorPicker = document.getElementById('propertyColorPicker');
+  const valueInput = document.getElementById('propertyValueInput');
+
+  const propName = customInput.value.trim() || select.value;
+
+  if (propName) {
+    // Show value section
+    valueSection.style.display = 'block';
+
+    // Check if it's a color property
+    if (isColorProperty(propName)) {
+      colorPicker.style.display = 'block';
+      valueInput.value = '#000000';
+      // Sync color picker with text input
+      colorPicker.addEventListener('input', function() {
+        valueInput.value = this.value;
+      });
+      valueInput.addEventListener('input', function() {
+        if (this.value.startsWith('#')) {
+          colorPicker.value = this.value;
+        }
+      });
+    } else {
+      colorPicker.style.display = 'none';
+      valueInput.value = '';
+    }
+  } else {
+    // Hide value section if no property selected
+    valueSection.style.display = 'none';
+  }
+}
+
 function closePropertyPicker() {
   const modal = document.getElementById('propertyPickerModal');
   if (modal) {
@@ -1869,6 +1919,7 @@ function closePropertyPicker() {
 function confirmAddProperty(className) {
   const select = document.getElementById('propertySelect');
   const customInput = document.getElementById('customPropertyInput');
+  const valueInput = document.getElementById('propertyValueInput');
 
   const propName = customInput.value.trim() || select.value;
 
@@ -1882,13 +1933,25 @@ function confirmAddProperty(className) {
     return;
   }
 
-  // Set default value based on property type
-  let defaultValue = '';
-  if (isColorProperty(propName)) {
-    defaultValue = '#000000';
+  // Get value from input, or use default
+  let value = valueInput.value.trim();
+  if (!value) {
+    // Set default value based on property type
+    if (isColorProperty(propName)) {
+      value = '#000000';
+    } else {
+      value = '';
+    }
+  } else {
+    // Try to parse as JSON for numbers/booleans
+    try {
+      value = JSON.parse(value);
+    } catch {
+      // Keep as string
+    }
   }
 
-  editingStyles[className][propName] = defaultValue;
+  editingStyles[className][propName] = value;
   closePropertyPicker();
   renderCssEditor();
   // Don't apply to preview yet - wait for Save button
