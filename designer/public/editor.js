@@ -1020,6 +1020,11 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
         }
       }
 
+      // Update current source with the edited source
+      if (result.currentSource) {
+        currentSource = result.currentSource;
+      }
+
       renderWidgetTree();
       renderPreview();
       applyStylesToPreview();
