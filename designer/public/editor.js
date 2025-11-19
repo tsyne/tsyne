@@ -7,6 +7,9 @@ let currentStyles = null;
 let currentSource = null;
 let originalSource = null;
 
+// CSS editor state (for staging changes before save)
+let editingStyles = null;
+
 // Context menu state
 let contextMenuTarget = null;
 
@@ -1116,13 +1119,15 @@ function applyStylesToPreview() {
   };
 
   // Generate CSS
+  // Make selectors more specific to override production mode styles
   let cssText = '';
   for (const [className, properties] of Object.entries(currentStyles)) {
-    cssText += `.${className} {\n`;
+    // Add specificity for both normal and production mode
+    cssText += `.preview-widget.${className}, .preview-content.production-mode .preview-widget.${className} {\n`;
     for (const [prop, value] of Object.entries(properties)) {
       const converted = fyneToCSS(prop, value);
       if (converted) {
-        cssText += `  ${converted.prop}: ${converted.value};\n`;
+        cssText += `  ${converted.prop}: ${converted.value} !important;\n`;
       }
     }
     cssText += '}\n\n';
@@ -1683,12 +1688,18 @@ function findWidgetsUsingClass(className) {
 }
 
 function openCssEditor() {
+  // Create a working copy of styles for editing
+  editingStyles = JSON.parse(JSON.stringify(currentStyles || {}));
+
   const modal = document.getElementById('cssEditorModal');
   modal.classList.add('visible');
   renderCssEditor();
 }
 
 function closeCssEditor() {
+  // Discard editing copy
+  editingStyles = null;
+
   const modal = document.getElementById('cssEditorModal');
   modal.classList.remove('visible');
 }
@@ -1696,14 +1707,14 @@ function closeCssEditor() {
 function renderCssEditor() {
   const body = document.getElementById('cssEditorBody');
 
-  if (!currentStyles || Object.keys(currentStyles).length === 0) {
+  if (!editingStyles || Object.keys(editingStyles).length === 0) {
     body.innerHTML = '<div class="no-selection">No CSS classes defined</div>';
     return;
   }
 
   let html = '';
 
-  for (const [className, properties] of Object.entries(currentStyles)) {
+  for (const [className, properties] of Object.entries(editingStyles)) {
     // Find widgets using this class
     const widgetsUsingClass = findWidgetsUsingClass(className);
     const usageInfo = widgetsUsingClass.length > 0
@@ -1760,35 +1771,35 @@ function renderCssEditor() {
 }
 
 function updateCssProperty(className, oldPropName, field, newValue) {
-  if (!currentStyles || !currentStyles[className]) return;
+  if (!editingStyles || !editingStyles[className]) return;
 
   if (field === 'name' && oldPropName !== newValue) {
     // Rename property
-    const value = currentStyles[className][oldPropName];
-    delete currentStyles[className][oldPropName];
-    currentStyles[className][newValue] = value;
+    const value = editingStyles[className][oldPropName];
+    delete editingStyles[className][oldPropName];
+    editingStyles[className][newValue] = value;
   } else if (field === 'value') {
     // Update value - try to parse as JSON for numbers/booleans
     try {
-      currentStyles[className][oldPropName] = JSON.parse(newValue);
+      editingStyles[className][oldPropName] = JSON.parse(newValue);
     } catch {
-      currentStyles[className][oldPropName] = newValue;
+      editingStyles[className][oldPropName] = newValue;
     }
   }
 
   renderCssEditor();
-  applyStylesToPreview();
+  // Don't apply to preview yet - wait for Save button
 }
 
 function deleteCssProperty(className, propName) {
-  if (!currentStyles || !currentStyles[className]) return;
-  delete currentStyles[className][propName];
+  if (!editingStyles || !editingStyles[className]) return;
+  delete editingStyles[className][propName];
   renderCssEditor();
-  applyStylesToPreview();
+  // Don't apply to preview yet - wait for Save button
 }
 
 function addCssProperty(className) {
-  if (!currentStyles || !currentStyles[className]) return;
+  if (!editingStyles || !editingStyles[className]) return;
 
   // Create a modal dialog with property selection
   const existingModal = document.getElementById('propertyPickerModal');
@@ -1866,7 +1877,7 @@ function confirmAddProperty(className) {
     return;
   }
 
-  if (currentStyles[className][propName] !== undefined) {
+  if (editingStyles[className][propName] !== undefined) {
     alert(`Property "${propName}" already exists`);
     return;
   }
@@ -1877,24 +1888,31 @@ function confirmAddProperty(className) {
     defaultValue = '#000000';
   }
 
-  currentStyles[className][propName] = defaultValue;
+  editingStyles[className][propName] = defaultValue;
   closePropertyPicker();
   renderCssEditor();
-  applyStylesToPreview();
+  // Don't apply to preview yet - wait for Save button
 }
 
 function deleteClass(className) {
-  if (!currentStyles) return;
+  if (!editingStyles) return;
 
   if (!confirm(`Delete class "${className}"?`)) return;
 
-  delete currentStyles[className];
+  delete editingStyles[className];
   renderCssEditor();
-  applyStylesToPreview();
+  // Don't apply to preview yet - wait for Save button
 }
 
 async function saveCssChanges() {
   try {
+    // Copy editing changes to current styles
+    currentStyles = JSON.parse(JSON.stringify(editingStyles));
+
+    // Apply to preview now
+    applyStylesToPreview();
+
+    // Send to backend
     const response = await fetch('/api/update-styles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1906,7 +1924,6 @@ async function saveCssChanges() {
     if (result.success) {
       console.log('CSS classes updated successfully');
       closeCssEditor();
-      // Styles are already applied to preview, no need for alert
     } else {
       alert('Error updating CSS classes: ' + result.error);
     }
