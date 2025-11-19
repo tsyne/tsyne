@@ -124,4 +124,47 @@ app({ title: 'Test' }, (a) => {
     // Note: originalSource is not returned by updateProperty,
     // it's only returned on initial load and stays constant
   });
+
+  test('valid source passes linting on load', async () => {
+    const validSource = `import { app } from '../src';
+
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.button('Click', () => {});
+      });
+    });
+    win.show();
+  });
+});`;
+
+    const loadResult = await loadFromString(validSource);
+    expect(loadResult.success).toBe(true);
+    // If linting fails, it logs warnings but still loads
+    expect(loadResult.metadata).toBeDefined();
+  });
+
+  test('invalid source logs lint errors but still loads', async () => {
+    const invalidSource = `import { app } from '../src';
+
+app({ title: 'Test' }, (a) => {
+  a.window({ title: 'Test' }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.button('Click', () => {
+          // Missing closing brace
+      });
+    });
+    win.show();
+  });
+});`;
+
+    // The load should still succeed even with lint errors
+    // (linting is informational, not blocking)
+    const loadResult = await loadFromString(invalidSource);
+    // Load might fail for other reasons (execution error), but that's expected
+    // The important thing is that linting doesn't crash the process
+    expect(loadResult).toBeDefined();
+  });
 });

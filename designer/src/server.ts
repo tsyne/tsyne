@@ -466,10 +466,59 @@ function extractStyles(sourceCode: string): Record<string, any> | null {
   }
 }
 
+// Lint TypeScript source code
+function lintSource(sourceCode: string, context: string = 'source'): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  try {
+    // Use TypeScript compiler to check for syntax errors
+    const result = ts.transpileModule(sourceCode, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+        noEmitOnError: true
+      },
+      reportDiagnostics: true
+    });
+
+    if (result.diagnostics && result.diagnostics.length > 0) {
+      result.diagnostics.forEach(diagnostic => {
+        if (diagnostic.file && diagnostic.start !== undefined) {
+          const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+          const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+          errors.push(`Line ${line + 1}, Column ${character + 1}: ${message}`);
+        } else {
+          const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+          errors.push(message);
+        }
+      });
+    }
+
+    if (errors.length > 0) {
+      console.warn(`[Lint] ${context} has ${errors.length} error(s):`);
+      errors.forEach(err => console.warn(`  - ${err}`));
+      return { valid: false, errors };
+    }
+
+    console.log(`[Lint] ${context} passed validation`);
+    return { valid: true, errors: [] };
+  } catch (error: any) {
+    const errorMsg = `Linting failed: ${error.message}`;
+    console.error(`[Lint] ${errorMsg}`);
+    return { valid: false, errors: [errorMsg] };
+  }
+}
+
 // Load and execute source code in designer mode
 function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): { widgets: any[] } {
   currentSourceCode = sourceCode;
   currentFilePath = virtualPath;
+
+  // Lint source code
+  const lintResult = lintSource(currentSourceCode, `load(${virtualPath})`);
+  if (!lintResult.valid) {
+    console.warn('[Designer] Source has lint errors, but continuing with load');
+  }
 
   // Extract CSS styles
   currentStyles = extractStyles(currentSourceCode);
@@ -1563,6 +1612,12 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         transformResult.warnings.forEach(warning => {
           console.warn(`[Transformer] ${warning}`);
         });
+      }
+
+      // Lint the final output source
+      const lintResult = lintSource(transformResult.source, 'save');
+      if (!lintResult.valid) {
+        console.warn('[Designer] Generated source has lint errors');
       }
 
       // Prepare output path
