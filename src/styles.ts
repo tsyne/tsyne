@@ -45,7 +45,7 @@ export interface WidgetStyle {
 
   // Button-specific properties (Fyne limitation workaround)
   // Maps to Fyne's importance levels since Fyne doesn't support per-widget colors
-  importance?: 'low' | 'medium' | 'high' | 'warning' | 'success';
+  importance?: 'low' | 'medium' | 'high' | 'danger' | 'warning' | 'success';
 }
 
 /**

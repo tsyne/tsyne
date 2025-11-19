@@ -33,7 +33,7 @@ export interface WidgetStyle {
     color?: number | string;
     background_color?: number | string;
     text_align?: 'left' | 'center' | 'right';
-    importance?: 'low' | 'medium' | 'high' | 'warning' | 'success';
+    importance?: 'low' | 'medium' | 'high' | 'danger' | 'warning' | 'success';
 }
 /**
  * Widget type selectors (includes built-in types and custom class names)
