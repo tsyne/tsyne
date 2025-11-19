@@ -1,16 +1,19 @@
 # Tsyne WYSIWYG Designer
 
-A 100% self-contained WYSIWYG visual editor for Tsyne applications. This is a complete sub-project within the Tsyne repository providing design-time tooling for building Tsyne GUIs.
+A 100% self-contained WYSIWYG visual editor for Tsyne applications. Available as both a **Node.js development server** and a **standalone desktop application** (via Tauri).
 
 ## Features
 
 - **Visual Widget Tree** - Hierarchical view of all widgets in your application
-- **Property Inspector** - Real-time property editing
+- **Property Inspector** - Real-time property editing with color pickers
+- **CSS Classes Editor** - Visual editor for Fyne styling with widget usage tracking
 - **Live Preview** - See your UI structure as you build
 - **Widget Palette** - Add new widgets from a categorized palette
 - **Source Code Persistence** - All changes saved back to TypeScript files
 - **Complete Tsyne ABI Emulation** - Supports all Tsyne widget types and containers
 - **Multi-line Widget Support** - Correctly handles complex widgets with callbacks
+- **TypeScript Linting** - Validates code quality on load and save
+- **MVC Architecture** - Proper model-view-controller separation (no databinding)
 
 ## Architecture
 
@@ -44,6 +47,29 @@ This designer is a complete sub-project with:
 
 ## Quick Start
 
+### Option 1: Desktop Application (Recommended for End Users)
+
+```bash
+# Install dependencies
+cd designer
+npm install
+
+# Run as standalone desktop app (Tauri)
+npm run tauri:dev
+
+# Or build distributable installer
+npm run tauri:build
+```
+
+**Tauri Requirements:** See [TAURI_SETUP.md](TAURI_SETUP.md) for prerequisites (Rust, system dependencies).
+
+**Distributable Output:** Creates platform-specific installers:
+- **macOS**: `.app` bundle + `.dmg` installer (~12MB)
+- **Linux**: `.deb` + `.AppImage` (~10MB)
+- **Windows**: `.msi` installer (~15MB)
+
+### Option 2: Development Server (For Contributors)
+
 ```bash
 # Install dependencies
 cd designer
@@ -52,19 +78,40 @@ npm install
 # Build TypeScript
 npm run build
 
-# Start the server
+# Start the Node.js server
 npm start
 
 # Open your browser
 open http://localhost:3000
 ```
 
+**Use this mode for:**
+- Contributing to the designer
+- Hot-reloading during development
+- Running tests
+- Debugging with browser DevTools
+
+## Comparison: Desktop vs Web
+
+| Feature | Tauri Desktop App | Node.js Dev Server |
+|---------|-------------------|-------------------|
+| **Installation** | Standalone installer | npm install |
+| **Offline** | ✅ Yes | ❌ No (localhost only) |
+| **File Access** | Full native access | Limited to served files |
+| **Bundle Size** | ~10-15MB | N/A |
+| **Updates** | Manual/auto-update | git pull |
+| **DevTools** | ✅ (debug builds) | ✅ Always |
+| **Hot Reload** | ❌ | ✅ |
+| **Best For** | End users | Contributors |
+
 ## Usage
 
 1. Select a file from the dropdown (hello.ts, calculator.ts, or todomvc.ts) and click **"Load"**
 2. Select widgets in the tree to view/edit properties
-3. Use the widget palette to add new widgets
-4. Click **"Save Changes"** to save to `[filename].edited.ts`
+3. Use the CSS Classes Editor to style widgets with Fyne importance levels
+4. Use the widget palette to add new widgets
+5. Click **"Save Changes"** to save to `[filename].edited.ts`
+6. View the "source" tab to see the generated TypeScript code
 
 ## Testing
 
