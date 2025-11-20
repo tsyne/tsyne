@@ -13,6 +13,20 @@ export interface ContextMenuItem {
 }
 
 /**
+ * Accessibility options for widgets
+ */
+export interface AccessibilityOptions {
+  /** ARIA label - concise name for the widget */
+  label?: string;
+  /** Extended description for screen readers */
+  description?: string;
+  /** ARIA role (e.g., 'button', 'textbox', 'navigation') */
+  role?: string;
+  /** Usage hint for assistive technologies */
+  hint?: string;
+}
+
+/**
  * Base class for all widgets
  */
 export abstract class Widget {
@@ -119,6 +133,26 @@ export abstract class Widget {
     this.visibilityCondition = updateVisibility;
     updateVisibility(); // Initial evaluation
 
+    return this;
+  }
+
+  /**
+   * Set accessibility properties for assistive technologies
+   * @param options Accessibility options (label, description, role, hint)
+   * @returns this for method chaining
+   * @example
+   * const submitBtn = a.button('Submit', onSubmit).accessibility({
+   *   label: 'Submit Form',
+   *   description: 'Submits the registration form',
+   *   role: 'button',
+   *   hint: 'Press Enter or click to submit'
+   * });
+   */
+  accessibility(options: AccessibilityOptions): this {
+    this.ctx.bridge.send('setAccessibility', {
+      widgetId: this.id,
+      ...options
+    });
     return this;
   }
 
