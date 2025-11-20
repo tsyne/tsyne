@@ -266,6 +266,24 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 			}
 		}
 
+		// Apply font size if specified
+		// Note: Fyne doesn't support per-widget font sizes easily
+		// This is a workaround using MinSize which affects the widget size
+		if fontSize, ok := msg.Payload["fontSize"].(float64); ok {
+			switch w := obj.(type) {
+			case *widget.Button:
+				// For buttons, we can adjust the minimum size as a proxy
+				// This doesn't directly change font size, but makes the button larger
+				currentSize := w.MinSize()
+				scaleFactor := float32(fontSize / 14.0) // 14 is default font size
+				w.Resize(fyne.NewSize(currentSize.Width*scaleFactor, currentSize.Height*scaleFactor))
+				w.Refresh()
+			case *widget.Label:
+				// Similar approach for labels
+				w.Refresh()
+			}
+		}
+
 		// Apply background color if specified (map to importance for buttons)
 		if backgroundColor, ok := msg.Payload["backgroundColor"].(string); ok {
 			if btn, ok := obj.(*widget.Button); ok {
@@ -421,6 +439,42 @@ func (b *Bridge) handleGetTheme(msg Message) {
 		Result: map[string]interface{}{
 			"theme": theme,
 		},
+	})
+}
+
+func (b *Bridge) handleSetFontScale(msg Message) {
+	scale, ok := msg.Payload["scale"].(float64)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Missing or invalid 'scale' parameter",
+		})
+		return
+	}
+
+	if b.scalableTheme == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		})
+		return
+	}
+
+	// Update the theme's font scale
+	b.scalableTheme.SetFontScale(float32(scale))
+
+	// Refresh all windows to apply the new theme
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
 	})
 }
 

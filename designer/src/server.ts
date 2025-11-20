@@ -58,6 +58,7 @@ function captureWidget(type: string, props: any): any {
     sourceLocation: location,
     properties: props,
     eventHandlers: {},
+    mouseEventHandlers: {},
     parent: currentParent
   };
   metadataStore.set(internalId, metadata);
@@ -79,6 +80,28 @@ function captureWidget(type: string, props: any): any {
     accessibility: (options: any) => {
       // Store accessibility options in metadata
       metadata.accessibility = options;
+      return chainableApi; // Return self for chaining
+    },
+    onMouseIn: (callback: any) => {
+      // Store mouse in handler in metadata
+      metadata.mouseEventHandlers.onMouseIn = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouseMoved: (callback: any) => {
+      // Store mouse moved handler in metadata
+      metadata.mouseEventHandlers.onMouseMoved = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouseOut: (callback: any) => {
+      // Store mouse out handler in metadata
+      metadata.mouseEventHandlers.onMouseOut = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouse: (callbacks: any) => {
+      // Store combined mouse handlers in metadata
+      if (callbacks.in) metadata.mouseEventHandlers.onMouseIn = callbacks.in.toString();
+      if (callbacks.moved) metadata.mouseEventHandlers.onMouseMoved = callbacks.moved.toString();
+      if (callbacks.out) metadata.mouseEventHandlers.onMouseOut = callbacks.out.toString();
       return chainableApi; // Return self for chaining
     },
     refresh: async () => {
@@ -108,6 +131,7 @@ function containerWidget(type: string, props: any, builder: () => void): any {
     sourceLocation: location,
     properties: props,
     eventHandlers: {},
+    mouseEventHandlers: {},
     parent: currentParent
   };
   metadataStore.set(internalId, metadata);
@@ -135,6 +159,28 @@ function containerWidget(type: string, props: any, builder: () => void): any {
     accessibility: (options: any) => {
       // Store accessibility options in metadata
       metadata.accessibility = options;
+      return chainableApi; // Return self for chaining
+    },
+    onMouseIn: (callback: any) => {
+      // Store mouse in handler in metadata
+      metadata.mouseEventHandlers.onMouseIn = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouseMoved: (callback: any) => {
+      // Store mouse moved handler in metadata
+      metadata.mouseEventHandlers.onMouseMoved = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouseOut: (callback: any) => {
+      // Store mouse out handler in metadata
+      metadata.mouseEventHandlers.onMouseOut = callback.toString();
+      return chainableApi; // Return self for chaining
+    },
+    onMouse: (callbacks: any) => {
+      // Store combined mouse handlers in metadata
+      if (callbacks.in) metadata.mouseEventHandlers.onMouseIn = callbacks.in.toString();
+      if (callbacks.moved) metadata.mouseEventHandlers.onMouseMoved = callbacks.moved.toString();
+      if (callbacks.out) metadata.mouseEventHandlers.onMouseOut = callbacks.out.toString();
       return chainableApi; // Return self for chaining
     },
     model: (items: any[]) => {

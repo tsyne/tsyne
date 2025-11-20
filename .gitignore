@@ -12,12 +12,3 @@ test-failures/
 test-output/
 pkg/
 bookmarks-export.json
-
-# Binary executables (build artifacts)
-bridge/tsyne-bridge
-src/tsyne-bridge
-**/tsyne-bridge-*
-*.exe
-*.dll
-*.so
-*.dylib

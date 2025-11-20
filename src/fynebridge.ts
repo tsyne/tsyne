@@ -224,6 +224,20 @@ export class BridgeConnection {
     this.eventHandlers.set(callbackId, handler);
   }
 
+  /**
+   * Register an event handler (alias for registerEventHandler)
+   */
+  on(eventType: string, handler: (data: any) => void): void {
+    this.eventHandlers.set(eventType, handler);
+  }
+
+  /**
+   * Unregister an event handler
+   */
+  off(eventType: string, handler?: (data: any) => void): void {
+    this.eventHandlers.delete(eventType);
+  }
+
   async registerCustomId(widgetId: string, customId: string): Promise<any> {
     return this.send('registerCustomId', { widgetId, customId });
   }

@@ -24,6 +24,17 @@ interface WidgetMetadata {
   sourceLocation: SourceLocation;
   properties: Record<string, any>;
   eventHandlers: Record<string, string>;
+  mouseEventHandlers: {
+    onMouseIn?: string;
+    onMouseMoved?: string;
+    onMouseOut?: string;
+  };
+  accessibility?: {
+    label?: string;
+    description?: string;
+    hint?: string;
+    role?: string;
+  };
   parent: string | null;
 }
 
@@ -56,6 +67,7 @@ function captureWidget(type: string, props: any): string {
     sourceLocation: location,
     properties: props,
     eventHandlers: {},
+    mouseEventHandlers: {},
     parent: currentParent
   };
   metadataStore.set(widgetId, metadata);
@@ -69,6 +81,64 @@ function containerWidget(type: string, props: any, builder: () => void): string 
   builder();
   currentParent = prev;
   return widgetId;
+}
+
+// Create a chainable widget proxy for method chaining
+function createWidgetProxy(widgetId: string): any {
+  return {
+    onMouseIn(callback: (event: { position: { x: number, y: number } }) => void) {
+      const widget = metadataStore.get(widgetId);
+      if (widget) {
+        widget.mouseEventHandlers.onMouseIn = callback.toString();
+      }
+      return this;
+    },
+    onMouseMoved(callback: (event: { position: { x: number, y: number } }) => void) {
+      const widget = metadataStore.get(widgetId);
+      if (widget) {
+        widget.mouseEventHandlers.onMouseMoved = callback.toString();
+      }
+      return this;
+    },
+    onMouseOut(callback: () => void) {
+      const widget = metadataStore.get(widgetId);
+      if (widget) {
+        widget.mouseEventHandlers.onMouseOut = callback.toString();
+      }
+      return this;
+    },
+    onMouse(callbacks: {
+      in?: (event: { position: { x: number, y: number } }) => void,
+      moved?: (event: { position: { x: number, y: number } }) => void,
+      out?: () => void
+    }) {
+      if (callbacks.in) this.onMouseIn(callbacks.in);
+      if (callbacks.moved) this.onMouseMoved(callbacks.moved);
+      if (callbacks.out) this.onMouseOut(callbacks.out);
+      return this;
+    },
+    accessibility(options: {
+      label?: string;
+      description?: string;
+      hint?: string;
+      role?: string;
+    }) {
+      const widget = metadataStore.get(widgetId);
+      if (widget) {
+        widget.accessibility = options;
+      }
+      return this;
+    },
+    announceOnHover(enabled: boolean) {
+      const widget = metadataStore.get(widgetId);
+      if (widget) {
+        if (!widget.properties.announceOnHover) {
+          widget.properties.announceOnHover = enabled;
+        }
+      }
+      return this;
+    }
+  };
 }
 
 // Designer API (emulates Tsyne ABI)
@@ -99,12 +169,13 @@ const designer = {
     return containerWidget('grid', { columns }, builder);
   },
 
-  button(text: string, onClick?: () => void, className?: string): void {
+  button(text: string, onClick?: () => void, className?: string): any {
     const widgetId = captureWidget('button', { text, className });
     if (onClick) {
       const widget = metadataStore.get(widgetId);
       if (widget) widget.eventHandlers.onClick = onClick.toString();
     }
+    return createWidgetProxy(widgetId);
   },
 
   label(text: string, className?: string, alignment?: string, wrapping?: string, textStyle?: any): void {

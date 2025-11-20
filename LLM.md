@@ -231,6 +231,37 @@ npm test
 
 IMPORTANT: DO NOT BUILD `tsyne-bridge` anywhere else - it goes into bin/ only.
 
+## Development Workflow
+
+**CRITICAL: No compiled JavaScript in src/ directory**
+
+- TypeScript source files live in `src/` (`.ts` files only)
+- Compiled output goes to `dist/` directory only (via `npm run build`)
+- **NEVER** have `.js` or `.d.ts` files in the `src/` tree
+- Use `npx ts-node` for running applications (compiles on-the-fly)
+- This applies to both development AND production - ts-node is used everywhere
+- Tests use ts-node automatically - no pre-compilation needed
+
+**Why this matters:**
+- When `.js` files exist in `src/`, Node.js/ts-node loads them instead of compiling `.ts` files
+- This causes stale code issues where your TypeScript changes don't take effect
+- The project depends on ts-node on-the-fly compilation, not pre-compiled artifacts
+- `npm run build` creates `dist/` for distribution, but runtime uses ts-node
+
+**If you find `.js` files in src/:**
+```bash
+# Clean up stale compiled files
+rm src/*.js src/*.d.ts src/**/*.js src/**/*.d.ts
+```
+
+**Running applications (development and production):**
+```bash
+npx ts-node examples/calculator.ts
+npx ts-node examples/todomvc.ts
+npx ts-node examples/01-hello-world.ts
+npx ts-node your-app.ts
+```
+
 ## Troubleshooting
 
 ### Cloud/LLM Environment Setup (Restricted Network Access)

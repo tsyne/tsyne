@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +15,16 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 )
+
+// unwrapWidget unwraps a HoverableWrapper to get the actual widget
+// Note: HoverableButton doesn't need unwrapping as it extends widget.Button
+func unwrapWidget(obj fyne.CanvasObject) fyne.CanvasObject {
+	if wrapper, isWrapper := obj.(*HoverableWrapper); isWrapper {
+		return wrapper.content
+	}
+	// HoverableButton IS a Button, so no unwrapping needed
+	return obj
+}
 
 func (b *Bridge) handleGetText(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
@@ -38,6 +49,9 @@ func (b *Bridge) handleGetText(msg Message) {
 	if hasEntry {
 		actualWidget = entryObj
 	}
+
+	// Unwrap HoverableWrapper if present
+	actualWidget = unwrapWidget(actualWidget)
 
 	var text string
 	switch w := actualWidget.(type) {
@@ -89,6 +103,9 @@ func (b *Bridge) handleSetText(msg Message) {
 	if hasEntry {
 		actualWidget = entryObj
 	}
+
+	// Unwrap HoverableWrapper if present
+	actualWidget = unwrapWidget(actualWidget)
 
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
@@ -910,6 +927,278 @@ func (b *Bridge) handleGetContainerObjects(msg Message) {
 		Success: true,
 		Result: map[string]interface{}{
 			"objects": childIDs,
+		},
+	})
+}
+
+func (b *Bridge) handleSetAccessibility(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Extract accessibility options
+	// For now, we store them in metadata for future use
+	// Fyne doesn't have direct accessibility properties, but we can prepare for it
+	label, _ := msg.Payload["label"].(string)
+	description, _ := msg.Payload["description"].(string)
+	role, _ := msg.Payload["role"].(string)
+	hint, _ := msg.Payload["hint"].(string)
+
+	b.mu.Lock()
+	if meta, exists := b.widgetMeta[widgetID]; exists {
+		// Store accessibility info in metadata for future use
+		meta.CustomData = map[string]interface{}{
+			"a11y_label":       label,
+			"a11y_description": description,
+			"a11y_role":        role,
+			"a11y_hint":        hint,
+		}
+		b.widgetMeta[widgetID] = meta
+	}
+	b.mu.Unlock()
+
+	// Determine parent widget ID by checking if this widget is in any container
+	var parentID string
+	b.mu.RLock()
+	for potentialParentID, potentialParentWidget := range b.widgets {
+		if container, ok := potentialParentWidget.(*fyne.Container); ok {
+			for _, childObj := range container.Objects {
+				if childObj == widget {
+					parentID = potentialParentID
+					break
+				}
+			}
+			if parentID != "" {
+				break
+			}
+		}
+	}
+	b.mu.RUnlock()
+
+	// Send accessibility registration event to TypeScript
+	b.sendEvent(Event{
+		Type: "accessibilityRegistered",
+		Data: map[string]interface{}{
+			"widgetId":    widgetID,
+			"label":       label,
+			"description": description,
+			"role":        role,
+			"hint":        hint,
+			"parentId":    parentID,
+		},
+	})
+
+	// TODO: When Fyne supports accessibility APIs, apply them here
+	// For now, this is a no-op that prevents the error
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleEnableAccessibility(msg Message) {
+	// Enable accessibility mode globally
+	// For now, this is a no-op since Fyne doesn't have global accessibility APIs
+	// But we acknowledge the request to prevent errors
+
+	// TODO: When Fyne adds accessibility APIs, enable them here
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleDisableAccessibility(msg Message) {
+	// Disable accessibility mode globally
+	// For now, this is a no-op since Fyne doesn't have global accessibility APIs
+
+	// TODO: When Fyne adds accessibility APIs, disable them here
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// handleAnnounce handles TTS announce messages
+func (b *Bridge) handleAnnounce(msg Message) {
+	// The text to announce is in the payload
+	// For now, we just log it and return success
+	// In the future, this could integrate with native platform TTS
+	text, _ := msg.Payload["text"].(string)
+	if b.testMode {
+		log.Printf("[TTS] %s", text)
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// handleStopSpeech handles stop speech messages
+func (b *Bridge) handleStopSpeech(msg Message) {
+	// Stop any current speech
+	// For now, this is a no-op since we're using client-side TTS
+	// In the future, this could stop native platform TTS
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// handleSetPointerEnter handles pointer enter event registration
+// This only stores metadata - actual wrapping happens later in processHoverWrappers
+func (b *Bridge) handleSetPointerEnter(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.Lock()
+
+	// Get the existing widget
+	_, exists := b.widgets[widgetID]
+	if !exists {
+		b.mu.Unlock()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Update metadata to indicate hover is enabled
+	// The actual wrapping will happen later in processHoverWrappers
+	widgetMeta, exists := b.widgetMeta[widgetID]
+	if !exists {
+		widgetMeta = WidgetMetadata{}
+	}
+	if widgetMeta.CustomData == nil {
+		widgetMeta.CustomData = make(map[string]interface{})
+	}
+	widgetMeta.CustomData["announceOnHover"] = true
+	b.widgetMeta[widgetID] = widgetMeta
+
+	log.Printf("[setPointerEnter] Stored hover metadata for widget %s (wrapping deferred)", widgetID)
+
+	// Unlock before sending response
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// handleProcessHoverWrappers wraps all widgets that have announceOnHover metadata
+// This should be called after the widget tree is complete
+func (b *Bridge) handleProcessHoverWrappers(msg Message) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	// In test mode, don't wrap widgets to avoid threading issues
+	if b.testMode {
+		log.Printf("[processHoverWrappers] Test mode - skipping wrapping")
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+		return
+	}
+
+	wrappedCount := 0
+
+	// Iterate through all widgets looking for announceOnHover metadata
+	for widgetID, widgetMeta := range b.widgetMeta {
+		if widgetMeta.CustomData != nil && widgetMeta.CustomData["announceOnHover"] == true {
+			obj, exists := b.widgets[widgetID]
+			if !exists {
+				log.Printf("[processHoverWrappers] Widget %s not found in map", widgetID)
+				continue
+			}
+
+			// Check if already hoverable
+			if _, alreadyHoverable := obj.(*HoverableButton); alreadyHoverable {
+				log.Printf("[processHoverWrappers] Widget %s already hoverable", widgetID)
+				continue
+			}
+			if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
+				log.Printf("[processHoverWrappers] Widget %s already wrapped", widgetID)
+				continue
+			}
+
+			var replacement fyne.CanvasObject
+
+			// For buttons, create a HoverableButton
+			if btn, isButton := obj.(*widget.Button); isButton {
+				log.Printf("[processHoverWrappers] Converting button %s to HoverableButton", widgetID)
+				hoverBtn := NewHoverableButton(btn.Text, btn.OnTapped, b, widgetID)
+				hoverBtn.Importance = btn.Importance
+				hoverBtn.Icon = btn.Icon
+				hoverBtn.IconPlacement = btn.IconPlacement
+				hoverBtn.Alignment = btn.Alignment
+				hoverBtn.Disable() // Copy disabled state
+				if !btn.Disabled() {
+					hoverBtn.Enable()
+				}
+				replacement = hoverBtn
+			} else {
+				// For other widgets, use the wrapper approach
+				log.Printf("[processHoverWrappers] Wrapping widget %s with HoverableWrapper", widgetID)
+				replacement = NewHoverableWrapper(obj, b, widgetID)
+			}
+
+			// Replace in widgets map
+			b.widgets[widgetID] = replacement
+
+			// Replace in parent container
+			parentID, hasParent := b.childToParent[widgetID]
+			log.Printf("[processHoverWrappers] Widget %s: hasParent=%v, parentID=%s", widgetID, hasParent, parentID)
+			if hasParent {
+				parentObj, exists := b.widgets[parentID]
+				if exists {
+					if container, ok := parentObj.(interface{ Objects() []fyne.CanvasObject }); ok {
+						objects := container.Objects()
+						for i, child := range objects {
+							if child == obj {
+								objects[i] = replacement
+								log.Printf("[processHoverWrappers] Replaced widget %s at index %d in parent %s", widgetID, i, parentID)
+								// Refresh the container
+								if refresher, ok := parentObj.(fyne.CanvasObject); ok {
+									fyne.DoAndWait(func() {
+										refresher.Refresh()
+									})
+								}
+								wrappedCount++
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	log.Printf("[processHoverWrappers] Wrapped %d widgets with HoverableWrapper", wrappedCount)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"wrappedCount": wrappedCount,
 		},
 	})
 }

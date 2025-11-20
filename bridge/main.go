@@ -158,6 +158,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetTheme(msg)
 	case "getTheme":
 		b.handleGetTheme(msg)
+	case "setFontScale":
+		b.handleSetFontScale(msg)
 	case "setWidgetStyle":
 		b.handleSetWidgetStyle(msg)
 	case "setWidgetContextMenu":
@@ -219,6 +221,20 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleRegisterCustomId(msg)
 	case "getParent":
 		b.handleGetParent(msg)
+	case "setAccessibility":
+		b.handleSetAccessibility(msg)
+	case "enableAccessibility":
+		b.handleEnableAccessibility(msg)
+	case "disableAccessibility":
+		b.handleDisableAccessibility(msg)
+	case "announce":
+		b.handleAnnounce(msg)
+	case "stopSpeech":
+		b.handleStopSpeech(msg)
+	case "setPointerEnter":
+		b.handleSetPointerEnter(msg)
+	case "processHoverWrappers":
+		b.handleProcessHoverWrappers(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,

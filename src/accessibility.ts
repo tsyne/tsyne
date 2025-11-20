@@ -27,6 +27,9 @@ export class AccessibilityManager {
   private widgetAccessibilityMap: Map<string, WidgetAccessibilityInfo> = new Map();
   private widgetParentMap: Map<string, string> = new Map();
   private speechSynthesisAvailable: boolean = false;
+  private currentSpeaker: any = null;
+  private speechQueue: string[] = [];
+  private isSpeaking: boolean = false;
 
   constructor(ctx: Context) {
     this.ctx = ctx;
@@ -41,6 +44,30 @@ export class AccessibilityManager {
       // Not in browser environment
       this.speechSynthesisAvailable = false;
     }
+
+    // Listen for pointer enter events to announce widgets
+    this.ctx.bridge.on('pointerEnter', (data: any) => {
+      console.log('[Accessibility] pointerEnter event received:', data);
+      if (this.enabled && data.widgetId) {
+        console.log('[Accessibility] Announcing widget:', data.widgetId);
+        this.announceWidget(data.widgetId);
+      } else {
+        console.log('[Accessibility] Not announcing - enabled:', this.enabled, 'widgetId:', data.widgetId);
+      }
+    });
+
+    // Listen for accessibility registration events from bridge
+    this.ctx.bridge.on('accessibilityRegistered', (data: any) => {
+      this.registerWidget(data.widgetId, {
+        widgetId: data.widgetId,
+        label: data.label,
+        description: data.description,
+        role: data.role,
+        hint: data.hint,
+        widgetType: data.widgetType,
+        parentId: data.parentId
+      });
+    });
   }
 
   /**
@@ -51,7 +78,7 @@ export class AccessibilityManager {
 
     this.enabled = true;
     this.ctx.bridge.send('enableAccessibility', { enabled: true });
-    this.announce('Accessibility mode enabled');
+    // Don't announce here - let the app provide context-specific messages
   }
 
   /**
@@ -62,7 +89,7 @@ export class AccessibilityManager {
 
     this.enabled = false;
     this.ctx.bridge.send('enableAccessibility', { enabled: false });
-    this.announce('Accessibility mode disabled');
+    // Don't announce here - let the app provide context-specific messages
   }
 
   /**
@@ -94,21 +121,87 @@ export class AccessibilityManager {
   }
 
   /**
+   * Resolve template variables in accessibility strings
+   * Supports: ${label}, ${id}, ${role}, ${parent.label}, ${parent.role}, ${grandparent.label}
+   */
+  private resolveTemplate(template: string, widgetId: string): string {
+    const info = this.widgetAccessibilityMap.get(widgetId);
+    if (!info) return template;
+
+    // Build context object with all available variables
+    const context: any = {
+      label: info.label || '',
+      id: widgetId,
+      role: info.role || '',
+      parent: {},
+      grandparent: {}
+    };
+
+    // Get parent info
+    const parentId = this.widgetParentMap.get(widgetId);
+    if (parentId) {
+      const parentInfo = this.widgetAccessibilityMap.get(parentId);
+      if (parentInfo) {
+        context.parent = {
+          label: parentInfo.label || '',
+          role: parentInfo.role || '',
+          id: parentId
+        };
+
+        // Get grandparent info
+        const grandparentId = this.widgetParentMap.get(parentId);
+        if (grandparentId) {
+          const grandparentInfo = this.widgetAccessibilityMap.get(grandparentId);
+          if (grandparentInfo) {
+            context.grandparent = {
+              label: grandparentInfo.label || '',
+              role: grandparentInfo.role || '',
+              id: grandparentId
+            };
+          }
+        }
+      }
+    }
+
+    // Replace template variables
+    return template.replace(/\$\{([^}]+)\}/g, (match, path) => {
+      const keys = path.split('.');
+      let value: any = context;
+
+      for (const key of keys) {
+        value = value?.[key];
+        if (value === undefined) return '';
+      }
+
+      return value || '';
+    });
+  }
+
+  /**
    * Announce widget information when pointer enters
    * Includes parent and grandparent context
+   * Supports template strings with ${label}, ${parent.label}, etc.
    */
   async announceWidget(widgetId: string): Promise<void> {
-    if (!this.enabled) return;
+    console.log('[Accessibility] announceWidget called for:', widgetId, 'enabled:', this.enabled);
+    if (!this.enabled) {
+      console.log('[Accessibility] Not enabled, returning');
+      return;
+    }
 
     const info = this.widgetAccessibilityMap.get(widgetId);
-    if (!info) return;
+    console.log('[Accessibility] Widget info:', info);
+    if (!info) {
+      console.log('[Accessibility] No accessibility info found for widget');
+      return;
+    }
 
     // Build announcement with context
     const parts: string[] = [];
 
-    // Add widget label or type
+    // Add widget label or type (resolve templates)
     if (info.label) {
-      parts.push(info.label);
+      parts.push(this.resolveTemplate(info.label, widgetId));
     } else if (info.widgetType) {
       parts.push(info.widgetType);
     }
@@ -118,32 +211,35 @@ export class AccessibilityManager {
       parts.push(`Role: ${info.role}`);
     }
 
-    // Add description
+    // Add description (resolve templates)
     if (info.description) {
-      parts.push(info.description);
+      parts.push(this.resolveTemplate(info.description, widgetId));
     }
 
-    // Add parent context
-    const parentId = this.widgetParentMap.get(widgetId);
-    if (parentId) {
-      const parentInfo = this.widgetAccessibilityMap.get(parentId);
-      if (parentInfo?.label) {
-        parts.push(`In ${parentInfo.label}`);
-      }
+    // Add parent context (only if not already in template)
+    const hasParentTemplate = info.label?.includes('${parent') || info.description?.includes('${parent');
+    if (!hasParentTemplate) {
+      const parentId = this.widgetParentMap.get(widgetId);
+      if (parentId) {
+        const parentInfo = this.widgetAccessibilityMap.get(parentId);
+        if (parentInfo?.label) {
+          parts.push(`In ${parentInfo.label}`);
+        }
 
-      // Add grandparent context
-      const grandparentId = this.widgetParentMap.get(parentId);
-      if (grandparentId) {
-        const grandparentInfo = this.widgetAccessibilityMap.get(grandparentId);
-        if (grandparentInfo?.label) {
-          parts.push(`Within ${grandparentInfo.label}`);
+        // Add grandparent context
+        const grandparentId = this.widgetParentMap.get(parentId);
+        if (grandparentId) {
+          const grandparentInfo = this.widgetAccessibilityMap.get(grandparentId);
+          if (grandparentInfo?.label) {
+            parts.push(`Within ${grandparentInfo.label}`);
+          }
         }
       }
     }
 
-    // Add hint
+    // Add hint (resolve templates)
     if (info.hint) {
-      parts.push(`Hint: ${info.hint}`);
+      parts.push(`Hint: ${this.resolveTemplate(info.hint, widgetId)}`);
     }
 
     const announcement = parts.join('. ');
@@ -151,12 +247,40 @@ export class AccessibilityManager {
   }
 
   /**
-   * Announce text using TTS
+   * Announce text using TTS (queued to prevent overlapping)
    */
   announce(text: string): void {
     if (!this.enabled) return;
 
-    // Use Web Speech API if available
+    console.log(`[TTS] ${text}`);
+
+    // Add to queue
+    this.speechQueue.push(text);
+
+    // Start processing if not already speaking
+    if (!this.isSpeaking) {
+      this.processNextAnnouncement();
+    }
+  }
+
+  /**
+   * Process the next announcement in the queue
+   */
+  private processNextAnnouncement(): void {
+    if (this.speechQueue.length === 0) {
+      this.isSpeaking = false;
+      return;
+    }
+
+    this.isSpeaking = true;
+    const text = this.speechQueue.shift()!;
+
+    // Log for debugging (use process.stdout in Node, console in browser)
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write(`[Accessibility] ${text}\n`);
+    }
+
+    // Use Web Speech API if available (browser environment)
     if (this.speechSynthesisAvailable) {
       try {
         // @ts-ignore - Browser API may not be available in all environments
@@ -164,26 +288,115 @@ export class AccessibilityManager {
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
+        utterance.onend = () => this.processNextAnnouncement();
         // @ts-ignore
         window.speechSynthesis.speak(utterance);
+        return;
       } catch (e) {
-        // Silently fail if speech synthesis is not available
+        // Fall through to system TTS
       }
     }
 
-    // Also send to bridge for native platform TTS
-    this.ctx.bridge.send('announce', { text });
+    // Use meSpeak for pure JS TTS (Node.js environment)
+    try {
+      const meSpeak = require('mespeak');
 
-    // Log for debugging (use process.stdout in Node, console in browser)
-    if (typeof process !== 'undefined' && process.stdout) {
-      process.stdout.write(`[Accessibility] ${text}\n`);
+      // Load meSpeak voice data (required for speech synthesis)
+      // This is a pure JS solution that doesn't require any native dependencies
+      try {
+        meSpeak.loadConfig(require('mespeak/src/mespeak_config.json'));
+        meSpeak.loadVoice(require('mespeak/voices/en/en-us.json'));
+      } catch (loadError) {
+        // Voice already loaded or not available
+      }
+
+      // In Node.js, use raw output mode and pipe to speaker
+      // @ts-ignore - window is not defined in Node.js
+      if (typeof window === 'undefined') {
+        try {
+          const Speaker = require('speaker');
+
+          // Get raw WAV audio data from meSpeak
+          const wav = meSpeak.speak(text, {
+            speed: 175,  // Normal speaking rate
+            pitch: 50,   // Normal pitch
+            volume: 100, // Full volume
+            rawdata: 'buffer'  // Get raw audio buffer
+          });
+
+          if (wav) {
+            // Calculate duration based on audio length (44100 samples per second)
+            const duration = (wav.length - 44) / (22050 * 2); // 22050 Hz, 16-bit (2 bytes)
+
+            // Create speaker with WAV format (22050 Hz, 16-bit, mono)
+            const speaker = new Speaker({
+              channels: 1,
+              bitDepth: 16,
+              sampleRate: 22050
+            });
+
+            // Process next announcement when this one finishes
+            speaker.on('close', () => {
+              setTimeout(() => this.processNextAnnouncement(), 100);
+            });
+
+            // Write the WAV data (skip 44-byte WAV header)
+            speaker.write(Buffer.from(wav.slice(44)));
+            speaker.end();
+          } else {
+            // No audio generated, move to next
+            this.processNextAnnouncement();
+          }
+        } catch (speakerError) {
+          // Fall back to browser mode or fail silently
+          meSpeak.speak(text, {
+            speed: 175,
+            pitch: 50,
+            volume: 100
+          });
+          // Can't detect when browser mode finishes, so just wait a bit
+          setTimeout(() => this.processNextAnnouncement(), 2000);
+        }
+      } else {
+        // Browser environment - use normal mode
+        meSpeak.speak(text, {
+          speed: 175,
+          pitch: 50,
+          volume: 100
+        });
+        // Can't detect when it finishes, so just wait a bit
+        setTimeout(() => this.processNextAnnouncement(), 2000);
+      }
+    } catch (e) {
+      // Silently fail if meSpeak is not available
+      this.processNextAnnouncement();
     }
+
+    // Also send to bridge for future native platform TTS support
+    this.ctx.bridge.send('announce', { text }).catch(() => {
+      // Ignore if bridge doesn't support announce yet
+    });
   }
 
   /**
-   * Stop any current speech
+   * Stop any current speech and clear queue
    */
   stopSpeech(): void {
+    // Clear the queue
+    this.speechQueue = [];
+    this.isSpeaking = false;
+
+    // Stop current speaker if exists
+    if (this.currentSpeaker) {
+      try {
+        this.currentSpeaker.end();
+        this.currentSpeaker = null;
+      } catch (e) {
+        // Silently fail
+      }
+    }
+
+    // Stop Web Speech API if available
     if (this.speechSynthesisAvailable) {
       try {
         // @ts-ignore - Browser API
@@ -192,6 +405,7 @@ export class AccessibilityManager {
         // Silently fail
       }
     }
+
     this.ctx.bridge.send('stopSpeech', {});
   }
 

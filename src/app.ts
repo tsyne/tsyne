@@ -181,6 +181,10 @@ export class App {
   }
 
   async run(): Promise<void> {
+    // Process all pending hover wrappers before showing windows
+    // This ensures widgets are wrapped after the tree is complete
+    await this.ctx.processHoverWrappers();
+
     // Show all windows
     for (const win of this.windows) {
       await win.show();
@@ -202,5 +206,56 @@ export class App {
 
   getWindows(): Window[] {
     return this.windows;
+  }
+
+  /**
+   * Show source code of the current application
+   * Displays the source file in a dialog window
+   * @param filePath - Path to the source file (use __filename or require.main?.filename)
+   */
+  showSource(filePath?: string): void {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      // Use provided path or try to detect the main file
+      let sourceFile = filePath;
+      if (!sourceFile && typeof require !== 'undefined' && require.main) {
+        sourceFile = require.main.filename;
+      }
+
+      if (!sourceFile) {
+        console.error('[Show Source] Could not determine source file path');
+        return;
+      }
+
+      // Read the source file
+      const sourceCode = fs.readFileSync(sourceFile, 'utf-8');
+      const fileName = path.basename(sourceFile);
+
+      // Create a dialog to show the source
+      this.window({ title: `Source Code: ${fileName}`, width: 900, height: 700 }, (win) => {
+        // Explicitly set the title to ensure it shows
+        win.setTitle(`Source Code - ${fileName}`);
+
+        win.setContent(() => {
+          this.border({
+            top: () => {
+              this.vbox(() => {
+                this.label(`File: ${sourceFile}`, undefined, 'leading', 'word', { bold: true });
+                this.separator();
+              });
+            },
+            center: () => {
+              const sourceEntry = this.multilineentry('', 'off');
+              sourceEntry.setText(sourceCode);
+            }
+          });
+        });
+        win.show();
+      });
+    } catch (error) {
+      console.error('[Show Source] Error reading source file:', error);
+    }
   }
 }

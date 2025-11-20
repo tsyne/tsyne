@@ -33,6 +33,7 @@ export abstract class Widget {
   protected ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
+  private styleClass?: WidgetSelector;
 
   constructor(ctx: Context, id: string) {
     this.ctx = ctx;
@@ -43,7 +44,18 @@ export abstract class Widget {
    * Apply styles from the global stylesheet to this widget
    */
   protected async applyStyles(widgetType: WidgetSelector): Promise<void> {
+    this.styleClass = widgetType; // Store for later refresh
     await applyStyleForWidget(this.ctx, this.id, widgetType);
+  }
+
+  /**
+   * Refresh styles from the global stylesheet
+   * Call this after updating the global styles to apply changes to existing widgets
+   */
+  async refreshStyles(): Promise<void> {
+    if (this.styleClass) {
+      await applyStyleForWidget(this.ctx, this.id, this.styleClass);
+    }
   }
 
   /**
@@ -138,6 +150,7 @@ export abstract class Widget {
 
   /**
    * Set accessibility properties for assistive technologies
+   * Automatically enables hover announcements so the accessibility info is announced on hover
    * @param options Accessibility options (label, description, role, hint)
    * @returns this for method chaining
    * @example
@@ -153,6 +166,99 @@ export abstract class Widget {
       widgetId: this.id,
       ...options
     });
+    // Automatically enable hover announcements when accessibility info is set
+    this.announceOnHover(true);
+    return this;
+  }
+
+  /**
+   * Enable hover announcements for this widget
+   * When enabled, hovering over the widget will announce its accessibility info
+   * @param enabled Whether to enable hover announcements (default: true)
+   * @returns this for method chaining
+   * @example
+   * const cell = a.button('X', onClick)
+   *   .accessibility({ label: 'Top left cell' })
+   *   .announceOnHover();
+   */
+  announceOnHover(enabled: boolean = true): this {
+    if (enabled) {
+      this.ctx.bridge.send('setPointerEnter', {
+        widgetId: this.id
+      });
+    }
+    return this;
+  }
+
+  /**
+   * Register a callback for when the mouse enters the widget
+   * @param callback Function called when mouse enters, receives mouse event with position
+   * @returns this for method chaining
+   * @example
+   * a.button('Cell', onClick)
+   *   .onMouseIn((event) => {
+   *     highlightCell();
+   *     console.log('Mouse at', event.position);
+   *   });
+   */
+  onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this {
+    this.ctx.bridge.on(`mouseIn:${this.id}`, callback);
+    this.announceOnHover(true);
+    return this;
+  }
+
+  /**
+   * Register a callback for when the mouse moves within the widget
+   * @param callback Function called when mouse moves, receives mouse event with position
+   * @returns this for method chaining
+   * @example
+   * a.button('Canvas', onClick)
+   *   .onMouseMoved((event) => {
+   *     updateCursor(event.position);
+   *   });
+   */
+  onMouseMoved(callback: (event: { position: { x: number, y: number } }) => void): this {
+    this.ctx.bridge.on(`mouseMoved:${this.id}`, callback);
+    this.announceOnHover(true);
+    return this;
+  }
+
+  /**
+   * Register a callback for when the mouse exits the widget
+   * @param callback Function called when mouse exits
+   * @returns this for method chaining
+   * @example
+   * a.button('Cell', onClick)
+   *   .onMouseOut(() => {
+   *     unhighlightCell();
+   *   });
+   */
+  onMouseOut(callback: () => void): this {
+    this.ctx.bridge.on(`mouseOut:${this.id}`, callback);
+    this.announceOnHover(true);
+    return this;
+  }
+
+  /**
+   * Register callbacks for mouse events (convenience method)
+   * @param callbacks Object with optional in, moved, and out callbacks
+   * @returns this for method chaining
+   * @example
+   * a.button('Cell', onClick)
+   *   .onMouse({
+   *     in: (e) => highlightCell(),
+   *     moved: (e) => updateCursor(e.position),
+   *     out: () => unhighlightCell()
+   *   });
+   */
+  onMouse(callbacks: {
+    in?: (event: { position: { x: number, y: number } }) => void,
+    moved?: (event: { position: { x: number, y: number } }) => void,
+    out?: () => void
+  }): this {
+    if (callbacks.in) this.onMouseIn(callbacks.in);
+    if (callbacks.moved) this.onMouseMoved(callbacks.moved);
+    if (callbacks.out) this.onMouseOut(callbacks.out);
     return this;
   }
 
@@ -936,6 +1042,32 @@ export class Grid {
     // Create the Grid with the children
     ctx.bridge.send('createGrid', { id: this.id, columns, children });
     ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this grid container
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+
+  /**
+   * Set accessibility properties for assistive technologies
+   * @param options Accessibility options (label, description, role, hint)
+   * @returns this for method chaining
+   */
+  accessibility(options: AccessibilityOptions): this {
+    this.ctx.bridge.send('setAccessibility', {
+      widgetId: this.id,
+      ...options
+    });
+    return this;
   }
 }
 
