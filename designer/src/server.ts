@@ -7,6 +7,8 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
+import * as Diff from 'diff';
+import * as prettier from 'prettier';
 import { WidgetMetadata, SourceLocation } from './metadata';
 import { transformerRegistry, TransformContext } from './transformers';
 
@@ -14,6 +16,7 @@ import { transformerRegistry, TransformContext } from './transformers';
 let currentMetadata: { widgets: any[] } | null = null;
 let currentFilePath: string | null = null;
 let currentSourceCode: string | null = null;
+let originalSource: string | null = null;  // Original unmodified source from file
 let currentStyles: Record<string, any> | null = null;
 let pendingEdits: any[] = [];
 
@@ -761,17 +764,27 @@ function lintSource(sourceCode: string, context: string = 'source'): { valid: bo
 
 // Load and execute source code in designer mode
 function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): { widgets: any[] } {
-  currentSourceCode = sourceCode;
+  // Format source code with Prettier for consistent display
+  const formattedSource = prettier.format(sourceCode, {
+    parser: 'typescript',
+    semi: true,
+    singleQuote: true,
+    tabWidth: 2,
+    printWidth: 80
+  });
+
+  currentSourceCode = formattedSource;
+  originalSource = formattedSource;  // Store original unmodified source for diffing
   currentFilePath = virtualPath;
 
   // Lint source code
-  const lintResult = lintSource(currentSourceCode, `load(${virtualPath})`);
+  const lintResult = lintSource(currentSourceCode!, `load(${virtualPath})`);
   if (!lintResult.valid) {
     console.warn('[Designer] Source has lint errors, but continuing with load');
   }
 
   // Extract CSS styles
-  currentStyles = extractStyles(currentSourceCode);
+  currentStyles = extractStyles(currentSourceCode!);
   if (currentStyles) {
     console.log('[Designer] Found styles:', Object.keys(currentStyles));
   }
@@ -795,7 +808,7 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
 
     // Use TypeScript compiler to properly transpile the code
     // This handles all TypeScript syntax correctly: type aliases, interfaces, union types, generics, etc.
-    const transpileResult = ts.transpileModule(currentSourceCode, {
+    const transpileResult = ts.transpileModule(currentSourceCode!, {
       compilerOptions: {
         module: ts.ModuleKind.CommonJS,
         target: ts.ScriptTarget.ES2020,
@@ -1760,7 +1773,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           metadata,
           styles: currentStyles,
           filePath: currentFilePath,
-          originalSource: currentSourceCode
+          originalSource: originalSource  // Return the pristine original, not current
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -1784,7 +1797,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           metadata,
           styles: currentStyles,
           filePath: currentFilePath,
-          originalSource: currentSourceCode
+          originalSource: originalSource  // Return the pristine original, not current
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -1825,11 +1838,22 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         // Generate current source from model (pure function - model to source serialization)
         const updatedSource = toSource(currentMetadata!, currentStyles);
 
+        // Format with Prettier for consistent display in tabs and diffs
+        const formattedSource = prettier.format(updatedSource, {
+          parser: 'typescript',
+          semi: true,
+          singleQuote: true,
+          tabWidth: 2,
+          printWidth: 80
+        });
+
+        currentSourceCode = formattedSource;  // Update server-side current source for diffing
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
           metadata: currentMetadata,
-          currentSource: updatedSource
+          currentSource: formattedSource
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -2348,11 +2372,22 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         // Generate current source from model (pure function - model to source serialization)
         const updatedSource = toSource(currentMetadata!, currentStyles);
 
+        // Format with Prettier for consistent display in tabs and diffs
+        const formattedSource = prettier.format(updatedSource, {
+          parser: 'typescript',
+          semi: true,
+          singleQuote: true,
+          tabWidth: 2,
+          printWidth: 80
+        });
+
+        currentSourceCode = formattedSource;  // Update server-side current source for diffing
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
           metadata: currentMetadata,
-          currentSource: updatedSource
+          currentSource: formattedSource
         }));
       } catch (error: any) {
         console.error('[API Error]', error);
@@ -2360,6 +2395,85 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         res.end(JSON.stringify({ success: false, error: error.message }));
       }
     });
+  },
+
+  '/api/get-diff': (req, res) => {
+    try {
+      if (!currentSourceCode || !originalSource) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          html: '<div class="diff-line context">No changes to display</div>'
+        }));
+        return;
+      }
+
+      if (currentSourceCode === originalSource) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          html: '<div class="diff-line context">No changes - source matches original</div>'
+        }));
+        return;
+      }
+
+      // Format both sources with Prettier to eliminate formatting noise
+      const formattedOriginal = prettier.format(originalSource, {
+        parser: 'typescript',
+        semi: true,
+        singleQuote: true,
+        tabWidth: 2,
+        printWidth: 80
+      });
+
+      const formattedCurrent = prettier.format(currentSourceCode, {
+        parser: 'typescript',
+        semi: true,
+        singleQuote: true,
+        tabWidth: 2,
+        printWidth: 80
+      });
+
+      // Use the diff library to compute a unified diff on formatted sources
+      const diffParts = Diff.diffLines(formattedOriginal, formattedCurrent);
+
+      // Generate HTML from diff parts
+      let html = '';
+      for (const part of diffParts) {
+        const lines = part.value.split('\n');
+        // Remove the last empty line if present
+        if (lines[lines.length - 1] === '') {
+          lines.pop();
+        }
+
+        for (const line of lines) {
+          const escapedLine = line
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+          if (part.added) {
+            html += `<span class="diff-line added">+ ${escapedLine}</span>\n`;
+          } else if (part.removed) {
+            html += `<span class="diff-line removed">- ${escapedLine}</span>\n`;
+          } else {
+            html += `<span class="diff-line context">  ${escapedLine}</span>\n`;
+          }
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        html: html || '<div class="diff-line context">No changes to display</div>'
+      }));
+    } catch (error: any) {
+      console.error('[API Error]', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
   }
 };
 

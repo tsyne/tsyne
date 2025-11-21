@@ -347,49 +347,24 @@ function renderOriginalSourceTab() {
   }
 }
 
-// Render diff tab
-function renderDiffTab() {
+// Render diff tab - now uses server-side semantic diff
+async function renderDiffTab() {
   const diffContent = document.getElementById('diffContent');
 
-  if (!originalSource || !currentSource) {
-    diffContent.textContent = 'No changes to display';
-    return;
-  }
+  try {
+    // Get semantic diff from server using the 'diff' npm library
+    const response = await fetch('/api/get-diff');
+    const data = await response.json();
 
-  if (originalSource === currentSource) {
-    diffContent.textContent = 'No changes - source matches original';
-    return;
-  }
-
-  // Simple line-by-line diff
-  const originalLines = originalSource.split('\n');
-  const currentLines = currentSource.split('\n');
-
-  let diffHtml = '';
-  const maxLines = Math.max(originalLines.length, currentLines.length);
-
-  for (let i = 0; i < maxLines; i++) {
-    const origLine = originalLines[i];
-    const currLine = currentLines[i];
-
-    if (origLine === currLine) {
-      // Context line (unchanged)
-      if (currLine !== undefined) {
-        diffHtml += `<span class="diff-line context">  ${escapeHtml(currLine)}</span>\n`;
-      }
+    if (data.success) {
+      diffContent.innerHTML = data.html;
     } else {
-      // Show removed line
-      if (origLine !== undefined) {
-        diffHtml += `<span class="diff-line removed">- ${escapeHtml(origLine)}</span>\n`;
-      }
-      // Show added line
-      if (currLine !== undefined) {
-        diffHtml += `<span class="diff-line added">+ ${escapeHtml(currLine)}</span>\n`;
-      }
+      diffContent.textContent = 'Error loading diff: ' + data.error;
     }
+  } catch (error) {
+    console.error('Error fetching diff:', error);
+    diffContent.textContent = 'Error loading diff: ' + error.message;
   }
-
-  diffContent.innerHTML = diffHtml || 'No changes to display';
 }
 
 // Copy widget tree to clipboard as outlined text
