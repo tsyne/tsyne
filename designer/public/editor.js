@@ -793,6 +793,18 @@ function renderProperties() {
       </div>
     ` : ''}
 
+    ${widget.mouseEventHandlers && Object.keys(widget.mouseEventHandlers).length > 0 ? `
+      <div class="property-section">
+        <h3>Mouse Event Handlers</h3>
+        ${renderEventHandlers(widget.mouseEventHandlers)}
+      </div>
+    ` : ''}
+
+    <div class="property-section">
+      <h3>Accessibility</h3>
+      ${renderAccessibilityInputs(widget)}
+    </div>
+
     <div class="property-section">
       <button class="delete-button" onclick="deleteWidget('${widget.id}')">Delete Widget</button>
     </div>
@@ -923,6 +935,54 @@ function renderEventHandlers(handlers) {
     .join('');
 }
 
+// Render accessibility inputs
+function renderAccessibilityInputs(widget) {
+  const accessibility = widget.accessibility || {};
+
+  return `
+    <div class="property-row">
+      <label class="property-label" title="Accessibility label for screen readers">Label</label>
+      <input
+        type="text"
+        class="property-input"
+        value="${accessibility.label ? escapeHtml(accessibility.label) : ''}"
+        placeholder="Not set"
+        onchange="updateAccessibility('${widget.id}', 'label', this.value)"
+      />
+    </div>
+    <div class="property-row">
+      <label class="property-label" title="Detailed description for screen readers">Description</label>
+      <input
+        type="text"
+        class="property-input"
+        value="${accessibility.description ? escapeHtml(accessibility.description) : ''}"
+        placeholder="Not set"
+        onchange="updateAccessibility('${widget.id}', 'description', this.value)"
+      />
+    </div>
+    <div class="property-row">
+      <label class="property-label" title="Hint text for user interaction">Hint</label>
+      <input
+        type="text"
+        class="property-input"
+        value="${accessibility.hint ? escapeHtml(accessibility.hint) : ''}"
+        placeholder="Not set"
+        onchange="updateAccessibility('${widget.id}', 'hint', this.value)"
+      />
+    </div>
+    <div class="property-row">
+      <label class="property-label" title="ARIA role for the widget">Role</label>
+      <input
+        type="text"
+        class="property-input"
+        value="${accessibility.role ? escapeHtml(accessibility.role) : ''}"
+        placeholder="Not set"
+        onchange="updateAccessibility('${widget.id}', 'role', this.value)"
+      />
+    </div>
+  `;
+}
+
 // Update widget ID
 async function updateWidgetId(internalId, newWidgetId) {
   newWidgetId = newWidgetId.trim();
@@ -1047,6 +1107,12 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
       renderPreview();
       applyStylesToPreview();
 
+      // Re-render Source tab if it's currently active
+      const sourceTab = document.getElementById('previewTabSource');
+      if (sourceTab && sourceTab.classList.contains('active')) {
+        renderSourceTab();
+      }
+
       console.log('Property updated successfully');
     } else {
       alert('Error updating property: ' + result.error);
@@ -1054,6 +1120,75 @@ async function updateProperty(widgetId, propertyName, newValue, valueType) {
   } catch (error) {
     console.error('Error updating property:', error);
     alert('Error updating property: ' + error.message);
+  }
+}
+
+// Update accessibility property
+async function updateAccessibility(widgetId, propertyName, newValue) {
+  try {
+    // Find the widget in metadata
+    const widget = metadata.widgets.find(w => w.id === widgetId);
+    if (!widget) {
+      console.error('Widget not found:', widgetId);
+      return;
+    }
+
+    // Get current accessibility object or create new one
+    const accessibility = widget.accessibility ? { ...widget.accessibility } : {};
+
+    // Trim the value
+    const trimmedValue = String(newValue).trim();
+
+    // Update the specific property (or remove it if empty)
+    if (trimmedValue) {
+      accessibility[propertyName] = trimmedValue;
+    } else {
+      delete accessibility[propertyName];
+    }
+
+    // Send the full accessibility object to backend
+    const response = await fetch('/api/update-accessibility', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        widgetId,
+        accessibility  // Send full accessibility object
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Update local metadata from server response
+      if (result.metadata) {
+        metadata = result.metadata;
+      }
+
+      // Update current source with the edited source
+      if (result.currentSource) {
+        currentSource = result.currentSource;
+      }
+
+      renderWidgetTree();
+      renderPreview();
+      applyStylesToPreview();
+      renderProperties();  // Re-render to show updated values
+
+      // Re-render Source tab if it's currently active
+      const sourceTab = document.getElementById('previewTabSource');
+      if (sourceTab && sourceTab.classList.contains('active')) {
+        renderSourceTab();
+      }
+
+      console.log('Accessibility property updated successfully');
+    } else {
+      alert('Error updating accessibility: ' + result.error);
+      renderProperties();  // Re-render to revert to previous values
+    }
+  } catch (error) {
+    console.error('Error updating accessibility:', error);
+    alert('Error updating accessibility: ' + error.message);
+    renderProperties();  // Re-render to revert to previous values
   }
 }
 
