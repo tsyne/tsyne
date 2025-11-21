@@ -1107,10 +1107,11 @@ func (b *Bridge) handleSetPointerEnter(msg Message) {
 // This should be called after the widget tree is complete
 func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 	b.mu.Lock()
-	defer b.mu.Unlock()
+	// Note: Don't use defer unlock here - we unlock manually before sendResponse to avoid deadlock
 
 	// In test mode, don't wrap widgets to avoid threading issues
 	if b.testMode {
+		b.mu.Unlock()
 		log.Printf("[processHoverWrappers] Test mode - skipping wrapping")
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1176,12 +1177,8 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 							if child == obj {
 								objects[i] = replacement
 								log.Printf("[processHoverWrappers] Replaced widget %s at index %d in parent %s", widgetID, i, parentID)
-								// Refresh the container
-								if refresher, ok := parentObj.(fyne.CanvasObject); ok {
-									fyne.DoAndWait(func() {
-										refresher.Refresh()
-									})
-								}
+								// Note: Don't refresh here - windows haven't been shown yet
+								// The refresh will happen naturally when the window is shown
 								wrappedCount++
 								break
 							}
@@ -1193,6 +1190,9 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 	}
 
 	log.Printf("[processHoverWrappers] Wrapped %d widgets with HoverableWrapper", wrappedCount)
+
+	// Unlock before sending response to avoid deadlock (sendResponse also acquires the lock)
+	b.mu.Unlock()
 
 	b.sendResponse(Response{
 		ID:      msg.ID,

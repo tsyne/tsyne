@@ -519,16 +519,6 @@ export function buildTicTacToe(a: any) {
           const position = getCellDescription(i);
           const coords = getCellCoordinates(i);
 
-            a.widget(" ", () => makeMove(i), "cell")
-                .hoverable(() => { })
-                .accessibility({
-                    label: position,
-                    description: `${coords} in \${parent.label}. Press Space or Enter to place your mark.`,
-                    role: "button",
-                    hint: `\${label} position. Use arrow keys to navigate.`
-                })
-
-
           const cellButton = a.button(" ", () => makeMove(i), "cell")
             .withId(`cell${i}`)
             .accessibility({
