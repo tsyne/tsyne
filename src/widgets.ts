@@ -1262,6 +1262,38 @@ export class ProgressBar extends Widget {
 }
 
 /**
+ * Activity widget - loading/busy spinner
+ * Displays an animated spinner to indicate loading or processing state
+ */
+export class Activity extends Widget {
+  constructor(ctx: Context) {
+    const id = ctx.generateId('activity');
+    super(ctx, id);
+
+    ctx.bridge.send('createActivity', { id });
+    ctx.addToCurrentContainer(id);
+  }
+
+  /**
+   * Start the activity animation
+   */
+  async start(): Promise<void> {
+    await this.ctx.bridge.send('startActivity', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Stop the activity animation
+   */
+  async stop(): Promise<void> {
+    await this.ctx.bridge.send('stopActivity', {
+      widgetId: this.id
+    });
+  }
+}
+
+/**
  * Scroll container
  */
 export class Scroll {

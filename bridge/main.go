@@ -56,6 +56,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateSlider(msg)
 	case "createProgressBar":
 		b.handleCreateProgressBar(msg)
+	case "createActivity":
+		b.handleCreateActivity(msg)
+	case "startActivity":
+		b.handleStartActivity(msg)
+	case "stopActivity":
+		b.handleStopActivity(msg)
 	case "createScroll":
 		b.handleCreateScroll(msg)
 	case "createGrid":
