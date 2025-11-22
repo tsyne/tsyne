@@ -4,7 +4,7 @@
 
 TypeScript → Go bridge → Fyne.io native GUI toolkit. Pseudo-declarative MVC inspired by AngularJS 1.0.
 
-There's a regular app mode, and there's a page-by-page mode inspired by the web that has a browser
+There's a **regular app mode** for standalone desktop applications, and a **browser mode** that loads Tsyne TypeScript pages from HTTP servers (similar to how web browsers load HTML pages). See `src/browser.ts` for the Swiby-inspired browser implementation
 
 
 ## Architecture
@@ -264,107 +264,35 @@ npx ts-node your-app.ts
 
 ## Troubleshooting
 
-### Cloud/LLM Environment Setup (Restricted Network Access)
-
-**Problem:** Working in containerized/cloud environments (e.g., Claude Code, Codespaces) where network access is restricted and you can't access `storage.googleapis.com`, `fyne.io`, or other dependency hosts.
-
-**Complete Solution:**
-
-```bash
-# Step 1: Install system dependencies first
-apt-get update -qq
-apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
-
-# Step 2: Download fyne.io/systray manually (it's not on Google's proxy)
-cd /tmp
-wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
-tar -xzf systray-master.tar.gz
-
-# Step 3: Use go mod replace to point to local systray
-cd /home/user/tsyne/bridge
-go mod edit -replace=fyne.io/systray=/tmp/systray-master
-
-# Step 4: Build bridge with GOPROXY=direct
-env GOPROXY=direct go build -o ../bin/tsyne-bridge .
-
-# Step 5: Install npm dependencies without running postinstall (it will try to rebuild)
-cd /home/user/tsyne
-npm install --ignore-scripts
-
-# Step 6: Now you can run tests
-npx jest examples/solitaire/draw-regression.test.ts --runInBand
-```
-
-**What this fixes:**
-- ✅ Bypasses `storage.googleapis.com` (Google's Go module proxy)
-- ✅ Bypasses `fyne.io/systray` direct fetch (503 errors)
-- ✅ Installs required X11/OpenGL headers for Fyne
-- ✅ Skips npm postinstall script that would fail without network
-- ✅ Allows running tests in restricted environments
-
-**System packages required:**
-- `libgl1-mesa-dev` - OpenGL development headers
-- `xorg-dev` - X11 development libraries (metapackage)
-- `libxrandr-dev` - X11 RandR extension (screen resolution/rotation)
-
-### Can't Access storage.googleapis.com for Fyne Dependencies (Standard Setup)
-
-**Problem:** Go tries to fetch Fyne v2.7.0 from `https://storage.googleapis.com/proxy-golang-org-prod` and fails with DNS or connection errors.
-
-**Solution:** Fetch directly from GitHub tag download - https://github.com/fyne-io/fyne/archive/refs/tags/v2.7.0.zip instead of using Google's proxy:
-
-```bash
-# Use GOPROXY=direct to bypass Google's proxy
-cd bridge
-env GOPROXY=direct go build -o ../bin/tsyne-bridge .
-```
-
-**If you get C library errors** (X11, OpenGL headers missing):
-
-```bash
-# Install required development libraries (Ubuntu/Debian)
-apt-get update
-apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
-
-# Then rebuild
-cd bridge
-env GOPROXY=direct go build -o ../bin/tsyne-bridge .
-```
-
-**Note:** If you still get `fyne.io/systray: 503 Service Unavailable` errors, use the Cloud/LLM Environment Setup above.
-
-**Why GOPROXY=direct works:**
-- Tells Go to fetch modules directly from their source repositories (GitHub)
-- Bypasses Google's module proxy entirely
-- Uses the version tags directly from `fyne.io/fyne/v2@v2.7.0` → GitHub release
-
-**Alternative:** Set globally in environment:
-```bash
-export GOPROXY=direct
-go build -o ../bin/tsyne-bridge .
-```
+See **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for detailed solutions to common issues:
+- Cloud/LLM environment setup (restricted network access)
+- Go module proxy issues (`storage.googleapis.com`, `fyne.io/systray`)
+- Missing system libraries (X11, OpenGL)
+- Bridge startup problems
+- Test timeouts
+- Stale compiled JavaScript
 
 ## References
 
 ### Documentation
-- **[docs/reference.md](docs/reference.md)** - **Comprehensive reference** with complete API, examples, and guides
+- **[docs/reference.md](docs/reference.md)** - Comprehensive API reference with examples
 - **[docs/README.md](docs/README.md)** - Documentation index and navigation
 - `docs/ARCHITECTURE.md` - Deep dive into internal architecture
 - `docs/TESTING.md` - TsyneTest framework guide
+- `docs/BROWSER_TESTING.md` - Browser mode testing guide
 - `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
+- `docs/ACCESSIBILITY.md` - Accessibility features and guidelines
+- `docs/QUICKSTART.md` - Getting started guide
 - `docs/ROADMAP.md` - Feature roadmap (~15% Fyne coverage)
 - `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
+- `docs/TROUBLESHOOTING.md` - Common issues and solutions
 
 ### Example Code
-- `examples/todomvc.ts` - Full MVC example with when() (16 tests, 15/16 passing)
+- `examples/todomvc.ts` - Full MVC example with when() and filtering
 - `examples/todomvc-when.ts` - Preserved when() implementation variant
-- `more_mvc_like_for_todomvc_app.md` - Implementation status: Phase 1 & 2 complete!
+- `more_mvc_like_for_todomvc_app.md` - Implementation status and next steps
 - `src/widgets.ts` - Widget base class, ModelBoundList, when() implementation
 
 ### Community
 - `CODE_OF_CONDUCT.md` - Community guidelines
 - `CONTRIBUTING.md` - Developer guide
-
-**Key commits:**
-- `fa35224` - Added when() method and ModelBoundList infrastructure
-- `b75ab38` - Added todomvc-when variants to preserve implementation
