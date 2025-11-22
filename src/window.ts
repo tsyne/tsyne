@@ -402,4 +402,28 @@ export class Window {
       });
     });
   }
+
+  // ==================== Clipboard ====================
+
+  /**
+   * Get the current clipboard content
+   * @returns The text content of the clipboard
+   */
+  async getClipboard(): Promise<string> {
+    const result = await this.ctx.bridge.send('clipboardGet', {
+      windowId: this.id
+    });
+    return result.content as string;
+  }
+
+  /**
+   * Set the clipboard content
+   * @param content The text to copy to clipboard
+   */
+  async setClipboard(content: string): Promise<void> {
+    await this.ctx.bridge.send('clipboardSet', {
+      windowId: this.id,
+      content
+    });
+  }
 }

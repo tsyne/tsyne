@@ -442,6 +442,91 @@ export abstract class Widget {
       await this.visibilityCondition();
     }
   }
+
+  // ==================== Drag & Drop ====================
+
+  /**
+   * Make this widget draggable
+   * @param options Drag options including data and callbacks
+   * @returns this for method chaining
+   * @example
+   * a.label('Drag me').makeDraggable({
+   *   dragData: 'item-1',
+   *   onDragStart: () => console.log('Started dragging'),
+   *   onDragEnd: () => console.log('Stopped dragging')
+   * });
+   */
+  makeDraggable(options: {
+    dragData: string;
+    onDragStart?: () => void;
+    onDragEnd?: () => void;
+  }): this {
+    const payload: any = {
+      widgetId: this.id,
+      dragData: options.dragData
+    };
+
+    if (options.onDragStart) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDragStartCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, () => options.onDragStart!());
+    }
+
+    if (options.onDragEnd) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDragEndCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, () => options.onDragEnd!());
+    }
+
+    this.ctx.bridge.send('setDraggable', payload);
+    return this;
+  }
+
+  /**
+   * Make this widget a drop target
+   * @param options Drop options including callbacks
+   * @returns this for method chaining
+   * @example
+   * a.vbox(() => { ... }).makeDroppable({
+   *   onDrop: (data, sourceId) => console.log('Dropped:', data),
+   *   onDragEnter: () => console.log('Drag entered'),
+   *   onDragLeave: () => console.log('Drag left')
+   * });
+   */
+  makeDroppable(options: {
+    onDrop?: (dragData: string, sourceId: string) => void;
+    onDragEnter?: (dragData: string, sourceId: string) => void;
+    onDragLeave?: () => void;
+  }): this {
+    const payload: any = {
+      widgetId: this.id
+    };
+
+    if (options.onDrop) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDropCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        options.onDrop!(data.dragData, data.sourceId);
+      });
+    }
+
+    if (options.onDragEnter) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDragEnterCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        options.onDragEnter!(data.dragData, data.sourceId);
+      });
+    }
+
+    if (options.onDragLeave) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDragLeaveCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, () => options.onDragLeave!());
+    }
+
+    this.ctx.bridge.send('setDroppable', payload);
+    return this;
+  }
 }
 
 /**

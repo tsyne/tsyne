@@ -283,4 +283,141 @@ export class App {
       console.error('[Show Source] Error reading source file:', error);
     }
   }
+
+  // ==================== System Tray ====================
+
+  /**
+   * System tray menu item
+   */
+
+
+  /**
+   * Set up the system tray with an icon and menu
+   * @param options System tray configuration
+   * @example
+   * a.setSystemTray({
+   *   iconPath: './icon.png',
+   *   menuItems: [
+   *     { label: 'Show', onClick: () => win.show() },
+   *     { label: 'Quit', onClick: () => a.quit() }
+   *   ]
+   * });
+   */
+  async setSystemTray(options: {
+    iconPath?: string;
+    menuItems: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
+  }): Promise<void> {
+    const menuItems = options.menuItems.map(item => {
+      if (item.isSeparator) {
+        return { isSeparator: true };
+      }
+
+      const callbackId = this.ctx.generateId('callback');
+      if (item.onClick) {
+        this.ctx.bridge.registerEventHandler(callbackId, item.onClick);
+      }
+
+      return {
+        label: item.label,
+        callbackId
+      };
+    });
+
+    await this.ctx.bridge.send('setSystemTray', {
+      iconPath: options.iconPath,
+      menuItems
+    });
+  }
+
+  // ==================== Notifications ====================
+
+  /**
+   * Send a desktop notification
+   * @param title Notification title
+   * @param content Notification body content
+   * @example
+   * a.sendNotification('Reminder', 'Time for your meeting!');
+   */
+  async sendNotification(title: string, content: string): Promise<void> {
+    await this.ctx.bridge.send('sendNotification', { title, content });
+  }
+
+  // ==================== Preferences ====================
+
+  /**
+   * Get a string preference value
+   * @param key Preference key
+   * @param defaultValue Default value if key doesn't exist
+   */
+  async getPreference(key: string, defaultValue?: string): Promise<string> {
+    const result = await this.ctx.bridge.send('preferencesGet', {
+      key,
+      type: 'string',
+      default: defaultValue
+    });
+    return result.value as string;
+  }
+
+  /**
+   * Get an integer preference value
+   * @param key Preference key
+   * @param defaultValue Default value if key doesn't exist
+   */
+  async getPreferenceInt(key: string, defaultValue?: number): Promise<number> {
+    const result = await this.ctx.bridge.send('preferencesGet', {
+      key,
+      type: 'int',
+      default: defaultValue
+    });
+    return result.value as number;
+  }
+
+  /**
+   * Get a float preference value
+   * @param key Preference key
+   * @param defaultValue Default value if key doesn't exist
+   */
+  async getPreferenceFloat(key: string, defaultValue?: number): Promise<number> {
+    const result = await this.ctx.bridge.send('preferencesGet', {
+      key,
+      type: 'float',
+      default: defaultValue
+    });
+    return result.value as number;
+  }
+
+  /**
+   * Get a boolean preference value
+   * @param key Preference key
+   * @param defaultValue Default value if key doesn't exist
+   */
+  async getPreferenceBool(key: string, defaultValue?: boolean): Promise<boolean> {
+    const result = await this.ctx.bridge.send('preferencesGet', {
+      key,
+      type: 'bool',
+      default: defaultValue
+    });
+    return result.value as boolean;
+  }
+
+  /**
+   * Set a preference value (string, number, or boolean)
+   * @param key Preference key
+   * @param value Value to store
+   * @example
+   * await a.setPreference('theme', 'dark');
+   * await a.setPreference('volume', 80);
+   * await a.setPreference('notifications', true);
+   */
+  async setPreference(key: string, value: string | number | boolean): Promise<void> {
+    await this.ctx.bridge.send('preferencesSet', { key, value });
+  }
+
+  /**
+   * Remove a preference value
+   * @param key Preference key to remove
+   */
+  async removePreference(key: string): Promise<void> {
+    await this.ctx.bridge.send('preferencesRemove', { key });
+  }
 }

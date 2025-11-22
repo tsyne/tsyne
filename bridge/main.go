@@ -268,6 +268,25 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleUpdateCanvasText(msg)
 	case "updateCanvasLinearGradient":
 		b.handleUpdateCanvasLinearGradient(msg)
+	// Platform integration
+	case "setSystemTray":
+		b.handleSetSystemTray(msg)
+	case "sendNotification":
+		b.handleSendNotification(msg)
+	case "clipboardGet":
+		b.handleClipboardGet(msg)
+	case "clipboardSet":
+		b.handleClipboardSet(msg)
+	case "preferencesGet":
+		b.handlePreferencesGet(msg)
+	case "preferencesSet":
+		b.handlePreferencesSet(msg)
+	case "preferencesRemove":
+		b.handlePreferencesRemove(msg)
+	case "setDraggable":
+		b.handleSetDraggable(msg)
+	case "setDroppable":
+		b.handleSetDroppable(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
