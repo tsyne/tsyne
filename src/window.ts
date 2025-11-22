@@ -6,6 +6,7 @@ export interface WindowOptions {
   width?: number;
   height?: number;
   fixedSize?: boolean;
+  icon?: string;  // Resource name registered via ResourceManager
 }
 
 /**
@@ -34,6 +35,9 @@ export class Window {
     }
     if (options.fixedSize !== undefined) {
       payload.fixedSize = options.fixedSize;
+    }
+    if (options.icon !== undefined) {
+      payload.icon = options.icon;
     }
 
     ctx.bridge.send('createWindow', payload);
@@ -237,6 +241,49 @@ export class Window {
     await this.ctx.bridge.send('setWindowFullScreen', {
       windowId: this.id,
       fullscreen
+    });
+  }
+
+  /**
+   * Set the window icon
+   * @param resourceName - Name of a resource registered via ResourceManager
+   */
+  async setIcon(resourceName: string): Promise<void> {
+    await this.ctx.bridge.send('setWindowIcon', {
+      windowId: this.id,
+      resourceName
+    });
+  }
+
+  /**
+   * Set a close intercept handler that is called before the window closes
+   * Return true from the callback to allow close, false to prevent it
+   * @param callback - Function called when user tries to close the window
+   */
+  setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
+    const callbackId = this.ctx.generateId('callback');
+
+    this.ctx.bridge.registerEventHandler(callbackId, async (_data: any) => {
+      const allowClose = await callback();
+      // Send response back to Go bridge
+      this.ctx.bridge.send('closeInterceptResponse', {
+        windowId: this.id,
+        allowClose
+      });
+    });
+
+    this.ctx.bridge.send('setWindowCloseIntercept', {
+      windowId: this.id,
+      callbackId
+    });
+  }
+
+  /**
+   * Close the window programmatically
+   */
+  async close(): Promise<void> {
+    await this.ctx.bridge.send('closeWindow', {
+      windowId: this.id
     });
   }
 

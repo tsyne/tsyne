@@ -138,6 +138,14 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCenterWindow(msg)
 	case "setWindowFullScreen":
 		b.handleSetWindowFullScreen(msg)
+	case "setWindowIcon":
+		b.handleSetWindowIcon(msg)
+	case "setWindowCloseIntercept":
+		b.handleSetWindowCloseIntercept(msg)
+	case "closeInterceptResponse":
+		b.handleCloseInterceptResponse(msg)
+	case "closeWindow":
+		b.handleCloseWindow(msg)
 	case "setMainMenu":
 		b.handleSetMainMenu(msg)
 	case "createToolbar":
