@@ -94,6 +94,20 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateSplit(msg)
 	case "createTabs":
 		b.handleCreateTabs(msg)
+	case "createTextGrid":
+		b.handleCreateTextGrid(msg)
+	case "setTextGridText":
+		b.handleSetTextGridText(msg)
+	case "setTextGridCell":
+		b.handleSetTextGridCell(msg)
+	case "setTextGridRow":
+		b.handleSetTextGridRow(msg)
+	case "setTextGridStyle":
+		b.handleSetTextGridStyle(msg)
+	case "setTextGridStyleRange":
+		b.handleSetTextGridStyleRange(msg)
+	case "getTextGridText":
+		b.handleGetTextGridText(msg)
 	case "setText":
 		b.handleSetText(msg)
 	case "getText":

@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, TextGrid } from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -436,6 +436,17 @@ export function innerWindow(title: string, builder: () => void, onClose?: () => 
 }
 
 /**
+ * Create a TextGrid widget (monospace text grid with per-cell styling)
+ * @param options TextGrid options or initial text string
+ */
+export function textgrid(options?: { text?: string; showLineNumbers?: boolean; showWhitespace?: boolean } | string): TextGrid {
+  if (!globalContext) {
+    throw new Error('textgrid() must be called within an app context');
+  }
+  return new TextGrid(globalContext, options);
+}
+
+/**
  * Set the application theme
  */
 export async function setTheme(theme: 'dark' | 'light'): Promise<void> {
@@ -523,11 +534,14 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export classes for advanced usage
-export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow };
+export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, TextGrid };
 export type { AppOptions, WindowOptions, MenuItem };
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';
+
+// Export TextGrid types
+export type { TextGridStyle, TextGridOptions } from './widgets';
 
 // Export state management utilities
 export {

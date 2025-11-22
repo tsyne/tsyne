@@ -2354,3 +2354,372 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 		Success: true,
 	})
 }
+
+// TextGridStyleImpl implements widget.TextGridStyle for custom cell styling
+type TextGridStyleImpl struct {
+	FGColor color.Color
+	BGColor color.Color
+	Style   fyne.TextStyle
+}
+
+func (s *TextGridStyleImpl) TextColor() color.Color {
+	return s.FGColor
+}
+
+func (s *TextGridStyleImpl) BackgroundColor() color.Color {
+	return s.BGColor
+}
+
+func (b *Bridge) handleCreateTextGrid(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	text, _ := msg.Payload["text"].(string)
+	showLineNumbers, _ := msg.Payload["showLineNumbers"].(bool)
+	showWhitespace, _ := msg.Payload["showWhitespace"].(bool)
+
+	var textGrid *widget.TextGrid
+	if text != "" {
+		textGrid = widget.NewTextGridFromString(text)
+	} else {
+		textGrid = widget.NewTextGrid()
+	}
+
+	textGrid.ShowLineNumbers = showLineNumbers
+	textGrid.ShowWhitespace = showWhitespace
+
+	b.mu.Lock()
+	b.widgets[widgetID] = textGrid
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "textgrid", Text: text}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleSetTextGridText(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	text := msg.Payload["text"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	textGrid.SetText(text)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridCell(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	col := int(msg.Payload["col"].(float64))
+	char, hasChar := msg.Payload["char"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	if hasChar && len(char) > 0 {
+		// Set rune at position
+		textGrid.SetRune(row, col, rune(char[0]))
+	}
+
+	// Apply style if provided
+	if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
+		style := parseTextGridStyle(styleData)
+		textGrid.SetStyle(row, col, style)
+	}
+
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridRow(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	text := msg.Payload["text"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	// Create TextGridRow from text
+	cells := make([]widget.TextGridCell, len(text))
+	for i, r := range text {
+		cells[i] = widget.TextGridCell{Rune: r}
+	}
+
+	// Apply style if provided
+	if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
+		style := parseTextGridStyle(styleData)
+		for i := range cells {
+			cells[i].Style = style
+		}
+	}
+
+	textGrid.SetRow(row, widget.TextGridRow{Cells: cells})
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridStyle(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	col := int(msg.Payload["col"].(float64))
+	styleData := msg.Payload["style"].(map[string]interface{})
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	style := parseTextGridStyle(styleData)
+	textGrid.SetStyle(row, col, style)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridStyleRange(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	startRow := int(msg.Payload["startRow"].(float64))
+	startCol := int(msg.Payload["startCol"].(float64))
+	endRow := int(msg.Payload["endRow"].(float64))
+	endCol := int(msg.Payload["endCol"].(float64))
+	styleData := msg.Payload["style"].(map[string]interface{})
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	style := parseTextGridStyle(styleData)
+	textGrid.SetStyleRange(startRow, startCol, endRow, endCol, style)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleGetTextGridText(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"text": textGrid.Text()},
+	})
+}
+
+// parseTextGridStyle parses style data from TypeScript into a TextGridStyle
+func parseTextGridStyle(styleData map[string]interface{}) widget.TextGridStyle {
+	style := &TextGridStyleImpl{
+		FGColor: nil,
+		BGColor: nil,
+		Style:   fyne.TextStyle{},
+	}
+
+	// Parse foreground color (hex string like "#ff0000" or "red")
+	if fgHex, ok := styleData["fgColor"].(string); ok && fgHex != "" {
+		style.FGColor = parseColorHex(fgHex)
+	}
+
+	// Parse background color
+	if bgHex, ok := styleData["bgColor"].(string); ok && bgHex != "" {
+		style.BGColor = parseColorHex(bgHex)
+	}
+
+	// Parse text style flags
+	if bold, ok := styleData["bold"].(bool); ok && bold {
+		style.Style.Bold = true
+	}
+	if italic, ok := styleData["italic"].(bool); ok && italic {
+		style.Style.Italic = true
+	}
+	if monospace, ok := styleData["monospace"].(bool); ok && monospace {
+		style.Style.Monospace = true
+	}
+
+	return style
+}
+
+// parseColorHex parses a hex color string into color.Color
+func parseColorHex(hex string) color.Color {
+	// Handle named colors
+	switch strings.ToLower(hex) {
+	case "black":
+		return color.Black
+	case "white":
+		return color.White
+	case "red":
+		return color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	case "green":
+		return color.RGBA{R: 0, G: 255, B: 0, A: 255}
+	case "blue":
+		return color.RGBA{R: 0, G: 0, B: 255, A: 255}
+	case "yellow":
+		return color.RGBA{R: 255, G: 255, B: 0, A: 255}
+	case "cyan":
+		return color.RGBA{R: 0, G: 255, B: 255, A: 255}
+	case "magenta":
+		return color.RGBA{R: 255, G: 0, B: 255, A: 255}
+	case "gray", "grey":
+		return color.RGBA{R: 128, G: 128, B: 128, A: 255}
+	}
+
+	// Handle hex colors (#RGB, #RRGGBB, #RRGGBBAA)
+	if strings.HasPrefix(hex, "#") {
+		hex = hex[1:]
+	}
+
+	var r, g, b, a uint8 = 0, 0, 0, 255
+
+	switch len(hex) {
+	case 3: // #RGB
+		fmt.Sscanf(hex, "%1x%1x%1x", &r, &g, &b)
+		r *= 17
+		g *= 17
+		b *= 17
+	case 6: // #RRGGBB
+		fmt.Sscanf(hex, "%2x%2x%2x", &r, &g, &b)
+	case 8: // #RRGGBBAA
+		fmt.Sscanf(hex, "%2x%2x%2x%2x", &r, &g, &b, &a)
+	}
+
+	return color.RGBA{R: r, G: g, B: b, A: a}
+}
