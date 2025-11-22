@@ -22,6 +22,10 @@ Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to t
 - **Easy Integration**: Simple npm package that's quick to add to any Node.js project
 - **Powerful**: Full access to Fyne's rich widget library and layout system
 - **Testable**: Built-in testing framework (TsyneTest) with Playwright-like API for headed/headless testing
+- **Single-Script Apps**: Complete desktop apps in one file - no complex project structure needed (like [calculator](examples/calculator.ts), [tic-tac-toe](examples/tictactoe.ts), [stopwatch](examples/17-stopwatch.ts), [dice roller](examples/18-dice-roller.ts))
+- **Browser Mode**: Load TypeScript pages from HTTP servers - enables server-driven desktop UIs where any backend language (Java, Ruby, Python, Go) can serve pages
+- **npm Ecosystem**: Use any of npm's 2M+ packages that don't require browser DOM - share validators, API clients, and business logic with your web apps
+- **Interpreted + Native**: TypeScript logic is interpreted for rapid iteration; rendering is compiled Go/Fyne for native performance (trade-off: requires Node.js runtime, not single binary distribution)
 
 ## Installation
 
