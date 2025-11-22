@@ -1216,6 +1216,100 @@ func (b *Bridge) handleCreateGridWrap(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateAdaptiveGrid(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	rowcols := int(msg.Payload["rowcols"].(float64))
+	childIDs, _ := msg.Payload["children"].([]interface{})
+
+	var children []fyne.CanvasObject
+	b.mu.RLock()
+	for _, childID := range childIDs {
+		if child, exists := b.widgets[childID.(string)]; exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	adaptiveGrid := container.NewAdaptiveGrid(rowcols, children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = adaptiveGrid
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "adaptivegrid", Text: ""}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleCreateAdaptiveGrid(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	rowcols := int(msg.Payload["rowcols"].(float64))
+	childIDs, _ := msg.Payload["children"].([]interface{})
+
+	var children []fyne.CanvasObject
+	b.mu.RLock()
+	for _, childID := range childIDs {
+		if child, exists := b.widgets[childID.(string)]; exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	adaptiveGrid := container.NewAdaptiveGrid(rowcols, children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = adaptiveGrid
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "adaptivegrid", Text: ""}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleCreatePadded(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childID := msg.Payload["childId"].(string)
+
+	b.mu.RLock()
+	child, exists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		})
+		return
+	}
+
+	padded := container.NewPadded(child)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = padded
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "padded", Text: ""}
+	b.childToParent[childID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateRadioGroup(msg Message) {
 	id := msg.Payload["id"].(string)
 	optionsInterface := msg.Payload["options"].([]interface{})

@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid, Navigation, NavigationOptions } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded } from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -214,20 +214,6 @@ export function radiogroup(
 }
 
 /**
- * Create a check group widget (multiple checkbox selection)
- */
-export function checkgroup(
-  options: string[],
-  initialSelected?: string[],
-  onChanged?: (selected: string[]) => void
-): CheckGroup {
-  if (!globalContext) {
-    throw new Error('checkgroup() must be called within an app context');
-  }
-  return new CheckGroup(globalContext, options, initialSelected, onChanged);
-}
-
-/**
  * Create a horizontal split container
  */
 export function hsplit(
@@ -266,22 +252,6 @@ export function tabs(
     throw new Error('tabs() must be called within an app context');
   }
   return new Tabs(globalContext, tabDefinitions, location);
-}
-
-/**
- * Create a doctabs container (tabs with close buttons)
- */
-export function doctabs(
-  tabDefinitions: Array<{title: string, builder: () => void}>,
-  options?: {
-    location?: 'top' | 'bottom' | 'leading' | 'trailing';
-    onClosed?: (tabIndex: number, tabTitle: string) => void;
-  }
-): DocTabs {
-  if (!globalContext) {
-    throw new Error('doctabs() must be called within an app context');
-  }
-  return new DocTabs(globalContext, tabDefinitions, options);
 }
 
 /**
@@ -337,16 +307,6 @@ export function center(builder: () => void): Center {
     throw new Error('center() must be called within an app context');
   }
   return new Center(globalContext, builder);
-}
-
-/**
- * Create a stack layout (Z-layering, overlapping children)
- */
-export function stack(builder: () => void): Stack {
-  if (!globalContext) {
-    throw new Error('stack() must be called within an app context');
-  }
-  return new Stack(globalContext, builder);
 }
 
 /**
@@ -445,18 +405,6 @@ export function gridwrap(itemWidth: number, itemHeight: number, builder: () => v
 }
 
 /**
- * Create a date entry widget
- * @param initialDate Optional initial date in ISO format (YYYY-MM-DD)
- * @param onChanged Optional callback when date changes
- */
-export function dateentry(initialDate?: string, onChanged?: (date: string) => void): DateEntry {
-  if (!globalContext) {
-    throw new Error('dateentry() must be called within an app context');
-  }
-  return new DateEntry(globalContext, initialDate, onChanged);
-}
-
-/**
  * Create a standalone menu widget
  * Useful for command palettes, action menus, and embedded menus
  */
@@ -488,46 +436,23 @@ export function innerWindow(title: string, builder: () => void, onClose?: () => 
 }
 
 /**
- * Create a padded container (adds theme padding around content)
+ * Create an adaptive grid layout (responsive columns)
+ */
+export function adaptivegrid(rowcols: number, builder: () => void): AdaptiveGrid {
+  if (!globalContext) {
+    throw new Error('adaptivegrid() must be called within an app context');
+  }
+  return new AdaptiveGrid(globalContext, rowcols, builder);
+}
+
+/**
+ * Create a padded container (adds theme-aware padding)
  */
 export function padded(builder: () => void): Padded {
   if (!globalContext) {
     throw new Error('padded() must be called within an app context');
   }
   return new Padded(globalContext, builder);
-}
-
-/**
- * Create a theme override container that applies a specific theme to its contents
- * @param variant The theme variant to apply ('dark' or 'light')
- * @param builder Function that creates the content
- */
-export function themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
-  if (!globalContext) {
-    throw new Error('themeoverride() must be called within an app context');
-  }
-  return new ThemeOverride(globalContext, variant, builder);
-}
-
-/**
- * Create a TextGrid widget (monospace text grid with per-cell styling)
- * @param options TextGrid options or initial text string
- */
-export function textgrid(options?: { text?: string; showLineNumbers?: boolean; showWhitespace?: boolean } | string): TextGrid {
-  if (!globalContext) {
-    throw new Error('textgrid() must be called within an app context');
-  }
-  return new TextGrid(globalContext, options);
-}
-
-/**
- * Create a navigation container with stack-based navigation
- */
-export function navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation {
-  if (!globalContext) {
-    throw new Error('navigation() must be called within an app context');
-  }
-  return new Navigation(globalContext, rootBuilder, options);
 }
 
 /**
@@ -618,14 +543,11 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export classes for advanced usage
-export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid, Navigation };
-export type { AppOptions, WindowOptions, MenuItem, NavigationOptions };
+export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded };
+export type { AppOptions, WindowOptions, MenuItem };
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';
-
-// Export TextGrid types
-export type { TextGridStyle, TextGridOptions } from './widgets';
 
 // Export state management utilities
 export {

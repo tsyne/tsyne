@@ -137,23 +137,6 @@ export abstract class Widget {
   }
 
   /**
-   * Register a test ID for this widget (for test framework getByTestId)
-   * Similar to data-testid in HTML - provides a stable selector for tests
-   * @param testId Test ID to register
-   * @returns this for method chaining
-   * @example
-   * const submitBtn = a.button('Submit', onClick).withTestId('submit-btn');
-   * // In tests: ctx.getByTestId('submit-btn')
-   */
-  withTestId(testId: string): this {
-    this.ctx.bridge.send('registerTestId', {
-      widgetId: this.id,
-      testId
-    });
-    return this;
-  }
-
-  /**
    * Declarative visibility control - show widget when condition is true
    * @param conditionFn Function that returns whether widget should be visible
    * @returns this for method chaining
@@ -1847,63 +1830,6 @@ export class Max {
 }
 
 /**
- * Stack layout - stacks widgets on top of each other (Z-layering)
- * All widgets are positioned at the same location, creating overlapping layers.
- * Unlike Max, Stack preserves natural sizes - children are not forced to fill the container.
- * Useful for layered UIs like card stacks, overlays, or floating elements.
- */
-export class Stack {
-  private ctx: Context;
-  public id: string;
-
-  constructor(ctx: Context, builder: () => void) {
-    this.ctx = ctx;
-    this.id = ctx.generateId('stack');
-
-    // Build child content
-    ctx.pushContainer();
-    builder();
-    const children = ctx.popContainer();
-
-    if (children.length === 0) {
-      throw new Error('Stack must have at least one child');
-    }
-
-    ctx.bridge.send('createStack', {
-      id: this.id,
-      childIds: children
-    });
-
-    ctx.addToCurrentContainer(this.id);
-  }
-
-  /**
-   * Register a custom ID for this widget (for testing/debugging)
-   * @param customId Custom ID to register
-   * @returns this for method chaining
-   */
-  withId(customId: string): this {
-    this.ctx.bridge.send('registerCustomId', {
-      widgetId: this.id,
-      customId
-    });
-    return this;
-  }
-
-  async hide(): Promise<void> {
-    await this.ctx.bridge.send('hideWidget', {
-      widgetId: this.id
-    });
-  }
-
-  async show(): Promise<void> {
-    await this.ctx.bridge.send('showWidget', {
-      widgetId: this.id
-    });
-  }
-}
-
-/**
  * Card container with title, subtitle, and content
  */
 export class Card {
@@ -2743,8 +2669,49 @@ export class InnerWindow {
 }
 
 /**
- * Padded container - adds theme-appropriate padding around content
- * Uses Fyne's container.NewPadded which adds standard theme padding
+ * AdaptiveGrid layout - responsive grid that adjusts columns based on width
+ * Creates a grid layout where the number of columns (rowcols) determines
+ * the minimum number of items per row. Items resize to fill available space.
+ */
+export class AdaptiveGrid {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, rowcols: number, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('adaptivegrid');
+
+    // Build children
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    ctx.bridge.send('createAdaptiveGrid', {
+      id: this.id,
+      rowcols,
+      children
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this container
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+}
+
+/**
+ * Padded container - adds standard inset padding around content
+ * Wraps a single child with Fyne's theme-aware padding
  */
 export class Padded {
   private ctx: Context;
@@ -2769,6 +2736,19 @@ export class Padded {
     });
 
     ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this container
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
   }
 }
 
