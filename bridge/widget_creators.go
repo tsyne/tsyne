@@ -544,6 +544,39 @@ func (b *Bridge) handleCreateCenter(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateClip(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childID := msg.Payload["childId"].(string)
+
+	b.mu.RLock()
+	child, exists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		})
+		return
+	}
+
+	// NewClip creates a container that clips any content that extends beyond the bounds of its child
+	clipped := container.NewClip(child)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = clipped
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "clip", Text: ""}
+	b.childToParent[childID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateMax(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, ok := msg.Payload["childIds"].([]interface{})
