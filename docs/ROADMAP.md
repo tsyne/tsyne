@@ -60,17 +60,17 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 
 ---
 
-## System Features Not Yet Implemented
+## System Features
 
-### Platform Integration
+### Platform Integration (IMPLEMENTED)
 
-| Feature | Fyne Package | Description | Suggested Demo App |
-|---------|--------------|-------------|-------------------|
-| **System Tray** | `fyne.Driver.SystemTray` | Tray icon with menu | `background-app.ts` - App that minimizes to tray |
-| **Notifications** | `fyne.App.SendNotification` | Desktop notifications | `reminder-app.ts` - Send system notifications |
-| **Clipboard** | `fyne.Clipboard` | Copy/paste support | `clipboard-manager.ts` - Clipboard history |
-| **Drag & Drop** | Widget `Draggable`/`Droppable` | File/widget drag | `kanban-board.ts` - Drag cards between columns |
-| **Preferences** | `fyne.App.Preferences` | Persistent settings | `settings-app.ts` - Save/load user preferences |
+| Feature | Fyne Package | Description | Demo App | Status |
+|---------|--------------|-------------|----------|--------|
+| ~~**System Tray**~~ | ~~`fyne.Driver.SystemTray`~~ | ~~Tray icon with menu~~ | ~~`background-app.ts`~~ | **IMPLEMENTED** |
+| ~~**Notifications**~~ | ~~`fyne.App.SendNotification`~~ | ~~Desktop notifications~~ | ~~`reminder-app.ts`~~ | **IMPLEMENTED** |
+| ~~**Clipboard**~~ | ~~`fyne.Clipboard`~~ | ~~Copy/paste support~~ | ~~`clipboard-manager.ts`~~ | **IMPLEMENTED** |
+| ~~**Drag & Drop**~~ | ~~Widget `Draggable`/`Droppable`~~ | ~~File/widget drag~~ | ~~`kanban-board.ts`~~ | **IMPLEMENTED** |
+| ~~**Preferences**~~ | ~~`fyne.App.Preferences`~~ | ~~Persistent settings~~ | ~~`settings-app.ts`~~ | **IMPLEMENTED** |
 
 ### Data Binding
 
