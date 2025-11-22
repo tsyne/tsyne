@@ -221,6 +221,40 @@ func (b *Bridge) handleCreateMyWidget(msg Message) {
 
 ## Quick Start
 
+### Cloud/LLM Environments (Recommended)
+
+If you're in a containerized/cloud environment (Claude Code, Codespaces, etc.) with restricted network access:
+
+```bash
+# Step 1: Install system dependencies
+apt-get update -qq
+apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
+
+# Step 2: Download fyne.io/systray manually (not on Google's proxy)
+cd /tmp
+wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
+tar -xzf systray-master.tar.gz
+
+# Step 3: Use go mod replace to point to local systray
+cd /home/user/tsyne/bridge
+go mod edit -replace=fyne.io/systray=/tmp/systray-master
+
+# Step 4: Build bridge with GOPROXY=direct (bypasses Google's module proxy)
+env GOPROXY=direct go build -o ../bin/tsyne-bridge .
+
+# Step 5: Install npm dependencies
+cd /home/user/tsyne
+npm install --ignore-scripts
+
+# Step 6: Build and test
+npm run build
+npm test
+```
+
+### Standard Environments (Full Network Access)
+
+If you have unrestricted network access:
+
 ```bash
 npm install
 cd bridge && go build -o ../bin/tsyne-bridge && cd ..
@@ -229,7 +263,7 @@ node examples/hello.js
 npm test
 ```
 
-IMPORTANT: DO NOT BUILD `tsyne-bridge` anywhere else - it goes into bin/ only.
+**IMPORTANT:** DO NOT BUILD `tsyne-bridge` anywhere else - it goes into `bin/` only.
 
 ## Development Workflow
 
