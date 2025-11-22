@@ -76,8 +76,8 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 
 | Feature | Fyne Package | Description | Suggested Demo App |
 |---------|--------------|-------------|-------------------|
-| **Data Binding** | `data/binding` | Reactive data binding | `reactive-form.ts` - Auto-syncing form fields |
-| **Validation** | `data/validation` | Input validation | `registration-form.ts` - Validated sign-up form |
+| ~~**Data Binding**~~ | ~~`data/binding`~~ | ~~Reactive data binding~~ | ~~`reactive-form.ts` - Auto-syncing form fields~~ | **IMPLEMENTED** |
+| ~~**Validation**~~ | ~~`data/validation`~~ | ~~Input validation~~ | ~~`registration-form.ts` - Validated sign-up form~~ | **IMPLEMENTED** |
 
 ---
 
