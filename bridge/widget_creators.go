@@ -1524,6 +1524,38 @@ func (b *Bridge) handleCreateTable(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreatePadded(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childID := msg.Payload["childId"].(string)
+
+	b.mu.RLock()
+	child, exists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		})
+		return
+	}
+
+	padded := container.NewPadded(child)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = padded
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "padded", Text: ""}
+	b.childToParent[childID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateList(msg Message) {
 	id := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
