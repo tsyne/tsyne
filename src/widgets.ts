@@ -137,6 +137,23 @@ export abstract class Widget {
   }
 
   /**
+   * Register a test ID for this widget (for test framework getByTestId)
+   * Similar to data-testid in HTML - provides a stable selector for tests
+   * @param testId Test ID to register
+   * @returns this for method chaining
+   * @example
+   * const submitBtn = a.button('Submit', onClick).withTestId('submit-btn');
+   * // In tests: ctx.getByTestId('submit-btn')
+   */
+  withTestId(testId: string): this {
+    this.ctx.bridge.send('registerTestId', {
+      widgetId: this.id,
+      testId
+    });
+    return this;
+  }
+
+  /**
    * Declarative visibility control - show widget when condition is true
    * @param conditionFn Function that returns whether widget should be visible
    * @returns this for method chaining

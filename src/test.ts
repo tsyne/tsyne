@@ -27,7 +27,7 @@ export class Locator {
   constructor(
     private bridge: BridgeConnection,
     private selector: string,
-    private selectorType: 'text' | 'exactText' | 'type' | 'id' | 'placeholder'
+    private selectorType: 'text' | 'exactText' | 'type' | 'id' | 'placeholder' | 'testId' | 'role' | 'label'
   ) {}
 
   /**
@@ -810,6 +810,42 @@ export class TestContext {
    */
   getByID(id: string): Locator {
     return new Locator(this.bridge, id, 'id');
+  }
+
+  /**
+   * Get a locator for widgets with a specific test ID (data-testid equivalent)
+   * Useful for testing - can add testIds to widgets without affecting UI
+   *
+   * @example
+   * const submitBtn = ctx.getByTestId('submit-button');
+   * await submitBtn.click();
+   */
+  getByTestId(testId: string): Locator {
+    return new Locator(this.bridge, testId, 'testId');
+  }
+
+  /**
+   * Get a locator for widgets with a specific ARIA role
+   * Selects widgets by their accessibility role (e.g., 'button', 'textbox', 'navigation')
+   *
+   * @example
+   * const buttons = ctx.getByRole('button');
+   * const textbox = ctx.getByRole('textbox');
+   */
+  getByRole(role: string): Locator {
+    return new Locator(this.bridge, role, 'role');
+  }
+
+  /**
+   * Get a locator for widgets with a specific accessibility label
+   * Selects widgets by their accessibility label (partial match)
+   *
+   * @example
+   * const usernameField = ctx.getByLabel('Username');
+   * await usernameField.type('john');
+   */
+  getByLabel(label: string): Locator {
+    return new Locator(this.bridge, label, 'label');
   }
 
   /**

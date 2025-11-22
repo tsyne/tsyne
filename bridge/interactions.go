@@ -734,6 +734,22 @@ func (b *Bridge) handleFindWidget(msg Message) {
 			isMatch = widgetID == resolvedSelector
 		case "placeholder":
 			isMatch = meta.Placeholder == selector
+		case "testId":
+			isMatch = meta.TestId == selector
+		case "role":
+			// Look up role from accessibility CustomData
+			if meta.CustomData != nil {
+				if role, ok := meta.CustomData["a11y_role"].(string); ok {
+					isMatch = role == selector
+				}
+			}
+		case "label":
+			// Look up accessibility label from CustomData
+			if meta.CustomData != nil {
+				if label, ok := meta.CustomData["a11y_label"].(string); ok {
+					isMatch = strings.Contains(label, selector)
+				}
+			}
 		}
 
 		if isMatch {
@@ -991,6 +1007,25 @@ func (b *Bridge) handleRegisterCustomId(msg Message) {
 
 	b.mu.Lock()
 	b.customIds[customID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleRegisterTestId(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	testID := msg.Payload["testId"].(string)
+
+	b.mu.Lock()
+	if meta, exists := b.widgetMeta[widgetID]; exists {
+		meta.TestId = testID
+		b.widgetMeta[widgetID] = meta
+	} else {
+		b.widgetMeta[widgetID] = WidgetMetadata{TestId: testID}
+	}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{

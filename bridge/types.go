@@ -75,6 +75,7 @@ type WidgetMetadata struct {
 	Text        string
 	URL         string                 // For hyperlinks
 	Placeholder string                 // For entry widgets
+	TestId      string                 // For test framework getByTestId
 	CustomData  map[string]interface{} // For storing additional metadata like accessibility info
 }
 
