@@ -259,6 +259,29 @@ export class Window {
   }
 
   /**
+   * Shows a folder open dialog and returns the selected folder path
+   * @returns Promise<string | null> - folder path if selected, null if cancelled
+   */
+  async showFolderOpen(): Promise<string | null> {
+    return new Promise((resolve) => {
+      const callbackId = this.ctx.generateId('callback');
+
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (data.error || !data.folderPath) {
+          resolve(null);
+        } else {
+          resolve(data.folderPath);
+        }
+      });
+
+      this.ctx.bridge.send('showFolderOpen', {
+        windowId: this.id,
+        callbackId
+      });
+    });
+  }
+
+  /**
    * Shows a color picker dialog and returns the selected color
    * @param title - Title for the color picker dialog
    * @param initialColor - Initial color as hex string (e.g., "#ff0000")

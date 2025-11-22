@@ -554,3 +554,42 @@ func (b *Bridge) handleShowEntryDialog(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleShowFolderOpen(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
+		var folderPath string
+		if uri != nil {
+			folderPath = uri.Path()
+		}
+
+		b.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": callbackID,
+				"folderPath": folderPath,
+				"error":      err != nil,
+			},
+		})
+	}, win)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
