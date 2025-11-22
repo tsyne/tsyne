@@ -122,9 +122,9 @@ app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45
 
 | Feature | Description | Suggested Demo App |
 |---------|-------------|-------------------|
-| **Custom Themes** | Define custom color schemes | `theme-creator.ts` - Build custom themes |
-| **Per-Widget Colors** | Override widget colors | Requires Fyne theme customization |
-| **Custom Fonts** | Load custom font files | `font-preview.ts` - Font selector |
+| ~~**Custom Themes**~~ | ~~Define custom color schemes~~ | ~~`theme-creator.ts` - Build custom themes~~ | **IMPLEMENTED** |
+| ~~**Per-Widget Colors**~~ | ~~Override widget colors~~ | ~~Requires Fyne theme customization~~ | **IMPLEMENTED** |
+| ~~**Custom Fonts**~~ | ~~Load custom font files~~ | ~~`font-preview.ts` - Font selector~~ | **IMPLEMENTED** |
 
 ---
 

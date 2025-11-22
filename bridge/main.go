@@ -172,6 +172,16 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleGetTheme(msg)
 	case "setFontScale":
 		b.handleSetFontScale(msg)
+	case "setCustomTheme":
+		b.handleSetCustomTheme(msg)
+	case "clearCustomTheme":
+		b.handleClearCustomTheme(msg)
+	case "setCustomFont":
+		b.handleSetCustomFont(msg)
+	case "clearCustomFont":
+		b.handleClearCustomFont(msg)
+	case "getAvailableFonts":
+		b.handleGetAvailableFonts(msg)
 	case "setWidgetStyle":
 		b.handleSetWidgetStyle(msg)
 	case "setWidgetContextMenu":

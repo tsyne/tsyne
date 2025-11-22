@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -475,6 +476,254 @@ func (b *Bridge) handleSetFontScale(msg Message) {
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
+	})
+}
+
+// parseHexColor parses a hex color string (#RRGGBB or #RRGGBBAA) to a color.NRGBA
+func parseHexColor(colorStr string) (color.NRGBA, bool) {
+	if len(colorStr) < 7 || colorStr[0] != '#' {
+		return color.NRGBA{}, false
+	}
+
+	var r, g, b, a uint8
+	a = 255 // Default alpha
+
+	if len(colorStr) == 7 { // #RRGGBB
+		fmt.Sscanf(colorStr[1:], "%02x%02x%02x", &r, &g, &b)
+	} else if len(colorStr) == 9 { // #RRGGBBAA
+		fmt.Sscanf(colorStr[1:], "%02x%02x%02x%02x", &r, &g, &b, &a)
+	} else {
+		return color.NRGBA{}, false
+	}
+
+	return color.NRGBA{R: r, G: g, B: b, A: a}, true
+}
+
+func (b *Bridge) handleSetCustomTheme(msg Message) {
+	if b.scalableTheme == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		})
+		return
+	}
+
+	colors, ok := msg.Payload["colors"].(map[string]interface{})
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Missing or invalid 'colors' parameter",
+		})
+		return
+	}
+
+	customColors := &CustomColors{}
+
+	// Parse each color from the payload
+	colorMap := map[string]*color.Color{
+		"background":        (*color.Color)(&customColors.Background),
+		"foreground":        (*color.Color)(&customColors.Foreground),
+		"button":            (*color.Color)(&customColors.Button),
+		"disabledButton":    (*color.Color)(&customColors.DisabledButton),
+		"disabled":          (*color.Color)(&customColors.Disabled),
+		"hover":             (*color.Color)(&customColors.Hover),
+		"focus":             (*color.Color)(&customColors.Focus),
+		"placeholder":       (*color.Color)(&customColors.Placeholder),
+		"primary":           (*color.Color)(&customColors.Primary),
+		"pressed":           (*color.Color)(&customColors.Pressed),
+		"scrollBar":         (*color.Color)(&customColors.ScrollBar),
+		"selection":         (*color.Color)(&customColors.Selection),
+		"separator":         (*color.Color)(&customColors.Separator),
+		"shadow":            (*color.Color)(&customColors.Shadow),
+		"inputBackground":   (*color.Color)(&customColors.InputBackground),
+		"inputBorder":       (*color.Color)(&customColors.InputBorder),
+		"menuBackground":    (*color.Color)(&customColors.MenuBackground),
+		"overlayBackground": (*color.Color)(&customColors.OverlayBackground),
+		"error":             (*color.Color)(&customColors.Error),
+		"success":           (*color.Color)(&customColors.Success),
+		"warning":           (*color.Color)(&customColors.Warning),
+		"hyperlink":         (*color.Color)(&customColors.Hyperlink),
+		"headerBackground":  (*color.Color)(&customColors.HeaderBackground),
+	}
+
+	for name, ptr := range colorMap {
+		if colorStr, ok := colors[name].(string); ok {
+			if c, valid := parseHexColor(colorStr); valid {
+				*ptr = c
+			}
+		}
+	}
+
+	// Apply custom colors
+	b.scalableTheme.SetCustomColors(customColors)
+
+	// Refresh all windows to apply the new theme
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleClearCustomTheme(msg Message) {
+	if b.scalableTheme == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		})
+		return
+	}
+
+	// Clear custom colors
+	b.scalableTheme.ClearCustomColors()
+
+	// Refresh all windows
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetCustomFont(msg Message) {
+	if b.scalableTheme == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		})
+		return
+	}
+
+	fontPath, ok := msg.Payload["path"].(string)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Missing or invalid 'path' parameter",
+		})
+		return
+	}
+
+	// Determine which text style to apply the font to
+	styleStr, _ := msg.Payload["style"].(string)
+	textStyle := fyne.TextStyle{}
+
+	switch styleStr {
+	case "bold":
+		textStyle.Bold = true
+	case "italic":
+		textStyle.Italic = true
+	case "boldItalic":
+		textStyle.Bold = true
+		textStyle.Italic = true
+	case "monospace":
+		textStyle.Monospace = true
+	case "symbol":
+		textStyle.Symbol = true
+	// default: regular style (no flags set)
+	}
+
+	// Load and set the custom font
+	err := b.scalableTheme.SetCustomFont(textStyle, fontPath)
+	if err != nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to load font: %v", err),
+		})
+		return
+	}
+
+	// Refresh all windows to apply the new font
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleClearCustomFont(msg Message) {
+	if b.scalableTheme == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		})
+		return
+	}
+
+	// Determine which text style to clear
+	styleStr, _ := msg.Payload["style"].(string)
+
+	if styleStr == "all" || styleStr == "" {
+		b.scalableTheme.ClearAllCustomFonts()
+	} else {
+		textStyle := fyne.TextStyle{}
+		switch styleStr {
+		case "bold":
+			textStyle.Bold = true
+		case "italic":
+			textStyle.Italic = true
+		case "boldItalic":
+			textStyle.Bold = true
+			textStyle.Italic = true
+		case "monospace":
+			textStyle.Monospace = true
+		case "symbol":
+			textStyle.Symbol = true
+		}
+		b.scalableTheme.ClearCustomFont(textStyle)
+	}
+
+	// Refresh all windows
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleGetAvailableFonts(msg Message) {
+	// Return a list of common font locations and supported font file extensions
+	// Note: Fyne supports TTF and OTF fonts
+	fonts := map[string]interface{}{
+		"supportedExtensions": []string{".ttf", ".otf"},
+		"commonLocations": map[string][]string{
+			"linux":   {"/usr/share/fonts", "/usr/local/share/fonts", "~/.fonts", "~/.local/share/fonts"},
+			"darwin":  {"/System/Library/Fonts", "/Library/Fonts", "~/Library/Fonts"},
+			"windows": {"C:\\Windows\\Fonts"},
+		},
+		"styles": []string{"regular", "bold", "italic", "boldItalic", "monospace", "symbol"},
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  fonts,
 	})
 }
 

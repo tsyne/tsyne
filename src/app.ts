@@ -10,6 +10,77 @@ export interface AppOptions {
 }
 
 /**
+ * Custom theme color definitions
+ * All colors should be hex strings in #RRGGBB or #RRGGBBAA format
+ */
+export interface CustomThemeColors {
+  /** Main background color */
+  background?: string;
+  /** Main text/foreground color */
+  foreground?: string;
+  /** Button background color */
+  button?: string;
+  /** Disabled button background color */
+  disabledButton?: string;
+  /** General disabled element color */
+  disabled?: string;
+  /** Hover state color */
+  hover?: string;
+  /** Focus indicator color */
+  focus?: string;
+  /** Placeholder text color */
+  placeholder?: string;
+  /** Primary/accent color */
+  primary?: string;
+  /** Pressed/active state color */
+  pressed?: string;
+  /** Scrollbar color */
+  scrollBar?: string;
+  /** Text selection color */
+  selection?: string;
+  /** Separator/divider color */
+  separator?: string;
+  /** Shadow color */
+  shadow?: string;
+  /** Input field background */
+  inputBackground?: string;
+  /** Input field border */
+  inputBorder?: string;
+  /** Menu background */
+  menuBackground?: string;
+  /** Overlay/modal background */
+  overlayBackground?: string;
+  /** Error state color */
+  error?: string;
+  /** Success state color */
+  success?: string;
+  /** Warning state color */
+  warning?: string;
+  /** Hyperlink color */
+  hyperlink?: string;
+  /** Header background color */
+  headerBackground?: string;
+}
+
+/**
+ * Text style variants for custom fonts
+ */
+export type FontTextStyle = 'regular' | 'bold' | 'italic' | 'boldItalic' | 'monospace' | 'symbol';
+
+/**
+ * Font information returned by getAvailableFonts()
+ */
+export interface FontInfo {
+  supportedExtensions: string[];
+  commonLocations: {
+    linux: string[];
+    darwin: string[];
+    windows: string[];
+  };
+  styles: string[];
+}
+
+/**
  * App is the main application class
  */
 export class App {
@@ -227,6 +298,54 @@ export class App {
   async getTheme(): Promise<'dark' | 'light'> {
     const result = await this.ctx.bridge.send('getTheme', {});
     return result.theme as 'dark' | 'light';
+  }
+
+  /**
+   * Set a custom theme with custom colors
+   * @param colors - Object with color names and hex values (#RRGGBB or #RRGGBBAA)
+   */
+  async setCustomTheme(colors: CustomThemeColors): Promise<void> {
+    await this.ctx.bridge.send('setCustomTheme', { colors });
+  }
+
+  /**
+   * Clear custom theme and revert to default
+   */
+  async clearCustomTheme(): Promise<void> {
+    await this.ctx.bridge.send('clearCustomTheme', {});
+  }
+
+  /**
+   * Set a custom font for a specific text style
+   * @param path - Path to the font file (.ttf or .otf)
+   * @param style - Which text style to apply the font to
+   */
+  async setCustomFont(path: string, style?: FontTextStyle): Promise<void> {
+    await this.ctx.bridge.send('setCustomFont', { path, style: style || 'regular' });
+  }
+
+  /**
+   * Clear custom font for a specific style or all styles
+   * @param style - Which style to clear, or 'all' to clear all custom fonts
+   */
+  async clearCustomFont(style?: FontTextStyle | 'all'): Promise<void> {
+    await this.ctx.bridge.send('clearCustomFont', { style: style || 'all' });
+  }
+
+  /**
+   * Get information about available fonts and supported formats
+   */
+  async getAvailableFonts(): Promise<FontInfo> {
+    const result = await this.ctx.bridge.send('getAvailableFonts', {});
+    return result as FontInfo;
+  }
+
+  /**
+   * Set the global font scale
+   * @param scale - Font scale factor (0.75 = small, 1.0 = normal, 1.5 = large)
+   */
+  async setFontScale(scale: number): Promise<void> {
+    await this.ctx.bridge.send('setFontScale', { scale });
   }
 
   getWindows(): Window[] {

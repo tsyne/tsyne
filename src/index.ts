@@ -435,9 +435,79 @@ export async function getTheme(): Promise<'dark' | 'light'> {
   return await globalApp.getTheme();
 }
 
+import type { CustomThemeColors, FontTextStyle, FontInfo } from './app';
+
+/**
+ * Set a custom theme with custom colors
+ * @param colors - Object with color names and hex values (#RRGGBB or #RRGGBBAA)
+ */
+export async function setCustomTheme(colors: CustomThemeColors): Promise<void> {
+  if (!globalApp) {
+    throw new Error('setCustomTheme() must be called within an app context');
+  }
+  await globalApp.setCustomTheme(colors);
+}
+
+/**
+ * Clear custom theme and revert to default
+ */
+export async function clearCustomTheme(): Promise<void> {
+  if (!globalApp) {
+    throw new Error('clearCustomTheme() must be called within an app context');
+  }
+  await globalApp.clearCustomTheme();
+}
+
+/**
+ * Set a custom font for a specific text style
+ * @param path - Path to the font file (.ttf or .otf)
+ * @param style - Which text style to apply the font to
+ */
+export async function setCustomFont(path: string, style?: FontTextStyle): Promise<void> {
+  if (!globalApp) {
+    throw new Error('setCustomFont() must be called within an app context');
+  }
+  await globalApp.setCustomFont(path, style);
+}
+
+/**
+ * Clear custom font for a specific style or all styles
+ * @param style - Which style to clear, or 'all' to clear all custom fonts
+ */
+export async function clearCustomFont(style?: FontTextStyle | 'all'): Promise<void> {
+  if (!globalApp) {
+    throw new Error('clearCustomFont() must be called within an app context');
+  }
+  await globalApp.clearCustomFont(style);
+}
+
+/**
+ * Get information about available fonts and supported formats
+ */
+export async function getAvailableFonts(): Promise<FontInfo> {
+  if (!globalApp) {
+    throw new Error('getAvailableFonts() must be called within an app context');
+  }
+  return await globalApp.getAvailableFonts();
+}
+
+/**
+ * Set the global font scale
+ * @param scale - Font scale factor (0.75 = small, 1.0 = normal, 1.5 = large)
+ */
+export async function setFontScale(scale: number): Promise<void> {
+  if (!globalApp) {
+    throw new Error('setFontScale() must be called within an app context');
+  }
+  await globalApp.setFontScale(scale);
+}
+
 // Export classes for advanced usage
 export { App, Window, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient };
 export type { AppOptions, WindowOptions, MenuItem };
+
+// Export theming types
+export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';
 
 // Export state management utilities
 export {
