@@ -1506,3 +1506,112 @@ func (b *Bridge) handleCreateList(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleCreateInnerWindow(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	title := msg.Payload["title"].(string)
+	contentID := msg.Payload["contentId"].(string)
+
+	b.mu.RLock()
+	content, exists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Content widget not found: %s", contentID),
+		})
+		return
+	}
+
+	innerWindow := container.NewInnerWindow(title, content)
+
+	// Set up onClose callback if provided
+	if closeCallbackID, ok := msg.Payload["onCloseCallbackId"].(string); ok {
+		innerWindow.CloseIntercept = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": closeCallbackID,
+				},
+			})
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = innerWindow
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "innerwindow", Text: title}
+	b.childToParent[contentID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleInnerWindowClose(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		})
+		return
+	}
+
+	innerWindow, ok := widget.(*container.InnerWindow)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		})
+		return
+	}
+
+	innerWindow.Close()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	title := msg.Payload["title"].(string)
+
+	b.mu.RLock()
+	_, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		})
+		return
+	}
+
+	// Note: Fyne's InnerWindow title is set at creation time and cannot be changed
+	// We update the metadata for tracking purposes
+	// To change the title, the window would need to be recreated
+	b.mu.Lock()
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "innerwindow", Text: title}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}

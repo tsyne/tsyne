@@ -1962,3 +1962,95 @@ export class GridWrap {
     ctx.addToCurrentContainer(this.id);
   }
 }
+
+/**
+ * InnerWindow - a window-like container that can be placed inside a canvas
+ * Useful for MDI (Multiple Document Interface) applications
+ */
+export class InnerWindow {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, title: string, builder: () => void, onClose?: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('innerwindow');
+
+    // Build content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('InnerWindow must have exactly one child');
+    }
+
+    const contentId = children[0];
+
+    const payload: any = {
+      id: this.id,
+      title,
+      contentId
+    };
+
+    if (onClose) {
+      const closeCallbackId = ctx.generateId('callback');
+      payload.onCloseCallbackId = closeCallbackId;
+      ctx.bridge.registerEventHandler(closeCallbackId, () => {
+        onClose();
+      });
+    }
+
+    ctx.bridge.send('createInnerWindow', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Close the inner window
+   */
+  async close(): Promise<void> {
+    await this.ctx.bridge.send('innerWindowClose', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Set the title of the inner window
+   */
+  async setTitle(title: string): Promise<void> {
+    await this.ctx.bridge.send('setInnerWindowTitle', {
+      widgetId: this.id,
+      title
+    });
+  }
+
+  /**
+   * Hide the inner window
+   */
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Show the inner window
+   */
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Register a custom ID for this inner window (for test framework getByID)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+}

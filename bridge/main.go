@@ -237,6 +237,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleProcessHoverWrappers(msg)
 	case "setWidgetHoverable":
 		b.handleSetWidgetHoverable(msg)
+	case "createInnerWindow":
+		b.handleCreateInnerWindow(msg)
+	case "innerWindowClose":
+		b.handleInnerWindowClose(msg)
+	case "setInnerWindowTitle":
+		b.handleSetInnerWindowTitle(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
