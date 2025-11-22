@@ -46,13 +46,17 @@ Tsyne isn't the right choice for every project. Consider these limitations:
 
 ## FAQ
 
-**Q: What's the difference between regular app mode and browser mode?**
+**Q: How does browser mode differ from regular mode?**
 
-Regular app mode creates standalone desktop applications. Browser mode loads TypeScript pages from HTTP servers dynamically, enabling server-driven UIs where the backend controls the UI (similar to traditional web apps but with native widgets). See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md).
+Regular app mode creates standalone desktop applications. Browser mode loads TypeScript pages from HTTP servers dynamically, enabling server-driven UIs where the backend controls the UI (similar to traditional web apps but with native widgets). Pages are the main concept, URLs back/forward buttons exist. See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md).
+
+**Q: Can Chrome, Firefox and Safari show browser-make pages?**
+
+No, we have our own browser for that and yes we know that's a second-class experience. It could be that someone could make a plugin for Chrome/Edge/Firefox and/or Safari, but it could still be a second-class experience.
 
 **Q: Can I use npm packages in my Tsyne app?**
 
-Yes! Any npm package that doesn't require browser DOM APIs will work. This includes validators, API clients, date libraries, and business logic packages. Share code between your Tsyne desktop app and web frontend.
+Yes! Any npm package that doesn't require browser DOM APIs will work. This includes validators, API clients, date libraries, and business logic packages. Share code between your Tsyne desktop app and web frontend. Share code between your Tsyne desktop app and your server-side NodeJS web applications.
 
 **Q: How does testing work?**
 
@@ -60,15 +64,15 @@ Tsyne provides two testing frameworks:
 - **TsyneTest** - For testing regular Tsyne apps/components ([docs/TESTING.md](docs/TESTING.md))
 - **TsyneBrowserTest** - For testing browser mode pages ([docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md))
 
-Both support headed and headless modes with Playwright-inspired APIs.
+Both support headed and headless modes with aPIR inspired by Selenium/Playwright.
 
 **Q: Can I style widgets with CSS?**
 
-Tsyne has a CSS-like styling system for fonts (family, size, style, weight). Per-widget colors are limited by Fyne's architecture - use themes for color customization. See the Widget Styling System section below.
+Tsyne has a CSS-like styling system for fonts (family, size, style, weight). Per-widget colors are limited by Fyne's architecture - use **themes** for color customization. See the Widget Styling System section below.
 
 **Q: Why TypeScript instead of Go for the UI logic?**
 
-TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.
+TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.  For me (Paul) this was always about [pseudo-declarative UI markup languages that could be interpreted](https://paulhammant.com/categories#Pseudo-declarative_UIs).
 
 **Q: How do I debug my app?**
 
