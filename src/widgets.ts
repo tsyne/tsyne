@@ -313,6 +313,128 @@ export abstract class Widget {
   }
 
   /**
+   * Register a callback for when a mouse button is pressed on the widget (Mouseable interface)
+   * @param callback Function called when mouse button pressed, receives event with button and position
+   * @returns this for method chaining
+   * @example
+   * a.button('Draw', onClick)
+   *   .onMouseDown((event) => {
+   *     console.log('Button', event.button, 'pressed at', event.position);
+   *   });
+   */
+  onMouseDown(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      onMouseDownCallbackId: callbackId,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
+   * Register a callback for when a mouse button is released on the widget (Mouseable interface)
+   * @param callback Function called when mouse button released, receives event with button and position
+   * @returns this for method chaining
+   * @example
+   * a.button('Draw', onClick)
+   *   .onMouseUp((event) => {
+   *     console.log('Button', event.button, 'released at', event.position);
+   *   });
+   */
+  onMouseUp(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      onMouseUpCallbackId: callbackId,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
+   * Register a callback for when a key is pressed while widget has focus (Keyable interface)
+   * @param callback Function called when key pressed, receives event with key name
+   * @returns this for method chaining
+   * @example
+   * a.button('Input', onClick)
+   *   .onKeyDown((event) => {
+   *     console.log('Key pressed:', event.key);
+   *   });
+   */
+  onKeyDown(callback: (event: { key: string }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      onKeyDownCallbackId: callbackId,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
+   * Register a callback for when a key is released while widget has focus (Keyable interface)
+   * @param callback Function called when key released, receives event with key name
+   * @returns this for method chaining
+   * @example
+   * a.button('Input', onClick)
+   *   .onKeyUp((event) => {
+   *     console.log('Key released:', event.key);
+   *   });
+   */
+  onKeyUp(callback: (event: { key: string }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      onKeyUpCallbackId: callbackId,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
+   * Register a callback for focus changes (Focusable interface)
+   * @param callback Function called when focus gained or lost, receives event with focused state
+   * @returns this for method chaining
+   * @example
+   * a.button('Action', onClick)
+   *   .onFocus((event) => {
+   *     console.log(event.focused ? 'Gained focus' : 'Lost focus');
+   *   });
+   */
+  onFocusChange(callback: (event: { focused: boolean }) => void): this {
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      onFocusCallbackId: callbackId,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
+   * Set the cursor to display when hovering over this widget (Cursorable interface)
+   * @param cursor Cursor type: 'default', 'text', 'crosshair', 'pointer', 'hResize', 'vResize'
+   * @returns this for method chaining
+   * @example
+   * a.button('Resize', onClick).setCursor('hResize');
+   * a.button('Text Input', onClick).setCursor('text');
+   */
+  setCursor(cursor: 'default' | 'text' | 'crosshair' | 'pointer' | 'hResize' | 'vResize'): this {
+    this.ctx.bridge.send('setWidgetHoverable', {
+      widgetId: this.id,
+      cursorType: cursor,
+      enabled: true
+    });
+    return this;
+  }
+
+  /**
    * Refresh the widget - re-evaluates visibility conditions
    */
   async refresh(): Promise<void> {

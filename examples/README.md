@@ -241,6 +241,20 @@ Tsyne's page-by-page browser mode inspired by the web.
 
 ## Event Handling
 
+### Desktop Interface Demos
+
+Focused demos showcasing Fyne's `driver/desktop` interfaces without accessibility coupling.
+
+| Example | Interface | Description |
+|---------|-----------|-------------|
+| **hoverable-demo.ts** | Hoverable | Heat map with hover tracking (onMouseIn, onMouseMoved, onMouseOut) |
+| **mouseable-demo.ts** | Mouseable | Click timing, button detection (onMouseDown, onMouseUp) |
+| **keyable-demo.ts** | Keyable | Keyboard tracker, arrow navigation (onKeyDown, onKeyUp) |
+| **cursorable-demo.ts** | Cursorable | Cursor gallery with all 6 types (setCursor) |
+| **focusable-demo.ts** | Focusable | Focus tracking, navigation game (onFocusChange) |
+
+### Other Event Examples
+
 | Example | Description |
 |---------|-------------|
 | **mouse-events-demo.ts** | Mouse events (onMouseIn, onMouseOut, etc.) |

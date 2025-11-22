@@ -1215,10 +1215,24 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
-	// Extract optional callback IDs
+	// Extract optional callback IDs for Hoverable interface
 	onMouseInCallbackId, _ := msg.Payload["onMouseInCallbackId"].(string)
 	onMouseMoveCallbackId, _ := msg.Payload["onMouseMoveCallbackId"].(string)
 	onMouseOutCallbackId, _ := msg.Payload["onMouseOutCallbackId"].(string)
+
+	// Extract optional callback IDs for Mouseable interface
+	onMouseDownCallbackId, _ := msg.Payload["onMouseDownCallbackId"].(string)
+	onMouseUpCallbackId, _ := msg.Payload["onMouseUpCallbackId"].(string)
+
+	// Extract optional callback IDs for Keyable interface
+	onKeyDownCallbackId, _ := msg.Payload["onKeyDownCallbackId"].(string)
+	onKeyUpCallbackId, _ := msg.Payload["onKeyUpCallbackId"].(string)
+
+	// Extract optional callback ID for Focus events
+	onFocusCallbackId, _ := msg.Payload["onFocusCallbackId"].(string)
+
+	// Extract optional cursor type for Cursorable interface
+	cursorType, _ := msg.Payload["cursorType"].(string)
 
 	b.mu.Lock()
 
@@ -1252,13 +1266,31 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 	if onMouseOutCallbackId != "" {
 		widgetMeta.CustomData["onMouseOutCallbackId"] = onMouseOutCallbackId
 	}
+	if onMouseDownCallbackId != "" {
+		widgetMeta.CustomData["onMouseDownCallbackId"] = onMouseDownCallbackId
+	}
+	if onMouseUpCallbackId != "" {
+		widgetMeta.CustomData["onMouseUpCallbackId"] = onMouseUpCallbackId
+	}
+	if onKeyDownCallbackId != "" {
+		widgetMeta.CustomData["onKeyDownCallbackId"] = onKeyDownCallbackId
+	}
+	if onKeyUpCallbackId != "" {
+		widgetMeta.CustomData["onKeyUpCallbackId"] = onKeyUpCallbackId
+	}
+	if onFocusCallbackId != "" {
+		widgetMeta.CustomData["onFocusCallbackId"] = onFocusCallbackId
+	}
+	if cursorType != "" {
+		widgetMeta.CustomData["cursorType"] = cursorType
+	}
 	widgetMeta.CustomData["hoverable"] = true
 	b.widgetMeta[widgetID] = widgetMeta
 
 	// Check if already a TsyneButton - if so, update its callback IDs
 	if tsyneBtn, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
 		log.Printf("[setWidgetHoverable] Widget %s is already a TsyneButton, updating callback IDs", widgetID)
-		// Update callback IDs
+		// Update Hoverable callback IDs
 		if onMouseInCallbackId != "" {
 			tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
 		}
@@ -1267,6 +1299,28 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 		}
 		if onMouseMoveCallbackId != "" {
 			tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
+		}
+		// Update Mouseable callback IDs
+		if onMouseDownCallbackId != "" {
+			tsyneBtn.onMouseDownCallbackId = onMouseDownCallbackId
+		}
+		if onMouseUpCallbackId != "" {
+			tsyneBtn.onMouseUpCallbackId = onMouseUpCallbackId
+		}
+		// Update Keyable callback IDs
+		if onKeyDownCallbackId != "" {
+			tsyneBtn.onKeyDownCallbackId = onKeyDownCallbackId
+		}
+		if onKeyUpCallbackId != "" {
+			tsyneBtn.onKeyUpCallbackId = onKeyUpCallbackId
+		}
+		// Update Focus callback ID
+		if onFocusCallbackId != "" {
+			tsyneBtn.onFocusCallbackId = onFocusCallbackId
+		}
+		// Update cursor type
+		if cursorType != "" {
+			tsyneBtn.SetCursor(stringToCursor(cursorType))
 		}
 		b.mu.Unlock()
 		b.sendResponse(Response{
@@ -1312,10 +1366,26 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 			tsyneBtn.Disable()
 		}
 
-		// Set callback IDs for event dispatching
+		// Set Hoverable callback IDs
 		tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
 		tsyneBtn.onMouseOutCallbackId = onMouseOutCallbackId
 		tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
+
+		// Set Mouseable callback IDs
+		tsyneBtn.onMouseDownCallbackId = onMouseDownCallbackId
+		tsyneBtn.onMouseUpCallbackId = onMouseUpCallbackId
+
+		// Set Keyable callback IDs
+		tsyneBtn.onKeyDownCallbackId = onKeyDownCallbackId
+		tsyneBtn.onKeyUpCallbackId = onKeyUpCallbackId
+
+		// Set Focus callback ID
+		tsyneBtn.onFocusCallbackId = onFocusCallbackId
+
+		// Set cursor type
+		if cursorType != "" {
+			tsyneBtn.SetCursor(stringToCursor(cursorType))
+		}
 
 		replacement = tsyneBtn
 	} else {
