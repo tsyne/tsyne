@@ -340,7 +340,7 @@ See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 - `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
 - `docs/ACCESSIBILITY.md` - Accessibility features and guidelines
 - `docs/QUICKSTART.md` - Getting started guide
-- `docs/ROADMAP.md` - Feature roadmap (~15% Fyne coverage)
+- `docs/ROADMAP.md` - Feature roadmap (~50% Fyne coverage, lists remaining APIs)
 - `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
 - `docs/TROUBLESHOOTING.md` - Common issues and solutions
 
