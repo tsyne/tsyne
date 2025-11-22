@@ -1,7 +1,7 @@
 import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient } from './widgets';
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -178,6 +178,31 @@ export class App {
 
   gridwrap(itemWidth: number, itemHeight: number, builder: () => void): GridWrap {
     return new GridWrap(this.ctx, itemWidth, itemHeight, builder);
+  }
+
+  // Canvas primitives
+  canvasLine(x1: number, y1: number, x2: number, y2: number, options?: { strokeColor?: string; strokeWidth?: number; }): CanvasLine {
+    return new CanvasLine(this.ctx, x1, y1, x2, y2, options);
+  }
+
+  canvasCircle(options?: { x?: number; y?: number; x2?: number; y2?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasCircle {
+    return new CanvasCircle(this.ctx, options);
+  }
+
+  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; }): CanvasRectangle {
+    return new CanvasRectangle(this.ctx, options);
+  }
+
+  canvasText(text: string, options?: { color?: string; textSize?: number; bold?: boolean; italic?: boolean; monospace?: boolean; alignment?: 'leading' | 'center' | 'trailing'; }): CanvasText {
+    return new CanvasText(this.ctx, text, options);
+  }
+
+  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster {
+    return new CanvasRaster(this.ctx, width, height, pixels);
+  }
+
+  canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number; }): CanvasLinearGradient {
+    return new CanvasLinearGradient(this.ctx, options);
   }
 
   async run(): Promise<void> {

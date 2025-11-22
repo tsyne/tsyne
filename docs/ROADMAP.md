@@ -2,7 +2,7 @@
 
 This document tracks Fyne features **not yet implemented** in Tsyne, with suggested demo apps to prove completion.
 
-**Current Coverage: ~50%** of Fyne's public API
+**Current Coverage: ~55%** of Fyne's public API
 
 ---
 
@@ -81,17 +81,40 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 
 ---
 
-## Canvas & Drawing API
+## Canvas & Drawing API ✅ IMPLEMENTED
 
-| Feature | Fyne Type | Description | Suggested Demo App |
-|---------|-----------|-------------|-------------------|
-| **Canvas** | `canvas.*` | Drawing primitives | `whiteboard.ts` - Freehand drawing |
-| **Line** | `canvas.Line` | Line drawing | Part of whiteboard |
-| **Circle** | `canvas.Circle` | Circle/ellipse | `diagram-editor.ts` - Shape diagrams |
-| **Rectangle** | `canvas.Rectangle` | Rectangle drawing | Part of diagram editor |
-| **Text** | `canvas.Text` | Canvas text | Part of diagram editor |
-| **Raster** | `canvas.Raster` | Pixel drawing | `pixel-art.ts` - Pixel art editor |
-| **LinearGradient** | `canvas.LinearGradient` | Gradient fills | `gradient-picker.ts` - Gradient editor |
+| Feature | Fyne Type | Description | Demo App | Status |
+|---------|-----------|-------------|----------|--------|
+| **Canvas** | `canvas.*` | Drawing primitives | `whiteboard.ts` | ✅ |
+| **Line** | `canvas.Line` | Line drawing | `whiteboard.ts` | ✅ |
+| **Circle** | `canvas.Circle` | Circle/ellipse | `diagram-editor.ts` | ✅ |
+| **Rectangle** | `canvas.Rectangle` | Rectangle drawing | `diagram-editor.ts` | ✅ |
+| **Text** | `canvas.Text` | Canvas text | `diagram-editor.ts` | ✅ |
+| **Raster** | `canvas.Raster` | Pixel drawing | `pixel-art.ts` | ✅ |
+| **LinearGradient** | `canvas.LinearGradient` | Gradient fills | `gradient-picker.ts` | ✅ |
+
+### Canvas API Usage
+
+```typescript
+// Line drawing
+app.canvasLine(x1, y1, x2, y2, { strokeColor: '#FF0000', strokeWidth: 2 });
+
+// Circle/ellipse
+app.canvasCircle({ x: 0, y: 0, x2: 100, y2: 100, fillColor: '#00FF00' });
+
+// Rectangle
+app.canvasRectangle({ width: 200, height: 100, fillColor: '#0000FF', cornerRadius: 10 });
+
+// Canvas text
+app.canvasText('Hello', { color: '#333', textSize: 24, bold: true });
+
+// Raster (pixel manipulation)
+const raster = app.canvasRaster(64, 64);
+await raster.setPixel(x, y, r, g, b, a);
+
+// Linear gradient
+app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45 });
+```
 
 ---
 
@@ -152,7 +175,7 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 4. System Tray
 
 ### Phase 4: Advanced Features
-1. Canvas/Drawing API
+1. ~~Canvas/Drawing API~~ ✅ DONE
 2. Drag & Drop
 3. Data Binding
 4. Custom Themes

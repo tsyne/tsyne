@@ -241,6 +241,31 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleProcessHoverWrappers(msg)
 	case "setWidgetHoverable":
 		b.handleSetWidgetHoverable(msg)
+	// Canvas primitives
+	case "createCanvasLine":
+		b.handleCreateCanvasLine(msg)
+	case "createCanvasCircle":
+		b.handleCreateCanvasCircle(msg)
+	case "createCanvasRectangle":
+		b.handleCreateCanvasRectangle(msg)
+	case "createCanvasText":
+		b.handleCreateCanvasText(msg)
+	case "createCanvasRaster":
+		b.handleCreateCanvasRaster(msg)
+	case "updateCanvasRaster":
+		b.handleUpdateCanvasRaster(msg)
+	case "createCanvasLinearGradient":
+		b.handleCreateCanvasLinearGradient(msg)
+	case "updateCanvasLine":
+		b.handleUpdateCanvasLine(msg)
+	case "updateCanvasCircle":
+		b.handleUpdateCanvasCircle(msg)
+	case "updateCanvasRectangle":
+		b.handleUpdateCanvasRectangle(msg)
+	case "updateCanvasText":
+		b.handleUpdateCanvasText(msg)
+	case "updateCanvasLinearGradient":
+		b.handleUpdateCanvasLinearGradient(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
