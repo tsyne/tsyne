@@ -12,7 +12,7 @@
 
 ---
 
-Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API inspired by Ruby's Shoes DSL and QML.
+Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/).
 
 ## Why Tsyne?
 
@@ -22,13 +22,13 @@ Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to t
 - **Easy Integration**: Simple npm package that's quick to add to any Node.js project
 - **Powerful**: Full access to Fyne's rich widget library and layout system
 - **Testable**: Built-in testing framework (TsyneTest) with Playwright-like API for headed/headless testing
-- **Single-File Distribution**: Embed npm dependencies directly in source files ([Grapes-style](docs/EMBEDDED_DEPENDENCIES.md))
 - **Single-Script Apps**: Complete desktop apps in one file - no complex project structure needed (like [calculator](examples/calculator.ts), [tic-tac-toe](examples/tictactoe.ts), [stopwatch](examples/17-stopwatch.ts), [dice roller](examples/18-dice-roller.ts))
-- **Browser Mode**: Load TypeScript pages from HTTP servers - enables server-driven desktop UIs where any backend language (Java, Ruby, Python, Go) can serve pages
+- **Single-File Distribution**: Embed npm dependency declarations directly in source files (See [EMBEDDED_DEPENDENCIES](docs/EMBEDDED_DEPENDENCIES.md)) if using `tsyne.exe` in the PATH
+- **Browser Mode**: Load TypeScript pages from HTTP servers - enables server-driven desktop UIs where any backend language (Java, Ruby, Python, Go) can serve pages. Big topic, see BROWSER_MODE.md
 - **npm Ecosystem**: Use any of npm's 2M+ packages that don't require browser DOM - share validators, API clients, and business logic with your web apps
 - **Interpreted + Native**: TypeScript logic is interpreted for rapid iteration; rendering is compiled Go/Fyne for native performance (trade-off: requires Node.js runtime, not single binary distribution)
 
-## Why Not Tsyne?
+## When Tsyne Is Not The Right Choice?
 
 Tsyne isn't the right choice for every project. Consider these limitations:
 
@@ -1092,7 +1092,7 @@ See `examples/theme.ts` for a complete theme demonstration with various widgets.
 
 ## Widget Styling System
 
-Tsyne includes a CSS-like styling system inspired by [Swiby](https://github.com/jeanlazarou/swiby), allowing you to separate presentation from structure. Define styles once in a stylesheet module, and they automatically apply to widgets based on their type.
+Tsyne includes a CSS-like styling system, allowing you to separate presentation from structure. Define styles once in a stylesheet module, and they automatically apply to widgets based on their type.
 
 ### Quick Start with Styling
 
