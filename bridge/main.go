@@ -94,6 +94,14 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateSplit(msg)
 	case "createTabs":
 		b.handleCreateTabs(msg)
+	case "createDocTabs":
+		b.handleCreateDocTabs(msg)
+	case "docTabsAppend":
+		b.handleDocTabsAppend(msg)
+	case "docTabsRemove":
+		b.handleDocTabsRemove(msg)
+	case "docTabsSelect":
+		b.handleDocTabsSelect(msg)
 	case "setText":
 		b.handleSetText(msg)
 	case "getText":

@@ -2354,3 +2354,245 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleCreateDocTabs(msg Message) {
+	id := msg.Payload["id"].(string)
+	tabsInterface := msg.Payload["tabs"].([]interface{})
+	closeCallbackID, hasCloseCallback := msg.Payload["closeCallbackId"].(string)
+
+	var tabItems []*container.TabItem
+
+	for _, tabInterface := range tabsInterface {
+		tabData := tabInterface.(map[string]interface{})
+		title := tabData["title"].(string)
+		contentID := tabData["contentId"].(string)
+
+		b.mu.RLock()
+		content, exists := b.widgets[contentID]
+		b.mu.RUnlock()
+
+		if !exists {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Tab content widget not found: %s", contentID),
+			})
+			return
+		}
+
+		tabItems = append(tabItems, container.NewTabItem(title, content))
+	}
+
+	docTabs := container.NewDocTabs(tabItems...)
+
+	// Store tab info for close callback
+	tabInfos := make([]map[string]interface{}, len(tabsInterface))
+	for i, t := range tabsInterface {
+		tabInfos[i] = t.(map[string]interface{})
+	}
+
+	// Set OnClosed callback if provided
+	if hasCloseCallback {
+		docTabs.OnClosed = func(item *container.TabItem) {
+			// Find the tab info for this item
+			for i, tabInfo := range tabInfos {
+				if tabInfo["title"].(string) == item.Text {
+					b.sendEvent(Event{
+						Type: "callback",
+						Data: map[string]interface{}{
+							"callbackId": closeCallbackID,
+							"tabIndex":   i,
+							"tabTitle":   item.Text,
+							"contentId":  tabInfo["contentId"].(string),
+						},
+					})
+					break
+				}
+			}
+		}
+	}
+
+	// Set location if provided (top, bottom, leading, trailing)
+	if location, ok := msg.Payload["location"].(string); ok {
+		switch location {
+		case "top":
+			docTabs.SetTabLocation(container.TabLocationTop)
+		case "bottom":
+			docTabs.SetTabLocation(container.TabLocationBottom)
+		case "leading":
+			docTabs.SetTabLocation(container.TabLocationLeading)
+		case "trailing":
+			docTabs.SetTabLocation(container.TabLocationTrailing)
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[id] = docTabs
+	b.widgetMeta[id] = WidgetMetadata{
+		Type: "doctabs",
+		Text: "",
+	}
+	for _, tabItem := range tabItems {
+		// Find the content widget ID for this tab item
+		for _, t := range tabsInterface {
+			tabData := t.(map[string]interface{})
+			if tabData["title"].(string) == tabItem.Text {
+				contentID := tabData["contentId"].(string)
+				b.childToParent[contentID] = id
+				break
+			}
+		}
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleDocTabsAppend(msg Message) {
+	id := msg.Payload["id"].(string)
+	title := msg.Payload["title"].(string)
+	contentID := msg.Payload["contentId"].(string)
+
+	b.mu.RLock()
+	widgetObj, exists := b.widgets[id]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("DocTabs not found: %s", id),
+		})
+		return
+	}
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Tab content widget not found: %s", contentID),
+		})
+		return
+	}
+
+	docTabs, ok := widgetObj.(*container.DocTabs)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
+		})
+		return
+	}
+
+	tabItem := container.NewTabItem(title, content)
+	docTabs.Append(tabItem)
+
+	// Select the new tab if requested
+	if selectNew, ok := msg.Payload["select"].(bool); ok && selectNew {
+		docTabs.Select(tabItem)
+	}
+
+	b.mu.Lock()
+	b.childToParent[contentID] = id
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleDocTabsRemove(msg Message) {
+	id := msg.Payload["id"].(string)
+	tabIndex := int(msg.Payload["tabIndex"].(float64))
+
+	b.mu.RLock()
+	widgetObj, exists := b.widgets[id]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("DocTabs not found: %s", id),
+		})
+		return
+	}
+
+	docTabs, ok := widgetObj.(*container.DocTabs)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
+		})
+		return
+	}
+
+	items := docTabs.Items
+	if tabIndex < 0 || tabIndex >= len(items) {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Tab index out of range: %d", tabIndex),
+		})
+		return
+	}
+
+	docTabs.Remove(items[tabIndex])
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleDocTabsSelect(msg Message) {
+	id := msg.Payload["id"].(string)
+	tabIndex := int(msg.Payload["tabIndex"].(float64))
+
+	b.mu.RLock()
+	widgetObj, exists := b.widgets[id]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("DocTabs not found: %s", id),
+		})
+		return
+	}
+
+	docTabs, ok := widgetObj.(*container.DocTabs)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
+		})
+		return
+	}
+
+	items := docTabs.Items
+	if tabIndex < 0 || tabIndex >= len(items) {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Tab index out of range: %d", tabIndex),
+		})
+		return
+	}
+
+	docTabs.Select(items[tabIndex])
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
