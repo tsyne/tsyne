@@ -3,7 +3,7 @@
 // Stock Ticker - A standalone Tsyne application demonstrating embedded npm dependencies
 //
 // This file uses @grab directives to declare npm dependencies inline.
-// Run with: ./scripts/tsyne-grapes examples/stock-ticker-standalone.ts
+// Run with: ./scripts/tsyne examples/stock-ticker-standalone.ts
 //
 // Uses Yahoo Finance API via the 'yahoo-finance2' package for real stock data.
 

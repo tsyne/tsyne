@@ -1,13 +1,12 @@
 #!/bin/bash
-# tsyne-grapes - Proof-of-concept Grapes-alike runner for Tsyne TypeScript apps
+# tsyne - TypeScript native GUI runner with embedded dependency support
 #
-# Usage: tsyne-grapes [options] <app.ts>
+# Usage: tsyne [options] <app.ts>
 #
-# This script demonstrates how a production tsyne.exe would handle embedded
-# npm dependencies declared with @grab directives in TypeScript source files.
+# Runs Tsyne TypeScript applications, automatically resolving @grab dependencies.
 #
 # Example:
-#   ./scripts/tsyne-grapes examples/weather-viewer-standalone.ts
+#   ./scripts/tsyne examples/weather-viewer-standalone.ts
 #
 # See docs/EMBEDDED_DEPENDENCIES.md for full documentation.
 

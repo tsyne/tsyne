@@ -109,12 +109,12 @@ Dependencies are installed to a shared cache:
 
 ### Shell Wrapper (Development/POC)
 
-A proof-of-concept shell script is provided at `scripts/tsyne-grapes`:
+A proof-of-concept shell script is provided at `scripts/tsyne`:
 
 ```bash
 # Try it:
-./scripts/tsyne-grapes examples/weather-viewer-standalone.ts
-./scripts/tsyne-grapes examples/stock-ticker-standalone.ts
+./scripts/tsyne examples/weather-viewer-standalone.ts
+./scripts/tsyne examples/stock-ticker-standalone.ts
 ```
 
 The script implementation:

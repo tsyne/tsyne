@@ -3,7 +3,7 @@
 // Weather Viewer - A standalone Tsyne application demonstrating embedded npm dependencies
 //
 // This file demonstrates the "Grapes-alike" pattern where npm dependencies are declared
-// directly in the source file. Run with: ./scripts/tsyne-grapes examples/weather-viewer-standalone.ts
+// directly in the source file. Run with: ./scripts/tsyne examples/weather-viewer-standalone.ts
 //
 // When run with `tsyne weather-viewer-standalone.ts`, the tsyne runtime will:
 //   1. Parse the @grab directives below
