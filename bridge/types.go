@@ -511,6 +511,25 @@ func (h *HoverableWrapper) SetMouseOutHandler(handler func()) {
 	h.mouseOutHandler = handler
 }
 
+// stringToCursor converts a cursor type string to desktop.Cursor
+// Supported cursor types: default, text, crosshair, pointer, hResize, vResize
+func stringToCursor(cursorType string) desktop.Cursor {
+	switch cursorType {
+	case "text":
+		return desktop.TextCursor
+	case "crosshair":
+		return desktop.CrosshairCursor
+	case "pointer":
+		return desktop.PointerCursor
+	case "hResize":
+		return desktop.HResizeCursor
+	case "vResize":
+		return desktop.VResizeCursor
+	default:
+		return desktop.DefaultCursor
+	}
+}
+
 func NewBridge(testMode bool) *Bridge {
 	var fyneApp fyne.App
 	if testMode {
