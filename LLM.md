@@ -297,7 +297,8 @@ See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 ## References
 
 ### Documentation
-- **[docs/reference.md](docs/reference.md)** - Comprehensive API reference with examples
+- **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)** - Complete API reference for widgets, layouts, and dialogs
+- **[docs/reference.md](docs/reference.md)** - Comprehensive technical reference with examples
 - **[docs/README.md](docs/README.md)** - Documentation index and navigation
 - `docs/ARCHITECTURE.md` - Deep dive into internal architecture
 - `docs/TESTING.md` - TsyneTest framework guide
