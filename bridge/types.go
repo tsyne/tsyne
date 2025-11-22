@@ -53,8 +53,16 @@ type Bridge struct {
 	customIds      map[string]string                // custom ID -> widget ID (for test framework)
 	childToParent  map[string]string              // child ID -> parent ID
 	quitChan       chan bool                      // signal quit in test mode
-	resources      map[string][]byte              // resource name -> decoded image data
-	scalableTheme  *ScalableTheme                 // custom theme for font scaling
+	resources       map[string][]byte              // resource name -> decoded image data
+	scalableTheme   *ScalableTheme                 // custom theme for font scaling
+	progressDialogs map[string]*ProgressDialogInfo // dialog ID -> progress dialog info
+}
+
+// ProgressDialogInfo stores information about a progress dialog
+type ProgressDialogInfo struct {
+	Dialog      interface{}          // *dialog.CustomDialog
+	ProgressBar *widget.ProgressBar  // nil for infinite progress bars
+	IsInfinite  bool
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -558,9 +566,10 @@ func NewBridge(testMode bool) *Bridge {
 		windowContent:  make(map[string]string),
 		customIds:      make(map[string]string),
 		childToParent:  make(map[string]string),
-		quitChan:       make(chan bool, 1),
-		resources:      make(map[string][]byte),
-		scalableTheme:  scalableTheme,
+		quitChan:        make(chan bool, 1),
+		resources:       make(map[string][]byte),
+		scalableTheme:   scalableTheme,
+		progressDialogs: make(map[string]*ProgressDialogInfo),
 	}
 }
 

@@ -1,6 +1,63 @@
 import { Context } from './context';
 import { registerDialogHandlers } from './globals';
 
+/**
+ * ProgressDialog provides control over a progress dialog
+ */
+export class ProgressDialog {
+  private ctx: Context;
+  private dialogId: string;
+  private closed: boolean = false;
+  private onCancelledCallback?: () => void;
+
+  constructor(ctx: Context, dialogId: string) {
+    this.ctx = ctx;
+    this.dialogId = dialogId;
+  }
+
+  /**
+   * Updates the progress value (0.0 to 1.0)
+   * Only effective for non-infinite progress dialogs
+   */
+  async setValue(value: number): Promise<void> {
+    if (this.closed) return;
+    await this.ctx.bridge.send('updateProgressDialog', {
+      dialogId: this.dialogId,
+      value: Math.max(0, Math.min(1, value))
+    });
+  }
+
+  /**
+   * Hides/closes the progress dialog
+   */
+  async hide(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
+    await this.ctx.bridge.send('hideProgressDialog', {
+      dialogId: this.dialogId
+    });
+  }
+
+  /**
+   * Registers a callback to be called when the dialog is cancelled
+   * @internal Used by Window.showProgress to set up the callback
+   */
+  _setOnCancelled(callback: () => void): void {
+    this.onCancelledCallback = callback;
+  }
+
+  /**
+   * Called when the dialog is cancelled by the user
+   * @internal
+   */
+  _handleCancelled(): void {
+    this.closed = true;
+    if (this.onCancelledCallback) {
+      this.onCancelledCallback();
+    }
+  }
+}
+
 export interface WindowOptions {
   title: string;
   width?: number;
@@ -303,5 +360,48 @@ export class Window {
       windowId: this.id,
       filePath
     });
+  }
+
+  /**
+   * Shows a progress dialog with a progress bar
+   * @param title - Dialog title
+   * @param message - Message displayed in the dialog
+   * @param options - Optional settings for the progress dialog
+   * @returns ProgressDialog instance to control the dialog
+   */
+  async showProgress(
+    title: string,
+    message: string,
+    options?: {
+      infinite?: boolean;
+      onCancelled?: () => void;
+    }
+  ): Promise<ProgressDialog> {
+    const dialogId = this.ctx.generateId('progress-dialog');
+    const callbackId = this.ctx.generateId('callback');
+    const progressDialog = new ProgressDialog(this.ctx, dialogId);
+
+    // Set up cancellation callback if provided
+    if (options?.onCancelled) {
+      progressDialog._setOnCancelled(options.onCancelled);
+    }
+
+    // Register event handler for cancellation
+    this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      if (data.cancelled) {
+        progressDialog._handleCancelled();
+      }
+    });
+
+    await this.ctx.bridge.send('showProgressDialog', {
+      windowId: this.id,
+      dialogId,
+      title,
+      message,
+      infinite: options?.infinite || false,
+      callbackId
+    });
+
+    return progressDialog;
   }
 }
