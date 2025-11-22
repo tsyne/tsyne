@@ -128,16 +128,26 @@ app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45
 
 ---
 
-## Window Features Not Yet Implemented
+## Window Features
 
-| Feature | Fyne Method | Description | Suggested Demo App |
-|---------|-------------|-------------|-------------------|
-| **Min/Max Size** | `Window.SetMinSize/SetMaxSize` | Size constraints | Add to window options |
-| **Always On Top** | `Window.SetOnTop` | Keep window on top | `sticky-notes.ts` - Floating notes |
-| **Window Icon** | `Window.SetIcon` | Custom window icon | Add to window options |
-| **Close Intercept** | `Window.SetCloseIntercept` | Confirm before close | `unsaved-changes.ts` - Prompt on close |
-| **Multiple Windows** | Multiple `Window` instances | Multi-window apps | `multi-window.ts` - Secondary windows |
-| **Fullscreen Toggle** | Already implemented | Verify working | - |
+### Implemented
+
+| Feature | Fyne Method | Description | Demo App |
+|---------|-------------|-------------|----------|
+| ~~**Window Icon**~~ | `Window.SetIcon` | Custom window icon | Add via `icon` option | **IMPLEMENTED** |
+| ~~**Close Intercept**~~ | `Window.SetCloseIntercept` | Confirm before close | `unsaved-changes.ts` | **IMPLEMENTED** |
+| ~~**Multiple Windows**~~ | Multiple `Window` instances | Multi-window apps | `multi-window.ts` | **IMPLEMENTED** |
+| ~~**Fullscreen Toggle**~~ | `Window.SetFullScreen` | Fullscreen mode | Already working | **IMPLEMENTED** |
+| ~~**Window Close**~~ | `Window.Close` | Programmatic close | Via `win.close()` | **IMPLEMENTED** |
+
+### Not Supported by Fyne
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Min/Max Size** | Size constraints | **NOT IN FYNE API** - `Window.SetMinSize/SetMaxSize` do not exist in Fyne v2.7.0 |
+| **Always On Top** | Keep window on top | **NOT IN FYNE API** - `Window.SetOnTop` does not exist in Fyne v2.7.0 |
+
+> **Note:** Some window features documented in external references do not exist in the current Fyne Window interface (v2.7.0). These features may be added in future Fyne versions.
 
 ---
 

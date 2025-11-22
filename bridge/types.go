@@ -57,6 +57,8 @@ type Bridge struct {
 	resources      map[string][]byte              // resource name -> decoded image data
 	scalableTheme  *ScalableTheme                 // custom theme for font scaling
 	rasterData     map[string][][]color.Color    // raster widget ID -> pixel buffer
+	closeIntercepts map[string]string             // window ID -> callback ID for close intercept
+	closeResponses  map[string]chan bool          // window ID -> channel for close intercept response
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -563,6 +565,8 @@ func NewBridge(testMode bool) *Bridge {
 		quitChan:       make(chan bool, 1),
 		resources:      make(map[string][]byte),
 		scalableTheme:  scalableTheme,
+		closeIntercepts: make(map[string]string),
+		closeResponses:  make(map[string]chan bool),
 	}
 }
 

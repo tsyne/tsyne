@@ -31,19 +31,78 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 			win.SetFixedSize(true)
 		}
 
+		// Set window icon if provided
+		if iconName, ok := msg.Payload["icon"].(string); ok {
+			b.mu.RLock()
+			iconData, exists := b.resources[iconName]
+			b.mu.RUnlock()
+			if exists {
+				resource := fyne.NewStaticResource(iconName, iconData)
+				win.SetIcon(resource)
+			}
+		}
+
 		// Handle window close - quit app when last window is closed
 		win.SetCloseIntercept(func() {
-			b.mu.Lock()
-			delete(b.windows, windowID)
-			windowCount := len(b.windows)
-			b.mu.Unlock()
+			// Check if there's a custom close intercept handler
+			b.mu.RLock()
+			callbackId, hasCallback := b.closeIntercepts[windowID]
+			b.mu.RUnlock()
 
-			// Close this window
-			win.Close()
+			if hasCallback {
+				// Create response channel
+				responseChan := make(chan bool, 1)
+				b.mu.Lock()
+				b.closeResponses[windowID] = responseChan
+				b.mu.Unlock()
 
-			// If no more windows, quit the application
-			if windowCount == 0 {
-				b.app.Quit()
+				// Send event to TypeScript
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": callbackId,
+						"windowId":   windowID,
+					},
+				})
+
+				// Wait for response
+				go func() {
+					allowClose := <-responseChan
+
+					b.mu.Lock()
+					delete(b.closeResponses, windowID)
+					b.mu.Unlock()
+
+					if allowClose {
+						b.mu.Lock()
+						delete(b.windows, windowID)
+						delete(b.closeIntercepts, windowID)
+						windowCount := len(b.windows)
+						b.mu.Unlock()
+
+						fyne.DoAndWait(func() {
+							win.Close()
+						})
+
+						if windowCount == 0 {
+							b.app.Quit()
+						}
+					}
+				}()
+			} else {
+				// No custom handler - use default behavior
+				b.mu.Lock()
+				delete(b.windows, windowID)
+				windowCount := len(b.windows)
+				b.mu.Unlock()
+
+				// Close this window
+				win.Close()
+
+				// If no more windows, quit the application
+				if windowCount == 0 {
+					b.app.Quit()
+				}
 			}
 		})
 	})
@@ -234,6 +293,126 @@ func (b *Bridge) handleResizeWindow(msg Message) {
 	}
 
 	win.Resize(fyne.NewSize(float32(width), float32(height)))
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetWindowIcon(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	resourceName := msg.Payload["resourceName"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	iconData, iconExists := b.resources[resourceName]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if !iconExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Resource not found: " + resourceName,
+		})
+		return
+	}
+
+	fyne.DoAndWait(func() {
+		resource := fyne.NewStaticResource(resourceName, iconData)
+		win.SetIcon(resource)
+	})
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetWindowCloseIntercept(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	callbackId := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	_, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	b.mu.Lock()
+	b.closeIntercepts[windowID] = callbackId
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCloseInterceptResponse(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	allowClose := msg.Payload["allowClose"].(bool)
+
+	b.mu.RLock()
+	responseChan, exists := b.closeResponses[windowID]
+	b.mu.RUnlock()
+
+	if exists {
+		responseChan <- allowClose
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCloseWindow(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	b.mu.Lock()
+	delete(b.windows, windowID)
+	delete(b.closeIntercepts, windowID)
+	windowCount := len(b.windows)
+	b.mu.Unlock()
+
+	fyne.DoAndWait(func() {
+		win.Close()
+	})
+
+	// If no more windows, quit the application
+	if windowCount == 0 {
+		b.app.Quit()
+	}
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
