@@ -55,7 +55,7 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 | **ColorPicker** | `dialog.ShowColorPicker` | Color selection | `drawing-app.ts` - Simple paint program |
 | **EntryDialog** | `dialog.ShowEntryDialog` | Quick text input | `rename-dialog.ts` - Rename file/item |
 | **FormDialog** | `dialog.ShowForm` | Form in dialog | `new-contact.ts` - Add contact form dialog |
-| **CustomDialog** | `dialog.NewCustom` | Custom dialog content | `about-dialog.ts` - Custom about box |
+| ~~**CustomDialog**~~ | ~~`dialog.NewCustom`~~ | ~~Custom dialog content~~ | ~~`about-dialog.ts` - Custom about box~~ | **IMPLEMENTED** |
 | **ProgressDialog** | `dialog.ShowProgress` | Progress in dialog | `download-manager.ts` - Download with progress |
 
 ---

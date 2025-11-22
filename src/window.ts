@@ -304,4 +304,102 @@ export class Window {
       filePath
     });
   }
+
+  /**
+   * Shows a custom dialog with arbitrary content
+   * @param title - Dialog title
+   * @param contentBuilder - Function that builds the dialog content using the app context
+   * @param options - Optional configuration for the dialog
+   * @returns Promise that resolves when the dialog is closed
+   */
+  async showCustom(
+    title: string,
+    contentBuilder: () => void,
+    options?: {
+      dismissText?: string;
+      onClosed?: () => void;
+    }
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      // Build the content widget
+      this.ctx.pushWindow(this.id);
+      this.ctx.pushContainer();
+
+      contentBuilder();
+
+      const children = this.ctx.popContainer();
+      this.ctx.popWindow();
+
+      if (children.length === 0) {
+        resolve();
+        return;
+      }
+
+      const contentId = children[0];
+      const callbackId = this.ctx.generateId('callback');
+
+      this.ctx.bridge.registerEventHandler(callbackId, (_data: any) => {
+        if (options?.onClosed) {
+          options.onClosed();
+        }
+        resolve();
+      });
+
+      this.ctx.bridge.send('showCustom', {
+        windowId: this.id,
+        title,
+        contentId,
+        dismissText: options?.dismissText || 'Close',
+        callbackId
+      });
+    });
+  }
+
+  /**
+   * Shows a custom dialog with confirm/cancel buttons
+   * @param title - Dialog title
+   * @param contentBuilder - Function that builds the dialog content using the app context
+   * @param options - Optional configuration for the dialog
+   * @returns Promise<boolean> - true if user confirmed, false if cancelled
+   */
+  async showCustomConfirm(
+    title: string,
+    contentBuilder: () => void,
+    options?: {
+      confirmText?: string;
+      dismissText?: string;
+    }
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      // Build the content widget
+      this.ctx.pushWindow(this.id);
+      this.ctx.pushContainer();
+
+      contentBuilder();
+
+      const children = this.ctx.popContainer();
+      this.ctx.popWindow();
+
+      if (children.length === 0) {
+        resolve(false);
+        return;
+      }
+
+      const contentId = children[0];
+      const callbackId = this.ctx.generateId('callback');
+
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        resolve(data.confirmed);
+      });
+
+      this.ctx.bridge.send('showCustomConfirm', {
+        windowId: this.id,
+        title,
+        contentId,
+        confirmText: options?.confirmText || 'OK',
+        dismissText: options?.dismissText || 'Cancel',
+        callbackId
+      });
+    });
+  }
 }
