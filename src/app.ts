@@ -1,7 +1,7 @@
 import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, ThemeOverride } from './widgets';
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -294,6 +294,16 @@ export class App {
 
   padded(builder: () => void): Padded {
     return new Padded(this.ctx, builder);
+  }
+
+  /**
+   * Create a theme override container that applies a specific theme to its contents
+   * @param variant The theme variant to apply ('dark' or 'light')
+   * @param builder Function that creates the content
+   * @returns ThemeOverride instance
+   */
+  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
+    return new ThemeOverride(this.ctx, variant, builder);
   }
 
   async run(): Promise<void> {

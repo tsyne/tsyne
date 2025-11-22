@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride } from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -456,6 +456,18 @@ export function padded(builder: () => void): Padded {
 }
 
 /**
+ * Create a theme override container that applies a specific theme to its contents
+ * @param variant The theme variant to apply ('dark' or 'light')
+ * @param builder Function that creates the content
+ */
+export function themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
+  if (!globalContext) {
+    throw new Error('themeoverride() must be called within an app context');
+  }
+  return new ThemeOverride(globalContext, variant, builder);
+}
+
+/**
  * Set the application theme
  */
 export async function setTheme(theme: 'dark' | 'light'): Promise<void> {
@@ -543,7 +555,7 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export classes for advanced usage
-export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded };
+export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride };
 export type { AppOptions, WindowOptions, MenuItem };
 
 // Export theming types

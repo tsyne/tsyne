@@ -1556,6 +1556,50 @@ func (b *Bridge) handleCreatePadded(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateThemeOverride(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childID := msg.Payload["childId"].(string)
+	themeVariant := msg.Payload["variant"].(string) // "dark" or "light"
+
+	b.mu.RLock()
+	child, exists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		})
+		return
+	}
+
+	// Create the appropriate theme based on variant
+	var overrideTheme fyne.Theme
+	if themeVariant == "dark" {
+		// Create a dark theme override
+		overrideTheme = &darkTheme{}
+	} else {
+		// Create a light theme override
+		overrideTheme = &lightTheme{}
+	}
+
+	// Create the theme override container
+	themeOverride := container.NewThemeOverride(child, overrideTheme)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = themeOverride
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "themeoverride", Text: themeVariant}
+	b.childToParent[childID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateList(msg Message) {
 	id := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})

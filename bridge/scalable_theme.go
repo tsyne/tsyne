@@ -9,6 +9,44 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
+// darkTheme is a theme that forces dark variant
+type darkTheme struct{}
+
+func (d *darkTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	return theme.DefaultTheme().Color(name, theme.VariantDark)
+}
+
+func (d *darkTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return theme.DefaultTheme().Font(style)
+}
+
+func (d *darkTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+
+func (d *darkTheme) Size(name fyne.ThemeSizeName) float32 {
+	return theme.DefaultTheme().Size(name)
+}
+
+// lightTheme is a theme that forces light variant
+type lightTheme struct{}
+
+func (l *lightTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	return theme.DefaultTheme().Color(name, theme.VariantLight)
+}
+
+func (l *lightTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return theme.DefaultTheme().Font(style)
+}
+
+func (l *lightTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+
+func (l *lightTheme) Size(name fyne.ThemeSizeName) float32 {
+	return theme.DefaultTheme().Size(name)
+}
+
 // CustomColors defines custom color overrides for a theme
 type CustomColors struct {
 	Background         color.Color
