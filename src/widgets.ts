@@ -1962,3 +1962,57 @@ export class GridWrap {
     ctx.addToCurrentContainer(this.id);
   }
 }
+
+/**
+ * Menu item for standalone Menu widget
+ */
+export interface MenuItem {
+  label: string;
+  onSelected: () => void;
+  disabled?: boolean;
+  checked?: boolean;
+  isSeparator?: boolean;
+}
+
+/**
+ * Menu widget - standalone menu that can be embedded in containers
+ * Useful for command palettes, action menus, and in-container menus
+ */
+export class Menu extends Widget {
+  private items: MenuItem[];
+
+  constructor(ctx: Context, items: MenuItem[]) {
+    const id = ctx.generateId('menu');
+    super(ctx, id);
+    this.items = items;
+
+    const menuItems = items.map(item => {
+      if (item.isSeparator) {
+        return { isSeparator: true };
+      }
+
+      const callbackId = ctx.generateId('callback');
+      ctx.bridge.registerEventHandler(callbackId, () => item.onSelected());
+
+      return {
+        label: item.label,
+        callbackId,
+        disabled: item.disabled,
+        checked: item.checked
+      };
+    });
+
+    ctx.bridge.send('createMenu', { id, items: menuItems });
+    ctx.addToCurrentContainer(id);
+
+    // Apply styles from stylesheet (non-blocking)
+    this.applyStyles('menu').catch(() => {});
+  }
+
+  /**
+   * Get the current menu items
+   */
+  getItems(): MenuItem[] {
+    return this.items;
+  }
+}

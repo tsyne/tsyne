@@ -241,6 +241,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleProcessHoverWrappers(msg)
 	case "setWidgetHoverable":
 		b.handleSetWidgetHoverable(msg)
+	case "createMenu":
+		b.handleCreateMenu(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
