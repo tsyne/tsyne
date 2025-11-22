@@ -126,6 +126,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowFileOpen(msg)
 	case "showFileSave":
 		b.handleShowFileSave(msg)
+	case "showColorPicker":
+		b.handleShowColorPicker(msg)
 	case "resizeWindow":
 		b.handleResizeWindow(msg)
 	case "setWindowTitle":
