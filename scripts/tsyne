@@ -143,20 +143,28 @@ if [ ! -f "$SOURCE_FILE" ]; then
     exit 1
 fi
 
-# Parse @grab directives
-# Format: /// <grab package="name" version="version" />
-log_info "Parsing @grab directives from $SOURCE_FILE..."
+# Parse @Grab directives
+# Format: // @Grab('package@version')
+log_info "Parsing @Grab directives from $SOURCE_FILE..."
 
-# Extract package names and versions
-GRABS=$(grep -oP '/// <grab package="\K[^"]+(?=" version="[^"]+")' "$SOURCE_FILE" 2>/dev/null || true)
-VERSIONS=$(grep -oP '/// <grab package="[^"]+" version="\K[^"]+' "$SOURCE_FILE" 2>/dev/null || true)
+# Extract package@version strings, then split them
+# Pattern matches: // @Grab('package@version')
+GRAB_SPECS=$(grep -oP "// @Grab\('\K[^']+(?='\))" "$SOURCE_FILE" 2>/dev/null || true)
 
-if [ -z "$GRABS" ]; then
-    log_info "No @grab directives found, running directly..."
+if [ -z "$GRAB_SPECS" ]; then
+    log_info "No @Grab directives found, running directly..."
 else
-    # Convert to arrays
-    readarray -t PACKAGES <<< "$GRABS"
-    readarray -t VERS <<< "$VERSIONS"
+    # Convert to arrays and split package@version
+    readarray -t SPECS <<< "$GRAB_SPECS"
+    PACKAGES=()
+    VERS=()
+    for spec in "${SPECS[@]}"; do
+        # Split on @ - package is before @, version is after
+        pkg="${spec%@*}"
+        ver="${spec#*@}"
+        PACKAGES+=("$pkg")
+        VERS+=("$ver")
+    done
 
     log_info "Found ${#PACKAGES[@]} dependencies:"
     for i in "${!PACKAGES[@]}"; do

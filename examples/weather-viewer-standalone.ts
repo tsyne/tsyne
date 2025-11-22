@@ -10,11 +10,10 @@
 //   2. Install missing dependencies to ~/.tsyne/packages/
 //   3. Configure NODE_PATH and run the app with ts-node
 //
-// Inspired by Groovy's Grapes: @Grab('org.apache.commons:commons-lang3:3.12.0')
-// See: https://docs.groovy-lang.org/latest/html/documentation/grape.html
+// Inspired by Groovy's Grapes: https://docs.groovy-lang.org/latest/html/documentation/grape.html
 
-/// <grab package="axios" version="^1.6.0" />
-/// <grab package="date-fns" version="^3.0.0" />
+// @Grab('axios@^1.6.0')
+// @Grab('date-fns@^3.0.0')
 
 // Note: The imports below work because tsyne sets up the module resolution
 // to include ~/.tsyne/packages/node_modules in the NODE_PATH

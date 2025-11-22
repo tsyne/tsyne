@@ -7,8 +7,8 @@
 //
 // Uses Yahoo Finance API via the 'yahoo-finance2' package for real stock data.
 
-/// <grab package="yahoo-finance2" version="^2.11.0" />
-/// <grab package="date-fns" version="^3.0.0" />
+// @Grab('yahoo-finance2@^2.11.0')
+// @Grab('date-fns@^3.0.0')
 
 import yahooFinance from 'yahoo-finance2';
 import { format, formatDistanceToNow } from 'date-fns';

@@ -11,16 +11,16 @@ Distributing a single-file TypeScript GUI application requires either:
 
 None of these are ideal for simple, single-source-file distribution.
 
-## The Solution: `@grab` Directives
+## The Solution: `@Grab` Directives
 
-Declare npm dependencies directly in your TypeScript file using triple-slash directives:
+Declare npm dependencies directly in your TypeScript file using Groovy-style comments:
 
 ```typescript
 #!/usr/bin/env tsyne
 
-/// <grab package="axios" version="^1.6.0" />
-/// <grab package="date-fns" version="^3.0.0" />
-/// <grab package="lodash" version="^4.17.21" />
+// @Grab('axios@^1.6.0')
+// @Grab('date-fns@^3.0.0')
+// @Grab('lodash@^4.17.21')
 
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -68,42 +68,26 @@ Dependencies are installed to a shared cache:
 - Range versions (`^1.6.0`): Uses highest compatible installed version, or installs
 - Multiple apps can share the same cached packages
 
-## Syntax Options
+## Syntax
 
-### Option A: Triple-Slash Directive (Recommended)
-
-```typescript
-/// <grab package="axios" version="^1.6.0" />
-```
-
-**Pros:**
-- TypeScript-idiomatic (similar to `/// <reference>`)
-- Survives compilation (treated as comments)
-- IDE-friendly (can add syntax highlighting support)
-
-### Option B: JSDoc-Style Comment
+The `@Grab` syntax mirrors Groovy's Grape annotations:
 
 ```typescript
-/** @grab axios@^1.6.0 */
+// @Grab('package@version')
 ```
 
-**Pros:**
-- Familiar to JSDoc users
-- Single line per dependency
-
-### Option C: Block Declaration
-
+**Examples:**
 ```typescript
-/*! @grapes
- * axios@^1.6.0
- * date-fns@^3.0.0
- * lodash@^4.17.21
- */
+// @Grab('axios@^1.6.0')           // Semver range
+// @Grab('lodash@4.17.21')         // Exact version
+// @Grab('date-fns@latest')        // Latest version
 ```
 
-**Pros:**
-- All dependencies in one place
-- Groovy-like block style
+**Why this syntax:**
+- Familiar to Groovy/Java developers
+- Compact and readable
+- Easy to parse with simple regex
+- Survives TypeScript compilation (it's just a comment)
 
 ## Reference Implementation
 
@@ -117,32 +101,29 @@ A proof-of-concept shell script is provided at `scripts/tsyne`:
 ./scripts/tsyne examples/stock-ticker-standalone.ts
 ```
 
-The script implementation:
+The script implementation (simplified):
 
 ```bash
 #!/bin/bash
-# tsyne - Grapes-alike TypeScript runner
+# tsyne - TypeScript runner with embedded dependency support
 
 TSYNE_CACHE="$HOME/.tsyne/packages"
 SOURCE_FILE="$1"
 
-# Parse @grab directives
-PACKAGES=$(grep -oP '/// <grab package="\K[^"]+' "$SOURCE_FILE")
-VERSIONS=$(grep -oP '/// <grab package="[^"]+" version="\K[^"]+' "$SOURCE_FILE")
+# Parse @Grab('package@version') directives
+GRAB_SPECS=$(grep -oP "// @Grab\('\K[^']+(?='\))" "$SOURCE_FILE")
 
 # Install missing packages
 mkdir -p "$TSYNE_CACHE"
-cd "$TSYNE_CACHE"
-
-paste <(echo "$PACKAGES") <(echo "$VERSIONS") | while read pkg ver; do
-  if [ ! -d "node_modules/$pkg" ]; then
-    echo "Installing $pkg@$ver..."
-    npm install "$pkg@$ver" --save
+for spec in $GRAB_SPECS; do
+  pkg="${spec%@*}"  # Everything before @
+  ver="${spec#*@}"  # Everything after @
+  if [ ! -d "$TSYNE_CACHE/node_modules/$pkg" ]; then
+    (cd "$TSYNE_CACHE" && npm install "$pkg@$ver")
   fi
 done
 
 # Run with NODE_PATH set
-cd - > /dev/null
 NODE_PATH="$TSYNE_CACHE/node_modules:$NODE_PATH" npx ts-node "$SOURCE_FILE"
 ```
 
@@ -169,8 +150,8 @@ See `examples/weather-viewer-standalone.ts` for a complete example:
 ```typescript
 #!/usr/bin/env tsyne
 
-/// <grab package="axios" version="^1.6.0" />
-/// <grab package="date-fns" version="^3.0.0" />
+// @Grab('axios@^1.6.0')
+// @Grab('date-fns@^3.0.0')
 
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -204,9 +185,9 @@ tsyne --dry-run weather-viewer.ts
 
 ## Comparison with Groovy Grapes
 
-| Feature | Groovy Grapes | Tsyne @grab |
+| Feature | Groovy Grapes | Tsyne @Grab |
 |---------|---------------|-------------|
-| Syntax | `@Grab('group:artifact:version')` | `/// <grab package="name" version="ver" />` |
+| Syntax | `@Grab('group:artifact:version')` | `// @Grab('package@version')` |
 | Repository | Maven Central | npm registry |
 | Cache | `~/.groovy/grapes/` | `~/.tsyne/packages/` |
 | Resolution | Ivy/Maven | npm |
@@ -221,7 +202,7 @@ tsyne --dry-run weather-viewer.ts
 
 ## Future Enhancements
 
-1. **TypeScript Plugin**: IDE support for `@grab` syntax
+1. **TypeScript Plugin**: IDE support for `@Grab` syntax
 2. **Type Definitions**: Auto-fetch `@types/*` packages
 3. **Private Registries**: Support for private npm registries
 4. **Bundling**: Option to bundle deps for fully offline distribution
