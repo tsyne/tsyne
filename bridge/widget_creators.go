@@ -634,6 +634,64 @@ func (b *Bridge) handleCreateMax(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateStack(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childIDs, ok := msg.Payload["childIds"].([]interface{})
+
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "childIds must be an array",
+		})
+		return
+	}
+
+	var children []fyne.CanvasObject
+
+	b.mu.RLock()
+	for _, childIDInterface := range childIDs {
+		childID, ok := childIDInterface.(string)
+		if !ok {
+			continue
+		}
+		child, exists := b.widgets[childID]
+		if exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	if len(children) == 0 {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "No valid child widgets found",
+		})
+		return
+	}
+
+	// NewStack stacks all widgets on top of each other (Z-layering)
+	// Unlike Max, Stack preserves natural sizes - children are not forced to fill
+	stackContainer := container.NewStack(children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = stackContainer
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "stack", Text: ""}
+	for _, childIDInterface := range childIDs {
+		if childID, ok := childIDInterface.(string); ok {
+			b.childToParent[childID] = widgetID
+		}
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateCard(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)

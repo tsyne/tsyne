@@ -1662,6 +1662,63 @@ export class Max {
 }
 
 /**
+ * Stack layout - stacks widgets on top of each other (Z-layering)
+ * All widgets are positioned at the same location, creating overlapping layers.
+ * Unlike Max, Stack preserves natural sizes - children are not forced to fill the container.
+ * Useful for layered UIs like card stacks, overlays, or floating elements.
+ */
+export class Stack {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('stack');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length === 0) {
+      throw new Error('Stack must have at least one child');
+    }
+
+    ctx.bridge.send('createStack', {
+      id: this.id,
+      childIds: children
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this widget (for testing/debugging)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+}
+
+/**
  * Card container with title, subtitle, and content
  */
 export class Card {
