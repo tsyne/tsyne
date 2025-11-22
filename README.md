@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <em>Bridging TypeScript and Go, inspired by the bridges over the River Tyne</em>
+  <em>Bridging TypeScript and Go's Fyne, Logo is Tyne-bridge -ish with Fyne's colors</em>
 </p>
 
 ---
