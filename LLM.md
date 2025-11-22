@@ -272,6 +272,28 @@ See **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for detailed solution
 - Test timeouts
 - Stale compiled JavaScript
 
+### Screenshots Are Blank in Cloud/LLM Environments
+
+**Problem:** You've set up Xvfb, run tests with `TSYNE_HEADED=1 TAKE_SCREENSHOTS=1`, tests pass, but screenshots are blank/white (~600 bytes instead of ~7KB).
+
+**This is expected behavior, not a bug.**
+
+Fyne uses OpenGL for rendering, which requires GPU hardware acceleration. Xvfb provides a software X11 display but cannot render OpenGL content properly. As a result:
+
+- ✅ Tests pass (logic is verified)
+- ✅ Screenshot files are created (capture mechanism works)
+- ❌ Screenshot content is blank (OpenGL doesn't render to software framebuffer)
+
+**What to do:**
+
+1. **Don't worry about it** - Tests verify functionality; screenshots are supplementary
+2. **Use existing screenshots** - `examples/screenshots/` contains pre-captured screenshots from a real display
+3. **Verify screenshots exist** - Check file sizes (~7KB = real content, ~600 bytes = blank)
+
+**For documentation purposes:** The repository's existing screenshots were captured on machines with real displays and show actual UI content. These can be referenced without needing to regenerate them.
+
+See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
+
 ## References
 
 ### Documentation

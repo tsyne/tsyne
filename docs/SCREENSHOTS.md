@@ -121,6 +121,33 @@ test-failures/should_handle_navigation_correctly_2025-11-10T21-57-49-390Z.png
 ### "Screenshot is blank/grey"
 You're running in headless mode. Use `headed: true` for visual screenshots.
 
+### "Screenshot is blank even with Xvfb and headed mode"
+
+**This is a known limitation of Fyne's OpenGL rendering.**
+
+Fyne uses OpenGL for rendering, which requires GPU acceleration. Virtual framebuffers like Xvfb provide a software-based X11 display but don't properly support OpenGL rendering. As a result:
+
+- **Tests will pass** - The test logic executes correctly
+- **Screenshot files are created** - The capture mechanism works
+- **Screenshot content is blank** - OpenGL doesn't render to the software framebuffer
+
+**Evidence:** A properly rendered screenshot is ~7KB with visible UI content. An Xvfb-captured screenshot is ~600 bytes and appears white/blank.
+
+**Solutions:**
+
+1. **Use a real display** - Run tests on a machine with a physical display or GPU:
+   ```bash
+   TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm run test:screenshots
+   ```
+
+2. **Use existing screenshots** - The repository contains pre-captured screenshots in `examples/screenshots/` that were taken on a real display. These can be used for documentation.
+
+3. **For LLM/cloud environments** - Tests can verify functionality without visual screenshots. The test assertions validate behavior; screenshots are supplementary.
+
+4. **GPU-accelerated CI** - Some CI providers offer GPU runners (GitHub Actions larger runners, GitLab GPU runners) that can render OpenGL properly.
+
+**Note for LLM assistants:** When working in containerized/cloud environments (Claude Code, Codespaces, etc.), expect blank screenshots even with proper Xvfb setup. This is not a bug - it's a rendering limitation.
+
 ### "No windows available to screenshot"
 Ensure you've created and shown at least one window before taking a screenshot.
 
