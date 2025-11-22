@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"image/color"
 	"log"
 	"os"
 	"sync"
@@ -55,6 +56,7 @@ type Bridge struct {
 	quitChan       chan bool                      // signal quit in test mode
 	resources      map[string][]byte              // resource name -> decoded image data
 	scalableTheme  *ScalableTheme                 // custom theme for font scaling
+	rasterData     map[string][][]color.Color    // raster widget ID -> pixel buffer
 }
 
 // WidgetMetadata stores metadata about widgets for testing
