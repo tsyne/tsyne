@@ -1,7 +1,7 @@
 import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow } from './widgets';
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -175,6 +175,10 @@ export class App {
 
   radiogroup(options: string[], initialSelected?: string, onSelected?: (selected: string) => void): RadioGroup {
     return new RadioGroup(this.ctx, options, initialSelected, onSelected);
+  }
+
+  checkgroup(options: string[], initialSelected?: string[], onChanged?: (selected: string[]) => void): CheckGroup {
+    return new CheckGroup(this.ctx, options, initialSelected, onChanged);
   }
 
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {

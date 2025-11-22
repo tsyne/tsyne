@@ -1387,6 +1387,47 @@ export class RadioGroup extends Widget {
 }
 
 /**
+ * CheckGroup widget - multiple checkbox selection
+ */
+export class CheckGroup extends Widget {
+  constructor(ctx: Context, options: string[], initialSelected?: string[], onChanged?: (selected: string[]) => void) {
+    const id = ctx.generateId('checkgroup');
+    super(ctx, id);
+
+    const payload: any = { id, options };
+
+    if (initialSelected !== undefined) {
+      payload.selected = initialSelected;
+    }
+
+    if (onChanged) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onChanged(data.selected);
+      });
+    }
+
+    ctx.bridge.send('createCheckGroup', payload);
+    ctx.addToCurrentContainer(id);
+  }
+
+  async setSelected(selected: string[]): Promise<void> {
+    await this.ctx.bridge.send('setCheckGroupSelected', {
+      widgetId: this.id,
+      selected
+    });
+  }
+
+  async getSelected(): Promise<string[]> {
+    const result = await this.ctx.bridge.send('getCheckGroupSelected', {
+      widgetId: this.id
+    });
+    return result.selected;
+  }
+}
+
+/**
  * Split container (horizontal or vertical)
  */
 export class Split {
