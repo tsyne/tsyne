@@ -383,6 +383,82 @@ func (b *Bridge) handleCreateSelect(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateSelectEntry(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	optionsInterface, _ := msg.Payload["options"].([]interface{})
+	placeholder, _ := msg.Payload["placeholder"].(string)
+	onChangedCallbackID, hasOnChanged := msg.Payload["onChangedCallbackId"].(string)
+	onSubmittedCallbackID, hasOnSubmitted := msg.Payload["onSubmittedCallbackId"].(string)
+	onSelectedCallbackID, hasOnSelected := msg.Payload["onSelectedCallbackId"].(string)
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, opt := range optionsInterface {
+		options[i] = opt.(string)
+	}
+
+	selectEntry := widget.NewSelectEntry(options)
+	selectEntry.SetPlaceHolder(placeholder)
+
+	if hasOnChanged {
+		selectEntry.OnChanged = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": onChangedCallbackID, "text": text},
+			})
+		}
+	}
+
+	if hasOnSubmitted {
+		selectEntry.OnSubmitted = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": onSubmittedCallbackID, "text": text},
+			})
+		}
+	}
+
+	// OnSelected is triggered when user selects from dropdown
+	if hasOnSelected {
+		// SelectEntry doesn't have direct OnSelected, but OnChanged fires for dropdown selections too
+		// We track this by wrapping OnChanged to detect dropdown selections
+		originalOnChanged := selectEntry.OnChanged
+		selectEntry.OnChanged = func(text string) {
+			// Check if the text matches one of the options (indicates selection)
+			for _, opt := range options {
+				if opt == text {
+					b.sendEvent(Event{
+						Type:     "callback",
+						WidgetID: widgetID,
+						Data:     map[string]interface{}{"callbackId": onSelectedCallbackID, "selected": text},
+					})
+					break
+				}
+			}
+			// Still fire the original OnChanged if it exists
+			if originalOnChanged != nil {
+				originalOnChanged(text)
+			}
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = selectEntry
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "selectentry", Text: "", Placeholder: placeholder}
+	if hasOnChanged {
+		b.callbacks[widgetID] = onChangedCallbackID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateSlider(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	min := msg.Payload["min"].(float64)
