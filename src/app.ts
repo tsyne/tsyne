@@ -181,10 +181,6 @@ export class App {
   }
 
   async run(): Promise<void> {
-    // Process all pending hover wrappers before showing windows
-    // This ensures widgets are wrapped after the tree is complete
-    await this.ctx.processHoverWrappers();
-
     // Show all windows
     for (const win of this.windows) {
       await win.show();

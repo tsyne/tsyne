@@ -184,18 +184,37 @@ func (t *TappableWrapper) SetCanvas(canvas fyne.Canvas) {
 	t.canvas = canvas
 }
 
-// HoverableButton is a custom button that implements desktop.Hoverable
-type HoverableButton struct {
+// TsyneButton is a custom button that implements desktop.Hoverable, desktop.Mouseable,
+// desktop.Cursorable, and desktop.Keyable interfaces.
+// Events are only sent to TypeScript if the corresponding callback ID is set.
+type TsyneButton struct {
 	widget.Button
 	bridge   *Bridge
 	widgetID string
+
+	// Callback IDs for event dispatching to TypeScript
+	onMouseInCallbackId    string
+	onMouseOutCallbackId   string
+	onMouseMovedCallbackId string
+	onMouseDownCallbackId  string
+	onMouseUpCallbackId    string
+	onKeyDownCallbackId    string
+	onKeyUpCallbackId      string
+	onFocusCallbackId      string
+
+	// Cursor to display when hovering
+	cursor desktop.Cursor
+
+	// Track focus state
+	focused bool
 }
 
-// NewHoverableButton creates a new hoverable button
-func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID string) *HoverableButton {
-	btn := &HoverableButton{
+// NewTsyneButton creates a new TsyneButton
+func NewTsyneButton(text string, tapped func(), bridge *Bridge, widgetID string) *TsyneButton {
+	btn := &TsyneButton{
 		bridge:   bridge,
 		widgetID: widgetID,
+		cursor:   desktop.DefaultCursor,
 	}
 	btn.Text = text
 	btn.OnTapped = tapped
@@ -203,36 +222,59 @@ func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID str
 	return btn
 }
 
-// MouseIn is called when the mouse pointer enters the button
-func (h *HoverableButton) MouseIn(e *desktop.MouseEvent) {
-	log.Printf("[HoverableButton] MouseIn for widget %s at position (%.2f, %.2f)", h.widgetID, e.Position.X, e.Position.Y)
+// SetCallbackIds configures callback IDs for event dispatching to TypeScript
+func (t *TsyneButton) SetCallbackIds(mouseIn, mouseOut, mouseMoved, mouseDown, mouseUp, keyDown, keyUp, focus string) {
+	t.onMouseInCallbackId = mouseIn
+	t.onMouseOutCallbackId = mouseOut
+	t.onMouseMovedCallbackId = mouseMoved
+	t.onMouseDownCallbackId = mouseDown
+	t.onMouseUpCallbackId = mouseUp
+	t.onKeyDownCallbackId = keyDown
+	t.onKeyUpCallbackId = keyUp
+	t.onFocusCallbackId = focus
+}
 
-	// Send custom mouseIn event for app callbacks
-	h.bridge.sendEvent(Event{
-		Type:     "mouseIn:" + h.widgetID,
-		WidgetID: h.widgetID,
-		Data: map[string]interface{}{
-			"position": map[string]interface{}{
-				"x": e.Position.X,
-				"y": e.Position.Y,
+// SetCursor sets the cursor to display when hovering over this button
+func (t *TsyneButton) SetCursor(cursor desktop.Cursor) {
+	t.cursor = cursor
+}
+
+// --- desktop.Hoverable interface ---
+
+// MouseIn is called when the mouse pointer enters the button
+func (t *TsyneButton) MouseIn(e *desktop.MouseEvent) {
+	log.Printf("[TsyneButton] MouseIn for widget %s at position (%.2f, %.2f)", t.widgetID, e.Position.X, e.Position.Y)
+
+	// Send callback event if registered
+	if t.onMouseInCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onMouseInCallbackId,
+				"position": map[string]interface{}{
+					"x": e.Position.X,
+					"y": e.Position.Y,
+				},
 			},
-		},
-	})
+		})
+	}
 
 	// Also send pointerEnter for accessibility announcements
-	h.bridge.sendEvent(Event{
+	t.bridge.sendEvent(Event{
 		Type:     "pointerEnter",
-		WidgetID: h.widgetID,
+		WidgetID: t.widgetID,
 	})
 }
 
 // MouseMoved is called when the mouse pointer moves over the button
-func (h *HoverableButton) MouseMoved(e *desktop.MouseEvent) {
-	// Send custom mouseMoved event for app callbacks
-	h.bridge.sendEvent(Event{
-		Type:     "mouseMoved:" + h.widgetID,
-		WidgetID: h.widgetID,
+func (t *TsyneButton) MouseMoved(e *desktop.MouseEvent) {
+	if t.onMouseMovedCallbackId == "" {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
 		Data: map[string]interface{}{
+			"callbackId": t.onMouseMovedCallbackId,
 			"position": map[string]interface{}{
 				"x": e.Position.X,
 				"y": e.Position.Y,
@@ -242,20 +284,164 @@ func (h *HoverableButton) MouseMoved(e *desktop.MouseEvent) {
 }
 
 // MouseOut is called when the mouse pointer leaves the button
-func (h *HoverableButton) MouseOut() {
-	log.Printf("[HoverableButton] MouseOut for widget %s", h.widgetID)
+func (t *TsyneButton) MouseOut() {
+	log.Printf("[TsyneButton] MouseOut for widget %s", t.widgetID)
 
-	// Send custom mouseOut event for app callbacks
-	h.bridge.sendEvent(Event{
-		Type:     "mouseOut:" + h.widgetID,
-		WidgetID: h.widgetID,
-	})
+	// Send callback event if registered
+	if t.onMouseOutCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onMouseOutCallbackId,
+			},
+		})
+	}
 
 	// Also send pointerExit for accessibility
-	h.bridge.sendEvent(Event{
+	t.bridge.sendEvent(Event{
 		Type:     "pointerExit",
-		WidgetID: h.widgetID,
+		WidgetID: t.widgetID,
 	})
+}
+
+// --- desktop.Mouseable interface ---
+
+// MouseDown is called when a mouse button is pressed over the button
+func (t *TsyneButton) MouseDown(e *desktop.MouseEvent) {
+	if t.onMouseDownCallbackId == "" {
+		return
+	}
+	log.Printf("[TsyneButton] MouseDown for widget %s button %d", t.widgetID, e.Button)
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseDownCallbackId,
+			"button":     int(e.Button),
+			"position": map[string]interface{}{
+				"x": e.Position.X,
+				"y": e.Position.Y,
+			},
+		},
+	})
+}
+
+// MouseUp is called when a mouse button is released over the button
+func (t *TsyneButton) MouseUp(e *desktop.MouseEvent) {
+	if t.onMouseUpCallbackId == "" {
+		return
+	}
+	log.Printf("[TsyneButton] MouseUp for widget %s button %d", t.widgetID, e.Button)
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseUpCallbackId,
+			"button":     int(e.Button),
+			"position": map[string]interface{}{
+				"x": e.Position.X,
+				"y": e.Position.Y,
+			},
+		},
+	})
+}
+
+// --- desktop.Cursorable interface ---
+
+// Cursor returns the cursor to display when hovering over this button
+func (t *TsyneButton) Cursor() desktop.Cursor {
+	return t.cursor
+}
+
+// --- desktop.Keyable interface (requires fyne.Focusable) ---
+
+// FocusGained is called when this button gains focus
+func (t *TsyneButton) FocusGained() {
+	t.focused = true
+	log.Printf("[TsyneButton] FocusGained for widget %s", t.widgetID)
+
+	if t.onFocusCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onFocusCallbackId,
+				"focused":    true,
+			},
+		})
+	}
+}
+
+// FocusLost is called when this button loses focus
+func (t *TsyneButton) FocusLost() {
+	t.focused = false
+	log.Printf("[TsyneButton] FocusLost for widget %s", t.widgetID)
+
+	if t.onFocusCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onFocusCallbackId,
+				"focused":    false,
+			},
+		})
+	}
+}
+
+// TypedRune is called when a character is typed while focused
+func (t *TsyneButton) TypedRune(r rune) {
+	// Buttons don't typically handle typed runes, but required by Focusable
+}
+
+// TypedKey is called when a key is pressed while focused (Focusable interface)
+func (t *TsyneButton) TypedKey(e *fyne.KeyEvent) {
+	log.Printf("[TsyneButton] TypedKey for widget %s key %s", t.widgetID, e.Name)
+	// Handle Space and Enter to activate the button
+	if e.Name == fyne.KeySpace || e.Name == fyne.KeyReturn || e.Name == fyne.KeyEnter {
+		log.Printf("[TsyneButton] Activating button %s via keyboard", t.widgetID)
+		if t.OnTapped != nil {
+			t.OnTapped()
+		}
+	}
+}
+
+// KeyDown is called when a key is pressed while focused (Keyable interface)
+func (t *TsyneButton) KeyDown(e *fyne.KeyEvent) {
+	if t.onKeyDownCallbackId == "" {
+		return
+	}
+	log.Printf("[TsyneButton] KeyDown for widget %s key %s", t.widgetID, e.Name)
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyDownCallbackId,
+			"key":        string(e.Name),
+		},
+	})
+}
+
+// KeyUp is called when a key is released while focused (Keyable interface)
+func (t *TsyneButton) KeyUp(e *fyne.KeyEvent) {
+	if t.onKeyUpCallbackId == "" {
+		return
+	}
+	log.Printf("[TsyneButton] KeyUp for widget %s key %s", t.widgetID, e.Name)
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyUpCallbackId,
+			"key":        string(e.Name),
+		},
+	})
+}
+
+// Backward compatibility alias
+type HoverableButton = TsyneButton
+
+// NewHoverableButton creates a new TsyneButton (backward compatibility)
+func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID string) *TsyneButton {
+	return NewTsyneButton(text, tapped, bridge, widgetID)
 }
 
 // HoverableWrapper wraps a widget and implements desktop.Hoverable for mouse enter/exit events

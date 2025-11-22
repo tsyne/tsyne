@@ -235,6 +235,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetPointerEnter(msg)
 	case "processHoverWrappers":
 		b.handleProcessHoverWrappers(msg)
+	case "setWidgetHoverable":
+		b.handleSetWidgetHoverable(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,

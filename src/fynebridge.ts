@@ -180,10 +180,20 @@ export class BridgeConnection {
         handler(event.data);
       }
     } else {
-      // Handle other event types (e.g., hyperlinkNavigation)
-      const handler = this.eventHandlers.get(event.type);
+      // For events like mouseIn, mouseOut, mouseMove - try both with and without widgetId
+      // First try: eventType:widgetId (e.g., "mouseIn:hoverable_9")
+      // Second try: just eventType (e.g., "mouseIn" for global handlers)
+      const handlerKey = event.widgetId ? `${event.type}:${event.widgetId}` : event.type;
+      const handler = this.eventHandlers.get(handlerKey) || this.eventHandlers.get(event.type);
+
       if (handler) {
-        handler(event.data);
+        // Pass both data and widgetId for events like pointerEnter
+        // Only override widgetId if event.widgetId is set (some events send it in data)
+        const eventData = { ...event.data };
+        if (event.widgetId) {
+          eventData.widgetId = event.widgetId;
+        }
+        handler(eventData);
       }
     }
   }

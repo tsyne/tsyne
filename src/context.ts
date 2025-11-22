@@ -67,12 +67,4 @@ export class Context {
   getCurrentContainer(): string[] | undefined {
     return this.containerStack[this.containerStack.length - 1];
   }
-
-  /**
-   * Process all pending hover wrappers
-   * This should be called after the widget tree is complete
-   */
-  async processHoverWrappers(): Promise<void> {
-    await this.bridge.send('processHoverWrappers', {});
-  }
 }

@@ -16,16 +16,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// unwrapWidget unwraps a HoverableWrapper to get the actual widget
-// Note: HoverableButton doesn't need unwrapping as it extends widget.Button
-func unwrapWidget(obj fyne.CanvasObject) fyne.CanvasObject {
-	if wrapper, isWrapper := obj.(*HoverableWrapper); isWrapper {
-		return wrapper.content
-	}
-	// HoverableButton IS a Button, so no unwrapping needed
-	return obj
-}
-
 func (b *Bridge) handleGetText(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -50,9 +40,6 @@ func (b *Bridge) handleGetText(msg Message) {
 		actualWidget = entryObj
 	}
 
-	// Unwrap HoverableWrapper if present
-	actualWidget = unwrapWidget(actualWidget)
-
 	var text string
 	switch w := actualWidget.(type) {
 	case *widget.Label:
@@ -61,6 +48,16 @@ func (b *Bridge) handleGetText(msg Message) {
 		text = w.Text
 	case *widget.Button:
 		text = w.Text
+	case *HoverableButton: // Handle HoverableButton
+		text = w.Text
+	case *HoverableWrapper: // Handle HoverableWrapper
+		if label, ok := w.content.(*widget.Label); ok {
+			text = label.Text
+		} else if btn, ok := w.content.(*widget.Button); ok {
+			text = btn.Text
+		} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
+			text = hoverBtn.Text
+		}
 	case *widget.Check:
 		text = w.Text
 	default:
@@ -104,9 +101,6 @@ func (b *Bridge) handleSetText(msg Message) {
 		actualWidget = entryObj
 	}
 
-	// Unwrap HoverableWrapper if present
-	actualWidget = unwrapWidget(actualWidget)
-
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
 		switch w := actualWidget.(type) {
@@ -116,6 +110,18 @@ func (b *Bridge) handleSetText(msg Message) {
 			w.SetText(text)
 		case *widget.Button:
 			w.SetText(text)
+		case *HoverableButton:
+			w.SetText(text)
+			w.Refresh() // Added Refresh for HoverableButton
+		case *HoverableWrapper: // Handle HoverableWrapper
+			if label, ok := w.content.(*widget.Label); ok {
+				label.SetText(text)
+			} else if btn, ok := w.content.(*widget.Button); ok {
+				btn.SetText(text)
+			} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
+				hoverBtn.SetText(text)
+				hoverBtn.Refresh() // Added Refresh for HoverableButton inside wrapper
+			}
 		case *widget.Check:
 			w.SetText(text)
 		}
@@ -124,7 +130,7 @@ func (b *Bridge) handleSetText(msg Message) {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *widget.Button, *widget.Check:
+	case *widget.Label, *widget.Entry, *widget.Button, *HoverableButton, *HoverableWrapper, *widget.Check:
 		supported = true
 	}
 
@@ -1131,9 +1137,9 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 				continue
 			}
 
-			// Check if already hoverable
-			if _, alreadyHoverable := obj.(*HoverableButton); alreadyHoverable {
-				log.Printf("[processHoverWrappers] Widget %s already hoverable", widgetID)
+			// Check if already a TsyneButton or wrapped
+			if _, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
+				log.Printf("[processHoverWrappers] Widget %s already a TsyneButton", widgetID)
 				continue
 			}
 			if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
@@ -1143,19 +1149,20 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 
 			var replacement fyne.CanvasObject
 
-			// For buttons, create a HoverableButton
+			// For buttons, create a TsyneButton
 			if btn, isButton := obj.(*widget.Button); isButton {
-				log.Printf("[processHoverWrappers] Converting button %s to HoverableButton", widgetID)
-				hoverBtn := NewHoverableButton(btn.Text, btn.OnTapped, b, widgetID)
-				hoverBtn.Importance = btn.Importance
-				hoverBtn.Icon = btn.Icon
-				hoverBtn.IconPlacement = btn.IconPlacement
-				hoverBtn.Alignment = btn.Alignment
-				hoverBtn.Disable() // Copy disabled state
-				if !btn.Disabled() {
-					hoverBtn.Enable()
+				log.Printf("[processHoverWrappers] Converting button %s to TsyneButton", widgetID)
+				tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
+				tsyneBtn.Importance = btn.Importance
+				tsyneBtn.Icon = btn.Icon
+				tsyneBtn.IconPlacement = btn.IconPlacement
+				tsyneBtn.Alignment = btn.Alignment
+				// Note: No callback IDs set here - processHoverWrappers is for accessibility
+				// The pointerEnter event is always sent regardless of callback IDs
+				if btn.Disabled() {
+					tsyneBtn.Disable()
 				}
-				replacement = hoverBtn
+				replacement = tsyneBtn
 			} else {
 				// For other widgets, use the wrapper approach
 				log.Printf("[processHoverWrappers] Wrapping widget %s with HoverableWrapper", widgetID)
@@ -1200,5 +1207,146 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 		Result: map[string]interface{}{
 			"wrappedCount": wrappedCount,
 		},
+	})
+}
+
+// handleSetWidgetHoverable handles enabling hover events on a widget
+// This wraps the widget to support mouse in/out/move events
+func (b *Bridge) handleSetWidgetHoverable(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	// Extract optional callback IDs
+	onMouseInCallbackId, _ := msg.Payload["onMouseInCallbackId"].(string)
+	onMouseMoveCallbackId, _ := msg.Payload["onMouseMoveCallbackId"].(string)
+	onMouseOutCallbackId, _ := msg.Payload["onMouseOutCallbackId"].(string)
+
+	b.mu.Lock()
+
+	obj, exists := b.widgets[widgetID]
+	if !exists {
+		b.mu.Unlock()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	// Store callback IDs in widget metadata
+	widgetMeta, metaExists := b.widgetMeta[widgetID]
+	if !metaExists {
+		widgetMeta = WidgetMetadata{}
+	}
+	if widgetMeta.CustomData == nil {
+		widgetMeta.CustomData = make(map[string]interface{})
+	}
+
+	// Store callback IDs for event dispatching
+	if onMouseInCallbackId != "" {
+		widgetMeta.CustomData["onMouseInCallbackId"] = onMouseInCallbackId
+	}
+	if onMouseMoveCallbackId != "" {
+		widgetMeta.CustomData["onMouseMoveCallbackId"] = onMouseMoveCallbackId
+	}
+	if onMouseOutCallbackId != "" {
+		widgetMeta.CustomData["onMouseOutCallbackId"] = onMouseOutCallbackId
+	}
+	widgetMeta.CustomData["hoverable"] = true
+	b.widgetMeta[widgetID] = widgetMeta
+
+	// Check if already a TsyneButton - if so, update its callback IDs
+	if tsyneBtn, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
+		log.Printf("[setWidgetHoverable] Widget %s is already a TsyneButton, updating callback IDs", widgetID)
+		// Update callback IDs
+		if onMouseInCallbackId != "" {
+			tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
+		}
+		if onMouseOutCallbackId != "" {
+			tsyneBtn.onMouseOutCallbackId = onMouseOutCallbackId
+		}
+		if onMouseMoveCallbackId != "" {
+			tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
+		}
+		b.mu.Unlock()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+		return
+	}
+	if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
+		log.Printf("[setWidgetHoverable] Widget %s is already wrapped", widgetID)
+		b.mu.Unlock()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+		return
+	}
+
+	// In test mode, skip the actual wrapping but return success
+	// Events will be handled differently in test mode
+	if b.testMode {
+		log.Printf("[setWidgetHoverable] Test mode - skipping widget wrapping for %s", widgetID)
+		b.mu.Unlock()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+		return
+	}
+
+	// Wrap the widget to make it interactive
+	var replacement fyne.CanvasObject
+
+	// For buttons, create a TsyneButton with appropriate callback IDs
+	if btn, isButton := obj.(*widget.Button); isButton {
+		log.Printf("[setWidgetHoverable] Converting button %s to TsyneButton", widgetID)
+		tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
+		tsyneBtn.Importance = btn.Importance
+		tsyneBtn.Icon = btn.Icon
+		tsyneBtn.IconPlacement = btn.IconPlacement
+		tsyneBtn.Alignment = btn.Alignment
+		if btn.Disabled() {
+			tsyneBtn.Disable()
+		}
+
+		// Set callback IDs for event dispatching
+		tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
+		tsyneBtn.onMouseOutCallbackId = onMouseOutCallbackId
+		tsyneBtn.onMouseMovedCallbackId = onMouseMoveCallbackId
+
+		replacement = tsyneBtn
+	} else {
+		// For other widgets, use the wrapper approach
+		log.Printf("[setWidgetHoverable] Wrapping widget %s with HoverableWrapper", widgetID)
+		replacement = NewHoverableWrapper(obj, b, widgetID)
+	}
+
+	// Replace in widgets map
+	b.widgets[widgetID] = replacement
+
+	// Replace in parent container if it exists
+	parentID, hasParent := b.childToParent[widgetID]
+	if hasParent {
+		parentObj, parentExists := b.widgets[parentID]
+		if parentExists {
+			if container, ok := parentObj.(*fyne.Container); ok {
+				for i, child := range container.Objects {
+					if child == obj {
+						container.Objects[i] = replacement
+						log.Printf("[setWidgetHoverable] Replaced widget %s at index %d in parent %s", widgetID, i, parentID)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	b.mu.Unlock()
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
 	})
 }

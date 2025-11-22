@@ -111,6 +111,16 @@ export abstract class Widget {
   }
 
   /**
+   * Focus this widget (for keyboard input)
+   * Widget must implement fyne.Focusable to receive focus
+   */
+  async focus(): Promise<void> {
+    await this.ctx.bridge.send('focusWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
    * Register a custom ID for this widget (for test framework getByID)
    * @param customId Custom ID to register
    * @returns this for method chaining
@@ -166,8 +176,16 @@ export abstract class Widget {
       widgetId: this.id,
       ...options
     });
-    // Automatically enable hover announcements when accessibility info is set
-    this.announceOnHover(true);
+
+    // If accessibility info is provided, enable hover-to-focus
+    // This gives the widget keyboard focus on hover (for spacebar activation)
+    // The announcement is handled by AccessibilityManager's pointerEnter listener
+    if (options.label || options.description) {
+      this.onMouseIn(() => {
+        // Focus the widget on hover so it can receive keyboard input
+        this.focus();
+      });
+    }
     return this;
   }
 
@@ -181,14 +199,7 @@ export abstract class Widget {
    *   .accessibility({ label: 'Top left cell' })
    *   .announceOnHover();
    */
-  announceOnHover(enabled: boolean = true): this {
-    if (enabled) {
-      this.ctx.bridge.send('setPointerEnter', {
-        widgetId: this.id
-      });
-    }
-    return this;
-  }
+
 
   /**
    * Register a callback for when the mouse enters the widget
@@ -202,8 +213,13 @@ export abstract class Widget {
    *   });
    */
   onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this {
-    this.ctx.bridge.on(`mouseIn:${this.id}`, callback);
-    this.announceOnHover(true);
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
+    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
+      widgetId: this.id,
+      onMouseInCallbackId: callbackId,
+      enabled: true // Enable hoverable capability
+    });
     return this;
   }
 
@@ -218,8 +234,13 @@ export abstract class Widget {
    *   });
    */
   onMouseMoved(callback: (event: { position: { x: number, y: number } }) => void): this {
-    this.ctx.bridge.on(`mouseMoved:${this.id}`, callback);
-    this.announceOnHover(true);
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
+    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
+      widgetId: this.id,
+      onMouseMoveCallbackId: callbackId,
+      enabled: true // Enable hoverable capability
+    });
     return this;
   }
 
@@ -234,8 +255,13 @@ export abstract class Widget {
    *   });
    */
   onMouseOut(callback: () => void): this {
-    this.ctx.bridge.on(`mouseOut:${this.id}`, callback);
-    this.announceOnHover(true);
+    const callbackId = this.ctx.generateId('callback');
+    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
+    this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
+      widgetId: this.id,
+      onMouseOutCallbackId: callbackId,
+      enabled: true // Enable hoverable capability
+    });
     return this;
   }
 
@@ -256,9 +282,33 @@ export abstract class Widget {
     moved?: (event: { position: { x: number, y: number } }) => void,
     out?: () => void
   }): this {
-    if (callbacks.in) this.onMouseIn(callbacks.in);
-    if (callbacks.moved) this.onMouseMoved(callbacks.moved);
-    if (callbacks.out) this.onMouseOut(callbacks.out);
+    if (callbacks.in) {
+      const callbackId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(callbackId, callbacks.in);
+      this.ctx.bridge.send('setWidgetHoverable', {
+        widgetId: this.id,
+        onMouseInCallbackId: callbackId,
+        enabled: true
+      });
+    }
+    if (callbacks.moved) {
+      const callbackId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(callbackId, callbacks.moved);
+      this.ctx.bridge.send('setWidgetHoverable', {
+        widgetId: this.id,
+        onMouseMoveCallbackId: callbackId,
+        enabled: true
+      });
+    }
+    if (callbacks.out) {
+      const callbackId = this.ctx.generateId('callback');
+      this.ctx.bridge.registerEventHandler(callbackId, callbacks.out);
+      this.ctx.bridge.send('setWidgetHoverable', {
+        widgetId: this.id,
+        onMouseOutCallbackId: callbackId,
+        enabled: true
+      });
+    }
     return this;
   }
 

@@ -611,16 +611,22 @@ function setupKeyboardShortcuts() {
 // Run directly when executed as main script
 if (require.main === module) {
   console.log("[DEBUG] Starting app creation...");
-  const myApp = app({ title: "Accessible Tic-Tac-Toe" }, buildTicTacToe);
+
+  // Create app with a wrapper that initializes accessibility BEFORE building UI
+  const myApp = app({ title: "Accessible Tic-Tac-Toe" }, (a) => {
+    // Store the app context for use in helper functions
+    appContext = (a as any).ctx;
+    console.log("[DEBUG] App context stored");
+
+    // Initialize the accessibility manager BEFORE building UI
+    // This ensures it's listening for accessibilityRegistered events
+    accessibilityManager = getAccessibilityManager(appContext);
+    console.log("[DEBUG] Accessibility manager initialized BEFORE UI build");
+
+    // Now build the UI
+    buildTicTacToe(a);
+  });
   console.log("[DEBUG] App created successfully");
-
-  // Store the app context for use in helper functions
-  appContext = (myApp as any).ctx;
-  console.log("[DEBUG] App context stored");
-
-  // Get the accessibility manager
-  accessibilityManager = getAccessibilityManager(appContext);
-  console.log("[DEBUG] Accessibility manager initialized");
 
   // Setup keyboard shortcuts
   setupKeyboardShortcuts();

@@ -182,68 +182,37 @@ export class AccessibilityManager {
    * Includes parent and grandparent context
    * Supports template strings with ${label}, ${parent.label}, etc.
    */
+  /**
+   * Announce widget on hover - just the label, keeping it brief
+   * For cells with X or O, appends "with X" or "with O"
+   */
   async announceWidget(widgetId: string): Promise<void> {
-    console.log('[Accessibility] announceWidget called for:', widgetId, 'enabled:', this.enabled);
     if (!this.enabled) {
-      console.log('[Accessibility] Not enabled, returning');
       return;
     }
 
     const info = this.widgetAccessibilityMap.get(widgetId);
-    console.log('[Accessibility] Widget info:', info);
     if (!info) {
-      console.log('[Accessibility] No accessibility info found for widget');
       return;
     }
 
-    // Build announcement with context
-    const parts: string[] = [];
+    // For hover, just announce the label - keep it short
+    let announcement = info.label ? this.resolveTemplate(info.label, widgetId) : info.widgetType;
 
-    // Add widget label or type (resolve templates)
-    if (info.label) {
-      parts.push(this.resolveTemplate(info.label, widgetId));
-    } else if (info.widgetType) {
-      parts.push(info.widgetType);
-    }
-
-    // Add role if specified
-    if (info.role) {
-      parts.push(`Role: ${info.role}`);
-    }
-
-    // Add description (resolve templates)
-    if (info.description) {
-      parts.push(this.resolveTemplate(info.description, widgetId));
-    }
-
-    // Add parent context (only if not already in template)
-    const hasParentTemplate = info.label?.includes('${parent') || info.description?.includes('${parent');
-    if (!hasParentTemplate) {
-      const parentId = this.widgetParentMap.get(widgetId);
-      if (parentId) {
-        const parentInfo = this.widgetAccessibilityMap.get(parentId);
-        if (parentInfo?.label) {
-          parts.push(`In ${parentInfo.label}`);
+    if (announcement) {
+      // Check if widget has X or O text (for game cells)
+      try {
+        const result = await this.ctx.bridge.send('getText', { widgetId });
+        const text = result.text?.trim();
+        if (text === 'X' || text === 'O') {
+          announcement += ` with ${text}`;
         }
-
-        // Add grandparent context
-        const grandparentId = this.widgetParentMap.get(parentId);
-        if (grandparentId) {
-          const grandparentInfo = this.widgetAccessibilityMap.get(grandparentId);
-          if (grandparentInfo?.label) {
-            parts.push(`Within ${grandparentInfo.label}`);
-          }
-        }
+      } catch {
+        // Ignore errors - widget might not support getText
       }
-    }
 
-    // Add hint (resolve templates)
-    if (info.hint) {
-      parts.push(`Hint: ${this.resolveTemplate(info.hint, widgetId)}`);
+      this.announce(announcement);
     }
-
-    const announcement = parts.join('. ');
-    this.announce(announcement);
   }
 
   /**
@@ -274,11 +243,6 @@ export class AccessibilityManager {
 
     this.isSpeaking = true;
     const text = this.speechQueue.shift()!;
-
-    // Log for debugging (use process.stdout in Node, console in browser)
-    if (typeof process !== 'undefined' && process.stdout) {
-      process.stdout.write(`[Accessibility] ${text}\n`);
-    }
 
     // Use Web Speech API if available (browser environment)
     if (this.speechSynthesisAvailable) {

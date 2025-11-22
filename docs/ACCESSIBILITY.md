@@ -322,7 +322,183 @@ if (!result.valid) {
 
 // Get required properties
 const required = validator.getRequiredProps('gridcell');
-// []
+```
+
+### 8. Mouse Hover Announcements
+
+**Why:** Users with low vision who use screen magnifiers or partial sight benefit from audio announcements when hovering over UI elements.
+
+**Implementation:**
+
+Use the `hoverable()` container to wrap widgets and provide custom hover callbacks.
+
+**Option 1: Fluent API (Recommended)**
+
+```typescript
+import { app, getAccessibilityManager } from 'tsyne';
+
+const myApp = app({ title: "App" }, (a) => {
+  const manager = getAccessibilityManager((myApp as any).ctx);
+
+  a.window({ title: "Hover Demo" }, () => {
+    a.vbox(() => {
+      // Fluent API - chain methods as needed
+      a.hoverable(() => {
+        a.button("Submit", () => submitForm())
+          .accessibility({
+            label: "Submit Form",
+            description: "Click to submit the registration form",
+            role: "button"
+          });
+      })
+      .onMouseIn((event) => {
+        // event.position contains { x, y } coordinates
+        manager.announce("Submit button. Click to submit form.", 'polite');
+      })
+      .onMouseOut(() => {
+        // Optional exit announcement
+      })
+      .onMouseMove((event) => {
+        // Track mouse movement within the widget
+        console.log(`Mouse at ${event.position.x}, ${event.position.y}`);
+      });
+
+      // Or use just the methods you need
+      a.hoverable(() => {
+        a.label("Hover over me");
+      })
+      .onMouseIn(() => {
+        manager.announce("Label hovered", 'polite');
+      });
+    });
+  });
+});
+```
+
+**Option 2: Constructor Callbacks**
+
+```typescript
+// Pass callbacks directly to constructor
+a.hoverable(
+  () => {
+    a.button("Submit", () => submitForm())
+      .accessibility({
+        label: "Submit Form",
+        role: "button"
+      });
+  },
+  () => {
+    // On mouse enter
+    manager.announce("Submit button", 'polite');
+  },
+  () => {
+    // On mouse exit (optional)
+  }
+);
+
+      // Hover announcements for grid cells (e.g., Tic-Tac-Toe)
+      a.grid(3, () => {
+        for (let i = 0; i < 9; i++) {
+          const position = getPositionDescription(i);
+          const cellState = board[i] || 'empty';
+
+          a.hoverable(
+            () => {
+              a.button(board[i], () => makeMove(i))
+                .accessibility({
+                  label: position,
+                  description: `Cell at ${position}`,
+                  role: "button"
+                });
+            },
+            () => {
+              // Announce position and current state on hover
+              manager.announce(`${position}, currently ${cellState}`, 'polite');
+            }
+          );
+        }
+      });
+
+      // Status label with hover announcement
+      a.hoverable(
+        () => {
+          statusLabel = a.label("Player X's turn")
+            .accessibility({
+              label: "Game Status",
+              role: "status"
+            });
+        },
+        () => {
+          // Read current status when user hovers
+          const status = statusLabel.getText ? statusLabel.getText() : "Player X's turn";
+          manager.announce(`Game status: ${status}`, 'polite');
+        }
+      );
+    });
+  });
+});
+```
+
+**Key Points:**
+- `hoverable(builder)` creates a container that wraps exactly one child widget
+- **Fluent API methods:**
+  - `.onMouseIn(callback)` - triggered when mouse enters, receives event with position
+  - `.onMouseOut(callback)` - triggered when mouse exits
+  - `.onMouseMove(callback)` - triggered when mouse moves, receives event with position
+  - `.on(eventType, callback)` - catch-all for any event type
+- All fluent methods are optional and chainable
+- Works with any widget type (buttons, labels, entries, etc.)
+- Combines with `.accessibility()` for comprehensive screen reader support
+- Use `'polite'` announcements to avoid interrupting other speech
+- Event data includes mouse position: `{ position: { x, y } }`
+- Can access dynamic state (e.g., board positions, form values) in callbacks
+
+**Example: Responsive Grid Cells**
+
+```typescript
+// Tic-Tac-Toe board with hover announcements using fluent API
+a.grid(3, () => {
+  for (let i = 0; i < 9; i++) {
+    const position = getCellDescription(i);  // "top left", "center", etc.
+
+    a.hoverable(() => {
+      cellButtons[i] = a.button(" ", () => makeMove(i), "cell")
+        .accessibility({
+          label: position,
+          role: "button",
+          hint: "Use arrow keys to navigate, Space to select"
+        });
+    })
+    .onMouseIn(() => {
+      // Announce position and state dynamically
+      const state = board[i] || 'empty';
+      announce(`${position}, currently ${state}`, 'polite');
+    });
+  }
+});
+```
+
+**Advanced Example: Custom Event Handling**
+
+```typescript
+// Use the catch-all .on() method for custom events
+a.hoverable(() => {
+  a.label("Drag me");
+})
+.on('mouseIn', (event) => {
+  console.log('Mouse entered at', event.position);
+})
+.on('mouseMove', (event) => {
+  console.log('Mouse moved to', event.position);
+})
+.on('mouseOut', () => {
+  console.log('Mouse exited');
+});
+```
+
+---
+
+## JavaScript Ecosystem Integration
 
 // Get supported properties
 const supported = validator.getSupportedProps('gridcell');
