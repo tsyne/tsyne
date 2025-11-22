@@ -1506,3 +1506,65 @@ func (b *Bridge) handleCreateList(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleCreateMenu(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	itemsInterface := msg.Payload["items"].([]interface{})
+
+	// Build menu items
+	var menuItems []*fyne.MenuItem
+
+	for _, itemInterface := range itemsInterface {
+		itemData := itemInterface.(map[string]interface{})
+
+		// Check if this is a separator
+		if isSeparator, ok := itemData["isSeparator"].(bool); ok && isSeparator {
+			menuItems = append(menuItems, fyne.NewMenuItemSeparator())
+			continue
+		}
+
+		label := itemData["label"].(string)
+		callbackID, hasCallback := itemData["callbackId"].(string)
+
+		// Capture callback ID in local scope to avoid closure issues
+		capturedCallbackID := callbackID
+		capturedHasCallback := hasCallback
+
+		menuItem := fyne.NewMenuItem(label, func() {
+			if capturedHasCallback {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": capturedCallbackID,
+					},
+				})
+			}
+		})
+
+		// Set disabled state if provided
+		if disabled, ok := itemData["disabled"].(bool); ok && disabled {
+			menuItem.Disabled = true
+		}
+
+		// Set checked state if provided
+		if checked, ok := itemData["checked"].(bool); ok && checked {
+			menuItem.Checked = true
+		}
+
+		menuItems = append(menuItems, menuItem)
+	}
+
+	// Create the menu widget
+	menu := widget.NewMenu(fyne.NewMenu("", menuItems...))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = menu
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "menu", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
