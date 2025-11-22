@@ -132,6 +132,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetProgress(msg)
 	case "getProgress":
 		b.handleGetProgress(msg)
+	case "startProgressInfinite":
+		b.handleStartProgressInfinite(msg)
+	case "stopProgressInfinite":
+		b.handleStopProgressInfinite(msg)
+	case "isProgressRunning":
+		b.handleIsProgressRunning(msg)
 	case "setChecked":
 		b.handleSetChecked(msg)
 	case "getChecked":

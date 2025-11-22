@@ -1492,3 +1492,103 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 		Success: true,
 	})
 }
+
+// ProgressBarInfinite handlers
+
+func (b *Bridge) handleStartProgressInfinite(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
+		fyne.DoAndWait(func() {
+			pb.Start()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an infinite progress bar",
+		})
+	}
+}
+
+func (b *Bridge) handleStopProgressInfinite(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
+		fyne.DoAndWait(func() {
+			pb.Stop()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an infinite progress bar",
+		})
+	}
+}
+
+func (b *Bridge) handleIsProgressRunning(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
+		running := pb.Running()
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+			Result:  map[string]interface{}{"running": running},
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an infinite progress bar",
+		})
+	}
+}
