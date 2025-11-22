@@ -1,629 +1,186 @@
-# Tsyne Roadmap
+# Tsyne Roadmap - Remaining Fyne API Coverage
 
-This document tracks Fyne features that have been implemented in Tsyne and what's still TODO.
+This document tracks Fyne features **not yet implemented** in Tsyne, with suggested demo apps to prove completion.
 
-## Implementation Status
-
-### ✅ Implemented
-
-#### Core Infrastructure
-- [x] Go bridge with JSON-RPC communication
-- [x] TypeScript client library
-- [x] Declarative API with builder pattern
-- [x] Event handling and callbacks
-- [x] Headless testing mode
-- [x] npm packaging with platform binaries
-
-#### Widgets
-- [x] Button
-- [x] Label
-- [x] Entry (text input)
-
-#### Layouts/Containers
-- [x] VBox (vertical box)
-- [x] HBox (horizontal box)
-
-#### Testing
-- [x] TsyneTest framework (Playwright-like)
-- [x] Headed/headless modes
-- [x] Widget selectors (by text, type)
-- [x] Assertions (toHaveText, toBeVisible, etc.)
-- [x] Jest integration for business logic
-
-#### Documentation
-- [x] README with examples
-- [x] QUICKSTART guide
-- [x] TESTING guide
-- [x] ARCHITECTURE documentation
-- [x] PUBLISHING guide
-- [x] Example applications (simple & advanced calculators)
+**Current Coverage: ~50%** of Fyne's public API
 
 ---
 
-## 📋 TODO - Fyne Features Not Yet Wrapped
+## Widgets Not Yet Implemented
 
-### High Priority - Core Widgets
+### High Priority
 
-#### Input Widgets
-- [ ] **Checkbox** - Boolean toggle with label
-  ```typescript
-  checkbox("Accept terms", (checked) => { ... })
-  ```
+| Widget | Fyne Type | Description | Suggested Demo App |
+|--------|-----------|-------------|-------------------|
+| **Activity** | `widget.Activity` | Loading/busy spinner | `loading-states.ts` - Show spinners during async operations |
+| **Icon** | `widget.Icon` | Theme icon display | `icon-gallery.ts` - Display all available theme icons |
+| **FileIcon** | `widget.FileIcon` | File type icon | `file-browser.ts` - Simple file browser with icons |
+| **SelectEntry** | `widget.SelectEntry` | Searchable dropdown | `country-picker.ts` - Searchable country selector |
+| **CheckGroup** | `widget.CheckGroup` | Multiple checkboxes | `preferences.ts` - Settings panel with grouped options |
+| **ProgressBarInfinite** | `widget.ProgressBarInfinite` | Indeterminate progress | Note: May already work via `progressbar(0, true)` - verify |
 
-- [ ] **Radio** - Radio button groups
-  ```typescript
-  radioGroup(["Option 1", "Option 2"], (selected) => { ... })
-  ```
+### Medium Priority
 
-- [ ] **Select** - Dropdown/combobox
-  ```typescript
-  select(["Red", "Green", "Blue"], (value) => { ... })
-  ```
-
-- [ ] **Slider** - Value slider
-  ```typescript
-  slider(0, 100, 50, (value) => { ... })
-  ```
-
-- [ ] **MultiLineEntry** - Multi-line text input
-  ```typescript
-  multiLineEntry("Enter multiple lines...")
-  ```
-
-- [ ] **PasswordEntry** - Password input field
-  ```typescript
-  passwordEntry("Enter password...")
-  ```
-
-#### Display Widgets
-- [ ] **ProgressBar** - Progress indicator
-  ```typescript
-  progressBar(0.5)  // 50%
-  progressBar()     // Infinite/indeterminate
-  ```
-
-- [ ] **ProgressBarInfinite** - Indeterminate progress
-  ```typescript
-  progressBarInfinite()
-  ```
-
-- [ ] **Separator** - Visual separator line
-  ```typescript
-  separator()
-  ```
-
-- [ ] **Hyperlink** - Clickable URL
-  ```typescript
-  hyperlink("Click here", "https://example.com")
-  ```
-
-- [ ] **Icon** - Icon display
-  ```typescript
-  icon(theme.InfoIcon())
-  ```
-
-- [ ] **Image** - Image from file/URL
-  ```typescript
-  image("/path/to/image.png")
-  imageFromURL("https://example.com/image.png")
-  ```
-
-#### Complex Widgets
-- [ ] **List** - Scrollable list with templates
-  ```typescript
-  list(items, (item) => label(item.name))
-  ```
-
-- [ ] **Table** - Grid of data
-  ```typescript
-  table(data, columns)
-  ```
-
-- [ ] **Tree** - Hierarchical tree view
-  ```typescript
-  tree(rootNode)
-  ```
-
-- [ ] **FileIcon** - File with icon
-  ```typescript
-  fileIcon("/path/to/file.txt")
-  ```
-
-- [ ] **Accordion** - Collapsible sections
-  ```typescript
-  accordion([
-    { title: "Section 1", content: vbox(...) },
-    { title: "Section 2", content: vbox(...) }
-  ])
-  ```
-
-- [ ] **Card** - Card container with title
-  ```typescript
-  card("Title", "Subtitle", () => {
-    vbox(() => { ... })
-  })
-  ```
-
-- [ ] **Form** - Labeled form fields
-  ```typescript
-  form([
-    { label: "Name", widget: entry() },
-    { label: "Age", widget: entry() }
-  ])
-  ```
-
-- [ ] **RichText** - Formatted text
-  ```typescript
-  richText([
-    { text: "Bold", bold: true },
-    { text: "Italic", italic: true }
-  ])
-  ```
+| Widget | Fyne Type | Description | Suggested Demo App |
+|--------|-----------|-------------|-------------------|
+| **Calendar** | `widget.Calendar` | Date picker widget | `appointment-scheduler.ts` - Date selection UI |
+| **DateEntry** | `widget.DateEntry` | Date input field | `event-form.ts` - Event creation with date fields |
+| **TextGrid** | `widget.TextGrid` | Monospace text grid | `terminal-emulator.ts` - Simple terminal display |
+| **PopUp** | `widget.PopUp` | Floating overlay | `tooltip-demo.ts` - Custom tooltips and popovers |
+| **PopUpMenu** | `widget.PopUpMenu` | Floating menu | Already have context menus - verify coverage |
+| **Menu** | `widget.Menu` | Standalone menu widget | `command-palette.ts` - Searchable command menu |
 
 ---
 
-### High Priority - Containers & Layouts
+## Containers Not Yet Implemented
 
-#### Container Widgets
-- [ ] **Scroll** - Scrollable container
-  ```typescript
-  scroll(() => {
-    vbox(() => {
-      // Long content...
-    })
-  })
-  ```
-
-- [ ] **Split** - Resizable split pane
-  ```typescript
-  splitHorizontal(() => label("Left"), () => label("Right"))
-  splitVertical(() => label("Top"), () => label("Bottom"))
-  ```
-
-- [ ] **AppTabs** - Tabbed interface
-  ```typescript
-  tabs([
-    { title: "Tab 1", content: () => vbox(...) },
-    { title: "Tab 2", content: () => vbox(...) }
-  ])
-  ```
-
-#### Layout Types
-- [ ] **GridLayout** - Grid with equal cells
-  ```typescript
-  grid(2, () => {  // 2 columns
-    button("1")
-    button("2")
-    button("3")
-    button("4")
-  })
-  ```
-
-- [ ] **GridWrap** - Wrapping grid
-  ```typescript
-  gridWrap(3, () => { ... })  // 3 items per row
-  ```
-
-- [ ] **BorderLayout** - Positioned at edges
-  ```typescript
-  border({
-    top: label("Header"),
-    left: label("Sidebar"),
-    center: label("Content"),
-    right: label("Right"),
-    bottom: label("Footer")
-  })
-  ```
-
-- [ ] **CenterLayout** - Centered content
-  ```typescript
-  center(() => button("Centered"))
-  ```
-
-- [ ] **MaxLayout** - Full size children
-  ```typescript
-  max(() => {
-    // Children fill entire space
-  })
-  ```
-
-- [ ] **FormLayout** - Two-column form
-  ```typescript
-  formLayout(() => {
-    formRow("Name:", entry())
-    formRow("Age:", entry())
-  })
-  ```
-
-- [ ] **PaddedLayout** - Add padding
-  ```typescript
-  padded(() => vbox(...))
-  ```
+| Container | Fyne Type | Description | Suggested Demo App |
+|-----------|-----------|-------------|-------------------|
+| **Padded** | `container.NewPadded` | Inset padding | Add as option to existing containers |
+| **Stack** | `container.NewStack` | Layered/stacked objects | `card-stack.ts` - Overlapping card UI |
+| **DocTabs** | `container.DocTabs` | Tabs with close buttons | `text-editor.ts` - Multi-document editor |
+| **InnerWindow** | `container.InnerWindow` | Window within canvas | `mdi-demo.ts` - Multiple document interface |
+| **Navigation** | `container.Navigation` | Stack-based navigation | `wizard.ts` - Multi-step wizard with back/forward |
+| **AdaptiveGrid** | `container.NewAdaptiveGrid` | Responsive grid | `photo-gallery.ts` - Responsive image grid |
+| **Clip** | `container.Clip` | Clipping region | Utility for other widgets |
+| **ThemeOverride** | `container.ThemeOverride` | Scoped theming | `theme-zones.ts` - Different themes in regions |
 
 ---
 
-### High Priority - Dialogs
+## Dialogs Not Yet Implemented
 
-- [ ] **Information Dialog**
-  ```typescript
-  showInfo("Title", "Message")
-  ```
-
-- [ ] **Error Dialog**
-  ```typescript
-  showError("Error", "Something went wrong")
-  ```
-
-- [ ] **Confirm Dialog**
-  ```typescript
-  confirm("Are you sure?", (confirmed) => { ... })
-  ```
-
-- [ ] **File Open Dialog**
-  ```typescript
-  openFile((file) => { ... })
-  ```
-
-- [ ] **File Save Dialog**
-  ```typescript
-  saveFile((file) => { ... })
-  ```
-
-- [ ] **Folder Dialog**
-  ```typescript
-  openFolder((folder) => { ... })
-  ```
-
-- [ ] **Color Picker**
-  ```typescript
-  pickColor((color) => { ... })
-  ```
-
-- [ ] **Custom Dialog**
-  ```typescript
-  dialog("Title", () => {
-    vbox(() => { ... })
-  }, {
-    onConfirm: () => { ... },
-    onCancel: () => { ... }
-  })
-  ```
+| Dialog | Fyne Function | Description | Suggested Demo App |
+|--------|---------------|-------------|-------------------|
+| **FolderOpen** | `dialog.ShowFolderOpen` | Folder picker | `project-opener.ts` - Select project directory |
+| **ColorPicker** | `dialog.ShowColorPicker` | Color selection | `drawing-app.ts` - Simple paint program |
+| **EntryDialog** | `dialog.ShowEntryDialog` | Quick text input | `rename-dialog.ts` - Rename file/item |
+| **FormDialog** | `dialog.ShowForm` | Form in dialog | `new-contact.ts` - Add contact form dialog |
+| **CustomDialog** | `dialog.NewCustom` | Custom dialog content | `about-dialog.ts` - Custom about box |
+| **ProgressDialog** | `dialog.ShowProgress` | Progress in dialog | `download-manager.ts` - Download with progress |
 
 ---
 
-### Medium Priority - Advanced Features
+## System Features Not Yet Implemented
 
-#### Menus
-- [ ] **Menu Bar**
-  ```typescript
-  menuBar([
-    menu("File", [
-      menuItem("New", () => { ... }),
-      menuSeparator(),
-      menuItem("Exit", () => { ... })
-    ]),
-    menu("Edit", [...])
-  ])
-  ```
+### Platform Integration
 
-- [ ] **Context Menu**
-  ```typescript
-  contextMenu(widget, [
-    menuItem("Copy", () => { ... }),
-    menuItem("Paste", () => { ... })
-  ])
-  ```
+| Feature | Fyne Package | Description | Suggested Demo App |
+|---------|--------------|-------------|-------------------|
+| **System Tray** | `fyne.Driver.SystemTray` | Tray icon with menu | `background-app.ts` - App that minimizes to tray |
+| **Notifications** | `fyne.App.SendNotification` | Desktop notifications | `reminder-app.ts` - Send system notifications |
+| **Clipboard** | `fyne.Clipboard` | Copy/paste support | `clipboard-manager.ts` - Clipboard history |
+| **Drag & Drop** | Widget `Draggable`/`Droppable` | File/widget drag | `kanban-board.ts` - Drag cards between columns |
+| **Preferences** | `fyne.App.Preferences` | Persistent settings | `settings-app.ts` - Save/load user preferences |
 
-#### Toolbar
-- [ ] **Toolbar**
-  ```typescript
-  toolbar([
-    toolbarAction("New", icon, () => { ... }),
-    toolbarSeparator(),
-    toolbarAction("Save", icon, () => { ... })
-  ])
-  ```
+### Data Binding
 
-#### Canvas & Drawing
-- [ ] **Canvas** - Direct drawing
-  ```typescript
-  canvas((context) => {
-    context.drawLine(x1, y1, x2, y2)
-    context.drawRectangle(x, y, w, h)
-    context.drawCircle(x, y, radius)
-  })
-  ```
-
-- [ ] **Custom Renderer** - Custom widget rendering
-  ```typescript
-  customWidget((canvas, size) => {
-    // Custom drawing code
-  })
-  ```
-
-#### Themes & Styling
-- [ ] **Theme Support**
-  ```typescript
-  setTheme('dark')
-  setTheme('light')
-  ```
-
-- [ ] **Custom Colors**
-  ```typescript
-  setColor(widget, color)
-  ```
-
-- [ ] **Font Customization**
-  ```typescript
-  setFont(widget, font)
-  ```
-
-#### Animation
-- [ ] **Animation API**
-  ```typescript
-  animate(widget, {
-    from: 0,
-    to: 100,
-    duration: 1000,
-    onUpdate: (value) => { ... }
-  })
-  ```
+| Feature | Fyne Package | Description | Suggested Demo App |
+|---------|--------------|-------------|-------------------|
+| **Data Binding** | `data/binding` | Reactive data binding | `reactive-form.ts` - Auto-syncing form fields |
+| **Validation** | `data/validation` | Input validation | `registration-form.ts` - Validated sign-up form |
 
 ---
 
-### Medium Priority - Window Features
+## Canvas & Drawing API
 
-- [ ] **Window Sizing**
-  ```typescript
-  window({
-    title: "App",
-    width: 800,
-    height: 600,
-    minWidth: 400,
-    minHeight: 300,
-    maxWidth: 1200,
-    maxHeight: 900
-  })
-  ```
-
-- [ ] **Window Position**
-  ```typescript
-  setWindowPosition(x, y)
-  centerWindow()
-  ```
-
-- [ ] **Window State**
-  ```typescript
-  maximizeWindow()
-  minimizeWindow()
-  fullscreenWindow()
-  ```
-
-- [ ] **Multiple Windows**
-  ```typescript
-  const win1 = window({ title: "Window 1" }, ...)
-  const win2 = window({ title: "Window 2" }, ...)
-  ```
-
-- [ ] **Window Events**
-  ```typescript
-  onWindowClose(() => { ... })
-  onWindowResize((width, height) => { ... })
-  onWindowFocus(() => { ... })
-  ```
+| Feature | Fyne Type | Description | Suggested Demo App |
+|---------|-----------|-------------|-------------------|
+| **Canvas** | `canvas.*` | Drawing primitives | `whiteboard.ts` - Freehand drawing |
+| **Line** | `canvas.Line` | Line drawing | Part of whiteboard |
+| **Circle** | `canvas.Circle` | Circle/ellipse | `diagram-editor.ts` - Shape diagrams |
+| **Rectangle** | `canvas.Rectangle` | Rectangle drawing | Part of diagram editor |
+| **Text** | `canvas.Text` | Canvas text | Part of diagram editor |
+| **Raster** | `canvas.Raster` | Pixel drawing | `pixel-art.ts` - Pixel art editor |
+| **LinearGradient** | `canvas.LinearGradient` | Gradient fills | `gradient-picker.ts` - Gradient editor |
 
 ---
 
-### Lower Priority - Platform-Specific
+## Advanced Theming
 
-#### System Tray
-- [ ] **System Tray Icon**
-  ```typescript
-  systemTray({
-    icon: icon,
-    menu: [
-      menuItem("Show", () => { ... }),
-      menuItem("Quit", () => { ... })
-    ]
-  })
-  ```
-
-#### Notifications
-- [ ] **Desktop Notifications**
-  ```typescript
-  notify("Title", "Message")
-  ```
-
-#### Clipboard
-- [ ] **Clipboard Access**
-  ```typescript
-  copyToClipboard(text)
-  pasteFromClipboard((text) => { ... })
-  ```
-
-#### Drag & Drop
-- [ ] **Drag and Drop**
-  ```typescript
-  onDrop(widget, (files) => { ... })
-  ```
+| Feature | Description | Suggested Demo App |
+|---------|-------------|-------------------|
+| **Custom Themes** | Define custom color schemes | `theme-creator.ts` - Build custom themes |
+| **Per-Widget Colors** | Override widget colors | Requires Fyne theme customization |
+| **Custom Fonts** | Load custom font files | `font-preview.ts` - Font selector |
 
 ---
 
-### Testing Enhancements
+## Window Features Not Yet Implemented
 
-#### TsyneTest Extensions
-- [ ] **Screenshot Capture**
-  ```typescript
-  await ctx.screenshot("test-result.png")
-  ```
-
-- [ ] **Visual Regression Testing**
-  ```typescript
-  await ctx.expectScreenshotToMatch("baseline.png")
-  ```
-
-- [ ] **Video Recording**
-  ```typescript
-  const test = new TsyneTest({ record: true })
-  ```
-
-- [ ] **Accessibility Testing**
-  ```typescript
-  await ctx.expectAccessible()
-  ```
-
-- [ ] **Performance Profiling**
-  ```typescript
-  const metrics = await ctx.getPerformanceMetrics()
-  ```
-
-- [ ] **Network Request Mocking**
-  ```typescript
-  await ctx.mockRequest("/api/data", { data: [...] })
-  ```
-
-- [ ] **Custom Selectors**
-  ```typescript
-  ctx.getByTestId("submit-button")
-  ctx.getByRole("button")
-  ctx.getByLabel("Email")
-  ```
+| Feature | Fyne Method | Description | Suggested Demo App |
+|---------|-------------|-------------|-------------------|
+| **Min/Max Size** | `Window.SetMinSize/SetMaxSize` | Size constraints | Add to window options |
+| **Always On Top** | `Window.SetOnTop` | Keep window on top | `sticky-notes.ts` - Floating notes |
+| **Window Icon** | `Window.SetIcon` | Custom window icon | Add to window options |
+| **Close Intercept** | `Window.SetCloseIntercept` | Confirm before close | `unsaved-changes.ts` - Prompt on close |
+| **Multiple Windows** | Multiple `Window` instances | Multi-window apps | `multi-window.ts` - Secondary windows |
+| **Fullscreen Toggle** | Already implemented | Verify working | - |
 
 ---
 
-## 🎯 Suggested Implementation Order
+## Testing Enhancements
 
-### Phase 1: Essential Widgets (1-2 weeks)
-1. Checkbox
-2. Select/Dropdown
-3. ProgressBar
-4. Scroll container
-5. Grid layout
-
-### Phase 2: Common Dialogs (1 week)
-1. Info/Error dialogs
-2. Confirm dialog
-3. File open/save dialogs
-
-### Phase 3: Advanced Widgets (2-3 weeks)
-1. Table
-2. List
-3. Tabs (AppTabs)
-4. Split containers
-5. Radio buttons
-
-### Phase 4: Polish (1-2 weeks)
-1. Menu bar
-2. Toolbar
-3. Window sizing/positioning
-4. Theme support
-
-### Phase 5: Advanced Features (ongoing)
-1. Canvas/drawing
-2. Drag & drop
-3. System tray
-4. Animations
-5. Custom widgets
+| Feature | Description | Suggested Demo |
+|---------|-------------|----------------|
+| **getByTestId** | Select by data-testid | Add testId option to widgets |
+| **getByRole** | Select by ARIA role | Accessibility selectors |
+| **getByLabel** | Select by form label | Form testing |
+| **Visual Regression** | Screenshot comparison | `visual-regression.test.ts` |
+| **Accessibility Audit** | a11y validation | `accessibility.test.ts` |
 
 ---
 
-## 🤝 Contributing
+## Implementation Priority
 
-Want to help implement missing features? See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+### Phase 1: Complete Widget Coverage
+1. Activity (loading spinner)
+2. Icon & FileIcon
+3. SelectEntry (searchable dropdown)
+4. CheckGroup
+5. Calendar & DateEntry
 
-**Adding a new widget typically involves:**
+### Phase 2: Missing Dialogs
+1. FolderOpen
+2. ColorPicker
+3. EntryDialog
+4. FormDialog
 
-1. **Go bridge** (`bridge/main.go`):
-   - Add `handleCreate{Widget}` function
-   - Register in `handleMessage` switch
-   - Set up event handlers
+### Phase 3: System Integration
+1. Clipboard
+2. Notifications
+3. Preferences/Storage
+4. System Tray
 
-2. **TypeScript widget** (`src/widgets.ts`):
-   - Create widget class extending `Widget`
-   - Implement constructor with bridge communication
-   - Add to container stack
-
-3. **Export** (`src/index.ts`):
-   - Export factory function
-   - Add TypeScript types
-
-4. **Tests**:
-   - Add TsyneTest integration tests
-   - Update examples
-
-5. **Documentation**:
-   - Update README
-   - Add to examples
-
----
-
-## 📊 Feature Parity Tracking
-
-| Category | Fyne Features | Tsyne Features | Coverage |
-|----------|---------------|---------------|----------|
-| **Basic Widgets** | 20+ | 3 | 15% |
-| **Containers** | 10+ | 2 | 20% |
-| **Layouts** | 8+ | 2 | 25% |
-| **Dialogs** | 10+ | 0 | 0% |
-| **Menus** | 5+ | 0 | 0% |
-| **Canvas** | Full API | 0 | 0% |
-| **Themes** | Full API | 0 | 0% |
-| **Testing** | Basic | Advanced | 120% ⭐ |
-
-**Overall Coverage: ~15%**
-
-*(Tsyne excels at testing with TsyneTest, but has limited widget coverage)*
+### Phase 4: Advanced Features
+1. Canvas/Drawing API
+2. Drag & Drop
+3. Data Binding
+4. Custom Themes
 
 ---
 
-## 🎓 Learning Resources
+## Contributing
 
-To implement new features, refer to:
+Each new feature should include:
 
-- [Fyne Widget Documentation](https://developer.fyne.io/widget/)
-- [Fyne Container Documentation](https://developer.fyne.io/container/)
-- [Fyne Layout Documentation](https://developer.fyne.io/container/layouts)
-- [Tsyne Architecture Guide](ARCHITECTURE.md)
-- [Existing Widget Examples](src/widgets.ts)
+1. **Go bridge handler** in `bridge/`
+2. **TypeScript class** in `src/widgets.ts`
+3. **Export** in `src/index.ts`
+4. **Demo app** in `examples/`
+5. **Test** in `examples/*.test.ts`
+6. **README update** with API docs
 
----
-
-## 📝 Notes
-
-- **Testing First**: TsyneTest is actually more advanced than Fyne's built-in testing
-- **Focus on Common**: Implement commonly-used widgets first
-- **API Design**: Keep declarative, terse syntax
-- **Examples**: Each new widget should have an example
-- **Tests**: Each widget needs both Jest (if applicable) and TsyneTest coverage
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-## Version Goals
+## References
 
-### v0.2.0 - Essential Widgets
-- Checkbox, Select, ProgressBar
-- Scroll container
-- Grid layout
-- Basic dialogs
-
-### v0.3.0 - Advanced Widgets
-- Table, List, Tabs
-- Split containers
-- Menu bar
-
-### v0.4.0 - Polish & Themes
-- Theme support
-- Window management
-- Toolbar
-
-### v1.0.0 - Production Ready
-- All common widgets
-- Comprehensive documentation
-- Full test coverage
-- Stable API
+- [Fyne Widget Docs](https://docs.fyne.io/explore/widgets.html)
+- [Fyne API Reference](https://pkg.go.dev/fyne.io/fyne/v2)
+- [Fyne Container Package](https://pkg.go.dev/fyne.io/fyne/v2/container)
+- [Fyne Dialog Package](https://pkg.go.dev/fyne.io/fyne/v2/dialog)
 
 ---
 
-**Last Updated:** 2025-11-09
-**Current Version:** 0.1.0
-**Next Milestone:** v0.2.0 - Essential Widgets
+**Last Updated:** 2025-11-22

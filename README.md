@@ -35,7 +35,7 @@ Tsyne isn't the right choice for every project. Consider these limitations:
 - **No Mobile Support**: Go+Fyne can target iOS and Android directly, but Tsyne requires Node.js runtime which isn't available on mobile platforms. If you need mobile, use Fyne directly in Go.
 - **Requires Node.js Runtime**: Pure Go/Fyne apps compile to single standalone binaries. Tsyne apps need Node.js installed, making distribution more complex.
 - **IPC Overhead**: The JSON-RPC bridge between TypeScript and Go adds latency compared to native Fyne. For performance-critical UIs with rapid updates, native Fyne may be better.
-- **Partial Fyne Coverage**: Tsyne wraps ~15% of Fyne's API (see [ROADMAP.md](docs/ROADMAP.md)). Advanced Fyne features like custom canvas drawing, animations, or specialized widgets may not be available.
+- **Partial Fyne Coverage**: Tsyne wraps ~50% of Fyne's widget API (see [ROADMAP.md](docs/ROADMAP.md)). Canvas drawing, system tray, and some specialized widgets are not yet available.
 - **Fyne's Styling Limitations**: Per-widget color customization is limited by Fyne's architecture. Font styling works well, but colors require custom themes.
 
 **When to use Fyne directly instead:**
@@ -80,7 +80,7 @@ Use standard Node.js debugging: `node --inspect` or your IDE's debugger. Console
 
 **Q: What percentage of Fyne is wrapped?**
 
-About 15%. See [docs/ROADMAP.md](docs/ROADMAP.md) for what's implemented and planned. PRs welcome for missing widgets!
+About 50% of widgets and containers. See [docs/ROADMAP.md](docs/ROADMAP.md) for what's remaining. PRs welcome for missing features!
 
 **Q: Can pages in browser mode communicate with the server beyond navigation?**
 
