@@ -44,6 +44,44 @@ Tsyne isn't the right choice for every project. Consider these limitations:
 - Performance-critical real-time UIs
 - Full access to Fyne's complete widget library
 
+## FAQ
+
+**Q: What's the difference between regular app mode and browser mode?**
+
+Regular app mode creates standalone desktop applications. Browser mode loads TypeScript pages from HTTP servers dynamically, enabling server-driven UIs where the backend controls the UI (similar to traditional web apps but with native widgets). See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md).
+
+**Q: Can I use npm packages in my Tsyne app?**
+
+Yes! Any npm package that doesn't require browser DOM APIs will work. This includes validators, API clients, date libraries, and business logic packages. Share code between your Tsyne desktop app and web frontend.
+
+**Q: How does testing work?**
+
+Tsyne provides two testing frameworks:
+- **TsyneTest** - For testing regular Tsyne apps/components ([docs/TESTING.md](docs/TESTING.md))
+- **TsyneBrowserTest** - For testing browser mode pages ([docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md))
+
+Both support headed and headless modes with Playwright-inspired APIs.
+
+**Q: Can I style widgets with CSS?**
+
+Tsyne has a CSS-like styling system for fonts (family, size, style, weight). Per-widget colors are limited by Fyne's architecture - use themes for color customization. See the Widget Styling System section below.
+
+**Q: Why TypeScript instead of Go for the UI logic?**
+
+TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.
+
+**Q: How do I debug my app?**
+
+Use standard Node.js debugging: `node --inspect` or your IDE's debugger. Console.log works normally. For UI issues, enable `TSYNE_HEADED=1` during testing to see the actual UI.
+
+**Q: What percentage of Fyne is wrapped?**
+
+About 15%. See [docs/ROADMAP.md](docs/ROADMAP.md) for what's implemented and planned. PRs welcome for missing widgets!
+
+**Q: Can pages in browser mode communicate with the server beyond navigation?**
+
+Pages are TypeScript code with full access to Node.js APIs. Use `fetch()`, `axios`, or any HTTP client to make API calls to your backend while the page is displayed.
+
 ## Installation
 
 ```bash
@@ -346,340 +384,31 @@ npm run test:calculator:headed
 
 ## Browser Testing with TsyneBrowserTest
 
-Tsyne includes **TsyneBrowserTest**, a testing framework specifically designed for testing Tsyne Browser pages. It automatically starts a test HTTP server and provides navigation helpers for testing multi-page browser applications.
-
-### Quick Browser Test Example
+Tsyne includes **TsyneBrowserTest**, a Playwright-inspired testing framework for testing Tsyne Browser pages. It automatically starts a test HTTP server and provides navigation helpers.
 
 ```typescript
 import { browserTest } from 'tsyne';
 
 browserTest(
-  'Test /home',  // Use path-based names
+  'Test /home',
   [
-    {
-      path: '/',
-      code: `
-        const { vbox, label, button } = tsyne;
-        vbox(() => {
-          label('Home Page');
-          button('Go to About', () => {
-            browserContext.changePage('/about');
-          });
-        });
-      `
-    },
-    {
-      path: '/about',
-      code: `
-        const { vbox, label } = tsyne;
-        vbox(() => {
-          label('About Page');
-        });
-      `
-    }
+    { path: '/', code: `const { vbox, label } = tsyne; vbox(() => { label('Home'); });` },
+    { path: '/about', code: `const { vbox, label } = tsyne; vbox(() => { label('About'); });` }
   ],
   async (bt) => {
     await bt.createBrowser('/');
-    const ctx = bt.getContext();
     bt.assertUrl('/');
-
-    // Verify page content
-    const heading = await ctx.findWidget({ text: 'Home Page' });
-    if (!heading) {
-      throw new Error('Page heading not found');
-    }
-
-    // Find and click navigation button
-    const aboutButton = await ctx.findWidget({ text: 'Go to About' });
-    if (!aboutButton) {
-      throw new Error('Navigation button not found');
-    }
-    await ctx.clickWidget(aboutButton.id);
-
-    // Verify navigation occurred
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await bt.navigate('/about');
     bt.assertUrl('/about');
-
-    // Verify About page loaded
-    const aboutHeading = await ctx.findWidget({ text: 'About Page' });
-    if (!aboutHeading) {
-      throw new Error('About page not loaded');
-    }
   }
 );
 ```
 
-### TsyneBrowserTest Features
-
-**Automatic Test Server:**
-- Starts HTTP server on random port
-- Serves test pages defined in test code
-- No need for separate server process
-
-**Navigation Helpers:**
-```typescript
-await bt.navigate('/about');        // Navigate to a path
-await bt.back();                    // Go back in history
-await bt.forward();                 // Go forward in history
-await bt.reload();                  // Reload current page
-await bt.waitForNavigation();       // Wait for navigation to complete (after clicks)
-```
-
-**Assertions:**
-```typescript
-bt.assertUrl('/expected-path');  // Assert current URL
-const url = bt.getCurrentUrl();  // Get current URL
-```
-
-**TestContext Access:**
-```typescript
-const ctx = bt.getContext();
-const widget = await ctx.findWidget({ text: 'Submit' });
-await ctx.clickWidget(widget.id);
-```
-
-### Complete Test Example
-
-```typescript
-import { browserTest, TsyneBrowserTest } from 'tsyne';
-
-// Test 1: Basic page content verification
-browserTest(
-  'Test /',  // Use path-based test names
-  [
-    {
-      path: '/',
-      code: `
-        const { vbox, label } = tsyne;
-        vbox(() => {
-          label('Welcome to Home Page');
-          label('This is the main content');
-        });
-      `
-    }
-  ],
-  async (bt: TsyneBrowserTest) => {
-    await bt.createBrowser('/');
-    const ctx = bt.getContext();
-    bt.assertUrl('/');
-
-    // Verify heading
-    const welcomeLabel = await ctx.findWidget({ text: 'Welcome to Home Page' });
-    if (!welcomeLabel) {
-      throw new Error('Welcome label not found');
-    }
-    console.log('✓ Page heading found');
-
-    // Verify content
-    const content = await ctx.findWidget({ text: 'This is the main content' });
-    if (!content) {
-      throw new Error('Page content not found');
-    }
-    console.log('✓ Page content verified');
-  }
-);
-
-// Test 2: Form submission and navigation
-browserTest(
-  'Test /form',
-  [
-    {
-      path: '/',
-      code: `
-        const { vbox, entry, button } = tsyne;
-        let nameEntry;
-        vbox(() => {
-          nameEntry = entry('Enter name');
-          button('Submit', () => {
-            browserContext.changePage('/thanks');
-          });
-        });
-      `
-    },
-    {
-      path: '/thanks',
-      code: `
-        const { vbox, label } = tsyne;
-        vbox(() => {
-          label('Thank you!');
-        });
-      `
-    }
-  ],
-  async (bt: TsyneBrowserTest) => {
-    await bt.createBrowser('/');
-    const ctx = bt.getContext();
-    bt.assertUrl('/');
-
-    // Find and verify submit button
-    const submitButton = await ctx.findWidget({ text: 'Submit' });
-    if (!submitButton) {
-      throw new Error('Submit button not found');
-    }
-    console.log('✓ Submit button found');
-
-    // Click submit and navigate
-    await ctx.clickWidget(submitButton.id);
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Verify navigation and content
-    bt.assertUrl('/thanks');
-    const thanksLabel = await ctx.findWidget({ text: 'Thank you!' });
-    if (!thanksLabel) {
-      throw new Error('Thanks page not loaded');
-    }
-    console.log('✓ Navigation successful, thanks page loaded');
-  }
-);
-
-// Test 3: Back/Forward navigation
-browserTest(
-  'Test /navigation',
-  [
-    {
-      path: '/',
-      code: `const { vbox, label } = tsyne; vbox(() => { label('Home'); });`
-    },
-    {
-      path: '/page2',
-      code: `const { vbox, label } = tsyne; vbox(() => { label('Page 2'); });`
-    }
-  ],
-  async (bt: TsyneBrowserTest) => {
-    await bt.createBrowser('/');
-    const ctx = bt.getContext();
-    bt.assertUrl('/');
-
-    // Verify home page
-    const homeLabel = await ctx.findWidget({ text: 'Home' });
-    if (!homeLabel) {
-      throw new Error('Home page not loaded');
-    }
-
-    // Navigate to page 2
-    await bt.navigate('/page2');
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/page2');
-
-    // Verify page 2 content
-    const page2Label = await ctx.findWidget({ text: 'Page 2' });
-    if (!page2Label) {
-      throw new Error('Page 2 not loaded');
-    }
-
-    // Test back navigation
-    await bt.back();
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/');
-
-    // Test forward navigation
-    await bt.forward();
-    await new Promise(resolve => setTimeout(resolve, 200));
-    bt.assertUrl('/page2');
-    console.log('✓ Back/forward navigation works correctly');
-  }
-);
-```
-
-### Running Browser Tests
-
-```bash
-# Build the project
-npm run build
-
-# Run browser tests (headless by default)
-node examples/web-features.test.js
-
-# Run with visible browser windows
-TSYNE_HEADED=1 node examples/web-features.test.js
-```
-
-**Test Runner Pattern:**
-```javascript
-const { browserTest, runBrowserTests } = require('tsyne');
-
-// Register tests using browserTest()
-browserTest('Test /page1', [...], async (bt) => { ... });
-browserTest('Test /page2', [...], async (bt) => { ... });
-
-// Run all registered tests sequentially
-(async () => {
-  await runBrowserTests();
-})();
-```
-
-### Helper Function API
-
-**`browserTest(name, pages, testFn, options?)`**
-
-Registers a browser test to run later (tests execute when `runBrowserTests()` is called).
-
-Parameters:
-- **`name`**: Test name - use path-based naming like "Test /images" or "Test /home"
-- **`pages`**: Array of test pages with `path` and `code` properties
-- **`testFn`**: Test function receiving `TsyneBrowserTest` instance
-- **`options`**: Optional configuration (port, headed mode)
-
-**`runBrowserTests()`**
-
-Runs all registered browser tests sequentially. Returns `Promise<void>`.
-
-**Best Practices:**
-- Use path-based test names: "Test /images" not "should load images page"
-- Add multiple assertions per test to verify actual content
-- Verify headings, sections, buttons, and specific text present
-- Test interactive features (clicks, navigation) not just page loads
-
-### TsyneBrowserTest Class API
-
-**Methods:**
-- **`addPages(pages)`**: Add test pages to be served
-- **`createBrowser(initialPath?, options?)`**: Start server and create browser
-- **`navigate(path)`**: Navigate to a path
-- **`back()`**: Navigate back in history
-- **`forward()`**: Navigate forward in history
-- **`reload()`**: Reload current page
-- **`assertUrl(expected)`**: Assert current URL matches expected
-- **`getCurrentUrl()`**: Get current URL
-- **`getContext()`**: Get TestContext for widget interaction
-- **`cleanup()`**: Stop server and quit browser
-
-**Fluent-Selenium Style API:**
-
-TsyneBrowserTest includes a complete fluent-selenium inspired API for elegant test writing:
-
-```typescript
-// Retry element location with within()
-await ctx.getByText("Submit").within(5000).click();
-
-// Wait for elements to disappear with without()
-await ctx.getByID("loading").without(3000);
-
-// Fluent assertions that return locator for chaining
-await ctx.getByID("status").shouldBe("Success");
-await ctx.getByID("message").shouldContain("error");
-await ctx.getByID("email").shouldMatch(/^.+@.+$/);
-await ctx.getByID("status").shouldNotBe("Error");
-
-// Wait for navigation after clicks
-await ctx.getByText("Next Page").click();
-await bt.waitForNavigation();
-
-// Enhanced expect assertions
-await ctx.expect(locator).toMatchText(/pattern/);
-await ctx.expect(locator).toNotHaveText("wrong");
-await ctx.expect(locator).toNotBeVisible();
-await ctx.expect(locator).toHaveCountGreaterThan(3);
-await ctx.expect(locator).toHaveCountLessThan(10);
-```
-
-**See [docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md) for complete documentation on TsyneBrowserTest, including:**
+**See [docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md)** for complete documentation including:
 - Playwright-inspired locators, actions, and expectations
-- Fluent-selenium style API (within, without, shouldBe, shouldContain, shouldMatch)
-- Integration with Jest, Mocha, Vitest, and other test runners
-- Assertion library flexibility (Jest, Chai, assert, etc.)
-- Complete API reference and best practices
-- **[examples/web-features.test.js](examples/web-features.test.js)**, **[examples/widget-interactions.test.js](examples/widget-interactions.test.js)**, and **[examples/fluent-api.test.ts](examples/fluent-api.test.ts)** for comprehensive examples
+- Fluent-selenium style API (within, without, shouldBe, shouldContain)
+- Integration with Jest, Mocha, Vitest
+- Complete API reference and examples
 
 ## API Reference
 
@@ -1446,409 +1175,32 @@ npx tsyne-browser http://localhost:3000/
 # Navigate to Context Menu Demo page and right-click on todo items
 ```
 
-## Browser System
+## Browser Mode
 
-Tsyne includes a Swiby-inspired browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how Mosaic, Firefox, or Chrome load HTML pages. This enables server-side page generation from any language or framework (Spring, Sinatra, Flask, Express, etc.).
+Tsyne includes a Swiby-inspired browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
 
-**Important:** Tsyne's page grammar is **TypeScript** (not JavaScript or HTML). Pages are TypeScript code that use the Tsyne API.
-
-### Why a Browser?
-
-Unlike HTML+JavaScript which mixes declarative markup with imperative scripts, Tsyne pages are seamless pseudo-declarative TypeScript. The browser:
-
-- **Loads pages from HTTP/HTTPS servers** - Standard GET requests with 200, 302, 404 support
-- **Provides navigation functions** - `back()`, `forward()`, `changePage(url)`
-- **Server-agnostic** - Any language can serve Tsyne pages (Node.js, Java, Ruby, Python, Go)
-- **Pseudo-declarative** - Pages are pure TypeScript using the Tsyne API
-
-### Quick Start
-
-**Run the browser:**
 ```bash
-# With a URL parameter
+# Run the browser with a URL
 npx tsyne-browser http://localhost:3000/
-
-# Or any other URL serving Tsyne TypeScript pages
-npx tsyne-browser https://example.com/tsyne/index
 ```
 
-**Create a browser in code:**
 ```typescript
-import { createBrowser } from 'tsyne';
-
-async function main() {
-  const browser = await createBrowser('http://localhost:3000/', {
-    title: 'Tsyne Browser',
-    width: 900,
-    height: 700
-  });
-
-  await browser.run();
-}
-
-main();
-```
-
-**Create a server (Node.js filesystem-based example):**
-```javascript
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
-const PAGES_DIR = path.join(__dirname, 'pages');
-
-// Map URL to filesystem path (/ → pages/index.ts, /about → pages/about.ts)
-function urlToFilePath(url) {
-  const cleanUrl = url.split('?')[0].split('#')[0].replace(/^\//, '');
-  const filePath = cleanUrl === '' ? 'index.ts' : cleanUrl + '.ts';
-  return path.join(PAGES_DIR, filePath);
-}
-
-http.createServer((req, res) => {
-  const filePath = urlToFilePath(req.url);
-
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      res.writeHead(404, { 'Content-Type': 'text/typescript' });
-      res.end(fs.readFileSync(path.join(PAGES_DIR, '404.ts'), 'utf8'));
-    } else {
-      res.writeHead(200, { 'Content-Type': 'text/typescript' });
-      res.end(data);
-    }
-  });
-}).listen(3000);
-```
-
-**Example page** (`pages/index.ts`):
-```typescript
-// Home Page - TypeScript content for Tsyne Browser
+// Example page (pages/index.ts)
 const { vbox, label, button } = tsyne;
 
 vbox(() => {
   label('Welcome to Tsyne Browser!');
-  label('');
-  label('Current URL: ' + browserContext.currentUrl);
-  label('');
-
   button('Go to About', () => {
     browserContext.changePage('/about');
   });
 });
 ```
 
-**Another page** (`pages/about.ts`):
-```typescript
-// About Page
-const { vbox, label, button, separator } = tsyne;
-
-vbox(() => {
-  label('About Tsyne Browser');
-  separator();
-  label('');
-  label('Pages are TypeScript code served from the server.');
-  label('');
-
-  button('Back', () => {
-    browserContext.back();
-  });
-});
-```
-
-### Browser API
-
-#### Browser Class
-
-**Constructor:**
-```typescript
-new Browser(options?: {
-  title?: string;
-  width?: number;
-  height?: number;
-})
-```
-
-**Methods:**
-- **`changePage(url: string): Promise<void>`** - Navigate to a URL and load the page
-- **`back(): Promise<void>`** - Navigate back in history
-- **`forward(): Promise<void>`** - Navigate forward in history
-- **`reload(): Promise<void>`** - Reload current page
-- **`stop(): void`** - Stop loading current page
-- **`run(): Promise<void>`** - Start the browser application
-- **`getApp(): App`** - Get the underlying App instance
-
-**Browser Chrome:**
-The browser window includes:
-- **Address bar** - Entry widget showing current URL (editable)
-- **← Back button** - Navigate to previous page in history
-- **→ Forward button** - Navigate to next page in history
-- **⟳ Reload button** - Refresh current page
-- **✕ Stop button** - Cancel loading (visible only when loading)
-- **Go button** - Navigate to URL in address bar
-- **Loading indicator** - "Loading..." text (visible when loading)
-
-**Menu Bar:**
-Standard browser menus are provided:
-- **File** - Close Window
-- **View** - Reload, Stop, View Page Source
-- **History** - Back, Forward (disabled when not available)
-- **Help** - About Tsyne Browser
-- **[Page Menus]** - Custom menus added by pages
-
-**Factory Function:**
-```typescript
-createBrowser(
-  initialUrl?: string,
-  options?: {
-    title?: string;
-    width?: number;
-    height?: number;
-  }
-): Promise<Browser>
-```
-
-#### BrowserContext
-
-Every loaded page receives a `browserContext` object with navigation functions:
-
-```typescript
-interface BrowserContext {
-  back: () => Promise<void>;
-  forward: () => Promise<void>;
-  changePage: (url: string) => Promise<void>;
-  reload: () => Promise<void>;
-  stop: () => void;
-  addPageMenu: (menuLabel: string, items: PageMenuItem[]) => void;
-  currentUrl: string;
-  isLoading: boolean;
-  browser: Browser;
-}
-```
-
-**Navigation functions:**
-- `back()` - Navigate to previous page
-- `forward()` - Navigate to next page
-- `changePage(url)` - Navigate to a new URL
-- `reload()` - Refresh current page
-- `stop()` - Stop loading
-
-**Page Menu API:**
-Pages can add custom menus to the browser menu bar:
-
-```typescript
-browserContext.addPageMenu('Tools', [
-  {
-    label: 'Say Hello',
-    onSelected: () => { console.log('Hello!'); }
-  },
-  {
-    label: 'Disabled Item',
-    onSelected: () => {},
-    disabled: true
-  },
-  {
-    label: 'Checked Item',
-    checked: true,
-    onSelected: () => {}
-  }
-]);
-```
-
-Custom menus appear in the menu bar and are removed when navigating away from the page.
-
-Pages also receive a `tsyne` object with all Tsyne API functions.
-
-### Page Format
-
-**Tsyne pages are TypeScript code** (not HTML or JavaScript) that execute in the browser context. They receive two parameters:
-
-1. **`browserContext`** - Navigation and browser functions
-2. **`tsyne`** - All Tsyne API functions (window, vbox, label, button, etc.)
-
-**Example page** (`pages/contact.ts`):
-```typescript
-// Contact Page - TypeScript content for Tsyne Browser
-const { vbox, hbox, label, button, entry } = tsyne;
-
-let nameEntry;
-let emailEntry;
-
-vbox(() => {
-  label('Contact Us');
-  label('');
-
-  label('Name:');
-  nameEntry = entry('Your name');
-  label('');
-
-  label('Email:');
-  emailEntry = entry('your@email.com');
-  label('');
-
-  hbox(() => {
-    button('Submit', async () => {
-      const name = await nameEntry.getText();
-      const email = await emailEntry.getText();
-      console.log('Submitted:', name, email);
-
-      // Navigate to thank you page
-      browserContext.changePage('/thanks');
-    });
-
-    button('Cancel', () => {
-      browserContext.back();
-    });
-  });
-});
-```
-
-### HTTP Support
-
-The browser supports standard HTTP features:
-
-- **GET requests** - Only GET is used (pages are code, not data)
-- **Status codes:**
-  - `200` - Success, page is rendered
-  - `301/302` - Redirects are followed automatically
-  - `404` - Can serve custom 404 error pages
-- **Content-Type** - Pages should be served as `text/typescript` or `text/plain`
-- **Timeouts** - 10 second timeout for requests
-
-### Page File Structure
-
-Pages are stored as `.ts` files with URL mapping:
-
-```
-pages/
-├── index.ts          # / → Home page
-├── about.ts          # /about → About page
-├── contact.ts        # /contact → Contact form
-├── form.ts           # /form → Form demo
-├── thanks.ts         # /thanks → Thank you page
-└── 404.ts            # (not found) → Error page
-```
-
-For nested URLs, use directories:
-```
-pages/
-├── products/
-│   ├── index.ts      # /products → Products listing
-│   └── detail.ts     # /products/detail → Product detail
-└── admin/
-    ├── index.ts      # /admin → Admin dashboard
-    └── users.ts      # /admin/users → User management
-```
-
-### Server Implementation
-
-Servers can be implemented in any language. The only requirement is to serve TypeScript code that uses the Tsyne API from `.ts` files.
-
-**Node.js/Express:**
-```javascript
-app.get('/page', (req, res) => {
-  res.type('text/typescript');
-  res.send('const { vbox, label } = tsyne; ...');
-});
-```
-
-**Python/Flask:**
-```python
-@app.route('/page')
-def page():
-    return '''
-        const { vbox, label } = tsyne;
-        // ... page code
-    ''', 200, {'Content-Type': 'text/typescript'}
-```
-
-**Ruby/Sinatra:**
-```ruby
-get '/page' do
-  content_type 'text/typescript'
-  <<~TSYNE
-    const { vbox, label } = tsyne;
-    // ... page code
-  TSYNE
-end
-```
-
-**Java/Spring:**
-```java
-@GetMapping("/page")
-public ResponseEntity<String> page() {
-    return ResponseEntity.ok()
-        .contentType(MediaType.valueOf("text/typescript"))
-        .body("const { vbox, label } = tsyne; ...");
-}
-```
-
-### Navigation Flow
-
-1. **Browser loads initial URL** via `createBrowser(url)`
-2. **Server returns TypeScript code** for the page
-3. **Browser executes code** with `browserContext` and `tsyne` parameters
-4. **Page builds UI** using Tsyne API
-5. **User clicks navigation** button calling `browserContext.changePage(url)`
-6. **Process repeats** for new page
-
-History is maintained automatically with back/forward support.
-
-### Examples
-
-**Browser Application:**
-- **`cli/tsynebrowser.ts`** - Tsyne Browser executable
-
-**Sample Server:**
-- **`examples/server.js`** - Filesystem-based Node.js HTTP server
-  - Reads `.ts` files from `pages/` directory
-  - Maps URLs to files (/ → index.ts, /about → about.ts)
-  - Serves TypeScript code with proper Content-Type
-  - Custom 404 handling with 404.ts
-
-**Sample Pages:**
-- **`examples/pages/index.ts`** - Home page with navigation
-- **`examples/pages/about.ts`** - About page with information
-- **`examples/pages/contact.ts`** - Contact form with input fields
-- **`examples/pages/form.ts`** - Form demo with various widgets
-- **`examples/pages/thanks.ts`** - Thank you confirmation page
-- **`examples/pages/404.ts`** - Custom 404 error page
-
-**Run the examples:**
-```bash
-npm run build
-
-# Terminal 1: Start the sample server
-node examples/server.js
-
-# Terminal 2: Run Tsyne Browser with URL parameter
-npx tsyne-browser http://localhost:3000/
-```
-
-The browser will connect to the specified URL and load the Tsyne TypeScript page. The browser window includes:
-- **Address bar** - Shows current URL, type new URLs to navigate
-- **Navigation buttons** - Back (←), Forward (→), Reload (⟳)
-- **Content area** - Displays the loaded Tsyne page (scrollable)
-
-Click navigation buttons or type URLs to explore different pages served by the server.
-
-### Use Cases
-
-- **Desktop applications with remote pages** - Centrally managed UI served to desktop browsers
-- **Dynamic UIs** - Update pages server-side without redeploying desktop apps
-- **Multi-language backends** - Use your preferred server language (Java, Ruby, Python, etc.)
-- **Content management** - Serve different pages based on user permissions or data
-- **Progressive enhancement** - Start with static pages, add server logic later
-
-### Comparison to Web Browsers
-
-| Feature | Web Browsers (HTML) | Tsyne Browser |
-|---------|-------------------|--------------|
-| **Content Format** | HTML + CSS + JS | **TypeScript** (Tsyne API) |
-| **Declarative/Imperative** | Mixed (HTML declarative, JS imperative) | **Seamless pseudo-declarative TypeScript** |
-| **Navigation** | `<a>` tags, `window.location` | `browserContext.changePage()` |
-| **Back/Forward** | Browser built-in | `browserContext.back/forward()` |
-| **Server Language** | Any (serves HTML) | Any (serves TypeScript) |
-| **Rendering** | Browser engine (Blink, Gecko) | Tsyne/Fyne (native widgets) |
-| **Platform** | Web | Desktop (macOS, Windows, Linux) |
+**See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md)** for complete documentation including:
+- Browser API and BrowserContext
+- Server implementations (Node.js, Python, Ruby, Java)
+- Page format and navigation flow
+- Examples and use cases
 
 ## State Management and Architectural Patterns
 
@@ -2396,6 +1748,10 @@ Special thanks to the open source libraries that make Tsyne possible:
 - **[examples/mvvm-todo.ts](examples/mvvm-todo.ts)** - MVVM pattern with ViewModels
 - **[examples/mvp-login.ts](examples/mvp-login.ts)** - MVP pattern with passive views
 - **[examples/dialog-state.ts](examples/dialog-state.ts)** - Dialog state passing pattern
+
+### Browser Mode
+- **[docs/BROWSER_MODE.md](docs/BROWSER_MODE.md)** - Complete guide to browser mode (loading pages from HTTP servers)
+- **[docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md)** - Testing framework for browser pages
 
 ### Testing
 - **[docs/TESTING.md](docs/TESTING.md)** - Complete guide to TsyneTest testing framework (for apps/components)

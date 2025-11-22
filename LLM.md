@@ -4,7 +4,7 @@
 
 TypeScript → Go bridge → Fyne.io native GUI toolkit. Pseudo-declarative MVC inspired by AngularJS 1.0.
 
-There's a **regular app mode** for standalone desktop applications, and a **browser mode** that loads Tsyne TypeScript pages from HTTP servers (similar to how web browsers load HTML pages). See `src/browser.ts` for the Swiby-inspired browser implementation
+There's a **regular app mode** for standalone desktop applications, and a **browser mode** that loads Tsyne TypeScript pages from HTTP servers (similar to how web browsers load HTML pages). See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md) for full documentation and `src/browser.ts` for the Swiby-inspired browser implementation
 
 
 ## Architecture
