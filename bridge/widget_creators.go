@@ -1586,7 +1586,7 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) {
 
 	// Set stroke color if provided
 	if colorHex, ok := msg.Payload["strokeColor"].(string); ok {
-		line.StrokeColor = parseHexColor(colorHex)
+		line.StrokeColor = parseHexColorSimple(colorHex)
 	}
 
 	// Set stroke width if provided
@@ -1613,12 +1613,12 @@ func (b *Bridge) handleCreateCanvasCircle(msg Message) {
 
 	// Set fill color if provided
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		circle.FillColor = parseHexColor(fillHex)
+		circle.FillColor = parseHexColorSimple(fillHex)
 	}
 
 	// Set stroke color if provided
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		circle.StrokeColor = parseHexColor(strokeHex)
+		circle.StrokeColor = parseHexColorSimple(strokeHex)
 	}
 
 	// Set stroke width if provided
@@ -1657,12 +1657,12 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) {
 
 	// Set fill color if provided
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		rect.FillColor = parseHexColor(fillHex)
+		rect.FillColor = parseHexColorSimple(fillHex)
 	}
 
 	// Set stroke color if provided
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		rect.StrokeColor = parseHexColor(strokeHex)
+		rect.StrokeColor = parseHexColorSimple(strokeHex)
 	}
 
 	// Set stroke width if provided
@@ -1702,7 +1702,7 @@ func (b *Bridge) handleCreateCanvasText(msg Message) {
 
 	// Set text color if provided
 	if colorHex, ok := msg.Payload["color"].(string); ok {
-		canvasText.Color = parseHexColor(colorHex)
+		canvasText.Color = parseHexColorSimple(colorHex)
 	}
 
 	// Set text size if provided
@@ -1877,10 +1877,10 @@ func (b *Bridge) handleCreateCanvasLinearGradient(msg Message) {
 	var endColor color.Color = color.Black
 
 	if startHex, ok := msg.Payload["startColor"].(string); ok {
-		startColor = parseHexColor(startHex)
+		startColor = parseHexColorSimple(startHex)
 	}
 	if endHex, ok := msg.Payload["endColor"].(string); ok {
-		endColor = parseHexColor(endHex)
+		endColor = parseHexColorSimple(endHex)
 	}
 
 	gradient := canvas.NewLinearGradient(startColor, endColor, 0)
@@ -1949,7 +1949,7 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) {
 
 	// Update stroke color if provided
 	if colorHex, ok := msg.Payload["strokeColor"].(string); ok {
-		line.StrokeColor = parseHexColor(colorHex)
+		line.StrokeColor = parseHexColorSimple(colorHex)
 	}
 
 	// Update stroke width if provided
@@ -1993,12 +1993,12 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) {
 
 	// Update fill color if provided
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		circle.FillColor = parseHexColor(fillHex)
+		circle.FillColor = parseHexColorSimple(fillHex)
 	}
 
 	// Update stroke color if provided
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		circle.StrokeColor = parseHexColor(strokeHex)
+		circle.StrokeColor = parseHexColorSimple(strokeHex)
 	}
 
 	// Update stroke width if provided
@@ -2054,12 +2054,12 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) {
 
 	// Update fill color if provided
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		rect.FillColor = parseHexColor(fillHex)
+		rect.FillColor = parseHexColorSimple(fillHex)
 	}
 
 	// Update stroke color if provided
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		rect.StrokeColor = parseHexColor(strokeHex)
+		rect.StrokeColor = parseHexColorSimple(strokeHex)
 	}
 
 	// Update stroke width if provided
@@ -2120,7 +2120,7 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) {
 
 	// Update color if provided
 	if colorHex, ok := msg.Payload["color"].(string); ok {
-		canvasText.Color = parseHexColor(colorHex)
+		canvasText.Color = parseHexColorSimple(colorHex)
 	}
 
 	// Update text size if provided
@@ -2164,12 +2164,12 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 
 	// Update start color if provided
 	if startHex, ok := msg.Payload["startColor"].(string); ok {
-		gradient.StartColor = parseHexColor(startHex)
+		gradient.StartColor = parseHexColorSimple(startHex)
 	}
 
 	// Update end color if provided
 	if endHex, ok := msg.Payload["endColor"].(string); ok {
-		gradient.EndColor = parseHexColor(endHex)
+		gradient.EndColor = parseHexColorSimple(endHex)
 	}
 
 	// Update angle if provided
@@ -2185,8 +2185,9 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 	})
 }
 
-// parseHexColor parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color
-func parseHexColor(hexStr string) color.Color {
+// parseHexColorSimple parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color
+// This is a simpler version that returns a default color on error, used by canvas primitives
+func parseHexColorSimple(hexStr string) color.Color {
 	// Remove leading # if present
 	if len(hexStr) > 0 && hexStr[0] == '#' {
 		hexStr = hexStr[1:]
