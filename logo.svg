@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+  <!-- Tsyne Bridge Logo - Inspired by the Tyne Bridge -->
+  <defs>
+    <!-- Gradient for the main arch -->
+    <linearGradient id="archGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3178C6;stop-opacity:1" /> <!-- TypeScript blue -->
+      <stop offset="50%" style="stop-color:#00ADD8;stop-opacity:1" /> <!-- Go cyan -->
+      <stop offset="100%" style="stop-color:#3178C6;stop-opacity:1" /> <!-- TypeScript blue -->
+    </linearGradient>
+    <!-- Gradient for towers -->
+    <linearGradient id="towerGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#2D5A8A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A90C2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Water reflection effect -->
+  <ellipse cx="100" cy="105" rx="85" ry="8" fill="#1a365d" opacity="0.3"/>
+
+  <!-- Main arch - iconic Tyne Bridge shape -->
+  <path d="M 20,85
+           Q 20,30 100,25
+           Q 180,30 180,85"
+        fill="none"
+        stroke="url(#archGradient)"
+        stroke-width="8"
+        stroke-linecap="round"/>
+
+  <!-- Secondary inner arch for depth -->
+  <path d="M 30,85
+           Q 30,40 100,35
+           Q 170,40 170,85"
+        fill="none"
+        stroke="url(#archGradient)"
+        stroke-width="3"
+        stroke-linecap="round"
+        opacity="0.5"/>
+
+  <!-- Left tower (Art Deco style) -->
+  <rect x="12" y="55" width="16" height="35" rx="2" fill="url(#towerGradient)"/>
+  <rect x="14" y="50" width="12" height="8" rx="1" fill="url(#towerGradient)"/>
+  <rect x="16" y="45" width="8" height="7" rx="1" fill="#3178C6"/>
+
+  <!-- Right tower (Art Deco style) -->
+  <rect x="172" y="55" width="16" height="35" rx="2" fill="url(#towerGradient)"/>
+  <rect x="174" y="50" width="12" height="8" rx="1" fill="url(#towerGradient)"/>
+  <rect x="176" y="45" width="8" height="7" rx="1" fill="#00ADD8"/>
+
+  <!-- Road deck -->
+  <rect x="20" y="83" width="160" height="6" rx="1" fill="#4A5568"/>
+
+  <!-- Suspension cables from arch to deck -->
+  <g stroke="#5A8BC2" stroke-width="1.5" opacity="0.7">
+    <line x1="40" y1="50" x2="40" y2="83"/>
+    <line x1="60" y1="38" x2="60" y2="83"/>
+    <line x1="80" y1="32" x2="80" y2="83"/>
+    <line x1="100" y1="29" x2="100" y2="83"/>
+    <line x1="120" y1="32" x2="120" y2="83"/>
+    <line x1="140" y1="38" x2="140" y2="83"/>
+    <line x1="160" y1="50" x2="160" y2="83"/>
+  </g>
+
+  <!-- Small decorative elements on towers -->
+  <circle cx="20" cy="60" r="2" fill="#fff" opacity="0.6"/>
+  <circle cx="180" cy="60" r="2" fill="#fff" opacity="0.6"/>
+</svg>

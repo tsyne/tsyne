@@ -1,6 +1,16 @@
-# Tsyne
+<p align="center">
+  <img src="logo-full.svg" alt="Tsyne Logo" width="300">
+</p>
 
-**Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js**
+<p align="center">
+  <strong>Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js</strong>
+</p>
+
+<p align="center">
+  <em>Bridging TypeScript and Go, inspired by the bridges over the River Tyne</em>
+</p>
+
+---
 
 Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API inspired by Ruby's Shoes DSL and QML.
 
