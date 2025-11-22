@@ -269,6 +269,22 @@ Tsyne provides common dialog methods on the Window class for user interactions:
   - `filename`: Default filename (optional, defaults to 'untitled.txt')
   - Returns: `Promise<string | null>` - selected file path or null if cancelled
 
+### Custom Dialogs
+
+- **`window.showCustom(title, contentBuilder, options?)`**: Show a custom dialog with arbitrary content
+  - `title`: Dialog title
+  - `contentBuilder`: Function that builds the dialog content using the app context
+  - `options.dismissText`: Text for the dismiss button (optional, default 'Close')
+  - `options.onClosed`: Callback when dialog is closed (optional)
+  - Returns: `Promise<void>` - resolves when dialog is closed
+
+- **`window.showCustomConfirm(title, contentBuilder, options?)`**: Show a custom dialog with confirm/cancel buttons
+  - `title`: Dialog title
+  - `contentBuilder`: Function that builds the dialog content using the app context
+  - `options.confirmText`: Text for the confirm button (optional, default 'OK')
+  - `options.dismissText`: Text for the dismiss button (optional, default 'Cancel')
+  - Returns: `Promise<boolean>` - true if confirmed, false if cancelled
+
 ### Dialog Examples
 
 ```typescript
@@ -297,6 +313,28 @@ if (filePath) {
 const savePath = await win.showFileSave('document.txt');
 if (savePath) {
   console.log('Save to:', savePath);
+}
+
+// Custom dialog with arbitrary content
+await win.showCustom('About', () => {
+  app.vbox(() => {
+    app.label('My Application v1.0');
+    app.label('Built with Tsyne');
+  });
+}, { dismissText: 'OK' });
+
+// Custom confirm dialog
+const accepted = await win.showCustomConfirm('License Agreement', () => {
+  app.vbox(() => {
+    app.label('Terms and Conditions');
+    app.label('Do you accept the license?');
+  });
+}, {
+  confirmText: 'Accept',
+  dismissText: 'Decline'
+});
+if (accepted) {
+  // User accepted the license
 }
 ```
 

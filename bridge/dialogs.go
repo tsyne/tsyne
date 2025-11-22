@@ -177,3 +177,114 @@ func (b *Bridge) handleShowFileSave(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleShowCustom(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	title := msg.Payload["title"].(string)
+	contentID := msg.Payload["contentId"].(string)
+	dismissText, _ := msg.Payload["dismissText"].(string)
+	callbackID, hasCallback := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		})
+		return
+	}
+
+	// Default dismiss text
+	if dismissText == "" {
+		dismissText = "Close"
+	}
+
+	// Create the custom dialog
+	customDialog := dialog.NewCustom(title, dismissText, content, win)
+
+	// Set callback for when dialog is closed
+	if hasCallback {
+		customDialog.SetOnClosed(func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{"callbackId": callbackID, "closed": true},
+			})
+		})
+	}
+
+	customDialog.Show()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleShowCustomConfirm(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	title := msg.Payload["title"].(string)
+	contentID := msg.Payload["contentId"].(string)
+	confirmText, _ := msg.Payload["confirmText"].(string)
+	dismissText, _ := msg.Payload["dismissText"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		})
+		return
+	}
+
+	// Default button texts
+	if confirmText == "" {
+		confirmText = "OK"
+	}
+	if dismissText == "" {
+		dismissText = "Cancel"
+	}
+
+	// Create the custom confirm dialog
+	customDialog := dialog.NewCustomConfirm(title, confirmText, dismissText, content, func(confirmed bool) {
+		b.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{"callbackId": callbackID, "confirmed": confirmed},
+		})
+	}, win)
+
+	customDialog.Show()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
