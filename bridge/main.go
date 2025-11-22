@@ -126,6 +126,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowFileOpen(msg)
 	case "showFileSave":
 		b.handleShowFileSave(msg)
+	case "showEntryDialog":
+		b.handleShowEntryDialog(msg)
 	case "resizeWindow":
 		b.handleResizeWindow(msg)
 	case "setWindowTitle":
