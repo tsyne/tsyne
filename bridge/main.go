@@ -317,6 +317,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetDraggable(msg)
 	case "setDroppable":
 		b.handleSetDroppable(msg)
+	case "createInnerWindow":
+		b.handleCreateInnerWindow(msg)
+	case "innerWindowClose":
+		b.handleInnerWindowClose(msg)
+	case "setInnerWindowTitle":
+		b.handleSetInnerWindowTitle(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
