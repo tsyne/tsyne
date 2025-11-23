@@ -43,7 +43,7 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 | **Navigation** | `container.Navigation` | Stack-based navigation | `wizard.ts` - Multi-step wizard with back/forward |
 | **AdaptiveGrid** | `container.NewAdaptiveGrid` | Responsive grid | `photo-gallery.ts` - Responsive image grid |
 | **Clip** | `container.Clip` | Clipping region | Utility for other widgets |
-| **ThemeOverride** | `container.ThemeOverride` | Scoped theming | `theme-zones.ts` - Different themes in regions |
+| ~~**ThemeOverride**~~ | ~~`container.ThemeOverride`~~ | ~~Scoped theming~~ | ~~`theme-zones.ts` - Different themes in regions~~ ✅ Implemented |
 
 ---
 

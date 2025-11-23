@@ -2603,3 +2603,34 @@ export class Padded {
     ctx.addToCurrentContainer(this.id);
   }
 }
+
+/**
+ * ThemeOverride container - applies a specific theme (dark/light) to its contents
+ * This allows different regions of the UI to have different themes
+ */
+export class ThemeOverride {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, variant: 'dark' | 'light', builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('themeoverride');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('ThemeOverride must have exactly one child');
+    }
+
+    ctx.bridge.send('createThemeOverride', {
+      id: this.id,
+      childId: children[0],
+      variant
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+}
