@@ -2867,3 +2867,172 @@ export class DateEntry extends Widget {
     });
   }
 }
+
+/**
+ * Style options for TextGrid cells
+ */
+export interface TextGridStyle {
+  /** Foreground (text) color - hex string like "#ff0000" or named color like "red" */
+  fgColor?: string;
+  /** Background color - hex string like "#00ff00" or named color like "green" */
+  bgColor?: string;
+  /** Bold text */
+  bold?: boolean;
+  /** Italic text */
+  italic?: boolean;
+  /** Monospace font */
+  monospace?: boolean;
+}
+
+/**
+ * Options for creating a TextGrid
+ */
+export interface TextGridOptions {
+  /** Initial text content */
+  text?: string;
+  /** Show line numbers on the left */
+  showLineNumbers?: boolean;
+  /** Show whitespace characters (spaces, tabs) */
+  showWhitespace?: boolean;
+}
+
+/**
+ * TextGrid widget - monospace text grid with per-cell styling
+ * Ideal for terminal emulators, code editors, and text-based displays
+ */
+export class TextGrid extends Widget {
+  constructor(ctx: Context, options?: TextGridOptions | string) {
+    const id = ctx.generateId('textgrid');
+    super(ctx, id);
+
+    const payload: any = { id };
+
+    // Support both string (legacy) and options object
+    if (typeof options === 'string') {
+      payload.text = options;
+    } else if (options) {
+      if (options.text !== undefined) payload.text = options.text;
+      if (options.showLineNumbers !== undefined) payload.showLineNumbers = options.showLineNumbers;
+      if (options.showWhitespace !== undefined) payload.showWhitespace = options.showWhitespace;
+    }
+
+    ctx.bridge.send('createTextGrid', payload);
+    ctx.addToCurrentContainer(id);
+  }
+
+  /**
+   * Set the entire text content of the grid
+   * @param text Text content (can include newlines for multiple rows)
+   */
+  async setText(text: string): Promise<void> {
+    await this.ctx.bridge.send('setTextGridText', {
+      widgetId: this.id,
+      text
+    });
+  }
+
+  /**
+   * Get the entire text content of the grid
+   * @returns The current text content
+   */
+  async getText(): Promise<string> {
+    const result = await this.ctx.bridge.send('getTextGridText', {
+      widgetId: this.id
+    });
+    return result.text;
+  }
+
+  /**
+   * Set a single cell's character and/or style
+   * @param row Row index (0-based)
+   * @param col Column index (0-based)
+   * @param char Single character to set (optional)
+   * @param style Style to apply (optional)
+   */
+  async setCell(row: number, col: number, char?: string, style?: TextGridStyle): Promise<void> {
+    const payload: any = {
+      widgetId: this.id,
+      row,
+      col
+    };
+
+    if (char !== undefined) {
+      payload.char = char;
+    }
+    if (style !== undefined) {
+      payload.style = style;
+    }
+
+    await this.ctx.bridge.send('setTextGridCell', payload);
+  }
+
+  /**
+   * Set an entire row's content and optionally style
+   * @param row Row index (0-based)
+   * @param text Text content for the row
+   * @param style Style to apply to all cells in the row (optional)
+   */
+  async setRow(row: number, text: string, style?: TextGridStyle): Promise<void> {
+    const payload: any = {
+      widgetId: this.id,
+      row,
+      text
+    };
+
+    if (style !== undefined) {
+      payload.style = style;
+    }
+
+    await this.ctx.bridge.send('setTextGridRow', payload);
+  }
+
+  /**
+   * Set the style of a single cell (without changing its character)
+   * @param row Row index (0-based)
+   * @param col Column index (0-based)
+   * @param style Style to apply
+   */
+  async setStyle(row: number, col: number, style: TextGridStyle): Promise<void> {
+    await this.ctx.bridge.send('setTextGridStyle', {
+      widgetId: this.id,
+      row,
+      col,
+      style
+    });
+  }
+
+  /**
+   * Set the style of a range of cells
+   * @param startRow Starting row index (0-based)
+   * @param startCol Starting column index (0-based)
+   * @param endRow Ending row index (inclusive)
+   * @param endCol Ending column index (inclusive)
+   * @param style Style to apply to all cells in the range
+   */
+  async setStyleRange(startRow: number, startCol: number, endRow: number, endCol: number, style: TextGridStyle): Promise<void> {
+    await this.ctx.bridge.send('setTextGridStyleRange', {
+      widgetId: this.id,
+      startRow,
+      startCol,
+      endRow,
+      endCol,
+      style
+    });
+  }
+
+  /**
+   * Append text to the grid (adds to the end)
+   * @param text Text to append
+   */
+  async append(text: string): Promise<void> {
+    const currentText = await this.getText();
+    await this.setText(currentText + text);
+  }
+
+  /**
+   * Clear all content from the grid
+   */
+  async clear(): Promise<void> {
+    await this.setText('');
+  }
+}
