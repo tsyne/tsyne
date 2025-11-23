@@ -2,6 +2,7 @@ import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
+import { BridgeInterface } from './fynebridge';
 
 export interface GrpcConnectionInfo {
   grpcPort: number;
@@ -24,7 +25,7 @@ export interface Event {
  * 3. Connect to gRPC server with auth token
  * 4. All subsequent communication via gRPC
  */
-export class GrpcBridgeConnection {
+export class GrpcBridgeConnection implements BridgeInterface {
   private process: ChildProcess;
   private client: any;
   private eventHandlers = new Map<string, (data: any) => void>();
@@ -224,7 +225,33 @@ export class GrpcBridgeConnection {
           if (response && !response.success && response.error) {
             reject(new Error(response.error));
           } else {
-            resolve(response?.result || {});
+            // Return the relevant response fields based on response type
+            // For responses with specific fields (widgetIds, text, etc.) return those directly
+            // For generic responses with result map, return result
+            if (response?.widgetIds !== undefined) {
+              resolve({ widgetIds: response.widgetIds });
+            } else if (response?.text !== undefined) {
+              resolve({ text: response.text });
+            } else if (response?.value !== undefined) {
+              resolve({ value: response.value });
+            } else if (response?.checked !== undefined) {
+              resolve({ checked: response.checked });
+            } else if (response?.widgets !== undefined) {
+              resolve({ widgets: response.widgets });
+            } else if (response?.id !== undefined) {
+              // WidgetInfoResponse
+              resolve({
+                id: response.id,
+                type: response.type,
+                text: response.text,
+                x: response.x,
+                y: response.y,
+                width: response.width,
+                height: response.height
+              });
+            } else {
+              resolve(response?.result || {});
+            }
           }
         }
       });

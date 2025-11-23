@@ -43,6 +43,8 @@ type Bridge struct {
 	callbacks      map[string]string              // widget ID -> callback ID
 	contextMenus   map[string]*fyne.Menu          // widget ID -> context menu
 	testMode       bool                           // true for headless testing
+	grpcMode       bool                           // true when running in gRPC mode (skip stdout writes)
+	grpcEventChan  chan Event                     // channel for gRPC event streaming
 	mu             sync.RWMutex
 	writer         *json.Encoder
 	widgetMeta     map[string]WidgetMetadata      // metadata for testing
@@ -581,6 +583,20 @@ func NewBridge(testMode bool) *Bridge {
 }
 
 func (b *Bridge) sendEvent(event Event) {
+	// In gRPC mode, events are sent via the gRPC stream channel
+	if b.grpcMode {
+		if b.grpcEventChan != nil {
+			select {
+			case b.grpcEventChan <- event:
+				// Event sent successfully
+			default:
+				// Channel full or closed, log and drop
+				log.Printf("Warning: gRPC event channel full, dropping event: %s", event.Type)
+			}
+		}
+		return
+	}
+
 	// IPC Safeguard #2: Mutex protection for stdout writes
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -599,6 +615,11 @@ func (b *Bridge) sendEvent(event Event) {
 }
 
 func (b *Bridge) sendResponse(resp Response) {
+	// In gRPC mode, responses are returned via gRPC, not stdout
+	if b.grpcMode {
+		return
+	}
+
 	// IPC Safeguard #2: Mutex protection for stdout writes
 	b.mu.Lock()
 	defer b.mu.Unlock()

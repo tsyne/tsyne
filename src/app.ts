@@ -1,4 +1,5 @@
-import { BridgeConnection } from './fynebridge';
+import { BridgeConnection, BridgeInterface } from './fynebridge';
+import { GrpcBridgeConnection } from './grpcbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
@@ -6,8 +7,12 @@ export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName }
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
+export type BridgeMode = 'stdio' | 'grpc';
+
 export interface AppOptions {
   title?: string;
+  /** Bridge communication mode: 'stdio' (default) or 'grpc' (binary protocol) */
+  bridgeMode?: BridgeMode;
 }
 
 /**
@@ -82,19 +87,39 @@ export interface FontInfo {
 }
 
 /**
+ * Get bridge mode from environment variable or options
+ */
+function getBridgeMode(options?: AppOptions): BridgeMode {
+  // Environment variable takes precedence
+  const envMode = process.env.TSYNE_BRIDGE_MODE;
+  if (envMode === 'grpc' || envMode === 'stdio') {
+    return envMode;
+  }
+  // Fall back to options or default
+  return options?.bridgeMode || 'stdio';
+}
+
+/**
  * App is the main application class
  */
 export class App {
   private ctx: Context;
   private windows: Window[] = [];
-  private bridge: BridgeConnection;
+  private bridge: BridgeInterface;
   public resources: ResourceManager;
 
   constructor(options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
     initializeGlobals();
 
-    this.bridge = new BridgeConnection(testMode);
+    // Create bridge based on mode (env var or options)
+    const mode = getBridgeMode(options);
+    if (mode === 'grpc') {
+      this.bridge = new GrpcBridgeConnection(testMode);
+    } else {
+      this.bridge = new BridgeConnection(testMode);
+    }
+
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);
   }
@@ -103,7 +128,7 @@ export class App {
     return this.ctx;
   }
 
-  getBridge(): BridgeConnection {
+  getBridge(): BridgeInterface {
     return this.bridge;
   }
 
