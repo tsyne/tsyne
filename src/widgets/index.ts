@@ -29,7 +29,8 @@ export {
   ThemeOverride,
   Navigation,
   NavigationOptions,
-  Popup
+  Popup,
+  MultipleWindows
 } from './containers';
 
 // Input widgets
@@ -80,5 +81,8 @@ export {
   CanvasRectangle,
   CanvasText,
   CanvasRaster,
-  CanvasLinearGradient
+  CanvasLinearGradient,
+  CanvasArc,
+  CanvasPolygon,
+  CanvasRadialGradient
 } from './canvas';

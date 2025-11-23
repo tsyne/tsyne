@@ -690,6 +690,49 @@ export class Window {
     return progressDialog;
   }
 
+  /**
+   * Shows a custom dialog without any buttons (no dismiss/confirm)
+   * Useful for non-dismissable loading overlays or modal content that must be closed programmatically
+   * @param title - Dialog title
+   * @param contentBuilder - Function that builds the dialog content
+   * @returns Object with hide() method to close the dialog programmatically
+   */
+  async showCustomWithoutButtons(
+    title: string,
+    contentBuilder: () => void
+  ): Promise<{ hide: () => Promise<void> }> {
+    // Build the content widget
+    this.ctx.pushWindow(this.id);
+    this.ctx.pushContainer();
+
+    contentBuilder();
+
+    const children = this.ctx.popContainer();
+    this.ctx.popWindow();
+
+    if (children.length === 0) {
+      return { hide: async () => {} };
+    }
+
+    const contentId = children[0];
+    const dialogId = this.ctx.generateId('dialog');
+
+    await this.ctx.bridge.send('showCustomWithoutButtons', {
+      windowId: this.id,
+      dialogId,
+      title,
+      contentId
+    });
+
+    return {
+      hide: async () => {
+        await this.ctx.bridge.send('hideCustomDialog', {
+          dialogId
+        });
+      }
+    };
+  }
+
   // ==================== Clipboard ====================
 
   /**

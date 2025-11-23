@@ -360,4 +360,174 @@ describe('Canvas Primitives', () => {
       expect(widgetInfo.some((w: any) => w.type === 'canvaslineargradient')).toBe(true);
     });
   });
+
+  describe('CanvasArc', () => {
+    it('should create a basic arc', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Arc Test' }, (win) => {
+          win.setContent(() => {
+            app.canvasArc({
+              x: 0, y: 0,
+              x2: 100, y2: 100,
+              startAngle: 0,
+              endAngle: Math.PI,
+              fillColor: '#FF0000'
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      expect(widgetInfo.some((w: any) => w.type === 'canvasarc')).toBe(true);
+    });
+
+    it('should create multiple arc segments for a pie chart', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Pie Chart Test' }, (win) => {
+          win.setContent(() => {
+            app.vbox(() => {
+              // Segment 1: 0 to 90 degrees
+              app.canvasArc({
+                x: 0, y: 0, x2: 100, y2: 100,
+                startAngle: 0, endAngle: Math.PI / 2,
+                fillColor: '#e74c3c'
+              });
+              // Segment 2: 90 to 180 degrees
+              app.canvasArc({
+                x: 0, y: 0, x2: 100, y2: 100,
+                startAngle: Math.PI / 2, endAngle: Math.PI,
+                fillColor: '#3498db'
+              });
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      const arcs = widgetInfo.filter((w: any) => w.type === 'canvasarc');
+      expect(arcs.length).toBe(2);
+    });
+  });
+
+  describe('CanvasPolygon', () => {
+    it('should create a triangle polygon', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Polygon Test' }, (win) => {
+          win.setContent(() => {
+            app.canvasPolygon({
+              points: [
+                { x: 50, y: 0 },
+                { x: 100, y: 100 },
+                { x: 0, y: 100 }
+              ],
+              fillColor: '#FF0000'
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      expect(widgetInfo.some((w: any) => w.type === 'canvaspolygon')).toBe(true);
+    });
+
+    it('should create a hexagon polygon', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Hexagon Test' }, (win) => {
+          win.setContent(() => {
+            const hexagonPoints = [];
+            for (let i = 0; i < 6; i++) {
+              const angle = (i * 2 * Math.PI) / 6 - Math.PI / 2;
+              hexagonPoints.push({
+                x: 50 + 50 * Math.cos(angle),
+                y: 50 + 50 * Math.sin(angle)
+              });
+            }
+            app.canvasPolygon({
+              points: hexagonPoints,
+              fillColor: '#9b59b6'
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      expect(widgetInfo.some((w: any) => w.type === 'canvaspolygon')).toBe(true);
+    });
+  });
+
+  describe('CanvasRadialGradient', () => {
+    it('should create a basic radial gradient', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Radial Gradient Test' }, (win) => {
+          win.setContent(() => {
+            app.canvasRadialGradient({
+              startColor: '#FFFFFF',
+              endColor: '#FF0000',
+              width: 100,
+              height: 100
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      expect(widgetInfo.some((w: any) => w.type === 'canvasradialgradient')).toBe(true);
+    });
+
+    it('should create a radial gradient with offset center', async () => {
+      const createTestApp = (app: App) => {
+        app.window({ title: 'Offset Radial Gradient Test' }, (win) => {
+          win.setContent(() => {
+            app.canvasRadialGradient({
+              startColor: '#FFFFFF',
+              endColor: '#3498db',
+              centerOffsetX: 0.3,
+              centerOffsetY: -0.3,
+              width: 150,
+              height: 100
+            });
+          });
+          win.show();
+        });
+      };
+
+      tsyneTest = new TsyneTest({ headed: false });
+      const testApp = await tsyneTest.createApp(createTestApp);
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      const widgetInfo = await ctx.getAllWidgets();
+      expect(widgetInfo.some((w: any) => w.type === 'canvasradialgradient')).toBe(true);
+    });
+  });
 });

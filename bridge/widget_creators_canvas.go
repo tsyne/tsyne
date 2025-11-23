@@ -625,6 +625,537 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateCanvasArc(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+
+	// Parse start and end angles (in radians)
+	var startAngle, endAngle float64 = 0, 3.14159 // Default half circle
+	if sa, ok := msg.Payload["startAngle"].(float64); ok {
+		startAngle = sa
+	}
+	if ea, ok := msg.Payload["endAngle"].(float64); ok {
+		endAngle = ea
+	}
+
+	// Set fill color if provided
+	fillColor := color.RGBA{R: 100, G: 100, B: 255, A: 255} // Default blue
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		fillColor = parseHexColorSimple(fillHex).(color.RGBA)
+	}
+
+	// Set stroke color if provided
+	var strokeColor color.Color = color.Transparent
+	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+		strokeColor = parseHexColorSimple(strokeHex)
+	}
+
+	// Set stroke width if provided
+	var strokeWidth float32 = 1
+	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+		strokeWidth = float32(sw)
+	}
+
+	// Set position and size
+	var x1, y1, x2, y2 float32 = 0, 0, 100, 100
+	if x, ok := msg.Payload["x"].(float64); ok {
+		x1 = float32(x)
+	}
+	if y, ok := msg.Payload["y"].(float64); ok {
+		y1 = float32(y)
+	}
+	if x, ok := msg.Payload["x2"].(float64); ok {
+		x2 = float32(x)
+	}
+	if y, ok := msg.Payload["y2"].(float64); ok {
+		y2 = float32(y)
+	}
+
+	// Store arc metadata for later use
+	b.mu.Lock()
+	if b.arcData == nil {
+		b.arcData = make(map[string]*ArcData)
+	}
+	b.arcData[widgetID] = &ArcData{
+		StartAngle:  startAngle,
+		EndAngle:    endAngle,
+		FillColor:   fillColor,
+		StrokeColor: strokeColor,
+		StrokeWidth: strokeWidth,
+		X1:          x1,
+		Y1:          y1,
+		X2:          x2,
+		Y2:          y2,
+	}
+	b.mu.Unlock()
+
+	// Create a raster that draws the arc
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		b.mu.RLock()
+		arcInfo, exists := b.arcData[widgetID]
+		b.mu.RUnlock()
+
+		if !exists {
+			return color.Transparent
+		}
+
+		// Calculate center and radius
+		centerX := float64(w) / 2
+		centerY := float64(h) / 2
+		radiusX := float64(w) / 2
+		radiusY := float64(h) / 2
+
+		// Calculate angle for current pixel
+		dx := float64(px) - centerX
+		dy := float64(py) - centerY
+
+		// Normalize to unit circle
+		nx := dx / radiusX
+		ny := dy / radiusY
+		dist := nx*nx + ny*ny
+
+		// Check if within the ellipse
+		if dist > 1.0 {
+			return color.Transparent
+		}
+
+		// Calculate angle (atan2 returns -pi to pi)
+		angle := atan2(ny, nx)
+		if angle < 0 {
+			angle += 2 * 3.14159265358979
+		}
+
+		// Check if angle is within arc range
+		start := arcInfo.StartAngle
+		end := arcInfo.EndAngle
+
+		// Normalize angles to 0-2pi range
+		for start < 0 {
+			start += 2 * 3.14159265358979
+		}
+		for end < 0 {
+			end += 2 * 3.14159265358979
+		}
+		start = float64Mod(start, 2*3.14159265358979)
+		end = float64Mod(end, 2*3.14159265358979)
+
+		// Check if angle falls within the arc
+		inArc := false
+		if start <= end {
+			inArc = angle >= start && angle <= end
+		} else {
+			inArc = angle >= start || angle <= end
+		}
+
+		if inArc {
+			return arcInfo.FillColor
+		}
+		return color.Transparent
+	})
+
+	width := x2 - x1
+	height := y2 - y1
+	if width < 10 {
+		width = 100
+	}
+	if height < 10 {
+		height = 100
+	}
+	raster.SetMinSize(fyne.NewSize(width, height))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasarc", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleUpdateCanvasArc(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	arcInfo, arcExists := b.arcData[widgetID]
+	b.mu.RUnlock()
+
+	if !exists || !arcExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Arc widget not found",
+		})
+		return
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an arc raster",
+		})
+		return
+	}
+
+	// Update arc data
+	b.mu.Lock()
+	if sa, ok := msg.Payload["startAngle"].(float64); ok {
+		arcInfo.StartAngle = sa
+	}
+	if ea, ok := msg.Payload["endAngle"].(float64); ok {
+		arcInfo.EndAngle = ea
+	}
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		arcInfo.FillColor = parseHexColorSimple(fillHex).(color.RGBA)
+	}
+	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+		arcInfo.StrokeColor = parseHexColorSimple(strokeHex)
+	}
+	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+		arcInfo.StrokeWidth = float32(sw)
+	}
+	b.mu.Unlock()
+
+	raster.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCreateCanvasPolygon(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+
+	// Parse fill color
+	fillColor := color.RGBA{R: 100, G: 100, B: 255, A: 255} // Default blue
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		fillColor = parseHexColorSimple(fillHex).(color.RGBA)
+	}
+
+	// Parse stroke color
+	var strokeColor color.Color = color.Transparent
+	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+		strokeColor = parseHexColorSimple(strokeHex)
+	}
+
+	// Parse stroke width
+	var strokeWidth float32 = 1
+	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+		strokeWidth = float32(sw)
+	}
+
+	// Parse points
+	var points []fyne.Position
+	if pts, ok := msg.Payload["points"].([]interface{}); ok {
+		for _, p := range pts {
+			if pt, ok := p.(map[string]interface{}); ok {
+				x := float32(pt["x"].(float64))
+				y := float32(pt["y"].(float64))
+				points = append(points, fyne.NewPos(x, y))
+			}
+		}
+	}
+
+	// Store polygon data
+	b.mu.Lock()
+	if b.polygonData == nil {
+		b.polygonData = make(map[string]*PolygonData)
+	}
+	b.polygonData[widgetID] = &PolygonData{
+		Points:      points,
+		FillColor:   fillColor,
+		StrokeColor: strokeColor,
+		StrokeWidth: strokeWidth,
+	}
+	b.mu.Unlock()
+
+	// Calculate bounding box
+	var minX, minY, maxX, maxY float32 = 0, 0, 100, 100
+	if len(points) > 0 {
+		minX, minY = points[0].X, points[0].Y
+		maxX, maxY = points[0].X, points[0].Y
+		for _, p := range points {
+			if p.X < minX {
+				minX = p.X
+			}
+			if p.Y < minY {
+				minY = p.Y
+			}
+			if p.X > maxX {
+				maxX = p.X
+			}
+			if p.Y > maxY {
+				maxY = p.Y
+			}
+		}
+	}
+
+	width := maxX - minX
+	height := maxY - minY
+	if width < 10 {
+		width = 100
+	}
+	if height < 10 {
+		height = 100
+	}
+
+	// Create a raster that draws the polygon using point-in-polygon algorithm
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		b.mu.RLock()
+		polyInfo, exists := b.polygonData[widgetID]
+		b.mu.RUnlock()
+
+		if !exists || len(polyInfo.Points) < 3 {
+			return color.Transparent
+		}
+
+		// Point in polygon test using ray casting
+		x := float32(px)
+		y := float32(py)
+		inside := false
+		n := len(polyInfo.Points)
+		j := n - 1
+
+		for i := 0; i < n; i++ {
+			xi := polyInfo.Points[i].X
+			yi := polyInfo.Points[i].Y
+			xj := polyInfo.Points[j].X
+			yj := polyInfo.Points[j].Y
+
+			if ((yi > y) != (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi) {
+				inside = !inside
+			}
+			j = i
+		}
+
+		if inside {
+			return polyInfo.FillColor
+		}
+		return color.Transparent
+	})
+
+	raster.SetMinSize(fyne.NewSize(width, height))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvaspolygon", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleUpdateCanvasPolygon(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	polyInfo, polyExists := b.polygonData[widgetID]
+	b.mu.RUnlock()
+
+	if !exists || !polyExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Polygon widget not found",
+		})
+		return
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a polygon raster",
+		})
+		return
+	}
+
+	// Update polygon data
+	b.mu.Lock()
+	if pts, ok := msg.Payload["points"].([]interface{}); ok {
+		var points []fyne.Position
+		for _, p := range pts {
+			if pt, ok := p.(map[string]interface{}); ok {
+				x := float32(pt["x"].(float64))
+				y := float32(pt["y"].(float64))
+				points = append(points, fyne.NewPos(x, y))
+			}
+		}
+		polyInfo.Points = points
+	}
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		polyInfo.FillColor = parseHexColorSimple(fillHex).(color.RGBA)
+	}
+	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+		polyInfo.StrokeColor = parseHexColorSimple(strokeHex)
+	}
+	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+		polyInfo.StrokeWidth = float32(sw)
+	}
+	b.mu.Unlock()
+
+	raster.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+
+	// Parse start and end colors
+	var startColor color.Color = color.White
+	var endColor color.Color = color.Black
+
+	if startHex, ok := msg.Payload["startColor"].(string); ok {
+		startColor = parseHexColorSimple(startHex)
+	}
+	if endHex, ok := msg.Payload["endColor"].(string); ok {
+		endColor = parseHexColorSimple(endHex)
+	}
+
+	gradient := canvas.NewRadialGradient(startColor, endColor)
+
+	// Set center offset if provided
+	if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
+		gradient.CenterOffsetX = offsetX
+	}
+	if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
+		gradient.CenterOffsetY = offsetY
+	}
+
+	// Set minimum size if provided
+	if width, ok := msg.Payload["width"].(float64); ok {
+		if height, ok := msg.Payload["height"].(float64); ok {
+			gradient.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = gradient
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasradialgradient", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Radial gradient widget not found",
+		})
+		return
+	}
+
+	gradient, ok := w.(*canvas.RadialGradient)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a radial gradient",
+		})
+		return
+	}
+
+	// Update start color if provided
+	if startHex, ok := msg.Payload["startColor"].(string); ok {
+		gradient.StartColor = parseHexColorSimple(startHex)
+	}
+
+	// Update end color if provided
+	if endHex, ok := msg.Payload["endColor"].(string); ok {
+		gradient.EndColor = parseHexColorSimple(endHex)
+	}
+
+	// Update center offset if provided
+	if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
+		gradient.CenterOffsetX = offsetX
+	}
+	if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
+		gradient.CenterOffsetY = offsetY
+	}
+
+	gradient.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// Helper functions for arc calculations
+func atan2(y, x float64) float64 {
+	// Simple atan2 implementation
+	if x > 0 {
+		return atan(y / x)
+	}
+	if x < 0 && y >= 0 {
+		return atan(y/x) + 3.14159265358979
+	}
+	if x < 0 && y < 0 {
+		return atan(y/x) - 3.14159265358979
+	}
+	if x == 0 && y > 0 {
+		return 3.14159265358979 / 2
+	}
+	if x == 0 && y < 0 {
+		return -3.14159265358979 / 2
+	}
+	return 0 // x == 0 && y == 0
+}
+
+func atan(x float64) float64 {
+	// Simple atan approximation using Taylor series
+	if x > 1 {
+		return 3.14159265358979/2 - atan(1/x)
+	}
+	if x < -1 {
+		return -3.14159265358979/2 - atan(1/x)
+	}
+	// Taylor series for |x| <= 1
+	result := x
+	term := x
+	for i := 1; i < 20; i++ {
+		term *= -x * x
+		result += term / float64(2*i+1)
+	}
+	return result
+}
+
+func float64Mod(a, b float64) float64 {
+	for a >= b {
+		a -= b
+	}
+	for a < 0 {
+		a += b
+	}
+	return a
+}
+
 // parseHexColorSimple parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color
 // This is a simpler version that returns a default color on error, used by canvas primitives
 func parseHexColorSimple(hexStr string) color.Color {
