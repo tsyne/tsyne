@@ -138,6 +138,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleHideProgressDialog(msg)
 	case "showColorPicker":
 		b.handleShowColorPicker(msg)
+	case "showEntryDialog":
+		b.handleShowEntryDialog(msg)
 	case "resizeWindow":
 		b.handleResizeWindow(msg)
 	case "setWindowTitle":

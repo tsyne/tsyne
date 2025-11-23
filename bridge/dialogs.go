@@ -518,3 +518,39 @@ func (b *Bridge) handleShowColorPicker(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleShowEntryDialog(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	title := msg.Payload["title"].(string)
+	message := msg.Payload["message"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	dialog.ShowEntryDialog(title, message, func(text string) {
+		b.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": callbackID,
+				"text":       text,
+				"cancelled":  text == "",
+			},
+		})
+	}, win)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}

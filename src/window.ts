@@ -107,11 +107,8 @@ export class Window {
       confirm: async (message: string): Promise<boolean> => {
         return await this.showConfirm('Confirm', message);
       },
-      prompt: async (message: string, defaultValue?: string): Promise<string | null> => {
-        // For now, we don't have a prompt dialog in Fyne, so we return null
-        // This can be implemented later with a custom dialog
-        console.log('[PROMPT]', message, defaultValue);
-        return null;
+      prompt: async (message: string, _defaultValue?: string): Promise<string | null> => {
+        return await this.showEntryDialog('Input', message);
       }
     });
 
@@ -296,6 +293,33 @@ export class Window {
         title,
         callbackId,
         initialColor: initialColor || '#000000'
+      });
+    });
+  }
+
+  /**
+   * Shows an entry dialog for quick text input
+   * @param title - Dialog title
+   * @param message - Prompt message shown to user
+   * @returns Promise<string | null> - entered text if submitted, null if cancelled
+   */
+  async showEntryDialog(title: string, message: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      const callbackId = this.ctx.generateId('callback');
+
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (data.cancelled || data.text === '') {
+          resolve(null);
+        } else {
+          resolve(data.text);
+        }
+      });
+
+      this.ctx.bridge.send('showEntryDialog', {
+        windowId: this.id,
+        title,
+        message,
+        callbackId
       });
     });
   }
