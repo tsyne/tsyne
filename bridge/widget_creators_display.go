@@ -13,6 +13,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -526,193 +528,193 @@ func mapIconNameToResource(name string) fyne.Resource {
 	switch name {
 	// Standard icons
 	case "cancel":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCancel)
+		return theme.CancelIcon()
 	case "confirm":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconConfirm)
+		return theme.ConfirmIcon()
 	case "delete":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDelete)
+		return theme.DeleteIcon()
 	case "search":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSearch)
+		return theme.SearchIcon()
 	case "searchReplace":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSearchReplace)
+		return theme.SearchReplaceIcon()
 
 	// Media icons
 	case "mediaPlay":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaPlay)
+		return theme.MediaPlayIcon()
 	case "mediaPause":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaPause)
+		return theme.MediaPauseIcon()
 	case "mediaStop":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaStop)
+		return theme.MediaStopIcon()
 	case "mediaRecord":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaRecord)
+		return theme.MediaRecordIcon()
 	case "mediaReplay":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaReplay)
+		return theme.MediaReplayIcon()
 	case "mediaSkipNext":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaSkipNext)
+		return theme.MediaSkipNextIcon()
 	case "mediaSkipPrevious":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaSkipPrevious)
+		return theme.MediaSkipPreviousIcon()
 	case "mediaFastForward":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaFastForward)
+		return theme.MediaFastForwardIcon()
 	case "mediaFastRewind":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaFastRewind)
+		return theme.MediaFastRewindIcon()
 
 	// Navigation icons
 	case "home":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHome)
+		return theme.HomeIcon()
 	case "menu":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMenu)
+		return theme.MenuIcon()
 	case "menuExpand":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMenuExpand)
+		return theme.MenuExpandIcon()
 	case "moveDown":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMoveDown)
+		return theme.MoveDownIcon()
 	case "moveUp":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMoveUp)
+		return theme.MoveUpIcon()
 	case "navigate":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconNavigate)
+		return theme.NavigateNextIcon()
 	case "arrowBack":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconArrowBack)
+		return theme.NavigateBackIcon()
 	case "arrowForward":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconArrowForward)
+		return theme.NavigateNextIcon()
 
 	// File icons
 	case "file":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFile)
+		return theme.FileIcon()
 	case "fileApplication":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileApplication)
+		return theme.FileApplicationIcon()
 	case "fileAudio":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileAudio)
+		return theme.FileAudioIcon()
 	case "fileImage":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileImage)
+		return theme.FileImageIcon()
 	case "fileText":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileText)
+		return theme.FileTextIcon()
 	case "fileVideo":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileVideo)
+		return theme.FileVideoIcon()
 	case "folder":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolder)
+		return theme.FolderIcon()
 	case "folderNew":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolderNew)
+		return theme.FolderNewIcon()
 	case "folderOpen":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolderOpen)
+		return theme.FolderOpenIcon()
 
 	// Document icons
 	case "document":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocument)
+		return theme.DocumentIcon()
 	case "documentCreate":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentCreate)
+		return theme.DocumentCreateIcon()
 	case "documentSave":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentSave)
+		return theme.DocumentSaveIcon()
 	case "documentPrint":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentPrint)
+		return theme.DocumentPrintIcon()
 
 	// Content icons
 	case "content":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContent)
+		return theme.ContentAddIcon()
 	case "contentAdd":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentAdd)
+		return theme.ContentAddIcon()
 	case "contentClear":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentClear)
+		return theme.ContentClearIcon()
 	case "contentCopy":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentCopy)
+		return theme.ContentCopyIcon()
 	case "contentCut":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentCut)
+		return theme.ContentCutIcon()
 	case "contentPaste":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentPaste)
+		return theme.ContentPasteIcon()
 	case "contentRedo":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentRedo)
+		return theme.ContentRedoIcon()
 	case "contentRemove":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentRemove)
+		return theme.ContentRemoveIcon()
 	case "contentUndo":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentUndo)
+		return theme.ContentUndoIcon()
 
 	// View icons
 	case "viewFullScreen":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewFullScreen)
+		return theme.ViewFullScreenIcon()
 	case "viewRefresh":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewRefresh)
+		return theme.ViewRefreshIcon()
 	case "viewZoomFit":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomFit)
+		return theme.ZoomFitIcon()
 	case "viewZoomIn":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomIn)
+		return theme.ZoomInIcon()
 	case "viewZoomOut":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomOut)
+		return theme.ZoomOutIcon()
 	case "viewRestore":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewRestore)
+		return theme.ViewRestoreIcon()
 	case "visibility":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVisibility)
+		return theme.VisibilityIcon()
 	case "visibilityOff":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVisibilityOff)
+		return theme.VisibilityOffIcon()
 
 	// Status icons
 	case "info":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconInfo)
+		return theme.InfoIcon()
 	case "question":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconQuestion)
+		return theme.QuestionIcon()
 	case "warning":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconWarning)
+		return theme.WarningIcon()
 	case "error":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconError)
+		return theme.ErrorIcon()
 	case "help":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHelp)
+		return theme.HelpIcon()
 	case "history":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHistory)
+		return theme.HistoryIcon()
 
 	// Action icons
 	case "settings":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSettings)
+		return theme.SettingsIcon()
 	case "mailAttachment":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailAttachment)
+		return theme.MailAttachmentIcon()
 	case "mailCompose":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailCompose)
+		return theme.MailComposeIcon()
 	case "mailForward":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailForward)
+		return theme.MailForwardIcon()
 	case "mailReply":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailReply)
+		return theme.MailReplyIcon()
 	case "mailReplyAll":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailReplyAll)
+		return theme.MailReplyAllIcon()
 	case "mailSend":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailSend)
+		return theme.MailSendIcon()
 
 	// Volume icons
 	case "volumeDown":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeDown)
+		return theme.VolumeDownIcon()
 	case "volumeMute":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeMute)
+		return theme.VolumeMuteIcon()
 	case "volumeUp":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeUp)
+		return theme.VolumeUpIcon()
 
 	// Misc icons
 	case "download":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDownload)
+		return theme.DownloadIcon()
 	case "upload":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconUpload)
+		return theme.UploadIcon()
 	case "computer":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconComputer)
+		return theme.ComputerIcon()
 	case "storage":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconStorage)
+		return theme.StorageIcon()
 	case "account":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconAccount)
+		return theme.AccountIcon()
 	case "login":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconLogin)
+		return theme.LoginIcon()
 	case "logout":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconLogout)
+		return theme.LogoutIcon()
 	case "list":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconList)
+		return theme.ListIcon()
 	case "grid":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconGrid)
+		return theme.GridIcon()
 	case "colorChromatic":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconColorChromatic)
+		return theme.ColorChromaticIcon()
 	case "colorPalette":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconColorPalette)
+		return theme.ColorPaletteIcon()
 
 	// Checkbox icons
 	case "checkButtonChecked":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCheckButtonChecked)
+		return theme.CheckButtonCheckedIcon()
 	case "checkButton":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCheckButton)
+		return theme.CheckButtonIcon()
 	case "radioButton":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconRadioButton)
+		return theme.RadioButtonIcon()
 	case "radioButtonChecked":
-		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconRadioButtonChecked)
+		return theme.RadioButtonCheckedIcon()
 
 	default:
 		return nil
@@ -727,12 +729,8 @@ func (b *Bridge) handleCreateFileIcon(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	path := msg.Payload["path"].(string)
 
-	// Create URI from path
-	uri := fyne.CurrentApp().Driver().LegacyStorage().Create(path)
-	if uri == nil {
-		// Fallback: try to create a file URI
-		uri = fyne.CurrentApp().Driver().LegacyStorage().Create("file://" + path)
-	}
+	// Create URI from file path
+	uri := storage.NewFileURI(path)
 
 	fileIcon := widget.NewFileIcon(uri)
 
@@ -775,7 +773,7 @@ func (b *Bridge) handleSetFileIconURI(msg Message) {
 		return
 	}
 
-	uri := fyne.CurrentApp().Driver().LegacyStorage().Create(path)
+	uri := storage.NewFileURI(path)
 	fileIcon.SetURI(uri)
 
 	b.mu.Lock()

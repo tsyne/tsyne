@@ -23,10 +23,10 @@ func (s *grpcBridgeService) CreateWindow(ctx context.Context, req *pb.CreateWind
 		ID:   req.WindowId,
 		Type: "createWindow",
 		Payload: map[string]interface{}{
-			"windowId":  req.WindowId,
+			"id":        req.WindowId,
 			"title":     req.Title,
-			"width":     req.Width,
-			"height":    req.Height,
+			"width":     float64(req.Width),
+			"height":    float64(req.Height),
 			"fixedSize": req.FixedSize,
 		},
 	}
@@ -154,9 +154,9 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 	log.Printf("[gRPC] CreateImage: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"width":    req.Width,
-		"height":   req.Height,
+		"id":     req.WidgetId,
+		"width":  float64(req.Width),
+		"height": float64(req.Height),
 	}
 
 	// Handle source (inline data or resource reference)
@@ -197,15 +197,15 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 	log.Printf("[gRPC] CreateLabel: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
+		"id":   req.WidgetId,
+		"text": req.Text,
 	}
 
 	if req.Bold {
 		payload["bold"] = true
 	}
 	if req.Alignment != 0 {
-		payload["alignment"] = req.Alignment
+		payload["alignment"] = float64(req.Alignment)
 	}
 
 	msg := Message{
@@ -226,8 +226,8 @@ func (s *grpcBridgeService) CreateButton(ctx context.Context, req *pb.CreateButt
 	log.Printf("[gRPC] CreateButton: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
+		"id":   req.WidgetId,
+		"text": req.Text,
 	}
 
 	if req.CallbackId != "" {
@@ -255,7 +255,7 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 	log.Printf("[gRPC] CreateEntry: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
+		"id": req.WidgetId,
 	}
 
 	if req.Placeholder != "" {
@@ -265,7 +265,7 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 		payload["callbackId"] = req.CallbackId
 	}
 	if req.Width != 0 {
-		payload["width"] = req.Width
+		payload["width"] = float64(req.Width)
 	}
 
 	msgType := "createEntry"
@@ -303,7 +303,7 @@ func (s *grpcBridgeService) CreateVBox(ctx context.Context, req *pb.CreateVBoxRe
 		ID:   req.WidgetId,
 		Type: "createVBox",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
+			"id": req.WidgetId,
 		},
 	}
 
@@ -322,7 +322,7 @@ func (s *grpcBridgeService) CreateHBox(ctx context.Context, req *pb.CreateHBoxRe
 		ID:   req.WidgetId,
 		Type: "createHBox",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
+			"id": req.WidgetId,
 		},
 	}
 
@@ -338,9 +338,9 @@ func (s *grpcBridgeService) CreateCheckbox(ctx context.Context, req *pb.CreateCh
 	log.Printf("[gRPC] CreateCheckbox: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
-		"checked":  req.Checked,
+		"id":      req.WidgetId,
+		"text":    req.Text,
+		"checked": req.Checked,
 	}
 
 	if req.CallbackId != "" {
@@ -365,9 +365,9 @@ func (s *grpcBridgeService) CreateSelect(ctx context.Context, req *pb.CreateSele
 	log.Printf("[gRPC] CreateSelect: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
+		"id":       req.WidgetId,
 		"options":  req.Options,
-		"selected": req.Selected,
+		"selected": float64(req.Selected),
 	}
 
 	if req.CallbackId != "" {
