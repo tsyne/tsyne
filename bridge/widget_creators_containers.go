@@ -1669,10 +1669,12 @@ func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) {
 		return
 	}
 
-	// Remove the window from the container
+	// Close the inner window (MultipleWindows container handles this automatically)
 	fyne.DoAndWait(func() {
-		multiWin.Remove(innerWin)
+		innerWin.Close()
 	})
+	// Suppress unused variable warning
+	_ = multiWin
 
 	b.mu.Lock()
 	delete(b.childToParent, windowID)

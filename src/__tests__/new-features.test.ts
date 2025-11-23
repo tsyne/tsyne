@@ -141,7 +141,7 @@ describe('New Features', () => {
                 () => {
                   app.vbox(() => {
                     app.label('Please wait...');
-                    app.progressBarInfinite();
+                    app.progressbarInfinite();
                   });
                 }
               );

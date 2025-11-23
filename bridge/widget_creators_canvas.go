@@ -628,10 +628,6 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 func (b *Bridge) handleCreateCanvasArc(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 
-	// Create arc with default transparent fill
-	arc := &canvas.Circle{} // Note: Fyne doesn't have a built-in Arc, we use a custom approach
-	// For proper arc support, we'll use a Raster that draws an arc
-
 	// Parse start and end angles (in radians)
 	var startAngle, endAngle float64 = 0, 3.14159 // Default half circle
 	if sa, ok := msg.Payload["startAngle"].(float64); ok {
@@ -648,7 +644,7 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) {
 	}
 
 	// Set stroke color if provided
-	strokeColor := color.Transparent
+	var strokeColor color.Color = color.Transparent
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		strokeColor = parseHexColorSimple(strokeHex)
 	}
@@ -842,7 +838,7 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) {
 	}
 
 	// Parse stroke color
-	strokeColor := color.Transparent
+	var strokeColor color.Color = color.Transparent
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		strokeColor = parseHexColorSimple(strokeHex)
 	}
