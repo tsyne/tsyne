@@ -104,10 +104,36 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreatePadded(msg)
 	case "createRadioGroup":
 		b.handleCreateRadioGroup(msg)
+	case "createCheckGroup":
+		b.handleCreateCheckGroup(msg)
+	case "getCheckGroupSelected":
+		b.handleGetCheckGroupSelected(msg)
+	case "setCheckGroupSelected":
+		b.handleSetCheckGroupSelected(msg)
 	case "createSplit":
 		b.handleCreateSplit(msg)
 	case "createTabs":
 		b.handleCreateTabs(msg)
+	case "createDocTabs":
+		b.handleCreateDocTabs(msg)
+	case "docTabsAppend":
+		b.handleDocTabsAppend(msg)
+	case "docTabsRemove":
+		b.handleDocTabsRemove(msg)
+	case "docTabsSelect":
+		b.handleDocTabsSelect(msg)
+	case "createThemeOverride":
+		b.handleCreateThemeOverride(msg)
+	case "createNavigation":
+		b.handleCreateNavigation(msg)
+	case "navigationPush":
+		b.handleNavigationPush(msg)
+	case "navigationBack":
+		b.handleNavigationBack(msg)
+	case "navigationForward":
+		b.handleNavigationForward(msg)
+	case "navigationSetTitle":
+		b.handleNavigationSetTitle(msg)
 	case "setText":
 		b.handleSetText(msg)
 	case "getText":
@@ -186,6 +212,26 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateTable(msg)
 	case "createList":
 		b.handleCreateList(msg)
+	case "createTextGrid":
+		b.handleCreateTextGrid(msg)
+	case "setTextGridText":
+		b.handleSetTextGridText(msg)
+	case "getTextGridText":
+		b.handleGetTextGridText(msg)
+	case "setTextGridCell":
+		b.handleSetTextGridCell(msg)
+	case "setTextGridRow":
+		b.handleSetTextGridRow(msg)
+	case "setTextGridStyle":
+		b.handleSetTextGridStyle(msg)
+	case "setTextGridStyleRange":
+		b.handleSetTextGridStyleRange(msg)
+	case "createDateEntry":
+		b.handleCreateDateEntry(msg)
+	case "setDate":
+		b.handleSetDate(msg)
+	case "getDate":
+		b.handleGetDate(msg)
 	case "updateTableData":
 		b.handleUpdateTableData(msg)
 	case "updateListData":

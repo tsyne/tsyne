@@ -791,6 +791,44 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		}
 	}
 
+	// Additionally, search RadioGroup and CheckGroup options by text
+	if selectorType == "text" || selectorType == "exactText" {
+		for widgetID, obj := range b.widgets {
+			meta := b.widgetMeta[widgetID]
+			if meta.Type == "radiogroup" {
+				if radio, ok := obj.(*widget.RadioGroup); ok {
+					for _, option := range radio.Options {
+						var isMatch bool
+						if selectorType == "text" {
+							isMatch = strings.Contains(option, selector)
+						} else {
+							isMatch = option == selector
+						}
+						if isMatch && radio.Visible() {
+							visibleMatches = append(visibleMatches, widgetID)
+							break
+						}
+					}
+				}
+			} else if meta.Type == "checkgroup" {
+				if checkGroup, ok := obj.(*widget.CheckGroup); ok {
+					for _, option := range checkGroup.Options {
+						var isMatch bool
+						if selectorType == "text" {
+							isMatch = strings.Contains(option, selector)
+						} else {
+							isMatch = option == selector
+						}
+						if isMatch && checkGroup.Visible() {
+							visibleMatches = append(visibleMatches, widgetID)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
 	b.mu.RUnlock() // Release read lock before sending response!
 
 	// Prioritize visible widgets - return visible first, then hidden
@@ -890,6 +928,13 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 				info["fillMode"] = "unknown"
 			}
 		}
+
+		// Check if widget is disabled
+		if disableable, ok := obj.(fyne.Disableable); ok {
+			info["disabled"] = disableable.Disabled()
+		} else {
+			info["disabled"] = false
+		}
 	})
 
 	b.sendResponse(Response{
@@ -948,6 +993,12 @@ func (b *Bridge) handleGetAllWidgets(msg Message) {
 					widgetInfo["items"] = toolbarMeta.Labels
 				}
 				b.mu.RUnlock()
+			case *widget.RadioGroup:
+				widgetInfo["options"] = w.Options
+				widgetInfo["selected"] = w.Selected
+			case *widget.CheckGroup:
+				widgetInfo["options"] = w.Options
+				widgetInfo["selected"] = w.Selected
 			case *fyne.Container:
 				// Traverse Container.Objects to get child widget IDs
 				var childIDs []string
