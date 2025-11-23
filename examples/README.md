@@ -2,7 +2,7 @@
 
 A comprehensive collection of showcase applications demonstrating Tsyne's capabilities, ranging from simple "Hello World" to complex multi-feature applications.
 
-![Examples Banner](https://img.shields.io/badge/Examples-50+-blue) ![Tests](https://img.shields.io/badge/Tests-Comprehensive-green)
+![Examples Banner](https://img.shields.io/badge/Examples-100+-blue) ![Tests](https://img.shields.io/badge/Tests-Comprehensive-green)
 
 ## Overview
 
@@ -81,6 +81,7 @@ Progressive learning examples from basic to advanced concepts.
 |-------------|-------------|-------------|
 | **chess/** | Classic chess game with computer opponent | [andydotxyz/chess](https://github.com/andydotxyz/chess) |
 | **solitaire/** | Klondike solitaire card game | [fyne-io/solitaire](https://github.com/fyne-io/solitaire) |
+| **game-of-life/** | Conway's Game of Life cellular automaton | Original |
 | **tictactoe.ts** | Tic-Tac-Toe game | Original |
 | **tictactoe-accessible.ts** | Accessible Tic-Tac-Toe with screen reader support | Original |
 | **tictactoe-braille.ts** | Tic-Tac-Toe with Braille display | Original |
@@ -94,13 +95,42 @@ Progressive learning examples from basic to advanced concepts.
 | **calculator.ts** | Calculator with full operations | Original |
 | **calculator-accessible.ts** | Accessible calculator with screen reader | Original |
 | **calculator-fully-accessible.ts** | Fully accessible calculator | Original |
+| **text-editor.ts** | Text editor with file operations | Original |
+| **kanban-board.ts** | Kanban-style task board | Original |
+| **clipboard-manager.ts** | Clipboard history manager | Original |
+| **reminder-app.ts** | Reminder/notification app | Original |
+| **appointment-scheduler.ts** | Appointment scheduling app | Original |
+| **diagram-editor.ts** | Diagram/flowchart editor | Original |
+| **whiteboard.ts** | Collaborative whiteboard | Original |
+| **slydes/** | Presentation slides application | Original |
 
 ### Tools
 
 | Application | Description | Attribution |
 |-------------|-------------|-------------|
 | **terminal/** | Terminal emulator demonstration | [fyne-io/terminal](https://github.com/fyne-io/terminal) |
+| **terminal-emulator.ts** | Standalone terminal emulator example | Original |
 | **pixeledit/** | Pixel-based image editor | [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit) |
+| **fyles/** | File manager application | Original |
+| **image-viewer/** | Image viewer with navigation | Original |
+| **svg-rendering/** | SVG rendering utilities | Original |
+| **drawing-app.ts** | Freehand drawing application | Original |
+| **pixel-art.ts** | Pixel art editor | Original |
+| **photo-gallery.ts** | Photo gallery viewer | Original |
+
+### Utilities
+
+| Application | Description | Attribution |
+|-------------|-------------|-------------|
+| **settings-app.ts** | Settings/preferences panel | Original |
+| **preferences.ts** | User preferences management | Original |
+| **file-browser.ts** | File system browser | Original |
+| **download-manager.ts** | Download queue manager | Original |
+| **font-preview.ts** | Font preview and selection | Original |
+| **project-opener.ts** | Project file opener | Original |
+| **country-picker.ts** | Country selection widget | Original |
+| **stock-ticker-standalone.ts** | Stock price ticker | Original |
+| **weather-viewer-standalone.ts** | Weather information viewer | Original |
 
 ---
 
@@ -114,6 +144,7 @@ Examples demonstrating different software architecture patterns.
 | **mvp-login.ts** | MVP | Model-View-Presenter login form |
 | **mvvm-todo.ts** | MVVM | Model-View-ViewModel todo list |
 | **data-binding.ts** | Data Binding | Two-way data binding with ObservableState |
+| **reactive-form.ts** | Reactive | Reactive form with validation |
 
 ---
 
@@ -134,6 +165,9 @@ Individual examples showcasing specific widgets.
 | **form.ts** | Form layout |
 | **form-styled.ts** | Styled form layouts |
 | **form-unstyled.ts** | Unstyled form layouts |
+| **padded-demo.ts** | Padded container with spacing |
+| **clip-demo.ts** | Clipped container demo |
+| **card-stack.ts** | Stacked card layout |
 
 ### Input Widgets
 
@@ -154,6 +188,9 @@ Individual examples showcasing specific widgets.
 | **list.ts** | List widget with selection |
 | **table.ts** | Table widget with rows/columns |
 | **progressbar.ts** | Progress bar updates |
+| **loading-states.ts** | Loading indicators and states |
+| **icon-gallery.ts** | Icon display and selection |
+| **gradient-picker.ts** | Gradient color picker |
 
 ### Advanced Widgets
 
@@ -163,6 +200,10 @@ Individual examples showcasing specific widgets.
 | **specialized-widgets.ts** | Specialized widget usage |
 | **toolbar.ts** | Toolbar with actions and separators |
 | **menu-bar.ts** | Menu bar with File/Edit/Help menus |
+| **tooltip-demo.ts** | Tooltip display and positioning |
+| **command-palette.ts** | Command palette (Ctrl+P style) |
+| **mdi-demo.ts** | Multi-document interface |
+| **theme-zones.ts** | Theme override zones |
 
 ---
 
@@ -174,6 +215,21 @@ Individual examples showcasing specific widgets.
 | **dialogs-confirm.ts** | Confirmation dialogs (Yes/No) |
 | **dialogs-file.ts** | File open and save dialogs |
 | **dialog-state.ts** | Dialog state management |
+| **about-dialog.ts** | About dialog pattern |
+| **rename-dialog.ts** | Rename dialog with validation |
+| **unsaved-changes.ts** | Unsaved changes confirmation |
+
+---
+
+## Form Examples
+
+| Example | Description |
+|---------|-------------|
+| **new-contact.ts** | New contact entry form |
+| **event-form.ts** | Event creation form |
+| **registration-form.ts** | User registration form |
+| **wizard.ts** | Multi-step wizard form |
+| **form-styles.ts** | Form styling patterns |
 
 ---
 
@@ -223,6 +279,7 @@ Tsyne's page-by-page browser mode inspired by the web.
 |---------|-------------|
 | **accessibility-demo.ts** | Accessibility features demo |
 | **tictactoe-accessible.ts** | Accessible game implementation |
+| **tictactoe-braille.ts** | Tic-Tac-Toe with Braille display |
 | **calculator-accessible.ts** | Accessible calculator |
 | **calculator-fully-accessible.ts** | Full accessibility support |
 
@@ -233,6 +290,8 @@ Tsyne's page-by-page browser mode inspired by the web.
 | Example | Description |
 |---------|-------------|
 | **theme.ts** | Light/dark theme switching |
+| **theme-creator.ts** | Theme creation and customization |
+| **theme-zones.ts** | Theme override zones |
 | **form-styled.ts** | Styled form examples |
 | **form-styles.ts** | Form styling patterns |
 | **shopping-cart-styles.ts** | Shopping cart with styles |
@@ -260,6 +319,7 @@ Focused demos showcasing Fyne's `driver/desktop` interfaces without accessibilit
 | **mouse-events-demo.ts** | Mouse events (onMouseIn, onMouseOut, etc.) |
 | **test_click_card.ts** | Click event handling |
 | **test_drag_card.ts** | Drag event handling |
+| **test_card.ts** | Card widget event testing |
 
 ---
 
@@ -268,6 +328,8 @@ Focused demos showcasing Fyne's `driver/desktop` interfaces without accessibilit
 | Example | Description |
 |---------|-------------|
 | **window-sizing.ts** | Window size configuration |
+| **multi-window.ts** | Multiple window management |
+| **background-app.ts** | Background/system tray app |
 
 ---
 
@@ -277,12 +339,15 @@ Focused demos showcasing Fyne's `driver/desktop` interfaces without accessibilit
 |---------|-------------|
 | **test-http-images.ts** | Loading images from HTTP |
 | **test-updateimage.ts** | Dynamic image updates |
+| **image-viewer/** | Full image viewer application |
 
 ---
 
 ## Testing Examples
 
 Examples focused on testing patterns and utilities.
+
+### Test Utilities
 
 | Example | Description |
 |---------|-------------|
@@ -294,6 +359,35 @@ Examples focused on testing patterns and utilities.
 | **advanced-interactions.test.ts** | Advanced interaction testing |
 | **capture-screenshots.ts** | Screenshot capture utility |
 | **capture-screenshots-v2.ts** | Screenshot capture v2 |
+
+### Application Tests
+
+| Test | Description |
+|------|-------------|
+| **calculator.test.ts** | Calculator functionality tests |
+| **calculator-designer.test.ts** | Calculator design verification |
+| **todomvc.test.ts** | TodoMVC tests |
+| **todomvc-when.test.ts** | TodoMVC when() feature tests |
+| **todomvc-designer.test.ts** | TodoMVC design verification |
+| **tictactoe.test.ts** | Tic-Tac-Toe game tests |
+| **tictactoe-accessible.test.ts** | Accessible Tic-Tac-Toe tests |
+| **tictactoe-high-contrast.test.ts** | High contrast mode tests |
+| **tictactoe-mespeak.test.ts** | MeSpeak integration tests |
+
+### Visual and Accessibility Tests
+
+| Test | Description |
+|------|-------------|
+| **visual-regression.test.ts** | Visual regression testing |
+| **accessibility-audit.test.ts** | Accessibility audit tests |
+| **mouse-events-designer.test.ts** | Mouse events verification |
+| **toolbar-isolation.test.ts** | Toolbar isolation tests |
+| **window-title.test.ts** | Window title tests |
+| **window-features.test.ts** | Window feature tests |
+| **status-bar.test.ts** | Status bar tests |
+| **home-button.test.ts** | Home button tests |
+| **web-features.test.ts** | Web features tests |
+| **widget-interactions.test.js** | Widget interaction tests |
 
 ---
 
@@ -338,6 +432,24 @@ Test files for browser mode features.
 
 ---
 
+## Sub-Project Documentation
+
+Several examples are full sub-projects with their own documentation:
+
+| Directory | Description | README |
+|-----------|-------------|--------|
+| **fyles/** | File manager application | [fyles/README.md](fyles/README.md) |
+| **slydes/** | Presentation slides app | See source files |
+| **svg-rendering/** | SVG rendering utilities | [svg-rendering/README.md](svg-rendering/README.md) |
+| **terminal/** | Terminal emulator | [terminal/README.md](terminal/README.md) |
+| **image-viewer/** | Image viewer application | See source files |
+| **game-of-life/** | Conway's Game of Life | See source files |
+| **chess/** | Chess game | See source files |
+| **solitaire/** | Solitaire card game | See source files |
+| **pixeledit/** | Pixel editor | See source files |
+
+---
+
 ## Screenshots
 
 Screenshots are stored in `examples/screenshots/` for visual reference.
@@ -360,7 +472,7 @@ done
 
 | Source | Examples | License |
 |--------|----------|---------|
-| **Original Tsyne** | 02-counter, 14-21, calculator, todomvc, tictactoe, MVC/MVP/MVVM patterns, widget demos | MIT |
+| **Original Tsyne** | 02-counter, 14-21, calculator, todomvc, tictactoe, MVC/MVP/MVVM patterns, widget demos, all utilities | MIT |
 | **Ryelang/rye-fyne** | 01, 03, 04, 05, 07, 09, 10, 11, 12, 13 | Apache 2.0 |
 | **fyne-io/terminal** | terminal/ | See original |
 | **fyne-io/pixeledit** | pixeledit/ | See original |
