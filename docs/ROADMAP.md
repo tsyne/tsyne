@@ -12,7 +12,7 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 
 | Widget | Fyne Type | Description | Suggested Demo App |
 |--------|-----------|-------------|-------------------|
-| **Activity** | `widget.Activity` | Loading/busy spinner | `loading-states.ts` - Show spinners during async operations |
+| ~~**Activity**~~ | ~~`widget.Activity`~~ | ~~Loading/busy spinner~~ | ~~`loading-states.ts`~~ - **IMPLEMENTED** |
 | **Icon** | `widget.Icon` | Theme icon display | `icon-gallery.ts` - Display all available theme icons |
 | **FileIcon** | `widget.FileIcon` | File type icon | `file-browser.ts` - Simple file browser with icons |
 | **SelectEntry** | `widget.SelectEntry` | Searchable dropdown | `country-picker.ts` - Searchable country selector |
@@ -166,7 +166,7 @@ app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45
 ## Implementation Priority
 
 ### Phase 1: Complete Widget Coverage
-1. Activity (loading spinner)
+1. ~~Activity (loading spinner)~~ - **DONE**
 2. Icon & FileIcon
 3. SelectEntry (searchable dropdown)
 4. CheckGroup

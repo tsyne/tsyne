@@ -185,6 +185,17 @@ app({ title: "My App" }, (app) => {
   - `infinite`: Set to true for indeterminate progress (optional)
   - Methods: `setProgress(value: number)`, `getProgress(): Promise<number>`
 
+- **`activity()`**: Create an activity spinner (loading indicator)
+  - Displays an animated spinner for indicating loading or processing state
+  - Methods: `start()`, `stop()`
+  - Example:
+    ```typescript
+    const spinner = app.activity();
+    await spinner.start();  // Start animation
+    // ... do async work ...
+    await spinner.stop();   // Stop animation
+    ```
+
 - **`separator()`**: Create a visual separator line
   - Creates a horizontal line to visually separate sections
   - Improves UI organization and readability
@@ -465,6 +476,7 @@ Common methods supported by most widgets:
 - **Slider**: `setValue(value: number)`, `getValue(): Promise<number>`
 - **RadioGroup**: `setSelected(value: string)`, `getSelected(): Promise<string>`
 - **ProgressBar**: `setProgress(value: number)`, `getProgress(): Promise<number>`
+- **Activity**: `start()`, `stop()` - Control the loading spinner animation
 
 ### Visibility Control
 

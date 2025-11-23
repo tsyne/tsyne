@@ -52,7 +52,7 @@ app({ title: 'My App' }, (a) => {
 
 **Containers:** vbox, hbox, scroll, grid, center, border, gridwrap, split, tabs, card, accordion, form, themeoverride, stack, clip, innerwindow, navigation
 **Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, radiogroup, slider
-**Display:** label, hyperlink, separator, progressbar, image, richtext, table, list, tree, toolbar
+**Display:** label, hyperlink, separator, progressbar, activity, image, richtext, table, list, tree, toolbar
 **Browser:** browser (embedded webview/page)
 
 **All widgets support:**

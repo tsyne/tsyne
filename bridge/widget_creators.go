@@ -526,6 +526,91 @@ func (b *Bridge) handleCreateProgressBar(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateActivity(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+
+	activity := widget.NewActivity()
+
+	b.mu.Lock()
+	b.widgets[widgetID] = activity
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "activity", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleStartActivity(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	activity, ok := w.(*widget.Activity)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an Activity",
+		})
+		return
+	}
+
+	activity.Start()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleStopActivity(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	activity, ok := w.(*widget.Activity)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an Activity",
+		})
+		return
+	}
+
+	activity.Stop()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
 func (b *Bridge) handleCreateScroll(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	contentID := msg.Payload["contentId"].(string)

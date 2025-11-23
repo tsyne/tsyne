@@ -1,19 +1,23 @@
 /**
  * Loading States Demo
  *
- * Demonstrates the ProgressBarInfinite widget for showing
+ * Demonstrates the ProgressBarInfinite and Activity widgets for showing
  * indeterminate progress during async operations.
  */
 
-import { app } from '../src';
+import { app, Activity } from '../src';
 
 app({ title: 'Loading States Demo' }, (a) => {
-  a.window({ title: 'Loading States', width: 500, height: 450 }, (win) => {
+  a.window({ title: 'Loading States', width: 500, height: 550 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.label('ProgressBarInfinite Demo');
+        a.label('Loading States Demo');
         a.label('Shows indeterminate progress for operations with unknown duration.');
         a.label('');
+
+        // ProgressBarInfinite Section
+        a.label('ProgressBarInfinite Demo:', undefined, 'leading', undefined, { bold: true });
+        a.separator();
 
         // Network request simulation
         a.label('Network Request:');
@@ -61,53 +65,54 @@ app({ title: 'Loading States Demo' }, (a) => {
 
         a.separator();
 
-        // Database sync simulation
-        a.label('Database Sync:');
-        const dbProgress = a.progressbarInfinite();
-        const dbStatus = a.label('Database idle');
-        a.label('');
+        // Activity Widget Section
+        a.label('Activity Widget Demo:', undefined, 'leading', undefined, { bold: true });
+        a.separator();
 
-        a.hbox(() => {
-          a.button('Sync Now', async () => {
-            await dbProgress.start();
-            await dbStatus.setText('Syncing with server...');
+        // Track activity widgets and their states
+        let loadingActivity: Activity;
+        let uploadActivity: Activity;
 
-            // Simulate sync duration
-            setTimeout(async () => {
-              await dbProgress.stop();
-              await dbStatus.setText('Sync complete!');
-            }, 2000);
+        // Example 1: Simple loading spinner
+        a.card('Data Loading', 'Simulate fetching data from a server', () => {
+          a.vbox(() => {
+            a.hbox(() => {
+              loadingActivity = a.activity();
+              a.label('Loading data...');
+            });
+            a.hbox(() => {
+              a.button('Start Loading', async () => {
+                await loadingActivity.start();
+              });
+              a.button('Stop Loading', async () => {
+                await loadingActivity.stop();
+              });
+            });
+          });
+        });
+
+        // Example 2: File upload simulation
+        a.card('File Upload', 'Simulate uploading a file', () => {
+          a.vbox(() => {
+            a.hbox(() => {
+              uploadActivity = a.activity();
+              a.label('Upload progress');
+            });
+            a.button('Upload File', async () => {
+              await uploadActivity.start();
+              // Simulate upload delay
+              setTimeout(async () => {
+                await uploadActivity.stop();
+              }, 3000);
+            });
           });
         });
 
         a.separator();
-
-        // Combined operations
-        a.label('Multiple Operations:');
-        a.label('');
-
-        a.hbox(() => {
-          a.button('Start All', async () => {
-            await networkProgress.start();
-            await fileProgress.start();
-            await dbProgress.start();
-            await networkStatus.setText('Status: Running');
-            await fileStatus.setText('Processing...');
-            await dbStatus.setText('Syncing...');
-          });
-
-          a.button('Stop All', async () => {
-            await networkProgress.stop();
-            await fileProgress.stop();
-            await dbProgress.stop();
-            await networkStatus.setText('Status: Stopped');
-            await fileStatus.setText('Stopped');
-            await dbStatus.setText('Stopped');
-          });
-        });
+        a.label('The Activity widget shows an animated spinner.', undefined, 'center');
+        a.label('Use start() to begin animation, stop() to end it.', undefined, 'center');
       });
     });
-
     win.show();
   });
 });
