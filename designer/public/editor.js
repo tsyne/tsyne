@@ -25,6 +25,9 @@ let findResults = [];
 let currentFindIndex = -1;
 let matchedWidgetIds = new Set(); // Track which widgets have matches for tree highlighting
 
+// Tree expand/collapse state
+let collapsedNodes = new Set();
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
@@ -700,8 +703,23 @@ function createTreeItem(widget) {
   // Add children if any
   const children = metadata.widgets.filter(w => w.parent === widget.id);
   if (children.length > 0) {
+    const isCollapsed = collapsedNodes.has(widget.id);
+
+    // Add toggle button at the start
+    const toggle = document.createElement('span');
+    toggle.className = 'tree-toggle' + (isCollapsed ? ' collapsed' : '');
+    toggle.innerHTML = isCollapsed ? '▶' : '▼';
+    toggle.onclick = (e) => {
+      e.stopPropagation();
+      toggleTreeNode(widget.id);
+    };
+    item.insertBefore(toggle, item.firstChild);
+
     const childrenContainer = document.createElement('div');
     childrenContainer.className = 'tree-children';
+    if (isCollapsed) {
+      childrenContainer.style.display = 'none';
+    }
     children.forEach(child => {
       childrenContainer.appendChild(createTreeItem(child));
     });
@@ -713,6 +731,16 @@ function createTreeItem(widget) {
   }
 
   return item;
+}
+
+// Toggle tree node expand/collapse
+function toggleTreeNode(widgetId) {
+  if (collapsedNodes.has(widgetId)) {
+    collapsedNodes.delete(widgetId);
+  } else {
+    collapsedNodes.add(widgetId);
+  }
+  renderWidgetTree();
 }
 
 // Get widget icon
