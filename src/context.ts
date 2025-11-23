@@ -1,16 +1,16 @@
-import { BridgeConnection } from './fynebridge';
+import { BridgeInterface } from './fynebridge';
 
 /**
  * Context holds the current state during declarative UI building
  */
 export class Context {
-  bridge: BridgeConnection;
+  bridge: BridgeInterface;
   private idCounter = 0;
   private windowStack: string[] = [];
   private containerStack: string[][] = [];
   private resourceMap: Map<string, string> = new Map();
 
-  constructor(bridge: BridgeConnection, resourceMap?: Map<string, string>) {
+  constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
       this.resourceMap = resourceMap;

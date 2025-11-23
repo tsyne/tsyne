@@ -21,7 +21,24 @@ export interface Event {
   data?: Record<string, any>;
 }
 
-export class BridgeConnection {
+/**
+ * Common interface for bridge implementations (stdio and gRPC)
+ */
+export interface BridgeInterface {
+  waitUntilReady(): Promise<void>;
+  send(type: string, payload: Record<string, any>): Promise<any>;
+  registerEventHandler(callbackId: string, handler: (data: any) => void): void;
+  on(eventType: string, handler: (data: any) => void): void;
+  off(eventType: string, handler?: (data: any) => void): void;
+  registerCustomId(widgetId: string, customId: string): Promise<any>;
+  getParent(widgetId: string): Promise<string>;
+  clickToolbarAction(toolbarId: string, actionLabel: string): Promise<any>;
+  quit(): void;
+  waitForPendingRequests(timeoutMs?: number): Promise<boolean>;
+  shutdown(): void;
+}
+
+export class BridgeConnection implements BridgeInterface {
   private process: ChildProcess;
   private messageId = 0;
   private pendingRequests = new Map<string, {

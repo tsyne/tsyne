@@ -1,4 +1,4 @@
-import { BridgeConnection } from './fynebridge';
+import { BridgeInterface } from './fynebridge';
 
 /**
  * Widget information returned from inspections
@@ -25,7 +25,7 @@ export class Locator {
   private withoutTimeout?: number;
 
   constructor(
-    private bridge: BridgeConnection,
+    private bridge: BridgeInterface,
     private selector: string,
     private selectorType: 'text' | 'exactText' | 'type' | 'id' | 'placeholder' | 'testId' | 'role' | 'label'
   ) {}
@@ -755,7 +755,7 @@ export class Expect {
  * Main test context for interacting with Tsyne apps
  */
 export class TestContext {
-  constructor(private bridge: BridgeConnection) {}
+  constructor(private bridge: BridgeInterface) {}
 
   /**
    * Get a locator for buttons with specific text

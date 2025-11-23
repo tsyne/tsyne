@@ -23,10 +23,10 @@ func (s *grpcBridgeService) CreateWindow(ctx context.Context, req *pb.CreateWind
 		ID:   req.WindowId,
 		Type: "createWindow",
 		Payload: map[string]interface{}{
-			"windowId":  req.WindowId,
+			"id":        req.WindowId,
 			"title":     req.Title,
-			"width":     req.Width,
-			"height":    req.Height,
+			"width":     float64(req.Width),
+			"height":    float64(req.Height),
 			"fixedSize": req.FixedSize,
 		},
 	}
@@ -154,9 +154,9 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 	log.Printf("[gRPC] CreateImage: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"width":    req.Width,
-		"height":   req.Height,
+		"id":     req.WidgetId,
+		"width":  float64(req.Width),
+		"height": float64(req.Height),
 	}
 
 	// Handle source (inline data or resource reference)
@@ -197,15 +197,15 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 	log.Printf("[gRPC] CreateLabel: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
+		"id":   req.WidgetId,
+		"text": req.Text,
 	}
 
 	if req.Bold {
 		payload["bold"] = true
 	}
 	if req.Alignment != 0 {
-		payload["alignment"] = req.Alignment
+		payload["alignment"] = float64(req.Alignment)
 	}
 
 	msg := Message{
@@ -226,8 +226,8 @@ func (s *grpcBridgeService) CreateButton(ctx context.Context, req *pb.CreateButt
 	log.Printf("[gRPC] CreateButton: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
+		"id":   req.WidgetId,
+		"text": req.Text,
 	}
 
 	if req.CallbackId != "" {
@@ -255,7 +255,7 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 	log.Printf("[gRPC] CreateEntry: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
+		"id": req.WidgetId,
 	}
 
 	if req.Placeholder != "" {
@@ -265,7 +265,7 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 		payload["callbackId"] = req.CallbackId
 	}
 	if req.Width != 0 {
-		payload["width"] = req.Width
+		payload["width"] = float64(req.Width)
 	}
 
 	msgType := "createEntry"
@@ -303,7 +303,7 @@ func (s *grpcBridgeService) CreateVBox(ctx context.Context, req *pb.CreateVBoxRe
 		ID:   req.WidgetId,
 		Type: "createVBox",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
+			"id": req.WidgetId,
 		},
 	}
 
@@ -322,7 +322,7 @@ func (s *grpcBridgeService) CreateHBox(ctx context.Context, req *pb.CreateHBoxRe
 		ID:   req.WidgetId,
 		Type: "createHBox",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
+			"id": req.WidgetId,
 		},
 	}
 
@@ -338,9 +338,9 @@ func (s *grpcBridgeService) CreateCheckbox(ctx context.Context, req *pb.CreateCh
 	log.Printf("[gRPC] CreateCheckbox: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
-		"text":     req.Text,
-		"checked":  req.Checked,
+		"id":      req.WidgetId,
+		"text":    req.Text,
+		"checked": req.Checked,
 	}
 
 	if req.CallbackId != "" {
@@ -365,9 +365,9 @@ func (s *grpcBridgeService) CreateSelect(ctx context.Context, req *pb.CreateSele
 	log.Printf("[gRPC] CreateSelect: %s", req.WidgetId)
 
 	payload := map[string]interface{}{
-		"widgetId": req.WidgetId,
+		"id":       req.WidgetId,
 		"options":  req.Options,
-		"selected": req.Selected,
+		"selected": float64(req.Selected),
 	}
 
 	if req.CallbackId != "" {
@@ -478,11 +478,12 @@ func (s *grpcBridgeService) SetText(ctx context.Context, req *pb.SetTextRequest)
 
 // GetText gets widget text
 func (s *grpcBridgeService) GetText(ctx context.Context, req *pb.GetTextRequest) (*pb.GetTextResponse, error) {
-	// This would need to be implemented with a synchronous response mechanism
-	// For now, return placeholder
+	result := s.bridge.GetTextSync(req.WidgetId)
+
 	return &pb.GetTextResponse{
-		Success: true,
-		Text:    "",
+		Success: result.Success,
+		Text:    result.Text,
+		Error:   result.Error,
 	}, nil
 }
 
@@ -506,9 +507,12 @@ func (s *grpcBridgeService) SetProgress(ctx context.Context, req *pb.SetProgress
 
 // GetProgress gets progress value
 func (s *grpcBridgeService) GetProgress(ctx context.Context, req *pb.GetProgressRequest) (*pb.GetProgressResponse, error) {
+	result := s.bridge.GetProgressSync(req.WidgetId)
+
 	return &pb.GetProgressResponse{
-		Success: true,
-		Value:   0.0,
+		Success: result.Success,
+		Value:   result.Value,
+		Error:   result.Error,
 	}, nil
 }
 
@@ -532,9 +536,12 @@ func (s *grpcBridgeService) SetChecked(ctx context.Context, req *pb.SetCheckedRe
 
 // GetChecked gets checkbox checked state
 func (s *grpcBridgeService) GetChecked(ctx context.Context, req *pb.GetCheckedRequest) (*pb.GetCheckedResponse, error) {
+	result := s.bridge.GetCheckedSync(req.WidgetId)
+
 	return &pb.GetCheckedResponse{
-		Success: true,
-		Checked: false,
+		Success: result.Success,
+		Checked: result.Checked,
+		Error:   result.Error,
 	}, nil
 }
 
@@ -646,43 +653,49 @@ func (s *grpcBridgeService) RegisterCustomId(ctx context.Context, req *pb.Regist
 
 // FindWidget finds widgets by selector
 func (s *grpcBridgeService) FindWidget(ctx context.Context, req *pb.FindWidgetRequest) (*pb.FindWidgetResponse, error) {
-	msg := Message{
-		ID:   "findWidget",
-		Type: "findWidget",
-		Payload: map[string]interface{}{
-			"selector": req.Selector,
-			"type":     req.Type,
-		},
-	}
-
-	// This needs a synchronous response mechanism
-	// For now, return placeholder
-	s.bridge.handleFindWidget(msg)
+	result := s.bridge.FindWidgetSync(req.Selector, req.Type)
 
 	return &pb.FindWidgetResponse{
-		Success:   true,
-		WidgetIds: []string{},
+		Success:   result.Success,
+		WidgetIds: result.WidgetIds,
+		Error:     result.Error,
 	}, nil
 }
 
 // GetWidgetInfo gets widget information
 func (s *grpcBridgeService) GetWidgetInfo(ctx context.Context, req *pb.GetWidgetInfoRequest) (*pb.WidgetInfoResponse, error) {
-	// This needs a synchronous response mechanism
-	// For now, return placeholder
+	result := s.bridge.GetWidgetInfoSync(req.WidgetId)
+
 	return &pb.WidgetInfoResponse{
-		Success: true,
-		Id:      req.WidgetId,
-		Type:    "unknown",
+		Success: result.Success,
+		Id:      result.ID,
+		Type:    result.Type,
+		Text:    result.Text,
+		X:       result.X,
+		Y:       result.Y,
+		Width:   result.Width,
+		Height:  result.Height,
+		Error:   result.Error,
 	}, nil
 }
 
 // GetAllWidgets gets all widgets
 func (s *grpcBridgeService) GetAllWidgets(ctx context.Context, req *pb.GetAllWidgetsRequest) (*pb.GetAllWidgetsResponse, error) {
-	// This needs a synchronous response mechanism
-	// For now, return placeholder
+	result := s.bridge.GetAllWidgetsSync()
+
+	widgets := make([]*pb.WidgetInfo, 0, len(result.Widgets))
+	for _, w := range result.Widgets {
+		widgets = append(widgets, &pb.WidgetInfo{
+			Id:   w["id"].(string),
+			Type: w["type"].(string),
+			Text: w["text"].(string),
+		})
+	}
+
 	return &pb.GetAllWidgetsResponse{
-		Success: true,
-		Widgets: []*pb.WidgetInfo{},
+		Success: result.Success,
+		Widgets: widgets,
+		Error:   result.Error,
 	}, nil
 }
 
@@ -690,11 +703,47 @@ func (s *grpcBridgeService) GetAllWidgets(ctx context.Context, req *pb.GetAllWid
 func (s *grpcBridgeService) SubscribeEvents(req *pb.EventSubscription, stream pb.BridgeService_SubscribeEventsServer) error {
 	log.Printf("[gRPC] SubscribeEvents: %v", req.EventTypes)
 
-	// This would require an event channel implementation
-	// For now, just keep the stream open
-	<-stream.Context().Done()
+	// Read from event channel and send to stream
+	eventChan := s.bridge.grpcEventChan
+	if eventChan == nil {
+		log.Printf("[gRPC] Warning: event channel is nil")
+		<-stream.Context().Done()
+		return nil
+	}
 
-	return nil
+	for {
+		select {
+		case event, ok := <-eventChan:
+			if !ok {
+				// Channel closed
+				return nil
+			}
+
+			// Convert event.Data (map[string]interface{}) to map[string]string
+			dataMap := make(map[string]string)
+			for k, v := range event.Data {
+				if str, ok := v.(string); ok {
+					dataMap[k] = str
+				} else {
+					dataMap[k] = fmt.Sprintf("%v", v)
+				}
+			}
+
+			pbEvent := &pb.Event{
+				Type:     event.Type,
+				WidgetId: event.WidgetID,
+				Data:     dataMap,
+			}
+
+			if err := stream.Send(pbEvent); err != nil {
+				log.Printf("[gRPC] Error sending event: %v", err)
+				return err
+			}
+
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
 }
 
 // Quit quits the application

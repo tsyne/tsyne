@@ -459,6 +459,8 @@ func runGrpcMode(testMode bool) {
 
 	// 3. Create bridge
 	bridge := NewBridge(testMode)
+	bridge.grpcMode = true // Skip stdout writes in gRPC mode
+	bridge.grpcEventChan = make(chan Event, 100) // Buffered channel for events
 
 	// 4. Start gRPC server in background
 	grpcReady := make(chan bool)
