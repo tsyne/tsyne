@@ -1,5 +1,5 @@
-import { app, window, vbox, grid, button, label, styles, FontStyle } from '../src';
-// In production: import { app, window, vbox, grid, button, label, styles, FontStyle } from 'tsyne';
+import { app, styles, FontStyle } from '../src';
+// In production: import { app, styles, FontStyle } from 'tsyne';
 
 // Calculator example demonstrating Tsyne's pseudo-declarative DSL
 // Pattern described at https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature/
@@ -15,6 +15,8 @@ styles({
     font_size: 28  // 2x bigger for buttons
   }
 });
+
+// Calculator state
 let display: any;
 let currentValue = "0";
 let operator: string | null = null;
@@ -67,30 +69,35 @@ function clear() {
 }
 
 // Build the calculator UI (exported for testing)
-export function buildCalculator(app: any) {
-  app.window({ title: "Calculator" }, () => {
-    app.vbox(() => {
-      // Display
-      display = app.label("0");
+export function buildCalculator(a: any) {
+  a.window({ title: "Calculator" }, (win: any) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        // Display
+        display = a.label("0");
 
-      // Number pad and operators - 4x4 grid for even button sizing
-      app.grid(4, () => {
-        [..."789"].forEach(n => app.button(n, () => handleNumber(n)));
-        app.button("÷", () => handleOperator("/"));
-        [..."456"].forEach(n => app.button(n, () => handleNumber(n)));
-        app.button("×", () => handleOperator("*"));
-        [..."123"].forEach(n => app.button(n, () => handleNumber(n)));
-        app.button("-", () => handleOperator("-"));
-        app.button("0", () => handleNumber("0"));
-        app.button("Clr", () => clear());
-        app.button("=", () => calculate());
-        app.button("+", () => handleOperator("+"));
+        // Number pad and operators - 4x4 grid for even button sizing
+        a.grid(4, () => {
+          [..."789"].forEach(n => a.button(n, () => handleNumber(n)));
+          a.button("÷", () => handleOperator("/"));
+          [..."456"].forEach(n => a.button(n, () => handleNumber(n)));
+          a.button("×", () => handleOperator("*"));
+          [..."123"].forEach(n => a.button(n, () => handleNumber(n)));
+          a.button("-", () => handleOperator("-"));
+          a.button("0", () => handleNumber("0"));
+          a.button("Clr", () => clear());
+          a.button("=", () => calculate());
+          a.button("+", () => handleOperator("+"));
+        });
       });
     });
   });
 }
 
-// Run directly when executed as main script
-if (require.main === module) {
+// Skip auto-run when imported by test framework (Jest sets NODE_ENV=test)
+const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+if (!isTestEnvironment) {
+  // Run the calculator - executes when loaded by designer or run directly
   app({ title: "Tsyne Calculator" }, buildCalculator);
 }

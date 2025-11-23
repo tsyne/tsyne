@@ -1587,15 +1587,28 @@ function createPreviewWidget(widget) {
 
     case 'window':
       element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">window${widget.properties.title ? `: ${widget.properties.title}` : ''}</div>`;
-      renderChildren({
+      // Apply width from window properties, but let height be content-driven
+      // with scrollbar if content is very tall
+      const windowStyles = {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
         padding: '8px',
         border: '2px solid #0e639c',
         borderRadius: '5px',
-        background: '#2d2d2d'
-      });
+        background: '#171718', // Fyne dark background
+        maxHeight: '80vh', // Cap at 80% viewport height
+        overflowY: 'auto' // Scroll if content exceeds max-height
+      };
+      if (widget.properties.width) {
+        windowStyles.width = widget.properties.width + 'px';
+        windowStyles.flexShrink = '0';
+      }
+      // Use minHeight from properties as a hint, but allow growth
+      if (widget.properties.height) {
+        windowStyles.minHeight = widget.properties.height + 'px';
+      }
+      renderChildren(windowStyles);
       break;
 
     case 'tabs':

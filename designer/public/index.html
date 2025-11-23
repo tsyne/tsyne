@@ -292,11 +292,15 @@
     }
 
     .preview-content {
-      background: #2d2d2d;
+      background: #171718; /* Fyne dark background */
       border: 1px solid #3e3e3e;
       border-radius: 5px;
       padding: 20px;
       min-height: 400px;
+      /* Center the window preview with expando-padding on sides */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
 
     .preview-widget {
@@ -332,17 +336,29 @@
       padding: 0 !important;
     }
 
+    /*
+     * Preview widget styles - aiming to match Fyne's dark theme
+     * Fyne color values from: https://github.com/fyne-io/fyne/blob/master/theme/color.go
+     *
+     * Key Fyne dark theme colors:
+     *   Button:           #28292e (40, 41, 46)
+     *   Background:       #171718 (23, 23, 24)
+     *   Foreground:       #f3f3f3 (243, 243, 243)
+     *   Input Background: #202023 (32, 32, 35)
+     *   Disabled Button:  #28292e (40, 41, 46)
+     *   Menu Background:  #28292e (40, 41, 46)
+     */
     .preview-label {
-      color: #d4d4d4;
+      color: #f3f3f3;
       font-size: 13px;
     }
 
     .preview-button {
-      background: #0e639c;
-      color: white;
+      background: #28292e;
+      color: #f3f3f3;
       border: none;
       padding: 8px 16px;
-      border-radius: 3px;
+      border-radius: 4px;
       font-size: 13px;
       cursor: pointer;
     }
