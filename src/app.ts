@@ -1,7 +1,7 @@
 import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, Split, Tabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded } from './widgets';
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -177,10 +177,6 @@ export class App {
     return new RadioGroup(this.ctx, options, initialSelected, onSelected);
   }
 
-  checkgroup(options: string[], initialSelected?: string[], onChanged?: (selected: string[]) => void): CheckGroup {
-    return new CheckGroup(this.ctx, options, initialSelected, onChanged);
-  }
-
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {
     return new Split(this.ctx, 'horizontal', leadingBuilder, trailingBuilder, offset);
   }
@@ -191,16 +187,6 @@ export class App {
 
   tabs(tabDefinitions: Array<{title: string, builder: () => void}>, location?: 'top' | 'bottom' | 'leading' | 'trailing'): Tabs {
     return new Tabs(this.ctx, tabDefinitions, location);
-  }
-
-  doctabs(
-    tabDefinitions: Array<{title: string, builder: () => void}>,
-    options?: {
-      location?: 'top' | 'bottom' | 'leading' | 'trailing';
-      onClosed?: (tabIndex: number, tabTitle: string) => void;
-    }
-  ): DocTabs {
-    return new DocTabs(this.ctx, tabDefinitions, options);
   }
 
   toolbar(toolbarItems: Array<ToolbarAction | { type: 'separator' | 'spacer' }>): Toolbar {
@@ -225,10 +211,6 @@ export class App {
 
   max(builder: () => void): Max {
     return new Max(this.ctx, builder);
-  }
-
-  stack(builder: () => void): Stack {
-    return new Stack(this.ctx, builder);
   }
 
   card(title: string, subtitle: string, builder: () => void): Card {
@@ -269,10 +251,6 @@ export class App {
     return new GridWrap(this.ctx, itemWidth, itemHeight, builder);
   }
 
-  dateentry(initialDate?: string, onChanged?: (date: string) => void): DateEntry {
-    return new DateEntry(this.ctx, initialDate, onChanged);
-  }
-
   menu(items: MenuItem[]): Menu {
     return new Menu(this.ctx, items);
   }
@@ -310,26 +288,12 @@ export class App {
     return new InnerWindow(this.ctx, title, builder, onClose);
   }
 
+  adaptivegrid(rowcols: number, builder: () => void): AdaptiveGrid {
+    return new AdaptiveGrid(this.ctx, rowcols, builder);
+  }
+
   padded(builder: () => void): Padded {
     return new Padded(this.ctx, builder);
-  }
-
-  /**
-   * Create a theme override container that applies a specific theme to its contents
-   * @param variant The theme variant to apply ('dark' or 'light')
-   * @param builder Function that creates the content
-   * @returns ThemeOverride instance
-   */
-  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
-    return new ThemeOverride(this.ctx, variant, builder);
-  }
-
-  textgrid(options?: TextGridOptions | string): TextGrid {
-    return new TextGrid(this.ctx, options);
-  }
-
-  navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation {
-    return new Navigation(this.ctx, rootBuilder, options);
   }
 
   async run(): Promise<void> {
