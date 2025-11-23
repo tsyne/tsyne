@@ -715,10 +715,8 @@ func mapIconNameToResource(name string) fyne.Resource {
 		return theme.RadioButtonIcon()
 	case "radioButtonChecked":
 		return theme.RadioButtonCheckedIcon()
-
-	default:
-		return nil
 	}
+	return nil
 }
 
 // ============================================================================
