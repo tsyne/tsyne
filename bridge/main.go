@@ -94,6 +94,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreatePadded(msg)
 	case "createRadioGroup":
 		b.handleCreateRadioGroup(msg)
+	case "createCheckGroup":
+		b.handleCreateCheckGroup(msg)
 	case "createSplit":
 		b.handleCreateSplit(msg)
 	case "createTabs":
@@ -124,6 +126,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetRadioSelected(msg)
 	case "getRadioSelected":
 		b.handleGetRadioSelected(msg)
+	case "setCheckGroupSelected":
+		b.handleSetCheckGroupSelected(msg)
+	case "getCheckGroupSelected":
+		b.handleGetCheckGroupSelected(msg)
 	case "showInfo":
 		b.handleShowInfo(msg)
 	case "showError":

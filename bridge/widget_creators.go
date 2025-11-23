@@ -1265,6 +1265,59 @@ func (b *Bridge) handleCreateRadioGroup(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateCheckGroup(msg Message) {
+	id := msg.Payload["id"].(string)
+	optionsInterface := msg.Payload["options"].([]interface{})
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, v := range optionsInterface {
+		options[i] = v.(string)
+	}
+
+	var callbackID string
+	hasCallback := false
+	if cid, ok := msg.Payload["callbackId"].(string); ok {
+		callbackID = cid
+		hasCallback = true
+	}
+
+	// Create check group with change callback
+	checkGroup := widget.NewCheckGroup(options, func(selected []string) {
+		if hasCallback {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"selected":   selected,
+				},
+			})
+		}
+	})
+
+	// Set initial selection if provided
+	if initialSelected, ok := msg.Payload["selected"].([]interface{}); ok {
+		selectedStrings := make([]string, len(initialSelected))
+		for i, v := range initialSelected {
+			selectedStrings[i] = v.(string)
+		}
+		checkGroup.Selected = selectedStrings
+	}
+
+	b.mu.Lock()
+	b.widgets[id] = checkGroup
+	b.widgetMeta[id] = WidgetMetadata{
+		Type: "checkgroup",
+		Text: "", // Check groups don't have a single text value
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
 func (b *Bridge) handleCreateSplit(msg Message) {
 	id := msg.Payload["id"].(string)
 	orientation := msg.Payload["orientation"].(string)

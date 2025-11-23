@@ -491,6 +491,78 @@ func (b *Bridge) handleSetRadioSelected(msg Message) {
 	}
 }
 
+func (b *Bridge) handleGetCheckGroupSelected(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if checkGroup, ok := obj.(*widget.CheckGroup); ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+			Result:  map[string]interface{}{"selected": checkGroup.Selected},
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a check group",
+		})
+	}
+}
+
+func (b *Bridge) handleSetCheckGroupSelected(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	selectedInterface := msg.Payload["selected"].([]interface{})
+
+	// Convert []interface{} to []string
+	selected := make([]string, len(selectedInterface))
+	for i, v := range selectedInterface {
+		selected[i] = v.(string)
+	}
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if checkGroup, ok := obj.(*widget.CheckGroup); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			checkGroup.SetSelected(selected)
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a check group",
+		})
+	}
+}
+
 func (b *Bridge) handleGetTableData(msg Message) {
 	id := msg.Payload["id"].(string)
 
