@@ -2,6 +2,7 @@ import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions } from './widgets';
+export type { TextGridOptions, TextGridStyle, NavigationOptions };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -195,6 +196,14 @@ export class App {
     return new RadioGroup(this.ctx, options, initialSelected, onSelected);
   }
 
+  checkgroup(options: string[], initialSelected?: string[], onChanged?: (selected: string[]) => void): CheckGroup {
+    return new CheckGroup(this.ctx, options, initialSelected, onChanged);
+  }
+
+  dateentry(initialDate?: string, onChanged?: (date: string) => void): DateEntry {
+    return new DateEntry(this.ctx, initialDate, onChanged);
+  }
+
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {
     return new Split(this.ctx, 'horizontal', leadingBuilder, trailingBuilder, offset);
   }
@@ -205,6 +214,16 @@ export class App {
 
   tabs(tabDefinitions: Array<{title: string, builder: () => void}>, location?: 'top' | 'bottom' | 'leading' | 'trailing'): Tabs {
     return new Tabs(this.ctx, tabDefinitions, location);
+  }
+
+  doctabs(
+    tabDefinitions: Array<{title: string, builder: () => void}>,
+    options?: {
+      location?: 'top' | 'bottom' | 'leading' | 'trailing';
+      onClosed?: (tabIndex: number, tabTitle: string) => void;
+    }
+  ): DocTabs {
+    return new DocTabs(this.ctx, tabDefinitions, options);
   }
 
   toolbar(toolbarItems: Array<ToolbarAction | { type: 'separator' | 'spacer' }>): Toolbar {
@@ -312,6 +331,18 @@ export class App {
 
   padded(builder: () => void): Padded {
     return new Padded(this.ctx, builder);
+  }
+
+  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
+    return new ThemeOverride(this.ctx, variant, builder);
+  }
+
+  navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation {
+    return new Navigation(this.ctx, rootBuilder, options);
+  }
+
+  textgrid(options?: TextGridOptions | string): TextGrid {
+    return new TextGrid(this.ctx, options);
   }
 
   /**

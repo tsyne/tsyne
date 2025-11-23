@@ -14,12 +14,15 @@ TypeScript (src/) ←→ JSON-RPC over stdio ←→ Go Bridge (bridge/) ←→ F
 ```
 
 **Key files:**
-- `src/app.ts` - App class, factory methods
-- `src/widgets.ts` - All widget classes
+- `src/app.ts` - App class, factory methods for all widgets
+- `src/widgets/` - Widget classes organized by category (base, containers, inputs, display, canvas)
 - `src/context.ts` - Declarative builder context (tracks parent containers)
 - `src/fynebridge.ts` - IPC to Go process
+- `src/window.ts` - Window class and all dialog methods
 - `src/browser.ts` - Browser/page mode
-- `bridge/main.go` - Go bridge implementation
+- `bridge/main.go` - Go bridge message routing
+- `bridge/widget_creators.go` - Widget creation handlers
+- `bridge/dialogs.go` - Dialog handlers
 
 ## Intended End-User Code Style
 
@@ -50,9 +53,10 @@ app({ title: 'My App' }, (a) => {
 
 ## Widget Categories
 
-**Containers:** vbox, hbox, scroll, grid, center, border, gridwrap, split, tabs, card, accordion, form, themeoverride, stack, clip, innerwindow, navigation
-**Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, radiogroup, slider
-**Display:** label, hyperlink, separator, progressbar, activity, image, richtext, table, list, tree, toolbar
+**Containers:** vbox, hbox, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup
+**Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, selectentry, radiogroup, checkgroup, slider, dateentry
+**Display:** label, hyperlink, separator, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid
+**Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient
 **Browser:** browser (embedded webview/page)
 
 **All widgets support:**
@@ -340,7 +344,7 @@ See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 - `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
 - `docs/ACCESSIBILITY.md` - Accessibility features and guidelines
 - `docs/QUICKSTART.md` - Getting started guide
-- `docs/ROADMAP.md` - Feature roadmap (~50% Fyne coverage, lists remaining APIs)
+- `docs/ROADMAP.md` - Feature roadmap (~85% Fyne coverage, lists remaining APIs)
 - `docs/PROS_AND_CONS.md` - Honest comparison with Electron/Tauri
 - `docs/TROUBLESHOOTING.md` - Common issues and solutions
 
@@ -348,7 +352,8 @@ See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 - `examples/todomvc.ts` - Full MVC example with when() and filtering
 - `examples/todomvc-when.ts` - Preserved when() implementation variant
 - `more_mvc_like_for_todomvc_app.md` - Implementation status and next steps
-- `src/widgets.ts` - Widget base class, ModelBoundList, when() implementation
+- `src/widgets/base.ts` - Widget base class, when() implementation
+- `src/widgets/containers.ts` - ModelBoundList, all container widgets
 
 ### Community
 - `CODE_OF_CONDUCT.md` - Community guidelines
