@@ -2573,3 +2573,33 @@ export class InnerWindow {
     return this;
   }
 }
+
+/**
+ * Padded container - adds theme-appropriate padding around content
+ * Uses Fyne's container.NewPadded which adds standard theme padding
+ */
+export class Padded {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('padded');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('Padded must have exactly one child');
+    }
+
+    ctx.bridge.send('createPadded', {
+      id: this.id,
+      childId: children[0]
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+}
