@@ -76,6 +76,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateClip(msg)
 	case "createMax":
 		b.handleCreateMax(msg)
+	case "createStack":
+		b.handleCreateStack(msg)
 	case "createCard":
 		b.handleCreateCard(msg)
 	case "createAccordion":
@@ -174,6 +176,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowFileOpen(msg)
 	case "showFileSave":
 		b.handleShowFileSave(msg)
+	case "showFolderOpen":
+		b.handleShowFolderOpen(msg)
+	case "showForm":
+		b.handleShowForm(msg)
 	case "showCustom":
 		b.handleShowCustom(msg)
 	case "showCustomConfirm":
@@ -319,6 +325,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowWidget(msg)
 	case "registerCustomId":
 		b.handleRegisterCustomId(msg)
+	case "registerTestId":
+		b.handleRegisterTestId(msg)
 	case "getParent":
 		b.handleGetParent(msg)
 	case "setAccessibility":
