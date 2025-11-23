@@ -710,3 +710,82 @@ func (b *Bridge) handleShowEntryDialog(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleShowCustomWithoutButtons(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	dialogID := msg.Payload["dialogId"].(string)
+	title := msg.Payload["title"].(string)
+	contentID := msg.Payload["contentId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		})
+		return
+	}
+
+	// Create a custom dialog without buttons using NewCustomWithoutButtons
+	customDialog := dialog.NewCustomWithoutButtons(title, content, win)
+
+	// Store the dialog for later hiding
+	b.mu.Lock()
+	if b.customDialogs == nil {
+		b.customDialogs = make(map[string]interface{})
+	}
+	b.customDialogs[dialogID] = customDialog
+	b.mu.Unlock()
+
+	customDialog.Show()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleHideCustomDialog(msg Message) {
+	dialogID := msg.Payload["dialogId"].(string)
+
+	b.mu.RLock()
+	d, exists := b.customDialogs[dialogID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Dialog not found",
+		})
+		return
+	}
+
+	if customDialog, ok := d.(*dialog.CustomDialog); ok {
+		customDialog.Hide()
+	}
+
+	// Clean up
+	b.mu.Lock()
+	delete(b.customDialogs, dialogID)
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}

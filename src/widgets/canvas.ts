@@ -272,3 +272,150 @@ export class CanvasLinearGradient {
     });
   }
 }
+
+/**
+ * Canvas Arc - draws a filled arc or annular sector
+ * Used for pie charts, circular progress indicators, etc.
+ */
+export class CanvasArc {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options?: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
+    startAngle?: number;
+    endAngle?: number;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasarc');
+
+    const payload: any = { id: this.id };
+
+    if (options) {
+      if (options.x !== undefined) payload.x = options.x;
+      if (options.y !== undefined) payload.y = options.y;
+      if (options.x2 !== undefined) payload.x2 = options.x2;
+      if (options.y2 !== undefined) payload.y2 = options.y2;
+      if (options.startAngle !== undefined) payload.startAngle = options.startAngle;
+      if (options.endAngle !== undefined) payload.endAngle = options.endAngle;
+      if (options.fillColor) payload.fillColor = options.fillColor;
+      if (options.strokeColor) payload.strokeColor = options.strokeColor;
+      if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
+    }
+
+    ctx.bridge.send('createCanvasArc', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
+    startAngle?: number;
+    endAngle?: number;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasArc', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}
+
+/**
+ * Canvas Polygon - draws a regular polygon primitive
+ * The points define the vertices of the polygon
+ */
+export class CanvasPolygon {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options?: {
+    points?: Array<{x: number; y: number}>;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvaspolygon');
+
+    const payload: any = { id: this.id };
+
+    if (options) {
+      if (options.points) payload.points = options.points;
+      if (options.fillColor) payload.fillColor = options.fillColor;
+      if (options.strokeColor) payload.strokeColor = options.strokeColor;
+      if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
+    }
+
+    ctx.bridge.send('createCanvasPolygon', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    points?: Array<{x: number; y: number}>;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasPolygon', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}
+
+/**
+ * Canvas Radial Gradient - draws a gradient from center outward
+ */
+export class CanvasRadialGradient {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options?: {
+    startColor?: string;
+    endColor?: string;
+    centerOffsetX?: number;
+    centerOffsetY?: number;
+    width?: number;
+    height?: number;
+  }) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasradialgradient');
+
+    const payload: any = { id: this.id };
+
+    if (options) {
+      if (options.startColor) payload.startColor = options.startColor;
+      if (options.endColor) payload.endColor = options.endColor;
+      if (options.centerOffsetX !== undefined) payload.centerOffsetX = options.centerOffsetX;
+      if (options.centerOffsetY !== undefined) payload.centerOffsetY = options.centerOffsetY;
+      if (options.width !== undefined) payload.width = options.width;
+      if (options.height !== undefined) payload.height = options.height;
+    }
+
+    ctx.bridge.send('createCanvasRadialGradient', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    startColor?: string;
+    endColor?: string;
+    centerOffsetX?: number;
+    centerOffsetY?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasRadialGradient', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}

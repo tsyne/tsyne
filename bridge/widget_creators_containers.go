@@ -1516,3 +1516,170 @@ func (b *Bridge) handleMovePopup(msg Message) {
 		Success: true,
 	})
 }
+
+// ============================================================================
+// MultipleWindows - MDI container for managing multiple InnerWindows
+// ============================================================================
+
+func (b *Bridge) handleCreateMultipleWindows(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childIDs, _ := msg.Payload["children"].([]interface{})
+
+	var children []fyne.CanvasObject
+	b.mu.RLock()
+	for _, childID := range childIDs {
+		if child, exists := b.widgets[childID.(string)]; exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	// Cast children to InnerWindows
+	var innerWindows []*container.InnerWindow
+	for _, child := range children {
+		if iw, ok := child.(*container.InnerWindow); ok {
+			innerWindows = append(innerWindows, iw)
+		}
+	}
+
+	// Create the MultipleWindows container
+	multiWin := container.NewMultipleWindows(innerWindows...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = multiWin
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "multiplewindows", Text: ""}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) {
+	containerID := msg.Payload["containerId"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	containerObj, containerExists := b.widgets[containerID]
+	windowObj, windowExists := b.widgets[windowID]
+	b.mu.RUnlock()
+
+	if !containerExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "MultipleWindows container not found",
+		})
+		return
+	}
+
+	if !windowExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		})
+		return
+	}
+
+	multiWin, ok := containerObj.(*container.MultipleWindows)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a MultipleWindows container",
+		})
+		return
+	}
+
+	innerWin, ok := windowObj.(*container.InnerWindow)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		})
+		return
+	}
+
+	// Add the window to the container
+	fyne.DoAndWait(func() {
+		multiWin.Add(innerWin)
+	})
+
+	b.mu.Lock()
+	b.childToParent[windowID] = containerID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) {
+	containerID := msg.Payload["containerId"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	containerObj, containerExists := b.widgets[containerID]
+	windowObj, windowExists := b.widgets[windowID]
+	b.mu.RUnlock()
+
+	if !containerExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "MultipleWindows container not found",
+		})
+		return
+	}
+
+	if !windowExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		})
+		return
+	}
+
+	multiWin, ok := containerObj.(*container.MultipleWindows)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a MultipleWindows container",
+		})
+		return
+	}
+
+	innerWin, ok := windowObj.(*container.InnerWindow)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		})
+		return
+	}
+
+	// Remove the window from the container
+	fyne.DoAndWait(func() {
+		multiWin.Remove(innerWin)
+	})
+
+	b.mu.Lock()
+	delete(b.childToParent, windowID)
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}

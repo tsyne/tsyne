@@ -2,7 +2,7 @@ import { BridgeConnection, BridgeInterface } from './fynebridge';
 import { GrpcBridgeConnection } from './grpcbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, CanvasArc, CanvasPolygon, CanvasRadialGradient, Clip, InnerWindow, MultipleWindows, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
 export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
@@ -354,12 +354,32 @@ export class App {
     return new CanvasLinearGradient(this.ctx, options);
   }
 
+  canvasArc(options?: { x?: number; y?: number; x2?: number; y2?: number; startAngle?: number; endAngle?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasArc {
+    return new CanvasArc(this.ctx, options);
+  }
+
+  canvasPolygon(options?: { points?: Array<{x: number; y: number}>; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasPolygon {
+    return new CanvasPolygon(this.ctx, options);
+  }
+
+  canvasRadialGradient(options?: { startColor?: string; endColor?: string; centerOffsetX?: number; centerOffsetY?: number; width?: number; height?: number; }): CanvasRadialGradient {
+    return new CanvasRadialGradient(this.ctx, options);
+  }
+
   clip(builder: () => void): Clip {
     return new Clip(this.ctx, builder);
   }
 
   innerWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow {
     return new InnerWindow(this.ctx, title, builder, onClose);
+  }
+
+  /**
+   * Create a MultipleWindows container (MDI)
+   * @param builder Optional function to build initial inner windows
+   */
+  multipleWindows(builder?: () => void): MultipleWindows {
+    return new MultipleWindows(this.ctx, builder);
   }
 
   adaptivegrid(rowcols: number, builder: () => void): AdaptiveGrid {

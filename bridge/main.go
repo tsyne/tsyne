@@ -184,6 +184,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowCustom(msg)
 	case "showCustomConfirm":
 		b.handleShowCustomConfirm(msg)
+	case "showCustomWithoutButtons":
+		b.handleShowCustomWithoutButtons(msg)
+	case "hideCustomDialog":
+		b.handleHideCustomDialog(msg)
 	case "showProgressDialog":
 		b.handleShowProgressDialog(msg)
 	case "updateProgressDialog":
@@ -372,6 +376,18 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleUpdateCanvasText(msg)
 	case "updateCanvasLinearGradient":
 		b.handleUpdateCanvasLinearGradient(msg)
+	case "createCanvasArc":
+		b.handleCreateCanvasArc(msg)
+	case "updateCanvasArc":
+		b.handleUpdateCanvasArc(msg)
+	case "createCanvasPolygon":
+		b.handleCreateCanvasPolygon(msg)
+	case "updateCanvasPolygon":
+		b.handleUpdateCanvasPolygon(msg)
+	case "createCanvasRadialGradient":
+		b.handleCreateCanvasRadialGradient(msg)
+	case "updateCanvasRadialGradient":
+		b.handleUpdateCanvasRadialGradient(msg)
 	// Platform integration
 	case "setSystemTray":
 		b.handleSetSystemTray(msg)
@@ -397,6 +413,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleInnerWindowClose(msg)
 	case "setInnerWindowTitle":
 		b.handleSetInnerWindowTitle(msg)
+	case "createMultipleWindows":
+		b.handleCreateMultipleWindows(msg)
+	case "multipleWindowsAddWindow":
+		b.handleMultipleWindowsAddWindow(msg)
+	case "multipleWindowsRemoveWindow":
+		b.handleMultipleWindowsRemoveWindow(msg)
 	case "createPopup":
 		b.handleCreatePopup(msg)
 	case "showPopup":

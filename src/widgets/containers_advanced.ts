@@ -416,3 +416,87 @@ export class Popup {
     });
   }
 }
+
+/**
+ * MultipleWindows container - MDI (Multiple Document Interface) container
+ * Manages multiple InnerWindows with drag/resize support
+ */
+export class MultipleWindows {
+  private ctx: Context;
+  public id: string;
+  private innerWindowIds: string[] = [];
+
+  constructor(ctx: Context, builder?: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('multiplewindows');
+
+    let children: string[] = [];
+    if (builder) {
+      // Build initial inner windows
+      ctx.pushContainer();
+      builder();
+      children = ctx.popContainer();
+      this.innerWindowIds = [...children];
+    }
+
+    ctx.bridge.send('createMultipleWindows', {
+      id: this.id,
+      children
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Add a new inner window to the container
+   * @param title Window title
+   * @param builder Function to build window content
+   * @param onClose Optional callback when window is closed
+   * @returns The created InnerWindow
+   */
+  addWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow {
+    const innerWin = new InnerWindow(this.ctx, title, builder, onClose);
+    this.innerWindowIds.push(innerWin.id);
+
+    // Add to the container
+    this.ctx.bridge.send('multipleWindowsAddWindow', {
+      containerId: this.id,
+      windowId: innerWin.id
+    });
+
+    return innerWin;
+  }
+
+  /**
+   * Remove an inner window from the container
+   * @param innerWindow The InnerWindow to remove
+   */
+  async removeWindow(innerWindow: InnerWindow): Promise<void> {
+    const idx = this.innerWindowIds.indexOf(innerWindow.id);
+    if (idx !== -1) {
+      this.innerWindowIds.splice(idx, 1);
+    }
+    await this.ctx.bridge.send('multipleWindowsRemoveWindow', {
+      containerId: this.id,
+      windowId: innerWindow.id
+    });
+  }
+
+  /**
+   * Hide the container
+   */
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Show the container
+   */
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+}

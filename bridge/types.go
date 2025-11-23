@@ -62,6 +62,9 @@ type Bridge struct {
 	closeIntercepts map[string]string             // window ID -> callback ID for close intercept
 	closeResponses  map[string]chan bool          // window ID -> channel for close intercept response
 	progressDialogs map[string]*ProgressDialogInfo // dialog ID -> progress dialog info
+	arcData         map[string]*ArcData           // arc widget ID -> arc data
+	polygonData     map[string]*PolygonData       // polygon widget ID -> polygon data
+	customDialogs   map[string]interface{}        // dialog ID -> custom dialog instance
 }
 
 // ProgressDialogInfo stores information about a progress dialog
@@ -69,6 +72,25 @@ type ProgressDialogInfo struct {
 	Dialog      interface{}          // *dialog.CustomDialog
 	ProgressBar *widget.ProgressBar  // nil for infinite progress bars
 	IsInfinite  bool
+}
+
+// ArcData stores data for canvas arc primitives
+type ArcData struct {
+	StartAngle  float64
+	EndAngle    float64
+	FillColor   color.RGBA
+	StrokeColor color.Color
+	StrokeWidth float32
+	X1, Y1      float32
+	X2, Y2      float32
+}
+
+// PolygonData stores data for canvas polygon primitives
+type PolygonData struct {
+	Points      []fyne.Position
+	FillColor   color.RGBA
+	StrokeColor color.Color
+	StrokeWidth float32
 }
 
 // WidgetMetadata stores metadata about widgets for testing
