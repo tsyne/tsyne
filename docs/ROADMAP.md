@@ -1,146 +1,24 @@
 # Tsyne Roadmap - Remaining Fyne API Coverage
 
-This document tracks Fyne features **not yet implemented** in Tsyne, with suggested demo apps to prove completion.
+This document tracks Fyne features **not yet implemented** in Tsyne.
 
-**Current Coverage: ~55%** of Fyne's public API
+**Current Coverage: ~85%** of Fyne's public API
 
 ---
 
 ## Widgets Not Yet Implemented
 
-### High Priority
-
 | Widget | Fyne Type | Description | Suggested Demo App |
 |--------|-----------|-------------|-------------------|
-| ~~**Activity**~~ | ~~`widget.Activity`~~ | ~~Loading/busy spinner~~ | ~~`loading-states.ts`~~ - **IMPLEMENTED** |
 | **Icon** | `widget.Icon` | Theme icon display | `icon-gallery.ts` - Display all available theme icons |
 | **FileIcon** | `widget.FileIcon` | File type icon | `file-browser.ts` - Simple file browser with icons |
-| **SelectEntry** | `widget.SelectEntry` | Searchable dropdown | `country-picker.ts` - Searchable country selector |
-| **CheckGroup** | `widget.CheckGroup` | Multiple checkboxes | `preferences.ts` - Settings panel with grouped options |
-| **ProgressBarInfinite** | `widget.ProgressBarInfinite` | Indeterminate progress | Note: May already work via `progressbar(0, true)` - verify |
+| **Calendar** | `widget.Calendar` | Standalone calendar widget | `appointment-scheduler.ts` - Date selection UI |
 
-### Medium Priority
-
-| Widget | Fyne Type | Description | Suggested Demo App |
-|--------|-----------|-------------|-------------------|
-| **Calendar** | `widget.Calendar` | Date picker widget | `appointment-scheduler.ts` - Date selection UI |
-| **DateEntry** | `widget.DateEntry` | Date input field | `event-form.ts` - Event creation with date fields |
-| **TextGrid** | `widget.TextGrid` | Monospace text grid | `terminal-emulator.ts` - Simple terminal display |
-| **PopUp** | `widget.PopUp` | Floating overlay | `tooltip-demo.ts` - Custom tooltips and popovers |
-| **PopUpMenu** | `widget.PopUpMenu` | Floating menu | Already have context menus - verify coverage |
-| **Menu** | `widget.Menu` | Standalone menu widget | `command-palette.ts` - Searchable command menu |
+> **Note:** `DateEntry` (date input with calendar popup) is implemented. The standalone `Calendar` widget would be useful for inline date display without an input field.
 
 ---
 
-## Containers Not Yet Implemented
-
-| Container | Fyne Type | Description | Suggested Demo App |
-|-----------|-----------|-------------|-------------------|
-| **Padded** | `container.NewPadded` | Inset padding | Add as option to existing containers |
-| **Stack** | `container.NewStack` | Layered/stacked objects | `card-stack.ts` - Overlapping card UI |
-| **DocTabs** | `container.DocTabs` | Tabs with close buttons | `text-editor.ts` - Multi-document editor |
-| **InnerWindow** | `container.InnerWindow` | Window within canvas | `mdi-demo.ts` - Multiple document interface |
-| ~~**Navigation**~~ | ~~`container.Navigation`~~ | ~~Stack-based navigation~~ | ~~`wizard.ts`~~ - **IMPLEMENTED** |
-| **AdaptiveGrid** | `container.NewAdaptiveGrid` | Responsive grid | `photo-gallery.ts` - Responsive image grid |
-| **Clip** | `container.Clip` | Clipping region | Utility for other widgets |
-| ~~**ThemeOverride**~~ | ~~`container.ThemeOverride`~~ | ~~Scoped theming~~ | ~~`theme-zones.ts` - Different themes in regions~~ ✅ Implemented |
-
----
-
-## Dialogs Not Yet Implemented
-
-| Dialog | Fyne Function | Description | Suggested Demo App |
-|--------|---------------|-------------|-------------------|
-| ~~**FolderOpen**~~ | ~~`dialog.ShowFolderOpen`~~ | ~~Folder picker~~ | ✅ `window.showFolderOpen()` **IMPLEMENTED** |
-| ~~**ColorPicker**~~ | ~~`dialog.ShowColorPicker`~~ | ~~Color selection~~ | ✅ `window.showColorPicker()` **IMPLEMENTED** |
-| ~~**EntryDialog**~~ | ~~`dialog.ShowEntryDialog`~~ | ~~Quick text input~~ | ✅ `window.showEntryDialog()` **IMPLEMENTED** |
-| ~~**FormDialog**~~ | ~~`dialog.ShowForm`~~ | ~~Form in dialog~~ | ✅ `new-contact.ts` **IMPLEMENTED** |
-| ~~**CustomDialog**~~ | ~~`dialog.NewCustom`~~ | ~~Custom dialog content~~ | ✅ `window.showCustom()` **IMPLEMENTED** |
-| ~~**ProgressDialog**~~ | ~~`dialog.ShowProgress`~~ | ~~Progress in dialog~~ | ✅ `window.showProgress()` **IMPLEMENTED** |
-
----
-
-## System Features
-
-### Platform Integration (IMPLEMENTED)
-
-| Feature | Fyne Package | Description | Demo App | Status |
-|---------|--------------|-------------|----------|--------|
-| ~~**System Tray**~~ | ~~`fyne.Driver.SystemTray`~~ | ~~Tray icon with menu~~ | ~~`background-app.ts`~~ | **IMPLEMENTED** |
-| ~~**Notifications**~~ | ~~`fyne.App.SendNotification`~~ | ~~Desktop notifications~~ | ~~`reminder-app.ts`~~ | **IMPLEMENTED** |
-| ~~**Clipboard**~~ | ~~`fyne.Clipboard`~~ | ~~Copy/paste support~~ | ~~`clipboard-manager.ts`~~ | **IMPLEMENTED** |
-| ~~**Drag & Drop**~~ | ~~Widget `Draggable`/`Droppable`~~ | ~~File/widget drag~~ | ~~`kanban-board.ts`~~ | **IMPLEMENTED** |
-| ~~**Preferences**~~ | ~~`fyne.App.Preferences`~~ | ~~Persistent settings~~ | ~~`settings-app.ts`~~ | **IMPLEMENTED** |
-
-### Data Binding
-
-| Feature | Fyne Package | Description | Suggested Demo App |
-|---------|--------------|-------------|-------------------|
-| ~~**Data Binding**~~ | ~~`data/binding`~~ | ~~Reactive data binding~~ | ~~`reactive-form.ts` - Auto-syncing form fields~~ | **IMPLEMENTED** |
-| ~~**Validation**~~ | ~~`data/validation`~~ | ~~Input validation~~ | ~~`registration-form.ts` - Validated sign-up form~~ | **IMPLEMENTED** |
-
----
-
-## Canvas & Drawing API ✅ IMPLEMENTED
-
-| Feature | Fyne Type | Description | Demo App | Status |
-|---------|-----------|-------------|----------|--------|
-| **Canvas** | `canvas.*` | Drawing primitives | `whiteboard.ts` | ✅ |
-| **Line** | `canvas.Line` | Line drawing | `whiteboard.ts` | ✅ |
-| **Circle** | `canvas.Circle` | Circle/ellipse | `diagram-editor.ts` | ✅ |
-| **Rectangle** | `canvas.Rectangle` | Rectangle drawing | `diagram-editor.ts` | ✅ |
-| **Text** | `canvas.Text` | Canvas text | `diagram-editor.ts` | ✅ |
-| **Raster** | `canvas.Raster` | Pixel drawing | `pixel-art.ts` | ✅ |
-| **LinearGradient** | `canvas.LinearGradient` | Gradient fills | `gradient-picker.ts` | ✅ |
-
-### Canvas API Usage
-
-```typescript
-// Line drawing
-app.canvasLine(x1, y1, x2, y2, { strokeColor: '#FF0000', strokeWidth: 2 });
-
-// Circle/ellipse
-app.canvasCircle({ x: 0, y: 0, x2: 100, y2: 100, fillColor: '#00FF00' });
-
-// Rectangle
-app.canvasRectangle({ width: 200, height: 100, fillColor: '#0000FF', cornerRadius: 10 });
-
-// Canvas text
-app.canvasText('Hello', { color: '#333', textSize: 24, bold: true });
-
-// Raster (pixel manipulation)
-const raster = app.canvasRaster(64, 64);
-await raster.setPixel(x, y, r, g, b, a);
-
-// Linear gradient
-app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45 });
-```
-
----
-
-## Advanced Theming
-
-| Feature | Description | Suggested Demo App |
-|---------|-------------|-------------------|
-| ~~**Custom Themes**~~ | ~~Define custom color schemes~~ | ~~`theme-creator.ts` - Build custom themes~~ | **IMPLEMENTED** |
-| ~~**Per-Widget Colors**~~ | ~~Override widget colors~~ | ~~Requires Fyne theme customization~~ | **IMPLEMENTED** |
-| ~~**Custom Fonts**~~ | ~~Load custom font files~~ | ~~`font-preview.ts` - Font selector~~ | **IMPLEMENTED** |
-
----
-
-## Window Features
-
-### Implemented
-
-| Feature | Fyne Method | Description | Demo App |
-|---------|-------------|-------------|----------|
-| ~~**Window Icon**~~ | `Window.SetIcon` | Custom window icon | Add via `icon` option | **IMPLEMENTED** |
-| ~~**Close Intercept**~~ | `Window.SetCloseIntercept` | Confirm before close | `unsaved-changes.ts` | **IMPLEMENTED** |
-| ~~**Multiple Windows**~~ | Multiple `Window` instances | Multi-window apps | `multi-window.ts` | **IMPLEMENTED** |
-| ~~**Fullscreen Toggle**~~ | `Window.SetFullScreen` | Fullscreen mode | Already working | **IMPLEMENTED** |
-| ~~**Window Close**~~ | `Window.Close` | Programmatic close | Via `win.close()` | **IMPLEMENTED** |
-
-### Not Supported by Fyne
+## Window Features Not Supported by Fyne
 
 | Feature | Description | Status |
 |---------|-------------|--------|
@@ -151,44 +29,60 @@ app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45
 
 ---
 
-## Testing Enhancements
+## Implementation Priority
 
-| Feature | Description | Suggested Demo |
-|---------|-------------|----------------|
-| ~~**getByTestId**~~ | ~~Select by data-testid~~ | ~~Add testId option to widgets~~ | **IMPLEMENTED** |
-| ~~**getByRole**~~ | ~~Select by ARIA role~~ | ~~Accessibility selectors~~ | **IMPLEMENTED** |
-| ~~**getByLabel**~~ | ~~Select by form label~~ | ~~Form testing~~ | **IMPLEMENTED** |
-| ~~**Visual Regression**~~ | ~~Screenshot comparison~~ | ~~`visual-regression.test.ts`~~ | **IMPLEMENTED** |
-| ~~**Accessibility Audit**~~ | ~~a11y validation~~ | ~~`accessibility-audit.test.ts`~~ | **IMPLEMENTED** |
+### Remaining Work
+1. **Icon** - Theme icon display widget
+2. **FileIcon** - File type icon widget
+3. **Calendar** - Standalone calendar widget (DateEntry already provides calendar popup)
 
 ---
 
-## Implementation Priority
+## What's Already Implemented
 
-### Phase 1: Complete Widget Coverage
-1. ~~Activity (loading spinner)~~ - **DONE**
-2. Icon & FileIcon
-3. SelectEntry (searchable dropdown)
-4. CheckGroup
-5. Calendar & DateEntry
+### Widgets ✅
+- Activity (loading spinner)
+- SelectEntry (searchable dropdown)
+- CheckGroup (multiple checkboxes)
+- ProgressBarInfinite (`a.progressbarInfinite()`)
+- DateEntry (date input with calendar)
+- TextGrid (monospace text grid)
+- Popup (floating overlay)
+- Menu (standalone menu widget)
+- All input widgets (Button, Entry, Checkbox, Select, Slider, RadioGroup, etc.)
+- All display widgets (Label, Image, Table, List, Tree, RichText, Toolbar, etc.)
 
-### Phase 2: Missing Dialogs
-1. FolderOpen
-2. ColorPicker
-3. EntryDialog
-4. FormDialog
+### Containers ✅
+- VBox, HBox, Grid, GridWrap, AdaptiveGrid
+- Scroll, Split, Tabs, DocTabs
+- Center, Max, Padded, Clip
+- Card, Accordion, Form, Border
+- InnerWindow, Navigation, ThemeOverride, Popup
 
-### Phase 3: System Integration
-1. Clipboard
-2. Notifications
-3. Preferences/Storage
-4. System Tray
+### Dialogs ✅
+- showInfo, showError, showConfirm
+- showFileOpen, showFileSave, showFolderOpen
+- showColorPicker, showEntryDialog
+- showForm, showCustom, showCustomConfirm
+- showProgress
 
-### Phase 4: Advanced Features
-1. ~~Canvas/Drawing API~~ ✅ DONE
-2. Drag & Drop
-3. Data Binding
-4. Custom Themes
+### Canvas & Drawing ✅
+- CanvasLine, CanvasCircle, CanvasRectangle
+- CanvasText, CanvasRaster, CanvasLinearGradient
+
+### System Features ✅
+- System Tray
+- Desktop Notifications
+- Clipboard
+- Drag & Drop
+- Preferences/Storage
+- Data Binding & Validation
+- Custom Themes & Fonts
+
+### Testing ✅
+- getByText, getByExactText, getByTestId
+- getByRole, getByLabel
+- Visual Regression, Accessibility Audit
 
 ---
 
@@ -197,11 +91,11 @@ app.canvasLinearGradient({ startColor: '#FF0000', endColor: '#0000FF', angle: 45
 Each new feature should include:
 
 1. **Go bridge handler** in `bridge/`
-2. **TypeScript class** in `src/widgets.ts`
-3. **Export** in `src/index.ts`
-4. **Demo app** in `examples/`
-5. **Test** in `examples/*.test.ts`
-6. **README update** with API docs
+2. **TypeScript class** in `src/widgets/`
+3. **Factory method** in `src/app.ts`
+4. **Export** in `src/widgets/index.ts`
+5. **Demo app** in `examples/`
+6. **Test** in `examples/*.test.ts`
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
@@ -216,4 +110,4 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-**Last Updated:** 2025-11-22
+**Last Updated:** 2025-11-23
