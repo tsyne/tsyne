@@ -2412,3 +2412,227 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleCreateNavigation(msg Message) {
+	id := msg.Payload["id"].(string)
+	rootID := msg.Payload["rootId"].(string)
+	title, hasTitle := msg.Payload["title"].(string)
+
+	b.mu.RLock()
+	root, exists := b.widgets[rootID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Root widget not found",
+		})
+		return
+	}
+
+	var nav *container.Navigation
+	if hasTitle && title != "" {
+		nav = container.NewNavigationWithTitle(root, title)
+	} else {
+		nav = container.NewNavigation(root)
+	}
+
+	// Set OnBack callback if provided
+	if onBackCallbackID, ok := msg.Payload["onBackCallbackId"].(string); ok {
+		nav.OnBack = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onBackCallbackID,
+				},
+			})
+		}
+	}
+
+	// Set OnForward callback if provided
+	if onForwardCallbackID, ok := msg.Payload["onForwardCallbackId"].(string); ok {
+		nav.OnForward = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onForwardCallbackID,
+				},
+			})
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[id] = nav
+	b.widgetMeta[id] = WidgetMetadata{Type: "navigation", Text: title}
+	b.childToParent[rootID] = id
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": id},
+	})
+}
+
+func (b *Bridge) handleNavigationPush(msg Message) {
+	navID := msg.Payload["navigationId"].(string)
+	contentID := msg.Payload["contentId"].(string)
+	title, hasTitle := msg.Payload["title"].(string)
+
+	b.mu.RLock()
+	navWidget, navExists := b.widgets[navID]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !navExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Navigation widget not found",
+		})
+		return
+	}
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		})
+		return
+	}
+
+	nav, ok := navWidget.(*container.Navigation)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a Navigation container",
+		})
+		return
+	}
+
+	if hasTitle && title != "" {
+		nav.PushWithTitle(content, title)
+	} else {
+		nav.Push(content)
+	}
+
+	b.mu.Lock()
+	b.childToParent[contentID] = navID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleNavigationBack(msg Message) {
+	navID := msg.Payload["navigationId"].(string)
+
+	b.mu.RLock()
+	navWidget, exists := b.widgets[navID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Navigation widget not found",
+		})
+		return
+	}
+
+	nav, ok := navWidget.(*container.Navigation)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a Navigation container",
+		})
+		return
+	}
+
+	nav.Back()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleNavigationForward(msg Message) {
+	navID := msg.Payload["navigationId"].(string)
+
+	b.mu.RLock()
+	navWidget, exists := b.widgets[navID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Navigation widget not found",
+		})
+		return
+	}
+
+	nav, ok := navWidget.(*container.Navigation)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a Navigation container",
+		})
+		return
+	}
+
+	nav.Forward()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleNavigationSetTitle(msg Message) {
+	navID := msg.Payload["navigationId"].(string)
+	title := msg.Payload["title"].(string)
+	isCurrent, _ := msg.Payload["current"].(bool)
+
+	b.mu.RLock()
+	navWidget, exists := b.widgets[navID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Navigation widget not found",
+		})
+		return
+	}
+
+	nav, ok := navWidget.(*container.Navigation)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a Navigation container",
+		})
+		return
+	}
+
+	if isCurrent {
+		nav.SetCurrentTitle(title)
+	} else {
+		nav.SetTitle(title)
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}

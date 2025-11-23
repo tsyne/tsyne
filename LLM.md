@@ -50,7 +50,7 @@ app({ title: 'My App' }, (a) => {
 
 ## Widget Categories
 
-**Containers:** vbox, hbox, scroll, grid, center, border, gridwrap, split, tabs, card, accordion, form
+**Containers:** vbox, hbox, scroll, grid, center, border, gridwrap, split, tabs, card, accordion, form, stack, clip, innerwindow, navigation
 **Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, radiogroup, slider
 **Display:** label, hyperlink, separator, progressbar, image, richtext, table, list, tree, toolbar
 **Browser:** browser (embedded webview/page)

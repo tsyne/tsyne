@@ -40,7 +40,7 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 | **Stack** | `container.NewStack` | Layered/stacked objects | `card-stack.ts` - Overlapping card UI |
 | **DocTabs** | `container.DocTabs` | Tabs with close buttons | `text-editor.ts` - Multi-document editor |
 | **InnerWindow** | `container.InnerWindow` | Window within canvas | `mdi-demo.ts` - Multiple document interface |
-| **Navigation** | `container.Navigation` | Stack-based navigation | `wizard.ts` - Multi-step wizard with back/forward |
+| ~~**Navigation**~~ | ~~`container.Navigation`~~ | ~~Stack-based navigation~~ | ~~`wizard.ts`~~ - **IMPLEMENTED** |
 | **AdaptiveGrid** | `container.NewAdaptiveGrid` | Responsive grid | `photo-gallery.ts` - Responsive image grid |
 | **Clip** | `container.Clip` | Clipping region | Utility for other widgets |
 | **ThemeOverride** | `container.ThemeOverride` | Scoped theming | `theme-zones.ts` - Different themes in regions |
