@@ -262,6 +262,45 @@ export class Window {
   }
 
   /**
+   * Shows a color picker dialog and returns the selected color
+   * @param title - Title for the color picker dialog
+   * @param initialColor - Initial color as hex string (e.g., "#ff0000")
+   * @returns Promise with color info (hex, r, g, b, a) or null if cancelled
+   */
+  async showColorPicker(title: string = 'Pick a Color', initialColor?: string): Promise<{
+    hex: string;
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+  } | null> {
+    return new Promise((resolve) => {
+      const callbackId = this.ctx.generateId('callback');
+
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (data.cancelled) {
+          resolve(null);
+        } else {
+          resolve({
+            hex: data.hex,
+            r: data.r,
+            g: data.g,
+            b: data.b,
+            a: data.a
+          });
+        }
+      });
+
+      this.ctx.bridge.send('showColorPicker', {
+        windowId: this.id,
+        title,
+        callbackId,
+        initialColor: initialColor || '#000000'
+      });
+    });
+  }
+
+  /**
    * Resize the window to the specified dimensions
    */
   async resize(width: number, height: number): Promise<void> {
