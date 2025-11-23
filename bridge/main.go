@@ -52,6 +52,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateCheckbox(msg)
 	case "createSelect":
 		b.handleCreateSelect(msg)
+	case "createSelectEntry":
+		b.handleCreateSelectEntry(msg)
+	case "setSelectEntryOptions":
+		b.handleSetSelectEntryOptions(msg)
 	case "createSlider":
 		b.handleCreateSlider(msg)
 	case "createProgressBar":

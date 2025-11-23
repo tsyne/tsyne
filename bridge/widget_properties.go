@@ -46,6 +46,8 @@ func (b *Bridge) handleGetText(msg Message) {
 		text = w.Text
 	case *widget.Entry:
 		text = w.Text
+	case *widget.SelectEntry:
+		text = w.Text
 	case *widget.Button:
 		text = w.Text
 	case *HoverableButton: // Handle HoverableButton
@@ -108,6 +110,8 @@ func (b *Bridge) handleSetText(msg Message) {
 			w.SetText(text)
 		case *widget.Entry:
 			w.SetText(text)
+		case *widget.SelectEntry:
+			w.SetText(text)
 		case *widget.Button:
 			w.SetText(text)
 		case *HoverableButton:
@@ -130,7 +134,7 @@ func (b *Bridge) handleSetText(msg Message) {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *widget.Button, *HoverableButton, *HoverableWrapper, *widget.Check:
+	case *widget.Label, *widget.Entry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *widget.Check:
 		supported = true
 	}
 
@@ -1589,6 +1593,47 @@ func (b *Bridge) handleIsProgressRunning(msg Message) {
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an infinite progress bar",
+		})
+	}
+}
+
+func (b *Bridge) handleSetSelectEntryOptions(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	optionsInterface, _ := msg.Payload["options"].([]interface{})
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, opt := range optionsInterface {
+		options[i] = opt.(string)
+	}
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if selectEntry, ok := obj.(*widget.SelectEntry); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			selectEntry.SetOptions(options)
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a SelectEntry",
 		})
 	}
 }
