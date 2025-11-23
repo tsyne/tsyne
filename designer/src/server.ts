@@ -310,6 +310,19 @@ function captureWidget(type: string, props: any): any {
     },
     show: async () => {
       return Promise.resolve();
+    },
+    // Widget methods - no-op stubs for designer mode
+    setText: async (text: string) => {
+      return Promise.resolve();
+    },
+    getText: async () => {
+      return Promise.resolve(props.text || props.placeholder || '');
+    },
+    setChecked: async (checked: boolean) => {
+      return Promise.resolve();
+    },
+    focus: async () => {
+      return Promise.resolve();
     }
   };
 
@@ -398,6 +411,24 @@ function containerWidget(type: string, props: any, builder: () => void): any {
         }
       };
     },
+    // Dynamic container methods - execute builder with this container as parent
+    add: (builder: () => void) => {
+      console.log(`[Designer] container.add() called on ${type}:${internalId}`);
+      const prev = currentParent;
+      currentParent = internalId;
+      try {
+        builder();
+      } catch (err: any) {
+        console.log(`[Designer] Error in container.add() builder: ${err.message}`);
+      }
+      currentParent = prev;
+      return chainableApi;
+    },
+    removeAll: () => {
+      // In designer mode, we don't actually remove children since we want to show
+      // both the initial state and dynamically added items
+      return chainableApi;
+    },
     refresh: async () => {
       return Promise.resolve();
     },
@@ -446,7 +477,8 @@ const designer = {
       setContent: (contentBuilder: () => void) => {
         contentBuilder();
       },
-      show: () => {}
+      show: () => {},
+      centerOnScreen: () => {}
     };
     builder(windowObj);
     currentParent = prev;
@@ -831,6 +863,14 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
       .replace(/\b\w+_\d+\.(\w+)/g, 'global.designer.$1')
       // Handle Object.defineProperty exports line
       .replace(/Object\.defineProperty\(exports,\s*"__esModule",\s*\{\s*value:\s*true\s*\}\);?\s*\n?/g, '');
+
+    // Process _designerMock() calls - strip the function name, leaving just the parenthesized mock value
+    // _designerMock([...]) becomes ([...])
+    const mockCount = (executableCode.match(/_designerMock\(/g) || []).length;
+    if (mockCount > 0) {
+      console.log(`[Designer] Found ${mockCount} _designerMock() call(s), stripping...`);
+    }
+    executableCode = executableCode.replace(/_designerMock(?=\()/g, '');
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
