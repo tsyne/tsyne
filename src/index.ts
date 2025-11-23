@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid, Navigation, NavigationOptions } from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -521,6 +521,16 @@ export function textgrid(options?: { text?: string; showLineNumbers?: boolean; s
 }
 
 /**
+ * Create a navigation container with stack-based navigation
+ */
+export function navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation {
+  if (!globalContext) {
+    throw new Error('navigation() must be called within an app context');
+  }
+  return new Navigation(globalContext, rootBuilder, options);
+}
+
+/**
  * Set the application theme
  */
 export async function setTheme(theme: 'dark' | 'light'): Promise<void> {
@@ -608,8 +618,8 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export classes for advanced usage
-export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid };
-export type { AppOptions, WindowOptions, MenuItem };
+export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, Slider, ProgressBar, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, Table, List, Center, Stack, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, Padded, ThemeOverride, DateEntry, TextGrid, Navigation };
+export type { AppOptions, WindowOptions, MenuItem, NavigationOptions };
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';

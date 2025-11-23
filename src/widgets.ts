@@ -3036,3 +3036,139 @@ export class TextGrid extends Widget {
     await this.setText('');
   }
 }
+
+/**
+ * Navigation options for creating a navigation container
+ */
+export interface NavigationOptions {
+  /** Optional title for the root level */
+  title?: string;
+  /** Callback when back button is pressed */
+  onBack?: () => void;
+  /** Callback when forward button is pressed */
+  onForward?: () => void;
+}
+
+/**
+ * Navigation container - stack-based navigation with back/forward controls
+ * Provides a navigation bar with title and manages a stack of content views
+ */
+export class Navigation {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, rootBuilder: () => void, options?: NavigationOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('navigation');
+
+    // Build root content
+    ctx.pushContainer();
+    rootBuilder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('Navigation must have exactly one root child');
+    }
+
+    const rootId = children[0];
+
+    const payload: any = {
+      id: this.id,
+      rootId
+    };
+
+    if (options?.title) {
+      payload.title = options.title;
+    }
+
+    if (options?.onBack) {
+      const onBackCallbackId = ctx.generateId('callback');
+      payload.onBackCallbackId = onBackCallbackId;
+      ctx.bridge.registerEventHandler(onBackCallbackId, () => {
+        options.onBack!();
+      });
+    }
+
+    if (options?.onForward) {
+      const onForwardCallbackId = ctx.generateId('callback');
+      payload.onForwardCallbackId = onForwardCallbackId;
+      ctx.bridge.registerEventHandler(onForwardCallbackId, () => {
+        options.onForward!();
+      });
+    }
+
+    ctx.bridge.send('createNavigation', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Push a new view onto the navigation stack
+   * @param builder Function that creates the content to push
+   * @param title Optional title for the new view
+   */
+  push(builder: () => void, title?: string): void {
+    // Build the content to push
+    this.ctx.pushContainer();
+    builder();
+    const children = this.ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('Navigation.push() must create exactly one child');
+    }
+
+    const contentId = children[0];
+
+    const payload: any = {
+      navigationId: this.id,
+      contentId
+    };
+
+    if (title) {
+      payload.title = title;
+    }
+
+    this.ctx.bridge.send('navigationPush', payload);
+  }
+
+  /**
+   * Go back to the previous view
+   */
+  async back(): Promise<void> {
+    await this.ctx.bridge.send('navigationBack', {
+      navigationId: this.id
+    });
+  }
+
+  /**
+   * Go forward to the next view (if available after going back)
+   */
+  async forward(): Promise<void> {
+    await this.ctx.bridge.send('navigationForward', {
+      navigationId: this.id
+    });
+  }
+
+  /**
+   * Set the root-level navigation title
+   * @param title The new title
+   */
+  async setTitle(title: string): Promise<void> {
+    await this.ctx.bridge.send('navigationSetTitle', {
+      navigationId: this.id,
+      title,
+      current: false
+    });
+  }
+
+  /**
+   * Set the title for the current navigation level
+   * @param title The new title
+   */
+  async setCurrentTitle(title: string): Promise<void> {
+    await this.ctx.bridge.send('navigationSetTitle', {
+      navigationId: this.id,
+      title,
+      current: true
+    });
+  }
+}

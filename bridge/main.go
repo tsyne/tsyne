@@ -369,6 +369,16 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetDate(msg)
 	case "getDate":
 		b.handleGetDate(msg)
+	case "createNavigation":
+		b.handleCreateNavigation(msg)
+	case "navigationPush":
+		b.handleNavigationPush(msg)
+	case "navigationBack":
+		b.handleNavigationBack(msg)
+	case "navigationForward":
+		b.handleNavigationForward(msg)
+	case "navigationSetTitle":
+		b.handleNavigationSetTitle(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,
