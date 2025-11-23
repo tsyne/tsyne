@@ -130,6 +130,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleShowCustom(msg)
 	case "showCustomConfirm":
 		b.handleShowCustomConfirm(msg)
+	case "showProgressDialog":
+		b.handleShowProgressDialog(msg)
+	case "updateProgressDialog":
+		b.handleUpdateProgressDialog(msg)
+	case "hideProgressDialog":
+		b.handleHideProgressDialog(msg)
 	case "resizeWindow":
 		b.handleResizeWindow(msg)
 	case "setWindowTitle":

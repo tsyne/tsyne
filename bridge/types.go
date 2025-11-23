@@ -59,6 +59,14 @@ type Bridge struct {
 	rasterData     map[string][][]color.Color    // raster widget ID -> pixel buffer
 	closeIntercepts map[string]string             // window ID -> callback ID for close intercept
 	closeResponses  map[string]chan bool          // window ID -> channel for close intercept response
+	progressDialogs map[string]*ProgressDialogInfo // dialog ID -> progress dialog info
+}
+
+// ProgressDialogInfo stores information about a progress dialog
+type ProgressDialogInfo struct {
+	Dialog      interface{}          // *dialog.CustomDialog
+	ProgressBar *widget.ProgressBar  // nil for infinite progress bars
+	IsInfinite  bool
 }
 
 // WidgetMetadata stores metadata about widgets for testing
@@ -561,12 +569,13 @@ func NewBridge(testMode bool) *Bridge {
 		toolbarActions: make(map[string]*widget.ToolbarAction),
 		windowContent:  make(map[string]string),
 		customIds:      make(map[string]string),
-		childToParent:  make(map[string]string),
-		quitChan:       make(chan bool, 1),
-		resources:      make(map[string][]byte),
-		scalableTheme:  scalableTheme,
+		childToParent:   make(map[string]string),
+		quitChan:        make(chan bool, 1),
+		resources:       make(map[string][]byte),
+		scalableTheme:   scalableTheme,
 		closeIntercepts: make(map[string]string),
 		closeResponses:  make(map[string]chan bool),
+		progressDialogs: make(map[string]*ProgressDialogInfo),
 	}
 }
 
