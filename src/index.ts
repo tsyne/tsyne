@@ -545,6 +545,31 @@ export type { WidgetStyle, WidgetSelector } from './styles';
 // Export context menu
 export type { ContextMenuItem } from './widgets';
 
+// Export data binding
+export {
+  StringBinding,
+  BoolBinding,
+  NumberBinding,
+  IntBinding,
+  FloatBinding,
+  ComputedBinding,
+  ListBinding,
+  StringListBinding,
+  createFormBindings,
+  bindEntryToString,
+  syncToBinding
+} from './binding';
+export type { Binding, BindingListener } from './binding';
+
+// Export validation
+export {
+  validators,
+  ValidatedField,
+  FormValidator,
+  createFormValidator
+} from './validation';
+export type { ValidationResult, Validator, ValidatorFn } from './validation';
+
 // Export accessibility
 export {
   getAccessibilityManager,
