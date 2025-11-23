@@ -23,9 +23,6 @@ import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Win
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Designer mock helper - returns undefined in production, stripped in designer
-const _designerMock = <T>(_: T): T | undefined => undefined;
-
 // ============================================================================
 // Observable System - Pseudo-declarative automatic updates
 // ============================================================================
@@ -343,7 +340,7 @@ export function createTodoApp(a: any, storePath?: string) {
   }
 
   function rebuildTodoList() {
-    const allTodos = _designerMock([{"id":1,"text":"Buy milk"},{"id":2,"text":"Walk the dog"}]) ?? store.getAllTodos();
+    const allTodos = store.getAllTodos();
     todoViews.clear();
     todoContainer.removeAll();
 

@@ -20,6 +20,11 @@ let originalSource: string | null = null;  // Original unmodified source from fi
 let currentStyles: Record<string, any> | null = null;
 let pendingEdits: any[] = [];
 
+// Designer scenarios state
+let currentScenarios: Record<string, { description?: string; mocks: Record<string, any> }> | null = null;
+let currentScenarioName: string | null = null;
+let designerFilePath: string | null = null;
+
 // Simple metadata store (using the POC approach)
 const metadataStore = new Map<string, any>();
 let currentParent: string | null = null;
@@ -838,6 +843,16 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
     // Make designer available globally BEFORE writing/executing the file
     (global as any).designer = designer;
 
+    // Inject scenario mocks if a scenario is selected
+    if (currentScenarios && currentScenarioName && currentScenarios[currentScenarioName]) {
+      const scenario = currentScenarios[currentScenarioName];
+      console.log(`[Designer] Injecting mocks for scenario: ${currentScenarioName}`);
+      for (const [className, mockClass] of Object.entries(scenario.mocks)) {
+        (global as any)[className] = mockClass;
+        console.log(`[Designer]   - ${className} mocked`);
+      }
+    }
+
     // Use TypeScript compiler to properly transpile the code
     // This handles all TypeScript syntax correctly: type aliases, interfaces, union types, generics, etc.
     const transpileResult = ts.transpileModule(currentSourceCode!, {
@@ -871,6 +886,31 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
       console.log(`[Designer] Found ${mockCount} _designerMock() call(s), stripping...`);
     }
     executableCode = executableCode.replace(/_designerMock(?=\()/g, '');
+
+    // Strip local class definitions for mocked classes (so they use the global mock)
+    if (currentScenarios && currentScenarioName && currentScenarios[currentScenarioName]) {
+      const scenario = currentScenarios[currentScenarioName];
+      for (const className of Object.keys(scenario.mocks)) {
+        // Match: class ClassName { ... } - need to handle nested braces
+        const classRegex = new RegExp(`class\\s+${className}\\s*\\{`);
+        const match = executableCode.match(classRegex);
+        if (match && match.index !== undefined) {
+          // Find the matching closing brace
+          let braceCount = 1;
+          let endIndex = match.index + match[0].length;
+          while (braceCount > 0 && endIndex < executableCode.length) {
+            if (executableCode[endIndex] === '{') braceCount++;
+            else if (executableCode[endIndex] === '}') braceCount--;
+            endIndex++;
+          }
+          // Replace the class with a reference to the global mock
+          const beforeClass = executableCode.substring(0, match.index);
+          const afterClass = executableCode.substring(endIndex);
+          executableCode = beforeClass + `const ${className} = global.${className};` + afterClass;
+          console.log(`[Designer]   - Replaced local class '${className}' with global mock`);
+        }
+      }
+    }
 
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
@@ -910,6 +950,75 @@ function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inl
   return currentMetadata;
 }
 
+// Load designer scenarios from .designer.ts file
+function loadDesignerScenarios(mainFilePath: string): void {
+  // Convert foo.ts to foo.designer.ts
+  const designerPath = mainFilePath.replace(/\.ts$/, '.designer.ts');
+  const fullDesignerPath = path.join(__dirname, '..', '..', designerPath);
+
+  // Preserve the current scenario selection if it exists
+  const previousScenario = currentScenarioName;
+
+  // Reset scenarios (but not the selection yet)
+  currentScenarios = null;
+  designerFilePath = null;
+
+  if (!fs.existsSync(fullDesignerPath)) {
+    console.log(`[Designer] No scenarios file found at ${designerPath}`);
+    return;
+  }
+
+  console.log(`[Designer] Loading scenarios from ${designerPath}`);
+  designerFilePath = designerPath;
+
+  try {
+    // Read and transpile the designer file
+    const designerSource = fs.readFileSync(fullDesignerPath, 'utf8');
+    const transpileResult = ts.transpileModule(designerSource, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+      }
+    });
+
+    // Create temp file and execute
+    const tempDir = path.join('/tmp', 'tsyne-designer-scenarios-' + Date.now());
+    fs.mkdirSync(tempDir, { recursive: true });
+    const tempPath = path.join(tempDir, 'scenarios.js');
+    fs.writeFileSync(tempPath, transpileResult.outputText, 'utf8');
+
+    // Clear cache and require
+    delete require.cache[require.resolve(tempPath)];
+    const scenariosModule = require(tempPath);
+
+    // Extract scenarios
+    currentScenarios = scenariosModule.scenarios || scenariosModule.default;
+
+    if (currentScenarios) {
+      const scenarioNames = Object.keys(currentScenarios);
+      console.log(`[Designer] Loaded ${scenarioNames.length} scenarios: ${scenarioNames.join(', ')}`);
+
+      // Restore previous selection if still valid, otherwise auto-select first
+      if (previousScenario && currentScenarios[previousScenario]) {
+        currentScenarioName = previousScenario;
+        console.log(`[Designer] Restored scenario: ${currentScenarioName}`);
+      } else if (scenarioNames.length > 0) {
+        currentScenarioName = scenarioNames[0];
+        console.log(`[Designer] Auto-selected scenario: ${currentScenarioName}`);
+      } else {
+        currentScenarioName = null;
+      }
+    }
+
+    // Cleanup temp files
+    fs.unlinkSync(tempPath);
+    fs.rmdirSync(tempDir);
+  } catch (error: any) {
+    console.error(`[Designer] Error loading scenarios: ${error.message}`);
+    currentScenarios = null;
+  }
+}
+
 // Load and execute a file in designer mode
 function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   const fullPath = path.join(__dirname, '..', '..', filePath);
@@ -917,6 +1026,9 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
   if (!fs.existsSync(fullPath)) {
     throw new Error(`File not found: ${fullPath}`);
   }
+
+  // Load designer scenarios if available
+  loadDesignerScenarios(filePath);
 
   // Read source code and load it
   const sourceCode = fs.readFileSync(fullPath, 'utf8');
@@ -1813,8 +1925,76 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
           metadata,
           styles: currentStyles,
           filePath: currentFilePath,
-          originalSource: originalSource  // Return the pristine original, not current
+          originalSource: originalSource,  // Return the pristine original, not current
+          // Include scenario information
+          scenarios: currentScenarios ? Object.entries(currentScenarios).map(([name, s]) => ({
+            name,
+            description: s.description
+          })) : null,
+          currentScenario: currentScenarioName
         }));
+      } catch (error: any) {
+        console.error('[API Error]', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  },
+
+  '/api/scenarios': (req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      scenarios: currentScenarios ? Object.entries(currentScenarios).map(([name, s]) => ({
+        name,
+        description: s.description
+      })) : null,
+      currentScenario: currentScenarioName,
+      designerFile: designerFilePath
+    }));
+  },
+
+  '/api/select-scenario': (req, res) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { scenario } = JSON.parse(body);
+
+        if (!currentScenarios) {
+          throw new Error('No scenarios loaded');
+        }
+
+        if (!currentScenarios[scenario]) {
+          throw new Error(`Unknown scenario: ${scenario}`);
+        }
+
+        currentScenarioName = scenario;
+        console.log(`[Designer] Selected scenario: ${scenario}`);
+
+        // Reload with new scenario
+        if (currentFilePath) {
+          const metadata = loadFileInDesignerMode(currentFilePath);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            metadata,
+            styles: currentStyles,
+            filePath: currentFilePath,
+            originalSource: originalSource,
+            scenarios: Object.entries(currentScenarios).map(([name, s]) => ({
+              name,
+              description: s.description
+            })),
+            currentScenario: currentScenarioName
+          }));
+        } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            currentScenario: currentScenarioName
+          }));
+        }
       } catch (error: any) {
         console.error('[API Error]', error);
         res.writeHead(500, { 'Content-Type': 'application/json' });
