@@ -55,7 +55,7 @@ app({ title: 'My App' }, (a) => {
 
 **Containers:** vbox, hbox, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup
 **Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, selectentry, radiogroup, checkgroup, slider, dateentry
-**Display:** label, hyperlink, separator, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid
+**Display:** label, hyperlink, separator, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon, calendar
 **Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient
 **Browser:** browser (embedded webview/page)
 
@@ -189,6 +189,323 @@ const listBinding = todoContainer
 store.subscribe(() => {
   listBinding.update(store.getAllTodos());
 });
+```
+
+## Additional Display Widgets
+
+**Icon** - Display theme icons:
+```typescript
+a.icon('confirm');  // Theme icon by name
+a.icon('delete');   // 50+ icons: cancel, confirm, delete, search, home, settings, etc.
+icon.setIconResource('search');  // Update icon
+```
+
+**FileIcon** - Display file type icons:
+```typescript
+a.fileicon('/path/to/document.pdf');  // Shows PDF icon
+fileIcon.setURI('/new/path.jpg');     // Update path
+fileIcon.setSelected(true);           // Selection state
+```
+
+**Calendar** - Standalone calendar picker:
+```typescript
+a.calendar(new Date(), (date) => console.log('Selected:', date));
+// Full calendar UI, different from dateentry inline picker
+```
+
+## Dialog System
+
+All dialogs are methods on `Window` objects:
+
+**Information Dialogs:**
+```typescript
+await win.showInfo('Title', 'Information message');
+await win.showError('Error', 'Something went wrong');
+await win.showConfirm('Confirm', 'Are you sure?');  // Returns boolean
+```
+
+**File Dialogs:**
+```typescript
+const filePath = await win.showFileOpen();      // Returns path or null
+const savePath = await win.showFileSave('default.txt');  // Returns path or null
+const folder = await win.showFolderOpen();      // Returns folder path or null
+```
+
+**Input Dialogs:**
+```typescript
+// Quick text input
+const text = await win.showEntryDialog('Name', 'Enter your name:');
+
+// Complex form with multiple fields
+const result = await win.showForm('User Details', [
+  { type: 'entry', label: 'Name', key: 'name' },
+  { type: 'password', label: 'Password', key: 'pass' },
+  { type: 'multiline', label: 'Bio', key: 'bio' },
+  { type: 'select', label: 'Country', key: 'country', options: ['US', 'UK', 'CA'] },
+  { type: 'check', label: 'Subscribe', key: 'subscribe' }
+]);
+// Returns: { submitted: boolean, values: { name: string, pass: string, ... } }
+```
+
+**Color Picker:**
+```typescript
+const color = await win.showColorPicker('Choose Color', '#ff0000');
+// Returns: { hex: '#ff0000', r: 255, g: 0, b: 0, a: 255 }
+```
+
+**Custom Content Dialogs:**
+```typescript
+// Custom dialog with arbitrary content
+await win.showCustom('Custom', () => {
+  a.vbox(() => {
+    a.label('Any widgets here');
+    a.button('Action', () => {});
+  });
+}, { dismissText: 'Close' });
+
+// Custom confirm dialog
+const confirmed = await win.showCustomConfirm('Confirm', () => {
+  a.label('Custom content with confirm/cancel');
+}, { confirmText: 'Yes', dismissText: 'No' });
+```
+
+**Progress Dialog:**
+```typescript
+const progress = await win.showProgress('Loading', 'Please wait...', {
+  infinite: false,  // or true for spinner
+  onCancelled: () => console.log('User cancelled')
+});
+progress.setValue(0.5);  // 50% (only for non-infinite)
+progress.hide();         // Close dialog
+```
+
+## Window Methods
+
+**Window Control:**
+```typescript
+win.resize(1024, 768);         // Resize window
+win.setTitle('New Title');     // Change title
+win.centerOnScreen();          // Center on display
+win.setFullScreen(true);       // Enter fullscreen
+win.setIcon('icon-resource');  // Set window icon
+win.close();                   // Close window
+```
+
+**Close Intercept:**
+```typescript
+win.setCloseIntercept(async () => {
+  const confirmed = await win.showConfirm('Quit', 'Save changes?');
+  return confirmed;  // Return true to allow close, false to prevent
+});
+```
+
+**Application Menu:**
+```typescript
+win.setMainMenu([
+  {
+    label: 'File',
+    items: [
+      { label: 'New', onClick: () => newFile() },
+      { isSeparator: true },
+      { label: 'Quit', onClick: () => app.quit() }
+    ]
+  },
+  {
+    label: 'Edit',
+    items: [
+      { label: 'Copy', onClick: () => copy() },
+      { label: 'Paste', onClick: () => paste() }
+    ]
+  }
+]);
+```
+
+**Clipboard Access:**
+```typescript
+const content = await win.getClipboard();  // Get clipboard text
+await win.setClipboard('Hello');           // Set clipboard text
+```
+
+**Screenshot:**
+```typescript
+await win.screenshot('/path/to/screenshot.png');  // Capture window to PNG
+```
+
+## App-Level Features
+
+**Theme Management:**
+```typescript
+app.setTheme('dark');   // or 'light'
+const theme = app.getTheme();  // Returns current theme
+```
+
+**Custom Theming:**
+```typescript
+app.setCustomTheme({
+  background: '#1a1a1a',
+  foreground: '#ffffff',
+  primary: '#0066cc',
+  error: '#ff0000',
+  success: '#00cc00',
+  // 20+ color keys available
+});
+app.clearCustomTheme();  // Revert to default
+```
+
+**Custom Fonts:**
+```typescript
+app.setCustomFont('/path/to/font.ttf', 'regular');  // regular, bold, italic, boldItalic, monospace, symbol
+app.clearCustomFont('regular');  // or 'all' to clear all
+app.setFontScale(1.2);           // Global font scaling (0.75-1.5)
+const fonts = app.getAvailableFonts();  // Get font info
+```
+
+**System Tray:**
+```typescript
+app.setSystemTray({
+  iconPath: '/path/to/icon.png',
+  menuItems: [
+    { label: 'Show Window', onClick: () => win.show() },
+    { isSeparator: true },
+    { label: 'Quit', onClick: () => app.quit() }
+  ]
+});
+```
+
+**Desktop Notifications:**
+```typescript
+app.sendNotification('Title', 'Notification message content');
+```
+
+**Persistent Preferences:**
+```typescript
+// Store and retrieve preferences (persists across sessions)
+app.setPreference('username', 'john');
+const username = app.getPreference('username', 'default');
+
+// Type-specific getters
+const count = app.getPreferenceInt('count', 0);
+const ratio = app.getPreferenceFloat('ratio', 1.0);
+const enabled = app.getPreferenceBool('enabled', true);
+
+app.removePreference('username');
+```
+
+**Show Source Code:**
+```typescript
+app.showSource();              // Show current app source
+app.showSource('/path/to/file.ts');  // Show specific file
+```
+
+## Container Widget Methods
+
+**DocTabs (dynamic tab management):**
+```typescript
+const tabs = a.doctabs((tab) => { /* initial tabs */ });
+tabs.append('New Tab', () => a.label('Content'), true);  // Add tab, select it
+tabs.remove(0);    // Remove tab by index
+tabs.select(1);    // Select tab by index
+```
+
+**Navigation (stack-based navigation):**
+```typescript
+const nav = a.navigation('Home', () => a.label('Home page'));
+nav.push(() => a.label('Detail page'), 'Details');  // Push new view
+nav.back();       // Pop to previous
+nav.forward();    // Go forward in history
+nav.setTitle('New Title');  // Update current title
+```
+
+**InnerWindow:**
+```typescript
+const inner = a.innerwindow('Title', () => { /* content */ });
+inner.setTitle('New Title');
+inner.close();
+```
+
+**Popup:**
+```typescript
+const popup = a.popup(() => { /* content */ });
+popup.show(100, 200);  // Show at x, y coordinates
+popup.move(150, 250);  // Move to new position
+popup.hide();          // Hide popup
+```
+
+## Interaction Features
+
+**Drag & Drop:**
+```typescript
+widget.setDraggable(true);   // Enable dragging
+widget.setDroppable(true);   // Accept drops
+// Handle via callbacks configured at creation
+```
+
+**Context Menus:**
+```typescript
+widget.setContextMenu([
+  { label: 'Copy', onClick: () => copy() },
+  { label: 'Paste', onClick: () => paste() }
+]);
+```
+
+**Focus Management:**
+```typescript
+widget.focus();      // Set focus to widget
+widget.focusNext();  // Move to next focusable
+widget.focusPrevious();  // Move to previous focusable
+```
+
+**Widget Registration (for testing):**
+```typescript
+widget.registerTestId('my-button');    // Register for automated testing
+widget.registerCustomId('unique-id');  // Custom ID for lookup
+```
+
+## Accessibility
+
+```typescript
+// Set accessibility metadata
+widget.setAccessibility({
+  label: 'Submit button',
+  description: 'Submits the form',
+  role: 'button'
+});
+
+// Screen reader announcements
+app.announce('Form submitted successfully');
+
+// Enable/disable accessibility
+app.enableAccessibility();
+app.disableAccessibility();
+```
+
+## TextGrid Advanced Features
+
+```typescript
+const grid = a.textgrid(80, 24);  // columns, rows
+
+// Set content
+grid.setText('Full grid content');
+grid.setCell(0, 0, 'A', { fgColor: '#ff0000', bold: true });
+grid.setRow(1, 'Entire row text', { bgColor: '#333333' });
+
+// Styling
+grid.setStyle(0, 0, { fgColor: '#00ff00', italic: true });
+grid.setStyleRange(0, 0, 5, 10, { bgColor: '#0000ff' });
+
+// Read content
+const text = grid.getText();
+```
+
+## Resource Management
+
+```typescript
+// Register binary resources (for images, fonts, etc.)
+app.resources.register('my-image', imageBuffer);
+app.resources.unregister('my-image');
+
+// Use registered resources
+a.image({ resource: 'my-image' });
 ```
 
 ## Adding Features
