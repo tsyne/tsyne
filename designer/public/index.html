@@ -250,6 +250,41 @@
       color: #fff;
     }
 
+    .scenario-selector {
+      background: #2d2d2d;
+      border: 1px solid #3e3e3e;
+      border-radius: 3px;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    .scenario-radio {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #d4d4d4;
+      padding: 4px 8px;
+      border-radius: 3px;
+      transition: background 0.2s;
+    }
+
+    .scenario-radio:hover {
+      background: #3c3c3c;
+    }
+
+    .scenario-radio input[type="radio"] {
+      cursor: pointer;
+      accent-color: #0e639c;
+    }
+
+    .scenario-radio.selected {
+      background: #094771;
+    }
+
     .preview-tabs {
       display: flex;
       gap: 2px;
@@ -824,6 +859,10 @@
           Production Preview
         </button>
       </h2>
+      <div id="scenarioSelector" class="scenario-selector" style="display: none;">
+        <label style="font-size: 12px; color: #858585; margin-right: 10px;">Scenario:</label>
+        <div id="scenarioRadios" style="display: inline-flex; gap: 10px; flex-wrap: wrap;"></div>
+      </div>
       <div class="preview-tabs">
         <button class="preview-tab active" onclick="switchPreviewTab('preview')">Preview</button>
         <button class="preview-tab" onclick="switchPreviewTab('source')">Source</button>

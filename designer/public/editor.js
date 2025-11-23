@@ -6,6 +6,8 @@ let currentFilePath = null;
 let currentStyles = null;
 let currentSource = null;
 let originalSource = null;
+let currentScenarios = null;
+let currentScenarioName = null;
 
 // CSS editor state (for staging changes before save)
 let editingStyles = null;
@@ -286,6 +288,11 @@ async function loadFile(filePath = 'examples/hello.ts') {
       cssEditorBtn.style.display = 'none';
     }
 
+    // Handle scenarios
+    currentScenarios = data.scenarios || null;
+    currentScenarioName = data.currentScenario || null;
+    renderScenarioSelector();
+
     renderWidgetTree();
     renderPreview();
     applyStylesToPreview();
@@ -295,6 +302,63 @@ async function loadFile(filePath = 'examples/hello.ts') {
   } catch (error) {
     console.error('Error loading file:', error);
     alert('Error loading file: ' + error.message);
+  }
+}
+
+// Render scenario selector radio buttons
+function renderScenarioSelector() {
+  const selectorDiv = document.getElementById('scenarioSelector');
+  const radiosDiv = document.getElementById('scenarioRadios');
+
+  if (!currentScenarios || currentScenarios.length === 0) {
+    selectorDiv.style.display = 'none';
+    return;
+  }
+
+  selectorDiv.style.display = 'flex';
+  radiosDiv.innerHTML = '';
+
+  currentScenarios.forEach((scenario, index) => {
+    const label = document.createElement('label');
+    label.className = 'scenario-radio' + (scenario.name === currentScenarioName ? ' selected' : '');
+    label.title = scenario.description || '';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'scenario';
+    radio.value = scenario.name;
+    radio.checked = scenario.name === currentScenarioName;
+    radio.onchange = () => selectScenario(scenario.name);
+
+    const text = document.createTextNode(scenario.name);
+
+    label.appendChild(radio);
+    label.appendChild(text);
+    radiosDiv.appendChild(label);
+  });
+}
+
+// Select a scenario and reload
+async function selectScenario(scenarioName) {
+  try {
+    const response = await fetch('/api/select-scenario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: scenarioName })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      currentScenarioName = scenarioName;
+      // Reload the file to apply the new scenario
+      await loadFile(currentFilePath);
+    } else {
+      console.error('Failed to select scenario:', result.error);
+      alert('Failed to select scenario: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error selecting scenario:', error);
+    alert('Error selecting scenario: ' + error.message);
   }
 }
 
