@@ -335,6 +335,12 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleInnerWindowClose(msg)
 	case "setInnerWindowTitle":
 		b.handleSetInnerWindowTitle(msg)
+	case "createDateEntry":
+		b.handleCreateDateEntry(msg)
+	case "setDate":
+		b.handleSetDate(msg)
+	case "getDate":
+		b.handleGetDate(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,

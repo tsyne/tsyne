@@ -10,5 +10,6 @@ bin/
 .idea/
 test-failures/
 test-output/
+examples/screenshots/visual-regression/
 pkg/
 bookmarks-export.json

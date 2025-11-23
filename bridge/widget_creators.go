@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -2486,5 +2487,137 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 	b.sendResponse(Response{
 		ID:      msg.ID,
 		Success: true,
+	})
+}
+
+func (b *Bridge) handleCreateDateEntry(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	callbackID, hasCallback := msg.Payload["callbackId"].(string)
+
+	dateEntry := widget.NewDateEntry()
+
+	// Set OnChanged callback if provided
+	if hasCallback {
+		dateEntry.OnChanged = func(t *time.Time) {
+			var dateStr string
+			if t != nil {
+				dateStr = t.Format("2006-01-02")
+			}
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"date":       dateStr,
+				},
+			})
+		}
+	}
+
+	// Set initial date if provided (format: "2006-01-02")
+	if initialDate, ok := msg.Payload["date"].(string); ok && initialDate != "" {
+		if t, err := time.Parse("2006-01-02", initialDate); err == nil {
+			dateEntry.SetDate(&t)
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = dateEntry
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "dateentry", Text: ""}
+	if hasCallback {
+		b.callbacks[widgetID] = callbackID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleSetDate(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	dateStr := msg.Payload["date"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	dateEntry, ok := w.(*widget.DateEntry)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a DateEntry",
+		})
+		return
+	}
+
+	if dateStr == "" {
+		dateEntry.SetDate(nil)
+	} else {
+		if t, err := time.Parse("2006-01-02", dateStr); err == nil {
+			dateEntry.SetDate(&t)
+		} else {
+			b.sendResponse(Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Invalid date format: %v", err),
+			})
+			return
+		}
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleGetDate(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	dateEntry, ok := w.(*widget.DateEntry)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a DateEntry",
+		})
+		return
+	}
+
+	var dateStr string
+	if dateEntry.Date != nil {
+		dateStr = dateEntry.Date.Format("2006-01-02")
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"date": dateStr},
 	})
 }
