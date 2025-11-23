@@ -1245,6 +1245,50 @@ export class ProgressBar extends Widget {
 }
 
 /**
+ * ProgressBarInfinite widget - indeterminate progress indicator
+ *
+ * Shows an animated progress bar that indicates activity without showing
+ * specific progress. Useful for operations with unknown duration.
+ */
+export class ProgressBarInfinite extends Widget {
+  constructor(ctx: Context) {
+    const id = ctx.generateId('progressbarinfinite');
+    super(ctx, id);
+
+    ctx.bridge.send('createProgressBar', { id, infinite: true });
+    ctx.addToCurrentContainer(id);
+  }
+
+  /**
+   * Start the progress bar animation
+   */
+  async start(): Promise<void> {
+    await this.ctx.bridge.send('startProgressInfinite', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Stop the progress bar animation
+   */
+  async stop(): Promise<void> {
+    await this.ctx.bridge.send('stopProgressInfinite', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Check if the progress bar animation is currently running
+   */
+  async isRunning(): Promise<boolean> {
+    const result = await this.ctx.bridge.send('isProgressRunning', {
+      widgetId: this.id
+    });
+    return result.running;
+  }
+}
+
+/**
  * Scroll container
  */
 export class Scroll {
