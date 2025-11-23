@@ -1,0 +1,757 @@
+package main
+
+import (
+	"image/color"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
+)
+
+// ============================================================================
+// Complex/Data Widgets: Tree, Table, List, Menu, Toolbar, TextGrid
+// ============================================================================
+
+func (b *Bridge) handleCreateTree(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	rootLabel := msg.Payload["rootLabel"].(string)
+
+	// Create tree with simple structure
+	// Tree nodes are built recursively from the data structure
+	tree := widget.NewTree(
+		func(uid string) []string {
+			// This is a simple tree - TypeScript will manage the structure
+			// For now, return empty children (tree can be enhanced later)
+			return []string{}
+		},
+		func(uid string) bool {
+			// All nodes can have children
+			return true
+		},
+		func(branch bool) fyne.CanvasObject {
+			return widget.NewLabel("Node")
+		},
+		func(uid string, branch bool, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			label.SetText(uid)
+		},
+	)
+
+	// Open root node
+	tree.OpenBranch(rootLabel)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = tree
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tree", Text: rootLabel}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleCreateTable(msg Message) {
+	id := msg.Payload["id"].(string)
+	headersInterface := msg.Payload["headers"].([]interface{})
+	dataInterface := msg.Payload["data"].([]interface{})
+
+	// Convert headers
+	headers := make([]string, len(headersInterface))
+	for i, h := range headersInterface {
+		headers[i] = h.(string)
+	}
+
+	// Convert data
+	var data [][]string
+	for _, rowInterface := range dataInterface {
+		rowData := rowInterface.([]interface{})
+		row := make([]string, len(rowData))
+		for j, cell := range rowData {
+			row[j] = cell.(string)
+		}
+		data = append(data, row)
+	}
+
+	// Store data
+	b.mu.Lock()
+	b.tableData[id] = data
+	b.mu.Unlock()
+
+	// Create table widget
+	table := widget.NewTable(
+		func() (int, int) {
+			b.mu.RLock()
+			defer b.mu.RUnlock()
+			tableData := b.tableData[id]
+			if len(tableData) == 0 {
+				return 1, len(headers) // Just header row
+			}
+			return len(tableData) + 1, len(headers) // +1 for header
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(cell widget.TableCellID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			b.mu.RLock()
+			tableData := b.tableData[id]
+			b.mu.RUnlock()
+
+			if cell.Row == 0 {
+				// Header row
+				if cell.Col < len(headers) {
+					label.SetText(headers[cell.Col])
+					label.TextStyle = fyne.TextStyle{Bold: true}
+				}
+			} else {
+				// Data row
+				rowIdx := cell.Row - 1
+				if rowIdx < len(tableData) && cell.Col < len(tableData[rowIdx]) {
+					label.SetText(tableData[rowIdx][cell.Col])
+					label.TextStyle = fyne.TextStyle{}
+				}
+			}
+		},
+	)
+
+	b.mu.Lock()
+	b.widgets[id] = table
+	b.widgetMeta[id] = WidgetMetadata{
+		Type: "table",
+		Text: "",
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCreateList(msg Message) {
+	id := msg.Payload["id"].(string)
+	itemsInterface := msg.Payload["items"].([]interface{})
+
+	// Convert items
+	items := make([]string, len(itemsInterface))
+	for i, item := range itemsInterface {
+		items[i] = item.(string)
+	}
+
+	// Store data
+	b.mu.Lock()
+	b.listData[id] = items
+	b.mu.Unlock()
+
+	// Create list widget
+	list := widget.NewList(
+		func() int {
+			b.mu.RLock()
+			defer b.mu.RUnlock()
+			return len(b.listData[id])
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("")
+		},
+		func(itemID widget.ListItemID, obj fyne.CanvasObject) {
+			label := obj.(*widget.Label)
+			b.mu.RLock()
+			listData := b.listData[id]
+			b.mu.RUnlock()
+
+			if itemID < len(listData) {
+				label.SetText(listData[itemID])
+			}
+		},
+	)
+
+	// Handle selection callback if provided
+	if callbackID, ok := msg.Payload["callbackId"].(string); ok {
+		list.OnSelected = func(itemID widget.ListItemID) {
+			b.mu.RLock()
+			listData := b.listData[id]
+			b.mu.RUnlock()
+
+			var selectedItem string
+			if itemID < len(listData) {
+				selectedItem = listData[itemID]
+			}
+
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"index":      itemID,
+					"item":       selectedItem,
+				},
+			})
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[id] = list
+	b.widgetMeta[id] = WidgetMetadata{
+		Type: "list",
+		Text: "",
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleCreateMenu(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	itemsInterface := msg.Payload["items"].([]interface{})
+
+	// Build menu items
+	var menuItems []*fyne.MenuItem
+
+	for _, itemInterface := range itemsInterface {
+		itemData := itemInterface.(map[string]interface{})
+
+		// Check if this is a separator
+		if isSeparator, ok := itemData["isSeparator"].(bool); ok && isSeparator {
+			menuItems = append(menuItems, fyne.NewMenuItemSeparator())
+			continue
+		}
+
+		label := itemData["label"].(string)
+		callbackID, hasCallback := itemData["callbackId"].(string)
+
+		// Capture callback ID in local scope to avoid closure issues
+		capturedCallbackID := callbackID
+		capturedHasCallback := hasCallback
+
+		menuItem := fyne.NewMenuItem(label, func() {
+			if capturedHasCallback {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": capturedCallbackID,
+					},
+				})
+			}
+		})
+
+		// Set disabled state if provided
+		if disabled, ok := itemData["disabled"].(bool); ok && disabled {
+			menuItem.Disabled = true
+		}
+
+		// Set checked state if provided
+		if checked, ok := itemData["checked"].(bool); ok && checked {
+			menuItem.Checked = true
+		}
+
+		menuItems = append(menuItems, menuItem)
+	}
+
+	// Create the menu widget
+	menu := widget.NewMenu(fyne.NewMenu("", menuItems...))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = menu
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "menu", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleCreateToolbar(msg Message) {
+	id := msg.Payload["id"].(string)
+	itemsInterface := msg.Payload["items"].([]interface{})
+
+	var toolbarItems []widget.ToolbarItem
+	var itemLabels []string // Track labels for testing/traversal
+
+	for _, itemInterface := range itemsInterface {
+		itemData := itemInterface.(map[string]interface{})
+		itemType := itemData["type"].(string)
+
+		switch itemType {
+		case "action":
+			label := itemData["label"].(string)
+			callbackID := itemData["callbackId"].(string)
+
+			action := widget.NewToolbarAction(
+				nil, // Icon (we'll keep it simple for now)
+				func() {
+					b.sendEvent(Event{
+						Type: "callback",
+						Data: map[string]interface{}{
+							"callbackId": callbackID,
+						},
+					})
+				},
+			)
+			toolbarItems = append(toolbarItems, action)
+			itemLabels = append(itemLabels, label)
+
+			// If a custom ID is provided for testing, store the action
+			if customID, ok := itemData["customId"].(string); ok {
+				b.toolbarActions[customID] = action
+			}
+
+		case "separator":
+			toolbarItems = append(toolbarItems, widget.NewToolbarSeparator())
+			itemLabels = append(itemLabels, "") // Empty label for separator
+
+		case "spacer":
+			toolbarItems = append(toolbarItems, widget.NewToolbarSpacer())
+			itemLabels = append(itemLabels, "") // Empty label for spacer
+		}
+	}
+
+	toolbar := widget.NewToolbar(toolbarItems...)
+
+	b.mu.Lock()
+	b.widgets[id] = toolbar
+	b.widgetMeta[id] = WidgetMetadata{
+		Type: "toolbar",
+		Text: "",
+	}
+	// Store item labels in the toolbarItems map for traversal
+	b.toolbarItems[id] = &ToolbarItemsMetadata{
+		Labels: itemLabels,
+		Items:  toolbarItems,
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// ============================================================================
+// TextGrid Widget - Terminal-style text display
+// ============================================================================
+
+func (b *Bridge) handleCreateTextGrid(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	text, _ := msg.Payload["text"].(string)
+	showLineNumbers, _ := msg.Payload["showLineNumbers"].(bool)
+	showWhitespace, _ := msg.Payload["showWhitespace"].(bool)
+
+	var textGrid *widget.TextGrid
+	if text != "" {
+		textGrid = widget.NewTextGridFromString(text)
+	} else {
+		textGrid = widget.NewTextGrid()
+	}
+
+	textGrid.ShowLineNumbers = showLineNumbers
+	textGrid.ShowWhitespace = showWhitespace
+
+	b.mu.Lock()
+	b.widgets[widgetID] = textGrid
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "textgrid", Text: text}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleSetTextGridText(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	text := msg.Payload["text"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	textGrid.SetText(text)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridCell(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	col := int(msg.Payload["col"].(float64))
+	char, hasChar := msg.Payload["char"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	if hasChar && len(char) > 0 {
+		// Set rune at position
+		textGrid.SetRune(row, col, rune(char[0]))
+	}
+
+	// Apply style if provided
+	if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
+		style := parseTextGridStyle(styleData)
+		textGrid.SetStyle(row, col, style)
+	}
+
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridRow(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	text := msg.Payload["text"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	// Create TextGridRow from text
+	cells := make([]widget.TextGridCell, len(text))
+	for i, r := range text {
+		cells[i] = widget.TextGridCell{Rune: r}
+	}
+
+	// Apply style if provided
+	if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
+		style := parseTextGridStyle(styleData)
+		for i := range cells {
+			cells[i].Style = style
+		}
+	}
+
+	textGrid.SetRow(row, widget.TextGridRow{Cells: cells})
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridStyle(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	row := int(msg.Payload["row"].(float64))
+	col := int(msg.Payload["col"].(float64))
+	styleData := msg.Payload["style"].(map[string]interface{})
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	style := parseTextGridStyle(styleData)
+	textGrid.SetStyle(row, col, style)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetTextGridStyleRange(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	startRow := int(msg.Payload["startRow"].(float64))
+	startCol := int(msg.Payload["startCol"].(float64))
+	endRow := int(msg.Payload["endRow"].(float64))
+	endCol := int(msg.Payload["endCol"].(float64))
+	styleData := msg.Payload["style"].(map[string]interface{})
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	style := parseTextGridStyle(styleData)
+	textGrid.SetStyleRange(startRow, startCol, endRow, endCol, style)
+	textGrid.Refresh()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleGetTextGridText(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	textGrid, ok := w.(*widget.TextGrid)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a TextGrid",
+		})
+		return
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"text": textGrid.Text()},
+	})
+}
+
+// TextGridStyleImpl implements widget.TextGridStyle
+type TextGridStyleImpl struct {
+	FGColor   color.Color
+	BGColor   color.Color
+	TextStyle fyne.TextStyle
+}
+
+func (s *TextGridStyleImpl) TextColor() color.Color {
+	return s.FGColor
+}
+
+func (s *TextGridStyleImpl) BackgroundColor() color.Color {
+	return s.BGColor
+}
+
+func (s *TextGridStyleImpl) Style() fyne.TextStyle {
+	return s.TextStyle
+}
+
+// parseTextGridStyle parses style data from TypeScript into a TextGridStyle
+func parseTextGridStyle(styleData map[string]interface{}) widget.TextGridStyle {
+	style := &TextGridStyleImpl{
+		FGColor:   nil,
+		BGColor:   nil,
+		TextStyle: fyne.TextStyle{},
+	}
+
+	// Parse foreground color (hex string like "#ff0000" or "red")
+	if fgHex, ok := styleData["fgColor"].(string); ok && fgHex != "" {
+		style.FGColor = parseColorHex(fgHex)
+	}
+
+	// Parse background color
+	if bgHex, ok := styleData["bgColor"].(string); ok && bgHex != "" {
+		style.BGColor = parseColorHex(bgHex)
+	}
+
+	// Parse text style flags
+	if bold, ok := styleData["bold"].(bool); ok && bold {
+		style.TextStyle.Bold = true
+	}
+	if italic, ok := styleData["italic"].(bool); ok && italic {
+		style.TextStyle.Italic = true
+	}
+	if monospace, ok := styleData["monospace"].(bool); ok && monospace {
+		style.TextStyle.Monospace = true
+	}
+
+	return style
+}
+
+// parseColorHex parses a hex color string to color.Color
+func parseColorHex(hexStr string) color.Color {
+	// Remove leading # if present
+	if len(hexStr) > 0 && hexStr[0] == '#' {
+		hexStr = hexStr[1:]
+	}
+
+	// Handle named colors
+	switch hexStr {
+	case "black":
+		return color.RGBA{R: 0, G: 0, B: 0, A: 255}
+	case "white":
+		return color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	case "red":
+		return color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	case "green":
+		return color.RGBA{R: 0, G: 255, B: 0, A: 255}
+	case "blue":
+		return color.RGBA{R: 0, G: 0, B: 255, A: 255}
+	case "yellow":
+		return color.RGBA{R: 255, G: 255, B: 0, A: 255}
+	case "cyan":
+		return color.RGBA{R: 0, G: 255, B: 255, A: 255}
+	case "magenta":
+		return color.RGBA{R: 255, G: 0, B: 255, A: 255}
+	case "gray", "grey":
+		return color.RGBA{R: 128, G: 128, B: 128, A: 255}
+	}
+
+	// Parse as hex
+	var r, g, b, a uint8 = 0, 0, 0, 255
+
+	switch len(hexStr) {
+	case 3: // #RGB
+		var rh, gh, bh uint8
+		for i, c := range hexStr {
+			val := hexCharToInt(c)
+			switch i {
+			case 0:
+				rh = val
+			case 1:
+				gh = val
+			case 2:
+				bh = val
+			}
+		}
+		r, g, b = rh*17, gh*17, bh*17
+	case 6: // #RRGGBB
+		for i := 0; i < 3; i++ {
+			high := hexCharToInt(rune(hexStr[i*2]))
+			low := hexCharToInt(rune(hexStr[i*2+1]))
+			val := high*16 + low
+			switch i {
+			case 0:
+				r = val
+			case 1:
+				g = val
+			case 2:
+				b = val
+			}
+		}
+	case 8: // #RRGGBBAA
+		for i := 0; i < 4; i++ {
+			high := hexCharToInt(rune(hexStr[i*2]))
+			low := hexCharToInt(rune(hexStr[i*2+1]))
+			val := high*16 + low
+			switch i {
+			case 0:
+				r = val
+			case 1:
+				g = val
+			case 2:
+				b = val
+			case 3:
+				a = val
+			}
+		}
+	}
+
+	return color.RGBA{R: r, G: g, B: b, A: a}
+}
+
+func hexCharToInt(c rune) uint8 {
+	switch {
+	case c >= '0' && c <= '9':
+		return uint8(c - '0')
+	case c >= 'a' && c <= 'f':
+		return uint8(c - 'a' + 10)
+	case c >= 'A' && c <= 'F':
+		return uint8(c - 'A' + 10)
+	}
+	return 0
+}
