@@ -269,6 +269,44 @@ Tsyne provides common dialog methods on the Window class for user interactions:
   - `filename`: Default filename (optional, defaults to 'untitled.txt')
   - Returns: `Promise<string | null>` - selected file path or null if cancelled
 
+- **`window.showFolderOpen()`**: Show a folder selection dialog
+  - Returns: `Promise<string | null>` - selected folder path or null if cancelled
+
+### Form Dialog
+
+- **`window.showForm(title, fields, options?)`**: Show a form dialog with customizable fields
+  - `title`: Dialog title
+  - `fields`: Array of field definitions (see below)
+  - `options`: Optional object with `confirmText` and `dismissText` (defaults to 'Submit' and 'Cancel')
+  - Returns: `Promise<{ submitted: boolean; values: Record<string, string | boolean> }>`
+
+**Field definition properties:**
+- `name`: Unique identifier for the field (used as key in returned values)
+- `label`: Field label displayed to the user
+- `type`: Field type - 'entry', 'password', 'multiline', 'select', or 'check' (optional, defaults to 'entry')
+- `placeholder`: Placeholder text for entry fields (optional)
+- `value`: Initial/default value (optional)
+- `hint`: Hint text displayed below the field (optional)
+- `options`: Array of options for 'select' type fields (optional)
+
+**Form Dialog Example:**
+```typescript
+const result = await win.showForm('Add Contact', [
+  { name: 'firstName', label: 'First Name', placeholder: 'John', hint: 'Required' },
+  { name: 'lastName', label: 'Last Name', placeholder: 'Doe' },
+  { name: 'email', label: 'Email', placeholder: 'john@example.com' },
+  { name: 'category', label: 'Category', type: 'select', options: ['Work', 'Personal', 'Family'] },
+  { name: 'notes', label: 'Notes', type: 'multiline', placeholder: 'Additional notes...' },
+  { name: 'favorite', label: 'Mark as Favorite', type: 'check' }
+], { confirmText: 'Add Contact', dismissText: 'Cancel' });
+
+if (result.submitted) {
+  console.log('First Name:', result.values.firstName);
+  console.log('Category:', result.values.category);
+  console.log('Is Favorite:', result.values.favorite);
+}
+```
+
 ### Custom Dialogs
 
 - **`window.showCustom(title, contentBuilder, options?)`**: Show a custom dialog with arbitrary content

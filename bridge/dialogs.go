@@ -181,6 +181,162 @@ func (b *Bridge) handleShowFileSave(msg Message) {
 	})
 }
 
+func (b *Bridge) handleShowFolderOpen(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
+		var folderPath string
+		if uri != nil {
+			folderPath = uri.Path()
+		}
+
+		b.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": callbackID,
+				"folderPath": folderPath,
+				"error":      err != nil,
+			},
+		})
+	}, win)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleShowForm(msg Message) {
+	windowID := msg.Payload["windowId"].(string)
+	title := msg.Payload["title"].(string)
+	confirmText := msg.Payload["confirmText"].(string)
+	dismissText := msg.Payload["dismissText"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+	fieldsRaw := msg.Payload["fields"].([]interface{})
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	// Create form items and track entries for value retrieval
+	formItems := make([]*widget.FormItem, 0, len(fieldsRaw))
+	entryWidgets := make(map[string]fyne.CanvasObject)
+
+	for _, fieldRaw := range fieldsRaw {
+		field := fieldRaw.(map[string]interface{})
+		fieldName := field["name"].(string)
+		fieldLabel := field["label"].(string)
+		fieldType, _ := field["type"].(string)
+		if fieldType == "" {
+			fieldType = "entry" // default to text entry
+		}
+		placeholder, _ := field["placeholder"].(string)
+		initialValue, _ := field["value"].(string)
+		hintText, _ := field["hint"].(string)
+
+		var inputWidget fyne.CanvasObject
+
+		switch fieldType {
+		case "password":
+			entry := widget.NewPasswordEntry()
+			entry.SetPlaceHolder(placeholder)
+			entry.SetText(initialValue)
+			inputWidget = entry
+		case "multiline":
+			entry := widget.NewMultiLineEntry()
+			entry.SetPlaceHolder(placeholder)
+			entry.SetText(initialValue)
+			inputWidget = entry
+		case "select":
+			options, _ := field["options"].([]interface{})
+			optionStrings := make([]string, len(options))
+			for i, opt := range options {
+				optionStrings[i] = opt.(string)
+			}
+			selectWidget := widget.NewSelect(optionStrings, nil)
+			if initialValue != "" {
+				selectWidget.SetSelected(initialValue)
+			}
+			inputWidget = selectWidget
+		case "check":
+			checkWidget := widget.NewCheck("", nil)
+			if initialValue == "true" {
+				checkWidget.SetChecked(true)
+			}
+			inputWidget = checkWidget
+		default: // "entry" or any other
+			entry := widget.NewEntry()
+			entry.SetPlaceHolder(placeholder)
+			entry.SetText(initialValue)
+			inputWidget = entry
+		}
+
+		entryWidgets[fieldName] = inputWidget
+
+		formItem := widget.NewFormItem(fieldLabel, inputWidget)
+		if hintText != "" {
+			formItem.HintText = hintText
+		}
+		formItems = append(formItems, formItem)
+	}
+
+	// Show the form dialog
+	dialog.ShowForm(title, confirmText, dismissText, formItems, func(submitted bool) {
+		// Collect values from all fields
+		values := make(map[string]interface{})
+
+		if submitted {
+			for name, w := range entryWidgets {
+				switch typedWidget := w.(type) {
+				case *widget.Entry:
+					values[name] = typedWidget.Text
+				case *widget.Select:
+					values[name] = typedWidget.Selected
+				case *widget.Check:
+					values[name] = typedWidget.Checked
+				}
+			}
+		}
+
+		b.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": callbackID,
+				"submitted":  submitted,
+				"values":     values,
+			},
+		})
+	}, win)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
 func (b *Bridge) handleShowCustom(msg Message) {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)

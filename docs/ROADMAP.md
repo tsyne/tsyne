@@ -51,12 +51,12 @@ This document tracks Fyne features **not yet implemented** in Tsyne, with sugges
 
 | Dialog | Fyne Function | Description | Suggested Demo App |
 |--------|---------------|-------------|-------------------|
-| **FolderOpen** | `dialog.ShowFolderOpen` | Folder picker | `project-opener.ts` - Select project directory |
-| **ColorPicker** | `dialog.ShowColorPicker` | Color selection | `drawing-app.ts` - Simple paint program |
-| **EntryDialog** | `dialog.ShowEntryDialog` | Quick text input | `rename-dialog.ts` - Rename file/item |
-| **FormDialog** | `dialog.ShowForm` | Form in dialog | `new-contact.ts` - Add contact form dialog |
-| ~~**CustomDialog**~~ | ~~`dialog.NewCustom`~~ | ~~Custom dialog content~~ | ~~`about-dialog.ts` - Custom about box~~ | **IMPLEMENTED** |
-| **ProgressDialog** | `dialog.ShowProgress` | Progress in dialog | `download-manager.ts` - Download with progress |
+| ~~**FolderOpen**~~ | ~~`dialog.ShowFolderOpen`~~ | ~~Folder picker~~ | ✅ `window.showFolderOpen()` **IMPLEMENTED** |
+| ~~**ColorPicker**~~ | ~~`dialog.ShowColorPicker`~~ | ~~Color selection~~ | ✅ `window.showColorPicker()` **IMPLEMENTED** |
+| ~~**EntryDialog**~~ | ~~`dialog.ShowEntryDialog`~~ | ~~Quick text input~~ | ✅ `window.showEntryDialog()` **IMPLEMENTED** |
+| ~~**FormDialog**~~ | ~~`dialog.ShowForm`~~ | ~~Form in dialog~~ | ✅ `new-contact.ts` **IMPLEMENTED** |
+| ~~**CustomDialog**~~ | ~~`dialog.NewCustom`~~ | ~~Custom dialog content~~ | ✅ `window.showCustom()` **IMPLEMENTED** |
+| ~~**ProgressDialog**~~ | ~~`dialog.ShowProgress`~~ | ~~Progress in dialog~~ | ✅ `window.showProgress()` **IMPLEMENTED** |
 
 ---
 
