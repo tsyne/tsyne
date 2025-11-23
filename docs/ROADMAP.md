@@ -2,19 +2,61 @@
 
 This document tracks Fyne features **not yet implemented** in Tsyne.
 
-**Current Coverage: ~85%** of Fyne's public API
+**Current Coverage: ~90%** of Fyne's public API
 
 ---
 
-## Widgets Not Yet Implemented
+## Canvas Primitives Not Yet Implemented
 
-| Widget | Fyne Type | Description | Suggested Demo App |
-|--------|-----------|-------------|-------------------|
-| **Icon** | `widget.Icon` | Theme icon display | `icon-gallery.ts` - Display all available theme icons |
-| **FileIcon** | `widget.FileIcon` | File type icon | `file-browser.ts` - Simple file browser with icons |
-| **Calendar** | `widget.Calendar` | Standalone calendar widget | `appointment-scheduler.ts` - Date selection UI |
+| Primitive | Fyne Type | Description | Suggested Demo App |
+|-----------|-----------|-------------|-------------------|
+| **CanvasArc** | `canvas.Arc` | Filled arc or annular sector | `pie-chart.ts` - Pie chart with arc segments |
+| **CanvasPolygon** | `canvas.Polygon` | Regular polygon primitive | `shape-gallery.ts` - Display various polygon shapes |
+| **CanvasRadialGradient** | `canvas.RadialGradient` | Radial gradient from center outward | `gradient-demo.ts` - Compare linear vs radial gradients |
 
-> **Note:** `DateEntry` (date input with calendar popup) is implemented. The standalone `Calendar` widget would be useful for inline date display without an input field.
+---
+
+## Containers Not Yet Implemented
+
+| Container | Fyne Type | Description | Suggested Demo App |
+|-----------|-----------|-------------|-------------------|
+| **MultipleWindows** | `container.MultipleWindows` | MDI container managing multiple InnerWindows with drag/resize | `mdi-workspace.ts` - Desktop-like workspace with floating windows |
+
+> **Note:** `InnerWindow` is implemented. `MultipleWindows` would provide coordinated management of multiple inner windows.
+
+---
+
+## Dialogs Not Yet Implemented
+
+| Dialog | Fyne Function | Description | Suggested Demo App |
+|--------|---------------|-------------|-------------------|
+| **showCustomWithoutButtons** | `dialog.NewCustomWithoutButtons` | Custom dialog without dismiss/confirm buttons | `modal-overlay.ts` - Non-dismissable loading overlay |
+
+---
+
+## Canvas Animations Not Yet Implemented
+
+| Animation | Fyne Function | Description | Suggested Demo App |
+|-----------|---------------|-------------|-------------------|
+| **ColorAnimation** | `canvas.NewColorRGBAAnimation` | Animate color transitions | `animated-ui.ts` - Smooth color transitions |
+| **PositionAnimation** | `canvas.NewPositionAnimation` | Animate object movement | `animated-ui.ts` - Moving objects |
+| **SizeAnimation** | `canvas.NewSizeAnimation` | Animate size changes | `animated-ui.ts` - Growing/shrinking elements |
+
+---
+
+## Data Binding (Partial Implementation)
+
+Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` package offers additional capabilities:
+
+| Feature | Fyne Package | Status | Notes |
+|---------|--------------|--------|-------|
+| **Scalar Bindings** | `binding.Bool/Int/Float/String` | Not implemented | Type-safe observable values |
+| **Type Conversion** | `binding.StringToInt`, etc. | Not implemented | Automatic type conversion |
+| **Boolean Logic** | `binding.Not/And/Or` | Not implemented | Combine boolean bindings |
+| **Preference Binding** | `binding.BindPreference*` | Not implemented | Auto-persist to preferences |
+| **Struct Binding** | `binding.Struct` | Not implemented | Bind to object properties |
+
+> **Note:** Full data binding may not be necessary for Tsyne's pseudo-declarative approach. The `when()` method and `ModelBoundList` cover most reactive UI needs.
 
 ---
 
@@ -31,16 +73,27 @@ This document tracks Fyne features **not yet implemented** in Tsyne.
 
 ## Implementation Priority
 
-### Remaining Work
-1. **Icon** - Theme icon display widget
-2. **FileIcon** - File type icon widget
-3. **Calendar** - Standalone calendar widget (DateEntry already provides calendar popup)
+### High Priority
+1. **CanvasArc** - Essential for pie charts and circular progress indicators
+2. **CanvasRadialGradient** - Common for modern UI effects
+3. **MultipleWindows** - MDI pattern for complex applications
+
+### Medium Priority
+4. **CanvasPolygon** - Useful for custom shapes and icons
+5. **Canvas Animations** - Smooth UI transitions
+6. **showCustomWithoutButtons** - Modal overlays
+
+### Low Priority (Consider on demand)
+7. **Full Data Binding** - Tsyne's `when()` and `ModelBoundList` may be sufficient
 
 ---
 
 ## What's Already Implemented
 
 ### Widgets ✅
+- Icon (theme icon display)
+- FileIcon (file type icon)
+- Calendar (standalone calendar widget)
 - Activity (loading spinner)
 - SelectEntry (searchable dropdown)
 - CheckGroup (multiple checkboxes)
