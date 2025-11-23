@@ -3862,3 +3862,440 @@ func (b *Bridge) handleMovePopup(msg Message) {
 		Success: true,
 	})
 }
+
+// ============================================================================
+// Icon Widget - Theme icon display
+// ============================================================================
+
+func (b *Bridge) handleCreateIcon(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	iconName := msg.Payload["iconName"].(string)
+
+	// Map icon name string to Fyne theme icon
+	resource := mapIconNameToResource(iconName)
+	if resource == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Unknown icon name: %s", iconName),
+		})
+		return
+	}
+
+	icon := widget.NewIcon(resource)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = icon
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "icon", Text: iconName}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleSetIconResource(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	iconName := msg.Payload["iconName"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	icon, ok := w.(*widget.Icon)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an Icon",
+		})
+		return
+	}
+
+	resource := mapIconNameToResource(iconName)
+	if resource == nil {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Unknown icon name: %s", iconName),
+		})
+		return
+	}
+
+	icon.SetResource(resource)
+
+	b.mu.Lock()
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "icon", Text: iconName}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// mapIconNameToResource maps icon name strings to Fyne theme resources
+func mapIconNameToResource(name string) fyne.Resource {
+	switch name {
+	// Standard icons
+	case "cancel":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCancel)
+	case "confirm":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconConfirm)
+	case "delete":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDelete)
+	case "search":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSearch)
+	case "searchReplace":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSearchReplace)
+
+	// Media icons
+	case "mediaPlay":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaPlay)
+	case "mediaPause":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaPause)
+	case "mediaStop":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaStop)
+	case "mediaRecord":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaRecord)
+	case "mediaReplay":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaReplay)
+	case "mediaSkipNext":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaSkipNext)
+	case "mediaSkipPrevious":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaSkipPrevious)
+	case "mediaFastForward":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaFastForward)
+	case "mediaFastRewind":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMediaFastRewind)
+
+	// Navigation icons
+	case "home":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHome)
+	case "menu":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMenu)
+	case "menuExpand":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMenuExpand)
+	case "moveDown":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMoveDown)
+	case "moveUp":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMoveUp)
+	case "navigate":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconNavigate)
+	case "arrowBack":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconArrowBack)
+	case "arrowForward":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconArrowForward)
+
+	// File icons
+	case "file":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFile)
+	case "fileApplication":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileApplication)
+	case "fileAudio":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileAudio)
+	case "fileImage":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileImage)
+	case "fileText":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileText)
+	case "fileVideo":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFileVideo)
+	case "folder":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolder)
+	case "folderNew":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolderNew)
+	case "folderOpen":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconFolderOpen)
+
+	// Document icons
+	case "document":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocument)
+	case "documentCreate":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentCreate)
+	case "documentSave":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentSave)
+	case "documentPrint":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDocumentPrint)
+
+	// Content icons
+	case "content":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContent)
+	case "contentAdd":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentAdd)
+	case "contentClear":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentClear)
+	case "contentCopy":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentCopy)
+	case "contentCut":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentCut)
+	case "contentPaste":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentPaste)
+	case "contentRedo":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentRedo)
+	case "contentRemove":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentRemove)
+	case "contentUndo":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconContentUndo)
+
+	// View icons
+	case "viewFullScreen":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewFullScreen)
+	case "viewRefresh":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewRefresh)
+	case "viewZoomFit":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomFit)
+	case "viewZoomIn":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomIn)
+	case "viewZoomOut":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewZoomOut)
+	case "viewRestore":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconViewRestore)
+	case "visibility":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVisibility)
+	case "visibilityOff":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVisibilityOff)
+
+	// Status icons
+	case "info":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconInfo)
+	case "question":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconQuestion)
+	case "warning":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconWarning)
+	case "error":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconError)
+	case "help":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHelp)
+	case "history":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconHistory)
+
+	// Action icons
+	case "settings":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconSettings)
+	case "mailAttachment":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailAttachment)
+	case "mailCompose":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailCompose)
+	case "mailForward":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailForward)
+	case "mailReply":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailReply)
+	case "mailReplyAll":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailReplyAll)
+	case "mailSend":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconMailSend)
+
+	// Volume icons
+	case "volumeDown":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeDown)
+	case "volumeMute":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeMute)
+	case "volumeUp":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconVolumeUp)
+
+	// Misc icons
+	case "download":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconDownload)
+	case "upload":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconUpload)
+	case "computer":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconComputer)
+	case "storage":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconStorage)
+	case "account":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconAccount)
+	case "login":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconLogin)
+	case "logout":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconLogout)
+	case "list":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconList)
+	case "grid":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconGrid)
+	case "colorChromatic":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconColorChromatic)
+	case "colorPalette":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconColorPalette)
+
+	// Checkbox icons
+	case "checkButtonChecked":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCheckButtonChecked)
+	case "checkButton":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconCheckButton)
+	case "radioButton":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconRadioButton)
+	case "radioButtonChecked":
+		return fyne.CurrentApp().Settings().Theme().Icon(fyne.ThemeIconRadioButtonChecked)
+
+	default:
+		return nil
+	}
+}
+
+// ============================================================================
+// FileIcon Widget - File type icon
+// ============================================================================
+
+func (b *Bridge) handleCreateFileIcon(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	path := msg.Payload["path"].(string)
+
+	// Create URI from path
+	uri := fyne.CurrentApp().Driver().LegacyStorage().Create(path)
+	if uri == nil {
+		// Fallback: try to create a file URI
+		uri = fyne.CurrentApp().Driver().LegacyStorage().Create("file://" + path)
+	}
+
+	var fileIcon *widget.FileIcon
+	if uri != nil {
+		fileIcon = widget.NewFileIcon(uri)
+	} else {
+		// Create with nil URI - will show generic file icon
+		fileIcon = widget.NewFileIcon(nil)
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = fileIcon
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "fileicon", Text: path}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleSetFileIconURI(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	path := msg.Payload["path"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	fileIcon, ok := w.(*widget.FileIcon)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a FileIcon",
+		})
+		return
+	}
+
+	uri := fyne.CurrentApp().Driver().LegacyStorage().Create(path)
+	fileIcon.SetURI(uri)
+
+	b.mu.Lock()
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "fileicon", Text: path}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleSetFileIconSelected(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	selected := msg.Payload["selected"].(bool)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	fileIcon, ok := w.(*widget.FileIcon)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a FileIcon",
+		})
+		return
+	}
+
+	fileIcon.SetSelected(selected)
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+// ============================================================================
+// Calendar Widget - Standalone calendar
+// ============================================================================
+
+func (b *Bridge) handleCreateCalendar(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	callbackID, hasCallback := msg.Payload["callbackId"].(string)
+
+	// Parse initial date if provided
+	initialTime := time.Now()
+	if initialDate, ok := msg.Payload["date"].(string); ok && initialDate != "" {
+		if t, err := time.Parse("2006-01-02", initialDate); err == nil {
+			initialTime = t
+		}
+	}
+
+	var calendar *widget.Calendar
+	if hasCallback {
+		calendar = widget.NewCalendar(initialTime, func(t time.Time) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data: map[string]interface{}{
+					"callbackId": callbackID,
+					"date":       t.Format("2006-01-02"),
+				},
+			})
+		})
+	} else {
+		calendar = widget.NewCalendar(initialTime, func(t time.Time) {})
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = calendar
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "calendar", Text: initialTime.Format("2006-01-02")}
+	if hasCallback {
+		b.callbacks[widgetID] = callbackID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}

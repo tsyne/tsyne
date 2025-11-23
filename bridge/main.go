@@ -347,6 +347,21 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreatePopup(msg)
 	case "showPopup":
 		b.handleShowPopup(msg)
+	// Icon widget
+	case "createIcon":
+		b.handleCreateIcon(msg)
+	case "setIconResource":
+		b.handleSetIconResource(msg)
+	// FileIcon widget
+	case "createFileIcon":
+		b.handleCreateFileIcon(msg)
+	case "setFileIconURI":
+		b.handleSetFileIconURI(msg)
+	case "setFileIconSelected":
+		b.handleSetFileIconSelected(msg)
+	// Calendar widget
+	case "createCalendar":
+		b.handleCreateCalendar(msg)
 	case "hidePopup":
 		b.handleHidePopup(msg)
 	case "movePopup":

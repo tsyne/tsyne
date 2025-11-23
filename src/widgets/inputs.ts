@@ -502,3 +502,35 @@ export class DateEntry extends Widget {
     });
   }
 }
+
+/**
+ * Calendar widget - Standalone calendar for date selection
+ * Displays a full calendar month view for selecting dates
+ * Unlike DateEntry, this shows the calendar inline without an input field
+ */
+export class Calendar extends Widget {
+  constructor(ctx: Context, initialDate?: string, onSelected?: (date: string) => void) {
+    const id = ctx.generateId('calendar');
+    super(ctx, id);
+
+    const payload: any = { id };
+
+    if (initialDate) {
+      payload.date = initialDate;
+    }
+
+    if (onSelected) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onSelected(data.date);
+      });
+    }
+
+    ctx.bridge.send('createCalendar', payload);
+    ctx.addToCurrentContainer(id);
+
+    // Apply styles from stylesheet (non-blocking)
+    this.applyStyles('calendar').catch(() => {});
+  }
+}

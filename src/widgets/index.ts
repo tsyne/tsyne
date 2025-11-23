@@ -44,11 +44,15 @@ export {
   Slider,
   RadioGroup,
   CheckGroup,
-  DateEntry
+  DateEntry,
+  Calendar
 } from './inputs';
 
 // Display widgets
 export {
+  ThemeIconName,
+  Icon,
+  FileIcon,
   Label,
   Separator,
   Hyperlink,

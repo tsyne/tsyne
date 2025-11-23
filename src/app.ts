@@ -1,8 +1,8 @@
 import { BridgeConnection } from './fynebridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions } from './widgets';
-export type { TextGridOptions, TextGridStyle, NavigationOptions };
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
+export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -202,6 +202,18 @@ export class App {
 
   dateentry(initialDate?: string, onChanged?: (date: string) => void): DateEntry {
     return new DateEntry(this.ctx, initialDate, onChanged);
+  }
+
+  calendar(initialDate?: string, onSelected?: (date: string) => void): Calendar {
+    return new Calendar(this.ctx, initialDate, onSelected);
+  }
+
+  icon(iconName: ThemeIconName): Icon {
+    return new Icon(this.ctx, iconName);
+  }
+
+  fileicon(path: string): FileIcon {
+    return new FileIcon(this.ctx, path);
   }
 
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {
