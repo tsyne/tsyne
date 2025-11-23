@@ -2377,3 +2377,33 @@ export class CanvasLinearGradient {
     });
   }
 }
+
+/**
+ * Clip container - clips any content that extends beyond the bounds of its child
+ * Useful for constraining overflow in layouts and preventing content from bleeding outside containers
+ */
+export class Clip {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('clip');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('Clip must have exactly one child');
+    }
+
+    ctx.bridge.send('createClip', {
+      id: this.id,
+      childId: children[0]
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+}
