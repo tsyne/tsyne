@@ -1099,6 +1099,8 @@ Tsyne uses a unique architecture to bridge TypeScript and Go:
 
 ## Examples
 
+> **100+ Examples Available!** See **[examples/README.md](examples/README.md)** for a comprehensive catalog of all examples organized by category, with direct links to source files and screenshots. Whether you're learning Tsyne basics or building complex applications, there's an example for you.
+
 ### Basic Examples
 
 Check out the `examples/` directory:
