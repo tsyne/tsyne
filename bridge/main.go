@@ -323,6 +323,14 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleInnerWindowClose(msg)
 	case "setInnerWindowTitle":
 		b.handleSetInnerWindowTitle(msg)
+	case "createPopup":
+		b.handleCreatePopup(msg)
+	case "showPopup":
+		b.handleShowPopup(msg)
+	case "hidePopup":
+		b.handleHidePopup(msg)
+	case "movePopup":
+		b.handleMovePopup(msg)
 	default:
 		b.sendResponse(Response{
 			ID:      msg.ID,

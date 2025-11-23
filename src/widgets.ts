@@ -2499,3 +2499,83 @@ export class InnerWindow {
     return this;
   }
 }
+
+/**
+ * Popup widget - floating overlay that can be positioned anywhere on the canvas
+ * Useful for tooltips, popovers, context menus, and floating panels
+ */
+export class Popup {
+  private ctx: Context;
+  public id: string;
+  private windowId: string;
+
+  constructor(ctx: Context, windowId: string, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('popup');
+    this.windowId = windowId;
+
+    // Build popup content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('Popup must have exactly one child widget');
+    }
+
+    const contentId = children[0];
+
+    // Create the popup (initially hidden)
+    ctx.bridge.send('createPopup', {
+      id: this.id,
+      contentId,
+      windowId
+    });
+
+    // Note: Popup is NOT added to current container - it's a floating overlay
+  }
+
+  /**
+   * Show the popup centered on the canvas
+   */
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showPopup', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Show the popup at a specific position
+   * @param x X coordinate
+   * @param y Y coordinate
+   */
+  async showAt(x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('showPopup', {
+      widgetId: this.id,
+      x,
+      y
+    });
+  }
+
+  /**
+   * Hide the popup
+   */
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hidePopup', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Move the popup to a new position
+   * @param x X coordinate
+   * @param y Y coordinate
+   */
+  async move(x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('movePopup', {
+      widgetId: this.id,
+      x,
+      y
+    });
+  }
+}

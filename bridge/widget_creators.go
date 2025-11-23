@@ -2354,3 +2354,163 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 		Success: true,
 	})
 }
+
+func (b *Bridge) handleCreatePopup(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	contentID := msg.Payload["contentId"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	content, contentExists := b.widgets[contentID]
+	win, windowExists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !contentExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		})
+		return
+	}
+
+	if !windowExists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		})
+		return
+	}
+
+	// Create the popup widget
+	popup := widget.NewPopUp(content, win.Canvas())
+
+	// Initially hidden
+	popup.Hide()
+
+	b.mu.Lock()
+	b.widgets[widgetID] = popup
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "popup", Text: ""}
+	b.childToParent[contentID] = widgetID
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleShowPopup(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Popup widget not found",
+		})
+		return
+	}
+
+	popup, ok := w.(*widget.PopUp)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a popup",
+		})
+		return
+	}
+
+	// Show at position if provided, otherwise show centered
+	if x, hasX := msg.Payload["x"].(float64); hasX {
+		if y, hasY := msg.Payload["y"].(float64); hasY {
+			popup.ShowAtPosition(fyne.NewPos(float32(x), float32(y)))
+		} else {
+			popup.Show()
+		}
+	} else {
+		popup.Show()
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleHidePopup(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Popup widget not found",
+		})
+		return
+	}
+
+	popup, ok := w.(*widget.PopUp)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a popup",
+		})
+		return
+	}
+
+	popup.Hide()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
+
+func (b *Bridge) handleMovePopup(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	x := msg.Payload["x"].(float64)
+	y := msg.Payload["y"].(float64)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Popup widget not found",
+		})
+		return
+	}
+
+	popup, ok := w.(*widget.PopUp)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a popup",
+		})
+		return
+	}
+
+	popup.Move(fyne.NewPos(float32(x), float32(y)))
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
+}
