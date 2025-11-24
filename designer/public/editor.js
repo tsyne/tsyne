@@ -767,6 +767,23 @@ function toggleTreeNode(widgetId) {
   renderWidgetTree();
 }
 
+// Switch inspector tab (Add Widgets / Properties)
+function switchInspectorTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.inspector-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Update tab content
+  document.querySelectorAll('.inspector-tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+
+  const contentId = tabName === 'widgets' ? 'inspectorWidgets' : 'inspectorProperties';
+  document.getElementById(contentId).classList.add('active');
+}
+
 // Get widget icon
 function getWidgetIcon(type) {
   const icons = {
@@ -835,6 +852,12 @@ function selectWidget(widgetId) {
   selectedWidgetId = widgetId;
   renderWidgetTree();
   renderProperties();
+
+  // Auto-switch to Properties tab when a widget is selected
+  document.querySelectorAll('.inspector-tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.inspector-tab-content').forEach(content => content.classList.remove('active'));
+  document.querySelector('.inspector-tab:nth-child(2)')?.classList.add('active');
+  document.getElementById('inspectorProperties')?.classList.add('active');
 }
 
 // Render properties panel

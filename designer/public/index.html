@@ -460,6 +460,48 @@
       background: #252526;
       padding: 15px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .inspector-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #3e3e3e;
+      margin-bottom: 15px;
+      flex-shrink: 0;
+    }
+
+    .inspector-tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      color: #858585;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .inspector-tab:hover {
+      color: #d4d4d4;
+    }
+
+    .inspector-tab.active {
+      color: #fff;
+      border-bottom-color: #0e639c;
+    }
+
+    .inspector-tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .inspector-tab-content.active {
+      display: block;
     }
 
     .property-inspector h2 {
@@ -901,7 +943,12 @@
     </div>
 
     <div class="property-inspector">
-      <h2>Add Widgets</h2>
+      <div class="inspector-tabs">
+        <div class="inspector-tab active" onclick="switchInspectorTab('widgets')">Add Widgets</div>
+        <div class="inspector-tab" onclick="switchInspectorTab('properties')">Properties</div>
+      </div>
+
+      <div id="inspectorWidgets" class="inspector-tab-content active">
       <div class="widget-palette">
         <h3>Containers</h3>
         <div class="palette-grid">
@@ -950,10 +997,12 @@
           <div class="palette-item" onclick="addWidget('tree')"><span class="icon">⌲</span>Tree</div>
         </div>
       </div>
+      </div>
 
-      <h2>Properties</h2>
+      <div id="inspectorProperties" class="inspector-tab-content">
       <div id="propertiesContent">
         <div class="no-selection">Select a widget to edit properties</div>
+      </div>
       </div>
     </div>
   </div>
