@@ -28,6 +28,9 @@ let matchedWidgetIds = new Set(); // Track which widgets have matches for tree h
 // Tree expand/collapse state
 let collapsedNodes = new Set();
 
+// Tab selection state (widget.id -> selected tab index)
+let selectedTabs = {};
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],
@@ -136,6 +139,27 @@ const widgetPropertySchemas = {
   card: {
     title: { type: 'string', description: 'Card title' },
     subtitle: { type: 'string', description: 'Card subtitle' }
+  },
+  tabs: {
+    tabTitles: { type: 'string', description: 'Comma-separated tab titles' },
+    location: { type: 'string', description: 'Tab position (top, bottom, leading, trailing)' }
+  },
+  accordion: {
+    itemTitles: { type: 'string', description: 'Comma-separated accordion item titles' }
+  },
+  activity: {},
+  center: {},
+  padded: {},
+  clip: {},
+  innerWindow: {
+    title: { type: 'string', description: 'Inner window title' }
+  },
+  adaptivegrid: {
+    rowcols: { type: 'number', description: 'Number of rows/columns' }
+  },
+  selectentry: {
+    options: { type: 'string', description: 'Comma-separated options' },
+    placeholder: { type: 'string', description: 'Placeholder text' }
   }
 };
 
@@ -761,17 +785,23 @@ function getWidgetIcon(type) {
     'accordion': '≡',
     'form': '▦',
     'border': '▭',
+    'clip': '✂',
+    'innerWindow': '□',
+    'adaptivegrid': '⊞',
+    'padded': '▢',
     // Input widgets
     'button': '▭',
     'label': 'T',
     'entry': '⎕',
-    'multilineentry': '▭',
+    'multilineentry': '▤',
     'passwordentry': '◆',
     'checkbox': '☑',
     'select': '▼',
+    'selectentry': '▼',
     'radiogroup': '◉',
     'slider': '◧',
     'progressbar': '▬',
+    'toolbar': '▭',
     // Display widgets
     'separator': '─',
     'hyperlink': '⎙',
@@ -780,7 +810,7 @@ function getWidgetIcon(type) {
     'table': '▦',
     'list': '☰',
     'tree': '⌲',
-    'toolbar': '▭'
+    'activity': '◌'
   };
   return icons[type] || '○';
 }
@@ -1437,7 +1467,8 @@ function createPreviewWidget(widget) {
 
   const containerTypes = [
     'vbox', 'hbox', 'window', 'scroll', 'grid', 'gridwrap', 'center',
-    'hsplit', 'vsplit', 'tabs', 'card', 'accordion', 'form', 'border'
+    'hsplit', 'vsplit', 'tabs', 'card', 'accordion', 'form', 'border',
+    'padded', 'clip', 'innerWindow', 'adaptivegrid'
   ];
   const isContainer = containerTypes.includes(widget.widgetType);
   if (isContainer) {
@@ -1704,15 +1735,62 @@ function createPreviewWidget(widget) {
       break;
 
     case 'tabs':
-      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">tabs: ${widget.properties.tabs || 'Tabs'}</div>`;
-      renderChildren({
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        padding: '8px',
-        border: '1px dashed #5e5e5e',
-        borderRadius: '3px'
+      // Get tab children
+      const tabChildren = metadata.widgets.filter(w => w.parent === widget.id);
+      const tabTitlesStr = widget.properties?.tabTitles || '';
+      const tabTitles = tabTitlesStr ? tabTitlesStr.split(',').map(t => t.trim()) : [];
+
+      // Ensure we have enough titles
+      while (tabTitles.length < tabChildren.length) {
+        tabTitles.push(`Tab ${tabTitles.length + 1}`);
+      }
+
+      // Get selected tab (default to 0)
+      const selectedTabIndex = selectedTabs[widget.id] ?? 0;
+
+      // Create tab header container
+      const tabHeader = document.createElement('div');
+      tabHeader.style.cssText = 'display: flex; gap: 0; border-bottom: 1px solid #5e5e5e; margin-bottom: 8px;';
+
+      // Create tab buttons - show all specified titles, or at least match children count
+      const tabCount = Math.max(tabTitles.length, tabChildren.length, 1);
+      tabTitles.slice(0, tabCount).forEach((title, index) => {
+        const tabBtn = document.createElement('div');
+        const isSelected = index === selectedTabIndex;
+        tabBtn.style.cssText = `
+          padding: 8px 16px;
+          cursor: pointer;
+          color: ${isSelected ? '#fff' : '#858585'};
+          border-bottom: 2px solid ${isSelected ? '#0e639c' : 'transparent'};
+          margin-bottom: -1px;
+          transition: all 0.2s;
+          font-size: 12px;
+        `;
+        tabBtn.textContent = title;
+        tabBtn.onmouseenter = () => { if (!isSelected) tabBtn.style.color = '#d4d4d4'; };
+        tabBtn.onmouseleave = () => { if (!isSelected) tabBtn.style.color = '#858585'; };
+        tabBtn.onclick = (e) => {
+          e.stopPropagation();
+          selectedTabs[widget.id] = index;
+          renderPreview();
+          applyStylesToPreview();
+        };
+        tabHeader.appendChild(tabBtn);
       });
+
+      element.appendChild(tabHeader);
+
+      // Create tab content container - only show selected tab's children
+      const tabContent = document.createElement('div');
+      tabContent.style.cssText = 'padding: 8px; border: 1px dashed #5e5e5e; border-radius: 3px;';
+
+      if (tabChildren.length > 0 && tabChildren[selectedTabIndex]) {
+        tabContent.appendChild(createPreviewWidget(tabChildren[selectedTabIndex]));
+      } else if (tabChildren.length === 0) {
+        tabContent.innerHTML = '<div style="color: #858585; font-size: 11px; font-style: italic;">No tab content</div>';
+      }
+
+      element.appendChild(tabContent);
       break;
 
     case 'card':
@@ -1747,6 +1825,69 @@ function createPreviewWidget(widget) {
         border: '1px dashed #5e5e5e',
         borderRadius: '3px'
       });
+      break;
+
+    case 'padded':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">padded</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '16px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
+    case 'clip':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">clip</div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px',
+        overflow: 'hidden'
+      });
+      break;
+
+    case 'innerWindow':
+      element.innerHTML = `<div style="background: #2d2d2d; padding: 4px 8px; border-radius: 3px 3px 0 0; font-size: 11px; color: #d4d4d4; display: flex; justify-content: space-between; align-items: center;"><span>${widget.properties?.title || 'Inner Window'}</span><span style="color: #858585;">✕</span></div>`;
+      renderChildren({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        border: '1px solid #5e5e5e',
+        borderTop: 'none',
+        borderRadius: '0 0 3px 3px',
+        background: '#1e1e1e'
+      });
+      break;
+
+    case 'adaptivegrid':
+      element.innerHTML = `<div style="color: #858585; font-size: 11px; margin-bottom: 5px;">adaptivegrid (${widget.properties?.rowcols || 2})</div>`;
+      renderChildren({
+        display: 'grid',
+        gridTemplateColumns: `repeat(${widget.properties?.rowcols || 2}, 1fr)`,
+        gap: '8px',
+        padding: '8px',
+        border: '1px dashed #5e5e5e',
+        borderRadius: '3px'
+      });
+      break;
+
+    case 'activity':
+      element.style.padding = '8px';
+      element.innerHTML = `<div style="display: flex; align-items: center; gap: 8px;"><div style="width: 20px; height: 20px; border: 2px solid #0e639c; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div><span style="color: #858585; font-size: 11px;">Loading...</span></div><style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
+      break;
+
+    case 'selectentry':
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.border = 'none';
+      element.innerHTML = `<div style="display: flex;"><input type="text" placeholder="${widget.properties?.placeholder || ''}" style="min-width: 100px; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; border-right: none; color: #d4d4d4; border-radius: 3px 0 0 3px;"><select style="padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 0 3px 3px 0;"><option>▼</option></select></div>`;
       break;
 
     default:
