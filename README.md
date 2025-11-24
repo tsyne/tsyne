@@ -68,11 +68,11 @@ Both support headed and headless modes with aPIR inspired by Selenium/Playwright
 
 **Q: Can I style widgets with CSS?**
 
-Tsyne has a CSS-like styling system for fonts (family, size, style, weight). Per-widget colors are limited by Fyne's architecture - use **themes** for color customization. See the Widget Styling System section below.
+Sort of. Tsyne has a CSS-like styling system for fonts (family, size, style, weight). Per-widget colors are limited by Fyne's architecture - use **themes** for color customization. See the Widget Styling System section below.
 
 **Q: Why TypeScript instead of Go for the UI logic?**
 
-TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.  For me (Paul) this was always about [pseudo-declarative UI markup languages that could be interpreted](https://paulhammant.com/categories#Pseudo-declarative_UIs).
+TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.  For me (Paul) this was always about [pseudo-declarative UI markup languages that could be interpreted](https://paulhammant.com/categories#Pseudo-declarative_UIs) and the browser mode.
 
 **Q: How do I debug my app?**
 
@@ -84,7 +84,11 @@ About 50% of widgets and containers. See [docs/ROADMAP.md](docs/ROADMAP.md) for 
 
 **Q: Can pages in browser mode communicate with the server beyond navigation?**
 
-Pages are TypeScript code with full access to Node.js APIs. Use `fetch()`, `axios`, or any HTTP client to make API calls to your backend while the page is displayed.
+Pages are TypeScript code with full access to Node.js APIs. Use `fetch()`, `axios`, or any HTTP client to make API calls to your backend while the page is displayed.  They are not runninhg in the DOM (of Chrome, Firefox, Edge Safari, etc) so this isn't a WASM or build-for-DOM use of TS/JS, it is a NodeJs use of TS/JS. As such it's a unsandboxed nightmare so don't put anything live with this tech until that's solved.
+
+**Q: Will Tsyne support the DOM's controls/widgets etc?**
+
+No, this is tied to Fyne. Someone else can do a pure TypeScript pseudo-declarative markup that maybe can run in a regular browser somehow.
 
 ## Installation
 
@@ -248,7 +252,9 @@ app({ title: "Calculator" }, (app) => {
 });
 ```
 
-**See the complete single-script calculator:** **[examples/calculator.ts](examples/calculator.ts)** - Full working calculator in one file (69 substantive lines, monolithic pattern) with **[test suite](examples/calculator.test.ts)**
+See the complete runnable single-script calculator here: [examples/calculator.ts](examples/calculator.ts) - 69 substantive lines, monolithic pattern. See also its [test suite](examples/calculator.test.ts).
+
+See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
 
 ### Counter Example
 
@@ -279,6 +285,7 @@ app({ title: "Counter" }, (app) => {
   });
 });
 ```
+See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
 
 ## Testing with TsyneTest
 
@@ -316,6 +323,8 @@ async function testCalculator() {
   await tsyneTest.cleanup();
 }
 ```
+
+See a bigger list of test examples with screenshots here: [examples/README.md](examples/README.md)
 
 ### Test Modes
 
