@@ -3,20 +3,20 @@
 </p>
 
 <p align="center">
-  <strong>Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js</strong>
+  <strong>A TypeScript wrapper for Go's excellent `Fyne` UI toolkit. Terse, elegant, interpreted, pseudo-declarative markup is made possible. Oh, and a Browser</strong>
 </p>
 
 <p align="center">
-  <em>Bridging TypeScript and Go's Fyne, Logo is Tyne-bridge -ish with Fyne's colors</em>
+  <em>Logo is Tyne-bridge -ish with Fyne's colors as Tsyne has a 'bridge' to its Go+Fyne underpinnings</em>
 </p>
 
 ---
 
-Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/).
+Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/). There's a WYSIWYG designer tool too because I've been [thinking about that for nearly 30 years](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/) with a [Hackernews discussion](https://news.ycombinator.com/item?id=21828622).
 
 ## Why Tsyne?
 
-- **Elegant Syntax**: Pseudo-declarative, terse UI markup with closures (inspired by Ruby/Groovy DSL patterns)
+- **Elegant Syntax**: Pseudo-declarative, terse UI markup with closures or blocks depending on your point of view.
 - **Cross-Platform**: Build native apps for macOS, Windows, and Linux from a single codebase
 - **Type-Safe**: Full TypeScript support with complete type definitions
 - **Easy Integration**: Simple npm package that's quick to add to any Node.js project
@@ -89,7 +89,7 @@ Pages are TypeScript code with full access to Node.js APIs. Use `fetch()`, `axio
 ## Installation
 
 ```bash
-npm install tsyne
+npm install tsyne # STILL TODO
 ```
 
 **Prerequisites**:
@@ -162,7 +162,9 @@ Tsyne works seamlessly with both TypeScript and JavaScript!
 
 ## Single-File Distribution
 
-Distribute standalone `.ts` apps with embedded npm dependencies ([Groovy Grapes](https://docs.groovy-lang.org/latest/html/documentation/grape.html)-style):
+This builds on single file applications that required Node.js running ts-node. 
+
+Distribute standalone `.ts` apps with npm dependencies declared inline in a similar way as ([Groovy's Grapes](https://docs.groovy-lang.org/latest/html/documentation/grape.html) technology does it.
 
 ```typescript
 #!/usr/bin/env tsyne
@@ -174,18 +176,22 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { app } from 'tsyne';
 
-// Your GUI app with external dependencies...
+// The rest of your GUI app that neds axios and date-fns` 
 ```
 
 Dependencies auto-resolve to `~/.tsyne/packages/` at runtime. See [docs/EMBEDDED_DEPENDENCIES.md](docs/EMBEDDED_DEPENDENCIES.md) for details.
 
+TODO: is this a directed graph or do 100 single-file distributions fight with each other in here?
+
 ## Elegant Syntax
 
-Tsyne's API is designed to be elegant and terse, inspired by Ruby Shoes and Groovy DSL patterns. The syntax feels pseudo-declarative while retaining full imperative power:
+Tsyne's API is designed to be elegant and terse, inspired by other pseudo-declarative markups. The syntax feels pseudo-declarative while retaining full imperative power:
 
 **See [HISTORICAL.md](HISTORICAL.md) for the historical context and influences behind Tsyne's design.**
 
 ### Calculator Example
+
+Calculator example is important to me because I'm forver comparing to [this one written in Ruby and Shoes UI tech](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) by Alexanderlol on GitHub, and [this one for ChrysaLisp](https://github.com/vygr/ChrysaLisp/blob/master/apps/calculator/app.lisp) by Chris Hinsley).
 
 ```typescript
 // Calculator example demonstrating Tsyne's pseudo-declarative DSL
@@ -418,7 +424,7 @@ browserTest(
 
 For the complete API reference, see **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)**.
 
-### Quick Reference
+** A Quick Reference, though**
 
 **Layouts:** `vbox`, `hbox`, `grid`, `scroll`, `hsplit`, `vsplit`, `tabs`, `center`, `border`, `gridwrap`
 
@@ -718,7 +724,7 @@ const sheet = getStyleSheet();
 const labelStyle = sheet?.getComputedStyle('label');
 ```
 
-**See [HISTORICAL.md](HISTORICAL.md) for comparison with Swiby, the Ruby/Swing framework that inspired Tsyne's styling system.**
+**See [HISTORICAL.md](HISTORICAL.md) for a discussion**
 
 ### Limitations
 
@@ -1404,32 +1410,14 @@ All ported applications maintain attribution to their original authors and licen
 
 Tsyne's design draws from several influential frameworks and patterns:
 
-- **Ruby Shoes** - Created by _why the lucky stiff - Pioneer of elegant DSL design for desktop GUIs
-- **Swiby** - Ruby/Swing integration by jeanlazarou - CSS-like styling separate from UI structure
-- **QML** - Qt's declarative UI language - Seamless declarative/imperative integration
-- **Playwright** - Microsoft's testing framework - Elegant, fluent testing API
-- **Java Swing** - Proven desktop UI patterns (MVC, widgets, event-driven architecture)
+- The Interface Builder before the current Interface Builder, written in Lisp.
+- Ruby Shoes - Created by _why_the_lucky_stiff - Pioneering elegant DSL design for desktop GUIs
+- Swiby - Ruby/Swing integration by jeanlazarou - CSS-like styling separate from UI structure
+- QML - Qt's declarative UI language - Seamless declarative/imperative integration
 
 **See [HISTORICAL.md](HISTORICAL.md) for detailed discussion of these influences and how they shaped Tsyne's design.**
 
-### Key Contributors
-
-- **Paul Hammant** - Creator of Tsyne, blog posts on elegant DSL design and Swing testing patterns
-- **Andrew Williams (andydotxyz)** - Creator of Fyne toolkit and example applications
-- **Fyne.io contributors** - Developers of the Fyne toolkit and example applications
-- **The Ruby/Groovy communities** - Inspiration for declarative UI patterns and DSL techniques
-- **Playwright team** - Inspiration for TsyneTest's fluent testing API
-- **_why the lucky stiff** - Creator of Ruby Shoes, pioneer of pseudo-declarative UI programming
-
-### Dependencies and Libraries
-
-Special thanks to the open source libraries that make Tsyne possible:
-
-- **chess.js** (jhlywa) - Chess game logic and move validation
-- **@resvg/resvg-js** - SVG to PNG rendering for image assets
-- **TypeScript** - Type-safe JavaScript that powers Tsyne's API
-- **Node.js** - Runtime environment for Tsyne applications
-- **Go** - Systems language that powers the Fyne bridge
+Special thanks to: Andrew Williams, colleagues and contributors - For Fyne UI toolkit and example applications
 
 ## Documentation
 
@@ -1438,9 +1426,10 @@ Special thanks to the open source libraries that make Tsyne possible:
 - **[README.md](README.md)** - You are here! Main documentation
 - **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)** - Complete API reference for widgets, layouts, and dialogs
 - **[docs/PROS_AND_CONS.md](docs/PROS_AND_CONS.md)** - Tsyne vs Electron/Tauri comparison and decision guide
-- **[docs/LLM.md](docs/LLM.md)** - Quick reference guide for LLMs
+- **[docs/LLM.md](docs/LLM.md)** - Quick reference guide for LLMs if you're assigning work to 'em'
 
-### State Management and Patterns
+### State Management, Patterns and pattern-centric examples
+
 - **[docs/PATTERNS.md](docs/PATTERNS.md)** - Complete guide to architectural patterns (MVC, MVVM, MVP), state management, and data binding
 - **[examples/data-binding.ts](examples/data-binding.ts)** - Observable state and computed state examples
 - **[examples/mvc-counter.ts](examples/mvc-counter.ts)** - MVC pattern implementation
@@ -1449,10 +1438,14 @@ Special thanks to the open source libraries that make Tsyne possible:
 - **[examples/dialog-state.ts](examples/dialog-state.ts)** - Dialog state passing pattern
 
 ### Browser Mode
-- **[docs/BROWSER_MODE.md](docs/BROWSER_MODE.md)** - Complete guide to browser mode (loading pages from HTTP servers)
+
+A major piece of this is the ability to server up "Tsyne Pages" and navigate them. An experience that you should be familiar with from Chrome, Safari, or Firefox. This isn't using those though there's a dedicated browser.  Pages would be served from regular choices of HTTP server and many of the existing server-side frameworks that go with them.
+
+- **[docs/BROWSER_MODE.md](docs/BROWSER_MODE.md)** - Complete guide to browser mode 
 - **[docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md)** - Testing framework for browser pages
 
 ### Testing
+
 - **[docs/TESTING.md](docs/TESTING.md)** - Complete guide to TsyneTest testing framework (for apps/components)
 - **[docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md)** - Complete guide to TsyneBrowserTest (for browser pages)
 - **[docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md)** - Comprehensive testing checklist for browser features
@@ -1462,6 +1455,7 @@ Special thanks to the open source libraries that make Tsyne possible:
 - **[test-apps/calculator-advanced/TESTING-STRATEGY.md](test-apps/calculator-advanced/TESTING-STRATEGY.md)** - Two-tier testing
 
 ### Development
+
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Internal design and architecture
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guide for contributors
 - **[docs/PUBLISHING.md](docs/PUBLISHING.md)** - Publishing to npm with bundled binaries
