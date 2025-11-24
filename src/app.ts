@@ -370,6 +370,66 @@ export class App {
     return new CanvasRadialGradient(this.ctx, options);
   }
 
+  // Simple canvas primitive aliases for common use cases
+  /**
+   * Create a colored rectangle - simplified API for backgrounds, dividers, and placeholder boxes
+   * @param color Fill color (hex string like '#ff0000' or color name)
+   * @param width Optional width in pixels
+   * @param height Optional height in pixels
+   */
+  rectangle(color: string, width?: number, height?: number): CanvasRectangle {
+    return new CanvasRectangle(this.ctx, { fillColor: color, width, height });
+  }
+
+  /**
+   * Create a colored circle - simplified API for decorative elements
+   * @param color Fill color (hex string like '#ff0000' or color name)
+   * @param radius Optional radius - sets both x2 and y2 to create a circle of this size
+   */
+  circle(color: string, radius?: number): CanvasCircle {
+    const size = radius ? radius * 2 : undefined;
+    return new CanvasCircle(this.ctx, { fillColor: color, x2: size, y2: size });
+  }
+
+  /**
+   * Create a colored line - simplified API for dividers and decoration
+   * @param color Stroke color (hex string like '#ff0000' or color name)
+   * @param strokeWidth Optional line thickness
+   */
+  line(color: string, strokeWidth?: number): CanvasLine {
+    // Default to a horizontal line; position/size handled by container
+    return new CanvasLine(this.ctx, 0, 0, 100, 0, { strokeColor: color, strokeWidth });
+  }
+
+  /**
+   * Create a linear gradient background
+   * @param startColor Starting color of the gradient
+   * @param endColor Ending color of the gradient
+   * @param angle Optional angle in degrees (0 = horizontal left-to-right)
+   */
+  linearGradient(startColor: string, endColor: string, angle?: number): CanvasLinearGradient {
+    return new CanvasLinearGradient(this.ctx, { startColor, endColor, angle });
+  }
+
+  /**
+   * Create a radial gradient background
+   * @param centerColor Color at the center of the gradient
+   * @param edgeColor Color at the edges of the gradient
+   */
+  radialGradient(centerColor: string, edgeColor: string): CanvasRadialGradient {
+    return new CanvasRadialGradient(this.ctx, { startColor: centerColor, endColor: edgeColor });
+  }
+
+  /**
+   * Create canvas text - low-level text rendering (label is usually better for UI)
+   * @param content The text to display
+   * @param size Optional font size
+   * @param color Optional text color
+   */
+  text(content: string, size?: number, color?: string): CanvasText {
+    return new CanvasText(this.ctx, content, { textSize: size, color });
+  }
+
   clip(builder: () => void): Clip {
     return new Clip(this.ctx, builder);
   }
