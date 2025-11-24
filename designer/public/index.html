@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tsyne WYSIWYG Designer</title>
+  <!-- Prism.js for syntax highlighting (dark theme) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
   <style>
     * {
       margin: 0;
@@ -447,6 +449,20 @@
       color: #d4d4d4;
       white-space: pre-wrap;
       overflow-x: auto;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Override Prism theme to match our dark theme */
+    pre.source-view[class*="language-"],
+    code[class*="language-"] {
+      background: #1e1e1e !important;
+      text-shadow: none !important;
+    }
+
+    .source-view code {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
       line-height: 1.5;
     }
 
@@ -961,16 +977,16 @@
         </div>
       </div>
       <div id="previewTabSource" class="preview-tab-content">
-        <div class="source-view" id="sourceContent">No source available</div>
+        <pre class="source-view"><code class="language-typescript" id="sourceContent">No source available</code></pre>
       </div>
       <div id="previewTabOriginal" class="preview-tab-content">
-        <div class="source-view" id="originalSourceContent">No original source available</div>
+        <pre class="source-view"><code class="language-typescript" id="originalSourceContent">No original source available</code></pre>
       </div>
       <div id="previewTabDiff" class="preview-tab-content">
         <div class="diff-view" id="diffContent">No changes to display</div>
       </div>
       <div id="previewTabDesigner" class="preview-tab-content">
-        <div class="source-view" id="designerFileContent">No designer file available</div>
+        <pre class="source-view"><code class="language-typescript" id="designerFileContent">No designer file available</code></pre>
       </div>
     </div>
 
@@ -1129,6 +1145,9 @@
     </div>
   </div>
 
+  <!-- Prism.js core + TypeScript support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
   <script src="editor.js"></script>
 </body>
 </html>

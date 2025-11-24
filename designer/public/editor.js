@@ -514,27 +514,33 @@ function switchPreviewTab(tabName) {
   }
 }
 
-// Render source tab
+// Render source tab with syntax highlighting
 function renderSourceTab() {
   const sourceContent = document.getElementById('sourceContent');
   if (currentSource) {
     sourceContent.textContent = currentSource;
+    if (typeof Prism !== 'undefined') {
+      Prism.highlightElement(sourceContent);
+    }
   } else {
     sourceContent.textContent = 'No source available';
   }
 }
 
-// Render original source tab
+// Render original source tab with syntax highlighting
 function renderOriginalSourceTab() {
   const originalSourceContent = document.getElementById('originalSourceContent');
   if (originalSource) {
     originalSourceContent.textContent = originalSource;
+    if (typeof Prism !== 'undefined') {
+      Prism.highlightElement(originalSourceContent);
+    }
   } else {
     originalSourceContent.textContent = 'No original source available';
   }
 }
 
-// Render designer file tab
+// Render designer file tab with syntax highlighting
 async function renderDesignerFileTab() {
   const designerFileContent = document.getElementById('designerFileContent');
   designerFileContent.textContent = 'Loading designer file...';
@@ -546,6 +552,9 @@ async function renderDesignerFileTab() {
     if (result.success) {
       if (result.content) {
         designerFileContent.textContent = result.content;
+        if (typeof Prism !== 'undefined') {
+          Prism.highlightElement(designerFileContent);
+        }
       } else {
         designerFileContent.textContent = result.message || 'No designer file for this source.\n\nCreate a file named [sourcename]_designer.ts to define scenarios and mock data.';
       }
