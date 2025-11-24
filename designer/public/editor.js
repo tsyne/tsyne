@@ -31,6 +31,45 @@ let collapsedNodes = new Set();
 // Tab selection state (widget.id -> selected tab index)
 let selectedTabs = {};
 
+// Resize handle state
+let isResizing = false;
+
+// Initialize resize handle
+document.addEventListener('DOMContentLoaded', () => {
+  const resizeHandle = document.getElementById('resizeHandle');
+  const propertyInspector = document.getElementById('propertyInspector');
+  const editorContainer = document.querySelector('.editor-container');
+
+  if (resizeHandle && propertyInspector) {
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      resizeHandle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+
+      const containerRect = editorContainer.getBoundingClientRect();
+      const newWidth = containerRect.right - e.clientX;
+      const clampedWidth = Math.max(200, Math.min(600, newWidth));
+
+      editorContainer.style.gridTemplateColumns = `300px 1fr 6px ${clampedWidth}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        resizeHandle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
+  }
+});
+
 // Known CSS properties (categorized)
 const knownCssProperties = {
   'Color': ['color', 'backgroundColor', 'borderColor', 'outlineColor'],

@@ -21,9 +21,22 @@
 
     .editor-container {
       display: grid;
-      grid-template-columns: 300px 1fr 350px;
+      grid-template-columns: 300px 1fr 6px 350px;
       grid-template-rows: 50px 1fr;
       height: 100vh;
+    }
+
+    .resize-handle {
+      grid-column: 3;
+      grid-row: 2;
+      background: #3e3e3e;
+      cursor: col-resize;
+      transition: background 0.2s;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.dragging {
+      background: #0e639c;
     }
 
     .toolbar {
@@ -74,6 +87,8 @@
     }
 
     .widget-tree {
+      grid-column: 1;
+      grid-row: 2;
       background: #252526;
       border-right: 1px solid #3e3e3e;
       overflow-y: auto;
@@ -221,6 +236,8 @@
     }
 
     .preview-panel {
+      grid-column: 2;
+      grid-row: 2;
       background: #1e1e1e;
       border-right: 1px solid #3e3e3e;
       padding: 20px;
@@ -457,6 +474,8 @@
     }
 
     .property-inspector {
+      grid-column: 4;
+      grid-row: 2;
       background: #252526;
       padding: 15px;
       overflow-y: auto;
@@ -942,7 +961,9 @@
       </div>
     </div>
 
-    <div class="property-inspector">
+    <div class="resize-handle" id="resizeHandle"></div>
+
+    <div class="property-inspector" id="propertyInspector">
       <div class="inspector-tabs">
         <div class="inspector-tab active" onclick="switchInspectorTab('widgets')">Add Widgets</div>
         <div class="inspector-tab" onclick="switchInspectorTab('properties')">Properties</div>
