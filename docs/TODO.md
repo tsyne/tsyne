@@ -41,6 +41,45 @@ Migrate IPC from stdin/stdout to Unix Domain Sockets (Linux/macOS) with fallback
 
 ---
 
+### Standalone tsyne Executable (tsyne.exe)
+
+**Priority**: Medium
+**Status**: Shell wrapper POC complete (`scripts/tsyne`)
+
+Currently, running standalone Tsyne apps requires Node.js/npm installed on the system. The shell wrapper (`scripts/tsyne`) demonstrates the pattern but isn't a true standalone executable.
+
+**Goal**: Create a self-contained `tsyne` / `tsyne.exe` that users can add to PATH for zero-friction single-file TypeScript GUI apps.
+
+**Current state**:
+- `scripts/tsyne` (shell wrapper): ~7 KB - requires system Node.js/npm
+- `bin/tsyne-bridge` (Go/Fyne GUI binary): ~39 MB
+
+**Production executable would bundle**:
+- Node.js runtime (~40-80 MB)
+- ts-node + TypeScript compiler (~10-20 MB)
+- tsyne npm package (JS sources) (~1 MB)
+- tsyne-bridge binary (~39 MB)
+
+**Estimated size**: ~100-150 MB uncompressed, ~50-70 MB compressed
+
+**Implementation options**:
+1. **Tauri**: Bundle Node.js + ts-node + tsyne as a Tauri app
+2. **pkg/nexe**: Package Node.js runtime with embedded modules
+3. **Deno-style**: Custom TypeScript runtime (major undertaking)
+
+**User experience goal**:
+```bash
+# Download single executable
+curl -O https://releases.tsyne.dev/tsyne-linux-x64
+chmod +x tsyne-linux-x64
+sudo mv tsyne-linux-x64 /usr/local/bin/tsyne
+
+# Run any .ts file with embedded dependencies
+tsyne my-weather-app.ts
+```
+
+---
+
 ## Future Work
 
 Add TODO items as needed for:

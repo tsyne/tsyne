@@ -2,7 +2,7 @@
 //
 // Stock Ticker - A standalone Tsyne application demonstrating embedded npm dependencies
 //
-// This file uses @grab directives to declare npm dependencies inline.
+// This file uses @Grab directives to declare npm dependencies inline.
 // Run with: ./scripts/tsyne examples/stock-ticker-standalone.ts
 //
 // Uses Yahoo Finance API via the 'yahoo-finance2' package for real stock data.
@@ -11,10 +11,10 @@
 // @Grab('date-fns@^3.0.0')
 
 import yahooFinance from 'yahoo-finance2';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
-import { app, styles, FontStyle } from '../src';
-// In production: import { app, styles, FontStyle } from 'tsyne';
+// Tsyne is automatically available when run via `tsyne` command (no @Grab needed)
+import { app, window, vbox, hbox, label, button, select, separator } from 'tsyne';
 
 // Popular stock symbols
 const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD'];
@@ -43,13 +43,6 @@ let priceLabel: any;
 let changeLabel: any;
 let detailsLabel: any;
 let statusLabel: any;
-
-// Styling
-styles({
-  label: {
-    text_align: 'center',
-  },
-});
 
 async function fetchQuote(symbol: string): Promise<StockQuote> {
   const result = await yahooFinance.quote(symbol);
@@ -136,66 +129,45 @@ function onSymbolChange(symbol: string) {
   refreshQuote();
 }
 
-// Build the Stock Ticker UI
-export function buildStockTicker(a: any) {
-  a.window({ title: 'Stock Ticker', width: 450, height: 320 }, () => {
-    a.vbox(() => {
+// Build the Stock Ticker UI using current Tsyne API
+app({ title: 'Stock Ticker' }, () => {
+  window({ title: 'Stock Ticker', width: 450, height: 320 }, () => {
+    vbox(() => {
       // Header
-      a.label('📊 Stock Ticker').setStyle({
-        font_size: 24,
-        font_style: FontStyle.BOLD,
-      });
-
-      a.separator();
+      label('Stock Ticker');
+      separator();
 
       // Symbol selector
-      a.hbox(() => {
-        a.label('Symbol: ');
-        a.select(SYMBOLS, selectedSymbol, onSymbolChange);
-        a.button('Refresh', refreshQuote);
+      hbox(() => {
+        label('Symbol: ');
+        select(SYMBOLS, onSymbolChange);
+        button('Refresh', refreshQuote);
       });
 
-      a.separator();
+      separator();
 
       // Stock display
-      a.vbox(() => {
+      vbox(() => {
         // Company name
-        symbolLabel = a.label(selectedSymbol).setStyle({
-          font_size: 16,
-        });
+        symbolLabel = label(selectedSymbol);
 
         // Large price display
-        priceLabel = a.label('--').setStyle({
-          font_size: 48,
-          font_style: FontStyle.BOLD,
-        });
+        priceLabel = label('--');
 
         // Change
-        changeLabel = a.label('').setStyle({
-          font_size: 20,
-        });
+        changeLabel = label('');
 
         // Details row
-        detailsLabel = a.label('').setStyle({
-          font_size: 14,
-        });
+        detailsLabel = label('');
       });
 
-      a.separator();
+      separator();
 
       // Status bar
-      statusLabel = a.label('Starting...').setStyle({
-        font_size: 12,
-        text_align: 'left',
-      });
+      statusLabel = label('Starting...');
     });
+
+    // Initial fetch
+    refreshQuote();
   });
-
-  // Initial fetch
-  refreshQuote();
-}
-
-// Run directly when executed as main script
-if (require.main === module) {
-  app({ title: 'Stock Ticker' }, buildStockTicker);
-}
+});

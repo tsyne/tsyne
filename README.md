@@ -23,7 +23,7 @@ Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to t
 - **Powerful**: Full access to Fyne's rich widget library and layout system
 - **Testable**: Built-in testing framework (TsyneTest) with Playwright-like API for headed/headless testing
 - **Single-Script Apps**: Complete desktop apps in one file - no complex project structure needed (like [calculator](examples/calculator.ts), [tic-tac-toe](examples/tictactoe.ts), [stopwatch](examples/17-stopwatch.ts), [dice roller](examples/18-dice-roller.ts))
-- **Single-File Distribution**: Embed npm dependency declarations directly in source files (See [EMBEDDED_DEPENDENCIES](docs/EMBEDDED_DEPENDENCIES.md)) if using `tsyne.exe` in the PATH
+- **Single-File Distribution**: Embed npm dependency declarations directly in source files (See [INLINE_DEPENDENCY_DECLARATIONS](docs/INLINE_DEPENDENCY_DECLARATIONS.md)) if using `tsyne.exe` in the PATH
 - **Browser Mode**: Load TypeScript pages from HTTP servers - enables server-driven desktop UIs where any backend language (Java, Ruby, Python, Go) can serve pages. Big topic, see BROWSER_MODE.md
 - **npm Ecosystem**: Use any of npm's 2M+ packages that don't require browser DOM - share validators, API clients, and business logic with your web apps
 - **Interpreted + Native**: TypeScript logic is interpreted for rapid iteration; rendering is compiled Go/Fyne for native performance (trade-off: requires Node.js runtime, not single binary distribution)
@@ -183,7 +183,7 @@ import { app } from 'tsyne';
 // The rest of your GUI app that neds axios and date-fns` 
 ```
 
-Dependencies auto-resolve to `~/.tsyne/packages/` at runtime. See [docs/EMBEDDED_DEPENDENCIES.md](docs/EMBEDDED_DEPENDENCIES.md) for details.
+Dependencies auto-resolve to `~/.tsyne/packages/` at runtime. See [docs/INLINE_DEPENDENCY_DECLARATIONS.md](docs/INLINE_DEPENDENCY_DECLARATIONS.md) for details.
 
 TODO: is this a directed graph or do 100 single-file distributions fight with each other in here?
 

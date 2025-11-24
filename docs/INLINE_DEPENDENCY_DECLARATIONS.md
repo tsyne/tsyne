@@ -1,6 +1,6 @@
-# Embedded Dependencies (Grapes-alike for TypeScript)
+# Inline Dependency Declarations (Grapes-alike for TypeScript)
 
-This document describes how Tsyne can support embedding npm dependency declarations directly in TypeScript source files, similar to Groovy's [Grape](https://docs.groovy-lang.org/latest/html/documentation/grape.html) annotations.
+This document describes how Tsyne can support embedding npm dependency declarations directly in Tsyne-specific TypeScript source files, similar to Groovy's [Grape](https://docs.groovy-lang.org/latest/html/documentation/grape.html) annotations. Well, a structred comment for us, not an annotation.
 
 ## The Problem
 
@@ -11,6 +11,7 @@ Distributing a single-file TypeScript GUI application requires either:
 
 None of these are ideal for simple, single-source-file distribution.
 
+## The Solution: `@Grab` Directives
 ## The Solution: `@Grab` Directives
 
 Declare npm dependencies directly in your TypeScript file using Groovy-style comments:

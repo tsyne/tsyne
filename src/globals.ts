@@ -10,7 +10,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Version imported from package.json
-const version = require('../package.json').version;
+// Use path resolution that works from both src/ (dev) and dist/src/ (built)
+const packageJsonPath = path.resolve(__dirname, '..', __dirname.includes('dist') ? '..' : '', 'package.json');
+const version = require(packageJsonPath).version;
 
 /**
  * Storage interface (subset of browser Storage API)

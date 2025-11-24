@@ -8,7 +8,7 @@
 # Example:
 #   ./scripts/tsyne examples/weather-viewer-standalone.ts
 #
-# See docs/EMBEDDED_DEPENDENCIES.md for full documentation.
+# See docs/INLINE_DEPENDENCY_DECLARATIONS.md for full documentation.
 
 set -e
 
@@ -152,7 +152,10 @@ log_info "Parsing @Grab directives from $SOURCE_FILE..."
 GRAB_SPECS=$(grep -oP "// @Grab\('\K[^']+(?='\))" "$SOURCE_FILE" 2>/dev/null || true)
 
 if [ -z "$GRAB_SPECS" ]; then
-    log_info "No @Grab directives found, running directly..."
+    log_info "No @Grab directives found"
+    if [ "$DRY_RUN" = true ]; then
+        exit 0
+    fi
 else
     # Convert to arrays and split package@version
     readarray -t SPECS <<< "$GRAB_SPECS"
@@ -230,11 +233,21 @@ fi
 log_info "Starting application..."
 echo ""
 
-# Build NODE_PATH - include cache, project node_modules, and existing NODE_PATH
+# Build NODE_PATH - include cache and project node_modules
 EFFECTIVE_NODE_PATH="$TSYNE_CACHE/node_modules:$PROJECT_ROOT/node_modules"
 if [ -n "$NODE_PATH" ]; then
     EFFECTIVE_NODE_PATH="$EFFECTIVE_NODE_PATH:$NODE_PATH"
 fi
 
+# Ensure 'tsyne' is available as a module by symlinking to the project
+# This allows 'import from "tsyne"' to resolve to the project's src/
+mkdir -p "$TSYNE_CACHE/node_modules"
+if [ ! -e "$TSYNE_CACHE/node_modules/tsyne" ]; then
+    ln -s "$PROJECT_ROOT" "$TSYNE_CACHE/node_modules/tsyne"
+    log_info "Created tsyne module symlink"
+fi
+
 # Run with ts-node
-NODE_PATH="$EFFECTIVE_NODE_PATH" npx ts-node "$SOURCE_FILE"
+# Use TS_NODE_TRANSPILE_ONLY to skip type checking (external modules from @grab
+# won't have types visible to TypeScript without modifying tsconfig.json)
+TS_NODE_TRANSPILE_ONLY=true NODE_PATH="$EFFECTIVE_NODE_PATH" npx ts-node "$SOURCE_FILE"

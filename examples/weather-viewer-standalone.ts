@@ -6,7 +6,7 @@
 // directly in the source file. Run with: ./scripts/tsyne examples/weather-viewer-standalone.ts
 //
 // When run with `tsyne weather-viewer-standalone.ts`, the tsyne runtime will:
-//   1. Parse the @grab directives below
+//   1. Parse the @Grab directives below
 //   2. Install missing dependencies to ~/.tsyne/packages/
 //   3. Configure NODE_PATH and run the app with ts-node
 //
@@ -20,8 +20,8 @@
 import axios from 'axios';
 import { format } from 'date-fns';
 
-import { app, styles, FontStyle } from '../src';
-// In production: import { app, styles, FontStyle } from 'tsyne';
+// Tsyne is automatically available when run via `tsyne` command (no @Grab needed)
+import { app, window, vbox, hbox, label, button, select, separator } from 'tsyne';
 
 // Weather API - Using Open-Meteo (free, no API key required)
 // https://open-meteo.com/en/docs
@@ -76,13 +76,6 @@ const CITIES: GeoLocation[] = [
   { name: 'São Paulo', lat: -23.5505, lon: -46.6333, country: 'Brazil' },
   { name: 'Mumbai', lat: 19.076, lon: 72.8777, country: 'India' },
 ];
-
-// Styling
-styles({
-  label: {
-    text_align: 'center',
-  },
-});
 
 // State
 let selectedCity: GeoLocation = CITIES[0];
@@ -142,7 +135,7 @@ function updateDisplay() {
   );
 
   if (lastUpdated) {
-    // Using date-fns for formatting (from @grab)
+    // Using date-fns for formatting (from @Grab)
     statusLabel?.setText(`Last updated: ${format(lastUpdated, 'PPpp')}`);
   }
 }
@@ -171,65 +164,45 @@ function onCityChange(cityName: string) {
   }
 }
 
-// Build the Weather Viewer UI
-export function buildWeatherViewer(a: any) {
-  a.window({ title: 'Weather Viewer', width: 400, height: 350 }, () => {
-    a.vbox(() => {
+// Build the Weather Viewer UI using current Tsyne API
+app({ title: 'Weather Viewer' }, () => {
+  window({ title: 'Weather Viewer', width: 400, height: 350 }, () => {
+    vbox(() => {
       // Header
-      a.label('🌤️ Weather Viewer').setStyle({
-        font_size: 24,
-        font_style: FontStyle.BOLD,
-      });
-
-      a.separator();
+      label('Weather Viewer');
+      separator();
 
       // City selector
-      a.hbox(() => {
-        a.label('City: ');
-        a.select(
+      hbox(() => {
+        label('City: ');
+        select(
           CITIES.map((c) => c.name),
-          selectedCity.name,
           onCityChange
         );
-        a.button('Refresh', refreshWeather);
+        button('Refresh', refreshWeather);
       });
 
-      a.separator();
+      separator();
 
       // Weather display
-      a.vbox(() => {
+      vbox(() => {
         // Large temperature display
-        temperatureLabel = a.label('--').setStyle({
-          font_size: 64,
-          font_style: FontStyle.BOLD,
-        });
+        temperatureLabel = label('--');
 
         // Condition
-        conditionLabel = a.label('Loading...').setStyle({
-          font_size: 20,
-        });
+        conditionLabel = label('Loading...');
 
         // Details row
-        detailsLabel = a.label('').setStyle({
-          font_size: 14,
-        });
+        detailsLabel = label('');
       });
 
-      a.separator();
+      separator();
 
       // Status bar
-      statusLabel = a.label('Starting...').setStyle({
-        font_size: 12,
-        text_align: 'left',
-      });
+      statusLabel = label('Starting...');
     });
+
+    // Initial fetch
+    refreshWeather();
   });
-
-  // Initial fetch
-  refreshWeather();
-}
-
-// Run directly when executed as main script
-if (require.main === module) {
-  app({ title: 'Weather Viewer' }, buildWeatherViewer);
-}
+});
