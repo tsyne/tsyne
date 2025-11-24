@@ -242,3 +242,44 @@ If we encounter significant brittleness issues with system Node.js in the wild, 
 
 **Last Updated:** 2025-11-24
 **Size Measurements:** Based on Node.js v22.17.0, tsyne v0.1.0, Linux x64
+
+---
+
+## Second Opinion (2025-11-24)
+
+A follow-up investigation was conducted to re-evaluate the feasibility of a standalone binary, prompted by a valid concern that the original 189 MB measurement for the Node.js runtime was incorrect.
+
+### Correcting the Node.js Binary Size
+
+The initial assessment cited a 189 MB size for the Node.js binary. Further verification has shown this to be inaccurate. The official Node.js v22.20.0 distribution for Linux x64 (`node-v22.20.0-linux-x64.tar.xz`) is **48 MB compressed**.
+
+While the exact uncompressed size of the core `node` executable can vary, a reasonable estimate is **~110 MB**. This is significantly smaller than the original figure.
+
+### Re-evaluation: The Real Culprit is `node_modules`
+
+With the corrected Node.js runtime size, the primary contributor to the binary's bloat is not the runtime itself, but the **249 MB `node_modules` directory**.
+
+Here is the revised size breakdown:
+
+| Component | Original Estimate | Corrected Estimate | Notes |
+|-----------|-------------------|--------------------|-------|
+| Node.js Runtime | 189 MB | ~110 MB | Based on 48 MB compressed download |
+| Tsyne runtime (dist/) | 5 MB | 5 MB | Unchanged |
+| Tsyne node_modules/ | 249 MB | 249 MB | **The primary size driver** |
+| tsyne-bridge binary | 40 MB | 40 MB | Unchanged |
+| **Total (uncompressed)** | **483 MB** | **~404 MB** | Still very large |
+| **Total (compressed)** | **~150-200 MB** | **~120-150 MB** | A modest improvement, but still impractical |
+
+### Analysis and Recommendation
+
+This corrected data leads to a more nuanced conclusion:
+
+1.  **A standalone binary is technically feasible, but impractical.** The core challenge is not the Node.js runtime, but the large dependency tree (`typescript`, `ts-node`, etc.) required for on-the-fly compilation.
+2.  **Aggressive Optimization Would Be Required.** To create a reasonably sized binary (~80-100 MB), a significant engineering effort would be needed to bundle and tree-shake the `node_modules`, effectively creating a custom, minimal Tsyne runtime.
+3.  **The Shell Script Installer Remains Superior.** The current `install.sh` script avoids this entire problem. It leverages the user's existing Node.js and npm installation, resulting in a tiny (~7 KB) download and sidestepping the challenge of dependency bundling.
+
+### Final Conclusion (Second Opinion)
+
+The initial conclusion holds, but for a different reason. A standalone binary is impractical not because of the Node.js runtime's size, but because of the project's large dependency footprint.
+
+The recommendation is unchanged: **stick with the shell script installer.** It is the most pragmatic and efficient distribution method for the target developer audience. While a standalone binary is more achievable than first thought, the engineering cost required to optimize its size is substantial and offers a poor return on investment compared to the current solution.
