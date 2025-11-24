@@ -1329,6 +1329,25 @@ class SourceCodeEditor {
       case 'grid':
         return `${indentation}a.grid(2, () => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
+      // Canvas primitives
+      case 'rectangle':
+        return `${indentation}a.rectangle("${properties.color || '#3c3c3c'}"${properties.width ? `, ${properties.width}` : ''}${properties.height ? `, ${properties.height}` : ''});`;
+
+      case 'circle':
+        return `${indentation}a.circle("${properties.color || '#3c3c3c'}"${properties.radius ? `, ${properties.radius}` : ''});`;
+
+      case 'line':
+        return `${indentation}a.line("${properties.color || '#5e5e5e'}"${properties.strokeWidth ? `, ${properties.strokeWidth}` : ''});`;
+
+      case 'linearGradient':
+        return `${indentation}a.linearGradient("${properties.startColor || '#0e639c'}", "${properties.endColor || '#3c3c3c'}"${properties.angle !== undefined ? `, ${properties.angle}` : ''});`;
+
+      case 'radialGradient':
+        return `${indentation}a.radialGradient("${properties.centerColor || '#0e639c'}", "${properties.edgeColor || '#3c3c3c'}");`;
+
+      case 'text':
+        return `${indentation}a.text("${properties.content || 'Text'}"${properties.size ? `, ${properties.size}` : ''}${properties.color ? `, "${properties.color}"` : ''});`;
+
       default:
         return `${indentation}a.${widgetType}();`;
     }

@@ -226,6 +226,34 @@ const widgetPropertySchemas = {
   selectentry: {
     options: { type: 'string', description: 'Comma-separated options' },
     placeholder: { type: 'string', description: 'Placeholder text' }
+  },
+  // Canvas primitives
+  rectangle: {
+    color: { type: 'string', description: 'Fill color (hex or name)' },
+    width: { type: 'number', description: 'Width in pixels' },
+    height: { type: 'number', description: 'Height in pixels' }
+  },
+  circle: {
+    color: { type: 'string', description: 'Fill color (hex or name)' },
+    radius: { type: 'number', description: 'Radius in pixels' }
+  },
+  line: {
+    color: { type: 'string', description: 'Stroke color (hex or name)' },
+    strokeWidth: { type: 'number', description: 'Line thickness' }
+  },
+  linearGradient: {
+    startColor: { type: 'string', description: 'Starting color' },
+    endColor: { type: 'string', description: 'Ending color' },
+    angle: { type: 'number', description: 'Gradient angle in degrees' }
+  },
+  radialGradient: {
+    centerColor: { type: 'string', description: 'Center color' },
+    edgeColor: { type: 'string', description: 'Edge color' }
+  },
+  text: {
+    content: { type: 'string', description: 'Text content' },
+    size: { type: 'number', description: 'Font size' },
+    color: { type: 'string', description: 'Text color' }
   }
 };
 
@@ -894,7 +922,14 @@ function getWidgetIcon(type) {
     'table': '▦',
     'list': '☰',
     'tree': '⌲',
-    'activity': '◌'
+    'activity': '◌',
+    // Canvas primitives
+    'rectangle': '■',
+    'circle': '●',
+    'line': '╱',
+    'linearGradient': '▤',
+    'radialGradient': '◎',
+    'text': 'A'
   };
   return icons[type] || '○';
 }
@@ -1987,6 +2022,64 @@ function createPreviewWidget(widget) {
       element.style.background = 'transparent';
       element.style.border = 'none';
       element.innerHTML = `<div style="display: flex;"><input type="text" placeholder="${widget.properties?.placeholder || ''}" style="min-width: 100px; padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; border-right: none; color: #d4d4d4; border-radius: 3px 0 0 3px;"><select style="padding: 6px; background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; border-radius: 0 3px 3px 0;"><option>▼</option></select></div>`;
+      break;
+
+    // Canvas primitives
+    case 'rectangle':
+      element.style.padding = '0';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const rectColor = widget.properties?.color || '#3c3c3c';
+      const rectWidth = widget.properties?.width ? `${widget.properties.width}px` : '60px';
+      const rectHeight = widget.properties?.height ? `${widget.properties.height}px` : '40px';
+      element.innerHTML = `<div style="width: ${rectWidth}; height: ${rectHeight}; background: ${rectColor}; border-radius: 2px;"></div>`;
+      break;
+
+    case 'circle':
+      element.style.padding = '0';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const circleColor = widget.properties?.color || '#3c3c3c';
+      const circleSize = widget.properties?.radius ? `${widget.properties.radius * 2}px` : '40px';
+      element.innerHTML = `<div style="width: ${circleSize}; height: ${circleSize}; background: ${circleColor}; border-radius: 50%;"></div>`;
+      break;
+
+    case 'line':
+      element.style.padding = '4px 0';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const lineColor = widget.properties?.color || '#5e5e5e';
+      const lineWidth = widget.properties?.strokeWidth || 2;
+      element.innerHTML = `<div style="height: ${lineWidth}px; background: ${lineColor}; width: 100%;"></div>`;
+      break;
+
+    case 'linearGradient':
+      element.style.padding = '0';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const lgStart = widget.properties?.startColor || '#0e639c';
+      const lgEnd = widget.properties?.endColor || '#3c3c3c';
+      const lgAngle = widget.properties?.angle || 0;
+      element.innerHTML = `<div style="width: 60px; height: 40px; background: linear-gradient(${lgAngle}deg, ${lgStart}, ${lgEnd}); border-radius: 2px;"></div>`;
+      break;
+
+    case 'radialGradient':
+      element.style.padding = '0';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const rgCenter = widget.properties?.centerColor || '#0e639c';
+      const rgEdge = widget.properties?.edgeColor || '#3c3c3c';
+      element.innerHTML = `<div style="width: 50px; height: 50px; background: radial-gradient(circle, ${rgCenter}, ${rgEdge}); border-radius: 2px;"></div>`;
+      break;
+
+    case 'text':
+      element.style.padding = '4px';
+      element.style.border = 'none';
+      element.style.background = 'transparent';
+      const textContent = widget.properties?.content || 'Text';
+      const textSize = widget.properties?.size ? `${widget.properties.size}px` : '14px';
+      const textColor = widget.properties?.color || '#d4d4d4';
+      element.innerHTML = `<span style="font-size: ${textSize}; color: ${textColor};">${escapeHtml(textContent)}</span>`;
       break;
 
     default:
