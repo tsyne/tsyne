@@ -60,16 +60,16 @@ Progressive learning examples from basic to advanced concepts.
 
 ### Interactive Apps (14-21)
 
-| Example | Description | Key Features | Attribution |
-|---------|-------------|--------------|-------------|
-| [**14-color-mixer.ts**](14-color-mixer.ts) | RGB color mixing | Sliders, hex/RGB conversion, random generation | Original |
-| [**15-tip-calculator.ts**](15-tip-calculator.ts) | Financial calculations | Entry validation, radio buttons, bill splitting | Original |
-| [**16-password-generator.ts**](16-password-generator.ts) | Random generation | Character type toggles, length slider, validation | Original |
-| [**17-stopwatch.ts**](17-stopwatch.ts) | Time tracking | Start/Stop/Reset, lap times, millisecond precision | Original |
-| [**18-dice-roller.ts**](18-dice-roller.ts) | Random dice rolling | Configurable dice types (d4-d100), roll history | Original |
-| [**19-bmi-calculator.ts**](19-bmi-calculator.ts) | Health calculations | Metric/imperial units, BMI categories | Original |
-| [**20-rock-paper-scissors.ts**](20-rock-paper-scissors.ts) | Game with score tracking | Win/loss logic, score persistence | Original |
-| [**21-quiz-app.ts**](21-quiz-app.ts) | Multi-screen quiz | State machines, screen transitions, scoring | Original |
+| Example | Description | Key Features | Attribution | Screenshot |
+|---------|-------------|--------------|-------------|------------|
+| [**14-color-mixer.ts**](14-color-mixer.ts) | RGB color mixing | Sliders, hex/RGB conversion, random generation | Original | [📷](screenshots/14-color-mixer.png) |
+| [**15-tip-calculator.ts**](15-tip-calculator.ts) | Financial calculations | Entry validation, radio buttons, bill splitting | Original | [📷](screenshots/15-tip-calculator.png) |
+| [**16-password-generator.ts**](16-password-generator.ts) | Random generation | Character type toggles, length slider, validation | Original | [📷](screenshots/16-password-generator.png) |
+| [**17-stopwatch.ts**](17-stopwatch.ts) | Time tracking | Start/Stop/Reset, lap times, millisecond precision | Original | [📷](screenshots/17-stopwatch.png) |
+| [**18-dice-roller.ts**](18-dice-roller.ts) | Random dice rolling | Configurable dice types (d4-d100), roll history | Original | [📷](screenshots/18-dice-roller.png) |
+| [**19-bmi-calculator.ts**](19-bmi-calculator.ts) | Health calculations | Metric/imperial units, BMI categories | Original | [📷](screenshots/19-bmi-calculator.png) |
+| [**20-rock-paper-scissors.ts**](20-rock-paper-scissors.ts) | Game with score tracking | Win/loss logic, score persistence | Original | [📷](screenshots/20-rock-paper-scissors.png) |
+| [**21-quiz-app.ts**](21-quiz-app.ts) | Multi-screen quiz | State machines, screen transitions, scoring | Original | [📷](screenshots/21-quiz-app.png) |
 
 ---
 
@@ -172,26 +172,26 @@ Individual examples showcasing specific widgets.
 
 ### Input Widgets
 
-| Example | Widgets Demonstrated |
-|---------|---------------------|
-| [**counter.ts**](counter.ts) | Button clicks, label updates |
-| [**checkbox.ts**](checkbox.ts) | Checkbox state management |
-| [**radiogroup.ts**](radiogroup.ts) | Radio button groups |
-| [**slider.ts**](slider.ts) | Slider value changes |
-| [**select.ts**](select.ts) | Dropdown selection |
-| [**input-widgets.ts**](input-widgets.ts) | Various input widgets |
+| Example | Widgets Demonstrated | Screenshot |
+|---------|---------------------|------------|
+| [**counter.ts**](counter.ts) | Button clicks, label updates | [📷](screenshots/counter.png) |
+| [**checkbox.ts**](checkbox.ts) | Checkbox state management | [📷](screenshots/checkbox.png) |
+| [**radiogroup.ts**](radiogroup.ts) | Radio button groups | [📷](screenshots/radiogroup.png) |
+| [**slider.ts**](slider.ts) | Slider value changes | [📷](screenshots/slider.png) |
+| [**select.ts**](select.ts) | Dropdown selection | [📷](screenshots/select.png) |
+| [**input-widgets.ts**](input-widgets.ts) | Various input widgets | |
 
 ### Display Widgets
 
-| Example | Widgets Demonstrated |
-|---------|---------------------|
-| [**hello.ts**](hello.ts) | Basic label with styling |
-| [**list.ts**](list.ts) | List widget with selection |
-| [**table.ts**](table.ts) | Table widget with rows/columns |
-| [**progressbar.ts**](progressbar.ts) | Progress bar updates |
-| [**loading-states.ts**](loading-states.ts) | Loading indicators and states |
-| [**icon-gallery.ts**](icon-gallery.ts) | Icon display and selection |
-| [**gradient-picker.ts**](gradient-picker.ts) | Gradient color picker |
+| Example | Widgets Demonstrated | Screenshot |
+|---------|---------------------|------------|
+| [**hello.ts**](hello.ts) | Basic label with styling | [📷](screenshots/hello.png) |
+| [**list.ts**](list.ts) | List widget with selection | |
+| [**table.ts**](table.ts) | Table widget with rows/columns | |
+| [**progressbar.ts**](progressbar.ts) | Progress bar updates | |
+| [**loading-states.ts**](loading-states.ts) | Loading indicators and states | |
+| [**icon-gallery.ts**](icon-gallery.ts) | Icon display and selection | |
+| [**gradient-picker.ts**](gradient-picker.ts) | Gradient color picker | |
 
 ### Canvas Primitives
 

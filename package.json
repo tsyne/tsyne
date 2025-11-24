@@ -31,6 +31,7 @@
     "test:screenshots:todomvc": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/todomvc.test.ts",
     "test:screenshots:todomvc-ngshow": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/todomvc-ngshow.test.ts",
     "test:screenshots:calculator": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/calculator.test.ts",
+    "test:screenshots:interactive": "TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 jest examples/14-color-mixer.test.ts examples/15-tip-calculator.test.ts examples/16-password-generator.test.ts examples/17-stopwatch.test.ts examples/18-dice-roller.test.ts examples/19-bmi-calculator.test.ts examples/20-rock-paper-scissors.test.ts examples/21-quiz-app.test.ts --runInBand",
     "run:example": "npm run build && node",
     "run:calculator": "npm run build && npx ts-node test-apps/calculator-advanced/calculator-ui.ts",
     "run:single-script-calculator": "npm run build && npx ts-node examples/calculator.ts",

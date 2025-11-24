@@ -6,6 +6,7 @@
  */
 
 import { app, window, vbox, hbox, label, button, radiogroup } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 let themeRadio: any;
 let languageRadio: any;
@@ -109,5 +110,6 @@ app({ title: 'RadioGroup Demo' }, () => {
     });
 
     win.show();
+    screenshotIfRequested(win);
   });
 });

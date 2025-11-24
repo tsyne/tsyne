@@ -6,6 +6,7 @@
  */
 
 import { app, window, vbox, hbox, label, select, button } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 let colorSelect: any;
 let sizeSelect: any;
@@ -86,6 +87,7 @@ app({ title: 'Select Demo' }, () => {
     });
 
     win.show();
+    screenshotIfRequested(win);
   });
 });
 

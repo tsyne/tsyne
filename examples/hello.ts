@@ -1,4 +1,5 @@
 import { app, window, vbox, button, label, styles } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 // CSS Classes for styling widgets
 styles({
@@ -24,7 +25,7 @@ styles({
 
 // Simple Hello World example demonstrating Tsyne's elegant declarative syntax
 app({ title: "Hello Tsyne" }, () => {
-  window({ title: "Hello World" }, () => {
+  window({ title: "Hello World" }, (win) => {
     vbox(() => {
       label("Welcome to Tsyne!", "title");
       label("A TypeScript wrapper for Fyne", "subtitle");
@@ -37,5 +38,6 @@ app({ title: "Hello Tsyne" }, () => {
         process.exit(0);
       }, "dangerButton");
     });
+    screenshotIfRequested(win);
   });
 });

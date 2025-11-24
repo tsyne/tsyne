@@ -5,6 +5,7 @@
  */
 
 import { app, window, vbox, hbox, label, checkbox, button } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 let termsCheckbox: any;
 let newsletterCheckbox: any;
@@ -66,6 +67,7 @@ app({ title: 'Checkbox Demo' }, () => {
     });
 
     win.show();
+    screenshotIfRequested(win);
   });
 });
 

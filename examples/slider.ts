@@ -6,6 +6,7 @@
  */
 
 import { app, window, vbox, hbox, label, slider, button } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 let volumeSlider: any;
 let brightnessSlider: any;
@@ -102,6 +103,7 @@ app({ title: 'Slider Demo' }, () => {
     });
 
     win.show();
+    screenshotIfRequested(win);
   });
 });
 

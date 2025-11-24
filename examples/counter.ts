@@ -1,4 +1,5 @@
 import { app, window, vbox, hbox, button, label } from '../src';
+import { screenshotIfRequested } from './screenshot-helper';
 
 // Counter example demonstrating state management with Tsyne
 let countLabel: any;
@@ -11,7 +12,7 @@ function updateCounter() {
 }
 
 app({ title: "Counter App" }, () => {
-  window({ title: "Simple Counter" }, () => {
+  window({ title: "Simple Counter" }, (win) => {
     vbox(() => {
       countLabel = label("Count: 0");
 
@@ -32,5 +33,6 @@ app({ title: "Counter App" }, () => {
         });
       });
     });
+    screenshotIfRequested(win);
   });
 });
