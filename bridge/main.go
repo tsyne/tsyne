@@ -42,6 +42,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreatePasswordEntry(msg)
 	case "createSeparator":
 		b.handleCreateSeparator(msg)
+	case "createSpacer":
+		b.handleCreateSpacer(msg)
 	case "createHyperlink":
 		b.handleCreateHyperlink(msg)
 	case "createVBox":

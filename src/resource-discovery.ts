@@ -36,6 +36,7 @@ class NullHBox extends NullWidget {}
 class NullScroll extends NullWidget {}
 class NullGrid extends NullWidget {}
 class NullSeparator extends NullWidget {}
+class NullSpacer extends NullWidget {}
 class NullHyperlink extends NullWidget {}
 class NullSplit extends NullWidget {}
 class NullTabs extends NullWidget {}
@@ -124,6 +125,10 @@ export class ResourceDiscoveryContext {
 
   separator(): NullSeparator {
     return new NullSeparator();
+  }
+
+  spacer(): NullSpacer {
+    return new NullSpacer();
   }
 
   hyperlink(text: string, url: string): NullHyperlink {
@@ -322,6 +327,7 @@ export function createDiscoveryAPI(context: ResourceDiscoveryContext) {
     radiogroup: (options: string[], selected?: string, onChange?: (selected: string) => void) =>
       context.radiogroup(options, selected, onChange),
     separator: () => context.separator(),
+    spacer: () => context.spacer(),
     hyperlink: (text: string, url: string) => context.hyperlink(text, url),
     image: (path: string, mode?: 'contain' | 'stretch' | 'original') => context.image(path, mode),
     table: (headers: string[], data: string[][]) => context.table(headers, data),

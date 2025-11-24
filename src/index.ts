@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded, Popup, ThemeOverride, DateEntry, TextGrid, Navigation, NavigationOptions } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Spacer, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded, Popup, ThemeOverride, DateEntry, TextGrid, Navigation, NavigationOptions } from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -122,6 +122,17 @@ export function separator(): Separator {
     throw new Error('separator() must be called within an app context');
   }
   return new Separator(globalContext);
+}
+
+/**
+ * Create a spacer widget (expanding empty space)
+ * Uses Fyne's layout.NewSpacer() to create flexible spacing in layouts
+ */
+export function spacer(): Spacer {
+  if (!globalContext) {
+    throw new Error('spacer() must be called within an app context');
+  }
+  return new Spacer(globalContext);
 }
 
 /**

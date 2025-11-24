@@ -13,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -49,6 +50,23 @@ func (b *Bridge) handleCreateSeparator(msg Message) {
 	b.mu.Lock()
 	b.widgets[widgetID] = separator
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "separator", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+func (b *Bridge) handleCreateSpacer(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+
+	spacer := layout.NewSpacer()
+
+	b.mu.Lock()
+	b.widgets[widgetID] = spacer
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "spacer", Text: ""}
 	b.mu.Unlock()
 
 	b.sendResponse(Response{

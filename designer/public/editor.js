@@ -887,6 +887,7 @@ function getWidgetIcon(type) {
     'toolbar': '▭',
     // Display widgets
     'separator': '─',
+    'spacer': '↕',
     'hyperlink': '⎙',
     'image': '⛶',
     'richtext': '⚑',
@@ -1598,6 +1599,15 @@ function createPreviewWidget(widget) {
       element.style.padding = '0';
       element.style.background = 'transparent';
       element.innerHTML = `<hr style="border: none; border-top: 1px solid #5e5e5e; margin: 4px 0; width: 100%;">`;
+      break;
+
+    case 'spacer':
+      element.style.border = 'none';
+      element.style.padding = '0';
+      element.style.background = 'transparent';
+      element.style.flex = '1';
+      element.style.minHeight = '8px';
+      element.innerHTML = `<div style="height: 100%; min-height: 8px; background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px);"></div>`;
       break;
 
     case 'richtext':

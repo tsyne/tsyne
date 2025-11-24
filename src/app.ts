@@ -2,7 +2,7 @@ import { BridgeConnection, BridgeInterface } from './fynebridge';
 import { GrpcBridgeConnection } from './grpcbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, CanvasArc, CanvasPolygon, CanvasRadialGradient, Clip, InnerWindow, MultipleWindows, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
+import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Spacer, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, CanvasArc, CanvasPolygon, CanvasRadialGradient, Clip, InnerWindow, MultipleWindows, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
 export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
@@ -169,6 +169,10 @@ export class App {
 
   separator(): Separator {
     return new Separator(this.ctx);
+  }
+
+  spacer(): Spacer {
+    return new Spacer(this.ctx);
   }
 
   hyperlink(text: string, url: string): Hyperlink {

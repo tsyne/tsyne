@@ -368,7 +368,7 @@ export function createTodoApp(a: any, storePath?: string) {
       a.vbox(() => {
         a.label('TodoMVC');
         a.separator();
-        a.label('');
+        a.spacer();
 
         a.label('Add New Todo:');
         // Pseudo-declarative event handler - just update model
@@ -383,9 +383,9 @@ export function createTodoApp(a: any, storePath?: string) {
           });
         });
 
-        a.label('');
+        a.spacer();
         a.separator();
-        a.label('');
+        a.spacer();
 
         a.label('Filter:');
         // Pseudo-declarative filters - just update model
@@ -398,15 +398,15 @@ export function createTodoApp(a: any, storePath?: string) {
           });
         });
 
-        a.label('');
+        a.spacer();
         statusLabel = a.label('').withId('statusLabel');
-        a.label('');
+        a.spacer();
 
         todoContainer = a.vbox(() => a.label('Loading...'));
 
-        a.label('');
+        a.spacer();
         a.separator();
-        a.label('');
+        a.spacer();
 
         // Pseudo-declarative file operations - just update model
         a.hbox(() => {

@@ -160,6 +160,23 @@ export class Separator {
 }
 
 /**
+ * Spacer widget (expanding empty space)
+ * Uses Fyne's layout.NewSpacer() to create flexible spacing in layouts
+ */
+export class Spacer {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('spacer');
+
+    ctx.bridge.send('createSpacer', { id: this.id });
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
  * Hyperlink widget (clickable URL)
  */
 export class Hyperlink {

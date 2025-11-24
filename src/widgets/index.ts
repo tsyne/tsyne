@@ -56,6 +56,7 @@ export {
   FileIcon,
   Label,
   Separator,
+  Spacer,
   Hyperlink,
   ProgressBar,
   ProgressBarInfinite,

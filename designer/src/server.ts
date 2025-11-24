@@ -172,6 +172,9 @@ function generateWidget(widget: any, allWidgets: any[], lines: string[], indent:
   } else if (type === 'separator') {
     lines.push(`${indentStr}separator();`);
 
+  } else if (type === 'spacer') {
+    lines.push(`${indentStr}spacer();`);
+
   } else if (isContainer) {
     // Container widgets: type(() => { children })
     if (children.length > 0) {
@@ -665,6 +668,10 @@ const designer = {
   // Display widgets
   separator(): any {
     return captureWidget('separator', {});
+  },
+
+  spacer(): any {
+    return captureWidget('spacer', {});
   },
 
   hyperlink(text: string, url: string): any {
@@ -1306,6 +1313,9 @@ class SourceCodeEditor {
 
       case 'separator':
         return `${indentation}a.separator();`;
+
+      case 'spacer':
+        return `${indentation}a.spacer();`;
 
       case 'hyperlink':
         return `${indentation}a.hyperlink("${properties.text || 'Link'}", "${properties.url || '#'}");`;
@@ -2701,9 +2711,10 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
 
-  // API routes
-  if (req.url && apiHandlers[req.url]) {
-    apiHandlers[req.url](req, res);
+  // API routes - extract pathname without query string
+  const urlPath = req.url?.split('?')[0] || '';
+  if (urlPath && apiHandlers[urlPath]) {
+    apiHandlers[urlPath](req, res);
     return;
   }
 
