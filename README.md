@@ -92,13 +92,12 @@ No, this is tied to Fyne. Someone else can do a pure TypeScript pseudo-declarati
 
 ## Installation
 
-```bash
-npm install tsyne # STILL TODO
-```
-
-**Prerequisites**:
-- Node.js 16+
-- Go 1.21+ (for building the bridge)
+See **[docs/INSTALLATION.md](docs/INSTALLATION.md)** for complete installation instructions, including:
+- Quick start for development
+- Standalone installation (recommended for users)
+- npm package installation (coming soon)
+- Prerequisites and troubleshooting
+- Platform support
 
 ## Quick Start
 

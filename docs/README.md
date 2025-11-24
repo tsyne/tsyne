@@ -7,6 +7,7 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 ### 🚀 Getting Started
 
 - **[reference.md](reference.md)** - **START HERE!** Complete technical reference with all core concepts, widgets, and API
+- **[INSTALLATION.md](INSTALLATION.md)** - Installation guide (development, standalone, npm)
 - **[QUICKSTART.md](QUICKSTART.md)** - 5-minute quick start guide
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep dive into internal architecture
 
@@ -20,6 +21,7 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 
 - **[ROADMAP.md](ROADMAP.md)** - Feature roadmap and implementation status (~15% Fyne coverage)
 - **[TODO.md](TODO.md)** - Technical debt and infrastructure improvements
+- **[STANDALONE_BINARY_ASSESSMENT.md](STANDALONE_BINARY_ASSESSMENT.md)** - Analysis of standalone binary approach (size, tradeoffs)
 - **[PROS_AND_CONS.md](PROS_AND_CONS.md)** - Honest comparison with Electron/Tauri
 
 ### 🌐 Browser Mode
@@ -98,5 +100,5 @@ When adding new documentation:
 
 ---
 
-**Last Updated:** 2025-11-15
+**Last Updated:** 2025-11-24
 **Documentation Version:** 0.1.0

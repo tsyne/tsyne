@@ -4,8 +4,32 @@ Get up and running with Tsyne in 5 minutes!
 
 ## Installation
 
+For complete installation instructions, see **[INSTALLATION.md](INSTALLATION.md)**.
+
+**Quick options:**
+
+**Development (building from source):**
 ```bash
-npm install tsyne
+git clone https://github.com/paul-hammant/tsyne.git
+cd tsyne
+npm install
+npm run build
+```
+
+**Standalone installation (recommended for users):**
+```bash
+# Download and run the installer
+curl -O https://raw.githubusercontent.com/paul-hammant/tsyne/main/scripts/install.sh
+chmod +x install.sh
+./install.sh
+
+# Then use 'tsyne' command anywhere
+tsyne my-app.ts
+```
+
+**npm package (coming soon):**
+```bash
+npm install tsyne  # Not yet published to npm
 ```
 
 ## Your First App

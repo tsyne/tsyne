@@ -60,12 +60,42 @@ Currently, running standalone Tsyne apps requires Node.js/npm installed on the s
 - tsyne npm package (JS sources) (~1 MB)
 - tsyne-bridge binary (~39 MB)
 
-**Estimated size**: ~100-150 MB uncompressed, ~50-70 MB compressed
+**Actual size analysis** (measured):
+- Node.js v22 binary: 189 MB
+- Tsyne runtime + node_modules: 254 MB
+- Total embedded: ~443 MB (impractical for single executable)
+
+**Current solution** (`scripts/install.sh`):
+- Install script: ~7 KB
+- Installs to `~/.local/bin/tsyne` (or custom path)
+- Runtime cached at `~/.tsyne/runtime/<version>/` (443 MB)
+- This approach is more practical than embedding everything
 
 **Implementation options**:
 1. **Tauri**: Bundle Node.js + ts-node + tsyne as a Tauri app
 2. **pkg/nexe**: Package Node.js runtime with embedded modules
 3. **Deno-style**: Custom TypeScript runtime (major undertaking)
+
+**Module Resolution for tsyne.exe**:
+When bundling Node.js, avoid NODE_PATH conflicts with system Node.js by using a custom ESM loader:
+
+```rust
+// In Tauri/Rust launcher
+Command::new("bundled/node")
+    .arg("--experimental-loader")
+    .arg("file:///bundled/tsyne-esm-loader.mjs")
+    .env("TSYNE_RUNTIME", bundled_runtime_path)
+    .env("TSYNE_CACHE", cache_path)
+    .env_remove("NODE_PATH")  // Don't interfere with system Node.js
+    .arg("user-app.ts")
+    .spawn()?;
+```
+
+The ESM loader (`tsyne-esm-loader.mjs`) would:
+- Read `TSYNE_RUNTIME` and `TSYNE_CACHE` env vars
+- Resolve `import 'tsyne'` to bundled runtime
+- Resolve `@Grab` dependencies to cache directory
+- No pollution of system NODE_PATH
 
 **User experience goal**:
 ```bash

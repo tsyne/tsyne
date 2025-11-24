@@ -311,4 +311,9 @@ export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 # Run with ts-node
 # Use TS_NODE_TRANSPILE_ONLY to skip type checking (external modules from @grab
 # won't have types visible to TypeScript without modifying tsconfig.json)
-TS_NODE_TRANSPILE_ONLY=true NODE_PATH="$EFFECTIVE_NODE_PATH" npx ts-node "$SOURCE_FILE"
+# Use --skipProject to avoid picking up any tsconfig.json files
+# Use TS_NODE_COMPILER_OPTIONS to set module resolution explicitly
+TS_NODE_TRANSPILE_ONLY=true \
+TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node","esModuleInterop":true}' \
+NODE_PATH="$EFFECTIVE_NODE_PATH" \
+npx ts-node --skipProject "$SOURCE_FILE"

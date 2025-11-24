@@ -56,10 +56,14 @@ await browserTest(
 
 ### Installation
 
-TsyneBrowserTest is included with Tsyne:
+TsyneBrowserTest is included with Tsyne. See **[INSTALLATION.md](INSTALLATION.md)** for complete installation instructions.
 
 ```bash
-npm install tsyne
+# npm package (coming soon)
+npm install tsyne  # Not yet published to npm
+
+# OR use standalone installer
+./scripts/install.sh
 ```
 
 ### Basic Test

@@ -101,8 +101,16 @@ button("Click", cb)
 
 ### Installation
 
+See **[INSTALLATION.md](INSTALLATION.md)** for complete installation instructions.
+
+**Quick start:**
 ```bash
-npm install tsyne
+# npm package (coming soon)
+npm install tsyne  # Not yet published
+
+# OR use standalone installer
+curl -O https://raw.githubusercontent.com/paul-hammant/tsyne/main/scripts/install.sh
+chmod +x install.sh && ./install.sh
 ```
 
 ### First App

@@ -14,3 +14,5 @@ examples/screenshots/visual-regression/
 pkg/
 .tsyne-dev/
 bookmarks-export.json
+cli/embed/
+cli/target/
