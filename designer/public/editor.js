@@ -509,6 +509,8 @@ function switchPreviewTab(tabName) {
     renderOriginalSourceTab();
   } else if (tabName === 'diff') {
     renderDiffTab();
+  } else if (tabName === 'designer') {
+    renderDesignerFileTab();
   }
 }
 
@@ -529,6 +531,29 @@ function renderOriginalSourceTab() {
     originalSourceContent.textContent = originalSource;
   } else {
     originalSourceContent.textContent = 'No original source available';
+  }
+}
+
+// Render designer file tab
+async function renderDesignerFileTab() {
+  const designerFileContent = document.getElementById('designerFileContent');
+  designerFileContent.textContent = 'Loading designer file...';
+
+  try {
+    const response = await fetch('/api/designer-file');
+    const result = await response.json();
+
+    if (result.success) {
+      if (result.content) {
+        designerFileContent.textContent = result.content;
+      } else {
+        designerFileContent.textContent = result.message || 'No designer file for this source.\n\nCreate a file named [sourcename]_designer.ts to define scenarios and mock data.';
+      }
+    } else {
+      designerFileContent.textContent = 'Error loading designer file: ' + result.error;
+    }
+  } catch (error) {
+    designerFileContent.textContent = 'Error loading designer file: ' + error.message;
   }
 }
 

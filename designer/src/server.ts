@@ -976,7 +976,7 @@ function loadDesignerScenarios(mainFilePath: string): void {
   }
 
   console.log(`[Designer] Loading scenarios from ${designerPath}`);
-  designerFilePath = designerPath;
+  designerFilePath = fullDesignerPath;
 
   try {
     // Read and transpile the designer file
@@ -1981,6 +1981,33 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       currentScenario: currentScenarioName,
       designerFile: designerFilePath
     }));
+  },
+
+  '/api/designer-file': (req, res) => {
+    try {
+      if (!designerFilePath) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          content: null,
+          filePath: null,
+          message: 'No designer file for this source'
+        }));
+        return;
+      }
+
+      const content = fs.readFileSync(designerFilePath, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        content,
+        filePath: designerFilePath
+      }));
+    } catch (error: any) {
+      console.error('[API Error]', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
   },
 
   '/api/select-scenario': (req, res) => {
