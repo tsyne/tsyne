@@ -32,42 +32,69 @@ let collapsedNodes = new Set();
 let selectedTabs = {};
 
 // Resize handle state
-let isResizing = false;
+let isResizingLeft = false;
+let isResizingRight = false;
+let leftPanelWidth = 300;
+let rightPanelWidth = 350;
 
-// Initialize resize handle
+// Initialize resize handles
 document.addEventListener('DOMContentLoaded', () => {
-  const resizeHandle = document.getElementById('resizeHandle');
-  const propertyInspector = document.getElementById('propertyInspector');
+  const resizeHandleLeft = document.getElementById('resizeHandleLeft');
+  const resizeHandleRight = document.getElementById('resizeHandleRight');
   const editorContainer = document.querySelector('.editor-container');
 
-  if (resizeHandle && propertyInspector) {
-    resizeHandle.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      resizeHandle.classList.add('dragging');
+  // Left resize handle (widget tree)
+  if (resizeHandleLeft) {
+    resizeHandleLeft.addEventListener('mousedown', (e) => {
+      isResizingLeft = true;
+      resizeHandleLeft.classList.add('dragging');
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
       e.preventDefault();
     });
+  }
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-
-      const containerRect = editorContainer.getBoundingClientRect();
-      const newWidth = containerRect.right - e.clientX;
-      const clampedWidth = Math.max(200, Math.min(600, newWidth));
-
-      editorContainer.style.gridTemplateColumns = `300px 1fr 6px ${clampedWidth}px`;
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (isResizing) {
-        isResizing = false;
-        resizeHandle.classList.remove('dragging');
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      }
+  // Right resize handle (property inspector)
+  if (resizeHandleRight) {
+    resizeHandleRight.addEventListener('mousedown', (e) => {
+      isResizingRight = true;
+      resizeHandleRight.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
     });
   }
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizingLeft && !isResizingRight) return;
+
+    const containerRect = editorContainer.getBoundingClientRect();
+
+    if (isResizingLeft) {
+      const newWidth = e.clientX - containerRect.left;
+      leftPanelWidth = Math.max(150, Math.min(500, newWidth));
+    }
+
+    if (isResizingRight) {
+      const newWidth = containerRect.right - e.clientX;
+      rightPanelWidth = Math.max(200, Math.min(600, newWidth));
+    }
+
+    editorContainer.style.gridTemplateColumns = `${leftPanelWidth}px 6px 1fr 6px ${rightPanelWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizingLeft) {
+      isResizingLeft = false;
+      resizeHandleLeft.classList.remove('dragging');
+    }
+    if (isResizingRight) {
+      isResizingRight = false;
+      resizeHandleRight.classList.remove('dragging');
+    }
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
 });
 
 // Known CSS properties (categorized)

@@ -21,17 +21,24 @@
 
     .editor-container {
       display: grid;
-      grid-template-columns: 300px 1fr 6px 350px;
+      grid-template-columns: 300px 6px 1fr 6px 350px;
       grid-template-rows: 50px 1fr;
       height: 100vh;
     }
 
     .resize-handle {
-      grid-column: 3;
       grid-row: 2;
       background: #3e3e3e;
       cursor: col-resize;
       transition: background 0.2s;
+    }
+
+    .resize-handle-left {
+      grid-column: 2;
+    }
+
+    .resize-handle-right {
+      grid-column: 4;
     }
 
     .resize-handle:hover,
@@ -236,7 +243,7 @@
     }
 
     .preview-panel {
-      grid-column: 2;
+      grid-column: 3;
       grid-row: 2;
       background: #1e1e1e;
       border-right: 1px solid #3e3e3e;
@@ -474,7 +481,7 @@
     }
 
     .property-inspector {
-      grid-column: 4;
+      grid-column: 5;
       grid-row: 2;
       background: #252526;
       padding: 15px;
@@ -928,6 +935,8 @@
       <div id="treeRoot"></div>
     </div>
 
+    <div class="resize-handle resize-handle-left" id="resizeHandleLeft"></div>
+
     <div class="preview-panel">
       <h2>
         Preview
@@ -961,7 +970,7 @@
       </div>
     </div>
 
-    <div class="resize-handle" id="resizeHandle"></div>
+    <div class="resize-handle resize-handle-right" id="resizeHandleRight"></div>
 
     <div class="property-inspector" id="propertyInspector">
       <div class="inspector-tabs">
