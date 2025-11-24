@@ -168,6 +168,7 @@ Individual examples showcasing specific widgets.
 | [**padded-demo.ts**](padded-demo.ts) | Padded container with spacing |
 | [**clip-demo.ts**](clip-demo.ts) | Clipped container demo |
 | [**card-stack.ts**](card-stack.ts) | Stacked card layout |
+| [**spacer-demo.ts**](spacer-demo.ts) | Spacer widget for flexible layout spacing |
 
 ### Input Widgets
 
@@ -191,6 +192,13 @@ Individual examples showcasing specific widgets.
 | [**loading-states.ts**](loading-states.ts) | Loading indicators and states |
 | [**icon-gallery.ts**](icon-gallery.ts) | Icon display and selection |
 | [**gradient-picker.ts**](gradient-picker.ts) | Gradient color picker |
+
+### Canvas Primitives
+
+| Example | Widgets Demonstrated |
+|---------|---------------------|
+| [**canvas-primitives.ts**](canvas-primitives.ts) | Simplified canvas APIs: rectangle(), circle(), line(), text(), gradients |
+| [**gradient-demo.ts**](gradient-demo.ts) | Linear and radial gradient comparison |
 
 ### Advanced Widgets
 
