@@ -57,7 +57,10 @@ export class BridgeConnection implements BridgeInterface {
     const isPkg = typeof (process as any).pkg !== 'undefined';
 
     let bridgePath: string;
-    if (isPkg) {
+    // First check TSYNE_BRIDGE_PATH environment variable (set by scripts/tsyne)
+    if (process.env.TSYNE_BRIDGE_PATH) {
+      bridgePath = process.env.TSYNE_BRIDGE_PATH;
+    } else if (isPkg) {
       // When running from pkg, look for bridge next to the executable
       const execDir = path.dirname(process.execPath);
       bridgePath = path.join(execDir, 'tsyne-bridge');

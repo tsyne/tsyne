@@ -12,4 +12,5 @@ test-failures/
 test-output/
 examples/screenshots/visual-regression/
 pkg/
+.tsyne-dev/
 bookmarks-export.json

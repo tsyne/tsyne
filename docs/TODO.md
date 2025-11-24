@@ -80,6 +80,45 @@ tsyne my-weather-app.ts
 
 ---
 
+### Design Location for tsyne.exe-coupled Packages
+
+**Priority**: Low
+**Status**: Not started
+**Related**: Standalone tsyne executable TODO above
+
+When tsyne is distributed as a standalone executable (tsyne.exe), it needs to provide its own libraries (tsyne npm package) bundled within. This raises questions about package location design:
+
+**Current state** (shell wrapper):
+- tsyne libs: Used in-situ from PROJECT_ROOT via `.tsyne-modules/tsyne` symlink
+- @Grab deps: Flat `~/.tsyne/packages/node_modules/`
+
+**Questions to resolve for tsyne.exe**:
+1. Where should bundled tsyne libs live within the executable?
+2. Should they be extracted to a temp location at runtime, or accessed via virtual filesystem?
+3. How to handle version conflicts if user has @Grab'd an older/newer version of a tsyne dependency?
+
+**Potential approaches**:
+- **Embedded virtual FS**: Keep tsyne libs inside executable, resolve via custom Node.js loader
+- **Extract on first run**: Unpack to `~/.tsyne/runtime/<version>/`
+- **pnpm-style content-addressable**: Store all packages (tsyne + @Grab) by content hash
+
+---
+
+### Content-Addressable Package Cache (pnpm-style)
+
+**Priority**: Low
+**Status**: Not started
+**Related**: @Grab dependency management
+
+Current @Grab cache (`~/.tsyne/packages/`) uses flat node_modules which can cause version conflicts. Consider migrating to pnpm-style content-addressable storage.
+
+**Benefits**:
+- No version conflicts between scripts with different @Grab versions
+- Deduplication of shared dependencies
+- Per-script virtual node_modules via symlinks
+
+---
+
 ## Future Work
 
 Add TODO items as needed for:

@@ -12,9 +12,15 @@
 
 set -e
 
-TSYNE_CACHE="${TSYNE_CACHE:-$HOME/.tsyne/packages}"
+# Get tsyne version from package.json
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+TSYNE_SOURCE="$(dirname "$SCRIPT_DIR")"  # Where tsyne source lives (dev only)
+TSYNE_VERSION=$(grep '"version"' "$TSYNE_SOURCE/package.json" | head -1 | grep -oP ':\s*"\K[^"]+')
+
+# Runtime directories - these are the production paths
+TSYNE_HOME="${TSYNE_HOME:-$HOME/.tsyne}"
+TSYNE_RUNTIME="$TSYNE_HOME/runtime/$TSYNE_VERSION"
+TSYNE_CACHE="$TSYNE_HOME/packages"
 
 # Colors for output
 RED='\033[0;31m'
@@ -220,32 +226,87 @@ else
     fi
 fi
 
-# Ensure tsyne-bridge is built
-BRIDGE_PATH="$PROJECT_ROOT/bin/tsyne-bridge"
-if [ ! -f "$BRIDGE_PATH" ]; then
-    log_warn "tsyne-bridge not found at $BRIDGE_PATH"
-    log_info "Building bridge..."
-    (cd "$PROJECT_ROOT/bridge" && go build -o "$BRIDGE_PATH")
-    log_success "Bridge built"
+# Detect if running from a dev checkout (has src/ directory with TypeScript)
+# In dev mode, use source directly; in production, use cached runtime
+IS_DEV_CHECKOUT=false
+if [ -d "$TSYNE_SOURCE/src" ] && [ -f "$TSYNE_SOURCE/src/index.ts" ]; then
+    IS_DEV_CHECKOUT=true
+fi
+
+if [ "$IS_DEV_CHECKOUT" = true ]; then
+    # DEV MODE: Use source directly, no caching
+    # This ensures changes are picked up immediately without manual cache clearing
+    [ "$VERBOSE" = true ] && log_info "Dev mode: using tsyne from $TSYNE_SOURCE"
+
+    # For dev, we need a directory structure where 'tsyne' can be resolved
+    # Create a minimal .tsyne-dev/ with symlink to source
+    TSYNE_DEV="$TSYNE_SOURCE/.tsyne-dev"
+    mkdir -p "$TSYNE_DEV"
+    if [ ! -e "$TSYNE_DEV/tsyne" ]; then
+        ln -s "$TSYNE_SOURCE" "$TSYNE_DEV/tsyne"
+    fi
+
+    # Use source's bin/ for bridge
+    BRIDGE_PATH="$TSYNE_SOURCE/bin/tsyne-bridge"
+    if [ ! -f "$BRIDGE_PATH" ]; then
+        log_info "Building tsyne-bridge..."
+        (cd "$TSYNE_SOURCE/bridge" && /usr/local/go/bin/go build -o "$BRIDGE_PATH")
+        log_success "Bridge built"
+    fi
+
+    # NODE_PATH for dev: symlink dir, source's node_modules, @Grab cache
+    EFFECTIVE_NODE_PATH="$TSYNE_DEV:$TSYNE_SOURCE/node_modules:$TSYNE_CACHE/node_modules"
+else
+    # PRODUCTION MODE: Install to ~/.tsyne/runtime/<version>/
+    if [ ! -d "$TSYNE_RUNTIME/tsyne" ]; then
+        log_info "Installing tsyne runtime v$TSYNE_VERSION to $TSYNE_RUNTIME..."
+        mkdir -p "$TSYNE_RUNTIME/tsyne"
+        mkdir -p "$TSYNE_RUNTIME/node_modules"
+
+        # Copy tsyne package (dist + package.json)
+        cp -r "$TSYNE_SOURCE/dist" "$TSYNE_RUNTIME/tsyne/"
+        cp "$TSYNE_SOURCE/package.json" "$TSYNE_RUNTIME/tsyne/"
+
+        # Copy tsyne's own dependencies
+        cp -r "$TSYNE_SOURCE/node_modules"/* "$TSYNE_RUNTIME/node_modules/" 2>/dev/null || true
+
+        log_success "Tsyne runtime installed"
+    fi
+
+    # Ensure tsyne-bridge exists in runtime
+    BRIDGE_PATH="$TSYNE_RUNTIME/tsyne-bridge"
+    if [ ! -f "$BRIDGE_PATH" ]; then
+        # First, check if pre-built bridge exists in source
+        if [ -f "$TSYNE_SOURCE/bin/tsyne-bridge" ]; then
+            log_info "Copying tsyne-bridge to runtime..."
+            cp "$TSYNE_SOURCE/bin/tsyne-bridge" "$BRIDGE_PATH"
+            log_success "Bridge installed"
+        # Otherwise try to build from source
+        elif [ -d "$TSYNE_SOURCE/bridge" ]; then
+            log_info "Building tsyne-bridge..."
+            (cd "$TSYNE_SOURCE/bridge" && /usr/local/go/bin/go build -o "$BRIDGE_PATH")
+            log_success "Bridge built"
+        else
+            log_error "tsyne-bridge not found and cannot build"
+            exit 1
+        fi
+    fi
+
+    # NODE_PATH for production: runtime, runtime's node_modules, @Grab cache
+    EFFECTIVE_NODE_PATH="$TSYNE_RUNTIME:$TSYNE_RUNTIME/node_modules:$TSYNE_CACHE/node_modules"
 fi
 
 # Run the application with NODE_PATH including our cache
 log_info "Starting application..."
 echo ""
 
-# Build NODE_PATH - include cache and project node_modules
-EFFECTIVE_NODE_PATH="$TSYNE_CACHE/node_modules:$PROJECT_ROOT/node_modules"
+# Add any existing NODE_PATH
 if [ -n "$NODE_PATH" ]; then
     EFFECTIVE_NODE_PATH="$EFFECTIVE_NODE_PATH:$NODE_PATH"
 fi
 
-# Ensure 'tsyne' is available as a module by symlinking to the project
-# This allows 'import from "tsyne"' to resolve to the project's src/
-mkdir -p "$TSYNE_CACHE/node_modules"
-if [ ! -e "$TSYNE_CACHE/node_modules/tsyne" ]; then
-    ln -s "$PROJECT_ROOT" "$TSYNE_CACHE/node_modules/tsyne"
-    log_info "Created tsyne module symlink"
-fi
+# Export bridge path so tsyne can find it
+export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 
 # Run with ts-node
 # Use TS_NODE_TRANSPILE_ONLY to skip type checking (external modules from @grab

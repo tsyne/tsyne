@@ -77,14 +77,14 @@ Progressive learning examples from basic to advanced concepts.
 
 ### Games
 
-| Application | Description | Attribution |
-|-------------|-------------|-------------|
-| [**chess/**](chess/) | Classic chess game with computer opponent | [andydotxyz/chess](https://github.com/andydotxyz/chess) |
-| [**solitaire/**](solitaire/) | Klondike solitaire card game | [fyne-io/solitaire](https://github.com/fyne-io/solitaire) |
-| [**game-of-life/**](game-of-life/) | Conway's Game of Life cellular automaton | Original |
-| [**tictactoe.ts**](tictactoe.ts) | Tic-Tac-Toe game | Original |
-| [**tictactoe-accessible.ts**](tictactoe-accessible.ts) | Accessible Tic-Tac-Toe with screen reader support | Original |
-| [**tictactoe-braille.ts**](tictactoe-braille.ts) | Tic-Tac-Toe with Braille display | Original |
+| Application | Description | Attribution                                                               |
+|-------------|-------------|---------------------------------------------------------------------------|
+| [**chess/**](chess/) | Classic chess game with computer opponent | Port of C# from [andydotxyz/chess](https://github.com/andydotxyz/chess)   |
+| [**solitaire/**](solitaire/) | Klondike solitaire card game | Port of C# from [fyne-io/solitaire](https://github.com/fyne-io/solitaire) |
+| [**game-of-life/**](game-of-life/) | Conway's Game of Life cellular automaton | Original                                                                  |
+| [**tictactoe.ts**](tictactoe.ts) | Tic-Tac-Toe game | Original                                                                  |
+| [**tictactoe-accessible.ts**](tictactoe-accessible.ts) | Accessible Tic-Tac-Toe with screen reader support | Original                                                                  |
+| [**tictactoe-braille.ts**](tictactoe-braille.ts) | Tic-Tac-Toe with Braille display | Original                                                                  |
 
 ### Productivity
 
@@ -106,17 +106,17 @@ Progressive learning examples from basic to advanced concepts.
 
 ### Tools
 
-| Application | Description | Attribution |
-|-------------|-------------|-------------|
-| [**terminal/**](terminal/) | Terminal emulator demonstration | [fyne-io/terminal](https://github.com/fyne-io/terminal) |
-| [**terminal-emulator.ts**](terminal-emulator.ts) | Standalone terminal emulator example | Original |
-| [**pixeledit/**](pixeledit/) | Pixel-based image editor | [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit) |
-| [**fyles/**](fyles/) | File manager application | Original |
-| [**image-viewer/**](image-viewer/) | Image viewer with navigation | Original |
-| [**svg-rendering/**](svg-rendering/) | SVG rendering utilities | Original |
-| [**drawing-app.ts**](drawing-app.ts) | Freehand drawing application | Original |
-| [**pixel-art.ts**](pixel-art.ts) | Pixel art editor | Original |
-| [**photo-gallery.ts**](photo-gallery.ts) | Photo gallery viewer | Original |
+| Application | Description | Attribution                                                               |
+|-------------|-------------|---------------------------------------------------------------------------|
+| [**terminal/**](terminal/) | Terminal emulator demonstration | Port of C# from [fyne-io/terminal](https://github.com/fyne-io/terminal)   |
+| [**terminal-emulator.ts**](terminal-emulator.ts) | Standalone terminal emulator example | Original                                                                  |
+| [**pixeledit/**](pixeledit/) | Pixel-based image editor | Port of C# from [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit) |
+| [**fyles/**](fyles/) | File manager application | Original                                                                  |
+| [**image-viewer/**](image-viewer/) | Image viewer with navigation | Original                                                                  |
+| [**svg-rendering/**](svg-rendering/) | SVG rendering utilities | Original                                                                  |
+| [**drawing-app.ts**](drawing-app.ts) | Freehand drawing application | Original                                                                  |
+| [**pixel-art.ts**](pixel-art.ts) | Pixel art editor | Original                                                                  |
+| [**photo-gallery.ts**](photo-gallery.ts) | Photo gallery viewer | Original                                                                  |
 
 ### Utilities
 
@@ -478,14 +478,14 @@ done
 
 ## Attribution Summary
 
-| Source | Examples | License |
-|--------|----------|---------|
-| **Original Tsyne** | 02-counter, 14-21, calculator, todomvc, tictactoe, MVC/MVP/MVVM patterns, widget demos, all utilities | MIT |
-| **Ryelang/rye-fyne** | 01, 03, 04, 05, 07, 09, 10, 11, 12, 13 | Apache 2.0 |
-| **fyne-io/terminal** | terminal/ | See original |
-| **fyne-io/pixeledit** | pixeledit/ | See original |
-| **fyne-io/solitaire** | solitaire/ | See original |
-| **andydotxyz/chess** | chess/ | See original |
+| Source                                                | Examples | License |
+|-------------------------------------------------------|----------|---------|
+| Original Tsyne                                        | 02-counter, 14-21, calculator, todomvc, tictactoe, MVC/MVP/MVVM patterns, widget demos, all utilities | MIT |
+| [Ryelang/rye-fyne](https://github.com/refaktor/rye-fyne) | 01, 03, 04, 05, 07, 09, 10, 11, 12, 13 | Apache 2.0 |
+| [fyne-io/terminal](https://github.com/fyne-io/terminal) | terminal/ | See original |
+| [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit) | pixeledit/ | See original |
+| [fyne-io/solitaire](https://github.com/fyne-io/solitaire) | solitaire/ | See original |
+| [andydotxyz/chess](https://github.com/andydotxyz/chess) | chess/ | See original |
 
 ---
 
