@@ -298,6 +298,7 @@ Tsyne's page-by-page browser mode inspired by the web.
 | Example | Description |
 |---------|-------------|
 | [**theme.ts**](theme.ts) | Light/dark theme switching |
+| [**custom_theme.ts**](custom_theme.ts) | Applying a fully custom color theme |
 | [**theme-creator.ts**](theme-creator.ts) | Theme creation and customization |
 | [**theme-zones.ts**](theme-zones.ts) | Theme override zones |
 | [**form-styled.ts**](form-styled.ts) | Styled form examples |
