@@ -39,7 +39,7 @@ describe('Entry Cursor Demo', () => {
     if (process.env.TAKE_SCREENSHOTS === '1') {
       await ctx.wait(500);
       const screenshotPath = path.join(__dirname, 'screenshots', 'entry-cursor-demo.png');
-      await ctx.takeScreenshot(screenshotPath);
+      await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved to ${screenshotPath}`);
     }
   });
