@@ -49,6 +49,8 @@ This designer is a complete sub-project with:
 └─────────────────────────────────────────────────────────┘
 ```
 
+A key architectural aspect is that designer interprets the to-be-designed .ts script into designer's own emulation of Tsyne's TypeScript API. TODO
+
 ## Quick Start
 
 ### Option 1: Desktop Application (Recommended for End Users)
