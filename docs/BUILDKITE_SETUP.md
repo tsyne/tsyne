@@ -5,15 +5,18 @@
 After starting your Buildkite agent container:
 
 ```bash
-docker run -d -t --name buildkite-agent buildkite/agent:3 start --token "<your-agent-token>"
+# Use Ubuntu-based image (recommended for Fyne builds)
+podman run -d -t --name buildkite-agent buildkite/agent:3-ubuntu start --token "<your-agent-token>" --tags 'queue=default-queue'
 ```
 
 Run these commands **once** to prepare the container:
 
 ### 1. Install Base Dependencies
 
+**IMPORTANT**: Use the Ubuntu-based image (`buildkite/agent:3-ubuntu`) for better compatibility with Fyne/OpenGL.
+
 ```bash
-docker exec -it buildkite-agent bash
+podman exec -it buildkite-agent bash
 ```
 
 Inside the container:
@@ -39,7 +42,6 @@ cd /tmp
 wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 export PATH=$PATH:/usr/local/go/bin
 
 # Verify installations
