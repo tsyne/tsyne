@@ -3,7 +3,18 @@ set -e
 
 echo "--- :package: Installing system dependencies"
 apt-get update -qq
-apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev xvfb wget curl
+apt-get install -y \
+  libgl1-mesa-dev \
+  xorg-dev \
+  libxrandr-dev \
+  libxcursor-dev \
+  libxinerama-dev \
+  libxi-dev \
+  libxxf86vm-dev \
+  libglfw3-dev \
+  xvfb \
+  wget \
+  curl
 
 echo "--- :golang: Setting up Go workarounds for restricted network"
 # Set up Go in PATH
