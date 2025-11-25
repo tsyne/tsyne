@@ -1,6 +1,6 @@
 # Tsyne WYSIWYG Designer
 
-A 100% self-contained WYSIWYG visual editor for Tsyne applications. Available as both a **Node.js development server** and a **standalone desktop application** (via Tauri).
+A 100% self-contained WYSIWYG visual editor for Tsyne applications. Available as both a **Node.js development server** and a **standalone desktop application** (via Tauri - TODO)
 
 ## Features
 
