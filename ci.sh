@@ -4,6 +4,9 @@ set -e
 echo "--- :package: Installing system dependencies"
 apt-get update -qq
 apt-get install -y \
+  build-essential \
+  gcc \
+  pkg-config \
   libgl1-mesa-dev \
   xorg-dev \
   libxrandr-dev \
@@ -34,7 +37,7 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
 
 echo "--- :hammer: Building Go bridge"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
-env GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
+env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
 echo "--- :nodejs: Installing npm dependencies"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
