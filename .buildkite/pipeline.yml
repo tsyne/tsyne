@@ -3,7 +3,7 @@ steps:
     command: "./ci.sh"
     agents:
       queue: "default-queue"
-    timeout_in_minutes: 10
+    timeout_in_minutes: 20
     artifact_paths:
       - "bin/tsyne-bridge"
       - "dist/**/*"
