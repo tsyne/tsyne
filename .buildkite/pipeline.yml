@@ -2,7 +2,7 @@ steps:
   - label: ":golang: :nodejs: Build and Test"
     command: "./ci.sh"
     agents:
-      queue: "default"
+      queue: "default-queue"
     timeout_in_minutes: 10
     artifact_paths:
       - "bin/tsyne-bridge"
