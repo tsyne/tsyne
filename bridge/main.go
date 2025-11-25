@@ -80,8 +80,6 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateClip(msg)
 	case "createMax":
 		b.handleCreateMax(msg)
-	case "createStack":
-		b.handleCreateStack(msg)
 	case "createCard":
 		b.handleCreateCard(msg)
 	case "createAccordion":

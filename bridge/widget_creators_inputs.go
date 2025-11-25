@@ -232,29 +232,8 @@ func (b *Bridge) handleCreateCheckbox(msg Message) {
 		}
 	})
 
-	// Set focus gained callback if provided
-	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
-		check.OnFocusGained = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onFocusCallbackID,
-				},
-			})
-		}
-	}
-
-	// Set focus lost callback if provided
-	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
-		check.OnFocusLost = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onBlurCallbackID,
-				},
-			})
-		}
-	}
+	// Note: Check widget does not support OnFocusGained/OnFocusLost in Fyne API
+	// Focus callbacks are not available for checkbox widgets
 
 	b.mu.Lock()
 	b.widgets[widgetID] = check
@@ -292,29 +271,8 @@ func (b *Bridge) handleCreateSelect(msg Message) {
 		}
 	})
 
-	// Set focus gained callback if provided
-	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
-		sel.OnFocusGained = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onFocusCallbackID,
-				},
-			})
-		}
-	}
-
-	// Set focus lost callback if provided
-	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
-		sel.OnFocusLost = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onBlurCallbackID,
-				},
-			})
-		}
-	}
+	// Note: Select widget does not support OnFocusGained/OnFocusLost in Fyne API
+	// Focus callbacks are not available for select widgets
 
 	b.mu.Lock()
 	b.widgets[widgetID] = sel
@@ -430,29 +388,8 @@ func (b *Bridge) handleCreateSlider(msg Message) {
 		}
 	}
 
-	// Set focus gained callback if provided
-	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
-		slider.OnFocusGained = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onFocusCallbackID,
-				},
-			})
-		}
-	}
-
-	// Set focus lost callback if provided
-	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
-		slider.OnFocusLost = func() {
-			b.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": onBlurCallbackID,
-				},
-			})
-		}
-	}
+	// Note: Slider widget does not support OnFocusGained/OnFocusLost in Fyne API
+	// Focus callbacks are not available for slider widgets
 
 	b.mu.Lock()
 	b.widgets[widgetID] = slider
