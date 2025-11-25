@@ -2,8 +2,12 @@
 set -e
 
 echo "--- :package: Installing system dependencies"
-apt-get update -qq
-apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev xvfb wget curl
+# Alpine uses apk, not apt-get
+apk update
+apk add mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev xvfb wget curl bash
+
+# Set up Go in PATH
+export PATH=$PATH:/usr/local/go/bin
 
 echo "--- :golang: Setting up Go workarounds for restricted network"
 # Download fyne.io/systray manually (not on Google's proxy)
