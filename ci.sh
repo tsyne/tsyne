@@ -5,10 +5,10 @@ echo "--- :package: Installing system dependencies"
 apt-get update -qq
 apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev xvfb wget curl
 
-# Set up Go in PATH
-export PATH=$PATH:/usr/local/go/bin
-
 echo "--- :golang: Setting up Go workarounds for restricted network"
+# Set up Go in PATH
+export PATH=/usr/local/go/bin:$PATH
+
 # Download fyne.io/systray manually (not on Google's proxy)
 cd /tmp
 if [ ! -d "/tmp/systray-master" ]; then
@@ -19,11 +19,11 @@ fi
 
 # Use go mod replace to point to local systray
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
-go mod edit -replace=fyne.io/systray=/tmp/systray-master
+/usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
 
 echo "--- :hammer: Building Go bridge"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
-env GOPROXY=direct go build -o ../bin/tsyne-bridge .
+env GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
 echo "--- :nodejs: Installing npm dependencies"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
