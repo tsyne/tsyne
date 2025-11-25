@@ -331,6 +331,16 @@ function captureWidget(type: string, props: any): any {
     },
     focus: async () => {
       return Promise.resolve();
+    },
+    // New methods from recent Tsyne updates
+    setOptions: async (options: string[]) => {
+      return Promise.resolve();
+    },
+    unselectAll: async () => {
+      return Promise.resolve();
+    },
+    updateData: async (items: string[]) => {
+      return Promise.resolve();
     }
   };
 
@@ -496,6 +506,7 @@ const designer = {
   // Containers
   vbox(builder: () => void): any { return containerWidget('vbox', {}, builder); },
   hbox(builder: () => void): any { return containerWidget('hbox', {}, builder); },
+  stack(builder: () => void): any { return containerWidget('stack', {}, builder); },
   scroll(builder: () => void): any { return containerWidget('scroll', {}, builder); },
   center(builder: () => void): any { return containerWidget('center', {}, builder); },
 
@@ -597,13 +608,15 @@ const designer = {
     return captureWidget('label', { text, className, alignment, wrapping, textStyle });
   },
 
-  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): any {
+  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void, onChange?: (text: string) => void, onCursorChanged?: () => void): any {
     const result = captureWidget('entry', { placeholder, minWidth });
-    if (onSubmit || onDoubleClick) {
+    if (onSubmit || onDoubleClick || onChange || onCursorChanged) {
       const widget = metadataStore.get(result.__internalId);
       if (widget) {
         if (onSubmit) widget.eventHandlers.onSubmit = onSubmit.toString();
         if (onDoubleClick) widget.eventHandlers.onDoubleClick = onDoubleClick.toString();
+        if (onChange) widget.eventHandlers.onChange = onChange.toString();
+        if (onCursorChanged) widget.eventHandlers.onCursorChanged = onCursorChanged.toString();
       }
     }
     return result;
@@ -622,28 +635,37 @@ const designer = {
     return result;
   },
 
-  checkbox(text: string, onChanged?: (checked: boolean) => void): any {
+  checkbox(text: string, onChanged?: (checked: boolean) => void, onFocus?: () => void, onBlur?: () => void): any {
     const result = captureWidget('checkbox', { text });
-    if (onChanged) {
+    if (onChanged || onFocus || onBlur) {
       const widget = metadataStore.get(result.__internalId);
-      if (widget) widget.eventHandlers.onChanged = onChanged.toString();
+      if (widget) {
+        if (onChanged) widget.eventHandlers.onChanged = onChanged.toString();
+        if (onFocus) widget.eventHandlers.onFocus = onFocus.toString();
+        if (onBlur) widget.eventHandlers.onBlur = onBlur.toString();
+      }
     }
     return result;
   },
 
-  select(options: string[], onSelected?: (option: string) => void): any {
+  select(options: string[], onSelected?: (option: string) => void, onFocus?: () => void, onBlur?: () => void): any {
     const result = captureWidget('select', { options: options.join(', ') });
-    if (onSelected) {
+    if (onSelected || onFocus || onBlur) {
       const widget = metadataStore.get(result.__internalId);
-      if (widget) widget.eventHandlers.onSelected = onSelected.toString();
+      if (widget) {
+        if (onSelected) widget.eventHandlers.onSelected = onSelected.toString();
+        if (onFocus) widget.eventHandlers.onFocus = onFocus.toString();
+        if (onBlur) widget.eventHandlers.onBlur = onBlur.toString();
+      }
     }
     return result;
   },
 
-  radiogroup(options: string[], initialSelected?: string, onSelected?: (option: string) => void): any {
+  radiogroup(options: string[], initialSelected?: string, onSelected?: (option: string) => void, horizontal?: boolean): any {
     const result = captureWidget('radiogroup', {
       options: options.join(', '),
-      initialSelected
+      initialSelected,
+      horizontal
     });
     if (onSelected) {
       const widget = metadataStore.get(result.__internalId);
@@ -652,11 +674,15 @@ const designer = {
     return result;
   },
 
-  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void): any {
+  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void, onFocus?: () => void, onBlur?: () => void): any {
     const result = captureWidget('slider', { min, max, initialValue });
-    if (onChanged) {
+    if (onChanged || onFocus || onBlur) {
       const widget = metadataStore.get(result.__internalId);
-      if (widget) widget.eventHandlers.onChanged = onChanged.toString();
+      if (widget) {
+        if (onChanged) widget.eventHandlers.onChanged = onChanged.toString();
+        if (onFocus) widget.eventHandlers.onFocus = onFocus.toString();
+        if (onBlur) widget.eventHandlers.onBlur = onBlur.toString();
+      }
     }
     return result;
   },
@@ -707,13 +733,16 @@ const designer = {
     });
   },
 
-  list(items: string[], onSelected?: (item: string) => void): any {
+  list(items: string[], onSelected?: (item: string) => void, onUnselected?: (item: string) => void): any {
     const result = captureWidget('list', {
       items: items.slice(0, 3).join(', ') + (items.length > 3 ? '...' : '')
     });
-    if (onSelected) {
+    if (onSelected || onUnselected) {
       const widget = metadataStore.get(result.__internalId);
-      if (widget) widget.eventHandlers.onSelected = onSelected.toString();
+      if (widget) {
+        if (onSelected) widget.eventHandlers.onSelected = onSelected.toString();
+        if (onUnselected) widget.eventHandlers.onUnselected = onUnselected.toString();
+      }
     }
     return result;
   },
@@ -807,9 +836,9 @@ function lintSource(sourceCode: string, context: string = 'source'): { valid: bo
 }
 
 // Load and execute source code in designer mode
-function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): { widgets: any[] } {
+async function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): Promise<{ widgets: any[] }> {
   // Format source code with Prettier for consistent display
-  const formattedSource = prettier.format(sourceCode, {
+  const formattedSource = await prettier.format(sourceCode, {
     parser: 'typescript',
     semi: true,
     singleQuote: true,
@@ -1027,7 +1056,7 @@ function loadDesignerScenarios(mainFilePath: string): void {
 }
 
 // Load and execute a file in designer mode
-function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
+async function loadFileInDesignerMode(filePath: string): Promise<{ widgets: any[] }> {
   const fullPath = path.join(__dirname, '..', '..', filePath);
 
   if (!fs.existsSync(fullPath)) {
@@ -1039,7 +1068,7 @@ function loadFileInDesignerMode(filePath: string): { widgets: any[] } {
 
   // Read source code and load it
   const sourceCode = fs.readFileSync(fullPath, 'utf8');
-  return loadSourceInDesignerMode(sourceCode, filePath);
+  return await loadSourceInDesignerMode(sourceCode, filePath);
 }
 
 // Source code editor
@@ -1307,6 +1336,9 @@ class SourceCodeEditor {
 
       case 'hbox':
         return `${indentation}a.hbox(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
+
+      case 'stack':
+        return `${indentation}a.stack(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
 
       case 'scroll':
         return `${indentation}a.scroll(() => {\n${indentation}  // Add widgets here\n${indentation}});`;
@@ -1943,10 +1975,10 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
   '/api/load': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { filePath } = JSON.parse(body);
-        const metadata = loadFileInDesignerMode(filePath);
+        const metadata = await loadFileInDesignerMode(filePath);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
@@ -2062,10 +2094,10 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
   '/api/load-string': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { sourceCode, virtualPath = 'inline.ts' } = JSON.parse(body);
-        const metadata = loadSourceInDesignerMode(sourceCode, virtualPath);
+        const metadata = await loadSourceInDesignerMode(sourceCode, virtualPath);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
@@ -2086,7 +2118,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
   '/api/update-property': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { widgetId, propertyName, newValue } = JSON.parse(body);
 
@@ -2115,7 +2147,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         const updatedSource = toSource(currentMetadata!, currentStyles);
 
         // Format with Prettier for consistent display in tabs and diffs
-        const formattedSource = prettier.format(updatedSource, {
+        const formattedSource = await prettier.format(updatedSource, {
           parser: 'typescript',
           semi: true,
           singleQuote: true,
@@ -2622,7 +2654,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
   '/api/update-accessibility': (req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const { widgetId, accessibility } = JSON.parse(body);
 
@@ -2649,7 +2681,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         const updatedSource = toSource(currentMetadata!, currentStyles);
 
         // Format with Prettier for consistent display in tabs and diffs
-        const formattedSource = prettier.format(updatedSource, {
+        const formattedSource = await prettier.format(updatedSource, {
           parser: 'typescript',
           semi: true,
           singleQuote: true,
@@ -2673,7 +2705,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
     });
   },
 
-  '/api/get-diff': (req, res) => {
+  '/api/get-diff': async (req, res) => {
     try {
       if (!currentSourceCode || !originalSource) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -2694,7 +2726,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       }
 
       // Format both sources with Prettier to eliminate formatting noise
-      const formattedOriginal = prettier.format(originalSource, {
+      const formattedOriginal = await prettier.format(originalSource, {
         parser: 'typescript',
         semi: true,
         singleQuote: true,
@@ -2702,7 +2734,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         printWidth: 80
       });
 
-      const formattedCurrent = prettier.format(currentSourceCode, {
+      const formattedCurrent = await prettier.format(currentSourceCode, {
         parser: 'typescript',
         semi: true,
         singleQuote: true,
