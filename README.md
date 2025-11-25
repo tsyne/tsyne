@@ -7,6 +7,12 @@
 </p>
 
 <p align="center">
+  <a href="https://buildkite.com/paul-hammant/tsyne">
+    <img src="https://badge.buildkite.com/4579634aaab70e5ce15dbec6cc68ce6aaa2891feca54345efb.svg" alt="Build status">
+  </a>
+</p>
+
+<p align="center">
   <em>Logo is Tyne-bridge -ish with Fyne's colors as Tsyne has a 'bridge' to its Go+Fyne underpinnings</em>
 </p>
 
