@@ -1,6 +1,68 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Spacer, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded, Popup, ThemeOverride, DateEntry, TextGrid, Navigation, NavigationOptions } from './widgets';
+import {
+  // Inputs
+  Button,
+  Checkbox,
+  CheckGroup,
+  DateEntry,
+  Entry,
+  MultiLineEntry,
+  PasswordEntry,
+  RadioGroup,
+  Select,
+  SelectEntry,
+  Slider,
+  // Display
+  Activity,
+  Hyperlink,
+  Image,
+  Label,
+  ProgressBar,
+  ProgressBarInfinite,
+  RichText,
+  Separator,
+  Spacer,
+  TextGrid,
+  // Data
+  List,
+  Menu,
+  MenuItem,
+  Table,
+  Toolbar,
+  ToolbarAction,
+  Tree,
+  // Containers - Layout
+  AdaptiveGrid,
+  Border,
+  Center,
+  Clip,
+  Grid,
+  GridWrap,
+  HBox,
+  Padded,
+  Scroll,
+  Split,
+  VBox,
+  // Containers - Organizational
+  Accordion,
+  Card,
+  DocTabs,
+  Form,
+  InnerWindow,
+  Navigation,
+  NavigationOptions,
+  Popup,
+  Tabs,
+  ThemeOverride,
+  // Canvas
+  CanvasCircle,
+  CanvasLine,
+  CanvasLinearGradient,
+  CanvasRaster,
+  CanvasRectangle,
+  CanvasText,
+} from './widgets';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -17,8 +79,31 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
 }
 
 /**
- * Create and run an application with declarative syntax
- * The builder receives the app instance for scoped declarative API (proper IoC/DI)
+ * Create and run a Tsyne desktop application with declarative syntax.
+ *
+ * This is the main entry point for Tsyne applications. The builder function receives
+ * the app instance, providing a scoped declarative API following IoC/DI principles.
+ *
+ * @param options - Application configuration options (title, bridge mode, etc.)
+ * @param builder - Builder function that receives the app instance and constructs the UI
+ * @returns The created App instance
+ *
+ * @example
+ * ```typescript
+ * import { app } from 'tsyne';
+ *
+ * app({ title: 'My App' }, (a) => {
+ *   a.window({ title: 'Hello', width: 400, height: 300 }, (win) => {
+ *     win.setContent(() => {
+ *       a.vbox(() => {
+ *         a.label('Hello, World!');
+ *         a.button('Click Me', () => console.log('Clicked!'));
+ *       });
+ *     });
+ *     win.show();
+ *   });
+ * });
+ * ```
  */
 export function app(options: AppOptions, builder: (app: App) => void): App {
   const appInstance = new App(options);
@@ -35,7 +120,26 @@ export function app(options: AppOptions, builder: (app: App) => void): App {
 }
 
 /**
- * Create a window in the current app context
+ * Create a window in the current app context.
+ *
+ * @param options - Window configuration (title, width, height, fixedSize, etc.)
+ * @param builder - Builder function that receives the window instance
+ * @returns The created Window instance
+ *
+ * @throws Error if called outside of an app() context
+ *
+ * @example
+ * ```typescript
+ * window({ title: 'Settings', width: 600, height: 400 }, (win) => {
+ *   win.setContent(() => {
+ *     vbox(() => {
+ *       label('Application Settings');
+ *       // ... more widgets
+ *     });
+ *   });
+ *   win.show();
+ * });
+ * ```
  */
 export function window(options: WindowOptions, builder: (win: Window) => void): Window {
   if (!globalApp) {
@@ -45,7 +149,20 @@ export function window(options: WindowOptions, builder: (win: Window) => void): 
 }
 
 /**
- * Create a vertical box container
+ * Create a vertical box container that stacks child widgets vertically.
+ *
+ * @param builder - Builder function that creates child widgets
+ * @returns The created VBox container
+ * @throws Error if called outside of an app context
+ *
+ * @example
+ * ```typescript
+ * vbox(() => {
+ *   label('Item 1');
+ *   label('Item 2');
+ *   button('Click', () => {});
+ * });
+ * ```
  */
 export function vbox(builder: () => void): VBox {
   if (!globalContext) {
@@ -55,7 +172,19 @@ export function vbox(builder: () => void): VBox {
 }
 
 /**
- * Create a horizontal box container
+ * Create a horizontal box container that arranges child widgets horizontally.
+ *
+ * @param builder - Builder function that creates child widgets
+ * @returns The created HBox container
+ * @throws Error if called outside of an app context
+ *
+ * @example
+ * ```typescript
+ * hbox(() => {
+ *   button('OK', () => {});
+ *   button('Cancel', () => {});
+ * });
+ * ```
  */
 export function hbox(builder: () => void): HBox {
   if (!globalContext) {
@@ -65,7 +194,19 @@ export function hbox(builder: () => void): HBox {
 }
 
 /**
- * Create a button widget
+ * Create a clickable button widget.
+ *
+ * @param text - The button label text
+ * @param onClick - Optional callback function executed when button is clicked
+ * @returns The created Button widget
+ * @throws Error if called outside of an app context
+ *
+ * @example
+ * ```typescript
+ * button('Submit', () => {
+ *   console.log('Form submitted!');
+ * });
+ * ```
  */
 export function button(text: string, onClick?: () => void): Button {
   if (!globalContext) {
@@ -75,7 +216,17 @@ export function button(text: string, onClick?: () => void): Button {
 }
 
 /**
- * Create a label widget
+ * Create a text label widget for displaying static or dynamic text.
+ *
+ * @param text - The text to display
+ * @returns The created Label widget
+ * @throws Error if called outside of an app context
+ *
+ * @example
+ * ```typescript
+ * const statusLabel = label('Ready');
+ * // Later: statusLabel.setText('Processing...');
+ * ```
  */
 export function label(text: string): Label {
   if (!globalContext) {
@@ -97,7 +248,10 @@ export function entry(placeholder?: string, onSubmit?: () => void): Entry {
 /**
  * Create a multi-line entry (text area) widget
  */
-export function multilineentry(placeholder?: string, wrapping?: 'off' | 'word' | 'break'): MultiLineEntry {
+export function multilineentry(
+  placeholder?: string,
+  wrapping?: 'off' | 'word' | 'break'
+): MultiLineEntry {
   if (!globalContext) {
     throw new Error('multilineentry() must be called within an app context');
   }
@@ -282,7 +436,7 @@ export function vsplit(
  * Create a tabs container
  */
 export function tabs(
-  tabDefinitions: Array<{title: string, builder: () => void}>,
+  tabDefinitions: Array<{ title: string; builder: () => void }>,
   location?: 'top' | 'bottom' | 'leading' | 'trailing'
 ): Tabs {
   if (!globalContext) {
@@ -306,14 +460,17 @@ export function toolbar(
   }
 
   // Convert plain action objects to ToolbarAction instances
-  const processedItems = toolbarItems.map(item => {
+  const processedItems = toolbarItems.map((item) => {
     if (item.type === 'action') {
       return new ToolbarAction(item.label || '', item.onAction);
     }
     return item;
   });
 
-  return new Toolbar(globalContext, processedItems as (ToolbarAction | { type: "separator" | "spacer"})[]);
+  return new Toolbar(
+    globalContext,
+    processedItems as (ToolbarAction | { type: 'separator' | 'spacer' })[]
+  );
 }
 
 /**
@@ -359,7 +516,7 @@ export function card(title: string, subtitle: string, builder: () => void): Card
 /**
  * Create an accordion (collapsible sections)
  */
-export function accordion(items: Array<{title: string, builder: () => void}>): Accordion {
+export function accordion(items: Array<{ title: string; builder: () => void }>): Accordion {
   if (!globalContext) {
     throw new Error('accordion() must be called within an app context');
   }
@@ -370,7 +527,7 @@ export function accordion(items: Array<{title: string, builder: () => void}>): A
  * Create a form with labeled fields and submit/cancel buttons
  */
 export function form(
-  items: Array<{label: string, widget: any}>,
+  items: Array<{ label: string; widget: any }>,
   onSubmit?: () => void,
   onCancel?: () => void
 ): Form {
@@ -393,12 +550,14 @@ export function tree(rootLabel: string): Tree {
 /**
  * Create a rich text widget with formatted text segments
  */
-export function richtext(segments: Array<{
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  monospace?: boolean;
-}>): RichText {
+export function richtext(
+  segments: Array<{
+    text: string;
+    bold?: boolean;
+    italic?: boolean;
+    monospace?: boolean;
+  }>
+): RichText {
   if (!globalContext) {
     throw new Error('richtext() must be called within an app context');
   }
@@ -592,7 +751,62 @@ export async function setFontScale(scale: number): Promise<void> {
 }
 
 // Export classes for advanced usage
-export { App, Window, ProgressDialog, Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, Table, List, Center, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Menu, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, Clip, InnerWindow, AdaptiveGrid, Padded, Popup, ThemeOverride, DateEntry, TextGrid, Navigation };
+export {
+  App,
+  Window,
+  ProgressDialog,
+  Button,
+  Label,
+  Entry,
+  MultiLineEntry,
+  PasswordEntry,
+  Separator,
+  Hyperlink,
+  VBox,
+  HBox,
+  Checkbox,
+  Select,
+  SelectEntry,
+  Slider,
+  ProgressBar,
+  ProgressBarInfinite,
+  Activity,
+  Scroll,
+  Grid,
+  RadioGroup,
+  CheckGroup,
+  Split,
+  Tabs,
+  DocTabs,
+  Toolbar,
+  Table,
+  List,
+  Center,
+  Card,
+  Accordion,
+  Form,
+  Tree,
+  RichText,
+  Image,
+  Border,
+  GridWrap,
+  Menu,
+  CanvasLine,
+  CanvasCircle,
+  CanvasRectangle,
+  CanvasText,
+  CanvasRaster,
+  CanvasLinearGradient,
+  Clip,
+  InnerWindow,
+  AdaptiveGrid,
+  Padded,
+  Popup,
+  ThemeOverride,
+  DateEntry,
+  TextGrid,
+  Navigation,
+};
 export type { AppOptions, WindowOptions, MenuItem, NavigationOptions };
 
 // Export theming types
@@ -606,19 +820,12 @@ export {
   TwoWayBinding,
   DialogResult,
   ViewModel,
-  Model
+  Model,
 } from './state';
 export type { BindingOptions } from './state';
 
 // Export styling system
-export {
-  styles,
-  clearStyles,
-  getStyleSheet,
-  StyleSheet,
-  FontFamily,
-  FontStyle
-} from './styles';
+export { styles, clearStyles, getStyleSheet, StyleSheet, FontFamily, FontStyle } from './styles';
 export type { WidgetStyle, WidgetSelector } from './styles';
 
 // Export context menu
@@ -636,17 +843,12 @@ export {
   StringListBinding,
   createFormBindings,
   bindEntryToString,
-  syncToBinding
+  syncToBinding,
 } from './binding';
 export type { Binding, BindingListener } from './binding';
 
 // Export validation
-export {
-  validators,
-  ValidatedField,
-  FormValidator,
-  createFormValidator
-} from './validation';
+export { validators, ValidatedField, FormValidator, createFormValidator } from './validation';
 export type { ValidationResult, Validator, ValidatorFn } from './validation';
 
 // Export accessibility
@@ -655,7 +857,7 @@ export {
   enableAccessibility,
   disableAccessibility,
   toggleAccessibility,
-  AccessibilityManager
+  AccessibilityManager,
 } from './accessibility';
 export type { AccessibilityOptions } from './widgets';
 
@@ -664,7 +866,12 @@ export { Browser, createBrowser } from './browser';
 export type { BrowserContext, PageMenuItem } from './browser';
 
 // Export browser testing
-export { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from './tsyne-browser-test';
+export {
+  TsyneBrowserTest,
+  browserTest,
+  describeBrowser,
+  runBrowserTests,
+} from './tsyne-browser-test';
 export type { BrowserTestOptions, TestPage } from './tsyne-browser-test';
 
 // Export browser compatibility globals
@@ -672,6 +879,6 @@ export {
   initializeGlobals,
   setBrowserGlobals,
   registerDialogHandlers,
-  TsyneStorage
+  TsyneStorage,
 } from './globals';
 export type { TsyneLocation, TsyneHistory, TsyneNavigator } from './globals';

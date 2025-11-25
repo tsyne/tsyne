@@ -1,0 +1,13 @@
+node_modules
+dist
+bin
+bridge
+*.min.js
+*.bundle.js
+package-lock.json
+*.d.ts
+coverage
+.next
+.nuxt
+.cache
+build

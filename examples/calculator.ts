@@ -1,5 +1,5 @@
-import { app, styles, FontStyle } from '../src';
-// In production: import { app, styles, FontStyle } from 'tsyne';
+import { app, styles, FontStyle, App, Window, Label } from '../src';
+// In production: import { app, styles, FontStyle, App, Window, Label } from 'tsyne';
 
 // Calculator example demonstrating Tsyne's pseudo-declarative DSL
 // Pattern described at https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature/
@@ -17,7 +17,7 @@ styles({
 });
 
 // Calculator state
-let display: any;
+let display: Label | undefined;
 let currentValue = "0";
 let operator: string | null = null;
 let previousValue = "0";
@@ -69,8 +69,8 @@ function clear() {
 }
 
 // Build the calculator UI (exported for testing)
-export function buildCalculator(a: any) {
-  a.window({ title: "Calculator" }, (win: any) => {
+export function buildCalculator(a: App) {
+  a.window({ title: "Calculator" }, (win: Window) => {
     win.setContent(() => {
       a.vbox(() => {
         // Display

@@ -5,20 +5,20 @@ import * as crc32 from 'buffer-crc32';
 export interface Message {
   id: string;
   type: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }
 
 export interface Response {
   id: string;
   success: boolean;
-  result?: Record<string, any>;
+  result?: Record<string, unknown>;
   error?: string;
 }
 
 export interface Event {
   type: string;
   widgetId: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -26,13 +26,13 @@ export interface Event {
  */
 export interface BridgeInterface {
   waitUntilReady(): Promise<void>;
-  send(type: string, payload: Record<string, any>): Promise<any>;
-  registerEventHandler(callbackId: string, handler: (data: any) => void): void;
-  on(eventType: string, handler: (data: any) => void): void;
-  off(eventType: string, handler?: (data: any) => void): void;
-  registerCustomId(widgetId: string, customId: string): Promise<any>;
+  send(type: string, payload: Record<string, unknown>): Promise<unknown>;
+  registerEventHandler(callbackId: string, handler: (data: unknown) => void): void;
+  on(eventType: string, handler: (data: unknown) => void): void;
+  off(eventType: string, handler?: (data: unknown) => void): void;
+  registerCustomId(widgetId: string, customId: string): Promise<unknown>;
   getParent(widgetId: string): Promise<string>;
-  clickToolbarAction(toolbarId: string, actionLabel: string): Promise<any>;
+  clickToolbarAction(toolbarId: string, actionLabel: string): Promise<unknown>;
   quit(): void;
   waitForPendingRequests(timeoutMs?: number): Promise<boolean>;
   shutdown(): void;
@@ -42,10 +42,10 @@ export class BridgeConnection implements BridgeInterface {
   private process: ChildProcess;
   private messageId = 0;
   private pendingRequests = new Map<string, {
-    resolve: (result: any) => void;
+    resolve: (result: unknown) => void;
     reject: (error: Error) => void;
   }>();
-  private eventHandlers = new Map<string, (data: any) => void>();
+  private eventHandlers = new Map<string, (data: unknown) => void>();
   private readyPromise: Promise<void>;
   private readyResolve?: () => void;
   private buffer = Buffer.alloc(0); // Accumulate incoming data
@@ -54,7 +54,7 @@ export class BridgeConnection implements BridgeInterface {
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
-    const isPkg = typeof (process as any).pkg !== 'undefined';
+    const isPkg = typeof (process as unknown as { pkg?: unknown }).pkg !== 'undefined';
 
     let bridgePath: string;
     // First check TSYNE_BRIDGE_PATH environment variable (set by scripts/tsyne)
@@ -194,7 +194,7 @@ export class BridgeConnection implements BridgeInterface {
   }
 
   private handleEvent(event: Event): void {
-    if (event.type === 'callback' && event.data?.callbackId) {
+    if (event.type === 'callback' && event.data?.callbackId && typeof event.data.callbackId === 'string') {
       const handler = this.eventHandlers.get(event.data.callbackId);
       if (handler) {
         handler(event.data);
@@ -225,7 +225,7 @@ export class BridgeConnection implements BridgeInterface {
     return this.readyPromise;
   }
 
-  async send(type: string, payload: Record<string, any>): Promise<any> {
+  async send(type: string, payload: Record<string, unknown>): Promise<unknown> {
     // Wait for bridge to be ready before sending commands
     await this.readyPromise;
 
@@ -250,34 +250,34 @@ export class BridgeConnection implements BridgeInterface {
     });
   }
 
-  registerEventHandler(callbackId: string, handler: (data: any) => void): void {
+  registerEventHandler(callbackId: string, handler: (data: unknown) => void): void {
     this.eventHandlers.set(callbackId, handler);
   }
 
   /**
    * Register an event handler (alias for registerEventHandler)
    */
-  on(eventType: string, handler: (data: any) => void): void {
+  on(eventType: string, handler: (data: unknown) => void): void {
     this.eventHandlers.set(eventType, handler);
   }
 
   /**
    * Unregister an event handler
    */
-  off(eventType: string, handler?: (data: any) => void): void {
+  off(eventType: string, handler?: (data: unknown) => void): void {
     this.eventHandlers.delete(eventType);
   }
 
-  async registerCustomId(widgetId: string, customId: string): Promise<any> {
+  async registerCustomId(widgetId: string, customId: string): Promise<unknown> {
     return this.send('registerCustomId', { widgetId, customId });
   }
 
   async getParent(widgetId: string): Promise<string> {
-    const result = await this.send('getParent', { widgetId });
+    const result = await this.send('getParent', { widgetId }) as { parentId: string };
     return result.parentId;
   }
 
-  async clickToolbarAction(toolbarId: string, actionLabel: string): Promise<any> {
+  async clickToolbarAction(toolbarId: string, actionLabel: string): Promise<unknown> {
     return this.send('clickToolbarAction', { toolbarId, actionLabel });
   }
 

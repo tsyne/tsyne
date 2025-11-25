@@ -24,7 +24,6 @@ export interface Storage {
   key(index: number): string | null;
   removeItem(key: string): void;
   setItem(key: string, value: string): void;
-  [key: string]: any;
 }
 
 /**
@@ -99,9 +98,6 @@ class TsyneStorage implements Storage {
     this.data.set(key, value);
     this.saveToDisk();
   }
-
-  // Allow bracket notation
-  [key: string]: any;
 }
 
 /**
@@ -127,12 +123,12 @@ export interface TsyneLocation {
  */
 export interface TsyneHistory {
   length: number;
-  state: any;
+  state: unknown;
   back(): void;
   forward(): void;
   go(delta?: number): void;
-  pushState(state: any, title: string, url?: string): void;
-  replaceState(state: any, title: string, url?: string): void;
+  pushState(state: unknown, title: string, url?: string): void;
+  replaceState(state: unknown, title: string, url?: string): void;
 }
 
 /**
@@ -159,24 +155,41 @@ export interface TsyneNavigator {
  * Initialize browser compatibility globals
  * This should be called when the application starts
  */
+interface TsyneGlobal {
+  __tsyneGlobalsInitialized?: boolean;
+  __tsyneAlertHandler?: (message: string) => void;
+  __tsyneConfirmHandler?: (message: string) => Promise<boolean>;
+  __tsynePromptHandler?: (message: string, defaultValue?: string) => Promise<string | null>;
+  localStorage?: Storage;
+  sessionStorage?: Storage;
+  navigator?: TsyneNavigator;
+  location?: TsyneLocation;
+  history?: TsyneHistory;
+  alert?: (message: string) => void;
+  confirm?: (message: string) => Promise<boolean>;
+  prompt?: (message: string, defaultValue?: string) => Promise<string | null>;
+}
+
 export function initializeGlobals(): void {
+  const g = global as TsyneGlobal;
+
   // Only initialize once
-  if ((global as any).__tsyneGlobalsInitialized) {
+  if (g.__tsyneGlobalsInitialized) {
     return;
   }
 
   // localStorage - persistent storage
-  if (!(global as any).localStorage) {
-    (global as any).localStorage = new TsyneStorage('localStorage', true);
+  if (!g.localStorage) {
+    g.localStorage = new TsyneStorage('localStorage', true);
   }
 
   // sessionStorage - in-memory storage (cleared on exit)
-  if (!(global as any).sessionStorage) {
-    (global as any).sessionStorage = new TsyneStorage('sessionStorage', false);
+  if (!g.sessionStorage) {
+    g.sessionStorage = new TsyneStorage('sessionStorage', false);
   }
 
   // navigator object
-  if (!(global as any).navigator) {
+  if (!g.navigator) {
     const navigator: TsyneNavigator = {
       userAgent: `Tsyne/${version} (${os.platform()}; ${os.arch()}) Node/${process.version}`,
       platform: os.platform(),
@@ -193,15 +206,15 @@ export function initializeGlobals(): void {
       product: 'Tsyne',
       productSub: version,
     };
-    (global as any).navigator = navigator;
+    g.navigator = navigator;
   }
 
   // alert function - shows info dialog
-  if (!(global as any).alert) {
-    (global as any).alert = (message: string): void => {
+  if (!g.alert) {
+    g.alert = (message: string): void => {
       // Queue the alert to be shown by the app
-      if ((global as any).__tsyneAlertHandler) {
-        (global as any).__tsyneAlertHandler(message);
+      if (g.__tsyneAlertHandler) {
+        g.__tsyneAlertHandler(message);
       } else {
         // Fallback to console if no handler is registered
         console.log('[ALERT]', message);
@@ -210,11 +223,11 @@ export function initializeGlobals(): void {
   }
 
   // confirm function - shows confirmation dialog
-  if (!(global as any).confirm) {
-    (global as any).confirm = async (message: string): Promise<boolean> => {
+  if (!g.confirm) {
+    g.confirm = async (message: string): Promise<boolean> => {
       // Queue the confirm to be shown by the app
-      if ((global as any).__tsyneConfirmHandler) {
-        return await (global as any).__tsyneConfirmHandler(message);
+      if (g.__tsyneConfirmHandler) {
+        return await g.__tsyneConfirmHandler(message);
       } else {
         // Fallback to console if no handler is registered
         console.log('[CONFIRM]', message);
@@ -224,11 +237,11 @@ export function initializeGlobals(): void {
   }
 
   // prompt function - shows input dialog
-  if (!(global as any).prompt) {
-    (global as any).prompt = async (message: string, defaultValue?: string): Promise<string | null> => {
+  if (!g.prompt) {
+    g.prompt = async (message: string, defaultValue?: string): Promise<string | null> => {
       // Queue the prompt to be shown by the app
-      if ((global as any).__tsynePromptHandler) {
-        return await (global as any).__tsynePromptHandler(message, defaultValue);
+      if (g.__tsynePromptHandler) {
+        return await g.__tsynePromptHandler(message, defaultValue);
       } else {
         // Fallback to console if no handler is registered
         console.log('[PROMPT]', message, defaultValue);
@@ -238,7 +251,7 @@ export function initializeGlobals(): void {
   }
 
   // Mark as initialized
-  (global as any).__tsyneGlobalsInitialized = true;
+  g.__tsyneGlobalsInitialized = true;
 }
 
 /**
@@ -246,8 +259,9 @@ export function initializeGlobals(): void {
  * This is called by the Browser class when a browser instance is active
  */
 export function setBrowserGlobals(location: TsyneLocation, history: TsyneHistory): void {
-  (global as any).location = location;
-  (global as any).history = history;
+  const g = global as TsyneGlobal;
+  g.location = location;
+  g.history = history;
 }
 
 /**
@@ -259,14 +273,15 @@ export function registerDialogHandlers(handlers: {
   confirm?: (message: string) => Promise<boolean>;
   prompt?: (message: string, defaultValue?: string) => Promise<string | null>;
 }): void {
+  const g = global as TsyneGlobal;
   if (handlers.alert) {
-    (global as any).__tsyneAlertHandler = handlers.alert;
+    g.__tsyneAlertHandler = handlers.alert;
   }
   if (handlers.confirm) {
-    (global as any).__tsyneConfirmHandler = handlers.confirm;
+    g.__tsyneConfirmHandler = handlers.confirm;
   }
   if (handlers.prompt) {
-    (global as any).__tsynePromptHandler = handlers.prompt;
+    g.__tsynePromptHandler = handlers.prompt;
   }
 }
 

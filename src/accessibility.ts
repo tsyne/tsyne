@@ -202,7 +202,7 @@ export class AccessibilityManager {
     if (announcement) {
       // Check if widget has X or O text (for game cells)
       try {
-        const result = await this.ctx.bridge.send('getText', { widgetId });
+        const result = await this.ctx.bridge.send('getText', { widgetId }) as { text?: string };
         const text = result.text?.trim();
         if (text === 'X' || text === 'O') {
           announcement += ` with ${text}`;

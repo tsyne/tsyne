@@ -14,6 +14,10 @@ export interface WidgetInfo {
   width?: number;
   height?: number;
   fillMode?: 'contain' | 'stretch' | 'original';
+  checked?: boolean;
+  value?: unknown;
+  selected?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -37,7 +41,7 @@ export class Locator {
     const result = await this.bridge.send('findWidget', {
       selector: this.selector,
       type: this.selectorType
-    });
+    }) as { widgetIds?: string[] };
     return result.widgetIds || [];
   }
 
@@ -156,7 +160,7 @@ export class Locator {
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
-    const result = await this.bridge.send('getText', { widgetId });
+    const result = await this.bridge.send('getText', { widgetId }) as { text: string };
     return result.text;
   }
 
@@ -168,7 +172,7 @@ export class Locator {
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
-    return await this.bridge.send('getWidgetInfo', { widgetId });
+    return await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
   }
 
   async getParent(): Promise<Locator> {
@@ -502,7 +506,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetInfo', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
       return response.checked || false;
     }
 
@@ -515,7 +519,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetInfo', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
         return response.checked || false;
       } catch (error) {
         lastError = error as Error;
@@ -535,7 +539,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetInfo', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
       return String(response.value || response.text || '');
     }
 
@@ -548,7 +552,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetInfo', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
         return String(response.value || response.text || '');
       } catch (error) {
         lastError = error as Error;
@@ -568,7 +572,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetInfo', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
       return response.selected || '';
     }
 
@@ -581,7 +585,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetInfo', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
         return response.selected || '';
       } catch (error) {
         lastError = error as Error;
@@ -601,7 +605,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetInfo', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
       return response.disabled || false;
     }
 
@@ -614,7 +618,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetInfo', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
         return response.disabled || false;
       } catch (error) {
         lastError = error as Error;
@@ -634,7 +638,7 @@ export class Locator {
       if (!widgetId) {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
-      const response = await this.bridge.send('getWidgetInfo', { widgetId });
+      const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
       return response.type || '';
     }
 
@@ -647,7 +651,7 @@ export class Locator {
         if (!widgetId) {
           throw new Error('Widget not found');
         }
-        const response = await this.bridge.send('getWidgetInfo', { widgetId });
+        const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
         return response.type || '';
       } catch (error) {
         lastError = error as Error;
@@ -852,7 +856,7 @@ export class TestContext {
    * Get all widgets in the application
    */
   async getAllWidgets(): Promise<WidgetInfo[]> {
-    const result = await this.bridge.send('getAllWidgets', {});
+    const result = await this.bridge.send('getAllWidgets', {}) as { widgets?: WidgetInfo[] };
     return result.widgets || [];
   }
 
@@ -927,7 +931,7 @@ export class TestContext {
    * Returns the raw table data (array of rows)
    */
   async getTableData(tableId: string): Promise<string[][]> {
-    const result = await this.bridge.send('getTableData', { id: tableId });
+    const result = await this.bridge.send('getTableData', { id: tableId }) as { data?: string[][] };
     return result.data || [];
   }
 
@@ -936,7 +940,7 @@ export class TestContext {
    * Returns the list items as an array
    */
   async getListData(listId: string): Promise<string[]> {
-    const result = await this.bridge.send('getListData', { id: listId });
+    const result = await this.bridge.send('getListData', { id: listId }) as { data?: string[] };
     return result.data || [];
   }
 

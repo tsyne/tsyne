@@ -184,7 +184,7 @@ import { app } from 'tsyne';
 
 Dependencies auto-resolve to `~/.tsyne/packages/` at runtime. See [docs/INLINE_DEPENDENCY_DECLARATIONS.md](docs/INLINE_DEPENDENCY_DECLARATIONS.md) for details.
 
-TODO: is this a directed graph or do 100 single-file distributions fight with each other in here?
+**Dependency Resolution:** All apps share a single global cache (`~/.tsyne/packages/node_modules/`) with a centralized `package.json` and `package-lock.json`. npm handles version conflicts using its standard dependency resolution algorithm—the same way it resolves dependencies in any project. This means packages are reused across apps when versions are compatible, and npm installs multiple versions only when necessary to satisfy conflicting semver ranges.
 
 ## Elegant Syntax
 

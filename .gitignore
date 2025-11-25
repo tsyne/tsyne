@@ -2,6 +2,7 @@ node_modules/
 dist/
 bin/
 *.log
+*.log.tmp.*
 .DS_Store
 *.swp
 *.swo
@@ -16,3 +17,5 @@ pkg/
 bookmarks-export.json
 cli/embed/
 cli/target/
+coverage
+docs/api

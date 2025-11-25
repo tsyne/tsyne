@@ -44,7 +44,7 @@ export class Button extends Widget {
   async isEnabled(): Promise<boolean> {
     const result = await this.ctx.bridge.send('isEnabled', {
       widgetId: this.id
-    });
+    }) as { enabled: boolean };
     return result.enabled;
   }
 }

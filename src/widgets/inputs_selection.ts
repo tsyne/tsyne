@@ -33,7 +33,7 @@ export class Checkbox extends Widget {
   async getChecked(): Promise<boolean> {
     const result = await this.ctx.bridge.send('getChecked', {
       widgetId: this.id
-    });
+    }) as { checked: boolean };
     return result.checked;
   }
 }
@@ -70,7 +70,7 @@ export class Select extends Widget {
   async getSelected(): Promise<string> {
     const result = await this.ctx.bridge.send('getSelected', {
       widgetId: this.id
-    });
+    }) as { selected: string };
     return result.selected;
   }
 }
@@ -137,7 +137,7 @@ export class SelectEntry extends Widget {
   async getText(): Promise<string> {
     const result = await this.ctx.bridge.send('getText', {
       widgetId: this.id
-    });
+    }) as { text: string };
     return result.text;
   }
 
@@ -188,7 +188,7 @@ export class RadioGroup extends Widget {
   async getSelected(): Promise<string> {
     const result = await this.ctx.bridge.send('getRadioSelected', {
       widgetId: this.id
-    });
+    }) as { selected: string };
     return result.selected;
   }
 }
@@ -229,7 +229,7 @@ export class CheckGroup extends Widget {
   async getSelected(): Promise<string[]> {
     const result = await this.ctx.bridge.send('getCheckGroupSelected', {
       widgetId: this.id
-    });
+    }) as { selected: string[] };
     return result.selected;
   }
 }

@@ -4,87 +4,184 @@ import * as protoLoader from '@grpc/proto-loader';
 import * as path from 'path';
 import * as fs from 'fs';
 
+// Request type definitions
+interface CreateWindowRequest {
+  window_id: string;
+  title: string;
+  width: number;
+  height: number;
+  fixed_size: boolean;
+}
+
+interface ShowWindowRequest {
+  window_id: string;
+}
+
+interface SetContentRequest {
+  window_id: string;
+  widget_id: string;
+}
+
+interface CreateImageRequest {
+  widget_id: string;
+  resource_name?: string;
+  inline_data?: Buffer;
+  width: number;
+  height: number;
+  callback_id?: string;
+}
+
+interface CreateLabelRequest {
+  widget_id: string;
+  text: string;
+  bold: boolean;
+  alignment: number;
+}
+
+interface CreateButtonRequest {
+  widget_id: string;
+  text: string;
+  callback_id: string;
+  important: boolean;
+}
+
+interface CreateVBoxRequest {
+  widget_id: string;
+}
+
+interface CreateHBoxRequest {
+  widget_id: string;
+}
+
+interface RegisterResourceRequest {
+  name: string;
+  data: Buffer;
+}
+
+interface UnregisterResourceRequest {
+  name: string;
+}
+
+interface UpdateImageRequest {
+  widget_id: string;
+  resource_name?: string;
+  inline_data?: Buffer;
+}
+
+interface SetTextRequest {
+  widget_id: string;
+  text: string;
+}
+
+interface ClickWidgetRequest {
+  widget_id: string;
+}
+
+interface RegisterCustomIdRequest {
+  custom_id: string;
+  widget_id: string;
+}
+
+interface FindWidgetRequest {
+  selector: string;
+  type: string;
+}
+
+interface QuitRequest {
+  // Empty request
+}
+
+// Response type definitions
+interface GenericResponse {
+  success?: boolean;
+  error?: string;
+}
+
+interface FindWidgetResponse extends GenericResponse {
+  widget_ids?: string[];
+}
+
 // Type definitions for the generated gRPC client
 interface BridgeClient extends grpc.Client {
   CreateWindow: (
-    request: any,
+    request: CreateWindowRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   ShowWindow: (
-    request: any,
+    request: ShowWindowRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   SetContent: (
-    request: any,
+    request: SetContentRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   CreateImage: (
-    request: any,
+    request: CreateImageRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   CreateLabel: (
-    request: any,
+    request: CreateLabelRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   CreateButton: (
-    request: any,
+    request: CreateButtonRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   CreateVBox: (
-    request: any,
+    request: CreateVBoxRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   CreateHBox: (
-    request: any,
+    request: CreateHBoxRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   RegisterResource: (
-    request: any,
+    request: RegisterResourceRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   UnregisterResource: (
-    request: any,
+    request: UnregisterResourceRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   UpdateImage: (
-    request: any,
+    request: UpdateImageRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   SetText: (
-    request: any,
+    request: SetTextRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   ClickWidget: (
-    request: any,
+    request: ClickWidgetRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   RegisterCustomId: (
-    request: any,
+    request: RegisterCustomIdRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
   FindWidget: (
-    request: any,
+    request: FindWidgetRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: FindWidgetResponse) => void
   ) => void;
   Quit: (
-    request: any,
+    request: QuitRequest,
     metadata: grpc.Metadata,
-    callback: (error: grpc.ServiceError | null, response: any) => void
+    callback: (error: grpc.ServiceError | null, response: GenericResponse) => void
   ) => void;
 }
 
@@ -190,7 +287,15 @@ export class GrpcBridge {
       oneofs: true,
     });
 
-    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as any;
+    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as {
+      bridge: {
+        BridgeService: new (
+          address: string,
+          credentials: grpc.ChannelCredentials,
+          options?: Record<string, unknown>
+        ) => BridgeClient;
+      };
+    };
     const BridgeService = protoDescriptor.bridge.BridgeService;
 
     this.client = new BridgeService(
@@ -227,9 +332,9 @@ export class GrpcBridge {
 
     return new Promise((resolve, reject) => {
       const metadata = this.getMetadata();
-      const methodFn = (this.client as any)[method];
+      const methodFn = (this.client as unknown as Record<string, Function>)[method];
 
-      if (!methodFn) {
+      if (!methodFn || typeof methodFn !== 'function') {
         reject(new Error(`Method ${method} not found on client`));
         return;
       }
@@ -297,7 +402,7 @@ export class GrpcBridge {
     height?: number;
     callbackId?: string;
   }): Promise<void> {
-    const request: any = {
+    const request: CreateImageRequest = {
       widget_id: params.widgetId,
       width: params.width || 0,
       height: params.height || 0,
@@ -394,7 +499,7 @@ export class GrpcBridge {
     widgetId: string;
     source?: { resource?: string; inlineData?: Buffer };
   }): Promise<void> {
-    const request: any = {
+    const request: UpdateImageRequest = {
       widget_id: params.widgetId,
     };
 
@@ -440,7 +545,7 @@ export class GrpcBridge {
    * Find widgets by selector
    */
   async findWidget(selector: string, type: string): Promise<string[]> {
-    const response: any = await this.call('FindWidget', {
+    const response = await this.call<FindWidgetRequest, FindWidgetResponse>('FindWidget', {
       selector,
       type,
     });

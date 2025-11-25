@@ -2,7 +2,81 @@ import { BridgeConnection, BridgeInterface } from './fynebridge';
 import { GrpcBridgeConnection } from './grpcbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { Button, Label, Entry, MultiLineEntry, PasswordEntry, Separator, Spacer, Hyperlink, VBox, HBox, Checkbox, Select, SelectEntry, Slider, ProgressBar, ProgressBarInfinite, Activity, Scroll, Grid, RadioGroup, CheckGroup, Split, Tabs, DocTabs, Toolbar, ToolbarAction, Table, List, Center, Max, Card, Accordion, Form, Tree, RichText, Image, Border, GridWrap, Padded, Menu, MenuItem, CanvasLine, CanvasCircle, CanvasRectangle, CanvasText, CanvasRaster, CanvasLinearGradient, CanvasArc, CanvasPolygon, CanvasRadialGradient, Clip, InnerWindow, MultipleWindows, AdaptiveGrid, Popup, ThemeOverride, DateEntry, TextGrid, TextGridOptions, TextGridStyle, Navigation, NavigationOptions, Icon, FileIcon, Calendar, ThemeIconName } from './widgets';
+import {
+  // Inputs
+  Button,
+  Checkbox,
+  CheckGroup,
+  DateEntry,
+  Entry,
+  MultiLineEntry,
+  PasswordEntry,
+  RadioGroup,
+  Select,
+  SelectEntry,
+  Slider,
+  // Display
+  Activity,
+  Calendar,
+  FileIcon,
+  Hyperlink,
+  Icon,
+  Image,
+  Label,
+  ProgressBar,
+  ProgressBarInfinite,
+  RichText,
+  Separator,
+  Spacer,
+  TextGrid,
+  TextGridOptions,
+  TextGridStyle,
+  // Data
+  List,
+  Menu,
+  MenuItem,
+  Table,
+  Toolbar,
+  ToolbarAction,
+  Tree,
+  // Containers - Layout
+  AdaptiveGrid,
+  Border,
+  Center,
+  Clip,
+  Grid,
+  GridWrap,
+  HBox,
+  Max,
+  Padded,
+  Scroll,
+  Split,
+  VBox,
+  // Containers - Organizational
+  Accordion,
+  Card,
+  DocTabs,
+  Form,
+  InnerWindow,
+  MultipleWindows,
+  Navigation,
+  NavigationOptions,
+  Popup,
+  Tabs,
+  ThemeOverride,
+  // Canvas
+  CanvasArc,
+  CanvasCircle,
+  CanvasLine,
+  CanvasLinearGradient,
+  CanvasPolygon,
+  CanvasRadialGradient,
+  CanvasRaster,
+  CanvasRectangle,
+  CanvasText,
+  // Types
+  ThemeIconName,
+} from './widgets';
 export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
@@ -132,6 +206,12 @@ export class App {
     return this.bridge;
   }
 
+  /**
+   * Create a new window.
+   * @param options - Window configuration (title, size, etc.)
+   * @param builder - Function to build window content
+   * @returns The created Window instance
+   */
   window(options: WindowOptions, builder: (win: Window) => void): Window {
     const win = new Window(this.ctx, options, builder);
     this.windows.push(win);
@@ -139,50 +219,134 @@ export class App {
   }
 
   // Scoped declarative API methods - these use the app's context (proper IoC/DI)
+
+  /**
+   * Create a vertical box container that stacks children vertically.
+   * @param builder - Function to create child widgets
+   * @returns VBox container
+   */
   vbox(builder: () => void): VBox {
     return new VBox(this.ctx, builder);
   }
 
+  /**
+   * Create a horizontal box container that arranges children horizontally.
+   * @param builder - Function to create child widgets
+   * @returns HBox container
+   */
   hbox(builder: () => void): HBox {
     return new HBox(this.ctx, builder);
   }
 
+  /**
+   * Create a clickable button.
+   * @param text - Button label
+   * @param onClick - Click handler
+   * @param className - Optional CSS class name for styling
+   * @returns Button widget
+   */
   button(text: string, onClick?: () => void, className?: string): Button {
     return new Button(this.ctx, text, onClick, className);
   }
 
-  label(text: string, className?: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }): Label {
+  /**
+   * Create a text label.
+   * @param text - Text to display
+   * @param className - Optional CSS class name
+   * @param alignment - Text alignment ('leading', 'center', 'trailing')
+   * @param wrapping - Text wrapping mode ('off', 'break', 'word')
+   * @param textStyle - Text styling options (bold, italic, monospace)
+   * @returns Label widget
+   */
+  label(
+    text: string,
+    className?: string,
+    alignment?: 'leading' | 'trailing' | 'center',
+    wrapping?: 'off' | 'break' | 'word',
+    textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }
+  ): Label {
     return new Label(this.ctx, text, className, alignment, wrapping, textStyle);
   }
 
-  entry(placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void): Entry {
+  /**
+   * Create a single-line text input.
+   * @param placeholder - Placeholder text
+   * @param onSubmit - Submit handler (Enter key pressed)
+   * @param minWidth - Minimum width in pixels
+   * @param onDoubleClick - Double-click handler
+   * @returns Entry widget
+   */
+  entry(
+    placeholder?: string,
+    onSubmit?: (text: string) => void,
+    minWidth?: number,
+    onDoubleClick?: () => void
+  ): Entry {
     return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick);
   }
 
+  /**
+   * Create a multi-line text input (text area).
+   * @param placeholder - Placeholder text
+   * @param wrapping - Text wrapping mode ('off', 'word', 'break')
+   * @returns MultiLineEntry widget
+   */
   multilineentry(placeholder?: string, wrapping?: 'off' | 'word' | 'break'): MultiLineEntry {
     return new MultiLineEntry(this.ctx, placeholder, wrapping);
   }
 
+  /**
+   * Create a password input (masked text).
+   * @param placeholder - Placeholder text
+   * @param onSubmit - Submit handler (Enter key pressed)
+   * @returns PasswordEntry widget
+   */
   passwordentry(placeholder?: string, onSubmit?: (text: string) => void): PasswordEntry {
     return new PasswordEntry(this.ctx, placeholder, onSubmit);
   }
 
+  /**
+   * Create a horizontal separator line.
+   * @returns Separator widget
+   */
   separator(): Separator {
     return new Separator(this.ctx);
   }
 
+  /**
+   * Create a flexible spacer for layout.
+   * @returns Spacer widget
+   */
   spacer(): Spacer {
     return new Spacer(this.ctx);
   }
 
+  /**
+   * Create a clickable hyperlink.
+   * @param text - Link text to display
+   * @param url - URL to open when clicked
+   * @returns Hyperlink widget
+   */
   hyperlink(text: string, url: string): Hyperlink {
     return new Hyperlink(this.ctx, text, url);
   }
 
+  /**
+   * Create a checkbox.
+   * @param text - Checkbox label
+   * @param onChanged - Handler called when checkbox state changes
+   * @returns Checkbox widget
+   */
   checkbox(text: string, onChanged?: (checked: boolean) => void): Checkbox {
     return new Checkbox(this.ctx, text, onChanged);
   }
 
+  /**
+   * Create a dropdown select.
+   * @param options - Array of option strings
+   * @param onSelected - Handler called when selection changes
+   * @returns Select widget
+   */
   select(options: string[], onSelected?: (selected: string) => void): Select {
     return new Select(this.ctx, options, onSelected);
   }
@@ -197,7 +361,12 @@ export class App {
     return new SelectEntry(this.ctx, options, placeholder, onChanged, onSubmitted, onSelected);
   }
 
-  slider(min: number, max: number, initialValue?: number, onChanged?: (value: number) => void): Slider {
+  slider(
+    min: number,
+    max: number,
+    initialValue?: number,
+    onChanged?: (value: number) => void
+  ): Slider {
     return new Slider(this.ctx, min, max, initialValue, onChanged);
   }
 
@@ -221,11 +390,19 @@ export class App {
     return new Grid(this.ctx, columns, builder);
   }
 
-  radiogroup(options: string[], initialSelected?: string, onSelected?: (selected: string) => void): RadioGroup {
+  radiogroup(
+    options: string[],
+    initialSelected?: string,
+    onSelected?: (selected: string) => void
+  ): RadioGroup {
     return new RadioGroup(this.ctx, options, initialSelected, onSelected);
   }
 
-  checkgroup(options: string[], initialSelected?: string[], onChanged?: (selected: string[]) => void): CheckGroup {
+  checkgroup(
+    options: string[],
+    initialSelected?: string[],
+    onChanged?: (selected: string[]) => void
+  ): CheckGroup {
     return new CheckGroup(this.ctx, options, initialSelected, onChanged);
   }
 
@@ -253,12 +430,15 @@ export class App {
     return new Split(this.ctx, 'vertical', leadingBuilder, trailingBuilder, offset);
   }
 
-  tabs(tabDefinitions: Array<{title: string, builder: () => void}>, location?: 'top' | 'bottom' | 'leading' | 'trailing'): Tabs {
+  tabs(
+    tabDefinitions: Array<{ title: string; builder: () => void }>,
+    location?: 'top' | 'bottom' | 'leading' | 'trailing'
+  ): Tabs {
     return new Tabs(this.ctx, tabDefinitions, location);
   }
 
   doctabs(
-    tabDefinitions: Array<{title: string, builder: () => void}>,
+    tabDefinitions: Array<{ title: string; builder: () => void }>,
     options?: {
       location?: 'top' | 'bottom' | 'leading' | 'trailing';
       onClosed?: (tabIndex: number, tabTitle: string) => void;
@@ -295,11 +475,15 @@ export class App {
     return new Card(this.ctx, title, subtitle, builder);
   }
 
-  accordion(items: Array<{title: string, builder: () => void}>): Accordion {
+  accordion(items: Array<{ title: string; builder: () => void }>): Accordion {
     return new Accordion(this.ctx, items);
   }
 
-  form(items: Array<{label: string, widget: any}>, onSubmit?: () => void, onCancel?: () => void): Form {
+  form(
+    items: Array<{ label: string; widget: any }>,
+    onSubmit?: () => void,
+    onCancel?: () => void
+  ): Form {
     return new Form(this.ctx, items, onSubmit, onCancel);
   }
 
@@ -307,12 +491,23 @@ export class App {
     return new Tree(this.ctx, rootLabel);
   }
 
-  richtext(segments: Array<{ text: string; bold?: boolean; italic?: boolean; monospace?: boolean; }>): RichText {
+  richtext(
+    segments: Array<{ text: string; bold?: boolean; italic?: boolean; monospace?: boolean }>
+  ): RichText {
     return new RichText(this.ctx, segments);
   }
 
   image(
-    pathOrOptions: string | { path?: string; resource?: string; fillMode?: 'contain' | 'stretch' | 'original'; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; },
+    pathOrOptions:
+      | string
+      | {
+          path?: string;
+          resource?: string;
+          fillMode?: 'contain' | 'stretch' | 'original';
+          onClick?: () => void;
+          onDrag?: (x: number, y: number) => void;
+          onDragEnd?: (x: number, y: number) => void;
+        },
     fillMode?: 'contain' | 'stretch' | 'original',
     onClick?: () => void,
     onDrag?: (x: number, y: number) => void,
@@ -321,7 +516,13 @@ export class App {
     return new Image(this.ctx, pathOrOptions, fillMode, onClick, onDrag, onDragEnd);
   }
 
-  border(config: { top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void; }): Border {
+  border(config: {
+    top?: () => void;
+    bottom?: () => void;
+    left?: () => void;
+    right?: () => void;
+    center?: () => void;
+  }): Border {
     return new Border(this.ctx, config);
   }
 
@@ -334,39 +535,102 @@ export class App {
   }
 
   // Canvas primitives
-  canvasLine(x1: number, y1: number, x2: number, y2: number, options?: { strokeColor?: string; strokeWidth?: number; }): CanvasLine {
+  canvasLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    options?: { strokeColor?: string; strokeWidth?: number }
+  ): CanvasLine {
     return new CanvasLine(this.ctx, x1, y1, x2, y2, options);
   }
 
-  canvasCircle(options?: { x?: number; y?: number; x2?: number; y2?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasCircle {
+  canvasCircle(options?: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }): CanvasCircle {
     return new CanvasCircle(this.ctx, options);
   }
 
-  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; }): CanvasRectangle {
+  canvasRectangle(options?: {
+    width?: number;
+    height?: number;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+    cornerRadius?: number;
+  }): CanvasRectangle {
     return new CanvasRectangle(this.ctx, options);
   }
 
-  canvasText(text: string, options?: { color?: string; textSize?: number; bold?: boolean; italic?: boolean; monospace?: boolean; alignment?: 'leading' | 'center' | 'trailing'; }): CanvasText {
+  canvasText(
+    text: string,
+    options?: {
+      color?: string;
+      textSize?: number;
+      bold?: boolean;
+      italic?: boolean;
+      monospace?: boolean;
+      alignment?: 'leading' | 'center' | 'trailing';
+    }
+  ): CanvasText {
     return new CanvasText(this.ctx, text, options);
   }
 
-  canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster {
+  canvasRaster(
+    width: number,
+    height: number,
+    pixels?: Array<[number, number, number, number]>
+  ): CanvasRaster {
     return new CanvasRaster(this.ctx, width, height, pixels);
   }
 
-  canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number; }): CanvasLinearGradient {
+  canvasLinearGradient(options?: {
+    startColor?: string;
+    endColor?: string;
+    angle?: number;
+    width?: number;
+    height?: number;
+  }): CanvasLinearGradient {
     return new CanvasLinearGradient(this.ctx, options);
   }
 
-  canvasArc(options?: { x?: number; y?: number; x2?: number; y2?: number; startAngle?: number; endAngle?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasArc {
+  canvasArc(options?: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
+    startAngle?: number;
+    endAngle?: number;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }): CanvasArc {
     return new CanvasArc(this.ctx, options);
   }
 
-  canvasPolygon(options?: { points?: Array<{x: number; y: number}>; fillColor?: string; strokeColor?: string; strokeWidth?: number; }): CanvasPolygon {
+  canvasPolygon(options?: {
+    points?: Array<{ x: number; y: number }>;
+    fillColor?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+  }): CanvasPolygon {
     return new CanvasPolygon(this.ctx, options);
   }
 
-  canvasRadialGradient(options?: { startColor?: string; endColor?: string; centerOffsetX?: number; centerOffsetY?: number; width?: number; height?: number; }): CanvasRadialGradient {
+  canvasRadialGradient(options?: {
+    startColor?: string;
+    endColor?: string;
+    centerOffsetX?: number;
+    centerOffsetY?: number;
+    width?: number;
+    height?: number;
+  }): CanvasRadialGradient {
     return new CanvasRadialGradient(this.ctx, options);
   }
 
@@ -491,8 +755,8 @@ export class App {
   }
 
   async getTheme(): Promise<'dark' | 'light'> {
-    const result = await this.ctx.bridge.send('getTheme', {});
-    return result.theme as 'dark' | 'light';
+    const result = await this.ctx.bridge.send('getTheme', {}) as { theme: 'dark' | 'light' };
+    return result.theme;
   }
 
   /**
@@ -543,6 +807,10 @@ export class App {
     await this.ctx.bridge.send('setFontScale', { scale });
   }
 
+  /**
+   * Get all windows created by this application.
+   * @returns Array of Window instances
+   */
   getWindows(): Window[] {
     return this.windows;
   }
@@ -588,7 +856,7 @@ export class App {
             center: () => {
               const sourceEntry = this.multilineentry('', 'off');
               sourceEntry.setText(sourceCode);
-            }
+            },
           });
         });
         win.show();
@@ -603,7 +871,6 @@ export class App {
   /**
    * System tray menu item
    */
-
 
   /**
    * Set up the system tray with an icon and menu
@@ -621,7 +888,7 @@ export class App {
     iconPath?: string;
     menuItems: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
   }): Promise<void> {
-    const menuItems = options.menuItems.map(item => {
+    const menuItems = options.menuItems.map((item) => {
       if (item.isSeparator) {
         return { isSeparator: true };
       }
@@ -633,13 +900,13 @@ export class App {
 
       return {
         label: item.label,
-        callbackId
+        callbackId,
       };
     });
 
     await this.ctx.bridge.send('setSystemTray', {
       iconPath: options.iconPath,
-      menuItems
+      menuItems,
     });
   }
 
@@ -667,9 +934,9 @@ export class App {
     const result = await this.ctx.bridge.send('preferencesGet', {
       key,
       type: 'string',
-      default: defaultValue
-    });
-    return result.value as string;
+      default: defaultValue,
+    }) as { value: string };
+    return result.value;
   }
 
   /**
@@ -681,9 +948,9 @@ export class App {
     const result = await this.ctx.bridge.send('preferencesGet', {
       key,
       type: 'int',
-      default: defaultValue
-    });
-    return result.value as number;
+      default: defaultValue,
+    }) as { value: number };
+    return result.value;
   }
 
   /**
@@ -695,9 +962,9 @@ export class App {
     const result = await this.ctx.bridge.send('preferencesGet', {
       key,
       type: 'float',
-      default: defaultValue
-    });
-    return result.value as number;
+      default: defaultValue,
+    }) as { value: number };
+    return result.value;
   }
 
   /**
@@ -709,9 +976,9 @@ export class App {
     const result = await this.ctx.bridge.send('preferencesGet', {
       key,
       type: 'bool',
-      default: defaultValue
-    });
-    return result.value as boolean;
+      default: defaultValue,
+    }) as { value: boolean };
+    return result.value;
   }
 
   /**

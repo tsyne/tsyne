@@ -42,7 +42,7 @@ jobs:
       run: |
         cd bridge
         go mod download
-        go build -o ../bin/jyne-bridge
+        go build -o ../bin/tsyne-bridge
         cd ..
 
     - name: Build TypeScript

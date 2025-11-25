@@ -13,14 +13,16 @@
 
 import http from 'http';
 import https from 'https';
+import { ClientRequest } from 'http';
 import { URL } from 'url';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { App } from './app';
 import { Window } from './window';
-import { Entry } from './widgets';
+import { Entry, Label, Button } from './widgets';
 import { setBrowserGlobals, TsyneLocation, TsyneHistory } from './globals';
+import { BridgeInterface } from './fynebridge';
 
 /**
  * Custom menu item that pages can define
@@ -30,6 +32,24 @@ export interface PageMenuItem {
   onSelected: () => void;
   disabled?: boolean;
   checked?: boolean;
+}
+
+/**
+ * Menu item definition for browser menu bar
+ */
+interface MenuItem {
+  label?: string;
+  onSelected?: () => void;
+  isSeparator?: boolean;
+  disabled?: boolean;
+}
+
+/**
+ * Menu definition with nested items
+ */
+interface MenuDefinition {
+  label: string;
+  items: MenuItem[];
 }
 
 /**
@@ -113,13 +133,13 @@ export class Browser {
   private app: App;
   private window: Window;
   private addressBarEntry: Entry | null = null;
-  private loadingLabel: any = null;
-  private stopButton: any = null;
+  private loadingLabel: Label | null = null;
+  private stopButton: Button | null = null;
   private history: HistoryEntry[] = [];
   private historyIndex: number = -1;
   private currentUrl: string = '';
   private loading: boolean = false;
-  private currentRequest: any = null;
+  private currentRequest: ClientRequest | null = null;
   private currentPageBuilder: (() => void) | null = null;
   private pageMenus: Map<string, PageMenuItem[]> = new Map();
   private testMode: boolean = false;
@@ -128,7 +148,7 @@ export class Browser {
   private pageTitle: string = '';
   private baseTitle: string = '';
   private statusText: string = 'Ready';
-  private statusBarLabel: any = null;
+  private statusBarLabel: Label | null = null;
   private pageCache: Map<string, CacheEntry> = new Map();
   private historyFilePath: string;
   private bookmarks: Bookmark[] = [];
@@ -154,16 +174,17 @@ export class Browser {
     this.app = new App({ title: this.baseTitle }, this.testMode);
 
     // Register hyperlink navigation event handler
-    const appBridge = (this.app as any).ctx.bridge;
-    appBridge.registerEventHandler('hyperlinkNavigation', (data: any) => {
-      if (data && data.url) {
-        this.changePage(data.url).catch(err => console.error('Hyperlink navigation failed:', err));
+    const appBridge = this.app.getBridge();
+    appBridge.registerEventHandler('hyperlinkNavigation', (data: unknown) => {
+      const navData = data as { url?: string };
+      if (navData && navData.url && typeof navData.url === 'string') {
+        this.changePage(navData.url).catch(err => console.error('Hyperlink navigation failed:', err));
       }
     });
 
     // Set global context for the browser's app so global API calls work
     const { __setGlobalContext } = require('./index');
-    __setGlobalContext(this.app, (this.app as any).ctx);
+    __setGlobalContext(this.app, this.app.getContext());
 
     // Create ONE persistent browser window with initial placeholder content
     // CRITICAL: We must provide content during window creation (not via setContent after)
@@ -190,7 +211,7 @@ export class Browser {
    * Set up the browser menu bar
    */
   private async setupMenuBar(): Promise<void> {
-    const menuDefinition: any[] = [
+    const menuDefinition: MenuDefinition[] = [
       {
         label: 'File',
         items: [
@@ -386,7 +407,16 @@ export class Browser {
       });
     }
 
-    await this.window.setMainMenu(menuDefinition);
+    await this.window.setMainMenu(menuDefinition as Array<{
+      label: string;
+      items: Array<{
+        label: string;
+        onSelected?: () => void;
+        isSeparator?: boolean;
+        disabled?: boolean;
+        checked?: boolean;
+      }>;
+    }>);
   }
 
   /**
@@ -840,11 +870,11 @@ export class Browser {
             }
           }
         },
-        pushState: (state: any, title: string, url?: string) => {
+        pushState: (state: unknown, title: string, url?: string) => {
           // For now, we don't support pushState fully
           console.log('[Browser] pushState not fully implemented:', { state, title, url });
         },
-        replaceState: (state: any, title: string, url?: string) => {
+        replaceState: (state: unknown, title: string, url?: string) => {
           // For now, we don't support replaceState fully
           console.log('[Browser] replaceState not fully implemented:', { state, title, url });
         }
@@ -1002,7 +1032,7 @@ export class Browser {
 
       // FIX: Don't create a new Context! Update the existing context's resourceMap instead.
       // Creating a new Context clears windowStack/containerStack, breaking widget parent lookups.
-      const appContext = (this.app as any).ctx;
+      const appContext = this.app.getContext();
       appContext.setResourceMap(resourceMap);
 
       const tsyne = require('./index');
@@ -1063,7 +1093,7 @@ export class Browser {
   /**
    * Show error page in the content area
    */
-  private async showError(url: string, error: any): Promise<void> {
+  private async showError(url: string, error: Error | unknown): Promise<void> {
     // Create error content builder
     this.currentPageBuilder = () => {
       const { vbox, label, button } = require('./index');
@@ -1072,7 +1102,7 @@ export class Browser {
         label('Error Loading Page');
         label('');
         label(`URL: ${url}`);
-        label(`Error: ${error.message || error}`);
+        label(`Error: ${error instanceof Error ? error.message : String(error)}`);
         label('');
 
         if (this.historyIndex > 0) {

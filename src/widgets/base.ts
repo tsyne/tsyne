@@ -94,7 +94,7 @@ export abstract class Widget {
   async getText(): Promise<string> {
     const result = await this.ctx.bridge.send('getText', {
       widgetId: this.id
-    });
+    }) as { text: string };
     return result.text;
   }
 
@@ -214,7 +214,9 @@ export abstract class Widget {
    */
   onMouseIn(callback: (event: { position: { x: number, y: number } }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { position: { x: number, y: number } });
+    }); // Register the callback
     this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
       widgetId: this.id,
       onMouseInCallbackId: callbackId,
@@ -235,7 +237,9 @@ export abstract class Widget {
    */
   onMouseMoved(callback: (event: { position: { x: number, y: number } }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback); // Register the callback
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { position: { x: number, y: number } });
+    }); // Register the callback
     this.ctx.bridge.send('setWidgetHoverable', { // Send message to bridge
       widgetId: this.id,
       onMouseMoveCallbackId: callbackId,
@@ -284,7 +288,9 @@ export abstract class Widget {
   }): this {
     if (callbacks.in) {
       const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, callbacks.in);
+      this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        callbacks.in!(data as { position: { x: number, y: number } });
+      });
       this.ctx.bridge.send('setWidgetHoverable', {
         widgetId: this.id,
         onMouseInCallbackId: callbackId,
@@ -293,7 +299,9 @@ export abstract class Widget {
     }
     if (callbacks.moved) {
       const callbackId = this.ctx.generateId('callback');
-      this.ctx.bridge.registerEventHandler(callbackId, callbacks.moved);
+      this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        callbacks.moved!(data as { position: { x: number, y: number } });
+      });
       this.ctx.bridge.send('setWidgetHoverable', {
         widgetId: this.id,
         onMouseMoveCallbackId: callbackId,
@@ -324,7 +332,9 @@ export abstract class Widget {
    */
   onMouseDown(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { button: number, position: { x: number, y: number } });
+    });
     this.ctx.bridge.send('setWidgetHoverable', {
       widgetId: this.id,
       onMouseDownCallbackId: callbackId,
@@ -345,7 +355,9 @@ export abstract class Widget {
    */
   onMouseUp(callback: (event: { button: number, position: { x: number, y: number } }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { button: number, position: { x: number, y: number } });
+    });
     this.ctx.bridge.send('setWidgetHoverable', {
       widgetId: this.id,
       onMouseUpCallbackId: callbackId,
@@ -366,7 +378,9 @@ export abstract class Widget {
    */
   onKeyDown(callback: (event: { key: string }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { key: string });
+    });
     this.ctx.bridge.send('setWidgetHoverable', {
       widgetId: this.id,
       onKeyDownCallbackId: callbackId,
@@ -387,7 +401,9 @@ export abstract class Widget {
    */
   onKeyUp(callback: (event: { key: string }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { key: string });
+    });
     this.ctx.bridge.send('setWidgetHoverable', {
       widgetId: this.id,
       onKeyUpCallbackId: callbackId,
@@ -408,7 +424,9 @@ export abstract class Widget {
    */
   onFocusChange(callback: (event: { focused: boolean }) => void): this {
     const callbackId = this.ctx.generateId('callback');
-    this.ctx.bridge.registerEventHandler(callbackId, callback);
+    this.ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+      callback(data as { focused: boolean });
+    });
     this.ctx.bridge.send('setWidgetHoverable', {
       widgetId: this.id,
       onFocusCallbackId: callbackId,

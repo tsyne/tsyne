@@ -29,7 +29,7 @@ export class ProgressBar extends Widget {
   async getProgress(): Promise<number> {
     const result = await this.ctx.bridge.send('getProgress', {
       widgetId: this.id
-    });
+    }) as { value: number };
     return result.value;
   }
 
@@ -82,7 +82,7 @@ export class ProgressBarInfinite extends Widget {
   async isRunning(): Promise<boolean> {
     const result = await this.ctx.bridge.send('isProgressRunning', {
       widgetId: this.id
-    });
+    }) as { running: boolean };
     return result.running;
   }
 }

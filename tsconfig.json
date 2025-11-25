@@ -6,6 +6,8 @@
     "declaration": true,
     "outDir": "./dist",
     "rootDir": ".",
+    "sourceMap": true,
+    "inlineSources": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

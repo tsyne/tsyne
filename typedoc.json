@@ -1,0 +1,39 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "plugin": [],
+  "name": "Tsyne API Documentation",
+  "includeVersion": true,
+  "readme": "README.md",
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Application",
+    "Window",
+    "Containers",
+    "Inputs",
+    "Display",
+    "Data",
+    "Canvas",
+    "*"
+  ],
+  "sort": ["source-order"],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "searchInComments": true,
+  "cleanOutputDir": true,
+  "emit": "both",
+  "githubPages": false,
+  "hideGenerator": false,
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  }
+}

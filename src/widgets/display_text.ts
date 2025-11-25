@@ -225,7 +225,7 @@ export class TextGrid extends Widget {
   async getText(): Promise<string> {
     const result = await this.ctx.bridge.send('getTextGridText', {
       widgetId: this.id
-    });
+    }) as { text: string };
     return result.text;
   }
 

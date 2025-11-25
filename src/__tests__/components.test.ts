@@ -4,6 +4,19 @@
  */
 import { TsyneTest, TestContext } from '../index-test';
 import { App } from '../index';
+import {
+  Label,
+  Entry,
+  ProgressBar,
+  ProgressBarInfinite,
+  Activity,
+  TextGrid,
+  Table,
+  List,
+  DateEntry,
+  Slider,
+  Navigation
+} from '../widgets';
 
 describe('Container Components', () => {
   let tsyneTest: TsyneTest;
@@ -326,7 +339,7 @@ describe('Container Components', () => {
 
     test('form - labeled form fields', async () => {
       let submitted = false;
-      let nameEntry: any;
+      let nameEntry: Entry;
 
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
@@ -395,7 +408,7 @@ describe('Container Components', () => {
     });
 
     test('navigation - stack-based nav', async () => {
-      let nav: any;
+      let nav: Navigation;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'Navigation Test' }, (win) => {
@@ -472,7 +485,7 @@ describe('Display Widgets', () => {
 
   describe('Progress Indicators', () => {
     test('progressbar - determinate progress', async () => {
-      let pb: any;
+      let pb!: ProgressBar;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'ProgressBar Test' }, (win) => {
@@ -494,7 +507,7 @@ describe('Display Widgets', () => {
     });
 
     test('progressbarInfinite - indeterminate progress', async () => {
-      let pbi: any;
+      let pbi!: ProgressBarInfinite;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'ProgressBarInfinite Test' }, (win) => {
@@ -516,7 +529,7 @@ describe('Display Widgets', () => {
     });
 
     test('activity - loading spinner', async () => {
-      let activity: any;
+      let activity!: Activity;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'Activity Test' }, (win) => {
@@ -597,7 +610,7 @@ describe('Display Widgets', () => {
     });
 
     test('textgrid - monospace text grid', async () => {
-      let grid: any;
+      let grid!: TextGrid;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'TextGrid Test' }, (win) => {
@@ -647,7 +660,7 @@ describe('Display Widgets', () => {
     });
 
     test('table - data table', async () => {
-      let table: any;
+      let table!: Table;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'Table Test' }, (win) => {
@@ -676,7 +689,7 @@ describe('Display Widgets', () => {
 
     test('list - selectable list', async () => {
       let selected = '';
-      let list: any;
+      let list!: List;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'List Test' }, (win) => {
@@ -830,7 +843,7 @@ describe('Input Widgets', () => {
   describe('Date/Time Widgets', () => {
     test('dateentry - date input', async () => {
       let selectedDate = '';
-      let dateEntry: any;
+      let dateEntry!: DateEntry;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'DateEntry Test' }, (win) => {
@@ -876,7 +889,7 @@ describe('Input Widgets', () => {
   describe('Range Widgets', () => {
     test('slider - range slider', async () => {
       let value = 0;
-      let slider: any;
+      let slider!: Slider;
       tsyneTest = new TsyneTest({ headed: false });
       await tsyneTest.createApp((a) => {
         a.window({ title: 'Slider Test' }, (win) => {
@@ -908,7 +921,7 @@ describe('Fluent Test API', () => {
   });
 
   test('within() - retry finding element', async () => {
-    let label: any;
+    let label!: Label;
     tsyneTest = new TsyneTest({ headed: false });
     await tsyneTest.createApp((a) => {
       a.window({ title: 'Within Test' }, (win) => {
@@ -972,7 +985,7 @@ describe('Fluent Test API', () => {
 
   test('waitForCondition - custom condition polling', async () => {
     let counter = 0;
-    let label: any;
+    let label!: Label;
 
     tsyneTest = new TsyneTest({ headed: false });
     await tsyneTest.createApp((a) => {
@@ -1035,7 +1048,7 @@ describe('Widget Methods', () => {
   });
 
   test('hide()/show() - visibility control', async () => {
-    let label: any;
+    let label!: Label;
     tsyneTest = new TsyneTest({ headed: false });
     await tsyneTest.createApp((a) => {
       a.window({ title: 'Visibility Control Test' }, (win) => {
@@ -1065,7 +1078,7 @@ describe('Widget Methods', () => {
   });
 
   test('setText()/getText() - label updates', async () => {
-    let label: any;
+    let label!: Label;
     tsyneTest = new TsyneTest({ headed: false });
     await tsyneTest.createApp((a) => {
       a.window({ title: 'Label Update Test' }, (win) => {
@@ -1087,7 +1100,7 @@ describe('Widget Methods', () => {
   });
 
   test('disable()/enable() - widget state', async () => {
-    let entry: any;
+    let entry: Entry;
     tsyneTest = new TsyneTest({ headed: false });
     await tsyneTest.createApp((a) => {
       a.window({ title: 'Enable/Disable Test' }, (win) => {

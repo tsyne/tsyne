@@ -43,7 +43,7 @@ export class Slider extends Widget {
   async getValue(): Promise<number> {
     const result = await this.ctx.bridge.send('getValue', {
       widgetId: this.id
-    });
+    }) as { value: number };
     return result.value;
   }
 }
@@ -96,7 +96,7 @@ export class DateEntry extends Widget {
   async getDate(): Promise<string> {
     const result = await this.ctx.bridge.send('getDate', {
       widgetId: this.id
-    });
+    }) as { date: string };
     return result.date;
   }
 

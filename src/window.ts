@@ -128,6 +128,10 @@ export class Window {
     }
   }
 
+  /**
+   * Show the window on screen.
+   * If content has been set but not yet sent to the bridge, it will be sent before showing.
+   */
   async show(): Promise<void> {
     // Only send setContent if we haven't already sent it
     if (this.contentId && !this.contentSent) {
@@ -143,6 +147,19 @@ export class Window {
     });
   }
 
+  /**
+   * Set or replace the window's content.
+   * @param builder - Function that creates the content widgets
+   * @example
+   * ```typescript
+   * win.setContent(() => {
+   *   a.vbox(() => {
+   *     a.label('New content');
+   *     a.button('Click', () => {});
+   *   });
+   * });
+   * ```
+   */
   async setContent(builder: () => void): Promise<void> {
     // Mark as sent immediately (synchronously) to prevent duplicate calls
     this.contentSent = true;
@@ -375,10 +392,17 @@ export class Window {
   }
 
   /**
-   * Shows an entry dialog for quick text input
+   * Show a dialog with a text input field for quick text input.
    * @param title - Dialog title
-   * @param message - Prompt message shown to user
-   * @returns Promise<string | null> - entered text if submitted, null if cancelled
+   * @param message - Prompt message to display
+   * @returns Promise resolving to the entered text, or null if cancelled/empty
+   * @example
+   * ```typescript
+   * const name = await win.showEntryDialog('Name', 'Enter your name:');
+   * if (name) {
+   *   console.log(`Hello, ${name}!`);
+   * }
+   * ```
    */
   async showEntryDialog(title: string, message: string): Promise<string | null> {
     return new Promise((resolve) => {
@@ -742,8 +766,8 @@ export class Window {
   async getClipboard(): Promise<string> {
     const result = await this.ctx.bridge.send('clipboardGet', {
       windowId: this.id
-    });
-    return result.content as string;
+    }) as { content: string };
+    return result.content;
   }
 
   /**

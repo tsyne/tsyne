@@ -13,7 +13,23 @@ export interface GrpcConnectionInfo {
 export interface Event {
   type: string;
   widgetId: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
+}
+
+// Type for gRPC event stream data
+interface GrpcEvent {
+  type: string;
+  widgetId: string;
+  data?: Record<string, unknown>;
+}
+
+// Type for the gRPC client methods
+interface GrpcClient {
+  [methodName: string]: Function;
+  subscribeEvents: (
+    request: { eventTypes: string[] },
+    metadata: grpc.Metadata
+  ) => grpc.ClientReadableStream<GrpcEvent>;
 }
 
 /**
@@ -27,16 +43,17 @@ export interface Event {
  */
 export class GrpcBridgeConnection implements BridgeInterface {
   private process: ChildProcess;
-  private client: any;
-  private eventHandlers = new Map<string, (data: any) => void>();
+  private client?: GrpcClient;
+  private eventHandlers = new Map<string, (data: Record<string, unknown>) => void>();
   private readyPromise: Promise<void>;
   private readyResolve?: () => void;
   private connectionInfo?: GrpcConnectionInfo;
-  private eventStream?: grpc.ClientReadableStream<any>;
+  private eventStream?: grpc.ClientReadableStream<GrpcEvent>;
+  private authToken?: string;
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
-    const isPkg = typeof (process as any).pkg !== 'undefined';
+    const isPkg = typeof (process as unknown as { pkg?: unknown }).pkg !== 'undefined';
 
     let bridgePath: string;
     if (isPkg) {
@@ -115,7 +132,14 @@ export class GrpcBridgeConnection implements BridgeInterface {
       oneofs: true
     });
 
-    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as any;
+    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as {
+      bridge: {
+        BridgeService: new (
+          address: string,
+          credentials: grpc.ChannelCredentials
+        ) => GrpcClient;
+      };
+    };
     const BridgeService = protoDescriptor.bridge.BridgeService;
 
     // Create client with insecure credentials
@@ -126,7 +150,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
     );
 
     // Store token for use in calls
-    (this as any).authToken = info.token;
+    this.authToken = info.token;
 
     // Subscribe to events
     this.subscribeToEvents();
@@ -138,18 +162,18 @@ export class GrpcBridgeConnection implements BridgeInterface {
   }
 
   private subscribeToEvents(): void {
-    if (!this.client) return;
+    if (!this.client || !this.authToken) return;
 
     const request = { eventTypes: [] }; // Subscribe to all events
 
     // Create metadata with auth token
     const metadata = new grpc.Metadata();
-    metadata.add('authorization', (this as any).authToken);
+    metadata.add('authorization', this.authToken);
 
     const stream = this.client.subscribeEvents(request, metadata);
     this.eventStream = stream;
 
-    stream.on('data', (event: any) => {
+    stream.on('data', (event: GrpcEvent) => {
       this.handleEvent({
         type: event.type,
         widgetId: event.widgetId,
@@ -171,7 +195,8 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
   private handleEvent(event: Event): void {
     if (event.type === 'callback' && event.data?.callbackId) {
-      const handler = this.eventHandlers.get(event.data.callbackId);
+      const callbackId = String(event.data.callbackId);
+      const handler = this.eventHandlers.get(callbackId);
       if (handler) {
         handler(event.data);
       }
@@ -180,7 +205,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
       const handler = this.eventHandlers.get(handlerKey) || this.eventHandlers.get(event.type);
 
       if (handler) {
-        const eventData = { ...event.data };
+        const eventData: Record<string, unknown> = { ...(event.data || {}) };
         if (event.widgetId) {
           eventData.widgetId = event.widgetId;
         }
@@ -196,10 +221,10 @@ export class GrpcBridgeConnection implements BridgeInterface {
   /**
    * Send a message via gRPC - maps message types to gRPC methods
    */
-  async send(type: string, payload: Record<string, any>): Promise<any> {
+  async send(type: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     await this.readyPromise;
 
-    if (!this.client) {
+    if (!this.client || !this.authToken) {
       throw new Error('gRPC client not connected');
     }
 
@@ -207,7 +232,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
       // Map message type to gRPC method and request
       const { method, request } = this.mapMessageToGrpc(type, payload);
 
-      if (!method) {
+      if (!method || !request) {
         // Fall back - this message type isn't implemented in gRPC yet
         console.warn(`gRPC method not implemented for: ${type}`);
         resolve({});
@@ -216,14 +241,22 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
       // Create metadata with auth token
       const metadata = new grpc.Metadata();
-      metadata.add('authorization', (this as any).authToken);
+      if (this.authToken) {
+        metadata.add('authorization', this.authToken);
+      }
 
-      this.client[method](request, metadata, (err: Error | null, response: any) => {
+      const methodFn = this.client![method];
+      if (typeof methodFn !== 'function') {
+        reject(new Error(`Method ${method} not found on client`));
+        return;
+      }
+
+      methodFn(request, metadata, (err: Error | null, response: Record<string, unknown>) => {
         if (err) {
           reject(err);
         } else {
           if (response && !response.success && response.error) {
-            reject(new Error(response.error));
+            reject(new Error(String(response.error)));
           } else {
             // Return the relevant response fields based on response type
             // For responses with specific fields (widgetIds, text, etc.) return those directly
@@ -250,7 +283,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
                 height: response.height
               });
             } else {
-              resolve(response?.result || {});
+              resolve((response as { result?: Record<string, unknown> })?.result || {});
             }
           }
         }
@@ -261,7 +294,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
   /**
    * Maps JSON-RPC message types to gRPC method calls
    */
-  private mapMessageToGrpc(type: string, payload: Record<string, any>): { method: string | null; request: any } {
+  private mapMessageToGrpc(type: string, payload: Record<string, unknown>): { method: string | null; request: Record<string, unknown> | null } {
     switch (type) {
       // Window operations
       case 'createWindow':
@@ -382,7 +415,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
           }
         };
       case 'createImage':
-        const imgRequest: any = {
+        const imgRequest: Record<string, unknown> = {
           widgetId: payload.widgetId || payload.id,
           width: payload.width || 0,
           height: payload.height || 0,
@@ -392,7 +425,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
         };
         if (payload.resource) {
           imgRequest.resourceName = payload.resource;
-        } else if (payload.source) {
+        } else if (payload.source && typeof payload.source === 'string') {
           // Handle base64 inline data
           if (payload.source.startsWith('data:')) {
             const base64Data = payload.source.split(',')[1];
@@ -407,7 +440,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
           method: 'registerResource',
           request: {
             name: payload.name,
-            data: Buffer.from(payload.data, 'base64')
+            data: Buffer.from(String(payload.data), 'base64')
           }
         };
       case 'unregisterResource':
@@ -478,10 +511,10 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
       // Update image
       case 'updateImage':
-        const updateRequest: any = { widgetId: payload.widgetId };
+        const updateRequest: Record<string, unknown> = { widgetId: payload.widgetId };
         if (payload.resource) {
           updateRequest.resourceName = payload.resource;
-        } else if (payload.source) {
+        } else if (payload.source && typeof payload.source === 'string') {
           if (payload.source.startsWith('data:')) {
             const base64Data = payload.source.split(',')[1];
             updateRequest.inlineData = Buffer.from(base64Data, 'base64');
@@ -495,19 +528,19 @@ export class GrpcBridgeConnection implements BridgeInterface {
     }
   }
 
-  registerEventHandler(callbackId: string, handler: (data: any) => void): void {
+  registerEventHandler(callbackId: string, handler: (data: Record<string, unknown>) => void): void {
     this.eventHandlers.set(callbackId, handler);
   }
 
-  on(eventType: string, handler: (data: any) => void): void {
+  on(eventType: string, handler: (data: Record<string, unknown>) => void): void {
     this.eventHandlers.set(eventType, handler);
   }
 
-  off(eventType: string, handler?: (data: any) => void): void {
+  off(eventType: string, handler?: (data: Record<string, unknown>) => void): void {
     this.eventHandlers.delete(eventType);
   }
 
-  async registerCustomId(widgetId: string, customId: string): Promise<any> {
+  async registerCustomId(widgetId: string, customId: string): Promise<Record<string, unknown>> {
     return this.send('registerCustomId', { widgetId, customId });
   }
 
@@ -517,7 +550,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
     return '';
   }
 
-  async clickToolbarAction(toolbarId: string, actionLabel: string): Promise<any> {
+  async clickToolbarAction(toolbarId: string, actionLabel: string): Promise<Record<string, unknown>> {
     // Not implemented in gRPC proto yet
     console.warn('clickToolbarAction not implemented in gRPC mode');
     return {};
@@ -543,7 +576,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
     // Close gRPC client
     if (this.client) {
-      grpc.closeClient(this.client);
+      grpc.closeClient(this.client as unknown as grpc.Client);
     }
 
     // Clear handlers

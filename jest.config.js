@@ -41,6 +41,16 @@ module.exports = {
     '!**/node_modules/**',
     '!**/*.test.ts'
   ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+  coverageThresholds: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50
+    }
+  },
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
