@@ -189,6 +189,29 @@ func (b *Bridge) handleCreateList(msg Message) {
 		}
 	}
 
+	// Handle unselection callback if provided
+	if onUnselectedCallbackID, ok := msg.Payload["onUnselectedCallbackId"].(string); ok {
+		list.OnUnselected = func(itemID widget.ListItemID) {
+			b.mu.RLock()
+			listData := b.listData[id]
+			b.mu.RUnlock()
+
+			var unselectedItem string
+			if itemID < len(listData) {
+				unselectedItem = listData[itemID]
+			}
+
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onUnselectedCallbackID,
+					"index":      itemID,
+					"item":       unselectedItem,
+				},
+			})
+		}
+	}
+
 	b.mu.Lock()
 	b.widgets[id] = list
 	b.widgetMeta[id] = WidgetMetadata{

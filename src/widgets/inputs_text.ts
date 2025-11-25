@@ -59,7 +59,8 @@ export class Entry extends Widget {
     onSubmit?: (text: string) => void,
     minWidth?: number,
     onDoubleClick?: () => void,
-    onChange?: (text: string) => void
+    onChange?: (text: string) => void,
+    onCursorChanged?: () => void
   ) {
     const id = ctx.generateId('entry');
     super(ctx, id);
@@ -89,6 +90,14 @@ export class Entry extends Widget {
       ctx.bridge.registerEventHandler(onChangeCallbackId, (data: unknown) => {
         const eventData = data as { text: string };
         onChange(eventData.text);
+      });
+    }
+
+    if (onCursorChanged) {
+      const cursorChangedCallbackId = ctx.generateId('callback');
+      payload.onCursorChangedCallbackId = cursorChangedCallbackId;
+      ctx.bridge.registerEventHandler(cursorChangedCallbackId, () => {
+        onCursorChanged();
       });
     }
 

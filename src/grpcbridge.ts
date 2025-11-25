@@ -587,10 +587,11 @@ export class GrpcBridgeConnection implements BridgeInterface {
       this.process.stdin.write('shutdown\n');
     }
 
-    // Kill process if still alive
+    // Kill process if still alive (SIGTERM first)
+    // The TsyneTest.cleanup() method handles SIGKILL escalation if needed
     if (this.process && !this.process.killed) {
       try {
-        this.process.kill();
+        this.process.kill('SIGTERM');
       } catch (err) {
         // Process might already be dead
       }

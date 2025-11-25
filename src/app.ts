@@ -51,6 +51,7 @@ import {
   Padded,
   Scroll,
   Split,
+  Stack,
   VBox,
   // Containers - Organizational
   Accordion,
@@ -239,6 +240,16 @@ export class App {
   }
 
   /**
+   * Create a stack container that stacks children on top of each other.
+   * Useful for creating overlapping UI elements.
+   * @param builder - Function to create child widgets
+   * @returns Stack container
+   */
+  stack(builder: () => void): Stack {
+    return new Stack(this.ctx, builder);
+  }
+
+  /**
    * Create a clickable button.
    * @param text - Button label
    * @param onClick - Click handler
@@ -281,9 +292,10 @@ export class App {
     onSubmit?: (text: string) => void,
     minWidth?: number,
     onDoubleClick?: () => void,
-    onChange?: (text: string) => void
+    onChange?: (text: string) => void,
+    onCursorChanged?: () => void
   ): Entry {
-    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange);
+    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged);
   }
 
   /**
@@ -338,8 +350,13 @@ export class App {
    * @param onChanged - Handler called when checkbox state changes
    * @returns Checkbox widget
    */
-  checkbox(text: string, onChanged?: (checked: boolean) => void): Checkbox {
-    return new Checkbox(this.ctx, text, onChanged);
+  checkbox(
+    text: string,
+    onChanged?: (checked: boolean) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
+  ): Checkbox {
+    return new Checkbox(this.ctx, text, onChanged, onFocus, onBlur);
   }
 
   /**
@@ -348,8 +365,13 @@ export class App {
    * @param onSelected - Handler called when selection changes
    * @returns Select widget
    */
-  select(options: string[], onSelected?: (selected: string) => void): Select {
-    return new Select(this.ctx, options, onSelected);
+  select(
+    options: string[],
+    onSelected?: (selected: string) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
+  ): Select {
+    return new Select(this.ctx, options, onSelected, onFocus, onBlur);
   }
 
   selectentry(
@@ -366,9 +388,11 @@ export class App {
     min: number,
     max: number,
     initialValue?: number,
-    onChanged?: (value: number) => void
+    onChanged?: (value: number) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
   ): Slider {
-    return new Slider(this.ctx, min, max, initialValue, onChanged);
+    return new Slider(this.ctx, min, max, initialValue, onChanged, onFocus, onBlur);
   }
 
   progressbar(initialValue?: number, infinite?: boolean): ProgressBar {
@@ -394,9 +418,10 @@ export class App {
   radiogroup(
     options: string[],
     initialSelected?: string,
-    onSelected?: (selected: string) => void
+    onSelected?: (selected: string) => void,
+    horizontal?: boolean
   ): RadioGroup {
-    return new RadioGroup(this.ctx, options, initialSelected, onSelected);
+    return new RadioGroup(this.ctx, options, initialSelected, onSelected, horizontal);
   }
 
   checkgroup(
@@ -460,8 +485,12 @@ export class App {
     return new Table(this.ctx, headers, data);
   }
 
-  list(items: string[], onSelected?: (index: number, item: string) => void): List {
-    return new List(this.ctx, items, onSelected);
+  list(
+    items: string[],
+    onSelected?: (index: number, item: string) => void,
+    onUnselected?: (index: number, item: string) => void
+  ): List {
+    return new List(this.ctx, items, onSelected, onUnselected);
   }
 
   center(builder: () => void): Center {

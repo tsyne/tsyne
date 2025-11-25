@@ -28,6 +28,12 @@ export class TsyneTest {
    * Returns a promise that resolves when the bridge is ready
    */
   async createApp(appBuilder: (app: App) => void): Promise<App> {
+    // Clean up any existing app before creating a new one
+    // This prevents process leaks when tests call createApp multiple times
+    if (this.app) {
+      await this.cleanup();
+    }
+
     const testMode = !this.options.headed;
     this.app = new App({}, testMode);
 
@@ -68,7 +74,7 @@ export class TsyneTest {
    */
   async cleanup(): Promise<void> {
     if (this.app) {
-      const bridge = this.app.getBridge();
+      const bridge = this.app.getBridge() as any;
 
       // Graceful quit first (triggers shutdown via timeout)
       try {
@@ -80,9 +86,9 @@ export class TsyneTest {
       // Wait for pending requests to complete before shutdown
       // This prevents "Bridge shutting down" errors from pending polling operations
       try {
-        const pendingCount = (bridge as any).pendingRequests?.size || 0;
+        const pendingCount = bridge.pendingRequests?.size || 0;
         if (pendingCount > 0) {
-          const completed = await (bridge as any).waitForPendingRequests?.(2000);
+          const completed = await bridge.waitForPendingRequests?.(2000);
           if (!completed) {
             // Still have pending requests after wait - this is expected in some cases
             // They will be rejected with "Bridge shutting down" but marked as shutdown errors
@@ -92,17 +98,50 @@ export class TsyneTest {
         // If waitForPendingRequests doesn't exist or fails, continue anyway
       }
 
-      // Immediately call shutdown to clean up all resources
+      // Call shutdown to clean up all resources
       // This removes event listeners, clears handlers, and kills the process
-      // This ensures Node.js event loop can exit properly
       try {
-        (bridge as any).shutdown?.();
+        bridge.shutdown?.();
       } catch (err) {
         // Shutdown may fail, that's OK
       }
 
-      // Brief wait to ensure process has exited
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Wait for the process to actually exit (with timeout)
+      // This is critical for headed mode where Fyne/OpenGL needs time to clean up
+      const process = bridge.process;
+      if (process && !process.killed) {
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => {
+            // Process didn't exit gracefully, force kill with SIGKILL
+            try {
+              if (!process.killed) {
+                process.kill('SIGKILL');
+              }
+            } catch (err) {
+              // Process may already be dead
+            }
+            resolve();
+          }, 2000); // 2 second timeout for graceful exit
+
+          process.once('exit', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+
+          // Check if already exited
+          if (process.exitCode !== null || process.killed) {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      }
+
+      // Brief additional wait for OS-level resource cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Clear references to allow garbage collection
+      this.app = null;
+      this.testContext = null;
     }
   }
 

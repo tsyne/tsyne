@@ -10,6 +10,7 @@ export {
   ModelBoundList,
   VBox,
   HBox,
+  Stack,
   Scroll,
   Grid,
   Split,

@@ -10,7 +10,9 @@ export class Slider extends Widget {
     min: number,
     max: number,
     initialValue?: number,
-    onChanged?: (value: number) => void
+    onChanged?: (value: number) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
   ) {
     const id = ctx.generateId('slider');
     super(ctx, id);
@@ -24,8 +26,25 @@ export class Slider extends Widget {
     if (onChanged) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
-        onChanged(data.value);
+      ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        const eventData = data as { value: number };
+        onChanged(eventData.value);
+      });
+    }
+
+    if (onFocus) {
+      const focusCallbackId = ctx.generateId('callback');
+      payload.onFocusCallbackId = focusCallbackId;
+      ctx.bridge.registerEventHandler(focusCallbackId, () => {
+        onFocus();
+      });
+    }
+
+    if (onBlur) {
+      const blurCallbackId = ctx.generateId('callback');
+      payload.onBlurCallbackId = blurCallbackId;
+      ctx.bridge.registerEventHandler(blurCallbackId, () => {
+        onBlur();
       });
     }
 

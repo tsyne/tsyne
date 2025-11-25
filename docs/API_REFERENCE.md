@@ -73,6 +73,10 @@ app({ title: "My App" }, (app) => {
 
 - **`vbox(builder)`**: Vertical box layout
 - **`hbox(builder)`**: Horizontal box layout
+- **`stack(builder)`**: Stack layout - layers widgets on top of each other for overlapping elements
+  - `builder`: Function that defines stacked children (first child is bottom layer, last child is top layer)
+  - Use cases: image overlays, loading indicators over content, watermarks, badges
+  - Example: `stack(() => { rectangle('#blue'); center(() => label('Overlay Text')); })`
 - **`grid(columns, builder)`**: Grid layout with specified number of columns
   - `columns`: Number of columns in the grid
   - `builder`: Function that defines grid children
@@ -139,8 +143,14 @@ app({ title: "My App" }, (app) => {
 - **`label(text)`**: Create a label
   - `text`: Label text
 
-- **`entry(placeholder?)`**: Create a text input
+- **`entry(placeholder?, onSubmit?, minWidth?, onDoubleClick?, onChange?, onCursorChanged?)`**: Create a text input
   - `placeholder`: Placeholder text (optional)
+  - `onSubmit`: Callback when Enter is pressed (optional) - receives text as parameter
+  - `minWidth`: Minimum width in pixels (optional)
+  - `onDoubleClick`: Callback when double-clicked (optional)
+  - `onChange`: Callback when text changes (optional) - receives text as parameter
+  - `onCursorChanged`: Callback when cursor position changes (optional) - useful for cursor tracking
+  - Methods: `setText(text: string)`, `getText(): Promise<string>`
 
 - **`multilineentry(placeholder?, wrapping?)`**: Create a multi-line text input
   - `placeholder`: Placeholder text (optional)
@@ -155,28 +165,35 @@ app({ title: "My App" }, (app) => {
 
 ### Input Widgets
 
-- **`checkbox(text, onChanged?)`**: Create a checkbox
+- **`checkbox(text, onChanged?, onFocus?, onBlur?)`**: Create a checkbox
   - `text`: Checkbox label
   - `onChanged`: Callback when checked state changes (optional)
+  - `onFocus`: Callback when checkbox gains focus (optional)
+  - `onBlur`: Callback when checkbox loses focus (optional)
   - Methods: `setChecked(checked: boolean)`, `getChecked(): Promise<boolean>`
 
-- **`select(options, onSelected?)`**: Create a dropdown select
+- **`select(options, onSelected?, onFocus?, onBlur?)`**: Create a dropdown select
   - `options`: Array of string options
   - `onSelected`: Callback when selection changes (optional)
-  - Methods: `setSelected(value: string)`, `getSelected(): Promise<string>`
+  - `onFocus`: Callback when select gains focus (optional)
+  - `onBlur`: Callback when select loses focus (optional)
+  - Methods: `setSelected(value: string)`, `getSelected(): Promise<string>`, `setOptions(options: string[]): Promise<void>`
 
-- **`slider(min, max, initialValue?, onChanged?)`**: Create a slider
+- **`slider(min, max, initialValue?, onChanged?, onFocus?, onBlur?)`**: Create a slider
   - `min`: Minimum value
   - `max`: Maximum value
   - `initialValue`: Starting value (optional)
   - `onChanged`: Callback when value changes (optional)
+  - `onFocus`: Callback when slider gains focus (optional)
+  - `onBlur`: Callback when slider loses focus (optional)
   - Methods: `setValue(value: number)`, `getValue(): Promise<number>`
 
-- **`radiogroup(options, initialSelected?, onSelected?)`**: Create a radio button group
+- **`radiogroup(options, initialSelected?, onSelected?, horizontal?)`**: Create a radio button group
   - `options`: Array of string options
   - `initialSelected`: Initially selected option (optional)
   - `onSelected`: Callback when selection changes (optional)
-  - Methods: `setSelected(value: string)`, `getSelected(): Promise<string>`
+  - `horizontal`: Display options horizontally instead of vertically (optional, default false)
+  - Methods: `setSelected(value: string)`, `getSelected(): Promise<string>`, `setOptions(options: string[]): Promise<void>`
 
 ### Display Widgets
 
@@ -220,11 +237,12 @@ app({ title: "My App" }, (app) => {
   - Methods: `updateData(data: string[][])` - Update table contents
   - Example: `table(['Name', 'Age', 'City'], [['John', '30', 'NYC'], ['Jane', '25', 'LA']])`
 
-- **`list(items, onSelected?)`**: Create a scrollable list
+- **`list(items, onSelected?, onUnselected?)`**: Create a scrollable list
   - `items`: Array of string items to display
   - `onSelected`: Callback when an item is selected (optional) - receives (index: number, item: string)
-  - Methods: `updateItems(items: string[])` - Update list contents
-  - Example: `list(['Item 1', 'Item 2', 'Item 3'], (index, item) => console.log(item))`
+  - `onUnselected`: Callback when an item is deselected (optional) - receives (index: number, item: string)
+  - Methods: `updateItems(items: string[])`, `unselectAll(): Promise<void>`
+  - Example: `list(['Item 1', 'Item 2', 'Item 3'], (index, item) => console.log('Selected:', item), (index, item) => console.log('Unselected:', item))`
 
 ### Specialized Widgets
 

@@ -203,7 +203,7 @@ The Context:
 ### Widget Categories
 
 **Containers:**
-- `vbox`, `hbox`, `scroll`, `grid`, `center`, `border`, `gridwrap`, `split`, `tabs`, `card`, `accordion`, `form`
+- `vbox`, `hbox`, `stack`, `scroll`, `grid`, `center`, `border`, `gridwrap`, `split`, `tabs`, `card`, `accordion`, `form`
 
 **Inputs:**
 - `button`, `entry`, `multilineentry`, `passwordentry`, `checkbox`, `select`, `radiogroup`, `slider`
@@ -243,27 +243,57 @@ const text = await lbl.getText(); // 'Updated text'
 
 **Entry (Text Input):**
 ```typescript
-const entry = a.entry('Enter name...', async (text) => {
-  console.log('Submitted:', text);
-}, 300); // width
+const entry = a.entry(
+  'Enter name...',
+  async (text) => console.log('Submitted:', text),
+  300, // width
+  undefined, // onDoubleClick
+  (text) => console.log('Changed:', text),
+  () => console.log('Cursor moved')
+);
 
 const text = await entry.getText();
 await entry.setText('John Doe');
 ```
 
+**Entry events:**
+- `onSubmit` - Enter key pressed
+- `onChange` - Text content changed
+- `onDoubleClick` - Double-clicked
+- `onCursorChanged` - Cursor position changed (arrow keys, mouse clicks)
+
 **Checkbox:**
 ```typescript
-const cb = a.checkbox('Accept terms', (checked) => {
-  console.log('Checked:', checked);
-});
+const cb = a.checkbox(
+  'Accept terms',
+  (checked) => console.log('Checked:', checked),
+  () => console.log('Focused'),
+  () => console.log('Blurred')
+);
 ```
+
+**Checkbox events:**
+- `onChanged` - Checked state changed
+- `onFocus` - Widget gained focus
+- `onBlur` - Widget lost focus
 
 **Select (Dropdown):**
 ```typescript
-const sel = a.select(['Option 1', 'Option 2'], (selected) => {
-  console.log('Selected:', selected);
-});
+const sel = a.select(
+  ['Option 1', 'Option 2'],
+  (selected) => console.log('Selected:', selected),
+  () => console.log('Focused'),
+  () => console.log('Blurred')
+);
+
+// Dynamic option updates
+await sel.setOptions(['New Option 1', 'New Option 2']);
 ```
+
+**Select events:**
+- `onSelected` - Selection changed
+- `onFocus` - Widget gained focus
+- `onBlur` - Widget lost focus
 
 ---
 
@@ -288,6 +318,27 @@ a.hbox(() => {
   a.button('Right');
 });
 ```
+
+### Stack Container
+
+```typescript
+a.stack(() => {
+  // Background layer (bottom)
+  a.rectangle('#3498db', 400, 100);
+
+  // Text overlay (top)
+  a.center(() => {
+    a.label('Overlaid Text');
+  });
+});
+```
+
+**Use cases:**
+- Image overlays with text
+- Loading indicators over content
+- Watermarks
+- Picture-in-picture displays
+- Badge indicators
 
 ### Grid Layout
 
@@ -788,18 +839,69 @@ label.getText(): Promise<string>
 app.button(text: string, onClick?: () => void): Button
 
 // Entry
-app.entry(placeholder?: string, onSubmit?: (text: string) => void, width?: number): Entry
+app.entry(
+  placeholder?: string,
+  onSubmit?: (text: string) => void,
+  width?: number,
+  onDoubleClick?: () => void,
+  onChange?: (text: string) => void,
+  onCursorChanged?: () => void
+): Entry
 entry.setText(text: string): Promise<void>
 entry.getText(): Promise<string>
 
 // Checkbox
-app.checkbox(label: string, onChange?: (checked: boolean) => void): Checkbox
+app.checkbox(
+  label: string,
+  onChange?: (checked: boolean) => void,
+  onFocus?: () => void,
+  onBlur?: () => void
+): Checkbox
+checkbox.setChecked(checked: boolean): Promise<void>
+checkbox.getChecked(): Promise<boolean>
 
 // Select
-app.select(options: string[], onSelected?: (value: string) => void): Select
+app.select(
+  options: string[],
+  onSelected?: (value: string) => void,
+  onFocus?: () => void,
+  onBlur?: () => void
+): Select
+select.setSelected(value: string): Promise<void>
+select.getSelected(): Promise<string>
+select.setOptions(options: string[]): Promise<void>
 
 // Slider
-app.slider(min: number, max: number, initial: number, onChange?: (value: number) => void): Slider
+app.slider(
+  min: number,
+  max: number,
+  initial: number,
+  onChange?: (value: number) => void,
+  onFocus?: () => void,
+  onBlur?: () => void
+): Slider
+slider.setValue(value: number): Promise<void>
+slider.getValue(): Promise<number>
+
+// RadioGroup
+app.radiogroup(
+  options: string[],
+  initialSelected?: string,
+  onSelected?: (selected: string) => void,
+  horizontal?: boolean
+): RadioGroup
+radiogroup.setSelected(value: string): Promise<void>
+radiogroup.getSelected(): Promise<string>
+radiogroup.setOptions(options: string[]): Promise<void>
+
+// List
+app.list(
+  items: string[],
+  onSelected?: (index: number, item: string) => void,
+  onUnselected?: (index: number, item: string) => void
+): List
+list.updateItems(items: string[]): Promise<void>
+list.unselectAll(): Promise<void>
 ```
 
 ### Containers
@@ -810,6 +912,9 @@ app.vbox(builder: () => void): VBox
 
 // HBox
 app.hbox(builder: () => void): HBox
+
+// Stack - overlapping widgets
+app.stack(builder: () => void): Stack
 
 // Grid
 app.grid(columns: number, builder: () => void): Grid

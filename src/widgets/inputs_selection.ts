@@ -5,7 +5,13 @@ import { Widget } from './base';
  * Checkbox widget
  */
 export class Checkbox extends Widget {
-  constructor(ctx: Context, text: string, onChanged?: (checked: boolean) => void) {
+  constructor(
+    ctx: Context,
+    text: string,
+    onChanged?: (checked: boolean) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
+  ) {
     const id = ctx.generateId('checkbox');
     super(ctx, id);
 
@@ -14,8 +20,25 @@ export class Checkbox extends Widget {
     if (onChanged) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
-        onChanged(data.checked);
+      ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        const eventData = data as { checked: boolean };
+        onChanged(eventData.checked);
+      });
+    }
+
+    if (onFocus) {
+      const focusCallbackId = ctx.generateId('callback');
+      payload.onFocusCallbackId = focusCallbackId;
+      ctx.bridge.registerEventHandler(focusCallbackId, () => {
+        onFocus();
+      });
+    }
+
+    if (onBlur) {
+      const blurCallbackId = ctx.generateId('callback');
+      payload.onBlurCallbackId = blurCallbackId;
+      ctx.bridge.registerEventHandler(blurCallbackId, () => {
+        onBlur();
       });
     }
 
@@ -42,7 +65,13 @@ export class Checkbox extends Widget {
  * Select (dropdown) widget
  */
 export class Select extends Widget {
-  constructor(ctx: Context, options: string[], onSelected?: (selected: string) => void) {
+  constructor(
+    ctx: Context,
+    options: string[],
+    onSelected?: (selected: string) => void,
+    onFocus?: () => void,
+    onBlur?: () => void
+  ) {
     const id = ctx.generateId('select');
     super(ctx, id);
 
@@ -53,6 +82,22 @@ export class Select extends Widget {
       payload.callbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         onSelected(data.selected);
+      });
+    }
+
+    if (onFocus) {
+      const focusCallbackId = ctx.generateId('callback');
+      payload.onFocusCallbackId = focusCallbackId;
+      ctx.bridge.registerEventHandler(focusCallbackId, () => {
+        onFocus();
+      });
+    }
+
+    if (onBlur) {
+      const blurCallbackId = ctx.generateId('callback');
+      payload.onBlurCallbackId = blurCallbackId;
+      ctx.bridge.registerEventHandler(blurCallbackId, () => {
+        onBlur();
       });
     }
 
@@ -167,7 +212,13 @@ export class SelectEntry extends Widget {
  * RadioGroup widget
  */
 export class RadioGroup extends Widget {
-  constructor(ctx: Context, options: string[], initialSelected?: string, onSelected?: (selected: string) => void) {
+  constructor(
+    ctx: Context,
+    options: string[],
+    initialSelected?: string,
+    onSelected?: (selected: string) => void,
+    horizontal?: boolean
+  ) {
     const id = ctx.generateId('radiogroup');
     super(ctx, id);
 
@@ -183,6 +234,10 @@ export class RadioGroup extends Widget {
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         onSelected(data.selected);
       });
+    }
+
+    if (horizontal !== undefined) {
+      payload.horizontal = horizontal;
     }
 
     ctx.bridge.send('createRadioGroup', payload);

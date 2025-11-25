@@ -95,6 +95,18 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 		}
 	}
 
+	// Set onCursorChanged callback if provided (triggered on cursor position change)
+	if onCursorChangedCallbackID, ok := msg.Payload["onCursorChangedCallbackId"].(string); ok {
+		entry.OnCursorChanged = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onCursorChangedCallbackID,
+				},
+			})
+		}
+	}
+
 	// Set minimum width if provided
 	var widgetToStore fyne.CanvasObject = entry
 	var needsEntryRef bool = false
@@ -220,6 +232,30 @@ func (b *Bridge) handleCreateCheckbox(msg Message) {
 		}
 	})
 
+	// Set focus gained callback if provided
+	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
+		check.OnFocusGained = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onFocusCallbackID,
+				},
+			})
+		}
+	}
+
+	// Set focus lost callback if provided
+	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
+		check.OnFocusLost = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onBlurCallbackID,
+				},
+			})
+		}
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = check
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "checkbox", Text: text}
@@ -255,6 +291,30 @@ func (b *Bridge) handleCreateSelect(msg Message) {
 			})
 		}
 	})
+
+	// Set focus gained callback if provided
+	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
+		sel.OnFocusGained = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onFocusCallbackID,
+				},
+			})
+		}
+	}
+
+	// Set focus lost callback if provided
+	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
+		sel.OnFocusLost = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onBlurCallbackID,
+				},
+			})
+		}
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = sel
@@ -370,6 +430,30 @@ func (b *Bridge) handleCreateSlider(msg Message) {
 		}
 	}
 
+	// Set focus gained callback if provided
+	if onFocusCallbackID, ok := msg.Payload["onFocusCallbackId"].(string); ok {
+		slider.OnFocusGained = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onFocusCallbackID,
+				},
+			})
+		}
+	}
+
+	// Set focus lost callback if provided
+	if onBlurCallbackID, ok := msg.Payload["onBlurCallbackId"].(string); ok {
+		slider.OnFocusLost = func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onBlurCallbackID,
+				},
+			})
+		}
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = slider
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "slider", Text: ""}
@@ -414,6 +498,11 @@ func (b *Bridge) handleCreateRadioGroup(msg Message) {
 			})
 		}
 	})
+
+	// Set horizontal property if provided
+	if horizontal, ok := msg.Payload["horizontal"].(bool); ok {
+		radio.Horizontal = horizontal
+	}
 
 	// Set initial selection if provided
 	if initialSelected, ok := msg.Payload["selected"].(string); ok {

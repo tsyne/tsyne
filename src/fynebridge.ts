@@ -303,6 +303,7 @@ export class BridgeConnection implements BridgeInterface {
   /**
    * Forcefully shutdown the bridge and clean up all resources
    * This removes all event listeners, clears handlers, and kills the process
+   * Note: This sends SIGTERM. For SIGKILL fallback, use the cleanup() method in TsyneTest.
    */
   shutdown(): void {
     // Clear the timeout if it's still pending
@@ -330,10 +331,11 @@ export class BridgeConnection implements BridgeInterface {
     // Clear the buffer
     this.buffer = Buffer.alloc(0);
 
-    // Kill the process if still alive
+    // Kill the process if still alive (SIGTERM first)
+    // The TsyneTest.cleanup() method handles SIGKILL escalation if needed
     if (this.process && !this.process.killed) {
       try {
-        this.process.kill();
+        this.process.kill('SIGTERM');
       } catch (err) {
         // Process might already be dead
       }

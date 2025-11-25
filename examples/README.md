@@ -154,21 +154,22 @@ Individual examples showcasing specific widgets.
 
 ### Layout Containers
 
-| Example | Widgets Demonstrated |
-|---------|---------------------|
-| [**hbox-example.ts**](hbox-example.ts) | HBox horizontal layout |
-| [**grid.ts**](grid.ts) | Grid layout for calculator-style UIs |
-| [**grid-example.ts**](grid-example.ts) | Additional grid examples |
-| [**scroll.ts**](scroll.ts) | Scrollable containers |
-| [**split.ts**](split.ts) | Split panes |
-| [**tabs.ts**](tabs.ts) | Tabbed containers |
-| [**form.ts**](form.ts) | Form layout |
-| [**form-styled.ts**](form-styled.ts) | Styled form layouts |
-| [**form-unstyled.ts**](form-unstyled.ts) | Unstyled form layouts |
-| [**padded-demo.ts**](padded-demo.ts) | Padded container with spacing |
-| [**clip-demo.ts**](clip-demo.ts) | Clipped container demo |
-| [**card-stack.ts**](card-stack.ts) | Stacked card layout |
-| [**spacer-demo.ts**](spacer-demo.ts) | Spacer widget for flexible layout spacing |
+| Example | Widgets Demonstrated | Screenshot |
+|---------|---------------------|------------|
+| [**hbox-example.ts**](hbox-example.ts) | HBox horizontal layout | |
+| [**grid.ts**](grid.ts) | Grid layout for calculator-style UIs | |
+| [**grid-example.ts**](grid-example.ts) | Additional grid examples | |
+| [**scroll.ts**](scroll.ts) | Scrollable containers | |
+| [**split.ts**](split.ts) | Split panes | |
+| [**tabs.ts**](tabs.ts) | Tabbed containers | |
+| [**form.ts**](form.ts) | Form layout | |
+| [**form-styled.ts**](form-styled.ts) | Styled form layouts | |
+| [**form-unstyled.ts**](form-unstyled.ts) | Unstyled form layouts | |
+| [**padded-demo.ts**](padded-demo.ts) | Padded container with spacing | |
+| [**clip-demo.ts**](clip-demo.ts) | Clipped container demo | |
+| [**card-stack.ts**](card-stack.ts) | Stacked card layout | |
+| [**stack-demo.ts**](stack-demo.ts) | Stack container - overlapping widgets for rich UI effects | [📷](screenshots/stack-demo.png) |
+| [**spacer-demo.ts**](spacer-demo.ts) | Spacer widget for flexible layout spacing | |
 
 ### Input Widgets
 
@@ -177,8 +178,11 @@ Individual examples showcasing specific widgets.
 | [**counter.ts**](counter.ts) | Button clicks, label updates | [📷](screenshots/counter.png) |
 | [**checkbox.ts**](checkbox.ts) | Checkbox state management | [📷](screenshots/checkbox.png) |
 | [**radiogroup.ts**](radiogroup.ts) | Radio button groups | [📷](screenshots/radiogroup.png) |
+| [**radiogroup-horizontal-demo.ts**](radiogroup-horizontal-demo.ts) | RadioGroup horizontal layout for compact forms | [📷](screenshots/radiogroup-horizontal-demo.png) |
 | [**slider.ts**](slider.ts) | Slider value changes | [📷](screenshots/slider.png) |
 | [**select.ts**](select.ts) | Dropdown selection | [📷](screenshots/select.png) |
+| [**entry-cursor-demo.ts**](entry-cursor-demo.ts) | Entry OnCursorChanged event for cursor tracking | [📷](screenshots/entry-cursor-demo.png) |
+| [**focus-events-demo.ts**](focus-events-demo.ts) | OnFocus/OnBlur events for Checkbox, Slider, Select | [📷](screenshots/focus-events-demo.png) |
 | [**input-widgets.ts**](input-widgets.ts) | Various input widgets | |
 
 ### Display Widgets
@@ -187,6 +191,7 @@ Individual examples showcasing specific widgets.
 |---------|---------------------|------------|
 | [**hello.ts**](hello.ts) | Basic label with styling | [📷](screenshots/hello.png) |
 | [**list.ts**](list.ts) | List widget with selection | |
+| [**list-features-demo.ts**](list-features-demo.ts) | List OnUnselected event and unselectAll() method | [📷](screenshots/list-features-demo.png) |
 | [**table.ts**](table.ts) | Table widget with rows/columns | |
 | [**progressbar.ts**](progressbar.ts) | Progress bar updates | |
 | [**loading-states.ts**](loading-states.ts) | Loading indicators and states | |

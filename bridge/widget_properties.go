@@ -790,6 +790,40 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 	}
 }
 
+func (b *Bridge) handleUnselectAllList(msg Message) {
+	id := msg.Payload["id"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[id]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "List not found",
+		})
+		return
+	}
+
+	if list, ok := obj.(*widget.List); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			list.UnselectAll()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a list",
+		})
+	}
+}
+
 func (b *Bridge) handleUpdateImage(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 

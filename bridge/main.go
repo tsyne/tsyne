@@ -50,6 +50,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateVBox(msg)
 	case "createHBox":
 		b.handleCreateHBox(msg)
+	case "createStack":
+		b.handleCreateStack(msg)
 	case "createCheckbox":
 		b.handleCreateCheckbox(msg)
 	case "createSelect":
@@ -252,6 +254,8 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleUpdateTableData(msg)
 	case "updateListData":
 		b.handleUpdateListData(msg)
+	case "unselectAllList":
+		b.handleUnselectAllList(msg)
 	case "getTableData":
 		b.handleGetTableData(msg)
 	case "getListData":

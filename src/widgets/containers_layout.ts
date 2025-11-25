@@ -2,6 +2,33 @@ import { Context } from '../context';
 import { AccessibilityOptions } from './base';
 
 /**
+ * Stack container - stacks widgets on top of each other
+ * Useful for creating overlapping UI elements
+ */
+export class Stack {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('stack');
+
+    // Push a new container context
+    ctx.pushContainer();
+
+    // Execute the builder function to collect children
+    builder();
+
+    // Pop the container and get the children
+    const children = ctx.popContainer();
+
+    // Create the Stack with the children
+    ctx.bridge.send('createStack', { id: this.id, children });
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
  * Scroll container
  */
 export class Scroll {

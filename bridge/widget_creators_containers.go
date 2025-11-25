@@ -72,6 +72,35 @@ func (b *Bridge) handleCreateHBox(msg Message) {
 	})
 }
 
+func (b *Bridge) handleCreateStack(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	childIDs, _ := msg.Payload["children"].([]interface{})
+
+	var children []fyne.CanvasObject
+	b.mu.RLock()
+	for _, childID := range childIDs {
+		if child, exists := b.widgets[childID.(string)]; exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	stack := container.NewStack(children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = stack
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
 func (b *Bridge) handleCreateScroll(msg Message) {
 	widgetID := msg.Payload["id"].(string)
 	contentID := msg.Payload["contentId"].(string)

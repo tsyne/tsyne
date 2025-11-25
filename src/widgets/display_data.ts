@@ -101,7 +101,12 @@ export class List {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, items: string[], onSelected?: (index: number, item: string) => void) {
+  constructor(
+    ctx: Context,
+    items: string[],
+    onSelected?: (index: number, item: string) => void,
+    onUnselected?: (index: number, item: string) => void
+  ) {
     this.ctx = ctx;
     this.id = ctx.generateId('list');
 
@@ -118,6 +123,14 @@ export class List {
       });
     }
 
+    if (onUnselected) {
+      const unselectedCallbackId = ctx.generateId('callback');
+      payload.onUnselectedCallbackId = unselectedCallbackId;
+      ctx.bridge.registerEventHandler(unselectedCallbackId, (data: any) => {
+        onUnselected(data.index, data.item);
+      });
+    }
+
     ctx.bridge.send('createList', payload);
     ctx.addToCurrentContainer(this.id);
   }
@@ -126,6 +139,12 @@ export class List {
     await this.ctx.bridge.send('updateListData', {
       id: this.id,
       items
+    });
+  }
+
+  async unselectAll(): Promise<void> {
+    await this.ctx.bridge.send('unselectAllList', {
+      id: this.id
     });
   }
 }
