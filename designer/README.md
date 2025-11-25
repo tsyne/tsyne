@@ -15,6 +15,10 @@ A 100% self-contained WYSIWYG visual editor for Tsyne applications. Available as
 - **TypeScript Linting** - Validates code quality on load and save
 - **MVC Architecture** - Proper model-view-controller separation (no databinding)
 
+## Screenshot
+
+TODO
+
 ## Architecture
 
 This designer is a complete sub-project with:
