@@ -73,6 +73,17 @@ export class Select extends Widget {
     }) as { selected: string };
     return result.selected;
   }
+
+  /**
+   * Update the dropdown options
+   * @param options - New array of option strings
+   */
+  async setOptions(options: string[]): Promise<void> {
+    await this.ctx.bridge.send('setSelectOptions', {
+      widgetId: this.id,
+      options
+    });
+  }
 }
 
 /**
@@ -190,6 +201,17 @@ export class RadioGroup extends Widget {
       widgetId: this.id
     }) as { selected: string };
     return result.selected;
+  }
+
+  /**
+   * Update the radio group options
+   * @param options - New array of option strings
+   */
+  async setOptions(options: string[]): Promise<void> {
+    await this.ctx.bridge.send('setRadioOptions', {
+      widgetId: this.id,
+      options
+    });
   }
 }
 

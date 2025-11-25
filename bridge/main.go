@@ -160,6 +160,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleSetSelected(msg)
 	case "getSelected":
 		b.handleGetSelected(msg)
+	case "setSelectOptions":
+		b.handleSetSelectOptions(msg)
+	case "setRadioOptions":
+		b.handleSetRadioOptions(msg)
 	case "setValue":
 		b.handleSetValue(msg)
 	case "getValue":

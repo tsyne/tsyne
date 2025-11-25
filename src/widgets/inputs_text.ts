@@ -53,7 +53,14 @@ export class Button extends Widget {
  * Entry (text input) widget
  */
 export class Entry extends Widget {
-  constructor(ctx: Context, placeholder?: string, onSubmit?: (text: string) => void, minWidth?: number, onDoubleClick?: () => void) {
+  constructor(
+    ctx: Context,
+    placeholder?: string,
+    onSubmit?: (text: string) => void,
+    minWidth?: number,
+    onDoubleClick?: () => void,
+    onChange?: (text: string) => void
+  ) {
     const id = ctx.generateId('entry');
     super(ctx, id);
 
@@ -62,8 +69,9 @@ export class Entry extends Widget {
     if (onSubmit) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
-        onSubmit(data.text);
+      ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        const eventData = data as { text: string };
+        onSubmit(eventData.text);
       });
     }
 
@@ -72,6 +80,15 @@ export class Entry extends Widget {
       payload.doubleClickCallbackId = doubleClickCallbackId;
       ctx.bridge.registerEventHandler(doubleClickCallbackId, () => {
         onDoubleClick();
+      });
+    }
+
+    if (onChange) {
+      const onChangeCallbackId = ctx.generateId('callback');
+      payload.onChangeCallbackId = onChangeCallbackId;
+      ctx.bridge.registerEventHandler(onChangeCallbackId, (data: unknown) => {
+        const eventData = data as { text: string };
+        onChange(eventData.text);
       });
     }
 

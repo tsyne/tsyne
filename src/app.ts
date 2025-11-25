@@ -280,9 +280,10 @@ export class App {
     placeholder?: string,
     onSubmit?: (text: string) => void,
     minWidth?: number,
-    onDoubleClick?: () => void
+    onDoubleClick?: () => void,
+    onChange?: (text: string) => void
   ): Entry {
-    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick);
+    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange);
   }
 
   /**

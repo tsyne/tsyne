@@ -429,6 +429,90 @@ func (b *Bridge) handleSetSelected(msg Message) {
 	}
 }
 
+func (b *Bridge) handleSetSelectOptions(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	optionsInterface := msg.Payload["options"].([]interface{})
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, v := range optionsInterface {
+		options[i] = v.(string)
+	}
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if sel, ok := obj.(*widget.Select); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			sel.Options = options
+			sel.Refresh()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a select",
+		})
+	}
+}
+
+func (b *Bridge) handleSetRadioOptions(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+	optionsInterface := msg.Payload["options"].([]interface{})
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, v := range optionsInterface {
+		options[i] = v.(string)
+	}
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		})
+		return
+	}
+
+	if radio, ok := obj.(*widget.RadioGroup); ok {
+		// UI updates must happen on the main thread
+		fyne.DoAndWait(func() {
+			radio.Options = options
+			radio.Refresh()
+		})
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: true,
+		})
+	} else {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a radio group",
+		})
+	}
+}
+
 func (b *Bridge) handleGetRadioSelected(msg Message) {
 	widgetID := msg.Payload["widgetId"].(string)
 

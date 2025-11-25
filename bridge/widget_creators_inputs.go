@@ -82,6 +82,19 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 		}
 	}
 
+	// Set onChange callback if provided (triggered on every text change)
+	if onChangeCallbackID, ok := msg.Payload["onChangeCallbackId"].(string); ok {
+		entry.OnChanged = func(text string) {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": onChangeCallbackID,
+					"text":       text,
+				},
+			})
+		}
+	}
+
 	// Set minimum width if provided
 	var widgetToStore fyne.CanvasObject = entry
 	var needsEntryRef bool = false
