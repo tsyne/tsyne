@@ -5,8 +5,7 @@
  * different value ranges and use cases.
  */
 
-import { app, window, vbox, hbox, label, slider, button } from '../src';
-import { screenshotIfRequested } from './screenshot-helper';
+import { app, window, vbox, hbox, label, slider, button, screenshotIfRequested } from '../src';
 
 let volumeSlider: any;
 let brightnessSlider: any;

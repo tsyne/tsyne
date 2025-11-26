@@ -4,8 +4,7 @@
  * Demonstrates the checkbox widget with state tracking and interaction.
  */
 
-import { app, window, vbox, hbox, label, checkbox, button } from '../src';
-import { screenshotIfRequested } from './screenshot-helper';
+import { app, window, vbox, hbox, label, checkbox, button, screenshotIfRequested } from '../src';
 
 let termsCheckbox: any;
 let newsletterCheckbox: any;

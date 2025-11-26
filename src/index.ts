@@ -882,3 +882,6 @@ export {
   TsyneStorage,
 } from './globals';
 export type { TsyneLocation, TsyneHistory, TsyneNavigator } from './globals';
+
+// Export screenshot helper (useful for demos and testing)
+export { screenshotIfRequested } from './screenshot-helper';

@@ -2,7 +2,7 @@
  * Screenshot helper for demo scripts
  *
  * Usage in demo scripts:
- *   import { screenshotIfRequested } from './screenshot-helper';
+ *   import { screenshotIfRequested } from '../src';
  *
  *   window({ title: "My App" }, (win) => {
  *     // ... build UI ...

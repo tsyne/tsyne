@@ -761,6 +761,11 @@ const designer = {
 
   toolbarAction(label: string, onAction: () => void) {
     return { label, onAction, type: 'action' };
+  },
+
+  // Screenshot helper - no-op in designer mode
+  screenshotIfRequested(win: any, delay?: number) {
+    // Designer doesn't take screenshots, this is a no-op
   }
 };
 

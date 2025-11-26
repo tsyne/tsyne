@@ -5,8 +5,7 @@
  * and dynamic interaction.
  */
 
-import { app, window, vbox, hbox, label, select, button } from '../src';
-import { screenshotIfRequested } from './screenshot-helper';
+import { app, window, vbox, hbox, label, select, button, screenshotIfRequested } from '../src';
 
 let colorSelect: any;
 let sizeSelect: any;

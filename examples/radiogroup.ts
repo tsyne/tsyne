@@ -5,8 +5,7 @@
  * from a list of mutually exclusive choices.
  */
 
-import { app, window, vbox, hbox, label, button, radiogroup } from '../src';
-import { screenshotIfRequested } from './screenshot-helper';
+import { app, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested } from '../src';
 
 let themeRadio: any;
 let languageRadio: any;

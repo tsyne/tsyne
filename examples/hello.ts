@@ -1,5 +1,4 @@
-import { app, window, vbox, button, label, styles } from '../src';
-import { screenshotIfRequested } from './screenshot-helper';
+import { app, window, vbox, button, label, styles, screenshotIfRequested } from '../src';
 
 // CSS Classes for styling widgets
 styles({
