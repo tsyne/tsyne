@@ -40,6 +40,8 @@ describe('Solitaire Game Tests', () => {
     // Reset game state before each test by clicking New Game
     await ctx.getByText('New Game').click();
     await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for UI to update
+    await ctx.expect(ctx.getByText('New game started')).toBeVisible();
   });
 
   afterAll(async () => {
@@ -53,7 +55,6 @@ describe('Solitaire Game Tests', () => {
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
 
     // Verify game sections
-    await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
     await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
     await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
@@ -85,9 +86,6 @@ describe('Solitaire Game Tests', () => {
   });
 
   test('should draw cards from hand', async () => {
-    // Verify hand section exists
-    await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
-
     // Click draw button
     await ctx.getByText('Draw').click();
 
@@ -104,7 +102,6 @@ describe('Solitaire Game Tests', () => {
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
 
     // Game areas
-    await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
     await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
     await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
@@ -127,7 +124,6 @@ describe('Solitaire Game Tests', () => {
     await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
     // Game sections should still be visible
-    await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
     await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
   });
 

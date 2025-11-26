@@ -251,7 +251,8 @@ export class GrpcBridgeConnection implements BridgeInterface {
         return;
       }
 
-      methodFn(request, metadata, (err: Error | null, response: Record<string, unknown>) => {
+      // Bind method to client to preserve 'this' context
+      methodFn.call(this.client, request, metadata, (err: Error | null, response: Record<string, unknown>) => {
         if (err) {
           reject(err);
         } else {

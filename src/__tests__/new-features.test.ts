@@ -121,7 +121,7 @@ describe('New Features', () => {
       await testApp.run();
 
       // Click the button to show the dialog
-      const button = await ctx.getByRole('button');
+      const button = ctx.getByText('Show Dialog');
       await button.click();
 
       // Wait for dialog to show and hide

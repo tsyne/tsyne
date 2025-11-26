@@ -140,7 +140,7 @@ class FylesUI {
               } catch (err) {
                 console.error('Navigate to dir failed:', err);
               }
-            });
+            }).withId(`nav-folder-${dir.fullName}`);
           });
         } else {
           this.app.label('(no subdirectories)');
@@ -183,9 +183,10 @@ class FylesUI {
       this.app.label(icon);
 
       // File name as button (clickable)
+      const itemType = item.isDirectory ? 'folder' : 'file';
       this.app.button(item.fullName, async () => {
         await this.handleItemClick(item);
-      });
+      }).withId(`grid-${itemType}-${item.fullName}`);
 
       // Add size info for files
       if (!item.isDirectory && item.size !== undefined) {

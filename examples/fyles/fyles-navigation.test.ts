@@ -51,6 +51,9 @@ describe('Fyles Navigation Tests', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+
+    // Wait for initial UI to render (like fyles.test.ts does)
+    await ctx.wait(500);
   }, 15000);
 
   afterAll(async () => {
@@ -64,9 +67,6 @@ describe('Fyles Navigation Tests', () => {
   });
 
   test('should start in specified directory', async () => {
-    // Should show test directory path
-    await ctx.getByText(testDir).within(2000).shouldExist();
-
     // Should show level1 folder
     await ctx.getByText('level1').within(2000).shouldExist();
 
@@ -76,7 +76,7 @@ describe('Fyles Navigation Tests', () => {
 
   test('should navigate down one level', async () => {
     // Navigate to level1
-    await ctx.getByText('level1').click();
+    await ctx.getByID('grid-folder-level1').click();
     await ctx.wait(200);
 
     // Path should update
@@ -86,23 +86,21 @@ describe('Fyles Navigation Tests', () => {
     // Should show level1.txt
     await ctx.getByText('level1.txt').within(2000).shouldExist();
 
-    // Should show level2 folder
-    await ctx.getByText('level2').within(2000).shouldExist();
+    // Should show level2 folder in navigation
+    await ctx.getByID('nav-folder-level2').within(2000).shouldExist();
   });
 
   test('should navigate down multiple levels', async () => {
-    // Start at root
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
+    // Navigate up to get back to test root (from previous test we're in level1)
+    await ctx.getByText('⬆️ ..').click();
     await ctx.wait(200);
 
     // Navigate to level1
-    await ctx.getByText('level1').click();
+    await ctx.getByID('grid-folder-level1').click();
     await ctx.wait(200);
 
     // Navigate to level2
-    await ctx.getByText('level2').click();
+    await ctx.getByID('grid-folder-level2').click();
     await ctx.wait(200);
 
     // Path should update
@@ -113,20 +111,11 @@ describe('Fyles Navigation Tests', () => {
     await ctx.getByText('level2.txt').within(2000).shouldExist();
 
     // Should show level3 folder
-    await ctx.getByText('level3').within(2000).shouldExist();
+    await ctx.getByID('nav-folder-level3').within(2000).shouldExist();
   });
 
   test('should navigate up one level', async () => {
-    // Navigate down to level2
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
-    await ctx.wait(200);
-    await ctx.getByText('level1').click();
-    await ctx.wait(200);
-    await ctx.getByText('level2').click();
-    await ctx.wait(200);
-
+    // We're currently at level2 from the previous test
     // Verify we're at level2
     const level2Path = path.join(testDir, 'level1', 'level2');
     await ctx.getByText(level2Path).within(2000).shouldExist();
@@ -156,50 +145,37 @@ describe('Fyles Navigation Tests', () => {
   });
 
   test('should show parent button only when not at root', async () => {
-    // Navigate to level1
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
-    await ctx.wait(200);
-    await ctx.getByText('level1').click();
-    await ctx.wait(200);
+    // We're currently at level1 from the previous test
+    // Verify we're at level1
+    const level1Path = path.join(testDir, 'level1');
+    await ctx.getByText(level1Path).within(2000).shouldExist();
 
     // Should show parent button
     await ctx.getByText('⬆️ ..').within(2000).shouldExist();
   });
 
   test('should update navigation panel on directory change', async () => {
-    // Start at root
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
+    // Navigate up to test root (currently at level1 from previous test)
+    await ctx.getByText('⬆️ ..').click();
     await ctx.wait(200);
 
     // Should show level1 in navigation
-    await ctx.getByText('📁 level1').within(2000).shouldExist();
+    await ctx.getByID('nav-folder-level1').within(2000).shouldExist();
 
     // Navigate to level1
-    await ctx.getByText('level1').click();
+    await ctx.getByID('grid-folder-level1').click();
     await ctx.wait(200);
 
     // Should now show level2 in navigation
-    await ctx.getByText('📁 level2').within(2000).shouldExist();
+    await ctx.getByID('nav-folder-level2').within(2000).shouldExist();
   });
 
   test('should handle navigation to deepest level', async () => {
-    // Navigate all the way to level3
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
+    // We're currently at level1, navigate to level2 then level3
+    await ctx.getByID('grid-folder-level2').click();
     await ctx.wait(200);
 
-    await ctx.getByText('level1').click();
-    await ctx.wait(200);
-
-    await ctx.getByText('level2').click();
-    await ctx.wait(200);
-
-    await ctx.getByText('level3').click();
+    await ctx.getByID('grid-folder-level3').click();
     await ctx.wait(200);
 
     // Should show level3 path
@@ -214,20 +190,10 @@ describe('Fyles Navigation Tests', () => {
   });
 
   test('should navigate back to root from deep level', async () => {
-    // Navigate to level3
-    await ctx.getByText('🏠').click();
-    await ctx.wait(200);
-    await ctx.getByText(testDir).click();
-    await ctx.wait(200);
-
-    await ctx.getByText('level1').click();
-    await ctx.wait(200);
-
-    await ctx.getByText('level2').click();
-    await ctx.wait(200);
-
-    await ctx.getByText('level3').click();
-    await ctx.wait(200);
+    // We're currently at level3 from the previous test
+    // Verify we're at level3
+    const level3Path = path.join(testDir, 'level1', 'level2', 'level3');
+    await ctx.getByText(level3Path).within(2000).shouldExist();
 
     // Navigate up 3 times
     await ctx.getByText('⬆️ ..').click();

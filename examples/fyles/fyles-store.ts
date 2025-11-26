@@ -26,7 +26,8 @@ export class FylesStore {
   constructor(initialDir?: string) {
     this.homeDir = os.homedir();
     this.currentDir = initialDir || this.homeDir;
-    this.loadDirectory(this.currentDir);
+    // Use synchronous load for constructor to avoid race condition with UI
+    this.loadDirectorySync(this.currentDir);
   }
 
   // ========================================
@@ -193,16 +194,28 @@ export class FylesStore {
   // ========================================
 
   /**
-   * Load directory contents
+   * Load directory contents synchronously (for constructor)
+   * Prevents race condition where UI builds before directory loads
+   */
+  private loadDirectorySync(dirPath: string): void {
+    try {
+      const dirents = fs.readdirSync(dirPath, { withFileTypes: true });
+      const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
+      this.items = sortFileItems(items);
+    } catch (err) {
+      console.error(`Failed to load directory ${dirPath}:`, err);
+      this.items = [];
+      throw err;
+    }
+  }
+
+  /**
+   * Load directory contents (async for navigation)
    */
   private async loadDirectory(dirPath: string): Promise<void> {
     try {
       const dirents = await fs.promises.readdir(dirPath, { withFileTypes: true });
-
-      // Convert to FileItems
       const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
-
-      // Sort (directories first, then alphabetically)
       this.items = sortFileItems(items);
     } catch (err) {
       console.error(`Failed to load directory ${dirPath}:`, err);

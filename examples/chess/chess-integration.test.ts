@@ -20,7 +20,7 @@ describe('Chess Integration Tests', () => {
     tsyneTest = new TsyneTest({ headed });
 
     const testApp = await tsyneTest.createApp((app) => {
-      chessUI = createChessApp(app);
+      chessUI = createChessApp(app, 10); // 10ms AI delay for fast tests
     });
 
     ctx = tsyneTest.getContext();
@@ -68,8 +68,8 @@ describe('Chess Integration Tests', () => {
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
 
-    // Verify UI is visible
-    await ctx.expect(ctx.getByText('New Game')).toBeVisible();
+    // Verify UI is visible - status label shows game state
+    await ctx.expect(ctx.getByText('White to move')).toBeVisible();
     expect(true).toBe(true);
   }, 25000);
 });

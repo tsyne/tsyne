@@ -20,10 +20,10 @@ export class Stack {
     builder();
 
     // Pop the container and get the children
-    const children = ctx.popContainer();
+    const childIds = ctx.popContainer();
 
     // Create the Stack with the children
-    ctx.bridge.send('createStack', { id: this.id, children });
+    ctx.bridge.send('createStack', { id: this.id, childIds });
     ctx.addToCurrentContainer(this.id);
   }
 }
