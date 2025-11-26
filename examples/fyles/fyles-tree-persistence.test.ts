@@ -297,6 +297,80 @@ describe('Fyles Tree Expansion Persistence (Unit Tests)', () => {
   });
 });
 
+describe('Fyles Multi-Panel State (Unit Tests)', () => {
+  let testDir1: string;
+  let testDir2: string;
+
+  beforeEach(() => {
+    testDir1 = fs.mkdtempSync(path.join(os.tmpdir(), 'fyles-multi-unit1-'));
+    testDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'fyles-multi-unit2-'));
+
+    fs.mkdirSync(path.join(testDir1, 'folder1'));
+    fs.mkdirSync(path.join(testDir2, 'folder2'));
+  });
+
+  afterEach(() => {
+    try {
+      fs.rmSync(testDir1, { recursive: true, force: true });
+      fs.rmSync(testDir2, { recursive: true, force: true });
+    } catch (err) {
+      console.error('Failed to clean up:', err);
+    }
+  });
+
+  describe('Independent Panel State', () => {
+    test('should create stores with different state files', () => {
+      const stateFile1 = path.join(testDir1, 'state1.json');
+      const stateFile2 = path.join(testDir2, 'state2.json');
+
+      const store1 = new FylesStore(testDir1, stateFile1);
+      const store2 = new FylesStore(testDir2, stateFile2);
+
+      expect(store1.getCurrentDir()).toBe(testDir1);
+      expect(store2.getCurrentDir()).toBe(testDir2);
+      expect(store1.getStateFilePath()).toBe(stateFile1);
+      expect(store2.getStateFilePath()).toBe(stateFile2);
+    });
+
+    test('should maintain independent expanded state', async () => {
+      const stateFile1 = path.join(testDir1, 'state1.json');
+      const stateFile2 = path.join(testDir2, 'state2.json');
+
+      const store1 = new FylesStore(testDir1, stateFile1);
+      const store2 = new FylesStore(testDir2, stateFile2);
+
+      const folder1Path = path.join(testDir1, 'folder1');
+      const folder2Path = path.join(testDir2, 'folder2');
+
+      await store1.expandDir(folder1Path);
+
+      expect(store1.isExpanded(folder1Path)).toBe(true);
+      expect(store2.isExpanded(folder2Path)).toBe(false);
+    });
+
+    test('should persist state independently', async () => {
+      const stateFile1 = path.join(testDir1, 'state1.json');
+      const stateFile2 = path.join(testDir2, 'state2.json');
+
+      // Create and modify first store
+      const store1 = new FylesStore(testDir1, stateFile1);
+      await store1.toggleShowHidden();
+
+      // Create and modify second store differently
+      const store2 = new FylesStore(testDir2, stateFile2);
+      await store2.expandDir(path.join(testDir2, 'folder2'));
+
+      // Recreate stores from persisted state
+      const store1Restored = new FylesStore(testDir1, stateFile1);
+      const store2Restored = new FylesStore(testDir2, stateFile2);
+
+      expect(store1Restored.isShowingHidden()).toBe(true);
+      expect(store2Restored.isShowingHidden()).toBe(false);
+      expect(store2Restored.isExpanded(path.join(testDir2, 'folder2'))).toBe(true);
+    });
+  });
+});
+
 describe('Fyles File Operations (Unit Tests)', () => {
   let testDir: string;
   let stateFile: string;

@@ -18,6 +18,8 @@ A simple file browser application ported from [FyshOS/fyles](https://github.com/
 - **New Folder Dialog**: Create folders via dialog prompt
 - **Clipboard Integration**: Copy file and folder paths to clipboard
 - **Drag-and-Drop**: Drag files and folders to move them into other folders
+- **Multi-Panel View**: Open multiple panels side-by-side for easy file operations
+- **Cross-Panel Operations**: Drag files from one panel to another
 
 ## Architecture
 
@@ -34,6 +36,7 @@ examples/fyles/
 ├── fyles.test.ts                    # UI integration tests
 ├── fyles-navigation.test.ts         # Navigation tests
 ├── fyles-tree-persistence.test.ts   # Tree expansion & persistence tests
+├── fyles-multipanel.test.ts         # Multi-panel integration tests
 └── README.md                        # This file
 ```
 
@@ -47,9 +50,11 @@ examples/fyles/
 - Persists state to `~/.tsyne/fyles-state.json`
 
 **View (fyles.ts)**
-- `FylesUI` class - Builds and manages the UI
-- Three main sections:
-  - Toolbar (top): Home, New Folder, Toggle Hidden, Current Path
+- `FylesMultiPanel` class - Manages multiple panels using hsplit
+- `FylesPanel` class - Builds and manages a single panel
+- `FylesUI` class - Backwards-compatible single-panel wrapper
+- Three main sections per panel:
+  - Toolbar (top): Home, New Folder, Toggle Hidden, Split (⊞), Close (✕), Current Path
   - Navigation Panel (left): Parent folder, expandable tree of subdirectories
   - File Grid (center): Files and folders as clickable items
 
@@ -57,26 +62,32 @@ examples/fyles/
 - Event handlers for user interactions
 - Subscribes to store changes and rebuilds UI
 - Handles navigation, file operations, dialogs
+- Multi-panel coordination (split, close, cross-panel operations)
 
 ### Widget Hierarchy
 
 ```
 Window
-└── Border
-    ├── Top: Toolbar (HBox)
-    │   ├── Home Button (🏠)
-    │   ├── New Folder Button (📁+)
-    │   ├── Toggle Hidden Button (👁️)
-    │   └── Current Path (Scrollable Label)
+└── HSplit (for multiple panels)
+    ├── Panel 1 (Border)
+    │   ├── Top: Toolbar (HBox)
+    │   │   ├── Home Button (🏠)
+    │   │   ├── New Folder Button (📁+)
+    │   │   ├── Toggle Hidden Button (👁️)
+    │   │   ├── Split Button (⊞)
+    │   │   ├── Close Button (✕) - only with multiple panels
+    │   │   └── Current Path (Scrollable Label)
+    │   │
+    │   ├── Left: Navigation Panel (Scroll + VBox)
+    │   │   ├── Parent Button (⬆️ ..)
+    │   │   ├── Current Folder Label + Collapse All Button (⏫)
+    │   │   └── Tree Nodes (HBox: Expand Toggle + Folder Button)
+    │   │       └── Child Tree Nodes (recursive, indented)
+    │   │
+    │   └── Center: File Grid (Scroll + VBox)
+    │       └── File Items (HBox: Icon + Name + Size)
     │
-    ├── Left: Navigation Panel (Scroll + VBox)
-    │   ├── Parent Button (⬆️ ..)
-    │   ├── Current Folder Label + Collapse All Button (⏫)
-    │   └── Tree Nodes (HBox: Expand Toggle + Folder Button)
-    │       └── Child Tree Nodes (recursive, indented)
-    │
-    └── Center: File Grid (Scroll + GridWrap)
-        └── File Items (VBox: Icon + Name + Size)
+    └── Panel 2, 3, ... (same structure)
 ```
 
 ## Usage
@@ -92,7 +103,20 @@ npm start examples/fyles/fyles.ts
 
 # Run with specific directory
 npm start examples/fyles/fyles.ts /path/to/directory
+
+# Run with multiple panels (specify multiple directories)
+npm start examples/fyles/fyles.ts /path/one /path/two
+
+# Split into three panels
+npm start examples/fyles/fyles.ts ~/Documents ~/Downloads ~/Pictures
 ```
+
+### Multi-Panel Usage
+
+- Click the **Split button (⊞)** in any panel's toolbar to create a new panel
+- The new panel opens showing the same directory as the source panel
+- Click the **Close button (✕)** to close a panel (only visible with multiple panels)
+- **Drag files** from one panel and drop into folders in another panel
 
 ### Running Tests
 
@@ -118,7 +142,7 @@ This Tsyne port is a simplified version focusing on core functionality:
 ### Implemented Features
 ✅ Directory tree navigation
 ✅ File grid view with icons
-✅ Toolbar (home, new folder, current path)
+✅ Toolbar (home, new folder, split, close, current path)
 ✅ Hidden file filtering
 ✅ File/folder click to navigate/open
 ✅ Parent directory navigation
@@ -128,9 +152,10 @@ This Tsyne port is a simplified version focusing on core functionality:
 ✅ Clipboard support for copying file/folder paths
 ✅ Drag-and-drop file operations (move files by dragging to folders)
 ✅ Tree expansion state persistence (expand/collapse folders, survives restart)
+✅ Multi-panel view (multiple side-by-side panels with hsplit)
+✅ Cross-panel drag-and-drop (move files between panels)
 
 ### Simplified/Omitted Features
-❌ Multi-panel view (original supports multiple side-by-side panels)
 ❌ Custom URI schemes for favorites (tree:///)
 ❌ Fancy folder backgrounds (fancyfs metadata)
 ❌ "Open With" application picker (uses simple xdg-open)
@@ -163,6 +188,14 @@ The test suite demonstrates Tsyne's fluent testing style:
 - Corrupted/missing state file handling
 - Change notification on expansion changes
 - File move/copy operations
+- Multi-panel independent state
+
+**fyles-multipanel.test.ts** - Multi-panel integration tests
+- Two-panel initial layout
+- Split button functionality
+- Close button functionality
+- Independent panel navigation
+- Cross-panel file display
 
 ## Code Examples
 
@@ -170,11 +203,17 @@ The test suite demonstrates Tsyne's fluent testing style:
 
 ```typescript
 import { app } from '../../src';
-import { createFylesApp } from './fyles';
+import { createFylesApp, createMultiPanelFylesApp } from './fyles';
 import * as os from 'os';
 
+// Single panel
 app({ title: 'Fyles' }, (a) => {
   createFylesApp(a, os.homedir());
+});
+
+// Multiple panels
+app({ title: 'Fyles' }, (a) => {
+  createMultiPanelFylesApp(a, ['/path/one', '/path/two']);
 });
 ```
 

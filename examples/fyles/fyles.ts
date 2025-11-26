@@ -6,14 +6,16 @@
  * License: See original repository
  *
  * A simple file browser with:
+ * - Multi-panel view (multiple side-by-side file browsers)
  * - Directory navigation panel (left) with expandable tree view
  * - File grid view (right)
- * - Toolbar with home button, new folder, current path
+ * - Toolbar with home button, new folder, split panel, current path
  * - Hidden file filtering
  * - File/folder icons
  * - Right-click context menus (Open, Copy path)
  * - New folder creation dialog
  * - Drag-and-drop file operations (move files by dragging to folders)
+ * - Cross-panel drag-and-drop (drag from one panel, drop in another)
  * - Tree expansion state persistence (remembers expanded folders)
  *
  * Implementation notes:
@@ -21,6 +23,7 @@
  * - Only rebuilds when directory changes
  * - Updates path label directly when just toggling hidden files
  * - Persists state to ~/.tsyne/fyles-state.json
+ * - Multiple panels use hsplit for side-by-side layout
  */
 
 import { app } from '../../src';
@@ -33,21 +36,143 @@ import { FileItem, getFileIcon } from './file-item';
 import { openFile, getParentDir } from './file-utils';
 
 // ============================================================================
-// Fyles UI Class (MVC Controller/View)
+// Multi-Panel Manager
 // ============================================================================
 
-class FylesUI {
+/**
+ * Manages multiple file browser panels
+ */
+class FylesMultiPanel {
+  private panels: FylesPanel[] = [];
+  private app: App;
+  private window: Window | null = null;
+
+  constructor(app: App, initialDirs: string[]) {
+    this.app = app;
+
+    // Create initial panels
+    if (initialDirs.length === 0) {
+      initialDirs = [os.homedir()];
+    }
+
+    initialDirs.forEach((dir, index) => {
+      this.panels.push(new FylesPanel(app, dir, index, this));
+    });
+  }
+
+  /**
+   * Get the number of panels
+   */
+  getPanelCount(): number {
+    return this.panels.length;
+  }
+
+  /**
+   * Add a new panel (split)
+   */
+  addPanel(initialDir?: string): void {
+    const dir = initialDir || this.panels[this.panels.length - 1]?.getStore().getCurrentDir() || os.homedir();
+    const index = this.panels.length;
+    this.panels.push(new FylesPanel(this.app, dir, index, this));
+    this.rebuildUI();
+  }
+
+  /**
+   * Remove a panel by index
+   */
+  removePanel(index: number): void {
+    if (this.panels.length <= 1) {
+      console.log('Cannot remove the last panel');
+      return;
+    }
+    this.panels.splice(index, 1);
+    // Re-index remaining panels
+    this.panels.forEach((panel, i) => panel.setIndex(i));
+    this.rebuildUI();
+  }
+
+  /**
+   * Get the window reference
+   */
+  getWindow(): Window | null {
+    return this.window;
+  }
+
+  /**
+   * Build the main UI
+   */
+  buildUI(win: Window): void {
+    this.window = win;
+
+    // Set window reference on all panels
+    this.panels.forEach((panel) => panel.setWindow(win));
+
+    if (this.panels.length === 1) {
+      // Single panel - simple layout
+      this.panels[0].buildPanel();
+    } else {
+      // Multiple panels - use hsplit recursively
+      this.buildSplitPanels(0);
+    }
+  }
+
+  /**
+   * Build panels using nested hsplit
+   */
+  private buildSplitPanels(startIndex: number): void {
+    if (startIndex >= this.panels.length - 1) {
+      // Last panel
+      this.panels[startIndex].buildPanel();
+      return;
+    }
+
+    // Split: left panel + rest of panels
+    this.app.hsplit(
+      () => this.panels[startIndex].buildPanel(),
+      () => this.buildSplitPanels(startIndex + 1),
+      1.0 / (this.panels.length - startIndex) // Equal distribution
+    );
+  }
+
+  /**
+   * Request a UI rebuild from any panel
+   */
+  rebuildUI(): void {
+    if (!this.window) return;
+
+    this.window.setContent(() => {
+      this.buildUI(this.window!);
+    });
+  }
+}
+
+// ============================================================================
+// Single Panel Class (MVC Controller/View)
+// ============================================================================
+
+/**
+ * Represents a single file browser panel
+ */
+class FylesPanel {
   private store: FylesStore;
   private window: Window | null = null;
   private pathLabel: any = null;
   private app: App;
+  private panelIndex: number;
+  private multiPanelManager: FylesMultiPanel;
 
   // Track last directory to detect when we need a full rebuild
   private lastDirectory: string = '';
 
-  constructor(app: App, initialDir?: string) {
+  constructor(app: App, initialDir: string, index: number, manager: FylesMultiPanel) {
     this.app = app;
-    this.store = new FylesStore(initialDir);
+    this.panelIndex = index;
+    this.multiPanelManager = manager;
+    // Each panel gets its own state file to persist its state independently
+    const stateFile = index === 0
+      ? undefined  // Default state file for first panel
+      : path.join(os.homedir(), '.tsyne', `fyles-state-panel-${index}.json`);
+    this.store = new FylesStore(initialDir, stateFile);
     this.lastDirectory = this.store.getCurrentDir();
 
     // Subscribe to store changes → incremental updates
@@ -57,11 +182,30 @@ class FylesUI {
   }
 
   /**
-   * Build the main UI
+   * Get the store for this panel
    */
-  buildUI(win: Window): void {
-    this.window = win;
+  getStore(): FylesStore {
+    return this.store;
+  }
 
+  /**
+   * Set the panel index (used when panels are removed/reordered)
+   */
+  setIndex(index: number): void {
+    this.panelIndex = index;
+  }
+
+  /**
+   * Set the window reference
+   */
+  setWindow(win: Window): void {
+    this.window = win;
+  }
+
+  /**
+   * Build this panel's UI
+   */
+  buildPanel(): void {
     // Use vbox with border layout
     this.app.border({
       top: () => this.buildToolbar(),
@@ -71,7 +215,7 @@ class FylesUI {
   }
 
   /**
-   * Build toolbar (home button, new folder button, current path)
+   * Build toolbar (home button, new folder button, split, close, current path)
    */
   private buildToolbar(): void {
     this.app.hbox(() => {
@@ -82,7 +226,7 @@ class FylesUI {
         } catch (err) {
           console.error('Navigate home failed:', err);
         }
-      });
+      }).withId(`panel-${this.panelIndex}-home`);
 
       // New folder button
       this.app.button('📁+', async () => {
@@ -99,7 +243,7 @@ class FylesUI {
             await this.window.showError('Error', `Failed to create folder: ${err}`);
           }
         }
-      });
+      }).withId(`panel-${this.panelIndex}-newfolder`);
 
       // Toggle hidden files button
       this.app.button(
@@ -107,11 +251,24 @@ class FylesUI {
         async () => {
           await this.store.toggleShowHidden();
         }
-      );
+      ).withId(`panel-${this.panelIndex}-hidden`);
+
+      // Split panel button (add new panel)
+      this.app.button('⊞', () => {
+        this.multiPanelManager.addPanel(this.store.getCurrentDir());
+      }).withId(`panel-${this.panelIndex}-split`);
+
+      // Close panel button (only show if more than one panel)
+      if (this.multiPanelManager.getPanelCount() > 1) {
+        this.app.button('✕', () => {
+          this.multiPanelManager.removePanel(this.panelIndex);
+        }).withId(`panel-${this.panelIndex}-close`);
+      }
 
       // Current path (scrollable label) with context menu
       this.app.scroll(() => {
         this.pathLabel = this.app.label(this.store.getCurrentDir());
+        this.pathLabel.withId(`panel-${this.panelIndex}-path`);
         // Add right-click context menu to copy current directory path
         this.pathLabel.setContextMenu([
           {
@@ -191,7 +348,7 @@ class FylesUI {
       // Expand/collapse toggle button
       this.app.button(`${indent}${expandIcon}`, async () => {
         await this.store.toggleExpanded(dir.path);
-      }).withId(`expand-${dir.fullName}`);
+      }).withId(`panel-${this.panelIndex}-expand-${dir.fullName}`);
 
       // Folder button (navigate on click)
       const navButton = this.app.button(`📁 ${dir.fullName}`, async () => {
@@ -200,7 +357,7 @@ class FylesUI {
         } catch (err) {
           console.error('Navigate to dir failed:', err);
         }
-      }).withId(`nav-folder-${dir.fullName}`);
+      }).withId(`panel-${this.panelIndex}-nav-folder-${dir.fullName}`);
 
       // Make navigation folders droppable
       navButton.makeDroppable({
@@ -291,7 +448,7 @@ class FylesUI {
       const itemType = item.isDirectory ? 'folder' : 'file';
       const button = this.app.button(item.fullName, async () => {
         await this.handleItemClick(item);
-      }).withId(`grid-${itemType}-${item.fullName}`);
+      }).withId(`panel-${this.panelIndex}-grid-${itemType}-${item.fullName}`);
 
       // Make files and folders draggable (drag data is the file path)
       button.makeDraggable({
@@ -463,11 +620,27 @@ class FylesUI {
    * Only called when directory changes or files visibility changes
    */
   private rebuildUI(): void {
-    if (!this.window) return;
+    // Delegate to multi-panel manager for full rebuild
+    this.multiPanelManager.rebuildUI();
+  }
+}
 
-    this.window.setContent(() => {
-      this.buildUI(this.window!);
-    });
+// ============================================================================
+// Legacy Single Panel Class (for backwards compatibility)
+// ============================================================================
+
+/**
+ * Legacy FylesUI class for single-panel usage (backwards compatible)
+ */
+class FylesUI {
+  private multiPanel: FylesMultiPanel;
+
+  constructor(app: App, initialDir?: string) {
+    this.multiPanel = new FylesMultiPanel(app, initialDir ? [initialDir] : []);
+  }
+
+  buildUI(win: Window): void {
+    this.multiPanel.buildUI(win);
   }
 }
 
@@ -476,7 +649,7 @@ class FylesUI {
 // ============================================================================
 
 /**
- * Create and run the Fyles application
+ * Create and run the Fyles application with a single panel (backwards compatible)
  */
 export function createFylesApp(a: App, initialDir?: string): FylesUI {
   const ui = new FylesUI(a, initialDir);
@@ -490,12 +663,42 @@ export function createFylesApp(a: App, initialDir?: string): FylesUI {
 }
 
 /**
+ * Create and run the Fyles application with multiple panels
+ */
+export function createMultiPanelFylesApp(a: App, initialDirs: string[]): FylesMultiPanel {
+  const multiPanel = new FylesMultiPanel(a, initialDirs);
+
+  // Calculate window width based on number of panels
+  const panelWidth = 540;
+  const width = Math.min(15 + (panelWidth * Math.max(1, initialDirs.length)), 1920);
+
+  a.window({ title: 'Fyles - File Browser', width, height: 600 }, (win) => {
+    multiPanel.buildUI(win);
+    win.show();
+  });
+
+  return multiPanel;
+}
+
+/**
  * Standalone entry point
+ * Supports multiple directory arguments for multi-panel view:
+ *   fyles /path/one /path/two   - Opens two panels
  */
 if (require.main === module) {
   app({ title: 'Fyles' }, (a) => {
-    // Get initial directory from command line args or use home
-    const initialDir = process.argv[2] || os.homedir();
-    createFylesApp(a, initialDir);
+    // Get initial directories from command line args
+    const args = process.argv.slice(2);
+
+    if (args.length === 0) {
+      // No args - single panel with home directory
+      createFylesApp(a, os.homedir());
+    } else if (args.length === 1) {
+      // One arg - single panel with specified directory
+      createFylesApp(a, args[0]);
+    } else {
+      // Multiple args - multi-panel view
+      createMultiPanelFylesApp(a, args);
+    }
   });
 }
