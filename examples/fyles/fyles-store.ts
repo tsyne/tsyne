@@ -14,18 +14,43 @@ import { sortFileItems, getParentDir } from './file-utils';
 export type ChangeListener = () => void;
 
 /**
+ * Persisted state interface
+ */
+interface PersistedState {
+  expandedDirs: string[];
+  showHidden: boolean;
+  currentDir: string;
+  version: number;
+}
+
+/**
  * Observable file browser store
  */
 export class FylesStore {
-  private currentDir: string;
+  private currentDir: string = '';
   private items: FileItem[] = [];
   private showHidden: boolean = false;
   private changeListeners: ChangeListener[] = [];
   private homeDir: string;
+  private expandedDirs: Set<string> = new Set();
+  private stateFilePath: string;
+  private persistenceEnabled: boolean;
 
-  constructor(initialDir?: string) {
+  constructor(initialDir?: string, stateFilePath?: string) {
     this.homeDir = os.homedir();
-    this.currentDir = initialDir || this.homeDir;
+    this.currentDir = this.homeDir; // Set default before loadState
+    // Default state file location
+    this.stateFilePath = stateFilePath || path.join(os.homedir(), '.tsyne', 'fyles-state.json');
+    this.persistenceEnabled = stateFilePath !== null; // Disable if explicitly null
+
+    // Load persisted state (may update currentDir)
+    this.loadState();
+
+    // Override with initialDir if explicitly provided
+    if (initialDir) {
+      this.currentDir = initialDir;
+    }
+
     // Use synchronous load for constructor to avoid race condition with UI
     this.loadDirectorySync(this.currentDir);
   }
@@ -108,6 +133,37 @@ export class FylesStore {
     return getParentDir(this.currentDir) !== null;
   }
 
+  /**
+   * Check if a directory is expanded in tree view
+   */
+  isExpanded(dirPath: string): boolean {
+    return this.expandedDirs.has(dirPath);
+  }
+
+  /**
+   * Get all expanded directories
+   */
+  getExpandedDirs(): string[] {
+    return Array.from(this.expandedDirs);
+  }
+
+  /**
+   * Get subdirectories for a given path (for tree expansion)
+   */
+  getSubdirectories(dirPath: string): FileItem[] {
+    try {
+      const dirents = fs.readdirSync(dirPath, { withFileTypes: true });
+      const items = dirents
+        .filter((dirent) => dirent.isDirectory())
+        .map((dirent) => createFileItem(dirent, dirPath));
+      const sorted = sortFileItems(items);
+      return this.filterItems(sorted);
+    } catch (err) {
+      console.error(`Failed to get subdirectories of ${dirPath}:`, err);
+      return [];
+    }
+  }
+
   // ========================================
   // Navigation
   // ========================================
@@ -159,6 +215,51 @@ export class FylesStore {
    */
   async toggleShowHidden(): Promise<void> {
     this.showHidden = !this.showHidden;
+    this.saveState();
+    this.notifyChange();
+  }
+
+  /**
+   * Toggle expansion state of a directory in tree view
+   */
+  async toggleExpanded(dirPath: string): Promise<void> {
+    if (this.expandedDirs.has(dirPath)) {
+      this.expandedDirs.delete(dirPath);
+    } else {
+      this.expandedDirs.add(dirPath);
+    }
+    this.saveState();
+    this.notifyChange();
+  }
+
+  /**
+   * Expand a directory in tree view
+   */
+  async expandDir(dirPath: string): Promise<void> {
+    if (!this.expandedDirs.has(dirPath)) {
+      this.expandedDirs.add(dirPath);
+      this.saveState();
+      this.notifyChange();
+    }
+  }
+
+  /**
+   * Collapse a directory in tree view
+   */
+  async collapseDir(dirPath: string): Promise<void> {
+    if (this.expandedDirs.has(dirPath)) {
+      this.expandedDirs.delete(dirPath);
+      this.saveState();
+      this.notifyChange();
+    }
+  }
+
+  /**
+   * Collapse all expanded directories
+   */
+  async collapseAll(): Promise<void> {
+    this.expandedDirs.clear();
+    this.saveState();
     this.notifyChange();
   }
 
@@ -187,6 +288,156 @@ export class FylesStore {
   async refresh(): Promise<void> {
     await this.loadDirectory(this.currentDir);
     this.notifyChange();
+  }
+
+  /**
+   * Move a file or folder to a destination directory
+   */
+  async moveItem(sourcePath: string, destDir: string): Promise<void> {
+    const fileName = path.basename(sourcePath);
+    const destPath = path.join(destDir, fileName);
+
+    // Check if source exists
+    try {
+      await fs.promises.access(sourcePath);
+    } catch {
+      throw new Error(`Source does not exist: ${sourcePath}`);
+    }
+
+    // Check if destination already has a file with same name
+    try {
+      await fs.promises.access(destPath);
+      throw new Error(`Destination already exists: ${destPath}`);
+    } catch (err: any) {
+      // ENOENT is expected - destination doesn't exist yet
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+    }
+
+    // Perform the move
+    await fs.promises.rename(sourcePath, destPath);
+    await this.refresh();
+  }
+
+  /**
+   * Copy a file or folder to a destination directory
+   */
+  async copyItem(sourcePath: string, destDir: string): Promise<void> {
+    const fileName = path.basename(sourcePath);
+    const destPath = path.join(destDir, fileName);
+
+    // Check if source exists
+    const stats = await fs.promises.stat(sourcePath);
+
+    // Check if destination already has a file with same name
+    try {
+      await fs.promises.access(destPath);
+      throw new Error(`Destination already exists: ${destPath}`);
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+    }
+
+    // Perform the copy
+    if (stats.isDirectory()) {
+      await this.copyDirRecursive(sourcePath, destPath);
+    } else {
+      await fs.promises.copyFile(sourcePath, destPath);
+    }
+    await this.refresh();
+  }
+
+  /**
+   * Recursively copy a directory
+   */
+  private async copyDirRecursive(src: string, dest: string): Promise<void> {
+    await fs.promises.mkdir(dest, { recursive: true });
+    const entries = await fs.promises.readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        await this.copyDirRecursive(srcPath, destPath);
+      } else {
+        await fs.promises.copyFile(srcPath, destPath);
+      }
+    }
+  }
+
+  // ========================================
+  // Persistence
+  // ========================================
+
+  /**
+   * Save state to disk
+   */
+  private saveState(): void {
+    if (!this.persistenceEnabled) return;
+
+    try {
+      const dir = path.dirname(this.stateFilePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const state: PersistedState = {
+        expandedDirs: Array.from(this.expandedDirs),
+        showHidden: this.showHidden,
+        currentDir: this.currentDir,
+        version: 1,
+      };
+
+      fs.writeFileSync(this.stateFilePath, JSON.stringify(state, null, 2), 'utf8');
+    } catch (error) {
+      console.error('Failed to save fyles state:', error);
+    }
+  }
+
+  /**
+   * Load state from disk
+   */
+  private loadState(): void {
+    if (!this.persistenceEnabled) return;
+
+    try {
+      if (fs.existsSync(this.stateFilePath)) {
+        const data = fs.readFileSync(this.stateFilePath, 'utf8');
+        const state: PersistedState = JSON.parse(data);
+
+        if (state.version === 1) {
+          this.expandedDirs = new Set(state.expandedDirs || []);
+          this.showHidden = state.showHidden || false;
+          this.currentDir = state.currentDir || this.homeDir;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load fyles state:', error);
+      // Continue with defaults
+    }
+  }
+
+  /**
+   * Clear persisted state (useful for tests)
+   */
+  clearPersistedState(): void {
+    try {
+      if (fs.existsSync(this.stateFilePath)) {
+        fs.unlinkSync(this.stateFilePath);
+      }
+    } catch (error) {
+      console.error('Failed to clear persisted state:', error);
+    }
+  }
+
+  /**
+   * Get the state file path (useful for tests)
+   */
+  getStateFilePath(): string {
+    return this.stateFilePath;
   }
 
   // ========================================

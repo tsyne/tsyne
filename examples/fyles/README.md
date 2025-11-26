@@ -8,7 +8,7 @@ A simple file browser application ported from [FyshOS/fyles](https://github.com/
 
 - **Directory Navigation**: Browse your filesystem with an intuitive interface
 - **File Grid View**: View files and folders as icons with names
-- **Navigation Panel**: Quick access to subdirectories
+- **Navigation Panel**: Expandable tree view of subdirectories with state persistence
 - **Toolbar**: Home button, new folder creation, hidden file toggle
 - **Hidden Files**: Toggle visibility of hidden files (starting with `.`)
 - **File Icons**: Visual distinction between file types using emojis
@@ -27,28 +27,30 @@ This is an idiomatic Tsyne implementation following the MVC pattern demonstrated
 
 ```
 examples/fyles/
-├── fyles.ts                    # Main UI (View + Controller)
-├── fyles-store.ts              # Observable store (Model)
-├── file-item.ts                # File item data model
-├── file-utils.ts               # Utility functions
-├── fyles.test.ts               # UI integration tests
-├── fyles-navigation.test.ts    # Navigation tests
-└── README.md                   # This file
+├── fyles.ts                         # Main UI (View + Controller)
+├── fyles-store.ts                   # Observable store (Model)
+├── file-item.ts                     # File item data model
+├── file-utils.ts                    # Utility functions
+├── fyles.test.ts                    # UI integration tests
+├── fyles-navigation.test.ts         # Navigation tests
+├── fyles-tree-persistence.test.ts   # Tree expansion & persistence tests
+└── README.md                        # This file
 ```
 
 ### MVC Components
 
 **Model (fyles-store.ts)**
 - `FylesStore` - Observable store with change listeners
-- Manages current directory, file items, visibility settings
+- Manages current directory, file items, visibility settings, expanded tree state
 - Provides navigation methods (navigateToDir, navigateUp, navigateHome)
 - Implements file operations (createFolder, moveItem, copyItem, refresh)
+- Persists state to `~/.tsyne/fyles-state.json`
 
 **View (fyles.ts)**
 - `FylesUI` class - Builds and manages the UI
 - Three main sections:
   - Toolbar (top): Home, New Folder, Toggle Hidden, Current Path
-  - Navigation Panel (left): Parent folder, subdirectories
+  - Navigation Panel (left): Parent folder, expandable tree of subdirectories
   - File Grid (center): Files and folders as clickable items
 
 **Controller (fyles.ts)**
@@ -69,8 +71,9 @@ Window
     │
     ├── Left: Navigation Panel (Scroll + VBox)
     │   ├── Parent Button (⬆️ ..)
-    │   ├── Current Folder Label
-    │   └── Subdirectory Buttons
+    │   ├── Current Folder Label + Collapse All Button (⏫)
+    │   └── Tree Nodes (HBox: Expand Toggle + Folder Button)
+    │       └── Child Tree Nodes (recursive, indented)
     │
     └── Center: File Grid (Scroll + GridWrap)
         └── File Items (VBox: Icon + Name + Size)
@@ -124,13 +127,13 @@ This Tsyne port is a simplified version focusing on core functionality:
 ✅ New Folder dialog with entry prompt
 ✅ Clipboard support for copying file/folder paths
 ✅ Drag-and-drop file operations (move files by dragging to folders)
+✅ Tree expansion state persistence (expand/collapse folders, survives restart)
 
 ### Simplified/Omitted Features
 ❌ Multi-panel view (original supports multiple side-by-side panels)
 ❌ Custom URI schemes for favorites (tree:///)
 ❌ Fancy folder backgrounds (fancyfs metadata)
 ❌ "Open With" application picker (uses simple xdg-open)
-❌ Tree expansion state persistence
 
 These features could be added in future iterations.
 
@@ -151,6 +154,15 @@ The test suite demonstrates Tsyne's fluent testing style:
 - Home directory navigation
 - Navigation panel updates
 - Deep nested folder handling
+
+**fyles-tree-persistence.test.ts** - Tree expansion and persistence tests
+- Expand/collapse folder state management
+- Subdirectory retrieval
+- State persistence to file
+- State restoration on app restart
+- Corrupted/missing state file handling
+- Change notification on expansion changes
+- File move/copy operations
 
 ## Code Examples
 
@@ -177,6 +189,25 @@ this.store.subscribe(() => {
 // Navigation triggers store update
 await this.store.navigateToDir('/some/path');
 // → Store updates, notifies listeners, UI refreshes automatically
+```
+
+### Tree Expansion State Persistence
+
+```typescript
+// Expand/collapse folders in navigation panel
+await this.store.toggleExpanded('/path/to/folder');
+
+// Check if folder is expanded
+if (this.store.isExpanded('/path/to/folder')) {
+  // Show child folders
+  const children = this.store.getSubdirectories('/path/to/folder');
+}
+
+// Collapse all expanded folders
+await this.store.collapseAll();
+
+// State is automatically persisted to ~/.tsyne/fyles-state.json
+// and restored on next app launch
 ```
 
 ### Fluent Test Style

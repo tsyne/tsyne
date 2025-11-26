@@ -6,7 +6,7 @@
  * License: See original repository
  *
  * A simple file browser with:
- * - Directory navigation panel (left)
+ * - Directory navigation panel (left) with expandable tree view
  * - File grid view (right)
  * - Toolbar with home button, new folder, current path
  * - Hidden file filtering
@@ -14,11 +14,13 @@
  * - Right-click context menus (Open, Copy path)
  * - New folder creation dialog
  * - Drag-and-drop file operations (move files by dragging to folders)
+ * - Tree expansion state persistence (remembers expanded folders)
  *
  * Implementation notes:
  * - Uses incremental updates like solitaire (no full rebuild on every change)
  * - Only rebuilds when directory changes
  * - Updates path label directly when just toggling hidden files
+ * - Persists state to ~/.tsyne/fyles-state.json
  */
 
 import { app } from '../../src';
@@ -126,8 +128,8 @@ class FylesUI {
   }
 
   /**
-   * Build simplified navigation panel (left side)
-   * Shows: Parent folder, current folder, and subfolders
+   * Build navigation panel (left side) with tree expansion
+   * Shows: Parent folder, current folder, and expandable subfolders
    */
   private buildNavigationPanel(): void {
     this.app.scroll(() => {
@@ -148,11 +150,19 @@ class FylesUI {
           this.app.separator();
         }
 
-        // Current folder label
-        this.app.label(`📂 ${path.basename(currentDir)}`);
+        // Current folder label with collapse all button
+        this.app.hbox(() => {
+          this.app.label(`📂 ${path.basename(currentDir)}`);
+          // Collapse all button (only show if something is expanded)
+          if (this.store.getExpandedDirs().length > 0) {
+            this.app.button('⏫', async () => {
+              await this.store.collapseAll();
+            }).withId('collapse-all-btn');
+          }
+        });
         this.app.separator();
 
-        // List subdirectories
+        // List subdirectories with tree expansion
         const items = this.store.getVisibleItems();
         const dirs = items.filter((item) => item.isDirectory);
 
@@ -160,55 +170,88 @@ class FylesUI {
           this.app.label('Subdirectories:');
 
           dirs.forEach((dir) => {
-            const navButton = this.app.button(`📁 ${dir.fullName}`, async () => {
-              try {
-                await this.store.navigateToDir(dir.path);
-              } catch (err) {
-                console.error('Navigate to dir failed:', err);
-              }
-            }).withId(`nav-folder-${dir.fullName}`);
-
-            // Make navigation folders droppable
-            navButton.makeDroppable({
-              onDrop: async (dragData: string, _sourceId: string) => {
-                await this.handleFileDrop(dragData, dir.path);
-              },
-              onDragEnter: (dragData: string, _sourceId: string) => {
-                console.log(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
-              },
-              onDragLeave: () => {
-                console.log(`Drag left nav folder: ${dir.fullName}`);
-              },
-            });
-
-            // Add right-click context menu for navigation folders
-            navButton.setContextMenu([
-              {
-                label: 'Open',
-                onSelected: async () => {
-                  try {
-                    await this.store.navigateToDir(dir.path);
-                  } catch (err) {
-                    console.error('Navigate to dir failed:', err);
-                  }
-                },
-              },
-              { label: '', onSelected: () => {}, isSeparator: true },
-              {
-                label: 'Copy folder path',
-                onSelected: async () => {
-                  if (this.window) {
-                    await this.window.setClipboard(dir.path);
-                  }
-                },
-              },
-            ]);
+            this.buildTreeNode(dir, 0);
           });
         } else {
           this.app.label('(no subdirectories)');
         }
       });
     });
+  }
+
+  /**
+   * Build a tree node (folder) with expand/collapse support
+   */
+  private buildTreeNode(dir: FileItem, depth: number): void {
+    const isExpanded = this.store.isExpanded(dir.path);
+    const indent = '  '.repeat(depth);
+    const expandIcon = isExpanded ? '▼' : '▶';
+
+    this.app.hbox(() => {
+      // Expand/collapse toggle button
+      this.app.button(`${indent}${expandIcon}`, async () => {
+        await this.store.toggleExpanded(dir.path);
+      }).withId(`expand-${dir.fullName}`);
+
+      // Folder button (navigate on click)
+      const navButton = this.app.button(`📁 ${dir.fullName}`, async () => {
+        try {
+          await this.store.navigateToDir(dir.path);
+        } catch (err) {
+          console.error('Navigate to dir failed:', err);
+        }
+      }).withId(`nav-folder-${dir.fullName}`);
+
+      // Make navigation folders droppable
+      navButton.makeDroppable({
+        onDrop: async (dragData: string, _sourceId: string) => {
+          await this.handleFileDrop(dragData, dir.path);
+        },
+        onDragEnter: (dragData: string, _sourceId: string) => {
+          console.log(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
+        },
+        onDragLeave: () => {
+          console.log(`Drag left nav folder: ${dir.fullName}`);
+        },
+      });
+
+      // Add right-click context menu for navigation folders
+      navButton.setContextMenu([
+        {
+          label: 'Open',
+          onSelected: async () => {
+            try {
+              await this.store.navigateToDir(dir.path);
+            } catch (err) {
+              console.error('Navigate to dir failed:', err);
+            }
+          },
+        },
+        {
+          label: isExpanded ? 'Collapse' : 'Expand',
+          onSelected: async () => {
+            await this.store.toggleExpanded(dir.path);
+          },
+        },
+        { label: '', onSelected: () => {}, isSeparator: true },
+        {
+          label: 'Copy folder path',
+          onSelected: async () => {
+            if (this.window) {
+              await this.window.setClipboard(dir.path);
+            }
+          },
+        },
+      ]);
+    });
+
+    // If expanded, show child directories recursively
+    if (isExpanded) {
+      const childDirs = this.store.getSubdirectories(dir.path);
+      childDirs.forEach((childDir) => {
+        this.buildTreeNode(childDir, depth + 1);
+      });
+    }
   }
 
   /**
