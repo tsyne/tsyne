@@ -17,7 +17,7 @@ A 100% self-contained WYSIWYG visual editor for Tsyne applications. Available as
 
 ## Screenshot
 
-TODO
+![](screenshot.png)
 
 ## Architecture
 
