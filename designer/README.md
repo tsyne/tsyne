@@ -70,9 +70,9 @@ npm run tauri:build
 **Tauri Requirements:** See [TAURI_SETUP.md](TAURI_SETUP.md) for prerequisites (Rust, system dependencies).
 
 **Distributable Output:** Creates platform-specific installers:
-- **macOS**: `.app` bundle + `.dmg` installer (~12MB)
-- **Linux**: `.deb` + `.AppImage` (~10MB)
-- **Windows**: `.msi` installer (~15MB)
+- **macOS**: `.app` bundle + `.dmg` installer (~40-50MB, uses system WebView)
+- **Linux**: `.deb` + `.AppImage` (~60-70MB, bundles WebView)
+- **Windows**: `.msi` installer (~50-60MB, bundles WebView2)
 
 ### Option 2: Development Server (For Contributors)
 
@@ -104,11 +104,13 @@ open http://localhost:3000
 | **Installation** | Standalone installer | npm install |
 | **Offline** | ✅ Yes | ❌ No (localhost only) |
 | **File Access** | Full native access | Limited to served files |
-| **Bundle Size** | ~10-15MB | N/A |
+| **Bundle Size** | ~40-60MB* | unbundled for now |
 | **Updates** | Manual/auto-update | git pull |
 | **DevTools** | ✅ (debug builds) | ✅ Always |
 | **Hot Reload** | ❌ | ✅ |
 | **Best For** | End users | Contributors |
+
+*Includes Tauri runtime + embedded Node.js + designer code. Varies by platform (macOS uses system supplied WebView, Linux/Windows bundle WebView).
 
 ## Usage
 
