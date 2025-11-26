@@ -17,6 +17,7 @@ A simple file browser application ported from [FyshOS/fyles](https://github.com/
 - **Context Menus**: Right-click on files/folders for Open and Copy path options
 - **New Folder Dialog**: Create folders via dialog prompt
 - **Clipboard Integration**: Copy file and folder paths to clipboard
+- **Drag-and-Drop**: Drag files and folders to move them into other folders
 
 ## Architecture
 
@@ -41,7 +42,7 @@ examples/fyles/
 - `FylesStore` - Observable store with change listeners
 - Manages current directory, file items, visibility settings
 - Provides navigation methods (navigateToDir, navigateUp, navigateHome)
-- Implements file operations (createFolder, refresh)
+- Implements file operations (createFolder, moveItem, copyItem, refresh)
 
 **View (fyles.ts)**
 - `FylesUI` class - Builds and manages the UI
@@ -122,13 +123,13 @@ This Tsyne port is a simplified version focusing on core functionality:
 ✅ Right-click context menus (Open, Copy path) for files and folders
 ✅ New Folder dialog with entry prompt
 ✅ Clipboard support for copying file/folder paths
+✅ Drag-and-drop file operations (move files by dragging to folders)
 
 ### Simplified/Omitted Features
 ❌ Multi-panel view (original supports multiple side-by-side panels)
 ❌ Custom URI schemes for favorites (tree:///)
 ❌ Fancy folder backgrounds (fancyfs metadata)
 ❌ "Open With" application picker (uses simple xdg-open)
-❌ Drag-and-drop file operations
 ❌ Tree expansion state persistence
 
 These features could be added in future iterations.

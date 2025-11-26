@@ -13,6 +13,7 @@
  * - File/folder icons
  * - Right-click context menus (Open, Copy path)
  * - New folder creation dialog
+ * - Drag-and-drop file operations (move files by dragging to folders)
  *
  * Implementation notes:
  * - Uses incremental updates like solitaire (no full rebuild on every change)
@@ -167,6 +168,19 @@ class FylesUI {
               }
             }).withId(`nav-folder-${dir.fullName}`);
 
+            // Make navigation folders droppable
+            navButton.makeDroppable({
+              onDrop: async (dragData: string, _sourceId: string) => {
+                await this.handleFileDrop(dragData, dir.path);
+              },
+              onDragEnter: (dragData: string, _sourceId: string) => {
+                console.log(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
+              },
+              onDragLeave: () => {
+                console.log(`Drag left nav folder: ${dir.fullName}`);
+              },
+            });
+
             // Add right-click context menu for navigation folders
             navButton.setContextMenu([
               {
@@ -221,7 +235,7 @@ class FylesUI {
   }
 
   /**
-   * Build a single file item (icon + label) with context menu
+   * Build a single file item (icon + label) with context menu and drag-drop
    */
   private buildFileItem(item: FileItem): void {
     this.app.hbox(() => {
@@ -235,6 +249,32 @@ class FylesUI {
       const button = this.app.button(item.fullName, async () => {
         await this.handleItemClick(item);
       }).withId(`grid-${itemType}-${item.fullName}`);
+
+      // Make files and folders draggable (drag data is the file path)
+      button.makeDraggable({
+        dragData: item.path,
+        onDragStart: () => {
+          console.log(`Started dragging: ${item.fullName}`);
+        },
+        onDragEnd: () => {
+          console.log(`Stopped dragging: ${item.fullName}`);
+        },
+      });
+
+      // Make folders droppable to receive file drops (on the button itself)
+      if (item.isDirectory) {
+        button.makeDroppable({
+          onDrop: async (dragData: string, _sourceId: string) => {
+            await this.handleFileDrop(dragData, item.path);
+          },
+          onDragEnter: (dragData: string, _sourceId: string) => {
+            console.log(`Drag entered folder: ${item.fullName}, data: ${dragData}`);
+          },
+          onDragLeave: () => {
+            console.log(`Drag left folder: ${item.fullName}`);
+          },
+        });
+      }
 
       // Add right-click context menu
       if (item.isDirectory) {
@@ -283,6 +323,38 @@ class FylesUI {
         this.app.label(`${sizeKB} KB`);
       }
     });
+  }
+
+  /**
+   * Handle file drop onto a folder
+   */
+  private async handleFileDrop(sourcePath: string, destFolder: string): Promise<void> {
+    // Don't allow dropping onto itself or parent
+    if (sourcePath === destFolder || destFolder.startsWith(sourcePath + path.sep)) {
+      console.log('Cannot drop folder onto itself or its children');
+      return;
+    }
+
+    // Don't allow dropping into same directory (no-op)
+    const sourceDir = path.dirname(sourcePath);
+    if (sourceDir === destFolder) {
+      console.log('File is already in this directory');
+      return;
+    }
+
+    const fileName = path.basename(sourcePath);
+
+    try {
+      // For now, default to move operation
+      // Could add a dialog to choose move vs copy
+      await this.store.moveItem(sourcePath, destFolder);
+      console.log(`Moved ${fileName} to ${destFolder}`);
+    } catch (err) {
+      console.error(`Failed to move ${fileName}:`, err);
+      if (this.window) {
+        await this.window.showError('Move Failed', `Failed to move ${fileName}: ${err}`);
+      }
+    }
   }
 
   /**
