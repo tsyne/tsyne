@@ -11,6 +11,8 @@
  * - Toolbar with home button, new folder, current path
  * - Hidden file filtering
  * - File/folder icons
+ * - Right-click context menus (Open, Copy path)
+ * - New folder creation dialog
  *
  * Implementation notes:
  * - Uses incremental updates like solitaire (no full rebuild on every change)
@@ -80,8 +82,20 @@ class FylesUI {
       });
 
       // New folder button
-      this.app.button('📁+', () => {
-        console.log('New folder button clicked - dialog not yet implemented');
+      this.app.button('📁+', async () => {
+        if (!this.window) return;
+        const folderName = await this.window.showEntryDialog(
+          'New Folder',
+          'Enter folder name:'
+        );
+        if (folderName && folderName.trim()) {
+          try {
+            await this.store.createFolder(folderName.trim());
+          } catch (err) {
+            console.error('Failed to create folder:', err);
+            await this.window.showError('Error', `Failed to create folder: ${err}`);
+          }
+        }
       });
 
       // Toggle hidden files button
@@ -92,9 +106,20 @@ class FylesUI {
         }
       );
 
-      // Current path (scrollable label)
+      // Current path (scrollable label) with context menu
       this.app.scroll(() => {
         this.pathLabel = this.app.label(this.store.getCurrentDir());
+        // Add right-click context menu to copy current directory path
+        this.pathLabel.setContextMenu([
+          {
+            label: 'Copy folder path',
+            onSelected: async () => {
+              if (this.window) {
+                await this.window.setClipboard(this.store.getCurrentDir());
+              }
+            },
+          },
+        ]);
       });
     });
   }
@@ -134,13 +159,36 @@ class FylesUI {
           this.app.label('Subdirectories:');
 
           dirs.forEach((dir) => {
-            this.app.button(`📁 ${dir.fullName}`, async () => {
+            const navButton = this.app.button(`📁 ${dir.fullName}`, async () => {
               try {
                 await this.store.navigateToDir(dir.path);
               } catch (err) {
                 console.error('Navigate to dir failed:', err);
               }
             }).withId(`nav-folder-${dir.fullName}`);
+
+            // Add right-click context menu for navigation folders
+            navButton.setContextMenu([
+              {
+                label: 'Open',
+                onSelected: async () => {
+                  try {
+                    await this.store.navigateToDir(dir.path);
+                  } catch (err) {
+                    console.error('Navigate to dir failed:', err);
+                  }
+                },
+              },
+              { label: '', onSelected: () => {}, isSeparator: true },
+              {
+                label: 'Copy folder path',
+                onSelected: async () => {
+                  if (this.window) {
+                    await this.window.setClipboard(dir.path);
+                  }
+                },
+              },
+            ]);
           });
         } else {
           this.app.label('(no subdirectories)');
@@ -173,7 +221,7 @@ class FylesUI {
   }
 
   /**
-   * Build a single file item (icon + label)
+   * Build a single file item (icon + label) with context menu
    */
   private buildFileItem(item: FileItem): void {
     this.app.hbox(() => {
@@ -184,9 +232,50 @@ class FylesUI {
 
       // File name as button (clickable)
       const itemType = item.isDirectory ? 'folder' : 'file';
-      this.app.button(item.fullName, async () => {
+      const button = this.app.button(item.fullName, async () => {
         await this.handleItemClick(item);
       }).withId(`grid-${itemType}-${item.fullName}`);
+
+      // Add right-click context menu
+      if (item.isDirectory) {
+        // Folder context menu
+        button.setContextMenu([
+          {
+            label: 'Open',
+            onSelected: async () => {
+              await this.handleItemClick(item);
+            },
+          },
+          { label: '', onSelected: () => {}, isSeparator: true },
+          {
+            label: 'Copy folder path',
+            onSelected: async () => {
+              if (this.window) {
+                await this.window.setClipboard(item.path);
+              }
+            },
+          },
+        ]);
+      } else {
+        // File context menu
+        button.setContextMenu([
+          {
+            label: 'Open',
+            onSelected: async () => {
+              await this.handleItemClick(item);
+            },
+          },
+          { label: '', onSelected: () => {}, isSeparator: true },
+          {
+            label: 'Copy path',
+            onSelected: async () => {
+              if (this.window) {
+                await this.window.setClipboard(item.path);
+              }
+            },
+          },
+        ]);
+      }
 
       // Add size info for files
       if (!item.isDirectory && item.size !== undefined) {

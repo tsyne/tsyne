@@ -14,6 +14,9 @@ A simple file browser application ported from [FyshOS/fyles](https://github.com/
 - **File Icons**: Visual distinction between file types using emojis
 - **File Operations**: Open files with default applications
 - **MVC Architecture**: Clean separation using observable store pattern
+- **Context Menus**: Right-click on files/folders for Open and Copy path options
+- **New Folder Dialog**: Create folders via dialog prompt
+- **Clipboard Integration**: Copy file and folder paths to clipboard
 
 ## Architecture
 
@@ -116,6 +119,9 @@ This Tsyne port is a simplified version focusing on core functionality:
 ✅ File/folder click to navigate/open
 ✅ Parent directory navigation
 ✅ Observable store pattern (MVC)
+✅ Right-click context menus (Open, Copy path) for files and folders
+✅ New Folder dialog with entry prompt
+✅ Clipboard support for copying file/folder paths
 
 ### Simplified/Omitted Features
 ❌ Multi-panel view (original supports multiple side-by-side panels)
@@ -123,10 +129,9 @@ This Tsyne port is a simplified version focusing on core functionality:
 ❌ Fancy folder backgrounds (fancyfs metadata)
 ❌ "Open With" application picker (uses simple xdg-open)
 ❌ Drag-and-drop file operations
-❌ Right-click context menus
 ❌ Tree expansion state persistence
 
-These features can be added in future iterations as Tsyne's widget library expands.
+These features could be added in future iterations.
 
 ## Test Coverage
 
