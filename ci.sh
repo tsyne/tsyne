@@ -19,8 +19,10 @@ apt-get install -y \
   wget \
   curl
 
-echo "--- :golang: Setting up Go workarounds for restricted network"
-# Set up Go in PATH
+# ============================================================================
+# STEP 1: Go Bridge Build
+# ============================================================================
+echo "--- :golang: Building Go bridge"
 export PATH=/usr/local/go/bin:$PATH
 
 # Download fyne.io/systray manually (not on Google's proxy)
@@ -34,40 +36,76 @@ fi
 # Use go mod replace to point to local systray
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
 /usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
-
-echo "--- :hammer: Building Go bridge"
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
-echo "--- :nodejs: Installing npm dependencies"
+# ============================================================================
+# STEP 2: Root Tsyne (Core Library)
+# ============================================================================
+echo "--- :nodejs: Root Tsyne - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 npm install --ignore-scripts
-
-echo "--- :typescript: Building TypeScript"
 npm run build
 
-echo "--- :test_tube: Running unit tests"
+echo "--- :test_tube: Root Tsyne - Unit Tests"
 # Start Xvfb for headless GUI testing
 Xvfb :99 -screen 0 1024x768x24 &
 XVFB_PID=$!
 export DISPLAY=:99
-
-# Wait for Xvfb to be ready
 sleep 2
 
-# Run tests with timeout - non-blocking for now
 timeout 180 npm run test:unit || {
   EXIT_CODE=$?
-  kill $XVFB_PID 2>/dev/null || true
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "⚠️  Tests timed out after 180 seconds"
+    echo "⚠️  Root unit tests timed out after 180 seconds"
   else
-    echo "⚠️  Tests completed with failures (exit code: $EXIT_CODE)"
+    echo "⚠️  Root unit tests completed with failures (exit code: $EXIT_CODE)"
   fi
   echo "Note: Test failures are non-blocking while test suite is being stabilized"
 }
 
+# ============================================================================
+# STEP 3: Designer Sub-Project
+# ============================================================================
+echo "--- :art: Designer - Install & Build"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
+if [ -f "package.json" ]; then
+  npm install --ignore-scripts
+  npm run build || echo "⚠️  Designer build failed (non-blocking)"
+
+  echo "--- :test_tube: Designer - Tests"
+  timeout 180 npm test || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "⚠️  Designer tests timed out after 180 seconds"
+    else
+      echo "⚠️  Designer tests completed with failures (exit code: $EXIT_CODE)"
+    fi
+    echo "Note: Test failures are non-blocking while test suite is being stabilized"
+  }
+else
+  echo "⚠️  No package.json found in designer/ - skipping"
+fi
+
+# ============================================================================
+# STEP 4: Examples Sub-Project
+# ============================================================================
+echo "--- :bulb: Examples - Tests"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
+# Examples use root node_modules, just run tests
+timeout 300 npm run test:examples || {
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -eq 124 ]; then
+    echo "⚠️  Examples tests timed out after 300 seconds"
+  else
+    echo "⚠️  Examples tests completed with failures (exit code: $EXIT_CODE)"
+  fi
+  echo "Note: Test failures are non-blocking while test suite is being stabilized"
+}
+
+# ============================================================================
 # Cleanup
+# ============================================================================
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 kill $XVFB_PID 2>/dev/null || true
 
 echo "--- :white_check_mark: Build complete"

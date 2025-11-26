@@ -94,9 +94,7 @@ describe('Chess E2E Tests (Critical Paths)', () => {
   // ============================================================================
 
   test.skip('resets game to initial state after moves', async () => {
-    // SKIPPED: rebuildUI() timing issue - widgets temporarily unfindable during UI rebuild
-    // See README: "widget lifecycle timing issues with the `rebuildUI()` architecture"
-    // chessUI.newGame() works but rebuildUI() makes test context lose widget references
+    // SKIPPED: rebuildUI() timing issue - even with 300ms wait, widgets not findable after rebuild
     // Make several moves
     await ctx.getByID('square-e2').within(5000).click();
     await ctx.getByID('square-e4').within(5000).click();
@@ -112,8 +110,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
 
     // Reset game programmatically (no button needed!)
     await chessUI.newGame();
-    // Brief wait for rebuildUI() to complete (known timing issue)
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for rebuildUI() to complete - use longer wait and verify element is accessible
+    await ctx.wait(300);
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Verify pieces are back at starting positions
