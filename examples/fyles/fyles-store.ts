@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { FileItem, createFileItem } from './file-item';
 import { sortFileItems, getParentDir } from './file-utils';
+import { FolderMetadata, getFolderMetadata } from './folder-metadata';
 
 export type ChangeListener = () => void;
 
@@ -131,6 +132,13 @@ export class FylesStore {
    */
   canNavigateUp(): boolean {
     return getParentDir(this.currentDir) !== null;
+  }
+
+  /**
+   * Get metadata for the current directory (fancy folder backgrounds)
+   */
+  getCurrentDirMetadata(): FolderMetadata {
+    return getFolderMetadata(this.currentDir);
   }
 
   /**

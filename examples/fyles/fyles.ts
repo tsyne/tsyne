@@ -11,12 +11,13 @@
  * - File grid view (right)
  * - Toolbar with home button, new folder, split panel, current path
  * - Hidden file filtering
- * - File/folder icons
+ * - File/folder icons with fancy folder support
  * - Right-click context menus (Open, Copy path)
  * - New folder creation dialog
  * - Drag-and-drop file operations (move files by dragging to folders)
  * - Cross-panel drag-and-drop (drag from one panel, drop in another)
  * - Tree expansion state persistence (remembers expanded folders)
+ * - Fancy folder backgrounds (fancyfs style metadata support)
  *
  * Implementation notes:
  * - Uses incremental updates like solitaire (no full rebuild on every change)
@@ -24,6 +25,8 @@
  * - Updates path label directly when just toggling hidden files
  * - Persists state to ~/.tsyne/fyles-state.json
  * - Multiple panels use hsplit for side-by-side layout
+ * - Special folder icons for Home, Desktop, Documents, Downloads, Music, Pictures, Videos
+ * - Background image detection (.background.png/jpg/svg)
  */
 
 import { app } from '../../src';
@@ -34,6 +37,7 @@ import * as path from 'path';
 import { FylesStore } from './fyles-store';
 import { FileItem, getFileIcon } from './file-item';
 import { openFile, getParentDir } from './file-utils';
+import { getSpecialFolderIcon, SpecialFolderType } from './folder-metadata';
 
 // ============================================================================
 // Multi-Panel Manager
@@ -308,8 +312,13 @@ class FylesPanel {
         }
 
         // Current folder label with collapse all button
+        // Use fancy folder icon for special folders
+        const currentDirMetadata = this.store.getCurrentDirMetadata();
+        const currentFolderIcon = currentDirMetadata.specialType !== SpecialFolderType.None
+          ? getSpecialFolderIcon(currentDirMetadata.specialType)
+          : '📂';
         this.app.hbox(() => {
-          this.app.label(`📂 ${path.basename(currentDir)}`);
+          this.app.label(`${currentFolderIcon} ${path.basename(currentDir)}`);
           // Collapse all button (only show if something is expanded)
           if (this.store.getExpandedDirs().length > 0) {
             this.app.button('⏫', async () => {
@@ -413,20 +422,31 @@ class FylesPanel {
 
   /**
    * Build file grid (center panel)
+   * Shows fancy folder background info if available
    */
   private buildFileGrid(): void {
     this.app.scroll(() => {
       const items = this.store.getVisibleItems();
-
-      if (items.length === 0) {
-        this.app.center(() => {
-          this.app.label('Empty directory');
-        });
-        return;
-      }
+      const metadata = this.store.getCurrentDirMetadata();
 
       // Use vbox instead of gridwrap for simplicity
       this.app.vbox(() => {
+        // Show background image indicator if present (fancy folder feature)
+        if (metadata.backgroundImagePath) {
+          this.app.hbox(() => {
+            this.app.label('🎨');
+            this.app.label(`Background: ${path.basename(metadata.backgroundImagePath)}`);
+          }).withId(`panel-${this.panelIndex}-bg-indicator`);
+          this.app.separator();
+        }
+
+        if (items.length === 0) {
+          this.app.center(() => {
+            this.app.label('Empty directory');
+          });
+          return;
+        }
+
         items.forEach((item) => {
           this.buildFileItem(item);
         });

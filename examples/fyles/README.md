@@ -20,6 +20,7 @@ A simple file browser application ported from [FyshOS/fyles](https://github.com/
 - **Drag-and-Drop**: Drag files and folders to move them into other folders
 - **Multi-Panel View**: Open multiple panels side-by-side for easy file operations
 - **Cross-Panel Operations**: Drag files from one panel to another
+- **Fancy Folder Backgrounds**: Special icons for well-known folders (Home, Desktop, Documents, Downloads, Music, Pictures, Videos) and background image detection (.background.png/jpg/svg)
 
 ## Architecture
 
@@ -33,10 +34,12 @@ examples/fyles/
 ├── fyles-store.ts                   # Observable store (Model)
 ├── file-item.ts                     # File item data model
 ├── file-utils.ts                    # Utility functions
+├── folder-metadata.ts               # Fancy folder metadata detection (fancyfs style)
 ├── fyles.test.ts                    # UI integration tests
 ├── fyles-navigation.test.ts         # Navigation tests
 ├── fyles-tree-persistence.test.ts   # Tree expansion & persistence tests
 ├── fyles-multipanel.test.ts         # Multi-panel integration tests
+├── folder-metadata.test.ts          # Folder metadata unit tests
 └── README.md                        # This file
 ```
 
@@ -154,10 +157,10 @@ This Tsyne port is a simplified version focusing on core functionality:
 ✅ Tree expansion state persistence (expand/collapse folders, survives restart)
 ✅ Multi-panel view (multiple side-by-side panels with hsplit)
 ✅ Cross-panel drag-and-drop (move files between panels)
+✅ Fancy folder backgrounds (fancyfs style - special folder icons and background image detection)
 
 ### Simplified/Omitted Features
 ❌ Custom URI schemes for favorites (tree:///)
-❌ Fancy folder backgrounds (fancyfs metadata)
 ❌ "Open With" application picker (uses simple xdg-open)
 
 These features could be added in future iterations.
@@ -196,6 +199,13 @@ The test suite demonstrates Tsyne's fluent testing style:
 - Close button functionality
 - Independent panel navigation
 - Cross-panel file display
+
+**folder-metadata.test.ts** - Folder metadata unit tests
+- Special folder type detection (Home, Desktop, Documents, Downloads, Music, Pictures, Videos)
+- Background image detection (.background.png/jpg/jpeg/svg)
+- Priority order of background image formats
+- Icon function tests
+- FileItem integration tests
 
 ## Code Examples
 
@@ -249,6 +259,32 @@ await this.store.collapseAll();
 // and restored on next app launch
 ```
 
+### Fancy Folder Backgrounds (fancyfs style)
+
+```typescript
+import { getFolderMetadata, getFancyFolderIcon, SpecialFolderType } from './folder-metadata';
+
+// Get metadata for a folder
+const metadata = getFolderMetadata('/home/user/Documents');
+if (metadata.specialType === SpecialFolderType.Documents) {
+  console.log('This is the Documents folder');
+}
+
+// Check for background image
+if (metadata.backgroundImagePath) {
+  console.log(`Folder has background: ${metadata.backgroundImagePath}`);
+}
+
+// Get fancy icon for a folder (includes special folder type or background indicator)
+const icon = getFancyFolderIcon('/home/user/Documents'); // Returns '📑'
+const iconWithBg = getFancyFolderIcon('/path/with/.background.png'); // Returns '📁🎨'
+```
+
+To add a background image to a folder, create one of these files:
+- `.background.png`
+- `.background.jpg` / `.background.jpeg`
+- `.background.svg`
+
 ### Fluent Test Style
 
 ```typescript
@@ -266,12 +302,17 @@ await ctx.getByText(expectedPath).within(2000).shouldExist();
 ### File Icons
 
 Uses emoji for file type visualization:
-- 📁 Folders
-- 🖼️ Images (png, jpg, svg, etc.)
+- 📁 Regular folders
+- 📁🎨 Folders with background images
+- 🏠 Home directory
+- 🖥️ Desktop folder
+- 📑 Documents folder
+- ⬇️ Downloads folder
+- 🎵 Music folder / Audio files
+- 🖼️ Pictures folder / Images (png, jpg, svg, etc.)
+- 🎬 Videos folder / Video files
 - 📄 Documents (pdf, doc, etc.)
 - 💻 Code files (ts, js, py, etc.)
-- 🎵 Audio files
-- 🎬 Video files
 - 📦 Archives
 - 📃 Default files
 

@@ -6,6 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { getFancyFolderIcon, getFolderMetadata, SpecialFolderType } from './folder-metadata';
 
 export interface FileItem {
   name: string;         // Display name (without extension for files)
@@ -16,6 +17,10 @@ export interface FileItem {
   extension?: string;
   size?: number;
   modified?: Date;
+  /** Special folder type (for fancy folder backgrounds) */
+  specialFolderType?: SpecialFolderType;
+  /** Background image path (for fancy folder backgrounds) */
+  backgroundImagePath?: string;
 }
 
 /**
@@ -42,6 +47,19 @@ export function createFileItem(dirent: fs.Dirent, dirPath: string): FileItem {
     displayName = path.basename(fullName, '.' + extension);
   }
 
+  // Get folder metadata for directories (fancy folder backgrounds)
+  let specialFolderType: SpecialFolderType | undefined;
+  let backgroundImagePath: string | undefined;
+  if (isDirectory) {
+    const metadata = getFolderMetadata(fullPath);
+    if (metadata.specialType !== SpecialFolderType.None) {
+      specialFolderType = metadata.specialType;
+    }
+    if (metadata.backgroundImagePath) {
+      backgroundImagePath = metadata.backgroundImagePath;
+    }
+  }
+
   return {
     name: displayName,
     fullName: fullName,
@@ -51,15 +69,19 @@ export function createFileItem(dirent: fs.Dirent, dirPath: string): FileItem {
     extension: extension,
     size: stats?.size,
     modified: stats?.mtime,
+    specialFolderType,
+    backgroundImagePath,
   };
 }
 
 /**
  * Get icon resource name or emoji based on file type
+ * Uses fancy folder icons for special folders and folders with backgrounds
  */
 export function getFileIcon(item: FileItem): string {
   if (item.isDirectory) {
-    return '📁'; // Folder emoji
+    // Use fancy folder icon based on metadata
+    return getFancyFolderIcon(item.path);
   }
 
   // Map common file extensions to emojis
