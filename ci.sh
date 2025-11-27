@@ -17,7 +17,19 @@ apt-get install -y \
   libglfw3-dev \
   xvfb \
   wget \
-  curl
+  curl \
+  gnupg
+
+# ============================================================================
+# Install Node.js 24.x if not already present
+# ============================================================================
+if ! command -v node &> /dev/null; then
+  echo "--- :nodejs: Installing Node.js 24.x"
+  curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+  apt-get install -y nodejs
+fi
+node --version
+npm --version
 
 # ============================================================================
 # Install Go 1.24.x if not already present
