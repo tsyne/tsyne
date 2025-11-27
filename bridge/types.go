@@ -65,6 +65,7 @@ type Bridge struct {
 	arcData         map[string]*ArcData           // arc widget ID -> arc data
 	polygonData     map[string]*PolygonData       // polygon widget ID -> polygon data
 	customDialogs   map[string]interface{}        // dialog ID -> custom dialog instance
+	msgpackServer   *MsgpackServer                // MessagePack UDS server (when in msgpack-uds mode)
 }
 
 // ProgressDialogInfo stores information about a progress dialog
@@ -609,6 +610,12 @@ func NewBridge(testMode bool) *Bridge {
 func (b *Bridge) sendEvent(event Event) {
 	// In gRPC mode, events are sent via the gRPC stream channel
 	if b.grpcMode {
+		// Check for MessagePack server first (msgpack-uds mode)
+		if b.msgpackServer != nil {
+			b.msgpackServer.SendEvent(event)
+			return
+		}
+		// Otherwise use gRPC channel
 		if b.grpcEventChan != nil {
 			select {
 			case b.grpcEventChan <- event:

@@ -516,18 +516,28 @@ func tokenStreamInterceptor(expectedToken string) grpc.StreamServerInterceptor {
 }
 
 // startGrpcServer starts the gRPC server on the specified port
-func startGrpcServer(port int, token string, bridge *Bridge) error {
+func startGrpcServer(port int, token string, bridge *Bridge, readyChan chan<- bool) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		return err
 	}
 
+	// Performance-optimized gRPC server options
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(tokenAuthInterceptor(token)),
 		grpc.StreamInterceptor(tokenStreamInterceptor(token)),
+		// Larger buffers for reduced syscalls
+		grpc.WriteBufferSize(64*1024),
+		grpc.ReadBufferSize(64*1024),
+		// Disable max connection age for persistent connections
+		grpc.MaxRecvMsgSize(100*1024*1024),
+		grpc.MaxSendMsgSize(100*1024*1024),
 	)
 
 	pb.RegisterBridgeServiceServer(grpcServer, &grpcBridgeService{bridge: bridge})
+
+	// Signal ready immediately after registering - no artificial delay
+	readyChan <- true
 
 	log.Printf("[gRPC] Server listening on port %d", port)
 	return grpcServer.Serve(lis)
@@ -544,23 +554,17 @@ func runGrpcMode(testMode bool) {
 	// 3. Create bridge
 	bridge := NewBridge(testMode)
 	bridge.grpcMode = true // Skip stdout writes in gRPC mode
-	bridge.grpcEventChan = make(chan Event, 100) // Buffered channel for events
+	bridge.grpcEventChan = make(chan Event, 256) // Larger buffer for better throughput
 
-	// 4. Start gRPC server in background
-	grpcReady := make(chan bool)
+	// 4. Start gRPC server in background - server signals ready via channel
+	grpcReady := make(chan bool, 1)
 	go func() {
-		if err := startGrpcServer(port, token, bridge); err != nil {
+		if err := startGrpcServer(port, token, bridge, grpcReady); err != nil {
 			log.Fatalf("gRPC server failed: %v", err)
 		}
 	}()
 
-	// Wait a bit for server to start
-	go func() {
-		// Small delay to ensure server is listening
-		time.Sleep(100 * time.Millisecond)
-		grpcReady <- true
-	}()
-
+	// Wait for server to be ready (signaled from startGrpcServer after registration)
 	<-grpcReady
 
 	// 5. Send connection info to TypeScript via stdout
@@ -596,6 +600,56 @@ func runGrpcMode(testMode bool) {
 
 	<-shutdownChan
 	log.Println("[gRPC] Bridge shutting down...")
+}
+
+// runMsgpackUdsMode runs the bridge in MessagePack over Unix Domain Socket mode
+func runMsgpackUdsMode(testMode bool) {
+	// 1. Create bridge
+	bridge := NewBridge(testMode)
+	bridge.grpcMode = true // Reuse flag to skip stdout writes
+
+	// 2. Create and start MessagePack server
+	msgpackServer := NewMsgpackServer(bridge)
+	if err := msgpackServer.Start(); err != nil {
+		log.Fatalf("MessagePack server failed to start: %v", err)
+	}
+
+	// 3. Set up event forwarding from bridge to msgpack server
+	bridge.msgpackServer = msgpackServer
+
+	// 4. Send connection info to TypeScript via stdout
+	initMsg := map[string]interface{}{
+		"socketPath": msgpackServer.GetSocketPath(),
+		"protocol":   "msgpack-uds",
+	}
+	jsonData, _ := json.Marshal(initMsg)
+	os.Stdout.Write(jsonData)
+	os.Stdout.Write([]byte("\n"))
+	os.Stdout.Sync()
+
+	log.Printf("[msgpack-uds] Server listening on %s", msgpackServer.GetSocketPath())
+
+	// 5. Keep stdin open for shutdown signal
+	shutdownChan := make(chan bool)
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if line == "shutdown" {
+				shutdownChan <- true
+				break
+			}
+		}
+	}()
+
+	// 6. Run the Fyne app
+	if !testMode {
+		go bridge.app.Run()
+	}
+
+	<-shutdownChan
+	msgpackServer.Close()
+	log.Println("[msgpack-uds] Bridge shutting down...")
 }
 
 // runStdioMode runs the bridge in stdio mode (existing behavior)
@@ -677,7 +731,7 @@ func main() {
 	}
 
 	// Parse command-line flags
-	mode := flag.String("mode", "stdio", "Communication mode: stdio or grpc")
+	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, or msgpack-uds")
 	// Filter out --headless and --test flags before parsing, as they're not recognized by flag package
 	filteredArgs := []string{}
 	for _, arg := range os.Args[1:] {
@@ -690,9 +744,12 @@ func main() {
 	log.Printf("[main] Starting in mode: %s (testMode: %v)", *mode, testMode)
 
 	// Run in the specified mode
-	if *mode == "grpc" {
+	switch *mode {
+	case "grpc":
 		runGrpcMode(testMode)
-	} else {
+	case "msgpack-uds":
+		runMsgpackUdsMode(testMode)
+	default:
 		runStdioMode(testMode)
 	}
 }

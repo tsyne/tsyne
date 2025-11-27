@@ -6,6 +6,7 @@ toolchain go1.24.7
 
 require (
 	fyne.io/fyne/v2 v2.7.0
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.6
 )

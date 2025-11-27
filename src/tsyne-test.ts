@@ -4,7 +4,7 @@ import { TestContext } from './test';
 export interface TestOptions {
   headed?: boolean;
   timeout?: number;
-  bridgeMode?: 'stdio' | 'grpc';
+  bridgeMode?: 'stdio' | 'grpc' | 'msgpack-uds';
 }
 
 /**
