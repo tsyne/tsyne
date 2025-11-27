@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "test": "npm run test:logic && npm run test:gui",
-    "test:logic": "jest --testMatch='**/*.logic.test.ts'",
-    "test:gui": "jest --maxWorkers=1 --testMatch='**/*.test.ts' --testPathIgnorePatterns='logic.test.ts' --testPathIgnorePatterns='designer.test.ts'",
+    "test:logic": "jest --testMatch='**/*.logic.test.ts' --testPathIgnorePatterns='/node_modules/'",
+    "test:gui": "jest --maxWorkers=1",
     "test:watch": "jest --watch"
   },
   "devDependencies": {

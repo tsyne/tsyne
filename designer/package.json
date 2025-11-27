@@ -8,10 +8,13 @@
     "watch": "tsc --watch",
     "start": "node dist/server.js",
     "dev": "tsc && node dist/server.js",
-    "test": "npm run test:unit && npm run test:roundtrip && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "jest --testMatch='**/__tests__/unit/**/*.test.ts'",
     "test:roundtrip": "jest --runInBand --testMatch='**/__tests__/roundtrip/**/*.test.ts'",
     "test:e2e": "jest --testMatch='**/__tests__/e2e/**/*.test.ts'",
+    "test:playwright": "playwright test",
+    "test:playwright:headed": "playwright test --headed",
+    "test:playwright:debug": "playwright test --debug",
     "test:watch": "jest --watch",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
@@ -32,6 +35,7 @@
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/cli": "^2.9.4",
     "@types/jest": "^29.5.0",

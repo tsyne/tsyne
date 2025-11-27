@@ -930,33 +930,33 @@
 </head>
 <body>
   <div class="editor-container">
-    <div class="toolbar">
+    <div class="toolbar" data-testid="toolbar">
       <h1>Tsyne WYSIWYG Designer</h1>
-      <select id="fileSelect" style="background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; padding: 6px 8px; border-radius: 3px; font-size: 13px;">
+      <select id="fileSelect" data-testid="file-select" style="background: #3c3c3c; border: 1px solid #5e5e5e; color: #d4d4d4; padding: 6px 8px; border-radius: 3px; font-size: 13px;">
         <option value="examples/hello.ts">examples/hello.ts</option>
         <option value="examples/calculator.ts">examples/calculator.ts</option>
         <option value="examples/todomvc.ts">examples/todomvc.ts</option>
       </select>
-      <button onclick="loadSelectedFile()">Load</button>
-      <button onclick="undo()" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
-      <button onclick="redo()" id="redoBtn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
-      <button onclick="saveChanges()">💾 Save</button>
-      <button onclick="refreshPreview()">Refresh</button>
-      <button onclick="openCssEditor()" id="cssEditorBtn" style="display:none">CSS Classes</button>
-      <span class="file-path" id="filePath">No file loaded</span>
+      <button onclick="loadSelectedFile()" data-testid="load-btn">Load</button>
+      <button onclick="undo()" id="undoBtn" data-testid="undo-btn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+      <button onclick="redo()" id="redoBtn" data-testid="redo-btn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
+      <button onclick="saveChanges()" data-testid="save-btn">💾 Save</button>
+      <button onclick="refreshPreview()" data-testid="refresh-btn">Refresh</button>
+      <button onclick="openCssEditor()" id="cssEditorBtn" data-testid="css-editor-btn" style="display:none">CSS Classes</button>
+      <span class="file-path" id="filePath" data-testid="file-path">No file loaded</span>
     </div>
 
-    <div class="widget-tree">
-      <h2>Widget Tree <button class="tree-header-copy" onclick="copyTreeToClipboard()" title="Copy tree to clipboard">📋</button></h2>
-      <div id="treeRoot"></div>
+    <div class="widget-tree" data-testid="widget-tree">
+      <h2>Widget Tree <button class="tree-header-copy" onclick="copyTreeToClipboard()" title="Copy tree to clipboard" data-testid="copy-tree-btn">📋</button></h2>
+      <div id="treeRoot" data-testid="tree-root"></div>
     </div>
 
     <div class="resize-handle resize-handle-left" id="resizeHandleLeft"></div>
 
-    <div class="preview-panel">
+    <div class="preview-panel" data-testid="preview-panel">
       <h2>
         Preview
-        <button class="preview-mode-toggle" onclick="toggleProductionMode()" id="productionModeBtn" title="Toggle production preview (removes designer styling)">
+        <button class="preview-mode-toggle" onclick="toggleProductionMode()" id="productionModeBtn" data-testid="production-mode-btn" title="Toggle production preview (removes designer styling)">
           Production Preview
         </button>
       </h2>
@@ -964,12 +964,12 @@
         <label style="font-size: 12px; color: #858585; margin-right: 10px;">Scenario:</label>
         <div id="scenarioRadios" style="display: inline-flex; gap: 10px; flex-wrap: wrap;"></div>
       </div>
-      <div class="preview-tabs">
-        <button class="preview-tab active" onclick="switchPreviewTab('preview')">Preview</button>
-        <button class="preview-tab" onclick="switchPreviewTab('source')">Source</button>
-        <button class="preview-tab" onclick="switchPreviewTab('original')">Original Source</button>
-        <button class="preview-tab" onclick="switchPreviewTab('diff')">Source Diffs</button>
-        <button class="preview-tab" onclick="switchPreviewTab('designer')">Designer File</button>
+      <div class="preview-tabs" data-testid="preview-tabs">
+        <button class="preview-tab active" onclick="switchPreviewTab('preview')" data-testid="tab-preview">Preview</button>
+        <button class="preview-tab" onclick="switchPreviewTab('source')" data-testid="tab-source">Source</button>
+        <button class="preview-tab" onclick="switchPreviewTab('original')" data-testid="tab-original">Original Source</button>
+        <button class="preview-tab" onclick="switchPreviewTab('diff')" data-testid="tab-diff">Source Diffs</button>
+        <button class="preview-tab" onclick="switchPreviewTab('designer')" data-testid="tab-designer">Designer File</button>
       </div>
       <div id="previewTabPreview" class="preview-tab-content active">
         <div class="preview-content" id="previewContent">
@@ -992,18 +992,18 @@
 
     <div class="resize-handle resize-handle-right" id="resizeHandleRight"></div>
 
-    <div class="property-inspector" id="propertyInspector">
-      <div class="inspector-tabs">
-        <div class="inspector-tab active" onclick="switchInspectorTab('widgets')">Add Widgets</div>
-        <div class="inspector-tab" onclick="switchInspectorTab('properties')">Properties</div>
+    <div class="property-inspector" id="propertyInspector" data-testid="property-inspector">
+      <div class="inspector-tabs" data-testid="inspector-tabs">
+        <div class="inspector-tab active" onclick="switchInspectorTab('widgets')" data-testid="inspector-tab-widgets">Add Widgets</div>
+        <div class="inspector-tab" onclick="switchInspectorTab('properties')" data-testid="inspector-tab-properties">Properties</div>
       </div>
 
-      <div id="inspectorWidgets" class="inspector-tab-content active">
-      <div class="widget-palette">
+      <div id="inspectorWidgets" class="inspector-tab-content active" data-testid="inspector-widgets">
+      <div class="widget-palette" data-testid="widget-palette">
         <h3>Containers</h3>
         <div class="palette-grid">
-          <div class="palette-item" onclick="addWidget('vbox')"><span class="icon">⬍</span>VBox</div>
-          <div class="palette-item" onclick="addWidget('hbox')"><span class="icon">⬌</span>HBox</div>
+          <div class="palette-item" onclick="addWidget('vbox')" data-testid="palette-vbox"><span class="icon">⬍</span>VBox</div>
+          <div class="palette-item" onclick="addWidget('hbox')" data-testid="palette-hbox"><span class="icon">⬌</span>HBox</div>
           <div class="palette-item" onclick="addWidget('stack')"><span class="icon">▣</span>Stack</div>
           <div class="palette-item" onclick="addWidget('scroll')"><span class="icon">⤓</span>Scroll</div>
           <div class="palette-item" onclick="addWidget('grid')"><span class="icon">⊞</span>Grid</div>
@@ -1023,8 +1023,8 @@
         </div>
         <h3 style="margin-top: 15px;">Inputs</h3>
         <div class="palette-grid">
-          <div class="palette-item" onclick="addWidget('button')"><span class="icon">▭</span>Button</div>
-          <div class="palette-item" onclick="addWidget('entry')"><span class="icon">⎕</span>Entry</div>
+          <div class="palette-item" onclick="addWidget('button')" data-testid="palette-button"><span class="icon">▭</span>Button</div>
+          <div class="palette-item" onclick="addWidget('entry')" data-testid="palette-entry"><span class="icon">⎕</span>Entry</div>
           <div class="palette-item" onclick="addWidget('multilineentry')"><span class="icon">▤</span>MultiLine</div>
           <div class="palette-item" onclick="addWidget('passwordentry')"><span class="icon">◆</span>Password</div>
           <div class="palette-item" onclick="addWidget('checkbox')"><span class="icon">☑</span>Checkbox</div>
@@ -1036,7 +1036,7 @@
         </div>
         <h3 style="margin-top: 15px;">Display</h3>
         <div class="palette-grid">
-          <div class="palette-item" onclick="addWidget('label')"><span class="icon">T</span>Label</div>
+          <div class="palette-item" onclick="addWidget('label')" data-testid="palette-label"><span class="icon">T</span>Label</div>
           <div class="palette-item" onclick="addWidget('separator')"><span class="icon">─</span>Separator</div>
           <div class="palette-item" onclick="addWidget('spacer')"><span class="icon">↕</span>Spacer</div>
           <div class="palette-item" onclick="addWidget('image')"><span class="icon">⛶</span>Image</div>

@@ -56,11 +56,11 @@ sleep 2
 timeout 180 npm run test:unit || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "⚠️  Root unit tests timed out after 180 seconds"
+    echo "❌ Root unit tests timed out after 180 seconds"
   else
-    echo "⚠️  Root unit tests completed with failures (exit code: $EXIT_CODE)"
+    echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
   fi
-  echo "Note: Test failures are non-blocking while test suite is being stabilized"
+  exit 1
 }
 
 # ============================================================================
@@ -70,17 +70,20 @@ echo "--- :art: Designer - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
   npm install --ignore-scripts
-  npm run build || echo "⚠️  Designer build failed (non-blocking)"
+  npm run build || {
+    echo "❌ Designer build failed"
+    exit 1
+  }
 
   echo "--- :test_tube: Designer - Tests"
   timeout 180 npm test || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
-      echo "⚠️  Designer tests timed out after 180 seconds"
+      echo "❌ Designer tests timed out after 180 seconds"
     else
-      echo "⚠️  Designer tests completed with failures (exit code: $EXIT_CODE)"
+      echo "❌ Designer tests failed (exit code: $EXIT_CODE)"
     fi
-    echo "Note: Test failures are non-blocking while test suite is being stabilized"
+    exit 1
   }
 else
   echo "⚠️  No package.json found in designer/ - skipping"
@@ -95,11 +98,11 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 timeout 300 npm run test:examples || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "⚠️  Examples tests timed out after 300 seconds"
+    echo "❌ Examples tests timed out after 300 seconds"
   else
-    echo "⚠️  Examples tests completed with failures (exit code: $EXIT_CODE)"
+    echo "❌ Examples tests failed (exit code: $EXIT_CODE)"
   fi
-  echo "Note: Test failures are non-blocking while test suite is being stabilized"
+  exit 1
 }
 
 # ============================================================================

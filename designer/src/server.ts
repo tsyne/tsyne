@@ -787,6 +787,8 @@ function extractStyles(sourceCode: string): Record<string, any> | null {
     stylesContent = stylesContent.replace(/'/g, '"');
     // Remove trailing commas before closing braces
     stylesContent = stylesContent.replace(/,(\s*[}\]])/g, '$1');
+    // Remove trailing comma at end of content (before we wrap with {})
+    stylesContent = stylesContent.replace(/,\s*$/, '');
 
     // Parse as JSON
     const stylesObj = JSON.parse('{' + stylesContent + '}');
@@ -842,17 +844,9 @@ function lintSource(sourceCode: string, context: string = 'source'): { valid: bo
 
 // Load and execute source code in designer mode
 async function loadSourceInDesignerMode(sourceCode: string, virtualPath: string = 'inline.ts'): Promise<{ widgets: any[] }> {
-  // Format source code with Prettier for consistent display
-  const formattedSource = await prettier.format(sourceCode, {
-    parser: 'typescript',
-    semi: true,
-    singleQuote: true,
-    tabWidth: 2,
-    printWidth: 80
-  });
-
-  currentSourceCode = formattedSource;
-  originalSource = formattedSource;  // Store original unmodified source for diffing
+  // MVC: Store original source for diff view (comparing original vs model serialization)
+  originalSource = sourceCode;
+  currentSourceCode = sourceCode;
   currentFilePath = virtualPath;
 
   // Lint source code
@@ -1094,6 +1088,10 @@ class SourceCodeEditor {
       }
     }
     return found;
+  }
+
+  contains(searchText: string): boolean {
+    return this.lines.some(line => line.includes(searchText));
   }
 
   addWidget(parentMetadata: any, widgetType: string, properties: any): boolean {
@@ -2155,7 +2153,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         const formattedSource = await prettier.format(updatedSource, {
           parser: 'typescript',
           semi: true,
-          singleQuote: true,
+          singleQuote: false,
           tabWidth: 2,
           printWidth: 80
         });
@@ -2184,24 +2182,19 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         // Parse writer strategy from request (default: 'disk')
         const { writer = 'disk' } = body ? JSON.parse(body) : {};
 
-        if (pendingEdits.length === 0) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, message: 'No changes to save', content: currentSourceCode }));
-          return;
-        }
-
-      // Generate candidate source from model (pure function - model to source serialization)
-      // This replaces all the complex line-based editing logic
+      // MVC: Always serialize from model (not from original source)
+      // The model is the source of truth; source code is just a view/serialization
       const candidateSource = toSource(currentMetadata!, currentStyles);
 
-      console.log(`[Editor] Generated source from model with ${pendingEdits.length} pending edits`);
+      console.log(`[Editor] Serialized model to source (${pendingEdits.length} edits were made)`);
 
       // Apply source transformer (pluggable last-minute corrections)
+      // Future: LLM transformer could merge with original source to preserve style
       const transformer = transformerRegistry.getTransformer();
       console.log(`[Transformer] Using transformer: ${transformer.name}`);
 
       const transformContext: TransformContext = {
-        originalSource: currentSourceCode!,
+        originalSource: originalSource!,
         candidateSource,
         filePath: currentFilePath!,
         metadata: currentMetadata,
@@ -2220,12 +2213,6 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         });
       }
 
-      // Lint the final output source
-      const lintResult = lintSource(transformResult.source, 'save');
-      if (!lintResult.valid) {
-        console.warn('[Designer] Generated source has lint errors');
-      }
-
       // Prepare output path
       const outputPath = currentFilePath!.replace('.ts', '.edited.ts');
       const fullOutputPath = path.join(__dirname, '..', '..', outputPath);
@@ -2240,7 +2227,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         console.log(`[Editor] Captured changes to memory (no file written)`);
       }
 
-      console.log(`[Editor] Applied ${pendingEdits.length} edits`);
+      console.log(`[Editor] Saved (${pendingEdits.length} pending edits cleared)`);
 
       pendingEdits = [];
 
@@ -2289,7 +2276,8 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
 
         // Add the widget to metadata (don't reload file!)
         currentParent = parentId;
-        const newWidgetId = captureWidget(widgetType, props);
+        const newWidget = captureWidget(widgetType, props);
+        const newWidgetId = newWidget.__internalId;  // Extract the ID string
         currentParent = null;
 
         // Update metadata
@@ -2326,6 +2314,22 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         success: true,
         styles: currentStyles || {},
         sourceCode: currentSourceCode
+      }));
+    } catch (error: any) {
+      console.error('[API Error]', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: error.message }));
+    }
+  },
+
+  '/api/get-metadata': (req, res) => {
+    try {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        metadata: currentMetadata,
+        styles: currentStyles,
+        filePath: currentFilePath
       }));
     } catch (error: any) {
       console.error('[API Error]', error);
@@ -2689,7 +2693,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
         const formattedSource = await prettier.format(updatedSource, {
           parser: 'typescript',
           semi: true,
-          singleQuote: true,
+          singleQuote: false,
           tabWidth: 2,
           printWidth: 80
         });
@@ -2734,7 +2738,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       const formattedOriginal = await prettier.format(originalSource, {
         parser: 'typescript',
         semi: true,
-        singleQuote: true,
+        singleQuote: false,
         tabWidth: 2,
         printWidth: 80
       });
@@ -2742,7 +2746,7 @@ const apiHandlers: Record<string, (req: http.IncomingMessage, res: http.ServerRe
       const formattedCurrent = await prettier.format(currentSourceCode, {
         parser: 'typescript',
         semi: true,
-        singleQuote: true,
+        singleQuote: false,
         tabWidth: 2,
         printWidth: 80
       });

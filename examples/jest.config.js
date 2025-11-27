@@ -11,6 +11,7 @@ module.exports = {
     '/screenshots/',
     '/pages/',
     '/assets/',
+    'logic[.-]test\\.ts$',
     'browser.test.ts',
     'fluent-api.test.ts',
     'fluent-properties.test.ts',

@@ -45,5 +45,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace fyne.io/systray => /tmp/systray-master
