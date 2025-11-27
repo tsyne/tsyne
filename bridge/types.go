@@ -577,7 +577,14 @@ func NewBridge(testMode bool) *Bridge {
 
 	// Create and apply scalable theme with default font size
 	scalableTheme := NewScalableTheme(1.0)
-	fyneApp.Settings().SetTheme(scalableTheme)
+
+	// Set theme on the proper Fyne thread
+	done := make(chan bool)
+	fyne.Do(func() {
+		fyneApp.Settings().SetTheme(scalableTheme)
+		done <- true
+	})
+	<-done
 
 	return &Bridge{
 		app:            fyneApp,

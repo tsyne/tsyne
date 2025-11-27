@@ -253,8 +253,9 @@ export class BridgeConnection implements BridgeInterface {
     await this.readyPromise;
 
     // Check if bridge is still available before attempting to send
+    // Return rejected promise instead of throwing for proper async error handling
     if (this.bridgeExiting || this.stdinClosed || this.process.killed) {
-      throw new Error('Bridge is shutting down - cannot send messages');
+      return Promise.reject(new Error('Bridge is shutting down - cannot send messages'));
     }
 
     const id = `msg_${this.messageId++}`;
