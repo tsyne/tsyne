@@ -76,9 +76,13 @@ export class TsyneTest {
    */
   async cleanup(): Promise<void> {
     if (this.app) {
+      // Run app cleanup callbacks FIRST (stop timers, intervals, etc.)
+      // This ensures no async operations try to send messages after bridge shutdown begins
+      await this.app.runCleanupCallbacks();
+
       const bridge = this.app.getBridge() as any;
 
-      // Mark bridge as exiting FIRST to prevent new requests during cleanup
+      // Mark bridge as exiting AFTER cleanup callbacks to prevent new requests during shutdown
       // This is critical to prevent EPIPE errors from race conditions
       if (bridge.bridgeExiting !== undefined) {
         bridge.bridgeExiting = true;

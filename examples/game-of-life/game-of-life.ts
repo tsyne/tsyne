@@ -451,6 +451,9 @@ class GameOfLifeUI {
 export function createGameOfLifeApp(a: App): GameOfLifeUI {
   const ui = new GameOfLifeUI(a);
 
+  // Register cleanup callback to stop the game timer before shutdown
+  a.registerCleanup(() => ui.cleanup());
+
   a.window({ title: 'Game of Life', width: 800, height: 600 }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);

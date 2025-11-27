@@ -182,6 +182,7 @@ export class App {
   private windows: Window[] = [];
   private bridge: BridgeInterface;
   public resources: ResourceManager;
+  private cleanupCallbacks: Array<() => void | Promise<void>> = [];
 
   constructor(options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
@@ -205,6 +206,25 @@ export class App {
 
   getBridge(): BridgeInterface {
     return this.bridge;
+  }
+
+  /**
+   * Register a cleanup callback to be called before app shutdown
+   * Use this to clean up timers, intervals, event listeners, etc.
+   */
+  registerCleanup(callback: () => void | Promise<void>): void {
+    this.cleanupCallbacks.push(callback);
+  }
+
+  /**
+   * Run all registered cleanup callbacks
+   * Called by TsyneTest before shutting down the bridge
+   */
+  async runCleanupCallbacks(): Promise<void> {
+    for (const callback of this.cleanupCallbacks) {
+      await callback();
+    }
+    this.cleanupCallbacks = [];
   }
 
   /**
