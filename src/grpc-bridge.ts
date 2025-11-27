@@ -201,6 +201,8 @@ export class GrpcBridge {
   private token?: string;
   private port?: number;
   private connected = false;
+  // Cached metadata for all requests - avoids allocation per call
+  private cachedMetadata?: grpc.Metadata;
 
   /**
    * Connect to the bridge by spawning the tsyne-bridge process in gRPC mode
@@ -298,20 +300,35 @@ export class GrpcBridge {
     };
     const BridgeService = protoDescriptor.bridge.BridgeService;
 
+    // Performance-optimized channel options
     this.client = new BridgeService(
       `localhost:${port}`,
       grpc.credentials.createInsecure(),
       {
         'grpc.max_receive_message_length': 100 * 1024 * 1024, // 100MB
         'grpc.max_send_message_length': 100 * 1024 * 1024, // 100MB
+        'grpc.keepalive_time_ms': 10000,
+        'grpc.keepalive_timeout_ms': 5000,
+        'grpc.keepalive_permit_without_calls': 1,
+        'grpc.tcp_no_delay': true,  // Disable Nagle's algorithm
+        'grpc.default_compression_algorithm': 0,  // No compression for local
       }
     ) as BridgeClient;
+
+    // Cache metadata for reuse across all calls
+    this.cachedMetadata = new grpc.Metadata();
+    this.cachedMetadata.add('authorization', token);
   }
 
   /**
-   * Get metadata with auth token
+   * Get metadata with auth token (returns cached instance for performance)
    */
   private getMetadata(): grpc.Metadata {
+    // Return cached metadata to avoid allocation on every call
+    if (this.cachedMetadata) {
+      return this.cachedMetadata;
+    }
+    // Fallback: create new metadata if not cached
     const metadata = new grpc.Metadata();
     if (this.token) {
       metadata.add('authorization', this.token);

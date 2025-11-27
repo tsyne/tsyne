@@ -32,6 +32,59 @@ interface GrpcClient {
   ) => grpc.ClientReadableStream<GrpcEvent>;
 }
 
+// ==================== PERFORMANCE OPTIMIZATION ====================
+// Cache proto definition at module level - loaded once, reused across all connections
+let cachedProtoDescriptor: {
+  bridge: {
+    BridgeService: new (
+      address: string,
+      credentials: grpc.ChannelCredentials,
+      options?: Record<string, unknown>
+    ) => GrpcClient;
+  };
+} | null = null;
+
+function getProtoDescriptor() {
+  if (cachedProtoDescriptor) {
+    return cachedProtoDescriptor;
+  }
+
+  // Determine proto path
+  const isCompiled = __dirname.includes(path.sep + 'dist' + path.sep);
+  const projectRoot = isCompiled
+    ? path.join(__dirname, '..', '..')
+    : path.join(__dirname, '..');
+  const protoPath = path.join(projectRoot, 'bridge', 'proto', 'bridge.proto');
+
+  // Load synchronously once at startup
+  const packageDefinition = protoLoader.loadSync(protoPath, {
+    keepCase: false,  // Convert snake_case to camelCase
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+  });
+
+  cachedProtoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as typeof cachedProtoDescriptor;
+  return cachedProtoDescriptor;
+}
+
+// gRPC client channel options for low-latency communication
+const GRPC_CLIENT_OPTIONS = {
+  // Larger buffers reduce syscalls
+  'grpc.max_receive_message_length': 100 * 1024 * 1024,  // 100MB
+  'grpc.max_send_message_length': 100 * 1024 * 1024,     // 100MB
+  // Keepalive to prevent connection drops
+  'grpc.keepalive_time_ms': 10000,
+  'grpc.keepalive_timeout_ms': 5000,
+  'grpc.keepalive_permit_without_calls': 1,
+  // Enable TCP_NODELAY for lower latency (disable Nagle's algorithm)
+  'grpc.tcp_no_delay': true,
+  // Default compression disabled for speed on local connections
+  'grpc.default_compression_algorithm': 0,  // GRPC_COMPRESS_NONE
+};
+// ===================================================================
+
 /**
  * GrpcBridgeConnection - Connects to tsyne-bridge via gRPC protocol
  *
@@ -50,6 +103,8 @@ export class GrpcBridgeConnection implements BridgeInterface {
   private connectionInfo?: GrpcConnectionInfo;
   private eventStream?: grpc.ClientReadableStream<GrpcEvent>;
   private authToken?: string;
+  // Cached metadata object - reused for all requests
+  private cachedMetadata?: grpc.Metadata;
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -119,40 +174,24 @@ export class GrpcBridgeConnection implements BridgeInterface {
   }
 
   private async connectGrpc(info: GrpcConnectionInfo): Promise<void> {
-    // Load proto definition
-    const isCompiled = __dirname.includes(path.sep + 'dist' + path.sep);
-    const projectRoot = isCompiled
-      ? path.join(__dirname, '..', '..')
-      : path.join(__dirname, '..');
-    const protoPath = path.join(projectRoot, 'bridge', 'proto', 'bridge.proto');
-
-    const packageDefinition = protoLoader.loadSync(protoPath, {
-      keepCase: false,  // Convert snake_case to camelCase
-      longs: String,
-      enums: String,
-      defaults: true,
-      oneofs: true
-    });
-
-    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as {
-      bridge: {
-        BridgeService: new (
-          address: string,
-          credentials: grpc.ChannelCredentials
-        ) => GrpcClient;
-      };
-    };
+    // Use cached proto descriptor for faster startup
+    const protoDescriptor = getProtoDescriptor();
+    if (!protoDescriptor) {
+      throw new Error('Failed to load proto descriptor');
+    }
     const BridgeService = protoDescriptor.bridge.BridgeService;
 
-    // Create client with insecure credentials
-    // Auth token will be passed via metadata on each call
+    // Create client with performance-optimized channel options
     this.client = new BridgeService(
       `localhost:${info.grpcPort}`,
-      grpc.credentials.createInsecure()
+      grpc.credentials.createInsecure(),
+      GRPC_CLIENT_OPTIONS
     );
 
-    // Store token for use in calls
+    // Store token and create cached metadata for all requests
     this.authToken = info.token;
+    this.cachedMetadata = new grpc.Metadata();
+    this.cachedMetadata.add('authorization', info.token);
 
     // Subscribe to events
     this.subscribeToEvents();
@@ -164,15 +203,12 @@ export class GrpcBridgeConnection implements BridgeInterface {
   }
 
   private subscribeToEvents(): void {
-    if (!this.client || !this.authToken) return;
+    if (!this.client || !this.cachedMetadata) return;
 
     const request = { eventTypes: [] }; // Subscribe to all events
 
-    // Create metadata with auth token
-    const metadata = new grpc.Metadata();
-    metadata.add('authorization', this.authToken);
-
-    const stream = this.client.subscribeEvents(request, metadata);
+    // Use cached metadata for better performance
+    const stream = this.client.subscribeEvents(request, this.cachedMetadata);
     this.eventStream = stream;
 
     stream.on('data', (event: GrpcEvent) => {
@@ -226,7 +262,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
   async send(type: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     await this.readyPromise;
 
-    if (!this.client || !this.authToken) {
+    if (!this.client || !this.cachedMetadata) {
       throw new Error('gRPC client not connected');
     }
 
@@ -241,12 +277,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
         return;
       }
 
-      // Create metadata with auth token
-      const metadata = new grpc.Metadata();
-      if (this.authToken) {
-        metadata.add('authorization', this.authToken);
-      }
-
+      // Use cached metadata for better performance (no allocation per call)
       const methodFn = this.client![method];
       if (typeof methodFn !== 'function') {
         reject(new Error(`Method ${method} not found on client`));
@@ -254,7 +285,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
       }
 
       // Bind method to client to preserve 'this' context
-      methodFn.call(this.client, request, metadata, (err: Error | null, response: Record<string, unknown>) => {
+      methodFn.call(this.client, request, this.cachedMetadata, (err: Error | null, response: Record<string, unknown>) => {
         if (err) {
           reject(err);
         } else {
