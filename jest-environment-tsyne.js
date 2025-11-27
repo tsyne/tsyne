@@ -12,7 +12,7 @@ class TsyneEnvironment extends NodeEnvironment {
     // Suppress "Bridge shutting down" errors during test cleanup
     // These are expected errors that occur when tests end while bridge requests are pending
     this.unhandledRejectionHandler = (reason) => {
-      if (reason && reason.message === 'Bridge shutting down') {
+      if (reason && reason.message && reason.message.includes('Bridge') && reason.message.includes('shutting down')) {
         // Silently ignore - this is an expected cleanup error
         return;
       }

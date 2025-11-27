@@ -359,13 +359,22 @@ func (b *Bridge) handleCreateImage(msg Message) {
 			return
 		}
 
-		// Create a static resource from the file data
-		resource := fyne.NewStaticResource(path, data)
-		img = canvas.NewImageFromResource(resource)
+		// Decode to get dimensions and create image from decoded data directly
+		decodedImg, _, decodeErr := image.Decode(bytes.NewReader(data))
+		if decodeErr != nil {
+			log.Printf("[Image] Warning: could not decode image for dimensions: %v", decodeErr)
+			// Fallback to resource-based approach
+			resource := fyne.NewStaticResource(path, data)
+			img = canvas.NewImageFromResource(resource)
+		} else {
+			// Create image from decoded data (more reliable than resource)
+			img = canvas.NewImageFromImage(decodedImg)
+		}
 	}
 
 	// Set fill mode if provided
-	if fillMode, ok := msg.Payload["fillMode"].(string); ok {
+	fillMode, hasFillMode := msg.Payload["fillMode"].(string)
+	if hasFillMode {
 		switch fillMode {
 		case "contain":
 			img.FillMode = canvas.ImageFillContain
@@ -375,7 +384,30 @@ func (b *Bridge) handleCreateImage(msg Message) {
 			img.FillMode = canvas.ImageFillOriginal
 		}
 	} else {
+		fillMode = "original"
 		img.FillMode = canvas.ImageFillOriginal // Use original size to preserve image quality
+	}
+
+	// Set MinSize based on fill mode
+	// For contain/stretch, use a reasonable default since the image will scale
+	// For original, use the actual image dimensions
+	if img.Image != nil {
+		bounds := img.Image.Bounds()
+		if fillMode == "original" {
+			img.SetMinSize(fyne.NewSize(float32(bounds.Dx()), float32(bounds.Dy())))
+		} else {
+			// For contain/stretch, use a reasonable minimum that maintains aspect ratio
+			// Default to 200x200 or smaller if image is smaller
+			minW := float32(200)
+			minH := float32(200)
+			if float32(bounds.Dx()) < minW {
+				minW = float32(bounds.Dx())
+			}
+			if float32(bounds.Dy()) < minH {
+				minH = float32(bounds.Dy())
+			}
+			img.SetMinSize(fyne.NewSize(minW, minH))
+		}
 	}
 
 	// Force refresh to ensure the image renders

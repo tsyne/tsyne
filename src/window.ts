@@ -233,6 +233,13 @@ export class Window {
    * @returns Promise<string | null> - file path if selected, null if cancelled
    */
   async showFileOpen(): Promise<string | null> {
+    // Check for mocked response in test harness
+    const testHarness = this.ctx.testHarness;
+    if (testHarness && testHarness.hasMockedFileDialog('open')) {
+      const mockedResponse = testHarness.popMockedFileDialog('open');
+      return mockedResponse === undefined ? null : mockedResponse;
+    }
+
     return new Promise((resolve) => {
       const callbackId = this.ctx.generateId('callback');
 
@@ -256,6 +263,13 @@ export class Window {
    * @returns Promise<string | null> - file path if selected, null if cancelled
    */
   async showFileSave(filename?: string): Promise<string | null> {
+    // Check for mocked response in test harness
+    const testHarness = this.ctx.testHarness;
+    if (testHarness && testHarness.hasMockedFileDialog('save')) {
+      const mockedResponse = testHarness.popMockedFileDialog('save');
+      return mockedResponse === undefined ? null : mockedResponse;
+    }
+
     return new Promise((resolve) => {
       const callbackId = this.ctx.generateId('callback');
 

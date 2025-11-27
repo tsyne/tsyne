@@ -21,7 +21,7 @@
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
-import type { Image as ImageWidget } from '../../src/widgets';
+import type { Image as ImageWidget, Slider } from '../../src/widgets';
 import { Jimp, type JimpInstance } from 'jimp';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -51,7 +51,7 @@ interface EditParams {
  * Image viewer/editor with REAL Jimp processing
  * Based on: img.go and ui.go from Palexer/image-viewer
  */
-class ImageViewer {
+export class ImageViewer {
   private currentImage: ImageInfo | null = null;
   private sourceImage: Awaited<ReturnType<typeof Jimp.read>> | null = null;  // Original unedited image
   private editParams: EditParams = {
@@ -72,7 +72,12 @@ class ImageViewer {
     size: null,
     lastModified: null
   };
-  private editSliders: any = {
+  private editSliders: {
+    brightness: Slider | null;
+    contrast: Slider | null;
+    saturation: Slider | null;
+    hue: Slider | null;
+  } = {
     brightness: null,
     contrast: null,
     saturation: null,
@@ -112,9 +117,18 @@ class ImageViewer {
       await this.updateDisplay();
       await this.applyEditsAndDisplay();
     } catch (error) {
+      // Ignore "bridge shutting down" errors - these are expected during test cleanup
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('Bridge') && errorMessage.includes('shutting down')) {
+        return;
+      }
       console.error('Failed to load image:', error);
       if (this.imageAreaLabel) {
-        await this.imageAreaLabel.setText('Error loading image: ' + (error as Error).message);
+        try {
+          await this.imageAreaLabel.setText('Error loading image: ' + errorMessage);
+        } catch (e) {
+          // Ignore errors when setting error text (bridge may be shutting down)
+        }
       }
     }
   }
@@ -124,9 +138,13 @@ class ImageViewer {
    * This is where the REAL image processing happens with Jimp!
    */
   private async applyEditsAndDisplay(): Promise<void> {
-    if (!this.sourceImage || !this.imageDisplay) return;
-
     try {
+      // Always update zoom status (even without an image)
+      if (this.zoomStatus) {
+        await this.zoomStatus.setText(`Zoom: ${Math.round(this.zoomLevel * 100)}%`);
+      }
+
+      if (!this.sourceImage || !this.imageDisplay) return;
       // Clone the source image (don't modify original)
       let processedImage = this.sourceImage.clone();
 
@@ -172,13 +190,12 @@ class ImageViewer {
 
       // Send to Fyne for display!
       await this.imageDisplay.updateImage(base64);
-
-      // Update zoom status
-      if (this.zoomStatus) {
-        await this.zoomStatus.setText(`Zoom: ${Math.round(this.zoomLevel * 100)}%`);
-      }
     } catch (error) {
-      console.error('Failed to process image:', error);
+      // Ignore "bridge shutting down" errors - these are expected during test cleanup
+      const errorMessage = (error as Error).message || '';
+      if (!errorMessage.includes('Bridge') || !errorMessage.includes('shutting down')) {
+        console.error('Failed to process image:', error);
+      }
     }
   }
 
@@ -186,40 +203,49 @@ class ImageViewer {
    * Update information display
    */
   private async updateDisplay(): Promise<void> {
-    if (!this.currentImage) return;
+    try {
+      // Update image info if available
+      if (this.currentImage) {
+        // Update image area label
+        if (this.imageAreaLabel) {
+          await this.imageAreaLabel.setText(`Viewing: ${path.basename(this.currentImage.path)}`);
+        }
 
-    // Update image area label
-    if (this.imageAreaLabel) {
-      await this.imageAreaLabel.setText(`Viewing: ${path.basename(this.currentImage.path)}`);
-    }
+        // Update info labels
+        if (this.imageInfoLabels.width) {
+          await this.imageInfoLabels.width.setText(`Width: ${this.currentImage.width}px`);
+        }
+        if (this.imageInfoLabels.height) {
+          await this.imageInfoLabels.height.setText(`Height: ${this.currentImage.height}px`);
+        }
+        if (this.imageInfoLabels.size) {
+          const sizeKB = Math.round(this.currentImage.size / 1024);
+          await this.imageInfoLabels.size.setText(`Size: ${sizeKB} KB`);
+        }
+        if (this.imageInfoLabels.lastModified) {
+          await this.imageInfoLabels.lastModified.setText(`Last modified: ${this.currentImage.lastModified}`);
+        }
+      }
 
-    // Update info labels
-    if (this.imageInfoLabels.width) {
-      await this.imageInfoLabels.width.setText(`Width: ${this.currentImage.width}px`);
-    }
-    if (this.imageInfoLabels.height) {
-      await this.imageInfoLabels.height.setText(`Height: ${this.currentImage.height}px`);
-    }
-    if (this.imageInfoLabels.size) {
-      const sizeKB = Math.round(this.currentImage.size / 1024);
-      await this.imageInfoLabels.size.setText(`Size: ${sizeKB} KB`);
-    }
-    if (this.imageInfoLabels.lastModified) {
-      await this.imageInfoLabels.lastModified.setText(`Last modified: ${this.currentImage.lastModified}`);
-    }
-
-    // Update edit sliders
-    if (this.editSliders.brightness) {
-      await this.editSliders.brightness.setText(`Brightness: ${this.editParams.brightness}`);
-    }
-    if (this.editSliders.contrast) {
-      await this.editSliders.contrast.setText(`Contrast: ${this.editParams.contrast}`);
-    }
-    if (this.editSliders.saturation) {
-      await this.editSliders.saturation.setText(`Saturation: ${this.editParams.saturation}`);
-    }
-    if (this.editSliders.hue) {
-      await this.editSliders.hue.setText(`Hue: ${this.editParams.hue}`);
+      // Always update edit sliders (even without an image loaded)
+      if (this.editSliders.brightness) {
+        await this.editSliders.brightness.setValue(this.editParams.brightness);
+      }
+      if (this.editSliders.contrast) {
+        await this.editSliders.contrast.setValue(this.editParams.contrast);
+      }
+      if (this.editSliders.saturation) {
+        await this.editSliders.saturation.setValue(this.editParams.saturation);
+      }
+      if (this.editSliders.hue) {
+        await this.editSliders.hue.setValue(this.editParams.hue);
+      }
+    } catch (error) {
+      // Ignore "bridge shutting down" errors - these are expected during test cleanup
+      const errorMessage = (error as Error).message || '';
+      if (!errorMessage.includes('Bridge') || !errorMessage.includes('shutting down')) {
+        console.error('Failed to update display:', error);
+      }
     }
   }
 
@@ -317,8 +343,8 @@ class ImageViewer {
     this.imageInfoLabels[type] = widget;
   }
 
-  registerEditSlider(type: keyof typeof this.editSliders, widget: any): void {
-    this.editSliders[type] = widget;
+  registerEditSlider(type: keyof typeof this.editSliders, slider: Slider): void {
+    this.editSliders[type] = slider;
   }
 
   registerZoomStatus(widget: any): void {
@@ -333,21 +359,22 @@ class ImageViewer {
 class ImageViewerUI {
   private a: App;
   private viewer: ImageViewer;
+  private win: Window;
 
-  constructor(a: App, viewer: ImageViewer) {
+  constructor(a: App, viewer: ImageViewer, win: Window) {
     this.a = a;
     this.viewer = viewer;
+    this.win = win;
   }
 
   /**
    * Build the complete UI (called from createImageViewerApp)
    */
-  buildUI(win: Window): void {
+  buildUI(): void {
+    // Set up the main menu (like the original Go version)
+    this.buildMainMenu(this.win);
+
     this.a.border({
-      top: () => {
-        // Toolbar
-        this.buildToolbar();
-      },
       center: () => {
         // HSplit: image area (70%) | side panel (30%)
         this.a.hsplit(
@@ -357,25 +384,123 @@ class ImageViewerUI {
         );
       },
       bottom: () => {
-        // Status bar with zoom level
-        const zoomLabel = this.a.label('Zoom: 100%');
-        this.viewer.registerZoomStatus(zoomLabel);
+        // Status bar with icon buttons (like the original Go version)
+        this.buildStatusBar();
       }
     });
   }
 
   /**
-   * Build toolbar
+   * Build main menu bar (File, Edit, View, Help)
+   * Based on the original Go version's menu structure
    */
-  private buildToolbar(): void {
-    this.a.toolbar([
-      this.a.toolbarAction('Open', () => this.openImage()),
-      this.a.toolbarAction('Reset Edits', () => this.viewer.resetEdits()),
-      { type: 'separator' },
-      this.a.toolbarAction('Zoom In', () => this.viewer.zoomIn()),
-      this.a.toolbarAction('Zoom Out', () => this.viewer.zoomOut()),
-      this.a.toolbarAction('Reset Zoom', () => this.viewer.resetZoom())
+  private buildMainMenu(win: Window): void {
+    win.setMainMenu([
+      {
+        label: 'File',
+        items: [
+          {
+            label: 'Open',
+            onSelected: () => this.openImage()
+          },
+          {
+            label: 'Save As...',
+            onSelected: () => this.saveImage(win)
+          },
+          { label: '', isSeparator: true },
+          {
+            label: 'Quit',
+            onSelected: () => process.exit(0)
+          }
+        ]
+      },
+      {
+        label: 'Edit',
+        items: [
+          {
+            label: 'Reset Edits',
+            onSelected: () => this.viewer.resetEdits()
+          }
+        ]
+      },
+      {
+        label: 'View',
+        items: [
+          {
+            label: 'Fullscreen',
+            onSelected: () => win.setFullScreen(true)
+          },
+          {
+            label: 'Exit Fullscreen',
+            onSelected: () => win.setFullScreen(false)
+          },
+          { label: '', isSeparator: true },
+          {
+            label: 'Zoom In',
+            onSelected: () => this.viewer.zoomIn()
+          },
+          {
+            label: 'Zoom Out',
+            onSelected: () => this.viewer.zoomOut()
+          },
+          {
+            label: 'Reset Zoom',
+            onSelected: () => this.viewer.resetZoom()
+          }
+        ]
+      },
+      {
+        label: 'Help',
+        items: [
+          {
+            label: 'About',
+            onSelected: async () => {
+              await win.showInfo(
+                'About Image Viewer',
+                'Image Viewer with Real Editing\n\nPorted from github.com/Palexer/image-viewer\nUsing Jimp for image processing'
+              );
+            }
+          }
+        ]
+      }
     ]);
+  }
+
+  /**
+   * Build status bar with icon buttons
+   * Based on the original Go version's status bar
+   */
+  private buildStatusBar(): void {
+    this.a.hbox(() => {
+      // Open button for quick access
+      this.a.button('Open', () => this.openImage()).withId('open-btn');
+
+      // Spacer to push zoom controls to the right
+      this.a.label('');
+
+      // Zoom controls with unicode icons in buttons
+      this.a.button('−', () => this.viewer.zoomOut()).withId('zoom-out-btn');
+
+      const zoomLabel = this.a.label('Zoom: 100%').withId('zoom-status');
+      this.viewer.registerZoomStatus(zoomLabel);
+
+      this.a.button('+', () => this.viewer.zoomIn()).withId('zoom-in-btn');
+      this.a.button('⟲', () => this.viewer.resetZoom()).withId('reset-zoom-btn');
+
+      // Reset edits button
+      this.a.button('Reset', () => this.viewer.resetEdits()).withId('reset-edits-btn');
+    });
+  }
+
+  /**
+   * Save image to file
+   */
+  private async saveImage(win: Window): Promise<void> {
+    const filePath = await win.showFileSave('edited-image.png');
+    if (filePath) {
+      // TODO: Implement actual save functionality
+      await win.showInfo('Save', `Would save to: ${filePath}`);
+    }
   }
 
   /**
@@ -383,17 +508,12 @@ class ImageViewerUI {
    */
   private buildImageArea(): void {
     this.a.vbox(() => {
-      // Scrollable image container
-      this.a.scroll(() => {
-        this.a.center(() => {
-          // Create image widget with empty placeholder
-          // We'll update it with real base64 data when an image is loaded
-          const imageWidget = this.a.image('./examples/image-viewer/sample-image.png', 'contain');
-          this.viewer.registerImageDisplay(imageWidget);
-        });
-      });
+      // Image display - use contain mode to fit the available space
+      const sampleImagePath = path.join(__dirname, 'sample-image.png');
+      const imageWidget = this.a.image(sampleImagePath, 'contain');
+      this.viewer.registerImageDisplay(imageWidget);
 
-      // Label showing current image filename or status
+      // Label showing current image filename
       const label = this.a.label('No image loaded');
       this.viewer.registerImageAreaLabel(label);
     });
@@ -417,16 +537,16 @@ class ImageViewerUI {
       this.a.label('Image Information:');
       this.a.separator();
 
-      const widthLabel = this.a.label('Width: -');
+      const widthLabel = this.a.label('Width: -').withId('info-width');
       this.viewer.registerImageInfoLabel('width', widthLabel);
 
-      const heightLabel = this.a.label('Height: -');
+      const heightLabel = this.a.label('Height: -').withId('info-height');
       this.viewer.registerImageInfoLabel('height', heightLabel);
 
-      const sizeLabel = this.a.label('Size: -');
+      const sizeLabel = this.a.label('Size: -').withId('info-size');
       this.viewer.registerImageInfoLabel('size', sizeLabel);
 
-      const modifiedLabel = this.a.label('Last modified: -');
+      const modifiedLabel = this.a.label('Last modified: -').withId('info-modified');
       this.viewer.registerImageInfoLabel('lastModified', modifiedLabel);
     });
   }
@@ -442,77 +562,70 @@ class ImageViewerUI {
       this.a.separator();
 
       // Brightness control
-      this.buildEditControl('brightness', 'Brightness', () => this.viewer.setBrightness);
+      this.buildEditControl('brightness', 'Brightness', (v: number) => this.viewer.setBrightness(v));
 
       // Contrast control
-      this.buildEditControl('contrast', 'Contrast', () => this.viewer.setContrast);
+      this.buildEditControl('contrast', 'Contrast', (v: number) => this.viewer.setContrast(v));
 
       // Saturation control
-      this.buildEditControl('saturation', 'Saturation', () => this.viewer.setSaturation);
+      this.buildEditControl('saturation', 'Saturation', (v: number) => this.viewer.setSaturation(v));
 
       // Hue control
-      this.buildEditControl('hue', 'Hue', () => this.viewer.setHue);
+      this.buildEditControl('hue', 'Hue', (v: number) => this.viewer.setHue(v));
     });
   }
 
   /**
-   * Build an edit control with increase/decrease buttons
+   * Build an edit control with a slider
    */
   private buildEditControl(
     type: 'brightness' | 'contrast' | 'saturation' | 'hue',
     labelText: string,
-    getSetter: () => (value: number) => void
+    setter: (value: number) => void
   ): void {
+    // Hue has a different range than the others
+    const min = type === 'hue' ? -180 : -100;
+    const max = type === 'hue' ? 180 : 100;
+
     this.a.vbox(() => {
-      const label = this.a.label(`${labelText}: 0`);
-      this.viewer.registerEditSlider(type, label);
+      this.a.label(labelText);
 
-      this.a.button(`Increase ${labelText}`, () => {
-        const setter = getSetter.call(this.viewer);
-        const currentValue = this.getCurrentValue(type);
-        setter.call(this.viewer, currentValue + 10);
-      });
+      const slider = this.a.slider(min, max, 0, (value: number) => {
+        setter(value);
+      }).withId(`edit-${type}`);
 
-      this.a.button(`Decrease ${labelText}`, () => {
-        const setter = getSetter.call(this.viewer);
-        const currentValue = this.getCurrentValue(type);
-        setter.call(this.viewer, currentValue - 10);
-      });
+      this.viewer.registerEditSlider(type, slider);
     });
   }
 
   /**
-   * Get current value of an edit parameter
-   */
-  private getCurrentValue(type: 'brightness' | 'contrast' | 'saturation' | 'hue'): number {
-    return (this.viewer as any).editParams[type];
-  }
-
-  /**
-   * Open image (hardcoded to sample image for demo)
+   * Open image using file picker dialog
    */
   private async openImage(): Promise<void> {
-    // For demo purposes, load the sample image
-    // In a real app, you would use a file dialog
-    const samplePath = './examples/image-viewer/sample-image.png';
-    await this.viewer.loadImage(samplePath);
+    const filePath = await this.win.showFileOpen();
+    if (filePath) {
+      await this.viewer.loadImage(filePath);
+    }
   }
 }
 
 /**
  * Create and run the image viewer application
  * Based on: main.go
+ * Returns the viewer instance for programmatic control (useful for testing)
  */
-export function createImageViewerApp(a: App): void {
+export function createImageViewerApp(a: App): ImageViewer {
   const viewer = new ImageViewer();
-  const ui = new ImageViewerUI(a, viewer);
 
-  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
+  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, async (win: Window) => {
+    const ui = new ImageViewerUI(a, viewer, win);
     win.setContent(() => {
-      ui.buildUI(win);
+      ui.buildUI();
     });
     win.show();
   });
+
+  return viewer;
 }
 
 /**

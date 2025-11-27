@@ -927,6 +927,11 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 			default:
 				info["fillMode"] = "unknown"
 			}
+		case *widget.Slider:
+			info["type"] = "slider"
+			info["value"] = w.Value
+			info["min"] = w.Min
+			info["max"] = w.Max
 		}
 
 		// Check if widget is disabled

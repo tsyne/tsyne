@@ -8,6 +8,14 @@ export interface TestOptions {
 }
 
 /**
+ * Mocked file dialog response
+ */
+export interface MockedFileDialog {
+  type: 'open' | 'save';
+  response: string | null;  // file path or null for cancel
+}
+
+/**
  * TsyneTest provides a testing framework for Tsyne applications
  * Uses proper IoC/DI - app instance is injected into builder
  */
@@ -15,6 +23,7 @@ export class TsyneTest {
   private app: App | null = null;
   private testContext: TestContext | null = null;
   private options: TestOptions;
+  private mockedFileDialogs: MockedFileDialog[] = [];
 
   constructor(options: TestOptions = {}) {
     this.options = {
@@ -22,6 +31,38 @@ export class TsyneTest {
       timeout: options.timeout ?? 30000,
       bridgeMode: options.bridgeMode
     };
+  }
+
+  /**
+   * Mock the next file dialog response.
+   * When showFileOpen or showFileSave is called, it will return this response
+   * instead of showing the actual dialog.
+   *
+   * @param type - 'open' for showFileOpen, 'save' for showFileSave
+   * @param response - file path to return, or null to simulate cancel
+   */
+  mockFileDialog(type: 'open' | 'save', response: string | null): void {
+    this.mockedFileDialogs.push({ type, response });
+  }
+
+  /**
+   * Get and remove the next mocked file dialog response for the given type.
+   * Returns undefined if no mock is queued.
+   */
+  popMockedFileDialog(type: 'open' | 'save'): string | null | undefined {
+    const index = this.mockedFileDialogs.findIndex(m => m.type === type);
+    if (index === -1) {
+      return undefined;
+    }
+    const mock = this.mockedFileDialogs.splice(index, 1)[0];
+    return mock.response;
+  }
+
+  /**
+   * Check if there's a mocked response for the given dialog type
+   */
+  hasMockedFileDialog(type: 'open' | 'save'): boolean {
+    return this.mockedFileDialogs.some(m => m.type === type);
   }
 
   /**
@@ -41,6 +82,9 @@ export class TsyneTest {
 
     // Wait for bridge to be ready before building
     await this.app.getBridge().waitUntilReady();
+
+    // Register this TsyneTest instance as the test harness for file dialog mocking
+    this.app.getContext().setTestHarness(this);
 
     // Create test context
     this.testContext = new TestContext(this.app.getBridge());

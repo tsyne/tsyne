@@ -1027,6 +1027,22 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
 		imgWidget.Image = decodedImg
+		// Update MinSize based on the new image dimensions
+		// Use a reasonable minimum (200x200) to avoid forcing window to be huge
+		// The image will scale based on its FillMode setting
+		if decodedImg != nil {
+			bounds := decodedImg.Bounds()
+			minW := float32(200)
+			minH := float32(200)
+			// Use actual dimensions if smaller than minimum
+			if float32(bounds.Dx()) < minW {
+				minW = float32(bounds.Dx())
+			}
+			if float32(bounds.Dy()) < minH {
+				minH = float32(bounds.Dy())
+			}
+			imgWidget.SetMinSize(fyne.NewSize(minW, minH))
+		}
 		imgWidget.Refresh()
 	})
 

@@ -114,6 +114,20 @@ export class Locator {
   }
 
   /**
+   * Set the value of a slider or progress bar
+   * Respects within() timeout if set
+   * @example
+   * await ctx.getByID("volume").setValue(75);
+   */
+  async setValue(value: number): Promise<void> {
+    const widgetId = await this.findWithRetry();
+    if (!widgetId) {
+      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    }
+    await this.bridge.send('setValue', { widgetId, value });
+  }
+
+  /**
    * Right-click (secondary tap) the first widget matching this locator
    * Respects within() timeout if set
    */
@@ -540,7 +554,9 @@ export class Locator {
         throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
       }
       const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-      return String(response.value || response.text || '');
+      // Check for value first (can be 0 for sliders), then text, then empty string
+      const value = response.value !== undefined ? response.value : (response.text || '');
+      return String(value);
     }
 
     const startTime = Date.now();
@@ -553,7 +569,9 @@ export class Locator {
           throw new Error('Widget not found');
         }
         const response = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-        return String(response.value || response.text || '');
+        // Check for value first (can be 0 for sliders), then text, then empty string
+        const value = response.value !== undefined ? response.value : (response.text || '');
+        return String(value);
       } catch (error) {
         lastError = error as Error;
         await new Promise(resolve => setTimeout(resolve, 100));

@@ -5,6 +5,14 @@ import { BridgeInterface } from './fynebridge';
 type AccessibilityManagerType = import('./accessibility').AccessibilityManager;
 
 /**
+ * Interface for test harness that can mock dialogs
+ */
+export interface TestHarness {
+  hasMockedFileDialog(type: 'open' | 'save'): boolean;
+  popMockedFileDialog(type: 'open' | 'save'): string | null | undefined;
+}
+
+/**
  * Context holds the current state during declarative UI building
  */
 export class Context {
@@ -14,12 +22,27 @@ export class Context {
   private containerStack: string[][] = [];
   private resourceMap: Map<string, string> = new Map();
   private _accessibilityManager: AccessibilityManagerType | null = null;
+  private _testHarness: TestHarness | null = null;
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
       this.resourceMap = resourceMap;
     }
+  }
+
+  /**
+   * Set test harness for mocking dialogs during testing
+   */
+  setTestHarness(harness: TestHarness): void {
+    this._testHarness = harness;
+  }
+
+  /**
+   * Get the test harness (null in production)
+   */
+  get testHarness(): TestHarness | null {
+    return this._testHarness;
   }
 
   /**
