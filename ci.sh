@@ -20,10 +20,22 @@ apt-get install -y \
   curl
 
 # ============================================================================
+# Install Go 1.24.x if not already present
+# ============================================================================
+if [ ! -d "/usr/local/go" ]; then
+  echo "--- :golang: Installing Go 1.24.10"
+  GO_VERSION=1.24.10
+  wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+  rm go${GO_VERSION}.linux-amd64.tar.gz
+fi
+export PATH=/usr/local/go/bin:$PATH
+/usr/local/go/bin/go version
+
+# ============================================================================
 # STEP 1: Go Bridge Build
 # ============================================================================
 echo "--- :golang: Building Go bridge"
-export PATH=/usr/local/go/bin:$PATH
 
 # Download fyne.io/systray manually (not on Google's proxy)
 cd /tmp
