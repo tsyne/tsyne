@@ -602,6 +602,56 @@ func runGrpcMode(testMode bool) {
 	log.Println("[gRPC] Bridge shutting down...")
 }
 
+// runMsgpackUdsMode runs the bridge in MessagePack over Unix Domain Socket mode
+func runMsgpackUdsMode(testMode bool) {
+	// 1. Create bridge
+	bridge := NewBridge(testMode)
+	bridge.grpcMode = true // Reuse flag to skip stdout writes
+
+	// 2. Create and start MessagePack server
+	msgpackServer := NewMsgpackServer(bridge)
+	if err := msgpackServer.Start(); err != nil {
+		log.Fatalf("MessagePack server failed to start: %v", err)
+	}
+
+	// 3. Set up event forwarding from bridge to msgpack server
+	bridge.msgpackServer = msgpackServer
+
+	// 4. Send connection info to TypeScript via stdout
+	initMsg := map[string]interface{}{
+		"socketPath": msgpackServer.GetSocketPath(),
+		"protocol":   "msgpack-uds",
+	}
+	jsonData, _ := json.Marshal(initMsg)
+	os.Stdout.Write(jsonData)
+	os.Stdout.Write([]byte("\n"))
+	os.Stdout.Sync()
+
+	log.Printf("[msgpack-uds] Server listening on %s", msgpackServer.GetSocketPath())
+
+	// 5. Keep stdin open for shutdown signal
+	shutdownChan := make(chan bool)
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if line == "shutdown" {
+				shutdownChan <- true
+				break
+			}
+		}
+	}()
+
+	// 6. Run the Fyne app
+	if !testMode {
+		go bridge.app.Run()
+	}
+
+	<-shutdownChan
+	msgpackServer.Close()
+	log.Println("[msgpack-uds] Bridge shutting down...")
+}
+
 // runStdioMode runs the bridge in stdio mode (existing behavior)
 func runStdioMode(testMode bool) {
 	bridge := NewBridge(testMode)
@@ -681,7 +731,7 @@ func main() {
 	}
 
 	// Parse command-line flags
-	mode := flag.String("mode", "stdio", "Communication mode: stdio or grpc")
+	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, or msgpack-uds")
 	// Filter out --headless and --test flags before parsing, as they're not recognized by flag package
 	filteredArgs := []string{}
 	for _, arg := range os.Args[1:] {
@@ -694,9 +744,12 @@ func main() {
 	log.Printf("[main] Starting in mode: %s (testMode: %v)", *mode, testMode)
 
 	// Run in the specified mode
-	if *mode == "grpc" {
+	switch *mode {
+	case "grpc":
 		runGrpcMode(testMode)
-	} else {
+	case "msgpack-uds":
+		runMsgpackUdsMode(testMode)
+	default:
 		runStdioMode(testMode)
 	}
 }

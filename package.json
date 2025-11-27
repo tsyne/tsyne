@@ -114,6 +114,7 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.12.4",
     "@grpc/proto-loader": "^0.7.15",
+    "@msgpack/msgpack": "^3.0.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/marked": "^5.0.2",
     "buffer-crc32": "^1.0.0",

@@ -8,7 +8,7 @@
 import { TsyneTest } from './index-test';
 
 interface LatencyResult {
-  protocol: 'stdio' | 'grpc';
+  protocol: 'stdio' | 'grpc' | 'msgpack-uds';
   messageCount: number;
   totalTimeMs: number;
   avgLatencyMs: number;
@@ -26,7 +26,7 @@ function percentile(sorted: number[], p: number): number {
 }
 
 async function measureLatency(
-  protocol: 'stdio' | 'grpc',
+  protocol: 'stdio' | 'grpc' | 'msgpack-uds',
   messageCount: number
 ): Promise<LatencyResult> {
   const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
@@ -119,40 +119,61 @@ describe('Protocol Latency Benchmark', () => {
     expect(result.avgLatencyMs).toBeLessThan(100);
   }, 60000);
 
-  test('compare stdio vs gRPC latency', async () => {
+  test('measure msgpack-uds latency', async () => {
+    const result = await measureLatency('msgpack-uds', MESSAGE_COUNT);
+    console.log(formatResult(result));
+
+    expect(result.avgLatencyMs).toBeGreaterThan(0);
+    expect(result.avgLatencyMs).toBeLessThan(100);
+  }, 60000);
+
+  test('compare all protocols latency', async () => {
     console.log('\n========================================');
     console.log('     PROTOCOL LATENCY COMPARISON');
     console.log('========================================');
 
-    const [stdioResult, grpcResult] = await Promise.all([
-      measureLatency('stdio', MESSAGE_COUNT),
-      measureLatency('grpc', MESSAGE_COUNT),
-    ]);
+    // Run all three protocols
+    const stdioResult = await measureLatency('stdio', MESSAGE_COUNT);
+    const grpcResult = await measureLatency('grpc', MESSAGE_COUNT);
+    const msgpackResult = await measureLatency('msgpack-uds', MESSAGE_COUNT);
 
     console.log(formatResult(stdioResult));
     console.log(formatResult(grpcResult));
+    console.log(formatResult(msgpackResult));
 
-    // Comparison
-    const speedup = stdioResult.avgLatencyMs / grpcResult.avgLatencyMs;
-    const winner = speedup > 1 ? 'gRPC' : 'stdio';
-    const ratio = speedup > 1 ? speedup : 1 / speedup;
+    // Find winner (lowest latency)
+    const results = [
+      { name: 'stdio', result: stdioResult },
+      { name: 'gRPC', result: grpcResult },
+      { name: 'msgpack-uds', result: msgpackResult },
+    ];
+    results.sort((a, b) => a.result.avgLatencyMs - b.result.avgLatencyMs);
+    const winner = results[0];
+    const slowest = results[results.length - 1];
 
     console.log('\n=== COMPARISON ===');
-    console.log(`Winner: ${winner}`);
-    console.log(`Speed ratio: ${ratio.toFixed(2)}x faster`);
-    console.log(`stdio avg: ${stdioResult.avgLatencyMs.toFixed(3)}ms`);
-    console.log(`gRPC avg:  ${grpcResult.avgLatencyMs.toFixed(3)}ms`);
-    console.log(`Throughput improvement: ${((grpcResult.messagesPerSecond / stdioResult.messagesPerSecond - 1) * 100).toFixed(1)}%`);
+    console.log(`Winner: ${winner.name}`);
+    console.log(`Speedup vs slowest: ${(slowest.result.avgLatencyMs / winner.result.avgLatencyMs).toFixed(2)}x`);
+    console.log('');
+    console.log('Average latencies:');
+    console.log(`  stdio:       ${stdioResult.avgLatencyMs.toFixed(3)}ms`);
+    console.log(`  gRPC:        ${grpcResult.avgLatencyMs.toFixed(3)}ms`);
+    console.log(`  msgpack-uds: ${msgpackResult.avgLatencyMs.toFixed(3)}ms`);
+    console.log('');
+    console.log('Throughput (msg/sec):');
+    console.log(`  stdio:       ${stdioResult.messagesPerSecond.toFixed(1)}`);
+    console.log(`  gRPC:        ${grpcResult.messagesPerSecond.toFixed(1)}`);
+    console.log(`  msgpack-uds: ${msgpackResult.messagesPerSecond.toFixed(1)}`);
 
     // No assertion on which is faster - just report
-  }, 120000);
+  }, 180000);
 
   test('burst message test (rapid fire)', async () => {
     console.log('\n========================================');
     console.log('     BURST MESSAGE TEST (50 rapid)');
     console.log('========================================');
 
-    for (const protocol of ['stdio', 'grpc'] as const) {
+    for (const protocol of ['stdio', 'grpc', 'msgpack-uds'] as const) {
       const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
 
       try {

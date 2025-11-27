@@ -1,5 +1,6 @@
 import { BridgeConnection, BridgeInterface } from './fynebridge';
 import { GrpcBridgeConnection } from './grpcbridge';
+import { MsgpackBridgeConnection } from './msgpackbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import {
@@ -82,11 +83,11 @@ export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName }
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
-export type BridgeMode = 'stdio' | 'grpc';
+export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds';
 
 export interface AppOptions {
   title?: string;
-  /** Bridge communication mode: 'stdio' (default) or 'grpc' (binary protocol) */
+  /** Bridge communication mode: 'stdio' (default), 'grpc' (binary protocol), or 'msgpack-uds' (fastest) */
   bridgeMode?: BridgeMode;
 }
 
@@ -167,7 +168,7 @@ export interface FontInfo {
 function getBridgeMode(options?: AppOptions): BridgeMode {
   // Environment variable takes precedence
   const envMode = process.env.TSYNE_BRIDGE_MODE;
-  if (envMode === 'grpc' || envMode === 'stdio') {
+  if (envMode === 'grpc' || envMode === 'stdio' || envMode === 'msgpack-uds') {
     return envMode;
   }
   // Fall back to options or default
@@ -190,10 +191,15 @@ export class App {
 
     // Create bridge based on mode (env var or options)
     const mode = getBridgeMode(options);
-    if (mode === 'grpc') {
-      this.bridge = new GrpcBridgeConnection(testMode);
-    } else {
-      this.bridge = new BridgeConnection(testMode);
+    switch (mode) {
+      case 'grpc':
+        this.bridge = new GrpcBridgeConnection(testMode);
+        break;
+      case 'msgpack-uds':
+        this.bridge = new MsgpackBridgeConnection(testMode);
+        break;
+      default:
+        this.bridge = new BridgeConnection(testMode);
     }
 
     this.ctx = new Context(this.bridge);

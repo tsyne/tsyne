@@ -251,7 +251,7 @@ class LifecycleInstrumentation {
   }
 }
 
-async function runSingleInstance(instanceId: number, instrumentation: LifecycleInstrumentation, bridgeMode: 'stdio' | 'grpc' = 'stdio'): Promise<LoadTestResult> {
+async function runSingleInstance(instanceId: number, instrumentation: LifecycleInstrumentation, bridgeMode: 'stdio' | 'grpc' | 'msgpack-uds' = 'stdio'): Promise<LoadTestResult> {
   const startTime = Date.now();
   const events: LifecycleEvent[] = [];
   const errors: LifecycleError[] = [];
