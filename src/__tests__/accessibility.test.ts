@@ -1,6 +1,6 @@
 import { TsyneTest, TestContext } from '../index-test';
 import { App } from '../app';
-import { getAccessibilityManager } from '../accessibility';
+import { getAccessibilityManager, resetAccessibilityManager } from '../accessibility';
 
 const createTestApp = (app: App) => {
   app.window({ title: 'Accessibility Test' }, (win) => {
@@ -53,8 +53,9 @@ describe('Accessibility', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    resetAccessibilityManager();
+    await tsyneTest.cleanup();
   });
 
   it('should apply accessibility options to widgets', async () => {
@@ -92,8 +93,9 @@ describe('AccessibilityManager', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    resetAccessibilityManager();
+    await tsyneTest.cleanup();
   });
 
   it('should be disabled by default', () => {

@@ -390,37 +390,39 @@ export class AccessibilityManager {
 }
 
 /**
- * Global accessibility manager instance
- */
-let globalAccessibilityManager: AccessibilityManager | null = null;
-
-/**
- * Initialize or get the global accessibility manager
+ * Get the accessibility manager for a context
+ * Uses proper IoC - each context has its own manager instance
+ * This is the recommended way to access the accessibility manager
  */
 export function getAccessibilityManager(ctx: Context): AccessibilityManager {
-  if (!globalAccessibilityManager) {
-    globalAccessibilityManager = new AccessibilityManager(ctx);
-  }
-  return globalAccessibilityManager;
+  return ctx.accessibilityManager;
 }
 
 /**
- * Enable accessibility mode globally
+ * Enable accessibility mode for a context
  */
 export function enableAccessibility(ctx: Context): void {
-  getAccessibilityManager(ctx).enable();
+  ctx.accessibilityManager.enable();
 }
 
 /**
- * Disable accessibility mode globally
+ * Disable accessibility mode for a context
  */
 export function disableAccessibility(ctx: Context): void {
-  getAccessibilityManager(ctx).disable();
+  ctx.accessibilityManager.disable();
 }
 
 /**
- * Toggle accessibility mode globally
+ * Toggle accessibility mode for a context
  */
 export function toggleAccessibility(ctx: Context): void {
-  getAccessibilityManager(ctx).toggle();
+  ctx.accessibilityManager.toggle();
+}
+
+/**
+ * @deprecated No longer needed - each context now has its own manager instance
+ * Kept for backward compatibility but does nothing
+ */
+export function resetAccessibilityManager(): void {
+  // No-op: Each context now has its own manager, so no global state to reset
 }

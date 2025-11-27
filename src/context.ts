@@ -1,5 +1,9 @@
 import { BridgeInterface } from './fynebridge';
 
+// Forward declaration to avoid circular dependency
+// The actual AccessibilityManager is imported lazily
+type AccessibilityManagerType = import('./accessibility').AccessibilityManager;
+
 /**
  * Context holds the current state during declarative UI building
  */
@@ -9,12 +13,26 @@ export class Context {
   private windowStack: string[] = [];
   private containerStack: string[][] = [];
   private resourceMap: Map<string, string> = new Map();
+  private _accessibilityManager: AccessibilityManagerType | null = null;
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
       this.resourceMap = resourceMap;
     }
+  }
+
+  /**
+   * Get the accessibility manager for this context (lazy-initialized)
+   * This provides proper IoC - each context has its own manager instance
+   */
+  get accessibilityManager(): AccessibilityManagerType {
+    if (!this._accessibilityManager) {
+      // Lazy import to avoid circular dependency
+      const { AccessibilityManager } = require('./accessibility');
+      this._accessibilityManager = new AccessibilityManager(this);
+    }
+    return this._accessibilityManager!;
   }
 
   /**
