@@ -51,6 +51,8 @@ export class BridgeConnection implements BridgeInterface {
   private buffer = Buffer.alloc(0); // Accumulate incoming data
   private readingFrame = false;
   private quitTimeout?: NodeJS.Timeout;
+  private bridgeExiting = false; // Track when bridge is shutting down
+  private stdinClosed = false; // Track when stdin pipe is closed
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -101,9 +103,30 @@ export class BridgeConnection implements BridgeInterface {
     });
 
     this.process.on('exit', (code) => {
+      // Mark bridge as exiting to prevent further writes
+      this.bridgeExiting = true;
       // Only log non-zero exit codes (errors)
       if (code !== 0) {
         console.error(`Bridge process exited with code ${code}`);
+      }
+      // Reject any pending requests since bridge is gone
+      for (const pending of this.pendingRequests.values()) {
+        pending.reject(new Error('Bridge process exited'));
+      }
+      this.pendingRequests.clear();
+    });
+
+    // Handle stdin errors (EPIPE when bridge closes unexpectedly)
+    this.process.stdin!.on('error', (err: NodeJS.ErrnoException) => {
+      this.stdinClosed = true;
+      if (err.code === 'EPIPE') {
+        // Bridge process closed stdin - reject pending requests gracefully
+        for (const pending of this.pendingRequests.values()) {
+          pending.reject(new Error('Bridge stdin closed (EPIPE)'));
+        }
+        this.pendingRequests.clear();
+      } else {
+        console.error('Bridge stdin error:', err);
       }
     });
   }
@@ -229,6 +252,11 @@ export class BridgeConnection implements BridgeInterface {
     // Wait for bridge to be ready before sending commands
     await this.readyPromise;
 
+    // Check if bridge is still available before attempting to send
+    if (this.bridgeExiting || this.stdinClosed || this.process.killed) {
+      throw new Error('Bridge is shutting down - cannot send messages');
+    }
+
     const id = `msg_${this.messageId++}`;
     const message: Message = { id, type, payload };
 
@@ -245,6 +273,13 @@ export class BridgeConnection implements BridgeInterface {
       frame.writeUInt32BE(jsonBuffer.length, 0); // Write length
       frame.writeUInt32BE(checksum, 4); // Write CRC32
       jsonBuffer.copy(frame, 8); // Copy JSON payload
+
+      // Double-check state before write (race condition protection)
+      if (this.bridgeExiting || this.stdinClosed) {
+        this.pendingRequests.delete(id);
+        reject(new Error('Bridge closed during send preparation'));
+        return;
+      }
 
       this.process.stdin!.write(frame);
     });
@@ -282,7 +317,11 @@ export class BridgeConnection implements BridgeInterface {
   }
 
   quit(): void {
-    this.send('quit', {});
+    // Mark as exiting to prevent new requests during shutdown
+    this.bridgeExiting = true;
+    this.send('quit', {}).catch(() => {
+      // Ignore errors during quit - bridge may already be closing
+    });
     this.quitTimeout = setTimeout(() => {
       this.shutdown();
     }, 1000);
@@ -306,6 +345,10 @@ export class BridgeConnection implements BridgeInterface {
    * Note: This sends SIGTERM. For SIGKILL fallback, use the cleanup() method in TsyneTest.
    */
   shutdown(): void {
+    // Mark as exiting immediately to prevent any further writes
+    this.bridgeExiting = true;
+    this.stdinClosed = true;
+
     // Clear the timeout if it's still pending
     if (this.quitTimeout) {
       clearTimeout(this.quitTimeout);

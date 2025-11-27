@@ -76,15 +76,14 @@ export class TsyneTest {
     if (this.app) {
       const bridge = this.app.getBridge() as any;
 
-      // Graceful quit first (triggers shutdown via timeout)
-      try {
-        bridge.quit?.();
-      } catch (err) {
-        // Quit may fail if bridge is already shutting down, that's OK
+      // Mark bridge as exiting FIRST to prevent new requests during cleanup
+      // This is critical to prevent EPIPE errors from race conditions
+      if (bridge.bridgeExiting !== undefined) {
+        bridge.bridgeExiting = true;
       }
 
-      // Wait for pending requests to complete before shutdown
-      // This prevents "Bridge shutting down" errors from pending polling operations
+      // Wait for pending requests to complete BEFORE calling quit
+      // This prevents EPIPE errors from in-flight writes
       try {
         const pendingCount = bridge.pendingRequests?.size || 0;
         if (pendingCount > 0) {
@@ -96,6 +95,13 @@ export class TsyneTest {
         }
       } catch (err) {
         // If waitForPendingRequests doesn't exist or fails, continue anyway
+      }
+
+      // Graceful quit (triggers shutdown via timeout)
+      try {
+        bridge.quit?.();
+      } catch (err) {
+        // Quit may fail if bridge is already shutting down, that's OK
       }
 
       // Call shutdown to clean up all resources

@@ -563,12 +563,20 @@ export class GrpcBridge {
    * Shutdown the bridge
    */
   shutdown(): void {
-    if (this.process && !this.process.killed) {
-      // Send shutdown signal via stdin
-      this.process.stdin?.write('shutdown\n');
-      this.process.kill();
-    }
     this.connected = false;
+    if (this.process && !this.process.killed) {
+      // Send shutdown signal via stdin (with error handling to prevent EPIPE)
+      try {
+        this.process.stdin?.write('shutdown\n');
+      } catch (err) {
+        // Ignore EPIPE errors - process may have already closed stdin
+      }
+      try {
+        this.process.kill();
+      } catch (err) {
+        // Process may already be dead
+      }
+    }
   }
 
   /**
