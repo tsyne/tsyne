@@ -435,8 +435,8 @@ class FylesPanel {
         if (metadata.backgroundImagePath) {
           this.app.hbox(() => {
             this.app.label('🎨');
-            this.app.label(`Background: ${path.basename(metadata.backgroundImagePath)}`);
-          }).withId(`panel-${this.panelIndex}-bg-indicator`);
+            this.app.label(`Background: ${path.basename(metadata.backgroundImagePath!)}`);
+          });
           this.app.separator();
         }
 

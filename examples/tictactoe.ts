@@ -112,6 +112,13 @@ function newGame() {
 
 // Build the UI
 export function buildTicTacToe(a: any) {
+  // Reset state for fresh game (important for test isolation)
+  board = ['', '', '', '', '', '', '', '', ''];
+  currentPlayer = 'X';
+  gameState = 'playing';
+  winner = '';
+  cellButtons = [];
+
   a.window({ title: "Tic-Tac-Toe" }, () => {
     a.vbox(() => {
       // Status

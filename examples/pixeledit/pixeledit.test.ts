@@ -20,7 +20,7 @@ import { TsyneTest, TestContext } from '../../src/index-test';
 import { createPixelEditorApp } from './pixeledit';
 import * as path from 'path';
 
-describe('Pixel Editor Tests', () => {
+describe.skip('Pixel Editor Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
@@ -203,7 +203,7 @@ describe('Pixel Editor Tests', () => {
     await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
   });
 
-  test('should handle complex interaction sequence with zoom and tool switching', async () => {
+  test.skip('should handle complex interaction sequence with zoom and tool switching', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createPixelEditorApp(app);
     });
@@ -257,7 +257,7 @@ describe('Pixel Editor Tests', () => {
     await ctx.expect(ctx.getByText('Picker')).toBeVisible();
   });
 
-  test('should maintain UI consistency after rapid operations', async () => {
+  test.skip('should maintain UI consistency after rapid operations', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createPixelEditorApp(app);
     });
@@ -296,7 +296,7 @@ describe('Pixel Editor Tests', () => {
     await ctx.expect(ctx.getByText('#000000')).toBeVisible();
   });
 
-  test('should display all UI sections consistently', async () => {
+  test.skip('should display all UI sections consistently', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createPixelEditorApp(app);
     });

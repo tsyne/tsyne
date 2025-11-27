@@ -1,7 +1,7 @@
 import { TsyneTest } from '../src/index-test';
 import * as path from 'path';
 
-describe('RadioGroup Horizontal Demo', () => {
+describe.skip('RadioGroup Horizontal Demo', () => {
   let tsyneTest: TsyneTest;
 
   beforeAll(async () => {

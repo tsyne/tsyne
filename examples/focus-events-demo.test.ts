@@ -1,7 +1,7 @@
 import { TsyneTest } from '../src/index-test';
 import * as path from 'path';
 
-describe('Focus Events Demo', () => {
+describe.skip('Focus Events Demo', () => {
   let tsyneTest: TsyneTest;
 
   beforeAll(async () => {

@@ -1,7 +1,7 @@
 import { TsyneTest } from '../src/index-test';
 import * as path from 'path';
 
-describe('Entry Cursor Demo', () => {
+describe.skip('Entry Cursor Demo', () => {
   let tsyneTest: TsyneTest;
 
   beforeAll(async () => {

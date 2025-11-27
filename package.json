@@ -29,6 +29,7 @@
     "test:root": "npm run test:unit:fast && npm run test:gui",
     "test:designer": "cd designer && npm test",
     "test:examples": "cd examples && npm test",
+    "test:ported-apps": "cd ported-apps && npm test",
     "test:headed": "TSYNE_HEADED=1 npm test",
     "test:unit:fast": "jest --config jest.config.unit.js",
     "test:gui": "jest --config jest.config.gui.js",

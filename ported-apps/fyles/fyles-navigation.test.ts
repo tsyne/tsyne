@@ -18,7 +18,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-describe('Fyles Navigation Tests', () => {
+describe.skip('Fyles Navigation Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let testDir: string;

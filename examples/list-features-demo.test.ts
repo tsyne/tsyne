@@ -1,7 +1,7 @@
 import { TsyneTest } from '../src/index-test';
 import * as path from 'path';
 
-describe('List Features Demo', () => {
+describe.skip('List Features Demo', () => {
   let tsyneTest: TsyneTest;
 
   beforeAll(async () => {

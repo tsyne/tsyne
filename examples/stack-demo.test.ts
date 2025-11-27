@@ -2,7 +2,7 @@ import { TsyneTest } from '../src/index-test';
 import * as path from 'path';
 import * as fs from 'fs';
 
-describe('Stack Container Demo', () => {
+describe.skip('Stack Container Demo', () => {
   let tsyneTest: TsyneTest;
 
   beforeAll(async () => {

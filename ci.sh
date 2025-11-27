@@ -130,6 +130,26 @@ timeout 300 npm run test:examples || {
 }
 
 # ============================================================================
+# STEP 5: Ported Apps Sub-Project
+# ============================================================================
+echo "--- :package: Ported Apps - Tests"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
+if [ -f "package.json" ]; then
+  npm install --ignore-scripts
+  timeout 300 npm test || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Ported Apps tests timed out after 300 seconds"
+    else
+      echo "❌ Ported Apps tests failed (exit code: $EXIT_CODE)"
+    fi
+    exit 1
+  }
+else
+  echo "⚠️  No package.json found in ported-apps/ - skipping"
+fi
+
+# ============================================================================
 # Cleanup
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
