@@ -42,7 +42,7 @@ async function measureLatency(
     });
 
     await testApp.run();
-    const bridge = (tsyneTest as any).bridge;
+    const bridge = testApp.getBridge();
 
     // Warm-up: 10 messages to prime connections
     for (let i = 0; i < 10; i++) {
