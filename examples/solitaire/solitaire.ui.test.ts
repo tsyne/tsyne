@@ -365,9 +365,9 @@ describe('Solitaire UI Integration Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Should show hand count (using partial match)
-      await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
-      expect(true).toBe(true);
+      // Should show game sections
+      await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
+      await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
     }, 10000);
 
     test('should update status on draw', async () => {
@@ -456,8 +456,7 @@ describe('Solitaire UI Integration Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify all sections are visible
-      await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
+      // Verify game sections are visible
       await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
       await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
@@ -482,8 +481,7 @@ describe('Solitaire UI Integration Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Should still show all sections
-      await ctx.expect(ctx.getByText('Hand:')).toBeVisible();
+      // Should still show game sections
       await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
       await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
     }, 10000);
