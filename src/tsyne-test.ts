@@ -4,6 +4,7 @@ import { TestContext } from './test';
 export interface TestOptions {
   headed?: boolean;
   timeout?: number;
+  bridgeMode?: 'stdio' | 'grpc';
 }
 
 /**
@@ -18,7 +19,8 @@ export class TsyneTest {
   constructor(options: TestOptions = {}) {
     this.options = {
       headed: options.headed ?? false,
-      timeout: options.timeout ?? 30000
+      timeout: options.timeout ?? 30000,
+      bridgeMode: options.bridgeMode
     };
   }
 
@@ -35,7 +37,7 @@ export class TsyneTest {
     }
 
     const testMode = !this.options.headed;
-    this.app = new App({}, testMode);
+    this.app = new App({ bridgeMode: this.options.bridgeMode }, testMode);
 
     // Wait for bridge to be ready before building
     await this.app.getBridge().waitUntilReady();

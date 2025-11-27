@@ -17,6 +17,13 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 
 	// Window creation must happen on the main thread
 	fyne.DoAndWait(func() {
+		// Apply theme on first window creation (when event loop is running)
+		b.mu.Lock()
+		if len(b.windows) == 0 && b.scalableTheme != nil {
+			b.app.Settings().SetTheme(b.scalableTheme)
+		}
+		b.mu.Unlock()
+
 		win = b.app.NewWindow(title)
 
 		// Set window size if provided

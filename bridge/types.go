@@ -575,16 +575,11 @@ func NewBridge(testMode bool) *Bridge {
 		fyneApp = app.New()
 	}
 
-	// Create and apply scalable theme with default font size
+	// Create scalable theme with default font size
 	scalableTheme := NewScalableTheme(1.0)
 
-	// Set theme on the proper Fyne thread
-	done := make(chan bool)
-	fyne.Do(func() {
-		fyneApp.Settings().SetTheme(scalableTheme)
-		done <- true
-	})
-	<-done
+	// Note: Theme will be applied when first window is created (when event loop is running)
+	// Setting theme during initialization causes threading issues in test mode
 
 	return &Bridge{
 		app:            fyneApp,

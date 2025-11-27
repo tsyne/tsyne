@@ -110,7 +110,9 @@ export class GrpcBridgeConnection implements BridgeInterface {
     });
 
     this.process.on('exit', (code) => {
-      if (code !== 0) {
+      // Only log non-zero exit codes (errors)
+      // code can be null when process is killed
+      if (code !== null && code !== 0) {
         console.error(`Bridge process exited with code ${code}`);
       }
     });
