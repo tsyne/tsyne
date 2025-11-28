@@ -33,7 +33,7 @@ describe('Window Content Replacement', () => {
   afterEach(async () => {
     // Clean up - force shutdown to clean up all resources
     if (app) {
-      const bridge = (app as any).ctx?.bridge;
+      const bridge = app.getBridge() as any;
       if (bridge) {
         // Trigger graceful quit (doesn't return a promise)
         try {
@@ -60,7 +60,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace simple placeholder with complex form', async () => {
     const { vbox, label, entry, button, checkbox, separator } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: simple placeholder (like browser "Enter a URL..." state)
     window = app.window(
@@ -126,7 +126,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace form with data table', async () => {
     const { vbox, label, entry, button, table } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: form for data entry
     window = app.window(
@@ -189,7 +189,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace table with different complex layout', async () => {
     const { vbox, hbox, label, table, button, checkbox, separator } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: data table
     window = app.window(
@@ -259,7 +259,7 @@ describe('Window Content Replacement', () => {
 
   test('should handle browser-like pattern: chrome + placeholder → chrome + form → chrome + results', async () => {
     const { vbox, hbox, label, button, entry, border, separator, table } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // This test simulates the EXACT browser pattern that was failing:
     // 1. Browser chrome (menu, address bar, etc.) + "Enter a URL..." placeholder

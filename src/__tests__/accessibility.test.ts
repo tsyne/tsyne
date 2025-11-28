@@ -76,7 +76,7 @@ describe('Accessibility', () => {
 
 describe('AccessibilityManager', () => {
   let tsyneTest: TsyneTest;
-  let testApp: any;
+  let testApp: App;
 
   beforeEach(async () => {
     tsyneTest = new TsyneTest({ headed: false });
@@ -99,12 +99,12 @@ describe('AccessibilityManager', () => {
   });
 
   it('should be disabled by default', () => {
-    const manager = getAccessibilityManager((testApp as any).ctx);
+    const manager = getAccessibilityManager(testApp.getContext());
     expect(manager.isEnabled()).toBe(false);
   });
 
   it('should enable and disable accessibility mode', () => {
-    const manager = getAccessibilityManager((testApp as any).ctx);
+    const manager = getAccessibilityManager(testApp.getContext());
 
     manager.enable();
     expect(manager.isEnabled()).toBe(true);
@@ -114,7 +114,7 @@ describe('AccessibilityManager', () => {
   });
 
   it('should toggle accessibility mode', () => {
-    const manager = getAccessibilityManager((testApp as any).ctx);
+    const manager = getAccessibilityManager(testApp.getContext());
 
     const initialState = manager.isEnabled();
     manager.toggle();
@@ -125,7 +125,7 @@ describe('AccessibilityManager', () => {
   });
 
   it('should register widget accessibility information', () => {
-    const manager = getAccessibilityManager((testApp as any).ctx);
+    const manager = getAccessibilityManager(testApp.getContext());
 
     manager.registerWidget('widget-1', {
       widgetId: 'widget-1',
@@ -144,7 +144,7 @@ describe('AccessibilityManager', () => {
   });
 
   it('should clear all registered widgets', () => {
-    const manager = getAccessibilityManager((testApp as any).ctx);
+    const manager = getAccessibilityManager(testApp.getContext());
 
     manager.registerWidget('widget-1', {
       widgetId: 'widget-1',
