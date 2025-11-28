@@ -628,7 +628,7 @@ func runMsgpackUdsMode(testMode bool) {
 
 	log.Printf("[msgpack-uds] Server listening on %s", msgpackServer.GetSocketPath())
 
-	// 5. Keep stdin open for shutdown signal
+	// 5. Keep stdin open for shutdown signal (in background)
 	shutdownChan := make(chan bool)
 	go func() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -641,14 +641,24 @@ func runMsgpackUdsMode(testMode bool) {
 		}
 	}()
 
-	// 6. Run the Fyne app
-	if !testMode {
-		go bridge.app.Run()
-	}
+	// 6. Set up shutdown handler in background
+	go func() {
+		<-shutdownChan
+		msgpackServer.Close()
+		log.Println("[msgpack-uds] Bridge shutting down...")
+		if !testMode {
+			bridge.app.Quit()
+		}
+		os.Exit(0)
+	}()
 
-	<-shutdownChan
-	msgpackServer.Close()
-	log.Println("[msgpack-uds] Bridge shutting down...")
+	// 7. Run the Fyne app on main goroutine (required by Fyne)
+	if !testMode {
+		bridge.app.Run()
+	} else {
+		<-shutdownChan
+		msgpackServer.Close()
+	}
 }
 
 // runStdioMode runs the bridge in stdio mode (existing behavior)

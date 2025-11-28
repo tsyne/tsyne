@@ -29,7 +29,7 @@ const PREF_SPEED = 'life_speed';
 const PREF_GRID_WIDTH = 'life_grid_width';
 const PREF_GRID_HEIGHT = 'life_grid_height';
 const DEFAULT_SPEED = 166;  // ms per generation (~6 FPS)
-const MIN_SPEED = 50;
+const MIN_SPEED = 10;       // 10ms = 100 gen/s max
 const MAX_SPEED = 1000;
 
 /**
@@ -206,6 +206,13 @@ class Board {
    */
   getGeneration(): number {
     return this.generation;
+  }
+
+  /**
+   * Get current generation board data
+   */
+  getCurrentGen(): boolean[][] {
+    return this.currentGen;
   }
 
   /**
@@ -446,7 +453,7 @@ class GameOfLife {
   private updateCallback?: () => void;
   private speed: number = DEFAULT_SPEED;
 
-  constructor(width: number = 50, height: number = 40) {
+  constructor(width: number = 20, height: number = 20) {
     this.board = new Board(width, height);
     this.board.loadGliderGun();
   }
@@ -569,6 +576,13 @@ class GameOfLife {
   }
 
   /**
+   * Get raw board data for canvas rendering
+   */
+  getBoardData(): boolean[][] {
+    return this.board.getCurrentGen();
+  }
+
+  /**
    * Check if game is running
    */
   isRunning(): boolean {
@@ -655,8 +669,10 @@ class GameOfLifeUI {
   private statusLabel: any = null;
   private cellCountLabel: any = null;
   private speedLabel: any = null;
-  private boardLabel: any = null;
+  private boardCanvas: any = null;
+  private cellSize: number = 10;
   private currentFilePath: string | null = null;
+  private lastBoardState: boolean[][] | null = null;
 
   constructor(a: App) {
     this.a = a;
@@ -670,7 +686,9 @@ class GameOfLifeUI {
   private async loadPreferences(): Promise<void> {
     try {
       const speed = await this.a.getPreferenceInt(PREF_SPEED, DEFAULT_SPEED);
-      this.game.setSpeed(speed);
+      // Handle undefined/null return value (bug in getPreferenceInt)
+      const actualSpeed = (speed !== undefined && speed !== null && !isNaN(speed)) ? speed : DEFAULT_SPEED;
+      this.game.setSpeed(actualSpeed);
     } catch (e) {
       console.warn('Failed to load preferences:', e);
     }
@@ -734,7 +752,7 @@ class GameOfLifeUI {
     ]);
   }
 
-  async buildUI(win: Window): Promise<void> {
+  async setupWindowOnly(win: Window): Promise<void> {
     this.win = win;
     this.buildMainMenu(win);
     await this.loadPreferences();
@@ -752,16 +770,18 @@ class GameOfLifeUI {
       await this.savePreferences();
       return true;
     });
+  }
 
+  buildContent(): void {
     this.a.vbox(() => {
-      // Toolbar
-      this.a.toolbar([
-        this.a.toolbarAction('Start', () => this.start()),
-        this.a.toolbarAction('Pause', () => this.pause()),
-        this.a.toolbarAction('Step', () => this.step()),
-        this.a.toolbarAction('Reset', () => this.reset()),
-        this.a.toolbarAction('Clear', () => this.clearWithConfirm())
-      ]);
+      // Control buttons (using hbox instead of toolbar since toolbar doesn't render labels)
+      this.a.hbox(() => {
+        this.a.button('Start', () => this.start());
+        this.a.button('Pause', () => this.pause());
+        this.a.button('Step', () => this.step());
+        this.a.button('Reset', () => this.reset());
+        this.a.button('Clear', () => this.clearWithConfirm());
+      });
 
       // Status bar
       this.a.hbox(() => {
@@ -771,7 +791,9 @@ class GameOfLifeUI {
         this.a.label(' | ');
         this.cellCountLabel = this.a.label('Cells: 0');
         this.a.label(' | ');
-        this.speedLabel = this.a.label(`Speed: ${Math.round(1000 / this.game.getSpeed())} gen/s`);
+        const speed = this.game.getSpeed();
+        const fps = Math.round(1000 / speed);
+        this.speedLabel = this.a.label(`Speed: ${fps} gen/s`);
       });
 
       this.a.separator();
@@ -788,21 +810,17 @@ class GameOfLifeUI {
 
       this.a.separator();
 
-      // Board display (simplified text view)
-      this.a.scroll(() => {
-        this.a.vbox(() => {
-          this.a.label('Board (█ = alive, · = dead):');
-          this.boardLabel = this.a.label(this.game.getBoardState());
-        });
-      });
+      // Board display (canvas raster - each cell is scaled up)
+      this.a.label('Game of Life Board:');
+      const dims = this.game.getDimensions();
+      const cellSize = 14; // Each cell is 14x14 pixels
+      this.cellSize = cellSize;
+      this.boardCanvas = this.a.canvasRaster(dims.width * cellSize, dims.height * cellSize);
 
       // Instructions
       this.a.separator();
       this.a.label('Conway\'s Game of Life - Use menus for patterns and file operations');
     });
-
-    // Initial display update
-    await this.updateDisplay();
   }
 
   private start(): void {
@@ -939,6 +957,52 @@ class GameOfLifeUI {
     );
   }
 
+  private async renderBoard(): Promise<void> {
+    if (!this.boardCanvas) return;
+
+    const dims = this.game.getDimensions();
+    const pixels: Array<{x: number; y: number; r: number; g: number; b: number; a: number}> = [];
+
+    // Get board data directly
+    const board = this.game.getBoardData();
+
+    // Only send pixels for changed cells
+    for (let cellY = 0; cellY < dims.height; cellY++) {
+      for (let cellX = 0; cellX < dims.width; cellX++) {
+        const alive = board[cellY][cellX];
+
+        // Skip if cell hasn't changed (optimization)
+        if (this.lastBoardState &&
+            this.lastBoardState[cellY] &&
+            this.lastBoardState[cellY][cellX] === alive) {
+          continue;
+        }
+
+        const r = alive ? 255 : 0;
+        const g = alive ? 255 : 0;
+        const b = alive ? 255 : 0;
+
+        // Fill a cellSize x cellSize block for this cell
+        for (let py = 0; py < this.cellSize; py++) {
+          for (let px = 0; px < this.cellSize; px++) {
+            pixels.push({
+              x: cellX * this.cellSize + px,
+              y: cellY * this.cellSize + py,
+              r, g, b, a: 255
+            });
+          }
+        }
+      }
+    }
+
+    // Update last board state
+    this.lastBoardState = board.map(row => [...row]);
+
+    if (pixels.length > 0) {
+      await this.boardCanvas.setPixels(pixels);
+    }
+  }
+
   private async updateDisplay(): Promise<void> {
     if (this.generationLabel) {
       await this.generationLabel.setText(`Generation: ${this.game.getGeneration()}`);
@@ -946,9 +1010,8 @@ class GameOfLifeUI {
     if (this.cellCountLabel) {
       await this.cellCountLabel.setText(`Cells: ${this.game.getLiveCellCount()}`);
     }
-    if (this.boardLabel) {
-      await this.boardLabel.setText(this.game.getBoardState());
-    }
+
+    await this.renderBoard();
   }
 
   private async updateStatus(): Promise<void> {
@@ -974,9 +1037,14 @@ export function createGameOfLifeApp(a: App): GameOfLifeUI {
   a.registerCleanup(() => ui.cleanup());
 
   a.window({ title: 'Game of Life', width: 900, height: 700 }, async (win: Window) => {
-    win.setContent(async () => {
-      await ui.buildUI(win);
+    // Setup window (menu, preferences, close intercept)
+    await ui.setupWindowOnly(win);
+
+    // Set content inline (like test-canvas.ts)
+    win.setContent(() => {
+      ui.buildContent();
     });
+
     win.show();
   });
 

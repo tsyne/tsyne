@@ -10,15 +10,113 @@ import (
 )
 
 // ============================================================================
+// Helper functions for type conversion
+// ============================================================================
+
+// toInt converts interface{} to int, handling both JSON (float64) and msgpack (various int types)
+func toInt(v interface{}) int {
+	switch val := v.(type) {
+	case float64:
+		return int(val)
+	case int:
+		return val
+	case int8:
+		return int(val)
+	case int16:
+		return int(val)
+	case int32:
+		return int(val)
+	case int64:
+		return int(val)
+	case uint:
+		return int(val)
+	case uint8:
+		return int(val)
+	case uint16:
+		return int(val)
+	case uint32:
+		return int(val)
+	case uint64:
+		return int(val)
+	default:
+		return 0
+	}
+}
+
+// toFloat32 converts interface{} to float32, handling both JSON (float64) and msgpack (various numeric types)
+func toFloat32(v interface{}) float32 {
+	switch val := v.(type) {
+	case float64:
+		return float32(val)
+	case float32:
+		return val
+	case int:
+		return float32(val)
+	case int8:
+		return float32(val)
+	case int16:
+		return float32(val)
+	case int32:
+		return float32(val)
+	case int64:
+		return float32(val)
+	case uint:
+		return float32(val)
+	case uint8:
+		return float32(val)
+	case uint16:
+		return float32(val)
+	case uint32:
+		return float32(val)
+	case uint64:
+		return float32(val)
+	default:
+		return 0
+	}
+}
+
+// toFloat64 converts interface{} to float64, handling both JSON (float64) and msgpack (various numeric types)
+func toFloat64(v interface{}) float64 {
+	switch val := v.(type) {
+	case float64:
+		return val
+	case float32:
+		return float64(val)
+	case int:
+		return float64(val)
+	case int8:
+		return float64(val)
+	case int16:
+		return float64(val)
+	case int32:
+		return float64(val)
+	case int64:
+		return float64(val)
+	case uint:
+		return float64(val)
+	case uint8:
+		return float64(val)
+	case uint16:
+		return float64(val)
+	case uint32:
+		return float64(val)
+	case uint64:
+		return float64(val)
+	default:
+		return 0
+	}
+}
+
+// ============================================================================
 // Canvas Primitives: Line, Circle, Rectangle, Text, Raster, LinearGradient
 // ============================================================================
 
 func (b *Bridge) handleCreateCanvasLine(msg Message) {
 	widgetID := msg.Payload["id"].(string)
-	x1 := float32(msg.Payload["x1"].(float64))
-	y1 := float32(msg.Payload["y1"].(float64))
-	x2 := float32(msg.Payload["x2"].(float64))
-	y2 := float32(msg.Payload["y2"].(float64))
+	x1 := toFloat32(msg.Payload["x1"])
+	y1 := toFloat32(msg.Payload["y1"])
+	x2 := toFloat32(msg.Payload["x2"])
+	y2 := toFloat32(msg.Payload["y2"])
 
 	line := canvas.NewLine(color.Black)
 	line.Position1 = fyne.NewPos(x1, y1)
@@ -30,8 +128,8 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) {
 	}
 
 	// Set stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-		line.StrokeWidth = float32(strokeWidth)
+	if strokeWidth, ok := msg.Payload["strokeWidth"]; ok {
+		line.StrokeWidth = toFloat32(strokeWidth)
 	}
 
 	b.mu.Lock()
@@ -62,19 +160,19 @@ func (b *Bridge) handleCreateCanvasCircle(msg Message) {
 	}
 
 	// Set stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-		circle.StrokeWidth = float32(strokeWidth)
+	if strokeWidth, ok := msg.Payload["strokeWidth"]; ok {
+		circle.StrokeWidth = toFloat32(strokeWidth)
 	}
 
 	// Set position and size
-	if x, ok := msg.Payload["x"].(float64); ok {
-		if y, ok := msg.Payload["y"].(float64); ok {
-			circle.Position1 = fyne.NewPos(float32(x), float32(y))
+	if x, ok := msg.Payload["x"]; ok {
+		if y, ok := msg.Payload["y"]; ok {
+			circle.Position1 = fyne.NewPos(toFloat32(x), toFloat32(y))
 		}
 	}
-	if x2, ok := msg.Payload["x2"].(float64); ok {
-		if y2, ok := msg.Payload["y2"].(float64); ok {
-			circle.Position2 = fyne.NewPos(float32(x2), float32(y2))
+	if x2, ok := msg.Payload["x2"]; ok {
+		if y2, ok := msg.Payload["y2"]; ok {
+			circle.Position2 = fyne.NewPos(toFloat32(x2), toFloat32(y2))
 		}
 	}
 
@@ -187,8 +285,8 @@ func (b *Bridge) handleCreateCanvasText(msg Message) {
 
 func (b *Bridge) handleCreateCanvasRaster(msg Message) {
 	widgetID := msg.Payload["id"].(string)
-	width := int(msg.Payload["width"].(float64))
-	height := int(msg.Payload["height"].(float64))
+	width := toInt(msg.Payload["width"])
+	height := toInt(msg.Payload["height"])
 
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	var pixelData [][]uint8
@@ -197,7 +295,7 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) {
 			if pArr, ok := p.([]interface{}); ok {
 				pixel := make([]uint8, 4)
 				for i := 0; i < 4 && i < len(pArr); i++ {
-					pixel[i] = uint8(pArr[i].(float64))
+					pixel[i] = uint8(toInt(pArr[i]))
 				}
 				pixelData = append(pixelData, pixel)
 			}
@@ -228,12 +326,25 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) {
 	b.mu.Unlock()
 
 	// Create raster with generator function
+	// Store the original dimensions for the generator to use
+	origWidth := width
+	origHeight := height
 	raster := canvas.NewRasterWithPixels(func(x, y, w, h int) color.Color {
+		// Scale coordinates from display size (w, h) to buffer size (origWidth, origHeight)
+		bufX := x * origWidth / w
+		bufY := y * origHeight / h
+		if bufX >= origWidth {
+			bufX = origWidth - 1
+		}
+		if bufY >= origHeight {
+			bufY = origHeight - 1
+		}
+
 		b.mu.RLock()
 		defer b.mu.RUnlock()
 		if buf, ok := b.rasterData[widgetID]; ok {
-			if y < len(buf) && x < len(buf[y]) {
-				return buf[y][x]
+			if bufY < len(buf) && bufX < len(buf[bufY]) {
+				return buf[bufY][bufX]
 			}
 		}
 		return color.White
@@ -285,12 +396,12 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) {
 		buf := b.rasterData[widgetID]
 		for _, upd := range updates {
 			if updMap, ok := upd.(map[string]interface{}); ok {
-				x := int(updMap["x"].(float64))
-				y := int(updMap["y"].(float64))
-				r := uint8(updMap["r"].(float64))
-				g := uint8(updMap["g"].(float64))
-				bl := uint8(updMap["b"].(float64))
-				a := uint8(updMap["a"].(float64))
+				x := toInt(updMap["x"])
+				y := toInt(updMap["y"])
+				r := uint8(toInt(updMap["r"]))
+				g := uint8(toInt(updMap["g"]))
+				bl := uint8(toInt(updMap["b"]))
+				a := uint8(toInt(updMap["a"]))
 
 				if y >= 0 && y < len(buf) && x >= 0 && x < len(buf[y]) {
 					buf[y][x] = color.RGBA{R: r, G: g, B: bl, A: a}
@@ -300,8 +411,10 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) {
 		b.mu.Unlock()
 	}
 
-	// Refresh the raster to show updates
-	raster.Refresh()
+	// Refresh the raster to show updates (must be done on main thread)
+	fyne.Do(func() {
+		raster.Refresh()
+	})
 
 	b.sendResponse(Response{
 		ID:      msg.ID,
