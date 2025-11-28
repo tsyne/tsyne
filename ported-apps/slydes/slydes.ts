@@ -3,6 +3,14 @@
  *
  * Ported from https://github.com/andydotxyz/slydes
  * Uses incremental UI updates inspired by examples/solitaire
+ *
+ * Tsyne API features demonstrated:
+ * - Main menu with File, View, Help operations
+ * - File dialogs for opening/saving presentations
+ * - Preferences for recent files
+ * - Fullscreen presentation mode
+ * - Close intercept for unsaved changes
+ * - About dialog
  */
 
 import { app } from '../../src';
@@ -12,11 +20,21 @@ import type { Label } from '../../src/widgets';
 import type { MultiLineEntry } from '../../src/widgets';
 import type { VBox } from '../../src/widgets';
 import { SlideStore } from './store';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Constants for preferences
+const PREF_RECENT_COUNT = 'slydes_recent_count';
+const PREF_RECENT_PREFIX = 'slydes_recent_';
+const MAX_RECENT_FILES = 5;
 
 export interface SlydesUI {
   getStore(): SlideStore;
   refreshPreview(): void;
   showPresentation(): void;
+  openFile(filePath?: string): Promise<void>;
+  saveFile(filePath?: string): Promise<void>;
+  hasUnsavedChanges(): boolean;
 }
 
 /**
@@ -35,6 +53,270 @@ export function createSlydesApp(a: App): SlydesUI {
   let slideCountLabel: Label | null = null;
   let currentSlideLabel: Label | null = null;
   let previewContainer: VBox | null = null;
+  let mainWindow: Window | null = null;
+
+  // File state
+  let currentFilePath: string | null = null;
+  let savedMarkdown: string = store.getMarkdown();
+  let recentFiles: string[] = [];
+
+  /**
+   * Check if there are unsaved changes
+   */
+  function hasUnsavedChanges(): boolean {
+    return store.getMarkdown() !== savedMarkdown;
+  }
+
+  /**
+   * Load recent files from preferences
+   */
+  async function loadRecentFiles(): Promise<void> {
+    try {
+      const count = await a.getPreferenceInt(PREF_RECENT_COUNT, 0);
+      recentFiles = [];
+      for (let i = 0; i < count && i < MAX_RECENT_FILES; i++) {
+        const file = await a.getPreference(`${PREF_RECENT_PREFIX}${i}`, '');
+        if (file && fs.existsSync(file)) {
+          recentFiles.push(file);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load recent files:', e);
+    }
+  }
+
+  /**
+   * Save recent files to preferences
+   */
+  async function saveRecentFiles(): Promise<void> {
+    try {
+      await a.setPreference(PREF_RECENT_COUNT, recentFiles.length.toString());
+      for (let i = 0; i < recentFiles.length; i++) {
+        await a.setPreference(`${PREF_RECENT_PREFIX}${i}`, recentFiles[i]);
+      }
+    } catch (e) {
+      console.warn('Failed to save recent files:', e);
+    }
+  }
+
+  /**
+   * Add file to recent files list
+   */
+  function addToRecentFiles(filePath: string): void {
+    // Remove if already exists
+    recentFiles = recentFiles.filter(f => f !== filePath);
+    // Add to front
+    recentFiles.unshift(filePath);
+    // Trim to max
+    recentFiles = recentFiles.slice(0, MAX_RECENT_FILES);
+    saveRecentFiles();
+  }
+
+  /**
+   * Open a file
+   */
+  async function openFile(filePath?: string): Promise<void> {
+    if (!mainWindow) return;
+
+    // Check for unsaved changes
+    if (hasUnsavedChanges()) {
+      const save = await mainWindow.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before opening a new file?');
+      if (save) {
+        await saveFile();
+      }
+    }
+
+    // Get file path if not provided
+    let targetPath = filePath;
+    if (!targetPath) {
+      const selected = await mainWindow.showFileOpen();
+      if (!selected) return;
+      targetPath = selected;
+    }
+
+    try {
+      const content = fs.readFileSync(targetPath, 'utf-8');
+      store.setMarkdown(content);
+      currentFilePath = targetPath;
+      savedMarkdown = content;
+      addToRecentFiles(targetPath);
+      updateWindowTitle();
+    } catch (e) {
+      await mainWindow.showError('Error', `Failed to open file: ${e}`);
+    }
+  }
+
+  /**
+   * Save to a file
+   */
+  async function saveFile(filePath?: string): Promise<void> {
+    if (!mainWindow) return;
+
+    let targetPath = filePath || currentFilePath;
+
+    // If no path, show save dialog
+    if (!targetPath) {
+      const selected = await mainWindow.showFileSave('presentation.md');
+      if (!selected) return;
+      targetPath = selected;
+    }
+
+    try {
+      const content = store.getMarkdown();
+      fs.writeFileSync(targetPath, content, 'utf-8');
+      currentFilePath = targetPath;
+      savedMarkdown = content;
+      addToRecentFiles(targetPath);
+      updateWindowTitle();
+    } catch (e) {
+      await mainWindow.showError('Error', `Failed to save file: ${e}`);
+    }
+  }
+
+  /**
+   * Save as a new file
+   */
+  async function saveFileAs(): Promise<void> {
+    if (!mainWindow) return;
+
+    const defaultName = currentFilePath ? path.basename(currentFilePath) : 'presentation.md';
+    const selected = await mainWindow.showFileSave(defaultName);
+    if (!selected) return;
+
+    await saveFile(selected);
+  }
+
+  /**
+   * Update window title to show file name and modified state
+   */
+  function updateWindowTitle(): void {
+    if (!mainWindow) return;
+
+    let title = 'Slydes';
+    if (currentFilePath) {
+      title += ` - ${path.basename(currentFilePath)}`;
+    }
+    if (hasUnsavedChanges()) {
+      title += ' *';
+    }
+    mainWindow.setTitle(title);
+  }
+
+  /**
+   * Create new presentation
+   */
+  async function newPresentation(): Promise<void> {
+    if (!mainWindow) return;
+
+    if (hasUnsavedChanges()) {
+      const save = await mainWindow.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before creating a new presentation?');
+      if (save) {
+        await saveFile();
+      }
+    }
+
+    store.setMarkdown('# New Presentation\n\nEdit me!\n\n---\n\n# Slide 2\n\nAdd your content here.');
+    currentFilePath = null;
+    savedMarkdown = store.getMarkdown();
+    updateWindowTitle();
+  }
+
+  /**
+   * Show about dialog
+   */
+  async function showAbout(): Promise<void> {
+    if (!mainWindow) return;
+
+    await mainWindow.showInfo(
+      'About Slydes',
+      'Slydes v1.0.0\n\n' +
+      'A markdown-based presentation tool.\n\n' +
+      'Ported from github.com/andydotxyz/slydes\n' +
+      'Original authors: Fyne.io contributors\n\n' +
+      'Features:\n' +
+      '• Write slides in markdown format\n' +
+      '• Use --- to separate slides\n' +
+      '• Fullscreen presentation mode\n' +
+      '• Recent files tracking\n' +
+      '• Auto-save reminders'
+    );
+  }
+
+  /**
+   * Build the main menu
+   */
+  function buildMainMenu(win: Window): void {
+    const recentFilesMenu = recentFiles.map(filePath => ({
+      label: path.basename(filePath),
+      onSelected: () => openFile(filePath)
+    }));
+
+    win.setMainMenu([
+      {
+        label: 'File',
+        items: [
+          { label: 'New', onSelected: () => newPresentation() },
+          { label: 'Open...', onSelected: () => openFile() },
+          { label: '', isSeparator: true },
+          ...(recentFilesMenu.length > 0 ? [
+            ...recentFilesMenu,
+            { label: '', isSeparator: true }
+          ] : []),
+          { label: 'Save', onSelected: () => saveFile() },
+          { label: 'Save As...', onSelected: () => saveFileAs() },
+          { label: '', isSeparator: true },
+          { label: 'Exit', onSelected: () => confirmExit() }
+        ]
+      },
+      {
+        label: 'Edit',
+        items: [
+          { label: 'Add Slide', onSelected: () => addSlide() }
+        ]
+      },
+      {
+        label: 'View',
+        items: [
+          { label: 'Present', onSelected: () => showPresentation() },
+          { label: 'Present Fullscreen', onSelected: () => showPresentationFullscreen() }
+        ]
+      },
+      {
+        label: 'Help',
+        items: [
+          { label: 'About', onSelected: () => showAbout() }
+        ]
+      }
+    ]);
+  }
+
+  /**
+   * Confirm exit with unsaved changes check
+   */
+  async function confirmExit(): Promise<void> {
+    if (!mainWindow) {
+      process.exit(0);
+      return;
+    }
+
+    if (hasUnsavedChanges()) {
+      const save = await mainWindow.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before exiting?');
+      if (save) {
+        await saveFile();
+      }
+    }
+
+    process.exit(0);
+  }
+
+  /**
+   * Add a new slide
+   */
+  function addSlide(): void {
+    const current = store.getMarkdown();
+    const newMarkdown = current + '\n\n---\n\n# New Slide\n';
+    store.setMarkdown(newMarkdown);
+  }
 
   /**
    * Refresh the slide preview (incremental update)
@@ -85,8 +367,9 @@ export function createSlydesApp(a: App): SlydesUI {
 
   /**
    * Open presentation mode in a new window
+   * @param fullscreen Whether to open in fullscreen mode
    */
-  function showPresentation(): void {
+  function showPresentation(fullscreen: boolean = false): void {
     a.window({ title: 'Slydes - Presentation', width: 1024, height: 768 }, (presentWin) => {
       let presentHeading: Label | null = null;
       let presentSubheading: Label | null = null;
@@ -161,6 +444,20 @@ export function createSlydesApp(a: App): SlydesUI {
                 refreshPresentationSlide();
               }
             }).withId('btn-next');
+
+            if (fullscreen) {
+              a.button('Exit Fullscreen', () => {
+                presentWin.setFullScreen(false);
+              }).withId('btn-exit-fullscreen');
+            } else {
+              a.button('Fullscreen', () => {
+                presentWin.setFullScreen(true);
+              }).withId('btn-fullscreen');
+            }
+
+            a.button('Close', () => {
+              presentWin.close();
+            }).withId('btn-close-presentation');
           });
         });
       });
@@ -169,25 +466,64 @@ export function createSlydesApp(a: App): SlydesUI {
       refreshPresentationSlide();
 
       presentWin.show();
+
+      // Enter fullscreen if requested
+      if (fullscreen) {
+        presentWin.setFullScreen(true);
+      }
     });
+  }
+
+  /**
+   * Show presentation in fullscreen mode
+   */
+  function showPresentationFullscreen(): void {
+    showPresentation(true);
   }
 
   /**
    * Build the main editor UI
    */
-  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
+  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, async (win) => {
+    mainWindow = win;
+
+    // Load recent files first
+    await loadRecentFiles();
+
+    // Build the main menu
+    buildMainMenu(win);
+
+    // Set close intercept to check for unsaved changes
+    win.setCloseIntercept(async () => {
+      if (hasUnsavedChanges()) {
+        const save = await win.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before closing?');
+        if (save) {
+          await saveFile();
+        }
+      }
+      return true;
+    });
+
     win.setContent(() => {
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
           a.button('New', () => {
-            store.setMarkdown('# New Presentation\n\nEdit me!\n\n---\n\n# Slide 2\n');
+            newPresentation();
           }).withId('btn-new');
 
+          a.button('Open', () => {
+            openFile();
+          }).withId('btn-open');
+
+          a.button('Save', () => {
+            saveFile();
+          }).withId('btn-save');
+
+          a.separator();
+
           a.button('Add Slide', () => {
-            const current = store.getMarkdown();
-            const newMarkdown = current + '\n\n---\n\n# New Slide\n';
-            store.setMarkdown(newMarkdown);
+            addSlide();
           }).withId('btn-add-slide');
 
           a.separator();
@@ -195,6 +531,10 @@ export function createSlydesApp(a: App): SlydesUI {
           a.button('Present', () => {
             showPresentation();
           }).withId('btn-present');
+
+          a.button('Fullscreen', () => {
+            showPresentationFullscreen();
+          }).withId('btn-present-fullscreen');
 
           a.separator();
 
@@ -250,6 +590,7 @@ export function createSlydesApp(a: App): SlydesUI {
     // Subscribe to store changes for reactive updates
     store.subscribe(() => {
       refreshPreview();
+      updateWindowTitle();
     });
 
     // Initial render
@@ -261,7 +602,10 @@ export function createSlydesApp(a: App): SlydesUI {
   return {
     getStore: () => store,
     refreshPreview,
-    showPresentation,
+    showPresentation: () => showPresentation(false),
+    openFile,
+    saveFile,
+    hasUnsavedChanges,
   };
 }
 

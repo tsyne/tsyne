@@ -9,11 +9,28 @@
  * This is a simplified port to demonstrate simulation capabilities in Tsyne.
  * The original implementation uses Fyne's custom canvas widgets for rendering.
  * This version adapts the concepts to work with Tsyne's declarative API.
+ *
+ * Tsyne API features demonstrated:
+ * - Main menu with File, View, Help operations
+ * - File dialogs for pattern save/load
+ * - Preferences for simulation speed
+ * - Confirm dialogs for destructive operations
+ * - About dialog
+ * - Close intercept for running simulations
  */
 
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
+import * as fs from 'fs';
+
+// Constants for preferences
+const PREF_SPEED = 'life_speed';
+const PREF_GRID_WIDTH = 'life_grid_width';
+const PREF_GRID_HEIGHT = 'life_grid_height';
+const DEFAULT_SPEED = 166;  // ms per generation (~6 FPS)
+const MIN_SPEED = 50;
+const MAX_SPEED = 1000;
 
 /**
  * Board representing the Game of Life grid
@@ -211,6 +228,211 @@ class Board {
     }
     return result;
   }
+
+  /**
+   * Export pattern to RLE format (Run Length Encoded)
+   * RLE is a common format for Game of Life patterns
+   */
+  toRLE(): string {
+    const lines: string[] = [];
+    lines.push(`#N Tsyne Game of Life Pattern`);
+    lines.push(`#C Exported from Tsyne`);
+    lines.push(`x = ${this.width}, y = ${this.height}, rule = B3/S23`);
+
+    // Find bounding box of live cells
+    let minX = this.width, maxX = 0, minY = this.height, maxY = 0;
+    let hasLiveCells = false;
+
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.currentGen[y][x]) {
+          hasLiveCells = true;
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    if (!hasLiveCells) {
+      lines.push('!');
+      return lines.join('\n');
+    }
+
+    // Encode the pattern
+    let rle = '';
+    for (let y = minY; y <= maxY; y++) {
+      let runCount = 0;
+      let lastState = false;
+
+      for (let x = minX; x <= maxX; x++) {
+        const state = this.currentGen[y][x];
+
+        if (x === minX) {
+          lastState = state;
+          runCount = 1;
+        } else if (state === lastState) {
+          runCount++;
+        } else {
+          // Output the run
+          const char = lastState ? 'o' : 'b';
+          rle += runCount > 1 ? `${runCount}${char}` : char;
+          lastState = state;
+          runCount = 1;
+        }
+      }
+
+      // Output final run of this row (only if live cells)
+      if (lastState) {
+        const char = 'o';
+        rle += runCount > 1 ? `${runCount}${char}` : char;
+      }
+
+      // End of row ($ for intermediate rows, ! for last row)
+      rle += y < maxY ? '$' : '!';
+    }
+
+    lines.push(rle);
+    return lines.join('\n');
+  }
+
+  /**
+   * Import pattern from RLE format
+   */
+  fromRLE(rle: string): void {
+    this.clear();
+
+    const lines = rle.split('\n');
+    let patternData = '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('x')) {
+        continue; // Skip comments and header
+      }
+      patternData += trimmed;
+    }
+
+    // Parse the RLE data
+    let x = 0;
+    let y = 0;
+    let runCount = '';
+
+    for (const char of patternData) {
+      if (char >= '0' && char <= '9') {
+        runCount += char;
+      } else if (char === 'b') {
+        // Dead cells
+        const count = runCount ? parseInt(runCount) : 1;
+        x += count;
+        runCount = '';
+      } else if (char === 'o') {
+        // Live cells
+        const count = runCount ? parseInt(runCount) : 1;
+        for (let i = 0; i < count; i++) {
+          if (x < this.width && y < this.height) {
+            this.setCell(x, y, true);
+          }
+          x++;
+        }
+        runCount = '';
+      } else if (char === '$') {
+        // End of row
+        const count = runCount ? parseInt(runCount) : 1;
+        y += count;
+        x = 0;
+        runCount = '';
+      } else if (char === '!') {
+        // End of pattern
+        break;
+      }
+    }
+  }
+
+  /**
+   * Load a predefined Blinker pattern
+   */
+  loadBlinker(): void {
+    this.clear();
+    const centerX = Math.floor(this.width / 2);
+    const centerY = Math.floor(this.height / 2);
+    this.setCell(centerX - 1, centerY, true);
+    this.setCell(centerX, centerY, true);
+    this.setCell(centerX + 1, centerY, true);
+  }
+
+  /**
+   * Load a predefined Glider pattern
+   */
+  loadGlider(): void {
+    this.clear();
+    const pattern = [
+      [1, 0], [2, 1], [0, 2], [1, 2], [2, 2]
+    ];
+    const offsetX = Math.floor(this.width / 4);
+    const offsetY = Math.floor(this.height / 4);
+    pattern.forEach(([x, y]) => {
+      this.setCell(x + offsetX, y + offsetY, true);
+    });
+  }
+
+  /**
+   * Load a predefined Pulsar pattern
+   */
+  loadPulsar(): void {
+    this.clear();
+    const centerX = Math.floor(this.width / 2);
+    const centerY = Math.floor(this.height / 2);
+
+    // Pulsar is a period-3 oscillator
+    const offsets = [
+      [-6,-4],[-6,-3],[-6,-2],[-6,2],[-6,3],[-6,4],
+      [-4,-6],[-3,-6],[-2,-6],[-4,-1],[-3,-1],[-2,-1],
+      [-4,1],[-3,1],[-2,1],[-4,6],[-3,6],[-2,6],
+      [-1,-4],[-1,-3],[-1,-2],[-1,2],[-1,3],[-1,4],
+      [1,-4],[1,-3],[1,-2],[1,2],[1,3],[1,4],
+      [2,-6],[3,-6],[4,-6],[2,-1],[3,-1],[4,-1],
+      [2,1],[3,1],[4,1],[2,6],[3,6],[4,6],
+      [6,-4],[6,-3],[6,-2],[6,2],[6,3],[6,4]
+    ];
+
+    offsets.forEach(([dx, dy]) => {
+      const x = centerX + dx;
+      const y = centerY + dy;
+      if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+        this.setCell(x, y, true);
+      }
+    });
+  }
+
+  /**
+   * Randomize the board
+   */
+  randomize(density: number = 0.3): void {
+    this.clear();
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (Math.random() < density) {
+          this.setCell(x, y, true);
+        }
+      }
+    }
+    this.generation = 0;
+  }
+
+  /**
+   * Count live cells
+   */
+  getLiveCellCount(): number {
+    let count = 0;
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        if (this.currentGen[y][x]) count++;
+      }
+    }
+    return count;
+  }
 }
 
 /**
@@ -222,6 +444,7 @@ class GameOfLife {
   private running: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
   private updateCallback?: () => void;
+  private speed: number = DEFAULT_SPEED;
 
   constructor(width: number = 50, height: number = 40) {
     this.board = new Board(width, height);
@@ -235,10 +458,9 @@ class GameOfLife {
     if (this.running) return;
     this.running = true;
 
-    // Run at approximately 6 FPS like the original
     this.intervalId = setInterval(() => {
       this.tick();
-    }, 166); // ~6 FPS
+    }, this.speed);
   }
 
   /**
@@ -264,6 +486,25 @@ class GameOfLife {
   }
 
   /**
+   * Set simulation speed (ms per generation)
+   */
+  setSpeed(speedMs: number): void {
+    this.speed = Math.max(MIN_SPEED, Math.min(MAX_SPEED, speedMs));
+    if (this.running) {
+      // Restart with new speed
+      this.pause();
+      this.start();
+    }
+  }
+
+  /**
+   * Get current speed
+   */
+  getSpeed(): number {
+    return this.speed;
+  }
+
+  /**
    * Advance one generation
    */
   tick(): void {
@@ -274,7 +515,7 @@ class GameOfLife {
   }
 
   /**
-   * Reset the board
+   * Reset the board to Gosper Glider Gun
    */
   reset(): void {
     this.pause();
@@ -342,6 +583,60 @@ class GameOfLife {
   }
 
   /**
+   * Get live cell count
+   */
+  getLiveCellCount(): number {
+    return this.board.getLiveCellCount();
+  }
+
+  /**
+   * Export pattern to RLE format
+   */
+  exportRLE(): string {
+    return this.board.toRLE();
+  }
+
+  /**
+   * Import pattern from RLE format
+   */
+  importRLE(rle: string): void {
+    this.pause();
+    this.board.fromRLE(rle);
+    if (this.updateCallback) {
+      this.updateCallback();
+    }
+  }
+
+  /**
+   * Load predefined patterns
+   */
+  loadPattern(name: string): void {
+    this.pause();
+    switch (name) {
+      case 'glider':
+        this.board.loadGlider();
+        break;
+      case 'blinker':
+        this.board.loadBlinker();
+        break;
+      case 'pulsar':
+        this.board.loadPulsar();
+        break;
+      case 'glider-gun':
+        this.board.loadGliderGun();
+        break;
+      case 'random':
+        this.board.randomize();
+        break;
+      default:
+        this.board.loadGliderGun();
+    }
+    if (this.updateCallback) {
+      this.updateCallback();
+    }
+  }
+
+  /**
    * Cleanup
    */
   destroy(): void {
@@ -354,16 +649,110 @@ class GameOfLife {
  */
 class GameOfLifeUI {
   private game: GameOfLife;
+  private a: App;
+  private win: Window | null = null;
   private generationLabel: any = null;
   private statusLabel: any = null;
+  private cellCountLabel: any = null;
+  private speedLabel: any = null;
   private boardLabel: any = null;
+  private currentFilePath: string | null = null;
 
-  constructor(private a: App) {
+  constructor(a: App) {
+    this.a = a;
     this.game = new GameOfLife(50, 40);
     this.game.setUpdateCallback(() => this.updateDisplay());
   }
 
-  buildUI(win: Window): void {
+  /**
+   * Load preferences
+   */
+  private async loadPreferences(): Promise<void> {
+    try {
+      const speed = await this.a.getPreferenceInt(PREF_SPEED, DEFAULT_SPEED);
+      this.game.setSpeed(speed);
+    } catch (e) {
+      console.warn('Failed to load preferences:', e);
+    }
+  }
+
+  /**
+   * Save preferences
+   */
+  private async savePreferences(): Promise<void> {
+    try {
+      await this.a.setPreference(PREF_SPEED, this.game.getSpeed().toString());
+    } catch (e) {
+      console.warn('Failed to save preferences:', e);
+    }
+  }
+
+  /**
+   * Build main menu
+   */
+  private buildMainMenu(win: Window): void {
+    win.setMainMenu([
+      {
+        label: 'File',
+        items: [
+          { label: 'Open Pattern...', onSelected: () => this.openPattern() },
+          { label: 'Save Pattern...', onSelected: () => this.savePattern() },
+          { label: '', isSeparator: true },
+          { label: 'Exit', onSelected: () => this.exitWithConfirm() }
+        ]
+      },
+      {
+        label: 'Patterns',
+        items: [
+          { label: 'Gosper Glider Gun', onSelected: () => this.loadPattern('glider-gun') },
+          { label: 'Glider', onSelected: () => this.loadPattern('glider') },
+          { label: 'Blinker', onSelected: () => this.loadPattern('blinker') },
+          { label: 'Pulsar', onSelected: () => this.loadPattern('pulsar') },
+          { label: '', isSeparator: true },
+          { label: 'Random', onSelected: () => this.loadPattern('random') },
+          { label: 'Clear', onSelected: () => this.clearWithConfirm() }
+        ]
+      },
+      {
+        label: 'Simulation',
+        items: [
+          { label: 'Start', onSelected: () => this.start() },
+          { label: 'Pause', onSelected: () => this.pause() },
+          { label: 'Step', onSelected: () => this.step() },
+          { label: '', isSeparator: true },
+          { label: 'Faster', onSelected: () => this.changeSpeed(-50) },
+          { label: 'Slower', onSelected: () => this.changeSpeed(50) },
+          { label: 'Reset Speed', onSelected: () => this.resetSpeed() }
+        ]
+      },
+      {
+        label: 'Help',
+        items: [
+          { label: 'About', onSelected: () => this.showAbout() }
+        ]
+      }
+    ]);
+  }
+
+  async buildUI(win: Window): Promise<void> {
+    this.win = win;
+    this.buildMainMenu(win);
+    await this.loadPreferences();
+
+    // Set close intercept
+    win.setCloseIntercept(async () => {
+      if (this.game.isRunning()) {
+        const confirmed = await win.showConfirm('Exit', 'Simulation is running. Are you sure you want to exit?');
+        if (confirmed) {
+          await this.savePreferences();
+          this.game.destroy();
+        }
+        return confirmed;
+      }
+      await this.savePreferences();
+      return true;
+    });
+
     this.a.vbox(() => {
       // Toolbar
       this.a.toolbar([
@@ -371,13 +760,30 @@ class GameOfLifeUI {
         this.a.toolbarAction('Pause', () => this.pause()),
         this.a.toolbarAction('Step', () => this.step()),
         this.a.toolbarAction('Reset', () => this.reset()),
-        this.a.toolbarAction('Clear', () => this.clear())
+        this.a.toolbarAction('Clear', () => this.clearWithConfirm())
       ]);
 
-      // Status
+      // Status bar
       this.a.hbox(() => {
         this.generationLabel = this.a.label('Generation: 0');
+        this.a.label(' | ');
         this.statusLabel = this.a.label('Status: Paused');
+        this.a.label(' | ');
+        this.cellCountLabel = this.a.label('Cells: 0');
+        this.a.label(' | ');
+        this.speedLabel = this.a.label(`Speed: ${Math.round(1000 / this.game.getSpeed())} gen/s`);
+      });
+
+      this.a.separator();
+
+      // Speed control
+      this.a.hbox(() => {
+        this.a.label('Speed:');
+        this.a.button('<<', () => this.changeSpeed(100));
+        this.a.button('<', () => this.changeSpeed(25));
+        this.a.button('Reset', () => this.resetSpeed());
+        this.a.button('>', () => this.changeSpeed(-25));
+        this.a.button('>>', () => this.changeSpeed(-100));
       });
 
       this.a.separator();
@@ -392,8 +798,11 @@ class GameOfLifeUI {
 
       // Instructions
       this.a.separator();
-      this.a.label('Conway\'s Game of Life - Loaded with Gosper Glider Gun');
+      this.a.label('Conway\'s Game of Life - Use menus for patterns and file operations');
     });
+
+    // Initial display update
+    await this.updateDisplay();
   }
 
   private start(): void {
@@ -417,15 +826,125 @@ class GameOfLifeUI {
     this.updateStatus();
   }
 
-  private clear(): void {
+  private async clearWithConfirm(): Promise<void> {
+    if (!this.win) {
+      this.game.clear();
+      return;
+    }
+
+    const liveCells = this.game.getLiveCellCount();
+    if (liveCells > 0) {
+      const confirmed = await this.win.showConfirm('Clear Board', `Are you sure you want to clear ${liveCells} live cells?`);
+      if (!confirmed) return;
+    }
+
     this.game.clear();
     this.updateDisplay();
     this.updateStatus();
   }
 
+  private loadPattern(name: string): void {
+    this.game.loadPattern(name);
+    this.updateDisplay();
+    this.updateStatus();
+  }
+
+  private changeSpeed(delta: number): void {
+    const newSpeed = this.game.getSpeed() + delta;
+    this.game.setSpeed(newSpeed);
+    this.updateSpeedLabel();
+    this.savePreferences();
+  }
+
+  private resetSpeed(): void {
+    this.game.setSpeed(DEFAULT_SPEED);
+    this.updateSpeedLabel();
+    this.savePreferences();
+  }
+
+  private async updateSpeedLabel(): Promise<void> {
+    if (this.speedLabel) {
+      const genPerSec = Math.round(1000 / this.game.getSpeed());
+      await this.speedLabel.setText(`Speed: ${genPerSec} gen/s`);
+    }
+  }
+
+  private async openPattern(): Promise<void> {
+    if (!this.win) return;
+
+    const filePath = await this.win.showFileOpen();
+    if (!filePath) return;
+
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      this.game.importRLE(content);
+      this.currentFilePath = filePath;
+      await this.win.showInfo('Pattern Loaded', `Loaded pattern from ${filePath}`);
+      this.updateDisplay();
+    } catch (e) {
+      await this.win.showError('Error', `Failed to load pattern: ${e}`);
+    }
+  }
+
+  private async savePattern(): Promise<void> {
+    if (!this.win) return;
+
+    const defaultName = this.currentFilePath || 'pattern.rle';
+    const filePath = await this.win.showFileSave(defaultName);
+    if (!filePath) return;
+
+    try {
+      const content = this.game.exportRLE();
+      fs.writeFileSync(filePath, content, 'utf-8');
+      this.currentFilePath = filePath;
+      await this.win.showInfo('Pattern Saved', `Saved pattern to ${filePath}`);
+    } catch (e) {
+      await this.win.showError('Error', `Failed to save pattern: ${e}`);
+    }
+  }
+
+  private async exitWithConfirm(): Promise<void> {
+    if (!this.win) {
+      process.exit(0);
+      return;
+    }
+
+    if (this.game.isRunning()) {
+      const confirmed = await this.win.showConfirm('Exit', 'Simulation is running. Are you sure you want to exit?');
+      if (!confirmed) return;
+    }
+
+    await this.savePreferences();
+    this.game.destroy();
+    process.exit(0);
+  }
+
+  private async showAbout(): Promise<void> {
+    if (!this.win) return;
+
+    await this.win.showInfo(
+      'About Game of Life',
+      'Conway\'s Game of Life v1.0.0\n\n' +
+      'A cellular automaton devised by mathematician John Conway.\n\n' +
+      'Ported from github.com/fyne-io/life\n' +
+      'Original authors: Fyne.io contributors\n\n' +
+      'Rules:\n' +
+      '• Any live cell with 2 or 3 live neighbors survives\n' +
+      '• Any dead cell with exactly 3 live neighbors becomes alive\n' +
+      '• All other cells die or stay dead\n\n' +
+      'Features:\n' +
+      '• Pattern save/load (RLE format)\n' +
+      '• Predefined patterns\n' +
+      '• Adjustable speed'
+    );
+  }
+
   private async updateDisplay(): Promise<void> {
     if (this.generationLabel) {
       await this.generationLabel.setText(`Generation: ${this.game.getGeneration()}`);
+    }
+    if (this.cellCountLabel) {
+      await this.cellCountLabel.setText(`Cells: ${this.game.getLiveCellCount()}`);
     }
     if (this.boardLabel) {
       await this.boardLabel.setText(this.game.getBoardState());
@@ -454,15 +973,18 @@ export function createGameOfLifeApp(a: App): GameOfLifeUI {
   // Register cleanup callback to stop the game timer before shutdown
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Game of Life', width: 800, height: 600 }, (win: Window) => {
-    win.setContent(() => {
-      ui.buildUI(win);
+  a.window({ title: 'Game of Life', width: 900, height: 700 }, async (win: Window) => {
+    win.setContent(async () => {
+      await ui.buildUI(win);
     });
     win.show();
   });
 
   return ui;
 }
+
+// Export classes for testing
+export { Board, GameOfLife, GameOfLifeUI };
 
 /**
  * Main application entry point
