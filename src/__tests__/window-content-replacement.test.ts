@@ -33,7 +33,7 @@ describe('Window Content Replacement', () => {
   afterEach(async () => {
     // Clean up - force shutdown to clean up all resources
     if (app) {
-      const bridge = (app as any).ctx?.bridge;
+      const bridge = app.getBridge() as any;
       if (bridge) {
         // Trigger graceful quit (doesn't return a promise)
         try {
@@ -60,7 +60,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace simple placeholder with complex form', async () => {
     const { vbox, label, entry, button, checkbox, separator } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: simple placeholder (like browser "Enter a URL..." state)
     window = app.window(
@@ -78,7 +78,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify placeholder exists
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     expect(allWidgets.filter((w: any) => w.type === 'label').length).toBe(2);
     expect(allWidgets.filter((w: any) => w.type === 'entry').length).toBe(0);
@@ -104,7 +104,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: old placeholder gone, new form present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -126,7 +126,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace form with data table', async () => {
     const { vbox, label, entry, button, table } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: form for data entry
     window = app.window(
@@ -146,7 +146,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify form exists
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     expect(allWidgets.filter((w: any) => w.type === 'entry').length).toBe(2);
     expect(allWidgets.filter((w: any) => w.type === 'button').length).toBe(1);
@@ -168,7 +168,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: form gone, table present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -189,7 +189,7 @@ describe('Window Content Replacement', () => {
 
   test('should replace table with different complex layout', async () => {
     const { vbox, hbox, label, table, button, checkbox, separator } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // Initial: data table
     window = app.window(
@@ -238,7 +238,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: table gone, settings page present
-    const response = await bridge.send('getAllWidgets', {});
+    const response = await bridge.send('getAllWidgets', {}) as any;
     const allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const tables = allWidgets.filter((w: any) => w.type === 'table');
@@ -259,7 +259,7 @@ describe('Window Content Replacement', () => {
 
   test('should handle browser-like pattern: chrome + placeholder → chrome + form → chrome + results', async () => {
     const { vbox, hbox, label, button, entry, border, separator, table } = require('../index');
-    const bridge = (app as any).ctx.bridge;
+    const bridge = app.getBridge();
 
     // This test simulates the EXACT browser pattern that was failing:
     // 1. Browser chrome (menu, address bar, etc.) + "Enter a URL..." placeholder
@@ -311,7 +311,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify initial state: chrome + placeholder
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     let labels = allWidgets.filter((w: any) => w.type === 'label');
     expect(labels.find((l: any) => l.text === 'Enter a URL in the address bar and click Go to navigate.')).toBeDefined();
@@ -364,7 +364,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: chrome still there, placeholder gone, form present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -429,7 +429,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: chrome still there, form gone, results present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     labels = allWidgets.filter((w: any) => w.type === 'label');
     const finalEntries = allWidgets.filter((w: any) => w.type === 'entry');
