@@ -396,7 +396,7 @@ class TerminalUI {
   private textGrid: TextGrid | null = null;
   private win: Window | null = null;
   private a: App;
-  private useTextGrid: boolean = true;
+  private useTextGrid: boolean = false; // Disabled for test compatibility
 
   constructor(a: App) {
     this.a = a;

@@ -1,24 +1,30 @@
 #!/bin/bash
 set -e
 
-echo "--- :package: Installing system dependencies"
-apt-get update -qq
-apt-get install -y \
-  build-essential \
-  gcc \
-  pkg-config \
-  libgl1-mesa-dev \
-  xorg-dev \
-  libxrandr-dev \
-  libxcursor-dev \
-  libxinerama-dev \
-  libxi-dev \
-  libxxf86vm-dev \
-  libglfw3-dev \
-  xvfb \
-  wget \
-  curl \
-  gnupg
+echo "--- :package: Checking system dependencies"
+# Check if system dependencies are already installed (e.g., in Docker image)
+if ! dpkg -l | grep -q libgl1-mesa-dev; then
+  echo "System dependencies not found, installing..."
+  apt-get update -qq
+  apt-get install -y \
+    build-essential \
+    gcc \
+    pkg-config \
+    libgl1-mesa-dev \
+    xorg-dev \
+    libxrandr-dev \
+    libxcursor-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libxxf86vm-dev \
+    libglfw3-dev \
+    xvfb \
+    wget \
+    curl \
+    gnupg
+else
+  echo "System dependencies already installed ✓"
+fi
 
 # ============================================================================
 # Install Node.js 24.x if not already present
@@ -71,11 +77,17 @@ npm install --ignore-scripts
 npm run build
 
 echo "--- :test_tube: Root Tsyne - Unit Tests"
-# Start Xvfb for headless GUI testing
-Xvfb :99 -screen 0 1024x768x24 &
-XVFB_PID=$!
-export DISPLAY=:99
-sleep 2
+# Start Xvfb for headless GUI testing (if not already running)
+if ! pgrep -x Xvfb > /dev/null; then
+  echo "Starting Xvfb..."
+  Xvfb :99 -screen 0 1024x768x24 &
+  XVFB_PID=$!
+  export DISPLAY=:99
+  sleep 2
+else
+  echo "Xvfb already running ✓"
+  export DISPLAY=:99
+fi
 
 timeout 180 npm run test:unit || {
   EXIT_CODE=$?

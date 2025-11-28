@@ -149,10 +149,30 @@ Current @Grab cache (`~/.tsyne/packages/`) uses flat node_modules which can caus
 
 ---
 
+## Testing Improvements
+
+### TsyneTest Dialog Support
+
+**Priority**: Medium
+**Status**: Not started
+
+TsyneTest needs support for interacting with dialogs (showConfirm, showInfo, showError, etc.).
+
+**Current limitation**: Tests cannot accept/dismiss dialogs, which prevents testing features that use confirmation dialogs (e.g., Clear button in terminal app).
+
+**Potential approaches**:
+1. Auto-accept/dismiss API: `ctx.autoAcceptDialogs()` / `ctx.autoDismissDialogs()`
+2. Explicit dialog interaction: `ctx.acceptNextDialog()` / `ctx.dismissNextDialog()`
+3. Dialog assertions: `ctx.expectDialog('title', 'message').accept()`
+
+**Affected tests**:
+- `ported-apps/terminal/terminal.test.ts` - "should clear terminal and remove all content" (currently skipped)
+
+---
+
 ## Future Work
 
 Add TODO items as needed for:
 - Widget Library Expansion
-- Testing Improvements
 - Documentation Updates
 - Performance Optimizations
