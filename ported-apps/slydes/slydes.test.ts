@@ -7,6 +7,7 @@
 import { TsyneTest, TestContext } from '../../src/index-test';
 import { createSlydesApp, SlydesUI } from './slydes';
 import type { App } from '../../src/app';
+import * as path from 'path';
 
 describe('Slydes Functional Tests', () => {
   let tsyneTest: TsyneTest;
@@ -314,5 +315,32 @@ describe('Slydes Functional Tests', () => {
 
       await ctx.getByID('presentation-heading').within(2000).shouldBe('Slide A');
     }, 10000);
+  });
+
+  describe('Screenshots', () => {
+    test('should capture screenshot', async () => {
+      let uiController!: SlydesUI;
+      const testApp = await tsyneTest.createApp((app: App) => {
+        uiController = createSlydesApp(app);
+      });
+
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Set up sample presentation content
+      uiController.getStore().setMarkdown('# Welcome to Slydes\n## A Markdown Presentation App\n\nCreate beautiful presentations with simple markdown syntax.\n---\n# Features\n\n- Write in Markdown\n- Live preview\n- Full-screen presentation mode');
+
+      // Wait for UI to render
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Capture screenshot if TAKE_SCREENSHOTS=1
+      if (process.env.TAKE_SCREENSHOTS === '1') {
+        const screenshotPath = path.join(__dirname, '../screenshots', 'slydes.png');
+        await tsyneTest.screenshot(screenshotPath);
+        console.log(`📸 Screenshot saved: ${screenshotPath}`);
+      }
+
+      expect(true).toBe(true);
+    }, 15000);
   });
 });
