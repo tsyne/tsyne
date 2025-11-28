@@ -78,7 +78,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify placeholder exists
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     expect(allWidgets.filter((w: any) => w.type === 'label').length).toBe(2);
     expect(allWidgets.filter((w: any) => w.type === 'entry').length).toBe(0);
@@ -104,7 +104,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: old placeholder gone, new form present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -146,7 +146,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify form exists
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     expect(allWidgets.filter((w: any) => w.type === 'entry').length).toBe(2);
     expect(allWidgets.filter((w: any) => w.type === 'button').length).toBe(1);
@@ -168,7 +168,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: form gone, table present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -238,7 +238,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: table gone, settings page present
-    const response = await bridge.send('getAllWidgets', {});
+    const response = await bridge.send('getAllWidgets', {}) as any;
     const allWidgets = response.widgets;
     const labels = allWidgets.filter((w: any) => w.type === 'label');
     const tables = allWidgets.filter((w: any) => w.type === 'table');
@@ -311,7 +311,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify initial state: chrome + placeholder
-    let response = await bridge.send('getAllWidgets', {});
+    let response = await bridge.send('getAllWidgets', {}) as any;
     let allWidgets = response.widgets;
     let labels = allWidgets.filter((w: any) => w.type === 'label');
     expect(labels.find((l: any) => l.text === 'Enter a URL in the address bar and click Go to navigate.')).toBeDefined();
@@ -364,7 +364,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: chrome still there, placeholder gone, form present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     labels = allWidgets.filter((w: any) => w.type === 'label');
     const entries = allWidgets.filter((w: any) => w.type === 'entry');
@@ -429,7 +429,7 @@ describe('Window Content Replacement', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify: chrome still there, form gone, results present
-    response = await bridge.send('getAllWidgets', {});
+    response = await bridge.send('getAllWidgets', {}) as any;
     allWidgets = response.widgets;
     labels = allWidgets.filter((w: any) => w.type === 'label');
     const finalEntries = allWidgets.filter((w: any) => w.type === 'entry');
