@@ -185,7 +185,7 @@ describe('Protocol Latency Benchmark', () => {
         });
 
         await testApp.run();
-        const bridge = (tsyneTest as any).bridge;
+        const bridge = testApp.getBridge();
 
         // Send 50 messages as fast as possible (no await between sends)
         const start = performance.now();
