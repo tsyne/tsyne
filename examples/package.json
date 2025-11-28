@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "test": "npm run test:logic && npm run test:gui",
-    "test:logic": "jest --testMatch='**/*.logic.test.ts' --testPathIgnorePatterns='/node_modules/'",
+    "test:logic": "jest --testMatch='**/*.logic.test.ts' --testPathIgnorePatterns='/node_modules/' --passWithNoTests",
     "test:gui": "jest --maxWorkers=1",
     "test:watch": "jest --watch"
   },
