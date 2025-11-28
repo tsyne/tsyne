@@ -51,7 +51,7 @@ describe('Image Viewer Tests', () => {
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshotPath = path.join(__dirname, 'screenshots', 'image-viewer-initial.png');
+      const screenshotPath = path.join(__dirname, '../screenshots', 'image-viewer.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);

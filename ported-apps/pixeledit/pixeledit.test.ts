@@ -64,7 +64,7 @@ describe('Pixel Editor Tests', () => {
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshotPath = path.join(__dirname, 'screenshots', 'pixeledit-initial.png');
+      const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);

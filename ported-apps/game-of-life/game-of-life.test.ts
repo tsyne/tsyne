@@ -57,7 +57,7 @@ describe('Game of Life Tests', () => {
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshotPath = path.join(__dirname, 'screenshots', 'game-of-life-initial.png');
+      const screenshotPath = path.join(__dirname, '../screenshots', 'game-of-life.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
