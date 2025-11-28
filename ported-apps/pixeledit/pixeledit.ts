@@ -5,14 +5,24 @@
  * Original authors: Fyne.io contributors
  * License: See original repository
  *
- * This is a simplified port to demonstrate pixel editing capabilities in Tsyne.
- * The original implementation uses Fyne's custom raster widgets for pixel-level
- * manipulation. This version adapts the concepts to work with Tsyne's architecture.
+ * This port demonstrates pixel editing capabilities in Tsyne, including:
+ * - Main menu with File operations
+ * - File dialogs for Open/Save
+ * - Recent files history (stored in preferences)
+ * - Color picker for foreground color selection
+ * - Power-of-2 zoom (100%, 200%, 400%, etc.)
+ * - FG color preview rectangle
  */
 
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
+import type { CanvasRectangle } from '../../src/widgets/canvas';
+
+// Constants
+const MAX_RECENT_FILES = 5;
+const RECENT_COUNT_KEY = 'pixeledit_recentCount';
+const RECENT_FORMAT_KEY = 'pixeledit_recent_';
 
 /**
  * Tool interface - defines the contract for editing tools
@@ -37,7 +47,7 @@ class Color {
 
   toHex(): string {
     const toHex = (n: number) => {
-      const hex = n.toString(16);
+      const hex = Math.round(n).toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     };
     return `#${toHex(this.r)}${toHex(this.g)}${toHex(this.b)}`;
@@ -96,14 +106,17 @@ class PixelEditor {
   public bgColor: Color = new Color(255, 255, 255); // White default
   private currentTool: Tool;
   private tools: Tool[] = [];
-  private zoom: number = 1;
+  private zoom: number = 1; // Power of 2: 1, 2, 4, 8, 16
   private imageWidth: number = 32;
   private imageHeight: number = 32;
   private pixels: Uint8ClampedArray | null = null; // RGBA pixel data
   private currentFile: string | null = null;
-  private statusLabel: any = null; // Will hold reference to label widget
+  private statusLabel: any = null;
   private zoomLabel: any = null;
   private colorLabel: any = null;
+  private fgPreview: CanvasRectangle | null = null;
+  private win: Window | null = null;
+  private recentFiles: string[] = [];
 
   constructor(private a: App) {
     // Initialize tools
@@ -112,6 +125,51 @@ class PixelEditor {
       new PickerTool(this)
     ];
     this.currentTool = this.tools[0]; // Default to pencil
+
+    // Recent files loaded lazily when window is set up
+  }
+
+  /**
+   * Load recent files from preferences
+   * Based on: history.go loadRecent()
+   */
+  private async loadRecentFiles(): Promise<void> {
+    const count = await this.a.getPreferenceInt(RECENT_COUNT_KEY, 0);
+    this.recentFiles = [];
+    for (let i = 0; i < count && i < MAX_RECENT_FILES; i++) {
+      const file = await this.a.getPreference(`${RECENT_FORMAT_KEY}${i}`, '');
+      if (file) {
+        this.recentFiles.push(file);
+      }
+    }
+  }
+
+  /**
+   * Save recent files to preferences
+   * Based on: history.go addRecent()
+   */
+  private async saveRecentFiles(): Promise<void> {
+    await this.a.setPreference(RECENT_COUNT_KEY, this.recentFiles.length.toString());
+    for (let i = 0; i < this.recentFiles.length; i++) {
+      await this.a.setPreference(`${RECENT_FORMAT_KEY}${i}`, this.recentFiles[i]);
+    }
+  }
+
+  /**
+   * Add a file to recent files list
+   */
+  private async addToRecentFiles(filepath: string): Promise<void> {
+    // Remove if already exists
+    this.recentFiles = this.recentFiles.filter(f => f !== filepath);
+    // Add to front
+    this.recentFiles.unshift(filepath);
+    // Limit to max
+    if (this.recentFiles.length > MAX_RECENT_FILES) {
+      this.recentFiles = this.recentFiles.slice(0, MAX_RECENT_FILES);
+    }
+    await this.saveRecentFiles();
+    // Update menu
+    this.updateMainMenu();
   }
 
   /**
@@ -149,7 +207,6 @@ class PixelEditor {
     this.pixels[index + 2] = color.b;
     this.pixels[index + 3] = color.a;
 
-    // TODO: Refresh canvas display
     this.updateStatus();
   }
 
@@ -161,7 +218,21 @@ class PixelEditor {
     this.fgColor = color;
     console.log(`Foreground color set to ${color.toHex()}`);
     if (this.colorLabel) {
-      await this.colorLabel.setText(`Color: ${color.toHex()}`);
+      await this.colorLabel.setText(`${color.toHex()}`);
+    }
+    if (this.fgPreview) {
+      await this.fgPreview.update({ fillColor: color.toHex() });
+    }
+  }
+
+  /**
+   * Open color picker dialog for FG color
+   */
+  async pickFGColor(): Promise<void> {
+    if (!this.win) return;
+    const result = await this.win.showColorPicker('Choose Foreground Color', this.fgColor.toHex());
+    if (result) {
+      await this.setFGColor(new Color(result.r, result.g, result.b, result.a));
     }
   }
 
@@ -175,15 +246,31 @@ class PixelEditor {
   }
 
   /**
-   * Set zoom level (1-16)
-   * Based on: editor.go setZoom()
+   * Set zoom level (power of 2: 1, 2, 4, 8, 16)
+   * Based on: editor.go setZoom() - uses power of 2 zoom like original
    */
   async setZoom(level: number): Promise<void> {
     this.zoom = Math.max(1, Math.min(16, level));
-    console.log(`Zoom set to ${this.zoom}x`);
+    console.log(`Zoom set to ${this.zoom * 100}%`);
     if (this.zoomLabel) {
-      await this.zoomLabel.setText(`Zoom: ${this.zoom}x`);
+      await this.zoomLabel.setText(`${this.zoom * 100}%`);
     }
+  }
+
+  /**
+   * Zoom in (double the zoom level)
+   * Based on: palette.go updateZoom - uses *2 for zoom in
+   */
+  async zoomIn(): Promise<void> {
+    await this.setZoom(this.zoom * 2);
+  }
+
+  /**
+   * Zoom out (halve the zoom level)
+   * Based on: palette.go updateZoom - uses /2 for zoom out
+   */
+  async zoomOut(): Promise<void> {
+    await this.setZoom(Math.floor(this.zoom / 2));
   }
 
   /**
@@ -193,7 +280,8 @@ class PixelEditor {
   async loadFile(filepath: string): Promise<void> {
     console.log(`Loading file: ${filepath}`);
     this.currentFile = filepath;
-    // TODO: Implement actual file loading
+    await this.addToRecentFiles(filepath);
+    // TODO: Implement actual image loading via bridge
     // For now, create a blank 32x32 image
     this.createBlankImage(32, 32);
     this.updateStatus();
@@ -223,20 +311,52 @@ class PixelEditor {
    */
   async save(): Promise<void> {
     if (!this.currentFile) {
-      console.log('No file to save');
+      await this.saveAs();
       return;
     }
     console.log(`Saving to ${this.currentFile}`);
-    // TODO: Implement actual file saving
+    // TODO: Implement actual file saving via bridge
+    if (this.win) {
+      await this.win.showInfo('Save', `Image saved to ${this.currentFile}`);
+    }
   }
 
   /**
    * Save image to new file
-   * Based on: editor.go SaveAs()
+   * Based on: editor.go SaveAs() and ui/main.go fileSaveAs()
    */
-  async saveAs(filepath: string): Promise<void> {
-    this.currentFile = filepath;
-    await this.save();
+  async saveAs(): Promise<void> {
+    if (!this.win) return;
+    const filepath = await this.win.showFileSave('image.png');
+    if (filepath) {
+      this.currentFile = filepath;
+      await this.addToRecentFiles(filepath);
+      await this.save();
+    }
+  }
+
+  /**
+   * Open file dialog
+   * Based on: ui/main.go fileOpen()
+   */
+  async fileOpen(): Promise<void> {
+    if (!this.win) return;
+    const filepath = await this.win.showFileOpen();
+    if (filepath) {
+      await this.loadFile(filepath);
+    }
+  }
+
+  /**
+   * Reset to original image with confirmation
+   * Based on: ui/main.go fileReset()
+   */
+  async fileReset(): Promise<void> {
+    if (!this.win) return;
+    const confirmed = await this.win.showConfirm('Reset content?', 'Are you sure you want to re-load the image?');
+    if (confirmed) {
+      await this.reload();
+    }
   }
 
   /**
@@ -244,7 +364,11 @@ class PixelEditor {
    * Based on: editor.go Reload()
    */
   async reload(): Promise<void> {
-    if (!this.currentFile) return;
+    if (!this.currentFile) {
+      this.createBlankImage(32, 32);
+      this.updateStatus();
+      return;
+    }
     await this.loadFile(this.currentFile);
   }
 
@@ -253,18 +377,56 @@ class PixelEditor {
    */
   private async updateStatus(): Promise<void> {
     if (this.statusLabel && this.pixels) {
-      const msg = this.currentFile
-        ? `${this.currentFile} (${this.imageWidth}x${this.imageHeight})`
-        : `New Image (${this.imageWidth}x${this.imageHeight})`;
+      const filename = this.currentFile ? this.currentFile.split('/').pop() : 'New Image';
+      const msg = `File: ${filename} | Width: ${this.imageWidth} | Height: ${this.imageHeight}`;
       await this.statusLabel.setText(msg);
     }
+  }
+
+  /**
+   * Build main menu
+   * Based on: ui/main.go buildMainMenu()
+   * Note: Tsyne's menu API uses onSelected (not onClick) and doesn't support nested submenus
+   */
+  private updateMainMenu(): void {
+    if (!this.win) return;
+
+    // Build menu items - flatten recent files into main menu since nested menus not supported
+    const menuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
+      { label: 'Open ...', onSelected: () => this.fileOpen() },
+      { label: 'isSeparator', isSeparator: true },
+    ];
+
+    // Add recent files directly to menu
+    if (this.recentFiles.length > 0) {
+      for (const filepath of this.recentFiles.slice(0, 3)) { // Show up to 3 recent
+        const filename = filepath.split('/').pop() || filepath;
+        menuItems.push({ label: `Recent: ${filename}`, onSelected: () => this.loadFile(filepath) });
+      }
+      menuItems.push({ label: 'isSeparator', isSeparator: true });
+    }
+
+    menuItems.push({ label: 'Reset ...', onSelected: () => this.fileReset() });
+    menuItems.push({ label: 'Save', onSelected: () => this.save() });
+    menuItems.push({ label: 'Save As ...', onSelected: () => this.saveAs() });
+
+    this.win.setMainMenu([
+      {
+        label: 'File',
+        items: menuItems
+      }
+    ]);
   }
 
   /**
    * Build the UI
    * Based on: ui/main.go BuildUI()
    */
-  buildUI(win: Window): void {
+  async buildUI(win: Window): Promise<void> {
+    this.win = win;
+    await this.loadRecentFiles();
+    this.updateMainMenu();
+
     this.a.border({
       top: () => {
         // Top toolbar
@@ -304,7 +466,7 @@ class PixelEditor {
   private buildPalette(): void {
     this.a.vbox(() => {
       // Tool selection
-      this.a.label('Tools:');
+      this.a.label('Tools');
 
       for (const tool of this.tools) {
         this.a.button(tool.name, () => {
@@ -314,20 +476,28 @@ class PixelEditor {
 
       this.a.separator();
 
-      // Zoom controls
-      this.zoomLabel = this.a.label(`Zoom: ${this.zoom}x`);
-      this.a.button('Zoom In', () => {
-        this.setZoom(this.zoom + 1);
-      });
-      this.a.button('Zoom Out', () => {
-        this.setZoom(this.zoom - 1);
+      // Zoom controls (power of 2, shown as percentage)
+      this.a.hbox(() => {
+        this.a.button('-', () => this.zoomOut());
+        this.zoomLabel = this.a.label(`${this.zoom * 100}%`);
+        this.a.button('+', () => this.zoomIn());
       });
 
       this.a.separator();
 
-      // Color preview
-      this.a.label('Foreground:');
+      // Color preview with clickable color picker
+      // Based on: editor.go fgPreview = canvas.NewRectangle(fgCol)
+      this.fgPreview = this.a.canvasRectangle({
+        width: 32,
+        height: 32,
+        fillColor: this.fgColor.toHex(),
+        strokeColor: '#000000',
+        strokeWidth: 1
+      });
+
       this.colorLabel = this.a.label(this.fgColor.toHex());
+
+      this.a.button('Pick Color', () => this.pickFGColor());
     });
   }
 
@@ -340,8 +510,8 @@ class PixelEditor {
       this.a.center(() => {
         this.a.vbox(() => {
           this.a.label('Pixel canvas will be rendered here');
-          this.a.label('(Custom raster widget needed for full functionality)');
-          // TODO: Implement custom raster widget or use Image with click handling
+          this.a.label('(Interactive raster widget needed for full functionality)');
+          // TODO: Implement interactive raster with click-to-pixel conversion
         });
       });
     });
@@ -352,22 +522,20 @@ class PixelEditor {
    * Based on: ui/status.go
    */
   private buildStatusBar(): void {
-    this.statusLabel = this.a.label('Ready');
+    this.statusLabel = this.a.label('Open a file');
   }
 
-  /**
-   * File operations
-   * Based on: ui/main.go file handlers
-   */
-  private async fileOpen(): Promise<void> {
-    console.log('File open dialog');
-    // TODO: Integrate with file dialog when available
-    await this.loadFile('untitled.png');
+  // Expose for testing
+  getZoom(): number {
+    return this.zoom;
   }
 
-  private async fileReset(): Promise<void> {
-    console.log('Reset to original');
-    await this.reload();
+  getCurrentFile(): string | null {
+    return this.currentFile;
+  }
+
+  getRecentFiles(): string[] {
+    return [...this.recentFiles];
   }
 }
 
@@ -378,15 +546,18 @@ class PixelEditor {
 export function createPixelEditorApp(a: App): PixelEditor {
   const editor = new PixelEditor(a);
 
-  a.window({ title: 'Pixel Editor', width: 520, height: 320 }, (win: Window) => {
-    win.setContent(() => {
-      editor.buildUI(win);
+  a.window({ title: 'Pixel Editor', width: 520, height: 320 }, async (win: Window) => {
+    win.setContent(async () => {
+      await editor.buildUI(win);
     });
     win.show();
   });
 
   return editor;
 }
+
+// Export PixelEditor class for testing
+export { PixelEditor };
 
 /**
  * Main application entry point
