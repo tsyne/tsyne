@@ -1,6 +1,6 @@
 # Terminal Emulator for Tsyne
 
-A simplified terminal emulator demonstration ported from [fyne-io/terminal](https://github.com/fyne-io/terminal) to Tsyne.
+A full-featured terminal emulator ported from [fyne-io/terminal](https://github.com/fyne-io/terminal) to Tsyne.
 
 ## Original Project
 
@@ -9,60 +9,53 @@ This application is based on the terminal emulator originally created by the Fyn
 - **Original Authors**: Fyne.io contributors
 - **Original License**: See the original repository for licensing information
 
-## ⚠️ Important Note
+## Features
 
-**This is a SIMPLIFIED DEMONSTRATION, not a full terminal emulator.**
+This Tsyne port provides a **fully-featured terminal emulator** including:
 
-The original fyne-io/terminal is a complete terminal emulator supporting:
-- Full PTY (pseudo-terminal) support
-- Real shell execution (bash, zsh, etc.)
-- SSH connections
-- ANSI escape sequences
-- Text selection and clipboard
-- Mouse input
-- Full terminal capabilities (colors, cursor control, etc.)
-- Cross-platform support (Linux, macOS, Windows, BSD)
+### Core Terminal Features
+- **Real Shell Execution** - Spawns actual shell processes (bash, zsh, sh, cmd.exe)
+- **Full ANSI/VT100 Escape Sequences** - Complete escape sequence parser
+- **256 Color Support** - Full 8/16/256 color palette with true color conversion
+- **Text Attributes** - Bold, italic, underline, blink, inverse, strikethrough
+- **Cursor Management** - Full cursor positioning, visibility, save/restore
+- **Scroll Regions** - DECSTBM scroll region support
+- **Scrollback Buffer** - Up to 1000 lines of scrollback history
+- **Alternate Screen Buffer** - For applications like vim, less, etc.
+- **Text Selection** - Mouse-based text selection for copy/paste
 
-**This Tsyne port is a simplified UI demonstration showing:**
-- Terminal-like interface
-- Basic command interaction
-- Simple command processor (echo, help, clear, etc.)
-- No real shell execution
-- No PTY management
-- No ANSI escape sequences
+### Input Handling
+- **Full Keyboard Support** - All standard keys including function keys (F1-F12)
+- **Control Sequences** - Ctrl+C, Ctrl+D, Ctrl+Z, etc.
+- **Arrow Keys** - Normal and application cursor key modes
+- **Bracketed Paste Mode** - Proper paste handling for modern shells
 
-## About This Port
+### Terminal Modes
+- **Origin Mode** (DECOM)
+- **Auto-Wrap Mode** (DECAWM)
+- **Application Cursor Keys** (DECCKM)
+- **Cursor Visibility** (DECTCEM)
+- **Mouse Tracking** (modes 1000, 1002, 1003)
 
-This is a Tsyne port demonstrating terminal-like UI interaction, adapted to work with Tsyne's TypeScript-to-Fyne bridge architecture. The original application requires deep OS integration for PTY management and shell execution, which is beyond the scope of a simplified demonstration.
+### OSC Commands
+- **Window Title** - OSC 0 and OSC 2 for title changes
+- **Working Directory** - OSC 7 for CWD updates
 
-### Purpose
+## Architecture
 
-This port demonstrates:
-- Terminal UI layout patterns
-- Command input/output interaction
-- Scroll area for terminal output
-- Basic command processing
+The port follows the original Fyne terminal structure:
 
-### Not Included
-
-Full terminal emulation would require:
-- PTY/shell integration in the Go bridge
-- ANSI escape sequence parsing
-- Terminal state management (cursor, colors, attributes)
-- Advanced input handling (control sequences, alt keys)
-- SSH client integration
-
-## Available Commands
-
-The simplified terminal includes these demo commands:
-
-- `help` - Show available commands
-- `echo [text]` - Echo text to output
-- `date` - Show current date/time
-- `pwd` - Print working directory (simulated)
-- `history` - Show command history
-- `clear` - Clear the terminal
-- `exit` - Exit message
+```
+Original (fyne-io/terminal):          Tsyne Port:
+term.go                    →          Terminal class
+escape.go                  →          AnsiParser class
+color.go                   →          Color palette & conversion
+input.go                   →          Keyboard input handling
+output.go                  →          Output processing
+select.go                  →          Text selection
+render.go                  →          TextGrid rendering
+cmd/fyneterm/main.go       →          TerminalUI class
+```
 
 ## Usage
 
@@ -73,137 +66,203 @@ cd bridge && go build -o ../bin/tsyne-bridge && cd ..
 # Build the TypeScript code
 npm run build
 
-# Run the terminal demo
-node dist/examples/terminal/terminal.js
+# Run the terminal
+npx ts-node ported-apps/terminal/terminal.ts
 ```
-
-## UI Controls
-
-- **Clear Button**: Clear all terminal output
-- **Help Button**: Show available commands
-- **Input Field**: Enter commands (press Enter to execute)
 
 ## Testing
 
 ```bash
-# Run tests
-npm test examples/terminal/terminal.test.ts
+# Run all tests (unit + UI)
+npm test ported-apps/terminal/terminal.test.ts
 
 # Run with visual debugging
-TSYNE_HEADED=1 npm test examples/terminal/terminal.test.ts
+TSYNE_HEADED=1 npm test ported-apps/terminal/terminal.test.ts
+
+# Run with screenshots
+TAKE_SCREENSHOTS=1 npm test ported-apps/terminal/terminal.test.ts
 ```
 
-**Test Coverage (12 tests):**
-- Initial UI display
-- Welcome message visibility
-- Help command execution
-- Clear functionality
-- Toolbar controls visibility
-- Input prompt display
-- Multiple command handling
-- UI state persistence
-- Rapid button click handling
-- All UI sections verification
+### Test Coverage
+
+The test suite includes **60+ tests** covering:
+
+**Terminal Core Unit Tests:**
+- Terminal buffer initialization and operations
+- Character writing and cursor positioning
+- Newline/carriage return handling
+- Line wrapping
+
+**ANSI Escape Sequences:**
+- Cursor movement (CUU, CUD, CUF, CUB, CUP, CHA, VPA)
+- Cursor save/restore
+- Erase operations (ED, EL)
+- SGR (colors and attributes)
+- 256-color and true color modes
+- Scrolling (SU, SD, DECSTBM)
+- Modes (DECTCEM, alternate buffer, etc.)
+- OSC commands (title changes)
+
+**Text Selection:**
+- Single-line selection
+- Multi-line selection
+- Reversed selection
+- Selection clearing
+
+**Keyboard Input:**
+- Regular characters
+- Special keys (Enter, Backspace, Tab)
+- Arrow keys
+- Ctrl+key combinations
+- Function keys
+- Bracketed paste mode
+
+**Complex Scenarios:**
+- Vim-like screen clearing
+- Progress bar output
+- Colored ls output
+- ANSI art rendering
+- Full-screen application layouts
 
 ## Implementation Details
 
 ### Terminal Class
-- Line-based output storage
-- Command processor for basic commands
-- Maximum line limit (500 lines)
-- Update callbacks for UI refresh
 
-### CommandProcessor Class
-- Simple command parsing
-- Built-in commands (help, echo, date, pwd, history, clear, exit)
-- Command history tracking
-- Error handling for unknown commands
+The `Terminal` class is the core emulator implementing:
+
+```typescript
+class Terminal {
+  // Shell management
+  runLocalShell(): void           // Start local shell
+  runWithConnection(): void       // Connect to remote shell
+  sendInput(data: string): void   // Send to shell
+
+  // Terminal operations
+  write(data: string): void       // Process output
+  resize(cols, rows): void        // Resize terminal
+  reset(): void                   // Reset to initial state
+
+  // Selection
+  startSelection(row, col): void  // Begin selection
+  updateSelection(row, col): void // Update selection
+  endSelection(): string          // Get selected text
+
+  // Input handling
+  typeChar(char: string): void    // Type character
+  typeKey(key, modifiers): void   // Special key
+  paste(text: string): void       // Paste with bracketed mode
+
+  // State
+  getText(): string               // Get buffer content
+  getConfig(): TerminalConfig     // Get configuration
+  getCursorRow/Col(): number      // Cursor position
+  isCursorVisible(): boolean      // Cursor visibility
+}
+```
+
+### AnsiParser Class
+
+State machine-based parser for ANSI/VT100 escape sequences:
+
+```typescript
+class AnsiParser {
+  parse(data: string): void
+
+  // Callbacks
+  onPrint: (char) => void
+  onExecute: (code) => void
+  onCsiDispatch: (params, intermediates, final, privateMarker) => void
+  onOscDispatch: (params) => void
+  onEscDispatch: (intermediates, final) => void
+}
+```
+
+### TerminalBuffer Class
+
+Screen buffer management with cell-level attributes:
+
+```typescript
+class TerminalBuffer {
+  clear(): void
+  getCell(row, col): Cell
+  setCell(row, col, char, attrs): void
+  scrollUp/Down(top, bottom, count): void
+  eraseLine(row, mode, col): void
+  eraseDisplay(mode, row, col): void
+  insertLines/deleteLines(): void
+  resize(cols, rows): void
+}
+```
 
 ### TerminalUI Class
-- Toolbar with Clear and Help buttons
-- Scrollable output area
-- Input field with command prompt ($)
-- Status bar with instructions
-- Real-time output updates
 
-## Architecture
+Tsyne UI integration using TextGrid widget:
 
-The port follows similar patterns to the original:
-
-```
-Original (fyne-io/terminal):
-term.go              → Terminal struct (PTY, I/O, rendering)
-cmd/fyneterm/main.go → Main entry point
-render.go            → Terminal rendering
-input.go/output.go   → I/O processing
-escape.go            → ANSI escape sequences
-
-Tsyne Port:
-terminal.ts          → Simplified Terminal + CommandProcessor
-                       TerminalUI (no PTY, basic commands only)
+```typescript
+class TerminalUI {
+  buildUI(win: Window): Promise<void>
+  handleKeyDown(key, modifiers): void
+  getTerminal(): Terminal
+}
 ```
 
-## Attribution
+## Color Support
 
-Original work by the Fyne.io team. Please visit the [original repository](https://github.com/fyne-io/terminal) for the full-featured terminal emulator with real shell execution, PTY support, and complete terminal capabilities.
+Full 256-color palette:
+- Colors 0-7: Standard ANSI colors
+- Colors 8-15: Bright ANSI colors
+- Colors 16-231: 6x6x6 color cube
+- Colors 232-255: Grayscale ramp
 
-This Tsyne port is provided **solely as a UI demonstration** of terminal-like interaction patterns in Tsyne applications.
+True color (24-bit) is converted to nearest 256-color value.
 
-## Future Enhancements
+## Escape Sequence Support
 
-To create a real terminal emulator in Tsyne would require:
+### CSI Sequences (ESC [ ...)
+- Cursor movement: A, B, C, D, E, F, G, H, d, f, `
+- Cursor save/restore: s, u
+- Erase: J, K
+- Insert/delete: L, M, P, @, X
+- Scroll: S, T
+- Modes: h, l
+- SGR: m
+- Scroll region: r
+- Device status: n, c
 
-1. **PTY Integration**:
-   - Add PTY support to the Go bridge
-   - Shell execution (bash, zsh, etc.)
-   - Proper input/output buffering
-   - Signal handling
+### OSC Sequences (ESC ] ...)
+- 0: Set icon name and window title
+- 2: Set window title
+- 7: Set working directory
 
-2. **ANSI Escape Sequences**:
-   - Parser for escape codes
-   - Color/attribute support
-   - Cursor positioning
-   - Screen manipulation
+### Single Character Escapes
+- 7: Save cursor (DECSC)
+- 8: Restore cursor (DECRC)
+- D: Index (IND)
+- E: Next line (NEL)
+- M: Reverse index (RI)
+- c: Reset (RIS)
 
-3. **Advanced Features**:
-   - Text selection with mouse
-   - Clipboard operations
-   - SSH client integration
-   - Tab completion
-   - Scrollback buffer
-   - Font/size customization
-
-4. **Cross-Platform Support**:
-   - Platform-specific PTY implementations
-   - Windows ConPTY support
-   - Unix PTY support
-
-## Why This is Simplified
-
-Creating a full terminal emulator requires:
-
-- **Operating System Integration**: PTY (pseudo-terminal) management is OS-specific and requires native code
-- **Process Management**: Spawning and managing shell processes
-- **Complex I/O**: Bidirectional communication with shells, signal handling
-- **ANSI Standards**: Full VT100/xterm escape sequence parsing
-- **Performance**: Efficient rendering of potentially thousands of characters
-- **State Management**: Cursor position, scrollback, screen buffers
-
-These features would require significant Go bridge enhancements and are beyond the scope of a demonstration port.
-
-## Comparison
+## Comparison with Original
 
 | Feature | Original (fyne-io/terminal) | This Port |
 |---------|----------------------------|-----------|
-| Real shell execution | ✓ | ✗ |
-| PTY support | ✓ | ✗ |
-| ANSI escape sequences | ✓ | ✗ |
-| SSH connections | ✓ | ✗ |
-| Mouse selection | ✓ | ✗ |
-| Command history | ✓ | ✓ (simplified) |
-| UI layout | ✓ | ✓ |
-| Scrollback | ✓ | ✓ (limited) |
-| Basic commands | N/A | ✓ (demo only) |
+| Real shell execution | ✓ | ✓ |
+| ANSI escape sequences | ✓ | ✓ |
+| 256 color support | ✓ | ✓ |
+| True color (24-bit) | ✓ | ✓ (converted to 256) |
+| Text selection | ✓ | ✓ |
+| Scrollback buffer | ✓ | ✓ |
+| Alternate screen | ✓ | ✓ |
+| Bracketed paste | ✓ | ✓ |
+| SSH connections | ✓ | ✓ (via runWithConnection) |
+| PTY support | ✓ (native) | Partial (child_process) |
+| Mouse tracking | ✓ | ✓ (mode flags) |
+
+## Limitations
+
+- **PTY**: Uses Node.js `child_process.spawn` instead of true PTY. For full PTY support, `node-pty` could be added as an optional dependency.
+- **SIGWINCH**: Terminal resize signals require `node-pty` for proper propagation.
+- **Performance**: Per-cell rendering may be slower than native Fyne for very large terminals.
 
 ## Credits
 
@@ -211,6 +270,6 @@ These features would require significant Go bridge enhancements and are beyond t
 - **Tsyne Framework**: Paul Hammant and contributors
 - **Fyne GUI Toolkit**: fyne.io team
 
-## Disclaimer
+## License
 
-This is a **demonstration port** showing terminal-like UI patterns. It is **NOT** a replacement for the original terminal emulator. For actual terminal emulation, shell execution, or SSH connections, please use the original [fyne-io/terminal](https://github.com/fyne-io/terminal) project.
+See the original [fyne-io/terminal](https://github.com/fyne-io/terminal) repository for licensing information.
