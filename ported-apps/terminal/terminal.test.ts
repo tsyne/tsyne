@@ -674,3 +674,195 @@ describe('Complex Terminal Scenarios', () => {
     expect(text).toContain('Content line');
   });
 });
+
+// Shell Integration Tests
+// Note: These tests use spawn() without a PTY, so behavior differs from a real terminal.
+// They verify that shell commands execute and output is captured.
+describe('Shell Integration Tests', () => {
+  test('should run ls command and capture output', async () => {
+    const { spawn } = require('child_process');
+
+    const term = new Terminal(80, 24);
+
+    // Track all data written to terminal
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    // Change to terminal directory before running
+    const originalCwd = process.cwd();
+
+    try {
+      process.chdir('/home/user/tsyne/ported-apps/terminal');
+
+      // Run ls directly as a command to verify output capture works
+      const ls = spawn('ls', [], {
+        cwd: '/home/user/tsyne/ported-apps/terminal',
+        env: { ...process.env, TERM: 'xterm-256color' },
+      });
+
+      ls.stdout.on('data', (data: Buffer) => {
+        term.write(data.toString());
+      });
+
+      // Wait for command to complete
+      await new Promise<void>((resolve) => {
+        ls.on('close', () => resolve());
+      });
+
+      // Verify output contains expected files
+      expect(capturedOutput).toContain('terminal.ts');
+      expect(capturedOutput).toContain('terminal.test.ts');
+      expect(capturedOutput).toContain('README.md');
+
+      // Also verify it's in the terminal buffer
+      const text = term.getText();
+      expect(text).toContain('terminal.ts');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  }, 10000);
+
+  test('should run echo command and capture output', async () => {
+    const { spawn } = require('child_process');
+
+    const term = new Terminal(80, 24);
+
+    // Track all data written to terminal
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    const testString = 'TSYNE_TEST_' + Date.now();
+
+    // Run echo command directly
+    const echo = spawn('echo', [testString], {
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    echo.stdout.on('data', (data: Buffer) => {
+      term.write(data.toString());
+    });
+
+    // Wait for command to complete
+    await new Promise<void>((resolve) => {
+      echo.on('close', () => resolve());
+    });
+
+    // Verify output contains our test string
+    expect(capturedOutput).toContain(testString);
+
+    // Also verify it's in the terminal buffer
+    const text = term.getText();
+    expect(text).toContain(testString);
+  }, 10000);
+
+  test('should run pwd command and capture path', async () => {
+    const { spawn } = require('child_process');
+
+    const term = new Terminal(80, 24);
+
+    // Track all data written to terminal
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    // Run pwd command directly
+    const pwd = spawn('pwd', [], {
+      cwd: '/home/user/tsyne/ported-apps/terminal',
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    pwd.stdout.on('data', (data: Buffer) => {
+      term.write(data.toString());
+    });
+
+    // Wait for command to complete
+    await new Promise<void>((resolve) => {
+      pwd.on('close', () => resolve());
+    });
+
+    // Verify output contains expected path
+    expect(capturedOutput).toContain('/home/user/tsyne/ported-apps/terminal');
+
+    // Also verify path pattern is in terminal buffer
+    const text = term.getText();
+    expect(text).toMatch(/\/[a-zA-Z0-9_\-\/]+/);
+  }, 10000);
+
+  test('should handle ANSI colored output', async () => {
+    const { spawn } = require('child_process');
+
+    const term = new Terminal(80, 24);
+
+    // Track all data written to terminal
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    // Use printf to output ANSI colors (more reliable than ls --color)
+    const printf = spawn('printf', [
+      '\\033[31mRed\\033[0m \\033[32mGreen\\033[0m \\033[34mBlue\\033[0m\\n',
+    ], {
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    printf.stdout.on('data', (data: Buffer) => {
+      term.write(data.toString());
+    });
+
+    // Wait for command to complete
+    await new Promise<void>((resolve) => {
+      printf.on('close', () => resolve());
+    });
+
+    // Verify output contains ANSI escape sequences
+    expect(capturedOutput).toMatch(/\x1b\[/);
+
+    // Verify color text appears in terminal (after ANSI parsing strips codes)
+    const text = term.getText();
+    expect(text).toContain('Red');
+    expect(text).toContain('Green');
+    expect(text).toContain('Blue');
+  }, 10000);
+
+  test('should handle multi-line command output', async () => {
+    const { spawn } = require('child_process');
+
+    const term = new Terminal(80, 24);
+
+    // Run a command that outputs multiple lines
+    const seq = spawn('seq', ['1', '5'], {
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    seq.stdout.on('data', (data: Buffer) => {
+      term.write(data.toString());
+    });
+
+    // Wait for command to complete
+    await new Promise<void>((resolve) => {
+      seq.on('close', () => resolve());
+    });
+
+    // Verify all numbers appear in terminal
+    const text = term.getText();
+    expect(text).toContain('1');
+    expect(text).toContain('2');
+    expect(text).toContain('3');
+    expect(text).toContain('4');
+    expect(text).toContain('5');
+  }, 10000);
+});
