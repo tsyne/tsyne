@@ -63,7 +63,8 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 ### Mouse/Touch Support
 - [x] Basic click handling
 - [x] Text selection (linear)
-- [ ] Block/rectangular selection
+- [x] Block/rectangular selection (Alt+drag)
+- [x] Cell selection detection for rendering
 - [ ] Double-click word selection
 - [ ] Right-click context menu (paste)
 - [x] Touch events (TouchDown, TouchMove, TouchUp, TouchCancel)
@@ -71,7 +72,7 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Touch-based text selection
 - [x] Pixel-to-cell coordinate conversion
 
-**Status:** ✅ Touch support complete. Tap, long press, and drag gestures implemented with proper text selection.
+**Status:** ✅ Touch and selection support complete. Linear and block selection modes with Alt+drag toggle. Cell selection detection for proper highlighting.
 
 ### Terminal Modes
 - [x] Application cursor keys (DECCKM)
@@ -151,7 +152,7 @@ Terminal (class)
 
 ## Test Coverage
 
-### Current Tests (124 total)
+### Current Tests (140 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
@@ -159,10 +160,12 @@ Terminal (class)
 - 10 DEC Special Graphics charset tests
 - 12 Touch event tests
 - 31 Mouse protocol tests
+- 16 Block selection tests
 
 ### Needed Tests
 - [x] DEC Special Graphics rendering
 - [x] Mouse protocol encoding
+- [x] Block/rectangular selection
 - [ ] Complex key sequences with modifiers
 - [x] PTY integration tests
 - [x] Mobile/touch event tests

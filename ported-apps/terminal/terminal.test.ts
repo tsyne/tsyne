@@ -1816,3 +1816,272 @@ describe('Mouse Protocol Tests', () => {
     });
   });
 });
+
+// ============================================================================
+// Block Selection Tests
+// ============================================================================
+
+import { SelectionMode } from './terminal';
+
+describe('Block Selection Tests', () => {
+  describe('Selection Mode', () => {
+    test('should default to linear selection mode', () => {
+      const term = new Terminal(80, 24);
+      expect(term.getSelectionMode()).toBe(SelectionMode.Linear);
+    });
+
+    test('should allow setting selection mode', () => {
+      const term = new Terminal(80, 24);
+      term.setSelectionMode(SelectionMode.Block);
+      expect(term.getSelectionMode()).toBe(SelectionMode.Block);
+    });
+
+    test('should start selection in specified mode', () => {
+      const term = new Terminal(80, 24);
+      term.startSelection(0, 0, SelectionMode.Block);
+      expect(term.getSelectionMode()).toBe(SelectionMode.Block);
+    });
+  });
+
+  describe('Linear Selection Text Extraction', () => {
+    test('should extract single line selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+      term.startSelection(0, 0, SelectionMode.Linear);
+      term.updateSelection(0, 4);
+      const text = term.endSelection();
+      expect(text).toBe('Hello');
+    });
+
+    test('should extract multi-line selection wrapping lines', () => {
+      const term = new Terminal(80, 24);
+      term.write('Line1\r\nLine2\r\nLine3');
+      term.startSelection(0, 3, SelectionMode.Linear); // From 'e1' in Line1
+      term.updateSelection(1, 2); // To 'ne' in Line2
+      const text = term.endSelection();
+      // Linear selection: 'e1' + full rest of line1 + 'Lin' from line2
+      expect(text).toContain('e1');
+      expect(text).toContain('Lin');
+    });
+  });
+
+  describe('Block Selection Text Extraction', () => {
+    test('should extract rectangular block from multiple lines', () => {
+      const term = new Terminal(80, 24);
+      // Write a grid of text on a single line to ensure proper row handling
+      // (newlines should move to next row, not be literal \n)
+      term.write('ABCDE');
+      term.write('\r\n');  // Use \r\n to move to next line
+      term.write('FGHIJ');
+      term.write('\r\n');
+      term.write('KLMNO');
+      term.write('\r\n');
+      term.write('PQRST');
+
+      // Debug: check what's in the buffer
+      const buffer = term.getBuffer();
+      const cell01 = buffer.getCell(0, 1);
+      const cell11 = buffer.getCell(1, 1);
+      const cell21 = buffer.getCell(2, 1);
+
+      // Select block from (0,1) to (2,3) - columns B-D across rows 0-2
+      term.startSelection(0, 1, SelectionMode.Block);
+      term.updateSelection(2, 3);
+      const text = term.endSelection();
+
+      // Should get columns 1-3 from each row (BCD, GHI, LMN)
+      const lines = text.split('\n');
+      expect(lines.length).toBe(3);
+      expect(lines[0]).toBe('BCD');
+      expect(lines[1]).toBe('GHI');
+      expect(lines[2]).toBe('LMN');
+    });
+
+    test('should handle reverse block selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ\r\n');
+      term.write('KLMNO');
+
+      // Select block in reverse direction
+      term.startSelection(2, 3, SelectionMode.Block);
+      term.updateSelection(0, 1);
+      const text = term.endSelection();
+
+      const lines = text.split('\n');
+      expect(lines.length).toBe(3);
+      expect(lines[0]).toBe('BCD');
+      expect(lines[1]).toBe('GHI');
+      expect(lines[2]).toBe('LMN');
+    });
+
+    test('should handle single column block selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ\r\n');
+      term.write('KLMNO');
+
+      // Select single column (column 2 = C, H, M)
+      term.startSelection(0, 2, SelectionMode.Block);
+      term.updateSelection(2, 2);
+      const text = term.endSelection();
+
+      const lines = text.split('\n');
+      expect(lines.length).toBe(3);
+      expect(lines[0]).toBe('C');
+      expect(lines[1]).toBe('H');
+      expect(lines[2]).toBe('M');
+    });
+
+    test('should handle single row block selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('ABCDEFGHIJ');
+
+      term.startSelection(0, 2, SelectionMode.Block);
+      term.updateSelection(0, 5);
+      const text = term.endSelection();
+
+      expect(text).toBe('CDEF');
+    });
+  });
+
+  describe('Cell Selection Detection', () => {
+    test('should detect cells in linear selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ');
+
+      term.startSelection(0, 2, SelectionMode.Linear);
+      term.updateSelection(1, 2);
+
+      // First row: from col 2 to end
+      expect(term.isCellSelected(0, 1)).toBe(false);
+      expect(term.isCellSelected(0, 2)).toBe(true);
+      expect(term.isCellSelected(0, 4)).toBe(true);
+
+      // Second row: from start to col 2
+      expect(term.isCellSelected(1, 0)).toBe(true);
+      expect(term.isCellSelected(1, 2)).toBe(true);
+      expect(term.isCellSelected(1, 3)).toBe(false);
+    });
+
+    test('should detect cells in block selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ\r\n');
+      term.write('KLMNO');
+
+      term.startSelection(0, 1, SelectionMode.Block);
+      term.updateSelection(2, 3);
+
+      // Check cells within block (rows 0-2, cols 1-3)
+      expect(term.isCellSelected(0, 0)).toBe(false); // A - outside
+      expect(term.isCellSelected(0, 1)).toBe(true);  // B - inside
+      expect(term.isCellSelected(0, 3)).toBe(true);  // D - inside
+      expect(term.isCellSelected(0, 4)).toBe(false); // E - outside
+
+      expect(term.isCellSelected(1, 0)).toBe(false); // F - outside
+      expect(term.isCellSelected(1, 2)).toBe(true);  // H - inside
+      expect(term.isCellSelected(1, 4)).toBe(false); // J - outside
+
+      expect(term.isCellSelected(2, 1)).toBe(true);  // L - inside
+      expect(term.isCellSelected(2, 4)).toBe(false); // O - outside
+
+      // Row outside selection
+      expect(term.isCellSelected(3, 2)).toBe(false);
+    });
+  });
+
+  describe('Selection Bounds', () => {
+    test('should return null bounds when no selection active', () => {
+      const term = new Terminal(80, 24);
+      expect(term.getSelectionBounds()).toBeNull();
+    });
+
+    test('should return normalized bounds for linear selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('Test');
+      term.startSelection(1, 5, SelectionMode.Linear);
+      term.updateSelection(0, 2);
+
+      const bounds = term.getSelectionBounds();
+      expect(bounds).not.toBeNull();
+      // Should be normalized so start < end
+      expect(bounds!.startRow).toBe(0);
+      expect(bounds!.startCol).toBe(2);
+      expect(bounds!.endRow).toBe(1);
+      expect(bounds!.endCol).toBe(5);
+    });
+
+    test('should return normalized bounds for block selection', () => {
+      const term = new Terminal(80, 24);
+      term.write('Test');
+      term.startSelection(2, 5, SelectionMode.Block);
+      term.updateSelection(0, 2);
+
+      const bounds = term.getSelectionBounds();
+      expect(bounds).not.toBeNull();
+      // For block, rows and cols are normalized independently
+      expect(bounds!.startRow).toBe(0);
+      expect(bounds!.endRow).toBe(2);
+      expect(bounds!.startCol).toBe(2);
+      expect(bounds!.endCol).toBe(5);
+    });
+  });
+
+  describe('Alt+Drag Block Selection via Touch', () => {
+    function createTouchEvent(
+      type: 'touchDown' | 'touchMove' | 'touchUp',
+      x: number,
+      y: number,
+      id: number = 0,
+      timestamp: number = Date.now(),
+      altKey: boolean = false
+    ): import('./terminal').TouchEvent {
+      return {
+        type: type as import('./terminal').TouchEventType,
+        x,
+        y,
+        id,
+        timestamp,
+        modifiers: altKey ? { alt: true } : undefined,
+      };
+    }
+
+    test('should use block selection when Alt is held during touch drag', () => {
+      const term = new Terminal(80, 24);
+      term.setCellDimensions(8, 16);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ');
+
+      const now = Date.now();
+
+      // Touch down with Alt held
+      term.handleTouchEvent(createTouchEvent('touchDown', 8, 0, 0, now, true));
+
+      // Drag far enough to start selection
+      term.handleTouchEvent(createTouchEvent('touchMove', 40, 32, 0, now + 50, true));
+
+      // Should be in block selection mode
+      expect(term.getSelectionMode()).toBe(SelectionMode.Block);
+    });
+
+    test('should use linear selection when Alt is not held during touch drag', () => {
+      const term = new Terminal(80, 24);
+      term.setCellDimensions(8, 16);
+      term.write('ABCDE\r\n');
+      term.write('FGHIJ');
+
+      const now = Date.now();
+
+      // Touch down without Alt
+      term.handleTouchEvent(createTouchEvent('touchDown', 8, 0, 0, now, false));
+
+      // Drag far enough to start selection
+      term.handleTouchEvent(createTouchEvent('touchMove', 40, 32, 0, now + 50, false));
+
+      // Should be in linear selection mode
+      expect(term.getSelectionMode()).toBe(SelectionMode.Linear);
+    });
+  });
+});

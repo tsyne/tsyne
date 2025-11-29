@@ -175,15 +175,24 @@ interface TerminalConfig {
 }
 
 /**
+ * Selection mode - linear (normal) or block (rectangular)
+ */
+export enum SelectionMode {
+  Linear = 'linear',   // Normal line-based selection
+  Block = 'block',     // Rectangular/column selection (Alt+drag)
+}
+
+/**
  * Selection state for text selection
  * Based on: select.go
  */
-interface Selection {
+export interface Selection {
   active: boolean;
   startRow: number;
   startCol: number;
   endRow: number;
   endCol: number;
+  mode: SelectionMode;
 }
 
 /**
@@ -206,6 +215,11 @@ export interface TouchEvent {
   y: number;           // Y position in pixels
   id: number;          // Touch identifier for multi-touch
   timestamp: number;   // Event timestamp
+  modifiers?: {        // Optional keyboard modifiers held during touch
+    alt?: boolean;     // Alt/Option key - triggers block selection
+    shift?: boolean;   // Shift key
+    ctrl?: boolean;    // Control key
+  };
 }
 
 /**
@@ -221,6 +235,7 @@ export interface TouchState {
   touchId: number;
   isLongPress: boolean;
   isDragging: boolean;
+  selectionMode: SelectionMode;  // Selection mode for this drag (linear or block)
 }
 
 // Touch gesture thresholds
@@ -687,7 +702,7 @@ export class Terminal {
   private title: string = 'Terminal';
   private cwd: string = os.homedir();
   private ptyProcess: IPty | null = null;
-  private selection: Selection = { active: false, startRow: 0, startCol: 0, endRow: 0, endCol: 0 };
+  private selection: Selection = { active: false, startRow: 0, startCol: 0, endRow: 0, endCol: 0, mode: SelectionMode.Linear };
 
   // Mode flags
   private originMode: boolean = false;
@@ -719,6 +734,7 @@ export class Terminal {
     touchId: -1,
     isLongPress: false,
     isDragging: false,
+    selectionMode: SelectionMode.Linear,
   };
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private cellWidth: number = 8;   // Default cell width in pixels
@@ -1590,19 +1606,23 @@ export class Terminal {
   /**
    * Start text selection
    * Based on: select.go
+   * @param row Starting row
+   * @param col Starting column
+   * @param mode Selection mode (linear or block). Default is linear.
    */
-  startSelection(row: number, col: number): void {
+  startSelection(row: number, col: number, mode: SelectionMode = SelectionMode.Linear): void {
     this.selection = {
       active: true,
       startRow: row,
       startCol: col,
       endRow: row,
       endCol: col,
+      mode,
     };
   }
 
   /**
-   * Update selection
+   * Update selection endpoint
    */
   updateSelection(row: number, col: number): void {
     if (this.selection.active) {
@@ -1612,14 +1632,40 @@ export class Terminal {
   }
 
   /**
+   * Set selection mode (can be changed during selection)
+   */
+  setSelectionMode(mode: SelectionMode): void {
+    this.selection.mode = mode;
+  }
+
+  /**
+   * Get current selection mode
+   */
+  getSelectionMode(): SelectionMode {
+    return this.selection.mode;
+  }
+
+  /**
    * End selection and return selected text
    * Based on: select.go SelectedText
+   * Supports both linear and block (rectangular) selection modes
    */
   endSelection(): string {
     if (!this.selection.active) return '';
 
     this.selection.active = false;
 
+    if (this.selection.mode === SelectionMode.Block) {
+      return this.getBlockSelectionText();
+    }
+
+    return this.getLinearSelectionText();
+  }
+
+  /**
+   * Get text from linear (normal) selection
+   */
+  private getLinearSelectionText(): string {
     let startRow = this.selection.startRow;
     let startCol = this.selection.startCol;
     let endRow = this.selection.endRow;
@@ -1646,6 +1692,100 @@ export class Terminal {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Get text from block (rectangular) selection
+   * Each line contains only the characters within the column range
+   */
+  private getBlockSelectionText(): string {
+    let startRow = this.selection.startRow;
+    let startCol = this.selection.startCol;
+    let endRow = this.selection.endRow;
+    let endCol = this.selection.endCol;
+
+    // Normalize row order
+    if (startRow > endRow) {
+      [startRow, endRow] = [endRow, startRow];
+    }
+
+    // Normalize column order (block selection uses absolute columns)
+    if (startCol > endCol) {
+      [startCol, endCol] = [endCol, startCol];
+    }
+
+    const lines: string[] = [];
+    for (let row = startRow; row <= endRow; row++) {
+      let line = '';
+      for (let col = startCol; col <= endCol; col++) {
+        const cell = this.buffer.getCell(row, col);
+        line += cell.char;
+      }
+      // For block selection, preserve trailing spaces within the block
+      // but trim trailing spaces that extend beyond actual content
+      lines.push(line.trimEnd());
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Get the normalized selection bounds
+   * Returns the top-left and bottom-right corners regardless of selection direction
+   */
+  getSelectionBounds(): { startRow: number; startCol: number; endRow: number; endCol: number } | null {
+    if (!this.selection.active) return null;
+
+    let { startRow, startCol, endRow, endCol } = this.selection;
+
+    if (this.selection.mode === SelectionMode.Block) {
+      // For block selection, normalize both row and column independently
+      if (startRow > endRow) [startRow, endRow] = [endRow, startRow];
+      if (startCol > endCol) [startCol, endCol] = [endCol, startCol];
+    } else {
+      // For linear selection, normalize by position
+      if (startRow > endRow || (startRow === endRow && startCol > endCol)) {
+        [startRow, endRow] = [endRow, startRow];
+        [startCol, endCol] = [endCol, startCol];
+      }
+    }
+
+    return { startRow, startCol, endRow, endCol };
+  }
+
+  /**
+   * Check if a cell is within the current selection
+   * Useful for rendering selection highlighting
+   */
+  isCellSelected(row: number, col: number): boolean {
+    if (!this.selection.active) return false;
+
+    const bounds = this.getSelectionBounds();
+    if (!bounds) return false;
+
+    const { startRow, startCol, endRow, endCol } = bounds;
+
+    if (row < startRow || row > endRow) return false;
+
+    if (this.selection.mode === SelectionMode.Block) {
+      // Block selection: cell must be within column range on any selected row
+      return col >= startCol && col <= endCol;
+    } else {
+      // Linear selection: depends on row position
+      if (row === startRow && row === endRow) {
+        // Single row selection
+        return col >= startCol && col <= endCol;
+      } else if (row === startRow) {
+        // First row: from startCol to end of row
+        return col >= startCol;
+      } else if (row === endRow) {
+        // Last row: from start of row to endCol
+        return col <= endCol;
+      } else {
+        // Middle rows: entire row is selected
+        return true;
+      }
+    }
   }
 
   /**
@@ -1708,6 +1848,10 @@ export class Terminal {
     // Cancel any existing long press timer
     this.cancelLongPressTimer();
 
+    // Determine selection mode based on Alt modifier
+    // Alt+drag = block selection, normal drag = linear selection
+    const selectionMode = event.modifiers?.alt ? SelectionMode.Block : SelectionMode.Linear;
+
     // Initialize touch state
     this.touchState = {
       active: true,
@@ -1719,6 +1863,7 @@ export class Terminal {
       touchId: event.id,
       isLongPress: false,
       isDragging: false,
+      selectionMode,
     };
 
     // Clear any existing selection
@@ -1751,9 +1896,10 @@ export class Terminal {
       this.touchState.isDragging = true;
       this.cancelLongPressTimer();
 
-      // Start selection at the initial touch point
+      // Start selection at the initial touch point with the appropriate mode
+      // Alt+drag = block selection, normal drag = linear selection
       const start = this.pixelToCell(this.touchState.startX, this.touchState.startY);
-      this.startSelection(start.row, start.col);
+      this.startSelection(start.row, start.col, this.touchState.selectionMode);
     }
 
     // If dragging, update selection
@@ -1823,6 +1969,7 @@ export class Terminal {
       touchId: -1,
       isLongPress: false,
       isDragging: false,
+      selectionMode: SelectionMode.Linear,
     };
   }
 
