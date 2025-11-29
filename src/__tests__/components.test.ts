@@ -126,10 +126,10 @@ describe('Container Components', () => {
         a.window({ title: 'Border Test' }, (win) => {
           win.setContent(() => {
             a.border({
-              top: () => a.label('Header'),
-              bottom: () => a.label('Footer'),
-              left: () => a.label('Sidebar'),
-              center: () => a.label('Main Content')
+              top: () => { a.label('Header'); },
+              bottom: () => { a.label('Footer'); },
+              left: () => { a.label('Sidebar'); },
+              center: () => { a.label('Main Content'); }
             });
           });
           win.show();

@@ -75,7 +75,7 @@ export class Window {
   private contentId?: string;
   private contentSent: boolean = false; // Track if content has been sent to bridge
 
-  constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void) {
+  constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void | Promise<void>) {
     this.ctx = ctx;
     this.id = ctx.generateId('window');
 
@@ -113,10 +113,17 @@ export class Window {
     });
 
     if (builder) {
+      // Note: We can't use await here because constructors can't be async
+      // For async initialization, users should call setContent() separately
       ctx.pushWindow(this.id);
       ctx.pushContainer();
 
-      builder(this);
+      const result = builder(this);
+      // If builder returns a Promise, this is a problem - we can't await in constructor
+      // Log a warning if the builder is async
+      if (result && typeof (result as any).then === 'function') {
+        console.warn('Window constructor received async builder - async operations may not complete. Use window.setContent() instead for async builders.');
+      }
 
       const children = ctx.popContainer();
       if (children.length > 0) {
@@ -160,14 +167,14 @@ export class Window {
    * });
    * ```
    */
-  async setContent(builder: () => void): Promise<void> {
+  async setContent(builder: () => void | Promise<void>): Promise<void> {
     // Mark as sent immediately (synchronously) to prevent duplicate calls
     this.contentSent = true;
 
     this.ctx.pushWindow(this.id);
     this.ctx.pushContainer();
 
-    builder();
+    await builder();
 
     const children = this.ctx.popContainer();
     if (children.length > 0) {

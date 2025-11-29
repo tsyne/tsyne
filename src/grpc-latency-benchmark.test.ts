@@ -36,7 +36,7 @@ async function measureLatency(
     const testApp = await tsyneTest.createApp((app) => {
       // Create minimal window
       app.window({ title: 'Latency Test', width: 200, height: 100 }, (win) => {
-        win.setContent(() => app.label('Test'));
+        win.setContent(() => { app.label('Test'); });
         win.show();
       });
     });
@@ -179,7 +179,7 @@ describe('Protocol Latency Benchmark', () => {
       try {
         const testApp = await tsyneTest.createApp((app) => {
           app.window({ title: 'Burst Test', width: 200, height: 100 }, (win) => {
-            win.setContent(() => app.label('Test'));
+            win.setContent(() => { app.label('Test'); });
             win.show();
           });
         });
