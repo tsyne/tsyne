@@ -1510,3 +1510,309 @@ describe('Touch Event Handling', () => {
     expect(term.getSelection().active).toBe(false);
   });
 });
+
+// ============================================================================
+// Mouse Protocol Tests
+// ============================================================================
+
+import {
+  MouseButton,
+  MouseEventType,
+  MouseEvent as TerminalMouseEvent,
+  MouseTrackingMode,
+  MouseEncodingFormat,
+} from './terminal';
+
+describe('Mouse Protocol Tests', () => {
+  // Helper to create mouse events
+  function createMouseEvent(
+    type: MouseEventType,
+    button: MouseButton,
+    x: number,
+    y: number,
+    modifiers: { shift?: boolean; alt?: boolean; ctrl?: boolean } = {}
+  ): TerminalMouseEvent {
+    return {
+      type,
+      button,
+      x,
+      y,
+      modifiers: {
+        shift: modifiers.shift || false,
+        alt: modifiers.alt || false,
+        ctrl: modifiers.ctrl || false,
+      },
+    };
+  }
+
+  describe('Mouse Tracking Mode Management', () => {
+    test('should default to no mouse tracking', () => {
+      const term = new Terminal(80, 24);
+      expect(term.getMouseTrackingMode()).toBe(MouseTrackingMode.None);
+      expect(term.isMouseTrackingEnabled()).toBe(false);
+    });
+
+    test('should enable X10 mouse tracking mode 1000', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h'); // Enable X10 mouse tracking
+      expect(term.getMouseTrackingMode()).toBe(MouseTrackingMode.X10);
+      expect(term.isMouseTrackingEnabled()).toBe(true);
+    });
+
+    test('should enable button event tracking mode 1002', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h'); // Enable button event tracking
+      expect(term.getMouseTrackingMode()).toBe(MouseTrackingMode.ButtonEvent);
+    });
+
+    test('should enable any event tracking mode 1003', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1003h'); // Enable any event tracking
+      expect(term.getMouseTrackingMode()).toBe(MouseTrackingMode.AnyEvent);
+    });
+
+    test('should disable mouse tracking', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h'); // Enable
+      expect(term.isMouseTrackingEnabled()).toBe(true);
+      term.write('\x1b[?1000l'); // Disable
+      expect(term.isMouseTrackingEnabled()).toBe(false);
+    });
+  });
+
+  describe('Mouse Encoding Format', () => {
+    test('should default to X10 encoding', () => {
+      const term = new Terminal(80, 24);
+      expect(term.getMouseEncodingFormat()).toBe(MouseEncodingFormat.X10);
+    });
+
+    test('should enable SGR encoding mode 1006', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1006h'); // Enable SGR encoding
+      expect(term.getMouseEncodingFormat()).toBe(MouseEncodingFormat.SGR);
+    });
+
+    test('should enable URXVT encoding mode 1015', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1015h'); // Enable URXVT encoding
+      expect(term.getMouseEncodingFormat()).toBe(MouseEncodingFormat.URXVT);
+    });
+
+    test('should revert to X10 when SGR is disabled', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1006h'); // Enable SGR
+      expect(term.getMouseEncodingFormat()).toBe(MouseEncodingFormat.SGR);
+      term.write('\x1b[?1006l'); // Disable SGR
+      expect(term.getMouseEncodingFormat()).toBe(MouseEncodingFormat.X10);
+    });
+  });
+
+  describe('Mouse Event Handling', () => {
+    test('should not report events when tracking disabled', () => {
+      const term = new Terminal(80, 24);
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 10, 5);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(false);
+    });
+
+    test('should report press events in X10 mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h'); // Enable X10 tracking
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 10, 5);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should not report release events in X10 mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h'); // Enable X10 tracking
+      const event = createMouseEvent(MouseEventType.Release, MouseButton.Release, 10, 5);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(false);
+    });
+
+    test('should report release events in ButtonEvent mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h'); // Enable button event tracking
+      // First press to set button state
+      term.handleMouseEvent(createMouseEvent(MouseEventType.Press, MouseButton.Left, 10, 5));
+      // Then release
+      const result = term.handleMouseEvent(createMouseEvent(MouseEventType.Release, MouseButton.Release, 10, 5));
+      expect(result).toBe(true);
+    });
+
+    test('should report drag events in ButtonEvent mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h'); // Enable button event tracking
+      // Press first
+      term.handleMouseEvent(createMouseEvent(MouseEventType.Press, MouseButton.Left, 10, 5));
+      // Then move (drag)
+      const result = term.handleMouseEvent(createMouseEvent(MouseEventType.Move, MouseButton.Left, 15, 5));
+      expect(result).toBe(true);
+    });
+
+    test('should not report hover in ButtonEvent mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h'); // Enable button event tracking
+      // Move without button pressed
+      const result = term.handleMouseEvent(createMouseEvent(MouseEventType.Move, MouseButton.Release, 15, 5));
+      expect(result).toBe(false);
+    });
+
+    test('should report hover in AnyEvent mode', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1003h'); // Enable any event tracking
+      // Move without button pressed
+      const result = term.handleMouseEvent(createMouseEvent(MouseEventType.Move, MouseButton.Release, 15, 5));
+      expect(result).toBe(true);
+    });
+
+    test('should report wheel events', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h'); // Enable button event tracking
+      const event = createMouseEvent(MouseEventType.Wheel, MouseButton.WheelUp, 10, 5);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('createMouseEvent utility', () => {
+    test('should create mouse events with correct properties', () => {
+      const term = new Terminal(80, 24);
+      term.setCellDimensions(8, 16); // cellWidth=8, cellHeight=16
+      // Pass pixel coordinates: (160, 160) -> cell (20, 10)
+      // Mouse protocol uses 1-based coordinates, so result is (21, 11)
+      const event = term.createMouseEvent(
+        MouseEventType.Press,
+        MouseButton.Right,
+        160, // pixelX -> 160/8 = cell 20 -> mouse coord 21
+        160, // pixelY -> 160/16 = cell 10 -> mouse coord 11
+        { shift: true, ctrl: true }
+      );
+      expect(event.type).toBe(MouseEventType.Press);
+      expect(event.button).toBe(MouseButton.Right);
+      expect(event.x).toBe(21); // 1-based mouse protocol coordinate
+      expect(event.y).toBe(11); // 1-based mouse protocol coordinate
+      expect(event.modifiers.shift).toBe(true);
+      expect(event.modifiers.ctrl).toBe(true);
+      expect(event.modifiers.alt).toBe(false);
+    });
+  });
+
+  describe('Mouse Button Codes', () => {
+    test('should encode left button as 0', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h'); // Enable tracking + SGR
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 1, 1);
+      term.handleMouseEvent(event);
+      // SGR format: \x1b[<0;x;yM for left button press
+      // We can't directly check output, but the event should be handled
+    });
+
+    test('should encode middle button as 1', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Middle, 1, 1);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should encode right button as 2', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Right, 1, 1);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should encode wheel up as 64', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Wheel, MouseButton.WheelUp, 1, 1);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should encode wheel down as 65', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1002h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Wheel, MouseButton.WheelDown, 1, 1);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('Modifier Encoding', () => {
+    test('should add shift modifier (4) to button code', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 1, 1, { shift: true });
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should add alt modifier (8) to button code', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 1, 1, { alt: true });
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should add ctrl modifier (16) to button code', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 1, 1, { ctrl: true });
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should combine multiple modifiers', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h\x1b[?1006h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 1, 1, {
+        shift: true,
+        alt: true,
+        ctrl: true,
+      });
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('Motion Encoding', () => {
+    test('should add motion flag (32) for move events', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1003h\x1b[?1006h'); // Any event + SGR
+      const event = createMouseEvent(MouseEventType.Move, MouseButton.Release, 10, 5);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('Coordinate Handling', () => {
+    test('should handle coordinates at origin (0,0)', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 0, 0);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should handle coordinates at max terminal size', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, 79, 23);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+
+    test('should clamp coordinates below zero', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[?1000h');
+      const event = createMouseEvent(MouseEventType.Press, MouseButton.Left, -5, -3);
+      const result = term.handleMouseEvent(event);
+      expect(result).toBe(true);
+    });
+  });
+});

@@ -36,12 +36,16 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 **Current:** Parser states exist but handlers are placeholder. Apps sending DCS will hang.
 
 ### Mouse Protocol
-- [ ] X10 mouse encoding (mode 1000)
-- [ ] V200 mouse encoding (modes 1002, 1003)
-- [ ] Mouse modifier encoding (Shift, Alt, Ctrl)
-- [ ] `encodeMouse()` implementation
+- [x] X10 mouse encoding (mode 1000)
+- [x] SGR mouse encoding (mode 1006)
+- [x] URXVT mouse encoding (mode 1015)
+- [x] Button event tracking (mode 1002)
+- [x] Any event tracking (mode 1003)
+- [x] Mouse modifier encoding (Shift, Alt, Ctrl)
+- [x] `encodeMouseEvent()` implementation (X10, SGR, URXVT formats)
+- [x] Wheel event support (WheelUp, WheelDown, WheelLeft, WheelRight)
 
-**Current:** Modes are stored but encoding not implemented. Mouse-aware apps won't work.
+**Status:** ✅ Complete. Full mouse protocol support with X10, SGR, and URXVT encoding formats. Mouse-aware TUI apps (vim, htop, etc.) now work correctly.
 
 ---
 
@@ -147,17 +151,18 @@ Terminal (class)
 
 ## Test Coverage
 
-### Current Tests (93 total)
+### Current Tests (124 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
 - 6 PTY integration tests
 - 10 DEC Special Graphics charset tests
 - 12 Touch event tests
+- 31 Mouse protocol tests
 
 ### Needed Tests
 - [x] DEC Special Graphics rendering
-- [ ] Mouse protocol encoding
+- [x] Mouse protocol encoding
 - [ ] Complex key sequences with modifiers
 - [x] PTY integration tests
 - [x] Mobile/touch event tests

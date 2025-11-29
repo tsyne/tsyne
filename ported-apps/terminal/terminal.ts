@@ -229,6 +229,68 @@ const DRAG_THRESHOLD = 10;        // pixels before drag starts
 const TAP_THRESHOLD = 200;        // ms max for tap detection
 
 // ============================================================================
+// Mouse Protocol Support
+// ============================================================================
+
+/**
+ * Mouse button identifiers
+ */
+export enum MouseButton {
+  Left = 0,
+  Middle = 1,
+  Right = 2,
+  Release = 3,      // Button release (no button)
+  WheelUp = 4,
+  WheelDown = 5,
+  WheelLeft = 6,    // Horizontal scroll
+  WheelRight = 7,
+}
+
+/**
+ * Mouse event types
+ */
+export enum MouseEventType {
+  Press = 'press',
+  Release = 'release',
+  Move = 'move',
+  Wheel = 'wheel',
+}
+
+/**
+ * Mouse event data
+ */
+export interface MouseEvent {
+  type: MouseEventType;
+  button: MouseButton;
+  x: number;           // Column (1-based for protocol)
+  y: number;           // Row (1-based for protocol)
+  modifiers: {
+    shift: boolean;
+    alt: boolean;
+    ctrl: boolean;
+  };
+}
+
+/**
+ * Mouse tracking modes
+ */
+export enum MouseTrackingMode {
+  None = 0,
+  X10 = 1000,           // Basic click tracking (press only)
+  ButtonEvent = 1002,   // Button event tracking (press, release, drag)
+  AnyEvent = 1003,      // Any event tracking (all mouse movement)
+}
+
+/**
+ * Mouse encoding formats
+ */
+export enum MouseEncodingFormat {
+  X10 = 'x10',       // Traditional X10 encoding (CSI M Cb Cx Cy)
+  SGR = 'sgr',       // SGR encoding (CSI < Cb ; Cx ; Cy M/m)
+  URXVT = 'urxvt',   // urxvt encoding (CSI Cb ; Cx ; Cy M)
+}
+
+// ============================================================================
 // ANSI Escape Sequence Parser
 // ============================================================================
 
@@ -634,6 +696,10 @@ export class Terminal {
   private applicationCursorKeys: boolean = false;
   private bracketedPasteMode: boolean = false;
   private mouseTrackingMode: number = 0;
+  private mouseEncodingFormat: MouseEncodingFormat = MouseEncodingFormat.X10;
+  private mouseButtonState: MouseButton = MouseButton.Release;
+  private lastMouseX: number = 0;
+  private lastMouseY: number = 0;
   private alternateBuffer: TerminalBuffer | null = null;
   private mainBuffer: TerminalBuffer;
 
@@ -1402,6 +1468,12 @@ export class Terminal {
           case 1003: // Any event mouse tracking
             this.mouseTrackingMode = enable ? mode : 0;
             break;
+          case 1006: // SGR mouse encoding
+            this.mouseEncodingFormat = enable ? MouseEncodingFormat.SGR : MouseEncodingFormat.X10;
+            break;
+          case 1015: // URXVT mouse encoding
+            this.mouseEncodingFormat = enable ? MouseEncodingFormat.URXVT : MouseEncodingFormat.X10;
+            break;
           case 1049: // Alternate screen buffer with cursor save/restore
             if (enable) {
               this.savedCursorRow = this.cursorRow;
@@ -1766,6 +1838,217 @@ export class Terminal {
    */
   isTouchActive(): boolean {
     return this.touchState.active;
+  }
+
+  // ============================================================================
+  // Mouse Protocol Handling
+  // ============================================================================
+
+  /**
+   * Handle mouse event from UI layer
+   * Encodes and sends mouse events to the PTY based on tracking mode
+   */
+  handleMouseEvent(event: MouseEvent): boolean {
+    // Check if mouse tracking is enabled
+    if (this.mouseTrackingMode === MouseTrackingMode.None) {
+      return false;  // Not handled - allow default behavior
+    }
+
+    const shouldReport = this.shouldReportMouseEvent(event);
+    if (!shouldReport) {
+      return false;
+    }
+
+    // Encode and send mouse event
+    const encoded = this.encodeMouseEvent(event);
+    if (encoded) {
+      this.sendInput(encoded);
+      return true;  // Event was handled
+    }
+
+    return false;
+  }
+
+  /**
+   * Determine if a mouse event should be reported based on tracking mode
+   */
+  private shouldReportMouseEvent(event: MouseEvent): boolean {
+    switch (this.mouseTrackingMode) {
+      case MouseTrackingMode.X10:
+        // X10 only reports button press, not release or motion
+        return event.type === MouseEventType.Press;
+
+      case MouseTrackingMode.ButtonEvent:
+        // Report press, release, and motion while button is pressed
+        if (event.type === MouseEventType.Press || event.type === MouseEventType.Release) {
+          return true;
+        }
+        if (event.type === MouseEventType.Move && this.mouseButtonState !== MouseButton.Release) {
+          return true;
+        }
+        if (event.type === MouseEventType.Wheel) {
+          return true;
+        }
+        return false;
+
+      case MouseTrackingMode.AnyEvent:
+        // Report all mouse events
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Encode mouse event for transmission to PTY
+   * Uses X10 encoding by default, SGR if enabled
+   */
+  private encodeMouseEvent(event: MouseEvent): string {
+    // Update button state
+    if (event.type === MouseEventType.Press) {
+      this.mouseButtonState = event.button;
+    } else if (event.type === MouseEventType.Release) {
+      this.mouseButtonState = MouseButton.Release;
+    }
+
+    // Update last position
+    this.lastMouseX = event.x;
+    this.lastMouseY = event.y;
+
+    // Calculate button code
+    let buttonCode = this.getMouseButtonCode(event);
+
+    // Add modifier bits
+    if (event.modifiers.shift) buttonCode |= 4;
+    if (event.modifiers.alt) buttonCode |= 8;
+    if (event.modifiers.ctrl) buttonCode |= 16;
+
+    // Add motion flag for move events
+    if (event.type === MouseEventType.Move) {
+      buttonCode |= 32;
+    }
+
+    // Clamp coordinates to valid range (1-based, max 223 for X10)
+    const x = Math.max(1, Math.min(event.x, 223));
+    const y = Math.max(1, Math.min(event.y, 223));
+
+    switch (this.mouseEncodingFormat) {
+      case MouseEncodingFormat.SGR:
+        return this.encodeSGR(buttonCode, x, y, event.type === MouseEventType.Release);
+
+      case MouseEncodingFormat.URXVT:
+        return this.encodeURXVT(buttonCode, x, y);
+
+      case MouseEncodingFormat.X10:
+      default:
+        return this.encodeX10(buttonCode, x, y);
+    }
+  }
+
+  /**
+   * Get button code for mouse protocol
+   */
+  private getMouseButtonCode(event: MouseEvent): number {
+    switch (event.button) {
+      case MouseButton.Left:
+        return 0;
+      case MouseButton.Middle:
+        return 1;
+      case MouseButton.Right:
+        return 2;
+      case MouseButton.Release:
+        return 3;  // Used in X10 for release
+      case MouseButton.WheelUp:
+        return 64;
+      case MouseButton.WheelDown:
+        return 65;
+      case MouseButton.WheelLeft:
+        return 66;
+      case MouseButton.WheelRight:
+        return 67;
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Encode mouse event in X10 format
+   * Format: CSI M Cb Cx Cy
+   * Where Cb, Cx, Cy are single bytes with value + 32
+   */
+  private encodeX10(buttonCode: number, x: number, y: number): string {
+    return `\x1b[M${String.fromCharCode(buttonCode + 32)}${String.fromCharCode(x + 32)}${String.fromCharCode(y + 32)}`;
+  }
+
+  /**
+   * Encode mouse event in SGR format
+   * Format: CSI < Cb ; Cx ; Cy M (press) or CSI < Cb ; Cx ; Cy m (release)
+   */
+  private encodeSGR(buttonCode: number, x: number, y: number, isRelease: boolean): string {
+    const suffix = isRelease ? 'm' : 'M';
+    return `\x1b[<${buttonCode};${x};${y}${suffix}`;
+  }
+
+  /**
+   * Encode mouse event in URXVT format
+   * Format: CSI Cb ; Cx ; Cy M
+   */
+  private encodeURXVT(buttonCode: number, x: number, y: number): string {
+    return `\x1b[${buttonCode + 32};${x};${y}M`;
+  }
+
+  /**
+   * Set mouse encoding format
+   */
+  setMouseEncodingFormat(format: MouseEncodingFormat): void {
+    this.mouseEncodingFormat = format;
+  }
+
+  /**
+   * Get current mouse encoding format
+   */
+  getMouseEncodingFormat(): MouseEncodingFormat {
+    return this.mouseEncodingFormat;
+  }
+
+  /**
+   * Get current mouse tracking mode
+   */
+  getMouseTrackingMode(): number {
+    return this.mouseTrackingMode;
+  }
+
+  /**
+   * Check if mouse tracking is enabled
+   */
+  isMouseTrackingEnabled(): boolean {
+    return this.mouseTrackingMode !== MouseTrackingMode.None;
+  }
+
+  /**
+   * Create a mouse event from UI coordinates
+   * Convenience method for UI layer
+   */
+  createMouseEvent(
+    type: MouseEventType,
+    button: MouseButton,
+    pixelX: number,
+    pixelY: number,
+    modifiers: { shift?: boolean; alt?: boolean; ctrl?: boolean } = {}
+  ): MouseEvent {
+    const cell = this.pixelToCell(pixelX, pixelY);
+    return {
+      type,
+      button,
+      x: cell.col + 1,  // Mouse protocol uses 1-based coordinates
+      y: cell.row + 1,
+      modifiers: {
+        shift: modifiers.shift || false,
+        alt: modifiers.alt || false,
+        ctrl: modifiers.ctrl || false,
+      },
+    };
   }
 
   // ============================================================================
