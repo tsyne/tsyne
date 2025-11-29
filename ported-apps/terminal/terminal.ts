@@ -186,6 +186,48 @@ interface Selection {
   endCol: number;
 }
 
+/**
+ * Touch event types for mobile/touch support
+ * Based on: Fyne's mobile event handling
+ */
+export enum TouchEventType {
+  TouchDown = 'touchDown',
+  TouchMove = 'touchMove',
+  TouchUp = 'touchUp',
+  TouchCancel = 'touchCancel',
+}
+
+/**
+ * Touch event data
+ */
+export interface TouchEvent {
+  type: TouchEventType;
+  x: number;           // X position in pixels
+  y: number;           // Y position in pixels
+  id: number;          // Touch identifier for multi-touch
+  timestamp: number;   // Event timestamp
+}
+
+/**
+ * Touch state tracking
+ */
+export interface TouchState {
+  active: boolean;
+  startX: number;
+  startY: number;
+  startTime: number;
+  lastX: number;
+  lastY: number;
+  touchId: number;
+  isLongPress: boolean;
+  isDragging: boolean;
+}
+
+// Touch gesture thresholds
+const LONG_PRESS_DURATION = 500;  // ms for long press detection
+const DRAG_THRESHOLD = 10;        // pixels before drag starts
+const TAP_THRESHOLD = 200;        // ms max for tap detection
+
 // ============================================================================
 // ANSI Escape Sequence Parser
 // ============================================================================
@@ -600,11 +642,29 @@ export class Terminal {
   private g1Charset: string = Charset.ASCII;  // G1 charset designator
   private useG1: boolean = false;             // true = use G1, false = use G0
 
+  // Touch state for mobile support
+  private touchState: TouchState = {
+    active: false,
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    lastX: 0,
+    lastY: 0,
+    touchId: -1,
+    isLongPress: false,
+    isDragging: false,
+  };
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private cellWidth: number = 8;   // Default cell width in pixels
+  private cellHeight: number = 16; // Default cell height in pixels
+
   // Callbacks
   onUpdate: () => void = () => {};
   onTitleChange: (title: string) => void = () => {};
   onBell: () => void = () => {};
   onExit: (code: number) => void = () => {};
+  onLongPress: (row: number, col: number) => void = () => {};
+  onTap: (row: number, col: number) => void = () => {};
 
   constructor(cols: number = DEFAULT_COLS, rows: number = DEFAULT_ROWS) {
     this.buffer = new TerminalBuffer(cols, rows);
@@ -1521,6 +1581,191 @@ export class Terminal {
    */
   clearSelection(): void {
     this.selection.active = false;
+  }
+
+  // ============================================================================
+  // Touch Event Handling
+  // ============================================================================
+
+  /**
+   * Set cell dimensions for touch coordinate conversion
+   * Should be called when terminal font/size changes
+   */
+  setCellDimensions(width: number, height: number): void {
+    this.cellWidth = width;
+    this.cellHeight = height;
+  }
+
+  /**
+   * Convert pixel coordinates to terminal cell coordinates
+   */
+  pixelToCell(x: number, y: number): { row: number; col: number } {
+    const col = Math.floor(x / this.cellWidth);
+    const row = Math.floor(y / this.cellHeight);
+    return {
+      row: Math.max(0, Math.min(row, this.buffer.getRows() - 1)),
+      col: Math.max(0, Math.min(col, this.buffer.getCols() - 1)),
+    };
+  }
+
+  /**
+   * Handle touch event
+   * Main entry point for touch events from the UI layer
+   */
+  handleTouchEvent(event: TouchEvent): void {
+    switch (event.type) {
+      case TouchEventType.TouchDown:
+        this.handleTouchDown(event);
+        break;
+      case TouchEventType.TouchMove:
+        this.handleTouchMove(event);
+        break;
+      case TouchEventType.TouchUp:
+        this.handleTouchUp(event);
+        break;
+      case TouchEventType.TouchCancel:
+        this.handleTouchCancel(event);
+        break;
+    }
+  }
+
+  /**
+   * Handle touch down (finger pressed)
+   */
+  private handleTouchDown(event: TouchEvent): void {
+    // Cancel any existing long press timer
+    this.cancelLongPressTimer();
+
+    // Initialize touch state
+    this.touchState = {
+      active: true,
+      startX: event.x,
+      startY: event.y,
+      startTime: event.timestamp,
+      lastX: event.x,
+      lastY: event.y,
+      touchId: event.id,
+      isLongPress: false,
+      isDragging: false,
+    };
+
+    // Clear any existing selection
+    this.clearSelection();
+
+    // Start long press timer
+    this.longPressTimer = setTimeout(() => {
+      if (this.touchState.active && !this.touchState.isDragging) {
+        this.touchState.isLongPress = true;
+        const { row, col } = this.pixelToCell(this.touchState.startX, this.touchState.startY);
+        this.onLongPress(row, col);
+      }
+    }, LONG_PRESS_DURATION);
+  }
+
+  /**
+   * Handle touch move (finger dragged)
+   */
+  private handleTouchMove(event: TouchEvent): void {
+    if (!this.touchState.active || event.id !== this.touchState.touchId) {
+      return;
+    }
+
+    const dx = event.x - this.touchState.startX;
+    const dy = event.y - this.touchState.startY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Check if we've moved enough to start dragging
+    if (!this.touchState.isDragging && distance > DRAG_THRESHOLD) {
+      this.touchState.isDragging = true;
+      this.cancelLongPressTimer();
+
+      // Start selection at the initial touch point
+      const start = this.pixelToCell(this.touchState.startX, this.touchState.startY);
+      this.startSelection(start.row, start.col);
+    }
+
+    // If dragging, update selection
+    if (this.touchState.isDragging) {
+      const current = this.pixelToCell(event.x, event.y);
+      this.updateSelection(current.row, current.col);
+      this.onUpdate();
+    }
+
+    // Update last position
+    this.touchState.lastX = event.x;
+    this.touchState.lastY = event.y;
+  }
+
+  /**
+   * Handle touch up (finger released)
+   */
+  private handleTouchUp(event: TouchEvent): void {
+    if (!this.touchState.active || event.id !== this.touchState.touchId) {
+      return;
+    }
+
+    this.cancelLongPressTimer();
+
+    const duration = event.timestamp - this.touchState.startTime;
+
+    // Check for tap gesture (quick touch without dragging)
+    if (!this.touchState.isDragging && !this.touchState.isLongPress && duration < TAP_THRESHOLD) {
+      const { row, col } = this.pixelToCell(event.x, event.y);
+      this.onTap(row, col);
+    }
+
+    // Reset touch state
+    this.resetTouchState();
+  }
+
+  /**
+   * Handle touch cancel (interrupted by system)
+   */
+  private handleTouchCancel(_event: TouchEvent): void {
+    this.cancelLongPressTimer();
+    this.clearSelection();
+    this.resetTouchState();
+  }
+
+  /**
+   * Cancel long press timer
+   */
+  private cancelLongPressTimer(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
+  /**
+   * Reset touch state
+   */
+  private resetTouchState(): void {
+    this.touchState = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      lastX: 0,
+      lastY: 0,
+      touchId: -1,
+      isLongPress: false,
+      isDragging: false,
+    };
+  }
+
+  /**
+   * Get current touch state (for testing)
+   */
+  getTouchState(): TouchState {
+    return { ...this.touchState };
+  }
+
+  /**
+   * Check if currently in a touch gesture
+   */
+  isTouchActive(): boolean {
+    return this.touchState.active;
   }
 
   // ============================================================================

@@ -1237,3 +1237,276 @@ describe('DEC Special Graphics Charset', () => {
     expect(text).toContain('£');
   });
 });
+
+// Touch Event Tests
+describe('Touch Event Handling', () => {
+  // Helper to create touch events
+  const createTouchEvent = (
+    type: 'touchDown' | 'touchMove' | 'touchUp' | 'touchCancel',
+    x: number,
+    y: number,
+    id: number = 0,
+    timestamp: number = Date.now()
+  ) => ({
+    type: type as any,
+    x,
+    y,
+    id,
+    timestamp,
+  });
+
+  test('should set cell dimensions', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(10, 20);
+
+    // Cell at (50, 40) should map to col=5, row=2
+    const cell = term.pixelToCell(50, 40);
+    expect(cell.col).toBe(5);
+    expect(cell.row).toBe(2);
+  });
+
+  test('should convert pixel to cell coordinates', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    // Test various positions
+    expect(term.pixelToCell(0, 0)).toEqual({ row: 0, col: 0 });
+    expect(term.pixelToCell(8, 16)).toEqual({ row: 1, col: 1 });
+    expect(term.pixelToCell(79, 47)).toEqual({ row: 2, col: 9 });
+  });
+
+  test('should clamp coordinates to buffer bounds', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    // Negative coordinates should clamp to 0
+    expect(term.pixelToCell(-10, -10)).toEqual({ row: 0, col: 0 });
+
+    // Large coordinates should clamp to buffer bounds
+    const large = term.pixelToCell(10000, 10000);
+    expect(large.row).toBe(23);  // 24 rows, 0-indexed
+    expect(large.col).toBe(79);  // 80 cols, 0-indexed
+  });
+
+  test('should handle tap gesture', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    let tapCalled = false;
+    let tapRow = -1;
+    let tapCol = -1;
+
+    term.onTap = (row, col) => {
+      tapCalled = true;
+      tapRow = row;
+      tapCol = col;
+    };
+
+    const now = Date.now();
+
+    // Tap at pixel (40, 32) = cell (4, 5)
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, now));
+    term.handleTouchEvent(createTouchEvent('touchUp', 40, 32, 0, now + 50));
+
+    expect(tapCalled).toBe(true);
+    expect(tapRow).toBe(2);  // 32 / 16 = 2
+    expect(tapCol).toBe(5);  // 40 / 8 = 5
+  });
+
+  test('should handle long press gesture', async () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    let longPressCalled = false;
+    let longPressRow = -1;
+    let longPressCol = -1;
+
+    term.onLongPress = (row, col) => {
+      longPressCalled = true;
+      longPressRow = row;
+      longPressCol = col;
+    };
+
+    // Touch down and wait for long press
+    term.handleTouchEvent(createTouchEvent('touchDown', 80, 48, 0, Date.now()));
+
+    expect(longPressCalled).toBe(false);
+
+    // Wait for long press timer (500ms + buffer)
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    expect(longPressCalled).toBe(true);
+    expect(longPressRow).toBe(3);  // 48 / 16 = 3
+    expect(longPressCol).toBe(10); // 80 / 8 = 10
+
+    // Clean up
+    term.handleTouchEvent(createTouchEvent('touchUp', 80, 48, 0, Date.now()));
+  });
+
+  test('should handle drag for text selection', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    // Write some text
+    term.write('Hello World! This is a test line.');
+
+    const now = Date.now();
+
+    // Start drag at col 0
+    term.handleTouchEvent(createTouchEvent('touchDown', 4, 8, 0, now));
+
+    // Move to trigger drag (more than 10 pixels)
+    term.handleTouchEvent(createTouchEvent('touchMove', 80, 8, 0, now + 50));
+
+    // Check that touch state is dragging
+    const touchState = term.getTouchState();
+    expect(touchState.isDragging).toBe(true);
+
+    // Check selection is active
+    const selection = term.getSelection();
+    expect(selection.active).toBe(true);
+
+    // End drag
+    term.handleTouchEvent(createTouchEvent('touchUp', 80, 8, 0, now + 100));
+
+    // Get selected text
+    // Note: Selection should be from col 0 to col 10
+    const selectedText = term.endSelection();
+    expect(selectedText.length).toBeGreaterThan(0);
+  });
+
+  test('should cancel long press when dragging', async () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    let longPressCalled = false;
+    term.onLongPress = () => {
+      longPressCalled = true;
+    };
+
+    const now = Date.now();
+
+    // Touch down
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, now));
+
+    // Drag before long press triggers
+    term.handleTouchEvent(createTouchEvent('touchMove', 100, 32, 0, now + 100));
+
+    // Wait for what would be long press time
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    // Long press should NOT have been called because we dragged
+    expect(longPressCalled).toBe(false);
+
+    // Verify we're in drag mode
+    expect(term.getTouchState().isDragging).toBe(true);
+
+    term.handleTouchEvent(createTouchEvent('touchUp', 100, 32, 0, now + 700));
+  });
+
+  test('should handle touch cancel', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    // Start a touch
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, Date.now()));
+    expect(term.isTouchActive()).toBe(true);
+
+    // Cancel the touch
+    term.handleTouchEvent(createTouchEvent('touchCancel', 40, 32, 0, Date.now()));
+
+    // Should no longer be active
+    expect(term.isTouchActive()).toBe(false);
+  });
+
+  test('should ignore touch events from different touch IDs', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    let tapCalled = false;
+    term.onTap = () => {
+      tapCalled = true;
+    };
+
+    const now = Date.now();
+
+    // Touch down with ID 0
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, now));
+
+    // Touch up with different ID should be ignored
+    term.handleTouchEvent(createTouchEvent('touchUp', 40, 32, 1, now + 50));
+
+    // Tap should not have been called
+    expect(tapCalled).toBe(false);
+
+    // Touch up with correct ID should work
+    term.handleTouchEvent(createTouchEvent('touchUp', 40, 32, 0, now + 100));
+    expect(tapCalled).toBe(true);
+  });
+
+  test('should not trigger tap if touch duration exceeds threshold', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    let tapCalled = false;
+    term.onTap = () => {
+      tapCalled = true;
+    };
+
+    const now = Date.now();
+
+    // Touch down
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, now));
+
+    // Touch up after too long (> 200ms)
+    term.handleTouchEvent(createTouchEvent('touchUp', 40, 32, 0, now + 300));
+
+    // Tap should not have been called
+    expect(tapCalled).toBe(false);
+  });
+
+  test('should track touch state correctly', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+
+    // Initially no touch active
+    expect(term.isTouchActive()).toBe(false);
+
+    const now = Date.now();
+
+    // Touch down
+    term.handleTouchEvent(createTouchEvent('touchDown', 100, 50, 5, now));
+
+    // Check touch state
+    const state = term.getTouchState();
+    expect(state.active).toBe(true);
+    expect(state.startX).toBe(100);
+    expect(state.startY).toBe(50);
+    expect(state.touchId).toBe(5);
+    expect(state.isDragging).toBe(false);
+    expect(state.isLongPress).toBe(false);
+
+    // Touch up
+    term.handleTouchEvent(createTouchEvent('touchUp', 100, 50, 5, now + 50));
+
+    // Touch should be inactive
+    expect(term.isTouchActive()).toBe(false);
+  });
+
+  test('should clear selection on new touch down', () => {
+    const term = new Terminal(80, 24);
+    term.setCellDimensions(8, 16);
+    term.write('Hello World');
+
+    // Create a selection
+    term.startSelection(0, 0);
+    term.updateSelection(0, 5);
+    expect(term.getSelection().active).toBe(true);
+
+    // Touch down should clear selection
+    term.handleTouchEvent(createTouchEvent('touchDown', 40, 32, 0, Date.now()));
+
+    // Selection should be cleared
+    expect(term.getSelection().active).toBe(false);
+  });
+});
