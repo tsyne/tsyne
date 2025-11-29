@@ -866,3 +866,185 @@ describe('Shell Integration Tests', () => {
     expect(text).toContain('5');
   }, 10000);
 });
+
+// PTY Integration Tests
+// These tests verify proper PTY functionality with node-pty
+describe('PTY Integration Tests', () => {
+  test('should start PTY shell and receive prompt', async () => {
+    const term = new Terminal(80, 24);
+
+    let outputReceived = false;
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      outputReceived = true;
+      originalWrite(data);
+    };
+
+    term.runLocalShell();
+
+    // Wait for shell to start and send prompt
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    expect(outputReceived).toBe(true);
+    expect(term.isRunning()).toBe(true);
+
+    // Clean up
+    term.exit();
+    expect(term.isRunning()).toBe(false);
+  }, 10000);
+
+  test('should run interactive command via PTY', async () => {
+    const term = new Terminal(80, 24);
+
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    term.runLocalShell();
+
+    // Wait for shell to start
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Type echo command
+    const testString = 'PTY_TEST_' + Date.now();
+    term.sendInput(`echo ${testString}\n`);
+
+    // Wait for command output
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verify output contains our test string
+    expect(capturedOutput).toContain(testString);
+
+    // Clean up
+    term.exit();
+  }, 10000);
+
+  test('should handle PTY resize (SIGWINCH)', async () => {
+    const term = new Terminal(80, 24);
+
+    term.runLocalShell();
+
+    // Wait for shell to start
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Resize the terminal
+    term.resize(120, 40);
+
+    // Query terminal size via stty
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    term.sendInput('stty size\n');
+
+    // Wait for output
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Should report the new size (40 rows, 120 cols)
+    expect(capturedOutput).toContain('40');
+    expect(capturedOutput).toContain('120');
+
+    term.exit();
+  }, 10000);
+
+  test('should echo typed characters in PTY mode', async () => {
+    const term = new Terminal(80, 24);
+
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    term.runLocalShell();
+
+    // Wait for shell to start
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Type characters one at a time (PTY should echo them)
+    term.typeChar('h');
+    term.typeChar('e');
+    term.typeChar('l');
+    term.typeChar('l');
+    term.typeChar('o');
+
+    // Wait for echo
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // PTY should echo typed characters
+    expect(capturedOutput).toContain('hello');
+
+    term.exit();
+  }, 10000);
+
+  test('should handle Ctrl+C interrupt', async () => {
+    const term = new Terminal(80, 24);
+
+    let capturedOutput = '';
+    const originalWrite = term.write.bind(term);
+    term.write = (data: string) => {
+      capturedOutput += data;
+      originalWrite(data);
+    };
+
+    term.runLocalShell();
+
+    // Wait for shell to start
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Start a long-running command
+    term.sendInput('sleep 100\n');
+
+    // Wait a bit
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Send Ctrl+C
+    term.typeKey('c', { ctrl: true });
+
+    // Wait for interrupt
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Shell should still be running after interrupt
+    expect(term.isRunning()).toBe(true);
+
+    // Should be able to run another command
+    term.sendInput('echo STILL_ALIVE\n');
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    expect(capturedOutput).toContain('STILL_ALIVE');
+
+    term.exit();
+  }, 15000);
+
+  test('should handle shell exit', async () => {
+    const term = new Terminal(80, 24);
+
+    let exitCode: number | null = null;
+    term.onExit = (code) => {
+      exitCode = code;
+    };
+
+    term.runLocalShell();
+
+    // Wait for shell to start
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    expect(term.isRunning()).toBe(true);
+
+    // Exit the shell
+    term.sendInput('exit 42\n');
+
+    // Wait for exit
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    expect(term.isRunning()).toBe(false);
+    expect(exitCode).toBe(42);
+  }, 10000);
+});

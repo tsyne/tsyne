@@ -18,6 +18,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@msgpack/msgpack": "^3.0.0"
+    "@msgpack/msgpack": "^3.0.0",
+    "node-pty": "^1.0.0"
   }
 }

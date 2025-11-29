@@ -6,7 +6,8 @@
  * License: See original repository
  *
  * This implementation provides:
- * - Real shell execution via child_process with PTY emulation
+ * - Real shell execution via node-pty (proper pseudo-terminal)
+ * - SIGWINCH handling for terminal resize
  * - Full ANSI/VT100 escape sequence parsing
  * - 8/16/256 color support
  * - Cursor positioning and movement
@@ -29,7 +30,8 @@ import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
 import type { TextGrid, TextGridStyle } from '../../src/widgets';
-import { spawn, ChildProcess } from 'child_process';
+import * as pty from 'node-pty';
+import type { IPty } from 'node-pty';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -533,7 +535,7 @@ export class Terminal {
   private currentAttrs: CellAttributes;
   private title: string = 'Terminal';
   private cwd: string = os.homedir();
-  private shell: ChildProcess | null = null;
+  private ptyProcess: IPty | null = null;
   private selection: Selection = { active: false, startRow: 0, startCol: 0, endRow: 0, endCol: 0 };
 
   // Mode flags
@@ -587,42 +589,31 @@ export class Terminal {
   }
 
   /**
-   * Start local shell
+   * Start local shell using PTY
    * Based on: term.go RunLocalShell
    */
   runLocalShell(): void {
-    const shell = process.env.SHELL || (os.platform() === 'win32' ? 'cmd.exe' : '/bin/sh');
+    const shell = process.env.SHELL || (os.platform() === 'win32' ? 'powershell.exe' : '/bin/sh');
 
-    this.shell = spawn(shell, [], {
+    this.ptyProcess = pty.spawn(shell, [], {
+      name: 'xterm-256color',
+      cols: this.buffer.getCols(),
+      rows: this.buffer.getRows(),
       cwd: this.cwd,
       env: {
         ...process.env,
         TERM: 'xterm-256color',
         COLORTERM: 'truecolor',
-        COLUMNS: this.buffer.getCols().toString(),
-        LINES: this.buffer.getRows().toString(),
-      },
-      stdio: ['pipe', 'pipe', 'pipe'],
+      } as { [key: string]: string },
     });
 
-    if (this.shell.stdout) {
-      this.shell.stdout.on('data', (data: Buffer) => {
-        this.write(data.toString());
-      });
-    }
-
-    if (this.shell.stderr) {
-      this.shell.stderr.on('data', (data: Buffer) => {
-        this.write(data.toString());
-      });
-    }
-
-    this.shell.on('exit', (code: number | null) => {
-      this.onExit(code || 0);
+    this.ptyProcess.onData((data: string) => {
+      this.write(data);
     });
 
-    this.shell.on('error', (err: Error) => {
-      this.write(`\r\nShell error: ${err.message}\r\n`);
+    this.ptyProcess.onExit(({ exitCode }) => {
+      this.ptyProcess = null;
+      this.onExit(exitCode);
     });
   }
 
@@ -649,12 +640,12 @@ export class Terminal {
   }
 
   /**
-   * Send input to shell
+   * Send input to shell via PTY
    * Based on: input.go TypedRune, TypedKey
    */
   sendInput(data: string): void {
-    if (this.shell && this.shell.stdin) {
-      this.shell.stdin.write(data);
+    if (this.ptyProcess) {
+      this.ptyProcess.write(data);
     } else if ((this as any)._writer) {
       (this as any)._writer.write(data);
     }
@@ -782,35 +773,36 @@ export class Terminal {
   /**
    * Resize terminal
    * Based on: term.go Resize
+   *
+   * This properly signals SIGWINCH to the PTY process.
    */
   resize(cols: number, rows: number): void {
     this.buffer.resize(cols, rows);
     this.scrollBottom = rows - 1;
 
-    // Update shell window size if running
-    if (this.shell && this.shell.stdin) {
-      // Send SIGWINCH equivalent by updating environment
-      // Note: proper SIGWINCH requires node-pty
+    // Signal the PTY about the new window size (sends SIGWINCH)
+    if (this.ptyProcess) {
+      this.ptyProcess.resize(cols, rows);
     }
 
     this.onUpdate();
   }
 
   /**
-   * Exit terminal
+   * Exit terminal and kill PTY process
    */
   exit(): void {
-    if (this.shell) {
-      this.shell.kill();
-      this.shell = null;
+    if (this.ptyProcess) {
+      this.ptyProcess.kill();
+      this.ptyProcess = null;
     }
   }
 
   /**
-   * Get exit code
+   * Check if PTY is running
    */
-  getExitCode(): number | null {
-    return this.shell?.exitCode ?? null;
+  isRunning(): boolean {
+    return this.ptyProcess !== null;
   }
 
   // ============================================================================

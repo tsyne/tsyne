@@ -13,12 +13,12 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 ## Priority 1: Critical (Compatibility Issues)
 
 ### PTY Support
-- [ ] Integrate `node-pty` for proper pseudo-terminal support
-- [ ] Implement SIGWINCH handling for terminal resize signals
-- [ ] Proper shell window size synchronization
-- [ ] Platform-specific PTY handling (Unix vs Windows)
+- [x] Integrate `node-pty` for proper pseudo-terminal support
+- [x] Implement SIGWINCH handling for terminal resize signals
+- [x] Proper shell window size synchronization
+- [x] Platform-specific PTY handling (Unix vs Windows via node-pty)
 
-**Current:** Uses `child_process.spawn()` without PTY. Interactive apps like `vim`, `htop`, `less` may not work correctly.
+**Status:** ✅ Complete. Uses `node-pty` for proper PTY with SIGWINCH support. Interactive apps like `vim`, `htop`, `less` now work correctly.
 
 ### Character Sets
 - [ ] DEC Special Graphics charset (box drawing: ╔═╗║╚╝)
@@ -143,26 +143,27 @@ Terminal (class)
 
 ## Test Coverage
 
-### Current Tests (65 total)
+### Current Tests (71 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
+- 6 PTY integration tests
 
 ### Needed Tests
 - [ ] DEC Special Graphics rendering
 - [ ] Mouse protocol encoding
 - [ ] Complex key sequences with modifiers
-- [ ] PTY integration tests (when implemented)
+- [x] PTY integration tests
 - [ ] Mobile/touch event tests
 - [ ] Error recovery tests
 
 ---
 
-## Dependencies to Consider
+## Dependencies
 
-| Package | Purpose | Notes |
-|---------|---------|-------|
-| `node-pty` | Proper PTY support | Native module, requires build tools |
+| Package | Purpose | Status |
+|---------|---------|--------|
+| `node-pty` | Proper PTY support | ✅ Installed and integrated |
 | `xterm` | Reference implementation | Could compare escape sequence handling |
 
 ---
@@ -171,9 +172,9 @@ Terminal (class)
 
 | Original File | Tsyne Equivalent | Status |
 |---------------|------------------|--------|
-| `term.go` | `Terminal` class | Core implemented |
-| `term_unix.go` | N/A | Not ported (platform-specific) |
-| `term_windows.go` | N/A | Not ported (platform-specific) |
+| `term.go` | `Terminal` class | ✅ Core implemented with PTY |
+| `term_unix.go` | `node-pty` | ✅ Handled by node-pty |
+| `term_windows.go` | `node-pty` | ✅ Handled by node-pty |
 | `escape.go` | `AnsiParser` class | Mostly complete |
 | `input.go` | `typeChar()`, `typeKey()` | Basic implementation |
 | `output.go` | `write()`, parser handlers | Complete |
