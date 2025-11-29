@@ -305,6 +305,16 @@ export enum MouseEncodingFormat {
   URXVT = 'urxvt',   // urxvt encoding (CSI Cb ; Cx ; Cy M)
 }
 
+/**
+ * Context menu item for right-click menus
+ */
+export interface ContextMenuItem {
+  label: string;
+  action: string;      // Action identifier (e.g., 'copy', 'paste', 'selectAll')
+  enabled: boolean;
+  separator?: boolean; // If true, this is a separator line
+}
+
 // ============================================================================
 // ANSI Escape Sequence Parser
 // ============================================================================
@@ -709,6 +719,8 @@ export class Terminal {
   private autoWrapMode: boolean = true;
   private cursorVisible: boolean = true;
   private applicationCursorKeys: boolean = false;
+  private applicationKeypadMode: boolean = false;  // DECKPAM/DECKPNM
+  private newLineMode: boolean = false;            // LNM - affects Enter key
   private bracketedPasteMode: boolean = false;
   private mouseTrackingMode: number = 0;
   private mouseEncodingFormat: MouseEncodingFormat = MouseEncodingFormat.X10;
@@ -717,6 +729,18 @@ export class Terminal {
   private lastMouseY: number = 0;
   private alternateBuffer: TerminalBuffer | null = null;
   private mainBuffer: TerminalBuffer;
+
+  // Platform detection
+  private platform: 'macos' | 'windows' | 'linux' = 'linux';
+
+  // Key state tracking
+  private pressedKeys: Set<string> = new Set();
+
+  // Double-click detection for word selection
+  private lastClickTime: number = 0;
+  private lastClickRow: number = -1;
+  private lastClickCol: number = -1;
+  private readonly DOUBLE_CLICK_THRESHOLD = 300; // ms
 
   // Charset state (G0 and G1 character sets)
   private g0Charset: string = Charset.ASCII;  // G0 charset designator
@@ -747,6 +771,7 @@ export class Terminal {
   onExit: (code: number) => void = () => {};
   onLongPress: (row: number, col: number) => void = () => {};
   onTap: (row: number, col: number) => void = () => {};
+  onContextMenu: (row: number, col: number, items: ContextMenuItem[]) => void = () => {};
 
   constructor(cols: number = DEFAULT_COLS, rows: number = DEFAULT_ROWS) {
     this.buffer = new TerminalBuffer(cols, rows);
@@ -756,6 +781,30 @@ export class Terminal {
 
     this.parser = new AnsiParser();
     this.setupParser();
+
+    // Detect platform for keyboard shortcuts
+    this.detectPlatform();
+  }
+
+  /**
+   * Detect the current platform for keyboard shortcut handling
+   */
+  private detectPlatform(): void {
+    const platform = os.platform();
+    if (platform === 'darwin') {
+      this.platform = 'macos';
+    } else if (platform === 'win32') {
+      this.platform = 'windows';
+    } else {
+      this.platform = 'linux';
+    }
+  }
+
+  /**
+   * Get the current platform
+   */
+  getPlatform(): 'macos' | 'windows' | 'linux' {
+    return this.platform;
   }
 
   private defaultAttrs(): CellAttributes {
@@ -878,104 +927,237 @@ export class Terminal {
   }
 
   /**
-   * Handle special key
+   * Handle special key with full modifier support
    * Based on: input.go TypedKey
+   *
+   * Modifier encoding for xterm-style sequences:
+   *   1 = none, 2 = Shift, 3 = Alt, 4 = Shift+Alt
+   *   5 = Ctrl, 6 = Shift+Ctrl, 7 = Alt+Ctrl, 8 = Shift+Alt+Ctrl
    */
-  typeKey(key: string, modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean } = {}): void {
+  typeKey(key: string, modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}): void {
+    // Track key state
+    this.pressedKeys.add(key);
+
     let sequence = '';
+    const hasModifier: boolean = !!(modifiers.shift || modifiers.alt || modifiers.ctrl);
+    const modifierCode = this.getModifierCode(modifiers);
 
     switch (key) {
       case 'Enter':
-        sequence = '\r';
+        // In new line mode, Enter sends CR LF; otherwise just CR
+        sequence = this.newLineMode ? '\r\n' : '\r';
         break;
       case 'Backspace':
-        sequence = '\x7f';
+        sequence = modifiers.ctrl ? '\x08' : '\x7f';
         break;
       case 'Tab':
-        sequence = '\t';
+        sequence = modifiers.shift ? '\x1b[Z' : '\t'; // Shift+Tab = backtab
         break;
       case 'Escape':
         sequence = '\x1b';
         break;
+
+      // Cursor keys with modifier support
       case 'ArrowUp':
-        sequence = this.applicationCursorKeys ? '\x1bOA' : '\x1b[A';
+        sequence = this.encodeCursorKey('A', modifierCode, hasModifier);
         break;
       case 'ArrowDown':
-        sequence = this.applicationCursorKeys ? '\x1bOB' : '\x1b[B';
+        sequence = this.encodeCursorKey('B', modifierCode, hasModifier);
         break;
       case 'ArrowRight':
-        sequence = this.applicationCursorKeys ? '\x1bOC' : '\x1b[C';
+        sequence = this.encodeCursorKey('C', modifierCode, hasModifier);
         break;
       case 'ArrowLeft':
-        sequence = this.applicationCursorKeys ? '\x1bOD' : '\x1b[D';
+        sequence = this.encodeCursorKey('D', modifierCode, hasModifier);
         break;
+
+      // Navigation keys with modifier support
       case 'Home':
-        sequence = '\x1b[H';
+        sequence = hasModifier ? `\x1b[1;${modifierCode}H` : '\x1b[H';
         break;
       case 'End':
-        sequence = '\x1b[F';
+        sequence = hasModifier ? `\x1b[1;${modifierCode}F` : '\x1b[F';
         break;
       case 'PageUp':
-        sequence = '\x1b[5~';
+        sequence = hasModifier ? `\x1b[5;${modifierCode}~` : '\x1b[5~';
         break;
       case 'PageDown':
-        sequence = '\x1b[6~';
+        sequence = hasModifier ? `\x1b[6;${modifierCode}~` : '\x1b[6~';
         break;
       case 'Insert':
-        sequence = '\x1b[2~';
+        sequence = hasModifier ? `\x1b[2;${modifierCode}~` : '\x1b[2~';
         break;
       case 'Delete':
-        sequence = '\x1b[3~';
+        sequence = hasModifier ? `\x1b[3;${modifierCode}~` : '\x1b[3~';
         break;
+
+      // Function keys F1-F4 (VT style with modifier support)
       case 'F1':
-        sequence = '\x1bOP';
+        sequence = this.encodeFunctionKey1_4('P', modifierCode, hasModifier);
         break;
       case 'F2':
-        sequence = '\x1bOQ';
+        sequence = this.encodeFunctionKey1_4('Q', modifierCode, hasModifier);
         break;
       case 'F3':
-        sequence = '\x1bOR';
+        sequence = this.encodeFunctionKey1_4('R', modifierCode, hasModifier);
         break;
       case 'F4':
-        sequence = '\x1bOS';
+        sequence = this.encodeFunctionKey1_4('S', modifierCode, hasModifier);
         break;
+
+      // Function keys F5-F12 (CSI style with modifier support)
       case 'F5':
-        sequence = '\x1b[15~';
+        sequence = hasModifier ? `\x1b[15;${modifierCode}~` : '\x1b[15~';
         break;
       case 'F6':
-        sequence = '\x1b[17~';
+        sequence = hasModifier ? `\x1b[17;${modifierCode}~` : '\x1b[17~';
         break;
       case 'F7':
-        sequence = '\x1b[18~';
+        sequence = hasModifier ? `\x1b[18;${modifierCode}~` : '\x1b[18~';
         break;
       case 'F8':
-        sequence = '\x1b[19~';
+        sequence = hasModifier ? `\x1b[19;${modifierCode}~` : '\x1b[19~';
         break;
       case 'F9':
-        sequence = '\x1b[20~';
+        sequence = hasModifier ? `\x1b[20;${modifierCode}~` : '\x1b[20~';
         break;
       case 'F10':
-        sequence = '\x1b[21~';
+        sequence = hasModifier ? `\x1b[21;${modifierCode}~` : '\x1b[21~';
         break;
       case 'F11':
-        sequence = '\x1b[23~';
+        sequence = hasModifier ? `\x1b[23;${modifierCode}~` : '\x1b[23~';
         break;
       case 'F12':
-        sequence = '\x1b[24~';
+        sequence = hasModifier ? `\x1b[24;${modifierCode}~` : '\x1b[24~';
         break;
+
+      // Extended function keys F13-F24 (Shift+F1-F12 on some systems)
+      case 'F13':
+        sequence = hasModifier ? `\x1b[1;${modifierCode}P` : '\x1b[1;2P';
+        break;
+      case 'F14':
+        sequence = hasModifier ? `\x1b[1;${modifierCode}Q` : '\x1b[1;2Q';
+        break;
+      case 'F15':
+        sequence = hasModifier ? `\x1b[1;${modifierCode}R` : '\x1b[1;2R';
+        break;
+      case 'F16':
+        sequence = hasModifier ? `\x1b[1;${modifierCode}S` : '\x1b[1;2S';
+        break;
+      case 'F17':
+        sequence = hasModifier ? `\x1b[15;${modifierCode}~` : '\x1b[15;2~';
+        break;
+      case 'F18':
+        sequence = hasModifier ? `\x1b[17;${modifierCode}~` : '\x1b[17;2~';
+        break;
+      case 'F19':
+        sequence = hasModifier ? `\x1b[18;${modifierCode}~` : '\x1b[18;2~';
+        break;
+      case 'F20':
+        sequence = hasModifier ? `\x1b[19;${modifierCode}~` : '\x1b[19;2~';
+        break;
+
       default:
-        // Handle Ctrl+key
+        // Handle Ctrl+key combinations
         if (modifiers.ctrl && key.length === 1) {
           const code = key.toUpperCase().charCodeAt(0) - 64;
           if (code >= 0 && code < 32) {
             sequence = String.fromCharCode(code);
           }
         }
+        // Handle Alt+key (send ESC prefix)
+        else if (modifiers.alt && key.length === 1) {
+          sequence = '\x1b' + key;
+        }
     }
 
     if (sequence) {
       this.sendInput(sequence);
     }
+  }
+
+  /**
+   * Handle key release event for key state tracking
+   */
+  keyUp(key: string): void {
+    this.pressedKeys.delete(key);
+  }
+
+  /**
+   * Check if a key is currently pressed
+   */
+  isKeyPressed(key: string): boolean {
+    return this.pressedKeys.has(key);
+  }
+
+  /**
+   * Get all currently pressed keys
+   */
+  getPressedKeys(): string[] {
+    return Array.from(this.pressedKeys);
+  }
+
+  /**
+   * Calculate xterm modifier code
+   * 1 = none, 2 = Shift, 3 = Alt, 4 = Shift+Alt
+   * 5 = Ctrl, 6 = Shift+Ctrl, 7 = Alt+Ctrl, 8 = Shift+Alt+Ctrl
+   */
+  private getModifierCode(modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean }): number {
+    let code = 1;
+    if (modifiers.shift) code += 1;
+    if (modifiers.alt) code += 2;
+    if (modifiers.ctrl) code += 4;
+    return code;
+  }
+
+  /**
+   * Encode cursor key with optional modifier
+   * In application mode: ESC O A (or ESC O 1 ; mod A with modifiers)
+   * In normal mode: ESC [ A (or ESC [ 1 ; mod A with modifiers)
+   */
+  private encodeCursorKey(suffix: string, modifierCode: number, hasModifier: boolean): string {
+    if (hasModifier) {
+      // Modifiers always use CSI format: ESC [ 1 ; mod X
+      return `\x1b[1;${modifierCode}${suffix}`;
+    }
+    // No modifier - use application or normal mode
+    return this.applicationCursorKeys ? `\x1bO${suffix}` : `\x1b[${suffix}`;
+  }
+
+  /**
+   * Encode function keys F1-F4 (SS3 style)
+   * Normal: ESC O P/Q/R/S
+   * With modifiers: ESC [ 1 ; mod P/Q/R/S
+   */
+  private encodeFunctionKey1_4(suffix: string, modifierCode: number, hasModifier: boolean): string {
+    if (hasModifier) {
+      return `\x1b[1;${modifierCode}${suffix}`;
+    }
+    return `\x1bO${suffix}`;
+  }
+
+  /**
+   * Check if the action modifier is pressed (Ctrl on Linux/Windows, Cmd on macOS)
+   */
+  isActionModifier(modifiers: { ctrl?: boolean; meta?: boolean }): boolean {
+    if (this.platform === 'macos') {
+      return !!modifiers.meta;
+    }
+    return !!modifiers.ctrl;
+  }
+
+  /**
+   * Get application keypad mode state
+   */
+  isApplicationKeypadMode(): boolean {
+    return this.applicationKeypadMode;
+  }
+
+  /**
+   * Get new line mode state (LNM)
+   */
+  isNewLineMode(): boolean {
+    return this.newLineMode;
   }
 
   /**
@@ -1507,6 +1689,17 @@ export class Terminal {
             this.bracketedPasteMode = enable;
             break;
         }
+      } else {
+        // Standard ANSI modes (no ? prefix)
+        switch (mode) {
+          case 4: // IRM - Insert/Replace Mode
+            // TODO: Implement insert mode
+            break;
+          case 20: // LNM - Line Feed/New Line Mode
+            // When set, Enter sends CR LF; when reset, Enter sends just CR
+            this.newLineMode = enable;
+            break;
+        }
       }
     }
   }
@@ -1548,6 +1741,12 @@ export class Terminal {
       case '8': // DECRC - Restore cursor
         this.cursorRow = this.savedCursorRow;
         this.cursorCol = this.savedCursorCol;
+        break;
+      case '=': // DECPAM - Application keypad mode
+        this.applicationKeypadMode = true;
+        break;
+      case '>': // DECPNM - Normal keypad mode
+        this.applicationKeypadMode = false;
         break;
       case 'D': // IND - Index (move down)
         if (this.cursorRow === this.scrollBottom) {
@@ -1793,6 +1992,205 @@ export class Terminal {
    */
   clearSelection(): void {
     this.selection.active = false;
+  }
+
+  // ============================================================================
+  // Word Selection (Double-click)
+  // ============================================================================
+
+  /**
+   * Handle click event for double-click detection
+   * Returns true if a double-click was detected and word was selected
+   */
+  handleClick(row: number, col: number, timestamp: number = Date.now()): boolean {
+    const timeDiff = timestamp - this.lastClickTime;
+    const samePosition = row === this.lastClickRow && col === this.lastClickCol;
+
+    // Update last click info
+    this.lastClickTime = timestamp;
+    this.lastClickRow = row;
+    this.lastClickCol = col;
+
+    // Check for double-click
+    if (timeDiff < this.DOUBLE_CLICK_THRESHOLD && samePosition) {
+      this.selectWord(row, col);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Select the word at the given position
+   */
+  selectWord(row: number, col: number): void {
+    const bounds = this.getWordBounds(row, col);
+    if (bounds) {
+      this.selection = {
+        active: true,
+        startRow: row,
+        startCol: bounds.start,
+        endRow: row,
+        endCol: bounds.end,
+        mode: SelectionMode.Linear,
+      };
+      this.onUpdate();
+    }
+  }
+
+  /**
+   * Get the word boundaries at the given position
+   * Returns { start, end } column indices or null if not in a word
+   */
+  getWordBounds(row: number, col: number): { start: number; end: number } | null {
+    const cols = this.buffer.getCols();
+    if (row < 0 || row >= this.buffer.getRows() || col < 0 || col >= cols) {
+      return null;
+    }
+
+    // Get character at position
+    const cell = this.buffer.getCell(row, col);
+    if (!this.isWordChar(cell.char)) {
+      return null;
+    }
+
+    // Find word start
+    let start = col;
+    while (start > 0) {
+      const prevCell = this.buffer.getCell(row, start - 1);
+      if (!this.isWordChar(prevCell.char)) break;
+      start--;
+    }
+
+    // Find word end
+    let end = col;
+    while (end < cols - 1) {
+      const nextCell = this.buffer.getCell(row, end + 1);
+      if (!this.isWordChar(nextCell.char)) break;
+      end++;
+    }
+
+    return { start, end };
+  }
+
+  /**
+   * Check if a character is part of a word
+   * Word characters include alphanumeric and common programming symbols
+   */
+  private isWordChar(char: string): boolean {
+    if (!char || char === ' ' || char === '\0') return false;
+    // Alphanumeric
+    if (/[a-zA-Z0-9_]/.test(char)) return true;
+    // Common path/URL characters
+    if (/[.\-\/\\:]/.test(char)) return true;
+    return false;
+  }
+
+  /**
+   * Get the word at the given position
+   */
+  getWordAt(row: number, col: number): string {
+    const bounds = this.getWordBounds(row, col);
+    if (!bounds) return '';
+
+    let word = '';
+    for (let c = bounds.start; c <= bounds.end; c++) {
+      const cell = this.buffer.getCell(row, c);
+      word += cell.char;
+    }
+    return word;
+  }
+
+  // ============================================================================
+  // Context Menu (Right-click)
+  // ============================================================================
+
+  /**
+   * Handle right-click context menu request
+   * Triggers the onContextMenu callback with appropriate menu items
+   */
+  handleContextMenu(row: number, col: number): void {
+    const items = this.getContextMenuItems();
+    this.onContextMenu(row, col, items);
+  }
+
+  /**
+   * Get context menu items based on current terminal state
+   */
+  getContextMenuItems(): ContextMenuItem[] {
+    const hasSelection = this.selection.active;
+    const items: ContextMenuItem[] = [
+      {
+        label: 'Copy',
+        action: 'copy',
+        enabled: hasSelection,
+      },
+      {
+        label: 'Paste',
+        action: 'paste',
+        enabled: true,
+      },
+      {
+        label: '',
+        action: '',
+        enabled: false,
+        separator: true,
+      },
+      {
+        label: 'Select All',
+        action: 'selectAll',
+        enabled: true,
+      },
+      {
+        label: 'Clear',
+        action: 'clear',
+        enabled: true,
+      },
+    ];
+
+    return items;
+  }
+
+  /**
+   * Execute a context menu action
+   */
+  executeContextMenuAction(action: string): void {
+    switch (action) {
+      case 'copy':
+        // Copy is handled by the UI layer which has clipboard access
+        break;
+      case 'paste':
+        // Paste is handled by the UI layer which has clipboard access
+        break;
+      case 'selectAll':
+        this.selectAll();
+        break;
+      case 'clear':
+        this.clear();
+        break;
+    }
+  }
+
+  /**
+   * Select all text in the terminal
+   */
+  selectAll(): void {
+    this.selection = {
+      active: true,
+      startRow: 0,
+      startCol: 0,
+      endRow: this.buffer.getRows() - 1,
+      endCol: this.buffer.getCols() - 1,
+      mode: SelectionMode.Linear,
+    };
+    this.onUpdate();
+  }
+
+  /**
+   * Clear the terminal screen
+   */
+  clear(): void {
+    this.write('\x1b[2J\x1b[H'); // Clear screen and move cursor to home
   }
 
   // ============================================================================

@@ -55,24 +55,30 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Basic character input
 - [x] Special keys (F1-F12, arrows, Home, End, etc.)
 - [x] Basic Ctrl modifiers
-- [ ] Shift+Function key sequences
-- [ ] Full key state tracking (KeyDown/KeyUp)
-- [ ] Platform-specific shortcuts (macOS vs others)
-- [ ] Buffer mode cursor keys (ESC O vs ESC [)
+- [x] Shift+Function key sequences (with xterm modifier encoding)
+- [x] Full key state tracking (KeyDown/KeyUp)
+- [x] Platform-specific shortcuts (macOS Cmd vs Ctrl detection)
+- [x] Buffer mode cursor keys (ESC O vs ESC [)
+- [x] Application keypad mode (DECPAM/DECPNM)
+- [x] New line mode (LNM)
+- [x] Alt+key ESC prefix
+- [x] Shift+Tab backtab
+
+**Status:** ✅ Complete. Full xterm-compatible key encoding with modifier support.
 
 ### Mouse/Touch Support
 - [x] Basic click handling
 - [x] Text selection (linear)
 - [x] Block/rectangular selection (Alt+drag)
 - [x] Cell selection detection for rendering
-- [ ] Double-click word selection
-- [ ] Right-click context menu (paste)
+- [x] Double-click word selection
+- [x] Right-click context menu (Copy, Paste, Select All, Clear)
 - [x] Touch events (TouchDown, TouchMove, TouchUp, TouchCancel)
 - [x] Mobile device support (tap, long press, drag)
 - [x] Touch-based text selection
 - [x] Pixel-to-cell coordinate conversion
 
-**Status:** ✅ Touch and selection support complete. Linear and block selection modes with Alt+drag toggle. Cell selection detection for proper highlighting.
+**Status:** ✅ Complete. Full mouse/touch support with word selection and context menus.
 
 ### Terminal Modes
 - [x] Application cursor keys (DECCKM)
@@ -152,7 +158,7 @@ Terminal (class)
 
 ## Test Coverage
 
-### Current Tests (140 total)
+### Current Tests (171 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
@@ -161,12 +167,13 @@ Terminal (class)
 - 12 Touch event tests
 - 31 Mouse protocol tests
 - 16 Block selection tests
+- 31 Input handling, word selection, and context menu tests
 
 ### Needed Tests
 - [x] DEC Special Graphics rendering
 - [x] Mouse protocol encoding
 - [x] Block/rectangular selection
-- [ ] Complex key sequences with modifiers
+- [x] Complex key sequences with modifiers
 - [x] PTY integration tests
 - [x] Mobile/touch event tests
 - [ ] Error recovery tests

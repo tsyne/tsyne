@@ -2085,3 +2085,369 @@ describe('Block Selection Tests', () => {
     });
   });
 });
+
+// ============================================================================
+// Input Handling Tests
+// ============================================================================
+
+import { ContextMenuItem } from './terminal';
+
+describe('Input Handling Tests', () => {
+  describe('Shift+Function Key Sequences', () => {
+    test('should send modified F1 sequence with Shift', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('F1', { shift: true });
+      // Shift modifier code = 2, F1 with modifier = ESC [ 1 ; 2 P
+      expect(sent).toBe('\x1b[1;2P');
+    });
+
+    test('should send modified F5 sequence with Ctrl+Shift', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('F5', { shift: true, ctrl: true });
+      // Ctrl+Shift modifier code = 6, F5 with modifier = ESC [ 15 ; 6 ~
+      expect(sent).toBe('\x1b[15;6~');
+    });
+
+    test('should send modified arrow key with Alt', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('ArrowUp', { alt: true });
+      // Alt modifier code = 3
+      expect(sent).toBe('\x1b[1;3A');
+    });
+  });
+
+  describe('Key State Tracking', () => {
+    test('should track pressed keys', () => {
+      const term = new Terminal(80, 24);
+      (term as any)._writer = { write: () => {} };
+
+      term.typeKey('F1');
+      expect(term.isKeyPressed('F1')).toBe(true);
+
+      term.keyUp('F1');
+      expect(term.isKeyPressed('F1')).toBe(false);
+    });
+
+    test('should return all pressed keys', () => {
+      const term = new Terminal(80, 24);
+      (term as any)._writer = { write: () => {} };
+
+      term.typeKey('Shift');
+      term.typeKey('ArrowUp');
+
+      const pressed = term.getPressedKeys();
+      expect(pressed).toContain('Shift');
+      expect(pressed).toContain('ArrowUp');
+    });
+  });
+
+  describe('Platform Detection', () => {
+    test('should detect platform', () => {
+      const term = new Terminal(80, 24);
+      const platform = term.getPlatform();
+      expect(['macos', 'windows', 'linux']).toContain(platform);
+    });
+
+    test('should check action modifier correctly', () => {
+      const term = new Terminal(80, 24);
+      // On Linux, Ctrl is the action modifier
+      if (term.getPlatform() === 'linux') {
+        expect(term.isActionModifier({ ctrl: true })).toBe(true);
+        expect(term.isActionModifier({ meta: true })).toBe(false);
+      }
+    });
+  });
+
+  describe('Application Cursor Keys Mode', () => {
+    test('should use normal mode cursor keys by default', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('ArrowUp');
+      expect(sent).toBe('\x1b[A'); // CSI A
+    });
+
+    test('should switch to application mode with DECCKM', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      // Enable application cursor keys mode
+      term.write('\x1b[?1h');
+
+      term.typeKey('ArrowUp');
+      expect(sent).toBe('\x1bOA'); // SS3 A
+    });
+
+    test('should use CSI format when modifiers are present even in application mode', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.write('\x1b[?1h'); // Enable application mode
+
+      term.typeKey('ArrowUp', { shift: true });
+      expect(sent).toBe('\x1b[1;2A'); // CSI format with modifier
+    });
+  });
+
+  describe('Application Keypad Mode', () => {
+    test('should enable application keypad mode with DECPAM', () => {
+      const term = new Terminal(80, 24);
+      expect(term.isApplicationKeypadMode()).toBe(false);
+
+      term.write('\x1b='); // DECPAM
+      expect(term.isApplicationKeypadMode()).toBe(true);
+    });
+
+    test('should disable application keypad mode with DECPNM', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b='); // Enable
+      term.write('\x1b>'); // DECPNM - disable
+      expect(term.isApplicationKeypadMode()).toBe(false);
+    });
+  });
+
+  describe('New Line Mode', () => {
+    test('should send CR by default for Enter', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('Enter');
+      expect(sent).toBe('\r');
+    });
+
+    test('should send CR LF in new line mode', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.write('\x1b[20h'); // Enable LNM
+      expect(term.isNewLineMode()).toBe(true);
+
+      term.typeKey('Enter');
+      expect(sent).toBe('\r\n');
+    });
+  });
+
+  describe('Shift+Tab', () => {
+    test('should send backtab sequence for Shift+Tab', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('Tab', { shift: true });
+      expect(sent).toBe('\x1b[Z');
+    });
+  });
+
+  describe('Alt+Key', () => {
+    test('should send ESC prefix for Alt+character', () => {
+      const term = new Terminal(80, 24);
+      let sent = '';
+      (term as any)._writer = { write: (data: string) => { sent = data; } };
+
+      term.typeKey('x', { alt: true });
+      expect(sent).toBe('\x1bx');
+    });
+  });
+});
+
+// ============================================================================
+// Word Selection (Double-click) Tests
+// ============================================================================
+
+describe('Word Selection Tests', () => {
+  describe('Word Boundary Detection', () => {
+    test('should find word boundaries', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const bounds = term.getWordBounds(0, 2); // 'l' in Hello
+      expect(bounds).not.toBeNull();
+      expect(bounds!.start).toBe(0);
+      expect(bounds!.end).toBe(4);
+    });
+
+    test('should return null for space', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const bounds = term.getWordBounds(0, 5); // space
+      expect(bounds).toBeNull();
+    });
+
+    test('should handle path-like strings', () => {
+      const term = new Terminal(80, 24);
+      term.write('/usr/local/bin');
+
+      const bounds = term.getWordBounds(0, 5); // 'l' in local
+      expect(bounds).not.toBeNull();
+      expect(bounds!.start).toBe(0);
+      expect(bounds!.end).toBe(13);
+    });
+  });
+
+  describe('Get Word At Position', () => {
+    test('should extract word at position', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const word = term.getWordAt(0, 7);
+      expect(word).toBe('World');
+    });
+
+    test('should return empty string for non-word position', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const word = term.getWordAt(0, 5);
+      expect(word).toBe('');
+    });
+  });
+
+  describe('Double-click Detection', () => {
+    test('should detect double-click and select word', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const now = Date.now();
+
+      // First click
+      const result1 = term.handleClick(0, 2, now);
+      expect(result1).toBe(false);
+
+      // Second click within threshold
+      const result2 = term.handleClick(0, 2, now + 100);
+      expect(result2).toBe(true);
+
+      // Should have selected the word
+      expect(term.getSelection().active).toBe(true);
+    });
+
+    test('should not trigger on slow clicks', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const now = Date.now();
+
+      term.handleClick(0, 2, now);
+      const result = term.handleClick(0, 2, now + 500); // Too slow
+
+      expect(result).toBe(false);
+    });
+
+    test('should not trigger on different positions', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      const now = Date.now();
+
+      term.handleClick(0, 2, now);
+      const result = term.handleClick(0, 7, now + 100); // Different column
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Select Word', () => {
+    test('should select word at position', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      term.selectWord(0, 7);
+
+      const selection = term.getSelection();
+      expect(selection.active).toBe(true);
+      expect(selection.startCol).toBe(6);
+      expect(selection.endCol).toBe(10);
+    });
+  });
+});
+
+// ============================================================================
+// Context Menu Tests
+// ============================================================================
+
+describe('Context Menu Tests', () => {
+  test('should return context menu items', () => {
+    const term = new Terminal(80, 24);
+    const items = term.getContextMenuItems();
+
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.some(i => i.action === 'copy')).toBe(true);
+    expect(items.some(i => i.action === 'paste')).toBe(true);
+    expect(items.some(i => i.action === 'selectAll')).toBe(true);
+  });
+
+  test('should disable copy when no selection', () => {
+    const term = new Terminal(80, 24);
+    const items = term.getContextMenuItems();
+
+    const copyItem = items.find(i => i.action === 'copy');
+    expect(copyItem?.enabled).toBe(false);
+  });
+
+  test('should enable copy when selection exists', () => {
+    const term = new Terminal(80, 24);
+    term.write('Hello');
+    term.startSelection(0, 0);
+    term.updateSelection(0, 4);
+
+    const items = term.getContextMenuItems();
+    const copyItem = items.find(i => i.action === 'copy');
+    expect(copyItem?.enabled).toBe(true);
+  });
+
+  test('should trigger onContextMenu callback', () => {
+    const term = new Terminal(80, 24);
+    let callbackItems: ContextMenuItem[] = [];
+
+    term.onContextMenu = (row, col, items) => {
+      callbackItems = items;
+    };
+
+    term.handleContextMenu(5, 10);
+    expect(callbackItems.length).toBeGreaterThan(0);
+  });
+
+  describe('Select All', () => {
+    test('should select entire terminal', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      term.selectAll();
+
+      const selection = term.getSelection();
+      expect(selection.active).toBe(true);
+      expect(selection.startRow).toBe(0);
+      expect(selection.startCol).toBe(0);
+      expect(selection.endRow).toBe(23);
+      expect(selection.endCol).toBe(79);
+    });
+  });
+
+  describe('Clear', () => {
+    test('should clear the terminal', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello World');
+
+      term.clear();
+
+      // Cursor should be at home position
+      expect(term.getCursorRow()).toBe(0);
+      expect(term.getCursorCol()).toBe(0);
+    });
+  });
+});
