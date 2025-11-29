@@ -1048,3 +1048,192 @@ describe('PTY Integration Tests', () => {
     expect(exitCode).toBe(42);
   }, 10000);
 });
+
+// DEC Special Graphics Charset Tests
+describe('DEC Special Graphics Charset', () => {
+  test('should render box drawing characters with DEC Special Graphics', () => {
+    const term = new Terminal(80, 24);
+
+    // ESC ( 0 - Set G0 to DEC Special Graphics
+    // Then draw a box using the charset
+    term.write('\x1b(0');  // Set G0 to DEC Special Graphics
+    term.write('lqqqqk'); // Upper border: ┌────┐
+    term.write('\n');
+    term.write('x    x'); // Sides: │    │
+    term.write('\n');
+    term.write('mqqqqj'); // Lower border: └────┘
+    term.write('\x1b(B');  // Reset G0 to ASCII
+
+    const text = term.getText();
+    // Should contain box drawing characters
+    expect(text).toContain('┌');
+    expect(text).toContain('─');
+    expect(text).toContain('┐');
+    expect(text).toContain('│');
+    expect(text).toContain('└');
+    expect(text).toContain('┘');
+  });
+
+  test('should render horizontal and vertical lines', () => {
+    const term = new Terminal(80, 24);
+
+    // ESC ( 0 - Set G0 to DEC Special Graphics
+    term.write('\x1b(0');
+    term.write('qqqqq'); // Horizontal line: ─────
+    term.write('\n');
+    term.write('x');     // Vertical line: │
+    term.write('\x1b(B'); // Reset to ASCII
+
+    const text = term.getText();
+    expect(text).toContain('─');
+    expect(text).toContain('│');
+  });
+
+  test('should render tee and cross characters', () => {
+    const term = new Terminal(80, 24);
+
+    term.write('\x1b(0');
+    term.write('tuwvn'); // ├ ┤ ┬ ┴ ┼
+    term.write('\x1b(B');
+
+    const text = term.getText();
+    expect(text).toContain('├');
+    expect(text).toContain('┤');
+    expect(text).toContain('┬');
+    expect(text).toContain('┴');
+    expect(text).toContain('┼');
+  });
+
+  test('should render special symbols', () => {
+    const term = new Terminal(80, 24);
+
+    term.write('\x1b(0');
+    term.write('`afg'); // ◆ ▒ ° ±
+    term.write('\x1b(B');
+
+    const text = term.getText();
+    expect(text).toContain('◆');
+    expect(text).toContain('▒');
+    expect(text).toContain('°');
+    expect(text).toContain('±');
+  });
+
+  test('should handle SO/SI charset switching', () => {
+    const term = new Terminal(80, 24);
+
+    // Set G1 to DEC Special Graphics
+    term.write('\x1b)0');
+    // Write normal ASCII
+    term.write('ABC');
+    // SO (Shift Out) - switch to G1
+    term.write('\x0e');
+    // Now these should be box drawing
+    term.write('lqk');
+    // SI (Shift In) - back to G0 (ASCII)
+    term.write('\x0f');
+    // This should be normal ASCII again
+    term.write('XYZ');
+
+    const text = term.getText();
+    expect(text).toContain('ABC');
+    expect(text).toContain('┌');
+    expect(text).toContain('─');
+    expect(text).toContain('┐');
+    expect(text).toContain('XYZ');
+  });
+
+  test('should leave non-mapped characters unchanged', () => {
+    const term = new Terminal(80, 24);
+
+    term.write('\x1b(0');
+    // Characters outside the mapping range (0-9, A-Z) should be unchanged
+    term.write('ABC123');
+    term.write('\x1b(B');
+
+    const text = term.getText();
+    expect(text).toContain('ABC123');
+  });
+
+  test('should reset charset on terminal reset', () => {
+    const term = new Terminal(80, 24);
+
+    // Set G0 to DEC Special Graphics
+    term.write('\x1b(0');
+    term.write('lqk'); // Should produce ┌─┐
+
+    // Reset terminal
+    term.reset();
+
+    // Now write same characters - should be ASCII
+    term.write('lqk');
+
+    const text = term.getText();
+    // After reset, should be plain ASCII
+    expect(text).toContain('lqk');
+  });
+
+  test('should render complete box with DEC Special Graphics', () => {
+    const term = new Terminal(80, 24);
+
+    // Draw a complete box
+    term.write('\x1b(0'); // Enable DEC Special Graphics
+
+    // Top border
+    term.write('l');     // ┌
+    term.write('qqqqqq'); // ──────
+    term.write('k');     // ┐
+    term.write('\r\n');
+
+    // Middle rows
+    for (let i = 0; i < 3; i++) {
+      term.write('x');     // │
+      term.write('      '); // spaces
+      term.write('x');     // │
+      term.write('\r\n');
+    }
+
+    // Bottom border
+    term.write('m');     // └
+    term.write('qqqqqq'); // ──────
+    term.write('j');     // ┘
+
+    term.write('\x1b(B'); // Reset to ASCII
+
+    const text = term.getText();
+
+    // Verify box corners
+    expect(text).toContain('┌');
+    expect(text).toContain('┐');
+    expect(text).toContain('└');
+    expect(text).toContain('┘');
+
+    // Verify lines
+    expect(text).toContain('─');
+    expect(text).toContain('│');
+  });
+
+  test('should handle comparison operators', () => {
+    const term = new Terminal(80, 24);
+
+    term.write('\x1b(0');
+    term.write('yz'); // ≤ ≥
+    term.write('\x1b(B');
+
+    const text = term.getText();
+    expect(text).toContain('≤');
+    expect(text).toContain('≥');
+  });
+
+  test('should handle pi and other math symbols', () => {
+    const term = new Terminal(80, 24);
+
+    term.write('\x1b(0');
+    term.write('{|}'); // π ≠ £
+    term.write('\x1b(B');
+
+    const text = term.getText();
+    expect(text).toContain('π');
+    expect(text).toContain('≠');
+    expect(text).toContain('£');
+  });
+});

@@ -21,11 +21,11 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 **Status:** ✅ Complete. Uses `node-pty` for proper PTY with SIGWINCH support. Interactive apps like `vim`, `htop`, `less` now work correctly.
 
 ### Character Sets
-- [ ] DEC Special Graphics charset (box drawing: ╔═╗║╚╝)
-- [ ] G0/G1 charset switching (SO/SI: 0x0e, 0x0f)
-- [ ] Full Unicode box drawing character mapping
+- [x] DEC Special Graphics charset (box drawing: ┌─┐│└┘)
+- [x] G0/G1 charset switching (SO/SI: 0x0e, 0x0f)
+- [x] Full Unicode box drawing character mapping
 
-**Current:** `handleCharSet()` has "ignore for simplicity" comment. TUI apps will show garbage for borders.
+**Status:** ✅ Complete. DEC Special Graphics charset fully implemented with all box drawing, math symbols, and special characters. TUI apps now render borders correctly.
 
 ### Device Control Sequences
 - [ ] DCS (Device Control String) handler dispatch
@@ -143,14 +143,15 @@ Terminal (class)
 
 ## Test Coverage
 
-### Current Tests (71 total)
+### Current Tests (81 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
 - 6 PTY integration tests
+- 10 DEC Special Graphics charset tests
 
 ### Needed Tests
-- [ ] DEC Special Graphics rendering
+- [x] DEC Special Graphics rendering
 - [ ] Mouse protocol encoding
 - [ ] Complex key sequences with modifiers
 - [x] PTY integration tests

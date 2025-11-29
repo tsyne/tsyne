@@ -43,6 +43,49 @@ const DEFAULT_COLS = 80;
 const DEFAULT_ROWS = 24;
 const MAX_SCROLLBACK = 1000;
 
+// Charset designators
+enum Charset {
+  ASCII = 'B',         // US ASCII (default)
+  DECSpecialGraphics = '0', // DEC Special Graphics (box drawing)
+  UK = 'A',            // UK charset
+}
+
+// DEC Special Graphics character mapping
+// Maps ASCII characters 0x60-0x7E to Unicode box-drawing and special characters
+const DEC_SPECIAL_GRAPHICS: { [key: string]: string } = {
+  '`': '◆', // Diamond
+  'a': '▒', // Checkerboard
+  'b': '␉', // HT symbol
+  'c': '␌', // FF symbol
+  'd': '␍', // CR symbol
+  'e': '␊', // LF symbol
+  'f': '°', // Degree symbol
+  'g': '±', // Plus/minus
+  'h': '␤', // NL symbol
+  'i': '␋', // VT symbol
+  'j': '┘', // Lower right corner
+  'k': '┐', // Upper right corner
+  'l': '┌', // Upper left corner
+  'm': '└', // Lower left corner
+  'n': '┼', // Crossing lines
+  'o': '⎺', // Scan line 1 (top)
+  'p': '⎻', // Scan line 3
+  'q': '─', // Horizontal line (scan line 5)
+  'r': '⎼', // Scan line 7
+  's': '⎽', // Scan line 9 (bottom)
+  't': '├', // Left tee
+  'u': '┤', // Right tee
+  'v': '┴', // Bottom tee
+  'w': '┬', // Top tee
+  'x': '│', // Vertical line
+  'y': '≤', // Less than or equal
+  'z': '≥', // Greater than or equal
+  '{': 'π', // Pi
+  '|': '≠', // Not equal
+  '}': '£', // Pound sterling
+  '~': '·', // Middle dot / bullet
+};
+
 // ANSI color palette (standard 16 colors)
 const ANSI_COLORS: string[] = [
   '#000000', // 0: Black
@@ -179,6 +222,7 @@ class AnsiParser {
   onCsiDispatch: (params: number[], intermediates: string, final: string, privateMarker: string) => void = () => {};
   onOscDispatch: (params: string[]) => void = () => {};
   onEscDispatch: (intermediates: string, final: string) => void = () => {};
+  onCharSetDispatch: (target: string, charset: string) => void = () => {};
 
   /**
    * Parse input data
@@ -292,7 +336,10 @@ class AnsiParser {
   }
 
   private handleCharSet(char: string, _code: number): void {
-    // Character set designation - we ignore this for simplicity
+    // Character set designation
+    // intermediates contains '(' for G0, ')' for G1, '*' for G2, '+' for G3
+    // char contains the charset designator ('0' for DEC Special Graphics, 'B' for ASCII, etc.)
+    this.onCharSetDispatch(this.intermediates, char);
     this.state = ParserState.Normal;
   }
 }
@@ -548,6 +595,11 @@ export class Terminal {
   private alternateBuffer: TerminalBuffer | null = null;
   private mainBuffer: TerminalBuffer;
 
+  // Charset state (G0 and G1 character sets)
+  private g0Charset: string = Charset.ASCII;  // G0 charset designator
+  private g1Charset: string = Charset.ASCII;  // G1 charset designator
+  private useG1: boolean = false;             // true = use G1, false = use G0
+
   // Callbacks
   onUpdate: () => void = () => {};
   onTitleChange: (title: string) => void = () => {};
@@ -586,6 +638,31 @@ export class Terminal {
       this.handleCSI(params, intermediates, final, privateMarker);
     this.parser.onOscDispatch = (params) => this.handleOSC(params);
     this.parser.onEscDispatch = (intermediates, final) => this.handleEsc(intermediates, final);
+    this.parser.onCharSetDispatch = (target, charset) => this.handleCharSetDesignation(target, charset);
+  }
+
+  /**
+   * Handle charset designation escape sequences
+   * ESC ( X - Designate G0 charset
+   * ESC ) X - Designate G1 charset
+   * ESC * X - Designate G2 charset (not commonly used)
+   * ESC + X - Designate G3 charset (not commonly used)
+   *
+   * Where X is:
+   *   0 = DEC Special Graphics (box drawing)
+   *   B = US ASCII
+   *   A = UK
+   */
+  private handleCharSetDesignation(target: string, charset: string): void {
+    switch (target) {
+      case '(':
+        this.g0Charset = charset;
+        break;
+      case ')':
+        this.g1Charset = charset;
+        break;
+      // G2 and G3 are rarely used, ignore for now
+    }
   }
 
   /**
@@ -810,8 +887,11 @@ export class Terminal {
   // ============================================================================
 
   private handlePrint(char: string): void {
+    // Translate character based on active charset
+    const translatedChar = this.translateCharset(char);
+
     // Handle wide characters
-    const charWidth = this.getCharWidth(char);
+    const charWidth = this.getCharWidth(translatedChar);
 
     // Auto-wrap if needed
     if (this.cursorCol >= this.buffer.getCols()) {
@@ -827,8 +907,27 @@ export class Terminal {
       }
     }
 
-    this.buffer.setCell(this.cursorRow, this.cursorCol, char, this.currentAttrs);
+    this.buffer.setCell(this.cursorRow, this.cursorCol, translatedChar, this.currentAttrs);
     this.cursorCol += charWidth;
+  }
+
+  /**
+   * Translate character based on active charset
+   * Handles DEC Special Graphics for box drawing characters
+   */
+  private translateCharset(char: string): string {
+    const activeCharset = this.useG1 ? this.g1Charset : this.g0Charset;
+
+    if (activeCharset === Charset.DECSpecialGraphics) {
+      // DEC Special Graphics maps characters in the range 0x60-0x7E
+      const mapped = DEC_SPECIAL_GRAPHICS[char];
+      if (mapped) {
+        return mapped;
+      }
+    }
+
+    // Default: return character unchanged
+    return char;
   }
 
   private getCharWidth(char: string): number {
@@ -876,8 +975,10 @@ export class Terminal {
         this.cursorCol = 0;
         break;
       case 0x0e: // SO (Shift Out) - switch to G1 charset
+        this.useG1 = true;
+        break;
       case 0x0f: // SI (Shift In) - switch to G0 charset
-        // Charset switching - simplified
+        this.useG1 = false;
         break;
     }
   }
@@ -1344,6 +1445,10 @@ export class Terminal {
     this.applicationCursorKeys = false;
     this.bracketedPasteMode = false;
     this.mouseTrackingMode = 0;
+    // Reset charset state
+    this.g0Charset = Charset.ASCII;
+    this.g1Charset = Charset.ASCII;
+    this.useG1 = false;
   }
 
   // ============================================================================
