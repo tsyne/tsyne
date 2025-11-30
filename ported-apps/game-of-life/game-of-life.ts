@@ -785,9 +785,11 @@ class GameOfLifeUI {
 
       // Status bar
       this.a.hbox(() => {
-        this.generationLabel = this.a.label('Generation: 0');
+        this.a.label('Generation: ');
+        this.generationLabel = this.a.label('0').withId('generationNum');
         this.a.label(' | ');
-        this.statusLabel = this.a.label('Status: Paused');
+        this.a.label('Status: ');
+        this.statusLabel = this.a.label('Paused').withId('statusText');
         this.a.label(' | ');
         this.cellCountLabel = this.a.label('Cells: 0');
         this.a.label(' | ');
@@ -1005,7 +1007,7 @@ class GameOfLifeUI {
 
   private async updateDisplay(): Promise<void> {
     if (this.generationLabel) {
-      await this.generationLabel.setText(`Generation: ${this.game.getGeneration()}`);
+      await this.generationLabel.setText(`${this.game.getGeneration()}`);
     }
     if (this.cellCountLabel) {
       await this.cellCountLabel.setText(`Cells: ${this.game.getLiveCellCount()}`);
@@ -1017,7 +1019,7 @@ class GameOfLifeUI {
   private async updateStatus(): Promise<void> {
     if (this.statusLabel) {
       const status = this.game.isRunning() ? 'Running' : 'Paused';
-      await this.statusLabel.setText(`Status: ${status}`);
+      await this.statusLabel.setText(`${status}`);
     }
   }
 
