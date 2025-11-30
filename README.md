@@ -38,14 +38,12 @@ Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to t
 
 Tsyne isn't the right choice for every project. Consider these limitations:
 
-- **No Mobile Support**: Go+Fyne can target iOS and Android directly, but Tsyne requires Node.js runtime which isn't available on mobile platforms. If you need mobile, use Fyne directly in Go.
 - **Requires Node.js Runtime**: Pure Go/Fyne apps compile to single standalone binaries. Tsyne apps need Node.js installed, making distribution more complex.
 - **IPC Overhead**: The JSON-RPC bridge between TypeScript and Go adds latency compared to native Fyne. For performance-critical UIs with rapid updates, native Fyne may be better.
 - **Partial Fyne Coverage**: Tsyne wraps ~50% of Fyne's widget API (see [ROADMAP.md](docs/ROADMAP.md)). Canvas drawing, system tray, and some specialized widgets are not yet available.
 - **Fyne's Styling Limitations**: Per-widget color customization is limited by Fyne's architecture. Font styling works well, but colors require custom themes.
 
 **When to use Fyne directly instead:**
-- Mobile apps (iOS/Android)
 - Single-binary desktop distribution
 - Performance-critical real-time UIs
 - Full access to Fyne's complete widget library
