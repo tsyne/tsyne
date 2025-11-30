@@ -162,60 +162,24 @@ if [ -f "package.json" ]; then
   npm install --ignore-scripts
 fi
 
-# Test each ported app (explicit list for clarity and control)
-PORTED_APPS=(
-  "chess"
-  "fyles"
-  "game-of-life"
-  "image-viewer"
-  "pixeledit"
-  "slydes"
-  "solitaire"
-  "terminal"
-)
-
-FAILED_APPS=()
-for app_name in "${PORTED_APPS[@]}"; do
-  if [ ! -d "${app_name}" ]; then
-    echo "⚠️  App directory not found: ${app_name} - skipping"
-    continue
-  fi
-
-  if [ ! -f "${app_name}/package.json" ]; then
-    echo "⚠️  No package.json in ${app_name} - skipping"
-    continue
-  fi
-
+# Helper function to build and test a ported app
+test_ported_app() {
+  local app_name=$1
   echo "--- :package: Ported App: ${app_name}"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
-
-  echo "Installing ${app_name} dependencies..."
   npm install --ignore-scripts
+  timeout 300 npm test
+}
 
-  echo "Testing ${app_name}..."
-  timeout 300 npm test || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ ${app_name} tests timed out after 300 seconds"
-      FAILED_APPS+=("${app_name} (timeout)")
-    else
-      echo "❌ ${app_name} tests failed (exit code: $EXIT_CODE)"
-      FAILED_APPS+=("${app_name} (exit ${EXIT_CODE})")
-    fi
-    continue  # Continue to next app instead of exiting
-  }
-  echo "✓ ${app_name} tests passed"
-done
-
-# Report any failures at the end
-if [ ${#FAILED_APPS[@]} -gt 0 ]; then
-  echo ""
-  echo "❌ The following ported apps failed:"
-  for app in "${FAILED_APPS[@]}"; do
-    echo "  - ${app}"
-  done
-  exit 1
-fi
+# Test each ported app
+test_ported_app "chess"
+test_ported_app "fyles"
+test_ported_app "game-of-life"
+test_ported_app "image-viewer"
+test_ported_app "pixeledit"
+test_ported_app "slydes"
+test_ported_app "solitaire"
+test_ported_app "terminal"
 
 # Run tests for apps that don't have their own package.json (use shared root)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
