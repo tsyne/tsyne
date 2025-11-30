@@ -5,7 +5,11 @@ TsyneTest is a Playwright-like testing framework for Tsyne applications, providi
 ## Quick Start
 
 ```typescript
-import { TsyneTest } from 'tsyne/test';
+// For development/examples in the tsyne repo:
+import { TsyneTest } from '../src/index-test';
+// For published package usage:
+// import { TsyneTest } from 'tsyne/dist/src/index-test';
+
 import { app, window, button, label } from 'tsyne';
 
 // Create a test
@@ -43,7 +47,11 @@ await tsyneTest.cleanup();
 TsyneTest is included with Tsyne. Import from the test entry point:
 
 ```typescript
-import { TsyneTest, TestContext } from 'tsyne/test';
+// For development/examples in the tsyne repo:
+import { TsyneTest, TestContext } from '../src/index-test';
+
+// For published package usage:
+import { TsyneTest, TestContext } from 'tsyne/dist/src/index-test';
 ```
 
 ## Core Concepts
@@ -238,7 +246,7 @@ widgets.forEach(w => {
 Here's a complete test for a counter application:
 
 ```typescript
-import { TsyneTest } from 'tsyne/test';
+import { TsyneTest } from '../src/index-test';
 import { app, window, vbox, hbox, button, label } from 'tsyne';
 
 async function testCounter() {
@@ -314,10 +322,10 @@ testCounter().catch(console.error);
 
 ### describe() and test()
 
-Organize tests into suites:
+Organize tests into suites using Tsyne's test utilities:
 
 ```typescript
-import { describe, test } from 'tsyne/test';
+import { describe, test } from '../src/index-test';
 
 describe('Calculator Tests', () => {
   test('should add numbers', async (ctx) => {
@@ -332,9 +340,12 @@ describe('Calculator Tests', () => {
 
 ### beforeEach() and afterEach()
 
-Set up and tear down for each test:
+Set up and tear down for each test using Jest lifecycle hooks:
 
 ```typescript
+// Note: beforeEach and afterEach are Jest functions, not Tsyne exports
+import { TsyneTest, TestContext } from '../src/index-test';
+
 let tsyneTest: TsyneTest;
 let ctx: TestContext;
 

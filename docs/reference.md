@@ -984,7 +984,7 @@ browserContext.clearFind(): void
 
 ```typescript
 // TsyneTest
-import { TsyneTest } from 'tsyne/test';
+import { TsyneTest } from '../src/index-test';
 
 const test = new TsyneTest({ headed: boolean });
 const app = test.createApp((app) => void);

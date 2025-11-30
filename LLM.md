@@ -21,7 +21,7 @@ TypeScript (src/) ←→ JSON-RPC over stdio ←→ Go Bridge (bridge/) ←→ F
 - `src/window.ts` - Window class and all dialog methods
 - `src/browser.ts` - Browser/page mode
 - `bridge/main.go` - Go bridge message routing
-- `bridge/widget_creators.go` - Widget creation handlers
+- `bridge/widget_creators_*.go` - Widget creation handlers (canvas, complex, containers, display, inputs)
 - `bridge/dialogs.go` - Dialog handlers
 
 ## Intended End-User Code Style
@@ -53,11 +53,10 @@ app({ title: 'My App' }, (a) => {
 
 ## Widget Categories
 
-**Containers:** vbox, hbox, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup
-**Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, selectentry, radiogroup, checkgroup, slider, dateentry
-**Display:** label, hyperlink, separator, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon, calendar
-**Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient
-**Browser:** browser (embedded webview/page)
+**Containers:** vbox, hbox, stack, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup, multiplewindows
+**Inputs:** button, entry, multilineentry, passwordentry, checkbox, select, selectentry, radiogroup, checkgroup, slider, dateentry, calendar
+**Display:** label, hyperlink, separator, spacer, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon
+**Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient, canvasArc, canvasPolygon, canvasRadialGradient
 
 **All widgets support:**
 - `hide()` / `show()` - Imperative visibility control

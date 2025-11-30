@@ -76,7 +76,7 @@ app({ title: "My App" }, (app) => {
 - **`stack(builder)`**: Stack layout - layers widgets on top of each other for overlapping elements
   - `builder`: Function that defines stacked children (first child is bottom layer, last child is top layer)
   - Use cases: image overlays, loading indicators over content, watermarks, badges
-  - Example: `stack(() => { rectangle('#blue'); center(() => label('Overlay Text')); })`
+  - Example: `a.stack(() => { a.rectangle('#blue'); a.center(() => { a.label('Overlay Text'); }); })`
 - **`grid(columns, builder)`**: Grid layout with specified number of columns
   - `columns`: Number of columns in the grid
   - `builder`: Function that defines grid children
@@ -143,14 +143,15 @@ app({ title: "My App" }, (app) => {
 - **`label(text)`**: Create a label
   - `text`: Label text
 
-- **`entry(placeholder?, onSubmit?, minWidth?, onDoubleClick?, onChange?, onCursorChanged?)`**: Create a text input
+- **`entry(placeholder?, onSubmit?)`**: Create a text input (simplified global function)
   - `placeholder`: Placeholder text (optional)
-  - `onSubmit`: Callback when Enter is pressed (optional) - receives text as parameter
-  - `minWidth`: Minimum width in pixels (optional)
-  - `onDoubleClick`: Callback when double-clicked (optional)
-  - `onChange`: Callback when text changes (optional) - receives text as parameter
-  - `onCursorChanged`: Callback when cursor position changes (optional) - useful for cursor tracking
+  - `onSubmit`: Callback when Enter is pressed (optional) - note: global function version doesn't pass text parameter
   - Methods: `setText(text: string)`, `getText(): Promise<string>`
+  - **Note:** For full feature access (minWidth, onDoubleClick, onChange, onCursorChanged), use the Entry class directly:
+    ```typescript
+    new Entry(ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged)
+    // Entry class onSubmit signature: (text: string) => void (receives text parameter)
+    ```
 
 - **`multilineentry(placeholder?, wrapping?)`**: Create a multi-line text input
   - `placeholder`: Placeholder text (optional)
@@ -188,12 +189,15 @@ app({ title: "My App" }, (app) => {
   - `onBlur`: Callback when slider loses focus (optional)
   - Methods: `setValue(value: number)`, `getValue(): Promise<number>`
 
-- **`radiogroup(options, initialSelected?, onSelected?, horizontal?)`**: Create a radio button group
+- **`radiogroup(options, initialSelected?, onSelected?)`**: Create a radio button group (simplified global function)
   - `options`: Array of string options
   - `initialSelected`: Initially selected option (optional)
   - `onSelected`: Callback when selection changes (optional)
-  - `horizontal`: Display options horizontally instead of vertically (optional, default false)
   - Methods: `setSelected(value: string)`, `getSelected(): Promise<string>`, `setOptions(options: string[]): Promise<void>`
+  - **Note:** For horizontal layout, use the RadioGroup class directly:
+    ```typescript
+    new RadioGroup(ctx, options, initialSelected, onSelected, horizontal)
+    ```
 
 ### Display Widgets
 
