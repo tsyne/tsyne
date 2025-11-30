@@ -162,30 +162,60 @@ if [ -f "package.json" ]; then
   npm install --ignore-scripts
 fi
 
-# Recursively test each app that has its own package.json
-for app_dir in */; do
-  app_name="${app_dir%/}"
+# Test each ported app (explicit list for clarity and control)
+PORTED_APPS=(
+  "chess"
+  "fyles"
+  "game-of-life"
+  "image-viewer"
+  "pixeledit"
+  "slydes"
+  "solitaire"
+  "terminal"
+)
 
-  if [ -f "${app_dir}package.json" ]; then
-    echo "--- :package: Ported App: ${app_name}"
-    cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
-
-    echo "Installing ${app_name} dependencies..."
-    npm install --ignore-scripts
-
-    echo "Testing ${app_name}..."
-    timeout 300 npm test || {
-      EXIT_CODE=$?
-      if [ $EXIT_CODE -eq 124 ]; then
-        echo "❌ ${app_name} tests timed out after 300 seconds"
-      else
-        echo "❌ ${app_name} tests failed (exit code: $EXIT_CODE)"
-      fi
-      exit 1
-    }
-    echo "✓ ${app_name} tests passed"
+FAILED_APPS=()
+for app_name in "${PORTED_APPS[@]}"; do
+  if [ ! -d "${app_name}" ]; then
+    echo "⚠️  App directory not found: ${app_name} - skipping"
+    continue
   fi
+
+  if [ ! -f "${app_name}/package.json" ]; then
+    echo "⚠️  No package.json in ${app_name} - skipping"
+    continue
+  fi
+
+  echo "--- :package: Ported App: ${app_name}"
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+
+  echo "Installing ${app_name} dependencies..."
+  npm install --ignore-scripts
+
+  echo "Testing ${app_name}..."
+  timeout 300 npm test || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ ${app_name} tests timed out after 300 seconds"
+      FAILED_APPS+=("${app_name} (timeout)")
+    else
+      echo "❌ ${app_name} tests failed (exit code: $EXIT_CODE)"
+      FAILED_APPS+=("${app_name} (exit ${EXIT_CODE})")
+    fi
+    continue  # Continue to next app instead of exiting
+  }
+  echo "✓ ${app_name} tests passed"
 done
+
+# Report any failures at the end
+if [ ${#FAILED_APPS[@]} -gt 0 ]; then
+  echo ""
+  echo "❌ The following ported apps failed:"
+  for app in "${FAILED_APPS[@]}"; do
+    echo "  - ${app}"
+  done
+  exit 1
+fi
 
 # Run tests for apps that don't have their own package.json (use shared root)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
