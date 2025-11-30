@@ -72,10 +72,7 @@ The Tsyne Designer is a WYSIWYG interface builder for Tsyne applications. Inspir
 
 #### 1. Drag-and-Drop Widget Reordering
 **Status**: Not implemented
-**Impact**: High - essential for visual editing UX
-
-Currently widgets can only be added or deleted. Users should be able to drag widgets within the tree to reorder siblings or move between containers.
-
+**Impact**: High - essential for visual editing UX. Users should be able to drag widgets within the tree to reorder siblings or move between containers.
 **Implementation Notes**:
 - HTML5 drag and drop API
 - Visual drop indicators
@@ -84,120 +81,106 @@ Currently widgets can only be added or deleted. Users should be able to drag wid
 
 #### 2. Monaco Editor for Event Handlers
 **Status**: Not implemented
-**Impact**: High - event handlers are currently read-only
-
-Event handlers display as strings but can't be edited. Integrate Monaco editor for:
-- TypeScript intellisense
-- Syntax highlighting
-- Inline editing in property inspector or modal
+**Impact**: High - event handlers are currently read-only.
+**Implementation Notes**:
+- Integrate Monaco editor for TypeScript intellisense, syntax highlighting, and inline editing in property inspector or modal.
 
 #### 3. Multi-Select
 **Status**: Not implemented
-**Impact**: Medium - bulk operations
-
-Shift+click or Ctrl+click to select multiple widgets for:
-- Bulk property editing
-- Bulk CSS class application
-- Bulk delete
+**Impact**: Medium - for bulk operations.
+**Implementation Notes**:
+- Shift+click or Ctrl+click to select multiple widgets for bulk property editing, CSS class application, and deletion.
 
 ### Medium Priority
 
 #### 4. Hot Reload
 **Status**: Not implemented (full reload on save)
-**Impact**: Medium - faster iteration
+**Impact**: Medium - faster iteration.
+**Implementation Notes**:
+- Implement incremental updates instead of full re-execution (e.g., debounced reload).
+- Only re-execute affected widgets and maintain UI state across reloads.
 
-Incremental updates instead of full re-execution:
-- Debounced reload (500ms after last edit)
-- Only re-execute affected widgets
-- Maintain UI state across reloads
-
-#### 5. Template/Snippet Library
+#### 5. Template/Component Library
 **Status**: Not implemented
-**Impact**: Medium - productivity boost
-
-Pre-built patterns users can drag into their UI:
-- Login form
-- Navigation bar
-- Data table
-- Dialog with OK/Cancel
-- Toolbar with actions
-
-Storage format: JSON files in `.tsyne/templates/`
+**Impact**: Medium - productivity boost.
+**Implementation Notes**:
+- Create a library of pre-built patterns (Login form, Nav bar, etc.).
+- Store templates as JSON files in `.tsyne/templates/`.
 
 #### 6. Mock Data System for Loops
 **Status**: Not implemented
-**Impact**: Medium - required for `.model().each()` visualization
+**Impact**: Medium - required for `.model().each()` visualization.
+**Implementation Notes**:
+- Implement a mock data system, either via a config file (`.tsyne-designer/mocks.ts`) or inline comments (`// @designer-mock: [...]`).
 
-Two approaches from original vision:
-1. **Config file**: `.tsyne-designer/mocks.ts`
-2. **Inline comments**: `// @designer-mock: [{"id": 1, ...}]`
-
-Without mocks, loops like `todos.model().each()` can't render sample data in the designer.
-
-#### 7. Visual Container Boundaries
-**Status**: Not implemented
-**Impact**: Low-Medium - UX improvement
-
-Show dotted outlines on container hover to visualize:
-- VBox/HBox boundaries
-- Padding and spacing
-- Nesting structure
+#### 7. Keyboard Shortcuts
+**Status**: Partially implemented (Undo/Redo, Duplicate exist).
+**Impact**: Medium - improves usability.
+**Implementation Notes**:
+- Add shortcuts for `Delete`, `Save`, arrow key navigation, `Escape` to clear selection.
+- Create a global keyboard event handler and a reference panel.
 
 ### Lower Priority / Future Vision
 
-#### 8. Design-Time State Preview
+#### 8. Visual Container Boundaries
 **Status**: Not implemented
-**Impact**: High (differentiating feature) but complex
+**Impact**: Low-Medium - UX improvement.
+**Implementation Notes**:
+- Show dotted outlines on container hover to visualize structure, padding, and spacing.
 
-The original vision included toggleable state controls:
-```
-State Preview Controls:
-  isEditing: [○ false] [● true]
-  filter: [● all] [○ active] [○ completed]
-```
+#### 9. Property Validation
+**Status**: Not implemented
+**Impact**: Low-Medium - Polish.
+**Implementation Notes**:
+- Implement real-time, type-specific validation in the property editor with visual indicators.
 
-This would:
-- Auto-detect state variables from `when()` predicates
-- Provide toggle UI for booleans and enums
-- Re-evaluate visibility conditions when toggled
+#### 10. Design-Time State Preview
+**Status**: Not implemented
+**Impact**: High (differentiating feature) but complex.
+**Implementation Notes**:
+- Auto-detect state variables from `when()` predicates and provide a UI to toggle them, re-evaluating visibility.
 
-This was inspired by AngularJS Design Mode but with toggles instead of showing all states simultaneously.
+#### 11. Component Extraction
+**Status**: Not implemented
+**Impact**: Medium - code quality.
+**Implementation Notes**:
+- Add functionality to extract repeated UI patterns into reusable functions.
 
-#### 9. Component Extraction
-Extract repeated UI patterns into reusable functions:
-```typescript
-// Before (inline):
-a.hbox(() => { checkbox(...); button('Edit'...); button('Delete'...); });
+#### 12. LLM-Assisted Formatting
+**Status**: Not implemented
+**Impact**: High - quality of life.
+**Implementation Notes**:
+- Use the existing transformer plugin system to integrate an LLM for preserving whitespace, comments, and minimizing diffs.
 
-// After (component):
-function TodoItem(a, todo, store) { ... }
-TodoItem(a, todo, store);
-```
+#### 13. Responsive Preview Modes
+**Status**: Not implemented
+**Impact**: Medium - for responsive design.
+**Implementation Notes**:
+- Add toggles for mobile, tablet, and desktop presets.
 
-#### 10. LLM-Assisted Formatting
-The transformer plugin system is ready for LLM integration to:
-- Preserve original whitespace style
-- Preserve comments not tied to widgets
-- Minimize diffs
-- Handle complex edge cases
+#### 14. Accessibility Checker
+**Status**: Not implemented
+**Impact**: High - for building accessible apps.
+**Implementation Notes**:
+- Integrate WCAG compliance warnings (e.g., missing labels, poor contrast) via a tool like `axe-core`.
 
-#### 11. Responsive Preview Modes
-Toggle between window sizes:
-- Mobile, tablet, desktop presets
-- Custom size input
-- Breakpoint indicators
+#### 15. Version History
+**Status**: Not implemented
+**Impact**: Medium - safety feature.
+**Implementation Notes**:
+- Track saved versions with timestamps and allow reverting.
 
-#### 12. Accessibility Checker
-WCAG compliance warnings:
-- Missing labels
-- Poor contrast
-- Keyboard navigation issues
+#### 16. Grid/Snap to Grid
+**Status**: Not implemented.
+**Impact**: Low.
+**Implementation Notes**:
+- Add a visual grid overlay with snap-to-grid functionality for alignment.
 
-#### 13. Version History
-Track saved versions with timestamps, allow reverting.
-
-#### 14. Collaborative Editing
-Real-time multi-user editing via WebSocket.
+#### 17. Theme Switcher
+**Status**: Not implemented.
+**Impact**: Low.
+**Implementation Notes**:
+- Add a UI to preview the application with different Fyne themes applied.
 
 ---
 
