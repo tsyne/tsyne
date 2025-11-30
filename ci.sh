@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# ============================================================================
+# Detect if running locally vs Buildkite CI
+# ============================================================================
+if [ -z "${BUILDKITE_BUILD_CHECKOUT_PATH}" ]; then
+  # Running locally - use the directory containing this script
+  BUILDKITE_BUILD_CHECKOUT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  echo "Running locally. Using checkout path: ${BUILDKITE_BUILD_CHECKOUT_PATH}"
+fi
+
 echo "--- :package: Checking system dependencies"
 # Check if system dependencies are already installed (e.g., in Docker image)
 if ! dpkg -l | grep -q libgl1-mesa-dev; then
