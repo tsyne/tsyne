@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -889,7 +888,6 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 		// Get absolute position
 		absPos := b.app.Driver().AbsolutePositionForObject(obj)
 
-		log.Printf("[DEBUG] handleGetWidgetInfo: widgetId=%s, pos=(%f, %f), absPos=(%f, %f), size=(%f, %f)", widgetID, pos.X, pos.Y, absPos.X, absPos.Y, size.Width, size.Height)
 		info["x"] = pos.X
 		info["y"] = pos.Y
 		info["absoluteX"] = absPos.X

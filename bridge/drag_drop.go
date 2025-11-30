@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -49,7 +48,6 @@ func (d *DraggableWidget) Dragged(e *fyne.DragEvent) {
 		currentDragData = d.dragData
 		currentDragSourceID = d.widgetID
 
-		log.Printf("[DraggableWidget] Drag started for %s with data: %s", d.widgetID, d.dragData)
 
 		if d.onDragStartCallbackID != "" {
 			d.bridge.sendEvent(Event{
@@ -67,7 +65,6 @@ func (d *DraggableWidget) Dragged(e *fyne.DragEvent) {
 func (d *DraggableWidget) DragEnd() {
 	if d.isDragging {
 		d.isDragging = false
-		log.Printf("[DraggableWidget] Drag ended for %s", d.widgetID)
 
 		if d.onDragEndCallbackID != "" {
 			d.bridge.sendEvent(Event{
@@ -125,7 +122,6 @@ func (d *DroppableWidget) CreateRenderer() fyne.WidgetRenderer {
 func (d *DroppableWidget) Dragged(e *fyne.DragEvent) {
 	if !d.isDragOver && currentDragData != "" {
 		d.isDragOver = true
-		log.Printf("[DroppableWidget] Drag entered %s", d.widgetID)
 
 		if d.onDragEnterCallbackID != "" {
 			d.bridge.sendEvent(Event{
@@ -143,7 +139,6 @@ func (d *DroppableWidget) Dragged(e *fyne.DragEvent) {
 // DragEnd implements fyne.Draggable - called when drag ends over this widget (drop)
 func (d *DroppableWidget) DragEnd() {
 	if d.isDragOver {
-		log.Printf("[DroppableWidget] Drop on %s with data: %s", d.widgetID, currentDragData)
 
 		if d.onDropCallbackID != "" && currentDragData != "" {
 			d.bridge.sendEvent(Event{

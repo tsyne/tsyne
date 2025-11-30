@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -1328,12 +1327,9 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) {
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
 
-	log.Printf("[bridge] Creating tappable canvas raster: widgetID=%s, width=%d, height=%d", widgetID, width, height)
-
 	// Create the tappable raster with a tap callback
 	tappable := NewTappableCanvasRaster(width, height, func(x, y int) {
 		// Send tap event back to the TypeScript layer
-		log.Printf("[bridge] Tappable raster tapped at position: x=%d, y=%d", x, y)
 		b.sendEvent(Event{
 			Type:     "canvasRasterTapped",
 			WidgetID: widgetID,
@@ -1346,7 +1342,6 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) {
 
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
-		log.Printf("[bridge] Received %d pixels for tappable raster %s", len(pixels), widgetID)
 		pixelBytes := make([]byte, width*height*4)
 
 		for i, p := range pixels {

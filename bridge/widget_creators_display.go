@@ -301,7 +301,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 	} else if !hasPath || path == "" {
 		// If path is empty, create a blank image (will be updated with base64 later)
-		log.Printf("[Image] Creating blank image widget %s (will be updated with base64)", widgetID)
 		img = canvas.NewImageFromImage(nil)
 	} else if strings.HasPrefix(path, "data:") {
 		// Handle base64 data URI directly
@@ -427,7 +426,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 
 		if hasDragCallback {
 			dragCallback = func(x, y float32) {
-				log.Printf("[Image] Dragging image widget %s at (%f, %f), sending callback %s", widgetID, x, y, dragCallbackID)
 				b.sendEvent(Event{
 					Type: "callback",
 					Data: map[string]interface{}{
@@ -441,7 +439,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 
 		if hasDragEndCallback {
 			dragEndCallback = func(x, y float32) {
-				log.Printf("[Image] DragEnd for image widget %s at (%f, %f), sending callback %s", widgetID, x, y, dragEndCallbackID)
 				b.sendEvent(Event{
 					Type: "callback",
 					Data: map[string]interface{}{
@@ -455,7 +452,6 @@ func (b *Bridge) handleCreateImage(msg Message) {
 
 		if hasClickCallback {
 			clickCallback = func() {
-				log.Printf("[Image] Clicked image widget %s, sending callback %s", widgetID, clickCallbackID)
 				b.sendEvent(Event{
 					Type: "callback",
 					Data: map[string]interface{}{

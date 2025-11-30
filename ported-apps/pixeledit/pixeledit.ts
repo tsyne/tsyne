@@ -1057,7 +1057,6 @@ class PixelEditor {
     this.activeLayerIndex = this.layers.length - 1;
     this.updateLayerDisplay();
 
-    console.log(`Added layer: ${layer.name}`);
     return layer;
   }
 
@@ -1211,7 +1210,6 @@ class PixelEditor {
 
     this.flattenToPixels();
     this.updateLayerDisplay();
-    console.log(`Merged ${topLayer.name} into ${bottomLayer.name}`);
   }
 
   /**
@@ -1369,7 +1367,6 @@ class PixelEditor {
    */
   async setZoom(level: number): Promise<void> {
     this.zoom = Math.max(1, Math.min(16, level));
-    console.log(`Zoom set to ${this.zoom * 100}%`);
     if (this.zoomLabel) {
       await this.zoomLabel.setText(`${this.zoom * 100}%`);
     }

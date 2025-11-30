@@ -1308,7 +1308,6 @@ func (b *Bridge) handleSetPointerEnter(msg Message) {
 	widgetMeta.CustomData["announceOnHover"] = true
 	b.widgetMeta[widgetID] = widgetMeta
 
-	log.Printf("[setPointerEnter] Stored hover metadata for widget %s (wrapping deferred)", widgetID)
 
 	// Unlock before sending response
 	b.mu.Unlock()
@@ -1328,7 +1327,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 	// In test mode, don't wrap widgets to avoid threading issues
 	if b.testMode {
 		b.mu.Unlock()
-		log.Printf("[processHoverWrappers] Test mode - skipping wrapping")
 		b.sendResponse(Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1343,17 +1341,14 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 		if widgetMeta.CustomData != nil && widgetMeta.CustomData["announceOnHover"] == true {
 			obj, exists := b.widgets[widgetID]
 			if !exists {
-				log.Printf("[processHoverWrappers] Widget %s not found in map", widgetID)
 				continue
 			}
 
 			// Check if already a TsyneButton or wrapped
 			if _, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
-				log.Printf("[processHoverWrappers] Widget %s already a TsyneButton", widgetID)
 				continue
 			}
 			if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
-				log.Printf("[processHoverWrappers] Widget %s already wrapped", widgetID)
 				continue
 			}
 
@@ -1361,7 +1356,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 
 			// For buttons, create a TsyneButton
 			if btn, isButton := obj.(*widget.Button); isButton {
-				log.Printf("[processHoverWrappers] Converting button %s to TsyneButton", widgetID)
 				tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
 				tsyneBtn.Importance = btn.Importance
 				tsyneBtn.Icon = btn.Icon
@@ -1375,7 +1369,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 				replacement = tsyneBtn
 			} else {
 				// For other widgets, use the wrapper approach
-				log.Printf("[processHoverWrappers] Wrapping widget %s with HoverableWrapper", widgetID)
 				replacement = NewHoverableWrapper(obj, b, widgetID)
 			}
 
@@ -1384,7 +1377,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 
 			// Replace in parent container
 			parentID, hasParent := b.childToParent[widgetID]
-			log.Printf("[processHoverWrappers] Widget %s: hasParent=%v, parentID=%s", widgetID, hasParent, parentID)
 			if hasParent {
 				parentObj, exists := b.widgets[parentID]
 				if exists {
@@ -1393,7 +1385,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 						for i, child := range objects {
 							if child == obj {
 								objects[i] = replacement
-								log.Printf("[processHoverWrappers] Replaced widget %s at index %d in parent %s", widgetID, i, parentID)
 								// Note: Don't refresh here - windows haven't been shown yet
 								// The refresh will happen naturally when the window is shown
 								wrappedCount++
@@ -1406,7 +1397,6 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 		}
 	}
 
-	log.Printf("[processHoverWrappers] Wrapped %d widgets with HoverableWrapper", wrappedCount)
 
 	// Unlock before sending response to avoid deadlock (sendResponse also acquires the lock)
 	b.mu.Unlock()
@@ -1499,7 +1489,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 
 	// Check if already a TsyneButton - if so, update its callback IDs
 	if tsyneBtn, alreadyTsyne := obj.(*TsyneButton); alreadyTsyne {
-		log.Printf("[setWidgetHoverable] Widget %s is already a TsyneButton, updating callback IDs", widgetID)
 		// Update Hoverable callback IDs
 		if onMouseInCallbackId != "" {
 			tsyneBtn.onMouseInCallbackId = onMouseInCallbackId
@@ -1540,7 +1529,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 		return
 	}
 	if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
-		log.Printf("[setWidgetHoverable] Widget %s is already wrapped", widgetID)
 		b.mu.Unlock()
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1552,7 +1540,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 	// In test mode, skip the actual wrapping but return success
 	// Events will be handled differently in test mode
 	if b.testMode {
-		log.Printf("[setWidgetHoverable] Test mode - skipping widget wrapping for %s", widgetID)
 		b.mu.Unlock()
 		b.sendResponse(Response{
 			ID:      msg.ID,
@@ -1566,7 +1553,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 
 	// For buttons, create a TsyneButton with appropriate callback IDs
 	if btn, isButton := obj.(*widget.Button); isButton {
-		log.Printf("[setWidgetHoverable] Converting button %s to TsyneButton", widgetID)
 		tsyneBtn := NewTsyneButton(btn.Text, btn.OnTapped, b, widgetID)
 		tsyneBtn.Importance = btn.Importance
 		tsyneBtn.Icon = btn.Icon
@@ -1600,7 +1586,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 		replacement = tsyneBtn
 	} else {
 		// For other widgets, use the wrapper approach
-		log.Printf("[setWidgetHoverable] Wrapping widget %s with HoverableWrapper", widgetID)
 		replacement = NewHoverableWrapper(obj, b, widgetID)
 	}
 
@@ -1616,7 +1601,6 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 				for i, child := range container.Objects {
 					if child == obj {
 						container.Objects[i] = replacement
-						log.Printf("[setWidgetHoverable] Replaced widget %s at index %d in parent %s", widgetID, i, parentID)
 						break
 					}
 				}

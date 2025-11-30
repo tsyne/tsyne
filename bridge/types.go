@@ -131,9 +131,7 @@ func NewTappableContainer(content fyne.CanvasObject, callback func()) *TappableC
 // Tapped handles tap events for double-click detection
 func (t *TappableContainer) Tapped(e *fyne.PointEvent) {
 	now := time.Now().UnixMilli()
-	log.Printf("DEBUG: TappableContainer tapped, lastTapTime=%d, now=%d, diff=%d", t.lastTapTime, now, now-t.lastTapTime)
 	if now-t.lastTapTime < 500 { // 500ms for double-click
-		log.Printf("DEBUG: Double-click detected! Firing callback")
 		if t.DoubleClickCallback != nil {
 			t.DoubleClickCallback()
 		}
@@ -170,7 +168,6 @@ func NewClickableContainer(content fyne.CanvasObject, callback func()) *Clickabl
 
 // Tapped handles single-click events
 func (c *ClickableContainer) Tapped(e *fyne.PointEvent) {
-	log.Printf("[ClickableContainer] Tapped, firing callback")
 	if c.ClickCallback != nil {
 		c.ClickCallback()
 	}
@@ -281,7 +278,6 @@ func (t *TsyneButton) SetCursor(cursor desktop.Cursor) {
 
 // MouseIn is called when the mouse pointer enters the button
 func (t *TsyneButton) MouseIn(e *desktop.MouseEvent) {
-	log.Printf("[TsyneButton] MouseIn for widget %s at position (%.2f, %.2f)", t.widgetID, e.Position.X, e.Position.Y)
 
 	// Send callback event if registered
 	if t.onMouseInCallbackId != "" {
@@ -323,7 +319,6 @@ func (t *TsyneButton) MouseMoved(e *desktop.MouseEvent) {
 
 // MouseOut is called when the mouse pointer leaves the button
 func (t *TsyneButton) MouseOut() {
-	log.Printf("[TsyneButton] MouseOut for widget %s", t.widgetID)
 
 	// Send callback event if registered
 	if t.onMouseOutCallbackId != "" {
@@ -349,7 +344,6 @@ func (t *TsyneButton) MouseDown(e *desktop.MouseEvent) {
 	if t.onMouseDownCallbackId == "" {
 		return
 	}
-	log.Printf("[TsyneButton] MouseDown for widget %s button %d", t.widgetID, e.Button)
 
 	t.bridge.sendEvent(Event{
 		Type: "callback",
@@ -369,7 +363,6 @@ func (t *TsyneButton) MouseUp(e *desktop.MouseEvent) {
 	if t.onMouseUpCallbackId == "" {
 		return
 	}
-	log.Printf("[TsyneButton] MouseUp for widget %s button %d", t.widgetID, e.Button)
 
 	t.bridge.sendEvent(Event{
 		Type: "callback",
@@ -396,7 +389,6 @@ func (t *TsyneButton) Cursor() desktop.Cursor {
 // FocusGained is called when this button gains focus
 func (t *TsyneButton) FocusGained() {
 	t.focused = true
-	log.Printf("[TsyneButton] FocusGained for widget %s", t.widgetID)
 
 	if t.onFocusCallbackId != "" {
 		t.bridge.sendEvent(Event{
@@ -412,7 +404,6 @@ func (t *TsyneButton) FocusGained() {
 // FocusLost is called when this button loses focus
 func (t *TsyneButton) FocusLost() {
 	t.focused = false
-	log.Printf("[TsyneButton] FocusLost for widget %s", t.widgetID)
 
 	if t.onFocusCallbackId != "" {
 		t.bridge.sendEvent(Event{
@@ -432,10 +423,8 @@ func (t *TsyneButton) TypedRune(r rune) {
 
 // TypedKey is called when a key is pressed while focused (Focusable interface)
 func (t *TsyneButton) TypedKey(e *fyne.KeyEvent) {
-	log.Printf("[TsyneButton] TypedKey for widget %s key %s", t.widgetID, e.Name)
 	// Handle Space and Enter to activate the button
 	if e.Name == fyne.KeySpace || e.Name == fyne.KeyReturn || e.Name == fyne.KeyEnter {
-		log.Printf("[TsyneButton] Activating button %s via keyboard", t.widgetID)
 		if t.OnTapped != nil {
 			t.OnTapped()
 		}
@@ -447,7 +436,6 @@ func (t *TsyneButton) KeyDown(e *fyne.KeyEvent) {
 	if t.onKeyDownCallbackId == "" {
 		return
 	}
-	log.Printf("[TsyneButton] KeyDown for widget %s key %s", t.widgetID, e.Name)
 
 	t.bridge.sendEvent(Event{
 		Type: "callback",
@@ -463,7 +451,6 @@ func (t *TsyneButton) KeyUp(e *fyne.KeyEvent) {
 	if t.onKeyUpCallbackId == "" {
 		return
 	}
-	log.Printf("[TsyneButton] KeyUp for widget %s key %s", t.widgetID, e.Name)
 
 	t.bridge.sendEvent(Event{
 		Type: "callback",
@@ -510,7 +497,6 @@ func (h *HoverableWrapper) CreateRenderer() fyne.WidgetRenderer {
 
 // MouseIn implements desktop.Hoverable - called when mouse enters the widget
 func (h *HoverableWrapper) MouseIn(ev *desktop.MouseEvent) {
-	log.Printf("[HoverableWrapper] MouseIn for widget %s", h.widgetID)
 	if h.mouseInHandler != nil {
 		h.mouseInHandler(ev)
 	}
@@ -523,7 +509,6 @@ func (h *HoverableWrapper) MouseIn(ev *desktop.MouseEvent) {
 
 // MouseOut implements desktop.Hoverable - called when mouse exits the widget
 func (h *HoverableWrapper) MouseOut() {
-	log.Printf("[HoverableWrapper] MouseOut for widget %s", h.widgetID)
 	if h.mouseOutHandler != nil {
 		h.mouseOutHandler()
 	}
