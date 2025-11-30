@@ -421,8 +421,9 @@ class AnsiParser {
       this.onEscDispatch('', char);
       this.state = ParserState.Normal;
     } else {
-      // Unknown escape sequence
+      // Unknown escape sequence, re-process the character in normal state
       this.state = ParserState.Normal;
+      this.handleNormal(char, code); // Re-process the character
     }
   }
 

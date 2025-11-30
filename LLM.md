@@ -81,7 +81,7 @@ const testApp = await tsyneTest.createApp((app) => {
 const ctx = tsyneTest.getContext();
 await testApp.run();
 
-await ctx.getByText('Hello').click();
+await ctx.getByText('Hello').click(); // prefer getById(..)
 await ctx.expect(ctx.getByExactText('Result')).toBeVisible();
 ```
 
@@ -94,6 +94,49 @@ const test = new TsyneBrowserTest({ headed: false });
 ```
 
 **Run:** `npm test` or `TSYNE_HEADED=1 npm test examples/todomvc.test.ts`
+
+### TsyneTest Do's and Don'ts
+
+**✅ DO:**
+- Use `.withId('elementId')` to register custom IDs on widgets for testing
+- Use `ctx.getByID('elementId')` to find elements reliably
+- Use `.within(timeout).shouldBe(value)` pattern for assertions with polling
+- Use `.getText()` to retrieve text values directly
+
+**❌ DON'T:**
+- Don't use `ctx.wait()` to fix timing issues - use proper locators instead
+- Don't increase Jest timeouts - find the root cause instead - lengthening timeouts almost never works
+- Don't use `.getValue()` - use `.getText()` or `.within().shouldBe()`
+
+**Use Less often**
+
+- Don't use `getByText()` for dynamic content - it can cause bridge crashes
+- Don't use `className` parameter as an ID - it's only for styling
+
+**Examples:**
+```typescript
+// ❌ WRONG - using getByText for dynamic content
+await ctx.getByText('Generation: 0').shouldExist();
+
+// ✅ CORRECT - using withId and getByID
+this.generationLabel = this.a.label('0').withId('generationNum');
+await ctx.getByID('generationNum').within(100).shouldBe('0');
+
+// ❌ WRONG - trying to use className as ID
+this.label = this.a.label('text', 'myId');  // className, not ID
+await ctx.getByID('myId').shouldBe('text');  // Won't work
+
+// ✅ CORRECT - using withId for custom ID
+this.label = this.a.label('text').withId('myId');
+await ctx.getByID('myId').within(100).shouldBe('text');
+
+// ❌ WRONG - using wait() for timing
+await ctx.wait(1000);
+await ctx.getByText('Loaded').shouldExist();
+
+// ✅ CORRECT - using within() for polling
+await ctx.getByID('status').within(500).shouldBe('Loaded');
+```
 
 ## MVC Pattern
 

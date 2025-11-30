@@ -142,24 +142,29 @@ timeout 300 npm run test:examples || {
 }
 
 # ============================================================================
-# STEP 5: Ported Apps Sub-Projects (recurse into each subdirectory)
+# STEP 5: Ported Apps Sub-Projects
 # ============================================================================
-echo "--- :package: Ported Apps - Tests"
+echo "--- :package: Ported Apps - Install & Test"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 
-# First install root ported-apps dependencies if package.json exists
+# Install root ported-apps dependencies (shared by all apps)
 if [ -f "package.json" ]; then
-  echo "Installing ported-apps root dependencies..."
+  echo "Installing ported-apps shared dependencies..."
   npm install --ignore-scripts
 fi
 
-# Recurse into each subdirectory that has a package.json
+# Recursively test each app that has its own package.json
 for app_dir in */; do
   app_name="${app_dir%/}"
+
   if [ -f "${app_dir}package.json" ]; then
     echo "--- :package: Ported App: ${app_name}"
     cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+
+    echo "Installing ${app_name} dependencies..."
     npm install --ignore-scripts
+
+    echo "Testing ${app_name}..."
     timeout 300 npm test || {
       EXIT_CODE=$?
       if [ $EXIT_CODE -eq 124 ]; then
@@ -170,10 +175,24 @@ for app_dir in */; do
       exit 1
     }
     echo "✓ ${app_name} tests passed"
-  else
-    echo "⚠️  No package.json in ${app_name}/ - skipping"
   fi
 done
+
+# Run tests for apps that don't have their own package.json (use shared root)
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
+if [ -f "package.json" ]; then
+  echo "--- :package: Testing apps with shared package.json"
+  timeout 300 npm test || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Shared ported apps tests timed out after 300 seconds"
+    else
+      echo "❌ Shared ported apps tests failed (exit code: $EXIT_CODE)"
+    fi
+    exit 1
+  }
+  echo "✓ Shared ported apps tests passed"
+fi
 
 # ============================================================================
 # Cleanup
