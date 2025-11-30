@@ -54,10 +54,7 @@ describe('Pixel Editor Tests', () => {
 
     // Verify color preview and picker button
     await ctx.expect(ctx.getByText('#000000')).toBeVisible(); // Black default
-    await ctx.expect(ctx.getByText('Pick Color')).toBeVisible();
-
-    // Verify canvas placeholder
-    await ctx.expect(ctx.getByText('Pixel canvas will be rendered here')).toBeVisible();
+    await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
 
     // Verify status bar shows initial message
     await ctx.expect(ctx.getByExactText('Open a file')).toBeVisible();
@@ -232,10 +229,10 @@ describe('Pixel Editor Tests', () => {
 
       // Default foreground color is black (#000000)
       await ctx.expect(ctx.getByText('#000000')).toBeVisible();
-      await ctx.expect(ctx.getByText('Pick Color')).toBeVisible();
+      await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
     });
 
-    test('should have clickable Pick Color button', async () => {
+    test('should have clickable Pick FG button', async () => {
       const testApp = await tsyneTest.createApp((app) => {
         createPixelEditorApp(app);
       });
@@ -243,11 +240,11 @@ describe('Pixel Editor Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify the Pick Color button is visible and can be clicked
+      // Verify the Pick FG button is visible and can be clicked
       // (Note: Actually opening the color picker would require dialog interaction)
-      await ctx.expect(ctx.getByText('Pick Color')).toBeVisible();
+      await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
       // Click doesn't throw an error
-      await ctx.getByText('Pick Color').click();
+      await ctx.getByText('Pick FG').click();
       await ctx.wait(50);
     });
   });
@@ -374,9 +371,6 @@ describe('Pixel Editor Tests', () => {
       // Left palette section
       await ctx.expect(ctx.getByText('Tools')).toBeVisible();
 
-      // Center canvas section
-      await ctx.expect(ctx.getByText('Pixel canvas will be rendered here')).toBeVisible();
-
       // Bottom status section
       await ctx.expect(ctx.getByExactText('Open a file')).toBeVisible();
 
@@ -391,7 +385,7 @@ describe('Pixel Editor Tests', () => {
 
       // Color controls
       await ctx.expect(ctx.getByText('#000000')).toBeVisible();
-      await ctx.expect(ctx.getByText('Pick Color')).toBeVisible();
+      await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
 
       // Toolbar
       await ctx.expect(ctx.getByText('Open')).toBeVisible();

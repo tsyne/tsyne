@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -1319,4 +1320,104 @@ func parseHexColorSimple(hexStr string) color.Color {
 	}
 
 	return color.RGBA{R: r, G: g, B: b, A: a}
+}
+
+// handleCreateTappableCanvasRaster creates a tappable canvas raster widget that responds to tap events
+func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) {
+	widgetID := msg.Payload["id"].(string)
+	width := toInt(msg.Payload["width"])
+	height := toInt(msg.Payload["height"])
+
+	log.Printf("[bridge] Creating tappable canvas raster: widgetID=%s, width=%d, height=%d", widgetID, width, height)
+
+	// Create the tappable raster with a tap callback
+	tappable := NewTappableCanvasRaster(width, height, func(x, y int) {
+		// Send tap event back to the TypeScript layer
+		log.Printf("[bridge] Tappable raster tapped at position: x=%d, y=%d", x, y)
+		b.sendEvent(Event{
+			Type:     "canvasRasterTapped",
+			WidgetID: widgetID,
+			Data: map[string]interface{}{
+				"x": x,
+				"y": y,
+			},
+		})
+	})
+
+	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
+	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
+		log.Printf("[bridge] Received %d pixels for tappable raster %s", len(pixels), widgetID)
+		pixelBytes := make([]byte, width*height*4)
+
+		for i, p := range pixels {
+			if pArr, ok := p.([]interface{}); ok && len(pArr) >= 4 {
+				pixelBytes[i*4] = uint8(toInt(pArr[0]))     // R
+				pixelBytes[i*4+1] = uint8(toInt(pArr[1]))   // G
+				pixelBytes[i*4+2] = uint8(toInt(pArr[2]))   // B
+				pixelBytes[i*4+3] = uint8(toInt(pArr[3]))   // A
+			}
+		}
+
+		tappable.SetPixels(pixelBytes)
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = tappable
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tappablecanvasraster", Text: ""}
+	b.mu.Unlock()
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	})
+}
+
+// handleUpdateTappableCanvasRaster updates pixels in a tappable canvas raster
+func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		})
+		return
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		b.sendResponse(Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		})
+		return
+	}
+
+	// Handle pixel updates (format: [{x, y, r, g, b, a}, ...])
+	if updates, ok := msg.Payload["updates"].([]interface{}); ok {
+		for _, u := range updates {
+			if update, ok := u.(map[string]interface{}); ok {
+				x := toInt(update["x"])
+				y := toInt(update["y"])
+				r := uint8(toInt(update["r"]))
+				g := uint8(toInt(update["g"]))
+				b := uint8(toInt(update["b"]))
+				a := uint8(toInt(update["a"]))
+
+				tappable.SetPixel(x, y, r, g, b, a)
+			}
+		}
+	}
+
+	b.sendResponse(Response{
+		ID:      msg.ID,
+		Success: true,
+	})
 }

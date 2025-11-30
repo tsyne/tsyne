@@ -231,6 +231,71 @@ export class CanvasRaster {
 }
 
 /**
+ * Tappable Canvas Raster - an interactive raster that responds to tap/click events
+ */
+export class TappableCanvasRaster {
+  private ctx: Context;
+  public id: string;
+  private _width: number;
+  private _height: number;
+  private onTapCallback?: (x: number, y: number) => void;
+
+  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>, onTap?: (x: number, y: number) => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('tappablecanvasraster');
+    this._width = width;
+    this._height = height;
+    this.onTapCallback = onTap;
+
+    const payload: any = { id: this.id, width, height };
+
+    if (pixels) {
+      payload.pixels = pixels;
+    }
+
+    ctx.bridge.send('createTappableCanvasRaster', payload);
+    ctx.addToCurrentContainer(this.id);
+
+    // Register event listener for tap events
+    if (onTap) {
+      ctx.bridge.on('canvasRasterTapped', (event: any) => {
+        if (event.widgetId === this.id && this.onTapCallback) {
+          this.onTapCallback(event.data.x, event.data.y);
+        }
+      });
+    }
+  }
+
+  get width(): number { return this._width; }
+  get height(): number { return this._height; }
+
+  /**
+   * Update individual pixels
+   * @param updates Array of pixel updates {x, y, r, g, b, a}
+   */
+  async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>): Promise<void> {
+    await this.ctx.bridge.send('updateTappableCanvasRaster', {
+      widgetId: this.id,
+      updates
+    });
+  }
+
+  /**
+   * Set a single pixel
+   */
+  async setPixel(x: number, y: number, r: number, g: number, b: number, a: number = 255): Promise<void> {
+    await this.setPixels([{x, y, r, g, b, a}]);
+  }
+
+  /**
+   * Set the tap callback
+   */
+  onTap(callback: (x: number, y: number) => void): void {
+    this.onTapCallback = callback;
+  }
+}
+
+/**
  * Canvas Linear Gradient - draws a gradient fill
  */
 export class CanvasLinearGradient {

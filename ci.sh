@@ -142,24 +142,38 @@ timeout 300 npm run test:examples || {
 }
 
 # ============================================================================
-# STEP 5: Ported Apps Sub-Project
+# STEP 5: Ported Apps Sub-Projects (recurse into each subdirectory)
 # ============================================================================
 echo "--- :package: Ported Apps - Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
+
+# First install root ported-apps dependencies if package.json exists
 if [ -f "package.json" ]; then
+  echo "Installing ported-apps root dependencies..."
   npm install --ignore-scripts
-  timeout 300 npm test || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Ported Apps tests timed out after 300 seconds"
-    else
-      echo "❌ Ported Apps tests failed (exit code: $EXIT_CODE)"
-    fi
-    exit 1
-  }
-else
-  echo "⚠️  No package.json found in ported-apps/ - skipping"
 fi
+
+# Recurse into each subdirectory that has a package.json
+for app_dir in */; do
+  app_name="${app_dir%/}"
+  if [ -f "${app_dir}package.json" ]; then
+    echo "--- :package: Ported App: ${app_name}"
+    cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+    npm install --ignore-scripts
+    timeout 300 npm test || {
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -eq 124 ]; then
+        echo "❌ ${app_name} tests timed out after 300 seconds"
+      else
+        echo "❌ ${app_name} tests failed (exit code: $EXIT_CODE)"
+      fi
+      exit 1
+    }
+    echo "✓ ${app_name} tests passed"
+  else
+    echo "⚠️  No package.json in ${app_name}/ - skipping"
+  fi
+done
 
 # ============================================================================
 # Cleanup

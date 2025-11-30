@@ -371,6 +371,10 @@ func (b *Bridge) handleMessage(msg Message) {
 		b.handleCreateCanvasRaster(msg)
 	case "updateCanvasRaster":
 		b.handleUpdateCanvasRaster(msg)
+	case "createTappableCanvasRaster":
+		b.handleCreateTappableCanvasRaster(msg)
+	case "updateTappableCanvasRaster":
+		b.handleUpdateTappableCanvasRaster(msg)
 	case "createCanvasLinearGradient":
 		b.handleCreateCanvasLinearGradient(msg)
 	case "updateCanvasLine":

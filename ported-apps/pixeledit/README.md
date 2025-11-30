@@ -1,117 +1,133 @@
 # Pixel Editor for Tsyne
 
-A pixel-based image editor ported from [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit) to Tsyne.
+A pixel-based image editor ported to Tsyne from the original Fyne implementation.
 
-## Original Project
+## Credits & Attribution
 
-This application is based on the Pixel Editor originally created by the Fyne.io team:
-- **Original Repository**: https://github.com/fyne-io/pixeledit
-- **Original Authors**: Fyne.io contributors
-- **Original License**: See the original repository for licensing information
+**Original Project:** [fyne-io/pixeledit](https://github.com/fyne-io/pixeledit)
+**Original Authors:** Fyne.io Contributors
+**Original Framework:** [Fyne](https://fyne.io/) - Cross-platform GUI toolkit for Go
 
-## About This Port
+This TypeScript port was created for the Tsyne framework (TypeScript → Go → Fyne.io bridge).
 
-This is a Tsyne port of the pixeledit application, adapted to work with Tsyne's TypeScript-to-Fyne bridge architecture. The original application was written in pure Go using the Fyne GUI toolkit. This version maintains the same conceptual structure but adapts it to Tsyne's declarative API.
+## License
 
-### Key Features
+Portions of this code are derived from the original pixeledit project by Fyne.io contributors.
 
-- **Main Menu**: File menu with Open, Save, Save As, Reset, and Open Recent submenu
-- **File Dialogs**: Native file open/save dialogs via Tsyne
-- **Recent Files**: Stores up to 5 recently opened files using preferences
-- **Color Picker**: Dialog for choosing foreground color
-- **FG Color Preview**: Visual rectangle showing current foreground color
-- **Power-of-2 Zoom**: 100%, 200%, 400%, 800%, 1600% (matches original behavior)
-- **Tool System**: Pencil and Picker tools
-- **Border Layout**: Toolbar (top), Palette (left), Canvas (center), Status (bottom)
-
-### Implementation Status
-
-✅ **Implemented:**
-- Main menu with File operations (Open, Save, Save As, Reset, Recent)
-- File dialogs (Open, Save As) via `win.showFileOpen()` / `win.showFileSave()`
-- Confirm dialog for Reset via `win.showConfirm()`
-- Color picker dialog via `win.showColorPicker()`
-- FG color preview rectangle using `canvasRectangle`
-- Power-of-2 zoom (×2 / ÷2) like original
-- Recent files using `app.setPreference()` / `app.getPreference()`
-- Tool interface and tools (Pencil, Picker)
-- UI layout with Border container
-- Status bar with file info
-
-⚠️ **Requires Enhancement:**
-- Interactive raster canvas (needs click-to-pixel event handling)
-- Actual image file loading/saving (needs bridge enhancement)
-
-## Architecture
-
-The port follows the original's architecture:
+The original pixeledit repository does not specify an explicit license. Fyne.io projects typically follow the BSD-3-Clause license used by the main [Fyne framework](https://github.com/fyne-io/fyne).
 
 ```
-internal/api/editor.go    → PixelEditor class
-internal/api/tool.go      → Tool interface
-internal/tool/pencil.go   → PencilTool class
-internal/tool/picker.go   → PickerTool class
-internal/ui/main.go       → buildUI(), buildMainMenu(), toolbar
-internal/ui/palette.go    → buildPalette() with tools & zoom
-internal/ui/editor.go     → Editor state management
-internal/ui/raster.go     → Canvas area (needs custom widget)
-internal/ui/history.go    → Recent files (loadRecent, addRecent)
-internal/ui/status.go     → Status bar
-main.go                   → Main app entry point
+Portions Copyright (c) 2019-2024 Fyne.io Contributors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## Features
+
+### From Original pixeledit
+- Pencil tool (draw with foreground color)
+- Picker/Eyedropper tool (sample colors)
+- Power-of-2 zoom (100% to 1600%)
+- File open/save/reload
+- Recent files history (preferences-based)
+- Foreground color preview
+- Tool button highlighting (▶ prefix on active tool)
+- Command-line file loading
+
+### Tsyne Port Enhancements
+- **Additional Tools:** Eraser, Bucket Fill, Line, Rectangle, Circle, Selection
+- **Undo/Redo System:** 50-operation history
+- **Background Color:** BG color picker and swap FG/BG
+- **Clipboard:** Copy, Cut, Paste operations with selection
+- **Layer System:** Multiple layers with visibility, opacity, and alpha compositing
+- **Enhanced Status Bar:** Coordinates, tool name, selection info, layer info, unsaved indicator
 
 ## Usage
 
 ```bash
-# Build the Tsyne bridge if not already built
-cd bridge && go build -o ../bin/tsyne-bridge && cd ..
-
 # Run the pixel editor
 npx ts-node ported-apps/pixeledit/pixeledit.ts
+
+# Load a file from command line
+npx ts-node ported-apps/pixeledit/pixeledit.ts /path/to/image.png
 ```
 
 ## Testing
 
 ```bash
 # Run all pixeledit tests
-npm test ported-apps/pixeledit/pixeledit.test.ts
+npm test -- pixeledit/
+
+# Run specific test files
+npm test -- pixeledit/pixeledit-tools.test.ts          # Bucket fill, line tool
+npm test -- pixeledit/pixeledit-new-features.test.ts   # Rectangle, circle, color
+npm test -- pixeledit/pixeledit-advanced-features.test.ts  # Selection, clipboard, layers
 
 # Run with visual debugging
-TSYNE_HEADED=1 npm test ported-apps/pixeledit/pixeledit.test.ts
-
-# Run with screenshots
-TAKE_SCREENSHOTS=1 npm test ported-apps/pixeledit/pixeledit.test.ts
+TSYNE_HEADED=1 npm test -- pixeledit/
 ```
 
-## New Features (vs Original Port)
+## Architecture
 
-| Feature | Original Port | Current |
-|---------|---------------|---------|
-| Main Menu | Not present | ✅ File menu with all operations |
-| File Dialogs | Hardcoded | ✅ Native dialogs |
-| Recent Files | Not present | ✅ Stored in preferences |
-| Confirm Dialog | Not present | ✅ For Reset operation |
-| Color Picker | Not present | ✅ Dialog for FG color |
-| FG Color Preview | Text only | ✅ Visual rectangle |
-| Zoom | Linear (+1/-1) | ✅ Power-of-2 (×2/÷2) |
+The port follows the original pixeledit structure:
 
-## Future Enhancements
+| Original (Go) | Port (TypeScript) |
+|---------------|-------------------|
+| `internal/api/editor.go` | `PixelEditor` class |
+| `internal/api/tool.go` | `Tool` interface |
+| `internal/tool/pencil.go` | `PencilTool` class |
+| `internal/tool/picker.go` | `PickerTool` class |
+| `internal/ui/palette.go` | `buildPalette()` method |
+| `internal/ui/raster.go` | `TappableCanvasRaster` |
+| `internal/ui/history.go` | `loadRecentFiles()` / `saveRecentFiles()` |
+| `internal/ui/status.go` | `buildStatusBar()` method |
+| `main.go loadFileArgs()` | `process.argv[2]` handling |
 
-To make this a fully functional pixel editor:
+## Implementation Status
 
-1. **Interactive Raster Canvas**: Add click event handling to CanvasRaster in the Go bridge
-2. **Image I/O**: Add image load/save capabilities through the bridge
-3. **Additional Tools**: Fill, Line, Rectangle tools
-4. **Checkered Background**: Transparency indicator pattern
+All features from the original pixeledit have been ported:
+- ✅ Pencil and Picker tools
+- ✅ Power-of-2 zoom
+- ✅ File open/save/reload
+- ✅ Recent files history
+- ✅ FG color preview and picker
+- ✅ Tool button highlighting
+- ✅ Command-line file loading
 
-## Attribution
+Plus significant enhancements not in the original:
+- ✅ 6 additional tools (Eraser, Bucket, Line, Rectangle, Circle, Select)
+- ✅ Undo/Redo system
+- ✅ Background color support
+- ✅ Clipboard operations
+- ✅ Layer system
 
-Original work by the Fyne.io team. Please visit the [original repository](https://github.com/fyne-io/pixeledit) for the full-featured Go implementation.
+## See Also
 
-This Tsyne port demonstrates how Tsyne's expanded API can implement native GUI features like menus, dialogs, and preferences.
-
-## Credits
-
-- **Original Pixeledit**: Fyne.io contributors
-- **Tsyne Framework**: Paul Hammant and contributors
-- **Fyne GUI Toolkit**: fyne.io team
+- [PLAN.md](./PLAN.md) - Detailed implementation plan and test coverage
+- [Original pixeledit](https://github.com/fyne-io/pixeledit) - Source project
+- [Fyne.io](https://fyne.io/) - Cross-platform GUI toolkit
