@@ -11,7 +11,7 @@ import (
 // Complex/Data Widgets: Tree, Table, List, Menu, Toolbar, TextGrid
 // ============================================================================
 
-func (b *Bridge) handleCreateTree(msg Message) {
+func (b *Bridge) handleCreateTree(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	rootLabel := msg.Payload["rootLabel"].(string)
 
@@ -44,14 +44,14 @@ func (b *Bridge) handleCreateTree(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tree", Text: rootLabel}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateTable(msg Message) {
+func (b *Bridge) handleCreateTable(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	headersInterface := msg.Payload["headers"].([]interface{})
 	dataInterface := msg.Payload["data"].([]interface{})
@@ -123,13 +123,13 @@ func (b *Bridge) handleCreateTable(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateList(msg Message) {
+func (b *Bridge) handleCreateList(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -220,13 +220,13 @@ func (b *Bridge) handleCreateList(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateMenu(msg Message) {
+func (b *Bridge) handleCreateMenu(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -281,14 +281,14 @@ func (b *Bridge) handleCreateMenu(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "menu", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateToolbar(msg Message) {
+func (b *Bridge) handleCreateToolbar(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -348,17 +348,17 @@ func (b *Bridge) handleCreateToolbar(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // ============================================================================
 // TextGrid Widget - Terminal-style text display
 // ============================================================================
 
-func (b *Bridge) handleCreateTextGrid(msg Message) {
+func (b *Bridge) handleCreateTextGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text, _ := msg.Payload["text"].(string)
 	showLineNumbers, _ := msg.Payload["showLineNumbers"].(bool)
@@ -379,14 +379,14 @@ func (b *Bridge) handleCreateTextGrid(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "textgrid", Text: text}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleSetTextGridText(msg Message) {
+func (b *Bridge) handleSetTextGridText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	text := msg.Payload["text"].(string)
 
@@ -395,34 +395,32 @@ func (b *Bridge) handleSetTextGridText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
 	textGrid.SetText(text)
 	textGrid.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetTextGridCell(msg Message) {
+func (b *Bridge) handleSetTextGridCell(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	row := int(msg.Payload["row"].(float64))
 	col := int(msg.Payload["col"].(float64))
@@ -433,22 +431,20 @@ func (b *Bridge) handleSetTextGridCell(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
 	if hasChar && len(char) > 0 {
@@ -464,13 +460,13 @@ func (b *Bridge) handleSetTextGridCell(msg Message) {
 
 	textGrid.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetTextGridRow(msg Message) {
+func (b *Bridge) handleSetTextGridRow(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	row := int(msg.Payload["row"].(float64))
 	text := msg.Payload["text"].(string)
@@ -480,22 +476,20 @@ func (b *Bridge) handleSetTextGridRow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
 	// Create TextGridRow from text
@@ -515,13 +509,13 @@ func (b *Bridge) handleSetTextGridRow(msg Message) {
 	textGrid.SetRow(row, widget.TextGridRow{Cells: cells})
 	textGrid.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetTextGridStyle(msg Message) {
+func (b *Bridge) handleSetTextGridStyle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	row := int(msg.Payload["row"].(float64))
 	col := int(msg.Payload["col"].(float64))
@@ -532,35 +526,33 @@ func (b *Bridge) handleSetTextGridStyle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
 	style := parseTextGridStyle(styleData)
 	textGrid.SetStyle(row, col, style)
 	textGrid.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetTextGridStyleRange(msg Message) {
+func (b *Bridge) handleSetTextGridStyleRange(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	startRow := int(msg.Payload["startRow"].(float64))
 	startCol := int(msg.Payload["startCol"].(float64))
@@ -573,35 +565,33 @@ func (b *Bridge) handleSetTextGridStyleRange(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
 	style := parseTextGridStyle(styleData)
 	textGrid.SetStyleRange(startRow, startCol, endRow, endCol, style)
 	textGrid.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleGetTextGridText(msg Message) {
+func (b *Bridge) handleGetTextGridText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -609,29 +599,27 @@ func (b *Bridge) handleGetTextGridText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	textGrid, ok := w.(*widget.TextGrid)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a TextGrid",
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"text": textGrid.Text()},
-	})
+	}
 }
 
 // TextGridStyleImpl implements widget.TextGridStyle

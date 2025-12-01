@@ -30,10 +30,11 @@ func (s *grpcBridgeService) CreateWindow(ctx context.Context, req *pb.CreateWind
 		},
 	}
 
-	s.bridge.handleCreateWindow(msg)
+	resp := s.bridge.handleCreateWindow(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -48,10 +49,11 @@ func (s *grpcBridgeService) ShowWindow(ctx context.Context, req *pb.ShowWindowRe
 		},
 	}
 
-	s.bridge.handleShowWindow(msg)
+	resp := s.bridge.handleShowWindow(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -67,10 +69,11 @@ func (s *grpcBridgeService) SetContent(ctx context.Context, req *pb.SetContentRe
 		},
 	}
 
-	s.bridge.handleSetContent(msg)
+	resp := s.bridge.handleSetContent(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -86,10 +89,11 @@ func (s *grpcBridgeService) ResizeWindow(ctx context.Context, req *pb.ResizeWind
 		},
 	}
 
-	s.bridge.handleResizeWindow(msg)
+	resp := s.bridge.handleResizeWindow(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -104,10 +108,11 @@ func (s *grpcBridgeService) SetWindowTitle(ctx context.Context, req *pb.SetWindo
 		},
 	}
 
-	s.bridge.handleSetWindowTitle(msg)
+	resp := s.bridge.handleSetWindowTitle(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -121,10 +126,11 @@ func (s *grpcBridgeService) CenterWindow(ctx context.Context, req *pb.CenterWind
 		},
 	}
 
-	s.bridge.handleCenterWindow(msg)
+	resp := s.bridge.handleCenterWindow(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -139,10 +145,11 @@ func (s *grpcBridgeService) SetWindowFullScreen(ctx context.Context, req *pb.Set
 		},
 	}
 
-	s.bridge.handleSetWindowFullScreen(msg)
+	resp := s.bridge.handleSetWindowFullScreen(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -181,10 +188,11 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 		Payload: payload,
 	}
 
-	s.bridge.handleCreateImage(msg)
+	resp := s.bridge.handleCreateImage(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -209,10 +217,11 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 		Payload: payload,
 	}
 
-	s.bridge.handleCreateLabel(msg)
+	resp := s.bridge.handleCreateLabel(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -237,10 +246,11 @@ func (s *grpcBridgeService) CreateButton(ctx context.Context, req *pb.CreateButt
 		Payload: payload,
 	}
 
-	s.bridge.handleCreateButton(msg)
+	resp := s.bridge.handleCreateButton(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -274,17 +284,19 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 		Payload: payload,
 	}
 
+	var resp Response
 	switch msgType {
 	case "createMultiLineEntry":
-		s.bridge.handleCreateMultiLineEntry(msg)
+		resp = s.bridge.handleCreateMultiLineEntry(msg)
 	case "createPasswordEntry":
-		s.bridge.handleCreatePasswordEntry(msg)
+		resp = s.bridge.handleCreatePasswordEntry(msg)
 	default:
-		s.bridge.handleCreateEntry(msg)
+		resp = s.bridge.handleCreateEntry(msg)
 	}
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -299,10 +311,11 @@ func (s *grpcBridgeService) CreateVBox(ctx context.Context, req *pb.CreateVBoxRe
 		},
 	}
 
-	s.bridge.handleCreateVBox(msg)
+	resp := s.bridge.handleCreateVBox(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -317,10 +330,11 @@ func (s *grpcBridgeService) CreateHBox(ctx context.Context, req *pb.CreateHBoxRe
 		},
 	}
 
-	s.bridge.handleCreateHBox(msg)
+	resp := s.bridge.handleCreateHBox(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -343,10 +357,11 @@ func (s *grpcBridgeService) CreateCheckbox(ctx context.Context, req *pb.CreateCh
 		Payload: payload,
 	}
 
-	s.bridge.handleCreateCheckbox(msg)
+	resp := s.bridge.handleCreateCheckbox(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -369,10 +384,11 @@ func (s *grpcBridgeService) CreateSelect(ctx context.Context, req *pb.CreateSele
 		Payload: payload,
 	}
 
-	s.bridge.handleCreateSelect(msg)
+	resp := s.bridge.handleCreateSelect(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -391,10 +407,11 @@ func (s *grpcBridgeService) RegisterResource(ctx context.Context, req *pb.Regist
 		},
 	}
 
-	s.bridge.handleRegisterResource(msg)
+	resp := s.bridge.handleRegisterResource(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -409,10 +426,11 @@ func (s *grpcBridgeService) UnregisterResource(ctx context.Context, req *pb.Unre
 		},
 	}
 
-	s.bridge.handleUnregisterResource(msg)
+	resp := s.bridge.handleUnregisterResource(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -437,10 +455,11 @@ func (s *grpcBridgeService) UpdateImage(ctx context.Context, req *pb.UpdateImage
 		Payload: payload,
 	}
 
-	s.bridge.handleUpdateImage(msg)
+	resp := s.bridge.handleUpdateImage(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -455,10 +474,11 @@ func (s *grpcBridgeService) SetText(ctx context.Context, req *pb.SetTextRequest)
 		},
 	}
 
-	s.bridge.handleSetText(msg)
+	resp := s.bridge.handleSetText(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -484,10 +504,11 @@ func (s *grpcBridgeService) SetProgress(ctx context.Context, req *pb.SetProgress
 		},
 	}
 
-	s.bridge.handleSetProgress(msg)
+	resp := s.bridge.handleSetProgress(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -513,10 +534,11 @@ func (s *grpcBridgeService) SetChecked(ctx context.Context, req *pb.SetCheckedRe
 		},
 	}
 
-	s.bridge.handleSetChecked(msg)
+	resp := s.bridge.handleSetChecked(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -541,10 +563,11 @@ func (s *grpcBridgeService) ClickWidget(ctx context.Context, req *pb.ClickWidget
 		},
 	}
 
-	s.bridge.handleClickWidget(msg)
+	resp := s.bridge.handleClickWidget(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -559,10 +582,11 @@ func (s *grpcBridgeService) TypeText(ctx context.Context, req *pb.TypeTextReques
 		},
 	}
 
-	s.bridge.handleTypeText(msg)
+	resp := s.bridge.handleTypeText(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -576,10 +600,11 @@ func (s *grpcBridgeService) DoubleTapWidget(ctx context.Context, req *pb.DoubleT
 		},
 	}
 
-	s.bridge.handleDoubleTapWidget(msg)
+	resp := s.bridge.handleDoubleTapWidget(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -593,10 +618,11 @@ func (s *grpcBridgeService) RightClickWidget(ctx context.Context, req *pb.RightC
 		},
 	}
 
-	s.bridge.handleRightClickWidget(msg)
+	resp := s.bridge.handleRightClickWidget(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -612,10 +638,11 @@ func (s *grpcBridgeService) DragWidget(ctx context.Context, req *pb.DragWidgetRe
 		},
 	}
 
-	s.bridge.handleDragWidget(msg)
+	resp := s.bridge.handleDragWidget(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -630,10 +657,11 @@ func (s *grpcBridgeService) RegisterCustomId(ctx context.Context, req *pb.Regist
 		},
 	}
 
-	s.bridge.handleRegisterCustomId(msg)
+	resp := s.bridge.handleRegisterCustomId(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }
 
@@ -740,9 +768,10 @@ func (s *grpcBridgeService) Quit(ctx context.Context, req *pb.QuitRequest) (*pb.
 		Payload: map[string]interface{}{},
 	}
 
-	s.bridge.handleQuit(msg)
+	resp := s.bridge.handleQuit(msg)
 
 	return &pb.Response{
-		Success: true,
+		Success: resp.Success,
+		Error:   resp.Error,
 	}, nil
 }

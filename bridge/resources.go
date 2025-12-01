@@ -6,25 +6,23 @@ import (
 )
 
 // handleRegisterResource registers a reusable image resource
-func (b *Bridge) handleRegisterResource(msg Message) {
+func (b *Bridge) handleRegisterResource(msg Message) Response {
 	resourceName, ok := msg.Payload["name"].(string)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'name' parameter",
-		})
-		return
+		}
 	}
 
 	resourceData, ok := msg.Payload["data"].(string)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'data' parameter",
-		})
-		return
+		}
 	}
 
 	// Decode base64 image data
@@ -44,12 +42,11 @@ func (b *Bridge) handleRegisterResource(msg Message) {
 
 	imgData, err := base64.StdEncoding.DecodeString(base64Data)
 	if err != nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Invalid base64 data: %v", err),
-		})
-		return
+		}
 	}
 
 	// Store resource
@@ -57,32 +54,31 @@ func (b *Bridge) handleRegisterResource(msg Message) {
 	b.resources[resourceName] = imgData
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleUnregisterResource removes a registered resource
-func (b *Bridge) handleUnregisterResource(msg Message) {
+func (b *Bridge) handleUnregisterResource(msg Message) Response {
 	resourceName, ok := msg.Payload["name"].(string)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'name' parameter",
-		})
-		return
+		}
 	}
 
 	b.mu.Lock()
 	delete(b.resources, resourceName)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // getResource retrieves a registered resource by name

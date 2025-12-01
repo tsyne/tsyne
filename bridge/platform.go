@@ -8,7 +8,7 @@ import (
 )
 
 // handleSetSystemTray sets up a system tray icon with menu
-func (b *Bridge) handleSetSystemTray(msg Message) {
+func (b *Bridge) handleSetSystemTray(msg Message) Response {
 	// Check if we're on a desktop platform
 	if desk, ok := b.app.(desktop.App); ok {
 		// Create menu items
@@ -59,21 +59,21 @@ func (b *Bridge) handleSetSystemTray(msg Message) {
 			}
 		})
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "System tray not supported on this platform",
-		})
+		}
 	}
 }
 
 // handleSendNotification sends a desktop notification
-func (b *Bridge) handleSendNotification(msg Message) {
+func (b *Bridge) handleSendNotification(msg Message) Response {
 	title := msg.Payload["title"].(string)
 	content := msg.Payload["content"].(string)
 
@@ -83,14 +83,14 @@ func (b *Bridge) handleSendNotification(msg Message) {
 		b.app.SendNotification(notification)
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleClipboardGet retrieves text from the clipboard
-func (b *Bridge) handleClipboardGet(msg Message) {
+func (b *Bridge) handleClipboardGet(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -98,12 +98,11 @@ func (b *Bridge) handleClipboardGet(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	var content string
@@ -111,17 +110,17 @@ func (b *Bridge) handleClipboardGet(msg Message) {
 		content = win.Clipboard().Content()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"content": content,
 		},
-	})
+	}
 }
 
 // handleClipboardSet sets text to the clipboard
-func (b *Bridge) handleClipboardSet(msg Message) {
+func (b *Bridge) handleClipboardSet(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	content := msg.Payload["content"].(string)
 
@@ -130,26 +129,25 @@ func (b *Bridge) handleClipboardSet(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	fyne.DoAndWait(func() {
 		win.Clipboard().SetContent(content)
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handlePreferencesGet retrieves a preference value
-func (b *Bridge) handlePreferencesGet(msg Message) {
+func (b *Bridge) handlePreferencesGet(msg Message) Response {
 	key := msg.Payload["key"].(string)
 
 	// Get the default value type hint
@@ -190,17 +188,17 @@ func (b *Bridge) handlePreferencesGet(msg Message) {
 		value = prefs.String(key)
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"value": value,
 		},
-	})
+	}
 }
 
 // handlePreferencesSet stores a preference value
-func (b *Bridge) handlePreferencesSet(msg Message) {
+func (b *Bridge) handlePreferencesSet(msg Message) Response {
 	key := msg.Payload["key"].(string)
 	value := msg.Payload["value"]
 
@@ -219,35 +217,34 @@ func (b *Bridge) handlePreferencesSet(msg Message) {
 	case bool:
 		prefs.SetBool(key, v)
 	default:
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Unsupported preference value type",
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handlePreferencesRemove removes a preference
-func (b *Bridge) handlePreferencesRemove(msg Message) {
+func (b *Bridge) handlePreferencesRemove(msg Message) Response {
 	key := msg.Payload["key"].(string)
 
 	prefs := b.app.Preferences()
 	prefs.RemoveValue(key)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleSetDraggable makes a widget draggable
-func (b *Bridge) handleSetDraggable(msg Message) {
+func (b *Bridge) handleSetDraggable(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	dragData := ""
 	if dd, ok := msg.Payload["dragData"].(string); ok {
@@ -258,12 +255,11 @@ func (b *Bridge) handleSetDraggable(msg Message) {
 	obj, exists := b.widgets[widgetID]
 	if !exists {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Get callbacks if provided
@@ -281,26 +277,25 @@ func (b *Bridge) handleSetDraggable(msg Message) {
 	b.widgets[widgetID] = draggable
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleSetDroppable makes a widget a drop target
-func (b *Bridge) handleSetDroppable(msg Message) {
+func (b *Bridge) handleSetDroppable(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.Lock()
 	obj, exists := b.widgets[widgetID]
 	if !exists {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Get callbacks if provided
@@ -322,8 +317,8 @@ func (b *Bridge) handleSetDroppable(msg Message) {
 	b.widgets[widgetID] = droppable
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

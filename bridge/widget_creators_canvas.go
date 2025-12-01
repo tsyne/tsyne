@@ -111,7 +111,7 @@ func toFloat64(v interface{}) float64 {
 // Canvas Primitives: Line, Circle, Rectangle, Text, Raster, LinearGradient
 // ============================================================================
 
-func (b *Bridge) handleCreateCanvasLine(msg Message) {
+func (b *Bridge) handleCreateCanvasLine(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	x1 := toFloat32(msg.Payload["x1"])
 	y1 := toFloat32(msg.Payload["y1"])
@@ -137,14 +137,14 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasline", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasCircle(msg Message) {
+func (b *Bridge) handleCreateCanvasCircle(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	circle := canvas.NewCircle(color.Transparent)
@@ -181,14 +181,14 @@ func (b *Bridge) handleCreateCanvasCircle(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvascircle", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasRectangle(msg Message) {
+func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	rect := canvas.NewRectangle(color.Transparent)
@@ -225,14 +225,14 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasrectangle", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasText(msg Message) {
+func (b *Bridge) handleCreateCanvasText(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 
@@ -276,14 +276,14 @@ func (b *Bridge) handleCreateCanvasText(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvastext", Text: text}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasRaster(msg Message) {
+func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
@@ -357,14 +357,14 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasraster", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasRaster(msg Message) {
+func (b *Bridge) handleUpdateCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -372,22 +372,20 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Raster widget not found",
-		})
-		return
+		}
 	}
 
 	raster, ok := w.(*canvas.Raster)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a raster",
-		})
-		return
+		}
 	}
 
 	// Update individual pixels if provided
@@ -416,13 +414,13 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) {
 		raster.Refresh()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasLinearGradient(msg Message) {
+func (b *Bridge) handleCreateCanvasLinearGradient(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Parse start and end colors
@@ -455,14 +453,14 @@ func (b *Bridge) handleCreateCanvasLinearGradient(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvaslineargradient", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasLine(msg Message) {
+func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -470,22 +468,20 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Line widget not found",
-		})
-		return
+		}
 	}
 
 	line, ok := w.(*canvas.Line)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a line",
-		})
-		return
+		}
 	}
 
 	// Update position if provided
@@ -512,13 +508,13 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) {
 
 	line.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasCircle(msg Message) {
+func (b *Bridge) handleUpdateCanvasCircle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -526,22 +522,20 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Circle widget not found",
-		})
-		return
+		}
 	}
 
 	circle, ok := w.(*canvas.Circle)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a circle",
-		})
-		return
+		}
 	}
 
 	// Update fill color if provided
@@ -573,13 +567,13 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) {
 
 	circle.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasRectangle(msg Message) {
+func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -587,22 +581,20 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Rectangle widget not found",
-		})
-		return
+		}
 	}
 
 	rect, ok := w.(*canvas.Rectangle)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a rectangle",
-		})
-		return
+		}
 	}
 
 	// Update fill color if provided
@@ -634,13 +626,13 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) {
 
 	rect.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasText(msg Message) {
+func (b *Bridge) handleUpdateCanvasText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -648,22 +640,20 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Canvas text widget not found",
-		})
-		return
+		}
 	}
 
 	canvasText, ok := w.(*canvas.Text)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a canvas text",
-		})
-		return
+		}
 	}
 
 	// Update text if provided
@@ -683,13 +673,13 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) {
 
 	canvasText.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
+func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -697,22 +687,20 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Gradient widget not found",
-		})
-		return
+		}
 	}
 
 	gradient, ok := w.(*canvas.LinearGradient)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a linear gradient",
-		})
-		return
+		}
 	}
 
 	// Update start color if provided
@@ -732,13 +720,13 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) {
 
 	gradient.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasArc(msg Message) {
+func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Parse start and end angles (in radians)
@@ -880,14 +868,14 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasarc", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasArc(msg Message) {
+func (b *Bridge) handleUpdateCanvasArc(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -896,22 +884,20 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists || !arcExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Arc widget not found",
-		})
-		return
+		}
 	}
 
 	raster, ok := w.(*canvas.Raster)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an arc raster",
-		})
-		return
+		}
 	}
 
 	// Update arc data
@@ -935,13 +921,13 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) {
 
 	raster.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasPolygon(msg Message) {
+func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Parse fill color
@@ -1059,14 +1045,14 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvaspolygon", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasPolygon(msg Message) {
+func (b *Bridge) handleUpdateCanvasPolygon(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1075,22 +1061,20 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists || !polyExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Polygon widget not found",
-		})
-		return
+		}
 	}
 
 	raster, ok := w.(*canvas.Raster)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a polygon raster",
-		})
-		return
+		}
 	}
 
 	// Update polygon data
@@ -1119,13 +1103,13 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) {
 
 	raster.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) {
+func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Parse start and end colors
@@ -1161,14 +1145,14 @@ func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasradialgradient", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) {
+func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1176,22 +1160,20 @@ func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Radial gradient widget not found",
-		})
-		return
+		}
 	}
 
 	gradient, ok := w.(*canvas.RadialGradient)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a radial gradient",
-		})
-		return
+		}
 	}
 
 	// Update start color if provided
@@ -1214,10 +1196,10 @@ func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) {
 
 	gradient.Refresh()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // Helper functions for arc calculations
@@ -1322,7 +1304,7 @@ func parseHexColorSimple(hexStr string) color.Color {
 }
 
 // handleCreateTappableCanvasRaster creates a tappable canvas raster widget that responds to tap events
-func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) {
+func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
@@ -1361,15 +1343,15 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tappablecanvasraster", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
 // handleUpdateTappableCanvasRaster updates pixels in a tappable canvas raster
-func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) {
+func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1377,22 +1359,20 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Tappable raster widget not found",
-		})
-		return
+		}
 	}
 
 	tappable, ok := w.(*TappableCanvasRaster)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a tappable canvas raster",
-		})
-		return
+		}
 	}
 
 	// Handle pixel updates (format: [{x, y, r, g, b, a}, ...])
@@ -1411,8 +1391,8 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) {
 		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

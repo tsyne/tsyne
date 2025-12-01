@@ -24,7 +24,7 @@ import (
 // RichText, Image, Icon, FileIcon, Calendar
 // ============================================================================
 
-func (b *Bridge) handleCreateLabel(msg Message) {
+func (b *Bridge) handleCreateLabel(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 
@@ -35,14 +35,14 @@ func (b *Bridge) handleCreateLabel(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSeparator(msg Message) {
+func (b *Bridge) handleCreateSeparator(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	separator := widget.NewSeparator()
@@ -52,14 +52,14 @@ func (b *Bridge) handleCreateSeparator(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "separator", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSpacer(msg Message) {
+func (b *Bridge) handleCreateSpacer(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	spacer := layout.NewSpacer()
@@ -69,14 +69,14 @@ func (b *Bridge) handleCreateSpacer(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "spacer", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateHyperlink(msg Message) {
+func (b *Bridge) handleCreateHyperlink(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 	urlStr := msg.Payload["url"].(string)
@@ -84,12 +84,11 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 	// Parse URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Invalid URL: %v", err),
-		})
-		return
+		}
 	}
 
 	hyperlink := widget.NewHyperlink(text, parsedURL)
@@ -99,14 +98,14 @@ func (b *Bridge) handleCreateHyperlink(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "hyperlink", Text: text, URL: urlStr}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateProgressBar(msg Message) {
+func (b *Bridge) handleCreateProgressBar(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	infinite, _ := msg.Payload["infinite"].(bool)
 
@@ -128,14 +127,14 @@ func (b *Bridge) handleCreateProgressBar(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "progressbar", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateActivity(msg Message) {
+func (b *Bridge) handleCreateActivity(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	activity := widget.NewActivity()
@@ -145,14 +144,14 @@ func (b *Bridge) handleCreateActivity(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "activity", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleStartActivity(msg Message) {
+func (b *Bridge) handleStartActivity(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -160,33 +159,31 @@ func (b *Bridge) handleStartActivity(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	activity, ok := w.(*widget.Activity)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an Activity",
-		})
-		return
+		}
 	}
 
 	activity.Start()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleStopActivity(msg Message) {
+func (b *Bridge) handleStopActivity(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -194,33 +191,31 @@ func (b *Bridge) handleStopActivity(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	activity, ok := w.(*widget.Activity)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an Activity",
-		})
-		return
+		}
 	}
 
 	activity.Stop()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateRichText(msg Message) {
+func (b *Bridge) handleCreateRichText(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	segmentsInterface := msg.Payload["segments"].([]interface{})
 
@@ -256,14 +251,14 @@ func (b *Bridge) handleCreateRichText(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "richtext", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateImage(msg Message) {
+func (b *Bridge) handleCreateImage(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	path, hasPath := msg.Payload["path"].(string)
 	resourceName, hasResource := msg.Payload["resource"].(string)
@@ -274,23 +269,21 @@ func (b *Bridge) handleCreateImage(msg Message) {
 	if hasResource && resourceName != "" {
 		imageData, exists := b.getResource(resourceName)
 		if !exists {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Resource not found: %s", resourceName),
-			})
-			return
+			}
 		}
 
 		// Decode image data
 		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode resource image: %v", err),
-			})
-			return
+			}
 		}
 
 		bounds := decodedImg.Bounds()
@@ -307,36 +300,33 @@ func (b *Bridge) handleCreateImage(msg Message) {
 		// Parse the data URL format: "data:image/png;base64,..."
 		parts := strings.SplitN(path, ",", 2)
 		if len(parts) != 2 {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   "Invalid data URL format",
-			})
-			return
+			}
 		}
 
 		base64Data := parts[1]
 		imageData, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			log.Printf("[Image] Error decoding base64: %v", err)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
-			})
-			return
+			}
 		}
 
 		// Decode image data
 		decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
 		if err != nil {
 			log.Printf("[Image] Error decoding image: %v", err)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode image: %v", err),
-			})
-			return
+			}
 		}
 
 		bounds := decodedImg.Bounds()
@@ -350,12 +340,11 @@ func (b *Bridge) handleCreateImage(msg Message) {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			log.Printf("[Image] Error reading file %s: %v", path, err)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to read image file: %v", err),
-			})
-			return
+			}
 		}
 
 		// Decode to get dimensions and create image from decoded data directly
@@ -480,30 +469,29 @@ func (b *Bridge) handleCreateImage(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "image", Text: path}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
 // ============================================================================
 // Icon Widget - Theme icon display
 // ============================================================================
 
-func (b *Bridge) handleCreateIcon(msg Message) {
+func (b *Bridge) handleCreateIcon(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	iconName := msg.Payload["iconName"].(string)
 
 	// Map icon name string to Fyne theme icon
 	resource := mapIconNameToResource(iconName)
 	if resource == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Unknown icon name: %s", iconName),
-		})
-		return
+		}
 	}
 
 	icon := widget.NewIcon(resource)
@@ -513,14 +501,14 @@ func (b *Bridge) handleCreateIcon(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "icon", Text: iconName}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleSetIconResource(msg Message) {
+func (b *Bridge) handleSetIconResource(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	iconName := msg.Payload["iconName"].(string)
 
@@ -529,32 +517,29 @@ func (b *Bridge) handleSetIconResource(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	icon, ok := w.(*widget.Icon)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an Icon",
-		})
-		return
+		}
 	}
 
 	resource := mapIconNameToResource(iconName)
 	if resource == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Unknown icon name: %s", iconName),
-		})
-		return
+		}
 	}
 
 	icon.SetResource(resource)
@@ -563,10 +548,10 @@ func (b *Bridge) handleSetIconResource(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "icon", Text: iconName}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // mapIconNameToResource maps icon name strings to Fyne theme resources
@@ -769,7 +754,7 @@ func mapIconNameToResource(name string) fyne.Resource {
 // FileIcon Widget - File type icon
 // ============================================================================
 
-func (b *Bridge) handleCreateFileIcon(msg Message) {
+func (b *Bridge) handleCreateFileIcon(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	path := msg.Payload["path"].(string)
 
@@ -783,14 +768,14 @@ func (b *Bridge) handleCreateFileIcon(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "fileicon", Text: path}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleSetFileIconURI(msg Message) {
+func (b *Bridge) handleSetFileIconURI(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	path := msg.Payload["path"].(string)
 
@@ -799,22 +784,20 @@ func (b *Bridge) handleSetFileIconURI(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	fileIcon, ok := w.(*widget.FileIcon)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a FileIcon",
-		})
-		return
+		}
 	}
 
 	uri := storage.NewFileURI(path)
@@ -824,13 +807,13 @@ func (b *Bridge) handleSetFileIconURI(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "fileicon", Text: path}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetFileIconSelected(msg Message) {
+func (b *Bridge) handleSetFileIconSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	selected := msg.Payload["selected"].(bool)
 
@@ -839,37 +822,35 @@ func (b *Bridge) handleSetFileIconSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	fileIcon, ok := w.(*widget.FileIcon)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a FileIcon",
-		})
-		return
+		}
 	}
 
 	fileIcon.SetSelected(selected)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // ============================================================================
 // Calendar Widget - Standalone calendar
 // ============================================================================
 
-func (b *Bridge) handleCreateCalendar(msg Message) {
+func (b *Bridge) handleCreateCalendar(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
@@ -905,9 +886,9 @@ func (b *Bridge) handleCreateCalendar(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }

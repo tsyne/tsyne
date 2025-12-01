@@ -16,7 +16,7 @@ import (
 // Select, SelectEntry, Slider, RadioGroup, CheckGroup, DateEntry
 // ============================================================================
 
-func (b *Bridge) handleCreateButton(msg Message) {
+func (b *Bridge) handleCreateButton(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
@@ -55,14 +55,14 @@ func (b *Bridge) handleCreateButton(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateEntry(msg Message) {
+func (b *Bridge) handleCreateEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	placeholder, _ := msg.Payload["placeholder"].(string)
 
@@ -147,14 +147,14 @@ func (b *Bridge) handleCreateEntry(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "entry", Text: "", Placeholder: placeholder}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateMultiLineEntry(msg Message) {
+func (b *Bridge) handleCreateMultiLineEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	placeholder, _ := msg.Payload["placeholder"].(string)
 
@@ -178,14 +178,14 @@ func (b *Bridge) handleCreateMultiLineEntry(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "multilineentry", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreatePasswordEntry(msg Message) {
+func (b *Bridge) handleCreatePasswordEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	placeholder, _ := msg.Payload["placeholder"].(string)
 
@@ -210,14 +210,14 @@ func (b *Bridge) handleCreatePasswordEntry(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "passwordentry", Text: ""}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCheckbox(msg Message) {
+func (b *Bridge) handleCreateCheckbox(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
@@ -243,14 +243,14 @@ func (b *Bridge) handleCreateCheckbox(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSelect(msg Message) {
+func (b *Bridge) handleCreateSelect(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	optionsInterface, _ := msg.Payload["options"].([]interface{})
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
@@ -282,14 +282,14 @@ func (b *Bridge) handleCreateSelect(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSelectEntry(msg Message) {
+func (b *Bridge) handleCreateSelectEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	optionsInterface, _ := msg.Payload["options"].([]interface{})
 	placeholder, _ := msg.Payload["placeholder"].(string)
@@ -358,14 +358,14 @@ func (b *Bridge) handleCreateSelectEntry(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSlider(msg Message) {
+func (b *Bridge) handleCreateSlider(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	min := msg.Payload["min"].(float64)
 	max := msg.Payload["max"].(float64)
@@ -399,14 +399,14 @@ func (b *Bridge) handleCreateSlider(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateRadioGroup(msg Message) {
+func (b *Bridge) handleCreateRadioGroup(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	optionsInterface := msg.Payload["options"].([]interface{})
 
@@ -454,13 +454,13 @@ func (b *Bridge) handleCreateRadioGroup(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCheckGroup(msg Message) {
+func (b *Bridge) handleCreateCheckGroup(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	optionsInterface := msg.Payload["options"].([]interface{})
 
@@ -507,13 +507,13 @@ func (b *Bridge) handleCreateCheckGroup(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateDateEntry(msg Message) {
+func (b *Bridge) handleCreateDateEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
@@ -552,14 +552,14 @@ func (b *Bridge) handleCreateDateEntry(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleSetDate(msg Message) {
+func (b *Bridge) handleSetDate(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	dateStr := msg.Payload["date"].(string)
 
@@ -568,22 +568,20 @@ func (b *Bridge) handleSetDate(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	dateEntry, ok := w.(*widget.DateEntry)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a DateEntry",
-		})
-		return
+		}
 	}
 
 	if dateStr == "" {
@@ -592,22 +590,21 @@ func (b *Bridge) handleSetDate(msg Message) {
 		if t, err := time.Parse("2006-01-02", dateStr); err == nil {
 			dateEntry.SetDate(&t)
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Invalid date format: %v", err),
-			})
-			return
+			}
 		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleGetDate(msg Message) {
+func (b *Bridge) handleGetDate(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -615,22 +612,20 @@ func (b *Bridge) handleGetDate(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	dateEntry, ok := w.(*widget.DateEntry)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a DateEntry",
-		})
-		return
+		}
 	}
 
 	var dateStr string
@@ -638,9 +633,9 @@ func (b *Bridge) handleGetDate(msg Message) {
 		dateStr = dateEntry.Date.Format("2006-01-02")
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"date": dateStr},
-	})
+	}
 }

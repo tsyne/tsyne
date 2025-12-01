@@ -4,7 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-func (b *Bridge) handleSetContent(msg Message) {
+func (b *Bridge) handleSetContent(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -16,21 +16,19 @@ func (b *Bridge) handleSetContent(msg Message) {
 	b.mu.RUnlock()
 
 	if !winExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if !widgetExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Remove old content widget tree if it exists (write lock)
@@ -50,10 +48,10 @@ func (b *Bridge) handleSetContent(msg Message) {
 	b.windowContent[windowID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // removeWidgetTree recursively removes a widget and all its descendants
@@ -104,7 +102,7 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 	}
 }
 
-func (b *Bridge) handleContainerAdd(msg Message) {
+func (b *Bridge) handleContainerAdd(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 	childID := msg.Payload["childId"].(string)
 
@@ -114,21 +112,19 @@ func (b *Bridge) handleContainerAdd(msg Message) {
 	b.mu.RUnlock()
 
 	if !containerExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Container not found",
-		})
-		return
+		}
 	}
 
 	if !childExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Child widget not found",
-		})
-		return
+		}
 	}
 
 	// Cast to container and add the child
@@ -142,20 +138,20 @@ func (b *Bridge) handleContainerAdd(msg Message) {
 		b.childToParent[childID] = containerID
 		b.mu.Unlock()
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a container",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleContainerRemoveAll(msg Message) {
+func (b *Bridge) handleContainerRemoveAll(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 
 	b.mu.RLock()
@@ -163,12 +159,11 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Container not found",
-		})
-		return
+		}
 	}
 
 	// Cast to container and remove all children
@@ -178,20 +173,20 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) {
 			cont.Objects = nil
 		})
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a container",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleContainerRefresh(msg Message) {
+func (b *Bridge) handleContainerRefresh(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 
 	b.mu.RLock()
@@ -199,12 +194,11 @@ func (b *Bridge) handleContainerRefresh(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Container not found",
-		})
-		return
+		}
 	}
 
 	// Cast to container and refresh
@@ -214,20 +208,20 @@ func (b *Bridge) handleContainerRefresh(msg Message) {
 			cont.Refresh()
 		})
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a container",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleClearWidgets(msg Message) {
+func (b *Bridge) handleClearWidgets(msg Message) Response {
 	// Clear all widgets from the maps
 	// This should be called before building new window content
 	b.mu.Lock()
@@ -235,8 +229,8 @@ func (b *Bridge) handleClearWidgets(msg Message) {
 	b.widgetMeta = make(map[string]WidgetMetadata)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

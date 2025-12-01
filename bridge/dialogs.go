@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (b *Bridge) handleShowInfo(msg Message) {
+func (b *Bridge) handleShowInfo(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	message := msg.Payload["message"].(string)
@@ -20,23 +20,22 @@ func (b *Bridge) handleShowInfo(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowInformation(title, message, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowError(msg Message) {
+func (b *Bridge) handleShowError(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	_ = msg.Payload["title"].(string) // title is not used by ShowError, but keep for API compatibility
 	message := msg.Payload["message"].(string)
@@ -46,23 +45,22 @@ func (b *Bridge) handleShowError(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowError(fmt.Errorf("%s", message), win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowConfirm(msg Message) {
+func (b *Bridge) handleShowConfirm(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	message := msg.Payload["message"].(string)
@@ -73,12 +71,11 @@ func (b *Bridge) handleShowConfirm(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowConfirm(title, message, func(confirmed bool) {
@@ -88,13 +85,13 @@ func (b *Bridge) handleShowConfirm(msg Message) {
 		})
 	}, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowFileOpen(msg Message) {
+func (b *Bridge) handleShowFileOpen(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
 
@@ -103,12 +100,11 @@ func (b *Bridge) handleShowFileOpen(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
@@ -128,13 +124,13 @@ func (b *Bridge) handleShowFileOpen(msg Message) {
 		})
 	}, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowFileSave(msg Message) {
+func (b *Bridge) handleShowFileSave(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
 	fileName, _ := msg.Payload["fileName"].(string)
@@ -144,12 +140,11 @@ func (b *Bridge) handleShowFileSave(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
@@ -175,13 +170,13 @@ func (b *Bridge) handleShowFileSave(msg Message) {
 		// This would need to be enhanced with NewFileSave and SetFileName
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowFolderOpen(msg Message) {
+func (b *Bridge) handleShowFolderOpen(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
 
@@ -190,12 +185,11 @@ func (b *Bridge) handleShowFolderOpen(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
@@ -214,13 +208,13 @@ func (b *Bridge) handleShowFolderOpen(msg Message) {
 		})
 	}, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowForm(msg Message) {
+func (b *Bridge) handleShowForm(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	confirmText := msg.Payload["confirmText"].(string)
@@ -233,12 +227,11 @@ func (b *Bridge) handleShowForm(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Create form items and track entries for value retrieval
@@ -331,13 +324,13 @@ func (b *Bridge) handleShowForm(msg Message) {
 		})
 	}, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowCustom(msg Message) {
+func (b *Bridge) handleShowCustom(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
@@ -350,21 +343,19 @@ func (b *Bridge) handleShowCustom(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	// Default dismiss text
@@ -387,13 +378,13 @@ func (b *Bridge) handleShowCustom(msg Message) {
 
 	customDialog.Show()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowCustomConfirm(msg Message) {
+func (b *Bridge) handleShowCustomConfirm(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
@@ -407,21 +398,19 @@ func (b *Bridge) handleShowCustomConfirm(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	// Default button texts
@@ -442,13 +431,13 @@ func (b *Bridge) handleShowCustomConfirm(msg Message) {
 
 	customDialog.Show()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowProgressDialog(msg Message) {
+func (b *Bridge) handleShowProgressDialog(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	dialogID := msg.Payload["dialogId"].(string)
 	title := msg.Payload["title"].(string)
@@ -461,12 +450,11 @@ func (b *Bridge) handleShowProgressDialog(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Create the progress bar widget based on whether infinite or not
@@ -516,13 +504,13 @@ func (b *Bridge) handleShowProgressDialog(msg Message) {
 
 	d.Show()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateProgressDialog(msg Message) {
+func (b *Bridge) handleUpdateProgressDialog(msg Message) Response {
 	dialogID := msg.Payload["dialogId"].(string)
 	value, _ := msg.Payload["value"].(float64)
 	newMessage, hasMessage := msg.Payload["message"].(string)
@@ -532,12 +520,11 @@ func (b *Bridge) handleUpdateProgressDialog(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Progress dialog not found",
-		})
-		return
+		}
 	}
 
 	// Update the progress bar value (only for non-infinite progress bars with valid reference)
@@ -556,13 +543,13 @@ func (b *Bridge) handleUpdateProgressDialog(msg Message) {
 		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleHideProgressDialog(msg Message) {
+func (b *Bridge) handleHideProgressDialog(msg Message) Response {
 	dialogID := msg.Payload["dialogId"].(string)
 
 	b.mu.RLock()
@@ -570,12 +557,11 @@ func (b *Bridge) handleHideProgressDialog(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Progress dialog not found",
-		})
-		return
+		}
 	}
 
 	// Hide/close the dialog
@@ -588,13 +574,13 @@ func (b *Bridge) handleHideProgressDialog(msg Message) {
 	delete(b.progressDialogs, dialogID)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowColorPicker(msg Message) {
+func (b *Bridge) handleShowColorPicker(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	callbackID := msg.Payload["callbackId"].(string)
@@ -613,12 +599,11 @@ func (b *Bridge) handleShowColorPicker(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Create the color picker dialog
@@ -669,13 +654,13 @@ func (b *Bridge) handleShowColorPicker(msg Message) {
 
 	picker.Show()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowEntryDialog(msg Message) {
+func (b *Bridge) handleShowEntryDialog(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 	message := msg.Payload["message"].(string)
@@ -686,12 +671,11 @@ func (b *Bridge) handleShowEntryDialog(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	dialog.ShowEntryDialog(title, message, func(text string) {
@@ -705,13 +689,13 @@ func (b *Bridge) handleShowEntryDialog(msg Message) {
 		})
 	}, win)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleShowCustomWithoutButtons(msg Message) {
+func (b *Bridge) handleShowCustomWithoutButtons(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	dialogID := msg.Payload["dialogId"].(string)
 	title := msg.Payload["title"].(string)
@@ -723,21 +707,19 @@ func (b *Bridge) handleShowCustomWithoutButtons(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	// Create a custom dialog without buttons using NewCustomWithoutButtons
@@ -753,13 +735,13 @@ func (b *Bridge) handleShowCustomWithoutButtons(msg Message) {
 
 	customDialog.Show()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleHideCustomDialog(msg Message) {
+func (b *Bridge) handleHideCustomDialog(msg Message) Response {
 	dialogID := msg.Payload["dialogId"].(string)
 
 	b.mu.RLock()
@@ -767,12 +749,11 @@ func (b *Bridge) handleHideCustomDialog(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Dialog not found",
-		})
-		return
+		}
 	}
 
 	if customDialog, ok := d.(*dialog.CustomDialog); ok {
@@ -784,8 +765,8 @@ func (b *Bridge) handleHideCustomDialog(msg Message) {
 	delete(b.customDialogs, dialogID)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

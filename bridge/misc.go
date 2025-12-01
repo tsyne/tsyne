@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (b *Bridge) handleSetMainMenu(msg Message) {
+func (b *Bridge) handleSetMainMenu(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	menuItemsInterface := msg.Payload["menuItems"].([]interface{})
 
@@ -17,12 +17,11 @@ func (b *Bridge) handleSetMainMenu(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Build menu structure
@@ -77,31 +76,29 @@ func (b *Bridge) handleSetMainMenu(msg Message) {
 		win.SetMainMenu(mainMenu)
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
+func (b *Bridge) handleSetWidgetContextMenu(msg Message) Response {
 	widgetID, ok := msg.Payload["widgetId"].(string)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "widgetId is required",
-		})
-		return
+		}
 	}
 
 	items, ok := msg.Payload["items"].([]interface{})
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "items array is required",
-		})
-		return
+		}
 	}
 
 	b.mu.Lock()
@@ -109,12 +106,11 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 
 	obj, exists := b.widgets[widgetID]
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Build menu items
@@ -188,13 +184,13 @@ func (b *Bridge) handleSetWidgetContextMenu(msg Message) {
 		b.widgets[widgetID] = wrapper
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWidgetStyle(msg Message) {
+func (b *Bridge) handleSetWidgetStyle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -202,12 +198,11 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// UI updates must happen on the main thread
@@ -303,10 +298,10 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) {
 	// or custom widgets. For now, buttons use importance levels (5 colors max).
 	// Text color for labels is not yet supported.
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // mapColorToImportance maps a CSS color string to a Fyne importance level
@@ -401,7 +396,7 @@ func importanceFromString(importance string) widget.Importance {
 	}
 }
 
-func (b *Bridge) handleSetTheme(msg Message) {
+func (b *Bridge) handleSetTheme(msg Message) Response {
 	theme := msg.Payload["theme"].(string)
 
 	// Note: Fyne v2 doesn't have NewDarkTheme/NewLightTheme
@@ -411,20 +406,20 @@ func (b *Bridge) handleSetTheme(msg Message) {
 	case "dark", "light":
 		// Theme switching in Fyne v2 is handled by the system
 		// Apps automatically follow system theme preferences
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	default:
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Unknown theme: %s. Use 'dark' or 'light'", theme),
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetTheme(msg Message) {
+func (b *Bridge) handleGetTheme(msg Message) Response {
 	// Fyne v2 follows system theme preferences
 	// We can check the current variant (0 = light, 1 = dark)
 	variant := b.app.Settings().ThemeVariant()
@@ -434,33 +429,31 @@ func (b *Bridge) handleGetTheme(msg Message) {
 		theme = "dark"
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"theme": theme,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleSetFontScale(msg Message) {
+func (b *Bridge) handleSetFontScale(msg Message) Response {
 	scale, ok := msg.Payload["scale"].(float64)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'scale' parameter",
-		})
-		return
+		}
 	}
 
 	if b.scalableTheme == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scalable theme not initialized",
-		})
-		return
+		}
 	}
 
 	// Update the theme's font scale
@@ -473,10 +466,10 @@ func (b *Bridge) handleSetFontScale(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // parseHexColor parses a hex color string (#RRGGBB or #RRGGBBAA) to a color.NRGBA
@@ -499,24 +492,22 @@ func parseHexColor(colorStr string) (color.NRGBA, bool) {
 	return color.NRGBA{R: r, G: g, B: b, A: a}, true
 }
 
-func (b *Bridge) handleSetCustomTheme(msg Message) {
+func (b *Bridge) handleSetCustomTheme(msg Message) Response {
 	if b.scalableTheme == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scalable theme not initialized",
-		})
-		return
+		}
 	}
 
 	colors, ok := msg.Payload["colors"].(map[string]interface{})
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'colors' parameter",
-		})
-		return
+		}
 	}
 
 	customColors := &CustomColors{}
@@ -566,20 +557,19 @@ func (b *Bridge) handleSetCustomTheme(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleClearCustomTheme(msg Message) {
+func (b *Bridge) handleClearCustomTheme(msg Message) Response {
 	if b.scalableTheme == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scalable theme not initialized",
-		})
-		return
+		}
 	}
 
 	// Clear custom colors
@@ -592,30 +582,28 @@ func (b *Bridge) handleClearCustomTheme(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetCustomFont(msg Message) {
+func (b *Bridge) handleSetCustomFont(msg Message) Response {
 	if b.scalableTheme == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scalable theme not initialized",
-		})
-		return
+		}
 	}
 
 	fontPath, ok := msg.Payload["path"].(string)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Missing or invalid 'path' parameter",
-		})
-		return
+		}
 	}
 
 	// Determine which text style to apply the font to
@@ -640,12 +628,11 @@ func (b *Bridge) handleSetCustomFont(msg Message) {
 	// Load and set the custom font
 	err := b.scalableTheme.SetCustomFont(textStyle, fontPath)
 	if err != nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Failed to load font: %v", err),
-		})
-		return
+		}
 	}
 
 	// Refresh all windows to apply the new font
@@ -655,20 +642,19 @@ func (b *Bridge) handleSetCustomFont(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleClearCustomFont(msg Message) {
+func (b *Bridge) handleClearCustomFont(msg Message) Response {
 	if b.scalableTheme == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scalable theme not initialized",
-		})
-		return
+		}
 	}
 
 	// Determine which text style to clear
@@ -701,13 +687,13 @@ func (b *Bridge) handleClearCustomFont(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleGetAvailableFonts(msg Message) {
+func (b *Bridge) handleGetAvailableFonts(msg Message) Response {
 	// Return a list of common font locations and supported font file extensions
 	// Note: Fyne supports TTF and OTF fonts
 	fonts := map[string]interface{}{
@@ -720,18 +706,18 @@ func (b *Bridge) handleGetAvailableFonts(msg Message) {
 		"styles": []string{"regular", "bold", "italic", "boldItalic", "monospace", "symbol"},
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  fonts,
-	})
+	}
 }
 
-func (b *Bridge) handleQuit(msg Message) {
-	b.sendResponse(Response{
+func (b *Bridge) handleQuit(msg Message) Response {
+	response := Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 
 	// Signal quit channel for test mode
 	if b.testMode {
@@ -745,4 +731,6 @@ func (b *Bridge) handleQuit(msg Message) {
 	fyne.Do(func() {
 		b.app.Quit()
 	})
+
+	return response
 }
