@@ -74,6 +74,7 @@ export class Window {
   public id: string;
   private contentId?: string;
   private contentSent: boolean = false; // Track if content has been sent to bridge
+  private creationPromise: Promise<unknown>; // Track window creation for proper sequencing
 
   constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void | Promise<void>) {
     this.ctx = ctx;
@@ -97,7 +98,8 @@ export class Window {
       payload.icon = options.icon;
     }
 
-    ctx.bridge.send('createWindow', payload);
+    // Store the creation promise to ensure window exists before subsequent operations
+    this.creationPromise = ctx.bridge.send('createWindow', payload);
 
     // Register dialog handlers for browser compatibility globals
     registerDialogHandlers({
@@ -140,6 +142,9 @@ export class Window {
    * If content has been set but not yet sent to the bridge, it will be sent before showing.
    */
   async show(): Promise<void> {
+    // Ensure window creation has completed before showing
+    await this.creationPromise;
+
     // Only send setContent if we haven't already sent it
     if (this.contentId && !this.contentSent) {
       await this.ctx.bridge.send('setContent', {
@@ -171,6 +176,8 @@ export class Window {
     // Mark as sent immediately (synchronously) to prevent duplicate calls
     this.contentSent = true;
 
+    // Build widgets synchronously first - this must happen before any awaits
+    // so widgets are registered in the current execution context
     this.ctx.pushWindow(this.id);
     this.ctx.pushContainer();
 
@@ -182,6 +189,9 @@ export class Window {
     }
 
     this.ctx.popWindow();
+
+    // Now ensure window creation has completed before sending to bridge
+    await this.creationPromise;
 
     // Actually send the new content to the window
     if (this.contentId) {

@@ -26,6 +26,12 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 
 		win = b.app.NewWindow(title)
 
+		// Register window immediately after creation to prevent race conditions
+		// where showWindow arrives before createWindow completes in gRPC mode
+		b.mu.Lock()
+		b.windows[windowID] = win
+		b.mu.Unlock()
+
 		// Set window size if provided
 		if width, ok := msg.Payload["width"].(float64); ok {
 			if height, ok := msg.Payload["height"].(float64); ok {
@@ -113,10 +119,6 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 			}
 		})
 	})
-
-	b.mu.Lock()
-	b.windows[windowID] = win
-	b.mu.Unlock()
 
 	return Response{
 		ID:      msg.ID,
