@@ -32,22 +32,22 @@ describe('Game of Life Debug', () => {
     // Take screenshot to see what's there
     const screenshotPath = path.join('/tmp', 'game-of-life-debug.png');
     await tsyneTest.screenshot(screenshotPath);
-    console.log(`Screenshot saved: ${screenshotPath}`);
+    console.error(`Screenshot saved: ${screenshotPath}`);
 
     // Get all text to see what's available
     const allText = await ctx.getAllTextAsString();
-    console.log('=== ALL TEXT ON SCREEN ===');
-    console.log(allText);
-    console.log('=== END TEXT ===');
+    console.error('=== ALL TEXT ON SCREEN ===');
+    console.error(allText);
+    console.error('=== END TEXT ===');
 
     // Try to find the Start button
     const hasStart = await ctx.hasText('Start');
-    console.log(`Has 'Start' text: ${hasStart}`);
+    console.error(`Has 'Start' text: ${hasStart}`);
 
     const hasGeneration = await ctx.hasText('Generation');
-    console.log(`Has 'Generation' text: ${hasGeneration}`);
+    console.error(`Has 'Generation' text: ${hasGeneration}`);
 
     const hasStatus = await ctx.hasText('Status');
-    console.log(`Has 'Status' text: ${hasStatus}`);
+    console.error(`Has 'Status' text: ${hasStatus}`);
   }, 30000);
 });

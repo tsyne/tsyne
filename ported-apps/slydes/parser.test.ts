@@ -94,7 +94,7 @@ Content`;
 
 \`\`\`javascript
 function hello() {
-  console.log("Hello!");
+  console.error("Hello!");
 }
 \`\`\``;
 

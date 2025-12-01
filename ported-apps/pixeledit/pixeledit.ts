@@ -149,7 +149,7 @@ class PencilTool implements Tool {
 
   async clicked(x: number, y: number): Promise<void> {
     await this.editor.setPixelColor(x, y, this.editor.fgColor);
-    console.log(`Pencil: Drew at (${x}, ${y}) with color ${this.editor.fgColor.toHex()}`);
+    console.error(`Pencil: Drew at (${x}, ${y}) with color ${this.editor.fgColor.toHex()}`);
   }
 }
 
@@ -166,7 +166,7 @@ class PickerTool implements Tool {
   async clicked(x: number, y: number): Promise<void> {
     const color = this.editor.getPixelColor(x, y);
     await this.editor.setFGColor(color);
-    console.log(`Picker: Sampled color ${color.toHex()} from (${x}, ${y})`);
+    console.error(`Picker: Sampled color ${color.toHex()} from (${x}, ${y})`);
   }
 }
 
@@ -182,7 +182,7 @@ class EraserTool implements Tool {
 
   async clicked(x: number, y: number): Promise<void> {
     await this.editor.setPixelColor(x, y, this.editor.bgColor);
-    console.log(`Eraser: Erased pixel at (${x}, ${y}) with BG color ${this.editor.bgColor.toHex()}`);
+    console.error(`Eraser: Erased pixel at (${x}, ${y}) with BG color ${this.editor.bgColor.toHex()}`);
   }
 }
 
@@ -202,11 +202,11 @@ class BucketTool implements Tool {
 
     // Don't fill if target and fill colors are the same
     if (this.colorsEqual(targetColor, fillColor)) {
-      console.log(`Bucket: Target and fill colors are same, skipping fill`);
+      console.error(`Bucket: Target and fill colors are same, skipping fill`);
       return;
     }
 
-    console.log(`Bucket: Filling from (${x}, ${y}) with ${fillColor.toHex()}`);
+    console.error(`Bucket: Filling from (${x}, ${y}) with ${fillColor.toHex()}`);
     await this.floodFill(x, y, targetColor, fillColor);
   }
 
@@ -251,7 +251,7 @@ class BucketTool implements Tool {
     }
 
     // Update all pixels at once for better performance
-    console.log(`Bucket: Filling ${pixelsToUpdate.length} pixels`);
+    console.error(`Bucket: Filling ${pixelsToUpdate.length} pixels`);
     for (const {x, y} of pixelsToUpdate) {
       await this.editor.setPixelColor(x, y, fillColor);
     }
@@ -276,12 +276,12 @@ class LineTool implements Tool {
       this.startX = x;
       this.startY = y;
       this.isDrawing = true;
-      console.log(`Line: Started at (${x}, ${y})`);
+      console.error(`Line: Started at (${x}, ${y})`);
     } else {
       // Second click - draw line to end point
       if (this.startX !== null && this.startY !== null) {
         await this.drawLine(this.startX, this.startY, x, y);
-        console.log(`Line: Drew from (${this.startX}, ${this.startY}) to (${x}, ${y})`);
+        console.error(`Line: Drew from (${this.startX}, ${this.startY}) to (${x}, ${y})`);
       }
       // Reset state
       this.startX = null;
@@ -344,12 +344,12 @@ class RectangleTool implements Tool {
       this.startX = x;
       this.startY = y;
       this.isDrawing = true;
-      console.log(`Rectangle: Started at (${x}, ${y})`);
+      console.error(`Rectangle: Started at (${x}, ${y})`);
     } else {
       // Second click - draw rectangle to end corner
       if (this.startX !== null && this.startY !== null) {
         await this.drawRectangle(this.startX, this.startY, x, y);
-        console.log(`Rectangle: Drew from (${this.startX}, ${this.startY}) to (${x}, ${y})`);
+        console.error(`Rectangle: Drew from (${this.startX}, ${this.startY}) to (${x}, ${y})`);
       }
       // Reset state
       this.startX = null;
@@ -411,7 +411,7 @@ class CircleTool implements Tool {
       this.centerX = x;
       this.centerY = y;
       this.isDrawing = true;
-      console.log(`Circle: Center at (${x}, ${y})`);
+      console.error(`Circle: Center at (${x}, ${y})`);
     } else {
       // Second click - draw circle with radius to this point
       if (this.centerX !== null && this.centerY !== null) {
@@ -419,7 +419,7 @@ class CircleTool implements Tool {
           Math.pow(x - this.centerX, 2) + Math.pow(y - this.centerY, 2)
         ));
         await this.drawCircle(this.centerX, this.centerY, radius);
-        console.log(`Circle: Drew circle at (${this.centerX}, ${this.centerY}) with radius ${radius}`);
+        console.error(`Circle: Drew circle at (${this.centerX}, ${this.centerY}) with radius ${radius}`);
       }
       // Reset state
       this.centerX = null;
@@ -496,7 +496,7 @@ class SelectionTool implements Tool {
       this.startX = x;
       this.startY = y;
       this.isSelecting = true;
-      console.log(`Select: Started at (${x}, ${y})`);
+      console.error(`Select: Started at (${x}, ${y})`);
     } else {
       // Second click - complete selection
       if (this.startX !== null && this.startY !== null) {
@@ -513,7 +513,7 @@ class SelectionTool implements Tool {
         };
 
         this.editor.setSelection(selection);
-        console.log(`Select: Created selection ${selection.width}x${selection.height} at (${selection.x}, ${selection.y})`);
+        console.error(`Select: Created selection ${selection.width}x${selection.height} at (${selection.x}, ${selection.y})`);
       }
       // Reset state
       this.startX = null;
@@ -757,11 +757,11 @@ class PixelEditor {
   async undo(): Promise<void> {
     const operation = this.undoStack.pop();
     if (!operation) {
-      console.log('Undo: Nothing to undo');
+      console.error('Undo: Nothing to undo');
       return;
     }
 
-    console.log(`Undo: ${operation.description}`);
+    console.error(`Undo: ${operation.description}`);
 
     // Apply changes in reverse
     for (let i = operation.changes.length - 1; i >= 0; i--) {
@@ -780,11 +780,11 @@ class PixelEditor {
   async redo(): Promise<void> {
     const operation = this.redoStack.pop();
     if (!operation) {
-      console.log('Redo: Nothing to redo');
+      console.error('Redo: Nothing to redo');
       return;
     }
 
-    console.log(`Redo: ${operation.description}`);
+    console.error(`Redo: ${operation.description}`);
 
     // Apply changes forward
     for (const change of operation.changes) {
@@ -872,7 +872,7 @@ class PixelEditor {
   clearSelection(): void {
     this.selection = null;
     this.updateSelectionDisplay();
-    console.log('Selection cleared');
+    console.error('Selection cleared');
   }
 
   /**
@@ -886,7 +886,7 @@ class PixelEditor {
       height: this.imageHeight
     };
     this.updateSelectionDisplay();
-    console.log(`Selected all: ${this.imageWidth}x${this.imageHeight}`);
+    console.error(`Selected all: ${this.imageWidth}x${this.imageHeight}`);
   }
 
   /**
@@ -911,7 +911,7 @@ class PixelEditor {
    */
   async copy(): Promise<void> {
     if (!this.selection || !this.pixels) {
-      console.log('Copy: No selection or no image');
+      console.error('Copy: No selection or no image');
       return;
     }
 
@@ -941,7 +941,7 @@ class PixelEditor {
       pixels: clipPixels
     };
 
-    console.log(`Copied ${width}x${height} pixels to clipboard`);
+    console.error(`Copied ${width}x${height} pixels to clipboard`);
   }
 
   /**
@@ -949,7 +949,7 @@ class PixelEditor {
    */
   async cut(): Promise<void> {
     if (!this.selection || !this.pixels) {
-      console.log('Cut: No selection or no image');
+      console.error('Cut: No selection or no image');
       return;
     }
 
@@ -966,7 +966,7 @@ class PixelEditor {
     }
     this.endOperation('Cut selection');
 
-    console.log(`Cut ${width}x${height} pixels`);
+    console.error(`Cut ${width}x${height} pixels`);
   }
 
   /**
@@ -974,7 +974,7 @@ class PixelEditor {
    */
   async paste(destX?: number, destY?: number): Promise<void> {
     if (!this.clipboard || !this.pixels) {
-      console.log('Paste: No clipboard data or no image');
+      console.error('Paste: No clipboard data or no image');
       return;
     }
 
@@ -1003,7 +1003,7 @@ class PixelEditor {
     }
 
     this.endOperation(`Paste at (${px}, ${py})`);
-    console.log(`Pasted ${this.clipboard.width}x${this.clipboard.height} pixels at (${px}, ${py})`);
+    console.error(`Pasted ${this.clipboard.width}x${this.clipboard.height} pixels at (${px}, ${py})`);
   }
 
   /**
@@ -1032,7 +1032,7 @@ class PixelEditor {
    */
   addLayer(name?: string): Layer {
     if (this.layers.length >= MAX_LAYERS) {
-      console.log('Maximum layer count reached');
+      console.error('Maximum layer count reached');
       return this.layers[this.activeLayerIndex];
     }
 
@@ -1065,12 +1065,12 @@ class PixelEditor {
    */
   removeLayer(index: number): void {
     if (this.layers.length <= 1) {
-      console.log('Cannot remove the last layer');
+      console.error('Cannot remove the last layer');
       return;
     }
 
     if (index < 0 || index >= this.layers.length) {
-      console.log('Invalid layer index');
+      console.error('Invalid layer index');
       return;
     }
 
@@ -1081,7 +1081,7 @@ class PixelEditor {
 
     this.flattenToPixels();
     this.updateLayerDisplay();
-    console.log(`Removed layer: ${removedLayer.name}`);
+    console.error(`Removed layer: ${removedLayer.name}`);
   }
 
   /**
@@ -1091,7 +1091,7 @@ class PixelEditor {
     if (index >= 0 && index < this.layers.length) {
       this.activeLayerIndex = index;
       this.updateLayerDisplay();
-      console.log(`Active layer: ${this.layers[index].name}`);
+      console.error(`Active layer: ${this.layers[index].name}`);
     }
   }
 
@@ -1117,7 +1117,7 @@ class PixelEditor {
       this.layers[index].visible = !this.layers[index].visible;
       this.flattenToPixels();
       this.updateLayerDisplay();
-      console.log(`Layer ${this.layers[index].name} visibility: ${this.layers[index].visible}`);
+      console.error(`Layer ${this.layers[index].name} visibility: ${this.layers[index].visible}`);
     }
   }
 
@@ -1128,7 +1128,7 @@ class PixelEditor {
     if (index >= 0 && index < this.layers.length) {
       this.layers[index].opacity = Math.max(0, Math.min(255, opacity));
       this.flattenToPixels();
-      console.log(`Layer ${this.layers[index].name} opacity: ${this.layers[index].opacity}`);
+      console.error(`Layer ${this.layers[index].name} opacity: ${this.layers[index].opacity}`);
     }
   }
 
@@ -1173,7 +1173,7 @@ class PixelEditor {
    */
   mergeLayerDown(index: number): void {
     if (index <= 0 || index >= this.layers.length) {
-      console.log('Cannot merge: no layer below');
+      console.error('Cannot merge: no layer below');
       return;
     }
 
@@ -1271,7 +1271,7 @@ class PixelEditor {
    */
   async setFGColor(color: Color): Promise<void> {
     this.fgColor = color;
-    console.log(`Foreground color set to ${color.toHex()}`);
+    console.error(`Foreground color set to ${color.toHex()}`);
     if (this.colorLabel) {
       await this.colorLabel.setText(`${color.toHex()}`);
     }
@@ -1296,7 +1296,7 @@ class PixelEditor {
    */
   async setBGColor(color: Color): Promise<void> {
     this.bgColor = color;
-    console.log(`Background color set to ${color.toHex()}`);
+    console.error(`Background color set to ${color.toHex()}`);
     if (this.bgColorLabel) {
       await this.bgColorLabel.setText(`${color.toHex()}`);
     }
@@ -1355,7 +1355,7 @@ class PixelEditor {
       }
     }
 
-    console.log(`Switched to ${tool.name} tool`);
+    console.error(`Switched to ${tool.name} tool`);
     if (this.toolLabel) {
       await this.toolLabel.setText(`Tool: ${tool.name}`);
     }
@@ -1393,7 +1393,7 @@ class PixelEditor {
    * Based on: editor.go LoadFile()
    */
   async loadFile(filepath: string): Promise<void> {
-    console.log(`Loading file: ${filepath}`);
+    console.error(`Loading file: ${filepath}`);
 
     try {
       // Try to load actual image using jimp
@@ -1428,7 +1428,7 @@ class PixelEditor {
       this.redoStack = [];
 
       await this.addToRecentFiles(filepath);
-      console.log(`Loaded image: ${this.imageWidth}x${this.imageHeight}`);
+      console.error(`Loaded image: ${this.imageWidth}x${this.imageHeight}`);
     } catch (error) {
       console.error(`Failed to load image: ${error}`);
       // Fallback to blank image
@@ -1547,7 +1547,7 @@ class PixelEditor {
     // Ensure the file has .png extension
     const finalPath = filepath.endsWith('.png') ? filepath : `${filepath}.png`;
     await image.write(finalPath as `${string}.${string}`);
-    console.log(`Saved image to ${finalPath}`);
+    console.error(`Saved image to ${finalPath}`);
   }
 
   /**
@@ -1997,7 +1997,7 @@ if (require.main === module) {
     if (preloadedFile) {
       try {
         await editor.loadFile(preloadedFile);
-        console.log(`Loaded file from command line: ${preloadedFile}`);
+        console.error(`Loaded file from command line: ${preloadedFile}`);
       } catch (error) {
         console.error(`Failed to load file from command line: ${error}`);
       }

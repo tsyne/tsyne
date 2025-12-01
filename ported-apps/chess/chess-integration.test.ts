@@ -65,7 +65,7 @@ describe('Chess Integration Tests', () => {
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'chess-integration.png');
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved: ${screenshotPath}`);
+      console.error(`Screenshot saved: ${screenshotPath}`);
     }
 
     // Verify UI is visible - status label shows game state

@@ -165,16 +165,22 @@ fi
 # Helper function to build and test a ported app
 test_ported_app() {
   local app_name=$1
+  local bridge_mode=$2
   echo "--- :package: Ported App: ${app_name}"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
   npm install --ignore-scripts
-  timeout 300 npm test
+  if [ -n "$bridge_mode" ]; then
+    echo "Using bridge mode: $bridge_mode"
+    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 npm test
+  else
+    timeout 300 npm test
+  fi
 }
 
 # Test each ported app
 test_ported_app "chess"
 test_ported_app "fyles"
-test_ported_app "game-of-life"
+test_ported_app "game-of-life" "msgpack-uds"
 test_ported_app "image-viewer"
 test_ported_app "pixeledit"
 test_ported_app "slydes"

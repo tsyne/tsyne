@@ -282,11 +282,11 @@ export class Browser {
             onSelected: async () => {
               if (this.historyIndex >= 0) {
                 const entry = this.history[this.historyIndex];
-                console.log('\n========== Page Source ==========');
-                console.log(`URL: ${entry.url}`);
-                console.log('==================================');
-                console.log(entry.pageCode);
-                console.log('==================================\n');
+                // DEBUG: console.log('\n========== Page Source ==========');
+                // DEBUG: console.log(`URL: ${entry.url}`);
+                // DEBUG: console.log('==================================');
+                // DEBUG: console.log(entry.pageCode);
+                // DEBUG: console.log('==================================\n');
               }
             }
           }
@@ -423,7 +423,7 @@ export class Browser {
    * Build the complete window content: browser chrome + page content
    */
   private buildWindowContent(): void {
-    console.log('[buildWindowContent] Called - currentPageBuilder:', this.currentPageBuilder !== null ? 'SET' : 'NULL');
+    // DEBUG: console.log('[buildWindowContent] Called - currentPageBuilder:', this.currentPageBuilder !== null ? 'SET' : 'NULL');
     const { vbox, hbox, button, entry, separator, scroll, label, border } = require('./index');
 
     // Use border layout at top level: chrome at top, content in center, status bar at bottom
@@ -498,12 +498,12 @@ export class Browser {
           vbox(() => {
             if (this.currentPageBuilder !== null) {
               // Render current page content
-              console.log('[buildWindowContent] Rendering page content - calling currentPageBuilder()');
+              // DEBUG: console.log('[buildWindowContent] Rendering page content - calling currentPageBuilder()');
               this.currentPageBuilder();
-              console.log('[buildWindowContent] Page content rendered');
+              // DEBUG: console.log('[buildWindowContent] Page content rendered');
             } else {
               // Welcome message when no page loaded
-              console.log('[buildWindowContent] No currentPageBuilder - rendering placeholder');
+              // DEBUG: console.log('[buildWindowContent] No currentPageBuilder - rendering placeholder');
               label('Tsyne Browser');
               label('');
               label('Enter a URL in the address bar and click Go to navigate.');
@@ -572,10 +572,10 @@ export class Browser {
    * Navigate to a URL and load the Tsyne page
    */
   async changePage(url: string): Promise<void> {
-    console.log('changePage called with URL:', url);
+    // DEBUG: console.log('changePage called with URL:', url);
 
     if (this.loading) {
-      console.log('Page already loading, ignoring navigation');
+      // DEBUG: console.log('Page already loading, ignoring navigation');
       return;
     }
 
@@ -593,7 +593,7 @@ export class Browser {
       try {
         const currentUrlObj = new URL(this.currentUrl);
         const fullUrl = `${currentUrlObj.protocol}//${currentUrlObj.host}${url}`;
-        console.log('Converted relative URL to full URL:', fullUrl);
+        // DEBUG: console.log('Converted relative URL to full URL:', fullUrl);
         url = fullUrl;
       } catch (e) {
         console.error('Failed to convert relative URL:', e);
@@ -602,7 +602,7 @@ export class Browser {
 
     this.loading = true;
     this.currentUrl = url;
-    console.log('Starting navigation to:', url);
+    // DEBUG: console.log('Starting navigation to:', url);
 
     // Update address bar
     if (this.addressBarEntry) {
@@ -620,19 +620,19 @@ export class Browser {
       const cachedEntry = this.pageCache.get(url);
       if (cachedEntry) {
         // Cache hit - use cached page
-        console.log('Cache hit for URL:', url);
+        // DEBUG: console.log('Cache hit for URL:', url);
         pageCode = cachedEntry.pageCode;
         fromCache = true;
         this.statusText = `Loaded from cache: ${url}`;
       } else {
         // Cache miss - fetch from server
-        console.log('Cache miss for URL:', url);
+        // DEBUG: console.log('Cache miss for URL:', url);
         this.statusText = `Loading ${url}...`;
         pageCode = await this.fetchPage(url);
 
         // Check if loading was cancelled
         if (!this.loading) {
-          console.log('Loading cancelled');
+          // DEBUG: console.log('Loading cancelled');
           this.statusText = 'Ready';
           return;
         }
@@ -643,7 +643,7 @@ export class Browser {
           pageCode,
           fetchedAt: Date.now()
         });
-        console.log('Added to cache:', url);
+        // DEBUG: console.log('Added to cache:', url);
       }
 
       // Add to history (clear forward history if navigating from middle)
@@ -691,7 +691,7 @@ export class Browser {
       return;
     }
 
-    console.log('Stopping page load');
+    // DEBUG: console.log('Stopping page load');
     this.loading = false;
 
     // Abort current HTTP request
@@ -729,7 +729,7 @@ export class Browser {
    */
   async back(): Promise<void> {
     if (this.historyIndex <= 0) {
-      console.log('No previous page in history');
+      // DEBUG: console.log('No previous page in history');
       return;
     }
 
@@ -757,7 +757,7 @@ export class Browser {
    */
   async forward(): Promise<void> {
     if (this.historyIndex >= this.history.length - 1) {
-      console.log('No next page in history');
+      // DEBUG: console.log('No next page in history');
       return;
     }
 
@@ -802,7 +802,7 @@ export class Browser {
     if (this.homeUrl) {
       await this.changePage(this.homeUrl);
     } else {
-      console.log('No home URL configured');
+      // DEBUG: console.log('No home URL configured');
     }
   }
 
@@ -872,11 +872,11 @@ export class Browser {
         },
         pushState: (state: unknown, title: string, url?: string) => {
           // For now, we don't support pushState fully
-          console.log('[Browser] pushState not fully implemented:', { state, title, url });
+          // DEBUG: console.log('[Browser] pushState not fully implemented:', { state, title, url });
         },
         replaceState: (state: unknown, title: string, url?: string) => {
           // For now, we don't support replaceState fully
-          console.log('[Browser] replaceState not fully implemented:', { state, title, url });
+          // DEBUG: console.log('[Browser] replaceState not fully implemented:', { state, title, url });
         }
       };
 
@@ -980,8 +980,8 @@ export class Browser {
       // If URL parsing fails, use as-is
     }
 
-    console.log('renderPage called for path:', pagePath);
-    console.log('Code length:', pageCode.length, 'chars');
+    // DEBUG: console.log('renderPage called for path:', pagePath);
+    // DEBUG: console.log('Code length:', pageCode.length, 'chars');
 
     // Create browser context for the page
     const browserContext: BrowserContext = {
@@ -1001,7 +1001,7 @@ export class Browser {
 
     try {
       //=== DUAL EXECUTION: Discovery Pass ===
-      console.log('[Discovery] Starting resource discovery pass...');
+      // DEBUG: console.log('[Discovery] Starting resource discovery pass...');
       const { ResourceDiscoveryContext, createDiscoveryAPI } = require('./resource-discovery');
       const discoveryContext = new ResourceDiscoveryContext();
       const discoveryTsyne = createDiscoveryAPI(discoveryContext);
@@ -1011,24 +1011,24 @@ export class Browser {
         const discoveryFunction = new Function('browserContext', 'tsyne', pageCode);
         discoveryFunction(browserContext, discoveryTsyne);
       } catch (error) {
-        console.log('[Discovery] Error during discovery (non-fatal):', error);
+        // DEBUG: console.log('[Discovery] Error during discovery (non-fatal):', error);
       }
 
       const discoveredResources = discoveryContext.getDiscoveredResources();
-      console.log('[Discovery] Found resources:', discoveredResources);
+      // DEBUG: console.log('[Discovery] Found resources:', discoveredResources);
 
       //=== RESOURCE FETCHING ===
       let resourceMap = new Map<string, string>();
       if (discoveredResources.images.length > 0) {
-        console.log(`[ResourceFetch] Fetching ${discoveredResources.images.length} image(s)...`);
+        // DEBUG: console.log(`[ResourceFetch] Fetching ${discoveredResources.images.length} image(s)...`);
         const { ResourceFetcher } = require('./resource-fetcher');
         const fetcher = new ResourceFetcher();
         resourceMap = await fetcher.fetchResources(discoveredResources.images, this.currentUrl);
-        console.log(`[ResourceFetch] Successfully fetched ${resourceMap.size} resource(s)`);
+        // DEBUG: console.log(`[ResourceFetch] Successfully fetched ${resourceMap.size} resource(s)`);
       }
 
       //=== REAL EXECUTION: Render Pass ===
-      console.log('[Render] Starting real render pass with resources...');
+      // DEBUG: console.log('[Render] Starting real render pass with resources...');
 
       // FIX: Don't create a new Context! Update the existing context's resourceMap instead.
       // Creating a new Context clears windowStack/containerStack, breaking widget parent lookups.
@@ -1037,36 +1037,36 @@ export class Browser {
 
       const tsyne = require('./index');
 
-      console.log('[Render] Creating page builder...');
+      // DEBUG: console.log('[Render] Creating page builder...');
 
       // Create a content builder that executes the page code with resources
       this.currentPageBuilder = () => {
-        console.log('[Render] Executing page builder...');
+        // DEBUG: console.log('[Render] Executing page builder...');
         // Execute the page code - it will create widgets directly
         const pageFunction = new Function('browserContext', 'tsyne', pageCode);
         pageFunction(browserContext, tsyne);
-        console.log('[Render] Page builder executed');
+        // DEBUG: console.log('[Render] Page builder executed');
       };
 
-      console.log('[Render] Setting window content...');
-      console.log('[Render] currentPageBuilder is:', this.currentPageBuilder !== null ? 'SET' : 'NULL');
+      // DEBUG: console.log('[Render] Setting window content...');
+      // DEBUG: console.log('[Render] currentPageBuilder is:', this.currentPageBuilder !== null ? 'SET' : 'NULL');
 
       // Re-render the entire window (chrome + new content)
       await this.window.setContent(() => {
-        console.log('[Render] Inside setContent callback - about to call buildWindowContent()');
+        // DEBUG: console.log('[Render] Inside setContent callback - about to call buildWindowContent()');
         this.buildWindowContent();
-        console.log('[Render] buildWindowContent() completed');
+        // DEBUG: console.log('[Render] buildWindowContent() completed');
       });
 
-      console.log('[Render] Window content set - setContent() returned');
+      // DEBUG: console.log('[Render] Window content set - setContent() returned');
 
       // Only call show() on first page load (window needs initial show)
       // After that, window is already shown
       if (!this.firstPageLoaded) {
-        console.log('[Render] Showing window for first time...');
+        // DEBUG: console.log('[Render] Showing window for first time...');
         await this.window.show();
         this.firstPageLoaded = true;
-        console.log('[Render] Window shown');
+        // DEBUG: console.log('[Render] Window shown');
       }
 
       // In test mode, wait briefly for widgets to register
@@ -1083,7 +1083,7 @@ export class Browser {
         }
       }
 
-      console.log('[Render] renderPage completed successfully');
+      // DEBUG: console.log('[Render] renderPage completed successfully');
     } catch (error) {
       console.error('[Error] Error in renderPage:', error);
       await this.showError(this.currentUrl, error);
@@ -1149,7 +1149,7 @@ export class Browser {
       };
 
       fs.writeFileSync(this.historyFilePath, JSON.stringify(historyData, null, 2), 'utf8');
-      console.log('History saved to:', this.historyFilePath);
+      // DEBUG: console.log('History saved to:', this.historyFilePath);
     } catch (error) {
       console.error('Failed to save history:', error);
       // Don't throw - history persistence failure shouldn't crash browser
@@ -1168,7 +1168,7 @@ export class Browser {
         if (historyData.history && Array.isArray(historyData.history)) {
           this.history = historyData.history;
           this.historyIndex = historyData.historyIndex || -1;
-          console.log('History loaded from disk:', this.history.length, 'entries');
+          // DEBUG: console.log('History loaded from disk:', this.history.length, 'entries');
         }
       }
     } catch (error) {
@@ -1191,12 +1191,12 @@ export class Browser {
       // Delete history file from disk
       if (fs.existsSync(this.historyFilePath)) {
         fs.unlinkSync(this.historyFilePath);
-        console.log('History file deleted:', this.historyFilePath);
+        // DEBUG: console.log('History file deleted:', this.historyFilePath);
       }
 
       // Update status
       this.statusText = 'History cleared';
-      console.log('Browser history cleared');
+      // DEBUG: console.log('Browser history cleared');
 
       // Update menu bar to reflect empty history (disable back/forward)
       await this.setupMenuBar();
@@ -1212,13 +1212,13 @@ export class Browser {
    */
   async addBookmark(title?: string): Promise<void> {
     if (!this.currentUrl) {
-      console.log('No current page to bookmark');
+      // DEBUG: console.log('No current page to bookmark');
       return;
     }
 
     // Check if already bookmarked
     if (this.isBookmarked(this.currentUrl)) {
-      console.log('Page already bookmarked:', this.currentUrl);
+      // DEBUG: console.log('Page already bookmarked:', this.currentUrl);
       this.statusText = 'Page already bookmarked';
       return;
     }
@@ -1236,7 +1236,7 @@ export class Browser {
     this.saveBookmarks();
 
     this.statusText = `Bookmarked: ${bookmarkTitle}`;
-    console.log('Added bookmark:', bookmark);
+    // DEBUG: console.log('Added bookmark:', bookmark);
 
     // Update menu bar to include new bookmark
     await this.setupMenuBar();
@@ -1252,12 +1252,12 @@ export class Browser {
     if (this.bookmarks.length < initialLength) {
       this.saveBookmarks();
       this.statusText = 'Bookmark removed';
-      console.log('Removed bookmark:', url);
+      // DEBUG: console.log('Removed bookmark:', url);
 
       // Update menu bar to reflect removed bookmark
       await this.setupMenuBar();
     } else {
-      console.log('Bookmark not found:', url);
+      // DEBUG: console.log('Bookmark not found:', url);
     }
   }
 
@@ -1286,7 +1286,7 @@ export class Browser {
 
         if (bookmarksData.bookmarks && Array.isArray(bookmarksData.bookmarks)) {
           this.bookmarks = bookmarksData.bookmarks;
-          console.log('Bookmarks loaded from disk:', this.bookmarks.length, 'entries');
+          // DEBUG: console.log('Bookmarks loaded from disk:', this.bookmarks.length, 'entries');
         }
       }
     } catch (error) {
@@ -1313,7 +1313,7 @@ export class Browser {
       };
 
       fs.writeFileSync(this.bookmarksFilePath, JSON.stringify(bookmarksData, null, 2), 'utf8');
-      console.log('Bookmarks saved to:', this.bookmarksFilePath);
+      // DEBUG: console.log('Bookmarks saved to:', this.bookmarksFilePath);
     } catch (error) {
       console.error('Failed to save bookmarks:', error);
       // Don't throw - bookmark persistence failure shouldn't crash browser
@@ -1337,7 +1337,7 @@ export class Browser {
       };
 
       fs.writeFileSync(exportPath, JSON.stringify(exportData, null, 2), 'utf8');
-      console.log('Bookmarks exported to:', exportPath);
+      // DEBUG: console.log('Bookmarks exported to:', exportPath);
       this.statusText = `Exported ${this.bookmarks.length} bookmark(s) to ${path.basename(exportPath)}`;
 
       await this.window.showInfo(
@@ -1409,7 +1409,7 @@ export class Browser {
       }
 
       this.saveBookmarks();
-      console.log(`Imported ${addedCount} bookmark(s) from:`, filePath);
+      // DEBUG: console.log(`Imported ${addedCount} bookmark(s) from:`, filePath);
       this.statusText = `Imported ${addedCount} bookmark(s)`;
 
       await this.window.showInfo(
@@ -1448,7 +1448,7 @@ export class Browser {
 
     // Get current page code
     if (this.historyIndex < 0 || this.historyIndex >= this.history.length) {
-      console.log('No page loaded for find');
+      // DEBUG: console.log('No page loaded for find');
       return 0;
     }
 
@@ -1476,7 +1476,7 @@ export class Browser {
 
     const matchText = this.findMatches.length === 1 ? 'match' : 'matches';
     this.statusText = `Found ${this.findMatches.length} ${matchText} for "${query}"`;
-    console.log(`Find in page: "${query}" - ${this.findMatches.length} matches`);
+    // DEBUG: console.log(`Find in page: "${query}" - ${this.findMatches.length} matches`);
 
     return this.findMatches.length;
   }
@@ -1487,20 +1487,20 @@ export class Browser {
    */
   findNext(): boolean {
     if (this.findMatches.length === 0) {
-      console.log('No find results to navigate');
+      // DEBUG: console.log('No find results to navigate');
       return false;
     }
 
     if (this.findCurrentIndex < this.findMatches.length - 1) {
       this.findCurrentIndex++;
       this.statusText = `Match ${this.findCurrentIndex + 1} of ${this.findMatches.length}`;
-      console.log(`Find next: ${this.findCurrentIndex + 1}/${this.findMatches.length}`);
+      // DEBUG: console.log(`Find next: ${this.findCurrentIndex + 1}/${this.findMatches.length}`);
       return true;
     } else {
       // Wrap to first match
       this.findCurrentIndex = 0;
       this.statusText = `Match ${this.findCurrentIndex + 1} of ${this.findMatches.length} (wrapped)`;
-      console.log(`Find next: wrapped to first match`);
+      // DEBUG: console.log(`Find next: wrapped to first match`);
       return true;
     }
   }
@@ -1511,20 +1511,20 @@ export class Browser {
    */
   findPrevious(): boolean {
     if (this.findMatches.length === 0) {
-      console.log('No find results to navigate');
+      // DEBUG: console.log('No find results to navigate');
       return false;
     }
 
     if (this.findCurrentIndex > 0) {
       this.findCurrentIndex--;
       this.statusText = `Match ${this.findCurrentIndex + 1} of ${this.findMatches.length}`;
-      console.log(`Find previous: ${this.findCurrentIndex + 1}/${this.findMatches.length}`);
+      // DEBUG: console.log(`Find previous: ${this.findCurrentIndex + 1}/${this.findMatches.length}`);
       return true;
     } else {
       // Wrap to last match
       this.findCurrentIndex = this.findMatches.length - 1;
       this.statusText = `Match ${this.findCurrentIndex + 1} of ${this.findMatches.length} (wrapped)`;
-      console.log(`Find previous: wrapped to last match`);
+      // DEBUG: console.log(`Find previous: wrapped to last match`);
       return true;
     }
   }
@@ -1537,7 +1537,7 @@ export class Browser {
     this.findMatches = [];
     this.findCurrentIndex = -1;
     this.statusText = 'Find cleared';
-    console.log('Find cleared');
+    // DEBUG: console.log('Find cleared');
   }
 
   /**
@@ -1578,19 +1578,19 @@ export class Browser {
    * Show browsing history in console
    */
   showHistory(): void {
-    console.log('\n========== Browsing History ==========');
-    console.log(`Total entries: ${this.history.length}`);
-    console.log(`Current index: ${this.historyIndex}`);
-    console.log('======================================');
+    // DEBUG: console.log('\n========== Browsing History ==========');
+    // DEBUG: console.log(`Total entries: ${this.history.length}`);
+    // DEBUG: console.log(`Current index: ${this.historyIndex}`);
+    // DEBUG: console.log('======================================');
 
     if (this.history.length === 0) {
-      console.log('(No history)');
+      // DEBUG: console.log('(No history)');
     } else {
       const formatted = this.getFormattedHistory();
       formatted.forEach(line => console.log(line));
     }
 
-    console.log('======================================\n');
+    // DEBUG: console.log('======================================\n');
   }
 
   /**

@@ -86,7 +86,7 @@ class FylesMultiPanel {
    */
   removePanel(index: number): void {
     if (this.panels.length <= 1) {
-      console.log('Cannot remove the last panel');
+      console.error('Cannot remove the last panel');
       return;
     }
     this.panels.splice(index, 1);
@@ -374,10 +374,10 @@ class FylesPanel {
           await this.handleFileDrop(dragData, dir.path);
         },
         onDragEnter: (dragData: string, _sourceId: string) => {
-          console.log(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
+          console.error(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
         },
         onDragLeave: () => {
-          console.log(`Drag left nav folder: ${dir.fullName}`);
+          console.error(`Drag left nav folder: ${dir.fullName}`);
         },
       });
 
@@ -474,10 +474,10 @@ class FylesPanel {
       button.makeDraggable({
         dragData: item.path,
         onDragStart: () => {
-          console.log(`Started dragging: ${item.fullName}`);
+          console.error(`Started dragging: ${item.fullName}`);
         },
         onDragEnd: () => {
-          console.log(`Stopped dragging: ${item.fullName}`);
+          console.error(`Stopped dragging: ${item.fullName}`);
         },
       });
 
@@ -488,10 +488,10 @@ class FylesPanel {
             await this.handleFileDrop(dragData, item.path);
           },
           onDragEnter: (dragData: string, _sourceId: string) => {
-            console.log(`Drag entered folder: ${item.fullName}, data: ${dragData}`);
+            console.error(`Drag entered folder: ${item.fullName}, data: ${dragData}`);
           },
           onDragLeave: () => {
-            console.log(`Drag left folder: ${item.fullName}`);
+            console.error(`Drag left folder: ${item.fullName}`);
           },
         });
       }
@@ -551,14 +551,14 @@ class FylesPanel {
   private async handleFileDrop(sourcePath: string, destFolder: string): Promise<void> {
     // Don't allow dropping onto itself or parent
     if (sourcePath === destFolder || destFolder.startsWith(sourcePath + path.sep)) {
-      console.log('Cannot drop folder onto itself or its children');
+      console.error('Cannot drop folder onto itself or its children');
       return;
     }
 
     // Don't allow dropping into same directory (no-op)
     const sourceDir = path.dirname(sourcePath);
     if (sourceDir === destFolder) {
-      console.log('File is already in this directory');
+      console.error('File is already in this directory');
       return;
     }
 
@@ -568,7 +568,7 @@ class FylesPanel {
       // For now, default to move operation
       // Could add a dialog to choose move vs copy
       await this.store.moveItem(sourcePath, destFolder);
-      console.log(`Moved ${fileName} to ${destFolder}`);
+      console.error(`Moved ${fileName} to ${destFolder}`);
     } catch (err) {
       console.error(`Failed to move ${fileName}:`, err);
       if (this.window) {
@@ -592,7 +592,7 @@ class FylesPanel {
       // Open file with default application
       try {
         await openFile(item.path);
-        console.log(`Opened file: ${item.path}`);
+        console.error(`Opened file: ${item.path}`);
       } catch (err) {
         console.error('Open file failed:', err);
       }

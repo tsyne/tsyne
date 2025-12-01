@@ -47,12 +47,12 @@ export class AccessibilityManager {
 
     // Listen for pointer enter events to announce widgets
     this.ctx.bridge.on('pointerEnter', (data: any) => {
-      console.log('[Accessibility] pointerEnter event received:', data);
+      // DEBUG: console.log('[Accessibility] pointerEnter event received:', data);
       if (this.enabled && data.widgetId) {
-        console.log('[Accessibility] Announcing widget:', data.widgetId);
+        // DEBUG: console.log('[Accessibility] Announcing widget:', data.widgetId);
         this.announceWidget(data.widgetId);
       } else {
-        console.log('[Accessibility] Not announcing - enabled:', this.enabled, 'widgetId:', data.widgetId);
+        // DEBUG: console.log('[Accessibility] Not announcing - enabled:', this.enabled, 'widgetId:', data.widgetId);
       }
     });
 
@@ -221,7 +221,7 @@ export class AccessibilityManager {
   announce(text: string): void {
     if (!this.enabled) return;
 
-    console.log(`[TTS] ${text}`);
+    // DEBUG: console.log(`[TTS] ${text}`);
 
     // Add to queue
     this.speechQueue.push(text);

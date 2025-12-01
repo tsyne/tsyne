@@ -181,7 +181,7 @@ describe.skip('Fyles File Browser Tests', () => {
       const screenshotPath = path.join(__dirname, '../screenshots', 'fyles.png');
       fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+      console.error(`📸 Screenshot saved: ${screenshotPath}`);
     }
 
     expect(true).toBe(true);

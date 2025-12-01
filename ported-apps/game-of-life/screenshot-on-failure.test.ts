@@ -28,32 +28,34 @@ describe('Game of Life Screenshot Debug', () => {
 
     // Take screenshot IMMEDIATELY after run (no wait)
     await tsyneTest.screenshot('/tmp/game-of-life-immediately-after-run.png');
-    console.log('Screenshot 1: Immediately after run');
+    console.error('Screenshot 1: Immediately after run');
 
     // Get all text immediately
     const textImmediate = await ctx.getAllTextAsString();
-    console.log('=== TEXT IMMEDIATELY AFTER RUN ===');
-    console.log(textImmediate);
-    console.log('=== END ===');
+    console.error('=== TEXT IMMEDIATELY AFTER RUN ===');
+    console.error(textImmediate);
+    console.error('=== END ===');
 
-    // Now try to find Generation: 0 like the failing tests do
-    console.log('Attempting to find "Generation: 0"...');
+    // Now try to find generation number using ID (correct approach)
+    console.error('Attempting to find generation number by ID...');
     try {
-      await ctx.getByText('Generation: 0').within(500).shouldExist();
-      console.log('SUCCESS: Found "Generation: 0"');
+      // Give time for async window setup
+      await ctx.getByText('Start').within(500).shouldExist();
+      await ctx.getByID('generationNum').within(500).shouldBe('0');
+      console.error('SUCCESS: Found generation number = 0');
     } catch (error) {
-      console.log('FAILED to find "Generation: 0"');
-      console.log('Error:', (error as Error).message);
+      console.error('FAILED to find generation number');
+      console.error('Error:', (error as Error).message);
 
       // Take screenshot at point of failure
       await tsyneTest.screenshot('/tmp/game-of-life-after-failure.png');
-      console.log('Screenshot 2: After failure to find Generation: 0');
+      console.error('Screenshot 2: After failure');
 
       // Get text again
       const textAfterFail = await ctx.getAllTextAsString();
-      console.log('=== TEXT AFTER FAILURE ===');
-      console.log(textAfterFail);
-      console.log('=== END ===');
+      console.error('=== TEXT AFTER FAILURE ===');
+      console.error(textAfterFail);
+      console.error('=== END ===');
 
       throw error;
     }

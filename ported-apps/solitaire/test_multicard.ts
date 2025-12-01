@@ -27,17 +27,17 @@ if (require.main === module) {
       handCards: []
     });
 
-    console.log('\n=== Multi-Card Move Test Setup ===');
-    console.log('Stack 0: King♠ → Queen♥ → Jack♣');
-    console.log('Stack 1: Empty');
-    console.log('Stack 2: Ace♦');
-    console.log('\nTry these moves:');
-    console.log('1. Click Stack 0, then click Stack 1 → Should move all 3 cards (King + Queen + Jack)');
-    console.log('2. Click Stack 0 again, then click empty space → Puts cards back');
-    console.log('3. Set up: Move King from Stack 0 to Stack 1 (single card)');
-    console.log('4. Now Stack 0 has Queen♥ → Jack♣');
-    console.log('5. Click Stack 0, the Jack indicator should show "(2 cards)"');
-    console.log('6. The multi-card sequence move is working!');
+    console.error('\n=== Multi-Card Move Test Setup ===');
+    console.error('Stack 0: King♠ → Queen♥ → Jack♣');
+    console.error('Stack 1: Empty');
+    console.error('Stack 2: Ace♦');
+    console.error('\nTry these moves:');
+    console.error('1. Click Stack 0, then click Stack 1 → Should move all 3 cards (King + Queen + Jack)');
+    console.error('2. Click Stack 0 again, then click empty space → Puts cards back');
+    console.error('3. Set up: Move King from Stack 0 to Stack 1 (single card)');
+    console.error('4. Now Stack 0 has Queen♥ → Jack♣');
+    console.error('5. Click Stack 0, the Jack indicator should show "(2 cards)"');
+    console.error('6. The multi-card sequence move is working!');
 
     setInterval(() => {}, 1000);
   });

@@ -514,7 +514,7 @@ describe('Terminal UI Tests', () => {
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../../examples/screenshots', 'terminal-full.png');
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved: ${screenshotPath}`);
+      console.error(`Screenshot saved: ${screenshotPath}`);
     }
   });
 

@@ -217,7 +217,7 @@ export function initializeGlobals(): void {
         g.__tsyneAlertHandler(message);
       } else {
         // Fallback to console if no handler is registered
-        console.log('[ALERT]', message);
+        // DEBUG: console.log('[ALERT]', message);
       }
     };
   }
@@ -230,7 +230,7 @@ export function initializeGlobals(): void {
         return await g.__tsyneConfirmHandler(message);
       } else {
         // Fallback to console if no handler is registered
-        console.log('[CONFIRM]', message);
+        // DEBUG: console.log('[CONFIRM]', message);
         return false;
       }
     };
@@ -244,7 +244,7 @@ export function initializeGlobals(): void {
         return await g.__tsynePromptHandler(message, defaultValue);
       } else {
         // Fallback to console if no handler is registered
-        console.log('[PROMPT]', message, defaultValue);
+        // DEBUG: console.log('[PROMPT]', message, defaultValue);
         return null;
       }
     };

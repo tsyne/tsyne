@@ -752,10 +752,9 @@ class GameOfLifeUI {
     ]);
   }
 
-  async setupWindowOnly(win: Window): Promise<void> {
+  setupWindowSync(win: Window): void {
     this.win = win;
     this.buildMainMenu(win);
-    await this.loadPreferences();
 
     // Set close intercept
     win.setCloseIntercept(async () => {
@@ -770,17 +769,22 @@ class GameOfLifeUI {
       await this.savePreferences();
       return true;
     });
+
+    // Load preferences asynchronously after window is set up
+    this.loadPreferences().catch(err => {
+      console.error('Failed to load preferences:', err);
+    });
   }
 
   buildContent(): void {
     this.a.vbox(() => {
       // Control buttons (using hbox instead of toolbar since toolbar doesn't render labels)
       this.a.hbox(() => {
-        this.a.button('Start', () => this.start());
-        this.a.button('Pause', () => this.pause());
-        this.a.button('Step', () => this.step());
-        this.a.button('Reset', () => this.reset());
-        this.a.button('Clear', () => this.clearWithConfirm());
+        this.a.button('Start', () => this.start()).withId('startBtn');
+        this.a.button('Pause', () => this.pause()).withId('pauseBtn');
+        this.a.button('Step', () => { this.step(); }).withId('stepBtn');
+        this.a.button('Reset', () => { this.reset(); }).withId('resetBtn');
+        this.a.button('Clear', () => this.clearWithConfirm()).withId('clearBtn');
       });
 
       // Status bar
@@ -805,7 +809,7 @@ class GameOfLifeUI {
         this.a.label('Speed:');
         this.a.button('<<', () => this.changeSpeed(100));
         this.a.button('<', () => this.changeSpeed(25));
-        this.a.button('Reset', () => this.resetSpeed());
+        this.a.button('⟲', () => this.resetSpeed());
         this.a.button('>', () => this.changeSpeed(-25));
         this.a.button('>>', () => this.changeSpeed(-100));
       });
@@ -835,15 +839,15 @@ class GameOfLifeUI {
     this.updateStatus();
   }
 
-  private step(): void {
+  private async step(): Promise<void> {
     this.game.tick();
-    this.updateDisplay();
+    await this.updateDisplay();
   }
 
-  private reset(): void {
+  private async reset(): Promise<void> {
     this.game.reset();
-    this.updateDisplay();
-    this.updateStatus();
+    await this.updateDisplay();
+    await this.updateStatus();
   }
 
   private async clearWithConfirm(): Promise<void> {
@@ -1001,7 +1005,20 @@ class GameOfLifeUI {
     this.lastBoardState = board.map(row => [...row]);
 
     if (pixels.length > 0) {
-      await this.boardCanvas.setPixels(pixels);
+      // Batch updates to avoid exceeding 10MB protocol limit
+      // Each pixel is ~50 bytes JSON, so 50,000 pixels ≈ 2.5MB per batch
+      const BATCH_SIZE = 50000;
+
+      if (pixels.length <= BATCH_SIZE) {
+        // Small update - send directly
+        await this.boardCanvas.setPixels(pixels);
+      } else {
+        // Large update - send in batches sequentially
+        for (let i = 0; i < pixels.length; i += BATCH_SIZE) {
+          const batch = pixels.slice(i, i + BATCH_SIZE);
+          await this.boardCanvas.setPixels(batch);
+        }
+      }
     }
   }
 
@@ -1038,11 +1055,11 @@ export function createGameOfLifeApp(a: App): GameOfLifeUI {
   // Register cleanup callback to stop the game timer before shutdown
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Game of Life', width: 900, height: 700 }, async (win: Window) => {
-    // Setup window (menu, preferences, close intercept)
-    await ui.setupWindowOnly(win);
+  a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
+    // Setup window synchronously (preferences load async in background)
+    ui.setupWindowSync(win);
 
-    // Set content inline (like test-canvas.ts)
+    // Set content
     win.setContent(() => {
       ui.buildContent();
     });

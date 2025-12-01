@@ -5,7 +5,7 @@ import { Widget } from './base';
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, onClick?: () => void, className?: string) {
+  constructor(ctx: Context, text: string, onClick?: () => void | Promise<void>, className?: string) {
     const id = ctx.generateId('button');
     super(ctx, id);
 
@@ -14,8 +14,8 @@ export class Button extends Widget {
     if (onClick) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, () => {
-        onClick();
+      ctx.bridge.registerEventHandler(callbackId, async () => {
+        await onClick();
       });
     }
 

@@ -249,7 +249,7 @@ describe('Pixel Editor - Selection and Layers', () => {
         const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-advanced-features.png');
         await ctx.wait(500);
         await tsyneTest.screenshot(screenshotPath);
-        console.log(`Screenshot saved: ${screenshotPath}`);
+        console.error(`Screenshot saved: ${screenshotPath}`);
       }
     }, 30000);
   });

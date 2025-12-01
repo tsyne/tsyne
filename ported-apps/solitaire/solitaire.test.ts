@@ -171,7 +171,7 @@ describe('Solitaire Game Tests', () => {
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'solitaire.png');
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+      console.error(`📸 Screenshot saved: ${screenshotPath}`);
     }
 
     // Just verify the window is showing

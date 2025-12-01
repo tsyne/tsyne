@@ -267,7 +267,7 @@ export class GrpcBridge {
     await this.createGrpcClient(port, token);
 
     this.connected = true;
-    console.log(`[gRPC] Connected to bridge on port ${port}`);
+    // DEBUG: console.log(`[gRPC] Connected to bridge on port ${port}`);
   }
 
   /**

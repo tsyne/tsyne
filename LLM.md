@@ -10,8 +10,15 @@ There's a **regular app mode** for standalone desktop applications, and a **brow
 ## Architecture
 
 ```
-TypeScript (src/) ←→ JSON-RPC over stdio ←→ Go Bridge (bridge/) ←→ Fyne widgets
+TypeScript (src/) ←→ IPC Protocol ←→ Go Bridge (bridge/) ←→ Fyne widgets
 ```
+
+**Bridge Protocols:**
+- `stdio` (default): JSON over stdio, compatible everywhere
+- `grpc`: Binary protocol over TCP, faster serialization
+- `msgpack-uds` (fastest): MessagePack over Unix Domain Sockets, ~10x faster than JSON
+
+Set via `TSYNE_BRIDGE_MODE` env var or `bridgeMode` option in `app()`
 
 **Key files:**
 - `src/app.ts` - App class, factory methods for all widgets

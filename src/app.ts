@@ -278,11 +278,11 @@ export class App {
   /**
    * Create a clickable button.
    * @param text - Button label
-   * @param onClick - Click handler
+   * @param onClick - Click handler (can be async)
    * @param className - Optional CSS class name for styling
    * @returns Button widget
    */
-  button(text: string, onClick?: () => void, className?: string): Button {
+  button(text: string, onClick?: () => void | Promise<void>, className?: string): Button {
     return new Button(this.ctx, text, onClick, className);
   }
 

@@ -32,7 +32,7 @@ describe('Draw Button Layout Test (No Status Label Dependency)', () => {
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    console.log('\n=== Testing layout stability WITHOUT status label dependency ===');
+    console.error('\n=== Testing layout stability WITHOUT status label dependency ===');
 
     let initialY: number | undefined;
     const yPositions: number[] = [];
@@ -56,10 +56,10 @@ describe('Draw Button Layout Test (No Status Label Dependency)', () => {
 
       if (i === 0) {
         initialY = currentY;
-        console.log(`Initial Y: ${currentY}`);
+        console.error(`Initial Y: ${currentY}`);
       } else {
         const shift = currentY - initialY!;
-        console.log(`Press ${i + 1}: Y=${currentY}, shift=${shift}px`);
+        console.error(`Press ${i + 1}: Y=${currentY}, shift=${shift}px`);
 
         // Fail if we detect shift
         if (Math.abs(shift) > 2) {
@@ -70,7 +70,7 @@ describe('Draw Button Layout Test (No Status Label Dependency)', () => {
       }
     }
 
-    console.log(`\n✅ SUCCESS: Y position stable across 20 clicks`);
-    console.log(`   All Y positions: ${yPositions.join(', ')}`);
+    console.error(`\n✅ SUCCESS: Y position stable across 20 clicks`);
+    console.error(`   All Y positions: ${yPositions.join(', ')}`);
   }, 60000);
 });

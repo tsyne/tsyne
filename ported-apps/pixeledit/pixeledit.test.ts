@@ -64,7 +64,7 @@ describe('Pixel Editor Tests', () => {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved: ${screenshotPath}`);
+      console.error(`Screenshot saved: ${screenshotPath}`);
     }
   });
 

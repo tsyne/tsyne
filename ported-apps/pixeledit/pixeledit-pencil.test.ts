@@ -88,7 +88,7 @@ describe('pixeledit - pencil drawing', () => {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-pencil.png');
       await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved: ${screenshotPath}`);
+      console.error(`Screenshot saved: ${screenshotPath}`);
     }
   }, 30000);
 
@@ -168,7 +168,7 @@ describe('pixeledit - pencil drawing', () => {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-pencil-drawing.png');
       await ctx.wait(300);
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved: ${screenshotPath}`);
+      console.error(`Screenshot saved: ${screenshotPath}`);
     }
   }, 30000);
 });

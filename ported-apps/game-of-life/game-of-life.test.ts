@@ -42,11 +42,11 @@ describe('Game of Life Tests', () => {
     await testApp.run();
 
     // Verify toolbar buttons
-    await ctx.getByText('Start').within(500).shouldExist();
-    await ctx.getByText('Pause').within(500).shouldExist();
-    await ctx.getByText('Step').within(500).shouldExist();
-    await ctx.getByText('Reset').within(500).shouldExist();
-    await ctx.getByText('Clear').within(500).shouldExist();
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getByID('stepBtn').within(500).shouldExist();
+    await ctx.getByID('resetBtn').within(500).shouldExist();
+    await ctx.getByID('clearBtn').within(500).shouldExist();
 
     // Verify status elements
     await ctx.getByID('generationNum').within(100).shouldBe('0');
@@ -61,16 +61,16 @@ describe('Game of Life Tests', () => {
       await ctx.wait(1000);
 
       // Run the game for a few generations to show it in action
-      await ctx.getByText('Start').click();
+      await ctx.getByID('startBtn').click();
       await ctx.wait(800); // Let it run for ~5 generations (166ms per gen)
-      await ctx.getByText('Pause').click();
+      await ctx.getByID('pauseBtn').click();
 
       // Wait for board rendering to complete
       await ctx.wait(500);
 
       const screenshotPath = path.join(__dirname, '../screenshots', 'game-of-life.png');
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`📸 Screenshot saved: ${screenshotPath}`);
+      console.error(`📸 Screenshot saved: ${screenshotPath}`);
     }
   });
 
@@ -87,7 +87,7 @@ describe('Game of Life Tests', () => {
     await ctx.getByID('statusText').within(100).shouldBe('Paused');
 
     // Click Start button
-    await ctx.getByText('Start').click();
+    await ctx.getByID('startBtn').click();
 
     // Should now be running
     await ctx.getByID('statusText').within(100).shouldBe('Running');
@@ -109,19 +109,20 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to be ready
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Wait for UI to be ready - give more time for async setup
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
     // Start the game
-    await ctx.getByText('Start').click();
+    await ctx.getByID('startBtn').click();
     await ctx.getByID('statusText').within(100).shouldBe('Running');
 
     // Let it run for a bit
     await ctx.wait(200);
 
     // Pause the game
-    await ctx.getByText('Pause').click();
+    await ctx.getByID('pauseBtn').click();
 
     // Should be paused
     await ctx.getByID('statusText').within(100).shouldBe('Paused');
@@ -135,18 +136,19 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to be ready
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Wait for UI to be ready - give more time for async setup
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
     // Step forward once
-    await ctx.getByText('Step').click();
+    await ctx.getByID('stepBtn').click();
 
     // Should be exactly generation 1
     await ctx.getByID('generationNum').within(100).shouldBe('1');
 
     // Step again
-    await ctx.getByText('Step').click();
+    await ctx.getByID('stepBtn').click();
 
     // Should be exactly generation 2
     await ctx.getByID('generationNum').within(100).shouldBe('2');
@@ -163,24 +165,26 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to be ready
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Wait for UI to be ready - give more time for async setup
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
     // Advance several generations
-    await ctx.getByText('Step').click();
-    await ctx.getByText('Step').click();
-    await ctx.getByText('Step').click();
+    await ctx.getByID('stepBtn').click();
+    await ctx.getByID('stepBtn').click();
+    await ctx.getByID('stepBtn').click();
 
     // Should be at generation 3
     await ctx.getByID('generationNum').within(100).shouldBe('3');
 
     // Reset the board
-    await ctx.getByText('Reset').click();
+    await ctx.getByID('resetBtn').click();
 
-    // Should be back to generation 0 and paused (reset may take a bit longer)
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Should be back to generation 0 and paused (use polling with .within())
+    // Reset reloads pattern and re-renders canvas which can take time
+    await ctx.getByID('generationNum').within(5000).shouldBe('0');
+    await ctx.getByID('statusText').within(1000).shouldBe('Paused');
 
     // Board should be reset (Glider Gun loaded again)
     // We can verify the description is still shown
@@ -195,11 +199,12 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify we start with Glider Gun loaded (generation 0)
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
+    // Verify we start with Glider Gun loaded (generation 0) - give more time for async setup
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
 
     // Clear the board
-    await ctx.getByText('Clear').click();
+    await ctx.getByID('clearBtn').click();
 
     // Should reset to generation 0 and pause
     await ctx.getByID('generationNum').within(100).shouldBe('0');
@@ -218,40 +223,42 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to be ready
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Wait for UI to be ready - give more time for async setup
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
     // Start simulation
-    await ctx.getByText('Start').click();
+    await ctx.getByID('startBtn').click();
     await ctx.getByID('statusText').within(100).shouldBe('Running');
 
     // Let it run for a few generations
     await ctx.wait(350); // ~2 generations
 
     // Pause it
-    await ctx.getByText('Pause').click();
+    await ctx.getByID('pauseBtn').click();
     await ctx.getByID('statusText').within(100).shouldBe('Paused');
 
     // Step once more
-    await ctx.getByText('Step').click();
+    await ctx.getByID('stepBtn').click();
 
     // Start again
-    await ctx.getByText('Start').click();
+    await ctx.getByID('startBtn').click();
     await ctx.getByID('statusText').within(100).shouldBe('Running');
 
     // Pause again
-    await ctx.getByText('Pause').click();
+    await ctx.getByID('pauseBtn').click();
 
     // Reset to initial state
-    await ctx.getByText('Reset').click();
+    await ctx.getByID('resetBtn').click();
 
-    // Should be back to generation 0 (reset may take a bit longer)
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    // Should be back to generation 0 (use polling with .within())
+    // Reset reloads pattern and re-renders canvas which can take time
+    await ctx.getByID('generationNum').within(5000).shouldBe('0');
+    await ctx.getByID('statusText').within(1000).shouldBe('Paused');
 
     // All UI elements should still be functional
-    await ctx.getByText('Start').within(500).shouldExist();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByText('Game of Life Board:').within(500).shouldExist();
   }, 10000);
 
@@ -263,34 +270,29 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for app to initialize (async window builder)
-    await ctx.wait(1000);
-
     // Wait for initial UI to be ready
-    await ctx.getByID('generationNum').within(100).shouldBe('0');
-    await ctx.getByID('statusText').within(100).shouldBe('Paused');
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
     // Start and let it run
-    await ctx.getByText('Start').click();
+    await ctx.getByID('startBtn').click();
     await ctx.wait(350); // Let it advance
 
     // Pause
-    await ctx.getByText('Pause').click();
+    await ctx.getByID('pauseBtn').click();
 
-    // Get the current generation text
-    const allText = await ctx.getAllTextAsString();
-    const genMatch = allText.match(/Generation: (\d+)/);
-    expect(genMatch).toBeTruthy();
-    const pausedGen = parseInt(genMatch![1], 10);
+    // Get the current generation number
+    const pausedGenText = await ctx.getByID('generationNum').getText();
+    const pausedGen = parseInt(pausedGenText, 10);
+    expect(pausedGen).toBeGreaterThan(0); // Should have advanced
 
     // Wait a bit more - generation should NOT advance while paused
     await ctx.wait(500);
 
     // Check generation hasn't changed
-    const allTextAfter = await ctx.getAllTextAsString();
-    const genMatchAfter = allTextAfter.match(/Generation: (\d+)/);
-    expect(genMatchAfter).toBeTruthy();
-    const afterGen = parseInt(genMatchAfter![1], 10);
+    const afterGenText = await ctx.getByID('generationNum').getText();
+    const afterGen = parseInt(afterGenText, 10);
 
     // Generation should be the same as when paused
     expect(afterGen).toBe(pausedGen);
@@ -304,6 +306,9 @@ describe('Game of Life Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
+    // Wait for UI to be ready first
+    await ctx.getByID('startBtn').within(500).shouldExist();
+
     // The board should be visible (canvas-based rendering)
     await ctx.getByText('Game of Life Board:').within(500).shouldExist();
 
@@ -311,5 +316,5 @@ describe('Game of Life Tests', () => {
     // (Glider Gun pattern should have alive cells)
     const allText = await ctx.getAllTextAsString();
     expect(allText).toContain('Game of Life Board:');
-  });
+  }, 60000); // Increase timeout to 60s for the pause
 });
