@@ -980,7 +980,7 @@ describe('Fluent Test API', () => {
     ctx = tsyneTest.getContext();
 
     await ctx.getByExactText('Visible Label').shouldBeVisible();
-    await ctx.getByText('Click Me').shouldExist();
+    expect(await ctx.getByText('Click Me').exists()).toBeTruthy();
   });
 
   test('waitForCondition - custom condition polling', async () => {

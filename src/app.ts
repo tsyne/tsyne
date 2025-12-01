@@ -176,6 +176,21 @@ function getBridgeMode(options?: AppOptions): BridgeMode {
 }
 
 /**
+ * Factory function to create the appropriate bridge implementation
+ * based on the specified mode
+ */
+function createBridge(mode: BridgeMode, testMode: boolean): BridgeInterface {
+  switch (mode) {
+    case 'grpc':
+      return new GrpcBridgeConnection(testMode);
+    case 'msgpack-uds':
+      return new MsgpackBridgeConnection(testMode);
+    default:
+      return new BridgeConnection(testMode);
+  }
+}
+
+/**
  * App is the main application class
  */
 export class App {
@@ -189,18 +204,8 @@ export class App {
     // Initialize browser compatibility globals
     initializeGlobals();
 
-    // Create bridge based on mode (env var or options)
-    const mode = getBridgeMode(options);
-    switch (mode) {
-      case 'grpc':
-        this.bridge = new GrpcBridgeConnection(testMode);
-        break;
-      case 'msgpack-uds':
-        this.bridge = new MsgpackBridgeConnection(testMode);
-        break;
-      default:
-        this.bridge = new BridgeConnection(testMode);
-    }
+    // Create bridge using factory
+    this.bridge = createBridge(getBridgeMode(options), testMode);
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);
@@ -800,6 +805,8 @@ export class App {
     for (const win of this.windows) {
       await win.show();
     }
+    // Wait for all widget ID registrations to complete
+    await this.ctx.waitForRegistrations();
   }
 
   quit(): void {

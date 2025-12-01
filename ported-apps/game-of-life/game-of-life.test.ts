@@ -24,6 +24,19 @@ describe('Game of Life Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
+  // Helper: Poll until widget is actually findable, with retries
+  async function waitForWidget(id: string, timeoutMs: number = 10000): Promise<void> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      const result = await ctx.getByID(id).exists();
+      if (result) {
+        return; // Found it!
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    throw new Error(`Widget ${id} never became findable after ${timeoutMs}ms`);
+  }
+
   beforeEach(async () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
@@ -34,26 +47,28 @@ describe('Game of Life Tests', () => {
   });
 
   test('should display initial game UI and capture screenshot', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Verify toolbar buttons
-    await ctx.getByID('startBtn').within(500).shouldExist();
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
-    await ctx.getByID('stepBtn').within(500).shouldExist();
-    await ctx.getByID('resetBtn').within(500).shouldExist();
-    await ctx.getByID('clearBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    expect(await ctx.getByID('pauseBtn').within(500).exists()).toBeTruthy();
+    expect(await ctx.getByID('stepBtn').within(500).exists()).toBeTruthy();
+    expect(await ctx.getByID('resetBtn').within(500).exists()).toBeTruthy();
+    expect(await ctx.getByID('clearBtn').within(500).exists()).toBeTruthy();
 
     // Verify status elements
     await ctx.getByID('generationNum').within(100).shouldBe('0');
     await ctx.getByID('statusText').within(100).shouldBe('Paused');
 
     // Verify board section
-    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
+    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -75,12 +90,14 @@ describe('Game of Life Tests', () => {
   });
 
   test('should start simulation and advance generations automatically', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Initial state: paused at generation 0
     await ctx.getByID('generationNum').within(100).shouldBe('0');
@@ -102,15 +119,17 @@ describe('Game of Life Tests', () => {
   }, 10000);
 
   test('should pause a running simulation', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -129,15 +148,17 @@ describe('Game of Life Tests', () => {
   }, 10000);
 
   test('should step exactly one generation when Step is clicked', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -158,15 +179,17 @@ describe('Game of Life Tests', () => {
   }, 10000);
 
   test('should reset board to initial Glider Gun pattern', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -188,19 +211,21 @@ describe('Game of Life Tests', () => {
 
     // Board should be reset (Glider Gun loaded again)
     // We can verify the description is still shown
-    await ctx.getByText('Conway\'s Game of Life - Use menus for patterns and file operations').within(500).shouldExist();
+    expect(await ctx.getByText('Conway\'s Game of Life - Use menus for patterns and file operations').within(500).exists()).toBeTruthy();
   }, 10000);
 
   test('should clear board and show empty state', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Verify we start with Glider Gun loaded (generation 0) - give more time for async setup
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
 
     // Clear the board
@@ -212,19 +237,21 @@ describe('Game of Life Tests', () => {
 
     // Board should be cleared (all dead cells)
     // The board display should still be visible (canvas-based rendering)
-    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
+    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
   });
 
   test('should handle complex interaction sequence', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -258,20 +285,22 @@ describe('Game of Life Tests', () => {
     await ctx.getByID('statusText').within(1000).shouldBe('Paused');
 
     // All UI elements should still be functional
-    await ctx.getByID('startBtn').within(500).shouldExist();
-    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
   }, 10000);
 
   test('should stop generation advancement when paused', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
     // Wait for initial UI to be ready
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -299,18 +328,26 @@ describe('Game of Life Tests', () => {
   }, 10000);
 
   test('should render board with Conway Life canvas', async () => {
+    let ui: any;
     const testApp = await tsyneTest.createApp((app) => {
-      createGameOfLifeApp(app);
+      ui = createGameOfLifeApp(app);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
+    await ui.initialize();
 
-    // Wait for UI to be ready first
-    await ctx.getByID('startBtn').within(500).shouldExist();
+    // ACTUALLY wait for the widget to be findable (aggressive polling)
+    await waitForWidget('startBtn');
+
+    // Take screenshot right after initialization
+    await tsyneTest.screenshot('/tmp/game-canvas-test-after-run.png');
+
+    // Now it should be findable
+    expect(await ctx.getByID('startBtn').exists()).toBeTruthy();
 
     // The board should be visible (canvas-based rendering)
-    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
+    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
 
     // Verify that some cells are alive in the initial state
     // (Glider Gun pattern should have alive cells)

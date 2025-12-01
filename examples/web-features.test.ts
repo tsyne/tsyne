@@ -21,7 +21,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/text-features');
 
-        await ctx.getByText('Text Features Demo').shouldExist();
+        expect(await ctx.getByText('Text Features Demo').exists()).toBeTruthy();
 
         // Verify richtext widgets exist and count (demonstrates formatted text capability)
         const allWidgets = await ctx.getAllWidgets();
@@ -155,16 +155,16 @@ describe('Web Features Browser Tests', () => {
         bt.assertUrl('/scrolling');
 
         // Verify heading
-        await ctx.getByText('Scrolling Demo').shouldExist();
+        expect(await ctx.getByText('Scrolling Demo').exists()).toBeTruthy();
 
         // Verify first line exists
-        await ctx.getByText('Line 1: This is a line of text to demonstrate scrolling. Scroll down to see more!').shouldExist();
+        expect(await ctx.getByText('Line 1: This is a line of text to demonstrate scrolling. Scroll down to see more!').exists()).toBeTruthy();
 
         // Verify middle line exists
-        await ctx.getByText('Line 50: This is a line of text to demonstrate scrolling. Scroll down to see more!').shouldExist();
+        expect(await ctx.getByText('Line 50: This is a line of text to demonstrate scrolling. Scroll down to see more!').exists()).toBeTruthy();
 
         // Verify last line exists (Line 100)
-        await ctx.getByText('Line 100: This is a line of text to demonstrate scrolling. Scroll down to see more!').shouldExist();
+        expect(await ctx.getByText('Line 100: This is a line of text to demonstrate scrolling. Scroll down to see more!').exists()).toBeTruthy();
       }
     );
   });
@@ -187,7 +187,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/table-demo');
 
-        await ctx.getByText('Table Demo').shouldExist();
+        expect(await ctx.getByText('Table Demo').exists()).toBeTruthy();
 
         // Find all table widgets
         const allWidgets = await ctx.getAllWidgets();
@@ -228,7 +228,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/list-demo');
 
-        await ctx.getByText('List Demo').shouldExist();
+        expect(await ctx.getByText('List Demo').exists()).toBeTruthy();
 
         // Find all list widgets
         const allWidgets = await ctx.getAllWidgets();
@@ -237,7 +237,7 @@ describe('Web Features Browser Tests', () => {
         expect(listWidgets.length).toBe(2);
 
         // Verify selection label exists (proves Simple List has selection callback)
-        await ctx.getByText('Selected: (none)').shouldExist();
+        expect(await ctx.getByText('Selected: (none)').exists()).toBeTruthy();
       }
     );
   });
@@ -260,26 +260,26 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/dynamic-demo');
 
-        await ctx.getByText('Dynamic Updates Demo (AJAX-like)').shouldExist();
+        expect(await ctx.getByText('Dynamic Updates Demo (AJAX-like)').exists()).toBeTruthy();
 
         // Verify counter display at initial value
-        await ctx.getByText('Count: 0').shouldExist();
+        expect(await ctx.getByText('Count: 0').exists()).toBeTruthy();
 
         // Test increment button
         await ctx.getByText('+').click();
-        await ctx.getByText('Count: 1').shouldExist();
+        expect(await ctx.getByText('Count: 1').exists()).toBeTruthy();
 
         // Click increment again
         await ctx.getByText('+').click();
-        await ctx.getByText('Count: 2').shouldExist();
+        expect(await ctx.getByText('Count: 2').exists()).toBeTruthy();
 
         // Test decrement button
         await ctx.getByText('-').click();
-        await ctx.getByText('Count: 1').shouldExist();
+        expect(await ctx.getByText('Count: 1').exists()).toBeTruthy();
 
         // Test reset button
         await ctx.getByText('Reset').click();
-        await ctx.getByText('Count: 0').shouldExist();
+        expect(await ctx.getByText('Count: 0').exists()).toBeTruthy();
       }
     );
   });
@@ -306,7 +306,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/post-demo');
 
-        await ctx.getByText('POST-Redirect-GET Demo').shouldExist();
+        expect(await ctx.getByText('POST-Redirect-GET Demo').exists()).toBeTruthy();
 
         // Find and fill in the form fields
         const allWidgets = await ctx.getAllWidgets();
@@ -331,7 +331,7 @@ describe('Web Features Browser Tests', () => {
         await ctx.getByID(checkboxWidgets[0].id).shouldHaveType('checkbox');
 
         // Verify submit button exists
-        await ctx.getByText('Submit Registration').shouldExist();
+        expect(await ctx.getByText('Submit Registration').exists()).toBeTruthy();
       }
     );
   });
@@ -354,7 +354,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/fyne-widgets');
 
-        await ctx.getByText('Fyne-Specific Widgets Demo').shouldExist();
+        expect(await ctx.getByText('Fyne-Specific Widgets Demo').exists()).toBeTruthy();
 
         // Verify all Fyne-specific widget types are present on the page
         const allWidgets = await ctx.getAllWidgets();
@@ -378,8 +378,8 @@ describe('Web Features Browser Tests', () => {
         expect(progressWidgets.length).toBe(2);
 
         // Test progress bar interactivity
-        await ctx.getByText('Start').shouldExist();
-        await ctx.getByText('Reset').shouldExist();
+        expect(await ctx.getByText('Start').exists()).toBeTruthy();
+        expect(await ctx.getByText('Reset').exists()).toBeTruthy();
 
         // Click Start to begin progress animation
         await ctx.getByText('Start').click();
@@ -415,7 +415,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/widget-interactions');
 
-        await ctx.getByText('Widget Interactions Test Page').shouldExist();
+        expect(await ctx.getByText('Widget Interactions Test Page').exists()).toBeTruthy();
 
         // Verify all widget types present
         const allWidgets = await ctx.getAllWidgets();
@@ -470,7 +470,7 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/layout-demo');
 
-        await ctx.getByText('Layout & Container Demo').shouldExist();
+        expect(await ctx.getByText('Layout & Container Demo').exists()).toBeTruthy();
 
         // Verify all layout container types present
         const allWidgets = await ctx.getAllWidgets();
@@ -525,19 +525,19 @@ describe('Web Features Browser Tests', () => {
         const ctx = bt.getContext();
         bt.assertUrl('/');
 
-        await ctx.getByText('Welcome to Tsyne Browser!').shouldExist();
+        expect(await ctx.getByText('Welcome to Tsyne Browser!').exists()).toBeTruthy();
 
         // Verify all four section headers present
-        await ctx.getByText('=== Core Web/HTML Features ===').shouldExist();
-        await ctx.getByText('=== Forms & User Input ===').shouldExist();
-        await ctx.getByText('=== Dynamic Features (AJAX / Web 2.0) ===').shouldExist();
-        await ctx.getByText('=== Desktop UI Features (Beyond HTML) ===').shouldExist();
+        expect(await ctx.getByText('=== Core Web/HTML Features ===').exists()).toBeTruthy();
+        expect(await ctx.getByText('=== Forms & User Input ===').exists()).toBeTruthy();
+        expect(await ctx.getByText('=== Dynamic Features (AJAX / Web 2.0) ===').exists()).toBeTruthy();
+        expect(await ctx.getByText('=== Desktop UI Features (Beyond HTML) ===').exists()).toBeTruthy();
 
         // Verify key navigation buttons (one from each section)
-        await ctx.getByText('📝 Text Features (Paragraphs, Headings)').shouldExist();
-        await ctx.getByText('📝 Form Demo (Inputs, Checkboxes, Selects)').shouldExist();
-        await ctx.getByText('⚡ Dynamic Updates (AJAX-like)').shouldExist();
-        await ctx.getByText('🎨 Fyne-Specific Widgets').shouldExist();
+        expect(await ctx.getByText('📝 Text Features (Paragraphs, Headings)').exists()).toBeTruthy();
+        expect(await ctx.getByText('📝 Form Demo (Inputs, Checkboxes, Selects)').exists()).toBeTruthy();
+        expect(await ctx.getByText('⚡ Dynamic Updates (AJAX-like)').exists()).toBeTruthy();
+        expect(await ctx.getByText('🎨 Fyne-Specific Widgets').exists()).toBeTruthy();
       }
     );
   });

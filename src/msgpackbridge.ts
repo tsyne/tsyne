@@ -118,24 +118,53 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   private async connectToSocket(socketPath: string): Promise<void> {
-    this.socket = net.createConnection({ path: socketPath });
+    const debug = process.env.TSYNE_DEBUG === '1';
+    if (debug) {
+      console.error(`[msgpack-uds] Connecting to ${socketPath}`);
+    }
 
-    this.socket.on('connect', () => {
-      if (this.readyResolve) {
-        this.readyResolve();
+    // Enforce a client connect timeout so tests fail fast instead of hanging
+    const CONNECT_TIMEOUT_MS = 2000;
+    let timeoutHandle: NodeJS.Timeout | null = null;
+
+    await new Promise<void>((resolve, reject) => {
+      try {
+        this.socket = net.createConnection({ path: socketPath });
+      } catch (err) {
+        return reject(err);
       }
-    });
 
-    this.socket.on('data', (chunk: Buffer) => {
-      this.handleData(chunk);
-    });
+      const onConnect = () => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        if (debug) {
+          console.error('[msgpack-uds] Connected');
+        }
+        if (this.readyResolve) this.readyResolve();
+        resolve();
+      };
 
-    this.socket.on('error', (err) => {
-      console.error('Socket error:', err);
-    });
+      const onError = (err: Error) => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        if (debug) {
+          console.error('[msgpack-uds] Socket error:', err.message);
+        }
+        reject(err);
+      };
 
-    this.socket.on('close', () => {
-      // Socket closed
+      this.socket!.once('connect', onConnect);
+      this.socket!.once('error', onError);
+
+      timeoutHandle = setTimeout(() => {
+        // Avoid hanging forever on connect() if server isn’t accepting
+        try { this.socket?.destroy(); } catch { /* ignore */ }
+        onError(new Error(`UDS connect timeout after ${CONNECT_TIMEOUT_MS}ms (${socketPath})`));
+      }, CONNECT_TIMEOUT_MS);
+
+      // After connection, rewire handlers for normal operation
+      this.socket!.on('data', (chunk: Buffer) => this.handleData(chunk));
+      this.socket!.on('close', () => {
+        if (debug) console.error('[msgpack-uds] Socket closed');
+      });
     });
   }
 

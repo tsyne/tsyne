@@ -1,5 +1,9 @@
 import { BridgeInterface } from './fynebridge';
 
+// Jest globals for test assertions
+declare const expect: any;
+declare const fail: (message?: string) => never;
+
 /**
  * Widget information returned from inspections
  */
@@ -26,7 +30,6 @@ export interface WidgetInfo {
  */
 export class Locator {
   private withinTimeout?: number;
-  private withoutTimeout?: number;
 
   constructor(
     private bridge: BridgeInterface,
@@ -55,10 +58,31 @@ export class Locator {
 
   /**
    * Click the first widget matching this locator
-   * Respects within() timeout if set
+   * Fast fail by default, or use .within(timeout) to poll until found
+   * @example
+   * await ctx.getByID("btn").click(); // Fast fail
+   * await ctx.getByID("btn").within(500).click(); // Poll 500ms
    */
   async click(): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    let widgetId: string | null = null;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      widgetId = await this.find();
+    } else {
+      // within() drives explicit retry polling
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeout) {
+        widgetId = await this.find();
+        if (widgetId) break;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -74,11 +98,10 @@ export class Locator {
   }
 
   /**
-   * Type text into the first widget matching this locator
-   * Respects within() timeout if set
+   * Type text into the first widget matching this locator (fast fail)
    */
   async type(text: string): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -86,11 +109,10 @@ export class Locator {
   }
 
   /**
-   * Double-click the first widget matching this locator
-   * Respects within() timeout if set
+   * Double-click the first widget matching this locator (fast fail)
    */
   async doubleClick(): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -98,7 +120,7 @@ export class Locator {
   }
 
   async submit(): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -106,7 +128,7 @@ export class Locator {
   }
 
   async drag(x: number, y: number): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -114,13 +136,12 @@ export class Locator {
   }
 
   /**
-   * Set the value of a slider or progress bar
-   * Respects within() timeout if set
+   * Set the value of a slider or progress bar (fast fail)
    * @example
    * await ctx.getByID("volume").setValue(75);
    */
   async setValue(value: number): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -128,11 +149,10 @@ export class Locator {
   }
 
   /**
-   * Right-click (secondary tap) the first widget matching this locator
-   * Respects within() timeout if set
+   * Right-click (secondary tap) the first widget matching this locator (fast fail)
    */
   async rightClick(): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -152,12 +172,11 @@ export class Locator {
   }
 
   /**
-   * Hover over the first widget matching this locator (moves mouse to widget position)
-   * Respects within() timeout if set
+   * Hover over the first widget matching this locator (fast fail)
    * Note: Requires windowId to be available (automatically determined from bridge)
    */
   async hover(): Promise<void> {
-    const widgetId = await this.findWithRetry();
+    const widgetId = await this.find();
     if (!widgetId) {
       throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     }
@@ -211,7 +230,7 @@ export class Locator {
       if (widget) {
         return;
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
     throw new Error(`Timeout waiting for widget with ${this.selectorType}: ${this.selector}`);
   }
@@ -229,118 +248,88 @@ export class Locator {
   }
 
   /**
-   * Fluent API: Wait for element to disappear from DOM (like fluent-selenium's without)
-   * Returns a promise that resolves when element is no longer found
+   * Fluent API: Set timeout for expecting element to disappear (chainable like within)
+   * Use with assertion methods to poll until element disappears
    * @param timeoutMs - Time in milliseconds to wait for element to disappear
    * @example
-   * await ctx.getByText("Loading...").without(5000);
+   * await ctx.getByID("loading").without(500).shouldNotExist(); // Poll until gone
    */
-  async without(timeoutMs: number): Promise<void> {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeoutMs) {
-      const widget = await this.find();
-      if (!widget) {
-        return; // Element not found = disappeared
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    throw new Error(`Timeout waiting for widget to disappear with ${this.selectorType}: ${this.selector}`);
-  }
-
-  /**
-   * Fluent API: Assert text equals expected value (like fluent-selenium's shouldBe)
-   * Returns this locator for chaining
-   * @example
-   * await ctx.getByID("status").getText().then(t => expect(t).toBe("Success"));
-   * // Or use shouldBe for fluent style:
-   * await ctx.getByID("status").shouldBe("Success");
-   */
-  async shouldBe(expected: string): Promise<Locator> {
-    // If within() was called, poll for the value to match
-    if (this.withinTimeout) {
-      const startTime = Date.now();
-      let lastActual = '';
-
-      while (Date.now() - startTime < this.withinTimeout) {
-        try {
-          const actual = await this.getText();
-          if (actual === expected) {
-            return this; // Success!
-          }
-          lastActual = actual;
-        } catch (error) {
-          // Widget not found yet, keep trying
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // Timeout - use Jest assertion for better error formatting
-      expect(lastActual).toBe(expected);
-      return this; // Won't reach here, but TypeScript needs it
-    }
-
-    // No polling - just check once
-    const actual = await this.getText();
-    expect(actual).toBe(expected);
+  without(timeoutMs: number): Locator {
+    this.withinTimeout = timeoutMs; // Use same timeout as within()
     return this;
   }
 
   /**
-   * Fluent API: Assert text contains expected substring (like fluent-selenium's shouldContain)
+   * Fluent API: Assert text equals expected value
+   * Fast fail by default, or use .within(timeout) to poll
+   * @example
+   * await ctx.getByID("status").shouldBe("Success"); // Fast fail
+   * await ctx.getByID("status").within(500).shouldBe("Success"); // Poll 500ms
+   */
+  async shouldBe(expected: string): Promise<Locator> {
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      const actual = await this.getText();
+      expect(actual).toBe(expected);
+      return this;
+    }
+
+    // within() drives explicit retry polling
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getText();
+        if (actual === expected) {
+          return this;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Widget not found yet, keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    // Timeout - fail with last value
+    expect(lastActual).toBe(expected);
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert text contains expected substring (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("message").shouldContain("success");
    */
   async shouldContain(expected: string): Promise<Locator> {
-    // If within() was called, poll for the value to match
-    if (this.withinTimeout) {
-      const startTime = Date.now();
-      let lastActual = '';
-
-      while (Date.now() - startTime < this.withinTimeout) {
-        try {
-          const actual = await this.getText();
-          if (actual.includes(expected)) {
-            return this; // Success!
-          }
-          lastActual = actual;
-        } catch (error) {
-          // Widget not found yet, keep trying
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // Timeout - use Jest assertion for better error formatting
-      expect(lastActual).toContain(expected);
-      return this; // Won't reach here, but TypeScript needs it
-    }
-
-    // No polling - just check once
     const actual = await this.getText();
     expect(actual).toContain(expected);
     return this;
   }
 
   /**
-   * Fluent API: Assert text matches regex pattern (like fluent-selenium's shouldMatch)
+   * Fluent API: Assert text matches regex pattern (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("email").shouldMatch(/^[a-z]+@[a-z]+\.[a-z]+$/);
    */
   async shouldMatch(pattern: RegExp): Promise<Locator> {
-    const actual = await this.getTextWithRetry();
+    const actual = await this.getText();
     expect(actual).toMatch(pattern);
     return this;
   }
 
   /**
-   * Fluent API: Assert text does not equal expected value
+   * Fluent API: Assert text does not equal expected value (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("status").shouldNotBe("Error");
    */
   async shouldNotBe(expected: string): Promise<Locator> {
-    const actual = await this.getTextWithRetry();
+    const actual = await this.getText();
     expect(actual).not.toBe(expected);
     return this;
   }
@@ -353,120 +342,154 @@ export class Locator {
    * await ctx.getByID("agree").within(5000).shouldBeChecked();
    */
   async shouldBeChecked(): Promise<Locator> {
-    const checked = await this.getCheckedWithRetry();
-    expect(checked).toBe(true);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.checked).toBe(true);
     return this;
   }
 
   /**
-   * Fluent API: Assert checkbox is not checked
+   * Fluent API: Assert checkbox is not checked (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("agree").shouldNotBeChecked();
    */
   async shouldNotBeChecked(): Promise<Locator> {
-    const checked = await this.getCheckedWithRetry();
-    expect(checked).toBe(false);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.checked).toBe(false);
     return this;
   }
 
   /**
-   * Fluent API: Assert widget has specific value (for entry, slider, select)
+   * Fluent API: Assert widget has specific value (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("volume").shouldHaveValue(75);
    * await ctx.getByID("country").shouldHaveValue("US");
    */
   async shouldHaveValue(expected: string | number): Promise<Locator> {
-    const actual = await this.getValueWithRetry();
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    const actual = String(info.value || '');
     const expectedStr = String(expected);
     expect(actual).toBe(expectedStr);
     return this;
   }
 
   /**
-   * Fluent API: Assert select/radiogroup has specific selected text
+   * Fluent API: Assert select/radiogroup has specific selected text (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("country").shouldHaveSelected("United States");
    */
   async shouldHaveSelected(expected: string): Promise<Locator> {
-    const actual = await this.getSelectedWithRetry();
-    expect(actual).toBe(expected);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.selected).toBe(expected);
     return this;
   }
 
   /**
-   * Fluent API: Assert widget is enabled (not disabled)
+   * Fluent API: Assert widget is enabled (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByText("Submit").shouldBeEnabled();
    */
   async shouldBeEnabled(): Promise<Locator> {
-    const disabled = await this.getDisabledWithRetry();
-    expect(disabled).toBe(false);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.disabled).toBe(false);
     return this;
   }
 
   /**
-   * Fluent API: Assert widget is disabled
+   * Fluent API: Assert widget is disabled (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByText("Submit").shouldBeDisabled();
    */
   async shouldBeDisabled(): Promise<Locator> {
-    const disabled = await this.getDisabledWithRetry();
-    expect(disabled).toBe(true);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.disabled).toBe(true);
     return this;
   }
 
   /**
-   * Fluent API: Assert widget has specific type
+   * Fluent API: Assert widget has specific type (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("myWidget").shouldHaveType("button");
    */
   async shouldHaveType(expected: string): Promise<Locator> {
-    const actual = await this.getTypeWithRetry();
-    expect(actual).toBe(expected);
+    const widgetId = await this.find();
+    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    expect(info.type).toBe(expected);
     return this;
   }
 
   /**
-   * Fluent API: Assert widget is visible
+   * Fluent API: Assert widget is visible (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("modal").shouldBeVisible();
    */
   async shouldBeVisible(): Promise<Locator> {
-    const widget = await this.findWithRetry();
+    const widget = await this.find();
     expect(widget).toBeTruthy();
     return this;
   }
 
   /**
-   * Fluent API: Assert widget is not visible
+   * Fluent API: Assert widget is not visible (fast fail)
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("modal").shouldNotBeVisible();
    */
   async shouldNotBeVisible(): Promise<Locator> {
-    const widget = await this.findWithRetry();
+    const widget = await this.find();
     expect(widget).toBeFalsy();
     return this;
   }
 
   /**
-   * Fluent API: Assert widget exists
-   * Returns this locator for chaining
+   * Find widget and return it (for assertion on test line)
+   * Fast fail by default, or use .within(timeout) to poll
    * @example
-   * await ctx.getByID("myWidget").shouldExist();
+   * expect(await ctx.getByID("myWidget").exists()).toBeTruthy(); // Fast fail
+   * expect(await ctx.getByID("myWidget").within(500).exists()).toBeTruthy(); // Poll 500ms
    */
-  async shouldExist(): Promise<Locator> {
-    const widget = await this.findWithRetry();
-    expect(widget).toBeTruthy();
-    return this;
+  async exists(): Promise<string | null> {
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      return await this.find();
+    }
+
+    // within() drives explicit retry polling
+    const startTime = Date.now();
+    let widget: string | null = null;
+    while (Date.now() - startTime < timeout) {
+      widget = await this.find();
+      if (widget) {
+        return widget;
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    return null;
   }
+
 
   /**
    * Get text with retry support (respects withinTimeout)
@@ -484,7 +507,7 @@ export class Locator {
         return await this.getText();
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 
@@ -505,7 +528,7 @@ export class Locator {
       if (widget) {
         return widget;
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
 
     return null; // Timeout
@@ -537,7 +560,7 @@ export class Locator {
         return response.checked || false;
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 
@@ -574,7 +597,7 @@ export class Locator {
         return String(value);
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 
@@ -607,7 +630,7 @@ export class Locator {
         return response.selected || '';
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 
@@ -640,7 +663,7 @@ export class Locator {
         return response.disabled || false;
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 
@@ -673,7 +696,7 @@ export class Locator {
         return response.type || '';
       } catch (error) {
         lastError = error as Error;
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
     }
 

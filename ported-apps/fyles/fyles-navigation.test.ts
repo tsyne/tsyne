@@ -68,10 +68,10 @@ describe.skip('Fyles Navigation Tests', () => {
 
   test('should start in specified directory', async () => {
     // Should show level1 folder
-    await ctx.getByText('level1').within(2000).shouldExist();
+    expect(await ctx.getByText('level1').within(2000).exists()).toBeTruthy();
 
     // Should show root.txt file
-    await ctx.getByText('root.txt').within(2000).shouldExist();
+    expect(await ctx.getByText('root.txt').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate down one level', async () => {
@@ -81,13 +81,13 @@ describe.skip('Fyles Navigation Tests', () => {
 
     // Path should update
     const level1Path = path.join(testDir, 'level1');
-    await ctx.getByText(level1Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level1Path).within(2000).exists()).toBeTruthy();
 
     // Should show level1.txt
-    await ctx.getByText('level1.txt').within(2000).shouldExist();
+    expect(await ctx.getByText('level1.txt').within(2000).exists()).toBeTruthy();
 
     // Should show level2 folder in navigation
-    await ctx.getByID('nav-folder-level2').within(2000).shouldExist();
+    expect(await ctx.getByID('nav-folder-level2').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate down multiple levels', async () => {
@@ -105,20 +105,20 @@ describe.skip('Fyles Navigation Tests', () => {
 
     // Path should update
     const level2Path = path.join(testDir, 'level1', 'level2');
-    await ctx.getByText(level2Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level2Path).within(2000).exists()).toBeTruthy();
 
     // Should show level2.txt
-    await ctx.getByText('level2.txt').within(2000).shouldExist();
+    expect(await ctx.getByText('level2.txt').within(2000).exists()).toBeTruthy();
 
     // Should show level3 folder
-    await ctx.getByID('nav-folder-level3').within(2000).shouldExist();
+    expect(await ctx.getByID('nav-folder-level3').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate up one level', async () => {
     // We're currently at level2 from the previous test
     // Verify we're at level2
     const level2Path = path.join(testDir, 'level1', 'level2');
-    await ctx.getByText(level2Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level2Path).within(2000).exists()).toBeTruthy();
 
     // Navigate up
     await ctx.getByText('⬆️ ..').click();
@@ -126,8 +126,8 @@ describe.skip('Fyles Navigation Tests', () => {
 
     // Should be at level1
     const level1Path = path.join(testDir, 'level1');
-    await ctx.getByText(level1Path).within(2000).shouldExist();
-    await ctx.getByText('level1.txt').within(2000).shouldExist();
+    expect(await ctx.getByText(level1Path).within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByText('level1.txt').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate to home and back', async () => {
@@ -137,7 +137,7 @@ describe.skip('Fyles Navigation Tests', () => {
 
     // Should show home directory
     const homeDir = os.homedir();
-    await ctx.getByText(homeDir).within(2000).shouldExist();
+    expect(await ctx.getByText(homeDir).within(2000).exists()).toBeTruthy();
 
     // Navigate to test directory via tree (simulate typing path or using tree)
     // For now, just verify home navigation worked
@@ -148,10 +148,10 @@ describe.skip('Fyles Navigation Tests', () => {
     // We're currently at level1 from the previous test
     // Verify we're at level1
     const level1Path = path.join(testDir, 'level1');
-    await ctx.getByText(level1Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level1Path).within(2000).exists()).toBeTruthy();
 
     // Should show parent button
-    await ctx.getByText('⬆️ ..').within(2000).shouldExist();
+    expect(await ctx.getByText('⬆️ ..').within(2000).exists()).toBeTruthy();
   });
 
   test('should update navigation panel on directory change', async () => {
@@ -160,14 +160,14 @@ describe.skip('Fyles Navigation Tests', () => {
     await ctx.wait(200);
 
     // Should show level1 in navigation
-    await ctx.getByID('nav-folder-level1').within(2000).shouldExist();
+    expect(await ctx.getByID('nav-folder-level1').within(2000).exists()).toBeTruthy();
 
     // Navigate to level1
     await ctx.getByID('grid-folder-level1').click();
     await ctx.wait(200);
 
     // Should now show level2 in navigation
-    await ctx.getByID('nav-folder-level2').within(2000).shouldExist();
+    expect(await ctx.getByID('nav-folder-level2').within(2000).exists()).toBeTruthy();
   });
 
   test('should handle navigation to deepest level', async () => {
@@ -180,20 +180,20 @@ describe.skip('Fyles Navigation Tests', () => {
 
     // Should show level3 path
     const level3Path = path.join(testDir, 'level1', 'level2', 'level3');
-    await ctx.getByText(level3Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level3Path).within(2000).exists()).toBeTruthy();
 
     // Should show level3.txt
-    await ctx.getByText('level3.txt').within(2000).shouldExist();
+    expect(await ctx.getByText('level3.txt').within(2000).exists()).toBeTruthy();
 
     // Should show no subdirectories
-    await ctx.getByText('(no subdirectories)').within(2000).shouldExist();
+    expect(await ctx.getByText('(no subdirectories)').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate back to root from deep level', async () => {
     // We're currently at level3 from the previous test
     // Verify we're at level3
     const level3Path = path.join(testDir, 'level1', 'level2', 'level3');
-    await ctx.getByText(level3Path).within(2000).shouldExist();
+    expect(await ctx.getByText(level3Path).within(2000).exists()).toBeTruthy();
 
     // Navigate up 3 times
     await ctx.getByText('⬆️ ..').click();
@@ -206,7 +206,7 @@ describe.skip('Fyles Navigation Tests', () => {
     await ctx.wait(200);
 
     // Should be back at root
-    await ctx.getByText(testDir).within(2000).shouldExist();
-    await ctx.getByText('root.txt').within(2000).shouldExist();
+    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByText('root.txt').within(2000).exists()).toBeTruthy();
   });
 });

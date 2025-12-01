@@ -40,7 +40,7 @@ describe('Game of Life Screenshot Debug', () => {
     console.error('Attempting to find generation number by ID...');
     try {
       // Give time for async window setup
-      await ctx.getByText('Start').within(500).shouldExist();
+      expect(await ctx.getByText('Start').within(500).exists()).toBeTruthy();
       await ctx.getByID('generationNum').within(500).shouldBe('0');
       console.error('SUCCESS: Found generation number = 0');
     } catch (error) {

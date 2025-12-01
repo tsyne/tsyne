@@ -176,23 +176,37 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 }
 
 func (s *MsgpackServer) handleMessage(msg MsgpackMessage) MsgpackResponse {
-	// Convert to bridge Message format
-	bridgeMsg := Message{
-		ID:      msg.ID,
-		Type:    msg.Type,
-		Payload: msg.Payload,
-	}
+    // Convert to bridge Message format
+    bridgeMsg := Message{
+        ID:      msg.ID,
+        Type:    msg.Type,
+        Payload: msg.Payload,
+    }
 
-	// Use the bridge's existing message handler
-	s.bridge.handleMessage(bridgeMsg)
+    // Capture the response produced by bridge handlers. In stdio mode, handlers
+    // call b.sendResponse to emit results. For msgpack-uds, we intercept that
+    // call to collect the Response and return it to the client directly.
+    captured := Response{ID: msg.ID, Success: true, Result: map[string]interface{}{}, Error: ""}
 
-	// For now, return success (the bridge handlers send responses via stdout in stdio mode,
-	// but in msgpack mode we return directly)
-	return MsgpackResponse{
-		ID:      msg.ID,
-		Success: true,
-		Result:  make(map[string]interface{}),
-	}
+    // Save original function
+    originalSend := s.bridge.sendResponse
+    s.bridge.sendResponse = func(resp Response) {
+        if resp.ID == msg.ID {
+            captured = resp
+        }
+        // Do not write to stdout in msgpack mode
+    }
+    defer func() { s.bridge.sendResponse = originalSend }()
+
+    // Dispatch to existing bridge handler chain
+    s.bridge.handleMessage(bridgeMsg)
+
+    return MsgpackResponse{
+        ID:      captured.ID,
+        Success: captured.Success,
+        Result:  captured.Result,
+        Error:   captured.Error,
+    }
 }
 
 func (s *MsgpackServer) broadcastEvents() {

@@ -129,10 +129,17 @@ export abstract class Widget {
    * // In tests: ctx.getByID('statusLabel')
    */
   withId(customId: string): this {
-    this.ctx.bridge.send('registerCustomId', {
+    // Send registration and track the promise so app.run() can wait for it
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
       widgetId: this.id,
       customId
+    }).then(() => {
+      // Registration complete
+    }).catch(err => {
+      console.error('Failed to register custom ID:', err);
     });
+
+    this.ctx.trackRegistration(registrationPromise);
     return this;
   }
 

@@ -23,12 +23,28 @@ export class Context {
   private resourceMap: Map<string, string> = new Map();
   private _accessibilityManager: AccessibilityManagerType | null = null;
   private _testHarness: TestHarness | null = null;
+  private pendingRegistrations: Promise<void>[] = [];
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
       this.resourceMap = resourceMap;
     }
+  }
+
+  /**
+   * Track a widget ID registration promise
+   */
+  trackRegistration(promise: Promise<void>): void {
+    this.pendingRegistrations.push(promise);
+  }
+
+  /**
+   * Wait for all pending widget ID registrations to complete
+   */
+  async waitForRegistrations(): Promise<void> {
+    await Promise.all(this.pendingRegistrations);
+    this.pendingRegistrations = []; // Clear after waiting
   }
 
   /**

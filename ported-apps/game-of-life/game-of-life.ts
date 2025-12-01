@@ -776,6 +776,14 @@ class GameOfLifeUI {
     });
   }
 
+  /**
+   * Initialize the display after widgets are created and registered
+   * This renders the initial board state (Glider Gun pattern)
+   */
+  async initialize(): Promise<void> {
+    await this.updateDisplay();
+  }
+
   buildContent(): void {
     this.a.vbox(() => {
       // Control buttons (using hbox instead of toolbar since toolbar doesn't render labels)
@@ -1064,7 +1072,8 @@ export function createGameOfLifeApp(a: App): GameOfLifeUI {
       ui.buildContent();
     });
 
-    win.show();
+    // Note: Don't call win.show() here - let app.run() handle it
+    // This ensures waitForPendingRequests() catches all widget registrations
   });
 
   return ui;
@@ -1077,7 +1086,9 @@ export { Board, GameOfLife, GameOfLifeUI };
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Game of Life' }, (a: App) => {
-    createGameOfLifeApp(a);
+  app({ title: 'Game of Life' }, async (a: App) => {
+    const ui = createGameOfLifeApp(a);
+    await a.run();
+    await ui.initialize();
   });
 }
