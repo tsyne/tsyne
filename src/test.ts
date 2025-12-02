@@ -771,6 +771,87 @@ export class Locator {
 
     throw lastError || new Error('Failed to get widget type');
   }
+
+  /**
+   * Access a specific item in a list widget by index
+   * Returns a ListItemLocator for fluent assertions
+   * @example
+   * await ctx.getByID("playerList").item(0).shouldBe("Alice");
+   * await ctx.getByID("playerList").item(2).shouldContain("Bob");
+   */
+  item(index: number): ListItemLocator {
+    return new ListItemLocator(this.bridge, this, index);
+  }
+}
+
+/**
+ * Locator for a specific item within a list widget
+ * Supports fluent assertions on list items
+ */
+export class ListItemLocator {
+  constructor(
+    private bridge: BridgeInterface,
+    private parentLocator: Locator,
+    private index: number
+  ) {}
+
+  /**
+   * Get the text value of this list item
+   */
+  async getText(): Promise<string> {
+    const parentId = await this.parentLocator.find();
+    if (!parentId) {
+      throw new Error('Parent list widget not found');
+    }
+    const result = await this.bridge.send('getListData', { id: parentId }) as { data?: string[] };
+    const data = result.data || [];
+    if (this.index < 0 || this.index >= data.length) {
+      throw new Error(`List item index ${this.index} out of bounds (list has ${data.length} items)`);
+    }
+    return data[this.index];
+  }
+
+  /**
+   * Assert this list item equals expected value
+   * @example
+   * await ctx.getByID("playerList").item(0).shouldBe("Alice");
+   */
+  async shouldBe(expected: string): Promise<ListItemLocator> {
+    const actual = await this.getText();
+    expect(actual).toBe(expected);
+    return this;
+  }
+
+  /**
+   * Assert this list item contains expected substring
+   * @example
+   * await ctx.getByID("playerList").item(0).shouldContain("Ali");
+   */
+  async shouldContain(expected: string): Promise<ListItemLocator> {
+    const actual = await this.getText();
+    expect(actual).toContain(expected);
+    return this;
+  }
+
+  /**
+   * Assert this list item matches regex pattern
+   * @example
+   * await ctx.getByID("emails").item(0).shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
+   */
+  async shouldMatch(pattern: RegExp): Promise<ListItemLocator> {
+    const actual = await this.getText();
+    expect(actual).toMatch(pattern);
+    return this;
+  }
+
+  /**
+   * Assert this list item does not equal expected value
+   */
+  async shouldNotBe(expected: string): Promise<ListItemLocator> {
+    const actual = await this.getText();
+    expect(actual).not.toBe(expected);
+    return this;
+  }
 }
 
 /**
