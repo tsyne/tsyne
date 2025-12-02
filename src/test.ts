@@ -374,7 +374,8 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    const actual = String(info.value || '');
+    // Use !== undefined to handle 0 values correctly (0 is falsy but valid)
+    const actual = info.value !== undefined ? String(info.value) : '';
     const expectedStr = String(expected);
     expect(actual).toBe(expectedStr);
     return this;
