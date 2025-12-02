@@ -1,4 +1,8 @@
 import { BridgeInterface } from './fynebridge';
+import { initTsyneMatchers } from './test-matchers';
+
+// Initialize custom matchers when module loads
+initTsyneMatchers();
 
 // Jest globals for test assertions
 declare const expect: any;
@@ -274,7 +278,7 @@ export class Locator {
     if (!timeout) {
       // Fast fail - no retry
       const actual = await this.getText();
-      expect(actual).toBe(expected);
+      expect(actual).toBeTsyneEqual(expected);
       return this;
     }
 
@@ -294,7 +298,7 @@ export class Locator {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
     // Timeout - fail with last value
-    expect(lastActual).toBe(expected);
+    expect(lastActual).toBeTsyneEqual(expected);
     return this;
   }
 
@@ -306,7 +310,7 @@ export class Locator {
    */
   async shouldContain(expected: string): Promise<Locator> {
     const actual = await this.getText();
-    expect(actual).toContain(expected);
+    expect(actual).toContainTsyneString(expected);
     return this;
   }
 
@@ -318,7 +322,7 @@ export class Locator {
    */
   async shouldMatch(pattern: RegExp): Promise<Locator> {
     const actual = await this.getText();
-    expect(actual).toMatch(pattern);
+    expect(actual).toMatchTsynePattern(pattern);
     return this;
   }
 
@@ -330,7 +334,7 @@ export class Locator {
    */
   async shouldNotBe(expected: string): Promise<Locator> {
     const actual = await this.getText();
-    expect(actual).not.toBe(expected);
+    expect(actual).not.toBeTsyneEqual(expected);
     return this;
   }
 
@@ -345,7 +349,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.checked).toBe(true);
+    expect(info.checked).toBeTsyneChecked(true);
     return this;
   }
 
@@ -359,7 +363,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.checked).toBe(false);
+    expect(info.checked).toBeTsyneChecked(false);
     return this;
   }
 
@@ -377,7 +381,7 @@ export class Locator {
     // Use !== undefined to handle 0 values correctly (0 is falsy but valid)
     const actual = info.value !== undefined ? String(info.value) : '';
     const expectedStr = String(expected);
-    expect(actual).toBe(expectedStr);
+    expect(actual).toBeTsyneEqual(expectedStr);
     return this;
   }
 
@@ -391,7 +395,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.selected).toBe(expected);
+    expect(info.selected).toBeTsyneEqual(expected);
     return this;
   }
 
@@ -405,7 +409,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.disabled).toBe(false);
+    expect(info.disabled).toBeTsyneEnabled(true);
     return this;
   }
 
@@ -419,7 +423,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.disabled).toBe(true);
+    expect(info.disabled).toBeTsyneEnabled(false);
     return this;
   }
 
@@ -433,7 +437,7 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
-    expect(info.type).toBe(expected);
+    expect(info.type).toBeTsyneEqual(expected);
     return this;
   }
 
@@ -445,7 +449,7 @@ export class Locator {
    */
   async shouldBeVisible(): Promise<Locator> {
     const widget = await this.find();
-    expect(widget).toBeTruthy();
+    expect(widget).toBeTsyneVisible(true);
     return this;
   }
 
@@ -457,7 +461,7 @@ export class Locator {
    */
   async shouldNotBeVisible(): Promise<Locator> {
     const widget = await this.find();
-    expect(widget).toBeFalsy();
+    expect(widget).toBeTsyneVisible(false);
     return this;
   }
 
@@ -714,32 +718,32 @@ export class Expect {
 
   async toHaveText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).toBe(expectedText);
+    expect(actualText).toBeTsyneEqual(expectedText);
   }
 
   async toContainText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).toContain(expectedText);
+    expect(actualText).toContainTsyneString(expectedText);
   }
 
   async toNotHaveText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).not.toBe(expectedText);
+    expect(actualText).not.toBeTsyneEqual(expectedText);
   }
 
   async toNotContainText(expectedText: string): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).not.toContain(expectedText);
+    expect(actualText).not.toContainTsyneString(expectedText);
   }
 
   async toMatchText(pattern: RegExp): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).toMatch(pattern);
+    expect(actualText).toMatchTsynePattern(pattern);
   }
 
   async toNotMatchText(pattern: RegExp): Promise<void> {
     const actualText = await this.locator.getText();
-    expect(actualText).not.toMatch(pattern);
+    expect(actualText).not.toMatchTsynePattern(pattern);
   }
 
   async toBeVisible(): Promise<void> {
@@ -756,7 +760,7 @@ export class Expect {
 
     try {
       const widget = await locator.findWithRetry();
-      expect(widget).toBeTruthy();
+      expect(widget).toBeTsyneVisible(true);
     } finally {
       // Clean up temporary timeout if we set it
       if (!hasTimeout) {
@@ -768,32 +772,32 @@ export class Expect {
   async toNotBeVisible(): Promise<void> {
     // For "not visible", we want immediate check (no retry)
     const widget = await this.locator.find();
-    expect(widget).toBeFalsy();
+    expect(widget).toBeTsyneVisible(false);
   }
 
   async toExist(): Promise<void> {
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBeGreaterThan(0);
+    expect(widgets.length).toHaveTsyneCountGreaterThan(0);
   }
 
   async toNotExist(): Promise<void> {
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBe(0);
+    expect(widgets.length).toHaveTsyneCount(0);
   }
 
   async toHaveCount(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBe(count);
+    expect(widgets.length).toHaveTsyneCount(count);
   }
 
   async toHaveCountGreaterThan(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBeGreaterThan(count);
+    expect(widgets.length).toHaveTsyneCountGreaterThan(count);
   }
 
   async toHaveCountLessThan(count: number): Promise<void> {
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBeLessThan(count);
+    expect(widgets.length).toHaveTsyneCountLessThan(count);
   }
 }
 
@@ -1064,7 +1068,7 @@ export class TestContext {
       ? await this.hasTextIgnoreCase(text)
       : await this.hasText(text);
 
-    expect(hasIt).toBe(true);
+    expect(hasIt).toBeTsyneTrue();
   }
 
   /**
