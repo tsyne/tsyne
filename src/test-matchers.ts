@@ -4,6 +4,9 @@
  * These matchers override Jest's built-in matchers with versions that use
  * INTERNAL_MATCHER_FLAG to ensure Jest's error reporting points to the test
  * file that called the matcher, not to the matcher implementation.
+ *
+ * Our implementations handle the same types as Jest's built-ins (strings,
+ * arrays, Sets, Maps, iterables) so they work as drop-in replacements.
  */
 
 const INTERNAL_MATCHER_FLAG = Symbol.for('$$jest-internal-matcher');
@@ -33,6 +36,11 @@ function markAsInternalMatcher(fn: Function): void {
   });
 }
 
+// Helper to check if value is iterable (but not string)
+function isIterable(value: unknown): value is Iterable<unknown> {
+  return value != null && typeof (value as any)[Symbol.iterator] === 'function' && typeof value !== 'string';
+}
+
 // toBe - overrides Jest's toBe for equality checks
 const toBe = function(this: MatcherContext, received: unknown, expected: unknown): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
@@ -58,18 +66,37 @@ const toBe = function(this: MatcherContext, received: unknown, expected: unknown
 };
 markAsInternalMatcher(toBe);
 
-// toContain - overrides Jest's toContain for substring/array checks
+// toContain - overrides Jest's toContain for substring/array/Set/iterable checks
 const toContain = function(this: MatcherContext, received: unknown, expected: unknown): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
 
   let pass = false;
   let itemType = 'item';
 
-  if (typeof received === 'string' && typeof expected === 'string') {
-    pass = received.includes(expected);
+  if (typeof received === 'string') {
+    // String substring check
+    pass = typeof expected === 'string' && received.includes(expected);
     itemType = 'substring';
   } else if (Array.isArray(received)) {
+    // Array element check
     pass = received.includes(expected);
+    itemType = 'item';
+  } else if (received instanceof Set) {
+    // Set membership check
+    pass = received.has(expected);
+    itemType = 'item';
+  } else if (received instanceof Map) {
+    // Map value check
+    pass = Array.from(received.values()).includes(expected);
+    itemType = 'value';
+  } else if (isIterable(received)) {
+    // Generic iterable check
+    for (const item of received) {
+      if (item === expected) {
+        pass = true;
+        break;
+      }
+    }
     itemType = 'item';
   }
 
