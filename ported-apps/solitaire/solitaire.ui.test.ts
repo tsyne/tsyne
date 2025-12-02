@@ -51,7 +51,7 @@ describe('Solitaire UI Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Verify status shows drew cards
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
 
       // Note: We can't directly test image clicks in this setup without
       // more complex mouse position simulation, but we verified the
@@ -207,17 +207,17 @@ describe('Solitaire UI Integration Tests', () => {
       // First draw
       await ctx.getByText('Draw').click();
       await new Promise(resolve => setTimeout(resolve, 100));
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
 
       // Second draw
       await ctx.getByText('Draw').click();
       await new Promise(resolve => setTimeout(resolve, 100));
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
 
       // Third draw should recycle
       await ctx.getByText('Draw').click();
       await new Promise(resolve => setTimeout(resolve, 100));
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
     }, 10000);
   });
 
@@ -384,7 +384,7 @@ describe('Solitaire UI Integration Tests', () => {
       await ctx.getByText('Draw').click();
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
     }, 10000);
   });
 
@@ -463,7 +463,7 @@ describe('Solitaire UI Integration Tests', () => {
       // Try drawing
       await ctx.getByText('Draw').click();
       await new Promise(resolve => setTimeout(resolve, 200));
-      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+      await ctx.getByID('status-label').shouldContain('Drew cards');
     }, 15000);
 
     test('should handle empty game state', async () => {
