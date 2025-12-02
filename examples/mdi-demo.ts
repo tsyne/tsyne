@@ -20,7 +20,7 @@ app({ title: 'MDI Demo' }, (a) => {
           a.multilineentry(`Type content for document ${docNum} here...`);
           a.hbox(() => {
             a.button('Save', () => {
-              console.log(`Saving document ${docNum}...`);
+// console.log(`Saving document ${docNum}...`);
             });
             a.button('Close', () => {
               innerWin.close();
@@ -29,7 +29,7 @@ app({ title: 'MDI Demo' }, (a) => {
         });
       }, () => {
         // onClose callback
-        console.log(`Document ${docNum} closed`);
+// console.log(`Document ${docNum} closed`);
         const idx = innerWindows.indexOf(innerWin);
         if (idx >= 0) {
           innerWindows.splice(idx, 1);

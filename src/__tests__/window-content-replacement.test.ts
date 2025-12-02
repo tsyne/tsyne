@@ -121,7 +121,7 @@ describe('Window Content Replacement', () => {
     expect(buttons.length).toBe(2);
     expect(checkboxes.length).toBe(1);
 
-    console.log('✓ Placeholder replaced with complex form - old widgets removed');
+// console.log('✓ Placeholder replaced with complex form - old widgets removed');
   });
 
   test('should replace form with data table', async () => {
@@ -184,7 +184,7 @@ describe('Window Content Replacement', () => {
     expect(tables.length).toBe(1);
     expect(buttons.find((b: any) => b.text === 'Back to Form')).toBeDefined();
 
-    console.log('✓ Form replaced with table - old form widgets removed');
+// console.log('✓ Form replaced with table - old form widgets removed');
   });
 
   test('should replace table with different complex layout', async () => {
@@ -254,7 +254,7 @@ describe('Window Content Replacement', () => {
     expect(checkboxes.length).toBe(3);
     expect(buttons.length).toBe(2);
 
-    console.log('✓ Table replaced with settings layout - old table removed');
+// console.log('✓ Table replaced with settings layout - old table removed');
   });
 
   test('should handle browser-like pattern: chrome + placeholder → chrome + form → chrome + results', async () => {
@@ -316,7 +316,7 @@ describe('Window Content Replacement', () => {
     let labels = allWidgets.filter((w: any) => w.type === 'label');
     expect(labels.find((l: any) => l.text === 'Enter a URL in the address bar and click Go to navigate.')).toBeDefined();
     expect(allWidgets.filter((w: any) => w.type === 'entry').length).toBe(1); // Just URL bar
-    console.log('✓ Initial state: browser chrome + placeholder');
+// console.log('✓ Initial state: browser chrome + placeholder');
 
     // Navigate to form page
     currentPageBuilder = () => {
@@ -382,7 +382,7 @@ describe('Window Content Replacement', () => {
     expect(entries.length).toBe(4);
     expect(buttons.find((b: any) => b.text === 'Send Message')).toBeDefined();
 
-    console.log('✓ Form page loaded: chrome preserved, placeholder replaced with form');
+// console.log('✓ Form page loaded: chrome preserved, placeholder replaced with form');
 
     // Navigate to results page
     currentPageBuilder = () => {
@@ -450,7 +450,7 @@ describe('Window Content Replacement', () => {
     expect(tables.length).toBe(1);
     expect(finalButtons.find((b: any) => b.text === 'Send Another Message')).toBeDefined();
 
-    console.log('✓ Results page loaded: chrome preserved, form replaced with results table');
-    console.log('✓ Full browser navigation cycle complete - all old widgets properly removed');
+// console.log('✓ Results page loaded: chrome preserved, form replaced with results table');
+// console.log('✓ Full browser navigation cycle complete - all old widgets properly removed');
   });
 });

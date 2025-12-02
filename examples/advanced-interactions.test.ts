@@ -116,7 +116,7 @@ describe('Advanced Interaction APIs', () => {
       await ctx.wait(100);
     } catch (error) {
       // Some widgets may not support secondary tap - that's expected
-      console.log('Right-click not supported on this widget (expected)');
+// console.log('Right-click not supported on this widget (expected)');
     }
   });
 

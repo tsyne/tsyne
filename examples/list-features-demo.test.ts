@@ -40,7 +40,7 @@ describe.skip('List Features Demo', () => {
       await ctx.wait(500);
       const screenshotPath = path.join(__dirname, 'screenshots', 'list-features-demo.png');
       await tsyneTest.screenshot(screenshotPath);
-      console.log(`Screenshot saved to ${screenshotPath}`);
+// console.log(`Screenshot saved to ${screenshotPath}`);
     }
   });
 

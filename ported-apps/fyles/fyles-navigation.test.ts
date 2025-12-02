@@ -132,7 +132,7 @@ describe('Fyles Navigation Tests', () => {
 
   test('should navigate to home and back', async () => {
     // Navigate to home
-    await ctx.getByText('🏠').click();
+    await ctx.getByID('panel-0-home').click();
     await ctx.wait(200);
 
     // Should show home directory

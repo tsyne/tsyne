@@ -175,7 +175,7 @@ vbox(() => {
 // Create HTTP server
 const server = http.createServer((req, res) => {
   const url = req.url || '/';
-  console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
+// console.log(`[${new Date().toISOString()}] ${req.method} ${url}`);
 
   // Serve static assets from /assets/ directory
   if (url.startsWith('/assets/')) {
@@ -237,7 +237,7 @@ vbox(() => {
 });
 
 server.listen(PORT, () => {
-  console.log(`
+// console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║  Tsyne Browser Demo Server                                  ║
 ╚════════════════════════════════════════════════════════════╝

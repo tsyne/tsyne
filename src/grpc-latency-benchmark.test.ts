@@ -108,7 +108,7 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure stdio latency', async () => {
     const result = await measureLatency('stdio', MESSAGE_COUNT);
-    console.log(formatResult(result));
+// console.log(formatResult(result));
 
     // Basic sanity check
     expect(result.avgLatencyMs).toBeGreaterThan(0);
@@ -117,7 +117,7 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure gRPC latency', async () => {
     const result = await measureLatency('grpc', MESSAGE_COUNT);
-    console.log(formatResult(result));
+// console.log(formatResult(result));
 
     expect(result.avgLatencyMs).toBeGreaterThan(0);
     expect(result.avgLatencyMs).toBeLessThan(100);
@@ -125,25 +125,25 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure msgpack-uds latency', async () => {
     const result = await measureLatency('msgpack-uds', MESSAGE_COUNT);
-    console.log(formatResult(result));
+// console.log(formatResult(result));
 
     expect(result.avgLatencyMs).toBeGreaterThan(0);
     expect(result.avgLatencyMs).toBeLessThan(100);
   }, 60000);
 
   test('compare all protocols latency', async () => {
-    console.log('\n========================================');
-    console.log('     PROTOCOL LATENCY COMPARISON');
-    console.log('========================================');
+// console.log('\n========================================');
+// console.log('     PROTOCOL LATENCY COMPARISON');
+// console.log('========================================');
 
     // Run all three protocols
     const stdioResult = await measureLatency('stdio', MESSAGE_COUNT);
     const grpcResult = await measureLatency('grpc', MESSAGE_COUNT);
     const msgpackResult = await measureLatency('msgpack-uds', MESSAGE_COUNT);
 
-    console.log(formatResult(stdioResult));
-    console.log(formatResult(grpcResult));
-    console.log(formatResult(msgpackResult));
+// console.log(formatResult(stdioResult));
+// console.log(formatResult(grpcResult));
+// console.log(formatResult(msgpackResult));
 
     // Find winner (lowest latency)
     const results = [
@@ -155,27 +155,27 @@ describe('Protocol Latency Benchmark', () => {
     const winner = results[0];
     const slowest = results[results.length - 1];
 
-    console.log('\n=== COMPARISON ===');
-    console.log(`Winner: ${winner.name}`);
-    console.log(`Speedup vs slowest: ${(slowest.result.avgLatencyMs / winner.result.avgLatencyMs).toFixed(2)}x`);
-    console.log('');
-    console.log('Average latencies:');
-    console.log(`  stdio:       ${stdioResult.avgLatencyMs.toFixed(3)}ms`);
-    console.log(`  gRPC:        ${grpcResult.avgLatencyMs.toFixed(3)}ms`);
-    console.log(`  msgpack-uds: ${msgpackResult.avgLatencyMs.toFixed(3)}ms`);
-    console.log('');
-    console.log('Throughput (msg/sec):');
-    console.log(`  stdio:       ${stdioResult.messagesPerSecond.toFixed(1)}`);
-    console.log(`  gRPC:        ${grpcResult.messagesPerSecond.toFixed(1)}`);
-    console.log(`  msgpack-uds: ${msgpackResult.messagesPerSecond.toFixed(1)}`);
+// console.log('\n=== COMPARISON ===');
+// console.log(`Winner: ${winner.name}`);
+// console.log(`Speedup vs slowest: ${(slowest.result.avgLatencyMs / winner.result.avgLatencyMs).toFixed(2)}x`);
+// console.log('');
+// console.log('Average latencies:');
+// console.log(`  stdio:       ${stdioResult.avgLatencyMs.toFixed(3)}ms`);
+// console.log(`  gRPC:        ${grpcResult.avgLatencyMs.toFixed(3)}ms`);
+// console.log(`  msgpack-uds: ${msgpackResult.avgLatencyMs.toFixed(3)}ms`);
+// console.log('');
+// console.log('Throughput (msg/sec):');
+// console.log(`  stdio:       ${stdioResult.messagesPerSecond.toFixed(1)}`);
+// console.log(`  gRPC:        ${grpcResult.messagesPerSecond.toFixed(1)}`);
+// console.log(`  msgpack-uds: ${msgpackResult.messagesPerSecond.toFixed(1)}`);
 
     // No assertion on which is faster - just report
   }, 180000);
 
   test('burst message test (rapid fire)', async () => {
-    console.log('\n========================================');
-    console.log('     BURST MESSAGE TEST (50 rapid)');
-    console.log('========================================');
+// console.log('\n========================================');
+// console.log('     BURST MESSAGE TEST (50 rapid)');
+// console.log('========================================');
 
     for (const protocol of ['stdio', 'grpc', 'msgpack-uds'] as const) {
       const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
@@ -206,7 +206,7 @@ describe('Protocol Latency Benchmark', () => {
         await Promise.all(promises);
         const elapsed = performance.now() - start;
 
-        console.log(`${protocol}: 50 burst messages in ${elapsed.toFixed(2)}ms (${(50000 / elapsed).toFixed(1)} msg/sec)`);
+// console.log(`${protocol}: 50 burst messages in ${elapsed.toFixed(2)}ms (${(50000 / elapsed).toFixed(1)} msg/sec)`);
       } finally {
         await tsyneTest.cleanup();
       }

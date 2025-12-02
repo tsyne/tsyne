@@ -240,8 +240,8 @@ if (require.main === module) {
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);
 
   // Announce that the app is ready
-  console.log("\n=== Accessible Calculator ===");
-  console.log("Click 'Accessibility: OFF' to enable text-to-speech");
-  console.log("All button presses and results will be announced");
-  console.log("===============================\n");
+// console.log("\n=== Accessible Calculator ===");
+// console.log("Click 'Accessibility: OFF' to enable text-to-speech");
+// console.log("All button presses and results will be announced");
+// console.log("===============================\n");
 }

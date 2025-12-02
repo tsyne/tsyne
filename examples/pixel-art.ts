@@ -45,7 +45,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
             palette.forEach((color, index) => {
               a.button(`Color ${index + 1}`, () => {
                 currentColor = color;
-                console.log(`Selected color: RGB(${color.r}, ${color.g}, ${color.b})`);
+// console.log(`Selected color: RGB(${color.r}, ${color.g}, ${color.b})`);
               });
             });
 

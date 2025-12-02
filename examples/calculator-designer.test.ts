@@ -254,7 +254,7 @@ describe('Calculator Designer Integration', () => {
 
   test('should load calculator and capture all widgets', () => {
     expect(widgets.length).toBeGreaterThan(0);
-    console.log(`Captured ${widgets.length} widgets`);
+// console.log(`Captured ${widgets.length} widgets`);
   });
 
   describe('Widget Hierarchy', () => {

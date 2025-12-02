@@ -19,12 +19,12 @@ app({ title: 'Checkbox Demo' }, () => {
 
         // Simple checkboxes with change callbacks
         termsCheckbox = checkbox('I accept the terms and conditions', (checked) => {
-          console.log('Terms checkbox:', checked);
+// console.log('Terms checkbox:', checked);
           updateStatus();
         });
 
         newsletterCheckbox = checkbox('Subscribe to newsletter', (checked) => {
-          console.log('Newsletter checkbox:', checked);
+// console.log('Newsletter checkbox:', checked);
           updateStatus();
         });
 

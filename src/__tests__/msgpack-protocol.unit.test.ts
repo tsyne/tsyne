@@ -234,8 +234,8 @@ describe('MessagePack Protocol Unit Tests', () => {
       expect(msgpackSize).toBeLessThan(jsonSize);
 
       // Log sizes for visibility
-      console.log(`MessagePack: ${msgpackSize} bytes, JSON: ${jsonSize} bytes`);
-      console.log(`Savings: ${((1 - msgpackSize / jsonSize) * 100).toFixed(1)}%`);
+// console.log(`MessagePack: ${msgpackSize} bytes, JSON: ${jsonSize} bytes`);
+// console.log(`Savings: ${((1 - msgpackSize / jsonSize) * 100).toFixed(1)}%`);
     });
   });
 
@@ -324,7 +324,7 @@ describe('MessagePack Protocol Unit Tests', () => {
       }
       const elapsed = performance.now() - start;
 
-      console.log(`Encoded 1000 messages in ${elapsed.toFixed(2)}ms`);
+// console.log(`Encoded 1000 messages in ${elapsed.toFixed(2)}ms`);
       expect(elapsed).toBeLessThan(100); // Should be well under 100ms
     });
 
@@ -342,7 +342,7 @@ describe('MessagePack Protocol Unit Tests', () => {
       }
       const elapsed = performance.now() - start;
 
-      console.log(`Decoded 1000 messages in ${elapsed.toFixed(2)}ms`);
+// console.log(`Decoded 1000 messages in ${elapsed.toFixed(2)}ms`);
       expect(elapsed).toBeLessThan(100);
     });
 
@@ -360,8 +360,8 @@ describe('MessagePack Protocol Unit Tests', () => {
       }
       const elapsed = performance.now() - start;
 
-      console.log(`Roundtripped 1000 messages in ${elapsed.toFixed(2)}ms`);
-      console.log(`Average: ${(elapsed / 1000).toFixed(3)}ms per roundtrip`);
+// console.log(`Roundtripped 1000 messages in ${elapsed.toFixed(2)}ms`);
+// console.log(`Average: ${(elapsed / 1000).toFixed(3)}ms per roundtrip`);
       expect(elapsed).toBeLessThan(200);
     });
   });

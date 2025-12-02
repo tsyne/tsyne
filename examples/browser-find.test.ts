@@ -34,7 +34,7 @@ vbox(() => {
 
       // Find "test" (should match "test" in "This is a test page" and "Testing")
       const matchCount = browser.findInPage('test');
-      console.log('Match count:', matchCount);
+// console.log('Match count:', matchCount);
 
       if (matchCount < 2) {
         throw new Error(`Expected at least 2 matches, found ${matchCount}`);
@@ -42,19 +42,19 @@ vbox(() => {
 
       // Verify find query is stored
       const query = browser.getFindQuery();
-      console.log('Find query:', query);
+// console.log('Find query:', query);
       if (query !== 'test') {
         throw new Error(`Expected query 'test', got: ${query}`);
       }
 
       // Verify current match index is set to first match
       const currentIndex = browser.getFindCurrentIndex();
-      console.log('Current match index:', currentIndex);
+// console.log('Current match index:', currentIndex);
       if (currentIndex !== 0) {
         throw new Error(`Expected current index 0, got: ${currentIndex}`);
       }
 
-      console.log('✓ Find text in page (case-insensitive) works correctly');
+// console.log('✓ Find text in page (case-insensitive) works correctly');
     },
     { timeout: 30000 }
   );
@@ -83,19 +83,19 @@ vbox(() => {
 
       // Case-insensitive search (default)
       const matchCountInsensitive = browser.findInPage('hello');
-      console.log('Case-insensitive matches:', matchCountInsensitive);
+// console.log('Case-insensitive matches:', matchCountInsensitive);
       if (matchCountInsensitive !== 3) {
         throw new Error(`Expected 3 matches (case-insensitive), found ${matchCountInsensitive}`);
       }
 
       // Case-sensitive search
       const matchCountSensitive = browser.findInPage('Hello', true);
-      console.log('Case-sensitive matches:', matchCountSensitive);
+// console.log('Case-sensitive matches:', matchCountSensitive);
       if (matchCountSensitive !== 1) {
         throw new Error(`Expected 1 match (case-sensitive), found ${matchCountSensitive}`);
       }
 
-      console.log('✓ Case-sensitive find works correctly');
+// console.log('✓ Case-sensitive find works correctly');
     },
     { timeout: 30000 }
   );
@@ -124,14 +124,14 @@ vbox(() => {
 
       // Find "match"
       const matchCount = browser.findInPage('match');
-      console.log('Match count:', matchCount);
+// console.log('Match count:', matchCount);
       if (matchCount !== 3) {
         throw new Error(`Expected 3 matches, found ${matchCount}`);
       }
 
       // Should start at first match (index 0)
       let currentIndex = browser.getFindCurrentIndex();
-      console.log('Initial index:', currentIndex);
+// console.log('Initial index:', currentIndex);
       if (currentIndex !== 0) {
         throw new Error(`Expected initial index 0, got: ${currentIndex}`);
       }
@@ -142,7 +142,7 @@ vbox(() => {
         throw new Error('Expected findNext to return true');
       }
       currentIndex = browser.getFindCurrentIndex();
-      console.log('After first findNext:', currentIndex);
+// console.log('After first findNext:', currentIndex);
       if (currentIndex !== 1) {
         throw new Error(`Expected index 1, got: ${currentIndex}`);
       }
@@ -153,12 +153,12 @@ vbox(() => {
         throw new Error('Expected findNext to return true');
       }
       currentIndex = browser.getFindCurrentIndex();
-      console.log('After second findNext:', currentIndex);
+// console.log('After second findNext:', currentIndex);
       if (currentIndex !== 2) {
         throw new Error(`Expected index 2, got: ${currentIndex}`);
       }
 
-      console.log('✓ Navigate to next match works correctly');
+// console.log('✓ Navigate to next match works correctly');
     },
     { timeout: 30000 }
   );
@@ -186,7 +186,7 @@ vbox(() => {
 
       // Find "Match"
       const matchCount = browser.findInPage('Match');
-      console.log('Match count:', matchCount);
+// console.log('Match count:', matchCount);
       if (matchCount !== 2) {
         throw new Error(`Expected 2 matches, found ${matchCount}`);
       }
@@ -194,7 +194,7 @@ vbox(() => {
       // Navigate to last match
       browser.findNext();
       let currentIndex = browser.getFindCurrentIndex();
-      console.log('At last match:', currentIndex);
+// console.log('At last match:', currentIndex);
       if (currentIndex !== 1) {
         throw new Error(`Expected index 1, got: ${currentIndex}`);
       }
@@ -202,12 +202,12 @@ vbox(() => {
       // Navigate past last match (should wrap to first)
       browser.findNext();
       currentIndex = browser.getFindCurrentIndex();
-      console.log('After wrap:', currentIndex);
+// console.log('After wrap:', currentIndex);
       if (currentIndex !== 0) {
         throw new Error(`Expected wrap to index 0, got: ${currentIndex}`);
       }
 
-      console.log('✓ Wrapping to first match works correctly');
+// console.log('✓ Wrapping to first match works correctly');
     },
     { timeout: 30000 }
   );
@@ -240,7 +240,7 @@ vbox(() => {
       // Navigate to second match
       browser.findNext();
       let currentIndex = browser.getFindCurrentIndex();
-      console.log('At second match:', currentIndex);
+// console.log('At second match:', currentIndex);
       if (currentIndex !== 1) {
         throw new Error(`Expected index 1, got: ${currentIndex}`);
       }
@@ -251,12 +251,12 @@ vbox(() => {
         throw new Error('Expected findPrevious to return true');
       }
       currentIndex = browser.getFindCurrentIndex();
-      console.log('After findPrevious:', currentIndex);
+// console.log('After findPrevious:', currentIndex);
       if (currentIndex !== 0) {
         throw new Error(`Expected index 0, got: ${currentIndex}`);
       }
 
-      console.log('✓ Navigate to previous match works correctly');
+// console.log('✓ Navigate to previous match works correctly');
     },
     { timeout: 30000 }
   );
@@ -285,7 +285,7 @@ vbox(() => {
 
       // Find "Match"
       const matchCount = browser.findInPage('Match');
-      console.log('Match count:', matchCount);
+// console.log('Match count:', matchCount);
       if (matchCount !== 3) {
         throw new Error(`Expected 3 matches, found ${matchCount}`);
       }
@@ -299,12 +299,12 @@ vbox(() => {
       // Navigate before first match (should wrap to last)
       browser.findPrevious();
       currentIndex = browser.getFindCurrentIndex();
-      console.log('After wrap to last:', currentIndex);
+// console.log('After wrap to last:', currentIndex);
       if (currentIndex !== 2) {
         throw new Error(`Expected wrap to index 2, got: ${currentIndex}`);
       }
 
-      console.log('✓ Wrapping to last match works correctly');
+// console.log('✓ Wrapping to last match works correctly');
     },
     { timeout: 30000 }
   );
@@ -331,7 +331,7 @@ vbox(() => {
 
       // Find "Test"
       const matchCount = browser.findInPage('Test');
-      console.log('Match count:', matchCount);
+// console.log('Match count:', matchCount);
       if (matchCount === 0) {
         throw new Error('Expected to find matches');
       }
@@ -363,7 +363,7 @@ vbox(() => {
         throw new Error(`Expected index -1 after clear, got: ${index}`);
       }
 
-      console.log('✓ Clear find state works correctly');
+// console.log('✓ Clear find state works correctly');
     },
     { timeout: 30000 }
   );
@@ -390,7 +390,7 @@ vbox(() => {
 
       // Search for text that doesn't exist
       const matchCount = browser.findInPage('nonexistent');
-      console.log('Match count for nonexistent text:', matchCount);
+// console.log('Match count for nonexistent text:', matchCount);
 
       if (matchCount !== 0) {
         throw new Error(`Expected 0 matches, found ${matchCount}`);
@@ -426,7 +426,7 @@ vbox(() => {
         throw new Error('Expected findPrevious to return false when no matches');
       }
 
-      console.log('✓ No matches found handled correctly');
+// console.log('✓ No matches found handled correctly');
     },
     { timeout: 30000 }
   );
@@ -459,7 +459,7 @@ vbox(() => {
 
       // Now search with empty query (should clear find state)
       const matchCount = browser.findInPage('');
-      console.log('Match count for empty query:', matchCount);
+// console.log('Match count for empty query:', matchCount);
 
       if (matchCount !== 0) {
         throw new Error(`Expected 0 matches for empty query, found ${matchCount}`);
@@ -476,7 +476,7 @@ vbox(() => {
         throw new Error(`Expected 0 matches, got: ${matches}`);
       }
 
-      console.log('✓ Empty query handled correctly');
+// console.log('✓ Empty query handled correctly');
     },
     { timeout: 30000 }
   );
@@ -503,13 +503,13 @@ vbox(() => {
 
       // Find "aa" in "aaa" - should find 2 overlapping matches
       const matchCount = browser.findInPage('aa');
-      console.log('Match count for overlapping:', matchCount);
+// console.log('Match count for overlapping:', matchCount);
 
       if (matchCount !== 2) {
         throw new Error(`Expected 2 overlapping matches, found ${matchCount}`);
       }
 
-      console.log('✓ Overlapping matches handled correctly');
+// console.log('✓ Overlapping matches handled correctly');
     },
     { timeout: 30000 }
   );
@@ -546,7 +546,7 @@ vbox(() => {
 
       // Find "one" on page 1
       const matchCount1 = browser.findInPage('one');
-      console.log('Match count on page 1:', matchCount1);
+// console.log('Match count on page 1:', matchCount1);
       if (matchCount1 === 0) {
         throw new Error('Expected to find "one" on page 1');
       }
@@ -557,19 +557,19 @@ vbox(() => {
 
       // Find query should still be "one" but no matches on page 2
       const query = browser.getFindQuery();
-      console.log('Find query after navigation:', query);
+// console.log('Find query after navigation:', query);
       if (query !== 'one') {
         throw new Error(`Expected query 'one' to persist, got: ${query}`);
       }
 
       // Can search for "two" on page 2
       const matchCount2 = browser.findInPage('two');
-      console.log('Match count on page 2:', matchCount2);
+// console.log('Match count on page 2:', matchCount2);
       if (matchCount2 === 0) {
         throw new Error('Expected to find "two" on page 2');
       }
 
-      console.log('✓ Find persists across navigation correctly');
+// console.log('✓ Find persists across navigation correctly');
     },
     { timeout: 30000 }
   );
