@@ -42,16 +42,16 @@ describe('Draw Button Layout Regression Test', () => {
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    console.error('\n=== Starting Draw button regression test ===');
-    console.error('Bug: Layout shifts after pressing Draw, making button unclickable');
-    console.error('Test: Press Draw 20 times and log Y position after each press\n');
+    console.info('\n=== Starting Draw button regression test ===');
+    console.info('Bug: Layout shifts after pressing Draw, making button unclickable');
+    console.info('Test: Press Draw 20 times and log Y position after each press\n');
 
     let initialY: number | undefined;
     let previousY: number | undefined;
 
     // Press Draw 20 times - if layout shifts, button becomes unclickable
     for (let i = 0; i < 20; i++) {
-      console.error(`Draw press ${i + 1}/20...`);
+      console.info(`Draw press ${i + 1}/20...`);
 
       try {
         const drawButton = ctx.getByText('Draw');
@@ -66,14 +66,14 @@ describe('Draw Button Layout Regression Test', () => {
         const infoAfter = await drawButton.getInfo();
         const currentY = infoAfter.absoluteY;
 
-        console.error(`  Before click Y: ${infoBefore.absoluteY}, After click Y: ${infoAfter.absoluteY}`);
+        console.info(`  Before click Y: ${infoBefore.absoluteY}, After click Y: ${infoAfter.absoluteY}`);
 
         // Verify the click worked by checking status message
         await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
 
         if (i === 0) {
           initialY = currentY;
-          console.error(`  ✓ Click successful, initial absolute Y position: ${currentY}`);
+          console.info(`  ✓ Click successful, initial absolute Y position: ${currentY}`);
         } else {
           const shiftFromInitial = currentY !== undefined && initialY !== undefined
             ? (currentY - initialY).toFixed(1)
@@ -82,7 +82,7 @@ describe('Draw Button Layout Regression Test', () => {
             ? (currentY - previousY).toFixed(1)
             : 'unknown';
 
-          console.error(`  ✓ Click successful, absolute Y: ${currentY}, shift from initial: ${shiftFromInitial}px, from previous: ${shiftFromPrevious}px`);
+          console.info(`  ✓ Click successful, absolute Y: ${currentY}, shift from initial: ${shiftFromInitial}px, from previous: ${shiftFromPrevious}px`);
 
           // Fail test if significant shift detected
           if (currentY !== undefined && initialY !== undefined) {
@@ -105,7 +105,7 @@ describe('Draw Button Layout Regression Test', () => {
                 if (!parentLocator) break;
 
                 const parentInfo = await parentLocator.getInfo();
-                console.error(`  [Parent L${level}] type: ${parentInfo.type}, id: ${parentInfo.id}, absY: ${parentInfo.absoluteY}`);
+                console.info(`  [Parent L${level}] type: ${parentInfo.type}, id: ${parentInfo.id}, absY: ${parentInfo.absoluteY}`);
 
             } catch (e) {
                 // This will happen if a widget has no parent, which is expected for the root
@@ -117,20 +117,12 @@ describe('Draw Button Layout Regression Test', () => {
         console.error(`\n❌ REGRESSION DETECTED at press ${i + 1}!`);
         console.error(`   Error: ${error}`);
 
-        // Try to get all visible text for debugging
-        try {
-          const allText = await ctx.getAllTextAsString();
-          console.error(`\n   Visible UI state:\n${allText}`);
-        } catch (e) {
-          console.error(`   Could not retrieve UI state: ${e}`);
-        }
-
         throw error;
       }
     }
 
-    console.error('\n✅ SUCCESS: Draw button remained clickable through 20 presses');
-    console.error('   No layout shift detected\n');
+    console.info('\n✅ SUCCESS: Draw button remained clickable through 20 presses');
+    console.info('   No layout shift detected\n');
   }, 60000); // 60 second timeout for 20 draws
 
   test('should handle New Game button press followed by Draw', async () => {

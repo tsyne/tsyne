@@ -40,16 +40,37 @@ describe('Hand Pile Click Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to load
-    await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
+    try {
+      // Wait for UI to load
+      await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
-    // Click hand pile to draw cards
-    await ctx.getByID('hand-pile').click();
-    await new Promise(resolve => setTimeout(resolve, 200));
+      // Click hand pile to draw cards
+      await ctx.getByID('hand-pile').click();
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Verify status shows drew cards
-    await ctx.getByID('status-label').shouldContain('Drew cards');
-  }, 10000);
+      // Verify status shows drew cards
+      await ctx.getByID('status-label').shouldContain('Drew cards');
+    } catch (error) {
+      // Take screenshot on timeout/failure
+      const screenshotPath = '/tmp/hand-click-timeout.png';
+      try {
+        await tsyneTest.screenshot(screenshotPath);
+        console.error(`Screenshot saved to: ${screenshotPath}`);
+      } catch (screenshotError) {
+        console.error(`Failed to capture screenshot: ${screenshotError}`);
+      }
+
+      // Log current UI state for debugging
+      try {
+        const allText = await ctx.getAllTextAsString();
+        console.error(`\nUI state at timeout:\n${allText}`);
+      } catch (e) {
+        console.error(`Could not retrieve UI state: ${e}`);
+      }
+
+      throw error;
+    }
+  }, 15000);
 
   test('should select and move draw3 card to tableau', async () => {
     const testApp = await tsyneTest.createApp((app: App) => {

@@ -910,12 +910,11 @@ class SolitaireUI {
 
     // Rebuild UI to show the move
     if (moved) {
-      this.rebuildUI();
-
-      // Check for win
+      // Check for win and update status before rebuilding
       if (this.game.hasWon()) {
-        await this.updateStatus('Congratulations! You won!');
+        this.currentStatus = 'Congratulations! You won!';
       }
+      this.rebuildUI();
     }
   }
 
@@ -981,12 +980,11 @@ class SolitaireUI {
 
     // Rebuild UI to show the move
     if (moved) {
-      this.rebuildUI();
-
-      // Check for win
+      // Check for win and update status before rebuilding
       if (this.game.hasWon()) {
-        await this.updateStatus('Congratulations! You won!');
+        this.currentStatus = 'Congratulations! You won!';
       }
+      this.rebuildUI();
     }
   }
 
@@ -1146,25 +1144,26 @@ class SolitaireUI {
     this.game.newGame();
     this.selectedCard = null;
     this.draggedCard = null;
+    this.currentStatus = 'New game started';
     this.rebuildUI();
-    this.updateStatus('New game started');
   }
 
   private shuffle(): void {
     this.game.newGame();
     this.selectedCard = null;
     this.draggedCard = null;
+    this.currentStatus = 'Deck shuffled';
     this.rebuildUI();
-    this.updateStatus('Deck shuffled');
   }
 
-  private async draw(): Promise<void> {
+  private draw(): void {
     this.game.drawThree();
-    await this.updateDrawPileUI(); // Incremental update instead of full rebuild
-    await this.updateStatus('Drew cards');
     if (this.game.hasWon()) {
-      await this.updateStatus('Congratulations! You won!');
+      this.currentStatus = 'Congratulations! You won!';
+    } else {
+      this.currentStatus = 'Drew cards';
     }
+    this.rebuildUI();
   }
 
   private async updateStatus(message: string): Promise<void> {
