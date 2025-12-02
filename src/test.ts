@@ -303,14 +303,42 @@ export class Locator {
   }
 
   /**
-   * Fluent API: Assert text contains expected substring (fast fail)
+   * Fluent API: Assert text contains expected substring
+   * Fast fail by default, or use .within(timeout) to poll
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("message").shouldContain("success");
+   * await ctx.getByID("status").within(500).shouldContain("Done");
    */
   async shouldContain(expected: string): Promise<Locator> {
-    const actual = await this.getText();
-    expect(actual).toContain(expected);
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      const actual = await this.getText();
+      expect(actual).toContain(expected);
+      return this;
+    }
+
+    // within() drives explicit retry polling
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getText();
+        if (actual.includes(expected)) {
+          return this;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Widget not found yet, keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    // Timeout - fail with last value
+    expect(lastActual).toContain(expected);
     return this;
   }
 
