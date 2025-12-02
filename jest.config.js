@@ -5,7 +5,7 @@ module.exports = {
   // GUI tests can't run in parallel - they compete for display resources
   // Only test root-level code (designer/ and examples/ have their own package.json)
   maxWorkers: 1,
-  roots: ['<rootDir>/test-apps', '<rootDir>/src', '<rootDir>/test'],
+  roots: ['<rootDir>/test-apps', '<rootDir>/src', '<rootDir>/test', '<rootDir>/ported-apps'],
   testMatch: [
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'

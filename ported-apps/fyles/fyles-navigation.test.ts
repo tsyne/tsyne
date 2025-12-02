@@ -18,7 +18,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-describe.skip('Fyles Navigation Tests', () => {
+describe('Fyles Navigation Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let testDir: string;
@@ -76,7 +76,7 @@ describe.skip('Fyles Navigation Tests', () => {
 
   test('should navigate down one level', async () => {
     // Navigate to level1
-    await ctx.getByID('grid-folder-level1').click();
+    await ctx.getByID('panel-0-grid-folder-level1').click();
     await ctx.wait(200);
 
     // Path should update
@@ -87,7 +87,7 @@ describe.skip('Fyles Navigation Tests', () => {
     expect(await ctx.getByText('level1.txt').within(2000).exists()).toBeTruthy();
 
     // Should show level2 folder in navigation
-    expect(await ctx.getByID('nav-folder-level2').within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByID('panel-0-nav-folder-level2').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate down multiple levels', async () => {
@@ -96,11 +96,11 @@ describe.skip('Fyles Navigation Tests', () => {
     await ctx.wait(200);
 
     // Navigate to level1
-    await ctx.getByID('grid-folder-level1').click();
+    await ctx.getByID('panel-0-grid-folder-level1').click();
     await ctx.wait(200);
 
     // Navigate to level2
-    await ctx.getByID('grid-folder-level2').click();
+    await ctx.getByID('panel-0-grid-folder-level2').click();
     await ctx.wait(200);
 
     // Path should update
@@ -111,7 +111,7 @@ describe.skip('Fyles Navigation Tests', () => {
     expect(await ctx.getByText('level2.txt').within(2000).exists()).toBeTruthy();
 
     // Should show level3 folder
-    expect(await ctx.getByID('nav-folder-level3').within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByID('panel-0-nav-folder-level3').within(2000).exists()).toBeTruthy();
   });
 
   test('should navigate up one level', async () => {
@@ -160,22 +160,22 @@ describe.skip('Fyles Navigation Tests', () => {
     await ctx.wait(200);
 
     // Should show level1 in navigation
-    expect(await ctx.getByID('nav-folder-level1').within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByID('panel-0-nav-folder-level1').within(2000).exists()).toBeTruthy();
 
     // Navigate to level1
-    await ctx.getByID('grid-folder-level1').click();
+    await ctx.getByID('panel-0-grid-folder-level1').click();
     await ctx.wait(200);
 
     // Should now show level2 in navigation
-    expect(await ctx.getByID('nav-folder-level2').within(2000).exists()).toBeTruthy();
+    expect(await ctx.getByID('panel-0-nav-folder-level2').within(2000).exists()).toBeTruthy();
   });
 
   test('should handle navigation to deepest level', async () => {
     // We're currently at level1, navigate to level2 then level3
-    await ctx.getByID('grid-folder-level2').click();
+    await ctx.getByID('panel-0-grid-folder-level2').click();
     await ctx.wait(200);
 
-    await ctx.getByID('grid-folder-level3').click();
+    await ctx.getByID('panel-0-grid-folder-level3').click();
     await ctx.wait(200);
 
     // Should show level3 path

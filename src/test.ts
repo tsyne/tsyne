@@ -1299,4 +1299,272 @@ export class TestContext {
     const windowId = 'window_0'; // TODO: Make this dynamic
     await this.bridge.send('captureWindow', { windowId, filePath });
   }
+
+  /**
+   * Get a fluent locator for dialogs
+   * Supports within() polling and chainable assertions
+   * @example
+   * await ctx.dialog().shouldBeError('Failed');
+   * await ctx.dialog().within(500).shouldExist();
+   * await ctx.dialog().shouldBeInfo('Success').thenDismiss();
+   */
+  dialog(): DialogLocator {
+    return new DialogLocator(this.bridge);
+  }
+
+  /**
+   * Get all currently active dialogs (info, error, confirm, etc.)
+   * Uses Fyne's canvas overlay system to inspect dialogs
+   * @returns Array of dialog information objects
+   * @example
+   * const dialogs = await ctx.getActiveDialogs();
+   * expect(dialogs).toHaveLength(1);
+   * expect(dialogs[0].type).toBe('error');
+   * expect(dialogs[0].message).toContain('Failed');
+   */
+  async getActiveDialogs(): Promise<DialogInfo[]> {
+    const windowId = 'window_0'; // First window created
+    const result = await this.bridge.send('getActiveDialogs', { windowId }) as { dialogs?: DialogInfo[] };
+    return result.dialogs || [];
+  }
+
+  /**
+   * Dismiss the top-most active dialog
+   * Finds and clicks the OK/Close/Dismiss/Cancel button
+   * @example
+   * await ctx.dismissActiveDialog();
+   */
+  async dismissActiveDialog(): Promise<void> {
+    const windowId = 'window_0'; // First window created
+    await this.bridge.send('dismissActiveDialog', { windowId });
+  }
+
+  /**
+   * Assert that an error dialog is currently shown with the expected message
+   * @param expectedMessage - Text that should be in the error message (partial match)
+   * @example
+   * await ctx.assertErrorDialog('Failed to navigate');
+   */
+  async assertErrorDialog(expectedMessage: string): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    const errorDialog = dialogs.find(d => d.type === 'error');
+    expect(errorDialog).toBeTruthy();
+    if (errorDialog?.message) {
+      expect(errorDialog.message).toContain(expectedMessage);
+    } else if (errorDialog?.texts) {
+      expect(errorDialog.texts.join(' ')).toContain(expectedMessage);
+    }
+  }
+
+  /**
+   * Assert that an info dialog is currently shown with the expected title/message
+   * @param expectedText - Text that should be in the dialog (partial match)
+   * @example
+   * await ctx.assertInfoDialog('Cannot Move');
+   */
+  async assertInfoDialog(expectedText: string): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    const infoDialog = dialogs.find(d => d.type === 'info');
+    expect(infoDialog).toBeTruthy();
+    const allText = [infoDialog?.title, infoDialog?.message, ...(infoDialog?.texts || [])].join(' ');
+    expect(allText).toContain(expectedText);
+  }
+
+  /**
+   * Assert that no dialogs are currently shown
+   * @example
+   * await ctx.assertNoDialogs();
+   */
+  async assertNoDialogs(): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    expect(dialogs).toHaveLength(0);
+  }
+}
+
+/**
+ * Information about an active dialog
+ */
+export interface DialogInfo {
+  type?: 'info' | 'error' | 'confirm';
+  title?: string;
+  message?: string;
+  texts?: string[];
+}
+
+/**
+ * Fluent locator for dialog assertions
+ * Supports within() polling and chainable assertions
+ */
+export class DialogLocator {
+  private withinTimeout?: number;
+  private windowId = 'window_0'; // First window created
+
+  constructor(private bridge: BridgeInterface) {}
+
+  /**
+   * Set timeout for polling until dialog appears
+   * @example
+   * await ctx.dialog().within(500).shouldExist();
+   */
+  within(timeoutMs: number): DialogLocator {
+    this.withinTimeout = timeoutMs;
+    return this;
+  }
+
+  /**
+   * Get all active dialogs (with optional polling)
+   */
+  private async getDialogs(): Promise<DialogInfo[]> {
+    const result = await this.bridge.send('getActiveDialogs', { windowId: this.windowId }) as { dialogs?: DialogInfo[] };
+    return result.dialogs || [];
+  }
+
+  /**
+   * Poll for dialogs until condition is met or timeout
+   */
+  private async pollFor<T>(
+    condition: (dialogs: DialogInfo[]) => T | null,
+    errorMsg: string
+  ): Promise<T> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined; // consume timeout
+
+    if (!timeout) {
+      // Fast fail
+      const dialogs = await this.getDialogs();
+      const result = condition(dialogs);
+      if (result === null) {
+        throw new Error(errorMsg);
+      }
+      return result;
+    }
+
+    // Poll with timeout
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const dialogs = await this.getDialogs();
+      const result = condition(dialogs);
+      if (result !== null) {
+        return result;
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error(`${errorMsg} (after ${timeout}ms)`);
+  }
+
+  /**
+   * Assert any dialog exists
+   * @example
+   * await ctx.dialog().shouldExist();
+   * await ctx.dialog().within(500).shouldExist();
+   */
+  async shouldExist(): Promise<DialogLocator> {
+    await this.pollFor(
+      dialogs => dialogs.length > 0 ? true : null,
+      'No dialog found'
+    );
+    return this;
+  }
+
+  /**
+   * Assert no dialogs exist
+   * @example
+   * await ctx.dialog().shouldNotExist();
+   */
+  async shouldNotExist(): Promise<DialogLocator> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const dialogs = await this.getDialogs();
+      expect(dialogs).toHaveLength(0);
+      return this;
+    }
+
+    // Poll until dialogs disappear
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const dialogs = await this.getDialogs();
+      if (dialogs.length === 0) {
+        return this;
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error(`Dialog still visible after ${timeout}ms`);
+  }
+
+  /**
+   * Assert an error dialog is shown with expected message
+   * @example
+   * await ctx.dialog().shouldBeError('Failed to navigate');
+   */
+  async shouldBeError(expectedMessage?: string): Promise<DialogLocator> {
+    const dialog = await this.pollFor(
+      dialogs => dialogs.find(d => d.type === 'error') || null,
+      'No error dialog found'
+    );
+
+    if (expectedMessage) {
+      const allText = [dialog.message, ...(dialog.texts || [])].join(' ');
+      expect(allText).toContain(expectedMessage);
+    }
+    return this;
+  }
+
+  /**
+   * Assert an info dialog is shown with expected text
+   * @example
+   * await ctx.dialog().shouldBeInfo('Success');
+   */
+  async shouldBeInfo(expectedText?: string): Promise<DialogLocator> {
+    const dialog = await this.pollFor(
+      dialogs => dialogs.find(d => d.type === 'info') || null,
+      'No info dialog found'
+    );
+
+    if (expectedText) {
+      const allText = [dialog.title, dialog.message, ...(dialog.texts || [])].join(' ');
+      expect(allText).toContain(expectedText);
+    }
+    return this;
+  }
+
+  /**
+   * Assert dialog contains specific text (any type)
+   * @example
+   * await ctx.dialog().shouldContain('error occurred');
+   */
+  async shouldContain(expectedText: string): Promise<DialogLocator> {
+    await this.pollFor(
+      dialogs => {
+        for (const d of dialogs) {
+          const allText = [d.title, d.message, ...(d.texts || [])].join(' ');
+          if (allText.includes(expectedText)) {
+            return true;
+          }
+        }
+        return null;
+      },
+      `No dialog containing "${expectedText}" found`
+    );
+    return this;
+  }
+
+  /**
+   * Dismiss the dialog (chainable after assertion)
+   * @example
+   * await ctx.dialog().shouldBeError('Failed').thenDismiss();
+   */
+  async thenDismiss(): Promise<void> {
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+  }
+
+  /**
+   * Dismiss the dialog (standalone)
+   * @example
+   * await ctx.dialog().dismiss();
+   */
+  async dismiss(): Promise<void> {
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+  }
 }

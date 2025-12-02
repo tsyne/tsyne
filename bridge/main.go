@@ -193,6 +193,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleShowCustomWithoutButtons(msg)
 	case "hideCustomDialog":
 		return b.handleHideCustomDialog(msg)
+	case "getActiveDialogs":
+		return b.handleGetActiveDialogs(msg)
+	case "dismissActiveDialog":
+		return b.handleDismissActiveDialog(msg)
 	case "showProgressDialog":
 		return b.handleShowProgressDialog(msg)
 	case "updateProgressDialog":

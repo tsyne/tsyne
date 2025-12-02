@@ -614,16 +614,19 @@ If you're in a containerized/cloud environment (Claude Code, Codespaces, etc.) w
 apt-get update -qq
 apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
 
-# Step 2: Download fyne.io/systray manually (not on Google's proxy)
+# Step 2: Download Fyne and systray from GitHub (bypasses Google's module proxy)
 cd /tmp
+wget -q https://github.com/fyne-io/fyne/archive/refs/tags/v2.7.1.tar.gz -O fyne-v2.7.1.tar.gz
+tar -xzf fyne-v2.7.1.tar.gz
 wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
 tar -xzf systray-master.tar.gz
 
-# Step 3: Use go mod replace to point to local systray
+# Step 3: Use go mod replace to point to local copies
 cd /home/user/tsyne/bridge
+go mod edit -replace=fyne.io/fyne/v2=/tmp/fyne-2.7.1
 go mod edit -replace=fyne.io/systray=/tmp/systray-master
 
-# Step 4: Build bridge with GOPROXY=direct (bypasses Google's module proxy)
+# Step 4: Build bridge with GOPROXY=direct (bypasses Google's module proxy for remaining deps)
 env GOPROXY=direct go build -o ../bin/tsyne-bridge .
 
 # Step 5: Install npm dependencies

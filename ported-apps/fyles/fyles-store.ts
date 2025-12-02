@@ -166,8 +166,8 @@ export class FylesStore {
         .map((dirent) => createFileItem(dirent, dirPath));
       const sorted = sortFileItems(items);
       return this.filterItems(sorted);
-    } catch (err) {
-      console.error(`Failed to get subdirectories of ${dirPath}:`, err);
+    } catch {
+      // Failed to read subdirectories - return empty (may be permission denied)
       return [];
     }
   }
@@ -180,21 +180,16 @@ export class FylesStore {
    * Navigate to a directory
    */
   async navigateToDir(dirPath: string): Promise<void> {
-    try {
-      // Check if directory exists and is accessible
-      const stats = await fs.promises.stat(dirPath);
-      if (!stats.isDirectory()) {
-        throw new Error('Not a directory');
-      }
-
-      // Update state
-      this.currentDir = dirPath;
-      await this.loadDirectory(dirPath);
-      this.notifyChange();
-    } catch (err) {
-      console.error(`Failed to navigate to ${dirPath}:`, err);
-      throw err;
+    // Check if directory exists and is accessible
+    const stats = await fs.promises.stat(dirPath);
+    if (!stats.isDirectory()) {
+      throw new Error('Not a directory');
     }
+
+    // Update state
+    this.currentDir = dirPath;
+    await this.loadDirectory(dirPath);
+    this.notifyChange();
   }
 
   /**
@@ -280,14 +275,8 @@ export class FylesStore {
     }
 
     const newPath = path.join(this.currentDir, name);
-
-    try {
-      await fs.promises.mkdir(newPath, { recursive: false });
-      await this.refresh();
-    } catch (err) {
-      console.error(`Failed to create folder ${name}:`, err);
-      throw err;
-    }
+    await fs.promises.mkdir(newPath, { recursive: false });
+    await this.refresh();
   }
 
   /**
@@ -400,8 +389,8 @@ export class FylesStore {
       };
 
       fs.writeFileSync(this.stateFilePath, JSON.stringify(state, null, 2), 'utf8');
-    } catch (error) {
-      console.error('Failed to save fyles state:', error);
+    } catch {
+      // Non-critical - silently ignore persistence failures
     }
   }
 
@@ -422,9 +411,8 @@ export class FylesStore {
           this.currentDir = state.currentDir || this.homeDir;
         }
       }
-    } catch (error) {
-      console.error('Failed to load fyles state:', error);
-      // Continue with defaults
+    } catch {
+      // Non-critical - continue with defaults on load failure
     }
   }
 
@@ -436,8 +424,8 @@ export class FylesStore {
       if (fs.existsSync(this.stateFilePath)) {
         fs.unlinkSync(this.stateFilePath);
       }
-    } catch (error) {
-      console.error('Failed to clear persisted state:', error);
+    } catch {
+      // Non-critical - silently ignore clear failures
     }
   }
 
@@ -457,30 +445,18 @@ export class FylesStore {
    * Prevents race condition where UI builds before directory loads
    */
   private loadDirectorySync(dirPath: string): void {
-    try {
-      const dirents = fs.readdirSync(dirPath, { withFileTypes: true });
-      const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
-      this.items = sortFileItems(items);
-    } catch (err) {
-      console.error(`Failed to load directory ${dirPath}:`, err);
-      this.items = [];
-      throw err;
-    }
+    const dirents = fs.readdirSync(dirPath, { withFileTypes: true });
+    const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
+    this.items = sortFileItems(items);
   }
 
   /**
    * Load directory contents (async for navigation)
    */
   private async loadDirectory(dirPath: string): Promise<void> {
-    try {
-      const dirents = await fs.promises.readdir(dirPath, { withFileTypes: true });
-      const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
-      this.items = sortFileItems(items);
-    } catch (err) {
-      console.error(`Failed to load directory ${dirPath}:`, err);
-      this.items = [];
-      throw err;
-    }
+    const dirents = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    const items = dirents.map((dirent) => createFileItem(dirent, dirPath));
+    this.items = sortFileItems(items);
   }
 
   /**

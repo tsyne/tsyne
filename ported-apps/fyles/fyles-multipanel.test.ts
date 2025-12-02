@@ -17,7 +17,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-describe.skip('Fyles Multi-Panel Tests', () => {
+describe('Fyles Multi-Panel Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let testDir1: string;
@@ -109,7 +109,7 @@ describe.skip('Fyles Multi-Panel Tests', () => {
   });
 });
 
-describe.skip('Fyles Single Panel with Split', () => {
+describe('Fyles Single Panel with Split', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let testDir: string;
