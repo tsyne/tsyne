@@ -1323,7 +1323,7 @@ export class TestContext {
    * expect(dialogs[0].message).toContain('Failed');
    */
   async getActiveDialogs(): Promise<DialogInfo[]> {
-    const windowId = 'window_1'; // TODO: Make this dynamic
+    const windowId = 'window_0'; // First window created
     const result = await this.bridge.send('getActiveDialogs', { windowId }) as { dialogs?: DialogInfo[] };
     return result.dialogs || [];
   }
@@ -1335,7 +1335,7 @@ export class TestContext {
    * await ctx.dismissActiveDialog();
    */
   async dismissActiveDialog(): Promise<void> {
-    const windowId = 'window_1'; // TODO: Make this dynamic
+    const windowId = 'window_0'; // First window created
     await this.bridge.send('dismissActiveDialog', { windowId });
   }
 
@@ -1397,7 +1397,7 @@ export interface DialogInfo {
  */
 export class DialogLocator {
   private withinTimeout?: number;
-  private windowId = 'window_1'; // TODO: Make this dynamic
+  private windowId = 'window_0'; // First window created
 
   constructor(private bridge: BridgeInterface) {}
 

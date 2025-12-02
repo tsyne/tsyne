@@ -801,7 +801,7 @@ func (b *Bridge) handleGetActiveDialogs(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
-		Data:    map[string]interface{}{"dialogs": dialogs},
+		Result:  map[string]interface{}{"dialogs": dialogs},
 	}
 }
 
@@ -814,29 +814,37 @@ func (b *Bridge) extractDialogInfo(obj fyne.CanvasObject) map[string]interface{}
 		return nil
 	}
 
-	// Fyne dialogs typically have:
-	// - First label is the title (or "Error" for error dialogs)
-	// - Second label is the message
 	info := map[string]interface{}{
 		"texts": labels,
 	}
 
-	// Try to determine dialog type based on content
-	if len(labels) >= 1 {
-		firstLabel := labels[0]
-		if firstLabel == "Error" {
-			info["type"] = "error"
-			if len(labels) >= 2 {
-				info["title"] = "Error"
-				info["message"] = labels[1]
+	// Check if any label is "Error" to determine dialog type
+	isError := false
+	for _, label := range labels {
+		if label == "Error" {
+			isError = true
+			break
+		}
+	}
+
+	if isError {
+		info["type"] = "error"
+		info["title"] = "Error"
+		// Find the non-"Error" label as the message
+		for _, label := range labels {
+			if label != "Error" {
+				info["message"] = label
+				break
 			}
-		} else {
-			// For info dialogs, first label is title, second is message
-			info["type"] = "info"
-			info["title"] = firstLabel
-			if len(labels) >= 2 {
-				info["message"] = labels[1]
-			}
+		}
+	} else {
+		// For info dialogs, first label is title, second is message
+		info["type"] = "info"
+		if len(labels) >= 1 {
+			info["title"] = labels[0]
+		}
+		if len(labels) >= 2 {
+			info["message"] = labels[1]
 		}
 	}
 
@@ -862,6 +870,11 @@ func (b *Bridge) findAllLabels(obj fyne.CanvasObject) []string {
 		}
 		if text != "" {
 			labels = append(labels, text)
+		}
+	case *widget.PopUp:
+		// PopUp has a Content field that contains the actual dialog content
+		if w.Content != nil {
+			labels = append(labels, b.findAllLabels(w.Content)...)
 		}
 	case *fyne.Container:
 		for _, child := range w.Objects {
@@ -929,6 +942,11 @@ func (b *Bridge) tapDialogButton(obj fyne.CanvasObject, buttonLabels []string) b
 				w.OnTapped()
 				return true
 			}
+		}
+	case *widget.PopUp:
+		// PopUp has a Content field
+		if w.Content != nil {
+			return b.tapDialogButton(w.Content, buttonLabels)
 		}
 	case *fyne.Container:
 		for _, child := range w.Objects {
