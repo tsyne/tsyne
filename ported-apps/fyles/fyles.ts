@@ -86,7 +86,7 @@ class FylesMultiPanel {
    */
   removePanel(index: number): void {
     if (this.panels.length <= 1) {
-      console.error('Cannot remove the last panel');
+      // Cannot remove the last panel - silently ignore
       return;
     }
     this.panels.splice(index, 1);
@@ -228,7 +228,7 @@ class FylesPanel {
         try {
           await this.store.navigateHome();
         } catch (err) {
-          console.error('Navigate home failed:', err);
+          await this.window?.showError('Navigation Error', `Failed to navigate home: ${err}`);
         }
       }).withId(`panel-${this.panelIndex}-home`);
 
@@ -243,7 +243,6 @@ class FylesPanel {
           try {
             await this.store.createFolder(folderName.trim());
           } catch (err) {
-            console.error('Failed to create folder:', err);
             await this.window.showError('Error', `Failed to create folder: ${err}`);
           }
         }
@@ -304,7 +303,7 @@ class FylesPanel {
             try {
               await this.store.navigateUp();
             } catch (err) {
-              console.error('Navigate up failed:', err);
+              await this.window?.showError('Navigation Error', `Failed to navigate up: ${err}`);
             }
           });
 
@@ -364,7 +363,7 @@ class FylesPanel {
         try {
           await this.store.navigateToDir(dir.path);
         } catch (err) {
-          console.error('Navigate to dir failed:', err);
+          await this.window?.showError('Navigation Error', `Failed to open folder: ${err}`);
         }
       }).withId(`panel-${this.panelIndex}-nav-folder-${dir.fullName}`);
 
@@ -373,11 +372,11 @@ class FylesPanel {
         onDrop: async (dragData: string, _sourceId: string) => {
           await this.handleFileDrop(dragData, dir.path);
         },
-        onDragEnter: (dragData: string, _sourceId: string) => {
-          console.error(`Drag entered nav folder: ${dir.fullName}, data: ${dragData}`);
+        onDragEnter: () => {
+          // Visual feedback handled by Fyne
         },
         onDragLeave: () => {
-          console.error(`Drag left nav folder: ${dir.fullName}`);
+          // Visual feedback handled by Fyne
         },
       });
 
@@ -389,7 +388,7 @@ class FylesPanel {
             try {
               await this.store.navigateToDir(dir.path);
             } catch (err) {
-              console.error('Navigate to dir failed:', err);
+              await this.window?.showError('Navigation Error', `Failed to open folder: ${err}`);
             }
           },
         },
@@ -474,10 +473,10 @@ class FylesPanel {
       button.makeDraggable({
         dragData: item.path,
         onDragStart: () => {
-          console.error(`Started dragging: ${item.fullName}`);
+          // Drag started - visual feedback handled by Fyne
         },
         onDragEnd: () => {
-          console.error(`Stopped dragging: ${item.fullName}`);
+          // Drag ended - visual feedback handled by Fyne
         },
       });
 
@@ -487,11 +486,11 @@ class FylesPanel {
           onDrop: async (dragData: string, _sourceId: string) => {
             await this.handleFileDrop(dragData, item.path);
           },
-          onDragEnter: (dragData: string, _sourceId: string) => {
-            console.error(`Drag entered folder: ${item.fullName}, data: ${dragData}`);
+          onDragEnter: () => {
+            // Visual feedback handled by Fyne
           },
           onDragLeave: () => {
-            console.error(`Drag left folder: ${item.fullName}`);
+            // Visual feedback handled by Fyne
           },
         });
       }
@@ -551,14 +550,14 @@ class FylesPanel {
   private async handleFileDrop(sourcePath: string, destFolder: string): Promise<void> {
     // Don't allow dropping onto itself or parent
     if (sourcePath === destFolder || destFolder.startsWith(sourcePath + path.sep)) {
-      console.error('Cannot drop folder onto itself or its children');
+      await this.window?.showInfo('Cannot Move', 'Cannot move a folder into itself or its children');
       return;
     }
 
     // Don't allow dropping into same directory (no-op)
     const sourceDir = path.dirname(sourcePath);
     if (sourceDir === destFolder) {
-      console.error('File is already in this directory');
+      // Silently ignore - file is already in this directory
       return;
     }
 
@@ -568,12 +567,8 @@ class FylesPanel {
       // For now, default to move operation
       // Could add a dialog to choose move vs copy
       await this.store.moveItem(sourcePath, destFolder);
-      console.error(`Moved ${fileName} to ${destFolder}`);
     } catch (err) {
-      console.error(`Failed to move ${fileName}:`, err);
-      if (this.window) {
-        await this.window.showError('Move Failed', `Failed to move ${fileName}: ${err}`);
-      }
+      await this.window?.showError('Move Failed', `Failed to move ${fileName}: ${err}`);
     }
   }
 
@@ -586,15 +581,14 @@ class FylesPanel {
       try {
         await this.store.navigateToDir(item.path);
       } catch (err) {
-        console.error('Navigate to directory failed:', err);
+        await this.window?.showError('Navigation Error', `Failed to open folder: ${err}`);
       }
     } else {
       // Open file with default application
       try {
         await openFile(item.path);
-        console.error(`Opened file: ${item.path}`);
       } catch (err) {
-        console.error('Open file failed:', err);
+        await this.window?.showError('Open Failed', `Failed to open file: ${err}`);
       }
     }
   }
