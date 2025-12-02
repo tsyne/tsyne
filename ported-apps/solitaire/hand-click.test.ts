@@ -48,7 +48,7 @@ describe('Hand Pile Click Tests', () => {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     // Verify status shows drew cards
-    await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+    await ctx.getByID('status-label').shouldContain('Drew cards');
   }, 10000);
 
   test('should select and move draw3 card to tableau', async () => {

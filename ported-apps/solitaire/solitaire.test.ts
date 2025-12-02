@@ -92,7 +92,7 @@ describe('Solitaire Game Tests', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Should show drew cards message
-    await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+    await ctx.getByID('status-label').shouldContain('Drew cards');
   });
 
   test('should display all game sections', async () => {
@@ -121,7 +121,7 @@ describe('Solitaire Game Tests', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Should show drew cards message
-    await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
+    await ctx.getByID('status-label').shouldContain('Drew cards');
 
     // Game sections should still be visible
     await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();

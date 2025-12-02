@@ -1106,7 +1106,7 @@ class SolitaireUI {
         });
 
       // Status
-      this.statusLabel = this.a.label(this.currentStatus);
+      this.statusLabel = this.a.label(this.currentStatus).withId('status-label');
     });
   }
 
