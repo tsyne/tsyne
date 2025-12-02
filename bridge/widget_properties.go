@@ -123,6 +123,15 @@ func (b *Bridge) handleSetText(msg Message) Response {
 				hoverBtn.SetText(text)
 				hoverBtn.Refresh() // Added Refresh for HoverableButton inside wrapper
 			}
+		case *TappableWrapper: // Handle TappableWrapper (context menu wrapper)
+			if label, ok := w.content.(*widget.Label); ok {
+				label.SetText(text)
+			} else if btn, ok := w.content.(*widget.Button); ok {
+				btn.SetText(text)
+			} else if hoverBtn, ok := w.content.(*HoverableButton); ok {
+				hoverBtn.SetText(text)
+				hoverBtn.Refresh()
+			}
 		case *widget.Check:
 			w.SetText(text)
 		}
@@ -131,7 +140,7 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *widget.Check:
+	case *widget.Label, *widget.Entry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
 		supported = true
 	}
 

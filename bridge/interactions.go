@@ -123,6 +123,15 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			ID:      msg.ID,
 			Success: true,
 		}
+	} else if wrapper, ok := obj.(*TappableWrapper); ok {
+		// Handle TappableWrapper - click through to its content (may be nested wrappers)
+		return b.clickThroughContent(msg, wrapper.content)
+	} else if droppable, ok := obj.(*DroppableWidget); ok {
+		// Handle DroppableWidget - click through to its content
+		return b.clickThroughContent(msg, droppable.content)
+	} else if draggableW, ok := obj.(*DraggableWidget); ok {
+		// Handle DraggableWidget - click through to its content
+		return b.clickThroughContent(msg, draggableW.content)
 	} else if container, ok := obj.(*fyne.Container); ok {
 		// Handle regular Fyne containers by finding and clicking tappable children
 		// This allows tests to click on container IDs and have clicks propagate to interactive content
@@ -155,6 +164,66 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			Success: false,
 			Error:   fmt.Sprintf("Widget is not clickable (type: %s, id: %s)", widgetType, widgetID),
 		}
+	}
+}
+
+// clickThroughContent recursively clicks through wrapper layers until it finds a clickable widget
+func (b *Bridge) clickThroughContent(msg Message, content fyne.CanvasObject) Response {
+	// Handle Button directly
+	if btn, ok := content.(*widget.Button); ok {
+		if b.testMode {
+			test.Tap(btn)
+		} else {
+			fyne.DoAndWait(func() {
+				btn.OnTapped()
+			})
+		}
+		return Response{ID: msg.ID, Success: true}
+	}
+
+	// Handle HoverableButton
+	if hoverBtn, ok := content.(*HoverableButton); ok {
+		if b.testMode {
+			test.Tap(hoverBtn)
+		} else {
+			fyne.DoAndWait(func() {
+				hoverBtn.OnTapped()
+			})
+		}
+		return Response{ID: msg.ID, Success: true}
+	}
+
+	// Handle nested TappableWrapper
+	if wrapper, ok := content.(*TappableWrapper); ok {
+		return b.clickThroughContent(msg, wrapper.content)
+	}
+
+	// Handle nested DroppableWidget
+	if droppable, ok := content.(*DroppableWidget); ok {
+		return b.clickThroughContent(msg, droppable.content)
+	}
+
+	// Handle nested DraggableWidget
+	if draggable, ok := content.(*DraggableWidget); ok {
+		return b.clickThroughContent(msg, draggable.content)
+	}
+
+	// Generic fallback for any tappable content
+	if tappable, ok := content.(fyne.Tappable); ok {
+		if b.testMode {
+			test.Tap(tappable)
+		} else {
+			fyne.DoAndWait(func() {
+				tappable.Tapped(&fyne.PointEvent{})
+			})
+		}
+		return Response{ID: msg.ID, Success: true}
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: false,
+		Error:   fmt.Sprintf("Wrapper content is not clickable (type: %T)", content),
 	}
 }
 
