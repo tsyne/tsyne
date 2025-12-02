@@ -305,7 +305,7 @@ class FylesPanel {
             } catch (err) {
               await this.window?.showError('Navigation Error', `Failed to navigate up: ${err}`);
             }
-          });
+          }).withId('parent-dir-btn');
 
           this.app.separator();
         }

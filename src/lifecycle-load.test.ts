@@ -265,11 +265,14 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
 
   try {
     // Phase 1: Bridge Start
+    console.log(`[Instance ${instanceId}] Phase 1: Starting bridge (${bridgeMode})...`);
     await instrumentation.recordEvent('bridge_start', instanceId);
     const tsyneTest = new TsyneTest({ headed: false, bridgeMode });
+    console.log(`[Instance ${instanceId}] TsyneTest created`);
 
     // Phase 2 & 3: Bridge Ready + App Creation
     let windowRef: any;
+    console.log(`[Instance ${instanceId}] Phase 2: Creating app...`);
     const testApp = await tsyneTest.createApp((app) => {
       // Intercept bridge to count messages
       const bridge = app.getBridge() as any;
@@ -291,6 +294,7 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
         };
       }
 
+      console.log(`[Instance ${instanceId}] Bridge ready, creating window...`);
       instrumentation.recordEvent('bridge_ready', instanceId);
 
       // Create window with button - use sync builder, show after run
@@ -302,31 +306,44 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
           // Button click handler
         });
       });
+      console.log(`[Instance ${instanceId}] Window and widgets created`);
     });
 
+    console.log(`[Instance ${instanceId}] App created, getting context...`);
     const ctx = tsyneTest.getContext();
+    console.log(`[Instance ${instanceId}] Phase 3: Running app (this calls win.show() and waitForRegistrations())...`);
     await testApp.run();
+    console.log(`[Instance ${instanceId}] ✓ app.run() completed!`);
 
     // Show window after run (when creation is complete)
     if (windowRef) {
+      console.log(`[Instance ${instanceId}] Showing window...`);
       await windowRef.show();
+      console.log(`[Instance ${instanceId}] Window shown`);
     }
     await instrumentation.recordEvent('app_run', instanceId);
 
     // Verify button is visible
+    console.log(`[Instance ${instanceId}] Verifying button is visible...`);
     await ctx.expect(ctx.getByText(`Button ${instanceId}`)).toBeVisible();
+    console.log(`[Instance ${instanceId}] ✓ Button verified`);
 
     // Phase 4: Cleanup Start
+    console.log(`[Instance ${instanceId}] Phase 4: Starting cleanup...`);
     await instrumentation.recordEvent('cleanup_start', instanceId);
     await tsyneTest.cleanup();
+    console.log(`[Instance ${instanceId}] ✓ Cleanup complete`);
     await instrumentation.recordEvent('cleanup_complete', instanceId);
 
     // Record message stats
     await instrumentation.recordMessageStats(instanceId, messageStats);
 
+    console.log(`[Instance ${instanceId}] ✓✓✓ SUCCESS - Total duration: ${Date.now() - startTime}ms`);
     success = true;
   } catch (error) {
     const err = error as Error;
+    console.error(`[Instance ${instanceId}] ✗✗✗ ERROR at ${Date.now() - startTime}ms: ${err.message}`);
+    console.error(`[Instance ${instanceId}] Stack: ${err.stack?.split('\n').slice(0, 3).join('\n')}`);
     await instrumentation.recordError('unknown', instanceId, err, false);
     errors.push({
       timestamp: Date.now() - startTime,
@@ -352,12 +369,18 @@ describe('Lifecycle Load Tests', () => {
     const CONCURRENT_INSTANCES = 5;
     const instrumentation = new LifecycleInstrumentation();
 
+    console.log(`\n========================================`);
+    console.log(`Starting ${CONCURRENT_INSTANCES} concurrent instances (stdio mode)`);
+    console.log(`========================================\n`);
+
     // Run instances in parallel
     const promises = Array.from({ length: CONCURRENT_INSTANCES }, (_, i) =>
       runSingleInstance(i, instrumentation, 'stdio')
     );
 
+    console.log(`All ${CONCURRENT_INSTANCES} instances launched, waiting for completion...`);
     const results = await Promise.all(promises);
+    console.log(`\n✓ All instances completed!\n`);
 
     // Generate and print report
     const report = instrumentation.generateReport();

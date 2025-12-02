@@ -131,7 +131,7 @@ describe('Fyles File Browser Tests', () => {
     expect(await ctx.getByText('nested.txt').within(2000).exists()).toBeTruthy();
 
     // Click parent button (..)
-    await ctx.getByText('⬆️ ..').click();
+    await ctx.getByID('parent-dir-btn').click();
     await ctx.wait(200);
 
     // Should be back in test directory

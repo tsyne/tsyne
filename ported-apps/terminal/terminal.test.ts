@@ -694,6 +694,7 @@ describe('Shell Integration Tests', () => {
 
     // Change to terminal directory before running
     const originalCwd = process.cwd();
+    process.chdir(__dirname);
 
     try {
       // Run ls directly as a command to verify output capture works

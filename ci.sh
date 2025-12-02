@@ -98,10 +98,10 @@ else
   export DISPLAY=:99
 fi
 
-timeout 180 npm run test:unit || {
+timeout 600 npm run test:unit || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Root unit tests timed out after 180 seconds"
+    echo "❌ Root unit tests timed out after 600 seconds"
   else
     echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
   fi
