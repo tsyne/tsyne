@@ -466,6 +466,70 @@ export class Locator {
   }
 
   /**
+   * Fluent API: Assert widget exists
+   * Fast fail by default, or use .within(timeout) to poll
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("modal").shouldExist(); // Fast fail
+   * await ctx.getByID("modal").within(500).shouldExist(); // Poll 500ms
+   */
+  async shouldExist(): Promise<Locator> {
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    let widget: string | null = null;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      widget = await this.find();
+    } else {
+      // within() drives explicit retry polling
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeout) {
+        widget = await this.find();
+        if (widget) break;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+
+    expect(widget).toBeTsyneExistent(true);
+    return this;
+  }
+
+  /**
+   * Fluent API: Assert widget does not exist
+   * Fast fail by default, or use .without(timeout) to poll until gone
+   * Returns this locator for chaining
+   * @example
+   * await ctx.getByID("modal").shouldNotExist(); // Fast fail
+   * await ctx.getByID("modal").without(500).shouldNotExist(); // Poll 500ms until gone
+   */
+  async shouldNotExist(): Promise<Locator> {
+    // Consume and clear timeout immediately so it doesn't leak to next operation
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    let widget: string | null = null;
+
+    if (!timeout) {
+      // Fast fail - no retry
+      widget = await this.find();
+    } else {
+      // without() drives explicit retry polling until element disappears
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeout) {
+        widget = await this.find();
+        if (!widget) break;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+
+    expect(widget).toBeTsyneExistent(false);
+    return this;
+  }
+
+  /**
    * Find widget and return it (for assertion on test line)
    * Fast fail by default, or use .within(timeout) to poll
    * @example

@@ -201,6 +201,30 @@ const toBeTsyneTrue = function(this: MatcherContext, received: boolean): Matcher
 };
 markAsInternalMatcher(toBeTsyneTrue);
 
+// toBeTsyneExistent - for widget existence checks
+const toBeTsyneExistent = function(this: MatcherContext, received: unknown, expectedToExist: boolean): MatcherResult {
+  const { matcherHint, printReceived } = this.utils;
+  const actuallyExists = received !== null && received !== undefined;
+  const pass = actuallyExists === expectedToExist;
+
+  const message = pass
+    ? () =>
+        matcherHint(expectedToExist ? '.not.toBeTsyneExistent' : '.toBeTsyneExistent', 'widget', '') +
+        '\n\n' +
+        (expectedToExist
+          ? `Expected widget not to exist\nReceived: ${printReceived(received)}`
+          : `Expected widget to exist\nReceived: not found`)
+    : () =>
+        matcherHint(expectedToExist ? '.toBeTsyneExistent' : '.not.toBeTsyneExistent', 'widget', '') +
+        '\n\n' +
+        (expectedToExist
+          ? `Expected widget to exist\nReceived: not found`
+          : `Expected widget not to exist\nReceived: ${printReceived(received)}`);
+
+  return { pass, message };
+};
+markAsInternalMatcher(toBeTsyneExistent);
+
 // toHaveTsyneCount - for exact widget count checks
 const toHaveTsyneCount = function(this: MatcherContext, received: number, expected: number): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
@@ -285,6 +309,7 @@ export const tsyneMatchers = {
   toBeTsyneEnabled,
   toBeTsyneVisible,
   toBeTsyneTrue,
+  toBeTsyneExistent,
   toHaveTsyneCount,
   toHaveTsyneCountGreaterThan,
   toHaveTsyneCountLessThan,
@@ -301,6 +326,7 @@ declare global {
       toBeTsyneEnabled(expectedEnabled: boolean): R;
       toBeTsyneVisible(expectedVisible: boolean): R;
       toBeTsyneTrue(): R;
+      toBeTsyneExistent(expectedToExist: boolean): R;
       toHaveTsyneCount(expected: number): R;
       toHaveTsyneCountGreaterThan(expected: number): R;
       toHaveTsyneCountLessThan(expected: number): R;
