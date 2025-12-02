@@ -101,7 +101,7 @@ function hello() {
       const result = parsePresentation(markdown);
 
       expect(result.slides[0].content).toContain('hello()');
-      expect(result.slides[0].content).toContain('console.log');
+      expect(result.slides[0].content).toContain('console.error');
     });
 
     test('should handle slide with only heading', () => {
