@@ -33,15 +33,19 @@ async function measureLatency(
   const latencies: number[] = [];
 
   try {
+    let windowRef: any;
     const testApp = await tsyneTest.createApp((app) => {
-      // Create minimal window
+      // Create minimal window with sync builder
       app.window({ title: 'Latency Test', width: 200, height: 100 }, (win) => {
-        win.setContent(() => { app.label('Test'); });
-        win.show();
+        windowRef = win;
+        app.label('Test');
       });
     });
 
     await testApp.run();
+    if (windowRef) {
+      await windowRef.show();
+    }
     const bridge = testApp.getBridge();
 
     // Warm-up: 10 messages to prime connections
@@ -177,14 +181,18 @@ describe('Protocol Latency Benchmark', () => {
       const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
 
       try {
+        let windowRef: any;
         const testApp = await tsyneTest.createApp((app) => {
           app.window({ title: 'Burst Test', width: 200, height: 100 }, (win) => {
-            win.setContent(() => { app.label('Test'); });
-            win.show();
+            windowRef = win;
+            app.label('Test');
           });
         });
 
         await testApp.run();
+        if (windowRef) {
+          await windowRef.show();
+        }
         const bridge = testApp.getBridge();
 
         // Send 50 messages as fast as possible (no await between sends)
