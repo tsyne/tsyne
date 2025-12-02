@@ -1,8 +1,9 @@
 /**
  * Custom Jest matchers for Tsyne testing
  *
- * These matchers use the INTERNAL_MATCHER_FLAG to ensure Jest's error reporting
- * points to the test file that called the matcher, not to the matcher implementation.
+ * These matchers override Jest's built-in matchers with versions that use
+ * INTERNAL_MATCHER_FLAG to ensure Jest's error reporting points to the test
+ * file that called the matcher, not to the matcher implementation.
  */
 
 const INTERNAL_MATCHER_FLAG = Symbol.for('$$jest-internal-matcher');
@@ -32,21 +33,21 @@ function markAsInternalMatcher(fn: Function): void {
   });
 }
 
-// toBeTsyneEqual - for string equality checks
-const toBeTsyneEqual = function(this: MatcherContext, received: unknown, expected: unknown): MatcherResult {
+// toBe - overrides Jest's toBe for equality checks
+const toBe = function(this: MatcherContext, received: unknown, expected: unknown): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
   const pass = received === expected;
 
   const message = pass
     ? () =>
-        matcherHint('.not.toBeTsyneEqual', 'received', 'expected') +
+        matcherHint('.not.toBe', 'received', 'expected') +
         '\n\n' +
         `Expected value not to equal:\n` +
         `  ${printExpected(expected)}\n` +
         `Received:\n` +
         `  ${printReceived(received)}`
     : () =>
-        matcherHint('.toBeTsyneEqual', 'received', 'expected') +
+        matcherHint('.toBe', 'received', 'expected') +
         '\n\n' +
         `Expected:\n` +
         `  ${printExpected(expected)}\n` +
@@ -55,48 +56,58 @@ const toBeTsyneEqual = function(this: MatcherContext, received: unknown, expecte
 
   return { pass, message };
 };
-markAsInternalMatcher(toBeTsyneEqual);
+markAsInternalMatcher(toBe);
 
-// toContainTsyneString - for substring checks
-const toContainTsyneString = function(this: MatcherContext, received: string, expected: string): MatcherResult {
+// toContain - overrides Jest's toContain for substring/array checks
+const toContain = function(this: MatcherContext, received: unknown, expected: unknown): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
-  const pass = typeof received === 'string' && received.includes(expected);
+
+  let pass = false;
+  let itemType = 'item';
+
+  if (typeof received === 'string' && typeof expected === 'string') {
+    pass = received.includes(expected);
+    itemType = 'substring';
+  } else if (Array.isArray(received)) {
+    pass = received.includes(expected);
+    itemType = 'item';
+  }
 
   const message = pass
     ? () =>
-        matcherHint('.not.toContainTsyneString', 'received', 'expected') +
+        matcherHint('.not.toContain', 'received', 'expected') +
         '\n\n' +
-        `Expected string not to contain:\n` +
+        `Expected not to contain ${itemType}:\n` +
         `  ${printExpected(expected)}\n` +
         `Received:\n` +
         `  ${printReceived(received)}`
     : () =>
-        matcherHint('.toContainTsyneString', 'received', 'expected') +
+        matcherHint('.toContain', 'received', 'expected') +
         '\n\n' +
-        `Expected string to contain:\n` +
+        `Expected to contain ${itemType}:\n` +
         `  ${printExpected(expected)}\n` +
         `Received:\n` +
         `  ${printReceived(received)}`;
 
   return { pass, message };
 };
-markAsInternalMatcher(toContainTsyneString);
+markAsInternalMatcher(toContain);
 
-// toMatchTsynePattern - for regex pattern checks
-const toMatchTsynePattern = function(this: MatcherContext, received: string, expected: RegExp): MatcherResult {
+// toMatch - overrides Jest's toMatch for regex pattern checks
+const toMatch = function(this: MatcherContext, received: string, expected: RegExp): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
   const pass = typeof received === 'string' && expected.test(received);
 
   const message = pass
     ? () =>
-        matcherHint('.not.toMatchTsynePattern', 'received', 'expected') +
+        matcherHint('.not.toMatch', 'received', 'expected') +
         '\n\n' +
         `Expected string not to match pattern:\n` +
         `  ${printExpected(expected)}\n` +
         `Received:\n` +
         `  ${printReceived(received)}`
     : () =>
-        matcherHint('.toMatchTsynePattern', 'received', 'expected') +
+        matcherHint('.toMatch', 'received', 'expected') +
         '\n\n' +
         `Expected string to match pattern:\n` +
         `  ${printExpected(expected)}\n` +
@@ -105,11 +116,103 @@ const toMatchTsynePattern = function(this: MatcherContext, received: string, exp
 
   return { pass, message };
 };
-markAsInternalMatcher(toMatchTsynePattern);
+markAsInternalMatcher(toMatch);
 
-// toBeTsyneChecked - for boolean checked state
-const toBeTsyneChecked = function(this: MatcherContext, received: boolean | undefined, expected: boolean): MatcherResult {
+// toBeTruthy - overrides Jest's toBeTruthy for truthy checks
+const toBeTruthy = function(this: MatcherContext, received: unknown): MatcherResult {
+  const { matcherHint, printReceived } = this.utils;
+  const pass = !!received;
+
+  const message = pass
+    ? () =>
+        matcherHint('.not.toBeTruthy', 'received', '') +
+        '\n\n' +
+        `Expected value to be falsy\n` +
+        `Received: ${printReceived(received)}`
+    : () =>
+        matcherHint('.toBeTruthy', 'received', '') +
+        '\n\n' +
+        `Expected value to be truthy\n` +
+        `Received: ${printReceived(received)}`;
+
+  return { pass, message };
+};
+markAsInternalMatcher(toBeTruthy);
+
+// toBeFalsy - overrides Jest's toBeFalsy for falsy checks
+const toBeFalsy = function(this: MatcherContext, received: unknown): MatcherResult {
+  const { matcherHint, printReceived } = this.utils;
+  const pass = !received;
+
+  const message = pass
+    ? () =>
+        matcherHint('.not.toBeFalsy', 'received', '') +
+        '\n\n' +
+        `Expected value to be truthy\n` +
+        `Received: ${printReceived(received)}`
+    : () =>
+        matcherHint('.toBeFalsy', 'received', '') +
+        '\n\n' +
+        `Expected value to be falsy\n` +
+        `Received: ${printReceived(received)}`;
+
+  return { pass, message };
+};
+markAsInternalMatcher(toBeFalsy);
+
+// toBeGreaterThan - overrides Jest's toBeGreaterThan
+const toBeGreaterThan = function(this: MatcherContext, received: number, expected: number): MatcherResult {
   const { matcherHint, printExpected, printReceived } = this.utils;
+  const pass = received > expected;
+
+  const message = pass
+    ? () =>
+        matcherHint('.not.toBeGreaterThan', 'received', 'expected') +
+        '\n\n' +
+        `Expected value not to be greater than:\n` +
+        `  ${printExpected(expected)}\n` +
+        `Received:\n` +
+        `  ${printReceived(received)}`
+    : () =>
+        matcherHint('.toBeGreaterThan', 'received', 'expected') +
+        '\n\n' +
+        `Expected value to be greater than:\n` +
+        `  ${printExpected(expected)}\n` +
+        `Received:\n` +
+        `  ${printReceived(received)}`;
+
+  return { pass, message };
+};
+markAsInternalMatcher(toBeGreaterThan);
+
+// toBeLessThan - overrides Jest's toBeLessThan
+const toBeLessThan = function(this: MatcherContext, received: number, expected: number): MatcherResult {
+  const { matcherHint, printExpected, printReceived } = this.utils;
+  const pass = received < expected;
+
+  const message = pass
+    ? () =>
+        matcherHint('.not.toBeLessThan', 'received', 'expected') +
+        '\n\n' +
+        `Expected value not to be less than:\n` +
+        `  ${printExpected(expected)}\n` +
+        `Received:\n` +
+        `  ${printReceived(received)}`
+    : () =>
+        matcherHint('.toBeLessThan', 'received', 'expected') +
+        '\n\n' +
+        `Expected value to be less than:\n` +
+        `  ${printExpected(expected)}\n` +
+        `Received:\n` +
+        `  ${printReceived(received)}`;
+
+  return { pass, message };
+};
+markAsInternalMatcher(toBeLessThan);
+
+// toBeChecked - custom matcher for checkbox state
+const toBeChecked = function(this: MatcherContext, received: boolean | undefined, expected: boolean): MatcherResult {
+  const { matcherHint } = this.utils;
   const pass = received === expected;
 
   const expectedText = expected ? 'checked' : 'unchecked';
@@ -117,23 +220,23 @@ const toBeTsyneChecked = function(this: MatcherContext, received: boolean | unde
 
   const message = pass
     ? () =>
-        matcherHint('.not.toBeTsyneChecked', 'received', '') +
+        matcherHint('.not.toBeChecked', 'received', '') +
         '\n\n' +
         `Expected checkbox not to be ${expectedText}\n` +
         `Received: ${receivedText}`
     : () =>
-        matcherHint('.toBeTsyneChecked', 'received', '') +
+        matcherHint('.toBeChecked', 'received', '') +
         '\n\n' +
         `Expected checkbox to be ${expectedText}\n` +
         `Received: ${receivedText}`;
 
   return { pass, message };
 };
-markAsInternalMatcher(toBeTsyneChecked);
+markAsInternalMatcher(toBeChecked);
 
-// toBeTsyneEnabled - for enabled/disabled state
-const toBeTsyneEnabled = function(this: MatcherContext, disabled: boolean | undefined, expectedEnabled: boolean): MatcherResult {
-  const { matcherHint, printExpected, printReceived } = this.utils;
+// toBeEnabled - custom matcher for enabled/disabled state
+const toBeEnabled = function(this: MatcherContext, disabled: boolean | undefined, expectedEnabled: boolean): MatcherResult {
+  const { matcherHint } = this.utils;
   const actualEnabled = disabled === false || disabled === undefined;
   const pass = actualEnabled === expectedEnabled;
 
@@ -142,80 +245,35 @@ const toBeTsyneEnabled = function(this: MatcherContext, disabled: boolean | unde
 
   const message = pass
     ? () =>
-        matcherHint('.not.toBeTsyneEnabled', 'received', '') +
+        matcherHint('.not.toBeEnabled', 'received', '') +
         '\n\n' +
         `Expected widget not to be ${expectedText}\n` +
         `Received: ${receivedText}`
     : () =>
-        matcherHint('.toBeTsyneEnabled', 'received', '') +
+        matcherHint('.toBeEnabled', 'received', '') +
         '\n\n' +
         `Expected widget to be ${expectedText}\n` +
         `Received: ${receivedText}`;
 
   return { pass, message };
 };
-markAsInternalMatcher(toBeTsyneEnabled);
+markAsInternalMatcher(toBeEnabled);
 
-// toBeTsyneVisible - for visibility checks
-const toBeTsyneVisible = function(this: MatcherContext, received: unknown, expectedVisible: boolean): MatcherResult {
-  const { matcherHint, printReceived } = this.utils;
-  const actualVisible = received !== null && received !== undefined;
-  const pass = actualVisible === expectedVisible;
-
-  const message = pass
-    ? () =>
-        matcherHint(expectedVisible ? '.not.toBeTsyneVisible' : '.toBeTsyneVisible', 'widget', '') +
-        '\n\n' +
-        (expectedVisible
-          ? `Expected widget not to be visible\nReceived: ${printReceived(received)}`
-          : `Expected widget to be visible\nReceived: not found`)
-    : () =>
-        matcherHint(expectedVisible ? '.toBeTsyneVisible' : '.not.toBeTsyneVisible', 'widget', '') +
-        '\n\n' +
-        (expectedVisible
-          ? `Expected widget to be visible\nReceived: not found`
-          : `Expected widget not to be visible\nReceived: ${printReceived(received)}`);
-
-  return { pass, message };
-};
-markAsInternalMatcher(toBeTsyneVisible);
-
-// toBeTsyneTrue - for boolean true assertions
-const toBeTsyneTrue = function(this: MatcherContext, received: boolean): MatcherResult {
-  const { matcherHint, printReceived } = this.utils;
-  const pass = received === true;
-
-  const message = pass
-    ? () =>
-        matcherHint('.not.toBeTsyneTrue', 'received', '') +
-        '\n\n' +
-        `Expected value not to be true\n` +
-        `Received: ${printReceived(received)}`
-    : () =>
-        matcherHint('.toBeTsyneTrue', 'received', '') +
-        '\n\n' +
-        `Expected value to be true\n` +
-        `Received: ${printReceived(received)}`;
-
-  return { pass, message };
-};
-markAsInternalMatcher(toBeTsyneTrue);
-
-// toBeTsyneExistent - for widget existence checks
-const toBeTsyneExistent = function(this: MatcherContext, received: unknown, expectedToExist: boolean): MatcherResult {
+// toExist - custom matcher for widget existence checks
+const toExist = function(this: MatcherContext, received: unknown, expectedToExist: boolean): MatcherResult {
   const { matcherHint, printReceived } = this.utils;
   const actuallyExists = received !== null && received !== undefined;
   const pass = actuallyExists === expectedToExist;
 
   const message = pass
     ? () =>
-        matcherHint(expectedToExist ? '.not.toBeTsyneExistent' : '.toBeTsyneExistent', 'widget', '') +
+        matcherHint(expectedToExist ? '.not.toExist' : '.toExist', 'widget', '') +
         '\n\n' +
         (expectedToExist
           ? `Expected widget not to exist\nReceived: ${printReceived(received)}`
           : `Expected widget to exist\nReceived: not found`)
     : () =>
-        matcherHint(expectedToExist ? '.toBeTsyneExistent' : '.not.toBeTsyneExistent', 'widget', '') +
+        matcherHint(expectedToExist ? '.toExist' : '.not.toExist', 'widget', '') +
         '\n\n' +
         (expectedToExist
           ? `Expected widget to exist\nReceived: not found`
@@ -223,119 +281,25 @@ const toBeTsyneExistent = function(this: MatcherContext, received: unknown, expe
 
   return { pass, message };
 };
-markAsInternalMatcher(toBeTsyneExistent);
-
-// toHaveTsyneCount - for exact widget count checks
-const toHaveTsyneCount = function(this: MatcherContext, received: number, expected: number): MatcherResult {
-  const { matcherHint, printExpected, printReceived } = this.utils;
-  const pass = received === expected;
-
-  const message = pass
-    ? () =>
-        matcherHint('.not.toHaveTsyneCount', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count not to be:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`
-    : () =>
-        matcherHint('.toHaveTsyneCount', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`;
-
-  return { pass, message };
-};
-markAsInternalMatcher(toHaveTsyneCount);
-
-// toHaveTsyneCountGreaterThan - for widget count greater than checks
-const toHaveTsyneCountGreaterThan = function(this: MatcherContext, received: number, expected: number): MatcherResult {
-  const { matcherHint, printExpected, printReceived } = this.utils;
-  const pass = received > expected;
-
-  const message = pass
-    ? () =>
-        matcherHint('.not.toHaveTsyneCountGreaterThan', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count not to be greater than:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`
-    : () =>
-        matcherHint('.toHaveTsyneCountGreaterThan', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count to be greater than:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`;
-
-  return { pass, message };
-};
-markAsInternalMatcher(toHaveTsyneCountGreaterThan);
-
-// toHaveTsyneCountLessThan - for widget count less than checks
-const toHaveTsyneCountLessThan = function(this: MatcherContext, received: number, expected: number): MatcherResult {
-  const { matcherHint, printExpected, printReceived } = this.utils;
-  const pass = received < expected;
-
-  const message = pass
-    ? () =>
-        matcherHint('.not.toHaveTsyneCountLessThan', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count not to be less than:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`
-    : () =>
-        matcherHint('.toHaveTsyneCountLessThan', 'received', 'expected') +
-        '\n\n' +
-        `Expected widget count to be less than:\n` +
-        `  ${printExpected(expected)}\n` +
-        `Received:\n` +
-        `  ${printReceived(received)}`;
-
-  return { pass, message };
-};
-markAsInternalMatcher(toHaveTsyneCountLessThan);
+markAsInternalMatcher(toExist);
 
 // Export matchers for registration
 export const tsyneMatchers = {
-  toBeTsyneEqual,
-  toContainTsyneString,
-  toMatchTsynePattern,
-  toBeTsyneChecked,
-  toBeTsyneEnabled,
-  toBeTsyneVisible,
-  toBeTsyneTrue,
-  toBeTsyneExistent,
-  toHaveTsyneCount,
-  toHaveTsyneCountGreaterThan,
-  toHaveTsyneCountLessThan,
+  toBe,
+  toContain,
+  toMatch,
+  toBeTruthy,
+  toBeFalsy,
+  toBeGreaterThan,
+  toBeLessThan,
+  toBeChecked,
+  toBeEnabled,
+  toExist,
 };
-
-// Type declarations for TypeScript
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeTsyneEqual(expected: unknown): R;
-      toContainTsyneString(expected: string): R;
-      toMatchTsynePattern(expected: RegExp): R;
-      toBeTsyneChecked(expected: boolean): R;
-      toBeTsyneEnabled(expectedEnabled: boolean): R;
-      toBeTsyneVisible(expectedVisible: boolean): R;
-      toBeTsyneTrue(): R;
-      toBeTsyneExistent(expectedToExist: boolean): R;
-      toHaveTsyneCount(expected: number): R;
-      toHaveTsyneCountGreaterThan(expected: number): R;
-      toHaveTsyneCountLessThan(expected: number): R;
-    }
-  }
-}
 
 /**
  * Initialize Tsyne test matchers - call this before running tests
+ * This overrides Jest's built-in matchers with versions that have proper stack traces
  */
 export function initTsyneMatchers(): void {
   // Get Jest's expect function
