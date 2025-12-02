@@ -1301,8 +1301,17 @@ export class TestContext {
   }
 
   /**
-   * Dialog information returned from getActiveDialogs
+   * Get a fluent locator for dialogs
+   * Supports within() polling and chainable assertions
+   * @example
+   * await ctx.dialog().shouldBeError('Failed');
+   * await ctx.dialog().within(500).shouldExist();
+   * await ctx.dialog().shouldBeInfo('Success').thenDismiss();
    */
+  dialog(): DialogLocator {
+    return new DialogLocator(this.bridge);
+  }
+
   /**
    * Get all currently active dialogs (info, error, confirm, etc.)
    * Uses Fyne's canvas overlay system to inspect dialogs
@@ -1380,4 +1389,182 @@ export interface DialogInfo {
   title?: string;
   message?: string;
   texts?: string[];
+}
+
+/**
+ * Fluent locator for dialog assertions
+ * Supports within() polling and chainable assertions
+ */
+export class DialogLocator {
+  private withinTimeout?: number;
+  private windowId = 'window_1'; // TODO: Make this dynamic
+
+  constructor(private bridge: BridgeInterface) {}
+
+  /**
+   * Set timeout for polling until dialog appears
+   * @example
+   * await ctx.dialog().within(500).shouldExist();
+   */
+  within(timeoutMs: number): DialogLocator {
+    this.withinTimeout = timeoutMs;
+    return this;
+  }
+
+  /**
+   * Get all active dialogs (with optional polling)
+   */
+  private async getDialogs(): Promise<DialogInfo[]> {
+    const result = await this.bridge.send('getActiveDialogs', { windowId: this.windowId }) as { dialogs?: DialogInfo[] };
+    return result.dialogs || [];
+  }
+
+  /**
+   * Poll for dialogs until condition is met or timeout
+   */
+  private async pollFor<T>(
+    condition: (dialogs: DialogInfo[]) => T | null,
+    errorMsg: string
+  ): Promise<T> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined; // consume timeout
+
+    if (!timeout) {
+      // Fast fail
+      const dialogs = await this.getDialogs();
+      const result = condition(dialogs);
+      if (result === null) {
+        throw new Error(errorMsg);
+      }
+      return result;
+    }
+
+    // Poll with timeout
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const dialogs = await this.getDialogs();
+      const result = condition(dialogs);
+      if (result !== null) {
+        return result;
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error(`${errorMsg} (after ${timeout}ms)`);
+  }
+
+  /**
+   * Assert any dialog exists
+   * @example
+   * await ctx.dialog().shouldExist();
+   * await ctx.dialog().within(500).shouldExist();
+   */
+  async shouldExist(): Promise<DialogLocator> {
+    await this.pollFor(
+      dialogs => dialogs.length > 0 ? true : null,
+      'No dialog found'
+    );
+    return this;
+  }
+
+  /**
+   * Assert no dialogs exist
+   * @example
+   * await ctx.dialog().shouldNotExist();
+   */
+  async shouldNotExist(): Promise<DialogLocator> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const dialogs = await this.getDialogs();
+      expect(dialogs).toHaveLength(0);
+      return this;
+    }
+
+    // Poll until dialogs disappear
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      const dialogs = await this.getDialogs();
+      if (dialogs.length === 0) {
+        return this;
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error(`Dialog still visible after ${timeout}ms`);
+  }
+
+  /**
+   * Assert an error dialog is shown with expected message
+   * @example
+   * await ctx.dialog().shouldBeError('Failed to navigate');
+   */
+  async shouldBeError(expectedMessage?: string): Promise<DialogLocator> {
+    const dialog = await this.pollFor(
+      dialogs => dialogs.find(d => d.type === 'error') || null,
+      'No error dialog found'
+    );
+
+    if (expectedMessage) {
+      const allText = [dialog.message, ...(dialog.texts || [])].join(' ');
+      expect(allText).toContain(expectedMessage);
+    }
+    return this;
+  }
+
+  /**
+   * Assert an info dialog is shown with expected text
+   * @example
+   * await ctx.dialog().shouldBeInfo('Success');
+   */
+  async shouldBeInfo(expectedText?: string): Promise<DialogLocator> {
+    const dialog = await this.pollFor(
+      dialogs => dialogs.find(d => d.type === 'info') || null,
+      'No info dialog found'
+    );
+
+    if (expectedText) {
+      const allText = [dialog.title, dialog.message, ...(dialog.texts || [])].join(' ');
+      expect(allText).toContain(expectedText);
+    }
+    return this;
+  }
+
+  /**
+   * Assert dialog contains specific text (any type)
+   * @example
+   * await ctx.dialog().shouldContain('error occurred');
+   */
+  async shouldContain(expectedText: string): Promise<DialogLocator> {
+    await this.pollFor(
+      dialogs => {
+        for (const d of dialogs) {
+          const allText = [d.title, d.message, ...(d.texts || [])].join(' ');
+          if (allText.includes(expectedText)) {
+            return true;
+          }
+        }
+        return null;
+      },
+      `No dialog containing "${expectedText}" found`
+    );
+    return this;
+  }
+
+  /**
+   * Dismiss the dialog (chainable after assertion)
+   * @example
+   * await ctx.dialog().shouldBeError('Failed').thenDismiss();
+   */
+  async thenDismiss(): Promise<void> {
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+  }
+
+  /**
+   * Dismiss the dialog (standalone)
+   * @example
+   * await ctx.dialog().dismiss();
+   */
+  async dismiss(): Promise<void> {
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+  }
 }
