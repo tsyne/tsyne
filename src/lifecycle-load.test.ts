@@ -269,6 +269,7 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
     const tsyneTest = new TsyneTest({ headed: false, bridgeMode });
 
     // Phase 2 & 3: Bridge Ready + App Creation
+    let windowRef: any;
     const testApp = await tsyneTest.createApp((app) => {
       // Intercept bridge to count messages
       const bridge = app.getBridge() as any;
@@ -292,21 +293,24 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
 
       instrumentation.recordEvent('bridge_ready', instanceId);
 
-      // Create window with button
+      // Create window with button - use sync builder, show after run
       let buttonWidget: any;
       app.window({ title: `Load Test ${instanceId}`, width: 400, height: 300 }, (win) => {
-        win.setContent(() => {
-          buttonWidget = app.button(`Button ${instanceId}`, () => {
-            // Button click handler
-          });
-          return buttonWidget;
+        windowRef = win;
+        // Sync content creation - widgets are collected by constructor
+        buttonWidget = app.button(`Button ${instanceId}`, () => {
+          // Button click handler
         });
-        win.show();
       });
     });
 
     const ctx = tsyneTest.getContext();
     await testApp.run();
+
+    // Show window after run (when creation is complete)
+    if (windowRef) {
+      await windowRef.show();
+    }
     await instrumentation.recordEvent('app_run', instanceId);
 
     // Verify button is visible

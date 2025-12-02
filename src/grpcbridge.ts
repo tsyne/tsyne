@@ -335,7 +335,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
         return {
           method: 'createWindow',
           request: {
-            windowId: payload.windowId,
+            windowId: payload.id || payload.windowId,  // Window sends 'id', gRPC proto expects windowId
             title: payload.title,
             width: payload.width,
             height: payload.height,

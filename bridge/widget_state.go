@@ -5,7 +5,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (b *Bridge) handleShowWidget(msg Message) {
+func (b *Bridge) handleShowWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -13,25 +13,24 @@ func (b *Bridge) handleShowWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	fyne.DoAndWait(func() {
 		obj.Show()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleHideWidget(msg Message) {
+func (b *Bridge) handleHideWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -39,25 +38,24 @@ func (b *Bridge) handleHideWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	fyne.DoAndWait(func() {
 		obj.Hide()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleEnableWidget(msg Message) {
+func (b *Bridge) handleEnableWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -67,12 +65,11 @@ func (b *Bridge) handleEnableWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from TappableEntry), use that
@@ -81,11 +78,10 @@ func (b *Bridge) handleEnableWidget(msg Message) {
 			fyne.DoAndWait(func() {
 				entry.Enable()
 			})
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
-			return
+			}
 		}
 	}
 
@@ -94,20 +90,20 @@ func (b *Bridge) handleEnableWidget(msg Message) {
 		fyne.DoAndWait(func() {
 			disableable.Enable()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget does not support enabling",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleDisableWidget(msg Message) {
+func (b *Bridge) handleDisableWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -117,12 +113,11 @@ func (b *Bridge) handleDisableWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from TappableEntry), use that
@@ -131,11 +126,10 @@ func (b *Bridge) handleDisableWidget(msg Message) {
 			fyne.DoAndWait(func() {
 				entry.Disable()
 			})
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
-			return
+			}
 		}
 	}
 
@@ -144,20 +138,20 @@ func (b *Bridge) handleDisableWidget(msg Message) {
 		fyne.DoAndWait(func() {
 			disableable.Disable()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget does not support disabling",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleIsEnabled(msg Message) {
+func (b *Bridge) handleIsEnabled(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -167,47 +161,45 @@ func (b *Bridge) handleIsEnabled(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from TappableEntry), use that
 	if hasEntry {
 		if entry, ok := entryObj.(*widget.Entry); ok {
 			enabled := !entry.Disabled()
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
 				Result: map[string]interface{}{
 					"enabled": enabled,
 				},
-			})
-			return
+			}
 		}
 	}
 
 	// Try to check if the widget is enabled
 	if disableable, ok := obj.(fyne.Disableable); ok {
 		enabled := !disableable.Disabled()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result: map[string]interface{}{
 				"enabled": enabled,
 			},
-		})
+		}
 	} else {
 		// Widget doesn't implement Disableable, so it's always "enabled"
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result: map[string]interface{}{
 				"enabled": true,
 			},
-		})
+		}
 	}
 }

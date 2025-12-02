@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-func (b *Bridge) handleCreateWindow(msg Message) {
+func (b *Bridge) handleCreateWindow(msg Message) Response {
 	title := msg.Payload["title"].(string)
 	windowID := msg.Payload["id"].(string)
 
@@ -25,6 +25,12 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 		b.mu.Unlock()
 
 		win = b.app.NewWindow(title)
+
+		// Register window immediately after creation to prevent race conditions
+		// where showWindow arrives before createWindow completes in gRPC mode
+		b.mu.Lock()
+		b.windows[windowID] = win
+		b.mu.Unlock()
 
 		// Set window size if provided
 		if width, ok := msg.Payload["width"].(float64); ok {
@@ -114,18 +120,14 @@ func (b *Bridge) handleCreateWindow(msg Message) {
 		})
 	})
 
-	b.mu.Lock()
-	b.windows[windowID] = win
-	b.mu.Unlock()
-
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"windowId": windowID},
-	})
+	}
 }
 
-func (b *Bridge) handleShowWindow(msg Message) {
+func (b *Bridge) handleShowWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -133,12 +135,11 @@ func (b *Bridge) handleShowWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Showing window must happen on the main thread
@@ -146,13 +147,13 @@ func (b *Bridge) handleShowWindow(msg Message) {
 		win.Show()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWindowTitle(msg Message) {
+func (b *Bridge) handleSetWindowTitle(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	title := msg.Payload["title"].(string)
 
@@ -161,12 +162,11 @@ func (b *Bridge) handleSetWindowTitle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Setting window title must happen on the main thread
@@ -174,13 +174,13 @@ func (b *Bridge) handleSetWindowTitle(msg Message) {
 		win.SetTitle(title)
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWindowFullScreen(msg Message) {
+func (b *Bridge) handleSetWindowFullScreen(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	fullscreen := msg.Payload["fullscreen"].(bool)
 
@@ -189,23 +189,22 @@ func (b *Bridge) handleSetWindowFullScreen(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	win.SetFullScreen(fullscreen)
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCaptureWindow(msg Message) {
+func (b *Bridge) handleCaptureWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	filePath := msg.Payload["filePath"].(string)
 
@@ -214,12 +213,11 @@ func (b *Bridge) handleCaptureWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	var img image.Image
@@ -232,32 +230,30 @@ func (b *Bridge) handleCaptureWindow(msg Message) {
 	// Create file
 	f, err := os.Create(filePath)
 	if err != nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Failed to create file: %v", err),
-		})
-		return
+		}
 	}
 	defer f.Close()
 
 	// Encode as PNG
 	if err := png.Encode(f, img); err != nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Failed to encode PNG: %v", err),
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCenterWindow(msg Message) {
+func (b *Bridge) handleCenterWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -265,23 +261,22 @@ func (b *Bridge) handleCenterWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	win.CenterOnScreen()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleResizeWindow(msg Message) {
+func (b *Bridge) handleResizeWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	width := msg.Payload["width"].(float64)
 	height := msg.Payload["height"].(float64)
@@ -291,23 +286,22 @@ func (b *Bridge) handleResizeWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	win.Resize(fyne.NewSize(float32(width), float32(height)))
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWindowIcon(msg Message) {
+func (b *Bridge) handleSetWindowIcon(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	resourceName := msg.Payload["resourceName"].(string)
 
@@ -317,21 +311,19 @@ func (b *Bridge) handleSetWindowIcon(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if !iconExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Resource not found: " + resourceName,
-		})
-		return
+		}
 	}
 
 	fyne.DoAndWait(func() {
@@ -339,13 +331,13 @@ func (b *Bridge) handleSetWindowIcon(msg Message) {
 		win.SetIcon(resource)
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetWindowCloseIntercept(msg Message) {
+func (b *Bridge) handleSetWindowCloseIntercept(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	callbackId := msg.Payload["callbackId"].(string)
 
@@ -354,25 +346,24 @@ func (b *Bridge) handleSetWindowCloseIntercept(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	b.mu.Lock()
 	b.closeIntercepts[windowID] = callbackId
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCloseInterceptResponse(msg Message) {
+func (b *Bridge) handleCloseInterceptResponse(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	allowClose := msg.Payload["allowClose"].(bool)
 
@@ -384,13 +375,13 @@ func (b *Bridge) handleCloseInterceptResponse(msg Message) {
 		responseChan <- allowClose
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCloseWindow(msg Message) {
+func (b *Bridge) handleCloseWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -398,12 +389,11 @@ func (b *Bridge) handleCloseWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	b.mu.Lock()
@@ -421,8 +411,8 @@ func (b *Bridge) handleCloseWindow(msg Message) {
 		b.app.Quit()
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

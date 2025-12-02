@@ -14,7 +14,7 @@ import (
 // Tabs, DocTabs, ThemeOverride, InnerWindow, Navigation, Popup
 // ============================================================================
 
-func (b *Bridge) handleCreateVBox(msg Message) {
+func (b *Bridge) handleCreateVBox(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
@@ -36,14 +36,14 @@ func (b *Bridge) handleCreateVBox(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateHBox(msg Message) {
+func (b *Bridge) handleCreateHBox(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
@@ -65,14 +65,14 @@ func (b *Bridge) handleCreateHBox(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateScroll(msg Message) {
+func (b *Bridge) handleCreateScroll(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	contentID := msg.Payload["contentId"].(string)
 
@@ -81,12 +81,11 @@ func (b *Bridge) handleCreateScroll(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	scroll := container.NewScroll(content)
@@ -97,14 +96,14 @@ func (b *Bridge) handleCreateScroll(msg Message) {
 	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateGrid(msg Message) {
+func (b *Bridge) handleCreateGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	columns := int(msg.Payload["columns"].(float64))
 	childIDs, _ := msg.Payload["children"].([]interface{})
@@ -128,14 +127,14 @@ func (b *Bridge) handleCreateGrid(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCenter(msg Message) {
+func (b *Bridge) handleCreateCenter(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)
 
@@ -144,12 +143,11 @@ func (b *Bridge) handleCreateCenter(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Child widget not found",
-		})
-		return
+		}
 	}
 
 	centered := container.NewCenter(child)
@@ -160,14 +158,14 @@ func (b *Bridge) handleCreateCenter(msg Message) {
 	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateClip(msg Message) {
+func (b *Bridge) handleCreateClip(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)
 
@@ -176,12 +174,11 @@ func (b *Bridge) handleCreateClip(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Child widget not found",
-		})
-		return
+		}
 	}
 
 	// NewClip creates a container that clips any content that extends beyond the bounds of its child
@@ -193,24 +190,23 @@ func (b *Bridge) handleCreateClip(msg Message) {
 	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateMax(msg Message) {
+func (b *Bridge) handleCreateMax(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, ok := msg.Payload["childIds"].([]interface{})
 
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "childIds must be an array",
-		})
-		return
+		}
 	}
 
 	var children []fyne.CanvasObject
@@ -229,12 +225,11 @@ func (b *Bridge) handleCreateMax(msg Message) {
 	b.mu.RUnlock()
 
 	if len(children) == 0 {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "No valid child widgets found",
-		})
-		return
+		}
 	}
 
 	// NewMax stacks all widgets on top of each other, expanding all to the max size
@@ -250,24 +245,23 @@ func (b *Bridge) handleCreateMax(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateStack(msg Message) {
+func (b *Bridge) handleCreateStack(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, ok := msg.Payload["childIds"].([]interface{})
 
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "childIds must be an array",
-		})
-		return
+		}
 	}
 
 	var children []fyne.CanvasObject
@@ -286,12 +280,11 @@ func (b *Bridge) handleCreateStack(msg Message) {
 	b.mu.RUnlock()
 
 	if len(children) == 0 {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "No valid child widgets found",
-		})
-		return
+		}
 	}
 
 	// NewStack stacks all widgets on top of each other (Z-layering)
@@ -308,14 +301,14 @@ func (b *Bridge) handleCreateStack(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateCard(msg Message) {
+func (b *Bridge) handleCreateCard(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)
 	subtitle, _ := msg.Payload["subtitle"].(string)
@@ -326,12 +319,11 @@ func (b *Bridge) handleCreateCard(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	card := widget.NewCard(title, subtitle, content)
@@ -342,14 +334,14 @@ func (b *Bridge) handleCreateCard(msg Message) {
 	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateAccordion(msg Message) {
+func (b *Bridge) handleCreateAccordion(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -387,14 +379,14 @@ func (b *Bridge) handleCreateAccordion(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateForm(msg Message) {
+func (b *Bridge) handleCreateForm(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -464,14 +456,14 @@ func (b *Bridge) handleCreateForm(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateBorder(msg Message) {
+func (b *Bridge) handleCreateBorder(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
 	// Get optional border widgets
@@ -517,14 +509,14 @@ func (b *Bridge) handleCreateBorder(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateGridWrap(msg Message) {
+func (b *Bridge) handleCreateGridWrap(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	itemWidth := float32(msg.Payload["itemWidth"].(float64))
 	itemHeight := float32(msg.Payload["itemHeight"].(float64))
@@ -552,14 +544,14 @@ func (b *Bridge) handleCreateGridWrap(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateAdaptiveGrid(msg Message) {
+func (b *Bridge) handleCreateAdaptiveGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	rowcols := int(msg.Payload["rowcols"].(float64))
 	childIDs, _ := msg.Payload["children"].([]interface{})
@@ -583,14 +575,14 @@ func (b *Bridge) handleCreateAdaptiveGrid(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreatePadded(msg Message) {
+func (b *Bridge) handleCreatePadded(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)
 
@@ -599,12 +591,11 @@ func (b *Bridge) handleCreatePadded(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Child widget not found",
-		})
-		return
+		}
 	}
 
 	padded := container.NewPadded(child)
@@ -615,14 +606,14 @@ func (b *Bridge) handleCreatePadded(msg Message) {
 	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateSplit(msg Message) {
+func (b *Bridge) handleCreateSplit(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	orientation := msg.Payload["orientation"].(string)
 	leadingID := msg.Payload["leadingId"].(string)
@@ -634,12 +625,11 @@ func (b *Bridge) handleCreateSplit(msg Message) {
 	b.mu.RUnlock()
 
 	if !leadingExists || !trailingExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Leading or trailing widget not found",
-		})
-		return
+		}
 	}
 
 	var split *container.Split
@@ -664,13 +654,13 @@ func (b *Bridge) handleCreateSplit(msg Message) {
 	b.childToParent[trailingID] = id
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateTabs(msg Message) {
+func (b *Bridge) handleCreateTabs(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	tabsInterface := msg.Payload["tabs"].([]interface{})
 
@@ -686,12 +676,11 @@ func (b *Bridge) handleCreateTabs(msg Message) {
 		b.mu.RUnlock()
 
 		if !exists {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Tab content widget not found: %s", contentID),
-			})
-			return
+			}
 		}
 
 		tabItems = append(tabItems, container.NewTabItem(title, content))
@@ -732,13 +721,13 @@ func (b *Bridge) handleCreateTabs(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateDocTabs(msg Message) {
+func (b *Bridge) handleCreateDocTabs(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	tabsInterface := msg.Payload["tabs"].([]interface{})
 	closeCallbackID, hasCloseCallback := msg.Payload["closeCallbackId"].(string)
@@ -755,12 +744,11 @@ func (b *Bridge) handleCreateDocTabs(msg Message) {
 		b.mu.RUnlock()
 
 		if !exists {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Tab content widget not found: %s", contentID),
-			})
-			return
+			}
 		}
 
 		tabItems = append(tabItems, container.NewTabItem(title, content))
@@ -828,13 +816,13 @@ func (b *Bridge) handleCreateDocTabs(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDocTabsAppend(msg Message) {
+func (b *Bridge) handleDocTabsAppend(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
@@ -845,31 +833,28 @@ func (b *Bridge) handleDocTabsAppend(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("DocTabs not found: %s", id),
-		})
-		return
+		}
 	}
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Tab content widget not found: %s", contentID),
-		})
-		return
+		}
 	}
 
 	docTabs, ok := widgetObj.(*container.DocTabs)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
-		})
-		return
+		}
 	}
 
 	tabItem := container.NewTabItem(title, content)
@@ -884,13 +869,13 @@ func (b *Bridge) handleDocTabsAppend(msg Message) {
 	b.childToParent[contentID] = id
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDocTabsRemove(msg Message) {
+func (b *Bridge) handleDocTabsRemove(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	tabIndex := int(msg.Payload["tabIndex"].(float64))
 
@@ -899,43 +884,40 @@ func (b *Bridge) handleDocTabsRemove(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("DocTabs not found: %s", id),
-		})
-		return
+		}
 	}
 
 	docTabs, ok := widgetObj.(*container.DocTabs)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
-		})
-		return
+		}
 	}
 
 	items := docTabs.Items
 	if tabIndex < 0 || tabIndex >= len(items) {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Tab index out of range: %d", tabIndex),
-		})
-		return
+		}
 	}
 
 	docTabs.Remove(items[tabIndex])
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDocTabsSelect(msg Message) {
+func (b *Bridge) handleDocTabsSelect(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	tabIndex := int(msg.Payload["tabIndex"].(float64))
 
@@ -944,43 +926,40 @@ func (b *Bridge) handleDocTabsSelect(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("DocTabs not found: %s", id),
-		})
-		return
+		}
 	}
 
 	docTabs, ok := widgetObj.(*container.DocTabs)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Widget is not a DocTabs: %s", id),
-		})
-		return
+		}
 	}
 
 	items := docTabs.Items
 	if tabIndex < 0 || tabIndex >= len(items) {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Tab index out of range: %d", tabIndex),
-		})
-		return
+		}
 	}
 
 	docTabs.Select(items[tabIndex])
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateThemeOverride(msg Message) {
+func (b *Bridge) handleCreateThemeOverride(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)
 	themeVariant := msg.Payload["variant"].(string) // "dark" or "light"
@@ -990,12 +969,11 @@ func (b *Bridge) handleCreateThemeOverride(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Child widget not found",
-		})
-		return
+		}
 	}
 
 	// Create the appropriate theme based on variant
@@ -1017,14 +995,14 @@ func (b *Bridge) handleCreateThemeOverride(msg Message) {
 	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleCreateInnerWindow(msg Message) {
+func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
@@ -1034,12 +1012,11 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Content widget not found: %s", contentID),
-		})
-		return
+		}
 	}
 
 	innerWindow := container.NewInnerWindow(title, content)
@@ -1062,14 +1039,14 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) {
 	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleInnerWindowClose(msg Message) {
+func (b *Bridge) handleInnerWindowClose(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1077,33 +1054,31 @@ func (b *Bridge) handleInnerWindowClose(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "InnerWindow not found",
-		})
-		return
+		}
 	}
 
 	innerWindow, ok := w.(*container.InnerWindow)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an InnerWindow",
-		})
-		return
+		}
 	}
 
 	innerWindow.Close()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
+func (b *Bridge) handleSetInnerWindowTitle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	title := msg.Payload["title"].(string)
 
@@ -1112,12 +1087,11 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "InnerWindow not found",
-		})
-		return
+		}
 	}
 
 	// Note: Fyne's InnerWindow title is set at creation time and cannot be changed
@@ -1127,13 +1101,13 @@ func (b *Bridge) handleSetInnerWindowTitle(msg Message) {
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "innerwindow", Text: title}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreateNavigation(msg Message) {
+func (b *Bridge) handleCreateNavigation(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	rootID := msg.Payload["rootId"].(string)
 	title, hasTitle := msg.Payload["title"].(string)
@@ -1143,12 +1117,11 @@ func (b *Bridge) handleCreateNavigation(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Root widget not found",
-		})
-		return
+		}
 	}
 
 	var nav *container.Navigation
@@ -1188,14 +1161,14 @@ func (b *Bridge) handleCreateNavigation(msg Message) {
 	b.childToParent[rootID] = id
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": id},
-	})
+	}
 }
 
-func (b *Bridge) handleNavigationPush(msg Message) {
+func (b *Bridge) handleNavigationPush(msg Message) Response {
 	navID := msg.Payload["navigationId"].(string)
 	contentID := msg.Payload["contentId"].(string)
 	title, hasTitle := msg.Payload["title"].(string)
@@ -1206,31 +1179,28 @@ func (b *Bridge) handleNavigationPush(msg Message) {
 	b.mu.RUnlock()
 
 	if !navExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Navigation widget not found",
-		})
-		return
+		}
 	}
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	nav, ok := navWidget.(*container.Navigation)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a Navigation container",
-		})
-		return
+		}
 	}
 
 	if hasTitle && title != "" {
@@ -1243,13 +1213,13 @@ func (b *Bridge) handleNavigationPush(msg Message) {
 	b.childToParent[contentID] = navID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleNavigationBack(msg Message) {
+func (b *Bridge) handleNavigationBack(msg Message) Response {
 	navID := msg.Payload["navigationId"].(string)
 
 	b.mu.RLock()
@@ -1257,33 +1227,31 @@ func (b *Bridge) handleNavigationBack(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Navigation widget not found",
-		})
-		return
+		}
 	}
 
 	nav, ok := navWidget.(*container.Navigation)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a Navigation container",
-		})
-		return
+		}
 	}
 
 	nav.Back()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleNavigationForward(msg Message) {
+func (b *Bridge) handleNavigationForward(msg Message) Response {
 	navID := msg.Payload["navigationId"].(string)
 
 	b.mu.RLock()
@@ -1291,33 +1259,31 @@ func (b *Bridge) handleNavigationForward(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Navigation widget not found",
-		})
-		return
+		}
 	}
 
 	nav, ok := navWidget.(*container.Navigation)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a Navigation container",
-		})
-		return
+		}
 	}
 
 	nav.Forward()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleNavigationSetTitle(msg Message) {
+func (b *Bridge) handleNavigationSetTitle(msg Message) Response {
 	navID := msg.Payload["navigationId"].(string)
 	title := msg.Payload["title"].(string)
 	isCurrent, _ := msg.Payload["current"].(bool)
@@ -1327,22 +1293,20 @@ func (b *Bridge) handleNavigationSetTitle(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Navigation widget not found",
-		})
-		return
+		}
 	}
 
 	nav, ok := navWidget.(*container.Navigation)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a Navigation container",
-		})
-		return
+		}
 	}
 
 	if isCurrent {
@@ -1351,13 +1315,13 @@ func (b *Bridge) handleNavigationSetTitle(msg Message) {
 		nav.SetTitle(title)
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleCreatePopup(msg Message) {
+func (b *Bridge) handleCreatePopup(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	contentID := msg.Payload["contentId"].(string)
 	windowID := msg.Payload["windowId"].(string)
@@ -1368,21 +1332,19 @@ func (b *Bridge) handleCreatePopup(msg Message) {
 	b.mu.RUnlock()
 
 	if !contentExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Content widget not found",
-		})
-		return
+		}
 	}
 
 	if !windowExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Create the popup widget
@@ -1397,14 +1359,14 @@ func (b *Bridge) handleCreatePopup(msg Message) {
 	b.childToParent[contentID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleShowPopup(msg Message) {
+func (b *Bridge) handleShowPopup(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1412,22 +1374,20 @@ func (b *Bridge) handleShowPopup(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Popup widget not found",
-		})
-		return
+		}
 	}
 
 	popup, ok := w.(*widget.PopUp)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a popup",
-		})
-		return
+		}
 	}
 
 	// Show at position if provided, otherwise show centered
@@ -1441,13 +1401,13 @@ func (b *Bridge) handleShowPopup(msg Message) {
 		popup.Show()
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleHidePopup(msg Message) {
+func (b *Bridge) handleHidePopup(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1455,33 +1415,31 @@ func (b *Bridge) handleHidePopup(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Popup widget not found",
-		})
-		return
+		}
 	}
 
 	popup, ok := w.(*widget.PopUp)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a popup",
-		})
-		return
+		}
 	}
 
 	popup.Hide()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleMovePopup(msg Message) {
+func (b *Bridge) handleMovePopup(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	x := msg.Payload["x"].(float64)
 	y := msg.Payload["y"].(float64)
@@ -1491,37 +1449,35 @@ func (b *Bridge) handleMovePopup(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Popup widget not found",
-		})
-		return
+		}
 	}
 
 	popup, ok := w.(*widget.PopUp)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a popup",
-		})
-		return
+		}
 	}
 
 	popup.Move(fyne.NewPos(float32(x), float32(y)))
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // ============================================================================
 // MultipleWindows - MDI container for managing multiple InnerWindows
 // ============================================================================
 
-func (b *Bridge) handleCreateMultipleWindows(msg Message) {
+func (b *Bridge) handleCreateMultipleWindows(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
@@ -1553,14 +1509,14 @@ func (b *Bridge) handleCreateMultipleWindows(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) {
+func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 	windowID := msg.Payload["windowId"].(string)
 
@@ -1570,41 +1526,37 @@ func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !containerExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "MultipleWindows container not found",
-		})
-		return
+		}
 	}
 
 	if !windowExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "InnerWindow not found",
-		})
-		return
+		}
 	}
 
 	multiWin, ok := containerObj.(*container.MultipleWindows)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a MultipleWindows container",
-		})
-		return
+		}
 	}
 
 	innerWin, ok := windowObj.(*container.InnerWindow)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an InnerWindow",
-		})
-		return
+		}
 	}
 
 	// Add the window to the container
@@ -1616,13 +1568,13 @@ func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) {
 	b.childToParent[windowID] = containerID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) {
+func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 	windowID := msg.Payload["windowId"].(string)
 
@@ -1632,41 +1584,37 @@ func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) {
 	b.mu.RUnlock()
 
 	if !containerExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "MultipleWindows container not found",
-		})
-		return
+		}
 	}
 
 	if !windowExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "InnerWindow not found",
-		})
-		return
+		}
 	}
 
 	multiWin, ok := containerObj.(*container.MultipleWindows)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a MultipleWindows container",
-		})
-		return
+		}
 	}
 
 	innerWin, ok := windowObj.(*container.InnerWindow)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an InnerWindow",
-		})
-		return
+		}
 	}
 
 	// Close the inner window (MultipleWindows container handles this automatically)
@@ -1680,8 +1628,8 @@ func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) {
 	delete(b.childToParent, windowID)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }

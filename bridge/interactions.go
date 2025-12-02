@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (b *Bridge) handleClickWidget(msg Message) {
+func (b *Bridge) handleClickWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -18,12 +18,11 @@ func (b *Bridge) handleClickWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Simulate click
@@ -34,10 +33,10 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			// In normal mode, just trigger the callback
 			btn.OnTapped()
 		}
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else if check, ok := obj.(*widget.Check); ok {
 		// Handle checkbox clicks
 		if b.testMode {
@@ -59,10 +58,10 @@ func (b *Bridge) handleClickWidget(msg Message) {
 				callback(newState)
 			}
 		}
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else if hyperlink, ok := obj.(*widget.Hyperlink); ok {
 		// Handle hyperlink clicks
 
@@ -92,10 +91,10 @@ func (b *Bridge) handleClickWidget(msg Message) {
 			}
 		}
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else if draggable, ok := obj.(*DraggableContainer); ok {
 		// Handle DraggableContainer clicks (images with both onClick and onDrag)
 		if b.testMode {
@@ -106,10 +105,10 @@ func (b *Bridge) handleClickWidget(msg Message) {
 				draggable.Tapped(&fyne.PointEvent{})
 			})
 		}
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else if clickable, ok := obj.(*ClickableContainer); ok {
 		// Handle ClickableContainer clicks (images with onClick only)
 		if b.testMode {
@@ -120,10 +119,10 @@ func (b *Bridge) handleClickWidget(msg Message) {
 				clickable.Tapped(&fyne.PointEvent{})
 			})
 		}
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else if container, ok := obj.(*fyne.Container); ok {
 		// Handle regular Fyne containers by finding and clicking tappable children
 		// This allows tests to click on container IDs and have clicks propagate to interactive content
@@ -137,25 +136,25 @@ func (b *Bridge) handleClickWidget(msg Message) {
 					tappable.Tapped(&fyne.PointEvent{})
 				})
 			}
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Container has no tappable children (id: %s)", widgetID),
-			})
+			}
 		}
 	} else {
 		// Get widget type for debugging
 		widgetType := fmt.Sprintf("%T", obj)
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Widget is not clickable (type: %s, id: %s)", widgetType, widgetID),
-		})
+		}
 	}
 }
 
@@ -179,7 +178,7 @@ func (b *Bridge) findFirstTappableChild(obj fyne.CanvasObject) fyne.Tappable {
 	return nil
 }
 
-func (b *Bridge) handleClickToolbarAction(msg Message) {
+func (b *Bridge) handleClickToolbarAction(msg Message) Response {
 	customID := msg.Payload["customId"].(string)
 
 	b.mu.RLock()
@@ -209,12 +208,11 @@ func (b *Bridge) handleClickToolbarAction(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Toolbar action not found",
-		})
-		return
+		}
 	}
 
 	// Simulate tap on the toolbar action
@@ -222,13 +220,13 @@ func (b *Bridge) handleClickToolbarAction(msg Message) {
 		action.OnActivated()
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDoubleTapWidget(msg Message) {
+func (b *Bridge) handleDoubleTapWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -236,48 +234,47 @@ func (b *Bridge) handleDoubleTapWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Use test.DoubleTap if in test mode
 	if b.testMode {
 		if tappable, ok := obj.(fyne.DoubleTappable); ok {
 			test.DoubleTap(tappable)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   "Widget is not double-tappable",
-			})
+			}
 		}
 	} else {
 		// In normal mode, trigger OnDoubleTapped if available
 		if dt, ok := obj.(fyne.DoubleTappable); ok {
 			dt.DoubleTapped(nil)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   "Widget does not support double-tap",
-			})
+			}
 		}
 	}
 }
 
-func (b *Bridge) handleRightClickWidget(msg Message) {
+func (b *Bridge) handleRightClickWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -285,48 +282,47 @@ func (b *Bridge) handleRightClickWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Use test.TapSecondary if in test mode
 	if b.testMode {
 		if tappable, ok := obj.(fyne.SecondaryTappable); ok {
 			test.TapSecondary(tappable)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   "Widget does not support right-click",
-			})
+			}
 		}
 	} else {
 		// In normal mode, trigger OnTappedSecondary if available
 		if st, ok := obj.(fyne.SecondaryTappable); ok {
 			st.TappedSecondary(nil)
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   "Widget does not support right-click",
-			})
+			}
 		}
 	}
 }
 
-func (b *Bridge) handleHoverWidget(msg Message) {
+func (b *Bridge) handleHoverWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -336,21 +332,19 @@ func (b *Bridge) handleHoverWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if !winExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	// Use test.MoveMouse to hover over the widget
@@ -359,28 +353,28 @@ func (b *Bridge) handleHoverWidget(msg Message) {
 		// Get widget position (simplified - assumes widget at center)
 		pos := obj.Position()
 		test.MoveMouse(canvas, pos)
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
 		// In normal mode, trigger MouseIn if available
 		if hoverable, ok := obj.(interface{ MouseIn(*fyne.PointEvent) }); ok {
 			hoverable.MouseIn(&fyne.PointEvent{})
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
+			}
 		} else {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true, // Success even if not hoverable
-			})
+			}
 		}
 	}
 }
 
-func (b *Bridge) handleTypeText(msg Message) {
+func (b *Bridge) handleTypeText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	text := msg.Payload["text"].(string)
 
@@ -391,12 +385,11 @@ func (b *Bridge) handleTypeText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from TappableEntry), use that
@@ -427,20 +420,20 @@ func (b *Bridge) handleTypeText(msg Message) {
 		}
 		b.mu.Unlock()
 
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a text entry",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSubmitEntry(msg Message) {
+func (b *Bridge) handleSubmitEntry(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -450,12 +443,11 @@ func (b *Bridge) handleSubmitEntry(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from minWidth wrapping), use that
@@ -466,11 +458,10 @@ func (b *Bridge) handleSubmitEntry(msg Message) {
 				fyne.DoAndWait(func() {
 					entry.OnSubmitted(entry.Text)
 				})
-				b.sendResponse(Response{
+				return Response{
 					ID:      msg.ID,
 					Success: true,
-				})
-				return
+				}
 			}
 		}
 	}
@@ -482,22 +473,21 @@ func (b *Bridge) handleSubmitEntry(msg Message) {
 			fyne.DoAndWait(func() {
 				entry.OnSubmitted(entry.Text)
 			})
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: true,
-			})
-			return
+			}
 		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: false,
 		Error:   "Widget is not an Entry or has no OnSubmitted callback",
-	})
+	}
 }
 
-func (b *Bridge) handleDragCanvas(msg Message) {
+func (b *Bridge) handleDragCanvas(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	fromX := msg.Payload["fromX"].(float64)
 	fromY := msg.Payload["fromY"].(float64)
@@ -509,32 +499,31 @@ func (b *Bridge) handleDragCanvas(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if b.testMode {
 		canvas := win.Canvas()
 		pos := fyne.NewPos(float32(fromX), float32(fromY))
 		test.Drag(canvas, pos, float32(deltaX), float32(deltaY))
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Drag is only supported in test mode",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleScrollCanvas(msg Message) {
+func (b *Bridge) handleScrollCanvas(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	deltaX := msg.Payload["deltaX"].(float64)
 	deltaY := msg.Payload["deltaY"].(float64)
@@ -544,12 +533,11 @@ func (b *Bridge) handleScrollCanvas(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if b.testMode {
@@ -558,20 +546,20 @@ func (b *Bridge) handleScrollCanvas(msg Message) {
 		size := canvas.Size()
 		pos := fyne.NewPos(size.Width/2, size.Height/2)
 		test.Scroll(canvas, pos, float32(deltaX), float32(deltaY))
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Scroll is only supported in test mode",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleFocusWidget(msg Message) {
+func (b *Bridge) handleFocusWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -581,12 +569,11 @@ func (b *Bridge) handleFocusWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference (from TappableEntry), use that
@@ -599,11 +586,10 @@ func (b *Bridge) handleFocusWidget(msg Message) {
 					fyne.DoAndWait(func() {
 						canvas.Focus(entry)
 					})
-					b.sendResponse(Response{
+					return Response{
 						ID:      msg.ID,
 						Success: true,
-					})
-					return
+					}
 				}
 			}
 		}
@@ -618,28 +604,27 @@ func (b *Bridge) handleFocusWidget(msg Message) {
 				fyne.DoAndWait(func() {
 					canvas.Focus(focusable)
 				})
-				b.sendResponse(Response{
+				return Response{
 					ID:      msg.ID,
 					Success: true,
-				})
-				return
+				}
 			}
 		}
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Could not find canvas for widget",
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not focusable",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleFocusNext(msg Message) {
+func (b *Bridge) handleFocusNext(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -647,31 +632,30 @@ func (b *Bridge) handleFocusNext(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if b.testMode {
 		canvas := win.Canvas()
 		test.FocusNext(canvas)
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "FocusNext is only supported in test mode",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleFocusPrevious(msg Message) {
+func (b *Bridge) handleFocusPrevious(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 
 	b.mu.RLock()
@@ -679,31 +663,30 @@ func (b *Bridge) handleFocusPrevious(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Window not found",
-		})
-		return
+		}
 	}
 
 	if b.testMode {
 		canvas := win.Canvas()
 		test.FocusPrevious(canvas)
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "FocusPrevious is only supported in test mode",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleFindWidget(msg Message) {
+func (b *Bridge) handleFindWidget(msg Message) Response {
 	selector := msg.Payload["selector"].(string)
 	selectorType := msg.Payload["type"].(string)
 
@@ -843,16 +826,16 @@ func (b *Bridge) handleFindWidget(msg Message) {
 		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"widgetIds": matches,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleGetWidgetInfo(msg Message) {
+func (b *Bridge) handleGetWidgetInfo(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -861,12 +844,11 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 	b.mu.RUnlock()
 
 	if !widgetExists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	info := map[string]interface{}{
@@ -940,14 +922,14 @@ func (b *Bridge) handleGetWidgetInfo(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  info,
-	})
+	}
 }
 
-func (b *Bridge) handleGetAllWidgets(msg Message) {
+func (b *Bridge) handleGetAllWidgets(msg Message) Response {
 	// First, collect widget IDs and metadata while holding the lock
 	b.mu.RLock()
 
@@ -1023,16 +1005,16 @@ func (b *Bridge) handleGetAllWidgets(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"widgets": widgets,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleGetParent(msg Message) {
+func (b *Bridge) handleGetParent(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1040,22 +1022,21 @@ func (b *Bridge) handleGetParent(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"parentId": ""}, // No parent found
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"parentId": parentID},
-	})
+	}
 }
 
-func (b *Bridge) handleRegisterCustomId(msg Message) {
+func (b *Bridge) handleRegisterCustomId(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	customID := msg.Payload["customId"].(string)
 
@@ -1063,13 +1044,13 @@ func (b *Bridge) handleRegisterCustomId(msg Message) {
 	b.customIds[customID] = widgetID
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleRegisterTestId(msg Message) {
+func (b *Bridge) handleRegisterTestId(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	testID := msg.Payload["testId"].(string)
 
@@ -1082,13 +1063,13 @@ func (b *Bridge) handleRegisterTestId(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDragWidget(msg Message) {
+func (b *Bridge) handleDragWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	x := msg.Payload["x"].(float64)
 	y := msg.Payload["y"].(float64)
@@ -1098,12 +1079,11 @@ func (b *Bridge) handleDragWidget(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if draggable, ok := obj.(fyne.Draggable); ok {
@@ -1114,15 +1094,15 @@ func (b *Bridge) handleDragWidget(msg Message) {
 			},
 		})
 		draggable.DragEnd()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not draggable",
-		})
+		}
 	}
 }

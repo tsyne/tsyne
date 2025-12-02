@@ -16,7 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (b *Bridge) handleGetText(msg Message) {
+func (b *Bridge) handleGetText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -26,12 +26,11 @@ func (b *Bridge) handleGetText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference, use that
@@ -63,22 +62,21 @@ func (b *Bridge) handleGetText(msg Message) {
 	case *widget.Check:
 		text = w.Text
 	default:
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget does not support getText",
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"text": text},
-	})
+	}
 }
 
-func (b *Bridge) handleSetText(msg Message) {
+func (b *Bridge) handleSetText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	text := msg.Payload["text"].(string)
 
@@ -89,12 +87,11 @@ func (b *Bridge) handleSetText(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// If we have a separate entry reference, use that
@@ -139,12 +136,11 @@ func (b *Bridge) handleSetText(msg Message) {
 	}
 
 	if !supported {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget does not support setText",
-		})
-		return
+		}
 	}
 
 	// Update metadata
@@ -155,13 +151,13 @@ func (b *Bridge) handleSetText(msg Message) {
 	}
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleGetChecked(msg Message) {
+func (b *Bridge) handleGetChecked(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -169,30 +165,29 @@ func (b *Bridge) handleGetChecked(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if check, ok := obj.(*widget.Check); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"checked": check.Checked},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a checkbox",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetChecked(msg Message) {
+func (b *Bridge) handleSetChecked(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	checked := msg.Payload["checked"].(bool)
 
@@ -201,12 +196,11 @@ func (b *Bridge) handleSetChecked(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if check, ok := obj.(*widget.Check); ok {
@@ -218,20 +212,20 @@ func (b *Bridge) handleSetChecked(msg Message) {
 			check.SetChecked(checked)
 			check.OnChanged = originalCallback
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a checkbox",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetValue(msg Message) {
+func (b *Bridge) handleGetValue(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -239,30 +233,29 @@ func (b *Bridge) handleGetValue(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if slider, ok := obj.(*widget.Slider); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"value": slider.Value},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a slider",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetValue(msg Message) {
+func (b *Bridge) handleSetValue(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	value := msg.Payload["value"].(float64)
 
@@ -271,12 +264,11 @@ func (b *Bridge) handleSetValue(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if slider, ok := obj.(*widget.Slider); ok {
@@ -284,20 +276,20 @@ func (b *Bridge) handleSetValue(msg Message) {
 		fyne.DoAndWait(func() {
 			slider.SetValue(value)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a slider",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetProgress(msg Message) {
+func (b *Bridge) handleGetProgress(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -305,30 +297,29 @@ func (b *Bridge) handleGetProgress(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if pb, ok := obj.(*widget.ProgressBar); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"value": pb.Value},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a progressbar",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetProgress(msg Message) {
+func (b *Bridge) handleSetProgress(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	value := msg.Payload["value"].(float64)
 
@@ -337,12 +328,11 @@ func (b *Bridge) handleSetProgress(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if pb, ok := obj.(*widget.ProgressBar); ok {
@@ -350,20 +340,20 @@ func (b *Bridge) handleSetProgress(msg Message) {
 		fyne.DoAndWait(func() {
 			pb.SetValue(value)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a progressbar",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetSelected(msg Message) {
+func (b *Bridge) handleGetSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -371,30 +361,29 @@ func (b *Bridge) handleGetSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if sel, ok := obj.(*widget.Select); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"selected": sel.Selected},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a select",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetSelected(msg Message) {
+func (b *Bridge) handleSetSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	selected := msg.Payload["selected"].(string)
 
@@ -403,12 +392,11 @@ func (b *Bridge) handleSetSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if sel, ok := obj.(*widget.Select); ok {
@@ -416,20 +404,20 @@ func (b *Bridge) handleSetSelected(msg Message) {
 		fyne.DoAndWait(func() {
 			sel.SetSelected(selected)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a select",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetSelectOptions(msg Message) {
+func (b *Bridge) handleSetSelectOptions(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	optionsInterface := msg.Payload["options"].([]interface{})
 
@@ -444,12 +432,11 @@ func (b *Bridge) handleSetSelectOptions(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if sel, ok := obj.(*widget.Select); ok {
@@ -458,20 +445,20 @@ func (b *Bridge) handleSetSelectOptions(msg Message) {
 			sel.Options = options
 			sel.Refresh()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a select",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetRadioOptions(msg Message) {
+func (b *Bridge) handleSetRadioOptions(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	optionsInterface := msg.Payload["options"].([]interface{})
 
@@ -486,12 +473,11 @@ func (b *Bridge) handleSetRadioOptions(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if radio, ok := obj.(*widget.RadioGroup); ok {
@@ -500,20 +486,20 @@ func (b *Bridge) handleSetRadioOptions(msg Message) {
 			radio.Options = options
 			radio.Refresh()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a radio group",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetRadioSelected(msg Message) {
+func (b *Bridge) handleGetRadioSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -521,30 +507,29 @@ func (b *Bridge) handleGetRadioSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if radio, ok := obj.(*widget.RadioGroup); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"selected": radio.Selected},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a radio group",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetRadioSelected(msg Message) {
+func (b *Bridge) handleSetRadioSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	selected := msg.Payload["selected"].(string)
 
@@ -553,12 +538,11 @@ func (b *Bridge) handleSetRadioSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if radio, ok := obj.(*widget.RadioGroup); ok {
@@ -566,20 +550,20 @@ func (b *Bridge) handleSetRadioSelected(msg Message) {
 		fyne.DoAndWait(func() {
 			radio.SetSelected(selected)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a radio group",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetCheckGroupSelected(msg Message) {
+func (b *Bridge) handleGetCheckGroupSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -587,30 +571,29 @@ func (b *Bridge) handleGetCheckGroupSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if checkGroup, ok := obj.(*widget.CheckGroup); ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"selected": checkGroup.Selected},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a check group",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetCheckGroupSelected(msg Message) {
+func (b *Bridge) handleSetCheckGroupSelected(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	selectedInterface := msg.Payload["selected"].([]interface{})
 
@@ -625,12 +608,11 @@ func (b *Bridge) handleSetCheckGroupSelected(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if checkGroup, ok := obj.(*widget.CheckGroup); ok {
@@ -638,20 +620,20 @@ func (b *Bridge) handleSetCheckGroupSelected(msg Message) {
 		fyne.DoAndWait(func() {
 			checkGroup.SetSelected(selected)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a check group",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetTableData(msg Message) {
+func (b *Bridge) handleGetTableData(msg Message) Response {
 	id := msg.Payload["id"].(string)
 
 	b.mu.RLock()
@@ -659,24 +641,23 @@ func (b *Bridge) handleGetTableData(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Table not found",
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"data": data,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateTableData(msg Message) {
+func (b *Bridge) handleUpdateTableData(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	dataInterface := msg.Payload["data"].([]interface{})
 
@@ -697,12 +678,11 @@ func (b *Bridge) handleUpdateTableData(msg Message) {
 	b.mu.Unlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Table not found",
-		})
-		return
+		}
 	}
 
 	if table, ok := obj.(*widget.Table); ok {
@@ -710,20 +690,20 @@ func (b *Bridge) handleUpdateTableData(msg Message) {
 		fyne.DoAndWait(func() {
 			table.Refresh()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a table",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleGetListData(msg Message) {
+func (b *Bridge) handleGetListData(msg Message) Response {
 	id := msg.Payload["id"].(string)
 
 	b.mu.RLock()
@@ -731,24 +711,23 @@ func (b *Bridge) handleGetListData(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "List not found",
-		})
-		return
+		}
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"data": data,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleUpdateListData(msg Message) {
+func (b *Bridge) handleUpdateListData(msg Message) Response {
 	id := msg.Payload["id"].(string)
 	itemsInterface := msg.Payload["items"].([]interface{})
 
@@ -764,12 +743,11 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 	b.mu.Unlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "List not found",
-		})
-		return
+		}
 	}
 
 	if list, ok := obj.(*widget.List); ok {
@@ -777,20 +755,20 @@ func (b *Bridge) handleUpdateListData(msg Message) {
 		fyne.DoAndWait(func() {
 			list.Refresh()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a list",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleUnselectAllList(msg Message) {
+func (b *Bridge) handleUnselectAllList(msg Message) Response {
 	id := msg.Payload["id"].(string)
 
 	b.mu.RLock()
@@ -798,12 +776,11 @@ func (b *Bridge) handleUnselectAllList(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "List not found",
-		})
-		return
+		}
 	}
 
 	if list, ok := obj.(*widget.List); ok {
@@ -811,20 +788,20 @@ func (b *Bridge) handleUnselectAllList(msg Message) {
 		fyne.DoAndWait(func() {
 			list.UnselectAll()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a list",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleUpdateImage(msg Message) {
+func (b *Bridge) handleUpdateImage(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	// Check which type of image source is provided
@@ -839,12 +816,11 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	var decodedImg image.Image
@@ -855,95 +831,86 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		// Resource-based image
 		resourceData, exists := b.getResource(resourceName)
 		if !exists {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Resource not found: %s", resourceName),
-			})
-			return
+			}
 		}
 
 		decodedImg, _, err = image.Decode(bytes.NewReader(resourceData))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode resource image: %v", err),
-			})
-			return
+			}
 		}
 	} else if hasPath && path != "" {
 		// File path-based image
 		data, err := os.ReadFile(path)
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to read image file: %v", err),
-			})
-			return
+			}
 		}
 
 		decodedImg, _, err = image.Decode(bytes.NewReader(data))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode image file: %v", err),
-			})
-			return
+			}
 		}
 	} else if hasSVG && svgString != "" {
 		// Raw SVG string - convert to image
 		decodedImg, _, err = image.Decode(strings.NewReader(svgString))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode SVG: %v", err),
-			})
-			return
+			}
 		}
 	} else if hasURL && urlString != "" {
 		// Remote URL - fetch and decode
 		resp, err := http.Get(urlString)
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to fetch URL: %v", err),
-			})
-			return
+			}
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != 200 {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("HTTP error: %d %s", resp.StatusCode, resp.Status),
-			})
-			return
+			}
 		}
 
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to read response body: %v", err),
-			})
-			return
+			}
 		}
 
 		decodedImg, _, err = image.Decode(bytes.NewReader(data))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode image from URL: %v", err),
-			})
-			return
+			}
 		}
 	} else if hasImageData && imageData != "" {
 		// Base64 data URI (backwards compatible)
@@ -952,12 +919,11 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 			// Split on comma to separate header from data
 			parts := strings.SplitN(imageData, ",", 2)
 			if len(parts) != 2 {
-				b.sendResponse(Response{
+				return Response{
 					ID:      msg.ID,
 					Success: false,
 					Error:   "Invalid data URL format",
-				})
-				return
+				}
 			}
 			base64Data = parts[1]
 		} else {
@@ -968,31 +934,28 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		// Decode base64
 		imgBytes, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode base64: %v", err),
-			})
-			return
+			}
 		}
 
 		// Decode image bytes
 		decodedImg, _, err = image.Decode(bytes.NewReader(imgBytes))
 		if err != nil {
-			b.sendResponse(Response{
+			return Response{
 				ID:      msg.ID,
 				Success: false,
 				Error:   fmt.Sprintf("Failed to decode image: %v", err),
-			})
-			return
+			}
 		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "No image source provided (expected imageData, path, resource, svg, or url)",
-		})
-		return
+		}
 	}
 
 	// Find the actual canvas.Image widget
@@ -1016,12 +979,11 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 	}
 
 	if imgWidget == nil {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an image",
-		})
-		return
+		}
 	}
 
 	// UI updates must happen on the main thread
@@ -1046,14 +1008,14 @@ func (b *Bridge) handleUpdateImage(msg Message) {
 		imgWidget.Refresh()
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
-	})
+	}
 }
 
-func (b *Bridge) handleGetToolbarItems(msg Message) {
+func (b *Bridge) handleGetToolbarItems(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1062,22 +1024,20 @@ func (b *Bridge) handleGetToolbarItems(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Verify it's a toolbar
 	if _, ok := obj.(*widget.Toolbar); !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a toolbar",
-		})
-		return
+		}
 	}
 
 	// Get toolbar items metadata
@@ -1086,16 +1046,16 @@ func (b *Bridge) handleGetToolbarItems(msg Message) {
 		items = toolbarMeta.Labels
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"items": items,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleGetContainerObjects(msg Message) {
+func (b *Bridge) handleGetContainerObjects(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1103,23 +1063,21 @@ func (b *Bridge) handleGetContainerObjects(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Verify it's a container
 	container, ok := obj.(*fyne.Container)
 	if !ok {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a container",
-		})
-		return
+		}
 	}
 
 	// Get container objects (child widget IDs)
@@ -1138,16 +1096,16 @@ func (b *Bridge) handleGetContainerObjects(msg Message) {
 		}
 	})
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"objects": childIDs,
 		},
-	})
+	}
 }
 
-func (b *Bridge) handleSetAccessibility(msg Message) {
+func (b *Bridge) handleSetAccessibility(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1155,12 +1113,11 @@ func (b *Bridge) handleSetAccessibility(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Extract accessibility options
@@ -1218,39 +1175,39 @@ func (b *Bridge) handleSetAccessibility(msg Message) {
 	// TODO: When Fyne supports accessibility APIs, apply them here
 	// For now, this is a no-op that prevents the error
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleEnableAccessibility(msg Message) {
+func (b *Bridge) handleEnableAccessibility(msg Message) Response {
 	// Enable accessibility mode globally
 	// For now, this is a no-op since Fyne doesn't have global accessibility APIs
 	// But we acknowledge the request to prevent errors
 
 	// TODO: When Fyne adds accessibility APIs, enable them here
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
-func (b *Bridge) handleDisableAccessibility(msg Message) {
+func (b *Bridge) handleDisableAccessibility(msg Message) Response {
 	// Disable accessibility mode globally
 	// For now, this is a no-op since Fyne doesn't have global accessibility APIs
 
 	// TODO: When Fyne adds accessibility APIs, disable them here
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleAnnounce handles TTS announce messages
-func (b *Bridge) handleAnnounce(msg Message) {
+func (b *Bridge) handleAnnounce(msg Message) Response {
 	// The text to announce is in the payload
 	// For now, we just log it and return success
 	// In the future, this could integrate with native platform TTS
@@ -1259,27 +1216,27 @@ func (b *Bridge) handleAnnounce(msg Message) {
 		log.Printf("[TTS] %s", text)
 	}
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleStopSpeech handles stop speech messages
-func (b *Bridge) handleStopSpeech(msg Message) {
+func (b *Bridge) handleStopSpeech(msg Message) Response {
 	// Stop any current speech
 	// For now, this is a no-op since we're using client-side TTS
 	// In the future, this could stop native platform TTS
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleSetPointerEnter handles pointer enter event registration
 // This only stores metadata - actual wrapping happens later in processHoverWrappers
-func (b *Bridge) handleSetPointerEnter(msg Message) {
+func (b *Bridge) handleSetPointerEnter(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.Lock()
@@ -1288,12 +1245,11 @@ func (b *Bridge) handleSetPointerEnter(msg Message) {
 	_, exists := b.widgets[widgetID]
 	if !exists {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Update metadata to indicate hover is enabled
@@ -1312,26 +1268,25 @@ func (b *Bridge) handleSetPointerEnter(msg Message) {
 	// Unlock before sending response
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // handleProcessHoverWrappers wraps all widgets that have announceOnHover metadata
 // This should be called after the widget tree is complete
-func (b *Bridge) handleProcessHoverWrappers(msg Message) {
+func (b *Bridge) handleProcessHoverWrappers(msg Message) Response {
 	b.mu.Lock()
 	// Note: Don't use defer unlock here - we unlock manually before sendResponse to avoid deadlock
 
 	// In test mode, don't wrap widgets to avoid threading issues
 	if b.testMode {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
-		return
+		}
 	}
 
 	wrappedCount := 0
@@ -1401,18 +1356,18 @@ func (b *Bridge) handleProcessHoverWrappers(msg Message) {
 	// Unlock before sending response to avoid deadlock (sendResponse also acquires the lock)
 	b.mu.Unlock()
 
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
 			"wrappedCount": wrappedCount,
 		},
-	})
+	}
 }
 
 // handleSetWidgetHoverable handles enabling hover events on a widget
 // This wraps the widget to support mouse in/out/move events
-func (b *Bridge) handleSetWidgetHoverable(msg Message) {
+func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	// Extract optional callback IDs for Hoverable interface
@@ -1439,12 +1394,11 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 	obj, exists := b.widgets[widgetID]
 	if !exists {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	// Store callback IDs in widget metadata
@@ -1522,30 +1476,27 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 			tsyneBtn.SetCursor(stringToCursor(cursorType))
 		}
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
-		return
+		}
 	}
 	if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
-		return
+		}
 	}
 
 	// In test mode, skip the actual wrapping but return success
 	// Events will be handled differently in test mode
 	if b.testMode {
 		b.mu.Unlock()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
-		return
+		}
 	}
 
 	// Wrap the widget to make it interactive
@@ -1609,15 +1560,15 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) {
 	}
 
 	b.mu.Unlock()
-	b.sendResponse(Response{
+	return Response{
 		ID:      msg.ID,
 		Success: true,
-	})
+	}
 }
 
 // ProgressBarInfinite handlers
 
-func (b *Bridge) handleStartProgressInfinite(msg Message) {
+func (b *Bridge) handleStartProgressInfinite(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1625,32 +1576,31 @@ func (b *Bridge) handleStartProgressInfinite(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
 		fyne.DoAndWait(func() {
 			pb.Start()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an infinite progress bar",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleStopProgressInfinite(msg Message) {
+func (b *Bridge) handleStopProgressInfinite(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1658,32 +1608,31 @@ func (b *Bridge) handleStopProgressInfinite(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
 		fyne.DoAndWait(func() {
 			pb.Stop()
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an infinite progress bar",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleIsProgressRunning(msg Message) {
+func (b *Bridge) handleIsProgressRunning(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
 	b.mu.RLock()
@@ -1691,31 +1640,30 @@ func (b *Bridge) handleIsProgressRunning(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if pb, ok := obj.(*widget.ProgressBarInfinite); ok {
 		running := pb.Running()
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
 			Result:  map[string]interface{}{"running": running},
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not an infinite progress bar",
-		})
+		}
 	}
 }
 
-func (b *Bridge) handleSetSelectEntryOptions(msg Message) {
+func (b *Bridge) handleSetSelectEntryOptions(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	optionsInterface, _ := msg.Payload["options"].([]interface{})
 
@@ -1730,12 +1678,11 @@ func (b *Bridge) handleSetSelectEntryOptions(msg Message) {
 	b.mu.RUnlock()
 
 	if !exists {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget not found",
-		})
-		return
+		}
 	}
 
 	if selectEntry, ok := obj.(*widget.SelectEntry); ok {
@@ -1743,15 +1690,15 @@ func (b *Bridge) handleSetSelectEntryOptions(msg Message) {
 		fyne.DoAndWait(func() {
 			selectEntry.SetOptions(options)
 		})
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: true,
-		})
+		}
 	} else {
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a SelectEntry",
-		})
+		}
 	}
 }

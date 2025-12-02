@@ -19,446 +19,446 @@ import (
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
 
-func (b *Bridge) handleMessage(msg Message) {
+func (b *Bridge) handleMessage(msg Message) Response {
 	switch msg.Type {
 	case "createWindow":
-		b.handleCreateWindow(msg)
+		return b.handleCreateWindow(msg)
 	case "setContent":
-		b.handleSetContent(msg)
+		return b.handleSetContent(msg)
 	case "clearWidgets":
-		b.handleClearWidgets(msg)
+		return b.handleClearWidgets(msg)
 	case "showWindow":
-		b.handleShowWindow(msg)
+		return b.handleShowWindow(msg)
 	case "createButton":
-		b.handleCreateButton(msg)
+		return b.handleCreateButton(msg)
 	case "createLabel":
-		b.handleCreateLabel(msg)
+		return b.handleCreateLabel(msg)
 	case "createEntry":
-		b.handleCreateEntry(msg)
+		return b.handleCreateEntry(msg)
 	case "createMultiLineEntry":
-		b.handleCreateMultiLineEntry(msg)
+		return b.handleCreateMultiLineEntry(msg)
 	case "createPasswordEntry":
-		b.handleCreatePasswordEntry(msg)
+		return b.handleCreatePasswordEntry(msg)
 	case "createSeparator":
-		b.handleCreateSeparator(msg)
+		return b.handleCreateSeparator(msg)
 	case "createSpacer":
-		b.handleCreateSpacer(msg)
+		return b.handleCreateSpacer(msg)
 	case "createHyperlink":
-		b.handleCreateHyperlink(msg)
+		return b.handleCreateHyperlink(msg)
 	case "createVBox":
-		b.handleCreateVBox(msg)
+		return b.handleCreateVBox(msg)
 	case "createHBox":
-		b.handleCreateHBox(msg)
+		return b.handleCreateHBox(msg)
 	case "createStack":
-		b.handleCreateStack(msg)
+		return b.handleCreateStack(msg)
 	case "createCheckbox":
-		b.handleCreateCheckbox(msg)
+		return b.handleCreateCheckbox(msg)
 	case "createSelect":
-		b.handleCreateSelect(msg)
+		return b.handleCreateSelect(msg)
 	case "createSelectEntry":
-		b.handleCreateSelectEntry(msg)
+		return b.handleCreateSelectEntry(msg)
 	case "setSelectEntryOptions":
-		b.handleSetSelectEntryOptions(msg)
+		return b.handleSetSelectEntryOptions(msg)
 	case "createSlider":
-		b.handleCreateSlider(msg)
+		return b.handleCreateSlider(msg)
 	case "createProgressBar":
-		b.handleCreateProgressBar(msg)
+		return b.handleCreateProgressBar(msg)
 	case "createActivity":
-		b.handleCreateActivity(msg)
+		return b.handleCreateActivity(msg)
 	case "startActivity":
-		b.handleStartActivity(msg)
+		return b.handleStartActivity(msg)
 	case "stopActivity":
-		b.handleStopActivity(msg)
+		return b.handleStopActivity(msg)
 	case "createScroll":
-		b.handleCreateScroll(msg)
+		return b.handleCreateScroll(msg)
 	case "createGrid":
-		b.handleCreateGrid(msg)
+		return b.handleCreateGrid(msg)
 	case "createCenter":
-		b.handleCreateCenter(msg)
+		return b.handleCreateCenter(msg)
 	case "createClip":
-		b.handleCreateClip(msg)
+		return b.handleCreateClip(msg)
 	case "createMax":
-		b.handleCreateMax(msg)
+		return b.handleCreateMax(msg)
 	case "createCard":
-		b.handleCreateCard(msg)
+		return b.handleCreateCard(msg)
 	case "createAccordion":
-		b.handleCreateAccordion(msg)
+		return b.handleCreateAccordion(msg)
 	case "createForm":
-		b.handleCreateForm(msg)
+		return b.handleCreateForm(msg)
 	case "createTree":
-		b.handleCreateTree(msg)
+		return b.handleCreateTree(msg)
 	case "createRichText":
-		b.handleCreateRichText(msg)
+		return b.handleCreateRichText(msg)
 	case "createImage":
-		b.handleCreateImage(msg)
+		return b.handleCreateImage(msg)
 	case "updateImage":
-		b.handleUpdateImage(msg)
+		return b.handleUpdateImage(msg)
 	case "registerResource":
-		b.handleRegisterResource(msg)
+		return b.handleRegisterResource(msg)
 	case "unregisterResource":
-		b.handleUnregisterResource(msg)
+		return b.handleUnregisterResource(msg)
 	case "createBorder":
-		b.handleCreateBorder(msg)
+		return b.handleCreateBorder(msg)
 	case "createGridWrap":
-		b.handleCreateGridWrap(msg)
+		return b.handleCreateGridWrap(msg)
 	case "createAdaptiveGrid":
-		b.handleCreateAdaptiveGrid(msg)
+		return b.handleCreateAdaptiveGrid(msg)
 	case "createPadded":
-		b.handleCreatePadded(msg)
+		return b.handleCreatePadded(msg)
 	case "createRadioGroup":
-		b.handleCreateRadioGroup(msg)
+		return b.handleCreateRadioGroup(msg)
 	case "createCheckGroup":
-		b.handleCreateCheckGroup(msg)
+		return b.handleCreateCheckGroup(msg)
 	case "getCheckGroupSelected":
-		b.handleGetCheckGroupSelected(msg)
+		return b.handleGetCheckGroupSelected(msg)
 	case "setCheckGroupSelected":
-		b.handleSetCheckGroupSelected(msg)
+		return b.handleSetCheckGroupSelected(msg)
 	case "createSplit":
-		b.handleCreateSplit(msg)
+		return b.handleCreateSplit(msg)
 	case "createTabs":
-		b.handleCreateTabs(msg)
+		return b.handleCreateTabs(msg)
 	case "createDocTabs":
-		b.handleCreateDocTabs(msg)
+		return b.handleCreateDocTabs(msg)
 	case "docTabsAppend":
-		b.handleDocTabsAppend(msg)
+		return b.handleDocTabsAppend(msg)
 	case "docTabsRemove":
-		b.handleDocTabsRemove(msg)
+		return b.handleDocTabsRemove(msg)
 	case "docTabsSelect":
-		b.handleDocTabsSelect(msg)
+		return b.handleDocTabsSelect(msg)
 	case "createThemeOverride":
-		b.handleCreateThemeOverride(msg)
+		return b.handleCreateThemeOverride(msg)
 	case "createNavigation":
-		b.handleCreateNavigation(msg)
+		return b.handleCreateNavigation(msg)
 	case "navigationPush":
-		b.handleNavigationPush(msg)
+		return b.handleNavigationPush(msg)
 	case "navigationBack":
-		b.handleNavigationBack(msg)
+		return b.handleNavigationBack(msg)
 	case "navigationForward":
-		b.handleNavigationForward(msg)
+		return b.handleNavigationForward(msg)
 	case "navigationSetTitle":
-		b.handleNavigationSetTitle(msg)
+		return b.handleNavigationSetTitle(msg)
 	case "setText":
-		b.handleSetText(msg)
+		return b.handleSetText(msg)
 	case "getText":
-		b.handleGetText(msg)
+		return b.handleGetText(msg)
 	case "setProgress":
-		b.handleSetProgress(msg)
+		return b.handleSetProgress(msg)
 	case "getProgress":
-		b.handleGetProgress(msg)
+		return b.handleGetProgress(msg)
 	case "startProgressInfinite":
-		b.handleStartProgressInfinite(msg)
+		return b.handleStartProgressInfinite(msg)
 	case "stopProgressInfinite":
-		b.handleStopProgressInfinite(msg)
+		return b.handleStopProgressInfinite(msg)
 	case "isProgressRunning":
-		b.handleIsProgressRunning(msg)
+		return b.handleIsProgressRunning(msg)
 	case "setChecked":
-		b.handleSetChecked(msg)
+		return b.handleSetChecked(msg)
 	case "getChecked":
-		b.handleGetChecked(msg)
+		return b.handleGetChecked(msg)
 	case "setSelected":
-		b.handleSetSelected(msg)
+		return b.handleSetSelected(msg)
 	case "getSelected":
-		b.handleGetSelected(msg)
+		return b.handleGetSelected(msg)
 	case "setSelectOptions":
-		b.handleSetSelectOptions(msg)
+		return b.handleSetSelectOptions(msg)
 	case "setRadioOptions":
-		b.handleSetRadioOptions(msg)
+		return b.handleSetRadioOptions(msg)
 	case "setValue":
-		b.handleSetValue(msg)
+		return b.handleSetValue(msg)
 	case "getValue":
-		b.handleGetValue(msg)
+		return b.handleGetValue(msg)
 	case "setRadioSelected":
-		b.handleSetRadioSelected(msg)
+		return b.handleSetRadioSelected(msg)
 	case "getRadioSelected":
-		b.handleGetRadioSelected(msg)
+		return b.handleGetRadioSelected(msg)
 	case "showInfo":
-		b.handleShowInfo(msg)
+		return b.handleShowInfo(msg)
 	case "showError":
-		b.handleShowError(msg)
+		return b.handleShowError(msg)
 	case "showConfirm":
-		b.handleShowConfirm(msg)
+		return b.handleShowConfirm(msg)
 	case "showFileOpen":
-		b.handleShowFileOpen(msg)
+		return b.handleShowFileOpen(msg)
 	case "showFileSave":
-		b.handleShowFileSave(msg)
+		return b.handleShowFileSave(msg)
 	case "showFolderOpen":
-		b.handleShowFolderOpen(msg)
+		return b.handleShowFolderOpen(msg)
 	case "showForm":
-		b.handleShowForm(msg)
+		return b.handleShowForm(msg)
 	case "showCustom":
-		b.handleShowCustom(msg)
+		return b.handleShowCustom(msg)
 	case "showCustomConfirm":
-		b.handleShowCustomConfirm(msg)
+		return b.handleShowCustomConfirm(msg)
 	case "showCustomWithoutButtons":
-		b.handleShowCustomWithoutButtons(msg)
+		return b.handleShowCustomWithoutButtons(msg)
 	case "hideCustomDialog":
-		b.handleHideCustomDialog(msg)
+		return b.handleHideCustomDialog(msg)
 	case "showProgressDialog":
-		b.handleShowProgressDialog(msg)
+		return b.handleShowProgressDialog(msg)
 	case "updateProgressDialog":
-		b.handleUpdateProgressDialog(msg)
+		return b.handleUpdateProgressDialog(msg)
 	case "hideProgressDialog":
-		b.handleHideProgressDialog(msg)
+		return b.handleHideProgressDialog(msg)
 	case "showColorPicker":
-		b.handleShowColorPicker(msg)
+		return b.handleShowColorPicker(msg)
 	case "showEntryDialog":
-		b.handleShowEntryDialog(msg)
+		return b.handleShowEntryDialog(msg)
 	case "resizeWindow":
-		b.handleResizeWindow(msg)
+		return b.handleResizeWindow(msg)
 	case "setWindowTitle":
-		b.handleSetWindowTitle(msg)
+		return b.handleSetWindowTitle(msg)
 	case "centerWindow":
-		b.handleCenterWindow(msg)
+		return b.handleCenterWindow(msg)
 	case "setWindowFullScreen":
-		b.handleSetWindowFullScreen(msg)
+		return b.handleSetWindowFullScreen(msg)
 	case "setWindowIcon":
-		b.handleSetWindowIcon(msg)
+		return b.handleSetWindowIcon(msg)
 	case "setWindowCloseIntercept":
-		b.handleSetWindowCloseIntercept(msg)
+		return b.handleSetWindowCloseIntercept(msg)
 	case "closeInterceptResponse":
-		b.handleCloseInterceptResponse(msg)
+		return b.handleCloseInterceptResponse(msg)
 	case "closeWindow":
-		b.handleCloseWindow(msg)
+		return b.handleCloseWindow(msg)
 	case "setMainMenu":
-		b.handleSetMainMenu(msg)
+		return b.handleSetMainMenu(msg)
 	case "createToolbar":
-		b.handleCreateToolbar(msg)
+		return b.handleCreateToolbar(msg)
 	case "createTable":
-		b.handleCreateTable(msg)
+		return b.handleCreateTable(msg)
 	case "createList":
-		b.handleCreateList(msg)
+		return b.handleCreateList(msg)
 	case "createTextGrid":
-		b.handleCreateTextGrid(msg)
+		return b.handleCreateTextGrid(msg)
 	case "setTextGridText":
-		b.handleSetTextGridText(msg)
+		return b.handleSetTextGridText(msg)
 	case "getTextGridText":
-		b.handleGetTextGridText(msg)
+		return b.handleGetTextGridText(msg)
 	case "setTextGridCell":
-		b.handleSetTextGridCell(msg)
+		return b.handleSetTextGridCell(msg)
 	case "setTextGridRow":
-		b.handleSetTextGridRow(msg)
+		return b.handleSetTextGridRow(msg)
 	case "setTextGridStyle":
-		b.handleSetTextGridStyle(msg)
+		return b.handleSetTextGridStyle(msg)
 	case "setTextGridStyleRange":
-		b.handleSetTextGridStyleRange(msg)
+		return b.handleSetTextGridStyleRange(msg)
 	case "createDateEntry":
-		b.handleCreateDateEntry(msg)
+		return b.handleCreateDateEntry(msg)
 	case "setDate":
-		b.handleSetDate(msg)
+		return b.handleSetDate(msg)
 	case "getDate":
-		b.handleGetDate(msg)
+		return b.handleGetDate(msg)
 	case "updateTableData":
-		b.handleUpdateTableData(msg)
+		return b.handleUpdateTableData(msg)
 	case "updateListData":
-		b.handleUpdateListData(msg)
+		return b.handleUpdateListData(msg)
 	case "unselectAllList":
-		b.handleUnselectAllList(msg)
+		return b.handleUnselectAllList(msg)
 	case "getTableData":
-		b.handleGetTableData(msg)
+		return b.handleGetTableData(msg)
 	case "getListData":
-		b.handleGetListData(msg)
+		return b.handleGetListData(msg)
 	case "getToolbarItems":
-		b.handleGetToolbarItems(msg)
+		return b.handleGetToolbarItems(msg)
 	case "getContainerObjects":
-		b.handleGetContainerObjects(msg)
+		return b.handleGetContainerObjects(msg)
 	case "setTheme":
-		b.handleSetTheme(msg)
+		return b.handleSetTheme(msg)
 	case "getTheme":
-		b.handleGetTheme(msg)
+		return b.handleGetTheme(msg)
 	case "setFontScale":
-		b.handleSetFontScale(msg)
+		return b.handleSetFontScale(msg)
 	case "setCustomTheme":
-		b.handleSetCustomTheme(msg)
+		return b.handleSetCustomTheme(msg)
 	case "clearCustomTheme":
-		b.handleClearCustomTheme(msg)
+		return b.handleClearCustomTheme(msg)
 	case "setCustomFont":
-		b.handleSetCustomFont(msg)
+		return b.handleSetCustomFont(msg)
 	case "clearCustomFont":
-		b.handleClearCustomFont(msg)
+		return b.handleClearCustomFont(msg)
 	case "getAvailableFonts":
-		b.handleGetAvailableFonts(msg)
+		return b.handleGetAvailableFonts(msg)
 	case "setWidgetStyle":
-		b.handleSetWidgetStyle(msg)
+		return b.handleSetWidgetStyle(msg)
 	case "setWidgetContextMenu":
-		b.handleSetWidgetContextMenu(msg)
+		return b.handleSetWidgetContextMenu(msg)
 	case "quit":
-		b.handleQuit(msg)
+		return b.handleQuit(msg)
 	// Testing methods
 	case "findWidget":
-		b.handleFindWidget(msg)
+		return b.handleFindWidget(msg)
 	case "clickWidget":
-		b.handleClickWidget(msg)
+		return b.handleClickWidget(msg)
 	case "clickToolbarAction":
-		b.handleClickToolbarAction(msg)
+		return b.handleClickToolbarAction(msg)
 	case "typeText":
-		b.handleTypeText(msg)
+		return b.handleTypeText(msg)
 	case "getWidgetInfo":
-		b.handleGetWidgetInfo(msg)
+		return b.handleGetWidgetInfo(msg)
 	case "getAllWidgets":
-		b.handleGetAllWidgets(msg)
+		return b.handleGetAllWidgets(msg)
 	case "captureWindow":
-		b.handleCaptureWindow(msg)
+		return b.handleCaptureWindow(msg)
 	case "doubleTapWidget":
-		b.handleDoubleTapWidget(msg)
+		return b.handleDoubleTapWidget(msg)
 	case "rightClickWidget":
-		b.handleRightClickWidget(msg)
+		return b.handleRightClickWidget(msg)
 	case "dragWidget":
-		b.handleDragWidget(msg)
+		return b.handleDragWidget(msg)
 	case "hoverWidget":
-		b.handleHoverWidget(msg)
+		return b.handleHoverWidget(msg)
 	case "scrollCanvas":
-		b.handleScrollCanvas(msg)
+		return b.handleScrollCanvas(msg)
 	case "dragCanvas":
-		b.handleDragCanvas(msg)
+		return b.handleDragCanvas(msg)
 	case "focusNext":
-		b.handleFocusNext(msg)
+		return b.handleFocusNext(msg)
 	case "focusPrevious":
-		b.handleFocusPrevious(msg)
+		return b.handleFocusPrevious(msg)
 	case "containerAdd":
-		b.handleContainerAdd(msg)
+		return b.handleContainerAdd(msg)
 	case "containerRemoveAll":
-		b.handleContainerRemoveAll(msg)
+		return b.handleContainerRemoveAll(msg)
 	case "containerRefresh":
-		b.handleContainerRefresh(msg)
+		return b.handleContainerRefresh(msg)
 	case "disableWidget":
-		b.handleDisableWidget(msg)
+		return b.handleDisableWidget(msg)
 	case "enableWidget":
-		b.handleEnableWidget(msg)
+		return b.handleEnableWidget(msg)
 	case "isEnabled":
-		b.handleIsEnabled(msg)
+		return b.handleIsEnabled(msg)
 	case "focusWidget":
-		b.handleFocusWidget(msg)
+		return b.handleFocusWidget(msg)
 	case "submitEntry":
-		b.handleSubmitEntry(msg)
+		return b.handleSubmitEntry(msg)
 	case "hideWidget":
-		b.handleHideWidget(msg)
+		return b.handleHideWidget(msg)
 	case "showWidget":
-		b.handleShowWidget(msg)
+		return b.handleShowWidget(msg)
 	case "registerCustomId":
-		b.handleRegisterCustomId(msg)
+		return b.handleRegisterCustomId(msg)
 	case "registerTestId":
-		b.handleRegisterTestId(msg)
+		return b.handleRegisterTestId(msg)
 	case "getParent":
-		b.handleGetParent(msg)
+		return b.handleGetParent(msg)
 	case "setAccessibility":
-		b.handleSetAccessibility(msg)
+		return b.handleSetAccessibility(msg)
 	case "enableAccessibility":
-		b.handleEnableAccessibility(msg)
+		return b.handleEnableAccessibility(msg)
 	case "disableAccessibility":
-		b.handleDisableAccessibility(msg)
+		return b.handleDisableAccessibility(msg)
 	case "announce":
-		b.handleAnnounce(msg)
+		return b.handleAnnounce(msg)
 	case "stopSpeech":
-		b.handleStopSpeech(msg)
+		return b.handleStopSpeech(msg)
 	case "setPointerEnter":
-		b.handleSetPointerEnter(msg)
+		return b.handleSetPointerEnter(msg)
 	case "processHoverWrappers":
-		b.handleProcessHoverWrappers(msg)
+		return b.handleProcessHoverWrappers(msg)
 	case "setWidgetHoverable":
-		b.handleSetWidgetHoverable(msg)
+		return b.handleSetWidgetHoverable(msg)
 	case "createMenu":
-		b.handleCreateMenu(msg)
+		return b.handleCreateMenu(msg)
 	// Canvas primitives
 	case "createCanvasLine":
-		b.handleCreateCanvasLine(msg)
+		return b.handleCreateCanvasLine(msg)
 	case "createCanvasCircle":
-		b.handleCreateCanvasCircle(msg)
+		return b.handleCreateCanvasCircle(msg)
 	case "createCanvasRectangle":
-		b.handleCreateCanvasRectangle(msg)
+		return b.handleCreateCanvasRectangle(msg)
 	case "createCanvasText":
-		b.handleCreateCanvasText(msg)
+		return b.handleCreateCanvasText(msg)
 	case "createCanvasRaster":
-		b.handleCreateCanvasRaster(msg)
+		return b.handleCreateCanvasRaster(msg)
 	case "updateCanvasRaster":
-		b.handleUpdateCanvasRaster(msg)
+		return b.handleUpdateCanvasRaster(msg)
 	case "createTappableCanvasRaster":
-		b.handleCreateTappableCanvasRaster(msg)
+		return b.handleCreateTappableCanvasRaster(msg)
 	case "updateTappableCanvasRaster":
-		b.handleUpdateTappableCanvasRaster(msg)
+		return b.handleUpdateTappableCanvasRaster(msg)
 	case "createCanvasLinearGradient":
-		b.handleCreateCanvasLinearGradient(msg)
+		return b.handleCreateCanvasLinearGradient(msg)
 	case "updateCanvasLine":
-		b.handleUpdateCanvasLine(msg)
+		return b.handleUpdateCanvasLine(msg)
 	case "updateCanvasCircle":
-		b.handleUpdateCanvasCircle(msg)
+		return b.handleUpdateCanvasCircle(msg)
 	case "updateCanvasRectangle":
-		b.handleUpdateCanvasRectangle(msg)
+		return b.handleUpdateCanvasRectangle(msg)
 	case "updateCanvasText":
-		b.handleUpdateCanvasText(msg)
+		return b.handleUpdateCanvasText(msg)
 	case "updateCanvasLinearGradient":
-		b.handleUpdateCanvasLinearGradient(msg)
+		return b.handleUpdateCanvasLinearGradient(msg)
 	case "createCanvasArc":
-		b.handleCreateCanvasArc(msg)
+		return b.handleCreateCanvasArc(msg)
 	case "updateCanvasArc":
-		b.handleUpdateCanvasArc(msg)
+		return b.handleUpdateCanvasArc(msg)
 	case "createCanvasPolygon":
-		b.handleCreateCanvasPolygon(msg)
+		return b.handleCreateCanvasPolygon(msg)
 	case "updateCanvasPolygon":
-		b.handleUpdateCanvasPolygon(msg)
+		return b.handleUpdateCanvasPolygon(msg)
 	case "createCanvasRadialGradient":
-		b.handleCreateCanvasRadialGradient(msg)
+		return b.handleCreateCanvasRadialGradient(msg)
 	case "updateCanvasRadialGradient":
-		b.handleUpdateCanvasRadialGradient(msg)
+		return b.handleUpdateCanvasRadialGradient(msg)
 	// Platform integration
 	case "setSystemTray":
-		b.handleSetSystemTray(msg)
+		return b.handleSetSystemTray(msg)
 	case "sendNotification":
-		b.handleSendNotification(msg)
+		return b.handleSendNotification(msg)
 	case "clipboardGet":
-		b.handleClipboardGet(msg)
+		return b.handleClipboardGet(msg)
 	case "clipboardSet":
-		b.handleClipboardSet(msg)
+		return b.handleClipboardSet(msg)
 	case "preferencesGet":
-		b.handlePreferencesGet(msg)
+		return b.handlePreferencesGet(msg)
 	case "preferencesSet":
-		b.handlePreferencesSet(msg)
+		return b.handlePreferencesSet(msg)
 	case "preferencesRemove":
-		b.handlePreferencesRemove(msg)
+		return b.handlePreferencesRemove(msg)
 	case "setDraggable":
-		b.handleSetDraggable(msg)
+		return b.handleSetDraggable(msg)
 	case "setDroppable":
-		b.handleSetDroppable(msg)
+		return b.handleSetDroppable(msg)
 	case "createInnerWindow":
-		b.handleCreateInnerWindow(msg)
+		return b.handleCreateInnerWindow(msg)
 	case "innerWindowClose":
-		b.handleInnerWindowClose(msg)
+		return b.handleInnerWindowClose(msg)
 	case "setInnerWindowTitle":
-		b.handleSetInnerWindowTitle(msg)
+		return b.handleSetInnerWindowTitle(msg)
 	case "createMultipleWindows":
-		b.handleCreateMultipleWindows(msg)
+		return b.handleCreateMultipleWindows(msg)
 	case "multipleWindowsAddWindow":
-		b.handleMultipleWindowsAddWindow(msg)
+		return b.handleMultipleWindowsAddWindow(msg)
 	case "multipleWindowsRemoveWindow":
-		b.handleMultipleWindowsRemoveWindow(msg)
+		return b.handleMultipleWindowsRemoveWindow(msg)
 	case "createPopup":
-		b.handleCreatePopup(msg)
+		return b.handleCreatePopup(msg)
 	case "showPopup":
-		b.handleShowPopup(msg)
+		return b.handleShowPopup(msg)
 	// Icon widget
 	case "createIcon":
-		b.handleCreateIcon(msg)
+		return b.handleCreateIcon(msg)
 	case "setIconResource":
-		b.handleSetIconResource(msg)
+		return b.handleSetIconResource(msg)
 	// FileIcon widget
 	case "createFileIcon":
-		b.handleCreateFileIcon(msg)
+		return b.handleCreateFileIcon(msg)
 	case "setFileIconURI":
-		b.handleSetFileIconURI(msg)
+		return b.handleSetFileIconURI(msg)
 	case "setFileIconSelected":
-		b.handleSetFileIconSelected(msg)
+		return b.handleSetFileIconSelected(msg)
 	// Calendar widget
 	case "createCalendar":
-		b.handleCreateCalendar(msg)
+		return b.handleCreateCalendar(msg)
 	case "hidePopup":
-		b.handleHidePopup(msg)
+		return b.handleHidePopup(msg)
 	case "movePopup":
-		b.handleMovePopup(msg)
+		return b.handleMovePopup(msg)
 	default:
-		b.sendResponse(Response{
+		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   fmt.Sprintf("Unknown message type: %s", msg.Type),
-		})
+		}
 	}
 }
 
@@ -691,8 +691,9 @@ func runStdioMode(testMode bool) {
 				continue
 			}
 
-			// Handle the message
-			bridge.handleMessage(msg)
+			// Handle the message and send response
+			resp := bridge.handleMessage(msg)
+			bridge.sendResponse(resp)
 		}
 
 		// If stdin closes, signal quit
