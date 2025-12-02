@@ -770,3 +770,180 @@ func (b *Bridge) handleHideCustomDialog(msg Message) Response {
 		Success: true,
 	}
 }
+
+// handleGetActiveDialogs returns information about dialogs currently shown on the canvas overlays
+func (b *Bridge) handleGetActiveDialogs(msg Message) Response {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		}
+	}
+
+	// Get all overlays from the canvas
+	overlays := win.Canvas().Overlays().List()
+	dialogs := make([]map[string]interface{}, 0)
+
+	for _, overlay := range overlays {
+		dialogInfo := b.extractDialogInfo(overlay)
+		if dialogInfo != nil {
+			dialogs = append(dialogs, dialogInfo)
+		}
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Data:    map[string]interface{}{"dialogs": dialogs},
+	}
+}
+
+// extractDialogInfo tries to extract title and message from a dialog overlay
+func (b *Bridge) extractDialogInfo(obj fyne.CanvasObject) map[string]interface{} {
+	// Collect all text from labels in the overlay
+	labels := b.findAllLabels(obj)
+
+	if len(labels) == 0 {
+		return nil
+	}
+
+	// Fyne dialogs typically have:
+	// - First label is the title (or "Error" for error dialogs)
+	// - Second label is the message
+	info := map[string]interface{}{
+		"texts": labels,
+	}
+
+	// Try to determine dialog type based on content
+	if len(labels) >= 1 {
+		firstLabel := labels[0]
+		if firstLabel == "Error" {
+			info["type"] = "error"
+			if len(labels) >= 2 {
+				info["title"] = "Error"
+				info["message"] = labels[1]
+			}
+		} else {
+			// For info dialogs, first label is title, second is message
+			info["type"] = "info"
+			info["title"] = firstLabel
+			if len(labels) >= 2 {
+				info["message"] = labels[1]
+			}
+		}
+	}
+
+	return info
+}
+
+// findAllLabels recursively finds all label texts in a canvas object tree
+func (b *Bridge) findAllLabels(obj fyne.CanvasObject) []string {
+	var labels []string
+
+	switch w := obj.(type) {
+	case *widget.Label:
+		if w.Text != "" {
+			labels = append(labels, w.Text)
+		}
+	case *widget.RichText:
+		// RichText is used in some dialogs
+		text := ""
+		for _, seg := range w.Segments {
+			if textSeg, ok := seg.(*widget.TextSegment); ok {
+				text += textSeg.Text
+			}
+		}
+		if text != "" {
+			labels = append(labels, text)
+		}
+	case *fyne.Container:
+		for _, child := range w.Objects {
+			labels = append(labels, b.findAllLabels(child)...)
+		}
+	case fyne.Widget:
+		// Try to get renderer and iterate children
+		// This handles custom container widgets
+		if container, ok := obj.(interface{ Objects() []fyne.CanvasObject }); ok {
+			for _, child := range container.Objects() {
+				labels = append(labels, b.findAllLabels(child)...)
+			}
+		}
+	}
+
+	return labels
+}
+
+// handleDismissActiveDialog dismisses the top-most dialog overlay
+func (b *Bridge) handleDismissActiveDialog(msg Message) Response {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		}
+	}
+
+	// Get the top overlay
+	topOverlay := win.Canvas().Overlays().Top()
+	if topOverlay == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "No active dialog",
+		}
+	}
+
+	// Try to find and tap a dismiss/OK button in the overlay
+	dismissed := b.tapDialogButton(topOverlay, []string{"OK", "Close", "Dismiss", "Cancel"})
+
+	if !dismissed {
+		// Fallback: remove the overlay directly
+		win.Canvas().Overlays().Remove(topOverlay)
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// tapDialogButton finds and taps a button with one of the given labels
+func (b *Bridge) tapDialogButton(obj fyne.CanvasObject, buttonLabels []string) bool {
+	switch w := obj.(type) {
+	case *widget.Button:
+		for _, label := range buttonLabels {
+			if w.Text == label {
+				w.OnTapped()
+				return true
+			}
+		}
+	case *fyne.Container:
+		for _, child := range w.Objects {
+			if b.tapDialogButton(child, buttonLabels) {
+				return true
+			}
+		}
+	case fyne.Widget:
+		if container, ok := obj.(interface{ Objects() []fyne.CanvasObject }); ok {
+			for _, child := range container.Objects() {
+				if b.tapDialogButton(child, buttonLabels) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

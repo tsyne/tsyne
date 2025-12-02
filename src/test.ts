@@ -1299,4 +1299,85 @@ export class TestContext {
     const windowId = 'window_0'; // TODO: Make this dynamic
     await this.bridge.send('captureWindow', { windowId, filePath });
   }
+
+  /**
+   * Dialog information returned from getActiveDialogs
+   */
+  /**
+   * Get all currently active dialogs (info, error, confirm, etc.)
+   * Uses Fyne's canvas overlay system to inspect dialogs
+   * @returns Array of dialog information objects
+   * @example
+   * const dialogs = await ctx.getActiveDialogs();
+   * expect(dialogs).toHaveLength(1);
+   * expect(dialogs[0].type).toBe('error');
+   * expect(dialogs[0].message).toContain('Failed');
+   */
+  async getActiveDialogs(): Promise<DialogInfo[]> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    const result = await this.bridge.send('getActiveDialogs', { windowId }) as { dialogs?: DialogInfo[] };
+    return result.dialogs || [];
+  }
+
+  /**
+   * Dismiss the top-most active dialog
+   * Finds and clicks the OK/Close/Dismiss/Cancel button
+   * @example
+   * await ctx.dismissActiveDialog();
+   */
+  async dismissActiveDialog(): Promise<void> {
+    const windowId = 'window_1'; // TODO: Make this dynamic
+    await this.bridge.send('dismissActiveDialog', { windowId });
+  }
+
+  /**
+   * Assert that an error dialog is currently shown with the expected message
+   * @param expectedMessage - Text that should be in the error message (partial match)
+   * @example
+   * await ctx.assertErrorDialog('Failed to navigate');
+   */
+  async assertErrorDialog(expectedMessage: string): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    const errorDialog = dialogs.find(d => d.type === 'error');
+    expect(errorDialog).toBeTruthy();
+    if (errorDialog?.message) {
+      expect(errorDialog.message).toContain(expectedMessage);
+    } else if (errorDialog?.texts) {
+      expect(errorDialog.texts.join(' ')).toContain(expectedMessage);
+    }
+  }
+
+  /**
+   * Assert that an info dialog is currently shown with the expected title/message
+   * @param expectedText - Text that should be in the dialog (partial match)
+   * @example
+   * await ctx.assertInfoDialog('Cannot Move');
+   */
+  async assertInfoDialog(expectedText: string): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    const infoDialog = dialogs.find(d => d.type === 'info');
+    expect(infoDialog).toBeTruthy();
+    const allText = [infoDialog?.title, infoDialog?.message, ...(infoDialog?.texts || [])].join(' ');
+    expect(allText).toContain(expectedText);
+  }
+
+  /**
+   * Assert that no dialogs are currently shown
+   * @example
+   * await ctx.assertNoDialogs();
+   */
+  async assertNoDialogs(): Promise<void> {
+    const dialogs = await this.getActiveDialogs();
+    expect(dialogs).toHaveLength(0);
+  }
+}
+
+/**
+ * Information about an active dialog
+ */
+export interface DialogInfo {
+  type?: 'info' | 'error' | 'confirm';
+  title?: string;
+  message?: string;
+  texts?: string[];
 }
