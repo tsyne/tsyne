@@ -15,9 +15,13 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
 
+  // Respect TSYNE_HEADED environment variable
   use: {
     // Base URL for tests - designer server should be running
     baseURL: 'http://localhost:3000',
+
+    // Run in headed mode if TSYNE_HEADED=1
+    headless: process.env.TSYNE_HEADED !== '1',
 
     // Collect trace on first retry
     trace: 'on-first-retry',

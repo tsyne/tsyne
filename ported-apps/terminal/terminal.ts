@@ -2919,7 +2919,7 @@ export class TerminalUI {
 export function createTerminalApp(a: App): TerminalUI {
   const ui = new TerminalUI(a);
 
-  a.window({ title: 'Tsyne Terminal', width: 900, height: 700 }, async (win: Window) => {
+  a.window({ title: 'Tsyne Terminal', width: 900, height: 700 }, (win: Window) => {
     win.setContent(async () => {
       await ui.buildUI(win);
     });

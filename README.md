@@ -10,6 +10,8 @@
   <a href="https://buildkite.com/paul-hammant/tsyne">
     <img src="https://badge.buildkite.com/4579634aaab70e5ce15dbec6cc68ce6aaa2891feca54345efb.svg" alt="Build status">
   </a>
+  <br>
+  <a href=".CI_TEST_RESULTS_SUMMARY.txt">📊 Latest Test Results</a>
 </p>
 
 <p align="center">

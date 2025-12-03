@@ -11,7 +11,8 @@ describe('Game of Life Debug', () => {
   let ctx: TestContext;
 
   beforeEach(async () => {
-    tsyneTest = new TsyneTest({ headed: false });
+    const headed = process.env.TSYNE_HEADED === '1';
+    tsyneTest = new TsyneTest({ headed });
   });
 
   afterEach(async () => {
@@ -32,22 +33,15 @@ describe('Game of Life Debug', () => {
     // Take screenshot to see what's there
     const screenshotPath = path.join('/tmp', 'game-of-life-debug.png');
     await tsyneTest.screenshot(screenshotPath);
-    console.error(`Screenshot saved: ${screenshotPath}`);
 
-    // Get all text to see what's available
-    const allText = await ctx.getAllTextAsString();
-    console.error('=== ALL TEXT ON SCREEN ===');
-    console.error(allText);
-    console.error('=== END TEXT ===');
-
-    // Try to find the Start button
+    // Verify expected text elements are present
     const hasStart = await ctx.hasText('Start');
-    console.error(`Has 'Start' text: ${hasStart}`);
+    expect(hasStart).toBe(true);
 
     const hasGeneration = await ctx.hasText('Generation');
-    console.error(`Has 'Generation' text: ${hasGeneration}`);
+    expect(hasGeneration).toBe(true);
 
     const hasStatus = await ctx.hasText('Status');
-    console.error(`Has 'Status' text: ${hasStatus}`);
+    expect(hasStatus).toBe(true);
   }, 30000);
 });

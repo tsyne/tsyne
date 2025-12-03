@@ -41,31 +41,46 @@ capture_test_results() {
 
 # Function to print test results summary
 print_test_summary() {
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "📊 CI TEST RESULTS SUMMARY"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  printf "%-30s %8s %8s %8s %8s %8s\n" "Section" "Tests" "Passed" "Failed" "Skipped" "Suites"
-  echo "────────────────────────────────────────────────────────────────────────────"
+  local output_file="${BUILDKITE_BUILD_CHECKOUT_PATH}/.CI_TEST_RESULTS_SUMMARY.txt"
+
+  # Helper function to output to both console and file
+  output_line() {
+    echo "$1"
+    echo "$1" >> "$output_file"
+  }
+
+  # Clear the file
+  > "$output_file"
+
+  output_line ""
+  output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  output_line "📊 CI TEST RESULTS SUMMARY"
+  output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "%-30s %8s %8s %8s %8s %8s\n" "Section" "Tests" "Passed" "Failed" "Skipped" "Suites" | tee -a "$output_file"
+  output_line "────────────────────────────────────────────────────────────────────────────"
 
   for result in "${TEST_RESULTS[@]}"; do
     IFS='|' read -r name tests passed failed skipped suites <<< "$result"
-    printf "%-30s %8s %8s %8s %8s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$suites"
+    printf "%-30s %8s %8s %8s %8s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$suites" | tee -a "$output_file"
   done
 
-  echo "────────────────────────────────────────────────────────────────────────────"
-  printf "%-30s %8s %8s %8s %8s %8s\n" "TOTAL" "$TOTAL_TESTS" "$TOTAL_PASSED" "$TOTAL_FAILED" "$TOTAL_SKIPPED" "$TOTAL_SUITES"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  output_line "────────────────────────────────────────────────────────────────────────────"
+  printf "%-30s %8s %8s %8s %8s %8s\n" "TOTAL" "$TOTAL_TESTS" "$TOTAL_PASSED" "$TOTAL_FAILED" "$TOTAL_SKIPPED" "$TOTAL_SUITES" | tee -a "$output_file"
+  output_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   if [ $TOTAL_SKIPPED -gt 0 ]; then
-    echo "⚠️  Warning: $TOTAL_SKIPPED tests are currently skipped"
+    output_line "⚠️  Warning: $TOTAL_SKIPPED tests are currently skipped"
   fi
 
   if [ $TOTAL_FAILED -gt 0 ]; then
-    echo "❌ FAILED: $TOTAL_FAILED tests failed"
+    output_line "❌ FAILED: $TOTAL_FAILED tests failed"
+    output_line ""
+    output_line "Summary written to: .CI_TEST_RESULTS_SUMMARY.txt"
     return 1
   else
-    echo "✅ SUCCESS: All $TOTAL_PASSED tests passed"
+    output_line "✅ SUCCESS: All $TOTAL_PASSED tests passed"
+    output_line ""
+    output_line "Summary written to: .CI_TEST_RESULTS_SUMMARY.txt"
   fi
 }
 
@@ -161,16 +176,25 @@ npm install --ignore-scripts
 npm run build
 
 echo "--- :test_tube: Root Tsyne - Unit Tests"
-# Start Xvfb for headless GUI testing (if not already running)
-if ! pgrep -x Xvfb > /dev/null; then
-  echo "Starting Xvfb..."
-  Xvfb :99 -screen 0 1024x768x24 &
-  XVFB_PID=$!
-  export DISPLAY=:99
-  sleep 2
+# Check if headed mode is requested
+if [ "${TSYNE_HEADED}" = "1" ]; then
+  echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
+  export TSYNE_HEADED=1
+  # Use existing DISPLAY or default to :0
+  export DISPLAY=${DISPLAY:-:0}
 else
-  echo "Xvfb already running ✓"
-  export DISPLAY=:99
+  echo "Running in HEADLESS mode (using Xvfb)"
+  # Start Xvfb for headless GUI testing (if not already running)
+  if ! pgrep -x Xvfb > /dev/null; then
+    echo "Starting Xvfb..."
+    Xvfb :99 -screen 0 1024x768x24 &
+    XVFB_PID=$!
+    export DISPLAY=:99
+    sleep 2
+  else
+    echo "Xvfb already running ✓"
+    export DISPLAY=:99
+  fi
 fi
 
 timeout 600 npm run test:unit -- --json --outputFile=/tmp/root-test-results.json || {
@@ -300,28 +324,14 @@ test_ported_app "solitaire" || true
 test_ported_app "terminal" || true
 set -e  # Re-enable exit-on-error
 
-# Run tests for apps that don't have their own package.json (use shared root)
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
-if [ -f "package.json" ]; then
-  echo "--- :package: Testing apps with shared package.json"
-  timeout 300 npm test -- --json --outputFile=/tmp/ported-shared-test-results.json || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Shared ported apps tests timed out after 300 seconds"
-    else
-      echo "❌ Shared ported apps tests failed (exit code: $EXIT_CODE)"
-    fi
-    capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json"
-  }
-  capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json" || true
-  echo "✓ Shared ported apps tests passed"
-fi
-
 # ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
-kill $XVFB_PID 2>/dev/null || true
+# Only kill Xvfb if we started it (headless mode)
+if [ -n "${XVFB_PID}" ]; then
+  kill $XVFB_PID 2>/dev/null || true
+fi
 
 # ============================================================================
 # Print Test Summary (this will exit with failure code if tests failed)

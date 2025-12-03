@@ -66,7 +66,9 @@ func (t *TappableCanvasRaster) generateImage(w, h int) image.Image {
 func (t *TappableCanvasRaster) SetPixels(pixels []byte) {
 	if len(pixels) == len(t.pixelBuffer) {
 		copy(t.pixelBuffer, pixels)
-		t.raster.Refresh()
+		fyne.Do(func() {
+			t.raster.Refresh()
+		})
 	}
 }
 
@@ -79,7 +81,9 @@ func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {
 			t.pixelBuffer[idx+1] = g
 			t.pixelBuffer[idx+2] = b
 			t.pixelBuffer[idx+3] = a
-			t.raster.Refresh()
+			fyne.Do(func() {
+				t.raster.Refresh()
+			})
 		}
 	}
 }

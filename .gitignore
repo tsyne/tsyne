@@ -20,3 +20,5 @@ cli/target/
 coverage
 docs/api
 .server-pid
+# CI test results are committed manually, not auto-generated
+# .CI_TEST_RESULTS_SUMMARY.txt

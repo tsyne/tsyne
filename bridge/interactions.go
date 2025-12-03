@@ -37,6 +37,18 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			ID:      msg.ID,
 			Success: true,
 		}
+	} else if tsyneBtn, ok := obj.(*TsyneButton); ok {
+		// Handle TsyneButton (custom button with hover/mouse events)
+		if b.testMode {
+			test.Tap(&tsyneBtn.Button)
+		} else {
+			// In normal mode, just trigger the callback
+			tsyneBtn.OnTapped()
+		}
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
 	} else if check, ok := obj.(*widget.Check); ok {
 		// Handle checkbox clicks
 		if b.testMode {

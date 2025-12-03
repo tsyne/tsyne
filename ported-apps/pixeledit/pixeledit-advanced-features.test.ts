@@ -103,7 +103,7 @@ describe('Clipboard System', () => {
   });
 
   test('copy without selection does nothing', async () => {
-    await editor.copy();
+    await editor.copy(true);
     expect(editor.hasClipboard()).toBe(false);
   });
 
@@ -119,7 +119,7 @@ describe('Clipboard System', () => {
     editor.setSelection({ x: 5, y: 5, width: 2, height: 2 });
 
     // Copy
-    await editor.copy();
+    await editor.copy(true);
 
     expect(editor.hasClipboard()).toBe(true);
   });
@@ -141,7 +141,7 @@ describe('Clipboard System', () => {
 
   test('paste without clipboard does nothing', async () => {
     const originalColor = editor.getPixelColor(0, 0);
-    await editor.paste(0, 0);
+    await editor.paste(0, 0, true);
     const newColor = editor.getPixelColor(0, 0);
     expect(newColor.equals(originalColor)).toBe(true);
   });
@@ -153,10 +153,10 @@ describe('Clipboard System', () => {
 
     // Select and copy
     editor.setSelection({ x: 0, y: 0, width: 1, height: 1 });
-    await editor.copy();
+    await editor.copy(true);
 
     // Paste at different location
-    await editor.paste(10, 10);
+    await editor.paste(10, 10, true);
 
     // Check the pasted pixel
     const pastedColor = editor.getPixelColor(10, 10);
@@ -170,11 +170,11 @@ describe('Clipboard System', () => {
     const blue = new Color(0, 0, 255);
     await editor.setPixelColor(0, 0, blue);
     editor.setSelection({ x: 0, y: 0, width: 1, height: 1 });
-    await editor.copy();
+    await editor.copy(true);
 
     // Set new selection and paste (no coordinates)
     editor.setSelection({ x: 15, y: 15, width: 1, height: 1 });
-    await editor.paste();
+    await editor.paste(undefined, undefined, true);
 
     const pastedColor = editor.getPixelColor(15, 15);
     expect(pastedColor.b).toBe(255);
@@ -209,22 +209,22 @@ describe('Layer System', () => {
     expect(layers.length).toBe(2);
   });
 
-  test('removeLayer removes layer', () => {
+  test('removeLayer removes layer', async () => {
     editor.addLayer('Layer 1');
     editor.addLayer('Layer 2');
 
     expect(editor.getLayers().length).toBe(2);
 
-    editor.removeLayer(1);
+    await editor.removeLayer(1, true);
 
     expect(editor.getLayers().length).toBe(1);
   });
 
-  test('cannot remove last layer', () => {
+  test('cannot remove last layer', async () => {
     editor.addLayer('Only Layer');
     expect(editor.getLayers().length).toBe(1);
 
-    editor.removeLayer(0);
+    await editor.removeLayer(0, true);
 
     // Should still have one layer
     expect(editor.getLayers().length).toBe(1);
@@ -292,22 +292,22 @@ describe('Layer System', () => {
     expect(layers[1].name).toBe('Bottom');
   });
 
-  test('mergeLayerDown merges layers', () => {
+  test('mergeLayerDown merges layers', async () => {
     editor.addLayer('Bottom');
     editor.addLayer('Top');
 
     expect(editor.getLayers().length).toBe(2);
 
-    editor.mergeLayerDown(1);
+    await editor.mergeLayerDown(1, true);
 
     expect(editor.getLayers().length).toBe(1);
   });
 
-  test('cannot merge bottom layer', () => {
+  test('cannot merge bottom layer', async () => {
     editor.addLayer('Only Layer');
 
     // This should not throw and should not change anything
-    editor.mergeLayerDown(0);
+    await editor.mergeLayerDown(0, true);
 
     expect(editor.getLayers().length).toBe(1);
   });
@@ -391,10 +391,10 @@ describe('Integration Tests', () => {
 
     // Select and copy
     editor.setSelection({ x: 10, y: 10, width: 2, height: 2 });
-    await editor.copy();
+    await editor.copy(true);
 
     // Paste elsewhere
-    await editor.paste(20, 20);
+    await editor.paste(20, 20, true);
 
     // Verify paste worked
     const pastedColor = editor.getPixelColor(20, 20);

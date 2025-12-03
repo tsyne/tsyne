@@ -617,7 +617,7 @@ class ImageViewerUI {
 export function createImageViewerApp(a: App): ImageViewer {
   const viewer = new ImageViewer();
 
-  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, async (win: Window) => {
+  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
     const ui = new ImageViewerUI(a, viewer, win);
     win.setContent(() => {
       ui.buildUI();

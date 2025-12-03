@@ -732,14 +732,7 @@ func main() {
 	// IPC Safeguard #1: Redirect all log output to stderr
 	// =============================================================================
 	// stdout is reserved exclusively for JSON-RPC protocol messages.
-	// Any accidental stdout writes (debug prints, panics, third-party libraries)
-	// would corrupt the JSON stream and crash the application.
-	// All logging MUST go to stderr.
-	log.SetOutput(os.Stderr)
-	log.SetPrefix("[tsyne-bridge] ")
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-
-	// Check for test mode flag BEFORE parsing
+	// Check for test mode flag BEFORE setting up logging
 	testMode := false
 	for _, arg := range os.Args[1:] {
 		if arg == "--test" || arg == "--headless" {
@@ -747,6 +740,18 @@ func main() {
 			break
 		}
 	}
+
+	// Set up logging
+	// Any accidental stdout writes (debug prints, panics, third-party libraries)
+	// would corrupt the JSON stream and crash the application.
+	// All logging MUST go to stderr (or discard in test mode).
+	if testMode {
+		log.SetOutput(io.Discard) // Suppress logs in test mode
+	} else {
+		log.SetOutput(os.Stderr)
+	}
+	log.SetPrefix("[tsyne-bridge] ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	// Parse command-line flags
 	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, or msgpack-uds")
