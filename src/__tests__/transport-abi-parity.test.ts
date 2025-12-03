@@ -177,11 +177,40 @@ function parseGrpcServerMappings(grpcPath: string, methodName: string): GrpcMapp
 
   const body = match[1];
 
-  // Match inline map initialization: "field": req.Value
-  const inlineMapRegex = /"(\w+)":\s*req\.(\w+)/g;
+  // Match inline map initialization: "field": req.Value or "field": float64(req.Value) etc
+  const inlineMapRegex = /"(\w+)":\s*(?:\w+\()?\s*req\.(\w+)/g;
   let inlineMatch;
   while ((inlineMatch = inlineMapRegex.exec(body)) !== null) {
     mappings.push({ payloadField: inlineMatch[1], protoField: inlineMatch[2] });
+  }
+
+  // Match items/tabs array construction: items := make([]interface{}, len(req.Items))
+  const itemsArrayRegex = /(\w+)\s*:=\s*make\(\[\]interface\{\},\s*len\(req\.(\w+)\)\)/g;
+  let itemsMatch;
+  while ((itemsMatch = itemsArrayRegex.exec(body)) !== null) {
+    mappings.push({ payloadField: itemsMatch[1], protoField: itemsMatch[2] });
+  }
+
+  // Match enum conversion patterns: convertSplitOrientation(req.Orientation)
+  const enumConvertRegex = /convert\w+\(req\.(\w+)\)/g;
+  let enumMatch;
+  while ((enumMatch = enumConvertRegex.exec(body)) !== null) {
+    mappings.push({ payloadField: enumMatch[1].toLowerCase(), protoField: enumMatch[1] });
+  }
+
+  // Match orientation conversion: if req.Orientation == pb.SplitOrientation_...
+  if (body.includes('req.Orientation') || body.includes('SPLIT_HORIZONTAL')) {
+    mappings.push({ payloadField: 'orientation', protoField: 'Orientation' });
+  }
+
+  // Match ThemeVariant conversion: req.Variant == pb.THEME_DARK
+  if (body.includes('req.Variant') || body.includes('THEME_')) {
+    mappings.push({ payloadField: 'variant', protoField: 'Variant' });
+  }
+
+  // Match tab location conversion: if req.Location == pb.TAB_LOCATION_...
+  if (body.includes('req.Location') || body.includes('TAB_LOCATION_')) {
+    mappings.push({ payloadField: 'location', protoField: 'Location' });
   }
 
   // Match payload assignments: payload["field"] = ...
@@ -320,14 +349,38 @@ function goFieldToTsField(goField: string): string {
  * Maps: Go handler name -> Proto message name -> gRPC server method name
  */
 const GRPC_SUPPORTED_WIDGETS = [
+  // Basic widgets
   { goHandler: 'handleCreateLabel', protoMessage: 'CreateLabelRequest', grpcMethod: 'CreateLabel', tsClass: 'Label', tsFile: 'display_basic.ts' },
   { goHandler: 'handleCreateButton', protoMessage: 'CreateButtonRequest', grpcMethod: 'CreateButton', tsClass: 'Button', tsFile: 'inputs.ts' },
   { goHandler: 'handleCreateEntry', protoMessage: 'CreateEntryRequest', grpcMethod: 'CreateEntry', tsClass: 'Entry', tsFile: 'inputs.ts' },
-  { goHandler: 'handleCreateVBox', protoMessage: 'CreateVBoxRequest', grpcMethod: 'CreateVBox', tsClass: 'VBox', tsFile: 'containers_basic.ts' },
-  { goHandler: 'handleCreateHBox', protoMessage: 'CreateHBoxRequest', grpcMethod: 'CreateHBox', tsClass: 'HBox', tsFile: 'containers_basic.ts' },
   { goHandler: 'handleCreateCheckbox', protoMessage: 'CreateCheckboxRequest', grpcMethod: 'CreateCheckbox', tsClass: 'Checkbox', tsFile: 'inputs.ts' },
   { goHandler: 'handleCreateSelect', protoMessage: 'CreateSelectRequest', grpcMethod: 'CreateSelect', tsClass: 'Select', tsFile: 'inputs.ts' },
   { goHandler: 'handleCreateImage', protoMessage: 'CreateImageRequest', grpcMethod: 'CreateImage', tsClass: 'Image', tsFile: 'display_basic.ts' },
+  // Basic containers
+  { goHandler: 'handleCreateVBox', protoMessage: 'CreateVBoxRequest', grpcMethod: 'CreateVBox', tsClass: 'VBox', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateHBox', protoMessage: 'CreateHBoxRequest', grpcMethod: 'CreateHBox', tsClass: 'HBox', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateScroll', protoMessage: 'CreateScrollRequest', grpcMethod: 'CreateScroll', tsClass: 'Scroll', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateGrid', protoMessage: 'CreateGridRequest', grpcMethod: 'CreateGrid', tsClass: 'Grid', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateCenter', protoMessage: 'CreateCenterRequest', grpcMethod: 'CreateCenter', tsClass: 'Center', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateClip', protoMessage: 'CreateClipRequest', grpcMethod: 'CreateClip', tsClass: 'Clip', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateMax', protoMessage: 'CreateMaxRequest', grpcMethod: 'CreateMax', tsClass: 'Max', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateStack', protoMessage: 'CreateStackRequest', grpcMethod: 'CreateStack', tsClass: 'Stack', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreatePadded', protoMessage: 'CreatePaddedRequest', grpcMethod: 'CreatePadded', tsClass: 'Padded', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateBorder', protoMessage: 'CreateBorderRequest', grpcMethod: 'CreateBorder', tsClass: 'Border', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateGridWrap', protoMessage: 'CreateGridWrapRequest', grpcMethod: 'CreateGridWrap', tsClass: 'GridWrap', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateAdaptiveGrid', protoMessage: 'CreateAdaptiveGridRequest', grpcMethod: 'CreateAdaptiveGrid', tsClass: 'AdaptiveGrid', tsFile: 'containers_basic.ts' },
+  { goHandler: 'handleCreateSplit', protoMessage: 'CreateSplitRequest', grpcMethod: 'CreateSplit', tsClass: 'Split', tsFile: 'containers_basic.ts' },
+  // Complex containers
+  { goHandler: 'handleCreateCard', protoMessage: 'CreateCardRequest', grpcMethod: 'CreateCard', tsClass: 'Card', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateAccordion', protoMessage: 'CreateAccordionRequest', grpcMethod: 'CreateAccordion', tsClass: 'Accordion', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateForm', protoMessage: 'CreateFormRequest', grpcMethod: 'CreateForm', tsClass: 'Form', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateTabs', protoMessage: 'CreateTabsRequest', grpcMethod: 'CreateTabs', tsClass: 'Tabs', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateDocTabs', protoMessage: 'CreateDocTabsRequest', grpcMethod: 'CreateDocTabs', tsClass: 'DocTabs', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateThemeOverride', protoMessage: 'CreateThemeOverrideRequest', grpcMethod: 'CreateThemeOverride', tsClass: 'ThemeOverride', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateInnerWindow', protoMessage: 'CreateInnerWindowRequest', grpcMethod: 'CreateInnerWindow', tsClass: 'InnerWindow', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateNavigation', protoMessage: 'CreateNavigationRequest', grpcMethod: 'CreateNavigation', tsClass: 'Navigation', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreatePopup', protoMessage: 'CreatePopupRequest', grpcMethod: 'CreatePopup', tsClass: 'Popup', tsFile: 'containers_complex.ts' },
+  { goHandler: 'handleCreateMultipleWindows', protoMessage: 'CreateMultipleWindowsRequest', grpcMethod: 'CreateMultipleWindows', tsClass: 'MultipleWindows', tsFile: 'containers_complex.ts' },
 ];
 
 /**
@@ -335,21 +388,18 @@ const GRPC_SUPPORTED_WIDGETS = [
  * These work via stdio/msgpack but not gRPC.
  */
 const GO_HANDLERS_WITHOUT_GRPC = [
+  // Display widgets without gRPC
   'handleCreateSeparator', 'handleCreateSpacer', 'handleCreateHyperlink',
   'handleCreateProgressBar', 'handleCreateActivity', 'handleCreateRichText',
   'handleCreateIcon', 'handleCreateFileIcon', 'handleCreateCalendar',
-  'handleCreateScroll', 'handleCreateGrid', 'handleCreateCenter',
-  'handleCreateClip', 'handleCreateMax', 'handleCreateStack',
-  'handleCreateCard', 'handleCreateAccordion', 'handleCreateForm',
-  'handleCreateBorder', 'handleCreateGridWrap', 'handleCreateAdaptiveGrid',
-  'handleCreatePadded', 'handleCreateSplit', 'handleCreateTabs',
-  'handleCreateDocTabs', 'handleCreateThemeOverride', 'handleCreateInnerWindow',
-  'handleCreateNavigation', 'handleCreatePopup', 'handleCreateMultipleWindows',
+  // Input widgets without gRPC
   'handleCreateMultiLineEntry', 'handleCreatePasswordEntry',
   'handleCreateSelectEntry', 'handleCreateSlider', 'handleCreateRadioGroup',
   'handleCreateCheckGroup', 'handleCreateDateEntry',
+  // Data widgets without gRPC
   'handleCreateTree', 'handleCreateTable', 'handleCreateList',
   'handleCreateMenu', 'handleCreateToolbar', 'handleCreateTextGrid',
+  // Canvas widgets without gRPC
   'handleCreateCanvasLine', 'handleCreateCanvasCircle', 'handleCreateCanvasRectangle',
   'handleCreateCanvasText', 'handleCreateCanvasRaster', 'handleCreateCanvasLinearGradient',
   'handleCreateCanvasArc', 'handleCreateCanvasPolygon', 'handleCreateCanvasRadialGradient',
@@ -381,12 +431,24 @@ describe('Transport ABI Parity', () => {
   describe.each(GRPC_SUPPORTED_WIDGETS)(
     '$goHandler ABI parity',
     ({ goHandler, protoMessage, grpcMethod, tsClass, tsFile }) => {
-      const goHandlerFile = goHandler.includes('Button') || goHandler.includes('Entry') ||
-                           goHandler.includes('Checkbox') || goHandler.includes('Select')
-        ? path.join(bridgePath, 'widget_creators_inputs.go')
-        : goHandler.includes('VBox') || goHandler.includes('HBox')
-        ? path.join(bridgePath, 'widget_creators_containers.go')
-        : handlerPath;
+      // Route to correct Go handler file based on widget type
+      const getGoHandlerFile = (handler: string): string => {
+        // Input widgets
+        if (['Button', 'Entry', 'Checkbox', 'Select'].some(t => handler.includes(t))) {
+          return path.join(bridgePath, 'widget_creators_inputs.go');
+        }
+        // Container widgets
+        if (['VBox', 'HBox', 'Scroll', 'Grid', 'Center', 'Clip', 'Max', 'Stack',
+             'Card', 'Accordion', 'Form', 'Border', 'GridWrap', 'AdaptiveGrid',
+             'Padded', 'Split', 'Tabs', 'DocTabs', 'ThemeOverride', 'InnerWindow',
+             'Navigation', 'Popup', 'MultipleWindows'].some(t => handler.includes(t))) {
+          return path.join(bridgePath, 'widget_creators_containers.go');
+        }
+        // Display widgets (Label, Image, etc.)
+        return handlerPath;
+      };
+
+      const goHandlerFile = getGoHandlerFile(goHandler);
 
       let goFields: GoField[];
 

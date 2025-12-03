@@ -25,6 +25,29 @@ service BridgeService {
   rpc CreateCheckbox(CreateCheckboxRequest) returns (Response);
   rpc CreateSelect(CreateSelectRequest) returns (Response);
 
+  // Container creation
+  rpc CreateScroll(CreateScrollRequest) returns (Response);
+  rpc CreateGrid(CreateGridRequest) returns (Response);
+  rpc CreateCenter(CreateCenterRequest) returns (Response);
+  rpc CreateClip(CreateClipRequest) returns (Response);
+  rpc CreateMax(CreateMaxRequest) returns (Response);
+  rpc CreateStack(CreateStackRequest) returns (Response);
+  rpc CreateCard(CreateCardRequest) returns (Response);
+  rpc CreateAccordion(CreateAccordionRequest) returns (Response);
+  rpc CreateForm(CreateFormRequest) returns (Response);
+  rpc CreateBorder(CreateBorderRequest) returns (Response);
+  rpc CreateGridWrap(CreateGridWrapRequest) returns (Response);
+  rpc CreateAdaptiveGrid(CreateAdaptiveGridRequest) returns (Response);
+  rpc CreatePadded(CreatePaddedRequest) returns (Response);
+  rpc CreateSplit(CreateSplitRequest) returns (Response);
+  rpc CreateTabs(CreateTabsRequest) returns (Response);
+  rpc CreateDocTabs(CreateDocTabsRequest) returns (Response);
+  rpc CreateThemeOverride(CreateThemeOverrideRequest) returns (Response);
+  rpc CreateInnerWindow(CreateInnerWindowRequest) returns (Response);
+  rpc CreateNavigation(CreateNavigationRequest) returns (Response);
+  rpc CreatePopup(CreatePopupRequest) returns (Response);
+  rpc CreateMultipleWindows(CreateMultipleWindowsRequest) returns (Response);
+
   // Resources
   rpc RegisterResource(RegisterResourceRequest) returns (Response);
   rpc UnregisterResource(UnregisterResourceRequest) returns (Response);
@@ -204,6 +227,178 @@ message CreateSelectRequest {
   repeated string options = 2;
   int32 selected = 3;
   string callback_id = 4;
+}
+
+// ============================================================================
+// Container creation messages
+// ============================================================================
+
+message CreateScrollRequest {
+  string widget_id = 1;
+  string content_id = 2;  // ID of widget to scroll
+}
+
+message CreateGridRequest {
+  string widget_id = 1;
+  int32 columns = 2;
+  repeated string children = 3;
+}
+
+message CreateCenterRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+message CreateClipRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+message CreateMaxRequest {
+  string widget_id = 1;
+  repeated string child_ids = 2;
+}
+
+message CreateStackRequest {
+  string widget_id = 1;
+  repeated string child_ids = 2;
+}
+
+message CreateCardRequest {
+  string widget_id = 1;
+  string title = 2;
+  string subtitle = 3;
+  string content_id = 4;
+}
+
+// Accordion item for CreateAccordionRequest
+message AccordionItem {
+  string title = 1;
+  string content_id = 2;
+}
+
+message CreateAccordionRequest {
+  string widget_id = 1;
+  repeated AccordionItem items = 2;
+}
+
+// Form item for CreateFormRequest
+message FormItem {
+  string label = 1;
+  string widget_id = 2;
+}
+
+message CreateFormRequest {
+  string widget_id = 1;
+  repeated FormItem items = 2;
+  string submit_callback_id = 3;
+  string cancel_callback_id = 4;
+}
+
+message CreateBorderRequest {
+  string widget_id = 1;
+  string top_id = 2;
+  string bottom_id = 3;
+  string left_id = 4;
+  string right_id = 5;
+  string center_id = 6;
+}
+
+message CreateGridWrapRequest {
+  string widget_id = 1;
+  float item_width = 2;
+  float item_height = 3;
+  repeated string children = 4;
+}
+
+message CreateAdaptiveGridRequest {
+  string widget_id = 1;
+  int32 rowcols = 2;
+  repeated string children = 3;
+}
+
+message CreatePaddedRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+// Split orientation
+enum SplitOrientation {
+  SPLIT_VERTICAL = 0;    // Default
+  SPLIT_HORIZONTAL = 1;
+}
+
+message CreateSplitRequest {
+  string widget_id = 1;
+  SplitOrientation orientation = 2;
+  string leading_id = 3;
+  string trailing_id = 4;
+  float offset = 5;  // 0.0 to 1.0
+}
+
+// Tab location
+enum TabLocation {
+  TAB_LOCATION_TOP = 0;      // Default
+  TAB_LOCATION_BOTTOM = 1;
+  TAB_LOCATION_LEADING = 2;
+  TAB_LOCATION_TRAILING = 3;
+}
+
+// Tab item for Tabs and DocTabs
+message TabItem {
+  string title = 1;
+  string content_id = 2;
+}
+
+message CreateTabsRequest {
+  string widget_id = 1;
+  repeated TabItem tabs = 2;
+  TabLocation location = 3;
+}
+
+message CreateDocTabsRequest {
+  string widget_id = 1;
+  repeated TabItem tabs = 2;
+  string close_callback_id = 3;
+  TabLocation location = 4;
+}
+
+// Theme variant
+enum ThemeVariant {
+  THEME_LIGHT = 0;  // Default
+  THEME_DARK = 1;
+}
+
+message CreateThemeOverrideRequest {
+  string widget_id = 1;
+  string child_id = 2;
+  ThemeVariant variant = 3;
+}
+
+message CreateInnerWindowRequest {
+  string widget_id = 1;
+  string title = 2;
+  string content_id = 3;
+  string on_close_callback_id = 4;
+}
+
+message CreateNavigationRequest {
+  string widget_id = 1;
+  string root_id = 2;
+  string title = 3;
+  string on_back_callback_id = 4;
+  string on_forward_callback_id = 5;
+}
+
+message CreatePopupRequest {
+  string widget_id = 1;
+  string content_id = 2;
+  string window_id = 3;
+}
+
+message CreateMultipleWindowsRequest {
+  string widget_id = 1;
+  repeated string children = 2;
 }
 
 // Resource messages

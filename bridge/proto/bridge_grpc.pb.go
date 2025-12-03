@@ -19,41 +19,62 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BridgeService_CreateWindow_FullMethodName        = "/bridge.BridgeService/CreateWindow"
-	BridgeService_ShowWindow_FullMethodName          = "/bridge.BridgeService/ShowWindow"
-	BridgeService_SetContent_FullMethodName          = "/bridge.BridgeService/SetContent"
-	BridgeService_ResizeWindow_FullMethodName        = "/bridge.BridgeService/ResizeWindow"
-	BridgeService_SetWindowTitle_FullMethodName      = "/bridge.BridgeService/SetWindowTitle"
-	BridgeService_CenterWindow_FullMethodName        = "/bridge.BridgeService/CenterWindow"
-	BridgeService_SetWindowFullScreen_FullMethodName = "/bridge.BridgeService/SetWindowFullScreen"
-	BridgeService_CreateImage_FullMethodName         = "/bridge.BridgeService/CreateImage"
-	BridgeService_CreateLabel_FullMethodName         = "/bridge.BridgeService/CreateLabel"
-	BridgeService_CreateButton_FullMethodName        = "/bridge.BridgeService/CreateButton"
-	BridgeService_CreateEntry_FullMethodName         = "/bridge.BridgeService/CreateEntry"
-	BridgeService_CreateVBox_FullMethodName          = "/bridge.BridgeService/CreateVBox"
-	BridgeService_CreateHBox_FullMethodName          = "/bridge.BridgeService/CreateHBox"
-	BridgeService_CreateCheckbox_FullMethodName      = "/bridge.BridgeService/CreateCheckbox"
-	BridgeService_CreateSelect_FullMethodName        = "/bridge.BridgeService/CreateSelect"
-	BridgeService_RegisterResource_FullMethodName    = "/bridge.BridgeService/RegisterResource"
-	BridgeService_UnregisterResource_FullMethodName  = "/bridge.BridgeService/UnregisterResource"
-	BridgeService_UpdateImage_FullMethodName         = "/bridge.BridgeService/UpdateImage"
-	BridgeService_SetText_FullMethodName             = "/bridge.BridgeService/SetText"
-	BridgeService_GetText_FullMethodName             = "/bridge.BridgeService/GetText"
-	BridgeService_SetProgress_FullMethodName         = "/bridge.BridgeService/SetProgress"
-	BridgeService_GetProgress_FullMethodName         = "/bridge.BridgeService/GetProgress"
-	BridgeService_SetChecked_FullMethodName          = "/bridge.BridgeService/SetChecked"
-	BridgeService_GetChecked_FullMethodName          = "/bridge.BridgeService/GetChecked"
-	BridgeService_ClickWidget_FullMethodName         = "/bridge.BridgeService/ClickWidget"
-	BridgeService_TypeText_FullMethodName            = "/bridge.BridgeService/TypeText"
-	BridgeService_DoubleTapWidget_FullMethodName     = "/bridge.BridgeService/DoubleTapWidget"
-	BridgeService_RightClickWidget_FullMethodName    = "/bridge.BridgeService/RightClickWidget"
-	BridgeService_DragWidget_FullMethodName          = "/bridge.BridgeService/DragWidget"
-	BridgeService_RegisterCustomId_FullMethodName    = "/bridge.BridgeService/RegisterCustomId"
-	BridgeService_FindWidget_FullMethodName          = "/bridge.BridgeService/FindWidget"
-	BridgeService_GetWidgetInfo_FullMethodName       = "/bridge.BridgeService/GetWidgetInfo"
-	BridgeService_GetAllWidgets_FullMethodName       = "/bridge.BridgeService/GetAllWidgets"
-	BridgeService_SubscribeEvents_FullMethodName     = "/bridge.BridgeService/SubscribeEvents"
-	BridgeService_Quit_FullMethodName                = "/bridge.BridgeService/Quit"
+	BridgeService_CreateWindow_FullMethodName          = "/bridge.BridgeService/CreateWindow"
+	BridgeService_ShowWindow_FullMethodName            = "/bridge.BridgeService/ShowWindow"
+	BridgeService_SetContent_FullMethodName            = "/bridge.BridgeService/SetContent"
+	BridgeService_ResizeWindow_FullMethodName          = "/bridge.BridgeService/ResizeWindow"
+	BridgeService_SetWindowTitle_FullMethodName        = "/bridge.BridgeService/SetWindowTitle"
+	BridgeService_CenterWindow_FullMethodName          = "/bridge.BridgeService/CenterWindow"
+	BridgeService_SetWindowFullScreen_FullMethodName   = "/bridge.BridgeService/SetWindowFullScreen"
+	BridgeService_CreateImage_FullMethodName           = "/bridge.BridgeService/CreateImage"
+	BridgeService_CreateLabel_FullMethodName           = "/bridge.BridgeService/CreateLabel"
+	BridgeService_CreateButton_FullMethodName          = "/bridge.BridgeService/CreateButton"
+	BridgeService_CreateEntry_FullMethodName           = "/bridge.BridgeService/CreateEntry"
+	BridgeService_CreateVBox_FullMethodName            = "/bridge.BridgeService/CreateVBox"
+	BridgeService_CreateHBox_FullMethodName            = "/bridge.BridgeService/CreateHBox"
+	BridgeService_CreateCheckbox_FullMethodName        = "/bridge.BridgeService/CreateCheckbox"
+	BridgeService_CreateSelect_FullMethodName          = "/bridge.BridgeService/CreateSelect"
+	BridgeService_CreateScroll_FullMethodName          = "/bridge.BridgeService/CreateScroll"
+	BridgeService_CreateGrid_FullMethodName            = "/bridge.BridgeService/CreateGrid"
+	BridgeService_CreateCenter_FullMethodName          = "/bridge.BridgeService/CreateCenter"
+	BridgeService_CreateClip_FullMethodName            = "/bridge.BridgeService/CreateClip"
+	BridgeService_CreateMax_FullMethodName             = "/bridge.BridgeService/CreateMax"
+	BridgeService_CreateStack_FullMethodName           = "/bridge.BridgeService/CreateStack"
+	BridgeService_CreateCard_FullMethodName            = "/bridge.BridgeService/CreateCard"
+	BridgeService_CreateAccordion_FullMethodName       = "/bridge.BridgeService/CreateAccordion"
+	BridgeService_CreateForm_FullMethodName            = "/bridge.BridgeService/CreateForm"
+	BridgeService_CreateBorder_FullMethodName          = "/bridge.BridgeService/CreateBorder"
+	BridgeService_CreateGridWrap_FullMethodName        = "/bridge.BridgeService/CreateGridWrap"
+	BridgeService_CreateAdaptiveGrid_FullMethodName    = "/bridge.BridgeService/CreateAdaptiveGrid"
+	BridgeService_CreatePadded_FullMethodName          = "/bridge.BridgeService/CreatePadded"
+	BridgeService_CreateSplit_FullMethodName           = "/bridge.BridgeService/CreateSplit"
+	BridgeService_CreateTabs_FullMethodName            = "/bridge.BridgeService/CreateTabs"
+	BridgeService_CreateDocTabs_FullMethodName         = "/bridge.BridgeService/CreateDocTabs"
+	BridgeService_CreateThemeOverride_FullMethodName   = "/bridge.BridgeService/CreateThemeOverride"
+	BridgeService_CreateInnerWindow_FullMethodName     = "/bridge.BridgeService/CreateInnerWindow"
+	BridgeService_CreateNavigation_FullMethodName      = "/bridge.BridgeService/CreateNavigation"
+	BridgeService_CreatePopup_FullMethodName           = "/bridge.BridgeService/CreatePopup"
+	BridgeService_CreateMultipleWindows_FullMethodName = "/bridge.BridgeService/CreateMultipleWindows"
+	BridgeService_RegisterResource_FullMethodName      = "/bridge.BridgeService/RegisterResource"
+	BridgeService_UnregisterResource_FullMethodName    = "/bridge.BridgeService/UnregisterResource"
+	BridgeService_UpdateImage_FullMethodName           = "/bridge.BridgeService/UpdateImage"
+	BridgeService_SetText_FullMethodName               = "/bridge.BridgeService/SetText"
+	BridgeService_GetText_FullMethodName               = "/bridge.BridgeService/GetText"
+	BridgeService_SetProgress_FullMethodName           = "/bridge.BridgeService/SetProgress"
+	BridgeService_GetProgress_FullMethodName           = "/bridge.BridgeService/GetProgress"
+	BridgeService_SetChecked_FullMethodName            = "/bridge.BridgeService/SetChecked"
+	BridgeService_GetChecked_FullMethodName            = "/bridge.BridgeService/GetChecked"
+	BridgeService_ClickWidget_FullMethodName           = "/bridge.BridgeService/ClickWidget"
+	BridgeService_TypeText_FullMethodName              = "/bridge.BridgeService/TypeText"
+	BridgeService_DoubleTapWidget_FullMethodName       = "/bridge.BridgeService/DoubleTapWidget"
+	BridgeService_RightClickWidget_FullMethodName      = "/bridge.BridgeService/RightClickWidget"
+	BridgeService_DragWidget_FullMethodName            = "/bridge.BridgeService/DragWidget"
+	BridgeService_RegisterCustomId_FullMethodName      = "/bridge.BridgeService/RegisterCustomId"
+	BridgeService_FindWidget_FullMethodName            = "/bridge.BridgeService/FindWidget"
+	BridgeService_GetWidgetInfo_FullMethodName         = "/bridge.BridgeService/GetWidgetInfo"
+	BridgeService_GetAllWidgets_FullMethodName         = "/bridge.BridgeService/GetAllWidgets"
+	BridgeService_SubscribeEvents_FullMethodName       = "/bridge.BridgeService/SubscribeEvents"
+	BridgeService_Quit_FullMethodName                  = "/bridge.BridgeService/Quit"
 )
 
 // BridgeServiceClient is the client API for BridgeService service.
@@ -79,6 +100,28 @@ type BridgeServiceClient interface {
 	CreateHBox(ctx context.Context, in *CreateHBoxRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateCheckbox(ctx context.Context, in *CreateCheckboxRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateSelect(ctx context.Context, in *CreateSelectRequest, opts ...grpc.CallOption) (*Response, error)
+	// Container creation
+	CreateScroll(ctx context.Context, in *CreateScrollRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateGrid(ctx context.Context, in *CreateGridRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateCenter(ctx context.Context, in *CreateCenterRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateClip(ctx context.Context, in *CreateClipRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateMax(ctx context.Context, in *CreateMaxRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateStack(ctx context.Context, in *CreateStackRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateCard(ctx context.Context, in *CreateCardRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateAccordion(ctx context.Context, in *CreateAccordionRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateForm(ctx context.Context, in *CreateFormRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateBorder(ctx context.Context, in *CreateBorderRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateGridWrap(ctx context.Context, in *CreateGridWrapRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateAdaptiveGrid(ctx context.Context, in *CreateAdaptiveGridRequest, opts ...grpc.CallOption) (*Response, error)
+	CreatePadded(ctx context.Context, in *CreatePaddedRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateSplit(ctx context.Context, in *CreateSplitRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateTabs(ctx context.Context, in *CreateTabsRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateDocTabs(ctx context.Context, in *CreateDocTabsRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateThemeOverride(ctx context.Context, in *CreateThemeOverrideRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateInnerWindow(ctx context.Context, in *CreateInnerWindowRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateNavigation(ctx context.Context, in *CreateNavigationRequest, opts ...grpc.CallOption) (*Response, error)
+	CreatePopup(ctx context.Context, in *CreatePopupRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateMultipleWindows(ctx context.Context, in *CreateMultipleWindowsRequest, opts ...grpc.CallOption) (*Response, error)
 	// Resources
 	RegisterResource(ctx context.Context, in *RegisterResourceRequest, opts ...grpc.CallOption) (*Response, error)
 	UnregisterResource(ctx context.Context, in *UnregisterResourceRequest, opts ...grpc.CallOption) (*Response, error)
@@ -260,6 +303,216 @@ func (c *bridgeServiceClient) CreateSelect(ctx context.Context, in *CreateSelect
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateSelect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateScroll(ctx context.Context, in *CreateScrollRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateScroll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateGrid(ctx context.Context, in *CreateGridRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateGrid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateCenter(ctx context.Context, in *CreateCenterRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateCenter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateClip(ctx context.Context, in *CreateClipRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateClip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateMax(ctx context.Context, in *CreateMaxRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateMax_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateStack(ctx context.Context, in *CreateStackRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateStack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateCard(ctx context.Context, in *CreateCardRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateAccordion(ctx context.Context, in *CreateAccordionRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateAccordion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateForm(ctx context.Context, in *CreateFormRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateForm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateBorder(ctx context.Context, in *CreateBorderRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateBorder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateGridWrap(ctx context.Context, in *CreateGridWrapRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateGridWrap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateAdaptiveGrid(ctx context.Context, in *CreateAdaptiveGridRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateAdaptiveGrid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreatePadded(ctx context.Context, in *CreatePaddedRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreatePadded_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateSplit(ctx context.Context, in *CreateSplitRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateSplit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateTabs(ctx context.Context, in *CreateTabsRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateTabs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateDocTabs(ctx context.Context, in *CreateDocTabsRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateDocTabs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateThemeOverride(ctx context.Context, in *CreateThemeOverrideRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateThemeOverride_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateInnerWindow(ctx context.Context, in *CreateInnerWindowRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateInnerWindow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateNavigation(ctx context.Context, in *CreateNavigationRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateNavigation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreatePopup(ctx context.Context, in *CreatePopupRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreatePopup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateMultipleWindows(ctx context.Context, in *CreateMultipleWindowsRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateMultipleWindows_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -498,6 +751,28 @@ type BridgeServiceServer interface {
 	CreateHBox(context.Context, *CreateHBoxRequest) (*Response, error)
 	CreateCheckbox(context.Context, *CreateCheckboxRequest) (*Response, error)
 	CreateSelect(context.Context, *CreateSelectRequest) (*Response, error)
+	// Container creation
+	CreateScroll(context.Context, *CreateScrollRequest) (*Response, error)
+	CreateGrid(context.Context, *CreateGridRequest) (*Response, error)
+	CreateCenter(context.Context, *CreateCenterRequest) (*Response, error)
+	CreateClip(context.Context, *CreateClipRequest) (*Response, error)
+	CreateMax(context.Context, *CreateMaxRequest) (*Response, error)
+	CreateStack(context.Context, *CreateStackRequest) (*Response, error)
+	CreateCard(context.Context, *CreateCardRequest) (*Response, error)
+	CreateAccordion(context.Context, *CreateAccordionRequest) (*Response, error)
+	CreateForm(context.Context, *CreateFormRequest) (*Response, error)
+	CreateBorder(context.Context, *CreateBorderRequest) (*Response, error)
+	CreateGridWrap(context.Context, *CreateGridWrapRequest) (*Response, error)
+	CreateAdaptiveGrid(context.Context, *CreateAdaptiveGridRequest) (*Response, error)
+	CreatePadded(context.Context, *CreatePaddedRequest) (*Response, error)
+	CreateSplit(context.Context, *CreateSplitRequest) (*Response, error)
+	CreateTabs(context.Context, *CreateTabsRequest) (*Response, error)
+	CreateDocTabs(context.Context, *CreateDocTabsRequest) (*Response, error)
+	CreateThemeOverride(context.Context, *CreateThemeOverrideRequest) (*Response, error)
+	CreateInnerWindow(context.Context, *CreateInnerWindowRequest) (*Response, error)
+	CreateNavigation(context.Context, *CreateNavigationRequest) (*Response, error)
+	CreatePopup(context.Context, *CreatePopupRequest) (*Response, error)
+	CreateMultipleWindows(context.Context, *CreateMultipleWindowsRequest) (*Response, error)
 	// Resources
 	RegisterResource(context.Context, *RegisterResourceRequest) (*Response, error)
 	UnregisterResource(context.Context, *UnregisterResourceRequest) (*Response, error)
@@ -579,6 +854,69 @@ func (UnimplementedBridgeServiceServer) CreateCheckbox(context.Context, *CreateC
 }
 func (UnimplementedBridgeServiceServer) CreateSelect(context.Context, *CreateSelectRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateSelect not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateScroll(context.Context, *CreateScrollRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateScroll not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateGrid(context.Context, *CreateGridRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGrid not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateCenter(context.Context, *CreateCenterRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCenter not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateClip(context.Context, *CreateClipRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateClip not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateMax(context.Context, *CreateMaxRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateMax not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateStack(context.Context, *CreateStackRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateStack not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateCard(context.Context, *CreateCardRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCard not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateAccordion(context.Context, *CreateAccordionRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAccordion not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateForm(context.Context, *CreateFormRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateForm not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateBorder(context.Context, *CreateBorderRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateBorder not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateGridWrap(context.Context, *CreateGridWrapRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGridWrap not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateAdaptiveGrid(context.Context, *CreateAdaptiveGridRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAdaptiveGrid not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreatePadded(context.Context, *CreatePaddedRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreatePadded not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateSplit(context.Context, *CreateSplitRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateSplit not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateTabs(context.Context, *CreateTabsRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTabs not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateDocTabs(context.Context, *CreateDocTabsRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateDocTabs not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateThemeOverride(context.Context, *CreateThemeOverrideRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateThemeOverride not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateInnerWindow(context.Context, *CreateInnerWindowRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateInnerWindow not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateNavigation(context.Context, *CreateNavigationRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateNavigation not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreatePopup(context.Context, *CreatePopupRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreatePopup not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateMultipleWindows(context.Context, *CreateMultipleWindowsRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateMultipleWindows not implemented")
 }
 func (UnimplementedBridgeServiceServer) RegisterResource(context.Context, *RegisterResourceRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterResource not implemented")
@@ -927,6 +1265,384 @@ func _BridgeService_CreateSelect_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateSelect(ctx, req.(*CreateSelectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateScroll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateScrollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateScroll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateScroll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateScroll(ctx, req.(*CreateScrollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateGrid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGridRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateGrid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateGrid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateGrid(ctx, req.(*CreateGridRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateCenter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCenterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateCenter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateCenter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateCenter(ctx, req.(*CreateCenterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateClip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateClipRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateClip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateClip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateClip(ctx, req.(*CreateClipRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateMax_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMaxRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateMax(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateMax_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateMax(ctx, req.(*CreateMaxRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateStack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateStackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateStack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateStack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateStack(ctx, req.(*CreateStackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateCard(ctx, req.(*CreateCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateAccordion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAccordionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateAccordion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateAccordion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateAccordion(ctx, req.(*CreateAccordionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateForm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFormRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateForm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateForm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateForm(ctx, req.(*CreateFormRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateBorder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBorderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateBorder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateBorder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateBorder(ctx, req.(*CreateBorderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateGridWrap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGridWrapRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateGridWrap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateGridWrap_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateGridWrap(ctx, req.(*CreateGridWrapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateAdaptiveGrid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAdaptiveGridRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateAdaptiveGrid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateAdaptiveGrid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateAdaptiveGrid(ctx, req.(*CreateAdaptiveGridRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreatePadded_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePaddedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreatePadded(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreatePadded_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreatePadded(ctx, req.(*CreatePaddedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateSplit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSplitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateSplit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateSplit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateSplit(ctx, req.(*CreateSplitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateTabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateTabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateTabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateTabs(ctx, req.(*CreateTabsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateDocTabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDocTabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateDocTabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateDocTabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateDocTabs(ctx, req.(*CreateDocTabsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateThemeOverride_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateThemeOverrideRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateThemeOverride(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateThemeOverride_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateThemeOverride(ctx, req.(*CreateThemeOverrideRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateInnerWindow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateInnerWindowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateInnerWindow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateInnerWindow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateInnerWindow(ctx, req.(*CreateInnerWindowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateNavigation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateNavigationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateNavigation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateNavigation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateNavigation(ctx, req.(*CreateNavigationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreatePopup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePopupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreatePopup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreatePopup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreatePopup(ctx, req.(*CreatePopupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateMultipleWindows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMultipleWindowsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateMultipleWindows(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateMultipleWindows_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateMultipleWindows(ctx, req.(*CreateMultipleWindowsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1350,6 +2066,90 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSelect",
 			Handler:    _BridgeService_CreateSelect_Handler,
+		},
+		{
+			MethodName: "CreateScroll",
+			Handler:    _BridgeService_CreateScroll_Handler,
+		},
+		{
+			MethodName: "CreateGrid",
+			Handler:    _BridgeService_CreateGrid_Handler,
+		},
+		{
+			MethodName: "CreateCenter",
+			Handler:    _BridgeService_CreateCenter_Handler,
+		},
+		{
+			MethodName: "CreateClip",
+			Handler:    _BridgeService_CreateClip_Handler,
+		},
+		{
+			MethodName: "CreateMax",
+			Handler:    _BridgeService_CreateMax_Handler,
+		},
+		{
+			MethodName: "CreateStack",
+			Handler:    _BridgeService_CreateStack_Handler,
+		},
+		{
+			MethodName: "CreateCard",
+			Handler:    _BridgeService_CreateCard_Handler,
+		},
+		{
+			MethodName: "CreateAccordion",
+			Handler:    _BridgeService_CreateAccordion_Handler,
+		},
+		{
+			MethodName: "CreateForm",
+			Handler:    _BridgeService_CreateForm_Handler,
+		},
+		{
+			MethodName: "CreateBorder",
+			Handler:    _BridgeService_CreateBorder_Handler,
+		},
+		{
+			MethodName: "CreateGridWrap",
+			Handler:    _BridgeService_CreateGridWrap_Handler,
+		},
+		{
+			MethodName: "CreateAdaptiveGrid",
+			Handler:    _BridgeService_CreateAdaptiveGrid_Handler,
+		},
+		{
+			MethodName: "CreatePadded",
+			Handler:    _BridgeService_CreatePadded_Handler,
+		},
+		{
+			MethodName: "CreateSplit",
+			Handler:    _BridgeService_CreateSplit_Handler,
+		},
+		{
+			MethodName: "CreateTabs",
+			Handler:    _BridgeService_CreateTabs_Handler,
+		},
+		{
+			MethodName: "CreateDocTabs",
+			Handler:    _BridgeService_CreateDocTabs_Handler,
+		},
+		{
+			MethodName: "CreateThemeOverride",
+			Handler:    _BridgeService_CreateThemeOverride_Handler,
+		},
+		{
+			MethodName: "CreateInnerWindow",
+			Handler:    _BridgeService_CreateInnerWindow_Handler,
+		},
+		{
+			MethodName: "CreateNavigation",
+			Handler:    _BridgeService_CreateNavigation_Handler,
+		},
+		{
+			MethodName: "CreatePopup",
+			Handler:    _BridgeService_CreatePopup_Handler,
+		},
+		{
+			MethodName: "CreateMultipleWindows",
+			Handler:    _BridgeService_CreateMultipleWindows_Handler,
 		},
 		{
 			MethodName: "RegisterResource",
