@@ -119,11 +119,28 @@ message CreateImageRequest {
   string double_tap_callback_id = 8; // Double tap callback
 }
 
+// Text alignment options for labels
+enum TextAlignment {
+  TEXT_ALIGN_LEADING = 0;   // Left-aligned (default)
+  TEXT_ALIGN_CENTER = 1;    // Center-aligned
+  TEXT_ALIGN_TRAILING = 2;  // Right-aligned
+}
+
+// Text wrapping options for labels
+enum TextWrapping {
+  TEXT_WRAP_OFF = 0;        // No wrapping (default)
+  TEXT_WRAP_TRUNCATE = 1;   // Truncate with ellipsis
+  TEXT_WRAP_WORD = 2;       // Wrap at word boundaries
+}
+
 message CreateLabelRequest {
   string widget_id = 1;
   string text = 2;
   bool bold = 3;
-  int32 alignment = 4;
+  TextAlignment alignment = 4;
+  bool italic = 5;
+  bool monospace = 6;
+  TextWrapping wrapping = 7;
 }
 
 message CreateButtonRequest {

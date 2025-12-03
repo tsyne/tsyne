@@ -204,24 +204,37 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 		"text": req.Text,
 	}
 
-	// Convert alignment int to string format expected by handler
-	// 0 = leading (default), 1 = center, 2 = trailing
-	if req.Alignment != 0 {
-		switch req.Alignment {
-		case 1:
-			payload["alignment"] = "center"
-		case 2:
-			payload["alignment"] = "trailing"
-		default:
-			payload["alignment"] = "leading"
-		}
+	// Convert alignment enum to string format expected by handler
+	switch req.Alignment {
+	case pb.TextAlignment_TEXT_ALIGN_CENTER:
+		payload["alignment"] = "center"
+	case pb.TextAlignment_TEXT_ALIGN_TRAILING:
+		payload["alignment"] = "trailing"
+	// TEXT_ALIGN_LEADING is the default, no need to set
 	}
 
-	// Convert bold to textStyle map format expected by handler
-	if req.Bold {
-		payload["textStyle"] = map[string]interface{}{
-			"bold": true,
+	// Convert wrapping enum to string format expected by handler
+	switch req.Wrapping {
+	case pb.TextWrapping_TEXT_WRAP_TRUNCATE:
+		payload["wrapping"] = "break"
+	case pb.TextWrapping_TEXT_WRAP_WORD:
+		payload["wrapping"] = "word"
+	// TEXT_WRAP_OFF is the default, no need to set
+	}
+
+	// Build textStyle map if any text style options are set
+	if req.Bold || req.Italic || req.Monospace {
+		textStyle := map[string]interface{}{}
+		if req.Bold {
+			textStyle["bold"] = true
 		}
+		if req.Italic {
+			textStyle["italic"] = true
+		}
+		if req.Monospace {
+			textStyle["monospace"] = true
+		}
+		payload["textStyle"] = textStyle
 	}
 
 	msg := Message{
