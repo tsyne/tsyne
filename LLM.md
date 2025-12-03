@@ -605,9 +605,9 @@ func (b *Bridge) handleCreateMyWidget(msg Message) {
 
 ## Quick Start
 
-### Cloud/LLM Environments (Recommended)
+### Agentic Dev Environments
 
-If you're in a containerized/cloud environment (Claude Code, Codespaces, etc.) with restricted network access:
+If you're in a containerized/cloud environment (Claude Code Web, Google's JulesAgent, Codespaces, etc.) with restricted network access:
 
 ```bash
 # Step 1: Install system dependencies
