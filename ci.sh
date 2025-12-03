@@ -2,6 +2,74 @@
 set -e
 
 # ============================================================================
+# Test Results Aggregation
+# ============================================================================
+declare -a TEST_RESULTS=()
+TOTAL_TESTS=0
+TOTAL_PASSED=0
+TOTAL_FAILED=0
+TOTAL_SKIPPED=0
+TOTAL_SUITES=0
+TOTAL_SUITES_PASSED=0
+TOTAL_SUITES_FAILED=0
+
+# Function to capture test results from Jest JSON output
+capture_test_results() {
+  local section_name="$1"
+  local json_file="$2"
+
+  if [ -f "$json_file" ]; then
+    local tests=$(jq '.numTotalTests' "$json_file")
+    local passed=$(jq '.numPassedTests' "$json_file")
+    local failed=$(jq '.numFailedTests' "$json_file")
+    local skipped=$(jq '.numPendingTests' "$json_file")
+    local suites=$(jq '.numTotalTestSuites' "$json_file")
+    local suites_passed=$(jq '.numPassedTestSuites' "$json_file")
+    local suites_failed=$(jq '.numFailedTestSuites' "$json_file")
+
+    TEST_RESULTS+=("$section_name|$tests|$passed|$failed|$skipped|$suites|$suites_passed|$suites_failed")
+
+    TOTAL_TESTS=$((TOTAL_TESTS + tests))
+    TOTAL_PASSED=$((TOTAL_PASSED + passed))
+    TOTAL_FAILED=$((TOTAL_FAILED + failed))
+    TOTAL_SKIPPED=$((TOTAL_SKIPPED + skipped))
+    TOTAL_SUITES=$((TOTAL_SUITES + suites))
+    TOTAL_SUITES_PASSED=$((TOTAL_SUITES_PASSED + suites_passed))
+    TOTAL_SUITES_FAILED=$((TOTAL_SUITES_FAILED + suites_failed))
+  fi
+}
+
+# Function to print test results summary
+print_test_summary() {
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📊 CI TEST RESULTS SUMMARY"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "%-30s %8s %8s %8s %8s %8s\n" "Section" "Tests" "Passed" "Failed" "Skipped" "Suites"
+  echo "────────────────────────────────────────────────────────────────────────────"
+
+  for result in "${TEST_RESULTS[@]}"; do
+    IFS='|' read -r name tests passed failed skipped suites <<< "$result"
+    printf "%-30s %8s %8s %8s %8s %8s\n" "$name" "$tests" "$passed" "$failed" "$skipped" "$suites"
+  done
+
+  echo "────────────────────────────────────────────────────────────────────────────"
+  printf "%-30s %8s %8s %8s %8s %8s\n" "TOTAL" "$TOTAL_TESTS" "$TOTAL_PASSED" "$TOTAL_FAILED" "$TOTAL_SKIPPED" "$TOTAL_SUITES"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  if [ $TOTAL_SKIPPED -gt 0 ]; then
+    echo "⚠️  Warning: $TOTAL_SKIPPED tests are currently skipped"
+  fi
+
+  if [ $TOTAL_FAILED -gt 0 ]; then
+    echo "❌ FAILED: $TOTAL_FAILED tests failed"
+    return 1
+  else
+    echo "✅ SUCCESS: All $TOTAL_PASSED tests passed"
+  fi
+}
+
+# ============================================================================
 # Detect if running locally vs Buildkite CI
 # ============================================================================
 if [ -z "${BUILDKITE_BUILD_CHECKOUT_PATH}" ]; then
@@ -30,9 +98,16 @@ if ! dpkg -l | grep -q libgl1-mesa-dev; then
     xvfb \
     wget \
     curl \
-    gnupg
+    gnupg \
+    jq
 else
   echo "System dependencies already installed ✓"
+fi
+
+# Ensure jq is installed for JSON parsing
+if ! command -v jq &> /dev/null; then
+  echo "Installing jq for test result aggregation..."
+  apt-get install -y jq
 fi
 
 # ============================================================================
@@ -98,15 +173,17 @@ else
   export DISPLAY=:99
 fi
 
-timeout 600 npm run test:unit || {
+timeout 600 npm run test:unit -- --json --outputFile=/tmp/root-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Root unit tests timed out after 600 seconds"
   else
     echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
   fi
+  capture_test_results "Root Tsyne" "/tmp/root-test-results.json"
   exit 1
 }
+capture_test_results "Root Tsyne" "/tmp/root-test-results.json"
 
 # ============================================================================
 # STEP 3: Designer Sub-Project
@@ -121,15 +198,17 @@ if [ -f "package.json" ]; then
   }
 
   echo "--- :test_tube: Designer - Tests"
-  timeout 180 npm test || {
+  timeout 180 npm test -- --json --outputFile=/tmp/designer-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Designer tests timed out after 180 seconds"
     else
       echo "❌ Designer tests failed (exit code: $EXIT_CODE)"
     fi
+    capture_test_results "Designer" "/tmp/designer-test-results.json"
     exit 1
   }
+  capture_test_results "Designer" "/tmp/designer-test-results.json"
 else
   echo "⚠️  No package.json found in designer/ - skipping"
 fi
@@ -140,15 +219,17 @@ fi
 echo "--- :bulb: Examples - Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 # Examples use root node_modules, just run tests
-timeout 300 npm run test:examples || {
+timeout 300 npm run test:examples -- --json --outputFile=/tmp/examples-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Examples tests timed out after 300 seconds"
   else
     echo "❌ Examples tests failed (exit code: $EXIT_CODE)"
   fi
+  capture_test_results "Examples" "/tmp/examples-test-results.json"
   exit 1
 }
+capture_test_results "Examples" "/tmp/examples-test-results.json"
 
 # ============================================================================
 # STEP 5: Ported Apps Sub-Projects
@@ -166,15 +247,23 @@ fi
 test_ported_app() {
   local app_name=$1
   local bridge_mode=$2
+  local json_file="/tmp/ported-${app_name}-test-results.json"
   echo "--- :package: Ported App: ${app_name}"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
   npm install --ignore-scripts
   if [ -n "$bridge_mode" ]; then
     echo "Using bridge mode: $bridge_mode"
-    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 npm test
+    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 npm test -- --json --outputFile="$json_file" || {
+      capture_test_results "Ported: ${app_name}" "$json_file"
+      return 1
+    }
   else
-    timeout 300 npm test
+    timeout 300 npm test -- --json --outputFile="$json_file" || {
+      capture_test_results "Ported: ${app_name}" "$json_file"
+      return 1
+    }
   fi
+  capture_test_results "Ported: ${app_name}" "$json_file"
 }
 
 # Test each ported app
@@ -191,17 +280,24 @@ test_ported_app "terminal"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 if [ -f "package.json" ]; then
   echo "--- :package: Testing apps with shared package.json"
-  timeout 300 npm test || {
+  timeout 300 npm test -- --json --outputFile=/tmp/ported-shared-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Shared ported apps tests timed out after 300 seconds"
     else
       echo "❌ Shared ported apps tests failed (exit code: $EXIT_CODE)"
     fi
+    capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json"
     exit 1
   }
+  capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json"
   echo "✓ Shared ported apps tests passed"
 fi
+
+# ============================================================================
+# Print Test Summary
+# ============================================================================
+print_test_summary
 
 # ============================================================================
 # Cleanup
