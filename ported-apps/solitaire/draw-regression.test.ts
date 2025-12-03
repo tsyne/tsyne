@@ -13,7 +13,7 @@
  * If the layout shifts, the button will become unclickable and the test will fail.
  */
 
-import { TsyneTest, TestContext, Locator } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../src/index-test';
 import { createSolitaireApp } from './solitaire';
 import { App } from '../../src/app';
 
@@ -42,87 +42,34 @@ describe('Draw Button Layout Regression Test', () => {
     await ctx.expect(ctx.getByText('Draw')).toBeVisible();
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    console.info('\n=== Starting Draw button regression test ===');
-    console.info('Bug: Layout shifts after pressing Draw, making button unclickable');
-    console.info('Test: Press Draw 20 times and log Y position after each press\n');
-
     let initialY: number | undefined;
-    let previousY: number | undefined;
 
     // Press Draw 20 times - if layout shifts, button becomes unclickable
     for (let i = 0; i < 20; i++) {
-      console.info(`Draw press ${i + 1}/20...`);
+      const drawButton = ctx.getByText('Draw');
 
-      try {
-        const drawButton = ctx.getByText('Draw');
+      // Click Draw - this will fail if button shifted out of position
+      await drawButton.click();
 
-        // Get position before click
-        const infoBefore = await drawButton.getInfo();
+      // Get position after click
+      const infoAfter = await drawButton.getInfo();
+      const currentY = infoAfter.absoluteY;
 
-        // Click Draw - this will fail if button shifted out of position
-        await drawButton.click();
-        
-        // Get position immediately after click
-        const infoAfter = await drawButton.getInfo();
-        const currentY = infoAfter.absoluteY;
+      // Verify the click worked by checking status message
+      await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
 
-        console.info(`  Before click Y: ${infoBefore.absoluteY}, After click Y: ${infoAfter.absoluteY}`);
-
-        // Verify the click worked by checking status message
-        await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
-
-        if (i === 0) {
-          initialY = currentY;
-          console.info(`  ✓ Click successful, initial absolute Y position: ${currentY}`);
-        } else {
-          const shiftFromInitial = currentY !== undefined && initialY !== undefined
-            ? (currentY - initialY).toFixed(1)
-            : 'unknown';
-          const shiftFromPrevious = currentY !== undefined && previousY !== undefined
-            ? (currentY - previousY).toFixed(1)
-            : 'unknown';
-
-          console.info(`  ✓ Click successful, absolute Y: ${currentY}, shift from initial: ${shiftFromInitial}px, from previous: ${shiftFromPrevious}px`);
-
-          // Fail test if significant shift detected
-          if (currentY !== undefined && initialY !== undefined) {
-            const totalShift = Math.abs(currentY - initialY);
-            if (totalShift > 2) {
-              throw new Error(`Layout shift detected! Y moved ${totalShift}px from initial position`);
-            }
+      if (i === 0) {
+        initialY = currentY;
+      } else {
+        // Fail test if significant shift detected
+        if (currentY !== undefined && initialY !== undefined) {
+          const totalShift = Math.abs(currentY - initialY);
+          if (totalShift > 2) {
+            throw new Error(`Layout shift detected! Y moved ${totalShift}px from initial position`);
           }
         }
-
-        previousY = currentY;
-
-        // Traverse up the parent hierarchy and log their positions
-        let parentLocator: Locator | null = drawButton;
-        for (let level = 0; level < 5; level++) { // Check up to 5 levels
-            try {
-                if (level > 0 && parentLocator) {
-                    parentLocator = await parentLocator.getParent();
-                }
-                if (!parentLocator) break;
-
-                const parentInfo = await parentLocator.getInfo();
-                console.info(`  [Parent L${level}] type: ${parentInfo.type}, id: ${parentInfo.id}, absY: ${parentInfo.absoluteY}`);
-
-            } catch (e) {
-                // This will happen if a widget has no parent, which is expected for the root
-                break;
-            }
-        }
-
-      } catch (error) {
-        console.error(`\n❌ REGRESSION DETECTED at press ${i + 1}!`);
-        console.error(`   Error: ${error}`);
-
-        throw error;
       }
     }
-
-    console.info('\n✅ SUCCESS: Draw button remained clickable through 20 presses');
-    console.info('   No layout shift detected\n');
   }, 60000); // 60 second timeout for 20 draws
 
   test('should handle New Game button press followed by Draw', async () => {

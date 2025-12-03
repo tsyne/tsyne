@@ -1,5 +1,6 @@
 import { App } from './app';
 import { TestContext } from './test';
+import { recordHeadlessScreenshot } from './headless-screenshot-tracker';
 
 export interface TestOptions {
   headed?: boolean;
@@ -220,10 +221,9 @@ export class TsyneTest {
       throw new Error('No windows available to screenshot');
     }
 
-    // Warn if in headless mode
+    // Track headless screenshots for end-of-run summary
     if (!this.options.headed) {
-      console.warn('  ⚠️  Screenshot captured in headless mode - will be blank/grey');
-      console.warn('     For visual screenshots, use headed mode: new TsyneTest({ headed: true })');
+      recordHeadlessScreenshot();
     }
 
     await windows[0].screenshot(filePath);
