@@ -484,14 +484,19 @@ export function createSlydesApp(a: App): SlydesUI {
   /**
    * Build the main editor UI
    */
-  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, async (win) => {
+  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
     mainWindow = win;
 
-    // Load recent files first
-    await loadRecentFiles();
-
-    // Build the main menu
+    // Build the main menu (will be updated when recent files load)
     buildMainMenu(win);
+
+    // Load recent files asynchronously and update menu when ready
+    loadRecentFiles().then(() => {
+      // Rebuild menu with recent files
+      buildMainMenu(win);
+    }).catch(err => {
+      console.error('Failed to load recent files:', err);
+    });
 
     // Set close intercept to check for unsaved changes
     win.setCloseIntercept(async () => {

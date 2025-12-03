@@ -144,11 +144,11 @@ Tests for API endpoints and source code persistence:
 npm start
 
 # In another terminal
-npm run test:e2e
+npm run test:gui
 ```
 
 **Test files:**
-- `__tests__/e2e/designer.test.ts`
+- `__tests__/gui/designer.test.ts`
 
 ### Run All Tests
 
@@ -171,7 +171,7 @@ designer/
 │   └── editor.js         # Client-side logic
 ├── __tests__/            # Test suites
 │   ├── unit/            # Jest unit tests
-│   └── e2e/             # End-to-end tests
+│   └── gui/             # GUI tests
 ├── dist/                 # Compiled JavaScript (generated)
 ├── package.json         # Dependencies and scripts
 ├── tsconfig.json       # TypeScript configuration
@@ -289,7 +289,7 @@ This consolidated version includes fixes for:
 1. **100% Self-Contained** - No dependencies on parent project during runtime
 2. **No Temp Files at Root** - All temporary files in `/tmp` with cleanup
 3. **Idiomatic Tests** - Standard Jest test patterns
-4. **Clean Separation** - Unit tests and E2E tests in separate suites
+4. **Clean Separation** - Unit tests and GUI tests in separate suites
 5. **Type-Safe** - Full TypeScript with strict mode
 
 ## License

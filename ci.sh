@@ -181,9 +181,8 @@ timeout 600 npm run test:unit -- --json --outputFile=/tmp/root-test-results.json
     echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
   fi
   capture_test_results "Root Tsyne" "/tmp/root-test-results.json"
-  exit 1
 }
-capture_test_results "Root Tsyne" "/tmp/root-test-results.json"
+capture_test_results "Root Tsyne" "/tmp/root-test-results.json" || true
 
 # ============================================================================
 # STEP 3: Designer Sub-Project
@@ -197,18 +196,29 @@ if [ -f "package.json" ]; then
     exit 1
   }
 
-  echo "--- :test_tube: Designer - Tests"
-  timeout 180 npm test -- --json --outputFile=/tmp/designer-test-results.json || {
+  echo "--- :test_tube: Designer - Unit Tests"
+  timeout 90 npm run test:unit -- --json --outputFile=/tmp/designer-unit-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Designer tests timed out after 180 seconds"
+      echo "❌ Designer unit tests timed out after 90 seconds"
     else
-      echo "❌ Designer tests failed (exit code: $EXIT_CODE)"
+      echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
     fi
-    capture_test_results "Designer" "/tmp/designer-test-results.json"
-    exit 1
+    capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json"
   }
-  capture_test_results "Designer" "/tmp/designer-test-results.json"
+  capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
+
+  echo "--- :test_tube: Designer - GUI Tests"
+  timeout 90 npm run test:gui -- --json --outputFile=/tmp/designer-gui-test-results.json || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Designer GUI tests timed out after 90 seconds"
+    else
+      echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
+    fi
+    capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json"
+  }
+  capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
 else
   echo "⚠️  No package.json found in designer/ - skipping"
 fi
@@ -217,19 +227,31 @@ fi
 # STEP 4: Examples Sub-Project
 # ============================================================================
 echo "--- :bulb: Examples - Tests"
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
-# Examples use root node_modules, just run tests
-timeout 300 npm run test:examples -- --json --outputFile=/tmp/examples-test-results.json || {
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
+
+echo "--- :test_tube: Examples - Logic Tests"
+timeout 150 npm run test:logic -- --json --outputFile=/tmp/examples-logic-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Examples tests timed out after 300 seconds"
+    echo "❌ Examples logic tests timed out after 150 seconds"
   else
-    echo "❌ Examples tests failed (exit code: $EXIT_CODE)"
+    echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
   fi
-  capture_test_results "Examples" "/tmp/examples-test-results.json"
-  exit 1
+  capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json"
 }
-capture_test_results "Examples" "/tmp/examples-test-results.json"
+capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
+
+echo "--- :test_tube: Examples - GUI Tests"
+timeout 150 npm run test:gui -- --json --outputFile=/tmp/examples-gui-test-results.json || {
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -eq 124 ]; then
+    echo "❌ Examples GUI tests timed out after 150 seconds"
+  else
+    echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
+  fi
+  capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json"
+}
+capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
 
 # ============================================================================
 # STEP 5: Ported Apps Sub-Projects
@@ -266,15 +288,17 @@ test_ported_app() {
   capture_test_results "Ported: ${app_name}" "$json_file"
 }
 
-# Test each ported app
-test_ported_app "chess"
-test_ported_app "fyles"
-test_ported_app "game-of-life" "msgpack-uds"
-test_ported_app "image-viewer"
-test_ported_app "pixeledit"
-test_ported_app "slydes"
-test_ported_app "solitaire"
-test_ported_app "terminal"
+# Test each ported app (continue even if some fail to collect all results)
+set +e  # Temporarily disable exit-on-error to collect all test results
+test_ported_app "chess" || true
+test_ported_app "fyles" || true
+test_ported_app "game-of-life" "msgpack-uds" || true
+test_ported_app "image-viewer" || true
+test_ported_app "pixeledit" || true
+test_ported_app "slydes" || true
+test_ported_app "solitaire" || true
+test_ported_app "terminal" || true
+set -e  # Re-enable exit-on-error
 
 # Run tests for apps that don't have their own package.json (use shared root)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
@@ -288,21 +312,20 @@ if [ -f "package.json" ]; then
       echo "❌ Shared ported apps tests failed (exit code: $EXIT_CODE)"
     fi
     capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json"
-    exit 1
   }
-  capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json"
+  capture_test_results "Ported: Shared" "/tmp/ported-shared-test-results.json" || true
   echo "✓ Shared ported apps tests passed"
 fi
 
 # ============================================================================
-# Print Test Summary
-# ============================================================================
-print_test_summary
-
-# ============================================================================
-# Cleanup
+# Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 kill $XVFB_PID 2>/dev/null || true
+
+# ============================================================================
+# Print Test Summary (this will exit with failure code if tests failed)
+# ============================================================================
+print_test_summary
 
 echo "--- :white_check_mark: Build complete"
