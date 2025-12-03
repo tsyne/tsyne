@@ -826,6 +826,7 @@ message CreateHyperlinkRequest {
 message CreateProgressBarRequest {
   string widget_id = 1;
   double value = 2;  // 0.0 to 1.0
+  bool infinite = 3; // If true, shows indeterminate progress
 }
 
 message CreateActivityRequest {
@@ -959,11 +960,9 @@ message CreateToolbarRequest {
 
 message CreateTextGridRequest {
   string widget_id = 1;
-  int32 rows = 2;
-  int32 columns = 3;
-  bool show_line_numbers = 4;
-  bool show_whitespace = 5;
-  string tab_width = 6;
+  string text = 2;
+  bool show_line_numbers = 3;
+  bool show_whitespace = 4;
 }
 
 // ============================================================================

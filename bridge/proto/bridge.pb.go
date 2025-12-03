@@ -4882,7 +4882,8 @@ func (x *CreateHyperlinkRequest) GetUrl() string {
 type CreateProgressBarRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Value         float64                `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"` // 0.0 to 1.0
+	Value         float64                `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`      // 0.0 to 1.0
+	Infinite      bool                   `protobuf:"varint,3,opt,name=infinite,proto3" json:"infinite,omitempty"` // If true, shows indeterminate progress
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4929,6 +4930,13 @@ func (x *CreateProgressBarRequest) GetValue() float64 {
 		return x.Value
 	}
 	return 0
+}
+
+func (x *CreateProgressBarRequest) GetInfinite() bool {
+	if x != nil {
+		return x.Infinite
+	}
+	return false
 }
 
 type CreateActivityRequest struct {
@@ -6118,11 +6126,9 @@ func (x *CreateToolbarRequest) GetItems() []*ToolbarItem {
 type CreateTextGridRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId        string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Rows            int32                  `protobuf:"varint,2,opt,name=rows,proto3" json:"rows,omitempty"`
-	Columns         int32                  `protobuf:"varint,3,opt,name=columns,proto3" json:"columns,omitempty"`
-	ShowLineNumbers bool                   `protobuf:"varint,4,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
-	ShowWhitespace  bool                   `protobuf:"varint,5,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
-	TabWidth        string                 `protobuf:"bytes,6,opt,name=tab_width,json=tabWidth,proto3" json:"tab_width,omitempty"`
+	Text            string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	ShowLineNumbers bool                   `protobuf:"varint,3,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
+	ShowWhitespace  bool                   `protobuf:"varint,4,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -6164,18 +6170,11 @@ func (x *CreateTextGridRequest) GetWidgetId() string {
 	return ""
 }
 
-func (x *CreateTextGridRequest) GetRows() int32 {
+func (x *CreateTextGridRequest) GetText() string {
 	if x != nil {
-		return x.Rows
+		return x.Text
 	}
-	return 0
-}
-
-func (x *CreateTextGridRequest) GetColumns() int32 {
-	if x != nil {
-		return x.Columns
-	}
-	return 0
+	return ""
 }
 
 func (x *CreateTextGridRequest) GetShowLineNumbers() bool {
@@ -6190,13 +6189,6 @@ func (x *CreateTextGridRequest) GetShowWhitespace() bool {
 		return x.ShowWhitespace
 	}
 	return false
-}
-
-func (x *CreateTextGridRequest) GetTabWidth() string {
-	if x != nil {
-		return x.TabWidth
-	}
-	return ""
 }
 
 type CreateCanvasLineRequest struct {
@@ -15301,10 +15293,11 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x16CreateHyperlinkRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x10\n" +
-	"\x03url\x18\x03 \x01(\tR\x03url\"M\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\"i\n" +
 	"\x18CreateProgressBarRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value\"4\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value\x12\x1a\n" +
+	"\binfinite\x18\x03 \x01(\bR\binfinite\"4\n" +
 	"\x15CreateActivityRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\"i\n" +
 	"\x15CreateRichTextRequest\x12\x1b\n" +
@@ -15401,14 +15394,12 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\tis_spacer\x18\x05 \x01(\bR\bisSpacer\"^\n" +
 	"\x14CreateToolbarRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12)\n" +
-	"\x05items\x18\x02 \x03(\v2\x13.bridge.ToolbarItemR\x05items\"\xd4\x01\n" +
+	"\x05items\x18\x02 \x03(\v2\x13.bridge.ToolbarItemR\x05items\"\x9d\x01\n" +
 	"\x15CreateTextGridRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
-	"\x04rows\x18\x02 \x01(\x05R\x04rows\x12\x18\n" +
-	"\acolumns\x18\x03 \x01(\x05R\acolumns\x12*\n" +
-	"\x11show_line_numbers\x18\x04 \x01(\bR\x0fshowLineNumbers\x12'\n" +
-	"\x0fshow_whitespace\x18\x05 \x01(\bR\x0eshowWhitespace\x12\x1b\n" +
-	"\ttab_width\x18\x06 \x01(\tR\btabWidth\"\xbc\x01\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12*\n" +
+	"\x11show_line_numbers\x18\x03 \x01(\bR\x0fshowLineNumbers\x12'\n" +
+	"\x0fshow_whitespace\x18\x04 \x01(\bR\x0eshowWhitespace\"\xbc\x01\n" +
 	"\x17CreateCanvasLineRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x0e\n" +
 	"\x02x1\x18\x02 \x01(\x02R\x02x1\x12\x0e\n" +

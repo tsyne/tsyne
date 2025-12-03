@@ -1616,13 +1616,18 @@ func (s *grpcBridgeService) CreateHyperlink(ctx context.Context, req *pb.CreateH
 
 // CreateProgressBar creates a progress bar widget
 func (s *grpcBridgeService) CreateProgressBar(ctx context.Context, req *pb.CreateProgressBarRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id":    req.WidgetId,
+		"value": req.Value,
+	}
+	if req.Infinite {
+		payload["infinite"] = true
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createProgressBar",
-		Payload: map[string]interface{}{
-			"id":    req.WidgetId,
-			"value": req.Value,
-		},
+		ID:      req.WidgetId,
+		Type:    "createProgressBar",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateProgressBar(msg)
@@ -2064,23 +2069,15 @@ func (s *grpcBridgeService) CreateToolbar(ctx context.Context, req *pb.CreateToo
 // CreateTextGrid creates a text grid widget
 func (s *grpcBridgeService) CreateTextGrid(ctx context.Context, req *pb.CreateTextGridRequest) (*pb.Response, error) {
 	payload := map[string]interface{}{
-		"id": req.WidgetId,
+		"id":   req.WidgetId,
+		"text": req.Text,
 	}
 
-	if req.Rows > 0 {
-		payload["rows"] = float64(req.Rows)
-	}
-	if req.Columns > 0 {
-		payload["columns"] = float64(req.Columns)
-	}
 	if req.ShowLineNumbers {
 		payload["showLineNumbers"] = true
 	}
 	if req.ShowWhitespace {
 		payload["showWhitespace"] = true
-	}
-	if req.TabWidth != "" {
-		payload["tabWidth"] = req.TabWidth
 	}
 
 	msg := Message{
@@ -2118,6 +2115,20 @@ func convertMenuItems(items []*pb.MenuItem) []interface{} {
 		}
 		if len(item.Children) > 0 {
 			itemMap["children"] = convertMenuItems(item.Children)
+		}
+		result[i] = itemMap
+	}
+	return result
+}
+
+func convertMainMenuItems(items []*pb.MainMenuItem) []interface{} {
+	result := make([]interface{}, len(items))
+	for i, item := range items {
+		itemMap := map[string]interface{}{
+			"label": item.Label,
+		}
+		if len(item.Items) > 0 {
+			itemMap["items"] = convertMenuItems(item.Items)
 		}
 		result[i] = itemMap
 	}
@@ -2223,6 +2234,14 @@ func (s *grpcBridgeService) CreateCanvasText(ctx context.Context, req *pb.Create
 	}
 	if req.Monospace {
 		payload["monospace"] = true
+	}
+	if req.Alignment != pb.TextAlignment_TEXT_ALIGN_LEADING {
+		switch req.Alignment {
+		case pb.TextAlignment_TEXT_ALIGN_CENTER:
+			payload["alignment"] = "center"
+		case pb.TextAlignment_TEXT_ALIGN_TRAILING:
+			payload["alignment"] = "trailing"
+		}
 	}
 
 	msg := Message{
@@ -4209,8 +4228,8 @@ func (s *grpcBridgeService) SetTextGridCell(ctx context.Context, req *pb.SetText
 		Payload: map[string]interface{}{
 			"widgetId": req.WidgetId,
 			"row":      float64(req.Row),
-			"column":   float64(req.Column),
-			"rune":     req.Rune,
+			"col":      float64(req.Col),
+			"char":     req.Text,
 		},
 	}
 
@@ -4244,15 +4263,20 @@ func (s *grpcBridgeService) SetTextGridRow(ctx context.Context, req *pb.SetTextG
 
 // SetTextGridStyle sets text grid style
 func (s *grpcBridgeService) SetTextGridStyle(ctx context.Context, req *pb.SetTextGridStyleRequest) (*pb.Response, error) {
+	styleData := map[string]interface{}{}
+	if req.Style != nil {
+		styleData["fgColor"] = req.Style.Foreground
+		styleData["bgColor"] = req.Style.Background
+	}
+
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTextGridStyle",
 		Payload: map[string]interface{}{
-			"widgetId":   req.WidgetId,
-			"row":        float64(req.Row),
-			"column":     float64(req.Column),
-			"foreground": req.Foreground,
-			"background": req.Background,
+			"widgetId": req.WidgetId,
+			"row":      float64(req.Row),
+			"col":      float64(req.Col),
+			"style":    styleData,
 		},
 	}
 
@@ -4266,17 +4290,22 @@ func (s *grpcBridgeService) SetTextGridStyle(ctx context.Context, req *pb.SetTex
 
 // SetTextGridStyleRange sets text grid style for a range
 func (s *grpcBridgeService) SetTextGridStyleRange(ctx context.Context, req *pb.SetTextGridStyleRangeRequest) (*pb.Response, error) {
+	styleData := map[string]interface{}{}
+	if req.Style != nil {
+		styleData["fgColor"] = req.Style.Foreground
+		styleData["bgColor"] = req.Style.Background
+	}
+
 	msg := Message{
 		ID:   req.WidgetId,
 		Type: "setTextGridStyleRange",
 		Payload: map[string]interface{}{
-			"widgetId":    req.WidgetId,
-			"startRow":    float64(req.StartRow),
-			"startColumn": float64(req.StartColumn),
-			"endRow":      float64(req.EndRow),
-			"endColumn":   float64(req.EndColumn),
-			"foreground":  req.Foreground,
-			"background":  req.Background,
+			"widgetId": req.WidgetId,
+			"startRow": float64(req.StartRow),
+			"startCol": float64(req.StartCol),
+			"endRow":   float64(req.EndRow),
+			"endCol":   float64(req.EndCol),
+			"style":    styleData,
 		},
 	}
 
@@ -4300,28 +4329,31 @@ func (s *grpcBridgeService) GetToolbarItems(ctx context.Context, req *pb.GetTool
 
 	resp := s.bridge.handleGetToolbarItems(msg)
 
-	var itemCount int32
+	var labels []string
 	if resp.Result != nil {
-		if v, ok := resp.Result["count"].(float64); ok {
-			itemCount = int32(v)
+		if v, ok := resp.Result["labels"].([]interface{}); ok {
+			for _, label := range v {
+				if s, ok := label.(string); ok {
+					labels = append(labels, s)
+				}
+			}
 		}
 	}
 
 	return &pb.GetToolbarItemsResponse{
-		Success:   resp.Success,
-		Error:     resp.Error,
-		ItemCount: itemCount,
+		Success: resp.Success,
+		Error:   resp.Error,
+		Labels:  labels,
 	}, nil
 }
 
 // ClickToolbarAction clicks a toolbar action
 func (s *grpcBridgeService) ClickToolbarAction(ctx context.Context, req *pb.ClickToolbarActionRequest) (*pb.Response, error) {
 	msg := Message{
-		ID:   req.WidgetId,
+		ID:   req.CustomId,
 		Type: "clickToolbarAction",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
-			"index":    float64(req.Index),
+			"customId": req.CustomId,
 		},
 	}
 
@@ -4400,17 +4432,8 @@ func (s *grpcBridgeService) SetFontScale(ctx context.Context, req *pb.SetFontSca
 // SetCustomTheme sets a custom theme
 func (s *grpcBridgeService) SetCustomTheme(ctx context.Context, req *pb.SetCustomThemeRequest) (*pb.Response, error) {
 	colors := map[string]interface{}{}
-	if req.BackgroundColor != "" {
-		colors["backgroundColor"] = req.BackgroundColor
-	}
-	if req.ForegroundColor != "" {
-		colors["foregroundColor"] = req.ForegroundColor
-	}
-	if req.PrimaryColor != "" {
-		colors["primaryColor"] = req.PrimaryColor
-	}
-	if req.DisabledColor != "" {
-		colors["disabledColor"] = req.DisabledColor
+	for k, v := range req.Colors {
+		colors[k] = v
 	}
 
 	msg := Message{
@@ -4451,7 +4474,8 @@ func (s *grpcBridgeService) SetCustomFont(ctx context.Context, req *pb.SetCustom
 		ID:   "setCustomFont",
 		Type: "setCustomFont",
 		Payload: map[string]interface{}{
-			"fontName": req.FontName,
+			"path":  req.Path,
+			"style": req.Style,
 		},
 	}
 
@@ -4489,21 +4513,30 @@ func (s *grpcBridgeService) GetAvailableFonts(ctx context.Context, req *pb.GetAv
 
 	resp := s.bridge.handleGetAvailableFonts(msg)
 
-	var fonts []string
+	var extensions []string
+	var styles []string
 	if resp.Result != nil {
-		if v, ok := resp.Result["fonts"].([]interface{}); ok {
+		if v, ok := resp.Result["extensions"].([]interface{}); ok {
 			for _, item := range v {
 				if s, ok := item.(string); ok {
-					fonts = append(fonts, s)
+					extensions = append(extensions, s)
+				}
+			}
+		}
+		if v, ok := resp.Result["styles"].([]interface{}); ok {
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					styles = append(styles, s)
 				}
 			}
 		}
 	}
 
 	return &pb.GetAvailableFontsResponse{
-		Success: resp.Success,
-		Error:   resp.Error,
-		Fonts:   fonts,
+		Success:    resp.Success,
+		Error:      resp.Error,
+		Extensions: extensions,
+		Styles:     styles,
 	}, nil
 }
 
@@ -4512,23 +4545,20 @@ func (s *grpcBridgeService) SetWidgetStyle(ctx context.Context, req *pb.SetWidge
 	payload := map[string]interface{}{
 		"widgetId": req.WidgetId,
 	}
-	if req.Bold {
-		payload["bold"] = true
+	if req.FontStyle != "" {
+		payload["fontStyle"] = req.FontStyle
 	}
-	if req.Italic {
-		payload["italic"] = true
+	if req.FontFamily != "" {
+		payload["fontFamily"] = req.FontFamily
 	}
-	if req.Monospace {
-		payload["monospace"] = true
+	if req.TextAlign != "" {
+		payload["textAlign"] = req.TextAlign
 	}
-	if req.TextSize != 0 {
-		payload["textSize"] = float64(req.TextSize)
+	if req.FontSize != 0 {
+		payload["fontSize"] = float64(req.FontSize)
 	}
-	if req.Alignment != "" {
-		payload["alignment"] = req.Alignment
-	}
-	if req.Wrapping != "" {
-		payload["wrapping"] = req.Wrapping
+	if req.BackgroundColor != "" {
+		payload["backgroundColor"] = req.BackgroundColor
 	}
 
 	msg := Message{
@@ -4547,7 +4577,7 @@ func (s *grpcBridgeService) SetWidgetStyle(ctx context.Context, req *pb.SetWidge
 
 // SetMainMenu sets the main menu
 func (s *grpcBridgeService) SetMainMenu(ctx context.Context, req *pb.SetMainMenuRequest) (*pb.Response, error) {
-	items := convertMenuItems(req.Items)
+	items := convertMainMenuItems(req.MenuItems)
 
 	msg := Message{
 		ID:   req.WindowId,
@@ -4593,15 +4623,14 @@ func (s *grpcBridgeService) SetWidgetContextMenu(ctx context.Context, req *pb.Se
 
 // SetSystemTray sets system tray
 func (s *grpcBridgeService) SetSystemTray(ctx context.Context, req *pb.SetSystemTrayRequest) (*pb.Response, error) {
-	items := convertMenuItems(req.Items)
+	menuItems := convertMenuItems(req.MenuItems)
 
 	msg := Message{
 		ID:   "setSystemTray",
 		Type: "setSystemTray",
 		Payload: map[string]interface{}{
-			"title":    req.Title,
-			"resource": req.ResourceName,
-			"items":    items,
+			"iconPath":  req.IconPath,
+			"menuItems": menuItems,
 		},
 	}
 
@@ -4743,8 +4772,10 @@ func (s *grpcBridgeService) SetDraggable(ctx context.Context, req *pb.SetDraggab
 		ID:   req.WidgetId,
 		Type: "setDraggable",
 		Payload: map[string]interface{}{
-			"widgetId":   req.WidgetId,
-			"callbackId": req.CallbackId,
+			"widgetId":             req.WidgetId,
+			"dragData":             req.DragData,
+			"onDragStartCallbackId": req.OnDragStartCallbackId,
+			"onDragEndCallbackId":   req.OnDragEndCallbackId,
 		},
 	}
 
@@ -4762,8 +4793,10 @@ func (s *grpcBridgeService) SetDroppable(ctx context.Context, req *pb.SetDroppab
 		ID:   req.WidgetId,
 		Type: "setDroppable",
 		Payload: map[string]interface{}{
-			"widgetId":   req.WidgetId,
-			"callbackId": req.CallbackId,
+			"widgetId":              req.WidgetId,
+			"onDropCallbackId":      req.OnDropCallbackId,
+			"onDragEnterCallbackId": req.OnDragEnterCallbackId,
+			"onDragLeaveCallbackId": req.OnDragLeaveCallbackId,
 		},
 	}
 
@@ -4872,14 +4905,14 @@ func (s *grpcBridgeService) SubmitEntry(ctx context.Context, req *pb.SubmitEntry
 // DragCanvas performs a drag on canvas
 func (s *grpcBridgeService) DragCanvas(ctx context.Context, req *pb.DragCanvasRequest) (*pb.Response, error) {
 	msg := Message{
-		ID:   req.WidgetId,
+		ID:   req.WindowId,
 		Type: "dragCanvas",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
-			"startX":   float64(req.StartX),
-			"startY":   float64(req.StartY),
-			"endX":     float64(req.EndX),
-			"endY":     float64(req.EndY),
+			"windowId": req.WindowId,
+			"fromX":    float64(req.FromX),
+			"fromY":    float64(req.FromY),
+			"deltaX":   float64(req.DeltaX),
+			"deltaY":   float64(req.DeltaY),
 		},
 	}
 
@@ -4894,14 +4927,12 @@ func (s *grpcBridgeService) DragCanvas(ctx context.Context, req *pb.DragCanvasRe
 // ScrollCanvas performs a scroll on canvas
 func (s *grpcBridgeService) ScrollCanvas(ctx context.Context, req *pb.ScrollCanvasRequest) (*pb.Response, error) {
 	msg := Message{
-		ID:   req.WidgetId,
+		ID:   req.WindowId,
 		Type: "scrollCanvas",
 		Payload: map[string]interface{}{
-			"widgetId": req.WidgetId,
-			"x":        float64(req.X),
-			"y":        float64(req.Y),
-			"deltaX":   req.DeltaX,
-			"deltaY":   req.DeltaY,
+			"windowId": req.WindowId,
+			"deltaX":   float64(req.DeltaX),
+			"deltaY":   float64(req.DeltaY),
 		},
 	}
 
@@ -5033,7 +5064,7 @@ func (s *grpcBridgeService) Announce(ctx context.Context, req *pb.AnnounceReques
 		ID:   "announce",
 		Type: "announce",
 		Payload: map[string]interface{}{
-			"text": req.Text,
+			"message": req.Message,
 		},
 	}
 
@@ -5067,9 +5098,8 @@ func (s *grpcBridgeService) SetWidgetHoverable(ctx context.Context, req *pb.SetW
 		ID:   req.WidgetId,
 		Type: "setWidgetHoverable",
 		Payload: map[string]interface{}{
-			"widgetId":        req.WidgetId,
-			"enterCallbackId": req.EnterCallbackId,
-			"exitCallbackId":  req.ExitCallbackId,
+			"widgetId":   req.WidgetId,
+			"callbackId": req.CallbackId,
 		},
 	}
 
