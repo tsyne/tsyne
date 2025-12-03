@@ -37,18 +37,18 @@ app({ title: 'Browser Globals Test' }, (a) => {
           const age = localStorage.getItem('age');
           const city = localStorage.getItem('city');
 
-          console.log('localStorage test:');
-          console.log('  name:', name);
-          console.log('  age:', age);
-          console.log('  city:', city);
-          console.log('  length:', localStorage.length);
+// console.log('localStorage test:');
+// console.log('  name:', name);
+// console.log('  age:', age);
+// console.log('  city:', city);
+// console.log('  length:', localStorage.length);
 
           alert(`localStorage contains:\nName: ${name}\nAge: ${age}\nCity: ${city}`);
         });
 
         a.button('Clear localStorage', () => {
           localStorage.clear();
-          console.log('localStorage cleared');
+// console.log('localStorage cleared');
           alert('localStorage has been cleared');
         });
 
@@ -64,17 +64,17 @@ app({ title: 'Browser Globals Test' }, (a) => {
           const sessionId = sessionStorage.getItem('sessionId');
           const tempData = sessionStorage.getItem('tempData');
 
-          console.log('sessionStorage test:');
-          console.log('  sessionId:', sessionId);
-          console.log('  tempData:', tempData);
-          console.log('  length:', sessionStorage.length);
+// console.log('sessionStorage test:');
+// console.log('  sessionId:', sessionId);
+// console.log('  tempData:', tempData);
+// console.log('  length:', sessionStorage.length);
 
           alert(`sessionStorage contains:\nSession ID: ${sessionId}\nTemp Data: ${tempData}`);
         });
 
         a.button('Clear sessionStorage', () => {
           sessionStorage.clear();
-          console.log('sessionStorage cleared');
+// console.log('sessionStorage cleared');
           alert('sessionStorage has been cleared');
         });
 
@@ -88,7 +88,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
         // Test confirm
         a.button('Test confirm()', async () => {
           const result = await confirm('Do you want to continue?');
-          console.log('confirm() returned:', result);
+// console.log('confirm() returned:', result);
           alert(`You clicked: ${result ? 'OK' : 'Cancel'}`);
         });
 

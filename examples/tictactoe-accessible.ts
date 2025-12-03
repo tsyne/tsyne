@@ -463,14 +463,14 @@ async function cycleFontSize() {
 
 // Build the UI
 export function buildTicTacToe(a: any) {
-  console.log("[DEBUG] buildTicTacToe called");
+// console.log("[DEBUG] buildTicTacToe called");
   applyStyles();
-  console.log("[DEBUG] Styles applied");
+// console.log("[DEBUG] Styles applied");
 
   a.window({ title: "Accessible Tic-Tac-Toe" }, () => {
-    console.log("[DEBUG] Window created");
+// console.log("[DEBUG] Window created");
     a.vbox(() => {
-      console.log("[DEBUG] Creating accessibility controls...");
+// console.log("[DEBUG] Creating accessibility controls...");
       // Accessibility controls
       a.hbox(() => {
         ttsToggle = a.button("TTS: OFF", () => toggleTTS(), "control")
@@ -500,10 +500,10 @@ export function buildTicTacToe(a: any) {
             hint: "Press F to cycle"
           });
       });
-      console.log("[DEBUG] Accessibility controls created");
+// console.log("[DEBUG] Accessibility controls created");
 
       // Status display
-      console.log("[DEBUG] Creating status label...");
+// console.log("[DEBUG] Creating status label...");
       statusLabel = a.label("Player X's turn", "status")
         .withId('status')
         .accessibility({
@@ -513,7 +513,7 @@ export function buildTicTacToe(a: any) {
         });
 
       // Game board - 3x3 grid
-      console.log("[DEBUG] Creating game board grid...");
+// console.log("[DEBUG] Creating game board grid...");
       a.grid(3, () => {
         for (let i = 0; i < 9; i++) {
           const position = getCellDescription(i);
@@ -584,11 +584,11 @@ export function buildTicTacToe(a: any) {
           description: "List of all moves made in the game",
           role: "log"
         });
-      console.log("[DEBUG] UI building complete");
+// console.log("[DEBUG] UI building complete");
     });
-    console.log("[DEBUG] VBox complete");
+// console.log("[DEBUG] VBox complete");
   });
-  console.log("[DEBUG] Window complete, buildTicTacToe finished");
+// console.log("[DEBUG] Window complete, buildTicTacToe finished");
 }
 
 // Keyboard shortcuts
@@ -596,60 +596,60 @@ function setupKeyboardShortcuts() {
   // Note: In a real Fyne implementation, keyboard shortcuts would be handled
   // via the bridge. This is a documentation of the intended shortcuts.
 
-  console.log("\n=== Keyboard Shortcuts ===");
-  console.log("Arrow Keys: Navigate the board");
-  console.log("Space/Enter: Place mark at focused cell");
-  console.log("N: New game");
-  console.log("U: Undo last move");
-  console.log("?: Show hint");
-  console.log("T: Toggle TTS");
-  console.log("H: Toggle high contrast");
-  console.log("F: Change font size");
-  console.log("=========================\n");
+// console.log("\n=== Keyboard Shortcuts ===");
+// console.log("Arrow Keys: Navigate the board");
+// console.log("Space/Enter: Place mark at focused cell");
+// console.log("N: New game");
+// console.log("U: Undo last move");
+// console.log("?: Show hint");
+// console.log("T: Toggle TTS");
+// console.log("H: Toggle high contrast");
+// console.log("F: Change font size");
+// console.log("=========================\n");
 }
 
 // Run directly when executed as main script
 if (require.main === module) {
-  console.log("[DEBUG] Starting app creation...");
+// console.log("[DEBUG] Starting app creation...");
 
   // Create app with a wrapper that initializes accessibility BEFORE building UI
   const myApp = app({ title: "Accessible Tic-Tac-Toe" }, (a) => {
     // Store the app context for use in helper functions
     appContext = (a as any).ctx;
-    console.log("[DEBUG] App context stored");
+// console.log("[DEBUG] App context stored");
 
     // Initialize the accessibility manager BEFORE building UI
     // This ensures it's listening for accessibilityRegistered events
     accessibilityManager = getAccessibilityManager(appContext);
-    console.log("[DEBUG] Accessibility manager initialized BEFORE UI build");
+// console.log("[DEBUG] Accessibility manager initialized BEFORE UI build");
 
     // Now build the UI
     buildTicTacToe(a);
   });
-  console.log("[DEBUG] App created successfully");
+// console.log("[DEBUG] App created successfully");
 
   // Setup keyboard shortcuts
   setupKeyboardShortcuts();
-  console.log("[DEBUG] Keyboard shortcuts setup complete");
+// console.log("[DEBUG] Keyboard shortcuts setup complete");
 
-  console.log("\n=== Accessible Tic-Tac-Toe ===");
-  console.log("Accessibility Features:");
-  console.log("✓ TTS - Announces moves, turns, and game state");
-  console.log("✓ Keyboard Navigation - Arrow keys + Space/Enter");
-  console.log("✓ High Contrast - Clear visual markers");
-  console.log("✓ Font Size - Small/Medium/Large options");
-  console.log("✓ Audio Feedback - Distinct sounds for X, O, win");
-  console.log("✓ ARIA Labels - Every cell has position description");
-  console.log("✓ Move History - Full game transcript");
-  console.log("✓ Undo Feature - Take back mistakes");
-  console.log("✓ Hints - Suggests good moves");
-  console.log("✓ Position Context - Row/column coordinates");
-  console.log("===============================\n");
+// console.log("\n=== Accessible Tic-Tac-Toe ===");
+// console.log("Accessibility Features:");
+// console.log("✓ TTS - Announces moves, turns, and game state");
+// console.log("✓ Keyboard Navigation - Arrow keys + Space/Enter");
+// console.log("✓ High Contrast - Clear visual markers");
+// console.log("✓ Font Size - Small/Medium/Large options");
+// console.log("✓ Audio Feedback - Distinct sounds for X, O, win");
+// console.log("✓ ARIA Labels - Every cell has position description");
+// console.log("✓ Move History - Full game transcript");
+// console.log("✓ Undo Feature - Take back mistakes");
+// console.log("✓ Hints - Suggests good moves");
+// console.log("✓ Position Context - Row/column coordinates");
+// console.log("===============================\n");
 
-  console.log("Game Rules:");
-  console.log("- Players alternate placing X and O");
-  console.log("- Get three in a row to win (horizontal, vertical, or diagonal)");
-  console.log("- If board fills with no winner, it's a draw");
-  console.log("\nAccessibility Tip:");
-  console.log("Enable TTS first to hear all game announcements!\n");
+// console.log("Game Rules:");
+// console.log("- Players alternate placing X and O");
+// console.log("- Get three in a row to win (horizontal, vertical, or diagonal)");
+// console.log("- If board fills with no winner, it's a draw");
+// console.log("\nAccessibility Tip:");
+// console.log("Enable TTS first to hear all game announcements!\n");
 }

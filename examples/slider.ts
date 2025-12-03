@@ -26,7 +26,7 @@ app({ title: 'Slider Demo' }, () => {
         volumeLabel = label('Volume: 50%');
         volumeSlider = slider(0, 100, 50, (value) => {
           volumeLabel.setText(`Volume: ${Math.round(value)}%`);
-          console.log('Volume:', value);
+// console.log('Volume:', value);
         });
 
         label('');
@@ -36,7 +36,7 @@ app({ title: 'Slider Demo' }, () => {
         brightnessLabel = label('Brightness: 75%');
         brightnessSlider = slider(0, 100, 75, (value) => {
           brightnessLabel.setText(`Brightness: ${Math.round(value)}%`);
-          console.log('Brightness:', value);
+// console.log('Brightness:', value);
         });
 
         label('');
@@ -46,7 +46,7 @@ app({ title: 'Slider Demo' }, () => {
         temperatureLabel = label('Temperature: 20.0°C');
         temperatureSlider = slider(-20, 40, 20, (value) => {
           temperatureLabel.setText(`Temperature: ${value.toFixed(1)}°C`);
-          console.log('Temperature:', value);
+// console.log('Temperature:', value);
         });
 
         label('');
@@ -85,7 +85,7 @@ app({ title: 'Slider Demo' }, () => {
             const brightness = await brightnessSlider.getValue();
             const temperature = await temperatureSlider.getValue();
 
-            console.log('Current values:', {
+// console.log('Current values:', {
               volume: Math.round(volume),
               brightness: Math.round(brightness),
               temperature: temperature.toFixed(1)
@@ -108,5 +108,5 @@ app({ title: 'Slider Demo' }, () => {
 
 // Helper function to simulate an alert (since we don't have dialogs yet)
 function alert(message: string) {
-  console.log('ALERT:', message);
+// console.log('ALERT:', message);
 }

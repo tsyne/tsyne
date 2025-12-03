@@ -21,7 +21,7 @@ app({ title: "Form Example" }, () => {
           const name = await nameEntry.getText();
           const email = await emailEntry.getText();
           await resultLabel.setText(`Hello, ${name}! Email: ${email}`);
-          console.log(`Submitted: ${name}, ${email}`);
+// console.log(`Submitted: ${name}, ${email}`);
         });
 
         button("Clear", async () => {

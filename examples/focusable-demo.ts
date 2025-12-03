@@ -37,7 +37,7 @@ app({ title: "Focusable Demo" }, (a) => {
 
       fields.forEach((field, index) => {
         const btn = a.button(`[${index + 1}] ${field}`, () => {
-          console.log(`${field} button clicked`);
+// console.log(`${field} button clicked`);
         });
 
         buttonLabels[field] = btn;
@@ -62,11 +62,11 @@ app({ title: "Focusable Demo" }, (a) => {
             // Update button text to show focus state
             btn.setText(`[${index + 1}] ${field} *FOCUSED*`);
 
-            console.log(`Focus gained: ${field}`);
+// console.log(`Focus gained: ${field}`);
           } else {
             // This button lost focus
             btn.setText(`[${index + 1}] ${field}`);
-            console.log(`Focus lost: ${field}`);
+// console.log(`Focus lost: ${field}`);
           }
         });
       });
@@ -81,7 +81,7 @@ app({ title: "Focusable Demo" }, (a) => {
             const btn = buttonLabels[field];
             if (btn) {
               await btn.focus();
-              console.log(`Programmatically focused: ${field}`);
+// console.log(`Programmatically focused: ${field}`);
             }
           });
         });
@@ -94,7 +94,7 @@ app({ title: "Focusable Demo" }, (a) => {
       a.hbox(() => {
         for (let i = 1; i <= 4; i++) {
           const ringBtn = a.button(`Tab ${i}`, () => {
-            console.log(`Tab ${i} activated`);
+// console.log(`Tab ${i} activated`);
           });
 
           ringBtn.onFocusChange((event) => {
@@ -121,7 +121,7 @@ app({ title: "Focusable Demo" }, (a) => {
       a.hbox(() => {
         targetSequence.forEach((letter) => {
           const gameBtn = a.button(letter, () => {
-            console.log(`Game button ${letter} clicked`);
+// console.log(`Game button ${letter} clicked`);
           });
 
           gameBtn.onFocusChange((event) => {
@@ -136,7 +136,7 @@ app({ title: "Focusable Demo" }, (a) => {
                 gameProgress = [];
               } else if (gameProgress.length === targetSequence.length) {
                 gameLabel.setText("Progress: A -> B -> C -> D - YOU WIN!");
-                console.log("Focus game won!");
+// console.log("Focus game won!");
               } else {
                 gameLabel.setText(`Progress: ${gameProgress.join(' -> ')}`);
               }
@@ -164,7 +164,7 @@ app({ title: "Focusable Demo" }, (a) => {
           buttonLabels[field].setText(`[${index + 1}] ${field}`);
         });
 
-        console.log("Focus demo reset");
+// console.log("Focus demo reset");
       });
 
       a.separator();
@@ -177,7 +177,7 @@ app({ title: "Focusable Demo" }, (a) => {
   });
 });
 
-console.log("\n=== Focusable Demo ===");
-console.log("Demonstrates: fyne.Focusable interface");
-console.log("Methods: onFocusChange(), focus()");
-console.log("========================\n");
+// console.log("\n=== Focusable Demo ===");
+// console.log("Demonstrates: fyne.Focusable interface");
+// console.log("Methods: onFocusChange(), focus()");
+// console.log("========================\n");

@@ -29,7 +29,7 @@ const examples: ExampleInfo[] = [
 ];
 
 async function captureScreenshot(exampleFile: string, name: string) {
-  console.log(`\n📸 Capturing ${name}...`);
+// console.log(`\n📸 Capturing ${name}...`);
 
   try {
     // Dynamic import to get the example's createApp function
@@ -54,15 +54,15 @@ async function captureScreenshot(exampleFile: string, name: string) {
 }
 
 async function captureAllScreenshots() {
-  console.log('📸 Starting screenshot capture for all examples...');
-  console.log('⚠️  Note: Screenshots will be captured in headed mode (windows will appear)\n');
+// console.log('📸 Starting screenshot capture for all examples...');
+// console.log('⚠️  Note: Screenshots will be captured in headed mode (windows will appear)\n');
 
   for (const example of examples) {
     await captureScreenshot(example.file, example.name);
   }
 
-  console.log('\n✨ All screenshots captured!');
-  console.log('Screenshots saved to: examples/screenshots/');
+// console.log('\n✨ All screenshots captured!');
+// console.log('Screenshots saved to: examples/screenshots/');
 }
 
 captureAllScreenshots().catch(console.error);

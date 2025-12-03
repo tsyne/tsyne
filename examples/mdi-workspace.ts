@@ -28,7 +28,7 @@ app({ title: 'MDI Workspace Demo' }, (a) => {
                 });
               },
               () => {
-                console.log(`Document ${windowCount} closed`);
+// console.log(`Document ${windowCount} closed`);
               }
             );
           });

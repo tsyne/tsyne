@@ -116,15 +116,15 @@ describe('Visual Regression Testing', () => {
       const result = compareScreenshots(baselinePath, currentPath);
 
       if (!result.match) {
-        console.log(`Visual difference detected in ${screenshotName}`);
-        console.log(`Baseline: ${baselinePath}`);
-        console.log(`Current: ${currentPath}`);
+// console.log(`Visual difference detected in ${screenshotName}`);
+// console.log(`Baseline: ${baselinePath}`);
+// console.log(`Current: ${currentPath}`);
       }
 
       // In a real scenario, you might want to fail on differences:
       // expect(result.match).toBe(true);
     } else {
-      console.log(`No baseline exists for ${screenshotName}. Creating baseline.`);
+// console.log(`No baseline exists for ${screenshotName}. Creating baseline.`);
       fs.copyFileSync(currentPath, baselinePath);
     }
   });
@@ -162,10 +162,10 @@ describe('Visual Regression Testing', () => {
     if (fs.existsSync(baselinePath)) {
       const result = compareScreenshots(baselinePath, currentPath);
       if (!result.match) {
-        console.log(`Visual difference detected in ${screenshotName}`);
+// console.log(`Visual difference detected in ${screenshotName}`);
       }
     } else {
-      console.log(`Creating baseline for ${screenshotName}`);
+// console.log(`Creating baseline for ${screenshotName}`);
       fs.copyFileSync(currentPath, baselinePath);
     }
   });

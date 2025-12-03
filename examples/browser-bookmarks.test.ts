@@ -18,7 +18,7 @@ describeBrowser('Browser Bookmarks', () => {
     try {
       if (fs.existsSync(bookmarksFilePath)) {
         fs.unlinkSync(bookmarksFilePath);
-        console.log('Cleared bookmarks file before test');
+// console.log('Cleared bookmarks file before test');
       }
     } catch (error) {
       console.error('Failed to clear bookmarks file:', error);
@@ -52,20 +52,20 @@ vbox(() => {
 
       // Verify no bookmarks initially
       const bookmarksBefore = browser.getBookmarks();
-      console.log('Bookmarks before:', bookmarksBefore.length);
+// console.log('Bookmarks before:', bookmarksBefore.length);
 
       // Add bookmark
       await browser.addBookmark();
 
       // Verify bookmark was added
       const bookmarksAfter = browser.getBookmarks();
-      console.log('Bookmarks after:', bookmarksAfter.length);
+// console.log('Bookmarks after:', bookmarksAfter.length);
       if (bookmarksAfter.length !== 1) {
         throw new Error(`Expected 1 bookmark, found ${bookmarksAfter.length}`);
       }
 
       const bookmark = bookmarksAfter[0];
-      console.log('Bookmark added:', bookmark.title, bookmark.url);
+// console.log('Bookmark added:', bookmark.title, bookmark.url);
 
       // Verify bookmark has correct title
       if (!bookmark.title.includes('Home Page')) {
@@ -79,7 +79,7 @@ vbox(() => {
         throw new Error('Expected bookmarks file to exist');
       }
 
-      console.log('✓ Bookmark added successfully');
+// console.log('✓ Bookmark added successfully');
     },
     { timeout: 30000 }
   );
@@ -134,7 +134,7 @@ vbox(() => {
       }
 
       const bookmarkedUrl = bookmarks[0].url;
-      console.log('Navigating to bookmarked URL:', bookmarkedUrl);
+// console.log('Navigating to bookmarked URL:', bookmarkedUrl);
 
       // Navigate back to bookmarked page
       await browser.changePage(bookmarkedUrl);
@@ -142,7 +142,7 @@ vbox(() => {
       // Verify we're back on first page
       await ctx.expect(ctx.getByText('First Page')).toBeVisible();
 
-      console.log('✓ Navigated to bookmarked page successfully');
+// console.log('✓ Navigated to bookmarked page successfully');
     },
     { timeout: 30000 }
   );
@@ -185,12 +185,12 @@ vbox(() => {
 
       // Verify bookmark was removed
       const bookmarksAfter = browser.getBookmarks();
-      console.log('Bookmarks after removal:', bookmarksAfter.length);
+// console.log('Bookmarks after removal:', bookmarksAfter.length);
       if (bookmarksAfter.length !== 0) {
         throw new Error(`Expected 0 bookmarks, found ${bookmarksAfter.length}`);
       }
 
-      console.log('✓ Bookmark removed successfully');
+// console.log('✓ Bookmark removed successfully');
     },
     { timeout: 30000 }
   );
@@ -225,7 +225,7 @@ vbox(() => {
 
       // Verify bookmark exists
       const bookmarks1 = browser1.getBookmarks();
-      console.log('Bookmarks in first session:', bookmarks1.length);
+// console.log('Bookmarks in first session:', bookmarks1.length);
       if (bookmarks1.length === 0) {
         throw new Error('Expected bookmark in first session');
       }
@@ -239,7 +239,7 @@ vbox(() => {
 
       // Check bookmarks were loaded
       const bookmarks2 = browser2.getBookmarks();
-      console.log('Bookmarks in second session:', bookmarks2.length);
+// console.log('Bookmarks in second session:', bookmarks2.length);
 
       if (bookmarks2.length === 0) {
         throw new Error('Expected bookmarks to persist across sessions');
@@ -250,7 +250,7 @@ vbox(() => {
         throw new Error(`Bookmark title mismatch: ${bookmarks2[0].title} vs ${bookmarks1[0].title}`);
       }
 
-      console.log('✓ Bookmarks persisted across sessions');
+// console.log('✓ Bookmarks persisted across sessions');
     },
     { timeout: 30000 }
   );
@@ -285,7 +285,7 @@ vbox(() => {
 
       // Verify only one bookmark exists
       const bookmarks = browser.getBookmarks();
-      console.log('Bookmarks after duplicate attempt:', bookmarks.length);
+// console.log('Bookmarks after duplicate attempt:', bookmarks.length);
       if (bookmarks.length !== 1) {
         throw new Error(`Expected 1 bookmark, found ${bookmarks.length}`);
       }
@@ -293,9 +293,9 @@ vbox(() => {
       // Verify status indicates already bookmarked
       await new Promise(resolve => setTimeout(resolve, 100));
       const status = browser.getStatusText();
-      console.log('Status after duplicate:', status);
+// console.log('Status after duplicate:', status);
 
-      console.log('✓ Duplicate bookmarks handled correctly');
+// console.log('✓ Duplicate bookmarks handled correctly');
     },
     { timeout: 30000 }
   );
@@ -367,16 +367,16 @@ vbox(() => {
 
       // Verify all bookmarks exist
       const bookmarks = browser.getBookmarks();
-      console.log('Total bookmarks:', bookmarks.length);
+// console.log('Total bookmarks:', bookmarks.length);
       if (bookmarks.length !== 3) {
         throw new Error(`Expected 3 bookmarks, found ${bookmarks.length}`);
       }
 
       // Verify each bookmark has correct title
       const titles = bookmarks.map(b => b.title);
-      console.log('Bookmark titles:', titles.join(', '));
+// console.log('Bookmark titles:', titles.join(', '));
 
-      console.log('✓ Multiple bookmarks created successfully');
+// console.log('✓ Multiple bookmarks created successfully');
     },
     { timeout: 30000 }
   );
@@ -413,12 +413,12 @@ vbox(() => {
       }
 
       const bookmark = bookmarks[0];
-      console.log('Bookmark title:', bookmark.title);
+// console.log('Bookmark title:', bookmark.title);
       if (bookmark.title !== 'My Custom Bookmark') {
         throw new Error(`Expected custom title 'My Custom Bookmark', got: ${bookmark.title}`);
       }
 
-      console.log('✓ Custom title bookmark created successfully');
+// console.log('✓ Custom title bookmark created successfully');
     },
     { timeout: 30000 }
   );
@@ -449,7 +449,7 @@ vbox(() => {
 
       // Verify not bookmarked initially
       const isBookmarkedBefore = browser.isBookmarked(testUrl);
-      console.log('Is bookmarked before:', isBookmarkedBefore);
+// console.log('Is bookmarked before:', isBookmarkedBefore);
       if (isBookmarkedBefore) {
         throw new Error('Expected URL not to be bookmarked initially');
       }
@@ -459,12 +459,12 @@ vbox(() => {
 
       // Verify is bookmarked now
       const isBookmarkedAfter = browser.isBookmarked(testUrl);
-      console.log('Is bookmarked after:', isBookmarkedAfter);
+// console.log('Is bookmarked after:', isBookmarkedAfter);
       if (!isBookmarkedAfter) {
         throw new Error('Expected URL to be bookmarked after adding');
       }
 
-      console.log('✓ Bookmark status checked correctly');
+// console.log('✓ Bookmark status checked correctly');
     },
     { timeout: 30000 }
   );

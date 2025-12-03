@@ -34,7 +34,7 @@ app({ title: 'List Demo' }, () => {
         // Create list with selection callback
         todoList = list(todos, (index: number, item: string) => {
           statusLabel.setText(`Selected: "${item}" (index ${index})`);
-          console.log(`Selected item at index ${index}: ${item}`);
+// console.log(`Selected item at index ${index}: ${item}`);
         });
 
         label('');

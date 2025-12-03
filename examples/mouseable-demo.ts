@@ -38,14 +38,14 @@ app({ title: "Mouseable Demo" }, (a) => {
         const buttonNames = ['Left', 'Middle', 'Right'];
         const buttonName = buttonNames[event.button - 1] || `Button ${event.button}`;
         statusLabel.setText(`Mouse DOWN: ${buttonName} button at (${event.position.x.toFixed(0)}, ${event.position.y.toFixed(0)})`);
-        console.log(`MouseDown: Button ${event.button} (${buttonName}) at position (${event.position.x}, ${event.position.y})`);
+        // console.log(`MouseDown: Button ${event.button} (${buttonName}) at position (${event.position.x}, ${event.position.y})`);
       });
 
       detectBtn.onMouseUp((event) => {
         const buttonNames = ['Left', 'Middle', 'Right'];
         const buttonName = buttonNames[event.button - 1] || `Button ${event.button}`;
         statusLabel.setText(`Mouse UP: ${buttonName} button`);
-        console.log(`MouseUp: Button ${event.button} (${buttonName})`);
+// console.log(`MouseUp: Button ${event.button} (${buttonName})`);
       });
 
       a.separator();
@@ -58,7 +58,7 @@ app({ title: "Mouseable Demo" }, (a) => {
         clickStartTime = Date.now();
         timerBtn.setText("HOLDING... release to measure!");
         statusLabel.setText("Holding button...");
-        console.log(`Timer started at ${clickStartTime}`);
+// console.log(`Timer started at ${clickStartTime}`);
       });
 
       timerBtn.onMouseUp((event) => {
@@ -75,7 +75,7 @@ app({ title: "Mouseable Demo" }, (a) => {
           statsLabel.setText(`Stats: ${totalClicks} clicks | Longest hold: ${longestHold}ms`);
           statusLabel.setText(`Released after ${holdDuration}ms`);
 
-          console.log(`Timer ended - Hold duration: ${holdDuration}ms`);
+// console.log(`Timer ended - Hold duration: ${holdDuration}ms`);
           clickStartTime = null;
         }
       });
@@ -98,7 +98,7 @@ app({ title: "Mouseable Demo" }, (a) => {
             // Check how many buttons are currently pressed
             const pressedCount = Object.values(buttonStates).filter(v => v).length;
             statusLabel.setText(`Pressed ${pressedCount} button(s) - simulating drag!`);
-            console.log(`Drag cell ${i} pressed - ${pressedCount} total pressed`);
+// console.log(`Drag cell ${i} pressed - ${pressedCount} total pressed`);
           });
 
           dragBtn.onMouseUp((event) => {
@@ -111,7 +111,7 @@ app({ title: "Mouseable Demo" }, (a) => {
             } else {
               statusLabel.setText(`${pressedCount} button(s) still pressed`);
             }
-            console.log(`Drag cell ${i} released`);
+// console.log(`Drag cell ${i} released`);
           });
         }
       });
@@ -126,7 +126,7 @@ app({ title: "Mouseable Demo" }, (a) => {
         statsLabel.setText("Stats: 0 clicks | Longest hold: 0ms");
         holdTimeLabel.setText("Hold time: 0ms");
         statusLabel.setText("Stats reset!");
-        console.log("Stats reset");
+// console.log("Stats reset");
       });
 
       a.separator();
@@ -138,7 +138,7 @@ app({ title: "Mouseable Demo" }, (a) => {
   });
 });
 
-console.log("\n=== Mouseable Demo ===");
-console.log("Demonstrates: desktop.Mouseable interface");
-console.log("Methods: onMouseDown(), onMouseUp()");
-console.log("========================\n");
+// console.log("\n=== Mouseable Demo ===");
+// console.log("Demonstrates: desktop.Mouseable interface");
+// console.log("Methods: onMouseDown(), onMouseUp()");
+// console.log("========================\n");

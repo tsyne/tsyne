@@ -402,15 +402,15 @@ function setupKeyboardShortcuts() {
   // Note: In a real implementation, this would use window.addEventListener('keydown', ...)
   // For Tsyne desktop apps, keyboard shortcuts would be handled via the Fyne bridge
 
-  console.log("\n=== Keyboard Shortcuts ===");
-  console.log("Numbers: 0-9");
-  console.log("Operators: + - * /");
-  console.log("Calculate: = or Enter");
-  console.log("Clear: C or Escape");
-  console.log("Toggle TTS: T");
-  console.log("Toggle High Contrast: H");
-  console.log("Change Font Size: F");
-  console.log("========================\n");
+// console.log("\n=== Keyboard Shortcuts ===");
+// console.log("Numbers: 0-9");
+// console.log("Operators: + - * /");
+// console.log("Calculate: = or Enter");
+// console.log("Clear: C or Escape");
+// console.log("Toggle TTS: T");
+// console.log("Toggle High Contrast: H");
+// console.log("Change Font Size: F");
+// console.log("========================\n");
 }
 
 // Run directly when executed as main script
@@ -425,14 +425,14 @@ if (require.main === module) {
   // Setup keyboard shortcuts
   setupKeyboardShortcuts();
 
-  console.log("\n=== Fully Accessible Calculator ===");
-  console.log("Accessibility Features:");
-  console.log("✓ TTS - Text-to-speech announcements");
-  console.log("✓ Keyboard shortcuts - Full keyboard navigation");
-  console.log("✓ High contrast mode - Better visibility");
-  console.log("✓ Font size controls - Small/Medium/Large");
-  console.log("✓ Audio feedback - Click sounds");
-  console.log("✓ ARIA labels - Screen reader support");
-  console.log("✓ Calculation history - Review past results");
-  console.log("====================================\n");
+// console.log("\n=== Fully Accessible Calculator ===");
+// console.log("Accessibility Features:");
+// console.log("✓ TTS - Text-to-speech announcements");
+// console.log("✓ Keyboard shortcuts - Full keyboard navigation");
+// console.log("✓ High contrast mode - Better visibility");
+// console.log("✓ Font size controls - Small/Medium/Large");
+// console.log("✓ Audio feedback - Click sounds");
+// console.log("✓ ARIA labels - Screen reader support");
+// console.log("✓ Calculation history - Review past results");
+// console.log("====================================\n");
 }

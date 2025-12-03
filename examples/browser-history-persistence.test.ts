@@ -49,7 +49,7 @@ vbox(() => {
         throw new Error('History file does not contain any entries');
       }
 
-      console.log('History file contains', historyData.history.length, 'entries');
+// console.log('History file contains', historyData.history.length, 'entries');
     },
     { timeout: 30000 }
   );
@@ -121,7 +121,7 @@ vbox(() => {
         throw new Error('History file does not contain all visited pages');
       }
 
-      console.log('History correctly saved all', historyData.history.length, 'navigations');
+// console.log('History correctly saved all', historyData.history.length, 'navigations');
     },
     { timeout: 30000 }
   );
@@ -181,7 +181,7 @@ vbox(() => {
         throw new Error('History index was not updated after back navigation');
       }
 
-      console.log('History index correctly saved:', historyData.historyIndex);
+// console.log('History index correctly saved:', historyData.historyIndex);
     },
     { timeout: 30000 }
   );
@@ -215,7 +215,7 @@ vbox(() => {
       // Browser should still work despite invalid history file
       await ctx.expect(ctx.getByText('Test Page')).toBeVisible();
 
-      console.log('Browser handled invalid history file gracefully');
+// console.log('Browser handled invalid history file gracefully');
     },
     { timeout: 30000 }
   );
@@ -267,7 +267,7 @@ vbox(() => {
         throw new Error('History file was not created');
       }
 
-      console.log('History directory and file created successfully');
+// console.log('History directory and file created successfully');
     },
     { timeout: 30000 }
   );
