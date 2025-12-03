@@ -18,7 +18,6 @@ describeBrowser('Browser History UI', () => {
     try {
       if (fs.existsSync(historyFilePath)) {
         fs.unlinkSync(historyFilePath);
-        console.log('Cleared history file before test');
       }
     } catch (error) {
       console.error('Failed to clear history file:', error);
@@ -51,7 +50,6 @@ vbox(() => {
 
       // Get history
       const history = browser.getHistory();
-      console.log('History entries:', history.length);
 
       if (history.length === 0) {
         throw new Error('Expected history to have entries');
@@ -59,7 +57,6 @@ vbox(() => {
 
       // Check that the entry has a timestamp
       const entry = history[0];
-      console.log('History entry:', entry);
 
       if (!entry.visitedAt) {
         throw new Error('Expected history entry to have visitedAt timestamp');
@@ -68,13 +65,10 @@ vbox(() => {
       // Verify timestamp is recent (within last 5 seconds)
       const now = Date.now();
       const timeDiff = now - entry.visitedAt;
-      console.log('Time difference (ms):', timeDiff);
 
       if (timeDiff < 0 || timeDiff > 5000) {
         throw new Error(`Expected timestamp to be recent, but difference was ${timeDiff}ms`);
       }
-
-      console.log('✓ Timestamps stored correctly');
     },
     { timeout: 30000 }
   );
@@ -112,13 +106,10 @@ vbox(() => {
 
       // Check that the entry has a title
       const entry = history[0];
-      console.log('History entry title:', entry.title);
 
       if (entry.title !== 'Test Page Title') {
         throw new Error(`Expected title 'Test Page Title', got: ${entry.title}`);
       }
-
-      console.log('✓ Page titles stored correctly');
     },
     { timeout: 30000 }
   );
@@ -165,7 +156,6 @@ vbox(() => {
 
       // Get formatted history
       const formatted = browser.getFormattedHistory();
-      console.log('Formatted history:', formatted.join('\n'));
 
       if (formatted.length !== 2) {
         throw new Error(`Expected 2 history entries, got ${formatted.length}`);
@@ -196,8 +186,6 @@ vbox(() => {
       if (!hasCurrent) {
         throw new Error('Expected formatted history to mark current entry');
       }
-
-      console.log('✓ History formatted correctly');
     },
     { timeout: 30000 }
   );
@@ -252,8 +240,6 @@ vbox(() => {
         if (!hasEntry) {
           throw new Error('Expected history display to include page entry');
         }
-
-        console.log('✓ History displayed correctly');
       } finally {
         // Ensure console.log is restored
         console.log = originalLog;
@@ -295,7 +281,6 @@ vbox(() => {
 
       // Try to format history - should not crash
       const formatted = browser.getFormattedHistory();
-      console.log('Formatted history with missing fields:', formatted[0]);
 
       if (formatted.length === 0) {
         throw new Error('Expected formatted history to have entries');
@@ -307,8 +292,6 @@ vbox(() => {
       if (!hasUnknownDate) {
         throw new Error('Expected formatted history to show "Unknown date" for old entries');
       }
-
-      console.log('✓ Backward compatibility handled correctly');
     },
     { timeout: 30000 }
   );
@@ -345,7 +328,6 @@ vbox(() => {
       }
 
       const timestamp1 = history1[0].visitedAt;
-      console.log('Timestamp in first session:', timestamp1);
 
       if (!timestamp1) {
         throw new Error('Expected timestamp in first session');
@@ -360,14 +342,12 @@ vbox(() => {
 
       // Check history was loaded with timestamp
       const history2 = browser2.getHistory();
-      console.log('History in second session:', history2.length);
 
       if (history2.length === 0) {
         throw new Error('Expected history to persist across sessions');
       }
 
       const timestamp2 = history2[0].visitedAt;
-      console.log('Timestamp in second session:', timestamp2);
 
       if (!timestamp2) {
         throw new Error('Expected timestamp to persist across sessions');
@@ -376,8 +356,6 @@ vbox(() => {
       if (timestamp1 !== timestamp2) {
         throw new Error(`Timestamp mismatch: ${timestamp1} vs ${timestamp2}`);
       }
-
-      console.log('✓ Timestamps persisted across sessions');
     },
     { timeout: 30000 }
   );
@@ -428,8 +406,6 @@ vbox(() => {
         if (!hasEmptyMessage) {
           throw new Error('Expected empty history message');
         }
-
-        console.log('✓ Empty history message displayed correctly');
       } finally {
         // Ensure console.log is restored
         console.log = originalLog;
@@ -475,15 +451,12 @@ vbox(() => {
       }
 
       const entry = history[0];
-      console.log('History entry title after update:', entry.title);
 
       // Note: The title update happens synchronously after the page renders,
       // so we should see the title in the history entry
       if (!entry.title || entry.title === browserTest.getTestUrl('/')) {
         console.warn('Title might not have been updated yet');
       }
-
-      console.log('✓ Title update checked');
     },
     { timeout: 30000 }
   );

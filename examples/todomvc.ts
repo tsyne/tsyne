@@ -107,9 +107,8 @@ class TodoStore {
         const parsed = JSON.parse(data);
         this.todos = parsed.todos || [];
         this.nextId = parsed.nextId || 1;
-        console.log(`Loaded ${this.todos.length} todos from ${this.filePath}`);
       } else {
-        console.log(`No existing file at ${this.filePath}, starting fresh`);
+        // Starting fresh - no existing file
       }
     } catch (error) {
       console.error(`Error loading todos: ${error}`);
@@ -126,7 +125,6 @@ class TodoStore {
         nextId: this.nextId
       }, null, 2);
       fs.writeFileSync(this.filePath, data, 'utf8');
-      console.log(`Saved ${this.todos.length} todos to ${this.filePath}`);
     } catch (error) {
       console.error(`Error saving todos: ${error}`);
     }
