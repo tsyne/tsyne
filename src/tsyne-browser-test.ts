@@ -1,5 +1,6 @@
 import { Browser } from './browser';
 import { TestContext } from './test';
+import { recordHeadlessScreenshot } from './headless-screenshot-tracker';
 import http from 'http';
 import { AddressInfo } from 'net';
 import * as fs from 'fs';
@@ -298,10 +299,9 @@ vbox(() => {
       throw new Error('Browser not created. Call createBrowser() first.');
     }
 
-    // Warn if in headless mode
+    // Track headless screenshots for end-of-run summary
     if (!this.options.headed) {
-      console.warn('  ⚠️  Screenshot captured in headless mode - will be blank/grey');
-      console.warn('     For visual screenshots, use headed mode: new TsyneBrowserTest({ headed: true })');
+      recordHeadlessScreenshot();
     }
 
     const window = this.browser.getWindow();
