@@ -204,11 +204,24 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 		"text": req.Text,
 	}
 
-	if req.Bold {
-		payload["bold"] = true
-	}
+	// Convert alignment int to string format expected by handler
+	// 0 = leading (default), 1 = center, 2 = trailing
 	if req.Alignment != 0 {
-		payload["alignment"] = float64(req.Alignment)
+		switch req.Alignment {
+		case 1:
+			payload["alignment"] = "center"
+		case 2:
+			payload["alignment"] = "trailing"
+		default:
+			payload["alignment"] = "leading"
+		}
+	}
+
+	// Convert bold to textStyle map format expected by handler
+	if req.Bold {
+		payload["textStyle"] = map[string]interface{}{
+			"bold": true,
+		}
 	}
 
 	msg := Message{

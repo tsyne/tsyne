@@ -30,6 +30,43 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 
 	lbl := widget.NewLabel(text)
 
+	// Apply alignment if specified
+	if alignment, ok := msg.Payload["alignment"].(string); ok {
+		switch alignment {
+		case "leading":
+			lbl.Alignment = fyne.TextAlignLeading
+		case "center":
+			lbl.Alignment = fyne.TextAlignCenter
+		case "trailing":
+			lbl.Alignment = fyne.TextAlignTrailing
+		}
+	}
+
+	// Apply wrapping if specified
+	if wrapping, ok := msg.Payload["wrapping"].(string); ok {
+		switch wrapping {
+		case "off":
+			lbl.Wrapping = fyne.TextWrapOff
+		case "break":
+			lbl.Wrapping = fyne.TextTruncate
+		case "word":
+			lbl.Wrapping = fyne.TextWrapWord
+		}
+	}
+
+	// Apply text style if specified
+	if textStyle, ok := msg.Payload["textStyle"].(map[string]interface{}); ok {
+		if bold, ok := textStyle["bold"].(bool); ok && bold {
+			lbl.TextStyle.Bold = true
+		}
+		if italic, ok := textStyle["italic"].(bool); ok && italic {
+			lbl.TextStyle.Italic = true
+		}
+		if monospace, ok := textStyle["monospace"].(bool); ok && monospace {
+			lbl.TextStyle.Monospace = true
+		}
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = lbl
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
