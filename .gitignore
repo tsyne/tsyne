@@ -19,3 +19,4 @@ cli/embed/
 cli/target/
 coverage
 docs/api
+.server-pid

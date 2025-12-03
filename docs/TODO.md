@@ -170,9 +170,65 @@ TsyneTest needs support for interacting with dialogs (showConfirm, showInfo, sho
 
 ---
 
+## Performance Optimizations
+
+### Msgpack-UDS Transport Optimizations
+
+**Priority**: Medium
+**Status**: Partially complete (optimizations #1-3 done)
+
+The msgpack-uds transport has been optimized with buffer pooling and reduced syscalls. Additional optimizations remain:
+
+#### #4: Broadcast Lock Contention Fix
+
+**Current issue**: Event broadcasting locks once per client during `clients.Range()` loop (msgpack_server.go:219-221).
+
+**Impact**: With 10 clients, that's 10 lock/unlock cycles per event.
+
+**Solution**:
+- Pre-serialize event once before loop
+- Use per-connection write queues/channels
+- Or lock once, copy to all buffers, unlock, then flush
+
+**Expected gain**: 5-10x improvement in broadcast performance with multiple clients.
+
+---
+
+#### #5: Message Batching
+
+**Current issue**: Every `send()` immediately writes to socket, causing syscall overhead for rapid updates.
+
+**Impact**: Many small messages (widget updates, progress bars) each trigger network/syscall overhead.
+
+**Solution**:
+- Add optional message batching with 1-5ms window
+- Flush immediately on user actions (clicks, etc.)
+- Batch background updates automatically
+
+**Expected gain**: 2-3x throughput improvement for burst scenarios like list rendering.
+
+---
+
+#### #6: MessagePack Encoder Reuse
+
+**Current issue**: `msgpack.Marshal()` creates new encoder per call (msgpack_server.go:163, 205).
+
+**Solution**:
+```go
+type encoderPool struct {
+    enc *msgpack.Encoder
+    buf *bytes.Buffer
+}
+```
+
+Use pooled encoder instances with buffer reuse.
+
+**Expected gain**: 5-15% reduction in encoding overhead.
+
+---
+
 ## Future Work
 
 Add TODO items as needed for:
 - Widget Library Expansion
 - Documentation Updates
-- Performance Optimizations

@@ -22,6 +22,7 @@ type MsgpackServer struct {
 	clients    sync.Map // map of client connections
 	eventChan  chan Event
 	mu         sync.Mutex
+	bufferPool sync.Pool // Pool for frame buffers to reduce allocations
 }
 
 // MsgpackMessage represents a message in MessagePack format
@@ -51,11 +52,19 @@ func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
 	// Create socket in temp directory
 	socketPath := filepath.Join(os.TempDir(), fmt.Sprintf("tsyne-%d.sock", os.Getpid()))
 
-	return &MsgpackServer{
+	server := &MsgpackServer{
 		bridge:     bridge,
 		socketPath: socketPath,
 		eventChan:  make(chan Event, 256),
 	}
+
+	// Initialize buffer pool with factory function
+	server.bufferPool.New = func() interface{} {
+		// Pre-allocate 8KB buffers (typical message size)
+		return make([]byte, 8192)
+	}
+
+	return server
 }
 
 // Start starts the MessagePack UDS server
@@ -166,12 +175,18 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 			continue
 		}
 
-		// Write length prefix + response
+		// Acquire buffer from pool
+		frameBuf := s.getFrameBuffer(4 + len(respBuf))
+		binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(respBuf)))
+		copy(frameBuf[4:], respBuf)
+
+		// Write to connection
 		s.mu.Lock()
-		binary.BigEndian.PutUint32(lengthBuf, uint32(len(respBuf)))
-		conn.Write(lengthBuf)
-		conn.Write(respBuf)
+		conn.Write(frameBuf[:4+len(respBuf)])
 		s.mu.Unlock()
+
+		// Return buffer to pool
+		s.putFrameBuffer(frameBuf)
 	}
 }
 
@@ -207,17 +222,40 @@ func (s *MsgpackServer) broadcastEvents() {
 			continue
 		}
 
-		lengthBuf := make([]byte, 4)
-		binary.BigEndian.PutUint32(lengthBuf, uint32(len(eventBuf)))
+		// Acquire buffer from pool
+		frameBuf := s.getFrameBuffer(4 + len(eventBuf))
+		binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(eventBuf)))
+		copy(frameBuf[4:], eventBuf)
 
 		// Broadcast to all clients
+		frameSize := 4 + len(eventBuf)
 		s.clients.Range(func(key, value interface{}) bool {
 			conn := value.(net.Conn)
 			s.mu.Lock()
-			conn.Write(lengthBuf)
-			conn.Write(eventBuf)
+			conn.Write(frameBuf[:frameSize])
 			s.mu.Unlock()
 			return true
 		})
+
+		// Return buffer to pool after broadcast
+		s.putFrameBuffer(frameBuf)
+	}
+}
+
+// getFrameBuffer acquires a buffer from the pool, allocating a larger one if needed
+func (s *MsgpackServer) getFrameBuffer(minSize int) []byte {
+	buf := s.bufferPool.Get().([]byte)
+	if cap(buf) < minSize {
+		// Buffer too small, allocate new one
+		return make([]byte, minSize)
+	}
+	return buf[:minSize]
+}
+
+// putFrameBuffer returns a buffer to the pool (only if it's reasonably sized)
+func (s *MsgpackServer) putFrameBuffer(buf []byte) {
+	// Only pool buffers up to 16KB to avoid holding huge buffers
+	if cap(buf) <= 16384 {
+		s.bufferPool.Put(buf)
 	}
 }

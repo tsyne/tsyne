@@ -15,6 +15,38 @@ export interface Event {
   data?: Record<string, unknown>;
 }
 
+/**
+ * Simple buffer pool to reduce allocations during message sending
+ */
+class BufferPool {
+  private pool: Buffer[] = [];
+  private readonly maxSize = 10;
+  private readonly bufferSize = 8192; // 8KB buffers
+
+  acquire(minSize: number): Buffer {
+    // Try to reuse a buffer from the pool if it's big enough
+    if (this.pool.length > 0) {
+      const buf = this.pool.pop()!;
+      if (buf.length >= minSize) {
+        return buf;
+      }
+    }
+    // Allocate new buffer (either bufferSize or minSize, whichever is larger)
+    return Buffer.allocUnsafe(Math.max(this.bufferSize, minSize));
+  }
+
+  release(buf: Buffer): void {
+    // Only keep reasonably-sized buffers in the pool
+    if (this.pool.length < this.maxSize && buf.length <= this.bufferSize * 2) {
+      this.pool.push(buf);
+    }
+  }
+
+  clear(): void {
+    this.pool = [];
+  }
+}
+
 interface MsgpackMessage {
   id: string;
   type: string;
@@ -54,7 +86,9 @@ export class MsgpackBridgeConnection implements BridgeInterface {
     resolve: (result: unknown) => void;
     reject: (error: Error) => void;
   }>();
-  private receiveBuffer = Buffer.alloc(0);
+  private receiveBuffer = Buffer.allocUnsafe(65536); // Pre-allocated 64KB buffer
+  private receiveLength = 0; // Track how much data is in the buffer
+  private bufferPool = new BufferPool(); // Pool for send frame buffers
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -169,22 +203,33 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   private handleData(chunk: Buffer): void {
-    // Append to buffer
-    this.receiveBuffer = Buffer.concat([this.receiveBuffer, chunk]);
+    // Ensure buffer has enough space for new chunk
+    if (this.receiveLength + chunk.length > this.receiveBuffer.length) {
+      // Need to expand buffer - double size or fit chunk, whichever is larger
+      const newSize = Math.max(this.receiveBuffer.length * 2, this.receiveLength + chunk.length);
+      const newBuffer = Buffer.allocUnsafe(newSize);
+      this.receiveBuffer.copy(newBuffer, 0, 0, this.receiveLength);
+      this.receiveBuffer = newBuffer;
+    }
+
+    // Copy chunk into buffer (no allocation!)
+    chunk.copy(this.receiveBuffer, this.receiveLength);
+    this.receiveLength += chunk.length;
 
     // Process complete messages
-    while (this.receiveBuffer.length >= 4) {
+    let offset = 0;
+    while (offset + 4 <= this.receiveLength) {
       // Read length prefix (4 bytes, big-endian)
-      const length = this.receiveBuffer.readUInt32BE(0);
+      const length = this.receiveBuffer.readUInt32BE(offset);
 
-      if (this.receiveBuffer.length < 4 + length) {
+      if (offset + 4 + length > this.receiveLength) {
         // Not enough data yet
         break;
       }
 
-      // Extract message
-      const msgBuf = this.receiveBuffer.slice(4, 4 + length);
-      this.receiveBuffer = this.receiveBuffer.slice(4 + length);
+      // Extract message (create slice view, no copy)
+      const msgBuf = this.receiveBuffer.slice(offset + 4, offset + 4 + length);
+      offset += 4 + length;
 
       // Decode MessagePack
       try {
@@ -209,6 +254,21 @@ export class MsgpackBridgeConnection implements BridgeInterface {
       } catch (err) {
         console.error('Failed to decode MessagePack:', err);
       }
+    }
+
+    // Compact buffer: move remaining data to start
+    if (offset > 0) {
+      if (offset < this.receiveLength) {
+        this.receiveBuffer.copy(this.receiveBuffer, 0, offset, this.receiveLength);
+      }
+      this.receiveLength -= offset;
+    }
+
+    // Shrink buffer if it's grown too large and mostly empty (> 256KB and < 25% used)
+    if (this.receiveBuffer.length > 262144 && this.receiveLength < this.receiveBuffer.length / 4) {
+      const newBuffer = Buffer.allocUnsafe(65536);
+      this.receiveBuffer.copy(newBuffer, 0, 0, this.receiveLength);
+      this.receiveBuffer = newBuffer;
     }
   }
 
@@ -246,12 +306,19 @@ export class MsgpackBridgeConnection implements BridgeInterface {
       // Encode to MessagePack
       const msgBuf = Buffer.from(encode(message));
 
-      // Create frame: length (4 bytes) + message
-      const frame = Buffer.alloc(4 + msgBuf.length);
+      // Acquire buffer from pool (reduces allocations)
+      const frameSize = 4 + msgBuf.length;
+      const frame = this.bufferPool.acquire(frameSize);
+
+      // Write length prefix and message
       frame.writeUInt32BE(msgBuf.length, 0);
       msgBuf.copy(frame, 4);
 
-      this.socket!.write(frame);
+      // Write only the used portion of the buffer
+      this.socket!.write(frame.slice(0, frameSize), () => {
+        // Return buffer to pool after write completes
+        this.bufferPool.release(frame);
+      });
     });
   }
 
@@ -305,6 +372,9 @@ export class MsgpackBridgeConnection implements BridgeInterface {
       this.socket.destroy();
       this.socket = undefined;
     }
+    // Reset buffer state
+    this.receiveLength = 0;
+    this.bufferPool.clear();
     if (this.process && !this.process.killed) {
       // Send shutdown signal via stdin
       try {
