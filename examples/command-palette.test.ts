@@ -141,7 +141,7 @@ describe('Command Palette (Menu Widget)', () => {
     // Verify the menu was created
     expect(createdMenu).not.toBeNull();
     expect(createdMenu!.id).toBeDefined();
-    expect(createdMenu!.id).toMatch(/^menu[_-]/);
+    expect(createdMenu!.id).toMatch(/^_menu_/);  // Internal ID format: _type_random
 
     // Verify menu items are stored correctly
     const items = createdMenu!.getItems();

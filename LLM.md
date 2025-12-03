@@ -126,6 +126,24 @@ Why `getByID()` is strongly preferred:
 Only use `getByText()` in rare cases where adding an ID is impossible:
 - Don't use `className` parameter as an ID - it's only for styling
 
+**Internal IDs vs Custom IDs:**
+
+Widgets have two kinds of IDs:
+- **Internal IDs** (e.g., `_label_k7m2z9`) - Auto-generated for bridge communication, NOT for testing
+- **Custom IDs** (e.g., `resetBtn`) - Set via `.withId()`, stable and reliable for testing
+
+Internal IDs use the format `_${type}_${random}` (underscore prefix, widget type, 6-char base36 random).
+The underscore prefix signals "internal - don't use in tests". Like HTML's DOM, only explicit IDs are queryable.
+
+```typescript
+// Internal ID (auto-generated, don't use in tests)
+const label = a.label('Hello');  // Gets ID like "_label_k7m2z9"
+
+// Custom ID (explicit, use this in tests)
+const label = a.label('Hello').withId('greeting');  // Queryable as 'greeting'
+await ctx.getByID('greeting').shouldBe('Hello');  // ✅ Stable
+```
+
 **Examples:**
 ```typescript
 // ❌ WRONG - using getByText can find the wrong widget

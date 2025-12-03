@@ -17,7 +17,7 @@ export interface TestHarness {
  */
 export class Context {
   bridge: BridgeInterface;
-  private idCounter = 0;
+  private usedIds: Set<string> = new Set();
   private windowStack: string[] = [];
   private containerStack: string[][] = [];
   private resourceMap: Map<string, string> = new Map();
@@ -90,8 +90,21 @@ export class Context {
     this.resourceMap = resourceMap;
   }
 
+  /**
+   * Generate a unique internal widget ID.
+   * Format: _${type}_${random} (e.g., "_label_k7m2z9")
+   * The underscore prefix indicates this is an internal ID, not for test queries.
+   * Use widget.withId('myId') to set explicit IDs for testing.
+   */
   generateId(prefix: string): string {
-    return `${prefix}_${this.idCounter++}`;
+    let id: string;
+    do {
+      // 6 chars base36 ≈ 2 billion combinations, plenty for any app session
+      const random = Math.random().toString(36).slice(2, 8);
+      id = `_${prefix}_${random}`;
+    } while (this.usedIds.has(id));
+    this.usedIds.add(id);
+    return id;
   }
 
   pushWindow(windowId: string): void {
