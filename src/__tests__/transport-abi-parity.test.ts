@@ -281,10 +281,22 @@ function goFieldToProtoField(goField: string): string {
   // Go: "textStyle.bold" -> Proto: "bold"
   // Go: "textStyle" (parent) -> skip (flattened in proto)
   // Go: "callbackId" -> Proto: "callback_id" (camelCase to snake_case)
+  // Go: "resource" -> Proto: "resource_name" (Image special case)
+  // Go: "onDragCallbackId" -> Proto: "drag_callback_id" (Image-specific, drop "on" prefix)
   if (goField === 'id') return 'widget_id';
   if (goField === 'textStyle') return '__skip__'; // Parent field, not in proto
   if (goField.startsWith('textStyle.')) {
     return goField.split('.')[1]; // textStyle.bold -> bold
+  }
+  // Special case: Image uses "resource" in Go but "resource_name" in proto
+  if (goField === 'resource') return 'resource_name';
+  // Special case: Image drag callbacks drop "on" prefix in proto
+  // onDragCallbackId -> drag_callback_id
+  // onDragEndCallbackId -> drag_end_callback_id
+  if (goField === 'onDragCallbackId' || goField === 'onDragEndCallbackId') {
+    const withoutOn = goField.slice(2); // Remove "on" prefix
+    // Convert camelCase to snake_case
+    return withoutOn.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   }
   // Convert camelCase to snake_case for proto field names
   return goField.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
@@ -450,6 +462,82 @@ describe('Transport ABI Parity', () => {
       // TypeScript sends textStyle as object
       expect(tsContent).toContain('payload.textStyle = textStyle');
     });
+  });
+});
+
+// ============================================================================
+// TODO Marker Detection Tests
+// ============================================================================
+
+describe('Code completeness checks', () => {
+  test('gRPC server has no TODO markers for incomplete implementations', () => {
+    const grpcContent = fs.readFileSync(grpcServerPath, 'utf-8');
+
+    // Find TODO comments that indicate incomplete implementations
+    const todoRegex = /\/\/\s*TODO[:\s].*(?:implement|incomplete|missing|placeholder|stub)/gi;
+    const todos = grpcContent.match(todoRegex) || [];
+
+    if (todos.length > 0) {
+      console.error('Found incomplete TODO markers in gRPC server:');
+      todos.forEach(t => console.error(`  - ${t}`));
+    }
+
+    expect(todos.length).toBe(0);
+  });
+
+  test('proto file has no TODO markers for missing fields', () => {
+    const protoContent = fs.readFileSync(protoPath, 'utf-8');
+
+    // Find TODO comments that indicate missing fields
+    const todoRegex = /\/\/\s*TODO[:\s].*(?:add|implement|missing|placeholder)/gi;
+    const todos = protoContent.match(todoRegex) || [];
+
+    if (todos.length > 0) {
+      console.error('Found TODO markers in proto file:');
+      todos.forEach(t => console.error(`  - ${t}`));
+    }
+
+    expect(todos.length).toBe(0);
+  });
+
+  test('widget handler files have no TODO markers for incomplete widgets', () => {
+    const handlerFiles = [
+      path.join(bridgePath, 'widget_creators_display.go'),
+      path.join(bridgePath, 'widget_creators_inputs.go'),
+      path.join(bridgePath, 'widget_creators_containers.go'),
+      path.join(bridgePath, 'widget_creators_complex.go'),
+      path.join(bridgePath, 'widget_creators_canvas.go'),
+    ];
+
+    const allTodos: { file: string; todo: string }[] = [];
+
+    for (const filePath of handlerFiles) {
+      if (!fs.existsSync(filePath)) continue;
+
+      const content = fs.readFileSync(filePath, 'utf-8');
+      // Find TODO comments that indicate incomplete implementations
+      // But exclude Fyne accessibility blockers (these are external issues)
+      const todoRegex = /\/\/\s*TODO[:\s].*(?:implement|incomplete|missing|placeholder|stub|fixme)/gi;
+      const todos = content.match(todoRegex) || [];
+
+      // Filter out known external blockers (Fyne accessibility)
+      const actionableTodos = todos.filter(t =>
+        !t.toLowerCase().includes('accessibility') &&
+        !t.toLowerCase().includes('fyne') &&
+        !t.toLowerCase().includes('upstream')
+      );
+
+      actionableTodos.forEach(t => {
+        allTodos.push({ file: path.basename(filePath), todo: t });
+      });
+    }
+
+    if (allTodos.length > 0) {
+      console.error('Found TODO markers in widget handler files:');
+      allTodos.forEach(({ file, todo }) => console.error(`  - ${file}: ${todo}`));
+    }
+
+    expect(allTodos.length).toBe(0);
   });
 });
 

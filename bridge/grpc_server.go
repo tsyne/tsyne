@@ -162,13 +162,25 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 		"height": float64(req.Height),
 	}
 
-	// Handle source (inline data or resource reference)
+	// Handle source (inline data, resource reference, or file path)
+	// Go handler expects "path" for data URLs/file paths and "resource" for resource names
 	switch src := req.Source.(type) {
 	case *pb.CreateImageRequest_InlineData:
-		// Convert bytes to base64
-		payload["source"] = fmt.Sprintf("data:image/png;base64,%s", src.InlineData)
+		// Convert bytes to base64 data URL - Go handler expects this in "path" field
+		payload["path"] = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(src.InlineData))
 	case *pb.CreateImageRequest_ResourceName:
 		payload["resource"] = src.ResourceName
+	case *pb.CreateImageRequest_Path:
+		payload["path"] = src.Path
+	}
+
+	// Convert fill mode enum to string format expected by handler
+	switch req.FillMode {
+	case pb.ImageFillMode_IMAGE_FILL_CONTAIN:
+		payload["fillMode"] = "contain"
+	case pb.ImageFillMode_IMAGE_FILL_STRETCH:
+		payload["fillMode"] = "stretch"
+	// IMAGE_FILL_ORIGINAL is the default, no need to set
 	}
 
 	// Add callbacks if present
@@ -176,10 +188,13 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 		payload["callbackId"] = req.CallbackId
 	}
 	if req.DragCallbackId != "" {
-		payload["dragCallbackId"] = req.DragCallbackId
+		payload["onDragCallbackId"] = req.DragCallbackId
 	}
 	if req.DoubleTapCallbackId != "" {
 		payload["doubleTapCallbackId"] = req.DoubleTapCallbackId
+	}
+	if req.DragEndCallbackId != "" {
+		payload["onDragEndCallbackId"] = req.DragEndCallbackId
 	}
 
 	msg := Message{
@@ -262,8 +277,18 @@ func (s *grpcBridgeService) CreateButton(ctx context.Context, req *pb.CreateButt
 	if req.CallbackId != "" {
 		payload["callbackId"] = req.CallbackId
 	}
-	if req.Important {
-		payload["important"] = true
+
+	// Convert importance enum to string format expected by handler
+	switch req.Importance {
+	case pb.ButtonImportance_BUTTON_IMPORTANCE_LOW:
+		payload["importance"] = "low"
+	case pb.ButtonImportance_BUTTON_IMPORTANCE_HIGH:
+		payload["importance"] = "high"
+	case pb.ButtonImportance_BUTTON_IMPORTANCE_WARNING:
+		payload["importance"] = "warning"
+	case pb.ButtonImportance_BUTTON_IMPORTANCE_SUCCESS:
+		payload["importance"] = "success"
+	// BUTTON_IMPORTANCE_MEDIUM is the default, no need to set
 	}
 
 	msg := Message{
@@ -295,6 +320,18 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 	}
 	if req.Width != 0 {
 		payload["width"] = float64(req.Width)
+	}
+	if req.OnChangeCallbackId != "" {
+		payload["onChangeCallbackId"] = req.OnChangeCallbackId
+	}
+	if req.OnCursorChangedCallbackId != "" {
+		payload["onCursorChangedCallbackId"] = req.OnCursorChangedCallbackId
+	}
+	if req.MinWidth != 0 {
+		payload["minWidth"] = float64(req.MinWidth)
+	}
+	if req.DoubleClickCallbackId != "" {
+		payload["doubleClickCallbackId"] = req.DoubleClickCallbackId
 	}
 
 	msgType := "createEntry"
@@ -329,12 +366,23 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 // CreateVBox creates a vertical box container
 func (s *grpcBridgeService) CreateVBox(ctx context.Context, req *pb.CreateVBoxRequest) (*pb.Response, error) {
 
+	payload := map[string]interface{}{
+		"id": req.WidgetId,
+	}
+
+	// Convert children slice to interface slice
+	if len(req.Children) > 0 {
+		children := make([]interface{}, len(req.Children))
+		for i, c := range req.Children {
+			children[i] = c
+		}
+		payload["children"] = children
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createVBox",
-		Payload: map[string]interface{}{
-			"id": req.WidgetId,
-		},
+		ID:      req.WidgetId,
+		Type:    "createVBox",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateVBox(msg)
@@ -348,12 +396,23 @@ func (s *grpcBridgeService) CreateVBox(ctx context.Context, req *pb.CreateVBoxRe
 // CreateHBox creates a horizontal box container
 func (s *grpcBridgeService) CreateHBox(ctx context.Context, req *pb.CreateHBoxRequest) (*pb.Response, error) {
 
+	payload := map[string]interface{}{
+		"id": req.WidgetId,
+	}
+
+	// Convert children slice to interface slice
+	if len(req.Children) > 0 {
+		children := make([]interface{}, len(req.Children))
+		for i, c := range req.Children {
+			children[i] = c
+		}
+		payload["children"] = children
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createHBox",
-		Payload: map[string]interface{}{
-			"id": req.WidgetId,
-		},
+		ID:      req.WidgetId,
+		Type:    "createHBox",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateHBox(msg)

@@ -105,18 +105,28 @@ message SetWindowFullScreenRequest {
   bool fullscreen = 2;
 }
 
+// Fill mode options for images
+enum ImageFillMode {
+  IMAGE_FILL_ORIGINAL = 0;  // Original size (default)
+  IMAGE_FILL_CONTAIN = 1;   // Scale to fit within bounds
+  IMAGE_FILL_STRETCH = 2;   // Stretch to fill bounds
+}
+
 // Widget creation messages
 message CreateImageRequest {
   string widget_id = 1;
   oneof source {
     bytes inline_data = 2;      // Raw PNG/JPEG bytes
     string resource_name = 3;   // Reference to registered resource
+    string path = 9;            // File path or data URL
   }
   int32 width = 4;
   int32 height = 5;
   string callback_id = 6;       // Click callback
   string drag_callback_id = 7;  // Drag callback
   string double_tap_callback_id = 8; // Double tap callback
+  ImageFillMode fill_mode = 10; // How to scale/fill the image
+  string drag_end_callback_id = 11; // Drag end callback
 }
 
 // Text alignment options for labels
@@ -143,28 +153,43 @@ message CreateLabelRequest {
   TextWrapping wrapping = 7;
 }
 
+// Button importance levels
+enum ButtonImportance {
+  BUTTON_IMPORTANCE_MEDIUM = 0;  // Default
+  BUTTON_IMPORTANCE_LOW = 1;
+  BUTTON_IMPORTANCE_HIGH = 2;
+  BUTTON_IMPORTANCE_WARNING = 3;
+  BUTTON_IMPORTANCE_SUCCESS = 4;
+}
+
 message CreateButtonRequest {
   string widget_id = 1;
   string text = 2;
   string callback_id = 3;
-  bool important = 4;
+  ButtonImportance importance = 4;
 }
 
 message CreateEntryRequest {
   string widget_id = 1;
   string placeholder = 2;
-  string callback_id = 3; // Submit callback
+  string callback_id = 3; // Submit callback (OnSubmitted)
   int32 width = 4;
   bool multiline = 5;
   bool password = 6;
+  string on_change_callback_id = 7; // OnChanged callback
+  string on_cursor_changed_callback_id = 8; // OnCursorChanged callback
+  float min_width = 9; // Minimum width for the entry
+  string double_click_callback_id = 10; // Double-click callback
 }
 
 message CreateVBoxRequest {
   string widget_id = 1;
+  repeated string children = 2;  // Child widget IDs
 }
 
 message CreateHBoxRequest {
   string widget_id = 1;
+  repeated string children = 2;  // Child widget IDs
 }
 
 message CreateCheckboxRequest {

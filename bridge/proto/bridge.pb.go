@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v3.21.12
-// source: bridge.proto
+// source: proto/bridge.proto
 
 package proto
 
@@ -20,6 +20,56 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// Fill mode options for images
+type ImageFillMode int32
+
+const (
+	ImageFillMode_IMAGE_FILL_ORIGINAL ImageFillMode = 0 // Original size (default)
+	ImageFillMode_IMAGE_FILL_CONTAIN  ImageFillMode = 1 // Scale to fit within bounds
+	ImageFillMode_IMAGE_FILL_STRETCH  ImageFillMode = 2 // Stretch to fill bounds
+)
+
+// Enum value maps for ImageFillMode.
+var (
+	ImageFillMode_name = map[int32]string{
+		0: "IMAGE_FILL_ORIGINAL",
+		1: "IMAGE_FILL_CONTAIN",
+		2: "IMAGE_FILL_STRETCH",
+	}
+	ImageFillMode_value = map[string]int32{
+		"IMAGE_FILL_ORIGINAL": 0,
+		"IMAGE_FILL_CONTAIN":  1,
+		"IMAGE_FILL_STRETCH":  2,
+	}
+)
+
+func (x ImageFillMode) Enum() *ImageFillMode {
+	p := new(ImageFillMode)
+	*p = x
+	return p
+}
+
+func (x ImageFillMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ImageFillMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_bridge_proto_enumTypes[0].Descriptor()
+}
+
+func (ImageFillMode) Type() protoreflect.EnumType {
+	return &file_proto_bridge_proto_enumTypes[0]
+}
+
+func (x ImageFillMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ImageFillMode.Descriptor instead.
+func (ImageFillMode) EnumDescriptor() ([]byte, []int) {
+	return file_proto_bridge_proto_rawDescGZIP(), []int{0}
+}
 
 // Text alignment options for labels
 type TextAlignment int32
@@ -55,11 +105,11 @@ func (x TextAlignment) String() string {
 }
 
 func (TextAlignment) Descriptor() protoreflect.EnumDescriptor {
-	return file_bridge_proto_enumTypes[0].Descriptor()
+	return file_proto_bridge_proto_enumTypes[1].Descriptor()
 }
 
 func (TextAlignment) Type() protoreflect.EnumType {
-	return &file_bridge_proto_enumTypes[0]
+	return &file_proto_bridge_proto_enumTypes[1]
 }
 
 func (x TextAlignment) Number() protoreflect.EnumNumber {
@@ -68,7 +118,7 @@ func (x TextAlignment) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TextAlignment.Descriptor instead.
 func (TextAlignment) EnumDescriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{0}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{1}
 }
 
 // Text wrapping options for labels
@@ -105,11 +155,11 @@ func (x TextWrapping) String() string {
 }
 
 func (TextWrapping) Descriptor() protoreflect.EnumDescriptor {
-	return file_bridge_proto_enumTypes[1].Descriptor()
+	return file_proto_bridge_proto_enumTypes[2].Descriptor()
 }
 
 func (TextWrapping) Type() protoreflect.EnumType {
-	return &file_bridge_proto_enumTypes[1]
+	return &file_proto_bridge_proto_enumTypes[2]
 }
 
 func (x TextWrapping) Number() protoreflect.EnumNumber {
@@ -118,7 +168,63 @@ func (x TextWrapping) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TextWrapping.Descriptor instead.
 func (TextWrapping) EnumDescriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{1}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{2}
+}
+
+// Button importance levels
+type ButtonImportance int32
+
+const (
+	ButtonImportance_BUTTON_IMPORTANCE_MEDIUM  ButtonImportance = 0 // Default
+	ButtonImportance_BUTTON_IMPORTANCE_LOW     ButtonImportance = 1
+	ButtonImportance_BUTTON_IMPORTANCE_HIGH    ButtonImportance = 2
+	ButtonImportance_BUTTON_IMPORTANCE_WARNING ButtonImportance = 3
+	ButtonImportance_BUTTON_IMPORTANCE_SUCCESS ButtonImportance = 4
+)
+
+// Enum value maps for ButtonImportance.
+var (
+	ButtonImportance_name = map[int32]string{
+		0: "BUTTON_IMPORTANCE_MEDIUM",
+		1: "BUTTON_IMPORTANCE_LOW",
+		2: "BUTTON_IMPORTANCE_HIGH",
+		3: "BUTTON_IMPORTANCE_WARNING",
+		4: "BUTTON_IMPORTANCE_SUCCESS",
+	}
+	ButtonImportance_value = map[string]int32{
+		"BUTTON_IMPORTANCE_MEDIUM":  0,
+		"BUTTON_IMPORTANCE_LOW":     1,
+		"BUTTON_IMPORTANCE_HIGH":    2,
+		"BUTTON_IMPORTANCE_WARNING": 3,
+		"BUTTON_IMPORTANCE_SUCCESS": 4,
+	}
+)
+
+func (x ButtonImportance) Enum() *ButtonImportance {
+	p := new(ButtonImportance)
+	*p = x
+	return p
+}
+
+func (x ButtonImportance) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ButtonImportance) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_bridge_proto_enumTypes[3].Descriptor()
+}
+
+func (ButtonImportance) Type() protoreflect.EnumType {
+	return &file_proto_bridge_proto_enumTypes[3]
+}
+
+func (x ButtonImportance) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ButtonImportance.Descriptor instead.
+func (ButtonImportance) EnumDescriptor() ([]byte, []int) {
+	return file_proto_bridge_proto_rawDescGZIP(), []int{3}
 }
 
 // Common response message
@@ -133,7 +239,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_bridge_proto_msgTypes[0]
+	mi := &file_proto_bridge_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -145,7 +251,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[0]
+	mi := &file_proto_bridge_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -158,7 +264,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{0}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Response) GetSuccess() bool {
@@ -196,7 +302,7 @@ type CreateWindowRequest struct {
 
 func (x *CreateWindowRequest) Reset() {
 	*x = CreateWindowRequest{}
-	mi := &file_bridge_proto_msgTypes[1]
+	mi := &file_proto_bridge_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -208,7 +314,7 @@ func (x *CreateWindowRequest) String() string {
 func (*CreateWindowRequest) ProtoMessage() {}
 
 func (x *CreateWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[1]
+	mi := &file_proto_bridge_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -221,7 +327,7 @@ func (x *CreateWindowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateWindowRequest.ProtoReflect.Descriptor instead.
 func (*CreateWindowRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{1}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreateWindowRequest) GetWindowId() string {
@@ -268,7 +374,7 @@ type ShowWindowRequest struct {
 
 func (x *ShowWindowRequest) Reset() {
 	*x = ShowWindowRequest{}
-	mi := &file_bridge_proto_msgTypes[2]
+	mi := &file_proto_bridge_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -280,7 +386,7 @@ func (x *ShowWindowRequest) String() string {
 func (*ShowWindowRequest) ProtoMessage() {}
 
 func (x *ShowWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[2]
+	mi := &file_proto_bridge_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -293,7 +399,7 @@ func (x *ShowWindowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShowWindowRequest.ProtoReflect.Descriptor instead.
 func (*ShowWindowRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{2}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ShowWindowRequest) GetWindowId() string {
@@ -313,7 +419,7 @@ type SetContentRequest struct {
 
 func (x *SetContentRequest) Reset() {
 	*x = SetContentRequest{}
-	mi := &file_bridge_proto_msgTypes[3]
+	mi := &file_proto_bridge_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -325,7 +431,7 @@ func (x *SetContentRequest) String() string {
 func (*SetContentRequest) ProtoMessage() {}
 
 func (x *SetContentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[3]
+	mi := &file_proto_bridge_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -338,7 +444,7 @@ func (x *SetContentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetContentRequest.ProtoReflect.Descriptor instead.
 func (*SetContentRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{3}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *SetContentRequest) GetWindowId() string {
@@ -366,7 +472,7 @@ type ResizeWindowRequest struct {
 
 func (x *ResizeWindowRequest) Reset() {
 	*x = ResizeWindowRequest{}
-	mi := &file_bridge_proto_msgTypes[4]
+	mi := &file_proto_bridge_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +484,7 @@ func (x *ResizeWindowRequest) String() string {
 func (*ResizeWindowRequest) ProtoMessage() {}
 
 func (x *ResizeWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[4]
+	mi := &file_proto_bridge_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,7 +497,7 @@ func (x *ResizeWindowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResizeWindowRequest.ProtoReflect.Descriptor instead.
 func (*ResizeWindowRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{4}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ResizeWindowRequest) GetWindowId() string {
@@ -425,7 +531,7 @@ type SetWindowTitleRequest struct {
 
 func (x *SetWindowTitleRequest) Reset() {
 	*x = SetWindowTitleRequest{}
-	mi := &file_bridge_proto_msgTypes[5]
+	mi := &file_proto_bridge_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -437,7 +543,7 @@ func (x *SetWindowTitleRequest) String() string {
 func (*SetWindowTitleRequest) ProtoMessage() {}
 
 func (x *SetWindowTitleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[5]
+	mi := &file_proto_bridge_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -450,7 +556,7 @@ func (x *SetWindowTitleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetWindowTitleRequest.ProtoReflect.Descriptor instead.
 func (*SetWindowTitleRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{5}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SetWindowTitleRequest) GetWindowId() string {
@@ -476,7 +582,7 @@ type CenterWindowRequest struct {
 
 func (x *CenterWindowRequest) Reset() {
 	*x = CenterWindowRequest{}
-	mi := &file_bridge_proto_msgTypes[6]
+	mi := &file_proto_bridge_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +594,7 @@ func (x *CenterWindowRequest) String() string {
 func (*CenterWindowRequest) ProtoMessage() {}
 
 func (x *CenterWindowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[6]
+	mi := &file_proto_bridge_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +607,7 @@ func (x *CenterWindowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CenterWindowRequest.ProtoReflect.Descriptor instead.
 func (*CenterWindowRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{6}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CenterWindowRequest) GetWindowId() string {
@@ -521,7 +627,7 @@ type SetWindowFullScreenRequest struct {
 
 func (x *SetWindowFullScreenRequest) Reset() {
 	*x = SetWindowFullScreenRequest{}
-	mi := &file_bridge_proto_msgTypes[7]
+	mi := &file_proto_bridge_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -533,7 +639,7 @@ func (x *SetWindowFullScreenRequest) String() string {
 func (*SetWindowFullScreenRequest) ProtoMessage() {}
 
 func (x *SetWindowFullScreenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[7]
+	mi := &file_proto_bridge_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -546,7 +652,7 @@ func (x *SetWindowFullScreenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetWindowFullScreenRequest.ProtoReflect.Descriptor instead.
 func (*SetWindowFullScreenRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{7}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SetWindowFullScreenRequest) GetWindowId() string {
@@ -571,19 +677,22 @@ type CreateImageRequest struct {
 	//
 	//	*CreateImageRequest_InlineData
 	//	*CreateImageRequest_ResourceName
+	//	*CreateImageRequest_Path
 	Source              isCreateImageRequest_Source `protobuf_oneof:"source"`
 	Width               int32                       `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
 	Height              int32                       `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
 	CallbackId          string                      `protobuf:"bytes,6,opt,name=callback_id,json=callbackId,proto3" json:"callback_id,omitempty"`                                // Click callback
 	DragCallbackId      string                      `protobuf:"bytes,7,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"`                  // Drag callback
 	DoubleTapCallbackId string                      `protobuf:"bytes,8,opt,name=double_tap_callback_id,json=doubleTapCallbackId,proto3" json:"double_tap_callback_id,omitempty"` // Double tap callback
+	FillMode            ImageFillMode               `protobuf:"varint,10,opt,name=fill_mode,json=fillMode,proto3,enum=bridge.ImageFillMode" json:"fill_mode,omitempty"`          // How to scale/fill the image
+	DragEndCallbackId   string                      `protobuf:"bytes,11,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"`      // Drag end callback
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CreateImageRequest) Reset() {
 	*x = CreateImageRequest{}
-	mi := &file_bridge_proto_msgTypes[8]
+	mi := &file_proto_bridge_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +704,7 @@ func (x *CreateImageRequest) String() string {
 func (*CreateImageRequest) ProtoMessage() {}
 
 func (x *CreateImageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[8]
+	mi := &file_proto_bridge_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +717,7 @@ func (x *CreateImageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateImageRequest.ProtoReflect.Descriptor instead.
 func (*CreateImageRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{8}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateImageRequest) GetWidgetId() string {
@@ -638,6 +747,15 @@ func (x *CreateImageRequest) GetResourceName() string {
 	if x != nil {
 		if x, ok := x.Source.(*CreateImageRequest_ResourceName); ok {
 			return x.ResourceName
+		}
+	}
+	return ""
+}
+
+func (x *CreateImageRequest) GetPath() string {
+	if x != nil {
+		if x, ok := x.Source.(*CreateImageRequest_Path); ok {
+			return x.Path
 		}
 	}
 	return ""
@@ -678,6 +796,20 @@ func (x *CreateImageRequest) GetDoubleTapCallbackId() string {
 	return ""
 }
 
+func (x *CreateImageRequest) GetFillMode() ImageFillMode {
+	if x != nil {
+		return x.FillMode
+	}
+	return ImageFillMode_IMAGE_FILL_ORIGINAL
+}
+
+func (x *CreateImageRequest) GetDragEndCallbackId() string {
+	if x != nil {
+		return x.DragEndCallbackId
+	}
+	return ""
+}
+
 type isCreateImageRequest_Source interface {
 	isCreateImageRequest_Source()
 }
@@ -690,9 +822,15 @@ type CreateImageRequest_ResourceName struct {
 	ResourceName string `protobuf:"bytes,3,opt,name=resource_name,json=resourceName,proto3,oneof"` // Reference to registered resource
 }
 
+type CreateImageRequest_Path struct {
+	Path string `protobuf:"bytes,9,opt,name=path,proto3,oneof"` // File path or data URL
+}
+
 func (*CreateImageRequest_InlineData) isCreateImageRequest_Source() {}
 
 func (*CreateImageRequest_ResourceName) isCreateImageRequest_Source() {}
+
+func (*CreateImageRequest_Path) isCreateImageRequest_Source() {}
 
 type CreateLabelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -709,7 +847,7 @@ type CreateLabelRequest struct {
 
 func (x *CreateLabelRequest) Reset() {
 	*x = CreateLabelRequest{}
-	mi := &file_bridge_proto_msgTypes[9]
+	mi := &file_proto_bridge_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +859,7 @@ func (x *CreateLabelRequest) String() string {
 func (*CreateLabelRequest) ProtoMessage() {}
 
 func (x *CreateLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[9]
+	mi := &file_proto_bridge_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +872,7 @@ func (x *CreateLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLabelRequest.ProtoReflect.Descriptor instead.
 func (*CreateLabelRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{9}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateLabelRequest) GetWidgetId() string {
@@ -791,14 +929,14 @@ type CreateButtonRequest struct {
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
 	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 	CallbackId    string                 `protobuf:"bytes,3,opt,name=callback_id,json=callbackId,proto3" json:"callback_id,omitempty"`
-	Important     bool                   `protobuf:"varint,4,opt,name=important,proto3" json:"important,omitempty"`
+	Importance    ButtonImportance       `protobuf:"varint,4,opt,name=importance,proto3,enum=bridge.ButtonImportance" json:"importance,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateButtonRequest) Reset() {
 	*x = CreateButtonRequest{}
-	mi := &file_bridge_proto_msgTypes[10]
+	mi := &file_proto_bridge_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -810,7 +948,7 @@ func (x *CreateButtonRequest) String() string {
 func (*CreateButtonRequest) ProtoMessage() {}
 
 func (x *CreateButtonRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[10]
+	mi := &file_proto_bridge_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +961,7 @@ func (x *CreateButtonRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateButtonRequest.ProtoReflect.Descriptor instead.
 func (*CreateButtonRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{10}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateButtonRequest) GetWidgetId() string {
@@ -847,28 +985,32 @@ func (x *CreateButtonRequest) GetCallbackId() string {
 	return ""
 }
 
-func (x *CreateButtonRequest) GetImportant() bool {
+func (x *CreateButtonRequest) GetImportance() ButtonImportance {
 	if x != nil {
-		return x.Important
+		return x.Importance
 	}
-	return false
+	return ButtonImportance_BUTTON_IMPORTANCE_MEDIUM
 }
 
 type CreateEntryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Placeholder   string                 `protobuf:"bytes,2,opt,name=placeholder,proto3" json:"placeholder,omitempty"`
-	CallbackId    string                 `protobuf:"bytes,3,opt,name=callback_id,json=callbackId,proto3" json:"callback_id,omitempty"` // Submit callback
-	Width         int32                  `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
-	Multiline     bool                   `protobuf:"varint,5,opt,name=multiline,proto3" json:"multiline,omitempty"`
-	Password      bool                   `protobuf:"varint,6,opt,name=password,proto3" json:"password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId                  string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Placeholder               string                 `protobuf:"bytes,2,opt,name=placeholder,proto3" json:"placeholder,omitempty"`
+	CallbackId                string                 `protobuf:"bytes,3,opt,name=callback_id,json=callbackId,proto3" json:"callback_id,omitempty"` // Submit callback (OnSubmitted)
+	Width                     int32                  `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
+	Multiline                 bool                   `protobuf:"varint,5,opt,name=multiline,proto3" json:"multiline,omitempty"`
+	Password                  bool                   `protobuf:"varint,6,opt,name=password,proto3" json:"password,omitempty"`
+	OnChangeCallbackId        string                 `protobuf:"bytes,7,opt,name=on_change_callback_id,json=onChangeCallbackId,proto3" json:"on_change_callback_id,omitempty"`                        // OnChanged callback
+	OnCursorChangedCallbackId string                 `protobuf:"bytes,8,opt,name=on_cursor_changed_callback_id,json=onCursorChangedCallbackId,proto3" json:"on_cursor_changed_callback_id,omitempty"` // OnCursorChanged callback
+	MinWidth                  float32                `protobuf:"fixed32,9,opt,name=min_width,json=minWidth,proto3" json:"min_width,omitempty"`                                                        // Minimum width for the entry
+	DoubleClickCallbackId     string                 `protobuf:"bytes,10,opt,name=double_click_callback_id,json=doubleClickCallbackId,proto3" json:"double_click_callback_id,omitempty"`              // Double-click callback
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *CreateEntryRequest) Reset() {
 	*x = CreateEntryRequest{}
-	mi := &file_bridge_proto_msgTypes[11]
+	mi := &file_proto_bridge_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -880,7 +1022,7 @@ func (x *CreateEntryRequest) String() string {
 func (*CreateEntryRequest) ProtoMessage() {}
 
 func (x *CreateEntryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[11]
+	mi := &file_proto_bridge_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -893,7 +1035,7 @@ func (x *CreateEntryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEntryRequest.ProtoReflect.Descriptor instead.
 func (*CreateEntryRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{11}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CreateEntryRequest) GetWidgetId() string {
@@ -938,16 +1080,45 @@ func (x *CreateEntryRequest) GetPassword() bool {
 	return false
 }
 
+func (x *CreateEntryRequest) GetOnChangeCallbackId() string {
+	if x != nil {
+		return x.OnChangeCallbackId
+	}
+	return ""
+}
+
+func (x *CreateEntryRequest) GetOnCursorChangedCallbackId() string {
+	if x != nil {
+		return x.OnCursorChangedCallbackId
+	}
+	return ""
+}
+
+func (x *CreateEntryRequest) GetMinWidth() float32 {
+	if x != nil {
+		return x.MinWidth
+	}
+	return 0
+}
+
+func (x *CreateEntryRequest) GetDoubleClickCallbackId() string {
+	if x != nil {
+		return x.DoubleClickCallbackId
+	}
+	return ""
+}
+
 type CreateVBoxRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Children      []string               `protobuf:"bytes,2,rep,name=children,proto3" json:"children,omitempty"` // Child widget IDs
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateVBoxRequest) Reset() {
 	*x = CreateVBoxRequest{}
-	mi := &file_bridge_proto_msgTypes[12]
+	mi := &file_proto_bridge_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -959,7 +1130,7 @@ func (x *CreateVBoxRequest) String() string {
 func (*CreateVBoxRequest) ProtoMessage() {}
 
 func (x *CreateVBoxRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[12]
+	mi := &file_proto_bridge_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +1143,7 @@ func (x *CreateVBoxRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateVBoxRequest.ProtoReflect.Descriptor instead.
 func (*CreateVBoxRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{12}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CreateVBoxRequest) GetWidgetId() string {
@@ -982,16 +1153,24 @@ func (x *CreateVBoxRequest) GetWidgetId() string {
 	return ""
 }
 
+func (x *CreateVBoxRequest) GetChildren() []string {
+	if x != nil {
+		return x.Children
+	}
+	return nil
+}
+
 type CreateHBoxRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Children      []string               `protobuf:"bytes,2,rep,name=children,proto3" json:"children,omitempty"` // Child widget IDs
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateHBoxRequest) Reset() {
 	*x = CreateHBoxRequest{}
-	mi := &file_bridge_proto_msgTypes[13]
+	mi := &file_proto_bridge_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1003,7 +1182,7 @@ func (x *CreateHBoxRequest) String() string {
 func (*CreateHBoxRequest) ProtoMessage() {}
 
 func (x *CreateHBoxRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[13]
+	mi := &file_proto_bridge_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1016,7 +1195,7 @@ func (x *CreateHBoxRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateHBoxRequest.ProtoReflect.Descriptor instead.
 func (*CreateHBoxRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{13}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CreateHBoxRequest) GetWidgetId() string {
@@ -1024,6 +1203,13 @@ func (x *CreateHBoxRequest) GetWidgetId() string {
 		return x.WidgetId
 	}
 	return ""
+}
+
+func (x *CreateHBoxRequest) GetChildren() []string {
+	if x != nil {
+		return x.Children
+	}
+	return nil
 }
 
 type CreateCheckboxRequest struct {
@@ -1038,7 +1224,7 @@ type CreateCheckboxRequest struct {
 
 func (x *CreateCheckboxRequest) Reset() {
 	*x = CreateCheckboxRequest{}
-	mi := &file_bridge_proto_msgTypes[14]
+	mi := &file_proto_bridge_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1050,7 +1236,7 @@ func (x *CreateCheckboxRequest) String() string {
 func (*CreateCheckboxRequest) ProtoMessage() {}
 
 func (x *CreateCheckboxRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[14]
+	mi := &file_proto_bridge_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1063,7 +1249,7 @@ func (x *CreateCheckboxRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCheckboxRequest.ProtoReflect.Descriptor instead.
 func (*CreateCheckboxRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{14}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CreateCheckboxRequest) GetWidgetId() string {
@@ -1106,7 +1292,7 @@ type CreateSelectRequest struct {
 
 func (x *CreateSelectRequest) Reset() {
 	*x = CreateSelectRequest{}
-	mi := &file_bridge_proto_msgTypes[15]
+	mi := &file_proto_bridge_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1118,7 +1304,7 @@ func (x *CreateSelectRequest) String() string {
 func (*CreateSelectRequest) ProtoMessage() {}
 
 func (x *CreateSelectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[15]
+	mi := &file_proto_bridge_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1317,7 @@ func (x *CreateSelectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSelectRequest.ProtoReflect.Descriptor instead.
 func (*CreateSelectRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{15}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CreateSelectRequest) GetWidgetId() string {
@@ -1173,7 +1359,7 @@ type RegisterResourceRequest struct {
 
 func (x *RegisterResourceRequest) Reset() {
 	*x = RegisterResourceRequest{}
-	mi := &file_bridge_proto_msgTypes[16]
+	mi := &file_proto_bridge_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1185,7 +1371,7 @@ func (x *RegisterResourceRequest) String() string {
 func (*RegisterResourceRequest) ProtoMessage() {}
 
 func (x *RegisterResourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[16]
+	mi := &file_proto_bridge_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1198,7 +1384,7 @@ func (x *RegisterResourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResourceRequest.ProtoReflect.Descriptor instead.
 func (*RegisterResourceRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{16}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RegisterResourceRequest) GetName() string {
@@ -1224,7 +1410,7 @@ type UnregisterResourceRequest struct {
 
 func (x *UnregisterResourceRequest) Reset() {
 	*x = UnregisterResourceRequest{}
-	mi := &file_bridge_proto_msgTypes[17]
+	mi := &file_proto_bridge_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1236,7 +1422,7 @@ func (x *UnregisterResourceRequest) String() string {
 func (*UnregisterResourceRequest) ProtoMessage() {}
 
 func (x *UnregisterResourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[17]
+	mi := &file_proto_bridge_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1249,7 +1435,7 @@ func (x *UnregisterResourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnregisterResourceRequest.ProtoReflect.Descriptor instead.
 func (*UnregisterResourceRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{17}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UnregisterResourceRequest) GetName() string {
@@ -1274,7 +1460,7 @@ type UpdateImageRequest struct {
 
 func (x *UpdateImageRequest) Reset() {
 	*x = UpdateImageRequest{}
-	mi := &file_bridge_proto_msgTypes[18]
+	mi := &file_proto_bridge_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1286,7 +1472,7 @@ func (x *UpdateImageRequest) String() string {
 func (*UpdateImageRequest) ProtoMessage() {}
 
 func (x *UpdateImageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[18]
+	mi := &file_proto_bridge_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1299,7 +1485,7 @@ func (x *UpdateImageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateImageRequest.ProtoReflect.Descriptor instead.
 func (*UpdateImageRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{18}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UpdateImageRequest) GetWidgetId() string {
@@ -1360,7 +1546,7 @@ type SetTextRequest struct {
 
 func (x *SetTextRequest) Reset() {
 	*x = SetTextRequest{}
-	mi := &file_bridge_proto_msgTypes[19]
+	mi := &file_proto_bridge_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1372,7 +1558,7 @@ func (x *SetTextRequest) String() string {
 func (*SetTextRequest) ProtoMessage() {}
 
 func (x *SetTextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[19]
+	mi := &file_proto_bridge_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1385,7 +1571,7 @@ func (x *SetTextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTextRequest.ProtoReflect.Descriptor instead.
 func (*SetTextRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{19}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SetTextRequest) GetWidgetId() string {
@@ -1411,7 +1597,7 @@ type GetTextRequest struct {
 
 func (x *GetTextRequest) Reset() {
 	*x = GetTextRequest{}
-	mi := &file_bridge_proto_msgTypes[20]
+	mi := &file_proto_bridge_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1609,7 @@ func (x *GetTextRequest) String() string {
 func (*GetTextRequest) ProtoMessage() {}
 
 func (x *GetTextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[20]
+	mi := &file_proto_bridge_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1436,7 +1622,7 @@ func (x *GetTextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTextRequest.ProtoReflect.Descriptor instead.
 func (*GetTextRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{20}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetTextRequest) GetWidgetId() string {
@@ -1457,7 +1643,7 @@ type GetTextResponse struct {
 
 func (x *GetTextResponse) Reset() {
 	*x = GetTextResponse{}
-	mi := &file_bridge_proto_msgTypes[21]
+	mi := &file_proto_bridge_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1469,7 +1655,7 @@ func (x *GetTextResponse) String() string {
 func (*GetTextResponse) ProtoMessage() {}
 
 func (x *GetTextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[21]
+	mi := &file_proto_bridge_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1482,7 +1668,7 @@ func (x *GetTextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTextResponse.ProtoReflect.Descriptor instead.
 func (*GetTextResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{21}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetTextResponse) GetSuccess() bool {
@@ -1516,7 +1702,7 @@ type SetProgressRequest struct {
 
 func (x *SetProgressRequest) Reset() {
 	*x = SetProgressRequest{}
-	mi := &file_bridge_proto_msgTypes[22]
+	mi := &file_proto_bridge_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1528,7 +1714,7 @@ func (x *SetProgressRequest) String() string {
 func (*SetProgressRequest) ProtoMessage() {}
 
 func (x *SetProgressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[22]
+	mi := &file_proto_bridge_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1541,7 +1727,7 @@ func (x *SetProgressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetProgressRequest.ProtoReflect.Descriptor instead.
 func (*SetProgressRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{22}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SetProgressRequest) GetWidgetId() string {
@@ -1567,7 +1753,7 @@ type GetProgressRequest struct {
 
 func (x *GetProgressRequest) Reset() {
 	*x = GetProgressRequest{}
-	mi := &file_bridge_proto_msgTypes[23]
+	mi := &file_proto_bridge_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1579,7 +1765,7 @@ func (x *GetProgressRequest) String() string {
 func (*GetProgressRequest) ProtoMessage() {}
 
 func (x *GetProgressRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[23]
+	mi := &file_proto_bridge_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1592,7 +1778,7 @@ func (x *GetProgressRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProgressRequest.ProtoReflect.Descriptor instead.
 func (*GetProgressRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{23}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetProgressRequest) GetWidgetId() string {
@@ -1613,7 +1799,7 @@ type GetProgressResponse struct {
 
 func (x *GetProgressResponse) Reset() {
 	*x = GetProgressResponse{}
-	mi := &file_bridge_proto_msgTypes[24]
+	mi := &file_proto_bridge_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1625,7 +1811,7 @@ func (x *GetProgressResponse) String() string {
 func (*GetProgressResponse) ProtoMessage() {}
 
 func (x *GetProgressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[24]
+	mi := &file_proto_bridge_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1638,7 +1824,7 @@ func (x *GetProgressResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProgressResponse.ProtoReflect.Descriptor instead.
 func (*GetProgressResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{24}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GetProgressResponse) GetSuccess() bool {
@@ -1672,7 +1858,7 @@ type SetCheckedRequest struct {
 
 func (x *SetCheckedRequest) Reset() {
 	*x = SetCheckedRequest{}
-	mi := &file_bridge_proto_msgTypes[25]
+	mi := &file_proto_bridge_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1684,7 +1870,7 @@ func (x *SetCheckedRequest) String() string {
 func (*SetCheckedRequest) ProtoMessage() {}
 
 func (x *SetCheckedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[25]
+	mi := &file_proto_bridge_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1697,7 +1883,7 @@ func (x *SetCheckedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetCheckedRequest.ProtoReflect.Descriptor instead.
 func (*SetCheckedRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{25}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *SetCheckedRequest) GetWidgetId() string {
@@ -1723,7 +1909,7 @@ type GetCheckedRequest struct {
 
 func (x *GetCheckedRequest) Reset() {
 	*x = GetCheckedRequest{}
-	mi := &file_bridge_proto_msgTypes[26]
+	mi := &file_proto_bridge_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1735,7 +1921,7 @@ func (x *GetCheckedRequest) String() string {
 func (*GetCheckedRequest) ProtoMessage() {}
 
 func (x *GetCheckedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[26]
+	mi := &file_proto_bridge_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1748,7 +1934,7 @@ func (x *GetCheckedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckedRequest.ProtoReflect.Descriptor instead.
 func (*GetCheckedRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{26}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetCheckedRequest) GetWidgetId() string {
@@ -1769,7 +1955,7 @@ type GetCheckedResponse struct {
 
 func (x *GetCheckedResponse) Reset() {
 	*x = GetCheckedResponse{}
-	mi := &file_bridge_proto_msgTypes[27]
+	mi := &file_proto_bridge_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1781,7 +1967,7 @@ func (x *GetCheckedResponse) String() string {
 func (*GetCheckedResponse) ProtoMessage() {}
 
 func (x *GetCheckedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[27]
+	mi := &file_proto_bridge_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1794,7 +1980,7 @@ func (x *GetCheckedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCheckedResponse.ProtoReflect.Descriptor instead.
 func (*GetCheckedResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{27}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GetCheckedResponse) GetSuccess() bool {
@@ -1828,7 +2014,7 @@ type ClickWidgetRequest struct {
 
 func (x *ClickWidgetRequest) Reset() {
 	*x = ClickWidgetRequest{}
-	mi := &file_bridge_proto_msgTypes[28]
+	mi := &file_proto_bridge_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1840,7 +2026,7 @@ func (x *ClickWidgetRequest) String() string {
 func (*ClickWidgetRequest) ProtoMessage() {}
 
 func (x *ClickWidgetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[28]
+	mi := &file_proto_bridge_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1853,7 +2039,7 @@ func (x *ClickWidgetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClickWidgetRequest.ProtoReflect.Descriptor instead.
 func (*ClickWidgetRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{28}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ClickWidgetRequest) GetWidgetId() string {
@@ -1873,7 +2059,7 @@ type TypeTextRequest struct {
 
 func (x *TypeTextRequest) Reset() {
 	*x = TypeTextRequest{}
-	mi := &file_bridge_proto_msgTypes[29]
+	mi := &file_proto_bridge_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1885,7 +2071,7 @@ func (x *TypeTextRequest) String() string {
 func (*TypeTextRequest) ProtoMessage() {}
 
 func (x *TypeTextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[29]
+	mi := &file_proto_bridge_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1898,7 +2084,7 @@ func (x *TypeTextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TypeTextRequest.ProtoReflect.Descriptor instead.
 func (*TypeTextRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{29}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TypeTextRequest) GetWidgetId() string {
@@ -1924,7 +2110,7 @@ type DoubleTapWidgetRequest struct {
 
 func (x *DoubleTapWidgetRequest) Reset() {
 	*x = DoubleTapWidgetRequest{}
-	mi := &file_bridge_proto_msgTypes[30]
+	mi := &file_proto_bridge_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1936,7 +2122,7 @@ func (x *DoubleTapWidgetRequest) String() string {
 func (*DoubleTapWidgetRequest) ProtoMessage() {}
 
 func (x *DoubleTapWidgetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[30]
+	mi := &file_proto_bridge_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1949,7 +2135,7 @@ func (x *DoubleTapWidgetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DoubleTapWidgetRequest.ProtoReflect.Descriptor instead.
 func (*DoubleTapWidgetRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{30}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *DoubleTapWidgetRequest) GetWidgetId() string {
@@ -1968,7 +2154,7 @@ type RightClickWidgetRequest struct {
 
 func (x *RightClickWidgetRequest) Reset() {
 	*x = RightClickWidgetRequest{}
-	mi := &file_bridge_proto_msgTypes[31]
+	mi := &file_proto_bridge_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1980,7 +2166,7 @@ func (x *RightClickWidgetRequest) String() string {
 func (*RightClickWidgetRequest) ProtoMessage() {}
 
 func (x *RightClickWidgetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[31]
+	mi := &file_proto_bridge_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1993,7 +2179,7 @@ func (x *RightClickWidgetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RightClickWidgetRequest.ProtoReflect.Descriptor instead.
 func (*RightClickWidgetRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{31}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *RightClickWidgetRequest) GetWidgetId() string {
@@ -2014,7 +2200,7 @@ type DragWidgetRequest struct {
 
 func (x *DragWidgetRequest) Reset() {
 	*x = DragWidgetRequest{}
-	mi := &file_bridge_proto_msgTypes[32]
+	mi := &file_proto_bridge_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2026,7 +2212,7 @@ func (x *DragWidgetRequest) String() string {
 func (*DragWidgetRequest) ProtoMessage() {}
 
 func (x *DragWidgetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[32]
+	mi := &file_proto_bridge_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2039,7 +2225,7 @@ func (x *DragWidgetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DragWidgetRequest.ProtoReflect.Descriptor instead.
 func (*DragWidgetRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{32}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *DragWidgetRequest) GetWidgetId() string {
@@ -2074,7 +2260,7 @@ type RegisterCustomIdRequest struct {
 
 func (x *RegisterCustomIdRequest) Reset() {
 	*x = RegisterCustomIdRequest{}
-	mi := &file_bridge_proto_msgTypes[33]
+	mi := &file_proto_bridge_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2086,7 +2272,7 @@ func (x *RegisterCustomIdRequest) String() string {
 func (*RegisterCustomIdRequest) ProtoMessage() {}
 
 func (x *RegisterCustomIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[33]
+	mi := &file_proto_bridge_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2099,7 +2285,7 @@ func (x *RegisterCustomIdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterCustomIdRequest.ProtoReflect.Descriptor instead.
 func (*RegisterCustomIdRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{33}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *RegisterCustomIdRequest) GetCustomId() string {
@@ -2127,7 +2313,7 @@ type FindWidgetRequest struct {
 
 func (x *FindWidgetRequest) Reset() {
 	*x = FindWidgetRequest{}
-	mi := &file_bridge_proto_msgTypes[34]
+	mi := &file_proto_bridge_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2139,7 +2325,7 @@ func (x *FindWidgetRequest) String() string {
 func (*FindWidgetRequest) ProtoMessage() {}
 
 func (x *FindWidgetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[34]
+	mi := &file_proto_bridge_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2152,7 +2338,7 @@ func (x *FindWidgetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindWidgetRequest.ProtoReflect.Descriptor instead.
 func (*FindWidgetRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{34}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *FindWidgetRequest) GetSelector() string {
@@ -2180,7 +2366,7 @@ type FindWidgetResponse struct {
 
 func (x *FindWidgetResponse) Reset() {
 	*x = FindWidgetResponse{}
-	mi := &file_bridge_proto_msgTypes[35]
+	mi := &file_proto_bridge_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2192,7 +2378,7 @@ func (x *FindWidgetResponse) String() string {
 func (*FindWidgetResponse) ProtoMessage() {}
 
 func (x *FindWidgetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[35]
+	mi := &file_proto_bridge_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2205,7 +2391,7 @@ func (x *FindWidgetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindWidgetResponse.ProtoReflect.Descriptor instead.
 func (*FindWidgetResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{35}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *FindWidgetResponse) GetSuccess() bool {
@@ -2238,7 +2424,7 @@ type GetWidgetInfoRequest struct {
 
 func (x *GetWidgetInfoRequest) Reset() {
 	*x = GetWidgetInfoRequest{}
-	mi := &file_bridge_proto_msgTypes[36]
+	mi := &file_proto_bridge_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2250,7 +2436,7 @@ func (x *GetWidgetInfoRequest) String() string {
 func (*GetWidgetInfoRequest) ProtoMessage() {}
 
 func (x *GetWidgetInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[36]
+	mi := &file_proto_bridge_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2263,7 +2449,7 @@ func (x *GetWidgetInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWidgetInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetWidgetInfoRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{36}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GetWidgetInfoRequest) GetWidgetId() string {
@@ -2292,7 +2478,7 @@ type WidgetInfoResponse struct {
 
 func (x *WidgetInfoResponse) Reset() {
 	*x = WidgetInfoResponse{}
-	mi := &file_bridge_proto_msgTypes[37]
+	mi := &file_proto_bridge_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2304,7 +2490,7 @@ func (x *WidgetInfoResponse) String() string {
 func (*WidgetInfoResponse) ProtoMessage() {}
 
 func (x *WidgetInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[37]
+	mi := &file_proto_bridge_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2317,7 +2503,7 @@ func (x *WidgetInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WidgetInfoResponse.ProtoReflect.Descriptor instead.
 func (*WidgetInfoResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{37}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *WidgetInfoResponse) GetSuccess() bool {
@@ -2405,7 +2591,7 @@ type GetAllWidgetsRequest struct {
 
 func (x *GetAllWidgetsRequest) Reset() {
 	*x = GetAllWidgetsRequest{}
-	mi := &file_bridge_proto_msgTypes[38]
+	mi := &file_proto_bridge_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2417,7 +2603,7 @@ func (x *GetAllWidgetsRequest) String() string {
 func (*GetAllWidgetsRequest) ProtoMessage() {}
 
 func (x *GetAllWidgetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[38]
+	mi := &file_proto_bridge_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2430,7 +2616,7 @@ func (x *GetAllWidgetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllWidgetsRequest.ProtoReflect.Descriptor instead.
 func (*GetAllWidgetsRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{38}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{38}
 }
 
 type GetAllWidgetsResponse struct {
@@ -2444,7 +2630,7 @@ type GetAllWidgetsResponse struct {
 
 func (x *GetAllWidgetsResponse) Reset() {
 	*x = GetAllWidgetsResponse{}
-	mi := &file_bridge_proto_msgTypes[39]
+	mi := &file_proto_bridge_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2456,7 +2642,7 @@ func (x *GetAllWidgetsResponse) String() string {
 func (*GetAllWidgetsResponse) ProtoMessage() {}
 
 func (x *GetAllWidgetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[39]
+	mi := &file_proto_bridge_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2469,7 +2655,7 @@ func (x *GetAllWidgetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllWidgetsResponse.ProtoReflect.Descriptor instead.
 func (*GetAllWidgetsResponse) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{39}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetAllWidgetsResponse) GetSuccess() bool {
@@ -2504,7 +2690,7 @@ type WidgetInfo struct {
 
 func (x *WidgetInfo) Reset() {
 	*x = WidgetInfo{}
-	mi := &file_bridge_proto_msgTypes[40]
+	mi := &file_proto_bridge_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2516,7 +2702,7 @@ func (x *WidgetInfo) String() string {
 func (*WidgetInfo) ProtoMessage() {}
 
 func (x *WidgetInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[40]
+	mi := &file_proto_bridge_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2529,7 +2715,7 @@ func (x *WidgetInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WidgetInfo.ProtoReflect.Descriptor instead.
 func (*WidgetInfo) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{40}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *WidgetInfo) GetId() string {
@@ -2565,7 +2751,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_bridge_proto_msgTypes[41]
+	mi := &file_proto_bridge_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2577,7 +2763,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[41]
+	mi := &file_proto_bridge_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2590,7 +2776,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{41}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *Event) GetType() string {
@@ -2623,7 +2809,7 @@ type EventSubscription struct {
 
 func (x *EventSubscription) Reset() {
 	*x = EventSubscription{}
-	mi := &file_bridge_proto_msgTypes[42]
+	mi := &file_proto_bridge_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2635,7 +2821,7 @@ func (x *EventSubscription) String() string {
 func (*EventSubscription) ProtoMessage() {}
 
 func (x *EventSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[42]
+	mi := &file_proto_bridge_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2648,7 +2834,7 @@ func (x *EventSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventSubscription.ProtoReflect.Descriptor instead.
 func (*EventSubscription) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{42}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *EventSubscription) GetEventTypes() []string {
@@ -2667,7 +2853,7 @@ type QuitRequest struct {
 
 func (x *QuitRequest) Reset() {
 	*x = QuitRequest{}
-	mi := &file_bridge_proto_msgTypes[43]
+	mi := &file_proto_bridge_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2679,7 +2865,7 @@ func (x *QuitRequest) String() string {
 func (*QuitRequest) ProtoMessage() {}
 
 func (x *QuitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_bridge_proto_msgTypes[43]
+	mi := &file_proto_bridge_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2692,14 +2878,14 @@ func (x *QuitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuitRequest.ProtoReflect.Descriptor instead.
 func (*QuitRequest) Descriptor() ([]byte, []int) {
-	return file_bridge_proto_rawDescGZIP(), []int{43}
+	return file_proto_bridge_proto_rawDescGZIP(), []int{43}
 }
 
-var File_bridge_proto protoreflect.FileDescriptor
+var File_proto_bridge_proto protoreflect.FileDescriptor
 
-const file_bridge_proto_rawDesc = "" +
+const file_proto_bridge_proto_rawDesc = "" +
 	"\n" +
-	"\fbridge.proto\x12\x06bridge\"\xab\x01\n" +
+	"\x12proto/bridge.proto\x12\x06bridge\"\xab\x01\n" +
 	"\bResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x124\n" +
@@ -2732,18 +2918,22 @@ const file_bridge_proto_rawDesc = "" +
 	"\twindow_id\x18\x01 \x01(\tR\bwindowId\x12\x1e\n" +
 	"\n" +
 	"fullscreen\x18\x02 \x01(\bR\n" +
-	"fullscreen\"\xb3\x02\n" +
+	"fullscreen\"\xae\x03\n" +
 	"\x12CreateImageRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12!\n" +
 	"\vinline_data\x18\x02 \x01(\fH\x00R\n" +
 	"inlineData\x12%\n" +
 	"\rresource_name\x18\x03 \x01(\tH\x00R\fresourceName\x12\x14\n" +
+	"\x04path\x18\t \x01(\tH\x00R\x04path\x12\x14\n" +
 	"\x05width\x18\x04 \x01(\x05R\x05width\x12\x16\n" +
 	"\x06height\x18\x05 \x01(\x05R\x06height\x12\x1f\n" +
 	"\vcallback_id\x18\x06 \x01(\tR\n" +
 	"callbackId\x12(\n" +
 	"\x10drag_callback_id\x18\a \x01(\tR\x0edragCallbackId\x123\n" +
-	"\x16double_tap_callback_id\x18\b \x01(\tR\x13doubleTapCallbackIdB\b\n" +
+	"\x16double_tap_callback_id\x18\b \x01(\tR\x13doubleTapCallbackId\x122\n" +
+	"\tfill_mode\x18\n" +
+	" \x01(\x0e2\x15.bridge.ImageFillModeR\bfillMode\x12/\n" +
+	"\x14drag_end_callback_id\x18\v \x01(\tR\x11dragEndCallbackIdB\b\n" +
 	"\x06source\"\xf6\x01\n" +
 	"\x12CreateLabelRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
@@ -2752,13 +2942,15 @@ const file_bridge_proto_rawDesc = "" +
 	"\talignment\x18\x04 \x01(\x0e2\x15.bridge.TextAlignmentR\talignment\x12\x16\n" +
 	"\x06italic\x18\x05 \x01(\bR\x06italic\x12\x1c\n" +
 	"\tmonospace\x18\x06 \x01(\bR\tmonospace\x120\n" +
-	"\bwrapping\x18\a \x01(\x0e2\x14.bridge.TextWrappingR\bwrapping\"\x85\x01\n" +
+	"\bwrapping\x18\a \x01(\x0e2\x14.bridge.TextWrappingR\bwrapping\"\xa1\x01\n" +
 	"\x13CreateButtonRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1f\n" +
 	"\vcallback_id\x18\x03 \x01(\tR\n" +
-	"callbackId\x12\x1c\n" +
-	"\timportant\x18\x04 \x01(\bR\timportant\"\xc4\x01\n" +
+	"callbackId\x128\n" +
+	"\n" +
+	"importance\x18\x04 \x01(\x0e2\x18.bridge.ButtonImportanceR\n" +
+	"importance\"\x8f\x03\n" +
 	"\x12CreateEntryRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12 \n" +
 	"\vplaceholder\x18\x02 \x01(\tR\vplaceholder\x12\x1f\n" +
@@ -2766,11 +2958,18 @@ const file_bridge_proto_rawDesc = "" +
 	"callbackId\x12\x14\n" +
 	"\x05width\x18\x04 \x01(\x05R\x05width\x12\x1c\n" +
 	"\tmultiline\x18\x05 \x01(\bR\tmultiline\x12\x1a\n" +
-	"\bpassword\x18\x06 \x01(\bR\bpassword\"0\n" +
+	"\bpassword\x18\x06 \x01(\bR\bpassword\x121\n" +
+	"\x15on_change_callback_id\x18\a \x01(\tR\x12onChangeCallbackId\x12@\n" +
+	"\x1don_cursor_changed_callback_id\x18\b \x01(\tR\x19onCursorChangedCallbackId\x12\x1b\n" +
+	"\tmin_width\x18\t \x01(\x02R\bminWidth\x127\n" +
+	"\x18double_click_callback_id\x18\n" +
+	" \x01(\tR\x15doubleClickCallbackId\"L\n" +
 	"\x11CreateVBoxRequest\x12\x1b\n" +
-	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\"0\n" +
+	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x1a\n" +
+	"\bchildren\x18\x02 \x03(\tR\bchildren\"L\n" +
 	"\x11CreateHBoxRequest\x12\x1b\n" +
-	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\"\x83\x01\n" +
+	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x1a\n" +
+	"\bchildren\x18\x02 \x03(\tR\bchildren\"\x83\x01\n" +
 	"\x15CreateCheckboxRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x18\n" +
@@ -2880,7 +3079,11 @@ const file_bridge_proto_rawDesc = "" +
 	"\x11EventSubscription\x12\x1f\n" +
 	"\vevent_types\x18\x01 \x03(\tR\n" +
 	"eventTypes\"\r\n" +
-	"\vQuitRequest*W\n" +
+	"\vQuitRequest*X\n" +
+	"\rImageFillMode\x12\x17\n" +
+	"\x13IMAGE_FILL_ORIGINAL\x10\x00\x12\x16\n" +
+	"\x12IMAGE_FILL_CONTAIN\x10\x01\x12\x16\n" +
+	"\x12IMAGE_FILL_STRETCH\x10\x02*W\n" +
 	"\rTextAlignment\x12\x16\n" +
 	"\x12TEXT_ALIGN_LEADING\x10\x00\x12\x15\n" +
 	"\x11TEXT_ALIGN_CENTER\x10\x01\x12\x17\n" +
@@ -2888,7 +3091,13 @@ const file_bridge_proto_rawDesc = "" +
 	"\fTextWrapping\x12\x11\n" +
 	"\rTEXT_WRAP_OFF\x10\x00\x12\x16\n" +
 	"\x12TEXT_WRAP_TRUNCATE\x10\x01\x12\x12\n" +
-	"\x0eTEXT_WRAP_WORD\x10\x022\xd3\x11\n" +
+	"\x0eTEXT_WRAP_WORD\x10\x02*\xa5\x01\n" +
+	"\x10ButtonImportance\x12\x1c\n" +
+	"\x18BUTTON_IMPORTANCE_MEDIUM\x10\x00\x12\x19\n" +
+	"\x15BUTTON_IMPORTANCE_LOW\x10\x01\x12\x1a\n" +
+	"\x16BUTTON_IMPORTANCE_HIGH\x10\x02\x12\x1d\n" +
+	"\x19BUTTON_IMPORTANCE_WARNING\x10\x03\x12\x1d\n" +
+	"\x19BUTTON_IMPORTANCE_SUCCESS\x10\x042\xd3\x11\n" +
 	"\rBridgeService\x12=\n" +
 	"\fCreateWindow\x12\x1b.bridge.CreateWindowRequest\x1a\x10.bridge.Response\x129\n" +
 	"\n" +
@@ -2935,162 +3144,167 @@ const file_bridge_proto_rawDesc = "" +
 	"\x04Quit\x12\x13.bridge.QuitRequest\x1a\x10.bridge.ResponseB,Z*github.com/paul-hammant/tsyne/bridge/protob\x06proto3"
 
 var (
-	file_bridge_proto_rawDescOnce sync.Once
-	file_bridge_proto_rawDescData []byte
+	file_proto_bridge_proto_rawDescOnce sync.Once
+	file_proto_bridge_proto_rawDescData []byte
 )
 
-func file_bridge_proto_rawDescGZIP() []byte {
-	file_bridge_proto_rawDescOnce.Do(func() {
-		file_bridge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_bridge_proto_rawDesc), len(file_bridge_proto_rawDesc)))
+func file_proto_bridge_proto_rawDescGZIP() []byte {
+	file_proto_bridge_proto_rawDescOnce.Do(func() {
+		file_proto_bridge_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_bridge_proto_rawDesc), len(file_proto_bridge_proto_rawDesc)))
 	})
-	return file_bridge_proto_rawDescData
+	return file_proto_bridge_proto_rawDescData
 }
 
-var file_bridge_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_bridge_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
-var file_bridge_proto_goTypes = []any{
-	(TextAlignment)(0),                 // 0: bridge.TextAlignment
-	(TextWrapping)(0),                  // 1: bridge.TextWrapping
-	(*Response)(nil),                   // 2: bridge.Response
-	(*CreateWindowRequest)(nil),        // 3: bridge.CreateWindowRequest
-	(*ShowWindowRequest)(nil),          // 4: bridge.ShowWindowRequest
-	(*SetContentRequest)(nil),          // 5: bridge.SetContentRequest
-	(*ResizeWindowRequest)(nil),        // 6: bridge.ResizeWindowRequest
-	(*SetWindowTitleRequest)(nil),      // 7: bridge.SetWindowTitleRequest
-	(*CenterWindowRequest)(nil),        // 8: bridge.CenterWindowRequest
-	(*SetWindowFullScreenRequest)(nil), // 9: bridge.SetWindowFullScreenRequest
-	(*CreateImageRequest)(nil),         // 10: bridge.CreateImageRequest
-	(*CreateLabelRequest)(nil),         // 11: bridge.CreateLabelRequest
-	(*CreateButtonRequest)(nil),        // 12: bridge.CreateButtonRequest
-	(*CreateEntryRequest)(nil),         // 13: bridge.CreateEntryRequest
-	(*CreateVBoxRequest)(nil),          // 14: bridge.CreateVBoxRequest
-	(*CreateHBoxRequest)(nil),          // 15: bridge.CreateHBoxRequest
-	(*CreateCheckboxRequest)(nil),      // 16: bridge.CreateCheckboxRequest
-	(*CreateSelectRequest)(nil),        // 17: bridge.CreateSelectRequest
-	(*RegisterResourceRequest)(nil),    // 18: bridge.RegisterResourceRequest
-	(*UnregisterResourceRequest)(nil),  // 19: bridge.UnregisterResourceRequest
-	(*UpdateImageRequest)(nil),         // 20: bridge.UpdateImageRequest
-	(*SetTextRequest)(nil),             // 21: bridge.SetTextRequest
-	(*GetTextRequest)(nil),             // 22: bridge.GetTextRequest
-	(*GetTextResponse)(nil),            // 23: bridge.GetTextResponse
-	(*SetProgressRequest)(nil),         // 24: bridge.SetProgressRequest
-	(*GetProgressRequest)(nil),         // 25: bridge.GetProgressRequest
-	(*GetProgressResponse)(nil),        // 26: bridge.GetProgressResponse
-	(*SetCheckedRequest)(nil),          // 27: bridge.SetCheckedRequest
-	(*GetCheckedRequest)(nil),          // 28: bridge.GetCheckedRequest
-	(*GetCheckedResponse)(nil),         // 29: bridge.GetCheckedResponse
-	(*ClickWidgetRequest)(nil),         // 30: bridge.ClickWidgetRequest
-	(*TypeTextRequest)(nil),            // 31: bridge.TypeTextRequest
-	(*DoubleTapWidgetRequest)(nil),     // 32: bridge.DoubleTapWidgetRequest
-	(*RightClickWidgetRequest)(nil),    // 33: bridge.RightClickWidgetRequest
-	(*DragWidgetRequest)(nil),          // 34: bridge.DragWidgetRequest
-	(*RegisterCustomIdRequest)(nil),    // 35: bridge.RegisterCustomIdRequest
-	(*FindWidgetRequest)(nil),          // 36: bridge.FindWidgetRequest
-	(*FindWidgetResponse)(nil),         // 37: bridge.FindWidgetResponse
-	(*GetWidgetInfoRequest)(nil),       // 38: bridge.GetWidgetInfoRequest
-	(*WidgetInfoResponse)(nil),         // 39: bridge.WidgetInfoResponse
-	(*GetAllWidgetsRequest)(nil),       // 40: bridge.GetAllWidgetsRequest
-	(*GetAllWidgetsResponse)(nil),      // 41: bridge.GetAllWidgetsResponse
-	(*WidgetInfo)(nil),                 // 42: bridge.WidgetInfo
-	(*Event)(nil),                      // 43: bridge.Event
-	(*EventSubscription)(nil),          // 44: bridge.EventSubscription
-	(*QuitRequest)(nil),                // 45: bridge.QuitRequest
-	nil,                                // 46: bridge.Response.ResultEntry
-	nil,                                // 47: bridge.Event.DataEntry
+var file_proto_bridge_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_proto_bridge_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
+var file_proto_bridge_proto_goTypes = []any{
+	(ImageFillMode)(0),                 // 0: bridge.ImageFillMode
+	(TextAlignment)(0),                 // 1: bridge.TextAlignment
+	(TextWrapping)(0),                  // 2: bridge.TextWrapping
+	(ButtonImportance)(0),              // 3: bridge.ButtonImportance
+	(*Response)(nil),                   // 4: bridge.Response
+	(*CreateWindowRequest)(nil),        // 5: bridge.CreateWindowRequest
+	(*ShowWindowRequest)(nil),          // 6: bridge.ShowWindowRequest
+	(*SetContentRequest)(nil),          // 7: bridge.SetContentRequest
+	(*ResizeWindowRequest)(nil),        // 8: bridge.ResizeWindowRequest
+	(*SetWindowTitleRequest)(nil),      // 9: bridge.SetWindowTitleRequest
+	(*CenterWindowRequest)(nil),        // 10: bridge.CenterWindowRequest
+	(*SetWindowFullScreenRequest)(nil), // 11: bridge.SetWindowFullScreenRequest
+	(*CreateImageRequest)(nil),         // 12: bridge.CreateImageRequest
+	(*CreateLabelRequest)(nil),         // 13: bridge.CreateLabelRequest
+	(*CreateButtonRequest)(nil),        // 14: bridge.CreateButtonRequest
+	(*CreateEntryRequest)(nil),         // 15: bridge.CreateEntryRequest
+	(*CreateVBoxRequest)(nil),          // 16: bridge.CreateVBoxRequest
+	(*CreateHBoxRequest)(nil),          // 17: bridge.CreateHBoxRequest
+	(*CreateCheckboxRequest)(nil),      // 18: bridge.CreateCheckboxRequest
+	(*CreateSelectRequest)(nil),        // 19: bridge.CreateSelectRequest
+	(*RegisterResourceRequest)(nil),    // 20: bridge.RegisterResourceRequest
+	(*UnregisterResourceRequest)(nil),  // 21: bridge.UnregisterResourceRequest
+	(*UpdateImageRequest)(nil),         // 22: bridge.UpdateImageRequest
+	(*SetTextRequest)(nil),             // 23: bridge.SetTextRequest
+	(*GetTextRequest)(nil),             // 24: bridge.GetTextRequest
+	(*GetTextResponse)(nil),            // 25: bridge.GetTextResponse
+	(*SetProgressRequest)(nil),         // 26: bridge.SetProgressRequest
+	(*GetProgressRequest)(nil),         // 27: bridge.GetProgressRequest
+	(*GetProgressResponse)(nil),        // 28: bridge.GetProgressResponse
+	(*SetCheckedRequest)(nil),          // 29: bridge.SetCheckedRequest
+	(*GetCheckedRequest)(nil),          // 30: bridge.GetCheckedRequest
+	(*GetCheckedResponse)(nil),         // 31: bridge.GetCheckedResponse
+	(*ClickWidgetRequest)(nil),         // 32: bridge.ClickWidgetRequest
+	(*TypeTextRequest)(nil),            // 33: bridge.TypeTextRequest
+	(*DoubleTapWidgetRequest)(nil),     // 34: bridge.DoubleTapWidgetRequest
+	(*RightClickWidgetRequest)(nil),    // 35: bridge.RightClickWidgetRequest
+	(*DragWidgetRequest)(nil),          // 36: bridge.DragWidgetRequest
+	(*RegisterCustomIdRequest)(nil),    // 37: bridge.RegisterCustomIdRequest
+	(*FindWidgetRequest)(nil),          // 38: bridge.FindWidgetRequest
+	(*FindWidgetResponse)(nil),         // 39: bridge.FindWidgetResponse
+	(*GetWidgetInfoRequest)(nil),       // 40: bridge.GetWidgetInfoRequest
+	(*WidgetInfoResponse)(nil),         // 41: bridge.WidgetInfoResponse
+	(*GetAllWidgetsRequest)(nil),       // 42: bridge.GetAllWidgetsRequest
+	(*GetAllWidgetsResponse)(nil),      // 43: bridge.GetAllWidgetsResponse
+	(*WidgetInfo)(nil),                 // 44: bridge.WidgetInfo
+	(*Event)(nil),                      // 45: bridge.Event
+	(*EventSubscription)(nil),          // 46: bridge.EventSubscription
+	(*QuitRequest)(nil),                // 47: bridge.QuitRequest
+	nil,                                // 48: bridge.Response.ResultEntry
+	nil,                                // 49: bridge.Event.DataEntry
 }
-var file_bridge_proto_depIdxs = []int32{
-	46, // 0: bridge.Response.result:type_name -> bridge.Response.ResultEntry
-	0,  // 1: bridge.CreateLabelRequest.alignment:type_name -> bridge.TextAlignment
-	1,  // 2: bridge.CreateLabelRequest.wrapping:type_name -> bridge.TextWrapping
-	42, // 3: bridge.GetAllWidgetsResponse.widgets:type_name -> bridge.WidgetInfo
-	47, // 4: bridge.Event.data:type_name -> bridge.Event.DataEntry
-	3,  // 5: bridge.BridgeService.CreateWindow:input_type -> bridge.CreateWindowRequest
-	4,  // 6: bridge.BridgeService.ShowWindow:input_type -> bridge.ShowWindowRequest
-	5,  // 7: bridge.BridgeService.SetContent:input_type -> bridge.SetContentRequest
-	6,  // 8: bridge.BridgeService.ResizeWindow:input_type -> bridge.ResizeWindowRequest
-	7,  // 9: bridge.BridgeService.SetWindowTitle:input_type -> bridge.SetWindowTitleRequest
-	8,  // 10: bridge.BridgeService.CenterWindow:input_type -> bridge.CenterWindowRequest
-	9,  // 11: bridge.BridgeService.SetWindowFullScreen:input_type -> bridge.SetWindowFullScreenRequest
-	10, // 12: bridge.BridgeService.CreateImage:input_type -> bridge.CreateImageRequest
-	11, // 13: bridge.BridgeService.CreateLabel:input_type -> bridge.CreateLabelRequest
-	12, // 14: bridge.BridgeService.CreateButton:input_type -> bridge.CreateButtonRequest
-	13, // 15: bridge.BridgeService.CreateEntry:input_type -> bridge.CreateEntryRequest
-	14, // 16: bridge.BridgeService.CreateVBox:input_type -> bridge.CreateVBoxRequest
-	15, // 17: bridge.BridgeService.CreateHBox:input_type -> bridge.CreateHBoxRequest
-	16, // 18: bridge.BridgeService.CreateCheckbox:input_type -> bridge.CreateCheckboxRequest
-	17, // 19: bridge.BridgeService.CreateSelect:input_type -> bridge.CreateSelectRequest
-	18, // 20: bridge.BridgeService.RegisterResource:input_type -> bridge.RegisterResourceRequest
-	19, // 21: bridge.BridgeService.UnregisterResource:input_type -> bridge.UnregisterResourceRequest
-	20, // 22: bridge.BridgeService.UpdateImage:input_type -> bridge.UpdateImageRequest
-	21, // 23: bridge.BridgeService.SetText:input_type -> bridge.SetTextRequest
-	22, // 24: bridge.BridgeService.GetText:input_type -> bridge.GetTextRequest
-	24, // 25: bridge.BridgeService.SetProgress:input_type -> bridge.SetProgressRequest
-	25, // 26: bridge.BridgeService.GetProgress:input_type -> bridge.GetProgressRequest
-	27, // 27: bridge.BridgeService.SetChecked:input_type -> bridge.SetCheckedRequest
-	28, // 28: bridge.BridgeService.GetChecked:input_type -> bridge.GetCheckedRequest
-	30, // 29: bridge.BridgeService.ClickWidget:input_type -> bridge.ClickWidgetRequest
-	31, // 30: bridge.BridgeService.TypeText:input_type -> bridge.TypeTextRequest
-	32, // 31: bridge.BridgeService.DoubleTapWidget:input_type -> bridge.DoubleTapWidgetRequest
-	33, // 32: bridge.BridgeService.RightClickWidget:input_type -> bridge.RightClickWidgetRequest
-	34, // 33: bridge.BridgeService.DragWidget:input_type -> bridge.DragWidgetRequest
-	35, // 34: bridge.BridgeService.RegisterCustomId:input_type -> bridge.RegisterCustomIdRequest
-	36, // 35: bridge.BridgeService.FindWidget:input_type -> bridge.FindWidgetRequest
-	38, // 36: bridge.BridgeService.GetWidgetInfo:input_type -> bridge.GetWidgetInfoRequest
-	40, // 37: bridge.BridgeService.GetAllWidgets:input_type -> bridge.GetAllWidgetsRequest
-	44, // 38: bridge.BridgeService.SubscribeEvents:input_type -> bridge.EventSubscription
-	45, // 39: bridge.BridgeService.Quit:input_type -> bridge.QuitRequest
-	2,  // 40: bridge.BridgeService.CreateWindow:output_type -> bridge.Response
-	2,  // 41: bridge.BridgeService.ShowWindow:output_type -> bridge.Response
-	2,  // 42: bridge.BridgeService.SetContent:output_type -> bridge.Response
-	2,  // 43: bridge.BridgeService.ResizeWindow:output_type -> bridge.Response
-	2,  // 44: bridge.BridgeService.SetWindowTitle:output_type -> bridge.Response
-	2,  // 45: bridge.BridgeService.CenterWindow:output_type -> bridge.Response
-	2,  // 46: bridge.BridgeService.SetWindowFullScreen:output_type -> bridge.Response
-	2,  // 47: bridge.BridgeService.CreateImage:output_type -> bridge.Response
-	2,  // 48: bridge.BridgeService.CreateLabel:output_type -> bridge.Response
-	2,  // 49: bridge.BridgeService.CreateButton:output_type -> bridge.Response
-	2,  // 50: bridge.BridgeService.CreateEntry:output_type -> bridge.Response
-	2,  // 51: bridge.BridgeService.CreateVBox:output_type -> bridge.Response
-	2,  // 52: bridge.BridgeService.CreateHBox:output_type -> bridge.Response
-	2,  // 53: bridge.BridgeService.CreateCheckbox:output_type -> bridge.Response
-	2,  // 54: bridge.BridgeService.CreateSelect:output_type -> bridge.Response
-	2,  // 55: bridge.BridgeService.RegisterResource:output_type -> bridge.Response
-	2,  // 56: bridge.BridgeService.UnregisterResource:output_type -> bridge.Response
-	2,  // 57: bridge.BridgeService.UpdateImage:output_type -> bridge.Response
-	2,  // 58: bridge.BridgeService.SetText:output_type -> bridge.Response
-	23, // 59: bridge.BridgeService.GetText:output_type -> bridge.GetTextResponse
-	2,  // 60: bridge.BridgeService.SetProgress:output_type -> bridge.Response
-	26, // 61: bridge.BridgeService.GetProgress:output_type -> bridge.GetProgressResponse
-	2,  // 62: bridge.BridgeService.SetChecked:output_type -> bridge.Response
-	29, // 63: bridge.BridgeService.GetChecked:output_type -> bridge.GetCheckedResponse
-	2,  // 64: bridge.BridgeService.ClickWidget:output_type -> bridge.Response
-	2,  // 65: bridge.BridgeService.TypeText:output_type -> bridge.Response
-	2,  // 66: bridge.BridgeService.DoubleTapWidget:output_type -> bridge.Response
-	2,  // 67: bridge.BridgeService.RightClickWidget:output_type -> bridge.Response
-	2,  // 68: bridge.BridgeService.DragWidget:output_type -> bridge.Response
-	2,  // 69: bridge.BridgeService.RegisterCustomId:output_type -> bridge.Response
-	37, // 70: bridge.BridgeService.FindWidget:output_type -> bridge.FindWidgetResponse
-	39, // 71: bridge.BridgeService.GetWidgetInfo:output_type -> bridge.WidgetInfoResponse
-	41, // 72: bridge.BridgeService.GetAllWidgets:output_type -> bridge.GetAllWidgetsResponse
-	43, // 73: bridge.BridgeService.SubscribeEvents:output_type -> bridge.Event
-	2,  // 74: bridge.BridgeService.Quit:output_type -> bridge.Response
-	40, // [40:75] is the sub-list for method output_type
-	5,  // [5:40] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+var file_proto_bridge_proto_depIdxs = []int32{
+	48, // 0: bridge.Response.result:type_name -> bridge.Response.ResultEntry
+	0,  // 1: bridge.CreateImageRequest.fill_mode:type_name -> bridge.ImageFillMode
+	1,  // 2: bridge.CreateLabelRequest.alignment:type_name -> bridge.TextAlignment
+	2,  // 3: bridge.CreateLabelRequest.wrapping:type_name -> bridge.TextWrapping
+	3,  // 4: bridge.CreateButtonRequest.importance:type_name -> bridge.ButtonImportance
+	44, // 5: bridge.GetAllWidgetsResponse.widgets:type_name -> bridge.WidgetInfo
+	49, // 6: bridge.Event.data:type_name -> bridge.Event.DataEntry
+	5,  // 7: bridge.BridgeService.CreateWindow:input_type -> bridge.CreateWindowRequest
+	6,  // 8: bridge.BridgeService.ShowWindow:input_type -> bridge.ShowWindowRequest
+	7,  // 9: bridge.BridgeService.SetContent:input_type -> bridge.SetContentRequest
+	8,  // 10: bridge.BridgeService.ResizeWindow:input_type -> bridge.ResizeWindowRequest
+	9,  // 11: bridge.BridgeService.SetWindowTitle:input_type -> bridge.SetWindowTitleRequest
+	10, // 12: bridge.BridgeService.CenterWindow:input_type -> bridge.CenterWindowRequest
+	11, // 13: bridge.BridgeService.SetWindowFullScreen:input_type -> bridge.SetWindowFullScreenRequest
+	12, // 14: bridge.BridgeService.CreateImage:input_type -> bridge.CreateImageRequest
+	13, // 15: bridge.BridgeService.CreateLabel:input_type -> bridge.CreateLabelRequest
+	14, // 16: bridge.BridgeService.CreateButton:input_type -> bridge.CreateButtonRequest
+	15, // 17: bridge.BridgeService.CreateEntry:input_type -> bridge.CreateEntryRequest
+	16, // 18: bridge.BridgeService.CreateVBox:input_type -> bridge.CreateVBoxRequest
+	17, // 19: bridge.BridgeService.CreateHBox:input_type -> bridge.CreateHBoxRequest
+	18, // 20: bridge.BridgeService.CreateCheckbox:input_type -> bridge.CreateCheckboxRequest
+	19, // 21: bridge.BridgeService.CreateSelect:input_type -> bridge.CreateSelectRequest
+	20, // 22: bridge.BridgeService.RegisterResource:input_type -> bridge.RegisterResourceRequest
+	21, // 23: bridge.BridgeService.UnregisterResource:input_type -> bridge.UnregisterResourceRequest
+	22, // 24: bridge.BridgeService.UpdateImage:input_type -> bridge.UpdateImageRequest
+	23, // 25: bridge.BridgeService.SetText:input_type -> bridge.SetTextRequest
+	24, // 26: bridge.BridgeService.GetText:input_type -> bridge.GetTextRequest
+	26, // 27: bridge.BridgeService.SetProgress:input_type -> bridge.SetProgressRequest
+	27, // 28: bridge.BridgeService.GetProgress:input_type -> bridge.GetProgressRequest
+	29, // 29: bridge.BridgeService.SetChecked:input_type -> bridge.SetCheckedRequest
+	30, // 30: bridge.BridgeService.GetChecked:input_type -> bridge.GetCheckedRequest
+	32, // 31: bridge.BridgeService.ClickWidget:input_type -> bridge.ClickWidgetRequest
+	33, // 32: bridge.BridgeService.TypeText:input_type -> bridge.TypeTextRequest
+	34, // 33: bridge.BridgeService.DoubleTapWidget:input_type -> bridge.DoubleTapWidgetRequest
+	35, // 34: bridge.BridgeService.RightClickWidget:input_type -> bridge.RightClickWidgetRequest
+	36, // 35: bridge.BridgeService.DragWidget:input_type -> bridge.DragWidgetRequest
+	37, // 36: bridge.BridgeService.RegisterCustomId:input_type -> bridge.RegisterCustomIdRequest
+	38, // 37: bridge.BridgeService.FindWidget:input_type -> bridge.FindWidgetRequest
+	40, // 38: bridge.BridgeService.GetWidgetInfo:input_type -> bridge.GetWidgetInfoRequest
+	42, // 39: bridge.BridgeService.GetAllWidgets:input_type -> bridge.GetAllWidgetsRequest
+	46, // 40: bridge.BridgeService.SubscribeEvents:input_type -> bridge.EventSubscription
+	47, // 41: bridge.BridgeService.Quit:input_type -> bridge.QuitRequest
+	4,  // 42: bridge.BridgeService.CreateWindow:output_type -> bridge.Response
+	4,  // 43: bridge.BridgeService.ShowWindow:output_type -> bridge.Response
+	4,  // 44: bridge.BridgeService.SetContent:output_type -> bridge.Response
+	4,  // 45: bridge.BridgeService.ResizeWindow:output_type -> bridge.Response
+	4,  // 46: bridge.BridgeService.SetWindowTitle:output_type -> bridge.Response
+	4,  // 47: bridge.BridgeService.CenterWindow:output_type -> bridge.Response
+	4,  // 48: bridge.BridgeService.SetWindowFullScreen:output_type -> bridge.Response
+	4,  // 49: bridge.BridgeService.CreateImage:output_type -> bridge.Response
+	4,  // 50: bridge.BridgeService.CreateLabel:output_type -> bridge.Response
+	4,  // 51: bridge.BridgeService.CreateButton:output_type -> bridge.Response
+	4,  // 52: bridge.BridgeService.CreateEntry:output_type -> bridge.Response
+	4,  // 53: bridge.BridgeService.CreateVBox:output_type -> bridge.Response
+	4,  // 54: bridge.BridgeService.CreateHBox:output_type -> bridge.Response
+	4,  // 55: bridge.BridgeService.CreateCheckbox:output_type -> bridge.Response
+	4,  // 56: bridge.BridgeService.CreateSelect:output_type -> bridge.Response
+	4,  // 57: bridge.BridgeService.RegisterResource:output_type -> bridge.Response
+	4,  // 58: bridge.BridgeService.UnregisterResource:output_type -> bridge.Response
+	4,  // 59: bridge.BridgeService.UpdateImage:output_type -> bridge.Response
+	4,  // 60: bridge.BridgeService.SetText:output_type -> bridge.Response
+	25, // 61: bridge.BridgeService.GetText:output_type -> bridge.GetTextResponse
+	4,  // 62: bridge.BridgeService.SetProgress:output_type -> bridge.Response
+	28, // 63: bridge.BridgeService.GetProgress:output_type -> bridge.GetProgressResponse
+	4,  // 64: bridge.BridgeService.SetChecked:output_type -> bridge.Response
+	31, // 65: bridge.BridgeService.GetChecked:output_type -> bridge.GetCheckedResponse
+	4,  // 66: bridge.BridgeService.ClickWidget:output_type -> bridge.Response
+	4,  // 67: bridge.BridgeService.TypeText:output_type -> bridge.Response
+	4,  // 68: bridge.BridgeService.DoubleTapWidget:output_type -> bridge.Response
+	4,  // 69: bridge.BridgeService.RightClickWidget:output_type -> bridge.Response
+	4,  // 70: bridge.BridgeService.DragWidget:output_type -> bridge.Response
+	4,  // 71: bridge.BridgeService.RegisterCustomId:output_type -> bridge.Response
+	39, // 72: bridge.BridgeService.FindWidget:output_type -> bridge.FindWidgetResponse
+	41, // 73: bridge.BridgeService.GetWidgetInfo:output_type -> bridge.WidgetInfoResponse
+	43, // 74: bridge.BridgeService.GetAllWidgets:output_type -> bridge.GetAllWidgetsResponse
+	45, // 75: bridge.BridgeService.SubscribeEvents:output_type -> bridge.Event
+	4,  // 76: bridge.BridgeService.Quit:output_type -> bridge.Response
+	42, // [42:77] is the sub-list for method output_type
+	7,  // [7:42] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_bridge_proto_init() }
-func file_bridge_proto_init() {
-	if File_bridge_proto != nil {
+func init() { file_proto_bridge_proto_init() }
+func file_proto_bridge_proto_init() {
+	if File_proto_bridge_proto != nil {
 		return
 	}
-	file_bridge_proto_msgTypes[8].OneofWrappers = []any{
+	file_proto_bridge_proto_msgTypes[8].OneofWrappers = []any{
 		(*CreateImageRequest_InlineData)(nil),
 		(*CreateImageRequest_ResourceName)(nil),
+		(*CreateImageRequest_Path)(nil),
 	}
-	file_bridge_proto_msgTypes[18].OneofWrappers = []any{
+	file_proto_bridge_proto_msgTypes[18].OneofWrappers = []any{
 		(*UpdateImageRequest_InlineData)(nil),
 		(*UpdateImageRequest_ResourceName)(nil),
 	}
@@ -3098,18 +3312,18 @@ func file_bridge_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_bridge_proto_rawDesc), len(file_bridge_proto_rawDesc)),
-			NumEnums:      2,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_bridge_proto_rawDesc), len(file_proto_bridge_proto_rawDesc)),
+			NumEnums:      4,
 			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_bridge_proto_goTypes,
-		DependencyIndexes: file_bridge_proto_depIdxs,
-		EnumInfos:         file_bridge_proto_enumTypes,
-		MessageInfos:      file_bridge_proto_msgTypes,
+		GoTypes:           file_proto_bridge_proto_goTypes,
+		DependencyIndexes: file_proto_bridge_proto_depIdxs,
+		EnumInfos:         file_proto_bridge_proto_enumTypes,
+		MessageInfos:      file_proto_bridge_proto_msgTypes,
 	}.Build()
-	File_bridge_proto = out.File
-	file_bridge_proto_goTypes = nil
-	file_bridge_proto_depIdxs = nil
+	File_proto_bridge_proto = out.File
+	file_proto_bridge_proto_goTypes = nil
+	file_proto_bridge_proto_depIdxs = nil
 }
