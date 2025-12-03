@@ -2,27 +2,7 @@
 
 This document tracks Fyne features **not yet implemented** in Tsyne.
 
-**Current Coverage: ~90%** of Fyne's public API
-
----
-
-## Canvas Primitives Not Yet Implemented
-
-| Primitive | Fyne Type | Description | Suggested Demo App |
-|-----------|-----------|-------------|-------------------|
-| **CanvasArc** | `canvas.Arc` | Filled arc or annular sector | `pie-chart.ts` - Pie chart with arc segments |
-| **CanvasPolygon** | `canvas.Polygon` | Regular polygon primitive | `shape-gallery.ts` - Display various polygon shapes |
-| **CanvasRadialGradient** | `canvas.RadialGradient` | Radial gradient from center outward | `gradient-demo.ts` - Compare linear vs radial gradients |
-
----
-
-## Containers Not Yet Implemented
-
-| Container | Fyne Type | Description | Suggested Demo App |
-|-----------|-----------|-------------|-------------------|
-| **MultipleWindows** | `container.MultipleWindows` | MDI container managing multiple InnerWindows with drag/resize | `mdi-workspace.ts` - Desktop-like workspace with floating windows |
-
-> **Note:** `InnerWindow` is implemented. `MultipleWindows` would provide coordinated management of multiple inner windows.
+**Current Coverage: ~95%** of Fyne's public API
 
 ---
 
@@ -73,18 +53,12 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 
 ## Implementation Priority
 
-### High Priority
-1. **CanvasArc** - Essential for pie charts and circular progress indicators
-2. **CanvasRadialGradient** - Common for modern UI effects
-3. **MultipleWindows** - MDI pattern for complex applications
-
 ### Medium Priority
-4. **CanvasPolygon** - Useful for custom shapes and icons
-5. **Canvas Animations** - Smooth UI transitions
-6. **showCustomWithoutButtons** - Modal overlays
+1. **Canvas Animations** - Smooth UI transitions (ColorAnimation, PositionAnimation, SizeAnimation)
+2. **showCustomWithoutButtons** - Modal overlays without dismiss buttons
 
 ### Low Priority (Consider on demand)
-7. **Full Data Binding** - Tsyne's `when()` and `ModelBoundList` may be sufficient
+3. **Full Data Binding** - Tsyne's `when()` and `ModelBoundList` may be sufficient
 
 ---
 
@@ -108,9 +82,9 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 ### Containers ✅
 - VBox, HBox, Grid, GridWrap, AdaptiveGrid
 - Scroll, Split, Tabs, DocTabs
-- Center, Max, Padded, Clip
+- Center, Max, Padded, Clip, Stack
 - Card, Accordion, Form, Border
-- InnerWindow, Navigation, ThemeOverride, Popup
+- InnerWindow, MultipleWindows, Navigation, ThemeOverride, Popup
 
 ### Dialogs ✅
 - showInfo, showError, showConfirm
@@ -122,6 +96,7 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 ### Canvas & Drawing ✅
 - CanvasLine, CanvasCircle, CanvasRectangle
 - CanvasText, CanvasRaster, CanvasLinearGradient
+- CanvasArc, CanvasPolygon, CanvasRadialGradient
 
 ### System Features ✅
 - System Tray
@@ -129,13 +104,17 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 - Clipboard
 - Drag & Drop
 - Preferences/Storage
-- Data Binding & Validation
 - Custom Themes & Fonts
 
+### Reactive Patterns ✅
+- `when(() => boolean)` - Declarative visibility
+- `ModelBoundList` - Smart list rendering with diffing
+- Store pattern with change listeners
+
 ### Testing ✅
-- getByText, getByExactText, getByTestId
-- getByRole, getByLabel
-- Visual Regression, Accessibility Audit
+- `getByID()` (preferred), `getByText()`, `getByExactText()`
+- `within(timeout).shouldBe()` - Polling assertions
+- Screenshot capture
 
 ---
 
@@ -163,4 +142,4 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-**Last Updated:** 2025-11-23
+**Last Updated:** 2025-12-03

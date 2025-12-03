@@ -432,6 +432,118 @@ vbox(() => {
 });
 ```
 
+## Reactive Patterns: Design Rationale
+
+### Why Tsyne Doesn't Use Fyne's Data Binding
+
+Fyne provides a `data/binding` package with observable wrappers:
+
+```go
+// Fyne's approach - wrap every value in an observable type
+myString := binding.NewString()
+myString.Set("hello")
+myString.AddListener(binding.NewDataListener(func() { ... }))
+label := widget.NewLabelWithData(myString)  // auto-updates when myString changes
+```
+
+This is the **observable wrapper pattern** from the 1990s-2010s:
+- **VB6/MFC** (1990s) - Data-bound controls
+- **WinForms** `BindingSource` (2002)
+- **WPF** `INotifyPropertyChanged` (2006)
+- **Knockout.js** observables (2010)
+
+**Characteristics:**
+- Requires explicit wrapper types for every piece of data (`binding.Int`, `binding.String`, etc.)
+- Type-specific bindings and conversions (`binding.StringToInt`)
+- Automatic propagation once wired up
+- Significant boilerplate to set up
+
+### Tsyne's Approach: Modern Reactive Patterns
+
+Tsyne uses patterns closer to modern frameworks:
+
+```typescript
+// Plain values + declarative conditions
+let filter = 'all';
+todoRow.when(() => filter === 'all' || todo.completed);
+
+// Callback-based updates with store pattern
+store.subscribe(() => {
+  label.setText(store.getCount().toString());
+  container.refreshVisibility();  // Re-evaluates all when() conditions
+});
+```
+
+This is more like:
+- **React** hooks/state (2019)
+- **Vue 3** Composition API (2020)
+- **Solid.js** signals (2021)
+
+**Characteristics:**
+- Works with plain TypeScript values (no wrapper types)
+- `when(() => boolean)` for declarative visibility (like `ng-if`/`v-if`)
+- `ModelBoundList` for smart list rendering with diffing (like `ng-repeat`/`v-for`)
+- Store pattern with explicit subscriptions
+- More explicit control flow, less "magic"
+
+### The Architectural Decision
+
+Tsyne intentionally does NOT port Fyne's `binding.*` package because:
+
+1. **TypeScript already has reactivity primitives** - Callbacks, Promises, async/await work naturally
+2. **No type wrapper overhead** - Use `number` not `binding.Int`, `string` not `binding.String`
+3. **Pseudo-declarative fits better** - `when()` + store subscriptions match AngularJS 1.0 inspiration
+4. **Simpler mental model** - Changes flow through explicit `subscribe()` callbacks
+5. **Better TypeScript integration** - No need for Go-style interface{} type erasure
+
+### What Tsyne Provides Instead
+
+| Fyne Binding | Tsyne Equivalent |
+|--------------|------------------|
+| `binding.String` | Plain `string` + `label.setText()` |
+| `binding.Bool` | Plain `boolean` + `widget.when(() => condition)` |
+| `binding.StringList` | `ModelBoundList<T>` with `trackBy()` and `each()` |
+| `widget.NewLabelWithData()` | `store.subscribe(() => label.setText(...))` |
+| Automatic propagation | Explicit `notifyChange()` → subscriber callbacks |
+
+### Example: TodoMVC Filter
+
+```typescript
+// Store (Model)
+class TodoStore {
+  private filter: 'all' | 'active' | 'completed' = 'all';
+  private listeners: (() => void)[] = [];
+
+  subscribe(fn: () => void) { this.listeners.push(fn); }
+  private notify() { this.listeners.forEach(fn => fn()); }
+
+  setFilter(f: typeof this.filter) {
+    this.filter = f;
+    this.notify();  // Explicit trigger
+  }
+}
+
+// View - declarative visibility
+todoRow.when(() => {
+  const f = store.getFilter();
+  return f === 'all' ||
+         (f === 'active' && !todo.completed) ||
+         (f === 'completed' && todo.completed);
+});
+
+// Controller - wire up updates
+store.subscribe(() => {
+  todoContainer.refreshVisibility();  // Re-evaluates all when() conditions
+  countLabel.setText(`${store.getActiveCount()} items left`);
+});
+```
+
+This achieves the same reactive behavior as Fyne's binding but with:
+- Plain TypeScript types
+- Explicit data flow
+- No wrapper boilerplate
+- Better IDE support and type inference
+
 ## Building and Distribution
 
 ### Build Process
@@ -453,16 +565,12 @@ tsyne/
 
 ## Future Enhancements
 
-Potential improvements:
+See [ROADMAP.md](ROADMAP.md) for current implementation status (~95% Fyne coverage).
 
-1. **More Widgets**: Tree, Table, List, Progress Bar, etc.
-2. **Layout Options**: Grid, Border, Form layouts
-3. **Dialogs**: Alert, Confirm, File picker dialogs
-4. **Themes**: Support for custom themes and styling
-5. **Canvas**: Direct drawing capabilities
-6. **Performance**: Widget pooling, lazy loading
-7. **Testing**: Headless mode for automated testing
-8. **Hot Reload**: Development mode with auto-restart
+**Remaining opportunities:**
+1. **Canvas Animations** - Color, position, and size animations
+2. **Performance** - Widget pooling, lazy loading for very large lists
+3. **Hot Reload** - Development mode with auto-restart on file changes
 
 ## Debugging
 
