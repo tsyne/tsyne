@@ -30,11 +30,9 @@ describe('Basic Tic-Tac-Toe', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.wait(500);
-
-    // Verify initial state
-    await ctx.expect(ctx.getByText("Player X's turn")).toBeVisible();
-    await ctx.expect(ctx.getByText('New Game')).toBeVisible();
+    // Verify initial state - use within() to poll for UI readiness
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
+    await ctx.getByText('New Game').shouldExist();
   });
 
   test('should allow placing X and O alternately', async () => {
@@ -44,21 +42,21 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // X's turn - click center
     await ctx.getByID('cell4').click();
-    await ctx.wait(200);
 
-    // Should now be O's turn
-    await ctx.expect(ctx.getByText("Player O's turn")).toBeVisible();
+    // Should now be O's turn - poll for state change
+    await ctx.getByText("Player O's turn").within(200).shouldExist();
 
     // O's turn - click top-left
     await ctx.getByID('cell0').click();
-    await ctx.wait(200);
 
-    // Should be X's turn again
-    await ctx.expect(ctx.getByText("Player X's turn")).toBeVisible();
+    // Should be X's turn again - poll for state change
+    await ctx.getByText("Player X's turn").within(200).shouldExist();
   });
 
   test('should detect horizontal win', async () => {
@@ -68,18 +66,19 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Create top row win for X: X X X / O O _ / _ _ _
     const moves = [0, 3, 1, 4, 2]; // X wins top row
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).click();
-      await ctx.wait(200);
+      await ctx.getByID(`cell${move}`).within(200).click();
     }
 
-    // Verify X wins
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Verify X wins - poll for win message
+    await ctx.getByText('Player X wins!').within(200).shouldExist();
   });
 
   test('should detect vertical win', async () => {
@@ -89,7 +88,9 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Create left column win for X
     const moves = [
@@ -101,12 +102,11 @@ describe('Basic Tic-Tac-Toe', () => {
     ];
 
     for (const move of moves) {
-      // Using cell IDs instead
-      await ctx.getByID(`cell${move}`).click();
-      await ctx.wait(200);
+      await ctx.getByID(`cell${move}`).within(200).click();
     }
 
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Verify X wins - poll for win message
+    await ctx.getByText('Player X wins!').within(200).shouldExist();
   });
 
   test('should detect diagonal win', async () => {
@@ -116,7 +116,9 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Create diagonal win for X (top-left to bottom-right)
     const moves = [
@@ -128,12 +130,11 @@ describe('Basic Tic-Tac-Toe', () => {
     ];
 
     for (const move of moves) {
-      // Using cell IDs instead
-      await ctx.getByID(`cell${move}`).click();
-      await ctx.wait(200);
+      await ctx.getByID(`cell${move}`).within(200).click();
     }
 
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Verify X wins - poll for win message
+    await ctx.getByText('Player X wins!').within(200).shouldExist();
   });
 
   test('should detect draw', async () => {
@@ -143,18 +144,19 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Create a draw: X X O / O O X / X O X
     const moves = [0, 2, 1, 3, 5, 4, 6, 8, 7];
 
     for (const move of moves) {
-      // Using cell IDs instead
-      await ctx.getByID(`cell${move}`).click();
-      await ctx.wait(200);
+      await ctx.getByID(`cell${move}`).within(200).click();
     }
 
-    await ctx.expect(ctx.getByText("It's a draw!")).toBeVisible();
+    // Verify draw - poll for draw message
+    await ctx.getByText("It's a draw!").within(200).shouldExist();
   });
 
   test('should reset game with New Game button', async () => {
@@ -164,21 +166,21 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Make a move
     await ctx.getByID('cell4').click();
-    await ctx.wait(200);
 
-    // Should be O's turn
-    await ctx.expect(ctx.getByText("Player O's turn")).toBeVisible();
+    // Should be O's turn - poll for state change
+    await ctx.getByText("Player O's turn").within(200).shouldExist();
 
     // Click New Game
     await ctx.getByText('New Game').click();
-    await ctx.wait(200);
 
-    // Should be back to X's turn
-    await ctx.expect(ctx.getByText("Player X's turn")).toBeVisible();
+    // Should be back to X's turn - poll for reset
+    await ctx.getByText("Player X's turn").within(200).shouldExist();
   });
 
   test('should not allow moves after game ends', async () => {
@@ -188,27 +190,22 @@ describe('Basic Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Quick win
     const moves = [0, 3, 1, 4, 2]; // X wins top row
 
     for (const move of moves) {
-      // Using cell IDs instead
-      await ctx.getByID(`cell${move}`).click();
-      await ctx.wait(200);
+      await ctx.getByID(`cell${move}`).within(200).click();
     }
 
-    // Game should be over
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Game should be over - poll for win message
+    await ctx.getByText('Player X wins!').within(200).shouldExist();
 
-    // Try to make another move (should not work)
-    // Using cell IDs instead
-    // Cell already filled;
-    await ctx.wait(200);
-
-    // Should still show X wins
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Should still show X wins (game state preserved)
+    await ctx.getByText('Player X wins!').shouldExist();
   });
 
   // Screenshot test
@@ -220,18 +217,20 @@ describe('Basic Tic-Tac-Toe', () => {
 
       ctx = tsyneTest.getContext();
       await testApp.run();
-      await ctx.wait(500);
+
+      // Wait for UI to be ready
+      await ctx.getByText("Player X's turn").within(500).shouldExist();
 
       // Make some moves for a better screenshot
       const moves = [4, 0, 2, 6]; // Some X's and O's
       for (const move of moves) {
-        // Using cell IDs instead
-        await ctx.getByID(`cell${move}`).click();
-        await ctx.wait(200);
+        await ctx.getByID(`cell${move}`).within(200).click();
       }
 
+      // Wait for final state before screenshot
+      await ctx.getByText("Player X's turn").within(200).shouldExist();
+
       const screenshotPath = path.join(__dirname, 'screenshots', 'tictactoe-basic.png');
-      await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     });

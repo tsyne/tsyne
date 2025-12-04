@@ -36,15 +36,16 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready - poll for first control
+    await ctx.getByText('TTS: OFF').within(500).shouldExist();
 
     // Verify accessibility controls are present
-    await ctx.expect(ctx.getByText('TTS: OFF')).toBeVisible();
-    await ctx.expect(ctx.getByText('High Contrast: OFF')).toBeVisible();
-    await ctx.expect(ctx.getByText('Font: A')).toBeVisible();
-    await ctx.expect(ctx.getByText('New Game')).toBeVisible();
-    await ctx.expect(ctx.getByText('Undo')).toBeVisible();
-    await ctx.expect(ctx.getByText('Hint')).toBeVisible();
+    await ctx.getByText('High Contrast: OFF').shouldExist();
+    await ctx.getByText('Font: A').shouldExist();
+    await ctx.getByText('New Game').shouldExist();
+    await ctx.getByText('Undo').shouldExist();
+    await ctx.getByText('Hint').shouldExist();
   });
 
   test.skip('should toggle TTS on and off', async () => {
@@ -54,21 +55,21 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText('TTS: OFF').within(500).shouldExist();
 
     // Toggle TTS ON
     await ctx.getByText('TTS: OFF').click();
-    await ctx.wait(300);
 
-    // Verify TTS is ON
-    await ctx.expect(ctx.getByText('TTS: ON')).toBeVisible();
+    // Verify TTS is ON - poll for state change
+    await ctx.getByText('TTS: ON').within(300).shouldExist();
 
     // Toggle TTS OFF
     await ctx.getByText('TTS: ON').click();
-    await ctx.wait(300);
 
-    // Verify TTS is OFF
-    await ctx.expect(ctx.getByText('TTS: OFF')).toBeVisible();
+    // Verify TTS is OFF - poll for state change
+    await ctx.getByText('TTS: OFF').within(300).shouldExist();
   });
 
   test('should cycle font sizes', async () => {
@@ -78,25 +79,21 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
 
-    // Initial state
-    await ctx.expect(ctx.getByText('Font: A')).toBeVisible();
+    // Initial state - poll for UI readiness
+    await ctx.getByText('Font: A').within(500).shouldExist();
 
     // Cycle to Large
     await ctx.getByText('Font: A').click();
-    await ctx.wait(300);
-    await ctx.expect(ctx.getByText('Font: A+')).toBeVisible();
+    await ctx.getByText('Font: A+').within(300).shouldExist();
 
     // Cycle to Small
     await ctx.getByText('Font: A+').click();
-    await ctx.wait(300);
-    await ctx.expect(ctx.getByText('Font: A-')).toBeVisible();
+    await ctx.getByText('Font: A-').within(300).shouldExist();
 
     // Cycle back to Medium
     await ctx.getByText('Font: A-').click();
-    await ctx.wait(300);
-    await ctx.expect(ctx.getByText('Font: A')).toBeVisible();
+    await ctx.getByText('Font: A').within(300).shouldExist();
   });
 
   test('should display move history', async () => {
@@ -106,23 +103,20 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
 
-    // Initial state - no moves yet
-    await ctx.expect(ctx.getByText('No moves yet')).toBeVisible();
+    // Initial state - no moves yet (poll for UI readiness)
+    await ctx.getByText('No moves yet').within(500).shouldExist();
 
     // Make some moves
     await ctx.getByID('cell4').click(); // X center
-    await ctx.wait(300);
 
-    // History should update
-    await ctx.expect(ctx.getByText('X at center')).toBeVisible();
+    // History should update - poll for state change
+    await ctx.getByText('X at center').within(300).shouldExist();
 
     await ctx.getByID('cell0').click(); // O top-left
-    await ctx.wait(300);
 
-    // Both moves in history
-    await ctx.expect(ctx.getByText('O at top left')).toBeVisible();
+    // Both moves in history - poll for state change
+    await ctx.getByText('O at top left').within(300).shouldExist();
   });
 
   test.skip('should support undo functionality', async () => {
@@ -132,21 +126,21 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Make a move
     await ctx.getByID('cell4').click();
-    await ctx.wait(300);
 
-    // Should be O's turn
-    await ctx.expect(ctx.getByText("Player O's turn")).toBeVisible();
+    // Should be O's turn - poll for state change
+    await ctx.getByText("Player O's turn").within(300).shouldExist();
 
     // Undo the move
     await ctx.getByText('Undo').click();
-    await ctx.wait(300);
 
-    // Should be back to X's turn
-    await ctx.expect(ctx.getByText("Player X's turn")).toBeVisible();
+    // Should be back to X's turn - poll for undo
+    await ctx.getByText("Player X's turn").within(300).shouldExist();
   });
 
   test('should provide hints', async () => {
@@ -156,15 +150,16 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText('Hint').within(500).shouldExist();
 
     // Click hint button
     await ctx.getByText('Hint').click();
-    await ctx.wait(300);
 
     // Hint should suggest center (traditionally best first move)
-    // The hint system suggests moves, we just verify the button works
-    await ctx.expect(ctx.getByText('Hint')).toBeVisible();
+    // The hint system suggests moves, we just verify the button still works
+    await ctx.getByText('Hint').within(300).shouldExist();
   });
 
   test.skip('should play full game with all features', async () => {
@@ -174,39 +169,39 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
+
+    // Wait for UI to be ready
+    await ctx.getByText('TTS: OFF').within(500).shouldExist();
 
     // Enable TTS
     await ctx.getByText('TTS: OFF').click();
-    await ctx.wait(200);
+    await ctx.getByText('TTS: ON').within(200).shouldExist();
 
     // Enable high contrast
     await ctx.getByText('High Contrast: OFF').click();
-    await ctx.wait(500);
+    await ctx.getByText('High Contrast: ON').within(500).shouldExist();
 
     // Play a winning game
     const moves = [0, 3, 1, 4, 2]; // X wins top row
     for (const moveIdx of moves) {
-      await ctx.getByID(`cell${moveIdx}`).click();
-      await ctx.wait(300);
+      await ctx.getByID(`cell${moveIdx}`).within(300).click();
     }
 
-    // Verify win
-    await ctx.expect(ctx.getByText('Player X wins!')).toBeVisible();
+    // Verify win - poll for win message
+    await ctx.getByText('Player X wins!').within(300).shouldExist();
 
     // Verify history shows all moves
-    await ctx.expect(ctx.getByText('X at top left')).toBeVisible();
+    await ctx.getByText('X at top left').shouldExist();
 
     // Start new game
     await ctx.getByText('New Game').click();
-    await ctx.wait(300);
 
-    // Verify reset
-    await ctx.expect(ctx.getByText("Player X's turn")).toBeVisible();
-    await ctx.expect(ctx.getByText('No moves yet')).toBeVisible();
+    // Verify reset - poll for state changes
+    await ctx.getByText("Player X's turn").within(300).shouldExist();
+    await ctx.getByText('No moves yet').shouldExist();
 
     // High contrast should still be ON after new game
-    await ctx.expect(ctx.getByText('High Contrast: ON')).toBeVisible();
+    await ctx.getByText('High Contrast: ON').shouldExist();
   });
 
   test('should handle rapid moves gracefully', async () => {
@@ -216,16 +211,17 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-    await ctx.wait(500);
 
-    // Rapid moves
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
+
+    // Rapid moves with short polling
     for (let i = 0; i < 5; i++) {
-      await ctx.getByID(`cell${i}`).click();
-      await ctx.wait(100); // Short delay
+      await ctx.getByID(`cell${i}`).within(100).click();
     }
 
-    // Game should still be functional
-    await ctx.expect(ctx.getByText('New Game')).toBeVisible();
+    // Game should still be functional - poll for UI state
+    await ctx.getByText('New Game').within(100).shouldExist();
   });
 
   // Screenshot tests
@@ -237,22 +233,25 @@ describe('Accessible Tic-Tac-Toe', () => {
 
       ctx = tsyneTest.getContext();
       await testApp.run();
-      await ctx.wait(500);
+
+      // Wait for UI to be ready
+      await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
 
       // Enable high contrast
       await ctx.getByText('High Contrast: OFF').click();
-      await ctx.wait(500);
+      await ctx.getByText('High Contrast: ON').within(500).shouldExist();
 
       // Make some moves
       await ctx.getByID('cell4').click();
-      await ctx.wait(200);
+      await ctx.getByText("Player O's turn").within(200).shouldExist();
+
       await ctx.getByID('cell0').click();
-      await ctx.wait(200);
+      await ctx.getByText("Player X's turn").within(200).shouldExist();
+
       await ctx.getByID('cell2').click();
-      await ctx.wait(200);
+      await ctx.getByText("Player O's turn").within(200).shouldExist();
 
       const screenshotPath = path.join(__dirname, 'screenshots', 'tictactoe-accessible-full.png');
-      await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     });
