@@ -128,8 +128,11 @@ describe('Download Manager Example', () => {
     // Click start button
     await ctx.getByExactText('Start').click();
 
-    // Wait for dialog to complete
-    await ctx.wait(500);
+    // Wait for dialog lifecycle to complete by polling
+    await ctx.waitForCondition(
+      () => dialogShown && dialogHidden,
+      { timeout: 1000, description: 'dialog lifecycle to complete' }
+    );
 
     // Dialog should have been shown and hidden
     expect(dialogShown).toBe(true);

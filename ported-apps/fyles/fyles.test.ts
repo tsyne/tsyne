@@ -49,8 +49,8 @@ describe('Fyles File Browser Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait a bit for the initial UI to render
-    await ctx.wait(500);
+    // Wait for initial UI to render by polling for home button
+    await ctx.getByID('panel-0-home').within(2000).shouldExist();
   }, 15000);
 
   afterAll(async () => {
@@ -96,24 +96,21 @@ describe('Fyles File Browser Tests', () => {
 
   test('should toggle hidden files visibility', async () => {
     // Click toggle hidden files button
-    await ctx.getByText('👁️‍🗨️').click();
-    await ctx.wait(200);
+    await ctx.getByText('👁️‍🗨️').within(500).click();
 
     // Now hidden file should be visible
     await ctx.getByText('.hidden').within(2000).shouldExist();
 
     // Toggle back - just verify the button works
-    await ctx.getByText('👁️').click();
-    await ctx.wait(200);
+    await ctx.getByText('👁️').within(500).click();
 
     // Verify we're still showing the test directory
     await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
   test('should navigate into subfolder', async () => {
-    // Click subfolder button
-    await ctx.getByText('subfolder').click();
-    await ctx.wait(200);
+    // Click subfolder button - use within() to wait for it to be clickable
+    await ctx.getByText('subfolder').within(500).click();
 
     // Path should update to include subfolder
     await ctx.getByText(path.join(testDir, 'subfolder')).within(2000).shouldExist();
@@ -123,16 +120,14 @@ describe('Fyles File Browser Tests', () => {
   });
 
   test('should navigate up to parent directory', async () => {
-    // First navigate into subfolder
-    await ctx.getByText('subfolder').click();
-    await ctx.wait(200);
+    // First navigate into subfolder - use within() to wait for it to be clickable
+    await ctx.getByText('subfolder').within(500).click();
 
     // Verify we're in subfolder
     await ctx.getByText('nested.txt').within(2000).shouldExist();
 
     // Click parent button (..)
-    await ctx.getByID('parent-dir-btn').click();
-    await ctx.wait(200);
+    await ctx.getByID('parent-dir-btn').within(500).click();
 
     // Should be back in test directory
     await ctx.getByText(testDir).within(2000).shouldExist();
@@ -142,8 +137,7 @@ describe('Fyles File Browser Tests', () => {
   test.skip('should navigate to home directory', async () => {
     // FIXME: Test has inter-dependency issues - previous tests leave app in unknown state
     // Click home button - use ID for reliability
-    await ctx.getByID('panel-0-home').click();
-    await ctx.wait(200);
+    await ctx.getByID('panel-0-home').within(500).click();
 
     // Path should show home directory
     const homeDir = os.homedir();
@@ -161,8 +155,7 @@ describe('Fyles File Browser Tests', () => {
   test.skip('should show empty directory message', async () => {
     // FIXME: Test has inter-dependency issues - previous tests leave app in unknown state
     // Navigate to empty subfolder
-    await ctx.getByText('subfolder').click();
-    await ctx.wait(200);
+    await ctx.getByText('subfolder').within(500).click();
 
     // Should show no subdirectories message
     await ctx.getByText('(no subdirectories)').within(2000).shouldExist();
@@ -175,8 +168,8 @@ describe('Fyles File Browser Tests', () => {
   });
 
   test('should capture screenshot', async () => {
-    // Wait for UI to settle
-    await ctx.wait(1000);
+    // Wait for UI to settle by polling for a known element
+    await ctx.getByText('Subdirectories:').within(1000).shouldExist();
 
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
