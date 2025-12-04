@@ -124,6 +124,34 @@ class WaitTimeTracker {
 
     write('='.repeat(80) + '\n');
   }
+
+  /**
+   * Save wait time data to a JSON file for CI aggregation
+   * Appends to existing file if present (for multi-file test runs)
+   */
+  saveToFile(filePath: string): void {
+    const fs = require('fs');
+    const data = {
+      totalWaitMs: this.getTotalWaitTime(),
+      totalCalls: this.records.length,
+      summaries: this.getSummaryByTest(),
+      records: this.records
+    };
+
+    // Read existing data if file exists and merge
+    let existingData: any[] = [];
+    try {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        existingData = JSON.parse(content);
+      }
+    } catch (e) {
+      // File doesn't exist or is invalid, start fresh
+    }
+
+    existingData.push(data);
+    fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2));
+  }
 }
 
 // Global singleton instance - use globalThis to ensure single instance across Jest's module isolation

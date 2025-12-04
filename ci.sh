@@ -13,6 +13,9 @@ TOTAL_SUITES=0
 TOTAL_SUITES_PASSED=0
 TOTAL_SUITES_FAILED=0
 
+# Wait time tracking file (cleared at start, aggregated at end)
+WAIT_TIME_FILE="/tmp/tsyne-wait-times.json"
+
 # Function to capture test results from Jest JSON output
 capture_test_results() {
   local section_name="$1"
@@ -37,6 +40,62 @@ capture_test_results() {
     TOTAL_SUITES_PASSED=$((TOTAL_SUITES_PASSED + suites_passed))
     TOTAL_SUITES_FAILED=$((TOTAL_SUITES_FAILED + suites_failed))
   fi
+}
+
+# Function to print aggregated wait time summary from all test runs
+print_wait_time_summary() {
+  local output_file="$1"
+  local wait_file="$WAIT_TIME_FILE"
+
+  if [ ! -f "$wait_file" ]; then
+    return 0
+  fi
+
+  # Aggregate wait times using jq
+  local total_wait_ms=$(jq '[.[].totalWaitMs] | add // 0' "$wait_file")
+  local total_calls=$(jq '[.[].totalCalls] | add // 0' "$wait_file")
+
+  if [ "$total_calls" -eq 0 ]; then
+    return 0
+  fi
+
+  local total_wait_s=$(echo "scale=2; $total_wait_ms / 1000" | bc)
+
+  # Helper function to output to both console and file
+  wait_output() {
+    echo "$1"
+    echo "$1" >> "$output_file"
+  }
+
+  wait_output ""
+  wait_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  wait_output "⏱️  ctx.wait() TIME SUMMARY"
+  wait_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  wait_output "Total wait time: ${total_wait_ms}ms (${total_wait_s}s)"
+  wait_output "Total ctx.wait() calls: ${total_calls}"
+  wait_output "────────────────────────────────────────────────────────────────────────────"
+  wait_output "Top 10 tests by wait time:"
+  wait_output "────────────────────────────────────────────────────────────────────────────"
+
+  # Get top 10 tests by wait time across all runs
+  jq -r '
+    [.[].summaries[]] |
+    group_by(.testName) |
+    map({
+      testName: .[0].testName,
+      totalWaitMs: (map(.totalWaitMs) | add),
+      waitCount: (map(.waitCount) | add)
+    }) |
+    sort_by(-.totalWaitMs) |
+    .[0:10] |
+    .[] |
+    "  \(.testName)|    └─ \(.totalWaitMs)ms (\(.waitCount) calls)"
+  ' "$wait_file" | while IFS='|' read -r test_line detail_line; do
+    wait_output "$test_line"
+    wait_output "$detail_line"
+  done
+
+  wait_output "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 # Function to print test results summary
@@ -71,6 +130,9 @@ print_test_summary() {
   if [ $TOTAL_SKIPPED -gt 0 ]; then
     output_line "⚠️  Warning: $TOTAL_SKIPPED tests are currently skipped"
   fi
+
+  # Print wait time summary
+  print_wait_time_summary "$output_file"
 
   if [ $TOTAL_FAILED -gt 0 ]; then
     output_line "❌ FAILED: $TOTAL_FAILED tests failed"
@@ -124,6 +186,9 @@ if ! command -v jq &> /dev/null; then
   echo "Installing jq for test result aggregation..."
   apt-get install -y jq
 fi
+
+# Clear wait time tracking file from previous runs
+rm -f "$WAIT_TIME_FILE"
 
 # ============================================================================
 # Install Node.js 24.x if not already present
