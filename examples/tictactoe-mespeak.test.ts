@@ -29,23 +29,23 @@ describe('meSpeak TTS Integration', () => {
     await testApp.run();
 
     // Wait for UI to be ready
-    await ctx.getByText('TTS: OFF').within(500).shouldExist();
+    await ctx.getByID('ttsToggle').within(500).shouldContain('OFF');
 
     // Enable TTS mode
-    await ctx.getByText('TTS: OFF').click();
-    await ctx.getByText('TTS: ON').within(500).shouldExist();
+    await ctx.getByID('ttsToggle').click();
+    await ctx.getByID('ttsToggle').within(500).shouldContain('ON');
 
     // Make some moves - TTS should announce them
     await ctx.getByID('cell0').click();  // X in top left
-    await ctx.getByText("Player O's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     await ctx.getByID('cell1').click();  // O in top center
-    await ctx.getByText("Player X's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     await ctx.getByID('cell3').click();  // X in middle left
     // If we got here without errors, meSpeak is working
     // The app is still running and responsive
-    await ctx.getByText("Player O's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
   }, 30000);
 
   test('should announce multiple moves without errors', async () => {
@@ -57,24 +57,24 @@ describe('meSpeak TTS Integration', () => {
     await testApp.run();
 
     // Wait for UI to be ready
-    await ctx.getByText('TTS: OFF').within(500).shouldExist();
+    await ctx.getByID('ttsToggle').within(500).shouldContain('OFF');
 
     // Enable TTS
-    await ctx.getByText('TTS: OFF').click();
-    await ctx.getByText('TTS: ON').within(500).shouldExist();
+    await ctx.getByID('ttsToggle').click();
+    await ctx.getByID('ttsToggle').within(500).shouldContain('ON');
 
     // Make multiple moves - each should be announced
     await ctx.getByID('cell4').click();  // X in center
-    await ctx.getByText("Player O's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     await ctx.getByID('cell0').click();  // O in top left
-    await ctx.getByText("Player X's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     await ctx.getByID('cell8').click();  // X in bottom right
-    await ctx.getByText("Player O's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     await ctx.getByID('cell2').click();  // O in top right
     // Verify game is still working after multiple TTS announcements
-    await ctx.getByText("Player X's turn").within(300).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
   }, 30000);
 });
