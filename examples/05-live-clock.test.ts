@@ -46,12 +46,14 @@ describe('Live Clock Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', '05-live-clock.png');
-      await ctx.wait(500);
+      // Wait for clock to be visible with a valid year
+      await ctx.getByText(/\d{4}/).within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
 
-    // Wait for update (600ms to ensure at least one update)
+    // Wait for at least one clock update cycle (clock updates every 500ms)
+    // Use a small wait since we need to verify time passage
     await ctx.wait(600);
 
     // Get updated time text

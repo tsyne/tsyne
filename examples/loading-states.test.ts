@@ -63,30 +63,26 @@ describe('Loading States - ProgressBarInfinite', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'loading-states.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Status: Idle').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
 
     // Start the progress bar
     await ctx.getByExactText('Start').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Status: Running')).toBeVisible();
+    await ctx.getByExactText('Status: Running').within(100).shouldExist();
 
     // Check if it's running
     await ctx.getByExactText('Check').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Status: Running')).toBeVisible();
+    await ctx.getByExactText('Status: Running').within(100).shouldExist();
 
     // Stop the progress bar
     await ctx.getByExactText('Stop').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Status: Stopped')).toBeVisible();
+    await ctx.getByExactText('Status: Stopped').within(100).shouldExist();
 
     // Verify it's stopped
     await ctx.getByExactText('Check').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Status: Stopped')).toBeVisible();
+    await ctx.getByExactText('Status: Stopped').within(100).shouldExist();
   });
 
   test('should handle auto-stop after simulated work', async () => {
@@ -126,12 +122,10 @@ describe('Loading States - ProgressBarInfinite', () => {
 
     // Start processing
     await ctx.getByExactText('Process').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Processing...')).toBeVisible();
+    await ctx.getByExactText('Processing...').within(100).shouldExist();
 
-    // Wait for auto-stop
-    await ctx.wait(600);
-    await ctx.expect(ctx.getByExactText('Done!')).toBeVisible();
+    // Wait for auto-stop (500ms in code + buffer)
+    await ctx.getByExactText('Done!').within(700).shouldExist();
   });
 
   test('should support multiple progress bars', async () => {
@@ -178,17 +172,15 @@ describe('Loading States - ProgressBarInfinite', () => {
 
     // Start both
     await ctx.getByExactText('Start Both').click();
-    await ctx.wait(100);
 
     // Both should be running - verify at least one 'Running' label exists
-    await ctx.expect(ctx.getByExactText('Running')).toBeVisible();
+    await ctx.getByExactText('Running').within(100).shouldExist();
 
     // Stop both
     await ctx.getByExactText('Stop Both').click();
-    await ctx.wait(100);
 
     // Both should be stopped - verify at least one 'Stopped' label exists
-    await ctx.expect(ctx.getByExactText('Stopped')).toBeVisible();
+    await ctx.getByExactText('Stopped').within(100).shouldExist();
   });
 });
 
@@ -246,18 +238,16 @@ describe('Activity Widget', () => {
 
     // Click start button
     await ctx.getByID('startBtn').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Activity started')).toBeVisible();
+    await ctx.getByExactText('Activity started').within(100).shouldExist();
 
     // Click stop button
     await ctx.getByID('stopBtn').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Activity stopped')).toBeVisible();
+    await ctx.getByExactText('Activity stopped').within(100).shouldExist();
 
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'activity-widget.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Activity stopped').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
@@ -302,10 +292,10 @@ describe('Activity Widget', () => {
 
     // Start both activities
     await ctx.getByID('startBoth').click();
-    await ctx.wait(100);
+    await ctx.getByExactText('Activity 1').within(100).shouldExist();
 
     // Stop both activities
     await ctx.getByID('stopBoth').click();
-    await ctx.wait(100);
+    await ctx.getByExactText('Activity 2').within(100).shouldExist();
   });
 });
