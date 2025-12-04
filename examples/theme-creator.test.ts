@@ -85,25 +85,22 @@ describe('Theme Creator Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'theme-creator.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Widget Preview:').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
 
     // Test applying Ocean theme
     await ctx.getByExactText('Ocean').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Applied Ocean theme')).toBeVisible();
+    await ctx.getByExactText('Applied Ocean theme').within(200).shouldExist();
 
     // Test applying Forest theme
     await ctx.getByExactText('Forest').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Applied Forest theme')).toBeVisible();
+    await ctx.getByExactText('Applied Forest theme').within(200).shouldExist();
 
     // Test resetting theme
     await ctx.getByExactText('Reset').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Reset to default theme')).toBeVisible();
+    await ctx.getByExactText('Reset to default theme').within(200).shouldExist();
   });
 
   test('should support font scale changes', async () => {
@@ -151,17 +148,14 @@ describe('Theme Creator Example', () => {
 
     // Test small scale
     await ctx.getByExactText('Small').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Scale: 0.75x')).toBeVisible();
+    await ctx.getByExactText('Scale: 0.75x').within(200).shouldExist();
 
     // Test large scale
     await ctx.getByExactText('Large').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Scale: 1.5x')).toBeVisible();
+    await ctx.getByExactText('Scale: 1.5x').within(200).shouldExist();
 
     // Reset to normal
     await ctx.getByExactText('Normal').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Scale: 1.0x')).toBeVisible();
+    await ctx.getByExactText('Scale: 1.0x').within(200).shouldExist();
   });
 });

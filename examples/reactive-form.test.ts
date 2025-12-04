@@ -221,10 +221,9 @@ describe('Reactive Form Integration Tests', () => {
 
     // Fill sample data using the button
     await ctx.getByExactText('Fill Sample Data').click();
-    await ctx.wait(200);
 
     // Check that the form summary shows the data
-    await ctx.expect(ctx.getByText('John Doe').within(1000)).toBeVisible();
+    await ctx.getByText('John Doe').within(1000).shouldExist();
   });
 
   test('should clear form when Clear button clicked', async () => {
@@ -237,13 +236,12 @@ describe('Reactive Form Integration Tests', () => {
 
     // Fill sample data first
     await ctx.getByExactText('Fill Sample Data').click();
-    await ctx.wait(200);
+    await ctx.getByText('John Doe').within(200).shouldExist();
 
     // Then clear
     await ctx.getByExactText('Clear Form').click();
-    await ctx.wait(200);
 
     // Check that name label is reset
-    await ctx.expect(ctx.getByText('Enter your name').within(1000)).toBeVisible();
+    await ctx.getByText('Enter your name').within(1000).shouldExist();
   });
 });

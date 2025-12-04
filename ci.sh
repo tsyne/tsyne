@@ -269,7 +269,6 @@ timeout 600 npm run test:unit -- --json --outputFile=/tmp/root-test-results.json
   else
     echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
   fi
-  capture_test_results "Root Tsyne" "/tmp/root-test-results.json"
 }
 capture_test_results "Root Tsyne" "/tmp/root-test-results.json" || true
 
@@ -326,7 +325,6 @@ timeout 150 npm run test:logic -- --json --outputFile=/tmp/examples-logic-test-r
   else
     echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
   fi
-  capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json"
 }
 capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
@@ -338,7 +336,6 @@ timeout 150 npm run test:gui -- --json --outputFile=/tmp/examples-gui-test-resul
   else
     echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
   fi
-  capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json"
 }
 capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
 

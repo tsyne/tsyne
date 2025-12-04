@@ -80,7 +80,7 @@ describe('Download Manager Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'download-manager.png');
-      await ctx.wait(200);
+      await ctx.getByExactText('Show Infinite Progress').within(200).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
@@ -176,17 +176,14 @@ describe('Download Manager Example', () => {
 
     // Add small file
     await ctx.getByExactText('Add Small').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByText('Queue: small.zip')).toBeVisible();
+    await ctx.getByText('Queue: small.zip').within(100).shouldExist();
 
     // Add large file
     await ctx.getByExactText('Add Large').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByText('Queue: small.zip, large.iso')).toBeVisible();
+    await ctx.getByText('Queue: small.zip, large.iso').within(100).shouldExist();
 
     // Clear queue
     await ctx.getByExactText('Clear').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByText('Queue: empty')).toBeVisible();
+    await ctx.getByText('Queue: empty').within(100).shouldExist();
   });
 });

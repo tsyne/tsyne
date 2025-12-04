@@ -13,6 +13,7 @@ declare const fail: (message?: string) => never;
  */
 export interface WaitTimeRecord {
   testName: string;       // Full test name including describe blocks
+  testPath?: string;      // File path of the test
   waitMs: number;         // Duration waited
   callLocation?: string;  // Optional: stack trace location of the call
 }
@@ -22,6 +23,7 @@ export interface WaitTimeRecord {
  */
 export interface TestWaitSummary {
   testName: string;
+  testPath?: string;  // File path of the test
   totalWaitMs: number;
   waitCount: number;
 }
@@ -36,9 +38,9 @@ class WaitTimeTracker {
   /**
    * Record a wait call
    */
-  record(waitMs: number, testName: string, callLocation?: string): void {
+  record(waitMs: number, testName: string, testPath?: string, callLocation?: string): void {
     if (!this.enabled) return;
-    this.records.push({ testName, waitMs, callLocation });
+    this.records.push({ testName, testPath, waitMs, callLocation });
   }
 
   /**
@@ -52,18 +54,22 @@ class WaitTimeTracker {
    * Get wait time summary per test
    */
   getSummaryByTest(): TestWaitSummary[] {
-    const byTest = new Map<string, { total: number; count: number }>();
+    const byTest = new Map<string, { total: number; count: number; testPath?: string }>();
 
     for (const record of this.records) {
-      const existing = byTest.get(record.testName) || { total: 0, count: 0 };
+      const existing = byTest.get(record.testName) || { total: 0, count: 0, testPath: record.testPath };
       existing.total += record.waitMs;
       existing.count += 1;
+      if (!existing.testPath && record.testPath) {
+        existing.testPath = record.testPath;
+      }
       byTest.set(record.testName, existing);
     }
 
     return Array.from(byTest.entries())
       .map(([testName, data]) => ({
         testName,
+        testPath: data.testPath,
         totalWaitMs: data.total,
         waitCount: data.count
       }))
@@ -118,7 +124,8 @@ class WaitTimeTracker {
 
     for (const summary of summaries) {
       const percentage = ((summary.totalWaitMs / total) * 100).toFixed(1);
-      write(`  ${summary.testName}`);
+      const pathInfo = summary.testPath ? ` [${summary.testPath}]` : '';
+      write(`  ${summary.testName}${pathInfo}`);
       write(`    └─ ${summary.totalWaitMs}ms (${summary.waitCount} calls, ${percentage}%)`);
     }
 
@@ -179,6 +186,35 @@ function getCurrentTestName(): string {
     // Not in Jest context or expect not available
   }
   return 'unknown';
+}
+
+/**
+ * Get the current Jest test file path (relative path for display)
+ * Returns undefined if not in a Jest test context
+ */
+function getCurrentTestPath(): string | undefined {
+  try {
+    // Jest exposes current test info via expect.getState()
+    const state = expect.getState();
+    if (state && state.testPath) {
+      // Return just the relative portion for cleaner display
+      const path = state.testPath as string;
+      // Find common markers to make path shorter
+      const markers = ['/examples/', '/ported-apps/', '/src/'];
+      for (const marker of markers) {
+        const idx = path.indexOf(marker);
+        if (idx !== -1) {
+          return path.substring(idx + 1); // Remove leading slash
+        }
+      }
+      // Fallback: just return the filename
+      const lastSlash = path.lastIndexOf('/');
+      return lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+    }
+  } catch (e) {
+    // Not in Jest context or expect not available
+  }
+  return undefined;
 }
 
 /**
@@ -1271,9 +1307,10 @@ export class TestContext {
    * Consider using .within(timeout).shouldBe() patterns instead for better test reliability.
    */
   async wait(ms: number): Promise<void> {
-    // Track this wait call with the current test name
+    // Track this wait call with the current test name and file path
     const testName = getCurrentTestName();
-    waitTimeTracker.record(ms, testName);
+    const testPath = getCurrentTestPath();
+    waitTimeTracker.record(ms, testName, testPath);
 
     await new Promise(resolve => setTimeout(resolve, ms));
   }

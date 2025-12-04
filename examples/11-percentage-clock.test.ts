@@ -72,7 +72,7 @@ describe('Percentage Clock Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', '11-percentage-clock.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Seconds:').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
