@@ -55,7 +55,7 @@ describe('Stopwatch Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', '17-stopwatch.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('No laps recorded').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
@@ -133,9 +133,8 @@ describe('Stopwatch Example', () => {
 
     // Click stop
     await ctx.getByExactText('Stop').click();
-    await ctx.wait(100);
 
-    // Time should have advanced from 00:00.00
+    // Time should have advanced from 00:00.00 - wait for UI to settle
     const labels = await ctx.getAllByType('label');
     let foundNonZeroTime = false;
     for (const label of labels) {
@@ -220,9 +219,8 @@ describe('Stopwatch Example', () => {
 
     // Click reset
     await ctx.getByExactText('Reset').click();
-    await ctx.wait(100);
 
     // Should be back to zero
-    await ctx.expect(ctx.getByExactText('00:00.00')).toBeVisible();
+    await ctx.getByExactText('00:00.00').within(100).shouldExist();
   });
 });

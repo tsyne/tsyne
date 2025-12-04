@@ -56,29 +56,25 @@ describe('Counter Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', '02-counter.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Count: 0').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
 
     // Click increment
     await ctx.getByExactText('Increment').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Count: 1')).toBeVisible();
+    await ctx.getByExactText('Count: 1').within(100).shouldExist();
 
     // Click increment again
     await ctx.getByExactText('Increment').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Count: 2')).toBeVisible();
+    await ctx.getByExactText('Count: 2').within(100).shouldExist();
 
     // Click decrement
     await ctx.getByExactText('Decrement').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Count: 1')).toBeVisible();
+    await ctx.getByExactText('Count: 1').within(100).shouldExist();
 
     // Click reset
     await ctx.getByExactText('Reset').click();
-    await ctx.wait(100);
-    await ctx.expect(ctx.getByExactText('Count: 0')).toBeVisible();
+    await ctx.getByExactText('Count: 0').within(100).shouldExist();
   });
 });
