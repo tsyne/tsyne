@@ -413,8 +413,8 @@ export function createSlydesApp(a: App): SlydesUI {
           // Title area
           a.center(() => {
             a.vbox(() => {
-              presentHeading = a.label('', undefined, undefined, undefined, undefined).withId('presentation-heading');
-              presentSubheading = a.label('', undefined, undefined, undefined, undefined).withId('presentation-subheading');
+              presentHeading = a.label('', undefined, 'center', undefined, { bold: true }).withId('presentation-heading');
+              presentSubheading = a.label('', undefined, 'center', undefined, { bold: true }).withId('presentation-subheading');
             });
           });
 
@@ -423,7 +423,7 @@ export function createSlydesApp(a: App): SlydesUI {
           // Content area
           a.scroll(() => {
             a.center(() => {
-              presentContent = a.label('', undefined, undefined, undefined, undefined).withId('presentation-content');
+              presentContent = a.label('', undefined, 'center', 'word', undefined).withId('presentation-content');
             });
           });
 
@@ -581,10 +581,10 @@ export function createSlydesApp(a: App): SlydesUI {
             // Preview content
             a.scroll(() => {
               previewContainer = a.vbox(() => {
-                previewHeading = a.label('', undefined, undefined, undefined, undefined).withId('preview-heading');
-                previewSubheading = a.label('', undefined, undefined, undefined, undefined).withId('preview-subheading');
+                previewHeading = a.label('', undefined, 'center', undefined, { bold: true }).withId('preview-heading');
+                previewSubheading = a.label('', undefined, 'center', undefined, { bold: true }).withId('preview-subheading');
                 a.separator();
-                previewContent = a.label('', undefined, undefined, undefined, undefined).withId('preview-content');
+                previewContent = a.label('', undefined, undefined, 'word', undefined).withId('preview-content');
               });
             });
           });

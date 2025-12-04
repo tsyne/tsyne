@@ -6,7 +6,9 @@ option go_package = "github.com/paul-hammant/tsyne/bridge/proto";
 
 // BridgeService provides high-performance binary protocol for Tsyne bridge
 service BridgeService {
+  // ============================================================================
   // Window operations
+  // ============================================================================
   rpc CreateWindow(CreateWindowRequest) returns (Response);
   rpc ShowWindow(ShowWindowRequest) returns (Response);
   rpc SetContent(SetContentRequest) returns (Response);
@@ -14,22 +16,112 @@ service BridgeService {
   rpc SetWindowTitle(SetWindowTitleRequest) returns (Response);
   rpc CenterWindow(CenterWindowRequest) returns (Response);
   rpc SetWindowFullScreen(SetWindowFullScreenRequest) returns (Response);
+  rpc CloseWindow(CloseWindowRequest) returns (Response);
+  rpc SetWindowIcon(SetWindowIconRequest) returns (Response);
+  rpc SetWindowCloseIntercept(SetWindowCloseInterceptRequest) returns (Response);
+  rpc CloseInterceptResponse(CloseInterceptResponseRequest) returns (Response);
+  rpc CaptureWindow(CaptureWindowRequest) returns (Response);
 
-  // Widget creation
+  // ============================================================================
+  // Display widget creation
+  // ============================================================================
   rpc CreateImage(CreateImageRequest) returns (Response);
   rpc CreateLabel(CreateLabelRequest) returns (Response);
+  rpc CreateSeparator(CreateSeparatorRequest) returns (Response);
+  rpc CreateSpacer(CreateSpacerRequest) returns (Response);
+  rpc CreateHyperlink(CreateHyperlinkRequest) returns (Response);
+  rpc CreateProgressBar(CreateProgressBarRequest) returns (Response);
+  rpc CreateActivity(CreateActivityRequest) returns (Response);
+  rpc CreateRichText(CreateRichTextRequest) returns (Response);
+  rpc CreateIcon(CreateIconRequest) returns (Response);
+  rpc CreateFileIcon(CreateFileIconRequest) returns (Response);
+  rpc CreateCalendar(CreateCalendarRequest) returns (Response);
+
+  // ============================================================================
+  // Input widget creation
+  // ============================================================================
   rpc CreateButton(CreateButtonRequest) returns (Response);
   rpc CreateEntry(CreateEntryRequest) returns (Response);
-  rpc CreateVBox(CreateVBoxRequest) returns (Response);
-  rpc CreateHBox(CreateHBoxRequest) returns (Response);
   rpc CreateCheckbox(CreateCheckboxRequest) returns (Response);
   rpc CreateSelect(CreateSelectRequest) returns (Response);
+  rpc CreateSlider(CreateSliderRequest) returns (Response);
+  rpc CreateRadioGroup(CreateRadioGroupRequest) returns (Response);
+  rpc CreateCheckGroup(CreateCheckGroupRequest) returns (Response);
+  rpc CreateSelectEntry(CreateSelectEntryRequest) returns (Response);
+  rpc CreateDateEntry(CreateDateEntryRequest) returns (Response);
 
+  // ============================================================================
+  // Container creation
+  // ============================================================================
+  rpc CreateVBox(CreateVBoxRequest) returns (Response);
+  rpc CreateHBox(CreateHBoxRequest) returns (Response);
+  rpc CreateScroll(CreateScrollRequest) returns (Response);
+  rpc CreateGrid(CreateGridRequest) returns (Response);
+  rpc CreateCenter(CreateCenterRequest) returns (Response);
+  rpc CreateClip(CreateClipRequest) returns (Response);
+  rpc CreateMax(CreateMaxRequest) returns (Response);
+  rpc CreateStack(CreateStackRequest) returns (Response);
+  rpc CreateCard(CreateCardRequest) returns (Response);
+  rpc CreateAccordion(CreateAccordionRequest) returns (Response);
+  rpc CreateForm(CreateFormRequest) returns (Response);
+  rpc CreateBorder(CreateBorderRequest) returns (Response);
+  rpc CreateGridWrap(CreateGridWrapRequest) returns (Response);
+  rpc CreateAdaptiveGrid(CreateAdaptiveGridRequest) returns (Response);
+  rpc CreatePadded(CreatePaddedRequest) returns (Response);
+  rpc CreateSplit(CreateSplitRequest) returns (Response);
+  rpc CreateTabs(CreateTabsRequest) returns (Response);
+  rpc CreateDocTabs(CreateDocTabsRequest) returns (Response);
+  rpc CreateThemeOverride(CreateThemeOverrideRequest) returns (Response);
+  rpc CreateInnerWindow(CreateInnerWindowRequest) returns (Response);
+  rpc CreateNavigation(CreateNavigationRequest) returns (Response);
+  rpc CreatePopup(CreatePopupRequest) returns (Response);
+  rpc CreateMultipleWindows(CreateMultipleWindowsRequest) returns (Response);
+
+  // ============================================================================
+  // Data widget creation
+  // ============================================================================
+  rpc CreateTable(CreateTableRequest) returns (Response);
+  rpc CreateTree(CreateTreeRequest) returns (Response);
+  rpc CreateList(CreateListRequest) returns (Response);
+  rpc CreateMenu(CreateMenuRequest) returns (Response);
+  rpc CreateToolbar(CreateToolbarRequest) returns (Response);
+  rpc CreateTextGrid(CreateTextGridRequest) returns (Response);
+
+  // ============================================================================
+  // Canvas primitives
+  // ============================================================================
+  rpc CreateCanvasLine(CreateCanvasLineRequest) returns (Response);
+  rpc CreateCanvasCircle(CreateCanvasCircleRequest) returns (Response);
+  rpc CreateCanvasRectangle(CreateCanvasRectangleRequest) returns (Response);
+  rpc CreateCanvasText(CreateCanvasTextRequest) returns (Response);
+  rpc CreateCanvasRaster(CreateCanvasRasterRequest) returns (Response);
+  rpc CreateCanvasLinearGradient(CreateCanvasLinearGradientRequest) returns (Response);
+  rpc CreateCanvasRadialGradient(CreateCanvasRadialGradientRequest) returns (Response);
+  rpc CreateCanvasArc(CreateCanvasArcRequest) returns (Response);
+  rpc CreateCanvasPolygon(CreateCanvasPolygonRequest) returns (Response);
+  rpc CreateTappableCanvasRaster(CreateTappableCanvasRasterRequest) returns (Response);
+
+  // Canvas updates
+  rpc UpdateCanvasLine(UpdateCanvasLineRequest) returns (Response);
+  rpc UpdateCanvasCircle(UpdateCanvasCircleRequest) returns (Response);
+  rpc UpdateCanvasRectangle(UpdateCanvasRectangleRequest) returns (Response);
+  rpc UpdateCanvasText(UpdateCanvasTextRequest) returns (Response);
+  rpc UpdateCanvasRaster(UpdateCanvasRasterRequest) returns (Response);
+  rpc UpdateCanvasLinearGradient(UpdateCanvasLinearGradientRequest) returns (Response);
+  rpc UpdateCanvasRadialGradient(UpdateCanvasRadialGradientRequest) returns (Response);
+  rpc UpdateCanvasArc(UpdateCanvasArcRequest) returns (Response);
+  rpc UpdateCanvasPolygon(UpdateCanvasPolygonRequest) returns (Response);
+  rpc UpdateTappableCanvasRaster(UpdateTappableCanvasRasterRequest) returns (Response);
+
+  // ============================================================================
   // Resources
+  // ============================================================================
   rpc RegisterResource(RegisterResourceRequest) returns (Response);
   rpc UnregisterResource(UnregisterResourceRequest) returns (Response);
 
+  // ============================================================================
   // Widget updates
+  // ============================================================================
   rpc UpdateImage(UpdateImageRequest) returns (Response);
   rpc SetText(SetTextRequest) returns (Response);
   rpc GetText(GetTextRequest) returns (GetTextResponse);
@@ -37,26 +129,179 @@ service BridgeService {
   rpc GetProgress(GetProgressRequest) returns (GetProgressResponse);
   rpc SetChecked(SetCheckedRequest) returns (Response);
   rpc GetChecked(GetCheckedRequest) returns (GetCheckedResponse);
+  rpc SetValue(SetValueRequest) returns (Response);
+  rpc GetValue(GetValueRequest) returns (GetValueResponse);
+  rpc SetSelected(SetSelectedRequest) returns (Response);
+  rpc GetSelected(GetSelectedRequest) returns (GetSelectedResponse);
+  rpc SetSelectOptions(SetSelectOptionsRequest) returns (Response);
+  rpc SetSelectEntryOptions(SetSelectEntryOptionsRequest) returns (Response);
+  rpc SetDate(SetDateRequest) returns (Response);
+  rpc GetDate(GetDateRequest) returns (GetDateResponse);
+  rpc SetIconResource(SetIconResourceRequest) returns (Response);
+  rpc SetFileIconURI(SetFileIconURIRequest) returns (Response);
+  rpc SetFileIconSelected(SetFileIconSelectedRequest) returns (Response);
+  rpc SetRadioSelected(SetRadioSelectedRequest) returns (Response);
+  rpc GetRadioSelected(GetRadioSelectedRequest) returns (GetRadioSelectedResponse);
+  rpc SetRadioOptions(SetRadioOptionsRequest) returns (Response);
+  rpc GetCheckGroupSelected(GetCheckGroupSelectedRequest) returns (GetCheckGroupSelectedResponse);
+  rpc SetCheckGroupSelected(SetCheckGroupSelectedRequest) returns (Response);
 
+  // ============================================================================
+  // Widget state
+  // ============================================================================
+  rpc ShowWidget(ShowWidgetRequest) returns (Response);
+  rpc HideWidget(HideWidgetRequest) returns (Response);
+  rpc EnableWidget(EnableWidgetRequest) returns (Response);
+  rpc DisableWidget(DisableWidgetRequest) returns (Response);
+  rpc IsEnabled(IsEnabledRequest) returns (IsEnabledResponse);
+  rpc ClearWidgets(ClearWidgetsRequest) returns (Response);
+  rpc StartActivity(StartActivityRequest) returns (Response);
+  rpc StopActivity(StopActivityRequest) returns (Response);
+  rpc StartProgressInfinite(StartProgressInfiniteRequest) returns (Response);
+  rpc StopProgressInfinite(StopProgressInfiniteRequest) returns (Response);
+  rpc IsProgressRunning(IsProgressRunningRequest) returns (IsProgressRunningResponse);
+
+  // ============================================================================
+  // Container operations
+  // ============================================================================
+  rpc ContainerAdd(ContainerAddRequest) returns (Response);
+  rpc ContainerRemoveAll(ContainerRemoveAllRequest) returns (Response);
+  rpc ContainerRefresh(ContainerRefreshRequest) returns (Response);
+  rpc GetContainerObjects(GetContainerObjectsRequest) returns (GetContainerObjectsResponse);
+  rpc DocTabsAppend(DocTabsAppendRequest) returns (Response);
+  rpc DocTabsRemove(DocTabsRemoveRequest) returns (Response);
+  rpc DocTabsSelect(DocTabsSelectRequest) returns (Response);
+  rpc MultipleWindowsAddWindow(MultipleWindowsAddWindowRequest) returns (Response);
+  rpc MultipleWindowsRemoveWindow(MultipleWindowsRemoveWindowRequest) returns (Response);
+
+  // ============================================================================
+  // Popup and Navigation operations
+  // ============================================================================
+  rpc ShowPopup(ShowPopupRequest) returns (Response);
+  rpc HidePopup(HidePopupRequest) returns (Response);
+  rpc MovePopup(MovePopupRequest) returns (Response);
+  rpc NavigationPush(NavigationPushRequest) returns (Response);
+  rpc NavigationBack(NavigationBackRequest) returns (Response);
+  rpc NavigationForward(NavigationForwardRequest) returns (Response);
+  rpc NavigationSetTitle(NavigationSetTitleRequest) returns (Response);
+  rpc InnerWindowClose(InnerWindowCloseRequest) returns (Response);
+  rpc SetInnerWindowTitle(SetInnerWindowTitleRequest) returns (Response);
+
+  // ============================================================================
+  // Dialogs
+  // ============================================================================
+  rpc ShowInfo(ShowInfoRequest) returns (Response);
+  rpc ShowError(ShowErrorRequest) returns (Response);
+  rpc ShowConfirm(ShowConfirmRequest) returns (Response);
+  rpc ShowFileOpen(ShowFileOpenRequest) returns (Response);
+  rpc ShowFileSave(ShowFileSaveRequest) returns (Response);
+  rpc ShowFolderOpen(ShowFolderOpenRequest) returns (Response);
+  rpc ShowForm(ShowFormRequest) returns (Response);
+  rpc ShowCustom(ShowCustomRequest) returns (Response);
+  rpc ShowCustomConfirm(ShowCustomConfirmRequest) returns (Response);
+  rpc ShowCustomWithoutButtons(ShowCustomWithoutButtonsRequest) returns (Response);
+  rpc HideCustomDialog(HideCustomDialogRequest) returns (Response);
+  rpc GetActiveDialogs(GetActiveDialogsRequest) returns (GetActiveDialogsResponse);
+  rpc DismissActiveDialog(DismissActiveDialogRequest) returns (Response);
+  rpc ShowProgressDialog(ShowProgressDialogRequest) returns (Response);
+  rpc UpdateProgressDialog(UpdateProgressDialogRequest) returns (Response);
+  rpc HideProgressDialog(HideProgressDialogRequest) returns (Response);
+  rpc ShowColorPicker(ShowColorPickerRequest) returns (Response);
+  rpc ShowEntryDialog(ShowEntryDialogRequest) returns (Response);
+
+  // ============================================================================
+  // Data widget operations
+  // ============================================================================
+  rpc GetTableData(GetTableDataRequest) returns (GetTableDataResponse);
+  rpc UpdateTableData(UpdateTableDataRequest) returns (Response);
+  rpc GetListData(GetListDataRequest) returns (GetListDataResponse);
+  rpc UpdateListData(UpdateListDataRequest) returns (Response);
+  rpc UnselectAllList(UnselectAllListRequest) returns (Response);
+  rpc GetTextGridText(GetTextGridTextRequest) returns (GetTextGridTextResponse);
+  rpc SetTextGridText(SetTextGridTextRequest) returns (Response);
+  rpc SetTextGridCell(SetTextGridCellRequest) returns (Response);
+  rpc SetTextGridRow(SetTextGridRowRequest) returns (Response);
+  rpc SetTextGridStyle(SetTextGridStyleRequest) returns (Response);
+  rpc SetTextGridStyleRange(SetTextGridStyleRangeRequest) returns (Response);
+  rpc GetToolbarItems(GetToolbarItemsRequest) returns (GetToolbarItemsResponse);
+  rpc ClickToolbarAction(ClickToolbarActionRequest) returns (Response);
+
+  // ============================================================================
+  // Theme and styling
+  // ============================================================================
+  rpc SetTheme(SetThemeRequest) returns (Response);
+  rpc GetTheme(GetThemeRequest) returns (GetThemeResponse);
+  rpc SetFontScale(SetFontScaleRequest) returns (Response);
+  rpc SetCustomTheme(SetCustomThemeRequest) returns (Response);
+  rpc ClearCustomTheme(ClearCustomThemeRequest) returns (Response);
+  rpc SetCustomFont(SetCustomFontRequest) returns (Response);
+  rpc ClearCustomFont(ClearCustomFontRequest) returns (Response);
+  rpc GetAvailableFonts(GetAvailableFontsRequest) returns (GetAvailableFontsResponse);
+  rpc SetWidgetStyle(SetWidgetStyleRequest) returns (Response);
+  rpc SetMainMenu(SetMainMenuRequest) returns (Response);
+  rpc SetWidgetContextMenu(SetWidgetContextMenuRequest) returns (Response);
+
+  // ============================================================================
+  // Platform integration
+  // ============================================================================
+  rpc SetSystemTray(SetSystemTrayRequest) returns (Response);
+  rpc SendNotification(SendNotificationRequest) returns (Response);
+  rpc ClipboardGet(ClipboardGetRequest) returns (ClipboardGetResponse);
+  rpc ClipboardSet(ClipboardSetRequest) returns (Response);
+  rpc PreferencesGet(PreferencesGetRequest) returns (PreferencesGetResponse);
+  rpc PreferencesSet(PreferencesSetRequest) returns (Response);
+  rpc PreferencesRemove(PreferencesRemoveRequest) returns (Response);
+  rpc SetDraggable(SetDraggableRequest) returns (Response);
+  rpc SetDroppable(SetDroppableRequest) returns (Response);
+
+  // ============================================================================
   // Interactions
+  // ============================================================================
   rpc ClickWidget(ClickWidgetRequest) returns (Response);
   rpc TypeText(TypeTextRequest) returns (Response);
   rpc DoubleTapWidget(DoubleTapWidgetRequest) returns (Response);
   rpc RightClickWidget(RightClickWidgetRequest) returns (Response);
   rpc DragWidget(DragWidgetRequest) returns (Response);
+  rpc HoverWidget(HoverWidgetRequest) returns (Response);
+  rpc FocusWidget(FocusWidgetRequest) returns (Response);
+  rpc FocusNext(FocusNextRequest) returns (Response);
+  rpc FocusPrevious(FocusPreviousRequest) returns (Response);
+  rpc SubmitEntry(SubmitEntryRequest) returns (Response);
+  rpc DragCanvas(DragCanvasRequest) returns (Response);
+  rpc ScrollCanvas(ScrollCanvasRequest) returns (Response);
 
-  // Custom IDs
+  // ============================================================================
+  // Custom IDs and testing
+  // ============================================================================
   rpc RegisterCustomId(RegisterCustomIdRequest) returns (Response);
+  rpc RegisterTestId(RegisterTestIdRequest) returns (Response);
+  rpc GetParent(GetParentRequest) returns (GetParentResponse);
 
+  // ============================================================================
   // Queries
+  // ============================================================================
   rpc FindWidget(FindWidgetRequest) returns (FindWidgetResponse);
   rpc GetWidgetInfo(GetWidgetInfoRequest) returns (WidgetInfoResponse);
   rpc GetAllWidgets(GetAllWidgetsRequest) returns (GetAllWidgetsResponse);
 
+  // ============================================================================
+  // Accessibility
+  // ============================================================================
+  rpc SetAccessibility(SetAccessibilityRequest) returns (Response);
+  rpc EnableAccessibility(EnableAccessibilityRequest) returns (Response);
+  rpc DisableAccessibility(DisableAccessibilityRequest) returns (Response);
+  rpc Announce(AnnounceRequest) returns (Response);
+  rpc StopSpeech(StopSpeechRequest) returns (Response);
+  rpc SetWidgetHoverable(SetWidgetHoverableRequest) returns (Response);
+
+  // ============================================================================
   // Events (streaming)
+  // ============================================================================
   rpc SubscribeEvents(EventSubscription) returns (stream Event);
 
+  // ============================================================================
   // Lifecycle
+  // ============================================================================
   rpc Quit(QuitRequest) returns (Response);
 }
 
@@ -105,49 +350,91 @@ message SetWindowFullScreenRequest {
   bool fullscreen = 2;
 }
 
+// Fill mode options for images
+enum ImageFillMode {
+  IMAGE_FILL_ORIGINAL = 0;  // Original size (default)
+  IMAGE_FILL_CONTAIN = 1;   // Scale to fit within bounds
+  IMAGE_FILL_STRETCH = 2;   // Stretch to fill bounds
+}
+
 // Widget creation messages
 message CreateImageRequest {
   string widget_id = 1;
   oneof source {
     bytes inline_data = 2;      // Raw PNG/JPEG bytes
     string resource_name = 3;   // Reference to registered resource
+    string path = 9;            // File path or data URL
   }
   int32 width = 4;
   int32 height = 5;
   string callback_id = 6;       // Click callback
   string drag_callback_id = 7;  // Drag callback
   string double_tap_callback_id = 8; // Double tap callback
+  ImageFillMode fill_mode = 10; // How to scale/fill the image
+  string drag_end_callback_id = 11; // Drag end callback
+}
+
+// Text alignment options for labels
+enum TextAlignment {
+  TEXT_ALIGN_LEADING = 0;   // Left-aligned (default)
+  TEXT_ALIGN_CENTER = 1;    // Center-aligned
+  TEXT_ALIGN_TRAILING = 2;  // Right-aligned
+}
+
+// Text wrapping options for labels
+enum TextWrapping {
+  TEXT_WRAP_OFF = 0;        // No wrapping (default)
+  TEXT_WRAP_TRUNCATE = 1;   // Truncate with ellipsis
+  TEXT_WRAP_WORD = 2;       // Wrap at word boundaries
 }
 
 message CreateLabelRequest {
   string widget_id = 1;
   string text = 2;
   bool bold = 3;
-  int32 alignment = 4;
+  TextAlignment alignment = 4;
+  bool italic = 5;
+  bool monospace = 6;
+  TextWrapping wrapping = 7;
+}
+
+// Button importance levels
+enum ButtonImportance {
+  BUTTON_IMPORTANCE_MEDIUM = 0;  // Default
+  BUTTON_IMPORTANCE_LOW = 1;
+  BUTTON_IMPORTANCE_HIGH = 2;
+  BUTTON_IMPORTANCE_WARNING = 3;
+  BUTTON_IMPORTANCE_SUCCESS = 4;
 }
 
 message CreateButtonRequest {
   string widget_id = 1;
   string text = 2;
   string callback_id = 3;
-  bool important = 4;
+  ButtonImportance importance = 4;
 }
 
 message CreateEntryRequest {
   string widget_id = 1;
   string placeholder = 2;
-  string callback_id = 3; // Submit callback
+  string callback_id = 3; // Submit callback (OnSubmitted)
   int32 width = 4;
   bool multiline = 5;
   bool password = 6;
+  string on_change_callback_id = 7; // OnChanged callback
+  string on_cursor_changed_callback_id = 8; // OnCursorChanged callback
+  float min_width = 9; // Minimum width for the entry
+  string double_click_callback_id = 10; // Double-click callback
 }
 
 message CreateVBoxRequest {
   string widget_id = 1;
+  repeated string children = 2;  // Child widget IDs
 }
 
 message CreateHBoxRequest {
   string widget_id = 1;
+  repeated string children = 2;  // Child widget IDs
 }
 
 message CreateCheckboxRequest {
@@ -162,6 +449,178 @@ message CreateSelectRequest {
   repeated string options = 2;
   int32 selected = 3;
   string callback_id = 4;
+}
+
+// ============================================================================
+// Container creation messages
+// ============================================================================
+
+message CreateScrollRequest {
+  string widget_id = 1;
+  string content_id = 2;  // ID of widget to scroll
+}
+
+message CreateGridRequest {
+  string widget_id = 1;
+  int32 columns = 2;
+  repeated string children = 3;
+}
+
+message CreateCenterRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+message CreateClipRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+message CreateMaxRequest {
+  string widget_id = 1;
+  repeated string child_ids = 2;
+}
+
+message CreateStackRequest {
+  string widget_id = 1;
+  repeated string child_ids = 2;
+}
+
+message CreateCardRequest {
+  string widget_id = 1;
+  string title = 2;
+  string subtitle = 3;
+  string content_id = 4;
+}
+
+// Accordion item for CreateAccordionRequest
+message AccordionItem {
+  string title = 1;
+  string content_id = 2;
+}
+
+message CreateAccordionRequest {
+  string widget_id = 1;
+  repeated AccordionItem items = 2;
+}
+
+// Form item for CreateFormRequest
+message FormItem {
+  string label = 1;
+  string widget_id = 2;
+}
+
+message CreateFormRequest {
+  string widget_id = 1;
+  repeated FormItem items = 2;
+  string submit_callback_id = 3;
+  string cancel_callback_id = 4;
+}
+
+message CreateBorderRequest {
+  string widget_id = 1;
+  string top_id = 2;
+  string bottom_id = 3;
+  string left_id = 4;
+  string right_id = 5;
+  string center_id = 6;
+}
+
+message CreateGridWrapRequest {
+  string widget_id = 1;
+  float item_width = 2;
+  float item_height = 3;
+  repeated string children = 4;
+}
+
+message CreateAdaptiveGridRequest {
+  string widget_id = 1;
+  int32 rowcols = 2;
+  repeated string children = 3;
+}
+
+message CreatePaddedRequest {
+  string widget_id = 1;
+  string child_id = 2;
+}
+
+// Split orientation
+enum SplitOrientation {
+  SPLIT_VERTICAL = 0;    // Default
+  SPLIT_HORIZONTAL = 1;
+}
+
+message CreateSplitRequest {
+  string widget_id = 1;
+  SplitOrientation orientation = 2;
+  string leading_id = 3;
+  string trailing_id = 4;
+  float offset = 5;  // 0.0 to 1.0
+}
+
+// Tab location
+enum TabLocation {
+  TAB_LOCATION_TOP = 0;      // Default
+  TAB_LOCATION_BOTTOM = 1;
+  TAB_LOCATION_LEADING = 2;
+  TAB_LOCATION_TRAILING = 3;
+}
+
+// Tab item for Tabs and DocTabs
+message TabItem {
+  string title = 1;
+  string content_id = 2;
+}
+
+message CreateTabsRequest {
+  string widget_id = 1;
+  repeated TabItem tabs = 2;
+  TabLocation location = 3;
+}
+
+message CreateDocTabsRequest {
+  string widget_id = 1;
+  repeated TabItem tabs = 2;
+  string close_callback_id = 3;
+  TabLocation location = 4;
+}
+
+// Theme variant
+enum ThemeVariant {
+  THEME_LIGHT = 0;  // Default
+  THEME_DARK = 1;
+}
+
+message CreateThemeOverrideRequest {
+  string widget_id = 1;
+  string child_id = 2;
+  ThemeVariant variant = 3;
+}
+
+message CreateInnerWindowRequest {
+  string widget_id = 1;
+  string title = 2;
+  string content_id = 3;
+  string on_close_callback_id = 4;
+}
+
+message CreateNavigationRequest {
+  string widget_id = 1;
+  string root_id = 2;
+  string title = 3;
+  string on_back_callback_id = 4;
+  string on_forward_callback_id = 5;
+}
+
+message CreatePopupRequest {
+  string widget_id = 1;
+  string content_id = 2;
+  string window_id = 3;
+}
+
+message CreateMultipleWindowsRequest {
+  string widget_id = 1;
+  repeated string children = 2;
 }
 
 // Resource messages
@@ -316,4 +775,1109 @@ message EventSubscription {
 
 // Lifecycle
 message QuitRequest {
+}
+
+// ============================================================================
+// Additional Window operations
+// ============================================================================
+
+message CloseWindowRequest {
+  string window_id = 1;
+}
+
+message SetWindowIconRequest {
+  string window_id = 1;
+  string resource_name = 2;
+}
+
+message SetWindowCloseInterceptRequest {
+  string window_id = 1;
+  string callback_id = 2;
+}
+
+message CloseInterceptResponseRequest {
+  string window_id = 1;
+  bool allow_close = 2;
+}
+
+message CaptureWindowRequest {
+  string window_id = 1;
+  string file_path = 2;
+}
+
+// ============================================================================
+// Additional Display widget creation
+// ============================================================================
+
+message CreateSeparatorRequest {
+  string widget_id = 1;
+}
+
+message CreateSpacerRequest {
+  string widget_id = 1;
+}
+
+message CreateHyperlinkRequest {
+  string widget_id = 1;
+  string text = 2;
+  string url = 3;
+}
+
+message CreateProgressBarRequest {
+  string widget_id = 1;
+  double value = 2;  // 0.0 to 1.0
+  bool infinite = 3; // If true, shows indeterminate progress
+}
+
+message CreateActivityRequest {
+  string widget_id = 1;
+}
+
+message CreateRichTextRequest {
+  string widget_id = 1;
+  repeated RichTextSegment segments = 2;
+}
+
+message RichTextSegment {
+  string text = 1;
+  bool bold = 2;
+  bool italic = 3;
+  bool monospace = 4;
+  string color = 5;  // hex color
+}
+
+message CreateIconRequest {
+  string widget_id = 1;
+  string icon_name = 2;
+}
+
+message CreateFileIconRequest {
+  string widget_id = 1;
+  string path = 2;
+}
+
+message CreateCalendarRequest {
+  string widget_id = 1;
+  string callback_id = 2;  // OnChanged callback
+  string date = 3;         // Initial date in "2006-01-02" format
+}
+
+// ============================================================================
+// Additional Input widget creation
+// ============================================================================
+
+message CreateSliderRequest {
+  string widget_id = 1;
+  double min = 2;
+  double max = 3;
+  double value = 4;
+  double step = 5;
+  string callback_id = 6;  // OnChanged callback
+}
+
+message CreateRadioGroupRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+  string selected = 3;
+  string callback_id = 4;
+  bool horizontal = 5;
+}
+
+message CreateCheckGroupRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+  repeated string selected = 3;
+  string callback_id = 4;
+  bool horizontal = 5;
+}
+
+message CreateSelectEntryRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+  string placeholder = 3;
+  string on_changed_callback_id = 4;
+  string on_submitted_callback_id = 5;
+  string on_selected_callback_id = 6;
+}
+
+message CreateDateEntryRequest {
+  string widget_id = 1;
+  string callback_id = 2;
+  string date = 3;  // Initial date in "2006-01-02" format
+}
+
+// ============================================================================
+// Data widget creation
+// ============================================================================
+
+message TableRow {
+  repeated string cells = 1;
+}
+
+message CreateTableRequest {
+  string widget_id = 1;
+  repeated string headers = 2;
+  repeated TableRow data = 3;
+}
+
+message CreateTreeRequest {
+  string widget_id = 1;
+  string root_label = 2;
+}
+
+message CreateListRequest {
+  string widget_id = 1;
+  repeated string items = 2;
+  string callback_id = 3;               // OnSelected callback
+  string on_unselected_callback_id = 4; // OnUnselected callback
+}
+
+message MenuItem {
+  string label = 1;
+  string callback_id = 2;
+  bool is_separator = 3;
+  bool disabled = 4;
+  bool checked = 5;
+  repeated MenuItem children = 6;  // Submenu items
+}
+
+message CreateMenuRequest {
+  string widget_id = 1;
+  repeated MenuItem items = 2;
+}
+
+message ToolbarItem {
+  string label = 1;
+  string icon_resource = 2;
+  string callback_id = 3;
+  bool is_separator = 4;
+  bool is_spacer = 5;
+}
+
+message CreateToolbarRequest {
+  string widget_id = 1;
+  repeated ToolbarItem items = 2;
+}
+
+message CreateTextGridRequest {
+  string widget_id = 1;
+  string text = 2;
+  bool show_line_numbers = 3;
+  bool show_whitespace = 4;
+}
+
+// ============================================================================
+// Canvas primitives
+// ============================================================================
+
+message CreateCanvasLineRequest {
+  string widget_id = 1;
+  float x1 = 2;
+  float y1 = 3;
+  float x2 = 4;
+  float y2 = 5;
+  string stroke_color = 6;  // hex color
+  float stroke_width = 7;
+}
+
+message CreateCanvasCircleRequest {
+  string widget_id = 1;
+  float x = 2;
+  float y = 3;
+  float x2 = 4;
+  float y2 = 5;
+  string fill_color = 6;
+  string stroke_color = 7;
+  float stroke_width = 8;
+}
+
+message CreateCanvasRectangleRequest {
+  string widget_id = 1;
+  float width = 2;
+  float height = 3;
+  string fill_color = 4;
+  string stroke_color = 5;
+  float stroke_width = 6;
+  float corner_radius = 7;
+}
+
+message CreateCanvasTextRequest {
+  string widget_id = 1;
+  string text = 2;
+  string color = 3;
+  float text_size = 4;
+  bool bold = 5;
+  bool italic = 6;
+  bool monospace = 7;
+  TextAlignment alignment = 8;
+}
+
+message PixelData {
+  int32 x = 1;
+  int32 y = 2;
+  int32 r = 3;
+  int32 g = 4;
+  int32 b = 5;
+  int32 a = 6;
+}
+
+message CreateCanvasRasterRequest {
+  string widget_id = 1;
+  int32 width = 2;
+  int32 height = 3;
+  bytes pixels = 4;  // RGBA pixel data
+}
+
+message CreateCanvasLinearGradientRequest {
+  string widget_id = 1;
+  string start_color = 2;
+  string end_color = 3;
+  double angle = 4;
+  float width = 5;
+  float height = 6;
+}
+
+message CreateCanvasRadialGradientRequest {
+  string widget_id = 1;
+  string start_color = 2;
+  string end_color = 3;
+  double center_offset_x = 4;
+  double center_offset_y = 5;
+  float width = 6;
+  float height = 7;
+}
+
+message CreateCanvasArcRequest {
+  string widget_id = 1;
+  float x = 2;
+  float y = 3;
+  float x2 = 4;
+  float y2 = 5;
+  double start_angle = 6;
+  double end_angle = 7;
+  string fill_color = 8;
+  string stroke_color = 9;
+  float stroke_width = 10;
+}
+
+message PolygonPoint {
+  float x = 1;
+  float y = 2;
+}
+
+message CreateCanvasPolygonRequest {
+  string widget_id = 1;
+  repeated PolygonPoint points = 2;
+  string fill_color = 3;
+  string stroke_color = 4;
+  float stroke_width = 5;
+}
+
+message CreateTappableCanvasRasterRequest {
+  string widget_id = 1;
+  int32 width = 2;
+  int32 height = 3;
+  bytes pixels = 4;
+}
+
+// Canvas update messages
+message UpdateCanvasLineRequest {
+  string widget_id = 1;
+  float x1 = 2;
+  float y1 = 3;
+  float x2 = 4;
+  float y2 = 5;
+  string stroke_color = 6;
+  float stroke_width = 7;
+}
+
+message UpdateCanvasCircleRequest {
+  string widget_id = 1;
+  float x = 2;
+  float y = 3;
+  float x2 = 4;
+  float y2 = 5;
+  string fill_color = 6;
+  string stroke_color = 7;
+  float stroke_width = 8;
+}
+
+message UpdateCanvasRectangleRequest {
+  string widget_id = 1;
+  float width = 2;
+  float height = 3;
+  string fill_color = 4;
+  string stroke_color = 5;
+  float stroke_width = 6;
+  float corner_radius = 7;
+}
+
+message UpdateCanvasTextRequest {
+  string widget_id = 1;
+  string text = 2;
+  string color = 3;
+  float text_size = 4;
+}
+
+message UpdateCanvasRasterRequest {
+  string widget_id = 1;
+  repeated PixelData updates = 2;
+}
+
+message UpdateCanvasLinearGradientRequest {
+  string widget_id = 1;
+  string start_color = 2;
+  string end_color = 3;
+  double angle = 4;
+}
+
+message UpdateCanvasRadialGradientRequest {
+  string widget_id = 1;
+  string start_color = 2;
+  string end_color = 3;
+  double center_offset_x = 4;
+  double center_offset_y = 5;
+}
+
+message UpdateCanvasArcRequest {
+  string widget_id = 1;
+  double start_angle = 2;
+  double end_angle = 3;
+  string fill_color = 4;
+  string stroke_color = 5;
+  float stroke_width = 6;
+}
+
+message UpdateCanvasPolygonRequest {
+  string widget_id = 1;
+  repeated PolygonPoint points = 2;
+  string fill_color = 3;
+  string stroke_color = 4;
+  float stroke_width = 5;
+}
+
+message UpdateTappableCanvasRasterRequest {
+  string widget_id = 1;
+  repeated PixelData updates = 2;
+}
+
+// ============================================================================
+// Widget update messages
+// ============================================================================
+
+message SetValueRequest {
+  string widget_id = 1;
+  double value = 2;
+}
+
+message GetValueRequest {
+  string widget_id = 1;
+}
+
+message GetValueResponse {
+  bool success = 1;
+  string error = 2;
+  double value = 3;
+}
+
+message SetSelectedRequest {
+  string widget_id = 1;
+  string selected = 2;
+}
+
+message GetSelectedRequest {
+  string widget_id = 1;
+}
+
+message GetSelectedResponse {
+  bool success = 1;
+  string error = 2;
+  string selected = 3;
+}
+
+message SetSelectOptionsRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+}
+
+message SetSelectEntryOptionsRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+}
+
+message SetDateRequest {
+  string widget_id = 1;
+  int32 year = 2;
+  int32 month = 3;
+  int32 day = 4;
+}
+
+message GetDateRequest {
+  string widget_id = 1;
+}
+
+message GetDateResponse {
+  bool success = 1;
+  string error = 2;
+  int32 year = 3;
+  int32 month = 4;
+  int32 day = 5;
+}
+
+message SetIconResourceRequest {
+  string widget_id = 1;
+  string resource_name = 2;
+}
+
+message SetFileIconURIRequest {
+  string widget_id = 1;
+  string uri = 2;
+}
+
+message SetFileIconSelectedRequest {
+  string widget_id = 1;
+  bool selected = 2;
+}
+
+message SetRadioSelectedRequest {
+  string widget_id = 1;
+  string selected = 2;
+}
+
+message GetRadioSelectedRequest {
+  string widget_id = 1;
+}
+
+message GetRadioSelectedResponse {
+  bool success = 1;
+  string error = 2;
+  string selected = 3;
+}
+
+message SetRadioOptionsRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+}
+
+message GetCheckGroupSelectedRequest {
+  string widget_id = 1;
+}
+
+message GetCheckGroupSelectedResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string selected = 3;
+}
+
+message SetCheckGroupSelectedRequest {
+  string widget_id = 1;
+  repeated string selected = 2;
+}
+
+// ============================================================================
+// Widget state messages
+// ============================================================================
+
+message ShowWidgetRequest {
+  string widget_id = 1;
+}
+
+message HideWidgetRequest {
+  string widget_id = 1;
+}
+
+message EnableWidgetRequest {
+  string widget_id = 1;
+}
+
+message DisableWidgetRequest {
+  string widget_id = 1;
+}
+
+message IsEnabledRequest {
+  string widget_id = 1;
+}
+
+message IsEnabledResponse {
+  bool success = 1;
+  string error = 2;
+  bool enabled = 3;
+}
+
+message ClearWidgetsRequest {
+}
+
+message StartActivityRequest {
+  string widget_id = 1;
+}
+
+message StopActivityRequest {
+  string widget_id = 1;
+}
+
+message StartProgressInfiniteRequest {
+  string widget_id = 1;
+}
+
+message StopProgressInfiniteRequest {
+  string widget_id = 1;
+}
+
+message IsProgressRunningRequest {
+  string widget_id = 1;
+}
+
+message IsProgressRunningResponse {
+  bool success = 1;
+  string error = 2;
+  bool running = 3;
+}
+
+// ============================================================================
+// Container operation messages
+// ============================================================================
+
+message ContainerAddRequest {
+  string container_id = 1;
+  string widget_id = 2;
+}
+
+message ContainerRemoveAllRequest {
+  string container_id = 1;
+}
+
+message ContainerRefreshRequest {
+  string container_id = 1;
+}
+
+message GetContainerObjectsRequest {
+  string container_id = 1;
+}
+
+message GetContainerObjectsResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string widget_ids = 3;
+}
+
+message DocTabsAppendRequest {
+  string widget_id = 1;
+  TabItem tab = 2;
+}
+
+message DocTabsRemoveRequest {
+  string widget_id = 1;
+  int32 index = 2;
+}
+
+message DocTabsSelectRequest {
+  string widget_id = 1;
+  int32 index = 2;
+}
+
+message MultipleWindowsAddWindowRequest {
+  string widget_id = 1;
+  string window_widget_id = 2;
+}
+
+message MultipleWindowsRemoveWindowRequest {
+  string widget_id = 1;
+  string window_widget_id = 2;
+}
+
+// ============================================================================
+// Popup and Navigation messages
+// ============================================================================
+
+message ShowPopupRequest {
+  string widget_id = 1;
+}
+
+message HidePopupRequest {
+  string widget_id = 1;
+}
+
+message MovePopupRequest {
+  string widget_id = 1;
+  float x = 2;
+  float y = 3;
+}
+
+message NavigationPushRequest {
+  string widget_id = 1;
+  string content_id = 2;
+}
+
+message NavigationBackRequest {
+  string widget_id = 1;
+}
+
+message NavigationForwardRequest {
+  string widget_id = 1;
+}
+
+message NavigationSetTitleRequest {
+  string widget_id = 1;
+  string title = 2;
+}
+
+message InnerWindowCloseRequest {
+  string widget_id = 1;
+}
+
+message SetInnerWindowTitleRequest {
+  string widget_id = 1;
+  string title = 2;
+}
+
+// ============================================================================
+// Dialog messages
+// ============================================================================
+
+message ShowInfoRequest {
+  string window_id = 1;
+  string title = 2;
+  string message = 3;
+  string callback_id = 4;
+}
+
+message ShowErrorRequest {
+  string window_id = 1;
+  string title = 2;
+  string message = 3;
+  string callback_id = 4;
+}
+
+message ShowConfirmRequest {
+  string window_id = 1;
+  string title = 2;
+  string message = 3;
+  string confirm_callback_id = 4;
+  string cancel_callback_id = 5;
+}
+
+message ShowFileOpenRequest {
+  string window_id = 1;
+  string callback_id = 2;
+  repeated string extensions = 3;
+}
+
+message ShowFileSaveRequest {
+  string window_id = 1;
+  string callback_id = 2;
+  string filename = 3;
+}
+
+message ShowFolderOpenRequest {
+  string window_id = 1;
+  string callback_id = 2;
+}
+
+message ShowFormRequest {
+  string window_id = 1;
+  string title = 2;
+  string confirm_text = 3;
+  string cancel_text = 4;
+  repeated FormItem items = 5;
+  string submit_callback_id = 6;
+  string cancel_callback_id = 7;
+}
+
+message ShowCustomRequest {
+  string window_id = 1;
+  string title = 2;
+  string content_id = 3;
+  string confirm_text = 4;
+  string confirm_callback_id = 5;
+}
+
+message ShowCustomConfirmRequest {
+  string window_id = 1;
+  string title = 2;
+  string content_id = 3;
+  string confirm_text = 4;
+  string dismiss_text = 5;
+  string confirm_callback_id = 6;
+  string dismiss_callback_id = 7;
+}
+
+message ShowCustomWithoutButtonsRequest {
+  string window_id = 1;
+  string title = 2;
+  string content_id = 3;
+}
+
+message HideCustomDialogRequest {
+  string window_id = 1;
+}
+
+message GetActiveDialogsRequest {
+  string window_id = 1;
+}
+
+message GetActiveDialogsResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string dialog_ids = 3;
+}
+
+message DismissActiveDialogRequest {
+  string window_id = 1;
+}
+
+message ShowProgressDialogRequest {
+  string window_id = 1;
+  string title = 2;
+  string message = 3;
+}
+
+message UpdateProgressDialogRequest {
+  string window_id = 1;
+  double progress = 2;  // 0.0 to 1.0
+  string message = 3;
+}
+
+message HideProgressDialogRequest {
+  string window_id = 1;
+}
+
+message ShowColorPickerRequest {
+  string window_id = 1;
+  string title = 2;
+  string initial_color = 3;  // hex color
+  string callback_id = 4;
+}
+
+message ShowEntryDialogRequest {
+  string window_id = 1;
+  string title = 2;
+  string message = 3;
+  string placeholder = 4;
+  string callback_id = 5;
+}
+
+// ============================================================================
+// Data widget operation messages
+// ============================================================================
+
+message GetTableDataRequest {
+  string widget_id = 1;
+}
+
+message GetTableDataResponse {
+  bool success = 1;
+  string error = 2;
+  int32 rows = 3;
+  int32 columns = 4;
+}
+
+message UpdateTableDataRequest {
+  string widget_id = 1;
+  int32 rows = 2;
+  int32 columns = 3;
+}
+
+message GetListDataRequest {
+  string widget_id = 1;
+}
+
+message GetListDataResponse {
+  bool success = 1;
+  string error = 2;
+  int32 length = 3;
+}
+
+message UpdateListDataRequest {
+  string widget_id = 1;
+  int32 length = 2;
+}
+
+message UnselectAllListRequest {
+  string widget_id = 1;
+}
+
+message GetTextGridTextRequest {
+  string widget_id = 1;
+}
+
+message GetTextGridTextResponse {
+  bool success = 1;
+  string error = 2;
+  string text = 3;
+}
+
+message SetTextGridTextRequest {
+  string widget_id = 1;
+  string text = 2;
+}
+
+message SetTextGridCellRequest {
+  string widget_id = 1;
+  int32 row = 2;
+  int32 col = 3;
+  string text = 4;
+}
+
+message SetTextGridRowRequest {
+  string widget_id = 1;
+  int32 row = 2;
+  string text = 3;
+}
+
+message TextGridStyle {
+  string foreground = 1;  // hex color
+  string background = 2;  // hex color
+}
+
+message SetTextGridStyleRequest {
+  string widget_id = 1;
+  int32 row = 2;
+  int32 col = 3;
+  TextGridStyle style = 4;
+}
+
+message SetTextGridStyleRangeRequest {
+  string widget_id = 1;
+  int32 start_row = 2;
+  int32 start_col = 3;
+  int32 end_row = 4;
+  int32 end_col = 5;
+  TextGridStyle style = 6;
+}
+
+message GetToolbarItemsRequest {
+  string widget_id = 1;
+}
+
+message GetToolbarItemsResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string labels = 3;
+}
+
+message ClickToolbarActionRequest {
+  string custom_id = 1;
+}
+
+// ============================================================================
+// Theme and styling messages
+// ============================================================================
+
+message SetThemeRequest {
+  string theme = 1;  // "dark" or "light"
+}
+
+message GetThemeRequest {
+}
+
+message GetThemeResponse {
+  bool success = 1;
+  string error = 2;
+  string theme = 3;
+}
+
+message SetFontScaleRequest {
+  float scale = 1;
+}
+
+message SetCustomThemeRequest {
+  map<string, string> colors = 1;  // color name -> hex value
+}
+
+message ClearCustomThemeRequest {
+}
+
+message SetCustomFontRequest {
+  string path = 1;
+  string style = 2;  // "regular", "bold", "italic", "boldItalic", "monospace", "symbol"
+}
+
+message ClearCustomFontRequest {
+  string style = 1;  // style to clear, or "all"
+}
+
+message GetAvailableFontsRequest {
+}
+
+message GetAvailableFontsResponse {
+  bool success = 1;
+  string error = 2;
+  repeated string extensions = 3;
+  repeated string styles = 4;
+}
+
+message SetWidgetStyleRequest {
+  string widget_id = 1;
+  string font_style = 2;
+  string font_family = 3;
+  string text_align = 4;
+  float font_size = 5;
+  string background_color = 6;
+}
+
+message SetMainMenuRequest {
+  string window_id = 1;
+  repeated MainMenuItem menu_items = 2;
+}
+
+message MainMenuItem {
+  string label = 1;
+  repeated MenuItem items = 2;
+}
+
+message SetWidgetContextMenuRequest {
+  string widget_id = 1;
+  repeated MenuItem items = 2;
+}
+
+// ============================================================================
+// Platform integration messages
+// ============================================================================
+
+message SetSystemTrayRequest {
+  string icon_path = 1;
+  repeated MenuItem menu_items = 2;
+}
+
+message SendNotificationRequest {
+  string title = 1;
+  string content = 2;
+}
+
+message ClipboardGetRequest {
+  string window_id = 1;
+}
+
+message ClipboardGetResponse {
+  bool success = 1;
+  string error = 2;
+  string content = 3;
+}
+
+message ClipboardSetRequest {
+  string window_id = 1;
+  string content = 2;
+}
+
+message PreferencesGetRequest {
+  string key = 1;
+  string type = 2;  // "string", "int", "float", "bool"
+  string default_value = 3;
+}
+
+message PreferencesGetResponse {
+  bool success = 1;
+  string error = 2;
+  string value = 3;  // Always returned as string, client converts
+}
+
+message PreferencesSetRequest {
+  string key = 1;
+  string value = 2;
+  string type = 3;  // "string", "int", "float", "bool"
+}
+
+message PreferencesRemoveRequest {
+  string key = 1;
+}
+
+message SetDraggableRequest {
+  string widget_id = 1;
+  string drag_data = 2;
+  string on_drag_start_callback_id = 3;
+  string on_drag_end_callback_id = 4;
+}
+
+message SetDroppableRequest {
+  string widget_id = 1;
+  string on_drop_callback_id = 2;
+  string on_drag_enter_callback_id = 3;
+  string on_drag_leave_callback_id = 4;
+}
+
+// ============================================================================
+// Interaction messages
+// ============================================================================
+
+message HoverWidgetRequest {
+  string widget_id = 1;
+  string window_id = 2;
+}
+
+message FocusWidgetRequest {
+  string widget_id = 1;
+}
+
+message FocusNextRequest {
+  string window_id = 1;
+}
+
+message FocusPreviousRequest {
+  string window_id = 1;
+}
+
+message SubmitEntryRequest {
+  string widget_id = 1;
+}
+
+message DragCanvasRequest {
+  string window_id = 1;
+  float from_x = 2;
+  float from_y = 3;
+  float delta_x = 4;
+  float delta_y = 5;
+}
+
+message ScrollCanvasRequest {
+  string window_id = 1;
+  float delta_x = 2;
+  float delta_y = 3;
+}
+
+// ============================================================================
+// Testing messages
+// ============================================================================
+
+message RegisterTestIdRequest {
+  string widget_id = 1;
+  string test_id = 2;
+}
+
+message GetParentRequest {
+  string widget_id = 1;
+}
+
+message GetParentResponse {
+  bool success = 1;
+  string error = 2;
+  string parent_id = 3;
+}
+
+// ============================================================================
+// Accessibility messages
+// ============================================================================
+
+message SetAccessibilityRequest {
+  string widget_id = 1;
+  string label = 2;
+  string role = 3;
+  string hint = 4;
+}
+
+message EnableAccessibilityRequest {
+}
+
+message DisableAccessibilityRequest {
+}
+
+message AnnounceRequest {
+  string message = 1;
+}
+
+message StopSpeechRequest {
+}
+
+message SetWidgetHoverableRequest {
+  string widget_id = 1;
+  string callback_id = 2;
 }

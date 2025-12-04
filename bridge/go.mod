@@ -48,8 +48,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
-
-// replace fyne.io/systray => /tmp/systray-master
+replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
 
 replace fyne.io/systray => /tmp/systray-master
