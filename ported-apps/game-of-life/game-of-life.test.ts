@@ -24,19 +24,6 @@ describe('Game of Life Tests', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
-  // Helper: Poll until widget is actually findable, with retries
-  async function waitForWidget(id: string, timeoutMs: number = 10000): Promise<void> {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeoutMs) {
-      const result = await ctx.getByID(id).exists();
-      if (result) {
-        return; // Found it!
-      }
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-    throw new Error(`Widget ${id} never became findable after ${timeoutMs}ms`);
-  }
-
   beforeEach(async () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
@@ -337,14 +324,11 @@ describe('Game of Life Tests', () => {
     await testApp.run();
     await ui.initialize();
 
-    // ACTUALLY wait for the widget to be findable (aggressive polling)
-    await waitForWidget('startBtn');
+    // Wait for the widget to be findable with polling
+    await ctx.getByID('startBtn').within(10000).shouldExist();
 
     // Take screenshot right after initialization
     await tsyneTest.screenshot('/tmp/game-canvas-test-after-run.png');
-
-    // Now it should be findable
-    await ctx.getByID('startBtn').shouldExist();
 
     // The board should be visible (canvas-based rendering)
     await ctx.getByText('Game of Life Board:').within(500).shouldExist();
