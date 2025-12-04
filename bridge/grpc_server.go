@@ -1702,7 +1702,7 @@ func (s *grpcBridgeService) CreateIcon(ctx context.Context, req *pb.CreateIconRe
 		Type: "createIcon",
 		Payload: map[string]interface{}{
 			"id":       req.WidgetId,
-			"resource": req.ResourceName,
+			"iconName": req.IconName,
 		},
 	}
 
@@ -1720,8 +1720,8 @@ func (s *grpcBridgeService) CreateFileIcon(ctx context.Context, req *pb.CreateFi
 		ID:   req.WidgetId,
 		Type: "createFileIcon",
 		Payload: map[string]interface{}{
-			"id":  req.WidgetId,
-			"uri": req.Uri,
+			"id":   req.WidgetId,
+			"path": req.Path,
 		},
 	}
 
@@ -1741,6 +1741,9 @@ func (s *grpcBridgeService) CreateCalendar(ctx context.Context, req *pb.CreateCa
 
 	if req.CallbackId != "" {
 		payload["callbackId"] = req.CallbackId
+	}
+	if req.Date != "" {
+		payload["date"] = req.Date
 	}
 
 	msg := Message{
@@ -1863,8 +1866,14 @@ func (s *grpcBridgeService) CreateSelectEntry(ctx context.Context, req *pb.Creat
 	if req.Placeholder != "" {
 		payload["placeholder"] = req.Placeholder
 	}
-	if req.CallbackId != "" {
-		payload["callbackId"] = req.CallbackId
+	if req.OnChangedCallbackId != "" {
+		payload["onChangedCallbackId"] = req.OnChangedCallbackId
+	}
+	if req.OnSubmittedCallbackId != "" {
+		payload["onSubmittedCallbackId"] = req.OnSubmittedCallbackId
+	}
+	if req.OnSelectedCallbackId != "" {
+		payload["onSelectedCallbackId"] = req.OnSelectedCallbackId
 	}
 
 	msg := Message{
@@ -1890,6 +1899,9 @@ func (s *grpcBridgeService) CreateDateEntry(ctx context.Context, req *pb.CreateD
 	if req.CallbackId != "" {
 		payload["callbackId"] = req.CallbackId
 	}
+	if req.Date != "" {
+		payload["date"] = req.Date
+	}
 
 	msg := Message{
 		ID:      req.WidgetId,
@@ -1911,17 +1923,26 @@ func (s *grpcBridgeService) CreateDateEntry(ctx context.Context, req *pb.CreateD
 
 // CreateTable creates a table widget
 func (s *grpcBridgeService) CreateTable(ctx context.Context, req *pb.CreateTableRequest) (*pb.Response, error) {
-	payload := map[string]interface{}{
-		"id":      req.WidgetId,
-		"rows":    float64(req.Rows),
-		"columns": float64(req.Columns),
+	// Convert headers
+	headers := make([]interface{}, len(req.Headers))
+	for i, h := range req.Headers {
+		headers[i] = h
 	}
 
-	if req.CreateCellCallbackId != "" {
-		payload["createCellCallbackId"] = req.CreateCellCallbackId
+	// Convert data ([]TableRow -> [][]interface{})
+	data := make([]interface{}, len(req.Data))
+	for i, row := range req.Data {
+		rowData := make([]interface{}, len(row.Cells))
+		for j, cell := range row.Cells {
+			rowData[j] = cell
+		}
+		data[i] = rowData
 	}
-	if req.UpdateCellCallbackId != "" {
-		payload["updateCellCallbackId"] = req.UpdateCellCallbackId
+
+	payload := map[string]interface{}{
+		"id":      req.WidgetId,
+		"headers": headers,
+		"data":    data,
 	}
 
 	msg := Message{
@@ -1941,20 +1962,8 @@ func (s *grpcBridgeService) CreateTable(ctx context.Context, req *pb.CreateTable
 // CreateTree creates a tree widget
 func (s *grpcBridgeService) CreateTree(ctx context.Context, req *pb.CreateTreeRequest) (*pb.Response, error) {
 	payload := map[string]interface{}{
-		"id": req.WidgetId,
-	}
-
-	if req.ChildUidsCallbackId != "" {
-		payload["childUIDsCallbackId"] = req.ChildUidsCallbackId
-	}
-	if req.IsBranchCallbackId != "" {
-		payload["isBranchCallbackId"] = req.IsBranchCallbackId
-	}
-	if req.CreateNodeCallbackId != "" {
-		payload["createNodeCallbackId"] = req.CreateNodeCallbackId
-	}
-	if req.UpdateNodeCallbackId != "" {
-		payload["updateNodeCallbackId"] = req.UpdateNodeCallbackId
+		"id":        req.WidgetId,
+		"rootLabel": req.RootLabel,
 	}
 
 	msg := Message{
@@ -1973,19 +1982,19 @@ func (s *grpcBridgeService) CreateTree(ctx context.Context, req *pb.CreateTreeRe
 
 // CreateList creates a list widget
 func (s *grpcBridgeService) CreateList(ctx context.Context, req *pb.CreateListRequest) (*pb.Response, error) {
-	payload := map[string]interface{}{
-		"id":     req.WidgetId,
-		"length": float64(req.Length),
+	// Convert items to []interface{}
+	items := make([]interface{}, len(req.Items))
+	for i, item := range req.Items {
+		items[i] = item
 	}
 
-	if req.CreateItemCallbackId != "" {
-		payload["createItemCallbackId"] = req.CreateItemCallbackId
+	payload := map[string]interface{}{
+		"id":    req.WidgetId,
+		"items": items,
 	}
-	if req.UpdateItemCallbackId != "" {
-		payload["updateItemCallbackId"] = req.UpdateItemCallbackId
-	}
-	if req.OnSelectedCallbackId != "" {
-		payload["onSelectedCallbackId"] = req.OnSelectedCallbackId
+
+	if req.CallbackId != "" {
+		payload["callbackId"] = req.CallbackId
 	}
 	if req.OnUnselectedCallbackId != "" {
 		payload["onUnselectedCallbackId"] = req.OnUnselectedCallbackId

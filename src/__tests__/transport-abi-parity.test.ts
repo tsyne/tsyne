@@ -327,13 +327,6 @@ function goFieldToProtoField(goField: string): string {
     // Convert camelCase to snake_case
     return withoutOn.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   }
-  // Skip: Table/List/Tree use callback-based API in gRPC (different design)
-  // The gRPC API is intentionally different from stdio for efficiency
-  // Also skip generic callbackId - gRPC uses specific callback names
-  // Skip date - Calendar/DateEntry in gRPC don't support initial date
-  // Skip callback variations - SelectEntry uses single generic callback_id
-  // Skip path - FileIcon uses uri in gRPC
-  if (['headers', 'data', 'items', 'callbackId', 'rootLabel', 'date', 'onChangedCallbackId', 'onSubmittedCallbackId', 'onSelectedCallbackId', 'path', 'iconName'].includes(goField)) return '__skip__';
   // Convert camelCase to snake_case for proto field names
   return goField.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
 }
@@ -516,13 +509,7 @@ describe('Transport ABI Parity', () => {
 
         // Fields to skip in gRPC server mapping check:
         // - pixels: uses intermediate variable (pixelData := base64...)
-        // - headers, data, items: gRPC uses callback-based API instead
-        // - callbackId: gRPC uses specific callback names
-        // - rootLabel: Tree uses callback-based API
-        // - date: DateEntry/Calendar uses different structure in gRPC
-        // - callback variations: SelectEntry uses single generic callback
-        // - path: FileIcon uses uri in gRPC
-        const skipInGrpcMapping = ['pixels', 'headers', 'data', 'items', 'callbackid', 'rootlabel', 'date', 'onchangedcallbackid', 'onsubmittedcallbackid', 'onselectedcallbackid', 'path', 'iconname'];
+        const skipInGrpcMapping = ['pixels'];
 
         for (const goField of goFields) {
           const payloadField = goField.name.toLowerCase();

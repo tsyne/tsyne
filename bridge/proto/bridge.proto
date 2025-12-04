@@ -848,17 +848,18 @@ message RichTextSegment {
 
 message CreateIconRequest {
   string widget_id = 1;
-  string resource_name = 2;
+  string icon_name = 2;
 }
 
 message CreateFileIconRequest {
   string widget_id = 1;
-  string uri = 2;
+  string path = 2;
 }
 
 message CreateCalendarRequest {
   string widget_id = 1;
   string callback_id = 2;  // OnChanged callback
+  string date = 3;         // Initial date in "2006-01-02" format
 }
 
 // ============================================================================
@@ -894,41 +895,41 @@ message CreateSelectEntryRequest {
   string widget_id = 1;
   repeated string options = 2;
   string placeholder = 3;
-  string callback_id = 4;
+  string on_changed_callback_id = 4;
+  string on_submitted_callback_id = 5;
+  string on_selected_callback_id = 6;
 }
 
 message CreateDateEntryRequest {
   string widget_id = 1;
   string callback_id = 2;
+  string date = 3;  // Initial date in "2006-01-02" format
 }
 
 // ============================================================================
 // Data widget creation
 // ============================================================================
 
+message TableRow {
+  repeated string cells = 1;
+}
+
 message CreateTableRequest {
   string widget_id = 1;
-  int32 rows = 2;
-  int32 columns = 3;
-  string create_cell_callback_id = 4;
-  string update_cell_callback_id = 5;
+  repeated string headers = 2;
+  repeated TableRow data = 3;
 }
 
 message CreateTreeRequest {
   string widget_id = 1;
-  string child_uids_callback_id = 2;
-  string is_branch_callback_id = 3;
-  string create_node_callback_id = 4;
-  string update_node_callback_id = 5;
+  string root_label = 2;
 }
 
 message CreateListRequest {
   string widget_id = 1;
-  int32 length = 2;
-  string create_item_callback_id = 3;
-  string update_item_callback_id = 4;
-  string on_selected_callback_id = 5;
-  string on_unselected_callback_id = 6;
+  repeated string items = 2;
+  string callback_id = 3;               // OnSelected callback
+  string on_unselected_callback_id = 4; // OnUnselected callback
 }
 
 message MenuItem {
