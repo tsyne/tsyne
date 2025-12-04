@@ -71,7 +71,7 @@ describe('Simple Calculator Tests', () => {
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const path = require('path');
       const screenshotPath = path.join(__dirname, 'screenshots', 'calculator.png');
-      await ctx.wait(500);
+      await ctx.getByType("label").within(500).shouldBe("8");
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }

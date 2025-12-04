@@ -129,12 +129,23 @@ describe('Stopwatch Example', () => {
 
     // Click start
     await ctx.getByExactText('Start').click();
-    await ctx.wait(500); // Wait half a second
+
+    // Poll until we see a non-zero time value (stopwatch has advanced)
+    await ctx.waitForCondition(async () => {
+      const labels = await ctx.getAllByType('label');
+      for (const label of labels) {
+        const text = await label.getText();
+        if (text && text.match(/\d{2}:\d{2}\.\d{2}/) && text !== '00:00.00') {
+          return true;
+        }
+      }
+      return false;
+    }, { timeout: 1000, description: 'stopwatch to advance from 00:00.00' });
 
     // Click stop
     await ctx.getByExactText('Stop').click();
 
-    // Time should have advanced from 00:00.00 - wait for UI to settle
+    // Verify time has advanced
     const labels = await ctx.getAllByType('label');
     let foundNonZeroTime = false;
     for (const label of labels) {
