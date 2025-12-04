@@ -563,7 +563,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeChecked);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeChecked) as WidgetInfo;
-    expect(info.checked).toBeChecked(true);
+    if (!info.checked) {
+      throwCallerError('Expected checkbox to be checked\nReceived: unchecked', this.shouldBeChecked);
+    }
     return this;
   }
 
@@ -577,7 +579,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldNotBeChecked);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldNotBeChecked) as WidgetInfo;
-    expect(info.checked).toBeChecked(false);
+    if (info.checked) {
+      throwCallerError('Expected checkbox to be unchecked\nReceived: checked', this.shouldNotBeChecked);
+    }
     return this;
   }
 
@@ -623,7 +627,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeEnabled);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeEnabled) as WidgetInfo;
-    expect(info.disabled).toBeEnabled(true);
+    if (info.disabled) {
+      throwCallerError('Expected widget to be enabled\nReceived: disabled', this.shouldBeEnabled);
+    }
     return this;
   }
 
@@ -637,7 +643,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeDisabled);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeDisabled) as WidgetInfo;
-    expect(info.disabled).toBeEnabled(false);
+    if (!info.disabled) {
+      throwCallerError('Expected widget to be disabled\nReceived: enabled', this.shouldBeDisabled);
+    }
     return this;
   }
 
@@ -663,7 +671,9 @@ export class Locator {
    */
   async shouldBeVisible(): Promise<Locator> {
     const widget = await this.find();
-    expect(widget).toBeTruthy();
+    if (!widget) {
+      throwCallerError('Expected widget to be visible\nReceived: not found', this.shouldBeVisible);
+    }
     return this;
   }
 
@@ -675,7 +685,9 @@ export class Locator {
    */
   async shouldNotBeVisible(): Promise<Locator> {
     const widget = await this.find();
-    expect(widget).toBeFalsy();
+    if (widget) {
+      throwCallerError('Expected widget not to be visible', this.shouldNotBeVisible);
+    }
     return this;
   }
 
@@ -707,7 +719,9 @@ export class Locator {
       }
     }
 
-    expect(widget).toExist(true);
+    if (!widget) {
+      throwCallerError('Expected widget to exist\nReceived: not found', this.shouldExist);
+    }
     return this;
   }
 
@@ -739,7 +753,9 @@ export class Locator {
       }
     }
 
-    expect(widget).toExist(false);
+    if (widget) {
+      throwCallerError('Expected widget not to exist', this.shouldNotExist);
+    }
     return this;
   }
 
