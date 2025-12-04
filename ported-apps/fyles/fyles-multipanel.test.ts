@@ -65,36 +65,36 @@ describe('Fyles Multi-Panel Tests', () => {
 
   test('should display two panels', async () => {
     // Both panels should show their respective directories
-    expect(await ctx.getByText(testDir1).within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText(testDir2).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir1).within(2000).shouldExist();
+    await ctx.getByText(testDir2).within(2000).shouldExist();
   });
 
   test('should display toolbar buttons for both panels', async () => {
     // Both panels should have home buttons - check by ID
-    expect(await ctx.getByID('panel-0-home').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByID('panel-1-home').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-home').within(2000).shouldExist();
+    await ctx.getByID('panel-1-home').within(2000).shouldExist();
 
     // Both panels should have split buttons - check by ID
-    expect(await ctx.getByID('panel-0-split').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByID('panel-1-split').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-split').within(2000).shouldExist();
+    await ctx.getByID('panel-1-split').within(2000).shouldExist();
   });
 
   test('should display close buttons for both panels', async () => {
     // With two panels, both should have close buttons - check by ID
-    expect(await ctx.getByID('panel-0-close').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByID('panel-1-close').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-close').within(2000).shouldExist();
+    await ctx.getByID('panel-1-close').within(2000).shouldExist();
   });
 
   test('should display files from first panel', async () => {
     // First panel should show file1.txt
-    expect(await ctx.getByText('file1.txt').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('folder1').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('file1.txt').within(2000).shouldExist();
+    await ctx.getByText('folder1').within(2000).shouldExist();
   });
 
   test('should display files from second panel', async () => {
     // Second panel should show file2.txt
-    expect(await ctx.getByText('file2.txt').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('folder2').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('file2.txt').within(2000).shouldExist();
+    await ctx.getByText('folder2').within(2000).shouldExist();
   });
 
   test('should have independent navigation in panels', async () => {
@@ -104,10 +104,10 @@ describe('Fyles Multi-Panel Tests', () => {
 
     // First panel should now be in folder1 (path updated)
     const folder1Path = path.join(testDir1, 'folder1');
-    expect(await ctx.getByText(folder1Path).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(folder1Path).within(2000).shouldExist();
 
     // Second panel should still show testDir2
-    expect(await ctx.getByText(testDir2).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir2).within(2000).shouldExist();
   });
 });
 
@@ -148,18 +148,18 @@ describe('Fyles Single Panel with Split', () => {
 
   test('should start with single panel', async () => {
     // Should show test directory path
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
 
     // Should show split button - use ID
-    expect(await ctx.getByID('panel-0-split').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-split').within(2000).shouldExist();
 
     // Should have home button - use ID
-    expect(await ctx.getByID('panel-0-home').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-home').within(2000).shouldExist();
   });
 
   test('should show files in single panel', async () => {
-    expect(await ctx.getByText('test.txt').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('subfolder').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('test.txt').within(2000).shouldExist();
+    await ctx.getByText('subfolder').within(2000).shouldExist();
   });
 
   test('should split into two panels when split button clicked', async () => {
@@ -169,16 +169,16 @@ describe('Fyles Single Panel with Split', () => {
 
     // Now there should be two panels showing the same directory
     // We should see close button for panel-1 now
-    expect(await ctx.getByID('panel-1-close').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-1-close').within(2000).shouldExist();
 
     // Both panels should show the same directory
     // (The path appears twice now)
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
   test('should close panel when close button clicked', async () => {
     // There should be close buttons now (from previous test)
-    expect(await ctx.getByID('panel-1-close').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-1-close').within(2000).shouldExist();
 
     // Click a close button - use ID
     await ctx.getByID('panel-1-close').click();
@@ -186,6 +186,6 @@ describe('Fyles Single Panel with Split', () => {
 
     // Should be back to single panel - close button should be gone
     // Verify single panel by checking directory is still shown
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
   });
 });

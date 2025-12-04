@@ -26,7 +26,7 @@ export interface Event {
  */
 export interface BridgeInterface {
   waitUntilReady(): Promise<void>;
-  send(type: string, payload: Record<string, unknown>): Promise<unknown>;
+  send(type: string, payload: Record<string, unknown>, callerFn?: Function): Promise<unknown>;
   registerEventHandler(callbackId: string, handler: (data: unknown) => void): void;
   on(eventType: string, handler: (data: unknown) => void): void;
   off(eventType: string, handler?: (data: unknown) => void): void;
@@ -44,6 +44,7 @@ export class BridgeConnection implements BridgeInterface {
   private pendingRequests = new Map<string, {
     resolve: (result: unknown) => void;
     reject: (error: Error) => void;
+    callerStack: string;
   }>();
   private eventHandlers = new Map<string, (data: unknown) => void>();
   private readyPromise: Promise<void>;
@@ -211,7 +212,13 @@ export class BridgeConnection implements BridgeInterface {
       if (response.success) {
         pending.resolve(response.result || {});
       } else {
-        pending.reject(new Error(response.error || 'Unknown error'));
+        // Create error with the original caller's stack trace for better debugging
+        const error = new Error(response.error || 'Unknown error');
+        if (pending.callerStack) {
+          // Use the caller's stack directly - it already has internal frames removed
+          error.stack = `Error: ${response.error || 'Unknown error'}\n${pending.callerStack}`;
+        }
+        pending.reject(error);
       }
     }
   }
@@ -248,7 +255,7 @@ export class BridgeConnection implements BridgeInterface {
     return this.readyPromise;
   }
 
-  async send(type: string, payload: Record<string, unknown>): Promise<unknown> {
+  async send(type: string, payload: Record<string, unknown>, callerFn?: Function): Promise<unknown> {
     // Wait for bridge to be ready before sending commands
     await this.readyPromise;
 
@@ -262,8 +269,14 @@ export class BridgeConnection implements BridgeInterface {
     const id = `msg_${this.messageId++}`;
     const message: Message = { id, type, payload };
 
+    // Capture stack trace at call site for better error reporting
+    // Skip internal frames up to callerFn (or this.send if not provided) to point to actual caller
+    const stackCapture = {} as { stack?: string };
+    Error.captureStackTrace(stackCapture, callerFn || this.send);
+    const callerStack = stackCapture.stack || '';
+
     return new Promise((resolve, reject) => {
-      this.pendingRequests.set(id, { resolve, reject });
+      this.pendingRequests.set(id, { resolve, reject, callerStack });
 
       // IPC Safeguard: Write framed message with length-prefix and CRC32 validation
       // Frame format: [uint32 length][uint32 crc32][json bytes]

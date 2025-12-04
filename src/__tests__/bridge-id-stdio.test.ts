@@ -22,7 +22,7 @@ describe('Bridge custom ID support – stdio', () => {
     ctx = t.getContext();
     await app.run();
 
-    expect(await ctx.getByID('testBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('testBtn').within(500).shouldExist();
     await t.cleanup();
   }, 10000);
 });

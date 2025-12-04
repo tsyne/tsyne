@@ -51,3 +51,5 @@ require (
 // For Agentic dev envs that have a problem getting modules from Google Container Registry
 // replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
 // replace fyne.io/systray => /tmp/systray-master
+
+replace fyne.io/systray => /tmp/systray-master

@@ -66,32 +66,32 @@ describe('Fyles File Browser Tests', () => {
 
   test('should display toolbar with home button', async () => {
     // Verify home button - use ID for reliability
-    expect(await ctx.getByID('panel-0-home').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-home').within(2000).shouldExist();
   });
 
   test('should display toolbar with new folder button', async () => {
     // Verify new folder button - use ID for reliability
-    expect(await ctx.getByID('panel-0-newfolder').within(2000).exists()).toBeTruthy();
+    await ctx.getByID('panel-0-newfolder').within(2000).shouldExist();
   });
 
   test('should display current directory path', async () => {
     // Should show the test directory path in the toolbar
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
   test.skip('should display test files in grid', async () => {
     // FIXME: App shows /tmp instead of test directory
     // FylesStore.loadDirectory is async but called without await in constructor (race condition)
     // App may also be navigating away from test directory during initialization
-    expect(await ctx.getByText('test-file.txt').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('README.md').within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('subfolder').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('test-file.txt').within(2000).shouldExist();
+    await ctx.getByText('README.md').within(2000).shouldExist();
+    await ctx.getByText('subfolder').within(2000).shouldExist();
   });
 
   test('should NOT display hidden files by default', async () => {
     // Hidden file should not be visible - skip this test as there's no clean way to test non-existence
     // Just verify the test directory is showing
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
   test('should toggle hidden files visibility', async () => {
@@ -100,14 +100,14 @@ describe('Fyles File Browser Tests', () => {
     await ctx.wait(200);
 
     // Now hidden file should be visible
-    expect(await ctx.getByText('.hidden').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('.hidden').within(2000).shouldExist();
 
     // Toggle back - just verify the button works
     await ctx.getByText('👁️').click();
     await ctx.wait(200);
 
     // Verify we're still showing the test directory
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
   });
 
   test('should navigate into subfolder', async () => {
@@ -116,10 +116,10 @@ describe('Fyles File Browser Tests', () => {
     await ctx.wait(200);
 
     // Path should update to include subfolder
-    expect(await ctx.getByText(path.join(testDir, 'subfolder')).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(path.join(testDir, 'subfolder')).within(2000).shouldExist();
 
     // Should show nested.txt
-    expect(await ctx.getByText('nested.txt').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('nested.txt').within(2000).shouldExist();
   });
 
   test('should navigate up to parent directory', async () => {
@@ -128,15 +128,15 @@ describe('Fyles File Browser Tests', () => {
     await ctx.wait(200);
 
     // Verify we're in subfolder
-    expect(await ctx.getByText('nested.txt').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('nested.txt').within(2000).shouldExist();
 
     // Click parent button (..)
     await ctx.getByID('parent-dir-btn').click();
     await ctx.wait(200);
 
     // Should be back in test directory
-    expect(await ctx.getByText(testDir).within(2000).exists()).toBeTruthy();
-    expect(await ctx.getByText('test-file.txt').within(2000).exists()).toBeTruthy();
+    await ctx.getByText(testDir).within(2000).shouldExist();
+    await ctx.getByText('test-file.txt').within(2000).shouldExist();
   });
 
   test.skip('should navigate to home directory', async () => {
@@ -147,15 +147,15 @@ describe('Fyles File Browser Tests', () => {
 
     // Path should show home directory
     const homeDir = os.homedir();
-    expect(await ctx.getByText(homeDir).within(2000).exists()).toBeTruthy();
+    await ctx.getByText(homeDir).within(2000).shouldExist();
   });
 
   test('should show subdirectories in navigation panel', async () => {
     // Should show "Subdirectories:" label
-    expect(await ctx.getByText('Subdirectories:').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('Subdirectories:').within(2000).shouldExist();
 
     // Should show subfolder in navigation
-    expect(await ctx.getByText('📁 subfolder').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('📁 subfolder').within(2000).shouldExist();
   });
 
   test.skip('should show empty directory message', async () => {
@@ -165,13 +165,13 @@ describe('Fyles File Browser Tests', () => {
     await ctx.wait(200);
 
     // Should show no subdirectories message
-    expect(await ctx.getByText('(no subdirectories)').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('(no subdirectories)').within(2000).shouldExist();
   });
 
   test('should display file sizes', async () => {
     // Should show file size for test-file.txt
     // Just look for "KB" text to verify sizes are shown
-    expect(await ctx.getByText('KB').within(2000).exists()).toBeTruthy();
+    await ctx.getByText('KB').within(2000).shouldExist();
   });
 
   test('should capture screenshot', async () => {

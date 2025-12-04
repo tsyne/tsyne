@@ -9,6 +9,19 @@ declare const expect: any;
 declare const fail: (message?: string) => never;
 
 /**
+ * Throw an error with stack trace pointing to the caller, not this file.
+ * This ensures Jest shows the test file line number, not test.ts internals.
+ */
+function throwCallerError(message: string, callerFn: Function): never {
+  const error = new Error(message);
+  // Remove this function and the caller from the stack trace
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(error, callerFn);
+  }
+  throw error;
+}
+
+/**
  * Widget information returned from inspections
  */
 export interface WidgetInfo {
@@ -48,7 +61,7 @@ export class Locator {
     const result = await this.bridge.send('findWidget', {
       selector: this.selector,
       type: this.selectorType
-    }) as { widgetIds?: string[] };
+    }, this.findAll) as { widgetIds?: string[] };
     return result.widgetIds || [];
   }
 
@@ -88,17 +101,17 @@ export class Locator {
     }
 
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.click);
     }
 
     // Check for special toolbar action prefix
     if (widgetId.startsWith('toolbar_action:')) {
       const customId = widgetId.substring('toolbar_action:'.length);
-      await this.bridge.send('clickToolbarAction', { customId });
+      await this.bridge.send('clickToolbarAction', { customId }, this.click);
       return;
     }
 
-    await this.bridge.send('clickWidget', { widgetId });
+    await this.bridge.send('clickWidget', { widgetId }, this.click);
   }
 
   /**
@@ -107,9 +120,9 @@ export class Locator {
   async type(text: string): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.type);
     }
-    await this.bridge.send('typeText', { widgetId, text });
+    await this.bridge.send('typeText', { widgetId, text }, this.type);
   }
 
   /**
@@ -118,25 +131,25 @@ export class Locator {
   async doubleClick(): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.doubleClick);
     }
-    await this.bridge.send('doubleTapWidget', { widgetId });
+    await this.bridge.send('doubleTapWidget', { widgetId }, this.doubleClick);
   }
 
   async submit(): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.submit);
     }
-    await this.bridge.send('submitEntry', { widgetId });
+    await this.bridge.send('submitEntry', { widgetId }, this.submit);
   }
 
   async drag(x: number, y: number): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.drag);
     }
-    await this.bridge.send('dragWidget', { widgetId, x, y });
+    await this.bridge.send('dragWidget', { widgetId, x, y }, this.drag);
   }
 
   /**
@@ -147,9 +160,9 @@ export class Locator {
   async setValue(value: number): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.setValue);
     }
-    await this.bridge.send('setValue', { widgetId, value });
+    await this.bridge.send('setValue', { widgetId, value }, this.setValue);
   }
 
   /**
@@ -158,7 +171,7 @@ export class Locator {
   async rightClick(): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.rightClick);
     }
 
     // Check if this is a synthetic toolbar button
@@ -172,7 +185,7 @@ export class Locator {
       }
     }
 
-    await this.bridge.send('rightClickWidget', { widgetId });
+    await this.bridge.send('rightClickWidget', { widgetId }, this.rightClick);
   }
 
   /**
@@ -182,11 +195,11 @@ export class Locator {
   async hover(): Promise<void> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.hover);
     }
     // Get first window ID from bridge (assumes single window for now)
     const windowId = 'window_1'; // TODO: Make this dynamic
-    await this.bridge.send('hoverWidget', { widgetId, windowId });
+    await this.bridge.send('hoverWidget', { widgetId, windowId }, this.hover);
   }
 
   /**
@@ -195,9 +208,9 @@ export class Locator {
   async getText(): Promise<string> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.getText);
     }
-    const result = await this.bridge.send('getText', { widgetId }) as { text: string };
+    const result = await this.bridge.send('getText', { widgetId }, this.getText) as { text: string };
     return result.text;
   }
 
@@ -207,19 +220,19 @@ export class Locator {
   async getInfo(): Promise<WidgetInfo> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.getInfo);
     }
-    return await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    return await this.bridge.send('getWidgetInfo', { widgetId }, this.getInfo) as WidgetInfo;
   }
 
   async getParent(): Promise<Locator> {
     const widgetId = await this.find();
     if (!widgetId) {
-      throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.getParent);
     }
     const parentId = await this.bridge.getParent(widgetId);
     if (!parentId) {
-      throw new Error(`Widget with ID ${widgetId} has no parent.`);
+      throwCallerError(`Widget with ID ${widgetId} has no parent.`, this.getParent);
     }
     return new Locator(this.bridge, parentId, 'id');
   }
@@ -236,7 +249,7 @@ export class Locator {
       }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
-    throw new Error(`Timeout waiting for widget with ${this.selectorType}: ${this.selector}`);
+    throwCallerError(`Timeout waiting for widget with ${this.selectorType}: ${this.selector}`, this.waitFor);
   }
 
   /**
@@ -375,8 +388,8 @@ export class Locator {
    */
   async shouldBeChecked(): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeChecked);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeChecked) as WidgetInfo;
     expect(info.checked).toBeChecked(true);
     return this;
   }
@@ -389,8 +402,8 @@ export class Locator {
    */
   async shouldNotBeChecked(): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldNotBeChecked);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldNotBeChecked) as WidgetInfo;
     expect(info.checked).toBeChecked(false);
     return this;
   }
@@ -404,8 +417,8 @@ export class Locator {
    */
   async shouldHaveValue(expected: string | number): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveValue);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveValue) as WidgetInfo;
     // Use !== undefined to handle 0 values correctly (0 is falsy but valid)
     const actual = info.value !== undefined ? String(info.value) : '';
     const expectedStr = String(expected);
@@ -421,8 +434,8 @@ export class Locator {
    */
   async shouldHaveSelected(expected: string): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveSelected);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveSelected) as WidgetInfo;
     expect(info.selected).toBe(expected);
     return this;
   }
@@ -435,8 +448,8 @@ export class Locator {
    */
   async shouldBeEnabled(): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeEnabled);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeEnabled) as WidgetInfo;
     expect(info.disabled).toBeEnabled(true);
     return this;
   }
@@ -449,8 +462,8 @@ export class Locator {
    */
   async shouldBeDisabled(): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldBeDisabled);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldBeDisabled) as WidgetInfo;
     expect(info.disabled).toBeEnabled(false);
     return this;
   }
@@ -463,8 +476,8 @@ export class Locator {
    */
   async shouldHaveType(expected: string): Promise<Locator> {
     const widgetId = await this.find();
-    if (!widgetId) throw new Error(`No widget found with ${this.selectorType}: ${this.selector}`);
-    const info = await this.bridge.send('getWidgetInfo', { widgetId }) as WidgetInfo;
+    if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveType);
+    const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveType) as WidgetInfo;
     expect(info.type).toBe(expected);
     return this;
   }
@@ -561,8 +574,8 @@ export class Locator {
    * Find widget and return it (for assertion on test line)
    * Fast fail by default, or use .within(timeout) to poll
    * @example
-   * expect(await ctx.getByID("myWidget").exists()).toBeTruthy(); // Fast fail
-   * expect(await ctx.getByID("myWidget").within(500).exists()).toBeTruthy(); // Poll 500ms
+   * await ctx.getByID("myWidget").shouldExist(); // Fast fail
+   * await ctx.getByID("myWidget").within(500).shouldExist(); // Poll 500ms
    */
   async exists(): Promise<string | null> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -829,12 +842,12 @@ export class ListItemLocator {
   async getText(): Promise<string> {
     const parentId = await this.parentLocator.find();
     if (!parentId) {
-      throw new Error('Parent list widget not found');
+      throwCallerError('Parent list widget not found', this.getText);
     }
-    const result = await this.bridge.send('getListData', { id: parentId }) as { data?: string[] };
+    const result = await this.bridge.send('getListData', { id: parentId }, this.getText) as { data?: string[] };
     const data = result.data || [];
     if (this.index < 0 || this.index >= data.length) {
-      throw new Error(`List item index ${this.index} out of bounds (list has ${data.length} items)`);
+      throwCallerError(`List item index ${this.index} out of bounds (list has ${data.length} items)`, this.getText);
     }
     return data[this.index];
   }
@@ -1075,7 +1088,7 @@ export class TestContext {
    * Get all widgets in the application
    */
   async getAllWidgets(): Promise<WidgetInfo[]> {
-    const result = await this.bridge.send('getAllWidgets', {}) as { widgets?: WidgetInfo[] };
+    const result = await this.bridge.send('getAllWidgets', {}, this.getAllWidgets) as { widgets?: WidgetInfo[] };
     return result.widgets || [];
   }
 
@@ -1115,7 +1128,7 @@ export class TestContext {
       await new Promise(resolve => setTimeout(resolve, interval));
     }
 
-    throw new Error(`Timeout waiting for ${description} after ${timeout}ms`);
+    throwCallerError(`Timeout waiting for ${description} after ${timeout}ms`, this.waitForCondition);
   }
 
   /**
@@ -1142,7 +1155,7 @@ export class TestContext {
    * Click a widget by ID (convenience method for backward compatibility)
    */
   async clickWidget(widgetId: string): Promise<void> {
-    await this.bridge.send('clickWidget', { widgetId });
+    await this.bridge.send('clickWidget', { widgetId }, this.clickWidget);
   }
 
   /**
@@ -1150,7 +1163,7 @@ export class TestContext {
    * Returns the raw table data (array of rows)
    */
   async getTableData(tableId: string): Promise<string[][]> {
-    const result = await this.bridge.send('getTableData', { id: tableId }) as { data?: string[][] };
+    const result = await this.bridge.send('getTableData', { id: tableId }, this.getTableData) as { data?: string[][] };
     return result.data || [];
   }
 
@@ -1159,7 +1172,7 @@ export class TestContext {
    * Returns the list items as an array
    */
   async getListData(listId: string): Promise<string[]> {
-    const result = await this.bridge.send('getListData', { id: listId }) as { data?: string[] };
+    const result = await this.bridge.send('getListData', { id: listId }, this.getListData) as { data?: string[] };
     return result.data || [];
   }
 
@@ -1255,7 +1268,7 @@ export class TestContext {
    */
   async scroll(deltaX: number, deltaY: number): Promise<void> {
     const windowId = 'window_1'; // TODO: Make this dynamic
-    await this.bridge.send('scrollCanvas', { windowId, deltaX, deltaY });
+    await this.bridge.send('scrollCanvas', { windowId, deltaX, deltaY }, this.scroll);
   }
 
   /**
@@ -1270,7 +1283,7 @@ export class TestContext {
    */
   async drag(fromX: number, fromY: number, deltaX: number, deltaY: number): Promise<void> {
     const windowId = 'window_1'; // TODO: Make this dynamic
-    await this.bridge.send('dragCanvas', { windowId, fromX, fromY, deltaX, deltaY });
+    await this.bridge.send('dragCanvas', { windowId, fromX, fromY, deltaX, deltaY }, this.drag);
   }
 
   /**
@@ -1281,7 +1294,7 @@ export class TestContext {
    */
   async focusNext(): Promise<void> {
     const windowId = 'window_1'; // TODO: Make this dynamic
-    await this.bridge.send('focusNext', { windowId });
+    await this.bridge.send('focusNext', { windowId }, this.focusNext);
   }
 
   /**
@@ -1292,12 +1305,12 @@ export class TestContext {
    */
   async focusPrevious(): Promise<void> {
     const windowId = 'window_1'; // TODO: Make this dynamic
-    await this.bridge.send('focusPrevious', { windowId });
+    await this.bridge.send('focusPrevious', { windowId }, this.focusPrevious);
   }
 
   async captureScreenshot(filePath: string): Promise<void> {
     const windowId = 'window_0'; // TODO: Make this dynamic
-    await this.bridge.send('captureWindow', { windowId, filePath });
+    await this.bridge.send('captureWindow', { windowId, filePath }, this.captureScreenshot);
   }
 
   /**
@@ -1324,7 +1337,7 @@ export class TestContext {
    */
   async getActiveDialogs(): Promise<DialogInfo[]> {
     const windowId = 'window_0'; // First window created
-    const result = await this.bridge.send('getActiveDialogs', { windowId }) as { dialogs?: DialogInfo[] };
+    const result = await this.bridge.send('getActiveDialogs', { windowId }, this.getActiveDialogs) as { dialogs?: DialogInfo[] };
     return result.dialogs || [];
   }
 
@@ -1336,7 +1349,7 @@ export class TestContext {
    */
   async dismissActiveDialog(): Promise<void> {
     const windowId = 'window_0'; // First window created
-    await this.bridge.send('dismissActiveDialog', { windowId });
+    await this.bridge.send('dismissActiveDialog', { windowId }, this.dismissActiveDialog);
   }
 
   /**
@@ -1414,8 +1427,8 @@ export class DialogLocator {
   /**
    * Get all active dialogs (with optional polling)
    */
-  private async getDialogs(): Promise<DialogInfo[]> {
-    const result = await this.bridge.send('getActiveDialogs', { windowId: this.windowId }) as { dialogs?: DialogInfo[] };
+  private async getDialogs(callerFn?: Function): Promise<DialogInfo[]> {
+    const result = await this.bridge.send('getActiveDialogs', { windowId: this.windowId }, callerFn) as { dialogs?: DialogInfo[] };
     return result.dialogs || [];
   }
 
@@ -1424,17 +1437,18 @@ export class DialogLocator {
    */
   private async pollFor<T>(
     condition: (dialogs: DialogInfo[]) => T | null,
-    errorMsg: string
+    errorMsg: string,
+    callerFn: Function
   ): Promise<T> {
     const timeout = this.withinTimeout;
     this.withinTimeout = undefined; // consume timeout
 
     if (!timeout) {
       // Fast fail
-      const dialogs = await this.getDialogs();
+      const dialogs = await this.getDialogs(callerFn);
       const result = condition(dialogs);
       if (result === null) {
-        throw new Error(errorMsg);
+        throwCallerError(errorMsg, callerFn);
       }
       return result;
     }
@@ -1442,14 +1456,14 @@ export class DialogLocator {
     // Poll with timeout
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
-      const dialogs = await this.getDialogs();
+      const dialogs = await this.getDialogs(callerFn);
       const result = condition(dialogs);
       if (result !== null) {
         return result;
       }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
-    throw new Error(`${errorMsg} (after ${timeout}ms)`);
+    throwCallerError(`${errorMsg} (after ${timeout}ms)`, callerFn);
   }
 
   /**
@@ -1461,7 +1475,8 @@ export class DialogLocator {
   async shouldExist(): Promise<DialogLocator> {
     await this.pollFor(
       dialogs => dialogs.length > 0 ? true : null,
-      'No dialog found'
+      'No dialog found',
+      this.shouldExist
     );
     return this;
   }
@@ -1476,7 +1491,7 @@ export class DialogLocator {
     this.withinTimeout = undefined;
 
     if (!timeout) {
-      const dialogs = await this.getDialogs();
+      const dialogs = await this.getDialogs(this.shouldNotExist);
       expect(dialogs).toHaveLength(0);
       return this;
     }
@@ -1484,13 +1499,13 @@ export class DialogLocator {
     // Poll until dialogs disappear
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
-      const dialogs = await this.getDialogs();
+      const dialogs = await this.getDialogs(this.shouldNotExist);
       if (dialogs.length === 0) {
         return this;
       }
       await new Promise(resolve => setTimeout(resolve, 10));
     }
-    throw new Error(`Dialog still visible after ${timeout}ms`);
+    throwCallerError(`Dialog still visible after ${timeout}ms`, this.shouldNotExist);
   }
 
   /**
@@ -1501,7 +1516,8 @@ export class DialogLocator {
   async shouldBeError(expectedMessage?: string): Promise<DialogLocator> {
     const dialog = await this.pollFor(
       dialogs => dialogs.find(d => d.type === 'error') || null,
-      'No error dialog found'
+      'No error dialog found',
+      this.shouldBeError
     );
 
     if (expectedMessage) {
@@ -1519,7 +1535,8 @@ export class DialogLocator {
   async shouldBeInfo(expectedText?: string): Promise<DialogLocator> {
     const dialog = await this.pollFor(
       dialogs => dialogs.find(d => d.type === 'info') || null,
-      'No info dialog found'
+      'No info dialog found',
+      this.shouldBeInfo
     );
 
     if (expectedText) {
@@ -1545,7 +1562,8 @@ export class DialogLocator {
         }
         return null;
       },
-      `No dialog containing "${expectedText}" found`
+      `No dialog containing "${expectedText}" found`,
+      this.shouldContain
     );
     return this;
   }
@@ -1556,7 +1574,7 @@ export class DialogLocator {
    * await ctx.dialog().shouldBeError('Failed').thenDismiss();
    */
   async thenDismiss(): Promise<void> {
-    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId }, this.thenDismiss);
   }
 
   /**
@@ -1565,6 +1583,6 @@ export class DialogLocator {
    * await ctx.dialog().dismiss();
    */
   async dismiss(): Promise<void> {
-    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId });
+    await this.bridge.send('dismissActiveDialog', { windowId: this.windowId }, this.dismiss);
   }
 }

@@ -57,18 +57,18 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Verify toolbar buttons
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
-    expect(await ctx.getByID('pauseBtn').within(500).exists()).toBeTruthy();
-    expect(await ctx.getByID('stepBtn').within(500).exists()).toBeTruthy();
-    expect(await ctx.getByID('resetBtn').within(500).exists()).toBeTruthy();
-    expect(await ctx.getByID('clearBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getByID('stepBtn').within(500).shouldExist();
+    await ctx.getByID('resetBtn').within(500).shouldExist();
+    await ctx.getByID('clearBtn').within(500).shouldExist();
 
     // Verify status elements
     await ctx.getByID('generationNum').within(100).shouldBe('0');
     await ctx.getByID('statusText').within(100).shouldBe('Paused');
 
     // Verify board section
-    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
+    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -129,7 +129,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -158,7 +158,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -189,7 +189,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -211,7 +211,7 @@ describe('Game of Life Tests', () => {
 
     // Board should be reset (Glider Gun loaded again)
     // We can verify the description is still shown
-    expect(await ctx.getByText('Conway\'s Game of Life - Use menus for patterns and file operations').within(500).exists()).toBeTruthy();
+    await ctx.getByText('Conway\'s Game of Life - Use menus for patterns and file operations').within(500).shouldExist();
   }, 10000);
 
   test('should clear board and show empty state', async () => {
@@ -225,7 +225,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Verify we start with Glider Gun loaded (generation 0) - give more time for async setup
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
 
     // Clear the board
@@ -237,7 +237,7 @@ describe('Game of Life Tests', () => {
 
     // Board should be cleared (all dead cells)
     // The board display should still be visible (canvas-based rendering)
-    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
+    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
   });
 
   test('should handle complex interaction sequence', async () => {
@@ -251,7 +251,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Wait for UI to be ready - give more time for async setup
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -285,8 +285,8 @@ describe('Game of Life Tests', () => {
     await ctx.getByID('statusText').within(1000).shouldBe('Paused');
 
     // All UI elements should still be functional
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
-    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
+    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
   }, 10000);
 
   test('should stop generation advancement when paused', async () => {
@@ -300,7 +300,7 @@ describe('Game of Life Tests', () => {
     await ui.initialize();
 
     // Wait for initial UI to be ready
-    expect(await ctx.getByID('startBtn').within(500).exists()).toBeTruthy();
+    await ctx.getByID('startBtn').within(500).shouldExist();
     await ctx.getByID('generationNum').within(500).shouldBe('0');
     await ctx.getByID('statusText').within(500).shouldBe('Paused');
 
@@ -344,10 +344,10 @@ describe('Game of Life Tests', () => {
     await tsyneTest.screenshot('/tmp/game-canvas-test-after-run.png');
 
     // Now it should be findable
-    expect(await ctx.getByID('startBtn').exists()).toBeTruthy();
+    await ctx.getByID('startBtn').shouldExist();
 
     // The board should be visible (canvas-based rendering)
-    expect(await ctx.getByText('Game of Life Board:').within(500).exists()).toBeTruthy();
+    await ctx.getByText('Game of Life Board:').within(500).shouldExist();
 
     // Verify that some cells are alive in the initial state
     // (Glider Gun pattern should have alive cells)
