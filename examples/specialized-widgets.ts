@@ -47,14 +47,14 @@ app({ title: 'Specialized Widgets Demo' }, () => {
         label('GridWrap Layout (Wrapping Grid):');
         label('Items wrap automatically with fixed sizes');
         gridwrap(120, 50, () => {
-          button('Item 1', () => statusLabel.setText('Item 1 clicked'));
-          button('Item 2', () => statusLabel.setText('Item 2 clicked'));
-          button('Item 3', () => statusLabel.setText('Item 3 clicked'));
-          button('Item 4', () => statusLabel.setText('Item 4 clicked'));
-          button('Item 5', () => statusLabel.setText('Item 5 clicked'));
-          button('Item 6', () => statusLabel.setText('Item 6 clicked'));
-          button('Item 7', () => statusLabel.setText('Item 7 clicked'));
-          button('Item 8', () => statusLabel.setText('Item 8 clicked'));
+          button('Item 1').onClick(() => statusLabel.setText('Item 1 clicked'));
+          button('Item 2').onClick(() => statusLabel.setText('Item 2 clicked'));
+          button('Item 3').onClick(() => statusLabel.setText('Item 3 clicked'));
+          button('Item 4').onClick(() => statusLabel.setText('Item 4 clicked'));
+          button('Item 5').onClick(() => statusLabel.setText('Item 5 clicked'));
+          button('Item 6').onClick(() => statusLabel.setText('Item 6 clicked'));
+          button('Item 7').onClick(() => statusLabel.setText('Item 7 clicked'));
+          button('Item 8').onClick(() => statusLabel.setText('Item 8 clicked'));
         });
 
         label('');
@@ -72,7 +72,7 @@ app({ title: 'Specialized Widgets Demo' }, () => {
             vbox(() => {
               label('Center Content Area');
               label('This is where main content goes');
-              button('Center Action', () => {
+              button('Center Action').onClick(() => {
                 statusLabel.setText('Center button clicked');
               });
             });

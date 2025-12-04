@@ -84,7 +84,7 @@ describe('Password Generator Example', () => {
 
             app.separator();
 
-            app.button('🎲 Generate Password', () => {
+            app.button('🎲 Generate Password').onClick(() => {
               generatePassword();
             });
           });
@@ -149,7 +149,7 @@ describe('Password Generator Example', () => {
             app.label('🔐 Password Generator 🔐');
             passwordLabel = app.label('Click Generate to create password');
 
-            app.button('🎲 Generate Password', () => {
+            app.button('🎲 Generate Password').onClick(() => {
               generatePassword();
             });
           });
@@ -217,7 +217,7 @@ describe('Password Generator Example', () => {
           app.vbox(() => {
             passwordLabel = app.label('Ready');
 
-            app.button('🎲 Generate Password', () => {
+            app.button('🎲 Generate Password').onClick(() => {
               generatePassword();
             });
           });

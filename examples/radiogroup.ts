@@ -61,7 +61,7 @@ app({ title: 'RadioGroup Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Get Selections', async () => {
+          button('Get Selections').onClick(async () => {
             const theme = await themeRadio.getSelected();
             const language = await languageRadio.getSelected();
             const size = await sizeRadio.getSelected();
@@ -70,7 +70,7 @@ app({ title: 'RadioGroup Demo' }, () => {
             console.log(message);
           });
 
-          button('Reset to Defaults', async () => {
+          button('Reset to Defaults').onClick(async () => {
             await themeRadio.setSelected('Light');
             await languageRadio.setSelected('English');
             await sizeRadio.setSelected('Medium');

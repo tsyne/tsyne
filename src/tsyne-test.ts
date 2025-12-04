@@ -87,8 +87,8 @@ export class TsyneTest {
     // Register this TsyneTest instance as the test harness for file dialog mocking
     this.app.getContext().setTestHarness(this);
 
-    // Create test context
-    this.testContext = new TestContext(this.app.getBridge());
+    // Create test context - pass app for getting window IDs
+    this.testContext = new TestContext(this.app.getBridge(), this.app);
 
     // Build the app - inject app instance for scoped declarative API
     appBuilder(this.app);

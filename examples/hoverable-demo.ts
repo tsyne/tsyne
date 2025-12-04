@@ -33,7 +33,7 @@ app({ title: "Hoverable Demo" }, (a) => {
             const cellId = `cell_${row}_${col}`;
             hoverCounts[cellId] = 0;
 
-            const btn = a.button(`Cell ${row},${col}`, () => {
+            const btn = a.button(`Cell ${row},${col}`).onClick(() => {
               console.log(`Clicked ${cellId} (hover count: ${hoverCounts[cellId]})`);
             });
 
@@ -69,7 +69,7 @@ app({ title: "Hoverable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset Heat Map", () => {
+      a.button("Reset Heat Map").onClick(() => {
         for (const cellId in hoverCounts) {
           hoverCounts[cellId] = 0;
         }

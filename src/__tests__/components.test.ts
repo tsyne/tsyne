@@ -148,9 +148,9 @@ describe('Container Components', () => {
         a.window({ title: 'GridWrap Test' }, (win) => {
           win.setContent(() => {
             a.gridwrap(100, 50, () => {
-              a.button('Btn 1', () => {});
-              a.button('Btn 2', () => {});
-              a.button('Btn 3', () => {});
+              a.button('Btn 1').onClick(() => {});
+              a.button('Btn 2').onClick(() => {});
+              a.button('Btn 3').onClick(() => {});
             });
           });
           win.show();
@@ -416,7 +416,7 @@ describe('Container Components', () => {
             nav = a.navigation(() => {
               a.vbox(() => {
                 a.label('Home Screen');
-                a.button('Go to Details', () => {
+                a.button('Go to Details').onClick(() => {
                   nav.push(() => a.label('Details Screen'), 'Details');
                 });
               });
@@ -928,7 +928,7 @@ describe('Fluent Test API', () => {
         win.setContent(() => {
           a.vbox(() => {
             label = a.label('Initial');
-            a.button('Update', async () => {
+            a.button('Update').onClick(async () => {
               await label.setText('Updated');
             });
           });
@@ -970,7 +970,7 @@ describe('Fluent Test API', () => {
         win.setContent(() => {
           a.vbox(() => {
             a.label('Visible Label');
-            a.button('Click Me', () => {});
+            a.button('Click Me').onClick(() => {});
           });
         });
         win.show();
@@ -993,7 +993,7 @@ describe('Fluent Test API', () => {
         win.setContent(() => {
           a.vbox(() => {
             label = a.label('Count: 0').withId('counter');
-            a.button('Increment', async () => {
+            a.button('Increment').onClick(async () => {
               counter++;
               await label.setText(`Count: ${counter}`);
             });
@@ -1032,7 +1032,7 @@ describe('Widget Methods', () => {
       a.window({ title: 'WithId Test' }, (win) => {
         win.setContent(() => {
           a.vbox(() => {
-            a.button('Submit', () => {}).withId('submit-btn');
+            a.button('Submit').onClick(() => {}).withId('submit-btn');
             a.label('Result').withId('result-label');
           });
         });
@@ -1055,8 +1055,8 @@ describe('Widget Methods', () => {
         win.setContent(() => {
           a.vbox(() => {
             label = a.label('Toggle Me').withId('toggle-label');
-            a.button('Hide', async () => { await label.hide(); });
-            a.button('Show', async () => { await label.show(); });
+            a.button('Hide').onClick(async () => { await label.hide(); });
+            a.button('Show').onClick(async () => { await label.show(); });
           });
         });
         win.show();
@@ -1107,8 +1107,8 @@ describe('Widget Methods', () => {
         win.setContent(() => {
           a.vbox(() => {
             entry = a.entry('Type here').withId('input-field');
-            a.button('Disable', async () => { await entry.disable(); });
-            a.button('Enable', async () => { await entry.enable(); });
+            a.button('Disable').onClick(async () => { await entry.disable(); });
+            a.button('Enable').onClick(async () => { await entry.enable(); });
           });
         });
         win.show();

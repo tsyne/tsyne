@@ -431,7 +431,7 @@ export function createSlydesApp(a: App): SlydesUI {
 
           // Navigation controls
           a.hbox(() => {
-            a.button('Previous', () => {
+            a.button('Previous').onClick(() => {
               if (store.previousSlide()) {
                 refreshPresentationSlide();
               }
@@ -439,23 +439,23 @@ export function createSlydesApp(a: App): SlydesUI {
 
             statusLabel = a.label(`1 / ${store.getSlideCount()}`, undefined, undefined, undefined, undefined).withId('presentation-status');
 
-            a.button('Next', () => {
+            a.button('Next').onClick(() => {
               if (store.nextSlide()) {
                 refreshPresentationSlide();
               }
             }).withId('btn-next');
 
             if (fullscreen) {
-              a.button('Exit Fullscreen', () => {
+              a.button('Exit Fullscreen').onClick(() => {
                 presentWin.setFullScreen(false);
               }).withId('btn-exit-fullscreen');
             } else {
-              a.button('Fullscreen', () => {
+              a.button('Fullscreen').onClick(() => {
                 presentWin.setFullScreen(true);
               }).withId('btn-fullscreen');
             }
 
-            a.button('Close', () => {
+            a.button('Close').onClick(() => {
               presentWin.close();
             }).withId('btn-close-presentation');
           });
@@ -513,31 +513,31 @@ export function createSlydesApp(a: App): SlydesUI {
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
-          a.button('New', () => {
+          a.button('New').onClick(() => {
             newPresentation();
           }).withId('btn-new');
 
-          a.button('Open', () => {
+          a.button('Open').onClick(() => {
             openFile();
           }).withId('btn-open');
 
-          a.button('Save', () => {
+          a.button('Save').onClick(() => {
             saveFile();
           }).withId('btn-save');
 
           a.separator();
 
-          a.button('Add Slide', () => {
+          a.button('Add Slide').onClick(() => {
             addSlide();
           }).withId('btn-add-slide');
 
           a.separator();
 
-          a.button('Present', () => {
+          a.button('Present').onClick(() => {
             showPresentation();
           }).withId('btn-present');
 
-          a.button('Fullscreen', () => {
+          a.button('Fullscreen').onClick(() => {
             showPresentationFullscreen();
           }).withId('btn-present-fullscreen');
 
@@ -567,11 +567,11 @@ export function createSlydesApp(a: App): SlydesUI {
 
             // Navigation in preview
             a.hbox(() => {
-              a.button('◀ Prev', () => {
+              a.button('◀ Prev').onClick(() => {
                 store.previousSlide();
               }).withId('preview-prev');
 
-              a.button('Next ▶', () => {
+              a.button('Next ▶').onClick(() => {
                 store.nextSlide();
               }).withId('preview-next');
             });

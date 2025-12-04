@@ -236,11 +236,11 @@ vbox(() => {
       progressBar = progressbar(0.3);
 
       hbox(() => {
-        button('Start', () => {
+        button('Start').onClick(() => {
           simulateProgress();
         });
 
-        button('Reset', () => {
+        button('Reset').onClick(() => {
           progressValue = 0;
           progressBar.setProgress(0);
         });
@@ -329,7 +329,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

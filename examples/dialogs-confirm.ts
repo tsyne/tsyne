@@ -32,7 +32,7 @@ app({ title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Basic confirm
-        button('Simple Confirm', async () => {
+        button('Simple Confirm').onClick(async () => {
           const confirmed = await win.showConfirm(
             'Confirm Action',
             'Are you sure you want to proceed?'
@@ -48,7 +48,7 @@ app({ title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Delete confirmation
-        button('Delete Item', async () => {
+        button('Delete Item').onClick(async () => {
           if (itemsToDelete.length === 0) {
             await win.showInfo('No Items', 'There are no items to delete');
             return;
@@ -71,7 +71,7 @@ app({ title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Delete all confirmation
-        button('Delete All Items', async () => {
+        button('Delete All Items').onClick(async () => {
           if (itemsToDelete.length === 0) {
             await win.showInfo('No Items', 'There are no items to delete');
             return;
@@ -95,7 +95,7 @@ app({ title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Exit confirmation
-        button('Exit Application', async () => {
+        button('Exit Application').onClick(async () => {
           const confirmed = await win.showConfirm(
             'Exit',
             'Are you sure you want to exit? Any unsaved changes will be lost.'
@@ -114,7 +114,7 @@ app({ title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Reset button
-        button('Reset Items', () => {
+        button('Reset Items').onClick(() => {
           itemsToDelete = ['Document1.txt', 'Image.png', 'Video.mp4'];
           updateItemList();
           statusLabel.setText('Items reset');

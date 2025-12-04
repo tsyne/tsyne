@@ -88,7 +88,7 @@ app({ title: 'Quiz App' }, (a) => {
 
           // Submit button
           if (!answered) {
-            a.button('Submit Answer', () => {
+            a.button('Submit Answer').onClick(() => {
               if (selectedAnswer === -1) {
                 return; // No answer selected
               }
@@ -141,14 +141,14 @@ app({ title: 'Quiz App' }, (a) => {
 
           // Next button
           if (currentQuestion < questions.length - 1) {
-            a.button('Next Question', () => {
+            a.button('Next Question').onClick(() => {
               currentQuestion++;
               answered = false;
               selectedAnswer = -1;
               showQuestion();
             });
           } else {
-            a.button('See Final Score', showFinalScore);
+            a.button('See Final Score').onClick(showFinalScore);
           }
         });
       });
@@ -201,7 +201,7 @@ app({ title: 'Quiz App' }, (a) => {
           a.separator();
 
           // Restart button
-          a.button('Play Again', () => {
+          a.button('Play Again').onClick(() => {
             currentQuestion = 0;
             score = 0;
             answered = false;
@@ -209,7 +209,7 @@ app({ title: 'Quiz App' }, (a) => {
             showQuestion();
           });
 
-          a.button('Exit', () => {
+          a.button('Exit').onClick(() => {
             process.exit(0);
           });
         });

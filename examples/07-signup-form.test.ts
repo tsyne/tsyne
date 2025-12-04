@@ -41,7 +41,7 @@ describe('Signup Form Example', () => {
               }
             });
 
-            signupButton = app.button('Sign up', async () => {
+            signupButton = app.button('Sign up').onClick(async () => {
               const username = await usernameEntry.getText();
               if (username && agreeChecked) {
                 console.log(`Welcome ${username}!`);
@@ -82,7 +82,7 @@ describe('Signup Form Example', () => {
       app.window({ title: 'Form', width: 400, height: 350 }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            signupButton = app.button('Sign up', async () => {
+            signupButton = app.button('Sign up').onClick(async () => {
               console.log('You rock!');
             });
           });

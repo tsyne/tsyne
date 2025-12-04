@@ -23,21 +23,21 @@ app({ title: 'Theme Demo' }, () => {
 
         // Theme switching buttons
         hbox(() => {
-          button('Switch to Dark Theme', async () => {
+          button('Switch to Dark Theme').onClick(async () => {
             const myApp = (win as any).ctx.bridge;
             await myApp.send('setTheme', { theme: 'dark' });
             themeLabel.setText('Current Theme: Dark');
             statusLabel.setText('Theme changed to Dark');
           });
 
-          button('Switch to Light Theme', async () => {
+          button('Switch to Light Theme').onClick(async () => {
             const myApp = (win as any).ctx.bridge;
             await myApp.send('setTheme', { theme: 'light' });
             themeLabel.setText('Current Theme: Light');
             statusLabel.setText('Theme changed to Light');
           });
 
-          button('Get Current Theme', async () => {
+          button('Get Current Theme').onClick(async () => {
             const myApp = (win as any).ctx.bridge;
             const result = await myApp.send('getTheme', {});
             const currentTheme = result.theme;
@@ -67,13 +67,13 @@ app({ title: 'Theme Demo' }, () => {
         // Buttons
         label('Buttons:');
         hbox(() => {
-          button('Primary', () => {
+          button('Primary').onClick(() => {
             statusLabel.setText('Primary button clicked');
           });
-          button('Secondary', () => {
+          button('Secondary').onClick(() => {
             statusLabel.setText('Secondary button clicked');
           });
-          button('Action', () => {
+          button('Action').onClick(() => {
             statusLabel.setText('Action button clicked');
           });
         });

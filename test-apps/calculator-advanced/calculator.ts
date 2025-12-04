@@ -31,35 +31,35 @@ export class Calculator {
 
         // Number pad and operators
         this.tsyneApp.hbox(() => {
-          this.tsyneApp.button("7", () => this.handleNumber("7"));
-          this.tsyneApp.button("8", () => this.handleNumber("8"));
-          this.tsyneApp.button("9", () => this.handleNumber("9"));
-          this.tsyneApp.button("÷", () => this.handleOperator("÷"));
+          this.tsyneApp.button("7").onClick(() => this.handleNumber("7"));
+          this.tsyneApp.button("8").onClick(() => this.handleNumber("8"));
+          this.tsyneApp.button("9").onClick(() => this.handleNumber("9"));
+          this.tsyneApp.button("÷").onClick(() => this.handleOperator("÷"));
         });
 
         this.tsyneApp.hbox(() => {
-          this.tsyneApp.button("4", () => this.handleNumber("4"));
-          this.tsyneApp.button("5", () => this.handleNumber("5"));
-          this.tsyneApp.button("6", () => this.handleNumber("6"));
-          this.tsyneApp.button("×", () => this.handleOperator("×"));
+          this.tsyneApp.button("4").onClick(() => this.handleNumber("4"));
+          this.tsyneApp.button("5").onClick(() => this.handleNumber("5"));
+          this.tsyneApp.button("6").onClick(() => this.handleNumber("6"));
+          this.tsyneApp.button("×").onClick(() => this.handleOperator("×"));
         });
 
         this.tsyneApp.hbox(() => {
-          this.tsyneApp.button("1", () => this.handleNumber("1"));
-          this.tsyneApp.button("2", () => this.handleNumber("2"));
-          this.tsyneApp.button("3", () => this.handleNumber("3"));
-          this.tsyneApp.button("-", () => this.handleOperator("-"));
+          this.tsyneApp.button("1").onClick(() => this.handleNumber("1"));
+          this.tsyneApp.button("2").onClick(() => this.handleNumber("2"));
+          this.tsyneApp.button("3").onClick(() => this.handleNumber("3"));
+          this.tsyneApp.button("-").onClick(() => this.handleOperator("-"));
         });
 
         this.tsyneApp.hbox(() => {
-          this.tsyneApp.button("0", () => this.handleNumber("0"));
-          this.tsyneApp.button(".", () => this.handleDecimal());
-          this.tsyneApp.button("Clr", () => this.clear());
-          this.tsyneApp.button("+", () => this.handleOperator("+"));
+          this.tsyneApp.button("0").onClick(() => this.handleNumber("0"));
+          this.tsyneApp.button(".").onClick(() => this.handleDecimal());
+          this.tsyneApp.button("Clr").onClick(() => this.clear());
+          this.tsyneApp.button("+").onClick(() => this.handleOperator("+"));
         });
 
         this.tsyneApp.hbox(() => {
-          this.tsyneApp.button("=", () => this.calculate());
+          this.tsyneApp.button("=").onClick(() => this.calculate());
         });
       });
     });

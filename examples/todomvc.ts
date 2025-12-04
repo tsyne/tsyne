@@ -300,9 +300,9 @@ export function createTodoApp(a: any, storePath?: string) {
 
         textEntry = a.entry('', ifEditingSaveEdit, 300);
 
-        a.button('Edit', ifNotEditingStartEdit);
+        a.button('Edit').onClick(ifNotEditingStartEdit);
 
-        deleteButton = a.button('Delete', async () => {
+        deleteButton = a.button('Delete').onClick(async () => {
           await store.deleteTodo(todo.id);
         });
       });
@@ -372,7 +372,7 @@ export function createTodoApp(a: any, storePath?: string) {
         // Pseudo-declarative event handler - just update model
         a.hbox(() => {
           newTodoEntry = a.entry('What needs to be done?', undefined, 400).withId('newTodoEntry');
-          a.button('Add', async () => {
+          a.button('Add').onClick(async () => {
             const text = await newTodoEntry.getText();
             if (text && text.trim()) {
               await store.addTodo(text);
@@ -388,10 +388,10 @@ export function createTodoApp(a: any, storePath?: string) {
         a.label('Filter:');
         // Pseudo-declarative filters - just update model
         a.hbox(() => {
-          filterAllButton = a.button('[All]', async () => await store.setFilter('all'));
-          filterActiveButton = a.button('Active', async () => await store.setFilter('active'));
-          filterCompletedButton = a.button('Completed', async () => await store.setFilter('completed'));
-          a.button('Clear Completed', async () => {
+          filterAllButton = a.button('[All]').onClick(async () => await store.setFilter('all'));
+          filterActiveButton = a.button('Active').onClick(async () => await store.setFilter('active'));
+          filterCompletedButton = a.button('Completed').onClick(async () => await store.setFilter('completed'));
+          a.button('Clear Completed').onClick(async () => {
             if (store.getCompletedCount() > 0) await store.clearCompleted();
           });
         });
@@ -408,8 +408,8 @@ export function createTodoApp(a: any, storePath?: string) {
 
         // Pseudo-declarative file operations - just update model
         a.hbox(() => {
-          a.button('Reload from File', async () => await store.load());
-          a.button('Save to File', async () => store.save());
+          a.button('Reload from File').onClick(async () => await store.load());
+          a.button('Save to File').onClick(async () => store.save());
         });
       });
     });

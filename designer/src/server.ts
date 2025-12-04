@@ -1326,7 +1326,7 @@ class SourceCodeEditor {
         return `${indentation}a.label("${properties.text || 'New Label'}");`;
 
       case 'button':
-        return `${indentation}a.button("${properties.text || 'New Button'}", () => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
+        return `${indentation}a.button("${properties.text || 'New Button'}").onClick(() => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
 
       case 'entry':
         return `${indentation}a.entry("${properties.placeholder || ''}");`;

@@ -53,32 +53,32 @@ export class CalculatorUI {
         // Number pad and operators - use grid for even sizing with semantic class names
         this.tsyneApp.grid(4, () => {
           // Row 1: 7 8 9 ÷
-          this.tsyneApp.button("7", () => this.handleNumberClick("7"), "numeral");
-          this.tsyneApp.button("8", () => this.handleNumberClick("8"), "numeral");
-          this.tsyneApp.button("9", () => this.handleNumberClick("9"), "numeral");
-          this.tsyneApp.button("÷", () => this.handleOperatorClick("÷"), "operation");
+          this.tsyneApp.button("7").onClick(() => this.handleNumberClick("7"), "numeral");
+          this.tsyneApp.button("8").onClick(() => this.handleNumberClick("8"), "numeral");
+          this.tsyneApp.button("9").onClick(() => this.handleNumberClick("9"), "numeral");
+          this.tsyneApp.button("÷").onClick(() => this.handleOperatorClick("÷"), "operation");
 
           // Row 2: 4 5 6 ×
-          this.tsyneApp.button("4", () => this.handleNumberClick("4"), "numeral");
-          this.tsyneApp.button("5", () => this.handleNumberClick("5"), "numeral");
-          this.tsyneApp.button("6", () => this.handleNumberClick("6"), "numeral");
-          this.tsyneApp.button("×", () => this.handleOperatorClick("×"), "operation");
+          this.tsyneApp.button("4").onClick(() => this.handleNumberClick("4"), "numeral");
+          this.tsyneApp.button("5").onClick(() => this.handleNumberClick("5"), "numeral");
+          this.tsyneApp.button("6").onClick(() => this.handleNumberClick("6"), "numeral");
+          this.tsyneApp.button("×").onClick(() => this.handleOperatorClick("×"), "operation");
 
           // Row 3: 1 2 3 -
-          this.tsyneApp.button("1", () => this.handleNumberClick("1"), "numeral");
-          this.tsyneApp.button("2", () => this.handleNumberClick("2"), "numeral");
-          this.tsyneApp.button("3", () => this.handleNumberClick("3"), "numeral");
-          this.tsyneApp.button("-", () => this.handleOperatorClick("-"), "operation");
+          this.tsyneApp.button("1").onClick(() => this.handleNumberClick("1"), "numeral");
+          this.tsyneApp.button("2").onClick(() => this.handleNumberClick("2"), "numeral");
+          this.tsyneApp.button("3").onClick(() => this.handleNumberClick("3"), "numeral");
+          this.tsyneApp.button("-").onClick(() => this.handleOperatorClick("-"), "operation");
 
           // Row 4: 0 . Clr +
-          this.tsyneApp.button("0", () => this.handleNumberClick("0"), "numeral");
-          this.tsyneApp.button(".", () => this.handleDecimalClick(), "numeral");
-          this.tsyneApp.button("Clr", () => this.handleClearClick(), "clear");
-          this.tsyneApp.button("+", () => this.handleOperatorClick("+"), "operation");
+          this.tsyneApp.button("0").onClick(() => this.handleNumberClick("0"), "numeral");
+          this.tsyneApp.button(".").onClick(() => this.handleDecimalClick(), "numeral");
+          this.tsyneApp.button("Clr").onClick(() => this.handleClearClick(), "clear");
+          this.tsyneApp.button("+").onClick(() => this.handleOperatorClick("+"), "operation");
         });
 
         // Equals button spans full width
-        this.tsyneApp.button("=", () => this.handleEqualsClick(), "equals");
+        this.tsyneApp.button("=").onClick(() => this.handleEqualsClick(), "equals");
       });
     });
   }

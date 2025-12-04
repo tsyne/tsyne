@@ -32,7 +32,7 @@ describe('Advanced Interaction APIs', () => {
         win.setContent(() => {
           a.vbox(() => {
             a.label('Double-click test');
-            a.button('Click Me', () => {});
+            a.button('Click Me').onClick(() => {});
             a.label('Status: Ready');
           });
         });
@@ -61,9 +61,9 @@ describe('Advanced Interaction APIs', () => {
         win.setContent(() => {
           a.vbox(() => {
             a.label('Focus navigation test');
-            a.button('First Button', () => {});
-            a.button('Second Button', () => {});
-            a.button('Third Button', () => {});
+            a.button('First Button').onClick(() => {});
+            a.button('Second Button').onClick(() => {});
+            a.button('Third Button').onClick(() => {});
           });
         });
         win.show();
@@ -95,7 +95,7 @@ describe('Advanced Interaction APIs', () => {
         win.setContent(() => {
           a.vbox(() => {
             a.label('Right-click test');
-            a.button('Right-click Me', () => {
+            a.button('Right-click Me').onClick(() => {
               // Regular click - not expected in this test
             });
             a.label('Status: Ready');
@@ -126,7 +126,7 @@ describe('Advanced Interaction APIs', () => {
         win.setContent(() => {
           a.vbox(() => {
             a.label('Hover test');
-            a.button('Hover Over Me', () => {});
+            a.button('Hover Over Me').onClick(() => {});
           });
         });
         win.show();

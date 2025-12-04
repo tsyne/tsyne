@@ -19,7 +19,7 @@ app({ title: 'Feedback' }, (a) => {
         a.label('Tell us more:');
         messageEntry = a.multilineentry('Type your feedback here...');
 
-        a.button('Send', async () => {
+        a.button('Send').onClick(async () => {
           const message = await messageEntry.getText();
           const mood = await moodSelect.getSelected();
 

@@ -54,7 +54,7 @@ app({ title: 'Kanban Board' }, (a) => {
         a.hbox(() => {
           a.label('New Task:');
           newTaskEntry = a.entry('Enter task title');
-          a.button('Add to To Do', async () => {
+          a.button('Add to To Do').onClick(async () => {
             const title = await newTaskEntry.getText();
             if (title) {
               const newTask: Task = {
@@ -148,7 +148,7 @@ app({ title: 'Kanban Board' }, (a) => {
     // Action buttons
     a.hbox(() => {
       if (task.column !== 'todo') {
-        a.button('<', () => {
+        a.button('<').onClick(() => {
           const columns: Array<'todo' | 'inprogress' | 'done'> = ['todo', 'inprogress', 'done'];
           const currentIdx = columns.indexOf(task.column);
           if (currentIdx > 0) {
@@ -157,7 +157,7 @@ app({ title: 'Kanban Board' }, (a) => {
         });
       }
       if (task.column !== 'done') {
-        a.button('>', () => {
+        a.button('>').onClick(() => {
           const columns: Array<'todo' | 'inprogress' | 'done'> = ['todo', 'inprogress', 'done'];
           const currentIdx = columns.indexOf(task.column);
           if (currentIdx < columns.length - 1) {
@@ -165,7 +165,7 @@ app({ title: 'Kanban Board' }, (a) => {
           }
         });
       }
-      a.button('X', () => {
+      a.button('X').onClick(() => {
         const idx = tasks.findIndex(t => t.id === task.id);
         if (idx !== -1) {
           tasks.splice(idx, 1);

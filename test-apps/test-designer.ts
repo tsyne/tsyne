@@ -171,11 +171,11 @@ designer.app({ title: "Hello Tsyne" }, (a) => {
       a.label("Welcome to Tsyne!");
       a.label("A TypeScript wrapper for Fyne");
 
-      a.button("Click Me", () => {
+      a.button("Click Me").onClick(() => {
         console.log("Button clicked!");
       });
 
-      a.button("Exit", () => {
+      a.button("Exit").onClick(() => {
         process.exit(0);
       });
     });

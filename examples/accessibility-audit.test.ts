@@ -150,7 +150,7 @@ describe.skip('Accessibility Audit', () => {
                 description: 'Enter your password'
               });
 
-            app.button('Login', () => {})
+            app.button('Login').onClick(() => {})
               
               .accessibility({
                 role: 'button',
@@ -182,9 +182,9 @@ describe.skip('Accessibility Audit', () => {
         win.setContent(() => {
           app.vbox(() => {
             // Empty button text - accessibility issue
-            app.button('', () => {});
+            app.button('').onClick(() => {});
             // Valid button
-            app.button('Valid Button', () => {});
+            app.button('Valid Button').onClick(() => {});
           });
         });
         win.show();
@@ -206,7 +206,7 @@ describe.skip('Accessibility Audit', () => {
       app.window({ title: 'Role Test', width: 400, height: 300 }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Submit', () => {})
+            app.button('Submit').onClick(() => {})
               .accessibility({ role: 'button', label: 'Submit Form' });
 
             app.entry('Search...')
@@ -270,7 +270,7 @@ describe.skip('Accessibility Audit', () => {
       app.window({ title: 'TestId Test', width: 400, height: 200 }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Dynamic Text Button', () => {})
+            app.button('Dynamic Text Button').onClick(() => {})
               ;
 
             app.entry('Search')
@@ -315,7 +315,7 @@ describe.skip('Accessibility Audit', () => {
               ;
             app.entry('Second field')
               ;
-            app.button('Submit', () => {})
+            app.button('Submit').onClick(() => {})
               ;
           });
         });
@@ -346,7 +346,7 @@ describe.skip('Accessibility Audit', () => {
         win.setContent(() => {
           app.vbox(() => {
             // Widget with multiple accessibility features
-            app.button('Register', () => {})
+            app.button('Register').onClick(() => {})
               .withId('register-btn')
               
               .accessibility({
@@ -417,7 +417,7 @@ describe.skip('Accessibility Best Practices', () => {
                 description: 'Your email for account recovery'
               });
 
-            app.button('Submit Form', () => {})
+            app.button('Submit Form').onClick(() => {})
               
               .accessibility({
                 role: 'button',

@@ -56,15 +56,15 @@ vbox(() => {
       label('');
 
       hbox(() => {
-        button('← Back', () => {
+        button('← Back').onClick(() => {
           browserContext.back();
         });
 
-        button('Forward →', () => {
+        button('Forward →').onClick(() => {
           browserContext.forward();
         });
 
-        button('⟳ Reload', () => {
+        button('⟳ Reload').onClick(() => {
           browserContext.reload();
         });
       });
@@ -85,7 +85,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

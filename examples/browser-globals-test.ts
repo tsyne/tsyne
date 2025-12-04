@@ -26,7 +26,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
         a.separator();
 
         // Test localStorage
-        a.button('Test localStorage', () => {
+        a.button('Test localStorage').onClick(() => {
           // Set some data
           localStorage.setItem('name', 'John Doe');
           localStorage.setItem('age', '30');
@@ -46,7 +46,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
           alert(`localStorage contains:\nName: ${name}\nAge: ${age}\nCity: ${city}`);
         });
 
-        a.button('Clear localStorage', () => {
+        a.button('Clear localStorage').onClick(() => {
           localStorage.clear();
 // console.log('localStorage cleared');
           alert('localStorage has been cleared');
@@ -55,7 +55,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
         a.separator();
 
         // Test sessionStorage
-        a.button('Test sessionStorage', () => {
+        a.button('Test sessionStorage').onClick(() => {
           // Set some data
           sessionStorage.setItem('sessionId', '12345');
           sessionStorage.setItem('tempData', 'This will be lost when app closes');
@@ -72,7 +72,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
           alert(`sessionStorage contains:\nSession ID: ${sessionId}\nTemp Data: ${tempData}`);
         });
 
-        a.button('Clear sessionStorage', () => {
+        a.button('Clear sessionStorage').onClick(() => {
           sessionStorage.clear();
 // console.log('sessionStorage cleared');
           alert('sessionStorage has been cleared');
@@ -81,12 +81,12 @@ app({ title: 'Browser Globals Test' }, (a) => {
         a.separator();
 
         // Test alert
-        a.button('Test alert()', () => {
+        a.button('Test alert()').onClick(() => {
           alert('This is an alert dialog!');
         });
 
         // Test confirm
-        a.button('Test confirm()', async () => {
+        a.button('Test confirm()').onClick(async () => {
           const result = await confirm('Do you want to continue?');
 // console.log('confirm() returned:', result);
           alert(`You clicked: ${result ? 'OK' : 'Cancel'}`);
@@ -95,7 +95,7 @@ app({ title: 'Browser Globals Test' }, (a) => {
         a.separator();
 
         // Test storage persistence
-        a.button('Check localStorage persistence', () => {
+        a.button('Check localStorage persistence').onClick(() => {
           const count = localStorage.getItem('launchCount');
           const newCount = count ? parseInt(count) + 1 : 1;
           localStorage.setItem('launchCount', newCount.toString());

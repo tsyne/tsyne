@@ -473,22 +473,22 @@ class ImageViewerUI {
   private buildStatusBar(): void {
     this.a.hbox(() => {
       // Open button for quick access
-      this.a.button('Open', () => this.openImage()).withId('open-btn');
+      this.a.button('Open').onClick(() => this.openImage()).withId('open-btn');
 
       // Spacer to push zoom controls to the right
       this.a.label('');
 
       // Zoom controls with unicode icons in buttons
-      this.a.button('−', () => this.viewer.zoomOut()).withId('zoom-out-btn');
+      this.a.button('−').onClick(() => this.viewer.zoomOut()).withId('zoom-out-btn');
 
       const zoomLabel = this.a.label('Zoom: 100%').withId('zoom-status');
       this.viewer.registerZoomStatus(zoomLabel);
 
-      this.a.button('+', () => this.viewer.zoomIn()).withId('zoom-in-btn');
-      this.a.button('⟲', () => this.viewer.resetZoom()).withId('reset-zoom-btn');
+      this.a.button('+').onClick(() => this.viewer.zoomIn()).withId('zoom-in-btn');
+      this.a.button('⟲').onClick(() => this.viewer.resetZoom()).withId('reset-zoom-btn');
 
       // Reset edits button
-      this.a.button('Reset', () => this.viewer.resetEdits()).withId('reset-edits-btn');
+      this.a.button('Reset').onClick(() => this.viewer.resetEdits()).withId('reset-edits-btn');
     });
   }
 

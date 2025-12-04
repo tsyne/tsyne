@@ -81,7 +81,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

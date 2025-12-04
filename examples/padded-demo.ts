@@ -20,8 +20,8 @@ app({ title: 'Padded Demo' }, (a) => {
               a.card('Card Title', 'No padding around content', () => {
                 a.vbox(() => {
                   a.label('This content has no extra padding');
-                  a.button('Button 1', () => console.log('Button 1 clicked'));
-                  a.button('Button 2', () => console.log('Button 2 clicked'));
+                  a.button('Button 1').onClick(() => console.log('Button 1 clicked'));
+                  a.button('Button 2').onClick(() => console.log('Button 2 clicked'));
                 });
               });
             });
@@ -34,8 +34,8 @@ app({ title: 'Padded Demo' }, (a) => {
                 a.padded(() => {
                   a.vbox(() => {
                     a.label('This content has theme padding');
-                    a.button('Button 1', () => console.log('Padded Button 1 clicked'));
-                    a.button('Button 2', () => console.log('Padded Button 2 clicked'));
+                    a.button('Button 1').onClick(() => console.log('Padded Button 1 clicked'));
+                    a.button('Button 2').onClick(() => console.log('Padded Button 2 clicked'));
                   });
                 });
               });
@@ -57,9 +57,9 @@ app({ title: 'Padded Demo' }, (a) => {
         // Padded button row
         a.padded(() => {
           a.hbox(() => {
-            a.button('Padded', () => console.log('Padded button'));
-            a.button('Button', () => console.log('Button'));
-            a.button('Row', () => console.log('Row'));
+            a.button('Padded').onClick(() => console.log('Padded button'));
+            a.button('Button').onClick(() => console.log('Button'));
+            a.button('Row').onClick(() => console.log('Row'));
           });
         });
       });

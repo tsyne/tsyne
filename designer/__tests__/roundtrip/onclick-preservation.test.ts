@@ -22,7 +22,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click Me', () => {
+        a.button('Click Me').onClick(() => {
           console.log('Button clicked!');
         });
       });
@@ -47,7 +47,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Increment', () => {
+        a.button('Increment').onClick(() => {
           count++;
           console.log('Count:', count);
           if (count > 10) {
@@ -74,7 +74,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Fetch Data', async () => {
+        a.button('Fetch Data').onClick(async () => {
           const response = await fetch('https://api.example.com/data');
           const data = await response.json();
           console.log('Data:', data);
@@ -103,7 +103,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         label = a.label('Count: 0');
-        a.button('Increment', async () => {
+        a.button('Increment').onClick(async () => {
           counter++;
           await label.setText(\`Count: \${counter}\`);
         });
@@ -127,7 +127,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Calculate', () => {
+        a.button('Calculate').onClick(() => {
           const x = Math.random();
           if (x < 0.33) {
             console.log('Low');
@@ -157,7 +157,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Safe Operation', async () => {
+        a.button('Safe Operation').onClick(async () => {
           try {
             const result = await riskyOperation();
             console.log('Success:', result);
@@ -188,7 +188,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Add Item', () => {
+        a.button('Add Item').onClick(() => {
           const newItem = \`Item \${items.length + 1}\`;
           items.push(newItem);
           console.log('Items:', items);
@@ -213,7 +213,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', () => {
+        a.button('Click').onClick(() => {
           console.log('Important business logic here!');
           performCriticalOperation();
         });
@@ -236,7 +236,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', () => {
+        a.button('Click').onClick(() => {
           console.log('Important business logic here!');
           performCriticalOperation();
         }).withId('actionButton');
@@ -256,7 +256,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Old Text', () => {
+        a.button('Old Text').onClick(() => {
           console.log('Handler code must survive!');
         });
       });
@@ -278,7 +278,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('New Text', () => {
+        a.button('New Text').onClick(() => {
           console.log('Handler code must survive!');
         });
       });
@@ -297,17 +297,17 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Save', async () => {
+        a.button('Save').onClick(async () => {
           await saveData();
           console.log('Data saved!');
         });
 
-        a.button('Load', async () => {
+        a.button('Load').onClick(async () => {
           const data = await loadData();
           console.log('Data loaded:', data);
         });
 
-        a.button('Delete', () => {
+        a.button('Delete').onClick(() => {
           if (confirm('Are you sure?')) {
             deleteAllData();
           }
@@ -335,7 +335,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Fetch', async () => {
+        a.button('Fetch').onClick(async () => {
           const url = \`\${baseUrl}/data?key=\${apiKey}\`;
           const response = await fetch(url);
           console.log('Response:', response);
@@ -360,7 +360,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Process', async () => {
+        a.button('Process').onClick(async () => {
           const { data, error } = await fetchData();
           if (error) {
             console.error('Error:', error);

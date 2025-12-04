@@ -25,7 +25,7 @@ vbox(() => {
   label('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   label('');
 
-  button('OK', () => {
+  button('OK').onClick(() => {
     // Go back to previous page
     browserContext.back();
   });

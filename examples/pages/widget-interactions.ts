@@ -59,7 +59,7 @@ vbox(() => {
   });
   checkboxStateLabel = label(`Checkbox state: ${checkboxState} (callbacks: ${checkboxCallbackCount})`);
 
-  button('Verify Checkbox State', async () => {
+  button('Verify Checkbox State').onClick(async () => {
     const checked = await checkboxWidget.getChecked();
     console.log('Checkbox getChecked():', checked);
     console.log('Checkbox state variable:', checkboxState);
@@ -74,7 +74,7 @@ vbox(() => {
   entryWidget = entry('Type something here');
   entryStateLabel = label('Entry text: (empty)');
 
-  button('Read Entry Text', async () => {
+  button('Read Entry Text').onClick(async () => {
     const text = await entryWidget.getText();
     console.log('Entry getText():', text);
     if (entryStateLabel) {
@@ -90,7 +90,7 @@ vbox(() => {
   multilineWidget = multilineentry('Type multiple lines here', 'word');
   multilineStateLabel = label('MultiLine text: (empty)');
 
-  button('Read MultiLine Text', async () => {
+  button('Read MultiLine Text').onClick(async () => {
     const text = await multilineWidget.getText();
     console.log('MultiLine getText():', text);
     if (multilineStateLabel) {
@@ -106,7 +106,7 @@ vbox(() => {
   passwordWidget = passwordentry('Enter password');
   passwordStateLabel = label('Password text: (empty)');
 
-  button('Read Password Text', async () => {
+  button('Read Password Text').onClick(async () => {
     const text = await passwordWidget.getText();
     console.log('Password getText():', text);
     if (passwordStateLabel) {
@@ -128,7 +128,7 @@ vbox(() => {
   });
   selectStateLabel = label(`Select state: ${selectState} (callbacks: ${selectCallbackCount})`);
 
-  button('Verify Select State', async () => {
+  button('Verify Select State').onClick(async () => {
     const selected = await selectWidget.getSelected();
     console.log('Select getSelected():', selected);
     console.log('Select state variable:', selectState);
@@ -149,7 +149,7 @@ vbox(() => {
   });
   sliderStateLabel = label(`Slider state: ${sliderState} (callbacks: ${sliderCallbackCount})`);
 
-  button('Verify Slider State', async () => {
+  button('Verify Slider State').onClick(async () => {
     const value = await sliderWidget.getValue();
     console.log('Slider getValue():', value);
     console.log('Slider state variable:', sliderState);
@@ -170,7 +170,7 @@ vbox(() => {
   });
   radiogroupStateLabel = label(`RadioGroup state: ${radiogroupState} (callbacks: ${radiogroupCallbackCount})`);
 
-  button('Verify RadioGroup State', async () => {
+  button('Verify RadioGroup State').onClick(async () => {
     const selected = await radiogroupWidget.getSelected();
     console.log('RadioGroup getSelected():', selected);
     console.log('RadioGroup state variable:', radiogroupState);
@@ -202,7 +202,7 @@ vbox(() => {
   progressStateLabel = label('Progress: 50%');
 
   hbox(() => {
-    button('Set 0%', async () => {
+    button('Set 0%').onClick(async () => {
       await progressWidget.setProgress(0);
       const value = await progressWidget.getProgress();
       if (progressStateLabel) {
@@ -211,7 +211,7 @@ vbox(() => {
       console.log('Progress set to:', value);
     });
 
-    button('Set 25%', async () => {
+    button('Set 25%').onClick(async () => {
       await progressWidget.setProgress(0.25);
       const value = await progressWidget.getProgress();
       if (progressStateLabel) {
@@ -220,7 +220,7 @@ vbox(() => {
       console.log('Progress set to:', value);
     });
 
-    button('Set 50%', async () => {
+    button('Set 50%').onClick(async () => {
       await progressWidget.setProgress(0.5);
       const value = await progressWidget.getProgress();
       if (progressStateLabel) {
@@ -229,7 +229,7 @@ vbox(() => {
       console.log('Progress set to:', value);
     });
 
-    button('Set 75%', async () => {
+    button('Set 75%').onClick(async () => {
       await progressWidget.setProgress(0.75);
       const value = await progressWidget.getProgress();
       if (progressStateLabel) {
@@ -238,7 +238,7 @@ vbox(() => {
       console.log('Progress set to:', value);
     });
 
-    button('Set 100%', async () => {
+    button('Set 100%').onClick(async () => {
       await progressWidget.setProgress(1.0);
       const value = await progressWidget.getProgress();
       if (progressStateLabel) {
@@ -250,7 +250,7 @@ vbox(() => {
 
   separator();
   label('');
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

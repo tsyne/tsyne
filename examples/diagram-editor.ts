@@ -22,18 +22,18 @@ app({ title: 'Diagram Editor' }, (a) => {
           a.vbox(() => {
             a.label('Shapes', undefined, 'center', undefined, { bold: true });
             a.separator();
-            a.button('Rectangle', () => { selectedShape = 'rectangle'; });
-            a.button('Circle', () => { selectedShape = 'circle'; });
-            a.button('Line', () => { selectedShape = 'line'; });
-            a.button('Text', () => { selectedShape = 'text'; });
+            a.button('Rectangle').onClick(() => { selectedShape = 'rectangle'; });
+            a.button('Circle').onClick(() => { selectedShape = 'circle'; });
+            a.button('Line').onClick(() => { selectedShape = 'line'; });
+            a.button('Text').onClick(() => { selectedShape = 'text'; });
             a.separator();
             a.label('Colors', undefined, 'center', undefined, { bold: true });
             a.separator();
-            a.button('Blue', () => { selectedColor = '#3498db'; });
-            a.button('Red', () => { selectedColor = '#e74c3c'; });
-            a.button('Green', () => { selectedColor = '#2ecc71'; });
-            a.button('Orange', () => { selectedColor = '#f39c12'; });
-            a.button('Purple', () => { selectedColor = '#9b59b6'; });
+            a.button('Blue').onClick(() => { selectedColor = '#3498db'; });
+            a.button('Red').onClick(() => { selectedColor = '#e74c3c'; });
+            a.button('Green').onClick(() => { selectedColor = '#2ecc71'; });
+            a.button('Orange').onClick(() => { selectedColor = '#f39c12'; });
+            a.button('Purple').onClick(() => { selectedColor = '#9b59b6'; });
           });
         },
         center: () => {

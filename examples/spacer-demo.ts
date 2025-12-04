@@ -13,9 +13,9 @@ app({ title: 'Spacer Demo' }, (a) => {
         // Horizontal layout with spacers
         a.label('Horizontal spacers (buttons pushed to edges):');
         a.hbox(() => {
-          a.button('Left', () => {});
+          a.button('Left').onClick(() => {});
           a.spacer(); // Pushes content to edges
-          a.button('Right', () => {});
+          a.button('Right').onClick(() => {});
         });
 
         a.separator();
@@ -24,11 +24,11 @@ app({ title: 'Spacer Demo' }, (a) => {
         a.label('Multiple spacers (evenly distributed):');
         a.hbox(() => {
           a.spacer();
-          a.button('A', () => {});
+          a.button('A').onClick(() => {});
           a.spacer();
-          a.button('B', () => {});
+          a.button('B').onClick(() => {});
           a.spacer();
-          a.button('C', () => {});
+          a.button('C').onClick(() => {});
           a.spacer();
         });
 
@@ -49,8 +49,8 @@ app({ title: 'Spacer Demo' }, (a) => {
         a.hbox(() => {
           a.label('File: document.txt');
           a.spacer();
-          a.button('Save', () => {});
-          a.button('Cancel', () => {});
+          a.button('Save').onClick(() => {});
+          a.button('Cancel').onClick(() => {});
         });
       });
     });

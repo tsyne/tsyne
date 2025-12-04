@@ -50,11 +50,11 @@ function createDocumentContent(a: App, doc: Document): void {
     editor.setText(doc.content);
 
     a.hbox(() => {
-      a.button('Mark Modified', () => {
+      a.button('Mark Modified').onClick(() => {
         doc.modified = true;
         updateStatus(`${doc.title} marked as modified`);
       });
-      a.button('Clear', () => {
+      a.button('Clear').onClick(() => {
         editor.setText('');
         doc.modified = true;
         updateStatus(`${doc.title} cleared`);
@@ -89,18 +89,18 @@ app({ title: 'Text Editor' }, (a) => {
         top: () => {
           a.vbox(() => {
             a.hbox(() => {
-              a.button('New Document', async () => {
+              a.button('New Document').onClick(async () => {
                 const doc = createDocument();
                 await addDocumentTab(doc);
                 updateStatus(`Created: ${doc.title}`);
               });
-              a.button('Open Sample', async () => {
+              a.button('Open Sample').onClick(async () => {
                 const doc = createDocument(`Sample ${nextDocId - 1}.txt`);
                 doc.content = `This is sample document ${doc.id}.\n\nAdd your content here.\n\nClick the X button on the tab to close this document.`;
                 await addDocumentTab(doc);
                 updateStatus(`Opened: ${doc.title}`);
               });
-              a.button('Close All', async () => {
+              a.button('Close All').onClick(async () => {
                 const confirmed = await win.showConfirm(
                   'Close All Documents',
                   'Are you sure you want to close all documents?'

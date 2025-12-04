@@ -40,7 +40,7 @@ app({ title: 'My App' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Hello');
-        a.button('Click', () => console.log('clicked'));
+        a.button('Click').onClick(() => console.log('clicked'));
         a.hbox(() => {
           a.entry('placeholder', onSubmit, 300);
         });
@@ -150,7 +150,7 @@ await ctx.getByID('greeting').shouldBe('Hello');  // ✅ Stable
 await ctx.getByText('Reset').click();  // Multiple "Reset" buttons? Random behavior!
 
 // ✅ CORRECT - using getByID is unique and reliable
-this.resetBtn = this.a.button('Reset', () => this.reset()).withId('resetBtn');
+this.resetBtn = this.a.button('Reset').onClick(() => this.reset()).withId('resetBtn');
 await ctx.getByID('resetBtn').click();
 
 // ❌ WRONG - using getByText for dynamic content
@@ -262,7 +262,7 @@ const listBinding = todoContainer
   .each((todo) => {
     a.hbox(() => {
       a.checkbox(todo.text, () => store.toggleTodo(todo.id));
-      a.button('Delete', () => store.deleteTodo(todo.id));
+      a.button('Delete').onClick(() => store.deleteTodo(todo.id));
     });
   });
 
@@ -340,7 +340,7 @@ const color = await win.showColorPicker('Choose Color', '#ff0000');
 await win.showCustom('Custom', () => {
   a.vbox(() => {
     a.label('Any widgets here');
-    a.button('Action', () => {});
+    a.button('Action').onClick(() => {});
   });
 }, { dismissText: 'Close' });
 

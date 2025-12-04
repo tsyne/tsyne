@@ -12,11 +12,11 @@ vbox(() => {
   label('URL: ' + browserContext.currentUrl);
   label('');
 
-  button('Go to Home', () => {
+  button('Go to Home').onClick(() => {
     browserContext.changePage('/');
   });
 
-  button('Go Back', () => {
+  button('Go Back').onClick(() => {
     browserContext.back();
   });
 });

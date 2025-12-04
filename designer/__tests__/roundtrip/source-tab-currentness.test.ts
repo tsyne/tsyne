@@ -26,7 +26,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         // This is an important button
-        a.button('Old Text', () => {});
+        a.button('Old Text').onClick(() => {});
       });
     });
     win.show();
@@ -100,7 +100,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         // Original comment
-        a.button('Original', () => {});
+        a.button('Original').onClick(() => {});
       });
     });
     win.show();
@@ -132,7 +132,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', () => {});
+        a.button('Click').onClick(() => {});
       });
     });
     win.show();
@@ -152,7 +152,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', () => {
+        a.button('Click').onClick(() => {
           // Missing closing brace
       });
     });

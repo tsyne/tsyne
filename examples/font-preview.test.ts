@@ -34,7 +34,7 @@ describe('Font Preview Example', () => {
             });
 
             app.hbox(() => {
-              app.button('Load Font', async () => {
+              app.button('Load Font').onClick(async () => {
                 const fontPath = await fontPathEntry.getText();
                 try {
                   await app.setCustomFont(fontPath, 'regular');
@@ -44,7 +44,7 @@ describe('Font Preview Example', () => {
                 }
               });
 
-              app.button('Clear Fonts', async () => {
+              app.button('Clear Fonts').onClick(async () => {
                 await app.clearCustomFont('all');
                 statusLabel.setText('Cleared all custom fonts');
               });
@@ -54,15 +54,15 @@ describe('Font Preview Example', () => {
 
             app.label('Font Scale:');
             app.hbox(() => {
-              app.button('Small', async () => {
+              app.button('Small').onClick(async () => {
                 await app.setFontScale(0.75);
                 statusLabel.setText('Font scale: 0.75x');
               });
-              app.button('Normal', async () => {
+              app.button('Normal').onClick(async () => {
                 await app.setFontScale(1.0);
                 statusLabel.setText('Font scale: 1.0x');
               });
-              app.button('Large', async () => {
+              app.button('Large').onClick(async () => {
                 await app.setFontScale(1.5);
                 statusLabel.setText('Font scale: 1.5x');
               });
@@ -131,7 +131,7 @@ describe('Font Preview Example', () => {
             app.label('Font Information');
             app.separator();
 
-            app.button('Get Font Info', async () => {
+            app.button('Get Font Info').onClick(async () => {
               const fontInfo = await app.getAvailableFonts();
               const extensions = fontInfo.supportedExtensions.join(', ');
               const styles = fontInfo.styles.join(', ');

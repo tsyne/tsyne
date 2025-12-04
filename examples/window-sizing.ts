@@ -35,7 +35,7 @@ app({ title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Resize Window', async () => {
+          button('Resize Window').onClick(async () => {
             const width = parseInt(await widthEntry.getText());
             const height = parseInt(await heightEntry.getText());
             if (!isNaN(width) && !isNaN(height)) {
@@ -46,7 +46,7 @@ app({ title: 'Window Sizing Demo' }, () => {
             }
           });
 
-          button('Reset Size', async () => {
+          button('Reset Size').onClick(async () => {
             await win.resize(500, 400);
             await widthEntry.setText('500');
             await heightEntry.setText('400');
@@ -62,12 +62,12 @@ app({ title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Center Window', async () => {
+          button('Center Window').onClick(async () => {
             await win.centerOnScreen();
             statusLabel.setText('Window centered on screen');
           });
 
-          button('Large Size', async () => {
+          button('Large Size').onClick(async () => {
             await win.resize(800, 600);
             await win.centerOnScreen();
             await widthEntry.setText('800');
@@ -79,7 +79,7 @@ app({ title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Small Size', async () => {
+          button('Small Size').onClick(async () => {
             await win.resize(400, 300);
             await win.centerOnScreen();
             await widthEntry.setText('400');
@@ -87,7 +87,7 @@ app({ title: 'Window Sizing Demo' }, () => {
             statusLabel.setText('Window set to 400x300 and centered');
           });
 
-          button('Compact Size', async () => {
+          button('Compact Size').onClick(async () => {
             await win.resize(350, 250);
             await win.centerOnScreen();
             await widthEntry.setText('350');
@@ -104,12 +104,12 @@ app({ title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Enter Fullscreen', async () => {
+          button('Enter Fullscreen').onClick(async () => {
             await win.setFullScreen(true);
             statusLabel.setText('Entered fullscreen mode');
           });
 
-          button('Exit Fullscreen', async () => {
+          button('Exit Fullscreen').onClick(async () => {
             await win.setFullScreen(false);
             statusLabel.setText('Exited fullscreen mode');
           });
@@ -122,7 +122,7 @@ app({ title: 'Window Sizing Demo' }, () => {
         label('Multiple Windows:');
         label('');
 
-        button('Open Second Window', () => {
+        button('Open Second Window').onClick(() => {
           if (!win2) {
             win2 = window({ title: 'Second Window', width: 400, height: 300 }, (secondWin) => {
               secondWin.setContent(() => {
@@ -131,15 +131,15 @@ app({ title: 'Window Sizing Demo' }, () => {
                   label('');
                   label('Size: 400x300');
                   label('');
-                  button('Center This Window', async () => {
+                  button('Center This Window').onClick(async () => {
                     await secondWin.centerOnScreen();
                   });
                   label('');
-                  button('Resize to 500x350', async () => {
+                  button('Resize to 500x350').onClick(async () => {
                     await secondWin.resize(500, 350);
                   });
                   label('');
-                  button('Close Window', () => {
+                  button('Close Window').onClick(() => {
                     // Note: Closing windows programmatically requires additional bridge support
                     console.log('Window close requested');
                   });

@@ -1781,7 +1781,7 @@ class PixelEditor {
       for (const tool of this.tools) {
         const isSelected = tool === this.currentTool;
         const buttonLabel = isSelected ? `▶ ${tool.name}` : tool.name;
-        const btn = this.a.button(buttonLabel, () => {
+        const btn = this.a.button(buttonLabel).onClick(() => {
           this.setTool(tool);
         });
         this.toolButtons.set(tool.name, btn);
@@ -1791,9 +1791,9 @@ class PixelEditor {
 
       // Zoom controls (power of 2, shown as percentage)
       this.a.hbox(() => {
-        this.a.button('-', () => this.zoomOut());
+        this.a.button('-').onClick(() => this.zoomOut());
         this.zoomLabel = this.a.label(`${this.zoom * 100}%`);
-        this.a.button('+', () => this.zoomIn());
+        this.a.button('+').onClick(() => this.zoomIn());
       });
 
       this.a.separator();
@@ -1808,7 +1808,7 @@ class PixelEditor {
         strokeWidth: 1
       });
       this.colorLabel = this.a.label(this.fgColor.toHex());
-      this.a.button('Pick FG', () => this.pickFGColor());
+      this.a.button('Pick FG').onClick(() => this.pickFGColor());
 
       this.a.separator();
 
@@ -1822,12 +1822,12 @@ class PixelEditor {
         strokeWidth: 1
       });
       this.bgColorLabel = this.a.label(this.bgColor.toHex());
-      this.a.button('Pick BG', () => this.pickBGColor());
+      this.a.button('Pick BG').onClick(() => this.pickBGColor());
 
       this.a.separator();
 
       // Swap colors button
-      this.a.button('Swap FG/BG', () => this.swapColors());
+      this.a.button('Swap FG/BG').onClick(() => this.swapColors());
     });
   }
 

@@ -70,7 +70,7 @@ describe('Dice Roller Example', () => {
 
             app.separator();
 
-            app.button('🎲 ROLL DICE 🎲', rollDice);
+            app.button('🎲 ROLL DICE 🎲').onClick(rollDice);
 
             app.separator();
 
@@ -126,7 +126,7 @@ describe('Dice Roller Example', () => {
           app.vbox(() => {
             app.label('🎲 Dice Roller 🎲');
 
-            app.button('🎲 ROLL DICE 🎲', rollDice);
+            app.button('🎲 ROLL DICE 🎲').onClick(rollDice);
 
             resultLabel = app.label('Click Roll to start!');
           });
@@ -173,7 +173,7 @@ describe('Dice Roller Example', () => {
           app.vbox(() => {
             app.label('🎲 Dice Roller 🎲');
 
-            app.button('🎲 ROLL DICE 🎲', rollDice);
+            app.button('🎲 ROLL DICE 🎲').onClick(rollDice);
 
             resultLabel = app.label('Click Roll to start!');
             totalLabel = app.label('');

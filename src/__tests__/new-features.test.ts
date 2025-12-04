@@ -95,7 +95,7 @@ describe('New Features', () => {
       const createTestApp = (app: App) => {
         app.window({ title: 'Dialog Test' }, async (win) => {
           win.setContent(() => {
-            app.button('Show Dialog', async () => {
+            app.button('Show Dialog').onClick(async () => {
               const dialog = await win.showCustomWithoutButtons(
                 'Loading',
                 () => {
@@ -135,7 +135,7 @@ describe('New Features', () => {
       const createTestApp = (app: App) => {
         app.window({ title: 'Content Dialog Test' }, async (win) => {
           win.setContent(() => {
-            app.button('Show Custom Dialog', async () => {
+            app.button('Show Custom Dialog').onClick(async () => {
               const dialog = await win.showCustomWithoutButtons(
                 'Processing',
                 () => {

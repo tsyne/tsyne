@@ -11,7 +11,7 @@ app({ title: 'Modal Overlay Demo' }, (a) => {
         a.label('Click the buttons to see different modal overlays.');
 
         // Loading Overlay Demo
-        a.button('Show Loading Overlay (3 sec)', async () => {
+        a.button('Show Loading Overlay (3 sec)').onClick(async () => {
           const dialog = await win.showCustomWithoutButtons(
             'Loading...',
             () => {
@@ -31,7 +31,7 @@ app({ title: 'Modal Overlay Demo' }, (a) => {
         });
 
         // Custom Status Overlay Demo
-        a.button('Show Status Overlay (5 sec)', async () => {
+        a.button('Show Status Overlay (5 sec)').onClick(async () => {
           let progressValue = 0;
           let progressBar: ReturnType<typeof a.progressBar>;
 
@@ -60,7 +60,7 @@ app({ title: 'Modal Overlay Demo' }, (a) => {
         });
 
         // Confirmation Process Demo
-        a.button('Start Multi-Step Process', async () => {
+        a.button('Start Multi-Step Process').onClick(async () => {
           const confirmed = await win.showConfirm(
             'Confirm Process',
             'This will start a multi-step process. Continue?'

@@ -115,7 +115,7 @@ app({ title: 'Drawing App' }, () => {
           currentColorLabel = label(currentColor);
           colorPreviewLabel = label('  ██  ', undefined, undefined, undefined, { bold: true });
 
-          button('Pick Color', async () => {
+          button('Pick Color').onClick(async () => {
             const result = await win.showColorPicker('Choose Drawing Color', currentColor);
             if (result) {
               currentColor = result.hex;
@@ -162,25 +162,25 @@ app({ title: 'Drawing App' }, () => {
         label('Drawing Tools:');
         hbox(() => {
           // Paint buttons for different positions (simplified interaction)
-          button('Paint Center', () => {
+          button('Paint Center').onClick(() => {
             paint(Math.floor(GRID_ROWS / 2), Math.floor(GRID_COLS / 2));
           });
 
-          button('Paint Random', () => {
+          button('Paint Random').onClick(() => {
             const row = Math.floor(Math.random() * GRID_ROWS);
             const col = Math.floor(Math.random() * GRID_COLS);
             paint(row, col);
           });
 
-          button('Fill All', () => {
+          button('Fill All').onClick(() => {
             fillCanvas();
           });
 
-          button('Random Pattern', () => {
+          button('Random Pattern').onClick(() => {
             randomPattern();
           });
 
-          button('Clear', () => {
+          button('Clear').onClick(() => {
             clearCanvas();
           });
         });

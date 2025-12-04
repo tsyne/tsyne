@@ -12,7 +12,7 @@ app({ title: 'MDI Workspace Demo' }, (a) => {
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
-          a.button('New Document', async () => {
+          a.button('New Document').onClick(async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Document ${windowCount}`,
@@ -21,7 +21,7 @@ app({ title: 'MDI Workspace Demo' }, (a) => {
                   a.label(`Content of Document ${windowCount}`);
                   a.entry('Type something here...');
                   a.hbox(() => {
-                    a.button('Save', () => {
+                    a.button('Save').onClick(() => {
                       win.showInfo('Saved', `Document ${windowCount} saved!`);
                     });
                   });
@@ -33,7 +33,7 @@ app({ title: 'MDI Workspace Demo' }, (a) => {
             );
           });
 
-          a.button('New Image', async () => {
+          a.button('New Image').onClick(async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Image ${windowCount}`,
@@ -50,7 +50,7 @@ app({ title: 'MDI Workspace Demo' }, (a) => {
             );
           });
 
-          a.button('New Chart', async () => {
+          a.button('New Chart').onClick(async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Chart ${windowCount}`,

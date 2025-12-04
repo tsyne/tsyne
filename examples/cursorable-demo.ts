@@ -23,7 +23,7 @@ app({ title: "Cursorable Demo" }, (a) => {
       a.label("Standard Cursor Types:");
 
       // Default cursor
-      a.button("Default Cursor", () => {
+      a.button("Default Cursor").onClick(() => {
         console.log("Default cursor button clicked");
       }).setCursor('default')
         .onMouseIn(() => {
@@ -31,7 +31,7 @@ app({ title: "Cursorable Demo" }, (a) => {
         });
 
       // Text cursor (I-beam)
-      a.button("Text Cursor (I-beam) - for text input", () => {
+      a.button("Text Cursor (I-beam) - for text input").onClick(() => {
         console.log("Text cursor button clicked");
       }).setCursor('text')
         .onMouseIn(() => {
@@ -39,7 +39,7 @@ app({ title: "Cursorable Demo" }, (a) => {
         });
 
       // Crosshair cursor
-      a.button("Crosshair Cursor - for precision", () => {
+      a.button("Crosshair Cursor - for precision").onClick(() => {
         console.log("Crosshair cursor button clicked");
       }).setCursor('crosshair')
         .onMouseIn(() => {
@@ -47,7 +47,7 @@ app({ title: "Cursorable Demo" }, (a) => {
         });
 
       // Pointer cursor (hand)
-      a.button("Pointer Cursor (Hand) - for links", () => {
+      a.button("Pointer Cursor (Hand) - for links").onClick(() => {
         console.log("Pointer cursor button clicked");
       }).setCursor('pointer')
         .onMouseIn(() => {
@@ -55,7 +55,7 @@ app({ title: "Cursorable Demo" }, (a) => {
         });
 
       // Horizontal resize cursor
-      a.button("H-Resize Cursor - horizontal resize", () => {
+      a.button("H-Resize Cursor - horizontal resize").onClick(() => {
         console.log("H-Resize cursor button clicked");
       }).setCursor('hResize')
         .onMouseIn(() => {
@@ -63,7 +63,7 @@ app({ title: "Cursorable Demo" }, (a) => {
         });
 
       // Vertical resize cursor
-      a.button("V-Resize Cursor - vertical resize", () => {
+      a.button("V-Resize Cursor - vertical resize").onClick(() => {
         console.log("V-Resize cursor button clicked");
       }).setCursor('vResize')
         .onMouseIn(() => {
@@ -76,7 +76,7 @@ app({ title: "Cursorable Demo" }, (a) => {
       // Simulated toolbar with contextual cursors
       a.hbox(() => {
         // Text tool
-        a.button("T", () => {
+        a.button("T").onClick(() => {
           console.log("Text tool selected");
         }).setCursor('text')
           .onMouseIn(() => {
@@ -84,7 +84,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Selection/pointer tool
-        a.button("S", () => {
+        a.button("S").onClick(() => {
           console.log("Select tool selected");
         }).setCursor('pointer')
           .onMouseIn(() => {
@@ -92,7 +92,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Precision/crosshair tool
-        a.button("+", () => {
+        a.button("+").onClick(() => {
           console.log("Precision tool selected");
         }).setCursor('crosshair')
           .onMouseIn(() => {
@@ -100,7 +100,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Width resize handle
-        a.button("|", () => {
+        a.button("|").onClick(() => {
           console.log("Width handle dragged");
         }).setCursor('hResize')
           .onMouseIn(() => {
@@ -108,7 +108,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Height resize handle
-        a.button("=", () => {
+        a.button("=").onClick(() => {
           console.log("Height handle dragged");
         }).setCursor('vResize')
           .onMouseIn(() => {
@@ -121,7 +121,7 @@ app({ title: "Cursorable Demo" }, (a) => {
 
       a.hbox(() => {
         // Left panel border
-        a.button("[ Left Border ]", () => {
+        a.button("[ Left Border ]").onClick(() => {
           console.log("Resizing left panel");
         }).setCursor('hResize')
           .onMouseIn(() => {
@@ -129,7 +129,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Right panel border
-        a.button("[ Right Border ]", () => {
+        a.button("[ Right Border ]").onClick(() => {
           console.log("Resizing right panel");
         }).setCursor('hResize')
           .onMouseIn(() => {
@@ -139,7 +139,7 @@ app({ title: "Cursorable Demo" }, (a) => {
 
       a.hbox(() => {
         // Top border
-        a.button("[ Top Border ]", () => {
+        a.button("[ Top Border ]").onClick(() => {
           console.log("Resizing top panel");
         }).setCursor('vResize')
           .onMouseIn(() => {
@@ -147,7 +147,7 @@ app({ title: "Cursorable Demo" }, (a) => {
           });
 
         // Bottom border
-        a.button("[ Bottom Border ]", () => {
+        a.button("[ Bottom Border ]").onClick(() => {
           console.log("Resizing bottom panel");
         }).setCursor('vResize')
           .onMouseIn(() => {

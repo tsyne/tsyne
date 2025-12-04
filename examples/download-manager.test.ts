@@ -26,7 +26,7 @@ describe('Download Manager Example', () => {
           app.vbox(() => {
             app.label('Progress Dialog Test');
 
-            app.button('Show Progress', async () => {
+            app.button('Show Progress').onClick(async () => {
               progressDialog = await win.showProgress(
                 'Processing',
                 'Processing your request...',
@@ -47,7 +47,7 @@ describe('Download Manager Example', () => {
               await progressDialog.hide();
             });
 
-            app.button('Show Infinite Progress', async () => {
+            app.button('Show Infinite Progress').onClick(async () => {
               progressDialog = await win.showProgress(
                 'Loading',
                 'Please wait...',
@@ -97,7 +97,7 @@ describe('Download Manager Example', () => {
           app.vbox(() => {
             app.label('Dialog Lifecycle Test');
 
-            app.button('Start', async () => {
+            app.button('Start').onClick(async () => {
               progressDialog = await win.showProgress(
                 'Working',
                 'Doing work...',
@@ -151,17 +151,17 @@ describe('Download Manager Example', () => {
 
             queueLabel = app.label('Queue: empty');
 
-            app.button('Add Small', () => {
+            app.button('Add Small').onClick(() => {
               downloadQueue.push('small.zip');
               queueLabel.setText(`Queue: ${downloadQueue.join(', ')}`);
             });
 
-            app.button('Add Large', () => {
+            app.button('Add Large').onClick(() => {
               downloadQueue.push('large.iso');
               queueLabel.setText(`Queue: ${downloadQueue.join(', ')}`);
             });
 
-            app.button('Clear', () => {
+            app.button('Clear').onClick(() => {
               downloadQueue = [];
               queueLabel.setText('Queue: empty');
             });

@@ -27,7 +27,7 @@ app({ title: 'Theme Zones' }, (a) => {
                 a.vbox(() => {
                   a.label('This area uses the dark theme');
                   a.separator();
-                  a.button('Dark Button', () => {
+                  a.button('Dark Button').onClick(() => {
                     console.log('Dark button clicked');
                   });
                   a.entry('Type here...');
@@ -48,7 +48,7 @@ app({ title: 'Theme Zones' }, (a) => {
                 a.vbox(() => {
                   a.label('This area uses the light theme');
                   a.separator();
-                  a.button('Light Button', () => {
+                  a.button('Light Button').onClick(() => {
                     console.log('Light button clicked');
                   });
                   a.entry('Type here...');

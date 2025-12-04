@@ -77,7 +77,7 @@ app({ title: 'Country Picker' }, (a) => {
         a.separator();
 
         // Button to show current selection
-        a.button('Show Selection', () => {
+        a.button('Show Selection').onClick(() => {
           if (selectedCountry) {
             console.log(`Current selection: ${selectedCountry}`);
           } else {
@@ -86,7 +86,7 @@ app({ title: 'Country Picker' }, (a) => {
         });
 
         // Exit button
-        a.button('Exit', () => {
+        a.button('Exit').onClick(() => {
           process.exit(0);
         });
       });

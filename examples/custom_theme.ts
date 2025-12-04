@@ -30,17 +30,17 @@ app({ title: 'Custom Theme Demo' }, (a) => {
         themeLabel = a.label('Current Theme: Light');
 
         a.hbox(() => {
-          a.button('Light Theme', async () => {
+          a.button('Light Theme').onClick(async () => {
             await a.clearCustomTheme();
             await a.setTheme('light');
             themeLabel.setText('Current Theme: Light');
           });
-          a.button('Dark Theme', async () => {
+          a.button('Dark Theme').onClick(async () => {
             await a.clearCustomTheme();
             await a.setTheme('dark');
             themeLabel.setText('Current Theme: Dark');
           });
-          a.button('Solarized Dark', async () => {
+          a.button('Solarized Dark').onClick(async () => {
             await a.setCustomTheme(solarizedDark);
             themeLabel.setText('Current Theme: Solarized Dark');
           });

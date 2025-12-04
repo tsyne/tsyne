@@ -82,7 +82,7 @@ app({ title: 'Dice Roller' }, (a) => {
           a.separator();
 
           // Roll button
-          a.button('🎲 ROLL DICE 🎲', rollDice);
+          a.button('🎲 ROLL DICE 🎲').onClick(rollDice);
 
           a.separator();
 

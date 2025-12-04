@@ -47,7 +47,7 @@ describe('Window Title Tests', () => {
         win.setContent(() => {
           const tsyne = require('../src/index');
           tsyne.vbox(() => {
-            const btn = tsyne.button('Change Title', () => {
+            const btn = tsyne.button('Change Title').onClick(() => {
               windowInstance.setTitle('New Title');
             });
             btn.id = 'change-title-btn';
@@ -78,7 +78,7 @@ describe('Window Title Tests', () => {
         win.setContent(() => {
           const tsyne = require('../src/index');
           tsyne.vbox(() => {
-            const btn = tsyne.button('Change Title Multiple Times', () => {
+            const btn = tsyne.button('Change Title Multiple Times').onClick(() => {
               clickCount++;
               windowInstance.setTitle(`Title ${clickCount}`);
             });
@@ -115,7 +115,7 @@ describe('Window Title Tests', () => {
         win.setContent(() => {
           const tsyne = require('../src/index');
           tsyne.vbox(() => {
-            const btn = tsyne.button('Clear Title', () => {
+            const btn = tsyne.button('Clear Title').onClick(() => {
               windowInstance.setTitle('');
             });
             btn.id = 'clear-title-btn';

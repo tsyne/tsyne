@@ -26,17 +26,17 @@ vbox(() => {
       displayLabel = label(`Count: ${counter}`);
 
       hbox(() => {
-        button('-', () => {
+        button('-').onClick(() => {
           counter--;
           displayLabel.setText(`Count: ${counter}`);
         });
 
-        button('Reset', () => {
+        button('Reset').onClick(() => {
           counter = 0;
           displayLabel.setText(`Count: ${counter}`);
         });
 
-        button('+', () => {
+        button('+').onClick(() => {
           counter++;
           displayLabel.setText(`Count: ${counter}`);
         });
@@ -53,15 +53,15 @@ vbox(() => {
       newItemEntry = entry('New item name');
 
       hbox(() => {
-        button('Add Item', () => {
+        button('Add Item').onClick(() => {
           addItem();
         });
 
-        button('Remove Last', () => {
+        button('Remove Last').onClick(() => {
           removeLastItem();
         });
 
-        button('Clear All', () => {
+        button('Clear All').onClick(() => {
           clearAllItems();
         });
       });
@@ -122,7 +122,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

@@ -18,15 +18,15 @@ app({ title: 'Card Stack Demo' }, (a) => {
 
         // Card control buttons
         a.hbox(() => {
-          a.button('Show Card 1', () => {
+          a.button('Show Card 1').onClick(() => {
             topCardIndex = 0;
             updateCardHighlights();
           });
-          a.button('Show Card 2', () => {
+          a.button('Show Card 2').onClick(() => {
             topCardIndex = 1;
             updateCardHighlights();
           });
-          a.button('Show Card 3', () => {
+          a.button('Show Card 3').onClick(() => {
             topCardIndex = 2;
             updateCardHighlights();
           });

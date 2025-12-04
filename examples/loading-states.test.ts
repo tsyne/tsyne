@@ -33,17 +33,17 @@ describe('Loading States - ProgressBarInfinite', () => {
             app.label('');
 
             app.hbox(() => {
-              app.button('Start', async () => {
+              app.button('Start').onClick(async () => {
                 await networkProgress.start();
                 await statusLabel.setText('Status: Running');
               });
 
-              app.button('Stop', async () => {
+              app.button('Stop').onClick(async () => {
                 await networkProgress.stop();
                 await statusLabel.setText('Status: Stopped');
               });
 
-              app.button('Check', async () => {
+              app.button('Check').onClick(async () => {
                 const running = await networkProgress.isRunning();
                 await statusLabel.setText(`Status: ${running ? 'Running' : 'Stopped'}`);
               });
@@ -98,7 +98,7 @@ describe('Loading States - ProgressBarInfinite', () => {
             fileStatus = app.label('Ready');
             app.label('');
 
-            app.button('Process', async () => {
+            app.button('Process').onClick(async () => {
               await fileProgress.start();
               await fileStatus.setText('Processing...');
 
@@ -147,14 +147,14 @@ describe('Loading States - ProgressBarInfinite', () => {
             status2 = app.label('Idle');
 
             app.hbox(() => {
-              app.button('Start Both', async () => {
+              app.button('Start Both').onClick(async () => {
                 await progress1.start();
                 await progress2.start();
                 await status1.setText('Running');
                 await status2.setText('Running');
               });
 
-              app.button('Stop Both', async () => {
+              app.button('Stop Both').onClick(async () => {
                 await progress1.stop();
                 await progress2.stop();
                 await status1.setText('Stopped');
@@ -214,12 +214,12 @@ describe('Activity Widget', () => {
             });
 
             app.hbox(() => {
-              app.button('Start', async () => {
+              app.button('Start').onClick(async () => {
                 await activityRef.start();
                 await statusLabel.setText('Activity started');
               }).withId('startBtn');
 
-              app.button('Stop', async () => {
+              app.button('Stop').onClick(async () => {
                 await activityRef.stop();
                 await statusLabel.setText('Activity stopped');
               }).withId('stopBtn');
@@ -269,11 +269,11 @@ describe('Activity Widget', () => {
               activity2 = app.activity();
               app.label('Activity 2');
             });
-            app.button('Start Both', async () => {
+            app.button('Start Both').onClick(async () => {
               await activity1.start();
               await activity2.start();
             }).withId('startBoth');
-            app.button('Stop Both', async () => {
+            app.button('Stop Both').onClick(async () => {
               await activity1.stop();
               await activity2.stop();
             }).withId('stopBoth');

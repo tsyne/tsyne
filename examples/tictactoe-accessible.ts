@@ -22,29 +22,59 @@ type Player = 'X' | 'O' | '';
 type Board = Player[];
 type GameState = 'playing' | 'won' | 'draw';
 
-let board: Board = ['', '', '', '', '', '', '', '', ''];
-let currentPlayer: Player = 'X';
-let gameState: GameState = 'playing';
-let winner: Player = '';
-let moveHistory: string[] = [];
-let moveStack: { board: Board; player: Player }[] = [];
+// Application context - holds all state and dependencies for a single game instance
+// This is injected into functions instead of using globals
+interface GameContext {
+  // Game state
+  board: Board;
+  currentPlayer: Player;
+  gameState: GameState;
+  winner: Player;
+  moveHistory: string[];
+  moveStack: { board: Board; player: Player }[];
 
-// UI references
-let cellButtons: any[] = [];
-let statusLabel: any;
-let historyLabel: any;
-let ttsToggle: any;
-let contrastToggle: any;
-let fontToggle: any;
-let accessibilityManager: any;
-let appContext: any;
+  // UI references
+  cellButtons: any[];
+  statusLabel: any;
+  historyLabel: any;
+  ttsToggle: any;
+  contrastToggle: any;
+  fontToggle: any;
+  appContext: any;
+  accessibilityManager: any;
 
-// Settings
-let ttsEnabled = false;
-let highContrast = false;
-let fontSize: 'small' | 'medium' | 'large' = 'medium';
-let audioFeedback = true;
-let currentFocus = 4; // Start at center cell
+  // Settings
+  ttsEnabled: boolean;
+  highContrast: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+  audioFeedback: boolean;
+  currentFocus: number;
+}
+
+// Factory function to create a fresh context for each game instance
+function createGameContext(): GameContext {
+  return {
+    board: ['', '', '', '', '', '', '', '', ''],
+    currentPlayer: 'X',
+    gameState: 'playing',
+    winner: '',
+    moveHistory: [],
+    moveStack: [],
+    cellButtons: [],
+    statusLabel: null,
+    historyLabel: null,
+    ttsToggle: null,
+    contrastToggle: null,
+    fontToggle: null,
+    appContext: null,
+    accessibilityManager: null,
+    ttsEnabled: false,
+    highContrast: false,
+    fontSize: 'medium',
+    audioFeedback: true,
+    currentFocus: 4,
+  };
+}
 
 // Styles
 const normalStyles = {
@@ -93,9 +123,9 @@ const highContrastStyles = {
 };
 
 // Apply current styles
-function applyStyles() {
-  const baseStyles = highContrast ? highContrastStyles : normalStyles;
-  const fontMultiplier = fontSize === 'small' ? 0.75 : fontSize === 'large' ? 1.5 : 1;
+function applyStyles(ctx: GameContext) {
+  const baseStyles = ctx.highContrast ? highContrastStyles : normalStyles;
+  const fontMultiplier = ctx.fontSize === 'small' ? 0.75 : ctx.fontSize === 'large' ? 1.5 : 1;
 
   styles({
     cell: {
@@ -112,8 +142,8 @@ function applyStyles() {
 }
 
 // Audio feedback
-function playSound(type: 'x' | 'o' | 'win' | 'draw' | 'error' | 'click') {
-  if (!audioFeedback) return;
+function playSound(ctx: GameContext, type: 'x' | 'o' | 'win' | 'draw' | 'error' | 'click') {
+  if (!ctx.audioFeedback) return;
 
   const sounds = {
     x: '✗',      // Lower tone
@@ -130,10 +160,10 @@ function playSound(type: 'x' | 'o' | 'win' | 'draw' | 'error' | 'click') {
 }
 
 // TTS announcements
-function announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
-  if (ttsEnabled && accessibilityManager?.isEnabled()) {
+function announce(ctx: GameContext, message: string, priority: 'polite' | 'assertive' = 'polite') {
+  if (ctx.ttsEnabled && ctx.accessibilityManager?.isEnabled()) {
     // Priority affects how screen readers handle interruption
-    accessibilityManager.announce(message);
+    ctx.accessibilityManager.announce(message);
   }
 }
 
@@ -155,7 +185,7 @@ function getCellCoordinates(index: number): string {
 }
 
 // Check for winner
-function checkWinner(): Player {
+function checkWinner(ctx: GameContext): Player {
   const lines = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
     [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
@@ -163,30 +193,30 @@ function checkWinner(): Player {
   ];
 
   for (const [a, b, c] of lines) {
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return board[a];
+    if (ctx.board[a] && ctx.board[a] === ctx.board[b] && ctx.board[a] === ctx.board[c]) {
+      return ctx.board[a];
     }
   }
   return '';
 }
 
 // Check for draw
-function checkDraw(): boolean {
-  return board.every(cell => cell !== '') && !checkWinner();
+function checkDraw(ctx: GameContext): boolean {
+  return ctx.board.every(cell => cell !== '') && !checkWinner(ctx);
 }
 
 // Get available moves (for hints)
-function getAvailableMoves(): number[] {
-  return board.map((cell, i) => cell === '' ? i : -1).filter(i => i !== -1);
+function getAvailableMoves(ctx: GameContext): number[] {
+  return ctx.board.map((cell, i) => cell === '' ? i : -1).filter(i => i !== -1);
 }
 
 // Simple AI hint (block opponent or take center)
-function getHint(): number {
-  const available = getAvailableMoves();
+function getHint(ctx: GameContext): number {
+  const available = getAvailableMoves(ctx);
   if (available.length === 0) return -1;
 
   // Check if we can win
-  const opponent = currentPlayer === 'X' ? 'O' : 'X';
+  const opponent = ctx.currentPlayer === 'X' ? 'O' : 'X';
   const lines = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -195,18 +225,18 @@ function getHint(): number {
 
   // Block opponent's win
   for (const [a, b, c] of lines) {
-    const cells = [board[a], board[b], board[c]];
+    const cells = [ctx.board[a], ctx.board[b], ctx.board[c]];
     if (cells.filter(x => x === opponent).length === 2 && cells.includes('')) {
-      const emptyIndex = [a, b, c].find(i => board[i] === '');
+      const emptyIndex = [a, b, c].find(i => ctx.board[i] === '');
       if (emptyIndex !== undefined) return emptyIndex;
     }
   }
 
   // Take center if available
-  if (board[4] === '') return 4;
+  if (ctx.board[4] === '') return 4;
 
   // Take a corner
-  const corners = [0, 2, 6, 8].filter(i => board[i] === '');
+  const corners = [0, 2, 6, 8].filter(i => ctx.board[i] === '');
   if (corners.length > 0) return corners[0];
 
   // Take any available
@@ -214,173 +244,173 @@ function getHint(): number {
 }
 
 // Update cell display
-function updateCell(index: number) {
-  if (cellButtons[index]) {
-    const value = board[index] || ' ';
-    cellButtons[index].setText(value);
+function updateCell(ctx: GameContext, index: number) {
+  if (ctx.cellButtons[index]) {
+    const value = ctx.board[index] || ' ';
+    ctx.cellButtons[index].setText(value);
   }
 }
 
 // Update status display
-function updateStatus() {
+function updateStatus(ctx: GameContext) {
   let statusText = '';
 
-  if (gameState === 'won') {
-    statusText = `Player ${winner} wins! 🎉`;
-  } else if (gameState === 'draw') {
+  if (ctx.gameState === 'won') {
+    statusText = `Player ${ctx.winner} wins! 🎉`;
+  } else if (ctx.gameState === 'draw') {
     statusText = `Game drawn! 🤝`;
   } else {
-    statusText = `Player ${currentPlayer}'s turn`;
+    statusText = `Player ${ctx.currentPlayer}'s turn`;
   }
 
-  if (statusLabel) {
-    statusLabel.setText(statusText);
+  if (ctx.statusLabel) {
+    ctx.statusLabel.setText(statusText);
   }
 }
 
 // Update history display
-function updateHistory() {
-  if (historyLabel) {
-    const historyText = moveHistory.length > 0
-      ? `Moves:\n${moveHistory.join('\n')}`
+function updateHistory(ctx: GameContext) {
+  if (ctx.historyLabel) {
+    const historyText = ctx.moveHistory.length > 0
+      ? `Moves:\n${ctx.moveHistory.join('\n')}`
       : 'No moves yet';
-    historyLabel.setText(historyText);
+    ctx.historyLabel.setText(historyText);
   }
 }
 
 // Make a move
-function makeMove(index: number) {
-  if (gameState !== 'playing') {
-    announce('Game is over. Press New Game to play again.', 'assertive');
-    playSound('error');
+function makeMove(ctx: GameContext, index: number) {
+  if (ctx.gameState !== 'playing') {
+    announce(ctx, 'Game is over. Press New Game to play again.', 'assertive');
+    playSound(ctx, 'error');
     return;
   }
 
-  if (board[index] !== '') {
-    announce('Cell is already occupied. Choose another cell.', 'assertive');
-    playSound('error');
+  if (ctx.board[index] !== '') {
+    announce(ctx, 'Cell is already occupied. Choose another cell.', 'assertive');
+    playSound(ctx, 'error');
     return;
   }
 
   // Save state for undo
-  moveStack.push({
-    board: [...board],
-    player: currentPlayer
+  ctx.moveStack.push({
+    board: [...ctx.board],
+    player: ctx.currentPlayer
   });
 
   // Make the move
-  board[index] = currentPlayer;
-  updateCell(index);
+  ctx.board[index] = ctx.currentPlayer;
+  updateCell(ctx, index);
 
   // Play sound
-  playSound(currentPlayer.toLowerCase() as 'x' | 'o');
+  playSound(ctx, ctx.currentPlayer.toLowerCase() as 'x' | 'o');
 
   // Add to history
-  const moveDesc = `${currentPlayer} at ${getCellDescription(index)} (${getCellCoordinates(index)})`;
-  moveHistory.push(moveDesc);
-  updateHistory();
+  const moveDesc = `${ctx.currentPlayer} at ${getCellDescription(index)} (${getCellCoordinates(index)})`;
+  ctx.moveHistory.push(moveDesc);
+  updateHistory(ctx);
 
   // Announce move
-  announce(`${currentPlayer} placed at ${getCellDescription(index)}`);
+  announce(ctx, `${ctx.currentPlayer} placed at ${getCellDescription(index)}`);
 
   // Check for winner
-  winner = checkWinner();
-  if (winner) {
-    gameState = 'won';
-    updateStatus();
-    playSound('win');
-    announce(`Player ${winner} wins the game!`, 'assertive');
+  ctx.winner = checkWinner(ctx);
+  if (ctx.winner) {
+    ctx.gameState = 'won';
+    updateStatus(ctx);
+    playSound(ctx, 'win');
+    announce(ctx, `Player ${ctx.winner} wins the game!`, 'assertive');
     return;
   }
 
   // Check for draw
-  if (checkDraw()) {
-    gameState = 'draw';
-    updateStatus();
-    playSound('draw');
-    announce('Game is drawn. No more moves available.', 'assertive');
+  if (checkDraw(ctx)) {
+    ctx.gameState = 'draw';
+    updateStatus(ctx);
+    playSound(ctx, 'draw');
+    announce(ctx, 'Game is drawn. No more moves available.', 'assertive');
     return;
   }
 
   // Switch player
-  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-  updateStatus();
-  announce(`Player ${currentPlayer}'s turn`, 'polite');
+  ctx.currentPlayer = ctx.currentPlayer === 'X' ? 'O' : 'X';
+  updateStatus(ctx);
+  announce(ctx, `Player ${ctx.currentPlayer}'s turn`, 'polite');
 }
 
 // Reset game
-function newGame() {
-  board = ['', '', '', '', '', '', '', '', ''];
-  currentPlayer = 'X';
-  gameState = 'playing';
-  winner = '';
-  moveHistory = [];
-  moveStack = [];
+function newGame(ctx: GameContext) {
+  ctx.board = ['', '', '', '', '', '', '', '', ''];
+  ctx.currentPlayer = 'X';
+  ctx.gameState = 'playing';
+  ctx.winner = '';
+  ctx.moveHistory = [];
+  ctx.moveStack = [];
 
   // Update display
   for (let i = 0; i < 9; i++) {
-    updateCell(i);
+    updateCell(ctx, i);
   }
-  updateStatus();
-  updateHistory();
+  updateStatus(ctx);
+  updateHistory(ctx);
 
-  playSound('click');
-  announce('New game started. Player X goes first.', 'assertive');
+  playSound(ctx, 'click');
+  announce(ctx, 'New game started. Player X goes first.', 'assertive');
 }
 
 // Undo last move
-function undoMove() {
-  if (moveStack.length === 0) {
-    announce('No moves to undo.', 'assertive');
-    playSound('error');
+function undoMove(ctx: GameContext) {
+  if (ctx.moveStack.length === 0) {
+    announce(ctx, 'No moves to undo.', 'assertive');
+    playSound(ctx, 'error');
     return;
   }
 
-  const lastState = moveStack.pop()!;
-  board = lastState.board;
-  currentPlayer = lastState.player;
-  gameState = 'playing';
-  winner = '';
+  const lastState = ctx.moveStack.pop()!;
+  ctx.board = lastState.board;
+  ctx.currentPlayer = lastState.player;
+  ctx.gameState = 'playing';
+  ctx.winner = '';
 
   // Update display
   for (let i = 0; i < 9; i++) {
-    updateCell(i);
+    updateCell(ctx, i);
   }
 
   // Remove last move from history
-  moveHistory.pop();
-  updateHistory();
-  updateStatus();
+  ctx.moveHistory.pop();
+  updateHistory(ctx);
+  updateStatus(ctx);
 
-  playSound('click');
-  announce(`Move undone. ${currentPlayer}'s turn again.`, 'assertive');
+  playSound(ctx, 'click');
+  announce(ctx, `Move undone. ${ctx.currentPlayer}'s turn again.`, 'assertive');
 }
 
 // Get hint
-function showHint() {
-  if (gameState !== 'playing') {
-    announce('Game is over.', 'assertive');
+function showHint(ctx: GameContext) {
+  if (ctx.gameState !== 'playing') {
+    announce(ctx, 'Game is over.', 'assertive');
     return;
   }
 
-  const hintIndex = getHint();
+  const hintIndex = getHint(ctx);
   if (hintIndex === -1) {
-    announce('No moves available.', 'assertive');
+    announce(ctx, 'No moves available.', 'assertive');
     return;
   }
 
   const position = getCellDescription(hintIndex);
-  announce(`Hint: Try placing at ${position}`, 'assertive');
-  playSound('click');
+  announce(ctx, `Hint: Try placing at ${position}`, 'assertive');
+  playSound(ctx, 'click');
 
   // Briefly highlight the suggested cell (in a real implementation)
-  currentFocus = hintIndex;
+  ctx.currentFocus = hintIndex;
 }
 
 // Keyboard navigation
-function moveFocus(direction: 'up' | 'down' | 'left' | 'right') {
-  const row = Math.floor(currentFocus / 3);
-  const col = currentFocus % 3;
+function moveFocus(ctx: GameContext, direction: 'up' | 'down' | 'left' | 'right') {
+  const row = Math.floor(ctx.currentFocus / 3);
+  const col = ctx.currentFocus % 3;
 
   let newRow = row;
   let newCol = col;
@@ -390,90 +420,111 @@ function moveFocus(direction: 'up' | 'down' | 'left' | 'right') {
   if (direction === 'left') newCol = Math.max(0, col - 1);
   if (direction === 'right') newCol = Math.min(2, col + 1);
 
-  currentFocus = newRow * 3 + newCol;
+  ctx.currentFocus = newRow * 3 + newCol;
 
   // Announce new position
-  const position = getCellDescription(currentFocus);
-  const cellValue = board[currentFocus] || 'empty';
-  announce(`Focused on ${position}, currently ${cellValue}`, 'polite');
+  const position = getCellDescription(ctx.currentFocus);
+  const cellValue = ctx.board[ctx.currentFocus] || 'empty';
+  announce(ctx, `Focused on ${position}, currently ${cellValue}`, 'polite');
 }
 
-// Accessibility toggles
-function toggleTTS() {
-  if (!accessibilityManager) return;
-
-  accessibilityManager.toggle();
-  ttsEnabled = accessibilityManager.isEnabled();
-
-  if (ttsToggle) {
-    const status = ttsEnabled ? "ON" : "OFF";
-    ttsToggle.setText(`TTS: ${status}`);
-  }
-
-  announce(ttsEnabled ? "Text to speech enabled" : "Text to speech disabled", 'assertive');
-}
-
-async function toggleHighContrast() {
-  highContrast = !highContrast;
-
-  if (contrastToggle) {
-    const status = highContrast ? "ON" : "OFF";
-    contrastToggle.setText(`High Contrast: ${status}`);
-  }
-
-  // Update global stylesheet
-  applyStyles();
-
-  // Refresh all widget styles to apply the new theme
-  for (const cellButton of cellButtons) {
-    if (cellButton) {
-      await cellButton.refreshStyles();
+// Factory function to create a TTS toggle that closes over the context
+function createToggleTTS(ctx: GameContext) {
+  return () => {
+    if (!ctx.accessibilityManager) {
+      return;
     }
-  }
 
-  if (statusLabel) await statusLabel.refreshStyles();
-  if (historyLabel) await historyLabel.refreshStyles();
-  if (contrastToggle) await contrastToggle.refreshStyles();
-  if (ttsToggle) await ttsToggle.refreshStyles();
-  if (fontToggle) await fontToggle.refreshStyles();
+    ctx.accessibilityManager.toggle();
+    ctx.ttsEnabled = ctx.accessibilityManager.isEnabled();
 
-  announce(highContrast ? "High contrast mode enabled" : "High contrast mode disabled", 'assertive');
-  playSound('click');
+    if (ctx.ttsToggle) {
+      const status = ctx.ttsEnabled ? "ON" : "OFF";
+      ctx.ttsToggle.setText(`TTS: ${status}`);
+    }
+
+    announce(ctx, ctx.ttsEnabled ? "Text to speech enabled" : "Text to speech disabled", 'assertive');
+  };
 }
 
-async function cycleFontSize() {
-  fontSize = fontSize === 'medium' ? 'large' : fontSize === 'large' ? 'small' : 'medium';
+// Factory function to create high contrast toggle
+function createToggleHighContrast(ctx: GameContext) {
+  return async () => {
+    ctx.highContrast = !ctx.highContrast;
 
-  if (fontToggle) {
-    const sizeLabel = fontSize === 'small' ? 'A-' : fontSize === 'large' ? 'A+' : 'A';
-    fontToggle.setText(`Font: ${sizeLabel}`);
-  }
+    if (ctx.contrastToggle) {
+      const status = ctx.highContrast ? "ON" : "OFF";
+      ctx.contrastToggle.setText(`High Contrast: ${status}`);
+    }
 
-  // Calculate font scale: small = 0.75, medium = 1.0, large = 1.5
-  const fontScale = fontSize === 'small' ? 0.75 : fontSize === 'large' ? 1.5 : 1.0;
+    // Update global stylesheet
+    applyStyles(ctx);
 
-  // Update theme font scale (this affects all widgets globally)
-  if (appContext) {
-    await appContext.bridge.send('setFontScale', { scale: fontScale });
-  }
+    // Refresh all widget styles to apply the new theme
+    for (const cellButton of ctx.cellButtons) {
+      if (cellButton) {
+        await cellButton.refreshStyles();
+      }
+    }
 
-  announce(`Font size: ${fontSize}`, 'polite');
-  playSound('click');
+    if (ctx.statusLabel) await ctx.statusLabel.refreshStyles();
+    if (ctx.historyLabel) await ctx.historyLabel.refreshStyles();
+    if (ctx.contrastToggle) await ctx.contrastToggle.refreshStyles();
+    if (ctx.ttsToggle) await ctx.ttsToggle.refreshStyles();
+    if (ctx.fontToggle) await ctx.fontToggle.refreshStyles();
+
+    announce(ctx, ctx.highContrast ? "High contrast mode enabled" : "High contrast mode disabled", 'assertive');
+    playSound(ctx, 'click');
+  };
+}
+
+// Factory function to create font size cycle toggle
+function createCycleFontSize(ctx: GameContext) {
+  return async () => {
+    ctx.fontSize = ctx.fontSize === 'medium' ? 'large' : ctx.fontSize === 'large' ? 'small' : 'medium';
+
+    if (ctx.fontToggle) {
+      const sizeLabel = ctx.fontSize === 'small' ? 'A-' : ctx.fontSize === 'large' ? 'A+' : 'A';
+      ctx.fontToggle.setText(`Font: ${sizeLabel}`);
+    }
+
+    // Calculate font scale: small = 0.75, medium = 1.0, large = 1.5
+    const fontScale = ctx.fontSize === 'small' ? 0.75 : ctx.fontSize === 'large' ? 1.5 : 1.0;
+
+    // Update theme font scale (this affects all widgets globally)
+    if (ctx.appContext) {
+      await ctx.appContext.bridge.send('setFontScale', { scale: fontScale });
+    }
+
+    announce(ctx, `Font size: ${ctx.fontSize}`, 'polite');
+    playSound(ctx, 'click');
+  };
 }
 
 // Build the UI
 export function buildTicTacToe(a: any) {
-// console.log("[DEBUG] buildTicTacToe called");
-  applyStyles();
-// console.log("[DEBUG] Styles applied");
+  // Create a fresh game context for this instance (fixes test isolation)
+  const ctx = createGameContext();
+  ctx.appContext = (a as any).ctx;
+  ctx.accessibilityManager = getAccessibilityManager(ctx.appContext);
+
+  // Create bound versions of game functions that use this context
+  // This is dependency injection - functions close over the context
+  const makeMoveBound = (index: number) => makeMove(ctx, index);
+  const newGameBound = () => newGame(ctx);
+  const undoMoveBound = () => undoMove(ctx);
+  const showHintBound = () => showHint(ctx);
+  const toggleTTSBound = () => createToggleTTS(ctx)();
+  const toggleHighContrastBound = () => createToggleHighContrast(ctx)();
+  const cycleFontSizeBound = () => createCycleFontSize(ctx)();
+
+  applyStyles(ctx);
 
   a.window({ title: "Accessible Tic-Tac-Toe" }, () => {
-// console.log("[DEBUG] Window created");
     a.vbox(() => {
-// console.log("[DEBUG] Creating accessibility controls...");
       // Accessibility controls
       a.hbox(() => {
-        ttsToggle = a.button("TTS: OFF", () => toggleTTS(), "control")
+        ctx.ttsToggle = a.button("TTS: OFF", "control").onClick(toggleTTSBound)
           .withId('ttsToggle')
           .accessibility({
             label: "Text-to-Speech Toggle",
@@ -482,7 +533,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press T to toggle"
           });
 
-        contrastToggle = a.button("High Contrast: OFF", () => toggleHighContrast(), "control")
+        ctx.contrastToggle = a.button("High Contrast: OFF", "control").onClick(toggleHighContrastBound)
           .withId('contrastToggle')
           .accessibility({
             label: "High Contrast Mode",
@@ -491,7 +542,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press H to toggle"
           });
 
-        fontToggle = a.button("Font: A", () => cycleFontSize(), "control")
+        ctx.fontToggle = a.button("Font: A", "control").onClick(cycleFontSizeBound)
           .withId('fontToggle')
           .accessibility({
             label: "Font Size",
@@ -500,11 +551,9 @@ export function buildTicTacToe(a: any) {
             hint: "Press F to cycle"
           });
       });
-// console.log("[DEBUG] Accessibility controls created");
 
       // Status display
-// console.log("[DEBUG] Creating status label...");
-      statusLabel = a.label("Player X's turn", "status")
+      ctx.statusLabel = a.label("Player X's turn", "status")
         .withId('status')
         .accessibility({
           label: "Game Status",
@@ -513,13 +562,12 @@ export function buildTicTacToe(a: any) {
         });
 
       // Game board - 3x3 grid
-// console.log("[DEBUG] Creating game board grid...");
       a.grid(3, () => {
         for (let i = 0; i < 9; i++) {
           const position = getCellDescription(i);
           const coords = getCellCoordinates(i);
 
-          const cellButton = a.button(" ", () => makeMove(i), "cell")
+          const cellButton = a.button(" ", "cell").onClick(() => makeMoveBound(i))
             .withId(`cell${i}`)
             .accessibility({
               label: position,
@@ -528,7 +576,7 @@ export function buildTicTacToe(a: any) {
               hint: `\${label} position. Use arrow keys to navigate.`
             });
 
-          cellButtons[i] = cellButton;
+          ctx.cellButtons[i] = cellButton;
         }
       })
         .withId('gameGrid')
@@ -539,7 +587,7 @@ export function buildTicTacToe(a: any) {
 
       // Game controls
       a.hbox(() => {
-        a.button("New Game", () => newGame())
+        a.button("New Game").onClick(newGameBound)
           .withId('newGame')
           .accessibility({
             label: "New Game",
@@ -548,7 +596,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press N to start a new game"
           });
 
-        a.button("Undo", () => undoMove())
+        a.button("Undo").onClick(undoMoveBound)
           .withId('undo')
           .accessibility({
             label: "Undo Move",
@@ -557,7 +605,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press U to undo. Only available during gameplay."
           });
 
-        a.button("Hint", () => showHint())
+        a.button("Hint").onClick(showHintBound)
           .withId('hint')
           .accessibility({
             label: "Get Hint",
@@ -566,7 +614,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press ? for a hint"
           });
 
-        a.button("Show Source", () => a.showSource(__filename))
+        a.button("Show Source").onClick(() => a.showSource(__filename))
           .withId('showSource')
           .accessibility({
             label: "Show Source Code",
@@ -577,18 +625,15 @@ export function buildTicTacToe(a: any) {
       });
 
       // Move history
-      historyLabel = a.label("No moves yet", "history")
+      ctx.historyLabel = a.label("No moves yet", "history")
         .withId('history')
         .accessibility({
           label: "Move History",
           description: "List of all moves made in the game",
           role: "log"
         });
-// console.log("[DEBUG] UI building complete");
     });
-// console.log("[DEBUG] VBox complete");
   });
-// console.log("[DEBUG] Window complete, buildTicTacToe finished");
 }
 
 // Keyboard shortcuts
@@ -610,27 +655,15 @@ function setupKeyboardShortcuts() {
 
 // Run directly when executed as main script
 if (require.main === module) {
-// console.log("[DEBUG] Starting app creation...");
-
-  // Create app with a wrapper that initializes accessibility BEFORE building UI
+  // Create app and build the game UI
+  // Note: buildTicTacToe creates its own isolated game context for each instance,
+  // which prevents test isolation issues
   const myApp = app({ title: "Accessible Tic-Tac-Toe" }, (a) => {
-    // Store the app context for use in helper functions
-    appContext = (a as any).ctx;
-// console.log("[DEBUG] App context stored");
-
-    // Initialize the accessibility manager BEFORE building UI
-    // This ensures it's listening for accessibilityRegistered events
-    accessibilityManager = getAccessibilityManager(appContext);
-// console.log("[DEBUG] Accessibility manager initialized BEFORE UI build");
-
-    // Now build the UI
     buildTicTacToe(a);
   });
-// console.log("[DEBUG] App created successfully");
 
   // Setup keyboard shortcuts
   setupKeyboardShortcuts();
-// console.log("[DEBUG] Keyboard shortcuts setup complete");
 
 // console.log("\n=== Accessible Tic-Tac-Toe ===");
 // console.log("Accessibility Features:");

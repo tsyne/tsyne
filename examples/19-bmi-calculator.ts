@@ -77,14 +77,14 @@ app({ title: 'BMI Calculator' }, (a) => {
 
         // Unit toggle
         a.hbox(() => {
-          a.button(useMetric ? '✓ Metric' : 'Metric', () => {
+          a.button(useMetric ? '✓ Metric' : 'Metric').onClick(() => {
             useMetric = true;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
           });
 
-          a.button(!useMetric ? '✓ Imperial' : 'Imperial', () => {
+          a.button(!useMetric ? '✓ Imperial' : 'Imperial').onClick(() => {
             useMetric = false;
             updateHeightDisplay();
             updateWeightDisplay();
@@ -146,14 +146,14 @@ app({ title: 'BMI Calculator' }, (a) => {
 
         // Unit toggle
         a.hbox(() => {
-          a.button(useMetric ? '✓ Metric' : 'Metric', () => {
+          a.button(useMetric ? '✓ Metric' : 'Metric').onClick(() => {
             useMetric = true;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
           });
 
-          a.button(!useMetric ? '✓ Imperial' : 'Imperial', () => {
+          a.button(!useMetric ? '✓ Imperial' : 'Imperial').onClick(() => {
             useMetric = false;
             updateHeightDisplay();
             updateWeightDisplay();

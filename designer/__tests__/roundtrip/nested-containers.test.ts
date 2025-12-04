@@ -25,7 +25,7 @@ app({ title: 'Button Demo' }, (a) => {
       a.vbox(() => {
         label = a.label("I'm Waiting ...");
         a.label(''); // Spacer equivalent
-        a.button('Click here', async () => {
+        a.button('Click here').onClick(async () => {
           await label.setText('Finally ...');
         });
       });
@@ -50,7 +50,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label("Waiting");
-        a.button('Click', async () => {});
+        a.button('Click').onClick(async () => {});
       });
     });
     win.show();
@@ -74,7 +74,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label("Waiting");
-        a.button('Click', async () => {}).withId('clickButton');
+        a.button('Click').onClick(async () => {}).withId('clickButton');
       }).withId('mainContainer');
     });
     win.show();

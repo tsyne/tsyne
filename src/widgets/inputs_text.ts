@@ -5,19 +5,11 @@ import { Widget } from './base';
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, onClick?: () => void | Promise<void>, className?: string) {
+  constructor(ctx: Context, text: string, className?: string) {
     const id = ctx.generateId('button');
     super(ctx, id);
 
     const payload: any = { id, text };
-
-    if (onClick) {
-      const callbackId = ctx.generateId('callback');
-      payload.callbackId = callbackId;
-      ctx.bridge.registerEventHandler(callbackId, async () => {
-        await onClick();
-      });
-    }
 
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id);
@@ -27,6 +19,25 @@ export class Button extends Widget {
     } else {
       this.applyStyles('button').catch(() => {});
     }
+  }
+
+  onClick(callback: (this: Button) => void | Promise<void>): this {
+    const callbackId = this.ctx.generateId('callback');
+
+    // Register callback with 'this' bound to the button instance
+    this.ctx.bridge.registerEventHandler(callbackId, async () => {
+      await callback.call(this);
+    });
+
+    // Tell the bridge to use this callback ID for this button
+    this.ctx.bridge.send('setWidgetCallback', {
+      widgetId: this.id,
+      callbackId
+    }).catch(() => {
+      // If send fails, the handler is still registered, just won't be triggered
+    });
+
+    return this;
   }
 
   async disable(): Promise<void> {

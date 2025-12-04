@@ -66,7 +66,7 @@ describe('Tip Calculator Example', () => {
 
             app.label('Split Between:');
             app.hbox(() => {
-              app.button('-', () => {
+              app.button('-').onClick(() => {
                 if (numPeople > 1) {
                   numPeople--;
                   peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
@@ -76,7 +76,7 @@ describe('Tip Calculator Example', () => {
 
               const peopleLabel = app.label('1 person');
 
-              app.button('+', () => {
+              app.button('+').onClick(() => {
                 numPeople++;
                 peopleLabel.setText(`${numPeople} people`);
                 calculate();
@@ -93,7 +93,7 @@ describe('Tip Calculator Example', () => {
 
             app.separator();
 
-            app.button('Clear', () => {
+            app.button('Clear').onClick(() => {
               billAmount = 0;
               tipPercent = 15;
               numPeople = 1;
@@ -153,7 +153,7 @@ describe('Tip Calculator Example', () => {
             app.label('💵 Tip Calculator 💵');
 
             app.hbox(() => {
-              app.button('-', () => {
+              app.button('-').onClick(() => {
                 if (numPeople > 1) {
                   numPeople--;
                   peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
@@ -163,7 +163,7 @@ describe('Tip Calculator Example', () => {
 
               const peopleLabel = app.label('1 person');
 
-              app.button('+', () => {
+              app.button('+').onClick(() => {
                 numPeople++;
                 peopleLabel.setText(`${numPeople} people`);
                 calculate();

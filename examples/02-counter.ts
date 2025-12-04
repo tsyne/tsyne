@@ -15,17 +15,17 @@ app({ title: 'Counter' }, (a) => {
         countLabel = a.label(`Count: ${count}`);
 
         a.hbox(() => {
-          a.button('Decrement', async () => {
+          a.button('Decrement').onClick(async () => {
             count--;
             await countLabel.setText(`Count: ${count}`);
           });
 
-          a.button('Reset', async () => {
+          a.button('Reset').onClick(async () => {
             count = 0;
             await countLabel.setText(`Count: ${count}`);
           });
 
-          a.button('Increment', async () => {
+          a.button('Increment').onClick(async () => {
             count++;
             await countLabel.setText(`Count: ${count}`);
           });

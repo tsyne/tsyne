@@ -249,7 +249,7 @@ export function buildFullyAccessibleCalculator(a: any) {
     a.vbox(() => {
       // Accessibility controls
       a.hbox(() => {
-        toggleButton = a.button("TTS: OFF", () => toggleAccessibility(), "controlButton")
+        toggleButton = a.button("TTS: OFF").onClick(() => toggleAccessibility(), "controlButton")
           .withId('ttsToggle')
           .accessibility({
             label: "Text-to-Speech Toggle",
@@ -258,7 +258,7 @@ export function buildFullyAccessibleCalculator(a: any) {
             hint: "Press T to toggle, or click"
           });
 
-        contrastButton = a.button("High Contrast: OFF", () => toggleHighContrast(), "controlButton")
+        contrastButton = a.button("High Contrast: OFF").onClick(() => toggleHighContrast(), "controlButton")
           .withId('contrastToggle')
           .accessibility({
             label: "High Contrast Mode Toggle",
@@ -267,7 +267,7 @@ export function buildFullyAccessibleCalculator(a: any) {
             hint: "Press H to toggle, or click"
           });
 
-        fontSizeButton = a.button("Font: A", () => cycleFontSize(), "controlButton")
+        fontSizeButton = a.button("Font: A").onClick(() => cycleFontSize(), "controlButton")
           .withId('fontSizeToggle')
           .accessibility({
             label: "Font Size Control",
@@ -291,7 +291,7 @@ export function buildFullyAccessibleCalculator(a: any) {
       a.grid(4, () => {
         // Row 1: 7, 8, 9, ÷
         [..."789"].forEach(n =>
-          a.button(n, () => handleNumber(n), "button")
+          a.button(n).onClick(() => handleNumber(n), "button")
             .withId(`btn${n}`)
             .accessibility({
               label: `Number ${n}`,
@@ -300,7 +300,7 @@ export function buildFullyAccessibleCalculator(a: any) {
               hint: `Press ${n} key on keyboard or click`
             })
         );
-        a.button("÷", () => handleOperator("/", "divide"), "button")
+        a.button("÷", "divide").onClick(() => handleOperator("/"), "button")
           .withId('btnDivide')
           .accessibility({
             label: "Divide",
@@ -311,7 +311,7 @@ export function buildFullyAccessibleCalculator(a: any) {
 
         // Row 2: 4, 5, 6, ×
         [..."456"].forEach(n =>
-          a.button(n, () => handleNumber(n), "button")
+          a.button(n).onClick(() => handleNumber(n), "button")
             .withId(`btn${n}`)
             .accessibility({
               label: `Number ${n}`,
@@ -320,7 +320,7 @@ export function buildFullyAccessibleCalculator(a: any) {
               hint: `Press ${n} key on keyboard or click`
             })
         );
-        a.button("×", () => handleOperator("*", "multiply"), "button")
+        a.button("×", "multiply").onClick(() => handleOperator("*"), "button")
           .withId('btnMultiply')
           .accessibility({
             label: "Multiply",
@@ -331,7 +331,7 @@ export function buildFullyAccessibleCalculator(a: any) {
 
         // Row 3: 1, 2, 3, -
         [..."123"].forEach(n =>
-          a.button(n, () => handleNumber(n), "button")
+          a.button(n).onClick(() => handleNumber(n), "button")
             .withId(`btn${n}`)
             .accessibility({
               label: `Number ${n}`,
@@ -340,7 +340,7 @@ export function buildFullyAccessibleCalculator(a: any) {
               hint: `Press ${n} key on keyboard or click`
             })
         );
-        a.button("-", () => handleOperator("-", "subtract"), "button")
+        a.button("-", "subtract").onClick(() => handleOperator("-"), "button")
           .withId('btnSubtract')
           .accessibility({
             label: "Subtract",
@@ -350,7 +350,7 @@ export function buildFullyAccessibleCalculator(a: any) {
           });
 
         // Row 4: 0, Clear, =, +
-        a.button("0", () => handleNumber("0"), "button")
+        a.button("0").onClick(() => handleNumber("0"), "button")
           .withId('btn0')
           .accessibility({
             label: "Number 0",
@@ -358,7 +358,7 @@ export function buildFullyAccessibleCalculator(a: any) {
             role: "button",
             hint: "Press 0 key on keyboard or click"
           });
-        a.button("Clear", () => clear(), "button")
+        a.button("Clear").onClick(() => clear(), "button")
           .withId('btnClear')
           .accessibility({
             label: "Clear",
@@ -366,7 +366,7 @@ export function buildFullyAccessibleCalculator(a: any) {
             role: "button",
             hint: "Press C or Escape key to clear, or click"
           });
-        a.button("=", () => calculate(), "button")
+        a.button("=").onClick(() => calculate(), "button")
           .withId('btnEquals')
           .accessibility({
             label: "Equals",
@@ -374,7 +374,7 @@ export function buildFullyAccessibleCalculator(a: any) {
             role: "button",
             hint: "Press = or Enter key to calculate, or click"
           });
-        a.button("+", () => handleOperator("+", "add"), "button")
+        a.button("+", "add").onClick(() => handleOperator("+"), "button")
           .withId('btnAdd')
           .accessibility({
             label: "Add",

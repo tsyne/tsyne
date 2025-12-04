@@ -292,7 +292,6 @@ if [ -f "package.json" ]; then
     else
       echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
     fi
-    capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json"
   }
   capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
 
@@ -304,7 +303,6 @@ if [ -f "package.json" ]; then
     else
       echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
     fi
-    capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json"
   }
   capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
 else

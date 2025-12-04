@@ -29,11 +29,11 @@ describe('meSpeak TTS Integration', () => {
     await testApp.run();
 
     // Wait for UI to be ready
-    await ctx.getByID('ttsToggle').within(500).shouldContain('OFF');
+    await ctx.getByExactText('TTS: OFF').within(500).shouldExist();
 
-    // Enable TTS mode
-    await ctx.getByID('ttsToggle').click();
-    await ctx.getByID('ttsToggle').within(500).shouldContain('ON');
+    // Enable TTS mode - click by text label using getByExactText
+    await ctx.getByExactText('TTS: OFF').click();
+    await ctx.getByExactText('TTS: ON').within(500).shouldExist();
 
     // Make some moves - TTS should announce them
     await ctx.getByID('cell0').click();  // X in top left
@@ -57,11 +57,11 @@ describe('meSpeak TTS Integration', () => {
     await testApp.run();
 
     // Wait for UI to be ready
-    await ctx.getByID('ttsToggle').within(500).shouldContain('OFF');
+    await ctx.getByExactText('TTS: OFF').within(500).shouldExist();
 
-    // Enable TTS
-    await ctx.getByID('ttsToggle').click();
-    await ctx.getByID('ttsToggle').within(500).shouldContain('ON');
+    // Enable TTS - click by text label using getByExactText
+    await ctx.getByExactText('TTS: OFF').click();
+    await ctx.getByExactText('TTS: ON').within(500).shouldExist();
 
     // Make multiple moves - each should be announced
     await ctx.getByID('cell4').click();  // X in center

@@ -101,7 +101,7 @@ describe('Clip Container', () => {
           app.clip(() => {
             app.vbox(() => {
               app.label('Click the button below:');
-              app.button('Click Me', () => {
+              app.button('Click Me').onClick(() => {
                 buttonClicked = true;
               });
             });

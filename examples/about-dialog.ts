@@ -21,7 +21,7 @@ app({ title: 'About Dialog Demo' }, (a) => {
         a.separator();
 
         // Button to show a simple About dialog
-        a.button('Show About Dialog', async () => {
+        a.button('Show About Dialog').onClick(async () => {
           await win.showCustom('About ' + APP_NAME, () => {
             a.vbox(() => {
               a.center(() => {
@@ -40,7 +40,7 @@ app({ title: 'About Dialog Demo' }, (a) => {
         });
 
         // Button to show a custom confirm dialog
-        a.button('Show License Agreement', async () => {
+        a.button('Show License Agreement').onClick(async () => {
           const accepted = await win.showCustomConfirm(
             'License Agreement',
             () => {
@@ -74,7 +74,7 @@ app({ title: 'About Dialog Demo' }, (a) => {
         });
 
         // Button to show a feature dialog with rich content
-        a.button('Show Features', async () => {
+        a.button('Show Features').onClick(async () => {
           await win.showCustom(
             'Features',
             () => {
@@ -111,7 +111,7 @@ app({ title: 'About Dialog Demo' }, (a) => {
         a.separator();
 
         // Button to show a settings-like dialog
-        a.button('Edit Settings', async () => {
+        a.button('Edit Settings').onClick(async () => {
           const confirmed = await win.showCustomConfirm(
             'Settings',
             () => {

@@ -55,7 +55,7 @@ app({ title: 'Font Preview' }, () => {
 
         label('');
         hbox(() => {
-          button('Load Font', async () => {
+          button('Load Font').onClick(async () => {
             const path = await fontPathEntry.getText();
             const style = await styleSelect.getSelected();
             try {
@@ -66,13 +66,13 @@ app({ title: 'Font Preview' }, () => {
             }
           });
 
-          button('Clear Font', async () => {
+          button('Clear Font').onClick(async () => {
             const style = await styleSelect.getSelected();
             await clearCustomFont(style as any);
             statusLabel.setText(`Cleared ${style} font`);
           });
 
-          button('Clear All Fonts', async () => {
+          button('Clear All Fonts').onClick(async () => {
             await clearCustomFont('all');
             statusLabel.setText('Cleared all custom fonts');
           });
@@ -92,17 +92,17 @@ app({ title: 'Font Preview' }, () => {
         });
 
         hbox(() => {
-          button('Small (0.75x)', async () => {
+          button('Small (0.75x)').onClick(async () => {
             await setFontScale(0.75);
             scaleLabel.setText('Scale: 0.75x');
             statusLabel.setText('Font scale set to 0.75x (small)');
           });
-          button('Normal (1.0x)', async () => {
+          button('Normal (1.0x)').onClick(async () => {
             await setFontScale(1.0);
             scaleLabel.setText('Scale: 1.0x');
             statusLabel.setText('Font scale set to 1.0x (normal)');
           });
-          button('Large (1.5x)', async () => {
+          button('Large (1.5x)').onClick(async () => {
             await setFontScale(1.5);
             scaleLabel.setText('Scale: 1.5x');
             statusLabel.setText('Font scale set to 1.5x (large)');
@@ -131,7 +131,7 @@ app({ title: 'Font Preview' }, () => {
 
         // Font info section
         label('Font Information:');
-        button('Show Font Locations', async () => {
+        button('Show Font Locations').onClick(async () => {
           try {
             const fontInfo = await getAvailableFonts();
             const platform = process.platform === 'darwin' ? 'darwin'

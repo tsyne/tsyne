@@ -58,7 +58,7 @@ describe('Drawing App Example', () => {
             currentColorLabel = app.label(currentColor);
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Pick Color', async () => {
+            app.button('Pick Color').onClick(async () => {
               const result = await win.showColorPicker('Choose Color', currentColor);
               if (result) {
                 currentColor = result.hex;
@@ -66,7 +66,7 @@ describe('Drawing App Example', () => {
               }
             });
 
-            app.button('Clear', () => {
+            app.button('Clear').onClick(() => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = null;
@@ -130,7 +130,7 @@ describe('Drawing App Example', () => {
             app.label('Canvas Test');
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Fill All', () => {
+            app.button('Fill All').onClick(() => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = '#000000';
@@ -139,7 +139,7 @@ describe('Drawing App Example', () => {
               canvasLabel.setText(renderCanvas());
             });
 
-            app.button('Clear', () => {
+            app.button('Clear').onClick(() => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = null;
@@ -186,17 +186,17 @@ describe('Drawing App Example', () => {
             colorLabel = app.label(currentColor);
 
             app.hbox(() => {
-              app.button('Red', () => {
+              app.button('Red').onClick(() => {
                 currentColor = '#ff0000';
                 colorLabel.setText(currentColor);
               });
 
-              app.button('Green', () => {
+              app.button('Green').onClick(() => {
                 currentColor = '#00ff00';
                 colorLabel.setText(currentColor);
               });
 
-              app.button('Blue', () => {
+              app.button('Blue').onClick(() => {
                 currentColor = '#0000ff';
                 colorLabel.setText(currentColor);
               });
@@ -271,7 +271,7 @@ describe('Drawing App Example', () => {
             paintedLabel = app.label('Painted: 0');
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Paint Center', () => {
+            app.button('Paint Center').onClick(() => {
               const centerRow = Math.floor(GRID_ROWS / 2);
               const centerCol = Math.floor(GRID_COLS / 2);
               canvas[centerRow][centerCol] = '#000000';

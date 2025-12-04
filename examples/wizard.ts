@@ -52,7 +52,7 @@ function createStep1(a: App): VBox {
 
     a.separator();
 
-    a.button('Next: Choose Plan', () => {
+    a.button('Next: Choose Plan').onClick(() => {
       // Save step 1 data
       nameEntry.getText().then(name => {
         wizardData.name = name;
@@ -84,11 +84,11 @@ function createStep2(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back', async () => {
+      a.button('Back').onClick(async () => {
         await nav.back();
       });
 
-      a.button('Next: Select Features', () => {
+      a.button('Next: Select Features').onClick(() => {
         // Get current plan selection
         planRadio.getSelected().then(plan => {
           wizardData.plan = plan;
@@ -138,11 +138,11 @@ function createStep3(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back', async () => {
+      a.button('Back').onClick(async () => {
         await nav.back();
       });
 
-      a.button('Next: Payment', () => {
+      a.button('Next: Payment').onClick(() => {
         // Navigate to step 4
         nav.push(() => createStep4(a), 'Step 4: Payment');
       });
@@ -166,11 +166,11 @@ function createStep4(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back', async () => {
+      a.button('Back').onClick(async () => {
         await nav.back();
       });
 
-      a.button('Review & Confirm', () => {
+      a.button('Review & Confirm').onClick(() => {
         // Get payment method
         paymentSelect.getSelected().then(method => {
           wizardData.paymentMethod = method;
@@ -197,11 +197,11 @@ function createConfirmation(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back', async () => {
+      a.button('Back').onClick(async () => {
         await nav.back();
       });
 
-      a.button('Complete Order', () => {
+      a.button('Complete Order').onClick(() => {
         // Navigate to success
         nav.push(() => createSuccess(a), 'Order Complete');
       });
@@ -220,7 +220,7 @@ function createSuccess(a: App): VBox {
 
     a.separator();
 
-    a.button('Start New Order', async () => {
+    a.button('Start New Order').onClick(async () => {
       // Reset wizard data
       wizardData.name = '';
       wizardData.email = '';

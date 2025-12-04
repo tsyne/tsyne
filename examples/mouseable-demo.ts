@@ -32,7 +32,7 @@ app({ title: "Mouseable Demo" }, (a) => {
       a.label("Mouse Button Detection:");
 
       // Button to detect which mouse button
-      const detectBtn = a.button("Click with any mouse button", () => {});
+      const detectBtn = a.button("Click with any mouse button").onClick(() => {});
 
       detectBtn.onMouseDown((event) => {
         const buttonNames = ['Left', 'Middle', 'Right'];
@@ -52,7 +52,7 @@ app({ title: "Mouseable Demo" }, (a) => {
       a.label("Click & Hold Timer:");
 
       // Timer button - measures how long you hold
-      const timerBtn = a.button("Press and HOLD me!", () => {});
+      const timerBtn = a.button("Press and HOLD me!").onClick(() => {});
 
       timerBtn.onMouseDown((event) => {
         clickStartTime = Date.now();
@@ -89,7 +89,7 @@ app({ title: "Mouseable Demo" }, (a) => {
           const cellId = `drag_${i}`;
           buttonStates[cellId] = false;
 
-          const dragBtn = a.button(`[${i}]`, () => {});
+          const dragBtn = a.button(`[${i}]`).onClick(() => {});
 
           dragBtn.onMouseDown((event) => {
             buttonStates[cellId] = true;
@@ -119,7 +119,7 @@ app({ title: "Mouseable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset Stats", () => {
+      a.button("Reset Stats").onClick(() => {
         totalClicks = 0;
         longestHold = 0;
         clickStartTime = null;

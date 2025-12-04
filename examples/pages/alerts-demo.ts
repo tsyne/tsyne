@@ -45,7 +45,7 @@ vbox(() => {
       label('Web: alert("Hello World")');
       label('');
 
-      button('Show Info Alert', () => {
+      button('Show Info Alert').onClick(() => {
         // Note: In a real implementation, this would need window reference
         // For demo purposes, we log to console
         console.log('INFO ALERT: Hello from Tsyne Browser!');
@@ -65,7 +65,7 @@ vbox(() => {
       label('Web: alert("Error: Something went wrong")');
       label('');
 
-      button('Show Error Alert', () => {
+      button('Show Error Alert').onClick(() => {
         console.log('ERROR ALERT: Something went wrong!');
         console.log('In a real app: window.showError("Error", "Something went wrong!")');
       });
@@ -83,7 +83,7 @@ vbox(() => {
       label('Web: confirm("Are you sure?")');
       label('');
 
-      button('Show Confirm Dialog', () => {
+      button('Show Confirm Dialog').onClick(() => {
         console.log('CONFIRM DIALOG: Are you sure you want to continue?');
         console.log('In a real app: const result = await window.showConfirm("Confirm", "Are you sure?")');
         console.log('Returns: true (OK) or false (Cancel)');
@@ -115,7 +115,7 @@ vbox(() => {
       hbox(() => {
         inputEntry = entry('Enter your name');
 
-        button('Submit', async () => {
+        button('Submit').onClick(async () => {
           const value = await inputEntry.getText();
           console.log('Input value:', value);
 
@@ -140,7 +140,7 @@ vbox(() => {
       label('For more control, create dedicated alert pages:');
       label('');
 
-      button('Navigate to Custom Alert Page', () => {
+      button('Navigate to Custom Alert Page').onClick(() => {
         browserContext.changePage('/custom-alert?title=Warning&message=This+is+a+custom+alert');
       });
 
@@ -158,7 +158,7 @@ vbox(() => {
       label('Instead of modal dialogs, show alerts in the page:');
       label('');
 
-      button('Show In-Page Alert', () => {
+      button('Show In-Page Alert').onClick(() => {
         console.log('Would display alert in page content area');
         // In a real implementation, update page state to show alert
       });
@@ -184,7 +184,7 @@ vbox(() => {
       label('Non-blocking notifications (like Android toasts):');
       label('');
 
-      button('Show Toast (Simulated)', () => {
+      button('Show Toast (Simulated)').onClick(() => {
         console.log('TOAST: File saved successfully');
         console.log('Would show temporary notification at bottom of window');
       });
@@ -273,7 +273,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

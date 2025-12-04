@@ -29,19 +29,19 @@ describe('Photo Gallery Example', () => {
             app.adaptivegrid(3, () => {
               app.card('Sunset Beach', 'Photo 1', () => {
                 app.padded(() => {
-                  app.button('View', () => {});
+                  app.button('View').onClick(() => {});
                 });
               });
 
               app.card('Mountain View', 'Photo 2', () => {
                 app.padded(() => {
-                  app.button('View', () => {});
+                  app.button('View').onClick(() => {});
                 });
               });
 
               app.card('City Lights', 'Photo 3', () => {
                 app.padded(() => {
-                  app.button('View', () => {});
+                  app.button('View').onClick(() => {});
                 });
               });
             });
@@ -97,10 +97,10 @@ describe('Photo Gallery Example', () => {
       app.window({ title: 'AdaptiveGrid Test', width: 600, height: 400 }, (win) => {
         win.setContent(() => {
           app.adaptivegrid(2, () => {
-            app.button('Item 1', () => {});
-            app.button('Item 2', () => {});
-            app.button('Item 3', () => {});
-            app.button('Item 4', () => {});
+            app.button('Item 1').onClick(() => {});
+            app.button('Item 2').onClick(() => {});
+            app.button('Item 3').onClick(() => {});
+            app.button('Item 4').onClick(() => {});
           });
         });
         win.show();

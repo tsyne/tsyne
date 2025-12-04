@@ -17,11 +17,11 @@ vbox(() => {
   label('• Browser chrome with address bar and navigation');
   label('');
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 
-  button('Browser Back', () => {
+  button('Browser Back').onClick(() => {
     browserContext.back();
   });
 });

@@ -27,48 +27,26 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 
 	// Simulate click
 	if btn, ok := obj.(*widget.Button); ok {
-		if b.testMode {
-			test.Tap(btn)
-		} else {
-			// In normal mode, just trigger the callback
-			btn.OnTapped()
-		}
+		// Invoke button callback directly
+		// The callback sends events to TypeScript asynchronously
+		btn.OnTapped()
 		return Response{
 			ID:      msg.ID,
 			Success: true,
 		}
 	} else if tsyneBtn, ok := obj.(*TsyneButton); ok {
 		// Handle TsyneButton (custom button with hover/mouse events)
-		if b.testMode {
-			test.Tap(&tsyneBtn.Button)
-		} else {
-			// In normal mode, just trigger the callback
-			tsyneBtn.OnTapped()
-		}
+		// Invoke button callback directly
+		tsyneBtn.OnTapped()
 		return Response{
 			ID:      msg.ID,
 			Success: true,
 		}
 	} else if check, ok := obj.(*widget.Check); ok {
 		// Handle checkbox clicks
-		if b.testMode {
-			test.Tap(check)
-		} else {
-			// Toggle the checkbox state and trigger the callback manually
-			newState := !check.Checked
-			var callback func(bool)
-
-			// Update UI on main thread
-			fyne.DoAndWait(func() {
-				check.SetChecked(newState)
-				// Capture callback reference (don't call it here - would block main thread)
-				callback = check.OnChanged
-			})
-
-			// Call callback AFTER DoAndWait to avoid blocking main thread
-			if callback != nil {
-				callback(newState)
-			}
+		check.Checked = !check.Checked
+		if check.OnChanged != nil {
+			check.OnChanged(check.Checked)
 		}
 		return Response{
 			ID:      msg.ID,
@@ -92,15 +70,8 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 				Data:     map[string]interface{}{"url": meta.URL},
 			})
 		} else {
-			// External URL - use normal hyperlink behavior
-			if b.testMode {
-				test.Tap(hyperlink)
-			} else {
-				// Trigger hyperlink tap on main thread
-				fyne.DoAndWait(func() {
-					hyperlink.Tapped(&fyne.PointEvent{})
-				})
-			}
+			// External URL - invoke hyperlink callback
+			hyperlink.Tapped(&fyne.PointEvent{})
 		}
 
 		return Response{
@@ -109,28 +80,14 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 		}
 	} else if draggable, ok := obj.(*DraggableContainer); ok {
 		// Handle DraggableContainer clicks (images with both onClick and onDrag)
-		if b.testMode {
-			test.Tap(draggable)
-		} else {
-			// Trigger tap on main thread
-			fyne.DoAndWait(func() {
-				draggable.Tapped(&fyne.PointEvent{})
-			})
-		}
+		draggable.Tapped(&fyne.PointEvent{})
 		return Response{
 			ID:      msg.ID,
 			Success: true,
 		}
 	} else if clickable, ok := obj.(*ClickableContainer); ok {
 		// Handle ClickableContainer clicks (images with onClick only)
-		if b.testMode {
-			test.Tap(clickable)
-		} else {
-			// Trigger tap on main thread
-			fyne.DoAndWait(func() {
-				clickable.Tapped(&fyne.PointEvent{})
-			})
-		}
+		clickable.Tapped(&fyne.PointEvent{})
 		return Response{
 			ID:      msg.ID,
 			Success: true,
@@ -149,14 +106,7 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 		// This allows tests to click on container IDs and have clicks propagate to interactive content
 		tappable := b.findFirstTappableChild(container)
 		if tappable != nil {
-			if b.testMode {
-				test.Tap(tappable)
-			} else {
-				// Trigger tap on main thread
-				fyne.DoAndWait(func() {
-					tappable.Tapped(&fyne.PointEvent{})
-				})
-			}
+			tappable.Tapped(&fyne.PointEvent{})
 			return Response{
 				ID:      msg.ID,
 				Success: true,
@@ -183,25 +133,13 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 func (b *Bridge) clickThroughContent(msg Message, content fyne.CanvasObject) Response {
 	// Handle Button directly
 	if btn, ok := content.(*widget.Button); ok {
-		if b.testMode {
-			test.Tap(btn)
-		} else {
-			fyne.DoAndWait(func() {
-				btn.OnTapped()
-			})
-		}
+		btn.OnTapped()
 		return Response{ID: msg.ID, Success: true}
 	}
 
 	// Handle HoverableButton
 	if hoverBtn, ok := content.(*HoverableButton); ok {
-		if b.testMode {
-			test.Tap(hoverBtn)
-		} else {
-			fyne.DoAndWait(func() {
-				hoverBtn.OnTapped()
-			})
-		}
+		hoverBtn.OnTapped()
 		return Response{ID: msg.ID, Success: true}
 	}
 
@@ -222,13 +160,7 @@ func (b *Bridge) clickThroughContent(msg Message, content fyne.CanvasObject) Res
 
 	// Generic fallback for any tappable content
 	if tappable, ok := content.(fyne.Tappable); ok {
-		if b.testMode {
-			test.Tap(tappable)
-		} else {
-			fyne.DoAndWait(func() {
-				tappable.Tapped(&fyne.PointEvent{})
-			})
-		}
+		tappable.Tapped(&fyne.PointEvent{})
 		return Response{ID: msg.ID, Success: true}
 	}
 

@@ -53,7 +53,7 @@ app({ title: 'Slider Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Set Defaults', async () => {
+          button('Set Defaults').onClick(async () => {
             await volumeSlider.setValue(50);
             await brightnessSlider.setValue(75);
             await temperatureSlider.setValue(20);
@@ -62,14 +62,14 @@ app({ title: 'Slider Demo' }, () => {
             temperatureLabel.setText('Temperature: 20.0°C');
           });
 
-          button('Mute/Dark', async () => {
+          button('Mute/Dark').onClick(async () => {
             await volumeSlider.setValue(0);
             await brightnessSlider.setValue(0);
             volumeLabel.setText('Volume: 0%');
             brightnessLabel.setText('Brightness: 0%');
           });
 
-          button('Max', async () => {
+          button('Max').onClick(async () => {
             await volumeSlider.setValue(100);
             await brightnessSlider.setValue(100);
             volumeLabel.setText('Volume: 100%');
@@ -80,7 +80,7 @@ app({ title: 'Slider Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Get Values', async () => {
+          button('Get Values').onClick(async () => {
             const volume = await volumeSlider.getValue();
             const brightness = await brightnessSlider.getValue();
             const temperature = await temperatureSlider.getValue();

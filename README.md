@@ -117,9 +117,7 @@ app({ title: "Hello Tsyne" }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label("Welcome to Tsyne!");
-        app.button("Click Me", () => {
-          console.log("Button clicked!");
-        });
+        app.button("Click Me").onClick(() => { console.log("Button clicked!"); });
       });
     });
     win.show();
@@ -137,9 +135,7 @@ app({ title: "Hello Tsyne" }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label("Welcome to Tsyne!");
-        app.button("Click Me", () => {
-          console.log("Button clicked!");
-        });
+        app.button("Click Me").onClick(() => { console.log("Button clicked!"); });
       });
     });
     win.show();
@@ -157,9 +153,7 @@ app({ title: "Hello Tsyne" }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label("Welcome to Tsyne!");
-        app.button("Click Me", () => {
-          console.log("Button clicked!");
-        });
+        app.button("Click Me").onClick(() => { console.log("Button clicked!"); });
       });
     });
     win.show();
@@ -240,15 +234,15 @@ app({ title: "Calculator" }, (app) => {
         display = app.label("0");
 
         app.grid(4, () => {
-          [..."789"].forEach(n => app.button(n, () => handleNumber(n)));
-          app.button("÷", () => handleOperator("/"));
-          [..."456"].forEach(n => app.button(n, () => handleNumber(n)));
-          app.button("×", () => handleOperator("*"));
-          [..."123"].forEach(n => app.button(n, () => handleNumber(n)));
-          app.button("-", () => handleOperator("-"));
-          app.button("0", () => handleNumber("0"));
-          app.button("=", () => calculate());
-          app.button("+", () => handleOperator("+"));
+          [..."789"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
+          app.button("÷").onClick(() => handleOperator("/"));
+          [..."456"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
+          app.button("×").onClick(() => handleOperator("*"));
+          [..."123"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
+          app.button("-").onClick(() => handleOperator("-"));
+          app.button("0").onClick(() => handleNumber("0"));
+          app.button("=").onClick(() => calculate());
+          app.button("+").onClick(() => handleOperator("+"));
         });
       });
     });
@@ -280,9 +274,9 @@ app({ title: "Counter" }, (app) => {
         countLabel = app.label("Count: 0");
 
         app.hbox(() => {
-          app.button("-", () => { count--; updateCounter(); });
-          app.button("Reset", () => { count = 0; updateCounter(); });
-          app.button("+", () => { count++; updateCounter(); });
+          app.button("-").onClick(() => { count--; updateCounter(); });
+          app.button("Reset").onClick(() => { count = 0; updateCounter(); });
+          app.button("+").onClick(() => { count++; updateCounter(); });
         });
       });
     });
@@ -514,13 +508,13 @@ app({ title: 'Theme Demo' }, (app) => {
       app.vbox(() => {
         themeLabel = app.label('Current Theme: Light');
 
-        app.button('Dark Theme', async () => {
+        app.button('Dark Theme').onClick(async () => {
           const myApp = (win as any).ctx.bridge;
           await myApp.send('setTheme', { theme: 'dark' });
           themeLabel.setText('Current Theme: Dark');
         });
 
-        app.button('Light Theme', async () => {
+        app.button('Light Theme').onClick(async () => {
           const myApp = (win as any).ctx.bridge;
           await myApp.send('setTheme', { theme: 'light' });
           themeLabel.setText('Current Theme: Light');
@@ -552,7 +546,7 @@ app({ title: 'Form Demo' }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label('Registration Form');
-        app.button('Submit', () => {});
+        app.button('Submit').onClick(() => {});
       });
     });
     win.show();
@@ -570,7 +564,7 @@ app({ title: 'Form Demo' }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label('Registration Form');  // Automatically styled!
-        app.button('Submit', () => {});  // Automatically styled!
+        app.button('Submit').onClick(() => {});  // Automatically styled!
       });
     });
     win.show();
@@ -677,7 +671,7 @@ app({ title: 'Styled App' }, (app) => {
         app.label('Enter your details:');
         app.entry('Name');
         app.entry('Email');
-        app.button('Submit', () => {});
+        app.button('Submit').onClick(() => {});
       });
     });
     win.show();
@@ -950,7 +944,7 @@ app({ title: "State Demo" }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         countLabel = app.label("Count: 0");
-        app.button("Increment", () => count.set(count.get() + 1));
+        app.button("Increment").onClick(() => count.set(count.get() + 1));
       });
     });
     win.show();

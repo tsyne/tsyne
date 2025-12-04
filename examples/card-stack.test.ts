@@ -25,9 +25,9 @@ describe('Card Stack Example', () => {
 
             // Card control buttons
             app.hbox(() => {
-              app.button('Show Card 1', () => {});
-              app.button('Show Card 2', () => {});
-              app.button('Show Card 3', () => {});
+              app.button('Show Card 1').onClick(() => {});
+              app.button('Show Card 2').onClick(() => {});
+              app.button('Show Card 3').onClick(() => {});
             });
 
             // Stack container - cards are layered on top of each other
@@ -120,7 +120,7 @@ describe('Card Stack Example', () => {
             // Foreground layer
             app.vbox(() => {
               app.label('Foreground');
-              app.button('Action', () => {});
+              app.button('Action').onClick(() => {});
             });
           });
         });

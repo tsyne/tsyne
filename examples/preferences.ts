@@ -61,13 +61,13 @@ app({ title: 'Preferences' }, (a) => {
 
         // Action buttons
         a.hbox(() => {
-          a.button('Reset to Defaults', async () => {
+          a.button('Reset to Defaults').onClick(async () => {
             notificationTypes = ['Email', 'Push'];
             features = ['Auto-save'];
             // Note: In a real app, you'd update the checkgroups' selected state
             updateStatus();
           });
-          a.button('Save Preferences', () => {
+          a.button('Save Preferences').onClick(() => {
             console.log('Saving preferences:', { notificationTypes, features });
           });
         });

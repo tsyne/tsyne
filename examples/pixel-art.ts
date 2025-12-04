@@ -43,7 +43,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
 
             // Color buttons
             palette.forEach((color, index) => {
-              a.button(`Color ${index + 1}`, () => {
+              a.button(`Color ${index + 1}`).onClick(() => {
                 currentColor = color;
 // console.log(`Selected color: RGB(${color.r}, ${color.g}, ${color.b})`);
               });
@@ -52,7 +52,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
             a.separator();
             a.label('Tools', undefined, 'center', undefined, { bold: true });
             a.separator();
-            a.button('Fill All', async () => {
+            a.button('Fill All').onClick(async () => {
               // Fill entire canvas with current color
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -68,7 +68,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
               }
               await raster.setPixels(updates);
             });
-            a.button('Clear', async () => {
+            a.button('Clear').onClick(async () => {
               // Clear to white
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -78,7 +78,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
               }
               await raster.setPixels(updates);
             });
-            a.button('Demo Pattern', async () => {
+            a.button('Demo Pattern').onClick(async () => {
               // Create a checkerboard pattern
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -95,7 +95,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
               }
               await raster.setPixels(updates);
             });
-            a.button('Gradient', async () => {
+            a.button('Gradient').onClick(async () => {
               // Create a gradient pattern
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -107,7 +107,7 @@ app({ title: 'Pixel Art Editor' }, (a) => {
               }
               await raster.setPixels(updates);
             });
-            a.button('Smiley Face', async () => {
+            a.button('Smiley Face').onClick(async () => {
               // Draw a simple smiley face
               const updates = [];
               // Fill with yellow background

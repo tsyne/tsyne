@@ -152,7 +152,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
         // Action Buttons
         a.hbox(() => {
           // Set Sample Data button
-          a.button('Fill Sample Data', () => {
+          a.button('Fill Sample Data').onClick(() => {
             firstName.set('John');
             lastName.set('Doe');
             email.set('john.doe@example.com');
@@ -162,7 +162,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
           });
 
           // Clear Form button
-          a.button('Clear Form', () => {
+          a.button('Clear Form').onClick(() => {
             firstName.set('');
             lastName.set('');
             email.set('');
@@ -172,7 +172,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
           });
 
           // Submit button
-          a.button('Submit', async () => {
+          a.button('Submit').onClick(async () => {
             const data = {
               firstName: firstName.get(),
               lastName: lastName.get(),

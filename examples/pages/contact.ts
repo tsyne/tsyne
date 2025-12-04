@@ -24,7 +24,7 @@ vbox(() => {
   label('');
 
   hbox(() => {
-    button('Submit', async () => {
+    button('Submit').onClick(async () => {
       const name = await nameEntry.getText();
       const email = await emailEntry.getText();
       const message = await messageEntry.getText();
@@ -37,7 +37,7 @@ vbox(() => {
       browserContext.changePage('/thanks');
     });
 
-    button('Cancel', () => {
+    button('Cancel').onClick(() => {
       browserContext.back();
     });
   });

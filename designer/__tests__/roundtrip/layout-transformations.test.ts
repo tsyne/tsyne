@@ -24,7 +24,7 @@ app({ title: 'Test' }, (a) => {
       a.vbox(() => {
         a.label('First');
         a.label('Second');
-        a.button('Third', () => {});
+        a.button('Third').onClick(() => {});
       });
     });
     win.show();
@@ -54,9 +54,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Left', () => {});
-        a.button('Center', () => {});
-        a.button('Right', () => {});
+        a.button('Left').onClick(() => {});
+        a.button('Center').onClick(() => {});
+        a.button('Right').onClick(() => {});
       });
     });
     win.show();
@@ -123,9 +123,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.grid(3, () => {
-        a.button('A', () => { console.log('A'); });
-        a.button('B', () => { console.log('B'); });
-        a.button('C', () => { console.log('C'); });
+        a.button('A').onClick(() => { console.log('A'); });
+        a.button('B').onClick(() => { console.log('B'); });
+        a.button('C').onClick(() => { console.log('C'); });
       });
     });
     win.show();
@@ -189,8 +189,8 @@ app({ title: 'Test' }, (a) => {
       a.vbox(() => {
         a.label('Title');
         a.hbox(() => {
-          a.button('Left', () => {});
-          a.button('Right', () => {});
+          a.button('Left').onClick(() => {});
+          a.button('Right').onClick(() => {});
         });
       });
     });
@@ -221,7 +221,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Content').withId('myLabel');
-        a.button('Action', () => {}).withId('myButton');
+        a.button('Action').onClick(() => {}).withId('myButton');
       }).withId('container');
     });
     win.show();
@@ -253,7 +253,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Always Shown');
-        a.button('Conditional', () => {}).when(() => isVisible);
+        a.button('Conditional').onClick(() => {}).when(() => isVisible);
       });
     });
     win.show();
@@ -286,7 +286,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Styled', () => {}, 'primary');
+        a.button('Styled', "primary").onClick(() => {});
       });
     });
     win.show();

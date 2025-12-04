@@ -302,7 +302,7 @@ async function runSingleInstance(instanceId: number, instrumentation: LifecycleI
       app.window({ title: `Load Test ${instanceId}`, width: 400, height: 300 }, (win) => {
         windowRef = win;
         // Sync content creation - widgets are collected by constructor
-        buttonWidget = app.button(`Button ${instanceId}`, () => {
+        buttonWidget = app.button(`Button ${instanceId}`).onClick(() => {
           // Button click handler
         });
       });

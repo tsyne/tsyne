@@ -32,7 +32,7 @@ app({ title: 'Rename Dialog Demo' }, (a) => {
             const label = a.label(file.name);
             fileLabels.set(file.id, label);
 
-            a.button('Rename', async () => {
+            a.button('Rename').onClick(async () => {
               const newName = await win.showEntryDialog(
                 'Rename File',
                 `Enter new name for "${file.name}":`

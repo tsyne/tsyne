@@ -25,9 +25,7 @@ app({ title: "Hello" }, (app) => {
     win.setContent(() => {
       app.vbox(() => {
         app.label("Welcome to Tsyne!");
-        app.button("Click me", () => {
-          console.log("Button clicked!");
-        });
+        app.button("Click me").onClick(() => { console.log("Button clicked!"); });
       });
     });
     win.show();
@@ -73,7 +71,7 @@ html {
 app.vbox(() => {
   app.label("My Page");
   app.hbox(() => {
-    app.button("Hello World", () => {});
+    app.button("Hello World").onClick(() => {});
   });
 });
 ```

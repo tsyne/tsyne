@@ -85,10 +85,10 @@ app({ title: 'Tsyne Appointment Scheduler' }, (a) => {
 
           // Action buttons
           a.hbox(() => {
-            a.button('Add Appointment', () => {
+            a.button('Add Appointment').onClick(() => {
               console.log(`Adding appointment for ${selectedDate}`);
             });
-            a.button('View All', () => {
+            a.button('View All').onClick(() => {
               console.log('Viewing all appointments');
               appointments.forEach(apt => {
                 console.log(`  ${apt.date} ${apt.time}: ${apt.title}`);

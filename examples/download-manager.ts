@@ -96,7 +96,7 @@ app({ title: 'Download Manager' }, () => {
         label('Add Downloads:');
 
         hbox(() => {
-          button('Small File (10 MB)', () => {
+          button('Small File (10 MB)').onClick(() => {
             downloads.push({
               name: 'small-file.zip',
               size: 10,
@@ -107,7 +107,7 @@ app({ title: 'Download Manager' }, () => {
             statusLabel.setText('Added small-file.zip to queue');
           });
 
-          button('Medium File (100 MB)', () => {
+          button('Medium File (100 MB)').onClick(() => {
             downloads.push({
               name: 'medium-file.zip',
               size: 100,
@@ -120,7 +120,7 @@ app({ title: 'Download Manager' }, () => {
         });
 
         hbox(() => {
-          button('Large File (500 MB)', () => {
+          button('Large File (500 MB)').onClick(() => {
             downloads.push({
               name: 'large-file.iso',
               size: 500,
@@ -131,7 +131,7 @@ app({ title: 'Download Manager' }, () => {
             statusLabel.setText('Added large-file.iso to queue');
           });
 
-          button('Huge File (2 GB)', () => {
+          button('Huge File (2 GB)').onClick(() => {
             downloads.push({
               name: 'huge-file.iso',
               size: 2000,
@@ -147,7 +147,7 @@ app({ title: 'Download Manager' }, () => {
 
         // Download action buttons
         hbox(() => {
-          button('Start Next Download', async () => {
+          button('Start Next Download').onClick(async () => {
             const pending = downloads.find(d => d.status === 'pending');
             if (!pending) {
               await win.showInfo('No Downloads', 'No pending downloads in queue');
@@ -175,7 +175,7 @@ app({ title: 'Download Manager' }, () => {
             });
           });
 
-          button('Download All', async () => {
+          button('Download All').onClick(async () => {
             const pendingDownloads = downloads.filter(d => d.status === 'pending');
             if (pendingDownloads.length === 0) {
               await win.showInfo('No Downloads', 'No pending downloads in queue');
@@ -218,7 +218,7 @@ app({ title: 'Download Manager' }, () => {
         separator();
 
         // Infinite progress demo
-        button('Show Infinite Progress (3s)', async () => {
+        button('Show Infinite Progress (3s)').onClick(async () => {
           statusLabel.setText('Processing...');
 
           const progressDialog = await win.showProgress(
@@ -242,7 +242,7 @@ app({ title: 'Download Manager' }, () => {
         separator();
 
         // Clear downloads
-        button('Clear Queue', () => {
+        button('Clear Queue').onClick(() => {
           downloads = [];
           updateDownloadList();
           statusLabel.setText('Download queue cleared');

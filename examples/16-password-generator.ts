@@ -79,7 +79,7 @@ app({ title: 'Password Generator' }, (a) => {
         a.separator();
 
         // Generate button
-        a.button('🎲 Generate Password', () => {
+        a.button('🎲 Generate Password').onClick(() => {
           generatePassword();
         });
 

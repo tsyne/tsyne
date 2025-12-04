@@ -36,7 +36,7 @@ export function buildAccessibilityDemo(a: any) {
         .withId('status');
 
       // Toggle button
-      a.button("Toggle Accessibility", () => toggleAccessibility())
+      a.button("Toggle Accessibility").onClick(() => toggleAccessibility())
         .withId('toggleBtn')
         .accessibility({
           label: "Toggle Accessibility",
@@ -45,7 +45,7 @@ export function buildAccessibilityDemo(a: any) {
         });
 
       // Example buttons with announcements
-      a.button("Say Hello", () => announceMessage("Hello from Tsyne!"))
+      a.button("Say Hello").onClick(() => announceMessage("Hello from Tsyne!"))
         .withId('helloBtn')
         .accessibility({
           label: "Say Hello Button",
@@ -53,7 +53,7 @@ export function buildAccessibilityDemo(a: any) {
           role: "button"
         });
 
-      a.button("Say Goodbye", () => announceMessage("Goodbye! Have a great day!"))
+      a.button("Say Goodbye").onClick(() => announceMessage("Goodbye! Have a great day!"))
         .withId('goodbyeBtn')
         .accessibility({
           label: "Say Goodbye Button",
@@ -61,7 +61,7 @@ export function buildAccessibilityDemo(a: any) {
           role: "button"
         });
 
-      a.button("Announce Time", () => {
+      a.button("Announce Time").onClick(() => {
         const time = new Date().toLocaleTimeString();
         announceMessage(`The current time is ${time}`);
       })

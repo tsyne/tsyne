@@ -31,7 +31,7 @@ app({ title: 'Test' }, (a) => {
         a.label('Main Title', 'title');
         a.label('Subtitle Text', 'subtitle');
         a.label('No Class');
-        a.button('Click', () => {}, 'title');
+        a.button('Click', "title").onClick(() => {});
       });
     });
     win.show();

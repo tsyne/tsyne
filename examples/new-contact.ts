@@ -42,7 +42,7 @@ app({ title: 'Contact Manager' }, () => {
 
         // Toolbar buttons
         hbox(() => {
-          button('Add Contact', async () => {
+          button('Add Contact').onClick(async () => {
             statusLabel.setText('Opening form...');
 
             const result = await win.showForm(
@@ -86,7 +86,7 @@ app({ title: 'Contact Manager' }, () => {
             }
           });
 
-          button('Quick Add', async () => {
+          button('Quick Add').onClick(async () => {
             // Simpler form with fewer fields
             const result = await win.showForm(
               'Quick Add Contact',
@@ -114,7 +114,7 @@ app({ title: 'Contact Manager' }, () => {
             }
           });
 
-          button('Clear All', async () => {
+          button('Clear All').onClick(async () => {
             if (contacts.length === 0) {
               await win.showInfo('Info', 'No contacts to clear.');
               return;

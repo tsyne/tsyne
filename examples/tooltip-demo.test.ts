@@ -26,11 +26,11 @@ describe('Popup Widget Demo', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Popup Test');
-            app.button('Show Popup', async () => {
+            app.button('Show Popup').onClick(async () => {
               await popup?.showAt(100, 100);
               popupShown = true;
             }).withId('showBtn');
-            app.button('Hide Popup', async () => {
+            app.button('Hide Popup').onClick(async () => {
               await popup?.hide();
               popupHidden = true;
             }).withId('hideBtn');
@@ -84,10 +84,10 @@ describe('Popup Widget Demo', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Position Test');
-            app.button('Show at 50,50', async () => {
+            app.button('Show at 50,50').onClick(async () => {
               await popup?.showAt(50, 50);
             }).withId('pos50');
-            app.button('Show at 200,150', async () => {
+            app.button('Show at 200,150').onClick(async () => {
               await popup?.showAt(200, 150);
             }).withId('pos200');
           });
@@ -123,7 +123,7 @@ describe('Popup Widget Demo', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Centered Popup Test');
-            app.button('Show Centered', async () => {
+            app.button('Show Centered').onClick(async () => {
               await popup?.show(); // show() without position centers the popup
             }).withId('showCentered');
           });
@@ -133,7 +133,7 @@ describe('Popup Widget Demo', () => {
           app.card('Centered', '', () => {
             app.vbox(() => {
               app.label('This popup is centered').withId('centeredContent');
-              app.button('Close', async () => {
+              app.button('Close').onClick(async () => {
                 await popup?.hide();
               }).withId('closeBtn');
             });
@@ -165,7 +165,7 @@ describe('Popup Widget Demo', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Hover Tooltip Test');
-            const hoverBtn = app.button('Hover Me', () => {}).withId('hoverBtn');
+            const hoverBtn = app.button('Hover Me').onClick(() => {}).withId('hoverBtn');
             hoverBtn.onMouseIn(() => {
               tooltip?.showAt(100, 100);
             });

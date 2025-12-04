@@ -46,7 +46,7 @@ vbox(() => {
 const { vbox, label, button } = tsyne;
 vbox(() => {
   label('Home Page');
-  button('Go to About', () => {
+  button('Go to About').onClick(() => {
     browserContext.changePage('/about');
   });
 });
@@ -103,7 +103,7 @@ vbox(() => {
 const { vbox, label, button } = tsyne;
 vbox(() => {
   label('Page 1');
-  button('Go to Page 2', () => {
+  button('Go to Page 2').onClick(() => {
     browserContext.changePage('/page2');
   });
 });
@@ -199,7 +199,7 @@ vbox(() => {
   label('Enter your name:');
   nameEntry = entry('Your name');
 
-  button('Submit', async () => {
+  button('Submit').onClick(async () => {
     const name = await nameEntry.getText();
     console.log('Submitted name:', name);
     browserContext.changePage('/thanks?name=' + encodeURIComponent(name));

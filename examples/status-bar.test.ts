@@ -59,7 +59,7 @@ describe('Status Bar Label Tests', () => {
           tsyne.vbox(() => {
             tsyne.label('Application');
 
-            const btn = tsyne.button('Update Status', () => {
+            const btn = tsyne.button('Update Status').onClick(() => {
               if (statusLabel) {
                 statusLabel.setText('Loading...');
               }
@@ -102,7 +102,7 @@ describe('Status Bar Label Tests', () => {
           const tsyne = require('../src/index');
 
           tsyne.vbox(() => {
-            const btn = tsyne.button('Cycle Status', () => {
+            const btn = tsyne.button('Cycle Status').onClick(() => {
               if (statusLabel) {
                 if (currentStatus === 'Ready') {
                   currentStatus = 'Loading...';

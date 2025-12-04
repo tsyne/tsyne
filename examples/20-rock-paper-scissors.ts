@@ -79,9 +79,9 @@ app({ title: 'Rock Paper Scissors' }, (a) => {
         // Choice buttons
         a.label('Choose your weapon:');
         a.hbox(() => {
-          a.button('✊ Rock', () => play('Rock'));
-          a.button('✋ Paper', () => play('Paper'));
-          a.button('✌️ Scissors', () => play('Scissors'));
+          a.button('✊ Rock').onClick(() => play('Rock'));
+          a.button('✋ Paper').onClick(() => play('Paper'));
+          a.button('✌️ Scissors').onClick(() => play('Scissors'));
         });
 
         a.separator();
@@ -113,7 +113,7 @@ app({ title: 'Rock Paper Scissors' }, (a) => {
         a.separator();
 
         // Reset button
-        a.button('Reset Score', reset);
+        a.button('Reset Score').onClick(reset);
       });
     });
 

@@ -96,8 +96,8 @@ describe('Window Content Replacement', () => {
         label('Password:');
         entry('password-entry', 'Enter password');
         checkbox('terms-check', 'I agree to terms', false, () => {});
-        button('Submit', () => {});
-        button('Cancel', () => {});
+        button('Submit').onClick(() => {});
+        button('Cancel').onClick(() => {});
       });
     });
 
@@ -137,7 +137,7 @@ describe('Window Content Replacement', () => {
             label('Add New User');
             entry('name-input', 'Name');
             entry('role-input', 'Role');
-            button('Add User', () => {});
+            button('Add User').onClick(() => {});
           });
         });
       }
@@ -161,7 +161,7 @@ describe('Window Content Replacement', () => {
           ['Jane Smith', 'User'],
           ['Bob Johnson', 'Editor']
         ]);
-        button('Back to Form', () => {});
+        button('Back to Form').onClick(() => {});
       });
     });
 
@@ -229,8 +229,8 @@ describe('Window Content Replacement', () => {
         });
         separator();
         hbox(() => {
-          button('Save Settings', () => {});
-          button('Reset to Defaults', () => {});
+          button('Save Settings').onClick(() => {});
+          button('Reset to Defaults').onClick(() => {});
         });
       });
     });
@@ -278,17 +278,17 @@ describe('Window Content Replacement', () => {
               vbox(() => {
                 // Menu bar
                 hbox(() => {
-                  button('File', () => {});
-                  button('View', () => {});
-                  button('History', () => {});
+                  button('File').onClick(() => {});
+                  button('View').onClick(() => {});
+                  button('History').onClick(() => {});
                 });
                 separator();
                 // Address bar
                 hbox(() => {
-                  button('←', () => {});
-                  button('→', () => {});
+                  button('←').onClick(() => {});
+                  button('→').onClick(() => {});
                   entry('url-bar', 'http://localhost:3000');
-                  button('Go', () => {});
+                  button('Go').onClick(() => {});
                 });
               });
             },
@@ -328,7 +328,7 @@ describe('Window Content Replacement', () => {
       entry('contact-email', '');
       label('Message:');
       entry('contact-message', '');
-      button('Send Message', () => {});
+      button('Send Message').onClick(() => {});
     };
 
     await window.setContent(() => {
@@ -336,16 +336,16 @@ describe('Window Content Replacement', () => {
         top: () => {
           vbox(() => {
             hbox(() => {
-              button('File', () => {});
-              button('View', () => {});
-              button('History', () => {});
+              button('File').onClick(() => {});
+              button('View').onClick(() => {});
+              button('History').onClick(() => {});
             });
             separator();
             hbox(() => {
-              button('←', () => {});
-              button('→', () => {});
+              button('←').onClick(() => {});
+              button('→').onClick(() => {});
               entry('url-bar', 'http://localhost:3000/contact');
-              button('Go', () => {});
+              button('Go').onClick(() => {});
             });
           });
         },
@@ -393,7 +393,7 @@ describe('Window Content Replacement', () => {
         ['2025-11-12', 'Contact Form', 'Delivered'],
         ['2025-11-10', 'Feedback', 'Delivered']
       ]);
-      button('Send Another Message', () => {});
+      button('Send Another Message').onClick(() => {});
     };
 
     await window.setContent(() => {
@@ -401,16 +401,16 @@ describe('Window Content Replacement', () => {
         top: () => {
           vbox(() => {
             hbox(() => {
-              button('File', () => {});
-              button('View', () => {});
-              button('History', () => {});
+              button('File').onClick(() => {});
+              button('View').onClick(() => {});
+              button('History').onClick(() => {});
             });
             separator();
             hbox(() => {
-              button('←', () => {});
-              button('→', () => {});
+              button('←').onClick(() => {});
+              button('→').onClick(() => {});
               entry('url-bar', 'http://localhost:3000/contact/success');
-              button('Go', () => {});
+              button('Go').onClick(() => {});
             });
           });
         },

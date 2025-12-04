@@ -28,6 +28,9 @@ describe('Dialog Inspection', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
+      // Wait for window to be fully set up by polling for the label
+      await ctx.getByText('No dialogs here').within(500).shouldExist();
+
       const dialogs = await ctx.getActiveDialogs();
       expect(dialogs).toHaveLength(0);
     });
@@ -36,7 +39,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Test Title', 'This is an info message');
             });
           });
@@ -65,7 +68,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Error', async () => {
+            app.button('Show Error').onClick(async () => {
               await win.showError('Error', 'Something went wrong');
             });
           });
@@ -92,7 +95,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Dismiss Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Test', 'Click OK to dismiss');
             });
           });
@@ -126,7 +129,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Fluent Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Hello', 'World');
             });
           });
@@ -166,7 +169,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Success', 'Operation completed');
             });
           });
@@ -187,7 +190,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Error', async () => {
+            app.button('Show Error').onClick(async () => {
               await win.showError('Error', 'Operation failed');
             });
           });
@@ -208,7 +211,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Contains Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Important', 'Please review the changes');
             });
           });
@@ -229,7 +232,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Polling Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Delayed Dialog', async () => {
+            app.button('Delayed Dialog').onClick(async () => {
               // Dialog appears after small delay
               setTimeout(async () => {
                 await win.showInfo('Delayed', 'This appeared after delay');
@@ -253,7 +256,7 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Chain Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info', async () => {
+            app.button('Show Info').onClick(async () => {
               await win.showInfo('Chain Test', 'Will be dismissed');
             });
           });

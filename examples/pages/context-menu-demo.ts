@@ -84,7 +84,7 @@ vbox(() => {
   label('  • Any item and select Move Up/Down');
   label('');
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

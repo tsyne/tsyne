@@ -36,7 +36,7 @@ app({ title: "Focusable Demo" }, (a) => {
       const fields = ['Username', 'Email', 'Password', 'Confirm'];
 
       fields.forEach((field, index) => {
-        const btn = a.button(`[${index + 1}] ${field}`, () => {
+        const btn = a.button(`[${index + 1}] ${field}`).onClick(() => {
 // console.log(`${field} button clicked`);
         });
 
@@ -77,7 +77,7 @@ app({ title: "Focusable Demo" }, (a) => {
       a.hbox(() => {
         // Programmatic focus buttons
         fields.forEach((field) => {
-          a.button(`Focus ${field}`, async () => {
+          a.button(`Focus ${field}`).onClick(async () => {
             const btn = buttonLabels[field];
             if (btn) {
               await btn.focus();
@@ -93,7 +93,7 @@ app({ title: "Focusable Demo" }, (a) => {
       // Visual focus ring simulation
       a.hbox(() => {
         for (let i = 1; i <= 4; i++) {
-          const ringBtn = a.button(`Tab ${i}`, () => {
+          const ringBtn = a.button(`Tab ${i}`).onClick(() => {
 // console.log(`Tab ${i} activated`);
           });
 
@@ -120,7 +120,7 @@ app({ title: "Focusable Demo" }, (a) => {
 
       a.hbox(() => {
         targetSequence.forEach((letter) => {
-          const gameBtn = a.button(letter, () => {
+          const gameBtn = a.button(letter).onClick(() => {
 // console.log(`Game button ${letter} clicked`);
           });
 
@@ -148,7 +148,7 @@ app({ title: "Focusable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset Demo", () => {
+      a.button("Reset Demo").onClick(() => {
         currentFocus = null;
         focusHistory = [];
         focusCount = 0;

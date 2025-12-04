@@ -40,12 +40,12 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
             usernameEntryId = usernameEntry.id;
 
             app.hbox(() => {
-              const submitBtn = app.button("Submit", () => {
+              const submitBtn = app.button("Submit").onClick(() => {
                 statusLabel.setText("Submitted!");
               });
               submitButtonId = submitBtn.id;
 
-              const cancelBtn = app.button("Cancel", () => {
+              const cancelBtn = app.button("Cancel").onClick(() => {
                 statusLabel.setText("Cancelled");
               });
               cancelButtonId = cancelBtn.id;
@@ -123,7 +123,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
             const displayLabel = app.label("");
             statusLabelId = displayLabel.id;
 
-            app.button("Display", () => {
+            app.button("Display").onClick(() => {
               entry.getText().then(text => {
                 displayLabel.setText(`You typed: ${text}`);
               });
@@ -160,7 +160,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
             app.label("Click to add button");
 
             let buttonAdded = false;
-            app.button("Add Button", () => {
+            app.button("Add Button").onClick(() => {
               if (!buttonAdded) {
                 const newBtn = app.button("Dynamic Button");
                 dynamicButtonId = newBtn.id;
@@ -219,7 +219,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
             const label = app.label("Test Label");
             statusLabelId = label.id;
 
-            app.button("Update", () => {
+            app.button("Update").onClick(() => {
               label.setText("Updated Text");
             });
 

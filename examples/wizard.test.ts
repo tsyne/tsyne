@@ -52,7 +52,7 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Page 1');
-              a.button('Go to Page 2', () => {
+              a.button('Go to Page 2').onClick(() => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Page 2');
@@ -88,11 +88,11 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Home');
-              a.button('Next', () => {
+              a.button('Next').onClick(() => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Details');
-                    a.button('Go Back', async () => {
+                    a.button('Go Back').onClick(async () => {
                       await nav.back();
                     });
                   });
@@ -132,16 +132,16 @@ describe('Navigation Container', () => {
             a.vbox(() => {
               a.label('Step 1: Name');
               a.entry('Enter name');
-              a.button('Next Step', () => {
+              a.button('Next Step').onClick(() => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Step 2: Email');
                     a.entry('Enter email');
                     a.hbox(() => {
-                      a.button('Previous', async () => {
+                      a.button('Previous').onClick(async () => {
                         await nav.back();
                       });
-                      a.button('Finish', () => {
+                      a.button('Finish').onClick(() => {
                         nav.push(() => {
                           a.vbox(() => {
                             a.label('Complete!');
@@ -194,11 +194,11 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Home');
-              a.button('Forward', () => {
+              a.button('Forward').onClick(() => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Page 2');
-                    a.button('Back', async () => {
+                    a.button('Back').onClick(async () => {
                       await nav.back();
                     });
                   });
@@ -241,7 +241,7 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Content');
-              a.button('Change Title', async () => {
+              a.button('Change Title').onClick(async () => {
                 await nav.setCurrentTitle('New Title');
               });
             });

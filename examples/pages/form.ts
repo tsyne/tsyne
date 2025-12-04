@@ -33,7 +33,7 @@ vbox(() => {
   label('');
 
   hbox(() => {
-    button('Submit', async () => {
+    button('Submit').onClick(async () => {
       const name = await nameEntry.getText();
       const age = await ageEntry.getText();
       const subscribe = await subscribeCheckbox.getChecked();
@@ -50,7 +50,7 @@ vbox(() => {
       browserContext.changePage('/thanks');
     });
 
-    button('Home', () => {
+    button('Home').onClick(() => {
       browserContext.changePage('/');
     });
   });

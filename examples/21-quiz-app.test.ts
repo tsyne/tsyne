@@ -68,7 +68,7 @@ describe('Quiz App Example', () => {
               app.separator();
 
               if (!answered) {
-                app.button('Submit Answer', () => {
+                app.button('Submit Answer').onClick(() => {
                   if (selectedAnswer === undefined) {
                     return;
                   }
@@ -136,7 +136,7 @@ describe('Quiz App Example', () => {
               });
 
               if (!answered) {
-                app.button('Submit Answer', () => {
+                app.button('Submit Answer').onClick(() => {
                   if (selectedAnswer === undefined) {
                     return;
                   }
@@ -248,8 +248,8 @@ describe('Quiz App Example', () => {
 
               app.separator();
 
-              app.button('Play Again', () => {});
-              app.button('Exit', () => {
+              app.button('Play Again').onClick(() => {});
+              app.button('Exit').onClick(() => {
                 process.exit(0);
               });
             });

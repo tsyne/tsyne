@@ -15,10 +15,10 @@ vbox(() => {
   label('Items arranged in a fixed-column grid:');
 
   grid(2, () => {
-    button('Cell 1', () => console.log('Cell 1 clicked'));
-    button('Cell 2', () => console.log('Cell 2 clicked'));
-    button('Cell 3', () => console.log('Cell 3 clicked'));
-    button('Cell 4', () => console.log('Cell 4 clicked'));
+    button('Cell 1').onClick(() => console.log('Cell 1 clicked'));
+    button('Cell 2').onClick(() => console.log('Cell 2 clicked'));
+    button('Cell 3').onClick(() => console.log('Cell 3 clicked'));
+    button('Cell 4').onClick(() => console.log('Cell 4 clicked'));
     label('Text cell');
     label('Another text');
   });
@@ -31,11 +31,11 @@ vbox(() => {
   label('Items wrap to next row with fixed item sizes:');
 
   gridwrap(100, 40, () => {
-    button('Item 1', () => {});
-    button('Item 2', () => {});
-    button('Item 3', () => {});
-    button('Item 4', () => {});
-    button('Item 5', () => {});
+    button('Item 1').onClick(() => {});
+    button('Item 2').onClick(() => {});
+    button('Item 3').onClick(() => {});
+    button('Item 4').onClick(() => {});
+    button('Item 5').onClick(() => {});
   });
 
   separator();
@@ -137,7 +137,7 @@ vbox(() => {
   separator();
   label('');
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

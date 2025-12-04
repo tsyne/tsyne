@@ -127,15 +127,15 @@ export function buildTicTacToe(a: any) {
       // Game board (3x3 grid)
       a.grid(3, () => {
         for (let i = 0; i < 9; i++) {
-          const cellButton = a.button(" ", () => makeMove(i)).withId(`cell${i}`);
+          const cellButton = a.button(" ").onClick(() => makeMove(i)).withId(`cell${i}`);
           cellButtons[i] = cellButton;
         }
       });
 
       // Controls
       a.hbox(() => {
-        a.button('New Game', () => newGame());
-        a.button('Show Source', () => a.showSource(__filename));
+        a.button('New Game').onClick(() => newGame());
+        a.button('Show Source').onClick(() => a.showSource(__filename));
       });
     });
   });

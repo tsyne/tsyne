@@ -36,11 +36,11 @@ vbox(() => {
 
   separator();
 
-  button('Submit Another Form', () => {
+  button('Submit Another Form').onClick(() => {
     browserContext.changePage('/post-demo');
   });
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

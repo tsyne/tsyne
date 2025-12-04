@@ -31,7 +31,7 @@ vbox(() => {
       agreeCheckbox = checkbox('I agree to the terms and conditions');
       label('');
 
-      button('Submit Registration', async () => {
+      button('Submit Registration').onClick(async () => {
         const name = await nameEntry.getText();
         const email = await emailEntry.getText();
         const agreed = await agreeCheckbox.getChecked();
@@ -120,7 +120,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

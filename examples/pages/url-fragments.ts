@@ -49,19 +49,19 @@ vbox(() => {
       label('Click these to navigate to different sections:');
       label('');
 
-      button('Go to Section 1 (#section1)', () => {
+      button('Go to Section 1 (#section1)').onClick(() => {
         browserContext.changePage('/url-fragments#section1');
       });
 
-      button('Go to Section 2 (#section2)', () => {
+      button('Go to Section 2 (#section2)').onClick(() => {
         browserContext.changePage('/url-fragments#section2');
       });
 
-      button('Go to Section 3 (#section3)', () => {
+      button('Go to Section 3 (#section3)').onClick(() => {
         browserContext.changePage('/url-fragments#section3');
       });
 
-      button('Clear Fragment', () => {
+      button('Clear Fragment').onClick(() => {
         browserContext.changePage('/url-fragments');
       });
 
@@ -120,15 +120,15 @@ vbox(() => {
       label('Fragments can control which tab is visible:');
       label('');
 
-      button('Show Tab A (#tab-a)', () => {
+      button('Show Tab A (#tab-a)').onClick(() => {
         browserContext.changePage('/url-fragments#tab-a');
       });
 
-      button('Show Tab B (#tab-b)', () => {
+      button('Show Tab B (#tab-b)').onClick(() => {
         browserContext.changePage('/url-fragments#tab-b');
       });
 
-      button('Show Tab C (#tab-c)', () => {
+      button('Show Tab C (#tab-c)').onClick(() => {
         browserContext.changePage('/url-fragments#tab-c');
       });
 
@@ -170,7 +170,7 @@ vbox(() => {
         label('  2. Another result matching ' + query);
         label('  3. More results...');
       } else {
-        button('Search for "typescript" (#query=typescript)', () => {
+        button('Search for "typescript" (#query=typescript)').onClick(() => {
           browserContext.changePage('/url-fragments#query=typescript');
         });
       }
@@ -247,7 +247,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

@@ -121,7 +121,7 @@ todoContainer.model(store.getAllTodos()).each((todo) => {
   a.hbox(() => {
     a.checkbox(todo.text, () => store.toggleTodo(todo.id))
       .when(() => shouldShowTodo(todo));  // Visibility based on filter
-    a.button('Delete', () => store.deleteTodo(todo.id));
+    a.button('Delete').onClick(() => store.deleteTodo(todo.id));
   });
 });
 ```
@@ -172,8 +172,8 @@ const listBinding = todoContainer
   .each((todo) => {
     const view = a.hbox(() => {
       a.checkbox(todo.text, () => store.toggleTodo(todo.id));
-      a.button('Edit', ifNotEditingStartEdit);
-      a.button('Delete', () => store.deleteTodo(todo.id));
+      a.button('Edit').onClick(ifNotEditingStartEdit);
+      a.button('Delete').onClick(() => store.deleteTodo(todo.id));
     });
 
     // when() equivalent - hide/show based on filter
@@ -418,7 +418,7 @@ const listBinding = todoContainer
   .each((todo) => {
     a.hbox(() => {
       a.checkbox(todo.text, () => store.toggleTodo(todo.id));
-      a.button('Delete', () => store.deleteTodo(todo.id));
+      a.button('Delete').onClick(() => store.deleteTodo(todo.id));
     });
   });
 

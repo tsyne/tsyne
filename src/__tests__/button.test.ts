@@ -6,11 +6,11 @@ const createTestApp = (app: App) => {
     win.setContent(() => {
       app.vbox(() => {
         app.button('Default');
-        app.button('Low', () => {}, 'low');
-        app.button('Medium', () => {}, 'medium');
-        app.button('High', () => {}, 'high');
-        app.button('Warning', () => {}, 'warning');
-        app.button('Success', () => {}, 'success');
+        app.button('Low', 'low').onClick(() => {});
+        app.button('Medium', 'medium').onClick(() => {});
+        app.button('High', 'high').onClick(() => {});
+        app.button('Warning', 'warning').onClick(() => {});
+        app.button('Success', 'success').onClick(() => {});
       });
     });
     win.show();

@@ -25,7 +25,7 @@ app({ title: 'File Dialogs Demo' }, () => {
         label('');
 
         // Open file dialog
-        button('Open File', async () => {
+        button('Open File').onClick(async () => {
           statusLabel.setText('Opening file dialog...');
 
           const filePath = await win.showFileOpen();
@@ -50,7 +50,7 @@ app({ title: 'File Dialogs Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Save File', async () => {
+          button('Save File').onClick(async () => {
             const filename = await filenameEntry.getText();
             statusLabel.setText('Opening save dialog...');
 
@@ -65,7 +65,7 @@ app({ title: 'File Dialogs Demo' }, () => {
             }
           });
 
-          button('Save As...', async () => {
+          button('Save As...').onClick(async () => {
             const filename = currentFilePath
               ? currentFilePath.split('/').pop() || 'untitled.txt'
               : 'untitled.txt';
@@ -91,7 +91,7 @@ app({ title: 'File Dialogs Demo' }, () => {
         label('Practical Workflow:');
         label('');
 
-        button('Open and Process', async () => {
+        button('Open and Process').onClick(async () => {
           const filePath = await win.showFileOpen();
 
           if (filePath) {
@@ -110,7 +110,7 @@ app({ title: 'File Dialogs Demo' }, () => {
 
         label('');
 
-        button('Create New Document', async () => {
+        button('Create New Document').onClick(async () => {
           const confirmed = await win.showConfirm(
             'Create New',
             'This will clear the current document. Continue?'
@@ -126,7 +126,7 @@ app({ title: 'File Dialogs Demo' }, () => {
 
         label('');
 
-        button('Save Current Work', async () => {
+        button('Save Current Work').onClick(async () => {
           if (currentFilePath) {
             // Save to existing path
             await win.showInfo('Saved', `Document saved to ${currentFilePath}`);

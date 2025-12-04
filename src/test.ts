@@ -251,6 +251,188 @@ export interface WidgetInfo {
 }
 
 /**
+ * TextValue represents a text value that can be polled and asserted
+ * Allows fluent chaining like: locator.getText().within(2000).shouldContain("text")
+ * Can also be awaited directly: const text = await locator.getText();
+ */
+export class TextValue implements PromiseLike<string> {
+  private withinTimeout?: number;
+  private getTextFn: () => Promise<string>;
+
+  constructor(getTextFn: () => Promise<string>) {
+    this.getTextFn = getTextFn;
+  }
+
+  /**
+   * Set polling timeout for subsequent assertions
+   * @example
+   * await locator.getText().within(2000).shouldContain("Updated");
+   */
+  within(timeout: number): this {
+    this.withinTimeout = timeout;
+    return this;
+  }
+
+  /**
+   * Assert text equals expected value
+   * With .within(), polls until match or timeout
+   */
+  async shouldBe(expected: string): Promise<void> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const actual = await this.getTextFn();
+      if (actual !== expected) {
+        throwCallerError(`Expected text to equal:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldBe);
+      }
+      return;
+    }
+
+    // Poll with within() timeout
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getTextFn();
+        if (actual === expected) {
+          return;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throwCallerError(`Expected text to equal:\n  ${expected}\nReceived:\n  ${lastActual}`, this.shouldBe);
+  }
+
+  /**
+   * Assert text contains substring
+   * With .within(), polls until substring appears or timeout
+   */
+  async shouldContain(expected: string): Promise<void> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const actual = await this.getTextFn();
+      if (!actual.includes(expected)) {
+        throwCallerError(`Expected text to contain substring:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldContain);
+      }
+      return;
+    }
+
+    // Poll with within() timeout
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getTextFn();
+        if (actual.includes(expected)) {
+          return;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throwCallerError(`Expected text to contain substring:\n  ${expected}\nReceived:\n  ${lastActual}`, this.shouldContain);
+  }
+
+  /**
+   * Assert text matches pattern
+   * With .within(), polls until pattern matches or timeout
+   */
+  async shouldMatch(pattern: RegExp): Promise<void> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const actual = await this.getTextFn();
+      if (!pattern.test(actual)) {
+        throwCallerError(`Expected text to match pattern:\n  ${pattern}\nReceived:\n  ${actual}`, this.shouldMatch);
+      }
+      return;
+    }
+
+    // Poll with within() timeout
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getTextFn();
+        if (pattern.test(actual)) {
+          return;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throwCallerError(`Expected text to match pattern:\n  ${pattern}\nReceived:\n  ${lastActual}`, this.shouldMatch);
+  }
+
+  /**
+   * Assert text does not equal expected value
+   * With .within(), polls until text changes or timeout
+   */
+  async shouldNotBe(unexpected: string): Promise<void> {
+    const timeout = this.withinTimeout;
+    this.withinTimeout = undefined;
+
+    if (!timeout) {
+      const actual = await this.getTextFn();
+      if (actual === unexpected) {
+        throwCallerError(`Expected text not to equal:\n  ${unexpected}\nReceived:\n  ${actual}`, this.shouldNotBe);
+      }
+      return;
+    }
+
+    // Poll with within() timeout
+    const startTime = Date.now();
+    let lastActual = '';
+    while (Date.now() - startTime < timeout) {
+      try {
+        const actual = await this.getTextFn();
+        if (actual !== unexpected) {
+          return;
+        }
+        lastActual = actual;
+      } catch (error) {
+        // Keep trying
+      }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throwCallerError(`Expected text to equal something other than:\n  ${unexpected}\nBut it remained:\n  ${lastActual}`, this.shouldNotBe);
+  }
+
+  /**
+   * Make TextValue thenable so it can be awaited like a Promise
+   * Enables: const text = await locator.getText();
+   */
+  async then<TResult1 = string, TResult2 = never>(
+    onfulfilled?: ((value: string) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+  ): Promise<TResult1 | TResult2> {
+    try {
+      const text = await this.getTextFn();
+      if (onfulfilled) {
+        return Promise.resolve(onfulfilled(text));
+      }
+      return Promise.resolve(text as any);
+    } catch (error) {
+      if (onrejected) {
+        return Promise.resolve(onrejected(error));
+      }
+      return Promise.reject(error);
+    }
+  }
+}
+
+/**
  * Locator represents a way to find widgets in the UI
  * Supports fluent-selenium style method chaining
  */
@@ -413,14 +595,19 @@ export class Locator {
 
   /**
    * Get the text of the first widget matching this locator
+   * Returns a TextValue that can be:
+   * - Awaited directly: const text = await locator.getText();
+   * - Asserted with polling: locator.getText().within(2000).shouldContain("text");
    */
-  async getText(): Promise<string> {
-    const widgetId = await this.find();
-    if (!widgetId) {
-      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.getText);
-    }
-    const result = await this.bridge.send('getText', { widgetId }, this.getText) as { text: string };
-    return result.text;
+  getText(): TextValue {
+    return new TextValue(async () => {
+      const widgetId = await this.find();
+      if (!widgetId) {
+        throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.getText);
+      }
+      const result = await this.bridge.send('getText', { widgetId }, this.getText) as { text: string };
+      return result.text;
+    });
   }
 
   /**
@@ -500,7 +687,9 @@ export class Locator {
     if (!timeout) {
       // Fast fail - no retry
       const actual = await this.getText();
-      expect(actual).toBe(expected);
+      if (actual !== expected) {
+        throwCallerError(`Expected text to equal:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldBe);
+      }
       return this;
     }
 
@@ -520,8 +709,7 @@ export class Locator {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
     // Timeout - fail with last value
-    expect(lastActual).toBe(expected);
-    return this;
+    throwCallerError(`Expected text to equal:\n  ${expected}\nReceived:\n  ${lastActual}`, this.shouldBe);
   }
 
   /**
@@ -540,7 +728,9 @@ export class Locator {
     if (!timeout) {
       // Fast fail - no retry
       const actual = await this.getText();
-      expect(actual).toContain(expected);
+      if (!actual.includes(expected)) {
+        throwCallerError(`Expected text to contain substring:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldContain);
+      }
       return this;
     }
 
@@ -560,8 +750,7 @@ export class Locator {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
     // Timeout - fail with last value
-    expect(lastActual).toContain(expected);
-    return this;
+    throwCallerError(`Expected text to contain substring:\n  ${expected}\nReceived:\n  ${lastActual}`, this.shouldContain);
   }
 
   /**
@@ -572,7 +761,9 @@ export class Locator {
    */
   async shouldMatch(pattern: RegExp): Promise<Locator> {
     const actual = await this.getText();
-    expect(actual).toMatch(pattern);
+    if (!pattern.test(actual)) {
+      throwCallerError(`Expected text to match pattern:\n  ${pattern}\nReceived:\n  ${actual}`, this.shouldMatch);
+    }
     return this;
   }
 
@@ -584,7 +775,9 @@ export class Locator {
    */
   async shouldNotBe(expected: string): Promise<Locator> {
     const actual = await this.getText();
-    expect(actual).not.toBe(expected);
+    if (actual === expected) {
+      throwCallerError(`Expected text not to equal:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldNotBe);
+    }
     return this;
   }
 
@@ -635,7 +828,9 @@ export class Locator {
     // Use !== undefined to handle 0 values correctly (0 is falsy but valid)
     const actual = info.value !== undefined ? String(info.value) : '';
     const expectedStr = String(expected);
-    expect(actual).toBe(expectedStr);
+    if (actual !== expectedStr) {
+      throwCallerError(`Expected widget value to equal:\n  ${expectedStr}\nReceived:\n  ${actual}`, this.shouldHaveValue);
+    }
     return this;
   }
 
@@ -649,7 +844,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveSelected);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveSelected) as WidgetInfo;
-    expect(info.selected).toBe(expected);
+    if (info.selected !== expected) {
+      throwCallerError(`Expected selected option to equal:\n  ${expected}\nReceived:\n  ${info.selected}`, this.shouldHaveSelected);
+    }
     return this;
   }
 
@@ -695,7 +892,9 @@ export class Locator {
     const widgetId = await this.find();
     if (!widgetId) throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.shouldHaveType);
     const info = await this.bridge.send('getWidgetInfo', { widgetId }, this.shouldHaveType) as WidgetInfo;
-    expect(info.type).toBe(expected);
+    if (info.type !== expected) {
+      throwCallerError(`Expected widget type to equal:\n  ${expected}\nReceived:\n  ${info.type}`, this.shouldHaveType);
+    }
     return this;
   }
 
@@ -1084,7 +1283,9 @@ export class ListItemLocator {
    */
   async shouldBe(expected: string): Promise<ListItemLocator> {
     const actual = await this.getText();
-    expect(actual).toBe(expected);
+    if (actual !== expected) {
+      throwCallerError(`Expected list item to equal:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldBe);
+    }
     return this;
   }
 
@@ -1095,7 +1296,9 @@ export class ListItemLocator {
    */
   async shouldContain(expected: string): Promise<ListItemLocator> {
     const actual = await this.getText();
-    expect(actual).toContain(expected);
+    if (!actual.includes(expected)) {
+      throwCallerError(`Expected list item to contain substring:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldContain);
+    }
     return this;
   }
 
@@ -1106,7 +1309,9 @@ export class ListItemLocator {
    */
   async shouldMatch(pattern: RegExp): Promise<ListItemLocator> {
     const actual = await this.getText();
-    expect(actual).toMatch(pattern);
+    if (!pattern.test(actual)) {
+      throwCallerError(`Expected list item to match pattern:\n  ${pattern}\nReceived:\n  ${actual}`, this.shouldMatch);
+    }
     return this;
   }
 
@@ -1115,7 +1320,9 @@ export class ListItemLocator {
    */
   async shouldNotBe(expected: string): Promise<ListItemLocator> {
     const actual = await this.getText();
-    expect(actual).not.toBe(expected);
+    if (actual === expected) {
+      throwCallerError(`Expected list item not to equal:\n  ${expected}\nReceived:\n  ${actual}`, this.shouldNotBe);
+    }
     return this;
   }
 }
@@ -1216,7 +1423,11 @@ export class Expect {
  * Main test context for interacting with Tsyne apps
  */
 export class TestContext {
-  constructor(private bridge: BridgeInterface) {}
+  private app?: any; // Store app for getting window IDs
+
+  constructor(private bridge: BridgeInterface, app?: any) {
+    this.app = app;
+  }
 
   /**
    * Get a locator for buttons with specific text
@@ -1541,7 +1752,10 @@ export class TestContext {
   }
 
   async captureScreenshot(filePath: string): Promise<void> {
-    const windowId = 'window_0'; // TODO: Make this dynamic
+    const windowId = this.app?.getFirstWindowId?.();
+    if (!windowId) {
+      throwCallerError('No window created. Call app.window() before capturing screenshots.', this.captureScreenshot);
+    }
     await this.bridge.send('captureWindow', { windowId, filePath }, this.captureScreenshot);
   }
 
@@ -1554,7 +1768,7 @@ export class TestContext {
    * await ctx.dialog().shouldBeInfo('Success').thenDismiss();
    */
   dialog(): DialogLocator {
-    return new DialogLocator(this.bridge);
+    return new DialogLocator(this.bridge, this.app);
   }
 
   /**
@@ -1568,7 +1782,12 @@ export class TestContext {
    * expect(dialogs[0].message).toContain('Failed');
    */
   async getActiveDialogs(): Promise<DialogInfo[]> {
-    const windowId = 'window_0'; // First window created
+    // Get window ID from app (dynamically generated, not hardcoded)
+    const windowId = this.app?.getFirstWindowId?.();
+    if (!windowId) {
+      throwCallerError('No window created. Call app.window() before querying dialogs.', this.getActiveDialogs);
+    }
+
     const result = await this.bridge.send('getActiveDialogs', { windowId }, this.getActiveDialogs) as { dialogs?: DialogInfo[] };
     return result.dialogs || [];
   }
@@ -1580,7 +1799,10 @@ export class TestContext {
    * await ctx.dismissActiveDialog();
    */
   async dismissActiveDialog(): Promise<void> {
-    const windowId = 'window_0'; // First window created
+    const windowId = this.app?.getFirstWindowId?.();
+    if (!windowId) {
+      throwCallerError('No window created. Call app.window() before dismissing dialogs.', this.dismissActiveDialog);
+    }
     await this.bridge.send('dismissActiveDialog', { windowId }, this.dismissActiveDialog);
   }
 
@@ -1642,9 +1864,12 @@ export interface DialogInfo {
  */
 export class DialogLocator {
   private withinTimeout?: number;
-  private windowId = 'window_0'; // First window created
+  private windowId?: string; // Dynamically set from app
 
-  constructor(private bridge: BridgeInterface) {}
+  constructor(private bridge: BridgeInterface, app?: any) {
+    // Get window ID from app (dynamically generated)
+    this.windowId = app?.getFirstWindowId?.();
+  }
 
   /**
    * Set timeout for polling until dialog appears
@@ -1660,6 +1885,9 @@ export class DialogLocator {
    * Get all active dialogs (with optional polling)
    */
   private async getDialogs(callerFn?: Function): Promise<DialogInfo[]> {
+    if (!this.windowId) {
+      throwCallerError('No window created. Call app.window() before querying dialogs.', callerFn || this.getDialogs);
+    }
     const result = await this.bridge.send('getActiveDialogs', { windowId: this.windowId }, callerFn) as { dialogs?: DialogInfo[] };
     return result.dialogs || [];
   }

@@ -21,7 +21,7 @@ describe('Custom Dialog', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Main Window');
-            app.button('Open Dialog', async () => {
+            app.button('Open Dialog').onClick(async () => {
               await win.showCustom('Test Dialog', () => {
                 app.vbox(() => {
                   app.label('Dialog Content');
@@ -76,7 +76,7 @@ describe('Custom Dialog', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Status: Waiting');
-            app.button('Open Confirm', async () => {
+            app.button('Open Confirm').onClick(async () => {
               await win.showCustomConfirm('Confirm Action', () => {
                 app.vbox(() => {
                   app.label('Do you want to proceed?');

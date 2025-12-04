@@ -152,7 +152,7 @@ let titleNumber = 1;
 vbox(() => {
   label('Dynamic Title Updates');
 
-  const btn = button('Update Title', () => {
+  const btn = button('Update Title').onClick(() => {
     titleNumber++;
     browserContext.setPageTitle(\`Title Version \${titleNumber}\`);
   });

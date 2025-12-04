@@ -29,7 +29,7 @@ describe('Theme Creator Example', () => {
             // Theme controls
             app.label('Preset Themes:');
             app.hbox(() => {
-              app.button('Ocean', async () => {
+              app.button('Ocean').onClick(async () => {
                 await app.setCustomTheme({
                   background: '#0a1929',
                   foreground: '#b2bac2',
@@ -38,7 +38,7 @@ describe('Theme Creator Example', () => {
                 statusLabel.setText('Applied Ocean theme');
               });
 
-              app.button('Forest', async () => {
+              app.button('Forest').onClick(async () => {
                 await app.setCustomTheme({
                   background: '#1a2e1a',
                   foreground: '#c8e6c9',
@@ -47,7 +47,7 @@ describe('Theme Creator Example', () => {
                 statusLabel.setText('Applied Forest theme');
               });
 
-              app.button('Reset', async () => {
+              app.button('Reset').onClick(async () => {
                 await app.clearCustomTheme();
                 statusLabel.setText('Reset to default theme');
               });
@@ -58,7 +58,7 @@ describe('Theme Creator Example', () => {
             // Widget preview
             app.label('Widget Preview:');
             app.hbox(() => {
-              app.button('Test Button', () => statusLabel.setText('Button clicked'));
+              app.button('Test Button').onClick(() => statusLabel.setText('Button clicked'));
             });
             app.entry('Sample entry field');
             app.checkbox('Sample checkbox', () => {});
@@ -116,17 +116,17 @@ describe('Theme Creator Example', () => {
             scaleLabel = app.label('Scale: 1.0x');
 
             app.hbox(() => {
-              app.button('Small', async () => {
+              app.button('Small').onClick(async () => {
                 await app.setFontScale(0.75);
                 scaleLabel.setText('Scale: 0.75x');
               });
 
-              app.button('Normal', async () => {
+              app.button('Normal').onClick(async () => {
                 await app.setFontScale(1.0);
                 scaleLabel.setText('Scale: 1.0x');
               });
 
-              app.button('Large', async () => {
+              app.button('Large').onClick(async () => {
                 await app.setFontScale(1.5);
                 scaleLabel.setText('Scale: 1.5x');
               });

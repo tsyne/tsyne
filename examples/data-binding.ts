@@ -44,14 +44,14 @@ app({ title: 'Data Binding Demo' }, () => {
 
         // First name input
         const firstEntry = entry('First name');
-        button('Update First Name', async () => {
+        button('Update First Name').onClick(async () => {
           const value = await firstEntry.getText();
           firstName.set(value);
         });
 
         // Last name input
         const lastEntry = entry('Last name');
-        button('Update Last Name', async () => {
+        button('Update Last Name').onClick(async () => {
           const value = await lastEntry.getText();
           lastName.set(value);
         });
@@ -67,12 +67,12 @@ app({ title: 'Data Binding Demo' }, () => {
         label('');
 
         // Buttons to manipulate state
-        button('Reset to Defaults', () => {
+        button('Reset to Defaults').onClick(() => {
           firstName.set('John');
           lastName.set('Doe');
         });
 
-        button('Clear All', () => {
+        button('Clear All').onClick(() => {
           firstName.set('');
           lastName.set('');
         });

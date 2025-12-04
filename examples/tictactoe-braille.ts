@@ -251,7 +251,7 @@ export function buildBrailleTicTacToe(a: any) {
         });
 
       a.hbox(() => {
-        ttsToggle = a.button("TTS: OFF", () => toggleTTS())
+        ttsToggle = a.button("TTS: OFF").onClick(() => toggleTTS())
           .withId('ttsToggle')
           .accessibility({
             role: "switch",
@@ -284,7 +284,7 @@ export function buildBrailleTicTacToe(a: any) {
           const row = Math.floor(i / 3) + 1;
           const col = (i % 3) + 1;
 
-          const cellButton = a.button(" ", () => makeMove(i))
+          const cellButton = a.button(" ").onClick(() => makeMove(i))
             .withId(`cell${i}`)
             .accessibility({
               role: "gridcell",  // Proper grid semantics
@@ -312,7 +312,7 @@ export function buildBrailleTicTacToe(a: any) {
         });
 
       a.hbox(() => {
-        a.button("New", () => newGame())  // Brief button text
+        a.button("New").onClick(() => newGame())  // Brief button text
           .withId('newGame')
           .accessibility({
             role: "button",
@@ -320,7 +320,7 @@ export function buildBrailleTicTacToe(a: any) {
             hint: "N"  // Keyboard shortcut
           });
 
-        a.button("Undo", () => undoMove())  // Brief
+        a.button("Undo").onClick(() => undoMove())  // Brief
           .withId('undo')
           .accessibility({
             role: "button",

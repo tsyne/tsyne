@@ -1009,9 +1009,9 @@ class SolitaireUI {
     this.a.vbox(() => {
       // Action buttons
       this.a.hbox(() => {
-        this.a.button('New Game', () => this.newGame()).withId('new-game-btn');
-        this.a.button('Shuffle', () => this.shuffle()).withId('shuffle-btn');
-        this.a.button('Draw', () => this.draw()).withId('draw-btn');
+        this.a.button('New Game').onClick(() => this.newGame()).withId('new-game-btn');
+        this.a.button('Shuffle').onClick(() => this.shuffle()).withId('shuffle-btn');
+        this.a.button('Draw').onClick(() => this.draw()).withId('draw-btn');
       });
 
       // Game area

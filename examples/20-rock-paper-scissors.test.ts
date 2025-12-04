@@ -32,9 +32,9 @@ describe('Rock Paper Scissors Example', () => {
 
             app.label('Choose your weapon:');
             app.hbox(() => {
-              app.button('✊ Rock', () => {});
-              app.button('✋ Paper', () => {});
-              app.button('✌️ Scissors', () => {});
+              app.button('✊ Rock').onClick(() => {});
+              app.button('✋ Paper').onClick(() => {});
+              app.button('✌️ Scissors').onClick(() => {});
             });
 
             app.separator();
@@ -137,9 +137,9 @@ describe('Rock Paper Scissors Example', () => {
             app.label('Rock Paper Scissors');
 
             app.hbox(() => {
-              app.button('✊ Rock', () => play('Rock'));
-              app.button('✋ Paper', () => play('Paper'));
-              app.button('✌️ Scissors', () => play('Scissors'));
+              app.button('✊ Rock').onClick(() => play('Rock'));
+              app.button('✋ Paper').onClick(() => play('Paper'));
+              app.button('✌️ Scissors').onClick(() => play('Scissors'));
             });
 
             playerChoiceLabel = app.label('Make your choice!');
@@ -217,9 +217,9 @@ describe('Rock Paper Scissors Example', () => {
             app.label('✊ ✋ ✌️');
 
             app.hbox(() => {
-              app.button('✊ Rock', () => play('Rock'));
-              app.button('✋ Paper', () => play('Paper'));
-              app.button('✌️ Scissors', () => play('Scissors'));
+              app.button('✊ Rock').onClick(() => play('Rock'));
+              app.button('✋ Paper').onClick(() => play('Paper'));
+              app.button('✌️ Scissors').onClick(() => play('Scissors'));
             });
 
             resultLabel = app.label('');
@@ -275,7 +275,7 @@ describe('Rock Paper Scissors Example', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.hbox(() => {
-              app.button('✊ Rock', () => play('Rock'));
+              app.button('✊ Rock').onClick(() => play('Rock'));
             });
 
             resultLabel = app.label('');

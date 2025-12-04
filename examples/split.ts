@@ -20,9 +20,9 @@ app({ title: 'Split Container Demo' }, () => {
             label('This is the sidebar area');
             label('with navigation items.');
             label('');
-            button('Home', () => console.log('Home clicked'));
-            button('Settings', () => console.log('Settings clicked'));
-            button('About', () => console.log('About clicked'));
+            button('Home').onClick(() => console.log('Home clicked'));
+            button('Settings').onClick(() => console.log('Settings clicked'));
+            button('About').onClick(() => console.log('About clicked'));
             label('');
             label('You can resize this');
             label('pane by dragging');
@@ -63,7 +63,7 @@ app({ title: 'Split Container Demo' }, () => {
                   label('');
                   entry('Enter text here...');
                   label('');
-                  button('Submit', () => {
+                  button('Submit').onClick(() => {
                     console.log('Submit clicked');
                   });
                   label('');

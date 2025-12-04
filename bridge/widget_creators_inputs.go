@@ -21,12 +21,18 @@ func (b *Bridge) handleCreateButton(msg Message) Response {
 	text := msg.Payload["text"].(string)
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
+	// Create button with a callback that looks up the callback ID from the map at click time
+	// This allows callbacks to be set/updated after button creation via setWidgetCallback
 	btn := widget.NewButton(text, func() {
-		if hasCallback {
+		b.mu.RLock()
+		storedCallbackID, hasStoredCallback := b.callbacks[widgetID]
+		b.mu.RUnlock()
+
+		if hasStoredCallback {
 			b.sendEvent(Event{
 				Type:     "callback",
 				WidgetID: widgetID,
-				Data:     map[string]interface{}{"callbackId": callbackID},
+				Data:     map[string]interface{}{"callbackId": storedCallbackID},
 			})
 		}
 	})

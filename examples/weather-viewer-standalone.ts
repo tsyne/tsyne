@@ -179,7 +179,7 @@ app({ title: 'Weather Viewer' }, () => {
           CITIES.map((c) => c.name),
           onCityChange
         );
-        button('Refresh', refreshWeather);
+        button('Refresh').onClick(refreshWeather);
       });
 
       separator();

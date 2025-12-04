@@ -56,7 +56,7 @@ app({ title: 'Tip Calculator' }, (a) => {
         // Number of people
         a.label('Split Between:');
         a.hbox(() => {
-          a.button('-', () => {
+          a.button('-').onClick(() => {
             if (numPeople > 1) {
               numPeople--;
               peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
@@ -66,7 +66,7 @@ app({ title: 'Tip Calculator' }, (a) => {
 
           const peopleLabel = a.label('1 person');
 
-          a.button('+', () => {
+          a.button('+').onClick(() => {
             numPeople++;
             peopleLabel.setText(`${numPeople} people`);
             calculate();
@@ -84,7 +84,7 @@ app({ title: 'Tip Calculator' }, (a) => {
 
         a.separator();
 
-        a.button('Clear', () => {
+        a.button('Clear').onClick(() => {
           billAmount = 0;
           tipPercent = 15;
           numPeople = 1;

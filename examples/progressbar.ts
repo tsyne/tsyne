@@ -44,13 +44,13 @@ app({ title: 'ProgressBar Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Start Download', async () => {
+          button('Start Download').onClick(async () => {
             statusLabel.setText('Downloading...');
             downloadValue = 0;
             simulateDownload();
           });
 
-          button('Start Upload', async () => {
+          button('Start Upload').onClick(async () => {
             statusLabel.setText('Uploading...');
             uploadValue = 0;
             simulateUpload();
@@ -60,19 +60,19 @@ app({ title: 'ProgressBar Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Set 50%', async () => {
+          button('Set 50%').onClick(async () => {
             await downloadProgress.setProgress(0.5);
             await uploadProgress.setProgress(0.5);
             statusLabel.setText('Progress set to 50%');
           });
 
-          button('Set 100%', async () => {
+          button('Set 100%').onClick(async () => {
             await downloadProgress.setProgress(1.0);
             await uploadProgress.setProgress(1.0);
             statusLabel.setText('Complete!');
           });
 
-          button('Reset', async () => {
+          button('Reset').onClick(async () => {
             await downloadProgress.setProgress(0);
             await uploadProgress.setProgress(0);
             downloadValue = 0;

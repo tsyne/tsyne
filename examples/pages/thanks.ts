@@ -12,11 +12,11 @@ vbox(() => {
   label('(Check the console for submitted data)');
   label('');
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 
-  button('Go Back', () => {
+  button('Go Back').onClick(() => {
     browserContext.back();
   });
 });

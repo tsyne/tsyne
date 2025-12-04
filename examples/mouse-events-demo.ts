@@ -17,7 +17,7 @@ app({ title: "Mouse Events Demo" }, (a) => {
       a.label("Hover over the buttons below and watch the console:");
 
       // Example 1: Individual event methods
-      a.button("Individual Events", () => console.log("Clicked!"))
+      a.button("Individual Events").onClick(() => console.log("Clicked!"))
         .onMouseIn((e) => {
           console.log(`[Individual] Mouse IN at (${e.position.x.toFixed(1)}, ${e.position.y.toFixed(1)})`);
         })
@@ -31,7 +31,7 @@ app({ title: "Mouse Events Demo" }, (a) => {
       a.separator();
 
       // Example 2: Combined .onMouse() method
-      a.button("Combined Events", () => console.log("Clicked!"))
+      a.button("Combined Events").onClick(() => console.log("Clicked!"))
         .onMouse({
           in: (e) => console.log(`[Combined] IN at (${e.position.x.toFixed(1)}, ${e.position.y.toFixed(1)})`),
           moved: (e) => console.log(`[Combined] MOVED to (${e.position.x.toFixed(1)}, ${e.position.y.toFixed(1)})`),
@@ -41,7 +41,7 @@ app({ title: "Mouse Events Demo" }, (a) => {
       a.separator();
 
       // Example 3: Selective - only onMouseIn and onMouseOut
-      a.button("Enter/Exit Only", () => console.log("Clicked!"))
+      a.button("Enter/Exit Only").onClick(() => console.log("Clicked!"))
         .onMouse({
           in: () => console.log('[Selective] Mouse entered'),
           out: () => console.log('[Selective] Mouse exited')
@@ -51,7 +51,7 @@ app({ title: "Mouse Events Demo" }, (a) => {
       a.separator();
 
       // Example 4: With accessibility
-      a.button("With Accessibility", () => console.log("Clicked!"))
+      a.button("With Accessibility").onClick(() => console.log("Clicked!"))
         .onMouseIn((e) => console.log(`[Accessible] IN at (${e.position.x.toFixed(1)}, ${e.position.y.toFixed(1)})`))
         .onMouseOut(() => console.log('[Accessible] OUT'))
         .accessibility({

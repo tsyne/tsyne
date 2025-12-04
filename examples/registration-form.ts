@@ -233,7 +233,7 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
           // Action Buttons
           a.hbox(() => {
             // Submit Button
-            submitButton = a.button('Create Account', async () => {
+            submitButton = a.button('Create Account').onClick(async () => {
               const isValid = await validateAllFields();
 
               if (isValid) {
@@ -255,7 +255,7 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
             });
 
             // Clear Button
-            a.button('Clear Form', () => {
+            a.button('Clear Form').onClick(() => {
               clearForm();
             });
           });

@@ -29,9 +29,9 @@ describe('Toolbar Button Visibility Tests', () => {
       app.window({ title: 'Regular Buttons Test', width: 400 }, (win: Window) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Button 1', () => {});
-            app.button('Button 2', () => {});
-            app.button('Button 3', () => {});
+            app.button('Button 1').onClick(() => {});
+            app.button('Button 2').onClick(() => {});
+            app.button('Button 3').onClick(() => {});
           });
         });
         win.show();
@@ -116,8 +116,8 @@ describe('Toolbar Button Visibility Tests', () => {
           app.border({
             top: () => {
               app.hbox(() => {
-                app.button('Regular Button 1', () => {});
-                app.button('Regular Button 2', () => {});
+                app.button('Regular Button 1').onClick(() => {});
+                app.button('Regular Button 2').onClick(() => {});
               });
             },
             center: () => {
@@ -148,7 +148,7 @@ describe('Toolbar Button Visibility Tests', () => {
               app.toolbarAction('Toolbar Button').withId('mixed-toolbar-btn')
             ]);
             app.label('After toolbar');
-            app.button('Regular Button Below', () => {});
+            app.button('Regular Button Below').onClick(() => {});
           });
         });
         win.show();

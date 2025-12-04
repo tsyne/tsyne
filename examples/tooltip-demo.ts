@@ -24,7 +24,7 @@ app({ title: 'Popup Demo' }, (a) => {
         // Section 1: Simple Tooltips
         a.label('--- Tooltips (appear on hover) ---');
         a.hbox(() => {
-          const btn1 = a.button('Hover Me!', () => {});
+          const btn1 = a.button('Hover Me!').onClick(() => {});
           btn1.onMouseIn(() => {
             tooltip1?.showAt(50, 150);
           });
@@ -32,7 +32,7 @@ app({ title: 'Popup Demo' }, (a) => {
             tooltip1?.hide();
           });
 
-          const btn2 = a.button('Hover Here Too', () => {});
+          const btn2 = a.button('Hover Here Too').onClick(() => {});
           btn2.onMouseIn(() => {
             tooltip2?.showAt(200, 150);
           });
@@ -40,7 +40,7 @@ app({ title: 'Popup Demo' }, (a) => {
             tooltip2?.hide();
           });
 
-          const btn3 = a.button('And Me!', () => {});
+          const btn3 = a.button('And Me!').onClick(() => {});
           btn3.onMouseIn(() => {
             tooltip3?.showAt(350, 150);
           });
@@ -54,7 +54,7 @@ app({ title: 'Popup Demo' }, (a) => {
         // Section 2: Click Popover
         a.label('--- Popover (click to toggle) ---');
         let popoverVisible = false;
-        a.button('Click for Details', () => {
+        a.button('Click for Details').onClick(() => {
           if (popoverVisible) {
             popover?.hide();
           } else {
@@ -67,7 +67,7 @@ app({ title: 'Popup Demo' }, (a) => {
 
         // Section 3: Centered Modal-style Popup
         a.label('--- Modal Popup (centered) ---');
-        a.button('Show Modal', () => {
+        a.button('Show Modal').onClick(() => {
           modalPopup?.show(); // Centered by default
         });
 
@@ -123,7 +123,7 @@ app({ title: 'Popup Demo' }, (a) => {
           a.label('Use this for important messages or');
           a.label('quick actions that need attention.');
           a.separator();
-          a.button('Close', () => {
+          a.button('Close').onClick(() => {
             modalPopup?.hide();
           });
         });

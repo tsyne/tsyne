@@ -43,10 +43,8 @@ import { app, window, vbox, button, getAccessibilityManager } from 'tsyne';
 const myApp = app({ title: "My App" }, (a) => {
   a.window({ title: "Accessible App" }, () => {
     a.vbox(() => {
-      a.button("Click Me", () => {
-        const manager = getAccessibilityManager((myApp as any).ctx);
-        manager.announce("Button was clicked!");
-      });
+      a.button("Click Me").onClick(() => { const manager = getAccessibilityManager((myApp as any).ctx);
+        manager.announce("Button was clicked!"); });
     });
   });
 });
@@ -59,7 +57,7 @@ manager.enable();
 ### 2. Adding Accessibility Metadata
 
 ```typescript
-a.button("Submit", onSubmit)
+a.button("Submit").onClick(onSubmit)
   .withId('submitBtn')
   .accessibility({
     label: 'Submit Form',
@@ -344,7 +342,7 @@ const myApp = app({ title: "App" }, (a) => {
     a.vbox(() => {
       // Fluent API - chain methods as needed
       a.hoverable(() => {
-        a.button("Submit", () => submitForm())
+        a.button("Submit").onClick(() => submitForm())
           .accessibility({
             label: "Submit Form",
             description: "Click to submit the registration form",
@@ -381,7 +379,7 @@ const myApp = app({ title: "App" }, (a) => {
 // Pass callbacks directly to constructor
 a.hoverable(
   () => {
-    a.button("Submit", () => submitForm())
+    a.button("Submit").onClick(() => submitForm())
       .accessibility({
         label: "Submit Form",
         role: "button"
@@ -404,7 +402,7 @@ a.hoverable(
 
           a.hoverable(
             () => {
-              a.button(board[i], () => makeMove(i))
+              a.button(board[i]).onClick(() => makeMove(i))
                 .accessibility({
                   label: position,
                   description: `Cell at ${position}`,

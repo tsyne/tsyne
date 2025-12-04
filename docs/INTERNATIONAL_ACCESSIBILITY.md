@@ -424,7 +424,7 @@ const testLanguages = [
 // Test text direction
 describe('RTL Languages', () => {
   it('should set RTL direction for Arabic', () => {
-    const button = a.button("إرسال", onClick)
+    const button = a.button("إرسال").onClick(onClick)
       .accessibility({
         label: "إرسال",
         language: "ar",
@@ -435,7 +435,7 @@ describe('RTL Languages', () => {
   });
 
   it('should set RTL direction for Hebrew', () => {
-    const button = a.button("שלח", onClick)
+    const button = a.button("שלח").onClick(onClick)
       .accessibility({
         label: "שלח",
         language: "he",
@@ -449,7 +449,7 @@ describe('RTL Languages', () => {
 // Test language codes
 describe('Language Codes', () => {
   it('should set correct language for Chinese', () => {
-    const button = a.button("提交", onClick)
+    const button = a.button("提交").onClick(onClick)
       .accessibility({
         label: "提交",
         language: "zh-CN"
@@ -592,7 +592,7 @@ function smartAccessibility(label: string, options: any = {}) {
 }
 
 // Usage
-a.button("提交", onClick)
+a.button("提交").onClick(onClick)
   .accessibility(smartAccessibility("提交"));
 
 // Automatically sets:

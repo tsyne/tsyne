@@ -38,7 +38,7 @@ app({ title: "Keyable Demo" }, (a) => {
       a.label("(Click this button, then type!)");
 
       // Main keyboard input button
-      const inputBtn = a.button("[ Click here, then type! ]", () => {
+      const inputBtn = a.button("[ Click here, then type! ]").onClick(() => {
         statusLabel.setText("Button clicked - now type on your keyboard!");
       });
 
@@ -97,7 +97,7 @@ app({ title: "Keyable Demo" }, (a) => {
         posLabel = a.label("Position: (0, 0)");
       });
 
-      const arrowBtn = a.button("[ Use Arrow Keys ]", () => {
+      const arrowBtn = a.button("[ Use Arrow Keys ]").onClick(() => {
         statusLabel.setText("Arrow button focused - use arrow keys!");
       });
 
@@ -134,7 +134,7 @@ app({ title: "Keyable Demo" }, (a) => {
       a.separator();
       a.label("Key Combination Detector:");
 
-      const comboBtn = a.button("[ Try key combos: Shift+A, Ctrl+S ]", () => {
+      const comboBtn = a.button("[ Try key combos: Shift+A, Ctrl+S ]").onClick(() => {
         statusLabel.setText("Combo button focused - try modifier + key!");
       });
 
@@ -173,7 +173,7 @@ app({ title: "Keyable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset All", () => {
+      a.button("Reset All").onClick(() => {
         keyHistory = [];
         currentlyPressed.clear();
         keyPressCount = 0;

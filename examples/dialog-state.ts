@@ -117,7 +117,7 @@ class ProfileDialog {
 
           // Buttons
           hbox(() => {
-            button('Save', async () => {
+            button('Save').onClick(async () => {
               const profile = await this.getProfileFromInputs();
               if (this.validateProfile(profile)) {
                 this.manager.confirm(profile);
@@ -126,7 +126,7 @@ class ProfileDialog {
               }
             });
 
-            button('Cancel', () => {
+            button('Cancel').onClick(() => {
               this.manager.cancel();
               this.statusLabel.setText('✗ Cancelled (Window would close)');
             });
@@ -217,7 +217,7 @@ app({ title: 'Dialog State Demo' }, () => {
         label('');
 
         // Button to open dialog
-        button('Edit Profile (Open Dialog)', async () => {
+        button('Edit Profile (Open Dialog)').onClick(async () => {
           // Get current profile from store
           const currentProfile = store.getState().userProfile;
 
@@ -239,7 +239,7 @@ app({ title: 'Dialog State Demo' }, () => {
         label('');
 
         // Button to reset state
-        button('Reset Profile', () => {
+        button('Reset Profile').onClick(() => {
           store.update(state => ({
             ...state,
             userProfile: {

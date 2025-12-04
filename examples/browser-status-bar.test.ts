@@ -51,7 +51,7 @@ browserContext.setStatus('Page loaded successfully');
 vbox(() => {
   label('Custom Status Page');
 
-  const btn = button('Update Status', () => {
+  const btn = button('Update Status').onClick(() => {
     browserContext.setStatus('Button clicked!');
   });
   btn.id = 'update-status-btn';
@@ -136,7 +136,7 @@ let count = 0;
 vbox(() => {
   label('Dynamic Status Updates');
 
-  const btn = button('Increment Counter', () => {
+  const btn = button('Increment Counter').onClick(() => {
     count++;
     browserContext.setStatus(\`Counter: \${count}\`);
   });

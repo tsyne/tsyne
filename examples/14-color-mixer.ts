@@ -62,7 +62,7 @@ app({ title: 'Color Mixer' }, (a) => {
         a.separator();
 
         a.hbox(() => {
-          a.button('Random Color', () => {
+          a.button('Random Color').onClick(() => {
             red = Math.floor(Math.random() * 256);
             green = Math.floor(Math.random() * 256);
             blue = Math.floor(Math.random() * 256);
@@ -72,7 +72,7 @@ app({ title: 'Color Mixer' }, (a) => {
             updateColor();
           });
 
-          a.button('Reset', () => {
+          a.button('Reset').onClick(() => {
             red = green = blue = 128;
             redLabel.setText(`Red: 128`);
             greenLabel.setText(`Green: 128`);

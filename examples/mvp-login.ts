@@ -111,7 +111,7 @@ class LoginView implements ILoginView {
       label('');
 
       // Login button
-      button('Login', this.onLogin);
+      button('Login').onClick(this.onLogin);
 
       label('');
       label('Validation: min 3 chars username, 6 chars password');
@@ -127,7 +127,7 @@ class LoginView implements ILoginView {
       label('');
       label('You have successfully logged in.');
       label('');
-      button('Logout', this.onLogout);
+      button('Logout').onClick(this.onLogout);
     });
   }
 

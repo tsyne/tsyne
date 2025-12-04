@@ -37,19 +37,19 @@ app({ title: 'Checkbox Demo' }, () => {
 
         // Action buttons
         hbox(() => {
-          button('Check All', async () => {
+          button('Check All').onClick(async () => {
             await termsCheckbox.setChecked(true);
             await newsletterCheckbox.setChecked(true);
             updateStatus();
           });
 
-          button('Uncheck All', async () => {
+          button('Uncheck All').onClick(async () => {
             await termsCheckbox.setChecked(false);
             await newsletterCheckbox.setChecked(false);
             updateStatus();
           });
 
-          button('Submit', async () => {
+          button('Submit').onClick(async () => {
             const termsAccepted = await termsCheckbox.getChecked();
             const newsletterSubscribed = await newsletterCheckbox.getChecked();
 

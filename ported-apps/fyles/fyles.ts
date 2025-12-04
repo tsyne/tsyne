@@ -224,7 +224,7 @@ class FylesPanel {
   private buildToolbar(): void {
     this.app.hbox(() => {
       // Home button
-      this.app.button('🏠', async () => {
+      this.app.button('🏠').onClick(async () => {
         try {
           await this.store.navigateHome();
         } catch (err) {
@@ -233,7 +233,7 @@ class FylesPanel {
       }).withId(`panel-${this.panelIndex}-home`);
 
       // New folder button
-      this.app.button('📁+', async () => {
+      this.app.button('📁+').onClick(async () => {
         if (!this.window) return;
         const folderName = await this.window.showEntryDialog(
           'New Folder',
@@ -257,13 +257,13 @@ class FylesPanel {
       ).withId(`panel-${this.panelIndex}-hidden`);
 
       // Split panel button (add new panel)
-      this.app.button('⊞', () => {
+      this.app.button('⊞').onClick(() => {
         this.multiPanelManager.addPanel(this.store.getCurrentDir());
       }).withId(`panel-${this.panelIndex}-split`);
 
       // Close panel button (only show if more than one panel)
       if (this.multiPanelManager.getPanelCount() > 1) {
-        this.app.button('✕', () => {
+        this.app.button('✕').onClick(() => {
           this.multiPanelManager.removePanel(this.panelIndex);
         }).withId(`panel-${this.panelIndex}-close`);
       }
@@ -299,7 +299,7 @@ class FylesPanel {
 
         // Parent folder (..)
         if (parentDir) {
-          this.app.button('⬆️ ..', async () => {
+          this.app.button('⬆️ ..').onClick(async () => {
             try {
               await this.store.navigateUp();
             } catch (err) {
@@ -320,7 +320,7 @@ class FylesPanel {
           this.app.label(`${currentFolderIcon} ${path.basename(currentDir)}`);
           // Collapse all button (only show if something is expanded)
           if (this.store.getExpandedDirs().length > 0) {
-            this.app.button('⏫', async () => {
+            this.app.button('⏫').onClick(async () => {
               await this.store.collapseAll();
             }).withId('collapse-all-btn');
           }
@@ -354,12 +354,12 @@ class FylesPanel {
 
     this.app.hbox(() => {
       // Expand/collapse toggle button
-      this.app.button(`${indent}${expandIcon}`, async () => {
+      this.app.button(`${indent}${expandIcon}`).onClick(async () => {
         await this.store.toggleExpanded(dir.path);
       }).withId(`panel-${this.panelIndex}-expand-${dir.fullName}`);
 
       // Folder button (navigate on click)
-      const navButton = this.app.button(`📁 ${dir.fullName}`, async () => {
+      const navButton = this.app.button(`📁 ${dir.fullName}`).onClick(async () => {
         try {
           await this.store.navigateToDir(dir.path);
         } catch (err) {
@@ -465,7 +465,7 @@ class FylesPanel {
 
       // File name as button (clickable)
       const itemType = item.isDirectory ? 'folder' : 'file';
-      const button = this.app.button(item.fullName, async () => {
+      const button = this.app.button(item.fullName).onClick(async () => {
         await this.handleItemClick(item);
       }).withId(`panel-${this.panelIndex}-grid-${itemType}-${item.fullName}`);
 

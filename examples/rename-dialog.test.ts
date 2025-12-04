@@ -43,7 +43,7 @@ describe('Rename Dialog Example', () => {
                 const label = app.label(file.name);
                 fileLabels.set(file.id, label);
 
-                app.button('Rename', async () => {
+                app.button('Rename').onClick(async () => {
                   const newName = await win.showEntryDialog(
                     'Rename File',
                     `Enter new name for "${file.name}":`
@@ -100,7 +100,7 @@ describe('Rename Dialog Example', () => {
       app.window({ title: 'Entry Dialog Test', width: 300, height: 150 }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Show Dialog', async () => {
+            app.button('Show Dialog').onClick(async () => {
               dialogShown = true;
               dialogResult = await win.showEntryDialog('Test Title', 'Enter some text:');
             });

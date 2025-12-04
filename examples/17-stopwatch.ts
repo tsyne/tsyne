@@ -85,10 +85,10 @@ app({ title: 'Stopwatch' }, (a) => {
 
           // Control buttons
           a.hbox(() => {
-            a.button('Start', start);
-            a.button('Stop', stop);
-            a.button('Lap', lap);
-            a.button('Reset', reset);
+            a.button('Start').onClick(start);
+            a.button('Stop').onClick(stop);
+            a.button('Lap').onClick(lap);
+            a.button('Reset').onClick(reset);
           });
 
           a.separator();
@@ -122,10 +122,10 @@ app({ title: 'Stopwatch' }, (a) => {
 
         // Control buttons
         a.hbox(() => {
-          a.button('Start', start);
-          a.button('Stop', stop);
-          a.button('Lap', lap);
-          a.button('Reset', reset);
+          a.button('Start').onClick(start);
+          a.button('Stop').onClick(stop);
+          a.button('Lap').onClick(lap);
+          a.button('Reset').onClick(reset);
         });
 
         a.separator();

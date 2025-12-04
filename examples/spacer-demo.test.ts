@@ -26,9 +26,9 @@ describe('Spacer Demo Example', () => {
             // Horizontal layout with spacers
             app.label('Horizontal spacers (buttons pushed to edges):');
             app.hbox(() => {
-              app.button('Left', () => {});
+              app.button('Left').onClick(() => {});
               app.spacer();
-              app.button('Right', () => {});
+              app.button('Right').onClick(() => {});
             });
 
             app.separator();
@@ -37,11 +37,11 @@ describe('Spacer Demo Example', () => {
             app.label('Multiple spacers (evenly distributed):');
             app.hbox(() => {
               app.spacer();
-              app.button('A', () => {});
+              app.button('A').onClick(() => {});
               app.spacer();
-              app.button('B', () => {});
+              app.button('B').onClick(() => {});
               app.spacer();
-              app.button('C', () => {});
+              app.button('C').onClick(() => {});
               app.spacer();
             });
           });
@@ -80,9 +80,9 @@ describe('Spacer Demo Example', () => {
       app.window({ title: 'Spacer Test', width: 200, height: 100 }, (win) => {
         win.setContent(() => {
           app.hbox(() => {
-            app.button('A', () => {});
+            app.button('A').onClick(() => {});
             app.spacer();
-            app.button('B', () => {});
+            app.button('B').onClick(() => {});
           });
         });
         win.show();

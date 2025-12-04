@@ -42,7 +42,7 @@ app({ title: 'Reminder App' }, (a) => {
         });
 
         a.hbox(() => {
-          a.button('Add Reminder', async () => {
+          a.button('Add Reminder').onClick(async () => {
             const title = await titleEntry.getText();
             const delayStr = await delayEntry.getText();
             const delay = parseInt(delayStr, 10) || 10;
@@ -77,7 +77,7 @@ app({ title: 'Reminder App' }, (a) => {
             }
           });
 
-          a.button('Send Now', async () => {
+          a.button('Send Now').onClick(async () => {
             const title = await titleEntry.getText();
             if (title) {
               await a.sendNotification('Reminder', title);
@@ -96,7 +96,7 @@ app({ title: 'Reminder App' }, (a) => {
         a.separator();
 
         a.hbox(() => {
-          a.button('Clear All Reminders', () => {
+          a.button('Clear All Reminders').onClick(() => {
             for (const reminder of reminders) {
               if (reminder.timeoutId) {
                 clearTimeout(reminder.timeoutId);
@@ -106,7 +106,7 @@ app({ title: 'Reminder App' }, (a) => {
             updateReminderList();
           });
 
-          a.button('Test Notification', async () => {
+          a.button('Test Notification').onClick(async () => {
             await a.sendNotification('Test', 'This is a test notification!');
           });
         });

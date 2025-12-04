@@ -29,7 +29,7 @@ app({ title: 'Project Opener' }, () => {
 
         // Open folder dialog
         hbox(() => {
-          button('Open Project Folder', async () => {
+          button('Open Project Folder').onClick(async () => {
             statusLabel.setText('Opening folder dialog...');
 
             const folderPath = await win.showFolderOpen();
@@ -45,7 +45,7 @@ app({ title: 'Project Opener' }, () => {
             }
           });
 
-          button('Close Project', async () => {
+          button('Close Project').onClick(async () => {
             if (currentProjectPath) {
               const confirmed = await win.showConfirm(
                 'Close Project',
@@ -69,14 +69,14 @@ app({ title: 'Project Opener' }, () => {
         label('');
 
         // Simulate recent projects list
-        button('  /home/user/my-project', async () => {
+        button('  /home/user/my-project').onClick(async () => {
           currentProjectPath = '/home/user/my-project';
           statusLabel.setText('Project opened from recent!');
           projectPathLabel.setText('Path: /home/user/my-project');
           projectNameLabel.setText('Project: my-project');
         });
 
-        button('  /home/user/another-app', async () => {
+        button('  /home/user/another-app').onClick(async () => {
           currentProjectPath = '/home/user/another-app';
           statusLabel.setText('Project opened from recent!');
           projectPathLabel.setText('Path: /home/user/another-app');
@@ -87,7 +87,7 @@ app({ title: 'Project Opener' }, () => {
         label('');
 
         // Project info button
-        button('Show Project Info', async () => {
+        button('Show Project Info').onClick(async () => {
           if (currentProjectPath) {
             await win.showInfo(
               'Project Information',

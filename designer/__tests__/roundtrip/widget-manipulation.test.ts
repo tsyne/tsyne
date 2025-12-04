@@ -47,7 +47,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', () => {});
+        a.button('Click').onClick(() => {});
       });
     });
     win.show();
@@ -101,7 +101,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Delete Me', () => {});
+        a.button('Delete Me').onClick(() => {});
       });
     });
     win.show();
@@ -128,7 +128,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Keep Me');
-        a.button('Delete Me', () => {});
+        a.button('Delete Me').onClick(() => {});
         a.label('Keep Me Too');
       });
     });
@@ -157,7 +157,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Title');
-        a.button('Delete', () => {
+        a.button('Delete').onClick(() => {
           console.log('Important code!');
           performCriticalOperation();
         });
@@ -245,7 +245,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Original', () => {});
+        a.button('Original').onClick(() => {});
       });
     });
     win.show();
@@ -320,14 +320,14 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Keep', () => {
+        a.button('Keep').onClick(() => {
           count++;
           console.log('Keep this handler!');
         });
-        a.button('Delete', () => {
+        a.button('Delete').onClick(() => {
           console.log('Delete this');
         });
-        a.button('Also Keep', () => {
+        a.button('Also Keep').onClick(() => {
           count--;
           console.log('Also keep this!');
         });

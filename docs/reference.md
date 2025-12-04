@@ -123,7 +123,7 @@ app({ title: 'My App' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Hello Tsyne!');
-        a.button('Click Me', () => console.log('clicked'));
+        a.button('Click Me').onClick(() => console.log('clicked'));
       });
     });
     win.show();
@@ -157,7 +157,7 @@ app({ title: 'My App' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Hello');
-        a.button('Click', () => console.log('clicked'));
+        a.button('Click').onClick(() => console.log('clicked'));
         a.hbox(() => {
           a.entry('placeholder', onSubmit, 300);
         });
@@ -229,9 +229,7 @@ The Context:
 
 **Button:**
 ```typescript
-const btn = a.button('Click Me', () => {
-  console.log('Button clicked!');
-});
+const btn = a.button('Click Me').onClick(() => { console.log('Button clicked!'); });
 ```
 
 **Label:**
@@ -475,7 +473,7 @@ const listBinding = todoContainer
   .each((todo) => {
     a.hbox(() => {
       a.checkbox(todo.text, () => store.toggleTodo(todo.id));
-      a.button('Delete', () => store.deleteTodo(todo.id));
+      a.button('Delete').onClick(() => store.deleteTodo(todo.id));
     });
   });
 

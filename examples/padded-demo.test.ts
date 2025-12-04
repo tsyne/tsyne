@@ -33,8 +33,8 @@ describe('Padded Container Demo', () => {
                   app.card('Card Title', 'No padding around content', () => {
                     app.vbox(() => {
                       app.label('This content has no extra padding');
-                      app.button('Button 1', () => {});
-                      app.button('Button 2', () => {});
+                      app.button('Button 1').onClick(() => {});
+                      app.button('Button 2').onClick(() => {});
                     });
                   });
                 });
@@ -47,8 +47,8 @@ describe('Padded Container Demo', () => {
                     app.padded(() => {
                       app.vbox(() => {
                         app.label('This content has theme padding');
-                        app.button('Button 1', () => {});
-                        app.button('Button 2', () => {});
+                        app.button('Button 1').onClick(() => {});
+                        app.button('Button 2').onClick(() => {});
                       });
                     });
                   });

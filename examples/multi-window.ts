@@ -19,7 +19,7 @@ app({ title: 'Multi-Window Demo' }, (a) => {
 
         statusLabel = a.label(`Open windows: ${windowCount + 1}`);
 
-        a.button('Open New Window', () => {
+        a.button('Open New Window').onClick(() => {
           windowCount++;
           const winId = windowCount;
 
@@ -32,11 +32,11 @@ app({ title: 'Multi-Window Demo' }, (a) => {
                 a.label(`This is Window ${winId}`);
                 a.separator();
 
-                a.button('Show Info', () => {
+                a.button('Show Info').onClick(() => {
                   newWin.showInfo('Window Info', `You are in Window ${winId}`);
                 });
 
-                a.button('Close This Window', async () => {
+                a.button('Close This Window').onClick(async () => {
                   await newWin.close();
                   statusLabel.setText(`Open windows: ${windows.length}`);
                 });
@@ -50,7 +50,7 @@ app({ title: 'Multi-Window Demo' }, (a) => {
 
         a.separator();
 
-        a.button('Show All Windows Info', () => {
+        a.button('Show All Windows Info').onClick(() => {
           mainWin.showInfo(
             'Windows Info',
             `Main window + ${windowCount} secondary windows created`

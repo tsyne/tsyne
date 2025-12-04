@@ -32,12 +32,12 @@ app({ title: 'Unsaved Changes Demo' }, (a) => {
         const editor = a.multilineentry('Type your document here...');
 
         a.hbox(() => {
-          a.button('Mark as Modified', async () => {
+          a.button('Mark as Modified').onClick(async () => {
             hasUnsavedChanges = true;
             await statusLabel.setText('Status: Modified (unsaved)');
           });
 
-          a.button('Save Document', async () => {
+          a.button('Save Document').onClick(async () => {
             hasUnsavedChanges = false;
             await statusLabel.setText('Status: Saved');
           });

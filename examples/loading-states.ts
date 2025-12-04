@@ -26,17 +26,17 @@ app({ title: 'Loading States Demo' }, (a) => {
         a.label('');
 
         a.hbox(() => {
-          a.button('Start Request', async () => {
+          a.button('Start Request').onClick(async () => {
             await networkProgress.start();
             await networkStatus.setText('Status: Loading...');
           });
 
-          a.button('Stop Request', async () => {
+          a.button('Stop Request').onClick(async () => {
             await networkProgress.stop();
             await networkStatus.setText('Status: Stopped');
           });
 
-          a.button('Check Status', async () => {
+          a.button('Check Status').onClick(async () => {
             const running = await networkProgress.isRunning();
             await networkStatus.setText(`Status: ${running ? 'Running' : 'Stopped'}`);
           });
@@ -51,7 +51,7 @@ app({ title: 'Loading States Demo' }, (a) => {
         a.label('');
 
         a.hbox(() => {
-          a.button('Process Files', async () => {
+          a.button('Process Files').onClick(async () => {
             await fileProgress.start();
             await fileStatus.setText('Processing files...');
 
@@ -81,10 +81,10 @@ app({ title: 'Loading States Demo' }, (a) => {
               a.label('Loading data...');
             });
             a.hbox(() => {
-              a.button('Start Loading', async () => {
+              a.button('Start Loading').onClick(async () => {
                 await loadingActivity.start();
               });
-              a.button('Stop Loading', async () => {
+              a.button('Stop Loading').onClick(async () => {
                 await loadingActivity.stop();
               });
             });
@@ -98,7 +98,7 @@ app({ title: 'Loading States Demo' }, (a) => {
               uploadActivity = a.activity();
               a.label('Upload progress');
             });
-            a.button('Upload File', async () => {
+            a.button('Upload File').onClick(async () => {
               await uploadActivity.start();
               // Simulate upload delay
               setTimeout(async () => {

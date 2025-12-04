@@ -208,11 +208,11 @@ export function hbox(builder: () => void): HBox {
  * });
  * ```
  */
-export function button(text: string, onClick?: () => void): Button {
+export function button(text: string): Button {
   if (!globalContext) {
     throw new Error('button() must be called within an app context');
   }
-  return new Button(globalContext, text, onClick);
+  return new Button(globalContext, text);
 }
 
 /**

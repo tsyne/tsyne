@@ -29,7 +29,7 @@ describe('Home Button Tests', () => {
 
           tsyne.vbox(() => {
             // Create home button with house icon
-            const homeBtn = tsyne.button('🏠', () => {
+            const homeBtn = tsyne.button('🏠').onClick(() => {
               homeClicked = true;
             });
             homeBtn.id = 'home-button';
@@ -63,16 +63,16 @@ describe('Home Button Tests', () => {
 
           tsyne.vbox(() => {
             tsyne.hbox(() => {
-              const backBtn = tsyne.button('←', () => {});
+              const backBtn = tsyne.button('←').onClick(() => {});
               backBtn.id = 'back-btn';
 
-              const forwardBtn = tsyne.button('→', () => {});
+              const forwardBtn = tsyne.button('→').onClick(() => {});
               forwardBtn.id = 'forward-btn';
 
-              const reloadBtn = tsyne.button('⟳', () => {});
+              const reloadBtn = tsyne.button('⟳').onClick(() => {});
               reloadBtn.id = 'reload-btn';
 
-              const homeBtn = tsyne.button('🏠', () => {});
+              const homeBtn = tsyne.button('🏠').onClick(() => {});
               homeBtn.id = 'home-btn';
             });
 
@@ -102,13 +102,13 @@ describe('Home Button Tests', () => {
           const tsyne = require('../src/index');
 
           tsyne.vbox(() => {
-            const btn1 = tsyne.button('First', () => clickOrder.push('first'));
+            const btn1 = tsyne.button('First').onClick(() => clickOrder.push('first'));
             btn1.id = 'btn1';
 
-            const homeBtn = tsyne.button('🏠', () => clickOrder.push('home'));
+            const homeBtn = tsyne.button('🏠').onClick(() => clickOrder.push('home'));
             homeBtn.id = 'home-btn';
 
-            const btn2 = tsyne.button('Last', () => clickOrder.push('last'));
+            const btn2 = tsyne.button('Last').onClick(() => clickOrder.push('last'));
             btn2.id = 'btn2';
           });
         });

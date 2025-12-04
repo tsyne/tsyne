@@ -19,7 +19,7 @@ Run: `TSYNE_HEADED=0 xvfb-run -a npx jest examples/toolbar-isolation.test.ts`
 
 ## Key Findings
 
-1. **Regular buttons work everywhere**: `app.button('Label', () => {})` buttons are correctly found by `ctx.getByText('Label')`
+1. **Regular buttons work everywhere**: `app.button('Label').onClick(() => {});` buttons are correctly found by `ctx.getByText('Label')`
 
 2. **Toolbar buttons are invisible to tests**: `app.toolbar([{ type: 'action', label: 'Label', onAction: () => {} }])` buttons cannot be found by `ctx.getByText('Label')`
 
@@ -37,9 +37,7 @@ Run: `TSYNE_HEADED=0 xvfb-run -a npx jest examples/toolbar-isolation.test.ts`
 
 ### Working Pattern (Regular Button)
 ```typescript
-app.button('My Button', () => {
-  console.log('clicked');
-});
+app.button('My Button').onClick(() => { console.log('clicked'); });
 ```
 **Result**: ✅ `ctx.getByText('My Button')` finds the widget
 

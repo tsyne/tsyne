@@ -220,6 +220,14 @@ export class App {
   }
 
   /**
+   * Get the ID of the first created window
+   * Used by test harness to query dialogs
+   */
+  getFirstWindowId(): string | undefined {
+    return this.windows[0]?.id;
+  }
+
+  /**
    * Register a cleanup callback to be called before app shutdown
    * Use this to clean up timers, intervals, event listeners, etc.
    */
@@ -283,12 +291,11 @@ export class App {
   /**
    * Create a clickable button.
    * @param text - Button label
-   * @param onClick - Click handler (can be async)
    * @param className - Optional CSS class name for styling
    * @returns Button widget
    */
-  button(text: string, onClick?: () => void | Promise<void>, className?: string): Button {
-    return new Button(this.ctx, text, onClick, className);
+  button(text: string, className?: string): Button {
+    return new Button(this.ctx, text, className);
   }
 
   /**

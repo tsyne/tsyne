@@ -141,6 +141,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetText(msg)
 	case "getText":
 		return b.handleGetText(msg)
+	case "setWidgetCallback":
+		return b.handleSetWidgetCallback(msg)
 	case "setProgress":
 		return b.handleSetProgress(msg)
 	case "getProgress":
@@ -744,12 +746,8 @@ func main() {
 	// Set up logging
 	// Any accidental stdout writes (debug prints, panics, third-party libraries)
 	// would corrupt the JSON stream and crash the application.
-	// All logging MUST go to stderr (or discard in test mode).
-	if testMode {
-		log.SetOutput(io.Discard) // Suppress logs in test mode
-	} else {
-		log.SetOutput(os.Stderr)
-	}
+	// All logging goes to stderr (including in test mode for debugging).
+	log.SetOutput(os.Stderr)
 	log.SetPrefix("[tsyne-bridge] ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 

@@ -71,8 +71,8 @@ app({ title: 'Focus Events Demo' }, (a) => {
         // Multiple widgets to tab between
         a.label('Additional Widgets for Testing:');
         a.hbox(() => {
-          a.button('Button 1', () => console.log('Button 1'));
-          a.button('Button 2', () => console.log('Button 2'));
+          a.button('Button 1').onClick(() => console.log('Button 1'));
+          a.button('Button 2').onClick(() => console.log('Button 2'));
         });
 
         a.separator();

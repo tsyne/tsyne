@@ -54,7 +54,7 @@ vbox(() => {
   label('Note: These menus only appear when this page is loaded.');
   label('');
 
-  button('Back to Home', () => {
+  button('Back to Home').onClick(() => {
     browserContext.changePage('/');
   });
 });

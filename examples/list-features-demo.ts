@@ -67,13 +67,13 @@ app({ title: 'List Features Demo' }, (a) => {
         // Control buttons
         a.label('List Controls:');
         a.hbox(() => {
-          a.button('Unselect All', async () => {
+          a.button('Unselect All').onClick(async () => {
             await listWidget.unselectAll();
             currentSelection = null;
             selectedLabel.setText('Selected: (cleared programmatically)');
           });
 
-          a.button('Show Selection', async () => {
+          a.button('Show Selection').onClick(async () => {
             if (currentSelection) {
               await win.showInfo('Current Selection', `Currently selected: ${currentSelection}`);
             } else {
