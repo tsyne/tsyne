@@ -34,60 +34,54 @@ describe('Tictactoe High Contrast Mode', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for UI to render
-    await ctx.wait(500);
+    // Wait for UI to render - poll for initial state
+    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
 
     // Make some moves to populate the board for better visual testing
     // X in center (cell4)
     await ctx.getByID('cell4').click();
-    await ctx.wait(200);
+    await ctx.getByText("Player O's turn").within(200).shouldExist();
 
     // O in top-left (cell0)
     await ctx.getByID('cell0').click();
-    await ctx.wait(200);
+    await ctx.getByText("Player X's turn").within(200).shouldExist();
 
     // X in top-right (cell2)
     await ctx.getByID('cell2').click();
-    await ctx.wait(200);
+    await ctx.getByText("Player O's turn").within(200).shouldExist();
 
     // O in bottom-left (cell6)
     await ctx.getByID('cell6').click();
-    await ctx.wait(200);
+    await ctx.getByText("Player X's turn").within(200).shouldExist();
 
     // Verify initial state
-    await ctx.expect(ctx.getByText('High Contrast: OFF')).toBeVisible();
+    await ctx.getByText('High Contrast: OFF').shouldExist();
 
     // Capture screenshot in normal mode if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'tictactoe-normal-mode.png');
-      await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Normal mode screenshot: ${screenshotPath}`);
     }
 
     // Toggle high contrast ON
-    const contrastButton = ctx.getByText('High Contrast: OFF');
-    await contrastButton.click();
-    await ctx.wait(500);
+    await ctx.getByText('High Contrast: OFF').click();
 
-    // Verify high contrast is ON
-    await ctx.expect(ctx.getByText('High Contrast: ON')).toBeVisible();
+    // Verify high contrast is ON - poll for state change
+    await ctx.getByText('High Contrast: ON').within(500).shouldExist();
 
     // Capture screenshot in high contrast mode if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'tictactoe-high-contrast-mode.png');
-      await ctx.wait(500);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 High contrast mode screenshot: ${screenshotPath}`);
     }
 
     // Toggle high contrast OFF
-    const contrastButtonOn = ctx.getByText('High Contrast: ON');
-    await contrastButtonOn.click();
-    await ctx.wait(500);
+    await ctx.getByText('High Contrast: ON').click();
 
-    // Verify high contrast is OFF again
-    await ctx.expect(ctx.getByText('High Contrast: OFF')).toBeVisible();
+    // Verify high contrast is OFF again - poll for state change
+    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
 
     // Keep window visible for a moment in headed mode
     if (process.env.TSYNE_HEADED === '1') {
@@ -103,35 +97,34 @@ describe('Tictactoe High Contrast Mode', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.wait(500);
+    // Wait for UI to be ready
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Make a move
     await ctx.getByID('cell4').click();
-    await ctx.wait(500);
+    await ctx.getByText("Player O's turn").within(500).shouldExist();
 
     // Toggle high contrast ON
     await ctx.getByText('High Contrast: OFF').click();
-    await ctx.wait(500);
 
-    // Verify high contrast is ON
-    await ctx.expect(ctx.getByText('High Contrast: ON')).toBeVisible();
+    // Verify high contrast is ON - poll for state change
+    await ctx.getByText('High Contrast: ON').within(500).shouldExist();
 
     // Make another move to verify game still works
     await ctx.getByID('cell0').click();
-    await ctx.wait(500);
+    await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Toggle high contrast OFF
     await ctx.getByText('High Contrast: ON').click();
-    await ctx.wait(500);
 
-    // Verify high contrast is OFF
-    await ctx.expect(ctx.getByText('High Contrast: OFF')).toBeVisible();
+    // Verify high contrast is OFF - poll for state change
+    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
 
     // Make one more move to verify game still works
     await ctx.getByID('cell2').click();
-    await ctx.wait(500);
+    await ctx.getByText("Player O's turn").within(500).shouldExist();
 
     // Game should still be functional - verify New Game button exists
-    await ctx.expect(ctx.getByText('New Game')).toBeVisible();
+    await ctx.getByText('New Game').shouldExist();
   });
 });
