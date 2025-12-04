@@ -16,7 +16,7 @@ describe('Dialog Inspection', () => {
 
   describe('getActiveDialogs', () => {
     test('should return empty array when no dialogs are shown', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.label('No dialogs here');
@@ -26,13 +26,14 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       const dialogs = await ctx.getActiveDialogs();
       expect(dialogs).toHaveLength(0);
     });
 
     test('should detect showInfo dialog', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -44,6 +45,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       // Initially no dialogs
       await ctx.assertNoDialogs();
@@ -60,7 +62,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should detect showError dialog', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Error', async () => {
@@ -72,6 +74,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       // Click to show error dialog
       await ctx.getByText('Show Error').click();
@@ -86,7 +89,7 @@ describe('Dialog Inspection', () => {
 
   describe('dismissActiveDialog', () => {
     test('should dismiss info dialog', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Dismiss Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -98,6 +101,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       // Show dialog
       await ctx.getByText('Show Info').click();
@@ -119,7 +123,7 @@ describe('Dialog Inspection', () => {
 
   describe('DialogLocator fluent API', () => {
     test('should use dialog().shouldExist()', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Fluent Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -131,6 +135,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       // Show dialog
       await ctx.getByText('Show Info').click();
@@ -141,7 +146,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should use dialog().shouldNotExist()', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Fluent Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.label('No dialogs');
@@ -151,13 +156,14 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       // No dialog should exist
       await ctx.dialog().shouldNotExist();
     });
 
     test('should use dialog().shouldBeInfo()', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -169,6 +175,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       await ctx.getByText('Show Info').click();
       await ctx.wait(100);
@@ -177,7 +184,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should use dialog().shouldBeError()', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Error', async () => {
@@ -189,6 +196,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       await ctx.getByText('Show Error').click();
       await ctx.wait(100);
@@ -197,7 +205,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should use dialog().shouldContain()', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Contains Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -209,6 +217,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       await ctx.getByText('Show Info').click();
       await ctx.wait(100);
@@ -217,7 +226,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should use dialog().within() for polling', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Polling Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Delayed Dialog', async () => {
@@ -232,6 +241,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       await ctx.getByText('Delayed Dialog').click();
 
@@ -240,7 +250,7 @@ describe('Dialog Inspection', () => {
     });
 
     test('should use dialog().thenDismiss() for chaining', async () => {
-      await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Chain Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
             app.button('Show Info', async () => {
@@ -252,6 +262,7 @@ describe('Dialog Inspection', () => {
       });
 
       ctx = tsyneTest.getContext();
+      await testApp.run();
 
       await ctx.getByText('Show Info').click();
       await ctx.wait(100);
