@@ -27,6 +27,28 @@ class TsyneEnvironment extends NodeEnvironment {
     if (this.unhandledRejectionHandler) {
       this.global.process.removeListener('unhandledRejection', this.unhandledRejectionHandler);
     }
+
+    // Print wait time report at the end of this test file's execution
+    // Access the global singleton tracker that's shared with test files
+    const TRACKER_KEY = '__tsyneWaitTimeTracker';
+    const waitTimeTracker = this.global[TRACKER_KEY];
+    if (waitTimeTracker && waitTimeTracker.getTotalWaitTime && waitTimeTracker.getTotalWaitTime() > 0) {
+      waitTimeTracker.printReport();
+
+      // Save to JSON file for CI aggregation
+      // Use /tmp/tsyne-wait-times.json as the aggregation file
+      if (waitTimeTracker.saveToFile) {
+        try {
+          waitTimeTracker.saveToFile('/tmp/tsyne-wait-times.json');
+        } catch (e) {
+          // Ignore errors saving to file - not critical
+        }
+      }
+
+      // Clear for next test file (each file gets its own environment)
+      waitTimeTracker.clear();
+    }
+
     await super.teardown();
   }
 }

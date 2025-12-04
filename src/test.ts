@@ -9,6 +9,179 @@ declare const expect: any;
 declare const fail: (message?: string) => never;
 
 /**
+ * Record of a single ctx.wait() call
+ */
+export interface WaitTimeRecord {
+  testName: string;       // Full test name including describe blocks
+  waitMs: number;         // Duration waited
+  callLocation?: string;  // Optional: stack trace location of the call
+}
+
+/**
+ * Summary of wait times for a single test
+ */
+export interface TestWaitSummary {
+  testName: string;
+  totalWaitMs: number;
+  waitCount: number;
+}
+
+/**
+ * Global tracker for ctx.wait() times across test runs
+ */
+class WaitTimeTracker {
+  private records: WaitTimeRecord[] = [];
+  private enabled: boolean = true;
+
+  /**
+   * Record a wait call
+   */
+  record(waitMs: number, testName: string, callLocation?: string): void {
+    if (!this.enabled) return;
+    this.records.push({ testName, waitMs, callLocation });
+  }
+
+  /**
+   * Get total wait time across all tests
+   */
+  getTotalWaitTime(): number {
+    return this.records.reduce((sum, r) => sum + r.waitMs, 0);
+  }
+
+  /**
+   * Get wait time summary per test
+   */
+  getSummaryByTest(): TestWaitSummary[] {
+    const byTest = new Map<string, { total: number; count: number }>();
+
+    for (const record of this.records) {
+      const existing = byTest.get(record.testName) || { total: 0, count: 0 };
+      existing.total += record.waitMs;
+      existing.count += 1;
+      byTest.set(record.testName, existing);
+    }
+
+    return Array.from(byTest.entries())
+      .map(([testName, data]) => ({
+        testName,
+        totalWaitMs: data.total,
+        waitCount: data.count
+      }))
+      .sort((a, b) => b.totalWaitMs - a.totalWaitMs); // Sort by highest wait time first
+  }
+
+  /**
+   * Get all raw records
+   */
+  getAllRecords(): WaitTimeRecord[] {
+    return [...this.records];
+  }
+
+  /**
+   * Clear all records (useful between test runs)
+   */
+  clear(): void {
+    this.records = [];
+  }
+
+  /**
+   * Enable or disable tracking
+   */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  /**
+   * Print a formatted report to stdout
+   * Uses process.stdout.write to bypass Jest's console interception during teardown
+   */
+  printReport(): void {
+    const summaries = this.getSummaryByTest();
+    const total = this.getTotalWaitTime();
+
+    // Use process.stdout.write to avoid Jest's "Cannot log after tests are done" warning
+    const write = (msg: string) => process.stdout.write(msg + '\n');
+
+    if (summaries.length === 0) {
+      write('\n📊 Wait Time Report: No ctx.wait() calls recorded\n');
+      return;
+    }
+
+    write('\n' + '='.repeat(80));
+    write('📊 Wait Time Report');
+    write('='.repeat(80));
+    write(`Total wait time: ${total}ms (${(total / 1000).toFixed(2)}s)`);
+    write(`Total ctx.wait() calls: ${this.records.length}`);
+    write('-'.repeat(80));
+    write('By test (sorted by highest wait time):');
+    write('-'.repeat(80));
+
+    for (const summary of summaries) {
+      const percentage = ((summary.totalWaitMs / total) * 100).toFixed(1);
+      write(`  ${summary.testName}`);
+      write(`    └─ ${summary.totalWaitMs}ms (${summary.waitCount} calls, ${percentage}%)`);
+    }
+
+    write('='.repeat(80) + '\n');
+  }
+
+  /**
+   * Save wait time data to a JSON file for CI aggregation
+   * Appends to existing file if present (for multi-file test runs)
+   */
+  saveToFile(filePath: string): void {
+    const fs = require('fs');
+    const data = {
+      totalWaitMs: this.getTotalWaitTime(),
+      totalCalls: this.records.length,
+      summaries: this.getSummaryByTest(),
+      records: this.records
+    };
+
+    // Read existing data if file exists and merge
+    let existingData: any[] = [];
+    try {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        existingData = JSON.parse(content);
+      }
+    } catch (e) {
+      // File doesn't exist or is invalid, start fresh
+    }
+
+    existingData.push(data);
+    fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2));
+  }
+}
+
+// Global singleton instance - use globalThis to ensure single instance across Jest's module isolation
+// This ensures the tracker is shared between the test environment and test files
+declare const globalThis: any;
+
+const TRACKER_KEY = '__tsyneWaitTimeTracker';
+if (!globalThis[TRACKER_KEY]) {
+  globalThis[TRACKER_KEY] = new WaitTimeTracker();
+}
+export const waitTimeTracker: WaitTimeTracker = globalThis[TRACKER_KEY];
+
+/**
+ * Get the current Jest test name (includes describe blocks)
+ * Returns 'unknown' if not in a Jest test context
+ */
+function getCurrentTestName(): string {
+  try {
+    // Jest exposes current test info via expect.getState()
+    const state = expect.getState();
+    if (state && state.currentTestName) {
+      return state.currentTestName;
+    }
+  } catch (e) {
+    // Not in Jest context or expect not available
+  }
+  return 'unknown';
+}
+
+/**
  * Throw an error with stack trace pointing to the caller, not this file.
  * This ensures Jest shows the test file line number, not test.ts internals.
  */
@@ -1094,8 +1267,14 @@ export class TestContext {
 
   /**
    * Wait for a specified time
+   * NOTE: Wait times are tracked and reported at end of test run.
+   * Consider using .within(timeout).shouldBe() patterns instead for better test reliability.
    */
   async wait(ms: number): Promise<void> {
+    // Track this wait call with the current test name
+    const testName = getCurrentTestName();
+    waitTimeTracker.record(ms, testName);
+
     await new Promise(resolve => setTimeout(resolve, ms));
   }
 
