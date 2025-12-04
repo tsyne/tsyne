@@ -35,27 +35,27 @@ describe('Tictactoe High Contrast Mode', () => {
     await testApp.run();
 
     // Wait for UI to render - poll for initial state
-    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
+    await ctx.getByID('contrastToggle').within(500).shouldContain('OFF');
 
     // Make some moves to populate the board for better visual testing
     // X in center (cell4)
     await ctx.getByID('cell4').click();
-    await ctx.getByText("Player O's turn").within(200).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     // O in top-left (cell0)
     await ctx.getByID('cell0').click();
-    await ctx.getByText("Player X's turn").within(200).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     // X in top-right (cell2)
     await ctx.getByID('cell2').click();
-    await ctx.getByText("Player O's turn").within(200).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     // O in bottom-left (cell6)
     await ctx.getByID('cell6').click();
-    await ctx.getByText("Player X's turn").within(200).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     // Verify initial state
-    await ctx.getByText('High Contrast: OFF').shouldExist();
+    await ctx.getByID('contrastToggle').shouldContain('OFF');
 
     // Capture screenshot in normal mode if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -65,10 +65,10 @@ describe('Tictactoe High Contrast Mode', () => {
     }
 
     // Toggle high contrast ON
-    await ctx.getByText('High Contrast: OFF').click();
+    await ctx.getByID('contrastToggle').click();
 
     // Verify high contrast is ON - poll for state change
-    await ctx.getByText('High Contrast: ON').within(500).shouldExist();
+    await ctx.getByID('contrastToggle').within(500).shouldContain('ON');
 
     // Capture screenshot in high contrast mode if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -78,10 +78,10 @@ describe('Tictactoe High Contrast Mode', () => {
     }
 
     // Toggle high contrast OFF
-    await ctx.getByText('High Contrast: ON').click();
+    await ctx.getByID('contrastToggle').click();
 
     // Verify high contrast is OFF again - poll for state change
-    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
+    await ctx.getByID('contrastToggle').within(500).shouldContain('OFF');
 
     // Keep window visible for a moment in headed mode
     if (process.env.TSYNE_HEADED === '1') {
@@ -98,31 +98,31 @@ describe('Tictactoe High Contrast Mode', () => {
     await testApp.run();
 
     // Wait for UI to be ready
-    await ctx.getByText("Player X's turn").within(500).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     // Make a move
     await ctx.getByID('cell4').click();
-    await ctx.getByText("Player O's turn").within(500).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     // Toggle high contrast ON
-    await ctx.getByText('High Contrast: OFF').click();
+    await ctx.getByID('contrastToggle').click();
 
     // Verify high contrast is ON - poll for state change
-    await ctx.getByText('High Contrast: ON').within(500).shouldExist();
+    await ctx.getByID('contrastToggle').within(500).shouldContain('ON');
 
     // Make another move to verify game still works
     await ctx.getByID('cell0').click();
-    await ctx.getByText("Player X's turn").within(500).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
 
     // Toggle high contrast OFF
-    await ctx.getByText('High Contrast: ON').click();
+    await ctx.getByID('contrastToggle').click();
 
     // Verify high contrast is OFF - poll for state change
-    await ctx.getByText('High Contrast: OFF').within(500).shouldExist();
+    await ctx.getByID('contrastToggle').within(500).shouldContain('OFF');
 
     // Make one more move to verify game still works
     await ctx.getByID('cell2').click();
-    await ctx.getByText("Player O's turn").within(500).shouldExist();
+    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
 
     // Game should still be functional - verify New Game button exists
     await ctx.getByText('New Game').shouldExist();
