@@ -64,8 +64,7 @@ describe('TodoMVC Tests', () => {
     // Type in entry and click Add
     const entry = ctx.getByType("entry");
     await entry.type("Buy groceries");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
 
     // Poll for todo to appear and count to update
     await ctx.expect(ctx.getByExactText("Buy groceries").within(1000)).toBeVisible();
@@ -83,22 +82,19 @@ describe('TodoMVC Tests', () => {
     // Add first todo
     const entry = ctx.getByType("entry");
     await entry.type("First task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     // Add second todo
     await entry.type("Second task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     // Add third todo
     await entry.type("Third task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("3 items left");
 
     // Should show all todos
@@ -109,7 +105,7 @@ describe('TodoMVC Tests', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'todomvc.png');
-      await ctx.wait(500);
+      await ctx.getByExactText("Third task").within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
@@ -126,14 +122,12 @@ describe('TodoMVC Tests', () => {
     // Add a todo
     const entry = ctx.getByType("entry");
     await entry.type("Test task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
 
-    // Click checkbox to complete
-    await ctx.wait(100); // Let todo item render
+    // Click checkbox to complete - poll for todo to render
     const checkbox = ctx.getByExactText("Test task");
-    await checkbox.click();
+    await checkbox.within(100).click();
 
     // Poll status label text until it shows 0 items
     const expectedStatus = `0 items left | Filter: all | File: ${path.basename(testFilePath)}`;
@@ -158,8 +152,7 @@ describe('TodoMVC Tests', () => {
     // Add a todo
     const entry = ctx.getByType("entry");
     await entry.type("Delete me");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
 
     // Click delete
@@ -181,14 +174,12 @@ describe('TodoMVC Tests', () => {
     // Add two todos
     const entry = ctx.getByType("entry");
     await entry.type("Active task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     await entry.type("Completed task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
 
     // Complete second task (id 2)
@@ -214,13 +205,12 @@ describe('TodoMVC Tests', () => {
     // Add and complete a todo
     const entry = ctx.getByType("entry");
     await entry.type("Done task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
 
-    await ctx.wait(100); // Let todo item render
+    // Poll for todo to render then click
     const checkbox = ctx.getByExactText("Done task");
-    await checkbox.click();
+    await checkbox.within(100).click();
     await ctx.getByID("statusLabel").within(2000).shouldContain("0 items left");
 
     // Filter by Completed
@@ -242,20 +232,17 @@ describe('TodoMVC Tests', () => {
     // Add two todos
     const entry = ctx.getByType("entry");
     await entry.type("Active task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     await entry.type("Completed task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
 
-    // Complete second task
-    await ctx.wait(100); // Let todo item render
+    // Complete second task - poll for todo to render
     const completedCheckbox = ctx.getByExactText("Completed task");
-    await completedCheckbox.click();
+    await completedCheckbox.within(100).click();
     await ctx.getByID("statusLabel").within(2000).shouldContain("1 item left");
 
     // Switch to active filter
@@ -282,20 +269,17 @@ describe('TodoMVC Tests', () => {
     // Add two todos
     const entry = ctx.getByType("entry");
     await entry.type("Keep this");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     await entry.type("Clear this");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
 
-    // Complete second task
-    await ctx.wait(100); // Let todo item render
+    // Complete second task - poll for todo to render
     const completedCheckbox = ctx.getByExactText("Clear this");
-    await completedCheckbox.click();
+    await completedCheckbox.within(100).click();
     await ctx.getByID("statusLabel").within(2000).shouldContain("1 item left");
 
     // Clear completed
@@ -333,8 +317,7 @@ describe('TodoMVC Tests', () => {
     // Add a todo
     const entry = ctx.getByType("entry");
     await entry.type("Persistent task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
 
     // Verify file was created and contains the todo
@@ -377,8 +360,7 @@ describe('TodoMVC Tests', () => {
     // Add and complete a todo
     const entry = ctx.getByType("entry");
     await entry.type("Complete me");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
 
     // Click checkbox by ID (first todo = id 1)
@@ -402,20 +384,17 @@ describe('TodoMVC Tests', () => {
     const entry = ctx.getByType("entry");
 
     await entry.type("Task 1");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     await entry.type("Task 2");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     await entry.type("Task 3");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("3 items left");
 
     // Complete first and third (ids 1 and 3)
@@ -447,15 +426,13 @@ describe('TodoMVC Tests', () => {
     // Add one item - should say "item"
     const entry = ctx.getByType("entry");
     await entry.type("Single task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("1 item left");
     await ctx.getByID("newTodoEntry").within(1000).shouldBe(""); // Poll for entry to clear
 
     // Add another - should say "items"
     await entry.type("Second task");
-    await ctx.wait(200);
-    await ctx.getByExactText("Add").click();
+    await ctx.getByExactText("Add").within(200).click();
     await ctx.getByID("statusLabel").within(1000).shouldContain("2 items left");
   });
 

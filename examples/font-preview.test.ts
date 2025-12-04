@@ -101,28 +101,24 @@ describe('Font Preview Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', 'font-preview.png');
-      await ctx.wait(500);
+      await ctx.getByExactText('Sample Text:').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
 
     // Test clear fonts button
     await ctx.getByExactText('Clear Fonts').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Cleared all custom fonts')).toBeVisible();
+    await ctx.getByExactText('Cleared all custom fonts').within(200).shouldExist();
 
     // Test font scale buttons
     await ctx.getByExactText('Small').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Font scale: 0.75x')).toBeVisible();
+    await ctx.getByExactText('Font scale: 0.75x').within(200).shouldExist();
 
     await ctx.getByExactText('Large').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Font scale: 1.5x')).toBeVisible();
+    await ctx.getByExactText('Font scale: 1.5x').within(200).shouldExist();
 
     await ctx.getByExactText('Normal').click();
-    await ctx.wait(200);
-    await ctx.expect(ctx.getByExactText('Font scale: 1.0x')).toBeVisible();
+    await ctx.getByExactText('Font scale: 1.0x').within(200).shouldExist();
   });
 
   test('should provide font information', async () => {
@@ -155,9 +151,8 @@ describe('Font Preview Example', () => {
 
     // Test getting font info
     await ctx.getByExactText('Get Font Info').click();
-    await ctx.wait(200);
 
     // Verify font info was retrieved (should contain .ttf)
-    await ctx.expect(ctx.getByText('.ttf')).toBeVisible();
+    await ctx.getByText('.ttf').within(200).shouldExist();
   });
 });

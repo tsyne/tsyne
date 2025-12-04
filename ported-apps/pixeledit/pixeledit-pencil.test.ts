@@ -86,7 +86,7 @@ describe('pixeledit - pencil drawing', () => {
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-pencil.png');
-      await ctx.wait(500);
+      await ctx.getByText('#000000').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.error(`Screenshot saved: ${screenshotPath}`);
     }
@@ -102,8 +102,7 @@ describe('pixeledit - pencil drawing', () => {
     await testApp.run();
 
     // Wait for the app to fully load
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.wait(200);
+    await ctx.getByText('Pencil').within(500).shouldExist();
 
     // Create a blank 64x64 canvas programmatically
     // We need to access the editor's internal methods
@@ -111,7 +110,7 @@ describe('pixeledit - pencil drawing', () => {
 
     // Click the "Reset" button which creates a blank 32x32 image
     await ctx.getByText('Reset').click();
-    await ctx.wait(300);
+    await ctx.getByText('Pencil').within(300).shouldExist();
 
     // Now programmatically draw some pixels using the editor's API
     // Draw a simple smiley face pattern
@@ -156,17 +155,17 @@ describe('pixeledit - pencil drawing', () => {
       editor.setPixelColor(21, 20, red);
       editor.setPixelColor(22, 18, red);
 
-      // Give the canvas time to render
-      await ctx.wait(500);
+      // Give the canvas time to render - verify UI is still responsive
+      await ctx.getByText('Pencil').within(500).shouldExist();
     }
 
     // Verify the UI is still functional
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
+    await ctx.getByText('Pencil').shouldExist();
 
     // Take screenshot showing the drawn content
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-pencil-drawing.png');
-      await ctx.wait(300);
+      await ctx.getByText('Pencil').within(300).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.error(`Screenshot saved: ${screenshotPath}`);
     }
