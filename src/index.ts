@@ -896,3 +896,14 @@ export {
   loadContentBuilder,
 } from './desktop-metadata';
 export type { AppMetadata } from './desktop-metadata';
+
+// Export TsyneWindow abstraction (for apps that work in both standalone and desktop modes)
+export {
+  createTsyneWindow,
+  enableDesktopMode,
+  disableDesktopMode,
+  isDesktopMode,
+  getDesktopContext,
+  InnerWindowAdapter,
+} from './tsyne-window';
+export type { ITsyneWindow, DesktopContext } from './tsyne-window';

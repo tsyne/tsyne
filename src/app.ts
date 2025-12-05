@@ -3,6 +3,7 @@ import { GrpcBridgeConnection } from './grpcbridge';
 import { MsgpackBridgeConnection } from './msgpackbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
+import { ITsyneWindow, createTsyneWindow, isDesktopMode } from './tsyne-window';
 import {
   // Inputs
   Button,
@@ -248,14 +249,25 @@ export class App {
 
   /**
    * Create a new window.
+   * In standalone mode, creates a real OS window (fyne.Window).
+   * In desktop mode, creates an inner window (container.InnerWindow).
    * @param options - Window configuration (title, size, etc.)
    * @param builder - Function to build window content
-   * @returns The created Window instance
+   * @returns The created Window instance (or ITsyneWindow in desktop mode)
    */
-  window(options: WindowOptions, builder: (win: Window) => void): Window {
-    const win = new Window(this.ctx, options, builder);
-    this.windows.push(win);
-    return win;
+  window(options: WindowOptions, builder: (win: Window) => void): Window;
+  window(options: WindowOptions, builder: (win: ITsyneWindow) => void): ITsyneWindow;
+  window(options: WindowOptions, builder: (win: any) => void): Window | ITsyneWindow {
+    if (isDesktopMode()) {
+      // Desktop mode - create InnerWindow via factory
+      const win = createTsyneWindow(this.ctx, options, builder);
+      return win;
+    } else {
+      // Standalone mode - create real Window
+      const win = new Window(this.ctx, options, builder);
+      this.windows.push(win);
+      return win;
+    }
   }
 
   // Scoped declarative API methods - these use the app's context (proper IoC/DI)

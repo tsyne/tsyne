@@ -4,20 +4,22 @@
  * A desktop-like environment for launching Tsyne apps.
  * - Displays app icons in a grid that can be clicked
  * - Double-click an icon to launch the app in an inner window
- * - Apps run within the same Node.js instance
+ * - Apps run within the same Node.js instance (using TsyneWindow abstraction)
  * - Includes a launch bar at the bottom
+ *
+ * Apps don't need special "contentBuilder" exports - the TsyneWindow abstraction
+ * automatically converts a.window() calls to InnerWindow when in desktop mode.
  *
  * Run with: ./scripts/tsyne examples/desktop.ts
  */
 
-import { app, App, Window, InnerWindow, MultipleWindows, Label, Button } from '../src';
-import { scanForApps, loadContentBuilder, AppMetadata } from '../src/desktop-metadata';
+import { app, App, Window, MultipleWindows, Label, Button, enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../src';
+import { scanForApps, loadAppBuilder, AppMetadata } from '../src/desktop-metadata';
 import * as path from 'path';
 
 // Desktop configuration
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
-const LAUNCH_BAR_HEIGHT = 48;
 
 // Desktop state
 interface DesktopIcon {
@@ -29,7 +31,7 @@ interface DesktopIcon {
 
 interface OpenApp {
   metadata: AppMetadata;
-  innerWindow: InnerWindow;
+  tsyneWindow: ITsyneWindow;
 }
 
 class Desktop {
@@ -82,7 +84,7 @@ class Desktop {
    */
   build() {
     this.a.window({ title: 'Tsyne Desktop', width: 1024, height: 768 }, (win) => {
-      this.win = win;
+      this.win = win as Window;
       win.setContent(() => {
         this.a.border({
           center: () => {
@@ -196,58 +198,64 @@ class Desktop {
   }
 
   /**
-   * Launch an app in an inner window
+   * Launch an app in an inner window using TsyneWindow abstraction.
+   * The app's builder calls a.window() which automatically creates
+   * an InnerWindow because we're in desktop mode.
    */
   async launchApp(metadata: AppMetadata) {
     // Check if already open - bring to front
     const existing = this.openApps.get(metadata.filePath);
     if (existing) {
-      await existing.innerWindow.show();
+      await existing.tsyneWindow.show();
       return;
     }
 
-    // Load the app's content builder
-    const contentBuilder = await loadContentBuilder(metadata);
-    if (!contentBuilder) {
-      console.error(`Could not load content builder for ${metadata.name}`);
+    // Load the app's builder function
+    const builder = await loadAppBuilder(metadata);
+    if (!builder) {
+      console.error(`Could not load builder for ${metadata.name}`);
       return;
     }
 
-    if (!this.mdiContainer) {
-      console.error('MDI container not initialized');
+    if (!this.mdiContainer || !this.win) {
+      console.error('MDI container or parent window not initialized');
       return;
     }
 
-    // Check if this is a content builder (doesn't create windows) or full builder
-    const hasContentBuilder = !!metadata.contentBuilder;
+    // Enable desktop mode so a.window() creates InnerWindows
+    enableDesktopMode({
+      mdiContainer: this.mdiContainer,
+      parentWindow: this.win
+    });
 
-    // Create inner window with the app content
-    const innerWin = this.mdiContainer.addWindow(
-      metadata.name,
-      () => {
-        if (hasContentBuilder) {
-          // Content builder - just builds widgets directly
-          contentBuilder(this.a);
-        } else {
-          // Full builder - wrap in a vbox and show a message
-          this.a.vbox(() => {
-            this.a.label(`App: ${metadata.name}`);
-            this.a.label('(Needs contentBuilder for desktop mode)');
-          });
-        }
-      },
-      () => {
-        // On close callback
-        this.openApps.delete(metadata.filePath);
+    try {
+      // Call the app's builder - it will call a.window() which creates an InnerWindow
+      // We need to capture the created window
+      let createdWindow: ITsyneWindow | null = null;
+
+      // Temporarily monkey-patch to capture the window
+      const originalWindow = this.a.window.bind(this.a);
+      (this.a as any).window = (options: any, builderFn: any) => {
+        const win = originalWindow(options, builderFn);
+        createdWindow = win;
+        return win;
+      };
+
+      builder(this.a);
+
+      // Restore original
+      (this.a as any).window = originalWindow;
+
+      if (createdWindow) {
+        // Track the open app
+        this.openApps.set(metadata.filePath, { metadata, tsyneWindow: createdWindow });
         this.updateRunningApps();
+        console.log(`Launched: ${metadata.name}`);
       }
-    );
-
-    // Track open app
-    this.openApps.set(metadata.filePath, { metadata, innerWindow: innerWin });
-    this.updateRunningApps();
-
-    console.log(`Launched: ${metadata.name}`);
+    } finally {
+      // Always disable desktop mode when done
+      disableDesktopMode();
+    }
   }
 
   /**
@@ -259,7 +267,7 @@ class Desktop {
       this.a.button('Show Desktop').withId('showDesktopBtn').onClick(() => {
         // Hide all open windows
         for (const [, openApp] of this.openApps) {
-          openApp.innerWindow.hide();
+          openApp.tsyneWindow.hide();
         }
       });
 

@@ -15,18 +15,48 @@ A desktop-like environment for launching and managing multiple Tsyne apps within
 - **Multiple Windows**: Run multiple apps simultaneously, each in its own draggable window
 - **Shared Runtime**: All apps share the same Node.js instance for efficiency
 - **Launch Bar**: Quick access to running apps and system functions
-- **Standalone Compatible**: Apps work both standalone AND in the desktop environment
+- **Zero Code Changes**: Apps work both standalone AND in desktop - no special exports needed!
 
-## Making Apps Desktop-Ready
+## How It Works: TsyneWindow Abstraction
 
-Add metadata comments at the top of your app file:
+The key innovation is the `TsyneWindow` abstraction layer. When you write:
+
+```typescript
+a.window({ title: "My App" }, (win) => {
+  win.setContent(() => {
+    a.vbox(() => { ... });
+  });
+});
+```
+
+- **Standalone mode**: Creates a real OS window (`fyne.Window`)
+- **Desktop mode**: Creates an inner window (`container.InnerWindow`)
+
+The desktop calls `enableDesktopMode()` before launching an app, and `disableDesktopMode()` after. The `a.window()` call automatically creates the right type.
+
+### No Special Exports Required!
+
+Unlike earlier approaches that required separate `buildContent` functions, apps now work unchanged:
+
+```typescript
+// This app works both standalone AND in the desktop!
+export function buildCalculator(a: App) {
+  a.window({ title: "Calculator" }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => { ... });
+    });
+  });
+}
+```
+
+## Making Apps Desktop-Visible
+
+Add metadata comments at the top of your app file to make it appear on the desktop:
 
 ```typescript
 // @tsyne-app:name Calculator
 // @tsyne-app:icon <svg viewBox="0 0 24 24">...</svg>
 // @tsyne-app:category utilities
-// @tsyne-app:builder buildCalculator
-// @tsyne-app:contentBuilder buildCalculatorContent
 ```
 
 ### Metadata Directives
@@ -36,8 +66,7 @@ Add metadata comments at the top of your app file:
 | `@tsyne-app:name` | Yes | Display name shown under the icon |
 | `@tsyne-app:icon` | No | SVG string or theme icon name (defaults to generic app icon) |
 | `@tsyne-app:category` | No | Category for grouping (utilities, games, etc.) |
-| `@tsyne-app:builder` | No | Function that creates standalone window (auto-detected if not specified) |
-| `@tsyne-app:contentBuilder` | No | Function that creates just content (for desktop inner windows) |
+| `@tsyne-app:builder` | No | Builder function name (auto-detected if not specified) |
 
 ### Icon Options
 
@@ -53,139 +82,141 @@ Icons can be specified as:
 // @tsyne-app:icon settings
 ```
 
-## Architecture
+## ITsyneWindow Interface
 
-### Builder Functions
-
-Apps should export two builder functions:
+Both `Window` and the desktop's `InnerWindowAdapter` implement `ITsyneWindow`:
 
 ```typescript
-// For standalone mode - creates its own window
-export function buildCalculator(a: App) {
-  a.window({ title: "Calculator" }, (win: Window) => {
-    win.setContent(() => {
-      buildCalculatorContent(a);
-    });
-  });
-}
+interface ITsyneWindow {
+  setContent(builder: () => void): Promise<void>;
+  setTitle(title: string): void;
+  show(): Promise<void>;
+  hide(): Promise<void>;
+  close(): Promise<void>;
 
-// For desktop mode - creates just the content
-export function buildCalculatorContent(a: App) {
-  a.vbox(() => {
-    a.label("0");
-    a.grid(4, () => {
-      // Calculator buttons...
-    });
-  });
+  // Window-specific (no-op in InnerWindow mode)
+  resize(width: number, height: number): Promise<void>;
+  centerOnScreen(): Promise<void>;
+  setFullScreen(fullscreen: boolean): Promise<void>;
+  setIcon(resourceName: string): Promise<void>;
+  setCloseIntercept(callback: () => Promise<boolean> | boolean): void;
+
+  // Menus (limited support in InnerWindow)
+  setMainMenu(menuDefinition: Array<{...}>): Promise<void>;
+
+  // Dialogs (delegate to parent window in desktop mode)
+  showInfo(title: string, message: string): Promise<void>;
+  showError(title: string, message: string): Promise<void>;
+  showConfirm(title: string, message: string): Promise<boolean>;
+  // ... etc
 }
 ```
 
-### State Management
+### Window-Only Methods Behavior
 
-For apps that need to support multiple instances (e.g., opening the same app twice), encapsulate state in a class:
+In desktop mode (InnerWindow), these methods become no-ops:
+- `resize()` - InnerWindow sizing managed by MDI container
+- `centerOnScreen()` - Not applicable
+- `setFullScreen()` - Not applicable
+- `setIcon()` - InnerWindow has no icon
 
-```typescript
-class CalculatorInstance {
-  private currentValue = "0";
+### Dialogs in Desktop Mode
 
-  buildContent(a: App) {
-    // Each instance has its own state
-  }
-}
+Dialog methods (`showInfo`, `showConfirm`, etc.) delegate to the parent window, so dialogs appear correctly.
 
-export function buildCalculatorContent(a: App) {
-  const instance = new CalculatorInstance();
-  instance.buildContent(a);
-}
-```
+### Menus in Desktop Mode
 
-## Desktop Components
+`setMainMenu()` currently logs a warning - InnerWindow doesn't support menus. Future enhancement could render menus as a toolbar.
 
-### Main Desktop (`desktop.ts`)
-
-The main desktop environment that:
-- Scans the examples directory for apps with `@tsyne-app:name` metadata
-- Displays icons in a scrollable grid
-- Manages app launching in inner windows via `MultipleWindows` container
-- Provides a launch bar with running apps and quick actions
-
-### Desktop Settings (`desktop-settings.ts`)
-
-A settings panel showing:
-- List of available apps
-- App details (category, builder functions, desktop readiness)
-- Display preferences (icon size, grid columns)
-
-### Metadata Parser (`src/desktop-metadata.ts`)
-
-Utilities for parsing and loading apps:
+## Desktop Mode API
 
 ```typescript
-import { scanForApps, loadContentBuilder, AppMetadata } from 'tsyne';
+import { enableDesktopMode, disableDesktopMode, isDesktopMode } from 'tsyne';
 
-// Scan directory for desktop apps
-const apps: AppMetadata[] = scanForApps('./examples');
+// Enable desktop mode before launching an app
+enableDesktopMode({
+  mdiContainer: myMdiContainer,
+  parentWindow: myMainWindow
+});
 
-// Load a specific app's content builder
-const builder = await loadContentBuilder(apps[0]);
-if (builder) {
-  builder(app);  // Build the app's content
-}
-```
+// Now any a.window() calls create InnerWindows
+builder(app);
 
-## API Reference
-
-### `parseAppMetadata(filePath: string): AppMetadata | null`
-
-Parse `@tsyne-app` metadata from a TypeScript source file.
-
-### `scanForApps(directory: string): AppMetadata[]`
-
-Scan a directory for all TypeScript files with `@tsyne-app:name` metadata.
-
-### `loadAppBuilder(metadata: AppMetadata): Promise<Function | null>`
-
-Load the builder function (creates window) from an app module.
-
-### `loadContentBuilder(metadata: AppMetadata): Promise<Function | null>`
-
-Load the content builder function (for inner windows) from an app module.
-Falls back to builder if no content builder is specified.
-
-### AppMetadata Interface
-
-```typescript
-interface AppMetadata {
-  filePath: string;        // Path to the source file
-  name: string;            // Display name
-  icon: string;            // SVG or theme icon name
-  iconIsSvg: boolean;      // Whether icon is SVG
-  category?: string;       // Optional category
-  builder: string;         // Builder function name
-  contentBuilder?: string; // Content builder function name
-}
+// Disable after app is launched
+disableDesktopMode();
 ```
 
 ## Examples
 
-### Calculator (Desktop-Ready)
+### Calculator (Works in Both Modes)
 
-See `examples/calculator.ts` for a complete example of a desktop-ready app with:
-- Metadata comments
-- Class-based state management
-- Both standalone and content builders
+```typescript
+// @tsyne-app:name Calculator
+// @tsyne-app:category utilities
 
-### Desktop Settings
+import { app, App, Window, Label } from 'tsyne';
 
-See `examples/desktop-settings.ts` for an example of a settings panel that:
-- Lists all available apps
-- Shows app details
-- Provides configuration options
+export function buildCalculator(a: App) {
+  // This window() call creates either:
+  // - A real Window (standalone mode)
+  // - An InnerWindow (desktop mode)
+  a.window({ title: "Calculator" }, (win) => {
+    win.setContent(() => {
+      a.vbox(() => {
+        a.label("0");
+        a.grid(4, () => { /* buttons */ });
+      });
+    });
+  });
+}
+
+// Standalone entry point
+app({ title: "Calculator" }, buildCalculator);
+```
+
+Run standalone:
+```bash
+./scripts/tsyne examples/calculator.ts
+```
+
+Or launch from desktop - same code, different context!
 
 ## Best Practices
 
-1. **Always export both builders**: This allows your app to work standalone or in the desktop
-2. **Use class-based state**: Supports multiple instances of the same app
-3. **Test standalone first**: Verify `./scripts/tsyne yourapp.ts` works before adding to desktop
-4. **Use meaningful categories**: Helps users organize and find apps
-5. **Provide custom icons**: Makes apps visually distinct on the desktop
+1. **Just add metadata**: No code changes needed - add `@tsyne-app:name` and your app appears on the desktop
+2. **Test standalone first**: Verify `./scripts/tsyne yourapp.ts` works
+3. **Use meaningful names**: The `@tsyne-app:name` is what users see
+4. **Provide custom icons**: Makes apps visually distinct
+5. **Handle missing features gracefully**: If your app uses `setMainMenu()`, it will log a warning but continue working
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Desktop Window                          │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │                   Stack Container                       │ │
+│  │  ┌──────────────────────────────────────────────────┐  │ │
+│  │  │              Icon Grid (Scroll)                   │  │ │
+│  │  │  [App1] [App2] [App3] [App4] ...                 │  │ │
+│  │  └──────────────────────────────────────────────────┘  │ │
+│  │  ┌──────────────────────────────────────────────────┐  │ │
+│  │  │            MultipleWindows (MDI)                  │  │ │
+│  │  │  ┌─────────────┐  ┌─────────────┐                │  │ │
+│  │  │  │ InnerWindow │  │ InnerWindow │                │  │ │
+│  │  │  │ (App1)      │  │ (App2)      │                │  │ │
+│  │  │  └─────────────┘  └─────────────┘                │  │ │
+│  │  └──────────────────────────────────────────────────┘  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │                    Launch Bar                           │ │
+│  │  [Desktop] | Running: App1, App2 |          [Calc]     │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Files
+
+- **`src/tsyne-window.ts`** - ITsyneWindow interface and InnerWindowAdapter
+- **`examples/desktop.ts`** - Main desktop environment
+- **`src/desktop-metadata.ts`** - Parser for `@tsyne-app` metadata
