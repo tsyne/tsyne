@@ -4,8 +4,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Root Tsyne                          378      378        0        0  23|23|0
-Designer: Unit                       88       87        1        0    8|7|1
+Root Tsyne                          383      383        0        0  24|24|0
 Designer: Unit                       88       87        1        0    8|7|1
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      21       21        0        0    1|1|0
@@ -18,15 +17,15 @@ Ported: pixeledit                    86       86        0        0    6|6|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                    94       94        0        0    7|7|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              1292     1262        2       28      136
+TOTAL                              1209     1180        1       28      129
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 28 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 17550ms (17.55s)
-Total ctx.wait() calls: 225
+Total wait time: 18450ms (18.45s)
+Total ctx.wait() calls: 230
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -51,6 +50,6 @@ Top 10 tests by wait time:
   Custom Dialog should open custom dialog and show content
     └─ 300ms (1 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 2 tests failed
+❌ FAILED: 1 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

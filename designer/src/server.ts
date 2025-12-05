@@ -597,9 +597,31 @@ const designer = {
   },
 
   // Input widgets
-  button(text: string, className?: string): any {
-    const result = captureWidget('button', { text, className });
-    // Add onClick as a chainable method on the result object itself
+  // Support both OLD API: button(text, onClick?, className?)
+  // and NEW API: button(text, className?).onClick(handler)
+  button(text: string, onClickOrClassName?: (() => void) | string, className?: string): any {
+    // Detect which API is being used
+    let actualClassName: string | undefined;
+    let onClickHandler: (() => void) | undefined;
+
+    if (typeof onClickOrClassName === 'function') {
+      // OLD API: button(text, onClick?, className?)
+      onClickHandler = onClickOrClassName;
+      actualClassName = className;
+    } else if (typeof onClickOrClassName === 'string') {
+      // NEW API: button(text, className?).onClick(handler)
+      actualClassName = onClickOrClassName;
+    }
+
+    const result = captureWidget('button', { text, className: actualClassName });
+
+    // Store onClick handler if using OLD API
+    if (onClickHandler) {
+      const widget = metadataStore.get(result.__internalId);
+      if (widget) widget.eventHandlers.onClick = onClickHandler.toString();
+    }
+
+    // Add onClick as a chainable method for NEW API
     result.onClick = function(callback?: () => void): any {
       if (callback) {
         const widget = metadataStore.get(this.__internalId);
