@@ -27,6 +27,8 @@
  */
 
 // @tsyne-app:name Terminal
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><path d="M12 16h6"/></svg>
+// @tsyne-app:category utilities
 // @tsyne-app:builder createTerminalApp
 // @tsyne-app:count many
 

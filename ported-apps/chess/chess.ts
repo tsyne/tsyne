@@ -10,6 +10,8 @@
  */
 
 // @tsyne-app:name Chess
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a2 2 0 012 2c0 .7-.4 1.4-1 1.7V9h2v3h-6V9h2V6.7A2 2 0 0112 3z"/><path d="M5 21h14l-2-8H7l-2 8z"/><path d="M12 16v5"/></svg>
+// @tsyne-app:category games
 // @tsyne-app:builder createChessApp
 // @tsyne-app:count many
 

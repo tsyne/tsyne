@@ -25,6 +25,7 @@ import * as path from 'path';
 // Desktop configuration
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
+const ICON_POSITION_PREFIX = 'desktop.icon.';
 
 // Desktop options
 export interface DesktopOptions {
@@ -67,6 +68,62 @@ class Desktop {
   }
 
   /**
+   * Get a sanitized key for an app name (for use in preferences)
+   */
+  private getIconKey(appName: string): string {
+    return appName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  }
+
+  /**
+   * Save icon position to preferences
+   */
+  private saveIconPosition(appName: string, x: number, y: number) {
+    const key = this.getIconKey(appName);
+    this.a.setPreference(`${ICON_POSITION_PREFIX}${key}.x`, x.toString());
+    this.a.setPreference(`${ICON_POSITION_PREFIX}${key}.y`, y.toString());
+  }
+
+  /**
+   * Load icon position from preferences
+   * Returns null if no saved position exists
+   */
+  private loadIconPosition(appName: string): { x: number; y: number } | null {
+    const key = this.getIconKey(appName);
+    const xStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.x`, '');
+    const yStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.y`, '');
+
+    if (xStr && yStr) {
+      const x = parseInt(xStr, 10);
+      const y = parseInt(yStr, 10);
+      if (!isNaN(x) && !isNaN(y)) {
+        return { x, y };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Reset all icon positions to default grid layout
+   */
+  resetIconLayout() {
+    const GRID_COLS = 8;
+    let col = 0;
+    let row = 0;
+
+    for (const icon of this.icons) {
+      icon.x = col * ICON_SPACING + 20;
+      icon.y = row * ICON_SPACING + 20;
+      this.saveIconPosition(icon.metadata.name, icon.x, icon.y);
+
+      col++;
+      if (col >= GRID_COLS) {
+        col = 0;
+        row++;
+      }
+    }
+  }
+
+  /**
    * Initialize the desktop by scanning for apps
    */
   init() {
@@ -78,16 +135,21 @@ class Desktop {
     const portedApps = scanPortedApps(portedAppsDir);
     const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
 
-    // Position icons in a grid (8 columns)
+    // Position icons in a grid (8 columns), but use saved positions if available
     const GRID_COLS = 8;
     let col = 0;
     let row = 0;
 
     for (const metadata of apps) {
+      // Try to load saved position, otherwise use default grid position
+      const savedPos = this.loadIconPosition(metadata.name);
+      const defaultX = col * ICON_SPACING + 20;
+      const defaultY = row * ICON_SPACING + 20;
+
       this.icons.push({
         metadata,
-        x: col * ICON_SPACING + 20,
-        y: row * ICON_SPACING + 20,
+        x: savedPos?.x ?? defaultX,
+        y: savedPos?.y ?? defaultY,
         selected: false
       });
 
@@ -107,6 +169,31 @@ class Desktop {
   build() {
     this.a.window({ title: 'Tsyne Desktop', width: 1024, height: 768 }, (win) => {
       this.win = win as Window;
+
+      // Set up the main menu with hamburger-style options
+      win.setMainMenu([
+        {
+          label: 'Desktop',
+          items: [
+            { label: 'Re-layout Icons', onClick: () => this.relayoutAndRefresh() },
+            { isSeparator: true },
+            { label: 'Light Theme', onClick: () => this.setTheme('light') },
+            { label: 'Dark Theme', onClick: () => this.setTheme('dark') },
+            { isSeparator: true },
+            { label: 'About', onClick: () => this.showAbout() }
+          ]
+        },
+        {
+          label: 'View',
+          items: [
+            { label: 'Show All Windows', onClick: () => this.showAllWindows() },
+            { label: 'Hide All Windows', onClick: () => this.hideAllWindows() },
+            { isSeparator: true },
+            { label: 'Fullscreen', onClick: () => win.setFullScreen(true) }
+          ]
+        }
+      ]);
+
       win.setContent(() => {
         // Use unified DesktopMDI container that combines desktop icons with MDI
         // This solves the layering problem - both drag and double-click work
@@ -114,6 +201,63 @@ class Desktop {
         this.createDesktopIcons();
       });
     });
+  }
+
+  /**
+   * Re-layout icons and refresh the desktop display
+   */
+  private relayoutAndRefresh() {
+    this.resetIconLayout();
+    // Rebuild the UI to show new positions
+    if (this.win && this.desktopMDI) {
+      // Update icon positions in the MDI container
+      for (let i = 0; i < this.icons.length; i++) {
+        const icon = this.icons[i];
+        this.desktopMDI.updateIconPosition(`app-${i}`, icon.x, icon.y);
+      }
+    }
+  }
+
+  /**
+   * Set the application theme
+   */
+  private setTheme(theme: 'light' | 'dark') {
+    this.a.setTheme(theme);
+  }
+
+  /**
+   * Show an about dialog
+   */
+  private async showAbout() {
+    if (this.win) {
+      await this.win.showInfo('About Tsyne Desktop',
+        'Tsyne Desktop Environment\n\n' +
+        'A desktop-like environment for launching Tsyne apps.\n\n' +
+        'Features:\n' +
+        '- Drag icons to arrange them\n' +
+        '- Double-click to launch apps\n' +
+        '- Positions are saved across restarts\n\n' +
+        `Apps available: ${this.icons.length}`
+      );
+    }
+  }
+
+  /**
+   * Show all open windows
+   */
+  private showAllWindows() {
+    for (const [, openApp] of this.openApps) {
+      openApp.tsyneWindow.show();
+    }
+  }
+
+  /**
+   * Hide all open windows
+   */
+  private hideAllWindows() {
+    for (const [, openApp] of this.openApps) {
+      openApp.tsyneWindow.hide();
+    }
   }
 
   /**
@@ -151,9 +295,10 @@ class Desktop {
           this.launchApp(icon.metadata);
         },
         onDragEnd: (iconId, x, y) => {
-          // Update stored position
+          // Update stored position and persist to preferences
           icon.x = x;
           icon.y = y;
+          this.saveIconPosition(icon.metadata.name, x, y);
         }
       });
     }
