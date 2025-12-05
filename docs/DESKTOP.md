@@ -5,7 +5,15 @@ A desktop-like environment for launching and managing multiple Tsyne apps within
 ## Quick Start
 
 ```bash
-./scripts/tsyne examples/desktop.ts
+# Run the desktop directly
+./scripts/tsyne src/desktop.ts
+
+# Or use it programmatically
+import { app, buildDesktop } from 'tsyne';
+
+app({ title: 'My Desktop' }, (a) => {
+  buildDesktop(a, { appDirectory: './my-apps' });
+});
 ```
 
 ## Features
@@ -217,6 +225,7 @@ Or launch from desktop - same code, different context!
 
 ## Files
 
+- **`src/desktop.ts`** - Main desktop environment (Desktop class, buildDesktop)
 - **`src/tsyne-window.ts`** - ITsyneWindow interface and InnerWindowAdapter
-- **`examples/desktop.ts`** - Main desktop environment
 - **`src/desktop-metadata.ts`** - Parser for `@tsyne-app` metadata
+- **`test/desktop.test.ts`** - Integration tests for the desktop

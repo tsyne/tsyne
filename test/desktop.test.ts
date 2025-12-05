@@ -7,12 +7,12 @@
  * - Run apps in inner windows using TsyneWindow abstraction
  *
  * USAGE:
- * - Headless mode (default): cd examples && npx jest desktop.test.ts
+ * - Headless mode (default): npx jest desktop.test.ts
  * - Visual debugging mode: TSYNE_HEADED=1 npx jest desktop.test.ts
  */
 
 import { TsyneTest, TestContext } from '../src/index-test';
-import { buildDesktop } from './desktop';
+import { buildDesktop } from '../src/desktop';
 
 describe('Desktop Environment Tests', () => {
   let tsyneTest: TsyneTest;

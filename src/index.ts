@@ -907,3 +907,7 @@ export {
   InnerWindowAdapter,
 } from './tsyne-window';
 export type { ITsyneWindow, DesktopContext } from './tsyne-window';
+
+// Export Desktop environment
+export { buildDesktop, Desktop } from './desktop';
+export type { DesktopOptions } from './desktop';

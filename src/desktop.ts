@@ -10,16 +10,26 @@
  * Apps don't need special "contentBuilder" exports - the TsyneWindow abstraction
  * automatically converts a.window() calls to InnerWindow when in desktop mode.
  *
- * Run with: ./scripts/tsyne examples/desktop.ts
+ * Run with: ./scripts/tsyne src/desktop.ts
+ * Or import and use: import { buildDesktop, Desktop } from 'tsyne';
  */
 
-import { app, App, Window, MultipleWindows, Label, Button, enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../src';
-import { scanForApps, loadAppBuilder, AppMetadata } from '../src/desktop-metadata';
+import { App } from './app';
+import { Window } from './window';
+import { MultipleWindows, Label, Button } from './widgets';
+import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
+import { scanForApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
 import * as path from 'path';
 
 // Desktop configuration
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
+
+// Desktop options
+export interface DesktopOptions {
+  /** Directory to scan for apps with @tsyne-app metadata. Defaults to 'examples/' relative to cwd */
+  appDirectory?: string;
+}
 
 // Desktop state
 interface DesktopIcon {
@@ -44,17 +54,19 @@ class Desktop {
   private selectedIcon: DesktopIcon | null = null;
   private lastClickTime: Map<string, number> = new Map();
   private runningAppsLabel: Label | null = null;
+  private options: DesktopOptions;
 
-  constructor(app: App) {
+  constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
+    this.options = options;
   }
 
   /**
    * Initialize the desktop by scanning for apps
    */
   init() {
-    const examplesDir = path.join(__dirname);
-    const apps = scanForApps(examplesDir);
+    const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
+    const apps = scanForApps(appDir);
 
     // Position icons in a grid (8 columns)
     const GRID_COLS = 8;
@@ -313,18 +325,15 @@ class Desktop {
   }
 }
 
-// Build the desktop environment
-export function buildDesktop(a: App) {
-  const desktop = new Desktop(a);
+/**
+ * Build the desktop environment
+ * @param a - The App instance
+ * @param options - Optional desktop configuration
+ */
+export function buildDesktop(a: App, options?: DesktopOptions) {
+  const desktop = new Desktop(a, options);
   desktop.init();
   desktop.build();
-}
-
-// Skip auto-run when imported by test framework
-const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
-
-if (!isTestEnvironment) {
-  app({ title: 'Tsyne Desktop' }, buildDesktop);
 }
 
 export { Desktop };
