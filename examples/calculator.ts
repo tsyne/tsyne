@@ -78,7 +78,7 @@ export function buildCalculator(a: App) {
     win.setContent(() => {
       a.vbox(() => {
         // Display
-        display = a.label("0");
+        display = a.label("0").withId('calc-display');
 
         // Number pad and operators - 4x4 grid for even button sizing
         a.grid(4, () => {

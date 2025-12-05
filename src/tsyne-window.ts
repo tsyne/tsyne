@@ -53,12 +53,17 @@ export interface ITsyneWindow {
 /**
  * Adapter that wraps InnerWindow to implement ITsyneWindow interface.
  * Window-only methods become no-ops or delegate to parent window.
+ *
+ * Key difference from Window: InnerWindow content is set via setContent(),
+ * and the actual InnerWindow is created at that point (not in constructor).
  */
 export class InnerWindowAdapter implements ITsyneWindow {
   private ctx: Context;
-  private innerWindow: InnerWindow;
+  private mdiContainer: MultipleWindows;
+  private innerWindow: InnerWindow | null = null;
   private parentWindow: Window;
   private _id: string;
+  private _title: string;
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
   private menuDefinition?: Array<{
     label: string;
@@ -73,60 +78,65 @@ export class InnerWindowAdapter implements ITsyneWindow {
     builder?: (win: ITsyneWindow) => void
   ) {
     this.ctx = ctx;
+    this.mdiContainer = mdiContainer;
     this.parentWindow = parentWindow;
     this._id = ctx.generateId('tsynewindow');
+    this._title = options.title;
 
-    // Create the inner window with content from builder
-    this.innerWindow = mdiContainer.addWindow(
-      options.title,
-      () => {
-        if (builder) {
-          // Push context so widgets are captured
-          ctx.pushWindow(this._id);
-          ctx.pushContainer();
-          builder(this);
-          ctx.popContainer();
-          ctx.popWindow();
-        }
-      },
-      async () => {
-        // On close - check intercept
-        if (this.closeInterceptCallback) {
-          const shouldClose = await this.closeInterceptCallback();
-          if (!shouldClose) {
-            // Re-show the window (can't actually prevent close in InnerWindow)
-            // This is a limitation - InnerWindow close can't be intercepted
-          }
-        }
-      }
-    );
+    // If builder is provided, call it - it will typically call setContent()
+    if (builder) {
+      builder(this);
+    }
   }
 
   get id(): string {
     return this._id;
   }
 
+  /**
+   * Set the content of the inner window.
+   * This is when we actually create the InnerWindow.
+   */
   async setContent(builder: () => void | Promise<void>): Promise<void> {
-    // InnerWindow doesn't support dynamic content replacement the same way
-    // For now, log a warning
-    console.warn('InnerWindowAdapter.setContent() - content replacement not fully supported');
-    await builder();
+    // Create the InnerWindow now with the actual content
+    this.innerWindow = this.mdiContainer.addWindow(
+      this._title,
+      () => {
+        // Build the content directly
+        builder();
+      },
+      async () => {
+        // On close callback
+        if (this.closeInterceptCallback) {
+          await this.closeInterceptCallback();
+        }
+      }
+    );
   }
 
   async show(): Promise<void> {
-    await this.innerWindow.show();
+    if (this.innerWindow) {
+      await this.innerWindow.show();
+    }
   }
 
   async hide(): Promise<void> {
-    await this.innerWindow.hide();
+    if (this.innerWindow) {
+      await this.innerWindow.hide();
+    }
   }
 
   async close(): Promise<void> {
-    await this.innerWindow.close();
+    if (this.innerWindow) {
+      await this.innerWindow.close();
+    }
   }
 
   setTitle(title: string): void {
-    this.innerWindow.setTitle(title);
+    this._title = title;
+    if (this.innerWindow) {
+      this.innerWindow.setTitle(title);
+    }
   }
 
   // === Window-specific methods (no-op in InnerWindow) ===
@@ -148,9 +158,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
   }
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
-    // Store callback, but note InnerWindow close can't actually be intercepted
     this.closeInterceptCallback = callback;
-    console.warn('InnerWindowAdapter.setCloseIntercept() - close interception is limited in InnerWindow mode');
   }
 
   async setMainMenu(menuDefinition: Array<{
@@ -159,9 +167,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
   }>): Promise<void> {
     // Store menu definition - could potentially render as toolbar in future
     this.menuDefinition = menuDefinition;
-    // For now, menus are not displayed in InnerWindow mode
-    // Future: Could render as a toolbar or dropdown buttons at top of inner window
-    console.warn('InnerWindowAdapter.setMainMenu() - menus not yet supported in InnerWindow mode');
+    // Menus are not displayed in InnerWindow mode (silent - don't warn on every app)
   }
 
   // === Dialogs - delegate to parent window ===
@@ -246,7 +252,7 @@ export function createTsyneWindow(
   builder?: (win: ITsyneWindow) => void
 ): ITsyneWindow {
   if (desktopContext) {
-    // Desktop mode - create InnerWindow
+    // Desktop mode - create InnerWindowAdapter
     return new InnerWindowAdapter(
       ctx,
       desktopContext.mdiContainer,
