@@ -50,6 +50,7 @@ import {
   DocTabs,
   Form,
   InnerWindow,
+  MultipleWindows,
   Navigation,
   NavigationOptions,
   Popup,
@@ -799,6 +800,7 @@ export {
   CanvasLinearGradient,
   Clip,
   InnerWindow,
+  MultipleWindows,
   AdaptiveGrid,
   Padded,
   Popup,
@@ -885,3 +887,12 @@ export type { TsyneLocation, TsyneHistory, TsyneNavigator } from './globals';
 
 // Export screenshot helper (useful for demos and testing)
 export { screenshotIfRequested } from './screenshot-helper';
+
+// Export desktop metadata utilities (for building desktop environments)
+export {
+  parseAppMetadata,
+  scanForApps,
+  loadAppBuilder,
+  loadContentBuilder,
+} from './desktop-metadata';
+export type { AppMetadata } from './desktop-metadata';
