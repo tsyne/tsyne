@@ -1,3 +1,7 @@
+// @tsyne-app:name Calculator
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="8" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="8" cy="16" r="1.5"/><circle cx="12" cy="16" r="1.5"/><circle cx="16" cy="16" r="1.5"/></svg>
+// @tsyne-app:category utilities
+
 import { app, styles, FontStyle, App, Window, Label } from '../src';
 // In production: import { app, styles, FontStyle, App, Window, Label } from 'tsyne';
 
@@ -74,7 +78,7 @@ export function buildCalculator(a: App) {
     win.setContent(() => {
       a.vbox(() => {
         // Display
-        display = a.label("0");
+        display = a.label("0").withId('calc-display');
 
         // Number pad and operators - 4x4 grid for even button sizing
         a.grid(4, () => {

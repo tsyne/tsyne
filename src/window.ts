@@ -531,6 +531,15 @@ export class Window {
   }
 
   /**
+   * Hide the window (minimize or make invisible)
+   */
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWindow', {
+      windowId: this.id
+    });
+  }
+
+  /**
    * Close the window programmatically
    */
   async close(): Promise<void> {
