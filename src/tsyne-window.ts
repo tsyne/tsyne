@@ -10,7 +10,7 @@
 
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { InnerWindow, MultipleWindows } from './widgets';
+import { InnerWindow, MultipleWindows, DesktopMDI } from './widgets';
 
 /**
  * Common interface for both Window and InnerWindow
@@ -59,7 +59,8 @@ export interface ITsyneWindow {
  */
 export class InnerWindowAdapter implements ITsyneWindow {
   private ctx: Context;
-  private mdiContainer: MultipleWindows;
+  private mdiContainer: MultipleWindows | null;
+  private desktopMDI: DesktopMDI | null;
   private innerWindow: InnerWindow | null = null;
   private parentWindow: Window;
   private _id: string;
@@ -72,13 +73,20 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   constructor(
     ctx: Context,
-    mdiContainer: MultipleWindows,
+    mdiContainerOrDesktopMDI: MultipleWindows | DesktopMDI,
     parentWindow: Window,
     options: WindowOptions,
     builder?: (win: ITsyneWindow) => void
   ) {
     this.ctx = ctx;
-    this.mdiContainer = mdiContainer;
+    // Determine which container type we have
+    if ((mdiContainerOrDesktopMDI as any).addWindowWithContent) {
+      this.desktopMDI = mdiContainerOrDesktopMDI as DesktopMDI;
+      this.mdiContainer = null;
+    } else {
+      this.mdiContainer = mdiContainerOrDesktopMDI as MultipleWindows;
+      this.desktopMDI = null;
+    }
     this.parentWindow = parentWindow;
     this._id = ctx.generateId('tsynewindow');
     this._title = options.title;
@@ -98,27 +106,37 @@ export class InnerWindowAdapter implements ITsyneWindow {
    * This is when we actually create the InnerWindow.
    */
   async setContent(builder: () => void | Promise<void>): Promise<void> {
-    // Create the InnerWindow now with the actual content
-    this.innerWindow = this.mdiContainer.addWindow(
-      this._title,
-      () => {
-        // Build the content directly
-        builder();
-      },
-      async () => {
-        // On close callback - user clicked X button
-        if (this.closeInterceptCallback) {
-          const shouldClose = await this.closeInterceptCallback();
-          if (shouldClose === false) {
-            return; // Don't close if callback returns false
-          }
-        }
-        // Actually close the window by sending innerWindowClose to Go
-        if (this.innerWindow) {
-          await this.innerWindow.close();
+    const closeHandler = async () => {
+      // On close callback - user clicked X button
+      if (this.closeInterceptCallback) {
+        const shouldClose = await this.closeInterceptCallback();
+        if (shouldClose === false) {
+          return; // Don't close if callback returns false
         }
       }
-    );
+      // Actually close the window by sending innerWindowClose to Go
+      if (this.innerWindow) {
+        await this.innerWindow.close();
+      }
+    };
+
+    // Create the InnerWindow now with the actual content
+    // Use whichever container type we have
+    if (this.desktopMDI) {
+      this.innerWindow = this.desktopMDI.addWindowWithContent(
+        this._title,
+        () => { builder(); },
+        closeHandler
+      );
+    } else if (this.mdiContainer) {
+      this.innerWindow = this.mdiContainer.addWindow(
+        this._title,
+        () => { builder(); },
+        closeHandler
+      );
+    } else {
+      throw new Error('No MDI container available');
+    }
   }
 
   async show(): Promise<void> {
@@ -212,7 +230,10 @@ export class InnerWindowAdapter implements ITsyneWindow {
  * Desktop context for creating windows as InnerWindows
  */
 export interface DesktopContext {
-  mdiContainer: MultipleWindows;
+  /** MDI container (legacy approach with layering issues) */
+  mdiContainer?: MultipleWindows;
+  /** Desktop MDI container (unified approach - preferred) */
+  desktopMDI?: DesktopMDI;
   parentWindow: Window;
   /** The desktop's App instance - sub-apps should use this instead of creating new ones */
   desktopApp: any;  // Use 'any' to avoid circular import with App
@@ -262,9 +283,14 @@ export function createTsyneWindow(
 ): ITsyneWindow {
   if (desktopContext) {
     // Desktop mode - create InnerWindowAdapter
+    // Use desktopMDI if available (preferred), otherwise fall back to mdiContainer
+    const container = desktopContext.desktopMDI || desktopContext.mdiContainer;
+    if (!container) {
+      throw new Error('Desktop mode enabled but no MDI container available');
+    }
     return new InnerWindowAdapter(
       ctx,
-      desktopContext.mdiContainer,
+      container,
       desktopContext.parentWindow,
       options,
       builder

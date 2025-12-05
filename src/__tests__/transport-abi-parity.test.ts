@@ -415,6 +415,9 @@ const GRPC_SUPPORTED_WIDGETS = [
   { goHandler: 'handleCreateCanvasArc', protoMessage: 'CreateCanvasArcRequest', grpcMethod: 'CreateCanvasArc', tsClass: 'CanvasArc', tsFile: 'canvas.ts' },
   { goHandler: 'handleCreateCanvasPolygon', protoMessage: 'CreateCanvasPolygonRequest', grpcMethod: 'CreateCanvasPolygon', tsClass: 'CanvasPolygon', tsFile: 'canvas.ts' },
   { goHandler: 'handleCreateTappableCanvasRaster', protoMessage: 'CreateTappableCanvasRasterRequest', grpcMethod: 'CreateTappableCanvasRaster', tsClass: 'TappableCanvasRaster', tsFile: 'canvas.ts' },
+  // Desktop widgets
+  { goHandler: 'handleCreateDesktopCanvas', protoMessage: 'CreateDesktopCanvasRequest', grpcMethod: 'CreateDesktopCanvas', tsClass: 'DesktopCanvas', tsFile: 'desktop.ts' },
+  { goHandler: 'handleCreateDesktopIcon', protoMessage: 'CreateDesktopIconRequest', grpcMethod: 'CreateDesktopIcon', tsClass: 'DesktopIcon', tsFile: 'desktop.ts' },
 ];
 
 /**
@@ -453,6 +456,10 @@ describe('Transport ABI Parity', () => {
     ({ goHandler, protoMessage, grpcMethod, tsClass, tsFile }) => {
       // Route to correct Go handler file based on widget type
       const getGoHandlerFile = (handler: string): string => {
+        // Desktop widgets (must check before Canvas since DesktopCanvas contains Canvas)
+        if (handler.includes('Desktop')) {
+          return path.join(bridgePath, 'widget_creators_complex.go');
+        }
         // Canvas widgets
         if (handler.includes('Canvas')) {
           return path.join(bridgePath, 'widget_creators_canvas.go');

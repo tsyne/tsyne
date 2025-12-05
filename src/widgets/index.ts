@@ -89,3 +89,14 @@ export {
   CanvasPolygon,
   CanvasRadialGradient
 } from './canvas';
+
+// Desktop widgets
+export {
+  DesktopCanvas,
+  DesktopCanvasOptions,
+  DesktopIcon,
+  DesktopIconOptions,
+  DesktopMDI,
+  DesktopMDIOptions,
+  DesktopMDIIcon
+} from './desktop';

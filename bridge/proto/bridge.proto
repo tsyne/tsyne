@@ -88,6 +88,15 @@ service BridgeService {
   rpc CreateTextGrid(CreateTextGridRequest) returns (Response);
 
   // ============================================================================
+  // Desktop Canvas - draggable icons
+  // ============================================================================
+  rpc CreateDesktopCanvas(CreateDesktopCanvasRequest) returns (Response);
+  rpc CreateDesktopIcon(CreateDesktopIconRequest) returns (Response);
+  rpc MoveDesktopIcon(MoveDesktopIconRequest) returns (Response);
+  rpc UpdateDesktopIconLabel(UpdateDesktopIconLabelRequest) returns (Response);
+  rpc UpdateDesktopIconColor(UpdateDesktopIconColorRequest) returns (Response);
+
+  // ============================================================================
   // Canvas primitives
   // ============================================================================
   rpc CreateCanvasLine(CreateCanvasLineRequest) returns (Response);
@@ -964,6 +973,44 @@ message CreateTextGridRequest {
   string text = 2;
   bool show_line_numbers = 3;
   bool show_whitespace = 4;
+}
+
+// ============================================================================
+// Desktop Canvas - draggable icons with absolute positioning
+// ============================================================================
+
+message CreateDesktopCanvasRequest {
+  string widget_id = 1;
+  string bg_color = 2;  // hex color for background
+}
+
+message CreateDesktopIconRequest {
+  string widget_id = 1;   // icon ID (Go: "id")
+  string desktop_id = 2;  // parent desktop canvas ID (Go: "desktopId")
+  string label = 3;
+  float x = 4;
+  float y = 5;
+  string color = 6;  // hex color for icon
+  string on_click_callback_id = 7;     // "on_" prefix for click callbacks
+  string on_dbl_click_callback_id = 8;
+  string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (test convention)
+  string drag_end_callback_id = 10;
+}
+
+message MoveDesktopIconRequest {
+  string icon_id = 1;
+  float x = 2;
+  float y = 3;
+}
+
+message UpdateDesktopIconLabelRequest {
+  string icon_id = 1;
+  string label = 2;
+}
+
+message UpdateDesktopIconColorRequest {
+  string icon_id = 1;
+  string color = 2;  // hex color
 }
 
 // ============================================================================

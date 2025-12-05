@@ -78,6 +78,11 @@ import {
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
+  // Desktop
+  DesktopCanvas,
+  DesktopCanvasOptions,
+  DesktopMDI,
+  DesktopMDIOptions,
   // Types
   ThemeIconName,
 } from './widgets';
@@ -824,6 +829,24 @@ export class App {
 
   textgrid(options?: TextGridOptions | string): TextGrid {
     return new TextGrid(this.ctx, options);
+  }
+
+  /**
+   * Create a desktop canvas for draggable icons
+   * Solves Fyne Stack click limitation with single-widget absolute positioning
+   */
+  desktopCanvas(options?: DesktopCanvasOptions): DesktopCanvas {
+    return new DesktopCanvas(this.ctx, options);
+  }
+
+  /**
+   * Create a DesktopMDI container that combines desktop icons with MDI window management.
+   * This solves the layering problem by managing both in a single widget.
+   * @param options - Optional configuration
+   * @returns DesktopMDI widget instance
+   */
+  desktopMDI(options?: DesktopMDIOptions): DesktopMDI {
+    return new DesktopMDI(this.ctx, options);
   }
 
   /**

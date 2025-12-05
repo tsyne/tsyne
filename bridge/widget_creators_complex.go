@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -785,4 +786,435 @@ func hexCharToInt(c rune) uint8 {
 		return uint8(c - 'A' + 10)
 	}
 	return 0
+}
+
+// =============================================================================
+// Desktop Canvas handlers - for draggable icon desktop
+// =============================================================================
+
+func (b *Bridge) handleCreateDesktopCanvas(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	bgColorStr, _ := msg.Payload["bgColor"].(string)
+
+	// Parse background color (default to dark blue)
+	var bgColor color.Color = color.RGBA{R: 30, G: 60, B: 90, A: 255}
+	if bgColorStr != "" {
+		bgColor = parseColorHex(bgColorStr)
+	}
+
+	desktop := NewTsyneDesktopCanvas(widgetID, bgColor, b)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = desktop
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "desktopCanvas"}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
+	iconID := msg.Payload["id"].(string)
+	desktopID := msg.Payload["desktopId"].(string)
+	label, _ := msg.Payload["label"].(string)
+	x, _ := msg.Payload["x"].(float64)
+	y, _ := msg.Payload["y"].(float64)
+	colorStr, _ := msg.Payload["color"].(string)
+
+	// Extract callback IDs
+	onDragCallbackId, _ := msg.Payload["onDragCallbackId"].(string)
+	onDragEndCallbackId, _ := msg.Payload["onDragEndCallbackId"].(string)
+	onClickCallbackId, _ := msg.Payload["onClickCallbackId"].(string)
+	onDblClickCallbackId, _ := msg.Payload["onDblClickCallbackId"].(string)
+
+	// Get the desktop canvas
+	b.mu.RLock()
+	desktopWidget, exists := b.widgets[desktopID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Desktop canvas not found",
+		}
+	}
+
+	desktop, ok := desktopWidget.(*TsyneDesktopCanvas)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a desktop canvas",
+		}
+	}
+
+	// Parse icon color (default to blue)
+	var iconColor color.Color = color.RGBA{R: 50, G: 100, B: 220, A: 255}
+	if colorStr != "" {
+		iconColor = parseColorHex(colorStr)
+	}
+
+	// Create the icon
+	icon := NewTsyneDraggableIcon(iconID, label, iconColor, float32(x), float32(y), desktop, b)
+	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
+
+	// Add to desktop
+	desktop.AddIcon(icon)
+
+	// Store reference
+	b.mu.Lock()
+	b.widgets[iconID] = icon
+	b.widgetMeta[iconID] = WidgetMetadata{Type: "desktopIcon", Text: label}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"iconId": iconID},
+	}
+}
+
+func (b *Bridge) handleMoveDesktopIcon(msg Message) Response {
+	iconID := msg.Payload["iconId"].(string)
+	x, _ := msg.Payload["x"].(float64)
+	y, _ := msg.Payload["y"].(float64)
+
+	b.mu.RLock()
+	iconWidget, exists := b.widgets[iconID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Icon not found",
+		}
+	}
+
+	icon, ok := iconWidget.(*TsyneDraggableIcon)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a desktop icon",
+		}
+	}
+
+	icon.PosX = float32(x)
+	icon.PosY = float32(y)
+
+	if icon.desktop != nil {
+		icon.desktop.MoveIcon(icon)
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleUpdateDesktopIconLabel(msg Message) Response {
+	iconID := msg.Payload["iconId"].(string)
+	label := msg.Payload["label"].(string)
+
+	b.mu.RLock()
+	iconWidget, exists := b.widgets[iconID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Icon not found",
+		}
+	}
+
+	icon, ok := iconWidget.(*TsyneDraggableIcon)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a desktop icon",
+		}
+	}
+
+	icon.Label = label
+	icon.TextObj.Text = label
+	icon.Refresh()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleUpdateDesktopIconColor(msg Message) Response {
+	iconID := msg.Payload["iconId"].(string)
+	colorStr := msg.Payload["color"].(string)
+
+	b.mu.RLock()
+	iconWidget, exists := b.widgets[iconID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Icon not found",
+		}
+	}
+
+	icon, ok := iconWidget.(*TsyneDraggableIcon)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a desktop icon",
+		}
+	}
+
+	icon.IconRect.FillColor = parseColorHex(colorStr)
+	icon.Refresh()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// =============================================================================
+// DesktopMDI - Combined Desktop Canvas + MDI Container
+// Solves the layering problem by combining both in a single widget
+// =============================================================================
+
+func (b *Bridge) handleCreateDesktopMDI(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	bgColorStr, _ := msg.Payload["bgColor"].(string)
+
+	// Parse background color (default to dark blue)
+	var bgColor color.Color = color.RGBA{R: 45, G: 90, B: 135, A: 255}
+	if bgColorStr != "" {
+		bgColor = parseColorHex(bgColorStr)
+	}
+
+	desktop := NewTsyneDesktopMDI(widgetID, bgColor, b)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = desktop
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "desktopMDI"}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
+	iconID := msg.Payload["id"].(string)
+	desktopID := msg.Payload["desktopId"].(string)
+	label, _ := msg.Payload["label"].(string)
+	x, _ := msg.Payload["x"].(float64)
+	y, _ := msg.Payload["y"].(float64)
+	colorStr, _ := msg.Payload["color"].(string)
+
+	// Extract callback IDs
+	onDragCallbackId, _ := msg.Payload["onDragCallbackId"].(string)
+	onDragEndCallbackId, _ := msg.Payload["onDragEndCallbackId"].(string)
+	onClickCallbackId, _ := msg.Payload["onClickCallbackId"].(string)
+	onDblClickCallbackId, _ := msg.Payload["onDblClickCallbackId"].(string)
+
+	// Get the desktop MDI
+	b.mu.RLock()
+	desktopWidget, exists := b.widgets[desktopID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Desktop MDI not found",
+		}
+	}
+
+	desktop, ok := desktopWidget.(*TsyneDesktopMDI)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a desktop MDI",
+		}
+	}
+
+	// Parse icon color (default to blue)
+	var iconColor color.Color = color.RGBA{R: 50, G: 100, B: 220, A: 255}
+	if colorStr != "" {
+		iconColor = parseColorHex(colorStr)
+	}
+
+	// Create the icon using the MDI constructor
+	icon := NewTsyneDraggableIconForMDI(iconID, label, iconColor, float32(x), float32(y), desktop, b)
+	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
+
+	// Add to desktop MDI
+	desktop.AddIcon(icon)
+
+	// Store reference
+	b.mu.Lock()
+	b.widgets[iconID] = icon
+	b.widgetMeta[iconID] = WidgetMetadata{Type: "desktopIcon", Text: label}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"iconId": iconID},
+	}
+}
+
+func (b *Bridge) handleDesktopMDIAddWindow(msg Message) Response {
+	containerID := msg.Payload["containerId"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	containerObj, containerExists := b.widgets[containerID]
+	windowObj, windowExists := b.widgets[windowID]
+	b.mu.RUnlock()
+
+	if !containerExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "DesktopMDI container not found",
+		}
+	}
+
+	if !windowExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	desktop, ok := containerObj.(*TsyneDesktopMDI)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a DesktopMDI container",
+		}
+	}
+
+	innerWin, ok := windowObj.(*container.InnerWindow)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	// Add the window to the container
+	fyne.DoAndWait(func() {
+		desktop.AddWindow(innerWin)
+
+		// Position the window if coordinates provided, otherwise center it
+		if x, ok := msg.Payload["x"].(float64); ok {
+			y, _ := msg.Payload["y"].(float64)
+			innerWin.Move(fyne.NewPos(float32(x), float32(y)))
+		} else {
+			// Center the window in the container
+			containerSize := desktop.Size()
+			windowSize := innerWin.MinSize()
+			// Use a reasonable default size if MinSize is too small
+			if windowSize.Width < 200 {
+				windowSize.Width = 300
+			}
+			if windowSize.Height < 150 {
+				windowSize.Height = 250
+			}
+			x := (containerSize.Width - windowSize.Width) / 2
+			y := (containerSize.Height - windowSize.Height) / 2
+			if x < 0 {
+				x = 20
+			}
+			if y < 0 {
+				y = 20
+			}
+			innerWin.Move(fyne.NewPos(x, y))
+		}
+	})
+
+	b.mu.Lock()
+	b.childToParent[windowID] = containerID
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleDesktopMDIRemoveWindow(msg Message) Response {
+	containerID := msg.Payload["containerId"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	containerObj, containerExists := b.widgets[containerID]
+	windowObj, windowExists := b.widgets[windowID]
+	b.mu.RUnlock()
+
+	if !containerExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "DesktopMDI container not found",
+		}
+	}
+
+	if !windowExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	desktop, ok := containerObj.(*TsyneDesktopMDI)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a DesktopMDI container",
+		}
+	}
+
+	innerWin, ok := windowObj.(*container.InnerWindow)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	// Remove the window from the container
+	fyne.DoAndWait(func() {
+		desktop.RemoveWindow(innerWin)
+	})
+
+	b.mu.Lock()
+	delete(b.childToParent, windowID)
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
 }

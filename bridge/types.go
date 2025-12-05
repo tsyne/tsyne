@@ -10,6 +10,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
@@ -663,6 +665,520 @@ func (h *HoverableWrapper) SetMouseInHandler(handler func(*desktop.MouseEvent)) 
 func (h *HoverableWrapper) SetMouseOutHandler(handler func()) {
 	h.mouseOutHandler = handler
 }
+
+// =============================================================================
+// TsyneDesktopCanvas - Container with absolute positioning for draggable icons
+// Based on bridge/cmd/draggable-icons demo - solves Fyne Stack click limitation
+// =============================================================================
+
+// DesktopIconContainer is an interface for containers that hold draggable icons
+// Both TsyneDesktopCanvas and TsyneDesktopMDI implement this
+type DesktopIconContainer interface {
+	fyne.CanvasObject
+	MoveIcon(icon *TsyneDraggableIcon)
+	Refresh()
+}
+
+// TsyneDraggableIcon is a desktop icon that can be dragged freely
+type TsyneDraggableIcon struct {
+	widget.BaseWidget
+
+	ID       string
+	Label    string
+	IconRect *canvas.Rectangle
+	TextObj  *canvas.Text
+
+	// Position tracking
+	PosX, PosY float32
+
+	// Drag state
+	dragging   bool
+	dragStartX float32
+	dragStartY float32
+
+	// Double-click detection
+	lastTapTime time.Time
+
+	// Reference to parent container for repositioning (supports both canvas types)
+	desktop          *TsyneDesktopCanvas
+	desktopContainer DesktopIconContainer
+
+	// Bridge for callbacks
+	bridge              *Bridge
+	onDragCallbackId    string
+	onDragEndCallbackId string
+	onClickCallbackId   string
+	onDblClickCallbackId string
+}
+
+// NewTsyneDraggableIcon creates a new draggable icon
+func NewTsyneDraggableIcon(id, label string, iconColor color.Color, x, y float32, desktop *TsyneDesktopCanvas, bridge *Bridge) *TsyneDraggableIcon {
+	icon := &TsyneDraggableIcon{
+		ID:      id,
+		Label:   label,
+		PosX:    x,
+		PosY:    y,
+		desktop: desktop,
+		bridge:  bridge,
+	}
+
+	// Create the icon rectangle (64x64)
+	icon.IconRect = canvas.NewRectangle(iconColor)
+	icon.IconRect.SetMinSize(fyne.NewSize(64, 64))
+	icon.IconRect.CornerRadius = 8
+
+	// Create the text label
+	icon.TextObj = canvas.NewText(label, color.White)
+	icon.TextObj.Alignment = fyne.TextAlignCenter
+	icon.TextObj.TextSize = 12
+
+	icon.ExtendBaseWidget(icon)
+	return icon
+}
+
+// NewTsyneDraggableIconForMDI creates a new draggable icon for a DesktopMDI container
+func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y float32, container DesktopIconContainer, bridge *Bridge) *TsyneDraggableIcon {
+	icon := &TsyneDraggableIcon{
+		ID:               id,
+		Label:            label,
+		PosX:             x,
+		PosY:             y,
+		desktopContainer: container,
+		bridge:           bridge,
+	}
+
+	// Create the icon rectangle (64x64)
+	icon.IconRect = canvas.NewRectangle(iconColor)
+	icon.IconRect.SetMinSize(fyne.NewSize(64, 64))
+	icon.IconRect.CornerRadius = 8
+
+	// Create the text label
+	icon.TextObj = canvas.NewText(label, color.White)
+	icon.TextObj.Alignment = fyne.TextAlignCenter
+	icon.TextObj.TextSize = 12
+
+	icon.ExtendBaseWidget(icon)
+	return icon
+}
+
+// SetCallbackIds configures callback IDs for event dispatching
+func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick string) {
+	d.onDragCallbackId = drag
+	d.onDragEndCallbackId = dragEnd
+	d.onClickCallbackId = click
+	d.onDblClickCallbackId = dblClick
+}
+
+// CreateRenderer returns the widget renderer
+func (d *TsyneDraggableIcon) CreateRenderer() fyne.WidgetRenderer {
+	// Stack icon and text vertically
+	content := container.NewVBox(
+		container.NewCenter(d.IconRect),
+		container.NewCenter(d.TextObj),
+	)
+	return widget.NewSimpleRenderer(content)
+}
+
+// MinSize returns the minimum size of the icon
+func (d *TsyneDraggableIcon) MinSize() fyne.Size {
+	return fyne.NewSize(80, 90)
+}
+
+// Tapped handles single tap/click - used for double-click detection
+func (d *TsyneDraggableIcon) Tapped(e *fyne.PointEvent) {
+	log.Printf("[TAP] Icon %s: Tapped() called", d.ID)
+	now := time.Now()
+	elapsed := now.Sub(d.lastTapTime)
+
+	if elapsed < 400*time.Millisecond {
+		// Double-click detected!
+		if d.onDblClickCallbackId != "" && d.bridge != nil {
+			d.bridge.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": d.onDblClickCallbackId,
+					"iconId":     d.ID,
+					"x":          d.PosX,
+					"y":          d.PosY,
+				},
+			})
+		}
+	} else {
+		// Single click
+		if d.onClickCallbackId != "" && d.bridge != nil {
+			d.bridge.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": d.onClickCallbackId,
+					"iconId":     d.ID,
+					"x":          d.PosX,
+					"y":          d.PosY,
+				},
+			})
+		}
+	}
+
+	d.lastTapTime = now
+}
+
+// DoubleTapped handles double-click events (Fyne's native double-tap interface)
+func (d *TsyneDraggableIcon) DoubleTapped(e *fyne.PointEvent) {
+	log.Printf("[DOUBLE-TAP] Icon %s: DoubleTapped() called", d.ID)
+	if d.onDblClickCallbackId != "" && d.bridge != nil {
+		d.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": d.onDblClickCallbackId,
+				"iconId":     d.ID,
+				"x":          d.PosX,
+				"y":          d.PosY,
+			},
+		})
+	}
+}
+
+// Dragged handles drag events
+func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
+	log.Printf("[DRAG] Icon %s: Dragged() called with dx=%.2f, dy=%.2f", d.ID, e.Dragged.DX, e.Dragged.DY)
+
+	if !d.dragging {
+		d.dragging = true
+		d.dragStartX = d.PosX
+		d.dragStartY = d.PosY
+	}
+
+	// Calculate new position based on drag delta
+	dx := e.Dragged.DX
+	dy := e.Dragged.DY
+
+	d.PosX += dx
+	d.PosY += dy
+
+	// Ensure icon stays within bounds (minimum 0,0)
+	if d.PosX < 0 {
+		d.PosX = 0
+	}
+	if d.PosY < 0 {
+		d.PosY = 0
+	}
+
+	log.Printf("[DRAG] Icon %s: Moving to (%.2f, %.2f)", d.ID, d.PosX, d.PosY)
+	// Directly move this widget to visually update position
+	// (Refresh alone doesn't trigger Layout)
+	d.Move(fyne.NewPos(d.PosX, d.PosY))
+
+	// Notify TypeScript of drag
+	if d.onDragCallbackId != "" && d.bridge != nil {
+		d.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": d.onDragCallbackId,
+				"iconId":     d.ID,
+				"x":          d.PosX,
+				"y":          d.PosY,
+				"dx":         dx,
+				"dy":         dy,
+			},
+		})
+	}
+
+	// Update position in the desktop (for proper refresh)
+	// Check both container types for backwards compatibility
+	if d.desktopContainer != nil {
+		d.desktopContainer.MoveIcon(d)
+	} else if d.desktop != nil {
+		d.desktop.MoveIcon(d)
+	}
+}
+
+// DragEnd handles the end of a drag operation
+func (d *TsyneDraggableIcon) DragEnd() {
+	if d.dragging {
+		// Notify TypeScript of drag end
+		if d.onDragEndCallbackId != "" && d.bridge != nil {
+			d.bridge.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": d.onDragEndCallbackId,
+					"iconId":     d.ID,
+					"x":          d.PosX,
+					"y":          d.PosY,
+				},
+			})
+		}
+		d.dragging = false
+	}
+}
+
+// TsyneDesktopCanvas is a container that allows free positioning of icons
+type TsyneDesktopCanvas struct {
+	widget.BaseWidget
+
+	icons   []*TsyneDraggableIcon
+	bgColor color.Color
+	bridge  *Bridge
+	id      string
+}
+
+// NewTsyneDesktopCanvas creates a new desktop canvas
+func NewTsyneDesktopCanvas(id string, bgColor color.Color, bridge *Bridge) *TsyneDesktopCanvas {
+	dc := &TsyneDesktopCanvas{
+		icons:   make([]*TsyneDraggableIcon, 0),
+		bgColor: bgColor,
+		bridge:  bridge,
+		id:      id,
+	}
+	dc.ExtendBaseWidget(dc)
+	return dc
+}
+
+// AddIcon adds an icon to the desktop at the specified position
+func (dc *TsyneDesktopCanvas) AddIcon(icon *TsyneDraggableIcon) {
+	dc.icons = append(dc.icons, icon)
+	dc.Refresh()
+}
+
+// MoveIcon updates the position of an icon
+func (dc *TsyneDesktopCanvas) MoveIcon(icon *TsyneDraggableIcon) {
+	dc.Refresh()
+}
+
+// GetIcon returns an icon by ID
+func (dc *TsyneDesktopCanvas) GetIcon(id string) *TsyneDraggableIcon {
+	for _, icon := range dc.icons {
+		if icon.ID == id {
+			return icon
+		}
+	}
+	return nil
+}
+
+// CreateRenderer returns the widget renderer for the desktop
+func (dc *TsyneDesktopCanvas) CreateRenderer() fyne.WidgetRenderer {
+	var bg *canvas.Rectangle
+	// Only create background if color is not transparent
+	if dc.bgColor != nil {
+		_, _, _, a := dc.bgColor.RGBA()
+		if a > 0 {
+			bg = canvas.NewRectangle(dc.bgColor)
+		}
+	}
+	return &desktopCanvasRenderer{
+		desktop: dc,
+		bg:      bg,
+	}
+}
+
+// desktopCanvasRenderer handles the rendering of the desktop
+type desktopCanvasRenderer struct {
+	desktop *TsyneDesktopCanvas
+	bg      *canvas.Rectangle
+}
+
+func (r *desktopCanvasRenderer) Layout(size fyne.Size) {
+	if r.bg != nil {
+		r.bg.Resize(size)
+		r.bg.Move(fyne.NewPos(0, 0))
+	}
+
+	// Position each icon at its stored position
+	for _, icon := range r.desktop.icons {
+		iconSize := icon.MinSize()
+		icon.Resize(iconSize)
+		icon.Move(fyne.NewPos(icon.PosX, icon.PosY))
+	}
+}
+
+func (r *desktopCanvasRenderer) MinSize() fyne.Size {
+	return fyne.NewSize(800, 600)
+}
+
+func (r *desktopCanvasRenderer) Refresh() {
+	if r.bg != nil {
+		r.bg.FillColor = r.desktop.bgColor
+		r.bg.Refresh()
+	}
+	for _, icon := range r.desktop.icons {
+		icon.Refresh()
+	}
+}
+
+func (r *desktopCanvasRenderer) Objects() []fyne.CanvasObject {
+	var objects []fyne.CanvasObject
+	if r.bg != nil {
+		objects = append(objects, r.bg)
+	}
+	for _, icon := range r.desktop.icons {
+		objects = append(objects, icon)
+	}
+	return objects
+}
+
+func (r *desktopCanvasRenderer) Destroy() {}
+
+// =============================================================================
+// TsyneDesktopMDI - Combined desktop canvas + MDI container
+// This solves the layering problem by combining both in a single widget
+// that properly routes events to icons or inner windows based on position.
+// =============================================================================
+
+// TsyneDesktopMDI combines desktop icons with MDI window management
+// Uses MultipleWindows for proper window drag support, with icons rendered on top
+type TsyneDesktopMDI struct {
+	widget.BaseWidget
+
+	icons      []*TsyneDraggableIcon
+	mdiWindows *container.MultipleWindows // Fyne's MDI handles window drag
+	bgColor    color.Color
+	bridge     *Bridge
+	id         string
+	iconsOnTop bool // When true, icons render on top of windows for interaction
+}
+
+// NewTsyneDesktopMDI creates a new desktop MDI container
+func NewTsyneDesktopMDI(id string, bgColor color.Color, bridge *Bridge) *TsyneDesktopMDI {
+	dm := &TsyneDesktopMDI{
+		icons:      make([]*TsyneDraggableIcon, 0),
+		mdiWindows: container.NewMultipleWindows(),
+		bgColor:    bgColor,
+		bridge:     bridge,
+		id:         id,
+		iconsOnTop: true, // Start with icons on top so they can be clicked
+	}
+	dm.ExtendBaseWidget(dm)
+	return dm
+}
+
+// AddIcon adds an icon to the desktop at the specified position
+func (dm *TsyneDesktopMDI) AddIcon(icon *TsyneDraggableIcon) {
+	dm.icons = append(dm.icons, icon)
+	dm.Refresh()
+}
+
+// AddWindow adds an inner window to the MDI
+func (dm *TsyneDesktopMDI) AddWindow(win *container.InnerWindow) {
+	fyne.Do(func() {
+		dm.mdiWindows.Add(win)
+		dm.iconsOnTop = false // Push icons behind windows when a new window opens
+		dm.Refresh()
+	})
+}
+
+// Tapped handles tap events on the desktop background
+// When tapped on empty space (not on a window), bring icons to front
+func (dm *TsyneDesktopMDI) Tapped(e *fyne.PointEvent) {
+	// If we received this tap, it means it wasn't captured by a window
+	// Bring icons to the front so they can be interacted with
+	dm.iconsOnTop = true
+	dm.Refresh()
+}
+
+// RemoveWindow removes an inner window from the MDI
+func (dm *TsyneDesktopMDI) RemoveWindow(win *container.InnerWindow) {
+	fyne.Do(func() {
+		// MultipleWindows has no Remove method, so manipulate Windows slice
+		for i, w := range dm.mdiWindows.Windows {
+			if w == win {
+				dm.mdiWindows.Windows = append(dm.mdiWindows.Windows[:i], dm.mdiWindows.Windows[i+1:]...)
+				break
+			}
+		}
+		dm.mdiWindows.Refresh()
+		dm.Refresh()
+	})
+}
+
+// RaiseWindow brings a window to the front
+// Note: MultipleWindows handles z-order internally when windows are clicked
+func (dm *TsyneDesktopMDI) RaiseWindow(win *container.InnerWindow) {
+	// MultipleWindows handles z-order automatically
+}
+
+// GetIcon returns an icon by ID
+func (dm *TsyneDesktopMDI) GetIcon(id string) *TsyneDraggableIcon {
+	for _, icon := range dm.icons {
+		if icon.ID == id {
+			return icon
+		}
+	}
+	return nil
+}
+
+// MoveIcon updates the position of an icon (implements DesktopIconContainer)
+func (dm *TsyneDesktopMDI) MoveIcon(icon *TsyneDraggableIcon) {
+	fyne.Do(func() {
+		dm.Refresh()
+	})
+}
+
+// CreateRenderer returns the widget renderer
+func (dm *TsyneDesktopMDI) CreateRenderer() fyne.WidgetRenderer {
+	bg := canvas.NewRectangle(dm.bgColor)
+	return &desktopMDIRenderer{
+		desktop: dm,
+		bg:      bg,
+	}
+}
+
+// desktopMDIRenderer handles rendering of the combined desktop
+type desktopMDIRenderer struct {
+	desktop *TsyneDesktopMDI
+	bg      *canvas.Rectangle
+}
+
+func (r *desktopMDIRenderer) Layout(size fyne.Size) {
+	r.bg.Resize(size)
+	r.bg.Move(fyne.NewPos(0, 0))
+
+	// MultipleWindows handles its own layout
+	r.desktop.mdiWindows.Resize(size)
+	r.desktop.mdiWindows.Move(fyne.NewPos(0, 0))
+
+	// Position icons at their stored positions (icons on top of windows)
+	for _, icon := range r.desktop.icons {
+		iconSize := icon.MinSize()
+		icon.Resize(iconSize)
+		icon.Move(fyne.NewPos(icon.PosX, icon.PosY))
+	}
+}
+
+func (r *desktopMDIRenderer) MinSize() fyne.Size {
+	return fyne.NewSize(800, 600)
+}
+
+func (r *desktopMDIRenderer) Refresh() {
+	r.bg.FillColor = r.desktop.bgColor
+	r.bg.Refresh()
+	r.desktop.mdiWindows.Refresh()
+	for _, icon := range r.desktop.icons {
+		icon.Refresh()
+	}
+}
+
+func (r *desktopMDIRenderer) Objects() []fyne.CanvasObject {
+	var objects []fyne.CanvasObject
+	// Background first
+	objects = append(objects, r.bg)
+
+	if r.desktop.iconsOnTop {
+		// Icons on top - they can be dragged/clicked, windows behind
+		objects = append(objects, r.desktop.mdiWindows)
+		for _, icon := range r.desktop.icons {
+			objects = append(objects, icon)
+		}
+	} else {
+		// Icons behind - windows on top, click desktop to bring icons front
+		for _, icon := range r.desktop.icons {
+			objects = append(objects, icon)
+		}
+		objects = append(objects, r.desktop.mdiWindows)
+	}
+	return objects
+}
+
+func (r *desktopMDIRenderer) Destroy() {}
+
+// =============================================================================
 
 // stringToCursor converts a cursor type string to desktop.Cursor
 // Supported cursor types: default, text, crosshair, pointer, hResize, vResize

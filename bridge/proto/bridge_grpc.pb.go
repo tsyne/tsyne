@@ -80,6 +80,11 @@ const (
 	BridgeService_CreateMenu_FullMethodName                  = "/bridge.BridgeService/CreateMenu"
 	BridgeService_CreateToolbar_FullMethodName               = "/bridge.BridgeService/CreateToolbar"
 	BridgeService_CreateTextGrid_FullMethodName              = "/bridge.BridgeService/CreateTextGrid"
+	BridgeService_CreateDesktopCanvas_FullMethodName         = "/bridge.BridgeService/CreateDesktopCanvas"
+	BridgeService_CreateDesktopIcon_FullMethodName           = "/bridge.BridgeService/CreateDesktopIcon"
+	BridgeService_MoveDesktopIcon_FullMethodName             = "/bridge.BridgeService/MoveDesktopIcon"
+	BridgeService_UpdateDesktopIconLabel_FullMethodName      = "/bridge.BridgeService/UpdateDesktopIconLabel"
+	BridgeService_UpdateDesktopIconColor_FullMethodName      = "/bridge.BridgeService/UpdateDesktopIconColor"
 	BridgeService_CreateCanvasLine_FullMethodName            = "/bridge.BridgeService/CreateCanvasLine"
 	BridgeService_CreateCanvasCircle_FullMethodName          = "/bridge.BridgeService/CreateCanvasCircle"
 	BridgeService_CreateCanvasRectangle_FullMethodName       = "/bridge.BridgeService/CreateCanvasRectangle"
@@ -315,6 +320,14 @@ type BridgeServiceClient interface {
 	CreateMenu(ctx context.Context, in *CreateMenuRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateToolbar(ctx context.Context, in *CreateToolbarRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateTextGrid(ctx context.Context, in *CreateTextGridRequest, opts ...grpc.CallOption) (*Response, error)
+	// ============================================================================
+	// Desktop Canvas - draggable icons
+	// ============================================================================
+	CreateDesktopCanvas(ctx context.Context, in *CreateDesktopCanvasRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateDesktopIcon(ctx context.Context, in *CreateDesktopIconRequest, opts ...grpc.CallOption) (*Response, error)
+	MoveDesktopIcon(ctx context.Context, in *MoveDesktopIconRequest, opts ...grpc.CallOption) (*Response, error)
+	UpdateDesktopIconLabel(ctx context.Context, in *UpdateDesktopIconLabelRequest, opts ...grpc.CallOption) (*Response, error)
+	UpdateDesktopIconColor(ctx context.Context, in *UpdateDesktopIconColorRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Canvas primitives
 	// ============================================================================
@@ -1129,6 +1142,56 @@ func (c *bridgeServiceClient) CreateTextGrid(ctx context.Context, in *CreateText
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateTextGrid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateDesktopCanvas(ctx context.Context, in *CreateDesktopCanvasRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateDesktopCanvas_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateDesktopIcon(ctx context.Context, in *CreateDesktopIconRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateDesktopIcon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) MoveDesktopIcon(ctx context.Context, in *MoveDesktopIconRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_MoveDesktopIcon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) UpdateDesktopIconLabel(ctx context.Context, in *UpdateDesktopIconLabelRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_UpdateDesktopIconLabel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) UpdateDesktopIconColor(ctx context.Context, in *UpdateDesktopIconColorRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_UpdateDesktopIconColor_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2737,6 +2800,14 @@ type BridgeServiceServer interface {
 	CreateToolbar(context.Context, *CreateToolbarRequest) (*Response, error)
 	CreateTextGrid(context.Context, *CreateTextGridRequest) (*Response, error)
 	// ============================================================================
+	// Desktop Canvas - draggable icons
+	// ============================================================================
+	CreateDesktopCanvas(context.Context, *CreateDesktopCanvasRequest) (*Response, error)
+	CreateDesktopIcon(context.Context, *CreateDesktopIconRequest) (*Response, error)
+	MoveDesktopIcon(context.Context, *MoveDesktopIconRequest) (*Response, error)
+	UpdateDesktopIconLabel(context.Context, *UpdateDesktopIconLabelRequest) (*Response, error)
+	UpdateDesktopIconColor(context.Context, *UpdateDesktopIconColorRequest) (*Response, error)
+	// ============================================================================
 	// Canvas primitives
 	// ============================================================================
 	CreateCanvasLine(context.Context, *CreateCanvasLineRequest) (*Response, error)
@@ -3128,6 +3199,21 @@ func (UnimplementedBridgeServiceServer) CreateToolbar(context.Context, *CreateTo
 }
 func (UnimplementedBridgeServiceServer) CreateTextGrid(context.Context, *CreateTextGridRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateTextGrid not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateDesktopCanvas(context.Context, *CreateDesktopCanvasRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateDesktopCanvas not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateDesktopIcon(context.Context, *CreateDesktopIconRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateDesktopIcon not implemented")
+}
+func (UnimplementedBridgeServiceServer) MoveDesktopIcon(context.Context, *MoveDesktopIconRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method MoveDesktopIcon not implemented")
+}
+func (UnimplementedBridgeServiceServer) UpdateDesktopIconLabel(context.Context, *UpdateDesktopIconLabelRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateDesktopIconLabel not implemented")
+}
+func (UnimplementedBridgeServiceServer) UpdateDesktopIconColor(context.Context, *UpdateDesktopIconColorRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateDesktopIconColor not implemented")
 }
 func (UnimplementedBridgeServiceServer) CreateCanvasLine(context.Context, *CreateCanvasLineRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateCanvasLine not implemented")
@@ -4697,6 +4783,96 @@ func _BridgeService_CreateTextGrid_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateTextGrid(ctx, req.(*CreateTextGridRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateDesktopCanvas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDesktopCanvasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateDesktopCanvas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateDesktopCanvas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateDesktopCanvas(ctx, req.(*CreateDesktopCanvasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateDesktopIcon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDesktopIconRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateDesktopIcon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateDesktopIcon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateDesktopIcon(ctx, req.(*CreateDesktopIconRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_MoveDesktopIcon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoveDesktopIconRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).MoveDesktopIcon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_MoveDesktopIcon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).MoveDesktopIcon(ctx, req.(*MoveDesktopIconRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_UpdateDesktopIconLabel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDesktopIconLabelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).UpdateDesktopIconLabel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_UpdateDesktopIconLabel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).UpdateDesktopIconLabel(ctx, req.(*UpdateDesktopIconLabelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_UpdateDesktopIconColor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDesktopIconColorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).UpdateDesktopIconColor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_UpdateDesktopIconColor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).UpdateDesktopIconColor(ctx, req.(*UpdateDesktopIconColorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7662,6 +7838,26 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTextGrid",
 			Handler:    _BridgeService_CreateTextGrid_Handler,
+		},
+		{
+			MethodName: "CreateDesktopCanvas",
+			Handler:    _BridgeService_CreateDesktopCanvas_Handler,
+		},
+		{
+			MethodName: "CreateDesktopIcon",
+			Handler:    _BridgeService_CreateDesktopIcon_Handler,
+		},
+		{
+			MethodName: "MoveDesktopIcon",
+			Handler:    _BridgeService_MoveDesktopIcon_Handler,
+		},
+		{
+			MethodName: "UpdateDesktopIconLabel",
+			Handler:    _BridgeService_UpdateDesktopIconLabel_Handler,
+		},
+		{
+			MethodName: "UpdateDesktopIconColor",
+			Handler:    _BridgeService_UpdateDesktopIconColor_Handler,
 		},
 		{
 			MethodName: "CreateCanvasLine",

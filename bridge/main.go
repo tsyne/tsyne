@@ -247,6 +247,24 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetTextGridStyle(msg)
 	case "setTextGridStyleRange":
 		return b.handleSetTextGridStyleRange(msg)
+	case "createDesktopCanvas":
+		return b.handleCreateDesktopCanvas(msg)
+	case "createDesktopIcon":
+		return b.handleCreateDesktopIcon(msg)
+	case "moveDesktopIcon":
+		return b.handleMoveDesktopIcon(msg)
+	case "updateDesktopIconLabel":
+		return b.handleUpdateDesktopIconLabel(msg)
+	case "updateDesktopIconColor":
+		return b.handleUpdateDesktopIconColor(msg)
+	case "createDesktopMDI":
+		return b.handleCreateDesktopMDI(msg)
+	case "desktopMDIAddIcon":
+		return b.handleDesktopMDIAddIcon(msg)
+	case "desktopMDIAddWindow":
+		return b.handleDesktopMDIAddWindow(msg)
+	case "desktopMDIRemoveWindow":
+		return b.handleDesktopMDIRemoveWindow(msg)
 	case "createDateEntry":
 		return b.handleCreateDateEntry(msg)
 	case "setDate":

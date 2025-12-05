@@ -5119,3 +5119,107 @@ func (s *grpcBridgeService) SetWidgetHoverable(ctx context.Context, req *pb.SetW
 		Error:   resp.Error,
 	}, nil
 }
+
+// CreateDesktopCanvas creates a desktop canvas widget
+func (s *grpcBridgeService) CreateDesktopCanvas(ctx context.Context, req *pb.CreateDesktopCanvasRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "createDesktopCanvas",
+		Payload: map[string]interface{}{
+			"id":      req.WidgetId,
+			"bgColor": req.BgColor,
+		},
+	}
+
+	resp := s.bridge.handleCreateDesktopCanvas(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// CreateDesktopIcon creates a desktop icon
+func (s *grpcBridgeService) CreateDesktopIcon(ctx context.Context, req *pb.CreateDesktopIconRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "createDesktopIcon",
+		Payload: map[string]interface{}{
+			"id":                   req.WidgetId,
+			"desktopId":            req.DesktopId,
+			"label":                req.Label,
+			"x":                    float64(req.X),
+			"y":                    float64(req.Y),
+			"color":                req.Color,
+			"onClickCallbackId":    req.OnClickCallbackId,
+			"onDblClickCallbackId": req.OnDblClickCallbackId,
+			"onDragCallbackId":     req.DragCallbackId,
+			"onDragEndCallbackId":  req.DragEndCallbackId,
+		},
+	}
+
+	resp := s.bridge.handleCreateDesktopIcon(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// MoveDesktopIcon moves a desktop icon
+func (s *grpcBridgeService) MoveDesktopIcon(ctx context.Context, req *pb.MoveDesktopIconRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.IconId,
+		Type: "moveDesktopIcon",
+		Payload: map[string]interface{}{
+			"iconId": req.IconId,
+			"x":      float64(req.X),
+			"y":      float64(req.Y),
+		},
+	}
+
+	resp := s.bridge.handleMoveDesktopIcon(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// UpdateDesktopIconLabel updates a desktop icon's label
+func (s *grpcBridgeService) UpdateDesktopIconLabel(ctx context.Context, req *pb.UpdateDesktopIconLabelRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.IconId,
+		Type: "updateDesktopIconLabel",
+		Payload: map[string]interface{}{
+			"iconId": req.IconId,
+			"label":  req.Label,
+		},
+	}
+
+	resp := s.bridge.handleUpdateDesktopIconLabel(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// UpdateDesktopIconColor updates a desktop icon's color
+func (s *grpcBridgeService) UpdateDesktopIconColor(ctx context.Context, req *pb.UpdateDesktopIconColorRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.IconId,
+		Type: "updateDesktopIconColor",
+		Payload: map[string]interface{}{
+			"iconId": req.IconId,
+			"color":  req.Color,
+		},
+	}
+
+	resp := s.bridge.handleUpdateDesktopIconColor(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}

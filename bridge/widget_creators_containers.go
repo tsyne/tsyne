@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -1006,6 +1009,7 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
+	log.Printf("[handleCreateInnerWindow] Creating InnerWindow id=%s title=%s contentId=%s", widgetID, title, contentID)
 
 	b.mu.RLock()
 	content, exists := b.widgets[contentID]
@@ -1019,7 +1023,11 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 		}
 	}
 
-	innerWindow := container.NewInnerWindow(title, content)
+	// Wrap content in a stack with themed background to ensure it's not transparent
+	bgRect := canvas.NewRectangle(theme.BackgroundColor())
+	contentWithBg := container.NewStack(bgRect, content)
+
+	innerWindow := container.NewInnerWindow(title, contentWithBg)
 
 	// Set up onClose callback if provided
 	// When user clicks X, we notify TypeScript via callback
@@ -1072,6 +1080,15 @@ func (b *Bridge) handleInnerWindowClose(msg Message) Response {
 			Error:   "Widget is not an InnerWindow",
 		}
 	}
+
+	// Remove from any DesktopMDI container
+	b.mu.RLock()
+	for _, widget := range b.widgets {
+		if desktop, ok := widget.(*TsyneDesktopMDI); ok {
+			desktop.RemoveWindow(innerWindow)
+		}
+	}
+	b.mu.RUnlock()
 
 	fyne.DoAndWait(func() {
 		innerWindow.Close()

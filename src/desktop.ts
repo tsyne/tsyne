@@ -16,7 +16,7 @@
 
 import { App } from './app';
 import { Window } from './window';
-import { MultipleWindows, Label, Button } from './widgets';
+import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
@@ -48,12 +48,14 @@ interface OpenApp {
 class Desktop {
   private a: App;
   private win: Window | null = null;
+  /** Unified desktop+MDI container - solves layering problem */
+  private desktopMDI: DesktopMDI | null = null;
+  // Keep legacy references for compatibility (may be null)
   private mdiContainer: MultipleWindows | null = null;
+  private desktopCanvas: DesktopCanvas | null = null;
   private icons: DesktopIcon[] = [];
   private openApps: Map<string, OpenApp> = new Map();
-  private iconWidgets: Map<string, Button> = new Map();
   private selectedIcon: DesktopIcon | null = null;
-  private lastClickTime: Map<string, number> = new Map();
   private runningAppsLabel: Label | null = null;
   private options: DesktopOptions;
   /** Counter for generating unique app instance scopes */
@@ -106,35 +108,55 @@ class Desktop {
     this.a.window({ title: 'Tsyne Desktop', width: 1024, height: 768 }, (win) => {
       this.win = win as Window;
       win.setContent(() => {
-        this.a.border({
-          // Main area: MDI container for app windows
-          center: () => {
-            this.mdiContainer = this.a.multipleWindows();
-          },
-          // App launcher at top with icon buttons
-          top: () => {
-            this.a.hbox(() => {
-              this.a.label('Apps: ');
-              for (const icon of this.icons) {
-                this.createIconButton(icon);
-              }
-              this.a.spacer();
-            });
-          }
-        });
+        // Use unified DesktopMDI container that combines desktop icons with MDI
+        // This solves the layering problem - both drag and double-click work
+        this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
+        this.createDesktopIcons();
       });
     });
   }
 
   /**
-   * Create a clickable app launcher button
+   * Create draggable icons on the desktop MDI
    */
-  private createIconButton(icon: DesktopIcon) {
-    const btn = this.a.button(`${this.getIconEmoji(icon.metadata.name)} ${icon.metadata.name}`);
-    btn.onClick(() => {
-      this.launchApp(icon.metadata);
-    });
-    this.iconWidgets.set(icon.metadata.filePath, btn);
+  private createDesktopIcons() {
+    if (!this.desktopMDI) {
+      console.log('ERROR: desktopMDI is null');
+      return;
+    }
+
+    console.log(`Creating ${this.icons.length} desktop icons`);
+
+    // Color palette for icons
+    const colors = [
+      '#dc3232', '#32b432', '#3264dc', '#dcb432', '#b432b4', '#32b4b4',
+      '#dc6432', '#6432dc', '#32dc64', '#dc3264', '#64dc32', '#3232dc'
+    ];
+
+    for (let i = 0; i < this.icons.length; i++) {
+      const icon = this.icons[i];
+      const color = colors[i % colors.length];
+
+      console.log(`Adding icon: ${icon.metadata.name} at (${icon.x}, ${icon.y})`);
+      this.desktopMDI.addIcon({
+        id: `app-${i}`,
+        label: icon.metadata.name,
+        x: icon.x,
+        y: icon.y,
+        color,
+        onClick: (iconId, x, y) => {
+          this.selectIcon(icon);
+        },
+        onDoubleClick: (iconId, x, y) => {
+          this.launchApp(icon.metadata);
+        },
+        onDragEnd: (iconId, x, y) => {
+          // Update stored position
+          icon.x = x;
+          icon.y = y;
+        }
+      });
+    }
   }
 
   /**
@@ -212,8 +234,8 @@ class Desktop {
       }
     }
 
-    if (!this.mdiContainer || !this.win) {
-      console.error('MDI container or parent window not initialized');
+    if (!this.desktopMDI || !this.win) {
+      console.error('Desktop MDI or parent window not initialized');
       return;
     }
 
@@ -223,7 +245,7 @@ class Desktop {
     // Enable desktop mode BEFORE loading the module so that any auto-run
     // app() calls in the module will use the desktop's App instead of creating new ones
     enableDesktopMode({
-      mdiContainer: this.mdiContainer,
+      desktopMDI: this.desktopMDI,
       parentWindow: this.win,
       desktopApp: this.a
     });
