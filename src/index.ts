@@ -208,11 +208,11 @@ export function hbox(builder: () => void): HBox {
  * });
  * ```
  */
-export function button(text: string): Button {
+export function button(text: string, className?: string): Button {
   if (!globalContext) {
     throw new Error('button() must be called within an app context');
   }
-  return new Button(globalContext, text);
+  return new Button(globalContext, text, className);
 }
 
 /**
@@ -228,11 +228,11 @@ export function button(text: string): Button {
  * // Later: statusLabel.setText('Processing...');
  * ```
  */
-export function label(text: string): Label {
+export function label(text: string, className?: string): Label {
   if (!globalContext) {
     throw new Error('label() must be called within an app context');
   }
-  return new Label(globalContext, text);
+  return new Label(globalContext, text, className);
 }
 
 /**

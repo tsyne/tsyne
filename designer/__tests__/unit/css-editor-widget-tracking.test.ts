@@ -41,10 +41,17 @@ app({ title: 'Test' }, (a) => {
     const loadResult = await loadFromString(source);
     expect(loadResult.success).toBe(true);
 
+    console.log('Widgets:', loadResult.metadata.widgets.map((w: any) => ({
+      type: w.widgetType,
+      text: w.properties?.text,
+      className: w.properties?.className
+    })));
+
     // Find widgets with className 'title'
     const titleWidgets = loadResult.metadata.widgets.filter((w: any) =>
       w.properties && w.properties.className === 'title'
     );
+    console.log('Title widgets:', titleWidgets.map((w: any) => ({ type: w.widgetType, text: w.properties?.text })));
     expect(titleWidgets.length).toBe(2); // label and button
 
     // Find widgets with className 'subtitle'

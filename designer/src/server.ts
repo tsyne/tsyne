@@ -147,26 +147,28 @@ function generateWidget(widget: any, allWidgets: any[], lines: string[], indent:
     }
 
   } else if (type === 'button') {
-    // button(text, onClick?, className?)
+    // button(text, className?).onClick(...)
     const text = props.text || '';
     const onClick = widget.eventHandlers?.onClick;
     const className = props.className;
 
     const args = [`"${text}"`];
-    if (onClick) {
-      args.push(onClick);
-    }
     if (className) {
       args.push(`"${className}"`);
     }
 
+    let buttonCode = `a.button(${args.join(', ')})`;
+    if (onClick) {
+      buttonCode += `.onClick(${onClick})`;
+    }
+
     const chainMethods = generateChainMethods(widget, indent);
     if (chainMethods) {
-      lines.push(`${indentStr}button(${args.join(', ')})`);
+      lines.push(`${indentStr}${buttonCode}`);
       lines.push(chainMethods);
       lines.push(`${indentStr};`);
     } else {
-      lines.push(`${indentStr}button(${args.join(', ')});`);
+      lines.push(`${indentStr}${buttonCode};`);
     }
 
   } else if (type === 'separator') {
@@ -595,12 +597,16 @@ const designer = {
   },
 
   // Input widgets
-  button(text: string, onClick?: () => void, className?: string): any {
+  button(text: string, className?: string): any {
     const result = captureWidget('button', { text, className });
-    if (onClick) {
-      const widget = metadataStore.get(result.__internalId);
-      if (widget) widget.eventHandlers.onClick = onClick.toString();
-    }
+    // Add onClick as a chainable method on the result object itself
+    result.onClick = function(callback?: () => void): any {
+      if (callback) {
+        const widget = metadataStore.get(this.__internalId);
+        if (widget) widget.eventHandlers.onClick = callback.toString();
+      }
+      return this;
+    };
     return result;
   },
 
