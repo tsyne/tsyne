@@ -18,7 +18,8 @@ import { App } from './app';
 import { Window } from './window';
 import { MultipleWindows, Label, Button } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
-import { scanForApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import * as path from 'path';
 
 // Desktop configuration
@@ -55,6 +56,8 @@ class Desktop {
   private lastClickTime: Map<string, number> = new Map();
   private runningAppsLabel: Label | null = null;
   private options: DesktopOptions;
+  /** Counter for generating unique app instance scopes */
+  private appInstanceCounter: Map<string, number> = new Map();
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
@@ -66,7 +69,12 @@ class Desktop {
    */
   init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
-    const apps = scanForApps(appDir);
+    const portedAppsDir = path.join(process.cwd(), 'ported-apps');
+
+    // Scan both examples and ported-apps directories
+    const exampleApps = scanForApps(appDir);
+    const portedApps = scanPortedApps(portedAppsDir);
+    const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Position icons in a grid (8 columns)
     const GRID_COLS = 8;
@@ -99,25 +107,19 @@ class Desktop {
       this.win = win as Window;
       win.setContent(() => {
         this.a.border({
+          // Main area: MDI container for app windows
           center: () => {
-            // Stack: desktop icons underneath, MDI windows on top
-            this.a.stack(() => {
-              // Desktop background with scrollable icon grid
-              this.a.scroll(() => {
-                this.a.gridwrap(ICON_SIZE, ICON_SIZE + 24, () => {
-                  for (const icon of this.icons) {
-                    this.createIconWidget(icon);
-                  }
-                });
-              });
-
-              // MDI container for open app windows
-              this.mdiContainer = this.a.multipleWindows();
-            });
+            this.mdiContainer = this.a.multipleWindows();
           },
-          bottom: () => {
-            // Launch bar
-            this.createLaunchBar();
+          // App launcher at top with icon buttons
+          top: () => {
+            this.a.hbox(() => {
+              this.a.label('Apps: ');
+              for (const icon of this.icons) {
+                this.createIconButton(icon);
+              }
+              this.a.spacer();
+            });
           }
         });
       });
@@ -125,37 +127,14 @@ class Desktop {
   }
 
   /**
-   * Create a desktop icon widget
+   * Create a clickable app launcher button
    */
-  private createIconWidget(icon: DesktopIcon) {
-    const iconId = `icon-${icon.metadata.name.replace(/\s+/g, '-').toLowerCase()}`;
-
-    this.a.vbox(() => {
-      // Icon button with emoji
-      const iconBtn = this.a.button(this.getIconEmoji(icon.metadata.name))
-        .withId(iconId);
-
-      // Handle clicks (single = select, double = launch)
-      iconBtn.onClick(() => {
-        const now = Date.now();
-        const lastClick = this.lastClickTime.get(iconId) || 0;
-
-        if (now - lastClick < 400) {
-          // Double click - launch the app
-          this.launchApp(icon.metadata);
-        } else {
-          // Single click - select
-          this.selectIcon(icon);
-        }
-
-        this.lastClickTime.set(iconId, now);
-      });
-
-      // Icon label
-      this.a.label(icon.metadata.name, undefined, 'center');
-
-      this.iconWidgets.set(icon.metadata.filePath, iconBtn);
+  private createIconButton(icon: DesktopIcon) {
+    const btn = this.a.button(`${this.getIconEmoji(icon.metadata.name)} ${icon.metadata.name}`);
+    btn.onClick(() => {
+      this.launchApp(icon.metadata);
     });
+    this.iconWidgets.set(icon.metadata.filePath, btn);
   }
 
   /**
@@ -210,23 +189,27 @@ class Desktop {
   }
 
   /**
+   * Generate a unique scope name for an app instance (e.g., "chess-1", "chess-2")
+   */
+  private generateAppScope(appName: string): string {
+    const count = (this.appInstanceCounter.get(appName) || 0) + 1;
+    this.appInstanceCounter.set(appName, count);
+    return `${appName.toLowerCase().replace(/\s+/g, '-')}-${count}`;
+  }
+
+  /**
    * Launch an app in an inner window using TsyneWindow abstraction.
    * The app's builder calls a.window() which automatically creates
    * an InnerWindow because we're in desktop mode.
    */
   async launchApp(metadata: AppMetadata) {
-    // Check if already open - bring to front
-    const existing = this.openApps.get(metadata.filePath);
-    if (existing) {
-      await existing.tsyneWindow.show();
-      return;
-    }
-
-    // Load the app's builder function
-    const builder = await loadAppBuilder(metadata);
-    if (!builder) {
-      console.error(`Could not load builder for ${metadata.name}`);
-      return;
+    // Check if already open - bring to front (unless count is 'many')
+    if (metadata.count !== 'many') {
+      const existing = this.openApps.get(metadata.filePath);
+      if (existing) {
+        await existing.tsyneWindow.show();
+        return;
+      }
     }
 
     if (!this.mdiContainer || !this.win) {
@@ -234,13 +217,31 @@ class Desktop {
       return;
     }
 
-    // Enable desktop mode so a.window() creates InnerWindows
+    // Generate unique scope for this app instance (IoC resource isolation)
+    const appScope = this.generateAppScope(metadata.name);
+
+    // Enable desktop mode BEFORE loading the module so that any auto-run
+    // app() calls in the module will use the desktop's App instead of creating new ones
     enableDesktopMode({
       mdiContainer: this.mdiContainer,
-      parentWindow: this.win
+      parentWindow: this.win,
+      desktopApp: this.a
     });
 
+    // Save original resources and create scoped version for this app instance
+    const originalResources = this.a.resources;
+    const scopedResources = new ScopedResourceManager(
+      originalResources as ResourceManager,
+      appScope
+    );
+
     try {
+      // Load the app's builder function (module auto-run will use desktop mode)
+      const builder = await loadAppBuilder(metadata);
+      if (!builder) {
+        console.error(`Could not load builder for ${metadata.name}`);
+        return;
+      }
       // Call the app's builder - it will call a.window() which creates an InnerWindow
       // We need to capture the created window
       let createdWindow: ITsyneWindow | null = null;
@@ -253,10 +254,16 @@ class Desktop {
         return win;
       };
 
-      builder(this.a);
+      // Inject scoped resources for this app instance (IoC)
+      (this.a as any).resources = scopedResources;
+      this.a.getContext().setResourceScope(appScope);
 
-      // Restore original
+      await builder(this.a);
+
+      // Restore originals
       (this.a as any).window = originalWindow;
+      (this.a as any).resources = originalResources;
+      this.a.getContext().setResourceScope(null);
 
       if (createdWindow) {
         // Track the open app
@@ -267,6 +274,9 @@ class Desktop {
     } finally {
       // Always disable desktop mode when done
       disableDesktopMode();
+      // Ensure resources are restored even on error
+      (this.a as any).resources = originalResources;
+      this.a.getContext().setResourceScope(null);
     }
   }
 
@@ -337,3 +347,14 @@ export function buildDesktop(a: App, options?: DesktopOptions) {
 }
 
 export { Desktop };
+
+// Entry point - only run when executed directly
+// Check if this module is the main entry point
+if (require.main === module) {
+  // Import the app function from index
+  const { app } = require('./index');
+
+  app({ title: 'Tsyne Desktop' }, (a: App) => {
+    buildDesktop(a);
+  });
+}

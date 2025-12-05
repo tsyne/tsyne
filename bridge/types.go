@@ -469,6 +469,136 @@ func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID str
 	return NewTsyneButton(text, tapped, bridge, widgetID)
 }
 
+// TsyneTextGrid wraps widget.TextGrid and implements fyne.Focusable and desktop.Keyable
+// for keyboard input support (needed for terminal emulator)
+type TsyneTextGrid struct {
+	widget.BaseWidget
+	TextGrid *widget.TextGrid
+	bridge   *Bridge
+	widgetID string
+
+	// Callback IDs for event dispatching to TypeScript
+	onKeyDownCallbackId string
+	onKeyUpCallbackId   string
+	onTypedCallbackId   string // For TypedRune - character input
+	onFocusCallbackId   string
+
+	// Track focus state
+	focused bool
+}
+
+// NewTsyneTextGrid creates a new focusable TextGrid wrapper
+func NewTsyneTextGrid(textGrid *widget.TextGrid, bridge *Bridge, widgetID string) *TsyneTextGrid {
+	tg := &TsyneTextGrid{
+		TextGrid: textGrid,
+		bridge:   bridge,
+		widgetID: widgetID,
+	}
+	tg.ExtendBaseWidget(tg)
+	return tg
+}
+
+// CreateRenderer renders the embedded TextGrid
+func (t *TsyneTextGrid) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(t.TextGrid)
+}
+
+// SetCallbackIds configures callback IDs for event dispatching
+func (t *TsyneTextGrid) SetCallbackIds(keyDown, keyUp, typed, focus string) {
+	t.onKeyDownCallbackId = keyDown
+	t.onKeyUpCallbackId = keyUp
+	t.onTypedCallbackId = typed
+	t.onFocusCallbackId = focus
+}
+
+// --- fyne.Tappable interface (click to focus) ---
+
+func (t *TsyneTextGrid) Tapped(_ *fyne.PointEvent) {
+	// Request focus when tapped
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
+}
+
+// --- fyne.Focusable interface ---
+
+func (t *TsyneTextGrid) FocusGained() {
+	t.focused = true
+	if t.onFocusCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onFocusCallbackId,
+				"focused":    true,
+			},
+		})
+	}
+}
+
+func (t *TsyneTextGrid) FocusLost() {
+	t.focused = false
+	if t.onFocusCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onFocusCallbackId,
+				"focused":    false,
+			},
+		})
+	}
+}
+
+// TypedRune handles character input - essential for terminal
+func (t *TsyneTextGrid) TypedRune(r rune) {
+	if t.onTypedCallbackId != "" {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onTypedCallbackId,
+				"char":       string(r),
+			},
+		})
+	}
+}
+
+// TypedKey handles special key input (arrows, function keys, etc.)
+func (t *TsyneTextGrid) TypedKey(e *fyne.KeyEvent) {
+	// Forward to KeyDown for unified handling
+	t.KeyDown(e)
+}
+
+// --- desktop.Keyable interface ---
+
+func (t *TsyneTextGrid) KeyDown(e *fyne.KeyEvent) {
+	if t.onKeyDownCallbackId == "" {
+		return
+	}
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyDownCallbackId,
+			"key":        string(e.Name),
+			"shift":      false,
+			"ctrl":       false,
+			"alt":        false,
+		},
+	})
+}
+
+func (t *TsyneTextGrid) KeyUp(e *fyne.KeyEvent) {
+	if t.onKeyUpCallbackId == "" {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyUpCallbackId,
+			"key":        string(e.Name),
+		},
+	})
+}
+
 // HoverableWrapper wraps a widget and implements desktop.Hoverable for mouse enter/exit events
 type HoverableWrapper struct {
 	widget.BaseWidget

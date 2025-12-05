@@ -24,3 +24,4 @@ docs/api
 # .CI_TEST_RESULTS_SUMMARY.txt
 # Compiled Go binary (use bin/tsyne-bridge instead)
 bridge/bridge
+bridge/bridge

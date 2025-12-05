@@ -24,12 +24,36 @@ export class Context {
   private _accessibilityManager: AccessibilityManagerType | null = null;
   private _testHarness: TestHarness | null = null;
   private pendingRegistrations: Promise<void>[] = [];
+  private _resourceScope: string | null = null;
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
     if (resourceMap) {
       this.resourceMap = resourceMap;
     }
+  }
+
+  /**
+   * Set resource scope for this context (used by Desktop for app instance isolation)
+   * When set, all resource names are prefixed with the scope
+   */
+  setResourceScope(scope: string | null): void {
+    this._resourceScope = scope;
+  }
+
+  /**
+   * Get the current resource scope (null = no scoping)
+   */
+  get resourceScope(): string | null {
+    return this._resourceScope;
+  }
+
+  /**
+   * Apply resource scope to a resource name
+   * Returns scoped name if scope is set, otherwise returns original name
+   */
+  scopeResourceName(name: string): string {
+    return this._resourceScope ? `${this._resourceScope}:${name}` : name;
   }
 
   /**

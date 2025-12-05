@@ -9,6 +9,10 @@
  * Uses chess.js for game logic and SVG rendering for pieces.
  */
 
+// @tsyne-app:name Chess
+// @tsyne-app:builder createChessApp
+// @tsyne-app:count many
+
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';

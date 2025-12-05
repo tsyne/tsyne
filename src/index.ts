@@ -1,5 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
+import { isDesktopMode, getDesktopContext } from './tsyne-window';
 import {
   // Inputs
   Button,
@@ -107,6 +108,17 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
  * ```
  */
 export function app(options: AppOptions, builder: (app: App) => void): App {
+  // In desktop mode, app() is a no-op - the desktop will explicitly call
+  // the exported builder function to create the app's UI as an InnerWindow
+  if (isDesktopMode()) {
+    const desktopCtx = getDesktopContext();
+    if (desktopCtx && desktopCtx.desktopApp) {
+      // Return the desktop's App but DON'T call the builder
+      // The desktop will call the builder itself via loadAppBuilder()
+      return desktopCtx.desktopApp;
+    }
+  }
+
   const appInstance = new App(options);
 
   // For backward compatibility, also set global context

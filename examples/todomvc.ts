@@ -19,6 +19,10 @@
  *   "test:todomvc": "jest examples/todomvc.test.ts"
  */
 
+// @tsyne-app:name TodoMVC
+// @tsyne-app:builder createTodoApp
+// @tsyne-app:count one
+
 import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../src';
 import * as fs from 'fs';
 import * as path from 'path';

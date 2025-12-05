@@ -48,6 +48,7 @@ import {
   Clip,
   Grid,
   GridWrap,
+  WithoutLayout,
   HBox,
   Max,
   Padded,
@@ -608,6 +609,21 @@ export class App {
 
   gridwrap(itemWidth: number, itemHeight: number, builder: () => void): GridWrap {
     return new GridWrap(this.ctx, itemWidth, itemHeight, builder);
+  }
+
+  /**
+   * Create a container with no automatic layout.
+   * Children must be manually positioned using moveWidget().
+   */
+  withoutLayout(builder: () => void): WithoutLayout {
+    return new WithoutLayout(this.ctx, builder);
+  }
+
+  /**
+   * Move a widget to a specific position (only works inside withoutLayout containers)
+   */
+  async moveWidget(widgetId: string, x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('moveWidget', { widgetId, x, y });
   }
 
   menu(items: MenuItem[]): Menu {

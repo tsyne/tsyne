@@ -326,6 +326,32 @@ export class GridWrap {
 }
 
 /**
+ * WithoutLayout container - children are manually positioned using moveWidget()
+ * Useful for free-form layouts like desktop icons
+ */
+export class WithoutLayout {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('withoutlayout');
+
+    // Build children
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    ctx.bridge.send('createWithoutLayout', {
+      id: this.id,
+      children
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
  * Clip container - clips any content that extends beyond the bounds of its child
  * Useful for constraining overflow in layouts and preventing content from bleeding outside containers
  */

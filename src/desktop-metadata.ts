@@ -34,6 +34,8 @@ export interface AppMetadata {
   builder: string;
   /** The exported content builder function name (creates content only, for desktop) */
   contentBuilder?: string;
+  /** Instance count: 'one' (default) or 'many' for multi-instance apps */
+  count: 'one' | 'many';
 }
 
 /**
@@ -58,6 +60,7 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
     let category: string | undefined;
     let builder: string | null = null;
     let contentBuilder: string | undefined;
+    let count: 'one' | 'many' = 'one';
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -101,6 +104,16 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       const contentBuilderMatch = trimmed.match(/^\/\/\s*@tsyne-app:contentBuilder\s+(.+)$/);
       if (contentBuilderMatch) {
         contentBuilder = contentBuilderMatch[1].trim();
+        continue;
+      }
+
+      // Parse @tsyne-app:count (one or many)
+      const countMatch = trimmed.match(/^\/\/\s*@tsyne-app:count\s+(.+)$/);
+      if (countMatch) {
+        const countValue = countMatch[1].trim().toLowerCase();
+        if (countValue === 'many') {
+          count = 'many';
+        }
         continue;
       }
     }
@@ -148,7 +161,8 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       iconIsSvg,
       category,
       builder,
-      contentBuilder
+      contentBuilder,
+      count
     };
   } catch (error) {
     console.error(`Error parsing metadata from ${filePath}:`, error);
@@ -182,6 +196,42 @@ export function scanForApps(directory: string): AppMetadata[] {
     }
   } catch (error) {
     console.error(`Error scanning directory ${directory}:`, error);
+  }
+
+  return apps.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Scan ported-apps directory where each subdirectory contains an app
+ * Looks for <appname>.ts in each subdirectory (e.g., chess/chess.ts, terminal/terminal.ts)
+ */
+export function scanPortedApps(portedAppsDir: string): AppMetadata[] {
+  const apps: AppMetadata[] = [];
+
+  try {
+    if (!fs.existsSync(portedAppsDir)) {
+      return apps;
+    }
+
+    const subdirs = fs.readdirSync(portedAppsDir);
+
+    for (const subdir of subdirs) {
+      const subdirPath = path.join(portedAppsDir, subdir);
+      const stats = fs.statSync(subdirPath);
+
+      if (stats.isDirectory()) {
+        // Look for <subdir>.ts file (e.g., chess/chess.ts)
+        const mainFile = path.join(subdirPath, `${subdir}.ts`);
+        if (fs.existsSync(mainFile)) {
+          const metadata = parseAppMetadata(mainFile);
+          if (metadata) {
+            apps.push(metadata);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error scanning ported-apps directory ${portedAppsDir}:`, error);
   }
 
   return apps.sort((a, b) => a.name.localeCompare(b.name));

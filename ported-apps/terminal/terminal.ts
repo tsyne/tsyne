@@ -26,6 +26,10 @@
  * - render.go → TextGrid rendering
  */
 
+// @tsyne-app:name Terminal
+// @tsyne-app:builder createTerminalApp
+// @tsyne-app:count many
+
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
@@ -2704,11 +2708,33 @@ export class TerminalUI {
     this.buildMainMenu(win);
 
     this.a.vbox(() => {
-      // Terminal display area
+      // Terminal display area with keyboard input
       this.textGrid = this.a.textgrid({
         text: '',
         showLineNumbers: false,
         showWhitespace: false,
+        // Handle typed characters (regular text input)
+        onTyped: (char: string) => {
+          this.terminal.typeChar(char);
+        },
+        // Handle special keys (arrows, enter, backspace, etc.)
+        onKeyDown: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          // Map Fyne key names to terminal key names
+          const keyMap: Record<string, string> = {
+            'Return': 'Enter',
+            'BackSpace': 'Backspace',
+            'Up': 'ArrowUp',
+            'Down': 'ArrowDown',
+            'Left': 'ArrowLeft',
+            'Right': 'ArrowRight',
+          };
+          const mappedKey = keyMap[key] || key;
+
+          // For special keys or when modifiers are used
+          if (mappedKey.length > 1 || modifiers.ctrl || modifiers.alt) {
+            this.terminal.typeKey(mappedKey, modifiers);
+          }
+        },
       });
     });
 

@@ -1022,6 +1022,8 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 	innerWindow := container.NewInnerWindow(title, content)
 
 	// Set up onClose callback if provided
+	// When user clicks X, we notify TypeScript via callback
+	// TypeScript then calls innerWindowClose to actually close the window
 	if closeCallbackID, ok := msg.Payload["onCloseCallbackId"].(string); ok {
 		innerWindow.CloseIntercept = func() {
 			b.sendEvent(Event{
@@ -1030,6 +1032,7 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 					"callbackId": closeCallbackID,
 				},
 			})
+			// TypeScript will call innerWindowClose to actually close
 		}
 	}
 
@@ -1070,7 +1073,9 @@ func (b *Bridge) handleInnerWindowClose(msg Message) Response {
 		}
 	}
 
-	innerWindow.Close()
+	fyne.DoAndWait(func() {
+		innerWindow.Close()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -1562,6 +1567,32 @@ func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) Response {
 	// Add the window to the container
 	fyne.DoAndWait(func() {
 		multiWin.Add(innerWin)
+
+		// Position the window if coordinates provided, otherwise center it
+		if x, ok := msg.Payload["x"].(float64); ok {
+			y, _ := msg.Payload["y"].(float64)
+			innerWin.Move(fyne.NewPos(float32(x), float32(y)))
+		} else {
+			// Center the window in the container
+			containerSize := multiWin.Size()
+			windowSize := innerWin.MinSize()
+			// Use a reasonable default size if MinSize is too small
+			if windowSize.Width < 200 {
+				windowSize.Width = 300
+			}
+			if windowSize.Height < 150 {
+				windowSize.Height = 250
+			}
+			x := (containerSize.Width - windowSize.Width) / 2
+			y := (containerSize.Height - windowSize.Height) / 2
+			if x < 0 {
+				x = 20
+			}
+			if y < 0 {
+				y = 20
+			}
+			innerWin.Move(fyne.NewPos(x, y))
+		}
 	})
 
 	b.mu.Lock()
@@ -1627,6 +1658,81 @@ func (b *Bridge) handleMultipleWindowsRemoveWindow(msg Message) Response {
 	b.mu.Lock()
 	delete(b.childToParent, windowID)
 	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleCreateWithoutLayout creates a container with no automatic layout.
+// Children must be manually positioned using moveWidget.
+func (b *Bridge) handleCreateWithoutLayout(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	childIDs, _ := msg.Payload["children"].([]interface{})
+
+	var children []fyne.CanvasObject
+	b.mu.RLock()
+	for _, childID := range childIDs {
+		if child, exists := b.widgets[childID.(string)]; exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	// NewWithoutLayout creates a container where children are positioned manually
+	cont := container.NewWithoutLayout(children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = cont
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "withoutlayout"}
+	for _, childID := range childIDs {
+		b.childToParent[childID.(string)] = widgetID
+	}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+// handleMoveWidget moves a widget to a specific position.
+// This only works for widgets inside a WithoutLayout container.
+func (b *Bridge) handleMoveWidget(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	x := msg.Payload["x"].(float64)
+	y := msg.Payload["y"].(float64)
+
+	// Optional width/height for resize
+	width, hasWidth := msg.Payload["width"].(float64)
+	height, hasHeight := msg.Payload["height"].(float64)
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	fyne.DoAndWait(func() {
+		widget.Move(fyne.NewPos(float32(x), float32(y)))
+		// If size provided, resize; otherwise use MinSize
+		var size fyne.Size
+		if hasWidth && hasHeight {
+			size = fyne.NewSize(float32(width), float32(height))
+		} else {
+			size = widget.MinSize()
+		}
+		widget.Resize(size)
+		widget.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,

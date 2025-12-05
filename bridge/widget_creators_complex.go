@@ -364,6 +364,12 @@ func (b *Bridge) handleCreateTextGrid(msg Message) Response {
 	showLineNumbers, _ := msg.Payload["showLineNumbers"].(bool)
 	showWhitespace, _ := msg.Payload["showWhitespace"].(bool)
 
+	// Extract optional keyboard callback IDs
+	onKeyDownCallbackId, _ := msg.Payload["onKeyDownCallbackId"].(string)
+	onKeyUpCallbackId, _ := msg.Payload["onKeyUpCallbackId"].(string)
+	onTypedCallbackId, _ := msg.Payload["onTypedCallbackId"].(string)
+	onFocusCallbackId, _ := msg.Payload["onFocusCallbackId"].(string)
+
 	var textGrid *widget.TextGrid
 	if text != "" {
 		textGrid = widget.NewTextGridFromString(text)
@@ -374,8 +380,12 @@ func (b *Bridge) handleCreateTextGrid(msg Message) Response {
 	textGrid.ShowLineNumbers = showLineNumbers
 	textGrid.ShowWhitespace = showWhitespace
 
+	// Create TsyneTextGrid wrapper for focusable/keyboard support
+	tsyneTextGrid := NewTsyneTextGrid(textGrid, b, widgetID)
+	tsyneTextGrid.SetCallbackIds(onKeyDownCallbackId, onKeyUpCallbackId, onTypedCallbackId, onFocusCallbackId)
+
 	b.mu.Lock()
-	b.widgets[widgetID] = textGrid
+	b.widgets[widgetID] = tsyneTextGrid
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "textgrid", Text: text}
 	b.mu.Unlock()
 
@@ -402,7 +412,7 @@ func (b *Bridge) handleSetTextGridText(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -411,8 +421,10 @@ func (b *Bridge) handleSetTextGridText(msg Message) Response {
 		}
 	}
 
-	textGrid.SetText(text)
-	textGrid.Refresh()
+	fyne.DoAndWait(func() {
+		tsyneTextGrid.TextGrid.SetText(text)
+		tsyneTextGrid.TextGrid.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -438,7 +450,7 @@ func (b *Bridge) handleSetTextGridCell(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -447,18 +459,20 @@ func (b *Bridge) handleSetTextGridCell(msg Message) Response {
 		}
 	}
 
-	if hasChar && len(char) > 0 {
-		// Set rune at position
-		textGrid.SetRune(row, col, rune(char[0]))
-	}
+	fyne.DoAndWait(func() {
+		if hasChar && len(char) > 0 {
+			// Set rune at position
+			tsyneTextGrid.TextGrid.SetRune(row, col, rune(char[0]))
+		}
 
-	// Apply style if provided
-	if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
-		style := parseTextGridStyle(styleData)
-		textGrid.SetStyle(row, col, style)
-	}
+		// Apply style if provided
+		if styleData, ok := msg.Payload["style"].(map[string]interface{}); ok {
+			style := parseTextGridStyle(styleData)
+			tsyneTextGrid.TextGrid.SetStyle(row, col, style)
+		}
 
-	textGrid.Refresh()
+		tsyneTextGrid.TextGrid.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -483,7 +497,7 @@ func (b *Bridge) handleSetTextGridRow(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -506,8 +520,10 @@ func (b *Bridge) handleSetTextGridRow(msg Message) Response {
 		}
 	}
 
-	textGrid.SetRow(row, widget.TextGridRow{Cells: cells})
-	textGrid.Refresh()
+	fyne.DoAndWait(func() {
+		tsyneTextGrid.TextGrid.SetRow(row, widget.TextGridRow{Cells: cells})
+		tsyneTextGrid.TextGrid.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -533,7 +549,7 @@ func (b *Bridge) handleSetTextGridStyle(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -543,8 +559,10 @@ func (b *Bridge) handleSetTextGridStyle(msg Message) Response {
 	}
 
 	style := parseTextGridStyle(styleData)
-	textGrid.SetStyle(row, col, style)
-	textGrid.Refresh()
+	fyne.DoAndWait(func() {
+		tsyneTextGrid.TextGrid.SetStyle(row, col, style)
+		tsyneTextGrid.TextGrid.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -572,7 +590,7 @@ func (b *Bridge) handleSetTextGridStyleRange(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -582,8 +600,10 @@ func (b *Bridge) handleSetTextGridStyleRange(msg Message) Response {
 	}
 
 	style := parseTextGridStyle(styleData)
-	textGrid.SetStyleRange(startRow, startCol, endRow, endCol, style)
-	textGrid.Refresh()
+	fyne.DoAndWait(func() {
+		tsyneTextGrid.TextGrid.SetStyleRange(startRow, startCol, endRow, endCol, style)
+		tsyneTextGrid.TextGrid.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -606,7 +626,7 @@ func (b *Bridge) handleGetTextGridText(msg Message) Response {
 		}
 	}
 
-	textGrid, ok := w.(*widget.TextGrid)
+	tsyneTextGrid, ok := w.(*TsyneTextGrid)
 	if !ok {
 		return Response{
 			ID:      msg.ID,
@@ -618,7 +638,7 @@ func (b *Bridge) handleGetTextGridText(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
-		Result:  map[string]interface{}{"text": textGrid.Text()},
+		Result:  map[string]interface{}{"text": tsyneTextGrid.TextGrid.Text()},
 	}
 }
 

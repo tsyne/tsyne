@@ -106,9 +106,16 @@ export class InnerWindowAdapter implements ITsyneWindow {
         builder();
       },
       async () => {
-        // On close callback
+        // On close callback - user clicked X button
         if (this.closeInterceptCallback) {
-          await this.closeInterceptCallback();
+          const shouldClose = await this.closeInterceptCallback();
+          if (shouldClose === false) {
+            return; // Don't close if callback returns false
+          }
+        }
+        // Actually close the window by sending innerWindowClose to Go
+        if (this.innerWindow) {
+          await this.innerWindow.close();
         }
       }
     );
@@ -207,6 +214,8 @@ export class InnerWindowAdapter implements ITsyneWindow {
 export interface DesktopContext {
   mdiContainer: MultipleWindows;
   parentWindow: Window;
+  /** The desktop's App instance - sub-apps should use this instead of creating new ones */
+  desktopApp: any;  // Use 'any' to avoid circular import with App
 }
 
 /**

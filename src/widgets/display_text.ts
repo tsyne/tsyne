@@ -32,6 +32,8 @@ export class RichText {
 export class Image {
   private ctx: Context;
   public id: string;
+  /** Injected resource scope - stored at creation time for app instance isolation */
+  private injectedScope: string | null;
 
   constructor(
     ctx: Context,
@@ -43,6 +45,8 @@ export class Image {
   ) {
     this.ctx = ctx;
     this.id = ctx.generateId('image');
+    // Store injected scope for use in future resource lookups (e.g., updateImage)
+    this.injectedScope = ctx.resourceScope;
 
     const payload: any = {
       id: this.id
@@ -62,7 +66,8 @@ export class Image {
       const options = pathOrOptions;
 
       if (options.resource) {
-        payload.resource = options.resource;
+        // Apply resource scoping if a scope is set (for multi-instance app isolation)
+        payload.resource = ctx.scopeResourceName(options.resource);
       } else if (options.path) {
         const resolvedPath = ctx.resolveResourcePath(options.path);
         payload.path = resolvedPath;
@@ -107,6 +112,13 @@ export class Image {
   }
 
   /**
+   * Apply the injected scope to a resource name
+   */
+  private applyInjectedScope(name: string): string {
+    return this.injectedScope ? `${this.injectedScope}:${name}` : name;
+  }
+
+  /**
    * Updates the image widget with new image data
    * @param imageData - Base64-encoded image data (with or without data URL prefix)
    */
@@ -128,10 +140,14 @@ export class Image {
       });
     } else {
       // New object-based API
+      // Use injected scope for app instance resource isolation
+      const scopedResource = imageSource.resource
+        ? this.applyInjectedScope(imageSource.resource)
+        : undefined;
       await this.ctx.bridge.send('updateImage', {
         widgetId: this.id,
         path: imageSource.path,
-        resource: imageSource.resource,
+        resource: scopedResource,
         svg: imageSource.svg,
         url: imageSource.url
       });
@@ -181,6 +197,14 @@ export interface TextGridOptions {
   showLineNumbers?: boolean;
   /** Show whitespace characters (spaces, tabs) */
   showWhitespace?: boolean;
+  /** Callback for typed characters (requires focus) */
+  onTyped?: (char: string) => void;
+  /** Callback for key down events (for special keys like arrows, enter, etc.) */
+  onKeyDown?: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
+  /** Callback for key up events */
+  onKeyUp?: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
+  /** Callback for focus change */
+  onFocus?: (focused: boolean) => void;
 }
 
 /**
@@ -201,6 +225,47 @@ export class TextGrid extends Widget {
       if (options.text !== undefined) payload.text = options.text;
       if (options.showLineNumbers !== undefined) payload.showLineNumbers = options.showLineNumbers;
       if (options.showWhitespace !== undefined) payload.showWhitespace = options.showWhitespace;
+
+      // Register keyboard callbacks
+      if (options.onTyped) {
+        const callbackId = ctx.generateId('callback');
+        payload.onTypedCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onTyped!(data.char);
+        });
+      }
+
+      if (options.onKeyDown) {
+        const callbackId = ctx.generateId('callback');
+        payload.onKeyDownCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onKeyDown!(data.key, {
+            shift: data.shift,
+            ctrl: data.ctrl,
+            alt: data.alt
+          });
+        });
+      }
+
+      if (options.onKeyUp) {
+        const callbackId = ctx.generateId('callback');
+        payload.onKeyUpCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onKeyUp!(data.key, {
+            shift: data.shift,
+            ctrl: data.ctrl,
+            alt: data.alt
+          });
+        });
+      }
+
+      if (options.onFocus) {
+        const callbackId = ctx.generateId('callback');
+        payload.onFocusCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onFocus!(data.focused);
+        });
+      }
     }
 
     ctx.bridge.send('createTextGrid', payload);

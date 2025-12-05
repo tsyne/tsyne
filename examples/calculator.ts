@@ -1,6 +1,7 @@
 // @tsyne-app:name Calculator
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="8" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="8" cy="16" r="1.5"/><circle cx="12" cy="16" r="1.5"/><circle cx="16" cy="16" r="1.5"/></svg>
 // @tsyne-app:category utilities
+// @tsyne-app:count many
 
 import { app, styles, FontStyle, App, Window, Label } from '../src';
 // In production: import { app, styles, FontStyle, App, Window, Label } from 'tsyne';
@@ -20,60 +21,61 @@ styles({
   }
 });
 
-// Calculator state
-let display: Label | undefined;
-let currentValue = "0";
-let operator: string | null = null;
-let previousValue = "0";
-let shouldResetDisplay = false;
-
-function updateDisplay(value: string) {
-  currentValue = value;
-  if (display) {
-    display.setText(value);
-  }
-}
-
-function handleNumber(num: string) {
-  if (shouldResetDisplay) {
-    updateDisplay(num);
-    shouldResetDisplay = false;
-  } else {
-    const newValue = currentValue === "0" ? num : currentValue + num;
-    updateDisplay(newValue);
-  }
-}
-
-function handleOperator(op: string) {
-  if (operator && !shouldResetDisplay) {
-    calculate();
-  }
-  previousValue = currentValue;
-  operator = op;
-  shouldResetDisplay = true;
-}
-
-function calculate() {
-  const prev = parseFloat(previousValue);
-  const current = parseFloat(currentValue);
-  if (!operator) return;
-
-  const result = eval(`${prev} ${operator} ${current}`);
-  updateDisplay(isFinite(result) ? result.toString() : "Error");
-  operator = null;
-  shouldResetDisplay = true;
-}
-
-function clear() {
-  currentValue = "0";
-  previousValue = "0";
-  operator = null;
-  shouldResetDisplay = false;
-  updateDisplay("0");
-}
-
 // Build the calculator UI (exported for testing)
+// Each call creates its own isolated state for multi-instance support
 export function buildCalculator(a: App) {
+  // Instance-local state (not shared between calculator instances)
+  let display: Label | undefined;
+  let currentValue = "0";
+  let operator: string | null = null;
+  let previousValue = "0";
+  let shouldResetDisplay = false;
+
+  function updateDisplay(value: string) {
+    currentValue = value;
+    if (display) {
+      display.setText(value);
+    }
+  }
+
+  function handleNumber(num: string) {
+    if (shouldResetDisplay) {
+      updateDisplay(num);
+      shouldResetDisplay = false;
+    } else {
+      const newValue = currentValue === "0" ? num : currentValue + num;
+      updateDisplay(newValue);
+    }
+  }
+
+  function handleOperator(op: string) {
+    if (operator && !shouldResetDisplay) {
+      calculate();
+    }
+    previousValue = currentValue;
+    operator = op;
+    shouldResetDisplay = true;
+  }
+
+  function calculate() {
+    const prev = parseFloat(previousValue);
+    const current = parseFloat(currentValue);
+    if (!operator) return;
+
+    const result = eval(`${prev} ${operator} ${current}`);
+    updateDisplay(isFinite(result) ? result.toString() : "Error");
+    operator = null;
+    shouldResetDisplay = true;
+  }
+
+  function clear() {
+    currentValue = "0";
+    previousValue = "0";
+    operator = null;
+    shouldResetDisplay = false;
+    updateDisplay("0");
+  }
+
   a.window({ title: "Calculator" }, (win: Window) => {
     win.setContent(() => {
       a.vbox(() => {

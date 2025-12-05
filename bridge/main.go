@@ -436,6 +436,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleMultipleWindowsAddWindow(msg)
 	case "multipleWindowsRemoveWindow":
 		return b.handleMultipleWindowsRemoveWindow(msg)
+	case "createWithoutLayout":
+		return b.handleCreateWithoutLayout(msg)
+	case "moveWidget":
+		return b.handleMoveWidget(msg)
 	case "createPopup":
 		return b.handleCreatePopup(msg)
 	case "showPopup":
