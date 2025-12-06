@@ -264,6 +264,9 @@ class Desktop {
             { label: 'Add Selected to Dock', onClick: () => this.addSelectedToDock() },
             { label: 'Remove Selected from Dock', onClick: () => this.removeSelectedFromDock() },
             { isSeparator: true },
+            { label: 'Move Selected Left in Dock', onClick: () => this.moveDockItemLeft() },
+            { label: 'Move Selected Right in Dock', onClick: () => this.moveDockItemRight() },
+            { isSeparator: true },
             { label: 'Clear Dock', onClick: () => this.clearDock() }
           ]
         },
@@ -384,6 +387,64 @@ class Desktop {
    */
   private clearDock() {
     this.dockedApps = [];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
+  }
+
+  /**
+   * Move the selected app left in the dock
+   */
+  private async moveDockItemLeft() {
+    if (!this.selectedIcon) {
+      if (this.win) await this.win.showInfo('No Selection', 'Click on an app icon first');
+      return;
+    }
+
+    const appName = this.selectedIcon.metadata.name;
+    const index = this.dockedApps.indexOf(appName);
+
+    if (index < 0) {
+      if (this.win) await this.win.showInfo('Not in Dock', `${appName} is not in the dock`);
+      return;
+    }
+
+    if (index === 0) {
+      // Already at the leftmost position
+      return;
+    }
+
+    // Swap with the item to the left
+    [this.dockedApps[index - 1], this.dockedApps[index]] =
+      [this.dockedApps[index], this.dockedApps[index - 1]];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
+  }
+
+  /**
+   * Move the selected app right in the dock
+   */
+  private async moveDockItemRight() {
+    if (!this.selectedIcon) {
+      if (this.win) await this.win.showInfo('No Selection', 'Click on an app icon first');
+      return;
+    }
+
+    const appName = this.selectedIcon.metadata.name;
+    const index = this.dockedApps.indexOf(appName);
+
+    if (index < 0) {
+      if (this.win) await this.win.showInfo('Not in Dock', `${appName} is not in the dock`);
+      return;
+    }
+
+    if (index === this.dockedApps.length - 1) {
+      // Already at the rightmost position
+      return;
+    }
+
+    // Swap with the item to the right
+    [this.dockedApps[index], this.dockedApps[index + 1]] =
+      [this.dockedApps[index + 1], this.dockedApps[index]];
     this.saveDockedApps();
     this.rebuildLaunchBar();
   }
