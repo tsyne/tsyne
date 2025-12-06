@@ -41,25 +41,7 @@ describe('Desktop Environment Tests', () => {
 
     // Launch bar should be visible
     await ctx.getByID('showDesktopBtn').shouldExist();
-    await ctx.getByID('quickCalcBtn').shouldExist();
-  });
-
-  test('should launch calculator via quick launch button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Click the quick launch calculator button
-    await ctx.getByID('quickCalcBtn').click();
-
-    // Wait a moment for the app to launch
-    await ctx.wait(200);
-
-    // The running apps label should update
-    await ctx.getByID('runningAppsLabel').shouldContain('Calculator');
+    await ctx.getByID('allAppsBtn').shouldExist();
   });
 
   test('should launch calculator via double-click on icon', async () => {
@@ -90,8 +72,10 @@ describe('Desktop Environment Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Launch calculator via quick launch
-    await ctx.getByID('quickCalcBtn').click();
+    // Launch calculator via double-click on icon
+    const calcIcon = ctx.getByID('icon-calculator');
+    await calcIcon.click();
+    await calcIcon.click();  // Double-click
     await ctx.wait(200);
 
     // Now interact with the calculator buttons
@@ -113,8 +97,10 @@ describe('Desktop Environment Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Launch calculator
-    await ctx.getByID('quickCalcBtn').click();
+    // Launch calculator via double-click
+    const calcIcon = ctx.getByID('icon-calculator');
+    await calcIcon.click();
+    await calcIcon.click();
     await ctx.wait(200);
 
     // Verify it's running
@@ -127,5 +113,45 @@ describe('Desktop Environment Tests', () => {
     // The app is still "running" but the window is hidden
     // (We can't easily verify hidden state in tests, but the button shouldn't crash)
     await ctx.getByID('runningAppsLabel').shouldContain('Calculator');
+  });
+});
+
+describe('Desktop Dock Integration Tests', () => {
+  let tsyneTest: TsyneTest;
+  let ctx: TestContext;
+
+  beforeEach(() => {
+    const headed = process.env.TSYNE_HEADED === '1';
+    tsyneTest = new TsyneTest({ headed });
+  });
+
+  afterEach(async () => {
+    await tsyneTest.cleanup();
+  });
+
+  test('should show launch bar components', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      buildDesktop(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // The launch bar should exist with its components
+    await ctx.getByID('showDesktopBtn').shouldExist();
+    await ctx.getByID('allAppsBtn').shouldExist();
+    await ctx.getByID('runningAppsLabel').shouldExist();
+  });
+
+  test('should show running apps count as None initially', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      buildDesktop(app);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Running apps label should show None initially
+    await ctx.getByID('runningAppsLabel').shouldBe('None');
   });
 });
