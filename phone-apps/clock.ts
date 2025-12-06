@@ -16,6 +16,7 @@ import { app, styles, FontStyle } from '../src';
 import type { App } from '../src/app';
 import type { Window } from '../src/window';
 import type { Label } from '../src/widgets/display';
+import type { CanvasLine } from '../src/widgets/canvas';
 import {
   IClockService,
   INotificationService,
@@ -40,12 +41,22 @@ styles({
 /**
  * Clock UI class
  */
+// Analog clock constants
+const CLOCK_SIZE = 200;
+const CLOCK_CENTER = CLOCK_SIZE / 2;
+const CLOCK_RADIUS = 90;
+
 class ClockUI {
   private timeLabel: Label | null = null;
   private dateLabel: Label | null = null;
   private timerLabel: Label | null = null;
   private stopwatchLabel: Label | null = null;
   private window: Window | null = null;
+
+  // Analog clock hands
+  private hourHand: CanvasLine | null = null;
+  private minuteHand: CanvasLine | null = null;
+  private secondHand: CanvasLine | null = null;
 
   // Timer state
   private timerSeconds = 0;
@@ -74,18 +85,61 @@ class ClockUI {
   }
 
   private updateTimeDisplay(): void {
+    const now = this.clock.getCurrentTime();
+
     if (this.timeLabel) {
-      const now = this.clock.getCurrentTime();
       this.timeLabel.setText(now.toLocaleTimeString());
     }
     if (this.dateLabel) {
-      const now = this.clock.getCurrentTime();
       this.dateLabel.setText(now.toLocaleDateString(undefined, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       }));
+    }
+
+    // Update analog clock hands
+    this.updateAnalogClock(now);
+  }
+
+  private updateAnalogClock(now: Date): void {
+    const hours = now.getHours() % 12;
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+
+    // Calculate angles (0 = 12 o'clock, clockwise)
+    const secondAngle = (seconds / 60) * 2 * Math.PI - Math.PI / 2;
+    const minuteAngle = ((minutes + seconds / 60) / 60) * 2 * Math.PI - Math.PI / 2;
+    const hourAngle = ((hours + minutes / 60) / 12) * 2 * Math.PI - Math.PI / 2;
+
+    // Calculate hand endpoints
+    const secondLength = CLOCK_RADIUS * 0.85;
+    const minuteLength = CLOCK_RADIUS * 0.75;
+    const hourLength = CLOCK_RADIUS * 0.5;
+
+    // Update second hand
+    if (this.secondHand) {
+      this.secondHand.update({
+        x2: CLOCK_CENTER + Math.cos(secondAngle) * secondLength,
+        y2: CLOCK_CENTER + Math.sin(secondAngle) * secondLength,
+      });
+    }
+
+    // Update minute hand
+    if (this.minuteHand) {
+      this.minuteHand.update({
+        x2: CLOCK_CENTER + Math.cos(minuteAngle) * minuteLength,
+        y2: CLOCK_CENTER + Math.sin(minuteAngle) * minuteLength,
+      });
+    }
+
+    // Update hour hand
+    if (this.hourHand) {
+      this.hourHand.update({
+        x2: CLOCK_CENTER + Math.cos(hourAngle) * hourLength,
+        y2: CLOCK_CENTER + Math.sin(hourAngle) * hourLength,
+      });
     }
   }
 
@@ -226,11 +280,82 @@ class ClockUI {
       // Clock tab
       this.a.tab('Clock', () => {
         this.a.vbox(() => {
-          this.a.spacer();
+          // Analog clock face
+          this.a.center(() => {
+            this.a.stack(() => {
+              // Clock face circle
+              this.a.canvasCircle({
+                x: 0, y: 0,
+                x2: CLOCK_SIZE, y2: CLOCK_SIZE,
+                fillColor: '#f5f5f5',
+                strokeColor: '#333333',
+                strokeWidth: 3,
+              });
+
+              // Hour markers
+              for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
+                const innerRadius = CLOCK_RADIUS * 0.85;
+                const outerRadius = CLOCK_RADIUS * 0.95;
+                const x1 = CLOCK_CENTER + Math.cos(angle) * innerRadius;
+                const y1 = CLOCK_CENTER + Math.sin(angle) * innerRadius;
+                const x2 = CLOCK_CENTER + Math.cos(angle) * outerRadius;
+                const y2 = CLOCK_CENTER + Math.sin(angle) * outerRadius;
+                this.a.canvasLine(x1, y1, x2, y2, {
+                  strokeColor: '#333333',
+                  strokeWidth: i % 3 === 0 ? 3 : 1, // Bold at 12, 3, 6, 9
+                });
+              }
+
+              // Clock hands (initialized pointing up, will be updated)
+              const now = this.clock.getCurrentTime();
+              const hours = now.getHours() % 12;
+              const minutes = now.getMinutes();
+              const seconds = now.getSeconds();
+
+              const secondAngle = (seconds / 60) * 2 * Math.PI - Math.PI / 2;
+              const minuteAngle = ((minutes + seconds / 60) / 60) * 2 * Math.PI - Math.PI / 2;
+              const hourAngle = ((hours + minutes / 60) / 12) * 2 * Math.PI - Math.PI / 2;
+
+              // Hour hand
+              this.hourHand = this.a.canvasLine(
+                CLOCK_CENTER, CLOCK_CENTER,
+                CLOCK_CENTER + Math.cos(hourAngle) * CLOCK_RADIUS * 0.5,
+                CLOCK_CENTER + Math.sin(hourAngle) * CLOCK_RADIUS * 0.5,
+                { strokeColor: '#333333', strokeWidth: 4 }
+              );
+
+              // Minute hand
+              this.minuteHand = this.a.canvasLine(
+                CLOCK_CENTER, CLOCK_CENTER,
+                CLOCK_CENTER + Math.cos(minuteAngle) * CLOCK_RADIUS * 0.75,
+                CLOCK_CENTER + Math.sin(minuteAngle) * CLOCK_RADIUS * 0.75,
+                { strokeColor: '#333333', strokeWidth: 3 }
+              );
+
+              // Second hand
+              this.secondHand = this.a.canvasLine(
+                CLOCK_CENTER, CLOCK_CENTER,
+                CLOCK_CENTER + Math.cos(secondAngle) * CLOCK_RADIUS * 0.85,
+                CLOCK_CENTER + Math.sin(secondAngle) * CLOCK_RADIUS * 0.85,
+                { strokeColor: '#e74c3c', strokeWidth: 1 }
+              );
+
+              // Center dot
+              this.a.canvasCircle({
+                x: CLOCK_CENTER - 5, y: CLOCK_CENTER - 5,
+                x2: CLOCK_CENTER + 5, y2: CLOCK_CENTER + 5,
+                fillColor: '#333333',
+              });
+            });
+          });
+
+          this.a.separator();
+
+          // Digital time display
           this.timeLabel = this.a.label(this.clock.getCurrentTime().toLocaleTimeString()).withId('time-display');
           this.dateLabel = this.a.label('').withId('date-display');
           this.updateTimeDisplay();
-          this.a.spacer();
           this.a.label(`Timezone: ${this.clock.getTimezone()}`);
         });
       });
@@ -360,7 +485,7 @@ export function createClockApp(
 ): ClockUI {
   const ui = new ClockUI(a, clock, notifications);
 
-  a.window({ title: 'Clock', width: 320, height: 480 }, (win: Window) => {
+  a.window({ title: 'Clock', width: 320, height: 560 }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
