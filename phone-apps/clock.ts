@@ -485,7 +485,7 @@ export function createClockApp(
 ): ClockUI {
   const ui = new ClockUI(a, clock, notifications);
 
-  a.window({ title: 'Clock', width: 320, height: 560 }, (win: Window) => {
+  a.window({ title: 'Clock' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });

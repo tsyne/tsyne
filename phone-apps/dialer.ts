@@ -207,7 +207,7 @@ export function createDialerApp(
 ): DialerUI {
   const ui = new DialerUI(a, telephony, contacts);
 
-  a.window({ title: 'Phone', width: 320, height: 540 }, (win: Window) => {
+  a.window({ title: 'Phone' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });

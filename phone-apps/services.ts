@@ -429,6 +429,8 @@ export interface Thread {
   unreadCount: number;
 }
 
+export type MessageListener = (message: Message) => void;
+
 export interface ISMSService {
   send(to: string, body: string): Promise<Message>;
   getThreads(): Thread[];
@@ -436,11 +438,28 @@ export interface ISMSService {
   markThreadRead(threadId: string): void;
   deleteThread(threadId: string): boolean;
   deleteMessage(messageId: string): boolean;
+  onMessageReceived(listener: MessageListener): () => void;
+  setAutoReply(enabled: boolean): void;
 }
 
 export class MockSMSService implements ISMSService {
   private messages: Message[] = [];
   private nextId = 1;
+  private listeners: MessageListener[] = [];
+  private autoReply = true;
+
+  // Simulated responses based on keywords
+  private static readonly RESPONSES: Record<string, string[]> = {
+    'hello': ['Hey there!', 'Hi! How are you?', 'Hello! 👋'],
+    'hi': ['Hey!', 'Hi! What\'s up?', 'Hello!'],
+    'how are you': ['I\'m doing great, thanks!', 'Pretty good! You?', 'Can\'t complain 😊'],
+    'yes': ['Great!', 'Awesome!', 'Perfect 👍'],
+    'no': ['OK, no problem', 'That\'s fine', 'Understood'],
+    'thanks': ['You\'re welcome!', 'No problem!', 'Anytime!'],
+    'bye': ['See you later!', 'Goodbye!', 'Take care!'],
+    'ok': ['👍', 'Sounds good', 'Cool'],
+    'default': ['Got it!', 'OK', 'I see', 'Interesting!', 'Tell me more', '👍', 'Sure thing'],
+  };
 
   constructor() {
     const now = new Date();
@@ -466,7 +485,68 @@ export class MockSMSService implements ISMSService {
     };
     this.messages.push(message);
     console.log(`[MockSMS] Sent to ${to}: ${body}`);
+
+    // Simulate a response after a delay if auto-reply is enabled
+    if (this.autoReply) {
+      this.scheduleAutoReply(to, body);
+    }
+
     return message;
+  }
+
+  private scheduleAutoReply(from: string, originalMessage: string): void {
+    // Random delay between 1-4 seconds
+    const delay = 1000 + Math.random() * 3000;
+
+    setTimeout(() => {
+      const response = this.generateResponse(originalMessage);
+      this.receiveMessage(from, response);
+    }, delay);
+  }
+
+  private generateResponse(originalMessage: string): string {
+    const lower = originalMessage.toLowerCase();
+
+    // Check for keyword matches
+    for (const [keyword, responses] of Object.entries(MockSMSService.RESPONSES)) {
+      if (keyword !== 'default' && lower.includes(keyword)) {
+        return responses[Math.floor(Math.random() * responses.length)];
+      }
+    }
+
+    // Default response
+    const defaults = MockSMSService.RESPONSES['default'];
+    return defaults[Math.floor(Math.random() * defaults.length)];
+  }
+
+  private receiveMessage(from: string, body: string): void {
+    const threadId = `thread-${from}`;
+    const message: Message = {
+      id: `msg-${this.nextId++}`,
+      threadId,
+      from,
+      to: 'me',
+      body,
+      timestamp: new Date(),
+      read: false,
+    };
+    this.messages.push(message);
+    console.log(`[MockSMS] Received from ${from}: ${body}`);
+
+    // Notify listeners
+    this.listeners.forEach(listener => listener(message));
+  }
+
+  onMessageReceived(listener: MessageListener): () => void {
+    this.listeners.push(listener);
+    return () => {
+      const index = this.listeners.indexOf(listener);
+      if (index >= 0) this.listeners.splice(index, 1);
+    };
+  }
+
+  setAutoReply(enabled: boolean): void {
+    this.autoReply = enabled;
   }
 
   getThreads(): Thread[] {

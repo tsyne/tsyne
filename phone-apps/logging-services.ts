@@ -26,6 +26,7 @@ import {
   Notification,
   Message,
   Thread,
+  MessageListener,
 } from './services';
 
 /**
@@ -134,6 +135,15 @@ export class LoggingTelephonyService implements ITelephonyService {
 export class LoggingSMSService implements ISMSService {
   private delegate = new MockSMSService();
 
+  constructor() {
+    // Subscribe to incoming messages to log them
+    this.delegate.onMessageReceived((message) => {
+      modemLog.log('SMS', 'RX', `+CMT: "${message.from}"`);
+      modemLog.log('SMS', 'RX', `> ${message.body.substring(0, 50)}${message.body.length > 50 ? '...' : ''}`);
+      modemLog.log('SMS', 'INFO', `SMS received from ${message.from} (${message.body.length} chars)`);
+    });
+  }
+
   async send(to: string, body: string): Promise<Message> {
     modemLog.log('SMS', 'TX', `AT+CMGS="${to}"`);
     modemLog.log('SMS', 'TX', `> ${body.substring(0, 50)}${body.length > 50 ? '...' : ''}`);
@@ -170,6 +180,15 @@ export class LoggingSMSService implements ISMSService {
     const result = this.delegate.deleteMessage(messageId);
     modemLog.log('SMS', 'RX', result ? 'OK' : 'ERROR');
     return result;
+  }
+
+  onMessageReceived(listener: (message: Message) => void): () => void {
+    return this.delegate.onMessageReceived(listener);
+  }
+
+  setAutoReply(enabled: boolean): void {
+    modemLog.log('SMS', 'INFO', `Auto-reply simulation ${enabled ? 'enabled' : 'disabled'}`);
+    this.delegate.setAutoReply(enabled);
   }
 }
 

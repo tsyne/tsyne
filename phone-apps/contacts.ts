@@ -2,13 +2,13 @@
  * Contacts App
  *
  * A contacts manager with list, search, and edit capabilities.
- * Uses ContactsService for contact operations.
+ * Uses ContactsService for contact operations and optionally SMSService for messaging.
  *
  * @tsyne-app:name Contacts
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
  * @tsyne-app:category phone
  * @tsyne-app:builder createContactsApp
- * @tsyne-app:args app,contacts
+ * @tsyne-app:args app,contacts,sms
  * @tsyne-app:count single
  */
 
@@ -18,7 +18,7 @@ import type { Window } from '../src/window';
 import type { Label } from '../src/widgets/display';
 import type { Entry } from '../src/widgets/inputs';
 import type { VBox } from '../src/widgets/containers';
-import { IContactsService, MockContactsService, Contact } from './services';
+import { IContactsService, MockContactsService, ISMSService, MockSMSService, Contact } from './services';
 
 /**
  * Contacts UI class
@@ -31,7 +31,8 @@ class ContactsUI {
 
   constructor(
     private a: App,
-    private contacts: IContactsService
+    private contacts: IContactsService,
+    private sms?: ISMSService
   ) {}
 
   private async refreshContactList(): Promise<void> {
@@ -111,6 +112,19 @@ class ContactsUI {
     }
   }
 
+  private async handleMessageContact(contact: Contact): Promise<void> {
+    if (!this.window || !this.sms) return;
+
+    const result = await this.window.showForm(`Message ${contact.name}`, [
+      { name: 'message', label: 'Message', type: 'entry' },
+    ]);
+
+    if (result.submitted && result.values.message) {
+      await this.sms.send(contact.phone, result.values.message as string);
+      await this.window.showAlert('Sent', `Message sent to ${contact.name}`);
+    }
+  }
+
   buildUI(win: Window): void {
     this.window = win;
 
@@ -174,6 +188,9 @@ class ContactsUI {
       this.a.spacer();
 
       // Action buttons
+      if (this.sms) {
+        this.a.button('Msg').onClick(() => this.handleMessageContact(contact)).withId(`contact-${contact.id}-msg`);
+      }
       this.a.button('Edit').onClick(() => this.handleEditContact(contact)).withId(`contact-${contact.id}-edit`);
       this.a.button('Del').onClick(() => this.handleDeleteContact(contact)).withId(`contact-${contact.id}-delete`);
     });
@@ -193,14 +210,16 @@ class ContactsUI {
  * Create the contacts app
  * @param a - App instance
  * @param contacts - Contacts service
+ * @param sms - Optional SMS service for messaging from contacts
  */
 export function createContactsApp(
   a: App,
-  contacts: IContactsService
+  contacts: IContactsService,
+  sms?: ISMSService
 ): ContactsUI {
-  const ui = new ContactsUI(a, contacts);
+  const ui = new ContactsUI(a, contacts, sms);
 
-  a.window({ title: 'Contacts', width: 360, height: 540 }, (win: Window) => {
+  a.window({ title: 'Contacts' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
@@ -214,6 +233,7 @@ export function createContactsApp(
 if (require.main === module) {
   app({ title: 'Contacts' }, (a: App) => {
     const contacts = new MockContactsService();
-    createContactsApp(a, contacts);
+    const sms = new MockSMSService();
+    createContactsApp(a, contacts, sms);
   });
 }

@@ -241,7 +241,7 @@ export function createNotesApp(
 ): NotesUI {
   const ui = new NotesUI(a, storage);
 
-  a.window({ title: 'Notes', width: 480, height: 400 }, (win: Window) => {
+  a.window({ title: 'Notes' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });

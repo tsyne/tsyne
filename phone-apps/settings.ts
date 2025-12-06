@@ -183,7 +183,7 @@ export function createSettingsApp(
 ): SettingsUI {
   const ui = new SettingsUI(a, settings);
 
-  a.window({ title: 'Settings', width: 360, height: 480 }, (win: Window) => {
+  a.window({ title: 'Settings' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
