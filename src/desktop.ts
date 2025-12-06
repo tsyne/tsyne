@@ -26,6 +26,7 @@ import * as path from 'path';
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
 const ICON_POSITION_PREFIX = 'desktop.icon.';
+const DOCK_APPS_KEY = 'desktop.dock.apps';
 
 // Desktop options
 export interface DesktopOptions {
@@ -61,10 +62,84 @@ class Desktop {
   private options: DesktopOptions;
   /** Counter for generating unique app instance scopes */
   private appInstanceCounter: Map<string, number> = new Map();
+  /** Apps pinned to the dock/launch bar */
+  private dockedApps: string[] = [];
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
     this.options = options;
+    this.loadDockedApps();
+  }
+
+  /**
+   * Load docked apps from preferences
+   */
+  private loadDockedApps() {
+    const saved = this.a.getPreference(DOCK_APPS_KEY, '');
+    if (saved) {
+      try {
+        this.dockedApps = JSON.parse(saved);
+      } catch {
+        this.dockedApps = [];
+      }
+    }
+  }
+
+  /**
+   * Save docked apps to preferences
+   */
+  private saveDockedApps() {
+    this.a.setPreference(DOCK_APPS_KEY, JSON.stringify(this.dockedApps));
+  }
+
+  /**
+   * Add an app to the dock
+   */
+  addToDock(appName: string) {
+    if (!this.dockedApps.includes(appName)) {
+      this.dockedApps.push(appName);
+      this.saveDockedApps();
+      this.rebuildLaunchBar();
+    }
+  }
+
+  /**
+   * Remove an app from the dock
+   */
+  removeFromDock(appName: string) {
+    const index = this.dockedApps.indexOf(appName);
+    if (index >= 0) {
+      this.dockedApps.splice(index, 1);
+      this.saveDockedApps();
+      this.rebuildLaunchBar();
+    }
+  }
+
+  /**
+   * Check if an app is in the dock
+   */
+  isInDock(appName: string): boolean {
+    return this.dockedApps.includes(appName);
+  }
+
+  /**
+   * Rebuild just the launch bar (after dock changes)
+   */
+  private rebuildLaunchBar() {
+    // For now, rebuild the whole content - could be optimized later
+    if (this.win) {
+      this.win.setContent(() => {
+        this.a.border(() => {
+          this.a.borderCenter(() => {
+            this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
+            this.createDesktopIcons();
+          });
+          this.a.borderBottom(() => {
+            this.createLaunchBar();
+          });
+        });
+      });
+    }
   }
 
   /**
@@ -184,6 +259,15 @@ class Desktop {
           ]
         },
         {
+          label: 'Dock',
+          items: [
+            { label: 'Add Selected to Dock', onClick: () => this.addSelectedToDock() },
+            { label: 'Remove Selected from Dock', onClick: () => this.removeSelectedFromDock() },
+            { isSeparator: true },
+            { label: 'Clear Dock', onClick: () => this.clearDock() }
+          ]
+        },
+        {
           label: 'View',
           items: [
             { label: 'Show All Windows', onClick: () => this.showAllWindows() },
@@ -267,6 +351,41 @@ class Desktop {
     for (const [, openApp] of this.openApps) {
       openApp.tsyneWindow.hide();
     }
+  }
+
+  /**
+   * Add the currently selected icon to the dock
+   */
+  private async addSelectedToDock() {
+    if (this.selectedIcon) {
+      this.addToDock(this.selectedIcon.metadata.name);
+    } else if (this.win) {
+      await this.win.showInfo('No Selection', 'Click on an app icon first, then use Dock > Add Selected to Dock');
+    }
+  }
+
+  /**
+   * Remove the currently selected icon from the dock
+   */
+  private async removeSelectedFromDock() {
+    if (this.selectedIcon) {
+      if (this.isInDock(this.selectedIcon.metadata.name)) {
+        this.removeFromDock(this.selectedIcon.metadata.name);
+      } else if (this.win) {
+        await this.win.showInfo('Not in Dock', `${this.selectedIcon.metadata.name} is not in the dock`);
+      }
+    } else if (this.win) {
+      await this.win.showInfo('No Selection', 'Click on an app icon first');
+    }
+  }
+
+  /**
+   * Clear all apps from the dock
+   */
+  private clearDock() {
+    this.dockedApps = [];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
   }
 
   /**
@@ -471,19 +590,26 @@ class Desktop {
 
       this.a.separator();
 
+      // Docked apps section
+      if (this.dockedApps.length > 0) {
+        for (const appName of this.dockedApps) {
+          const icon = this.icons.find(i => i.metadata.name === appName);
+          if (icon) {
+            // Get first letter as icon placeholder
+            const firstLetter = appName.charAt(0).toUpperCase();
+            this.a.button(`[${firstLetter}] ${appName}`)
+              .withId(`dock-${this.getIconKey(appName)}`)
+              .onClick(() => this.launchApp(icon.metadata));
+          }
+        }
+        this.a.separator();
+      }
+
       // Running apps label
       this.a.label('Running: ');
       this.runningAppsLabel = this.a.label('None').withId('runningAppsLabel');
 
       this.a.spacer();
-
-      // Quick launch for Calculator (demo)
-      this.a.button('\u{1F5A9} Calc').withId('quickCalcBtn').onClick(() => {
-        const calcApp = this.icons.find(i => i.metadata.name === 'Calculator');
-        if (calcApp) {
-          this.launchApp(calcApp.metadata);
-        }
-      });
 
       // App launcher
       this.a.button('All Apps').withId('allAppsBtn').onClick(() => {
