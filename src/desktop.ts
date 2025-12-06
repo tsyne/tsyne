@@ -195,10 +195,19 @@ class Desktop {
       ]);
 
       win.setContent(() => {
-        // Use unified DesktopMDI container that combines desktop icons with MDI
-        // This solves the layering problem - both drag and double-click work
-        this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
-        this.createDesktopIcons();
+        // Use border layout: desktop in center, launch bar at bottom
+        this.a.border(() => {
+          // Center: Desktop MDI with icons and windows
+          this.a.borderCenter(() => {
+            this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
+            this.createDesktopIcons();
+          });
+
+          // Bottom: Launch bar
+          this.a.borderBottom(() => {
+            this.createLaunchBar();
+          });
+        });
       });
     });
   }
