@@ -89,6 +89,32 @@ export class ResourceManager implements IResourceManager {
 }
 
 /**
+ * Null implementation of IResourceManager for apps that don't need resources.
+ * Useful for testing or standalone apps that handle their own resource management.
+ */
+export class NullResourceManager implements IResourceManager {
+  async registerResource(_name: string, _data: string): Promise<void> {
+    // No-op
+  }
+
+  async unregisterResource(_name: string): Promise<void> {
+    // No-op
+  }
+
+  isRegistered(_name: string): boolean {
+    return false;
+  }
+
+  getRegisteredResources(): string[] {
+    return [];
+  }
+
+  async unregisterAll(): Promise<void> {
+    // No-op
+  }
+}
+
+/**
  * Scoped ResourceManager that prefixes all resource names with a unique scope.
  * Used by Desktop to give each app instance its own resource namespace.
  * Apps don't need to know about scoping - it's transparent.

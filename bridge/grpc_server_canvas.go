@@ -580,6 +580,7 @@ func (s *grpcBridgeService) CreateDesktopIcon(ctx context.Context, req *pb.Creat
 			"x":                    float64(req.X),
 			"y":                    float64(req.Y),
 			"color":                req.Color,
+			"resource":             req.ResourceName,
 			"onClickCallbackId":    req.OnClickCallbackId,
 			"onDblClickCallbackId": req.OnDblClickCallbackId,
 			"onDragCallbackId":     req.DragCallbackId,

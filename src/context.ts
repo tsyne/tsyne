@@ -161,4 +161,85 @@ export class Context {
   getCurrentContainer(): string[] | undefined {
     return this.containerStack[this.containerStack.length - 1];
   }
+
+  /**
+   * Create a scoped context for sandboxed apps.
+   * Widget IDs are prefixed with the scope to prevent cross-app access.
+   */
+  createScopedContext(scope: string): Context {
+    return new ScopedContext(this, scope);
+  }
+}
+
+/**
+ * Scoped Context for sandboxed apps.
+ * Delegates to parent context but prefixes widget IDs with scope.
+ */
+class ScopedContext extends Context {
+  private parentCtx: Context;
+  private scope: string;
+
+  constructor(parent: Context, scope: string) {
+    // Share the same bridge
+    super(parent.bridge);
+    this.parentCtx = parent;
+    this.scope = scope;
+    // Set resource scope to match
+    this.setResourceScope(scope);
+  }
+
+  /**
+   * Generate scoped widget ID
+   * Format: ${scope}:_${type}_${random}
+   */
+  override generateId(prefix: string): string {
+    const baseId = super.generateId(prefix);
+    return `${this.scope}:${baseId}`;
+  }
+
+  /**
+   * Track registration in parent context
+   */
+  override trackRegistration(promise: Promise<void>): void {
+    this.parentCtx.trackRegistration(promise);
+  }
+
+  /**
+   * Wait uses parent's pending registrations
+   */
+  override async waitForRegistrations(): Promise<void> {
+    return this.parentCtx.waitForRegistrations();
+  }
+
+  /**
+   * Test harness comes from parent
+   */
+  override get testHarness() {
+    return this.parentCtx.testHarness;
+  }
+
+  // ============================================================================
+  // Container stack operations - delegate to parent so InnerWindow works
+  // ============================================================================
+
+  /**
+   * Push a new container onto parent's stack
+   */
+  override pushContainer(): void {
+    this.parentCtx.pushContainer();
+  }
+
+  /**
+   * Pop from parent's container stack
+   */
+  override popContainer(): string[] {
+    return this.parentCtx.popContainer();
+  }
+
+  /**
+   * Add to parent's current container
+   */
+  override addToCurrentContainer(id: string): void {
+    this.parentCtx.addToCurrentContainer(id);
+  }
 }

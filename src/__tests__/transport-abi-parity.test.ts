@@ -21,8 +21,22 @@ import * as path from 'path';
 const bridgePath = path.join(__dirname, '../../bridge');
 const protoPath = path.join(bridgePath, 'proto/bridge.proto');
 const handlerPath = path.join(bridgePath, 'widget_creators_display.go');
-const grpcServerPath = path.join(bridgePath, 'grpc_server.go');
 const labelTsPath = path.join(__dirname, '../widgets/display_basic.ts');
+
+// gRPC server is now split across multiple files - we need to search all of them
+function getGrpcServerFiles(): string[] {
+  const files = fs.readdirSync(bridgePath);
+  return files
+    .filter(f => f.startsWith('grpc_server') && f.endsWith('.go'))
+    .map(f => path.join(bridgePath, f));
+}
+
+// Get combined content of all gRPC server files
+function getAllGrpcServerContent(): string {
+  return getGrpcServerFiles()
+    .map(f => fs.readFileSync(f, 'utf-8'))
+    .join('\n');
+}
 
 // ============================================================================
 // Go Handler Parser (SOURCE OF TRUTH for stdio and msgpack-uds)
@@ -162,13 +176,32 @@ interface GrpcMapping {
   protoField: string;
 }
 
-function parseGrpcServerMappings(grpcPath: string, methodName: string): GrpcMapping[] {
-  const content = fs.readFileSync(grpcPath, 'utf-8');
+/**
+ * Parse gRPC server mappings from all gRPC server files.
+ * The gRPC server is now split across multiple files (grpc_server_*.go).
+ */
+function parseGrpcServerMappings(methodName: string): GrpcMapping[] {
+  // Search all gRPC server files for the method
+  const grpcFiles = getGrpcServerFiles();
+  let content = '';
+
+  // Use word boundary regex to avoid matching CreateSelectEntry when looking for CreateSelect
+  const methodExistsRegex = new RegExp(`\\b${methodName}\\b`);
+
+  for (const grpcPath of grpcFiles) {
+    const fileContent = fs.readFileSync(grpcPath, 'utf-8');
+    if (fileContent.includes(`func`) && methodExistsRegex.test(fileContent)) {
+      content = fileContent;
+      break;
+    }
+  }
+
+  if (!content) return [];
   const mappings: GrpcMapping[] = [];
 
-  // Find the method body
+  // Find the method body - use word boundary to avoid matching CreateSelectEntry when looking for CreateSelect
   const methodRegex = new RegExp(
-    `func[^{]*${methodName}[^{]*\\{([\\s\\S]*?)\\n\\}\\s*\\n`,
+    `func[^{]*\\b${methodName}\\b[^{]*\\{([\\s\\S]*?)\\n\\}\\s*\\n`,
     'm'
   );
 
@@ -511,7 +544,7 @@ describe('Transport ABI Parity', () => {
       });
 
       test('gRPC server maps all Go handler fields', () => {
-        const grpcMappings = parseGrpcServerMappings(grpcServerPath, grpcMethod);
+        const grpcMappings = parseGrpcServerMappings(grpcMethod);
         const mappedFields = grpcMappings.map(m => m.payloadField.toLowerCase());
 
         // Fields to skip in gRPC server mapping check:
@@ -530,7 +563,7 @@ describe('Transport ABI Parity', () => {
   describe('Cross-transport consistency for Label', () => {
     test('gRPC enum values match Go handler expected strings', () => {
       const handlerContent = fs.readFileSync(handlerPath, 'utf-8');
-      const grpcContent = fs.readFileSync(grpcServerPath, 'utf-8');
+      const grpcContent = getAllGrpcServerContent();
 
       // Alignment: Go expects "center", "trailing", "leading"
       if (handlerContent.includes('"center"')) {
@@ -551,7 +584,7 @@ describe('Transport ABI Parity', () => {
 
     test('all transports use same nested map structure for textStyle', () => {
       const handlerContent = fs.readFileSync(handlerPath, 'utf-8');
-      const grpcContent = fs.readFileSync(grpcServerPath, 'utf-8');
+      const grpcContent = getAllGrpcServerContent();
       const tsContent = fs.readFileSync(labelTsPath, 'utf-8');
 
       // Go handler expects textStyle as map[string]interface{}
@@ -573,7 +606,7 @@ describe('Transport ABI Parity', () => {
 
 describe('Code completeness checks', () => {
   test('gRPC server has no TODO markers for incomplete implementations', () => {
-    const grpcContent = fs.readFileSync(grpcServerPath, 'utf-8');
+    const grpcContent = getAllGrpcServerContent();
 
     // Find TODO comments that indicate incomplete implementations
     const todoRegex = /\/\/\s*TODO[:\s].*(?:implement|incomplete|missing|placeholder|stub)/gi;

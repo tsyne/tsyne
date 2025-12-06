@@ -20,6 +20,7 @@ import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI } from './wid
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
+import { SandboxedApp, IApp } from './sandboxed-app';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
 
@@ -553,8 +554,9 @@ class Desktop {
       const color = colors[i % colors.length];
 
       console.log(`Adding icon: ${icon.metadata.name} at (${icon.x}, ${icon.y})`);
+      const iconId = `icon-${icon.metadata.name.toLowerCase().replace(/\s+/g, '-')}`;
       this.desktopMDI.addIcon({
-        id: `app-${i}`,
+        id: iconId,
         label: icon.metadata.name,
         resource: icon.resourceName,
         x: icon.x,
@@ -668,12 +670,15 @@ class Desktop {
       onWindowClosed: (closedWindow) => this.handleWindowClosed(closedWindow)
     });
 
-    // Save original resources and create scoped version for this app instance
-    const originalResources = this.a.resources;
+    // Create scoped resource manager for this app instance (IoC)
     const scopedResources = new ScopedResourceManager(
-      originalResources as ResourceManager,
+      this.a.resources as ResourceManager,
       appScope
     );
+
+    // Create sandboxed app for this app instance
+    // Apps receive IApp interface, not the real App - prevents cross-app interference
+    const sandboxedApp = new SandboxedApp(this.a, appScope);
 
     try {
       // Load the app's builder function (module auto-run will use desktop mode)
@@ -686,7 +691,8 @@ class Desktop {
       // We need to capture the created window
       let createdWindow: ITsyneWindow | null = null;
 
-      // Temporarily monkey-patch to capture the window
+      // Temporarily monkey-patch the REAL app's window method to capture the window
+      // The sandboxed app delegates to real app for window creation
       const originalWindow = this.a.window.bind(this.a);
       (this.a as any).window = (options: any, builderFn: any) => {
         const win = originalWindow(options, builderFn);
@@ -694,16 +700,19 @@ class Desktop {
         return win;
       };
 
-      // Inject scoped resources for this app instance (IoC)
-      (this.a as any).resources = scopedResources;
-      this.a.getContext().setResourceScope(appScope);
+      // Build argument array based on @tsyne-app:args metadata (poor man's reflection)
+      // 'app' now maps to sandboxedApp, not this.a
+      const argMap: Record<string, any> = {
+        'app': sandboxedApp,
+        'resources': scopedResources,
+      };
+      const args = metadata.args.map(name => argMap[name]);
 
-      await builder(this.a);
+      // Call builder with the declared arguments
+      await builder(...args);
 
-      // Restore originals
+      // Restore original window method
       (this.a as any).window = originalWindow;
-      (this.a as any).resources = originalResources;
-      this.a.getContext().setResourceScope(null);
 
       if (createdWindow) {
         // Track the open app
@@ -714,9 +723,6 @@ class Desktop {
     } finally {
       // Always disable desktop mode when done
       disableDesktopMode();
-      // Ensure resources are restored even on error
-      (this.a as any).resources = originalResources;
-      this.a.getContext().setResourceScope(null);
     }
   }
 

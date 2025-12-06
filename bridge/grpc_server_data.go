@@ -178,6 +178,20 @@ func (s *grpcBridgeService) CreateTextGrid(ctx context.Context, req *pb.CreateTe
 		payload["showWhitespace"] = true
 	}
 
+	// Map keyboard callback IDs
+	if req.OnKeyDownCallbackId != "" {
+		payload["onKeyDownCallbackId"] = req.OnKeyDownCallbackId
+	}
+	if req.OnKeyUpCallbackId != "" {
+		payload["onKeyUpCallbackId"] = req.OnKeyUpCallbackId
+	}
+	if req.OnTypedCallbackId != "" {
+		payload["onTypedCallbackId"] = req.OnTypedCallbackId
+	}
+	if req.OnFocusCallbackId != "" {
+		payload["onFocusCallbackId"] = req.OnFocusCallbackId
+	}
+
 	msg := Message{
 		ID:      req.WidgetId,
 		Type:    "createTextGrid",

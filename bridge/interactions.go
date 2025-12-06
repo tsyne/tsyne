@@ -92,6 +92,13 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			ID:      msg.ID,
 			Success: true,
 		}
+	} else if desktopIcon, ok := obj.(*TsyneDraggableIcon); ok {
+		// Handle TsyneDraggableIcon clicks (desktop icons)
+		desktopIcon.Tapped(&fyne.PointEvent{})
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
 	} else if wrapper, ok := obj.(*TappableWrapper); ok {
 		// Handle TappableWrapper - click through to its content (may be nested wrappers)
 		return b.clickThroughContent(msg, wrapper.content)

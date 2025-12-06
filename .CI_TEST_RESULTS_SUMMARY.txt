@@ -4,31 +4,33 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Root Tsyne                          383      383        0        0  24|24|0
-Designer: Unit                       88       87        1        0    8|7|1
+Root Tsyne                          484      484        0        0  29|29|0
+Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      21       21        0        0    1|1|0
-Examples: GUI                       332      311        0       21  67|60|1
+Examples: GUI                       333      312        0       21  67|61|0
 Ported: chess                        60       57        0        3    3|3|0
-Ported: fyles                        57       57        0        0    5|2|3
+Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: pixeledit                    86       86        0        0    6|6|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                    94       94        0        0    7|7|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              1209     1180        1       28      129
+TOTAL                              1343     1312        0       31      134
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 28 tests are currently skipped
+⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 18450ms (18.45s)
-Total ctx.wait() calls: 230
+Total wait time: 19450ms (19.45s)
+Total ctx.wait() calls: 236
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
+  Live Clock Example should display current time and update
+    └─ 600ms (1 calls)
   TodoMVC Tests should handle multiple completed todos
     └─ 550ms (7 calls)
   TodoMVC Tests should show all todos when filter is all
@@ -47,9 +49,7 @@ Top 10 tests by wait time:
     └─ 300ms (3 calls)
   Custom Dialog should open custom confirm dialog and show content
     └─ 300ms (1 calls)
-  Custom Dialog should open custom dialog and show content
-    └─ 300ms (1 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 1 tests failed
+✅ SUCCESS: All 1312 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

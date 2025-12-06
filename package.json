@@ -127,5 +127,8 @@
     "mespeak": "^2.0.2",
     "speaker": "^0.5.5",
     "toml": "^3.0.0"
+  },
+  "optionalDependencies": {
+    "isolated-vm": "^5.0.1"
   }
 }

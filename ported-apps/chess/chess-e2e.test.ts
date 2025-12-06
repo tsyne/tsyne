@@ -8,6 +8,7 @@
 
 import { TsyneTest, TestContext } from '../../src/index-test';
 import { createChessApp } from './chess';
+import type { IResourceManager } from '../../src/resources';
 import * as path from 'path';
 
 describe('Chess E2E Tests (Critical Paths)', () => {
@@ -21,7 +22,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     tsyneTest = new TsyneTest({ headed });
 
     const testApp = await tsyneTest.createApp(async (app) => {
-      chessUI = await createChessApp(app, 10); // 10ms AI delay for fast tests
+      // Pass app.resources for test isolation (IoC pattern)
+      chessUI = await createChessApp(app, app.resources, 10); // 10ms AI delay for fast tests
     });
 
     ctx = tsyneTest.getContext();

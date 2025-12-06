@@ -255,11 +255,10 @@ class FylesPanel {
 
       // Toggle hidden files button
       this.app.button(
-        this.store.isShowingHidden() ? '👁️' : '👁️‍🗨️',
-        async () => {
-          await this.store.toggleShowHidden();
-        }
-      ).withId(`panel-${this.panelIndex}-hidden`);
+        this.store.isShowingHidden() ? '👁️' : '👁️‍🗨️'
+      ).onClick(async () => {
+        await this.store.toggleShowHidden();
+      }).withId(`panel-${this.panelIndex}-hidden`);
 
       // Split panel button (add new panel)
       this.app.button('⊞').onClick(() => {

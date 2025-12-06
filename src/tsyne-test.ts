@@ -71,7 +71,7 @@ export class TsyneTest {
    * Builder receives the app instance (proper IoC/DI)
    * Returns a promise that resolves when the bridge is ready
    */
-  async createApp(appBuilder: (app: App) => void): Promise<App> {
+  async createApp(appBuilder: (app: App) => void | Promise<void>): Promise<App> {
     // Clean up any existing app before creating a new one
     // This prevents process leaks when tests call createApp multiple times
     if (this.app) {
@@ -91,7 +91,8 @@ export class TsyneTest {
     this.testContext = new TestContext(this.app.getBridge(), this.app);
 
     // Build the app - inject app instance for scoped declarative API
-    appBuilder(this.app);
+    // Await in case the builder is async (e.g., buildDesktop)
+    await appBuilder(this.app);
 
     return this.app;
   }

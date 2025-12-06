@@ -13,11 +13,13 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a2 2 0 012 2c0 .7-.4 1.4-1 1.7V9h2v3h-6V9h2V6.7A2 2 0 0112 3z"/><path d="M5 21h14l-2-8H7l-2 8z"/><path d="M12 16v5"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createChessApp
+// @tsyne-app:args app,resources
 // @tsyne-app:count many
 
 import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
+import type { IResourceManager } from '../../src/resources';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Resvg } from '@resvg/resvg-js';
@@ -140,8 +142,10 @@ class ChessUI {
   private readonly aiDelayMs: number;
 
   private resourcesRegistered: boolean = false;
+  private resources: IResourceManager;
 
-  constructor(private a: App, aiDelayMs: number = 500) {
+  constructor(private a: App, resources: IResourceManager, aiDelayMs: number = 500) {
+    this.resources = resources;
     this.aiDelayMs = aiDelayMs;
     this.game = new Chess();
 
@@ -159,7 +163,7 @@ class ChessUI {
   }
 
   /**
-   * Register all chess resources (squares and pieces) with the app
+   * Register all chess resources (squares and pieces) with the injected resource manager
    * This should be called once before building the UI
    */
   private async registerChessResources(): Promise<void> {
@@ -171,8 +175,8 @@ class ChessUI {
     const lightSquare = this.createSquareImage(this.LIGHT_SQUARE_COLOR);
     const darkSquare = this.createSquareImage(this.DARK_SQUARE_COLOR);
 
-    await this.a.resources.registerResource('chess-square-light', lightSquare);
-    await this.a.resources.registerResource('chess-square-dark', darkSquare);
+    await this.resources.registerResource('chess-square-light', lightSquare);
+    await this.resources.registerResource('chess-square-dark', darkSquare);
 
     // Register all 12 piece types (white and black)
     const pieceTypes: Array<{ color: Color; type: PieceSymbol }> = [
@@ -185,7 +189,7 @@ class ChessUI {
     for (const { color, type } of pieceTypes) {
       const pieceImage = this.getPieceImage(color, type);
       const resourceName = `chess-piece-${color}-${type}`;
-      await this.a.resources.registerResource(resourceName, pieceImage);
+      await this.resources.registerResource(resourceName, pieceImage);
     }
 
     this.resourcesRegistered = true;
@@ -816,9 +820,12 @@ class ChessUI {
 
 /**
  * Create the chess app
+ * @param a - The App instance
+ * @param resources - Resource manager for registering chess piece images (IoC)
+ * @param aiDelayMs - AI response delay in ms (default 500, use lower for tests)
  */
-export async function createChessApp(a: App, aiDelayMs?: number): Promise<ChessUI> {
-  const ui = new ChessUI(a, aiDelayMs);
+export async function createChessApp(a: App, resources: IResourceManager, aiDelayMs?: number): Promise<ChessUI> {
+  const ui = new ChessUI(a, resources, aiDelayMs);
 
   // Register chess resources before building UI
   await ui['registerChessResources']();
@@ -834,10 +841,12 @@ export async function createChessApp(a: App, aiDelayMs?: number): Promise<ChessU
 }
 
 /**
- * Main application entry point
+ * Main application entry point - standalone execution
  */
 if (require.main === module) {
   app({ title: 'Chess' }, async (a: App) => {
-    await createChessApp(a);
+    // Standalone: create a dedicated resource manager (IoC - don't use a.resources)
+    const resources = a.createResourceManager();
+    await createChessApp(a, resources);
   });
 }

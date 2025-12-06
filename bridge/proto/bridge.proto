@@ -973,6 +973,10 @@ message CreateTextGridRequest {
   string text = 2;
   bool show_line_numbers = 3;
   bool show_whitespace = 4;
+  string on_key_down_callback_id = 5;
+  string on_key_up_callback_id = 6;
+  string on_typed_callback_id = 7;
+  string on_focus_callback_id = 8;
 }
 
 // ============================================================================
@@ -995,6 +999,7 @@ message CreateDesktopIconRequest {
   string on_dbl_click_callback_id = 8;
   string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (test convention)
   string drag_end_callback_id = 10;
+  string resource_name = 11;  // Fyne theme resource name for icon (Go: "resource")
 }
 
 message MoveDesktopIconRequest {

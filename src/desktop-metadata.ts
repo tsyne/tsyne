@@ -10,6 +10,7 @@
  *   // @tsyne-app:icon calculate
  *   // @tsyne-app:category utilities
  *   // @tsyne-app:builder buildCalculator
+ *   // @tsyne-app:args app,resources
  *
  * The icon can be:
  *   - An inline SVG (for custom icons)
@@ -18,6 +19,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { executeInSandbox, SandboxRuntimeType } from './sandbox-runtime';
 
 export interface AppMetadata {
   /** File path to the app source */
@@ -36,6 +38,8 @@ export interface AppMetadata {
   contentBuilder?: string;
   /** Instance count: 'one' (default) or 'many' for multi-instance apps */
   count: 'one' | 'many';
+  /** Builder function arguments in order (e.g., ['app', 'resources']) - poor man's reflection */
+  args: string[];
 }
 
 /**
@@ -61,6 +65,7 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
     let builder: string | null = null;
     let contentBuilder: string | undefined;
     let count: 'one' | 'many' = 'one';
+    let args: string[] = ['app'];  // Default: just app
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -116,6 +121,13 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
         }
         continue;
       }
+
+      // Parse @tsyne-app:args (comma-separated list of argument names)
+      const argsMatch = trimmed.match(/^\/\/\s*@tsyne-app:args\s+(.+)$/);
+      if (argsMatch) {
+        args = argsMatch[1].split(',').map(a => a.trim());
+        continue;
+      }
     }
 
     // If no name specified, not a desktop app
@@ -123,15 +135,9 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       return null;
     }
 
-    // Try to infer builder from exports if not specified
+    // Require explicit @tsyne-app:builder - no inference
     if (!builder) {
-      const buildMatch = content.match(/export\s+function\s+(build\w+)\s*\(/);
-      if (buildMatch) {
-        builder = buildMatch[1];
-      } else {
-        // Default to expecting a 'buildApp' function
-        builder = 'buildApp';
-      }
+      return null;
     }
 
     // Try to infer contentBuilder if not specified
@@ -162,7 +168,8 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       category,
       builder,
       contentBuilder,
-      count
+      count,
+      args
     };
   } catch (error) {
     console.error(`Error parsing metadata from ${filePath}:`, error);
@@ -239,8 +246,10 @@ export function scanPortedApps(portedAppsDir: string): AppMetadata[] {
 
 /**
  * Load and execute an app's builder function
+ * The builder function signature depends on @tsyne-app:args metadata.
+ * Desktop will build the argument array based on args declaration.
  */
-export async function loadAppBuilder(metadata: AppMetadata): Promise<((a: any) => void) | null> {
+export async function loadAppBuilder(metadata: AppMetadata): Promise<((...args: any[]) => void | Promise<void>) | null> {
   try {
     // Use require to load the module
     const modulePath = metadata.filePath;
@@ -263,7 +272,7 @@ export async function loadAppBuilder(metadata: AppMetadata): Promise<((a: any) =
  * Load an app's content builder function (for desktop inner windows)
  * Falls back to regular builder if no content builder is specified
  */
-export async function loadContentBuilder(metadata: AppMetadata): Promise<((a: any) => void) | null> {
+export async function loadContentBuilder(metadata: AppMetadata): Promise<((...args: any[]) => void | Promise<void>) | null> {
   try {
     const modulePath = metadata.filePath;
     const module = require(modulePath);
@@ -288,5 +297,101 @@ export async function loadContentBuilder(metadata: AppMetadata): Promise<((a: an
   } catch (error) {
     console.error(`Error loading content builder from ${metadata.filePath}:`, error);
     return null;
+  }
+}
+
+/**
+ * Configuration for sandbox mode
+ */
+export interface SandboxConfig {
+  /** Whether to enable sandbox transformation (default: false for development) */
+  enabled: boolean;
+  /** Which sandbox runtime to use: 'vm' (fast) or 'isolated-vm' (secure) */
+  runtime?: SandboxRuntimeType;
+  /** Memory limit in MB (isolated-vm only) */
+  memoryLimitMB?: number;
+  /** Execution timeout in milliseconds */
+  timeoutMs?: number;
+  /** List of npm modules the app is allowed to require */
+  allowedModules?: string[];
+}
+
+/** Global sandbox configuration */
+let sandboxConfig: SandboxConfig = { enabled: false, runtime: 'vm' };
+
+/**
+ * Set sandbox configuration for app loading
+ * Call this before loading apps to enable/disable transformation
+ *
+ * Examples:
+ *   // Development mode (default) - no sandboxing
+ *   setSandboxConfig({ enabled: false });
+ *
+ *   // Fast sandbox with AST transform + vm
+ *   setSandboxConfig({ enabled: true, runtime: 'vm' });
+ *
+ *   // Secure sandbox with AST transform + isolated-vm
+ *   setSandboxConfig({ enabled: true, runtime: 'isolated-vm', memoryLimitMB: 64 });
+ */
+export function setSandboxConfig(config: SandboxConfig): void {
+  sandboxConfig = { runtime: 'vm', ...config };
+}
+
+/**
+ * Get current sandbox configuration
+ */
+export function getSandboxConfig(): SandboxConfig {
+  return sandboxConfig;
+}
+
+/**
+ * Load an app's builder function with optional sandbox transformation.
+ *
+ * When sandbox is disabled (development mode):
+ *   - Uses normal require() for fast loading
+ *   - Apps have full Node.js access
+ *   - Best for development and debugging
+ *
+ * When sandbox is enabled (production/untrusted mode):
+ *   - Reads source file and transforms with TypeScript AST
+ *   - Dangerous identifiers rewritten with unguessable tokens
+ *   - Apps cannot access real require, eval, process, etc.
+ *   - Each app gets its own unique token - can't call each other's functions
+ *   - Choice of 'vm' (fast) or 'isolated-vm' (secure) runtime
+ */
+export async function loadAppBuilderSandboxed(
+  metadata: AppMetadata,
+  _tsyneExports: any  // The tsyne module exports to inject (for future use)
+): Promise<{ builder: ((...args: any[]) => void | Promise<void>) | null; token: string | null }> {
+  if (!sandboxConfig.enabled) {
+    // Development mode: use normal require
+    const builder = await loadAppBuilder(metadata);
+    return { builder, token: null };
+  }
+
+  try {
+    // Read source file
+    const source = fs.readFileSync(metadata.filePath, 'utf-8');
+
+    // Execute in sandbox using pluggable runtime
+    const result = await executeInSandbox(source, metadata.name, {
+      runtime: sandboxConfig.runtime || 'vm',
+      memoryLimitMB: sandboxConfig.memoryLimitMB,
+      timeoutMs: sandboxConfig.timeoutMs || 5000,
+      allowedModules: sandboxConfig.allowedModules || [],
+    });
+
+    // Extract the builder function
+    const builder = result.exports[metadata.builder];
+
+    if (typeof builder !== 'function') {
+      console.error(`Builder function '${metadata.builder}' not found in sandboxed module ${metadata.filePath}`);
+      return { builder: null, token: result.token };
+    }
+
+    return { builder, token: result.token };
+  } catch (error) {
+    console.error(`Error loading sandboxed app from ${metadata.filePath}:`, error);
+    return { builder: null, token: null };
   }
 }

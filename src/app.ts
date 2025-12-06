@@ -227,6 +227,14 @@ export class App {
   }
 
   /**
+   * Create a new ResourceManager instance backed by this app's bridge.
+   * Use this for IoC when you need to pass resources explicitly rather than using a.resources.
+   */
+  createResourceManager(): ResourceManager {
+    return new ResourceManager(this.bridge);
+  }
+
+  /**
    * Get the ID of the first created window
    * Used by test harness to query dialogs
    */

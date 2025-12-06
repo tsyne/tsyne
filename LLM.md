@@ -733,6 +733,118 @@ Fyne uses OpenGL for rendering, which requires GPU hardware acceleration. Xvfb p
 
 See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 
+## Desktop Mode & App Sandboxing
+
+Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from `ported-apps/` and `examples/` directories.
+
+**Desktop Architecture:**
+```
+Desktop Environment
+├── App Icons (TsyneDraggableIcon on desktop canvas)
+├── Launch Bar (Show Desktop, All Apps, Running Apps)
+└── Inner Windows (one per running app)
+    └── Sandboxed App Instance
+        ├── ScopedContext (isolated widget IDs)
+        └── ScopedResourceManager (isolated resources)
+```
+
+### App Metadata Format
+
+Apps declare their metadata and dependencies using JSDoc-style comments:
+
+```typescript
+/**
+ * Calculator App
+ *
+ * @tsyne-app:name Calculator
+ * @tsyne-app:icon calculatorIcon
+ * @tsyne-app:category Utilities
+ * @tsyne-app:args (a: App) => void  // Dependency injection signature
+ */
+export function buildCalculatorApp(a: App): void {
+  // App implementation using injected App instance
+}
+```
+
+**Metadata Tags:**
+- `@tsyne-app:name` - Display name for the app
+- `@tsyne-app:icon` - Icon resource name (Fyne theme icon)
+- `@tsyne-app:category` - Category for grouping (Games, Utilities, etc.)
+- `@tsyne-app:args` - Builder function signature for dependency injection
+
+### Dependency Injection Pattern
+
+Apps receive their dependencies through the builder function signature:
+
+```typescript
+// Pattern 1: App instance only (most common)
+// @tsyne-app:args (a: App) => void
+export function buildMyApp(a: App): void { }
+
+// Pattern 2: App + Window (for dialog access)
+// @tsyne-app:args (a: App, win: Window) => void
+export function buildMyApp(a: App, win: Window): void { }
+
+// Pattern 3: App + Context (for advanced scenarios)
+// @tsyne-app:args (a: App, ctx: Context) => void
+export function buildMyApp(a: App, ctx: Context): void { }
+```
+
+The desktop injects these dependencies when launching the app in its sandboxed environment.
+
+### Sandboxing Architecture
+
+When apps run in desktop mode, they're isolated through:
+
+1. **ScopedContext** - Widget IDs are prefixed with app instance scope
+   - Prevents cross-app widget access
+   - Format: `${appInstanceId}:${widgetId}`
+   - Container stack operations delegate to parent (InnerWindow integration)
+
+2. **ScopedResourceManager** - Resources are namespaced per app
+   - Apps can't access other apps' registered resources
+   - Format: `${appInstanceId}:${resourceName}`
+
+3. **IApp Interface** - Apps use a restricted API surface
+   - `vbox()`, `hbox()`, `label()`, etc. - widget creation
+   - No direct access to system APIs without explicit grants
+
+**Key Files:**
+- `src/desktop.ts` - Desktop environment, app discovery, launching
+- `src/context.ts` - Context and ScopedContext classes
+- `src/app-transformer.ts` - AST transformer for sandbox preparation (if using VM isolation)
+- `src/sandbox-runtime.ts` - Pluggable sandbox runtime (Node VM, isolated-vm)
+
+### Running the Desktop
+
+```bash
+# Run desktop environment
+npx ts-node examples/desktop-demo.ts
+
+# Or via the buildDesktop function
+import { buildDesktop } from './src/desktop';
+app({ title: 'Tsyne Desktop' }, async (a) => {
+  await buildDesktop(a);
+});
+```
+
+### Testing Desktop Apps
+
+Desktop tests use async builders since `buildDesktop` is async:
+
+```typescript
+const testApp = await tsyneTest.createApp(async (app) => {
+  await buildDesktop(app);
+});
+
+// Interact with desktop icons
+await ctx.getByID('icon-calculator').click();
+await ctx.getByID('icon-calculator').click(); // Double-click to launch
+
+// Interact with launched app
+await ctx.getByID('calc-display').shouldBe('0');
+```
+
 ## References
 
 ### Documentation

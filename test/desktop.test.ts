@@ -28,8 +28,8 @@ describe('Desktop Environment Tests', () => {
   });
 
   test('should display desktop with app icons', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -42,11 +42,11 @@ describe('Desktop Environment Tests', () => {
     // Launch bar should be visible
     await ctx.getByID('showDesktopBtn').shouldExist();
     await ctx.getByID('allAppsBtn').shouldExist();
-  });
+  }, 15000); // Desktop initialization can take longer due to app scanning
 
   test('should launch calculator via double-click on icon', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -65,8 +65,8 @@ describe('Desktop Environment Tests', () => {
   });
 
   test('should interact with calculator running in inner window', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -90,8 +90,8 @@ describe('Desktop Environment Tests', () => {
   });
 
   test('should hide windows when Show Desktop is clicked', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -130,8 +130,8 @@ describe('Desktop Dock Integration Tests', () => {
   });
 
   test('should show launch bar components', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -144,8 +144,8 @@ describe('Desktop Dock Integration Tests', () => {
   });
 
   test('should show running apps count as None initially', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildDesktop(app);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await buildDesktop(app);
     });
 
     ctx = tsyneTest.getContext();

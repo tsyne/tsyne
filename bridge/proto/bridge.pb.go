@@ -6144,13 +6144,17 @@ func (x *CreateToolbarRequest) GetItems() []*ToolbarItem {
 }
 
 type CreateTextGridRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId        string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Text            string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	ShowLineNumbers bool                   `protobuf:"varint,3,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
-	ShowWhitespace  bool                   `protobuf:"varint,4,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId            string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Text                string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	ShowLineNumbers     bool                   `protobuf:"varint,3,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
+	ShowWhitespace      bool                   `protobuf:"varint,4,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
+	OnKeyDownCallbackId string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
+	OnKeyUpCallbackId   string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
+	OnTypedCallbackId   string                 `protobuf:"bytes,7,opt,name=on_typed_callback_id,json=onTypedCallbackId,proto3" json:"on_typed_callback_id,omitempty"`
+	OnFocusCallbackId   string                 `protobuf:"bytes,8,opt,name=on_focus_callback_id,json=onFocusCallbackId,proto3" json:"on_focus_callback_id,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CreateTextGridRequest) Reset() {
@@ -6209,6 +6213,34 @@ func (x *CreateTextGridRequest) GetShowWhitespace() bool {
 		return x.ShowWhitespace
 	}
 	return false
+}
+
+func (x *CreateTextGridRequest) GetOnKeyDownCallbackId() string {
+	if x != nil {
+		return x.OnKeyDownCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTextGridRequest) GetOnKeyUpCallbackId() string {
+	if x != nil {
+		return x.OnKeyUpCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTextGridRequest) GetOnTypedCallbackId() string {
+	if x != nil {
+		return x.OnTypedCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTextGridRequest) GetOnFocusCallbackId() string {
+	if x != nil {
+		return x.OnFocusCallbackId
+	}
+	return ""
 }
 
 type CreateDesktopCanvasRequest struct {
@@ -6275,6 +6307,7 @@ type CreateDesktopIconRequest struct {
 	OnDblClickCallbackId string                 `protobuf:"bytes,8,opt,name=on_dbl_click_callback_id,json=onDblClickCallbackId,proto3" json:"on_dbl_click_callback_id,omitempty"`
 	DragCallbackId       string                 `protobuf:"bytes,9,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"` // no "on_" prefix for drag callbacks (test convention)
 	DragEndCallbackId    string                 `protobuf:"bytes,10,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"`
+	ResourceName         string                 `protobuf:"bytes,11,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"` // Fyne theme resource name for icon (Go: "resource")
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -6375,6 +6408,13 @@ func (x *CreateDesktopIconRequest) GetDragCallbackId() string {
 func (x *CreateDesktopIconRequest) GetDragEndCallbackId() string {
 	if x != nil {
 		return x.DragEndCallbackId
+	}
+	return ""
+}
+
+func (x *CreateDesktopIconRequest) GetResourceName() string {
+	if x != nil {
+		return x.ResourceName
 	}
 	return ""
 }
@@ -15746,15 +15786,19 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\tis_spacer\x18\x05 \x01(\bR\bisSpacer\"^\n" +
 	"\x14CreateToolbarRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12)\n" +
-	"\x05items\x18\x02 \x03(\v2\x13.bridge.ToolbarItemR\x05items\"\x9d\x01\n" +
+	"\x05items\x18\x02 \x03(\v2\x13.bridge.ToolbarItemR\x05items\"\xe7\x02\n" +
 	"\x15CreateTextGridRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12*\n" +
 	"\x11show_line_numbers\x18\x03 \x01(\bR\x0fshowLineNumbers\x12'\n" +
-	"\x0fshow_whitespace\x18\x04 \x01(\bR\x0eshowWhitespace\"T\n" +
+	"\x0fshow_whitespace\x18\x04 \x01(\bR\x0eshowWhitespace\x124\n" +
+	"\x17on_key_down_callback_id\x18\x05 \x01(\tR\x13onKeyDownCallbackId\x120\n" +
+	"\x15on_key_up_callback_id\x18\x06 \x01(\tR\x11onKeyUpCallbackId\x12/\n" +
+	"\x14on_typed_callback_id\x18\a \x01(\tR\x11onTypedCallbackId\x12/\n" +
+	"\x14on_focus_callback_id\x18\b \x01(\tR\x11onFocusCallbackId\"T\n" +
 	"\x1aCreateDesktopCanvasRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x19\n" +
-	"\bbg_color\x18\x02 \x01(\tR\abgColor\"\xe2\x02\n" +
+	"\bbg_color\x18\x02 \x01(\tR\abgColor\"\x87\x03\n" +
 	"\x18CreateDesktopIconRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x1d\n" +
 	"\n" +
@@ -15767,7 +15811,8 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x18on_dbl_click_callback_id\x18\b \x01(\tR\x14onDblClickCallbackId\x12(\n" +
 	"\x10drag_callback_id\x18\t \x01(\tR\x0edragCallbackId\x12/\n" +
 	"\x14drag_end_callback_id\x18\n" +
-	" \x01(\tR\x11dragEndCallbackId\"M\n" +
+	" \x01(\tR\x11dragEndCallbackId\x12#\n" +
+	"\rresource_name\x18\v \x01(\tR\fresourceName\"M\n" +
 	"\x16MoveDesktopIconRequest\x12\x17\n" +
 	"\aicon_id\x18\x01 \x01(\tR\x06iconId\x12\f\n" +
 	"\x01x\x18\x02 \x01(\x02R\x01x\x12\f\n" +

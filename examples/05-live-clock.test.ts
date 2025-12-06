@@ -46,8 +46,8 @@ describe('Live Clock Example', () => {
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, 'screenshots', '05-live-clock.png');
-      // Wait for clock to be visible with a valid year
-      await ctx.getByText(/\d{4}/).within(500).shouldExist();
+      // Clock is already visible (verified by initialText check above)
+      await ctx.wait(100);
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }

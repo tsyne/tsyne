@@ -771,6 +771,9 @@ export class Terminal {
   private cellWidth: number = 8;   // Default cell width in pixels
   private cellHeight: number = 16; // Default cell height in pixels
 
+  // Debug mode - set to true to enable logging
+  private debug: boolean = false;
+
   // Callbacks
   onUpdate: () => void = () => {};
   onTitleChange: (title: string) => void = () => {};
@@ -791,6 +794,38 @@ export class Terminal {
 
     // Detect platform for keyboard shortcuts
     this.detectPlatform();
+
+    // Check for debug environment variable
+    this.debug = process.env.TSYNE_TERMINAL_DEBUG === '1';
+  }
+
+  /**
+   * Enable or disable debug logging
+   */
+  setDebug(enabled: boolean): void {
+    this.debug = enabled;
+  }
+
+  /**
+   * Check if debug mode is enabled
+   */
+  isDebugEnabled(): boolean {
+    return this.debug;
+  }
+
+  /**
+   * Log debug message with hex dump of data
+   */
+  private debugLog(context: string, data: string): void {
+    if (!this.debug) return;
+    const hex = data.split('').map(c => {
+      const code = c.charCodeAt(0);
+      if (code < 32 || code > 126) {
+        return `\\x${code.toString(16).padStart(2, '0')}`;
+      }
+      return c;
+    }).join('');
+    console.log(`[Terminal:${context}] "${hex}"`);
   }
 
   /**
@@ -870,6 +905,11 @@ export class Terminal {
   runLocalShell(): void {
     const shell = process.env.SHELL || (os.platform() === 'win32' ? 'powershell.exe' : '/bin/sh');
 
+    if (this.debug) {
+      console.log(`[Terminal:runLocalShell] Starting shell: ${shell}`);
+      console.log(`[Terminal:runLocalShell] TERM=xterm-256color, cols=${this.buffer.getCols()}, rows=${this.buffer.getRows()}`);
+    }
+
     this.ptyProcess = pty.spawn(shell, [], {
       name: 'xterm-256color',
       cols: this.buffer.getCols(),
@@ -882,11 +922,18 @@ export class Terminal {
       } as { [key: string]: string },
     });
 
+    if (this.debug) {
+      console.log(`[Terminal:runLocalShell] PTY spawned, pid=${this.ptyProcess.pid}`);
+    }
+
     this.ptyProcess.onData((data: string) => {
       this.write(data);
     });
 
     this.ptyProcess.onExit(({ exitCode }) => {
+      if (this.debug) {
+        console.log(`[Terminal:runLocalShell] PTY exited with code ${exitCode}`);
+      }
       this.ptyProcess = null;
       this.onExit(exitCode);
     });
@@ -910,6 +957,7 @@ export class Terminal {
    * Based on: output.go Write
    */
   write(data: string): void {
+    this.debugLog('write (from shell)', data);
     this.parser.parse(data);
     this.onUpdate();
   }
@@ -919,10 +967,15 @@ export class Terminal {
    * Based on: input.go TypedRune, TypedKey
    */
   sendInput(data: string): void {
+    this.debugLog('sendInput', data);
     if (this.ptyProcess) {
       this.ptyProcess.write(data);
     } else if ((this as any)._writer) {
       (this as any)._writer.write(data);
+    } else {
+      if (this.debug) {
+        console.log('[Terminal:sendInput] WARNING: No PTY or writer available!');
+      }
     }
   }
 
@@ -942,6 +995,10 @@ export class Terminal {
    *   5 = Ctrl, 6 = Shift+Ctrl, 7 = Alt+Ctrl, 8 = Shift+Alt+Ctrl
    */
   typeKey(key: string, modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}): void {
+    if (this.debug) {
+      console.log(`[Terminal:typeKey] key="${key}" modifiers=${JSON.stringify(modifiers)}`);
+    }
+
     // Track key state
     this.pressedKeys.add(key);
 
@@ -956,6 +1013,9 @@ export class Terminal {
         break;
       case 'Backspace':
         sequence = modifiers.ctrl ? '\x08' : '\x7f';
+        if (this.debug) {
+          console.log(`[Terminal:typeKey] Backspace -> sending ${modifiers.ctrl ? '0x08 (BS)' : '0x7f (DEL)'}`);
+        }
         break;
       case 'Tab':
         sequence = modifiers.shift ? '\x1b[Z' : '\t'; // Shift+Tab = backtab
@@ -1281,11 +1341,17 @@ export class Terminal {
   }
 
   private handleExecute(code: number): void {
+    if (this.debug) {
+      console.log(`[Terminal:handleExecute] code=0x${code.toString(16)} (${code})`);
+    }
     switch (code) {
       case 0x07: // BEL
         this.onBell();
         break;
       case 0x08: // BS (Backspace)
+        if (this.debug) {
+          console.log(`[Terminal:handleExecute] BS received, cursorCol=${this.cursorCol} -> ${Math.max(0, this.cursorCol - 1)}`);
+        }
         if (this.cursorCol > 0) {
           this.cursorCol--;
         }
