@@ -24,6 +24,19 @@ import { SandboxedApp, IApp } from './sandboxed-app';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
 
+// Phone-apps services (lazy-loaded to avoid circular dependencies)
+let phoneServices: any = null;
+function getPhoneServices() {
+  if (!phoneServices) {
+    try {
+      phoneServices = require('../phone-apps/services');
+    } catch {
+      phoneServices = {};
+    }
+  }
+  return phoneServices;
+}
+
 // Desktop configuration
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
@@ -286,11 +299,13 @@ class Desktop {
   async init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
     const portedAppsDir = path.join(process.cwd(), 'ported-apps');
+    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
 
-    // Scan both examples and ported-apps directories
+    // Scan examples, ported-apps, and phone-apps directories
     const exampleApps = scanForApps(appDir);
     const portedApps = scanPortedApps(portedAppsDir);
-    const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
+    const phoneApps = scanForApps(phoneAppsDir);
+    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Position icons in a grid (8 columns), but use saved positions if available
     const GRID_COLS = 8;
@@ -702,9 +717,18 @@ class Desktop {
 
       // Build argument array based on @tsyne-app:args metadata (poor man's reflection)
       // 'app' now maps to sandboxedApp, not this.a
+      const services = getPhoneServices();
       const argMap: Record<string, any> = {
         'app': sandboxedApp,
         'resources': scopedResources,
+        // Phone-apps services (instantiated per app launch)
+        'telephony': services.MockTelephonyService ? new services.MockTelephonyService() : null,
+        'contacts': services.MockContactsService ? new services.MockContactsService() : null,
+        'clock': services.MockClockService ? new services.MockClockService() : null,
+        'notifications': services.MockNotificationService ? new services.MockNotificationService() : null,
+        'storage': services.MockStorageService ? new services.MockStorageService() : null,
+        'settings': services.MockSettingsService ? new services.MockSettingsService() : null,
+        'sms': services.MockSMSService ? new services.MockSMSService() : null,
       };
       const args = metadata.args.map(name => argMap[name]);
 
