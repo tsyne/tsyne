@@ -74,8 +74,8 @@ class Desktop {
   /**
    * Load docked apps from preferences
    */
-  private loadDockedApps() {
-    const saved = this.a.getPreference(DOCK_APPS_KEY, '');
+  private async loadDockedApps() {
+    const saved = await this.a.getPreference(DOCK_APPS_KEY, '');
     if (saved) {
       try {
         this.dockedApps = JSON.parse(saved);
@@ -129,14 +129,14 @@ class Desktop {
     // For now, rebuild the whole content - could be optimized later
     if (this.win) {
       this.win.setContent(() => {
-        this.a.border(() => {
-          this.a.borderCenter(() => {
+        this.a.border({
+          center: () => {
             this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
             this.createDesktopIcons();
-          });
-          this.a.borderBottom(() => {
+          },
+          bottom: () => {
             this.createLaunchBar();
-          });
+          }
         });
       });
     }
@@ -162,10 +162,10 @@ class Desktop {
    * Load icon position from preferences
    * Returns null if no saved position exists
    */
-  private loadIconPosition(appName: string): { x: number; y: number } | null {
+  private async loadIconPosition(appName: string): Promise<{ x: number; y: number } | null> {
     const key = this.getIconKey(appName);
-    const xStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.x`, '');
-    const yStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.y`, '');
+    const xStr = await this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.x`, '');
+    const yStr = await this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.y`, '');
 
     if (xStr && yStr) {
       const x = parseInt(xStr, 10);
@@ -201,7 +201,7 @@ class Desktop {
   /**
    * Initialize the desktop by scanning for apps
    */
-  init() {
+  async init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
     const portedAppsDir = path.join(process.cwd(), 'ported-apps');
 
@@ -217,7 +217,7 @@ class Desktop {
 
     for (const metadata of apps) {
       // Try to load saved position, otherwise use default grid position
-      const savedPos = this.loadIconPosition(metadata.name);
+      const savedPos = await this.loadIconPosition(metadata.name);
       const defaultX = col * ICON_SPACING + 20;
       const defaultY = row * ICON_SPACING + 20;
 
@@ -250,50 +250,49 @@ class Desktop {
         {
           label: 'Desktop',
           items: [
-            { label: 'Re-layout Icons', onClick: () => this.relayoutAndRefresh() },
-            { isSeparator: true },
-            { label: 'Light Theme', onClick: () => this.setTheme('light') },
-            { label: 'Dark Theme', onClick: () => this.setTheme('dark') },
-            { isSeparator: true },
-            { label: 'About', onClick: () => this.showAbout() }
+            { label: 'Re-layout Icons', onSelected: () => this.relayoutAndRefresh() },
+            { label: '', isSeparator: true },
+            { label: 'Light Theme', onSelected: () => this.setTheme('light') },
+            { label: 'Dark Theme', onSelected: () => this.setTheme('dark') },
+            { label: '', isSeparator: true },
+            { label: 'About', onSelected: () => this.showAbout() }
           ]
         },
         {
           label: 'Dock',
           items: [
-            { label: 'Add Selected to Dock', onClick: () => this.addSelectedToDock() },
-            { label: 'Remove Selected from Dock', onClick: () => this.removeSelectedFromDock() },
-            { isSeparator: true },
-            { label: 'Move Selected Left in Dock', onClick: () => this.moveDockItemLeft() },
-            { label: 'Move Selected Right in Dock', onClick: () => this.moveDockItemRight() },
-            { isSeparator: true },
-            { label: 'Clear Dock', onClick: () => this.clearDock() }
+            { label: 'Add Selected to Dock', onSelected: () => this.addSelectedToDock() },
+            { label: 'Remove Selected from Dock', onSelected: () => this.removeSelectedFromDock() },
+            { label: '', isSeparator: true },
+            { label: 'Move Selected Left in Dock', onSelected: () => this.moveDockItemLeft() },
+            { label: 'Move Selected Right in Dock', onSelected: () => this.moveDockItemRight() },
+            { label: '', isSeparator: true },
+            { label: 'Clear Dock', onSelected: () => this.clearDock() }
           ]
         },
         {
           label: 'View',
           items: [
-            { label: 'Show All Windows', onClick: () => this.showAllWindows() },
-            { label: 'Hide All Windows', onClick: () => this.hideAllWindows() },
-            { isSeparator: true },
-            { label: 'Fullscreen', onClick: () => win.setFullScreen(true) }
+            { label: 'Show All Windows', onSelected: () => this.showAllWindows() },
+            { label: 'Hide All Windows', onSelected: () => this.hideAllWindows() },
+            { label: '', isSeparator: true },
+            { label: 'Fullscreen', onSelected: () => win.setFullScreen(true) }
           ]
         }
       ]);
 
       win.setContent(() => {
         // Use border layout: desktop in center, launch bar at bottom
-        this.a.border(() => {
-          // Center: Desktop MDI with icons and windows
-          this.a.borderCenter(() => {
+        this.a.border({
+          center: () => {
+            // Center: Desktop MDI with icons and windows
             this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
             this.createDesktopIcons();
-          });
-
-          // Bottom: Launch bar
-          this.a.borderBottom(() => {
+          },
+          bottom: () => {
+            // Bottom: Launch bar
             this.createLaunchBar();
-          });
+          }
         });
       });
     });
@@ -581,7 +580,8 @@ class Desktop {
     enableDesktopMode({
       desktopMDI: this.desktopMDI,
       parentWindow: this.win,
-      desktopApp: this.a
+      desktopApp: this.a,
+      onWindowClosed: (closedWindow) => this.handleWindowClosed(closedWindow)
     });
 
     // Save original resources and create scoped version for this app instance
@@ -696,6 +696,19 @@ class Desktop {
       }
     }
   }
+
+  /**
+   * Handle an inner window closing so the desktop can update state.
+   */
+  private handleWindowClosed(closedWindow: ITsyneWindow) {
+    for (const [key, openApp] of this.openApps.entries()) {
+      if (openApp.tsyneWindow.id === closedWindow.id) {
+        this.openApps.delete(key);
+        this.updateRunningApps();
+        break;
+      }
+    }
+  }
 }
 
 /**
@@ -703,9 +716,9 @@ class Desktop {
  * @param a - The App instance
  * @param options - Optional desktop configuration
  */
-export function buildDesktop(a: App, options?: DesktopOptions) {
+export async function buildDesktop(a: App, options?: DesktopOptions) {
   const desktop = new Desktop(a, options);
-  desktop.init();
+  await desktop.init();
   desktop.build();
 }
 
@@ -717,7 +730,7 @@ if (require.main === module) {
   // Import the app function from index
   const { app } = require('./index');
 
-  app({ title: 'Tsyne Desktop' }, (a: App) => {
-    buildDesktop(a);
+  app({ title: 'Tsyne Desktop' }, async (a: App) => {
+    await buildDesktop(a);
   });
 }

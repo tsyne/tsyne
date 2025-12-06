@@ -123,8 +123,8 @@ class PhoneTop {
         {
           label: 'Settings',
           items: [
-            { label: 'Light Theme', onClick: () => this.a.setTheme('light') },
-            { label: 'Dark Theme', onClick: () => this.a.setTheme('dark') }
+            { label: 'Light Theme', onSelected: () => this.a.setTheme('light') },
+            { label: 'Dark Theme', onSelected: () => this.a.setTheme('dark') }
           ]
         }
       ]);

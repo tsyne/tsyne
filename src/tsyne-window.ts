@@ -66,6 +66,8 @@ export class InnerWindowAdapter implements ITsyneWindow {
   private _id: string;
   private _title: string;
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
+  private onWindowClosed?: (window: ITsyneWindow) => void;
+  private hasClosed = false;
   private menuDefinition?: Array<{
     label: string;
     items: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
@@ -76,7 +78,8 @@ export class InnerWindowAdapter implements ITsyneWindow {
     mdiContainerOrDesktopMDI: MultipleWindows | DesktopMDI,
     parentWindow: Window,
     options: WindowOptions,
-    builder?: (win: ITsyneWindow) => void
+    builder?: (win: ITsyneWindow) => void,
+    onWindowClosed?: (window: ITsyneWindow) => void
   ) {
     this.ctx = ctx;
     // Determine which container type we have
@@ -90,6 +93,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
     this.parentWindow = parentWindow;
     this._id = ctx.generateId('tsynewindow');
     this._title = options.title;
+    this.onWindowClosed = onWindowClosed;
 
     // If builder is provided, call it - it will typically call setContent()
     if (builder) {
@@ -114,10 +118,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
           return; // Don't close if callback returns false
         }
       }
-      // Actually close the window by sending innerWindowClose to Go
-      if (this.innerWindow) {
-        await this.innerWindow.close();
-      }
+      await this.closeInnerWindow();
     };
 
     // Create the InnerWindow now with the actual content
@@ -152,9 +153,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
   }
 
   async close(): Promise<void> {
-    if (this.innerWindow) {
-      await this.innerWindow.close();
-    }
+    await this.closeInnerWindow();
   }
 
   setTitle(title: string): void {
@@ -184,6 +183,19 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
     this.closeInterceptCallback = callback;
+  }
+
+  private async closeInnerWindow(): Promise<void> {
+    if (this.hasClosed) {
+      return;
+    }
+    this.hasClosed = true;
+    if (this.innerWindow) {
+      await this.innerWindow.close();
+    }
+    if (this.onWindowClosed) {
+      this.onWindowClosed(this);
+    }
   }
 
   async setMainMenu(menuDefinition: Array<{
@@ -237,6 +249,8 @@ export interface DesktopContext {
   parentWindow: Window;
   /** The desktop's App instance - sub-apps should use this instead of creating new ones */
   desktopApp: any;  // Use 'any' to avoid circular import with App
+  /** Notify desktop when an inner window closes */
+  onWindowClosed?: (window: ITsyneWindow) => void;
 }
 
 /**
@@ -293,7 +307,8 @@ export function createTsyneWindow(
       container,
       desktopContext.parentWindow,
       options,
-      builder
+      builder,
+      desktopContext.onWindowClosed
     );
   } else {
     // Standalone mode - create real Window

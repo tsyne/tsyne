@@ -39,41 +39,41 @@ type Event struct {
 
 // Bridge manages the Fyne app and communication
 type Bridge struct {
-	app            fyne.App
-	windows        map[string]fyne.Window
-	widgets        map[string]fyne.CanvasObject
-	callbacks      map[string]string              // widget ID -> callback ID
-	contextMenus   map[string]*fyne.Menu          // widget ID -> context menu
-	testMode       bool                           // true for headless testing
-	grpcMode       bool                           // true when running in gRPC mode (skip stdout writes)
-	grpcEventChan  chan Event                     // channel for gRPC event streaming
-	mu             sync.RWMutex
-	writer         *json.Encoder
-	widgetMeta     map[string]WidgetMetadata      // metadata for testing
-	tableData      map[string][][]string          // table ID -> data
-	listData       map[string][]string            // list ID -> data
-	toolbarItems   map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
-	toolbarActions map[string]*widget.ToolbarAction // custom ID -> toolbar action
-	windowContent  map[string]string                // window ID -> current content widget ID
-	customIds      map[string]string                // custom ID -> widget ID (for test framework)
-	childToParent  map[string]string              // child ID -> parent ID
-	quitChan       chan bool                      // signal quit in test mode
-	resources      map[string][]byte              // resource name -> decoded image data
-	scalableTheme  *ScalableTheme                 // custom theme for font scaling
-	rasterData     map[string][][]color.Color    // raster widget ID -> pixel buffer
-	closeIntercepts map[string]string             // window ID -> callback ID for close intercept
-	closeResponses  map[string]chan bool          // window ID -> channel for close intercept response
-	progressDialogs map[string]*ProgressDialogInfo // dialog ID -> progress dialog info
-	arcData         map[string]*ArcData           // arc widget ID -> arc data
-	polygonData     map[string]*PolygonData       // polygon widget ID -> polygon data
-	customDialogs   map[string]interface{}        // dialog ID -> custom dialog instance
-	msgpackServer   *MsgpackServer                // MessagePack UDS server (when in msgpack-uds mode)
+	app             fyne.App
+	windows         map[string]fyne.Window
+	widgets         map[string]fyne.CanvasObject
+	callbacks       map[string]string     // widget ID -> callback ID
+	contextMenus    map[string]*fyne.Menu // widget ID -> context menu
+	testMode        bool                  // true for headless testing
+	grpcMode        bool                  // true when running in gRPC mode (skip stdout writes)
+	grpcEventChan   chan Event            // channel for gRPC event streaming
+	mu              sync.RWMutex
+	writer          *json.Encoder
+	widgetMeta      map[string]WidgetMetadata        // metadata for testing
+	tableData       map[string][][]string            // table ID -> data
+	listData        map[string][]string              // list ID -> data
+	toolbarItems    map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
+	toolbarActions  map[string]*widget.ToolbarAction // custom ID -> toolbar action
+	windowContent   map[string]string                // window ID -> current content widget ID
+	customIds       map[string]string                // custom ID -> widget ID (for test framework)
+	childToParent   map[string]string                // child ID -> parent ID
+	quitChan        chan bool                        // signal quit in test mode
+	resources       map[string][]byte                // resource name -> decoded image data
+	scalableTheme   *ScalableTheme                   // custom theme for font scaling
+	rasterData      map[string][][]color.Color       // raster widget ID -> pixel buffer
+	closeIntercepts map[string]string                // window ID -> callback ID for close intercept
+	closeResponses  map[string]chan bool             // window ID -> channel for close intercept response
+	progressDialogs map[string]*ProgressDialogInfo   // dialog ID -> progress dialog info
+	arcData         map[string]*ArcData              // arc widget ID -> arc data
+	polygonData     map[string]*PolygonData          // polygon widget ID -> polygon data
+	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
+	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)
 }
 
 // ProgressDialogInfo stores information about a progress dialog
 type ProgressDialogInfo struct {
-	Dialog      interface{}          // *dialog.CustomDialog
-	ProgressBar *widget.ProgressBar  // nil for infinite progress bars
+	Dialog      interface{}         // *dialog.CustomDialog
+	ProgressBar *widget.ProgressBar // nil for infinite progress bars
 	IsInfinite  bool
 }
 
@@ -184,7 +184,6 @@ func (c *ClickableContainer) Tapped(e *fyne.PointEvent) {
 func (c *ClickableContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c.content)
 }
-
 
 // TappableWrapper wraps a widget and adds context menu support via right-click
 type TappableWrapper struct {
@@ -604,10 +603,10 @@ func (t *TsyneTextGrid) KeyUp(e *fyne.KeyEvent) {
 // HoverableWrapper wraps a widget and implements desktop.Hoverable for mouse enter/exit events
 type HoverableWrapper struct {
 	widget.BaseWidget
-	content        fyne.CanvasObject
-	bridge         *Bridge
-	widgetID       string
-	mouseInHandler func(*desktop.MouseEvent)
+	content         fyne.CanvasObject
+	bridge          *Bridge
+	widgetID        string
+	mouseInHandler  func(*desktop.MouseEvent)
 	mouseOutHandler func()
 }
 
@@ -704,10 +703,10 @@ type TsyneDraggableIcon struct {
 	desktopContainer DesktopIconContainer
 
 	// Bridge for callbacks
-	bridge              *Bridge
-	onDragCallbackId    string
-	onDragEndCallbackId string
-	onClickCallbackId   string
+	bridge               *Bridge
+	onDragCallbackId     string
+	onDragEndCallbackId  string
+	onClickCallbackId    string
 	onDblClickCallbackId string
 }
 
@@ -1027,23 +1026,21 @@ func (r *desktopCanvasRenderer) Destroy() {}
 type TsyneDesktopMDI struct {
 	widget.BaseWidget
 
-	icons      []*TsyneDraggableIcon
-	mdiWindows *container.MultipleWindows // Fyne's MDI handles window drag
-	bgColor    color.Color
-	bridge     *Bridge
-	id         string
-	iconsOnTop bool // When true, icons render on top of windows for interaction
+	icons   []*TsyneDraggableIcon
+	windows []*container.InnerWindow
+	bgColor color.Color
+	bridge  *Bridge
+	id      string
 }
 
 // NewTsyneDesktopMDI creates a new desktop MDI container
 func NewTsyneDesktopMDI(id string, bgColor color.Color, bridge *Bridge) *TsyneDesktopMDI {
 	dm := &TsyneDesktopMDI{
-		icons:      make([]*TsyneDraggableIcon, 0),
-		mdiWindows: container.NewMultipleWindows(),
-		bgColor:    bgColor,
-		bridge:     bridge,
-		id:         id,
-		iconsOnTop: true, // Start with icons on top so they can be clicked
+		icons:   make([]*TsyneDraggableIcon, 0),
+		windows: make([]*container.InnerWindow, 0),
+		bgColor: bgColor,
+		bridge:  bridge,
+		id:      id,
 	}
 	dm.ExtendBaseWidget(dm)
 	return dm
@@ -1057,41 +1054,62 @@ func (dm *TsyneDesktopMDI) AddIcon(icon *TsyneDraggableIcon) {
 
 // AddWindow adds an inner window to the MDI
 func (dm *TsyneDesktopMDI) AddWindow(win *container.InnerWindow) {
-	fyne.Do(func() {
-		dm.mdiWindows.Add(win)
-		dm.iconsOnTop = false // Push icons behind windows when a new window opens
-		dm.Refresh()
-	})
+	dm.setupWindowCallbacks(win)
+	dm.windows = append(dm.windows, win)
+	dm.Refresh()
 }
 
-// Tapped handles tap events on the desktop background
-// When tapped on empty space (not on a window), bring icons to front
-func (dm *TsyneDesktopMDI) Tapped(e *fyne.PointEvent) {
-	// If we received this tap, it means it wasn't captured by a window
-	// Bring icons to the front so they can be interacted with
-	dm.iconsOnTop = true
-	dm.Refresh()
+// setupWindowCallbacks wires up drag/resize/raise handlers so InnerWindows behave like MultipleWindows
+func (dm *TsyneDesktopMDI) setupWindowCallbacks(win *container.InnerWindow) {
+	win.OnDragged = func(ev *fyne.DragEvent) {
+		pos := win.Position()
+		win.Move(fyne.NewPos(pos.X+ev.Dragged.DX, pos.Y+ev.Dragged.DY))
+	}
+	win.OnResized = func(ev *fyne.DragEvent) {
+		size := win.Size()
+		min := win.MinSize()
+		newSize := fyne.NewSize(size.Width+ev.Dragged.DX, size.Height+ev.Dragged.DY)
+		if newSize.Width < min.Width {
+			newSize.Width = min.Width
+		}
+		if newSize.Height < min.Height {
+			newSize.Height = min.Height
+		}
+		win.Resize(newSize)
+	}
+	win.OnTappedBar = func() {
+		dm.RaiseWindow(win)
+	}
 }
 
 // RemoveWindow removes an inner window from the MDI
 func (dm *TsyneDesktopMDI) RemoveWindow(win *container.InnerWindow) {
-	fyne.Do(func() {
-		// MultipleWindows has no Remove method, so manipulate Windows slice
-		for i, w := range dm.mdiWindows.Windows {
-			if w == win {
-				dm.mdiWindows.Windows = append(dm.mdiWindows.Windows[:i], dm.mdiWindows.Windows[i+1:]...)
-				break
-			}
+	for i, w := range dm.windows {
+		if w == win {
+			dm.windows = append(dm.windows[:i], dm.windows[i+1:]...)
+			break
 		}
-		dm.mdiWindows.Refresh()
-		dm.Refresh()
-	})
+	}
+	dm.Refresh()
 }
 
 // RaiseWindow brings a window to the front
-// Note: MultipleWindows handles z-order internally when windows are clicked
 func (dm *TsyneDesktopMDI) RaiseWindow(win *container.InnerWindow) {
-	// MultipleWindows handles z-order automatically
+	index := -1
+	for i, w := range dm.windows {
+		if w == win {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return
+	}
+
+	// Move the window to the end of the slice so it renders last (top-most)
+	dm.windows = append(dm.windows[:index], dm.windows[index+1:]...)
+	dm.windows = append(dm.windows, win)
+	dm.Refresh()
 }
 
 // GetIcon returns an icon by ID
@@ -1126,19 +1144,34 @@ type desktopMDIRenderer struct {
 	bg      *canvas.Rectangle
 }
 
+func maxFloat(a, b float32) float32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func (r *desktopMDIRenderer) Layout(size fyne.Size) {
 	r.bg.Resize(size)
 	r.bg.Move(fyne.NewPos(0, 0))
-
-	// MultipleWindows handles its own layout
-	r.desktop.mdiWindows.Resize(size)
-	r.desktop.mdiWindows.Move(fyne.NewPos(0, 0))
 
 	// Position icons at their stored positions (icons on top of windows)
 	for _, icon := range r.desktop.icons {
 		iconSize := icon.MinSize()
 		icon.Resize(iconSize)
 		icon.Move(fyne.NewPos(icon.PosX, icon.PosY))
+	}
+
+	// Ensure windows at least their minimum size
+	for _, win := range r.desktop.windows {
+		size := win.Size()
+		min := win.MinSize()
+		if size.Width < min.Width || size.Height < min.Height {
+			win.Resize(fyne.NewSize(
+				maxFloat(size.Width, min.Width),
+				maxFloat(size.Height, min.Height),
+			))
+		}
 	}
 }
 
@@ -1149,9 +1182,11 @@ func (r *desktopMDIRenderer) MinSize() fyne.Size {
 func (r *desktopMDIRenderer) Refresh() {
 	r.bg.FillColor = r.desktop.bgColor
 	r.bg.Refresh()
-	r.desktop.mdiWindows.Refresh()
 	for _, icon := range r.desktop.icons {
 		icon.Refresh()
+	}
+	for _, win := range r.desktop.windows {
+		win.Refresh()
 	}
 }
 
@@ -1160,18 +1195,12 @@ func (r *desktopMDIRenderer) Objects() []fyne.CanvasObject {
 	// Background first
 	objects = append(objects, r.bg)
 
-	if r.desktop.iconsOnTop {
-		// Icons on top - they can be dragged/clicked, windows behind
-		objects = append(objects, r.desktop.mdiWindows)
-		for _, icon := range r.desktop.icons {
-			objects = append(objects, icon)
-		}
-	} else {
-		// Icons behind - windows on top, click desktop to bring icons front
-		for _, icon := range r.desktop.icons {
-			objects = append(objects, icon)
-		}
-		objects = append(objects, r.desktop.mdiWindows)
+	// Icons render before windows so windows stay on top
+	for _, icon := range r.desktop.icons {
+		objects = append(objects, icon)
+	}
+	for _, win := range r.desktop.windows {
+		objects = append(objects, win)
 	}
 	return objects
 }
@@ -1214,20 +1243,20 @@ func NewBridge(testMode bool) *Bridge {
 	// Setting theme during initialization causes threading issues in test mode
 
 	return &Bridge{
-		app:            fyneApp,
-		windows:        make(map[string]fyne.Window),
-		widgets:        make(map[string]fyne.CanvasObject),
-		callbacks:      make(map[string]string),
-		contextMenus:   make(map[string]*fyne.Menu),
-		testMode:       testMode,
-		writer:         json.NewEncoder(os.Stdout),
-		widgetMeta:     make(map[string]WidgetMetadata),
-		tableData:      make(map[string][][]string),
-		listData:       make(map[string][]string),
-		toolbarItems:   make(map[string]*ToolbarItemsMetadata),
-		toolbarActions: make(map[string]*widget.ToolbarAction),
-		windowContent:  make(map[string]string),
-		customIds:      make(map[string]string),
+		app:             fyneApp,
+		windows:         make(map[string]fyne.Window),
+		widgets:         make(map[string]fyne.CanvasObject),
+		callbacks:       make(map[string]string),
+		contextMenus:    make(map[string]*fyne.Menu),
+		testMode:        testMode,
+		writer:          json.NewEncoder(os.Stdout),
+		widgetMeta:      make(map[string]WidgetMetadata),
+		tableData:       make(map[string][][]string),
+		listData:        make(map[string][]string),
+		toolbarItems:    make(map[string]*ToolbarItemsMetadata),
+		toolbarActions:  make(map[string]*widget.ToolbarAction),
+		windowContent:   make(map[string]string),
+		customIds:       make(map[string]string),
 		childToParent:   make(map[string]string),
 		quitChan:        make(chan bool, 1),
 		resources:       make(map[string][]byte),

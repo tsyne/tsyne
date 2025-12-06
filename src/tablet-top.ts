@@ -124,10 +124,10 @@ class TabletTop {
         {
           label: 'View',
           items: [
-            { label: 'Light Theme', onClick: () => this.a.setTheme('light') },
-            { label: 'Dark Theme', onClick: () => this.a.setTheme('dark') },
-            { isSeparator: true },
-            { label: 'Fullscreen', onClick: () => win.setFullScreen(true) }
+            { label: 'Light Theme', onSelected: () => this.a.setTheme('light') },
+            { label: 'Dark Theme', onSelected: () => this.a.setTheme('dark') },
+            { label: '', isSeparator: true },
+            { label: 'Fullscreen', onSelected: () => win.setFullScreen(true) }
           ]
         }
       ]);

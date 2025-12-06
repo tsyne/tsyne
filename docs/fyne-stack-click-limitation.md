@@ -8,74 +8,74 @@ Fyne's Stack container doesn't propagate click events to nested layers. When cre
 
 Fyne delivers events only to the topmost layer at the click position.
 
-## The Solution: TsyneDesktopMDI with Dynamic Z-Order
+## The Solution: TsyneDesktopMDI without Global Stacks
 
-For a full desktop environment with both draggable icons AND MDI windows, we use `TsyneDesktopMDI` which combines:
+Instead of stacking two full-screen layers (icons + `container.MultipleWindows`) we now build a single widget that owns **both** the draggable icons and the `InnerWindow` instances. This avoids the Stack limitation completely because every canvas object only captures input within its own bounds.
 
-1. **`container.MultipleWindows`** - Fyne's built-in MDI container that handles window dragging, resizing, z-ordering, and centering
-2. **`TsyneDraggableIcon`** - Custom icons with drag + double-click support
-3. **Dynamic z-order** - Icons toggle between front/back based on user interaction
+TsyneDesktopMDI now combines:
 
-### How It Works
+1. **`TsyneDraggableIcon`** - Custom canvas widgets that implement drag + double-click
+2. **Direct `InnerWindow` management** - We keep a slice of windows, wire up their drag/resize callbacks, and raise them manually (same logic Fyne’s `MultipleWindows` used internally, but without the large scroll overlay)
+3. **Deterministic z-order** - Icons are rendered first, windows are appended after them, so windows are always visually above icons while icons remain clickable wherever a window is not covering them
 
-The `Objects()` method in the renderer returns items in different order based on an `iconsOnTop` flag:
+### Rendering Order
 
 ```go
 func (r *desktopMDIRenderer) Objects() []fyne.CanvasObject {
     var objects []fyne.CanvasObject
-    objects = append(objects, r.bg) // Background first
+    objects = append(objects, r.bg) // background
 
-    if r.desktop.iconsOnTop {
-        // Icons on top - they can be dragged/clicked
-        objects = append(objects, r.desktop.mdiWindows)
-        for _, icon := range r.desktop.icons {
-            objects = append(objects, icon)
-        }
-    } else {
-        // Windows on top - icons behind
-        for _, icon := range r.desktop.icons {
-            objects = append(objects, icon)
-        }
-        objects = append(objects, r.desktop.mdiWindows)
+    for _, icon := range r.desktop.icons {
+        objects = append(objects, icon) // icons first
+    }
+    for _, win := range r.desktop.windows {
+        objects = append(objects, win)  // windows last → always on top
     }
     return objects
 }
 ```
 
-### State Transitions
+Because each `InnerWindow` only receives pointer events inside its chrome, icons behind *visible* window regions still behave exactly like a traditional desktop: move or hide the window and the icon is instantly interactive again. No global “toggle layers” hack is required anymore.
 
-1. **Initial state**: `iconsOnTop = true` - icons can be dragged and double-clicked
-2. **Window opens** (`AddWindow`): `iconsOnTop = false` - windows come to front
-3. **Click desktop background** (`Tapped`): `iconsOnTop = true` - icons come to front
+### Window Behaviour
 
-The widget implements `fyne.Tappable` to detect clicks on the desktop background:
+When a window is added we attach the same handlers that `container.MultipleWindows` used:
 
 ```go
-func (dm *TsyneDesktopMDI) Tapped(e *fyne.PointEvent) {
-    // Click reached us = not captured by a window
-    dm.iconsOnTop = true
-    dm.Refresh()
+win.OnDragged = func(ev *fyne.DragEvent) {
+    pos := win.Position()
+    win.Move(fyne.NewPos(pos.X+ev.Dragged.DX, pos.Y+ev.Dragged.DY))
+}
+
+win.OnResized = func(ev *fyne.DragEvent) {
+    size := win.Size()
+    min := win.MinSize()
+    newSize := fyne.NewSize(
+        max(size.Width+ev.Dragged.DX, min.Width),
+        max(size.Height+ev.Dragged.DY, min.Height),
+    )
+    win.Resize(newSize)
+}
+
+win.OnTappedBar = func() {
+    dm.RaiseWindow(win) // move it to the end of the slice → top-most draw order
 }
 ```
 
 ### Working Functionality
 
-- Desktop icons can be dragged to reposition them
-- Double-click on icons launches apps in InnerWindows
-- InnerWindows can be dragged/moved (via MultipleWindows)
-- InnerWindows can be closed
-- Windows open centered (MultipleWindows handles this)
-- Click desktop background to bring icons to front for interaction
+- Desktop icons stay interactive anywhere they are visible
+- Double-click launches apps into InnerWindows that float above the icons
+- InnerWindows drag, resize, and raise just like they did inside `MultipleWindows`
+- Closing an InnerWindow removes it from the desktop slice immediately, so icons underneath become interactive again without restarting the desktop
+- Windows still open centered and respect minimum sizes
 
 ### Implementation
 
-**Go** (`bridge/types.go`) - ~500 lines:
-- `TsyneDraggableIcon` (~338 lines) - Fyne widget with drag, double-click, rendering
-- `TsyneDesktopMDI` (~161 lines) - container, z-order logic, `Objects()`, `Tapped()`
+**Go** (`bridge/types.go`) now owns the entire desktop composition:
+- `TsyneDraggableIcon` handles drag + double-click callbacks
+- `TsyneDesktopMDI` stores icon + window slices, manages window callbacks, and controls render order
 
-**TypeScript** (`src/widgets/desktop.ts`) - ~396 lines:
-- `DesktopMDIIcon`, `DesktopMDI` - thin wrappers sending bridge messages (`createDesktopMDI`, `desktopMDIAddIcon`, etc.) and registering callbacks
+**TypeScript** (`src/widgets/desktop.ts`) remains a thin wrapper that issues bridge commands (`createDesktopMDI`, `desktopMDIAddIcon`, `desktopMDIAddWindow`, etc.) and listens for callbacks.
 
-The original proof of concept is in `bridge/cmd/draggable-icons/main.go` - a standalone Go+Fyne demo showing draggable icons with absolute positioning. Run with `cd bridge && go run ./cmd/draggable-icons`.
-
-Run desktop: `TSYNE_HEADED=1 npx ts-node src/desktop.ts`
+The original proof of concept for draggable icons lives in `bridge/cmd/draggable-icons/main.go`. Run the full desktop with `TSYNE_HEADED=1 npx ts-node src/desktop.ts`.

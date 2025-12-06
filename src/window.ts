@@ -75,6 +75,7 @@ export class Window {
   private contentId?: string;
   private contentSent: boolean = false; // Track if content has been sent to bridge
   private creationPromise: Promise<unknown>; // Track window creation for proper sequencing
+  private setContentPromise: Promise<void> | null = null; // Track pending setContent() calls
 
   constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void | Promise<void>) {
     this.ctx = ctx;
@@ -145,6 +146,11 @@ export class Window {
     // Ensure window creation has completed before showing
     await this.creationPromise;
 
+    // Wait for any pending setContent() to complete
+    if (this.setContentPromise) {
+      await this.setContentPromise;
+    }
+
     // Only send setContent if we haven't already sent it
     if (this.contentId && !this.contentSent) {
       await this.ctx.bridge.send('setContent', {
@@ -173,6 +179,15 @@ export class Window {
    * ```
    */
   async setContent(builder: () => void | Promise<void>): Promise<void> {
+    // Store the promise so show() can wait for it to complete
+    this.setContentPromise = this._doSetContent(builder);
+    return this.setContentPromise;
+  }
+
+  /**
+   * Internal method that actually performs setContent
+   */
+  private async _doSetContent(builder: () => void | Promise<void>): Promise<void> {
     // Mark as sent immediately (synchronously) to prevent duplicate calls
     this.contentSent = true;
 

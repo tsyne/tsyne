@@ -107,7 +107,7 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
  * });
  * ```
  */
-export function app(options: AppOptions, builder: (app: App) => void): App {
+export function app(options: AppOptions, builder: (app: App) => void | Promise<void>): App {
   // In desktop mode, app() is a no-op - the desktop will explicitly call
   // the exported builder function to create the app's UI as an InnerWindow
   if (isDesktopMode()) {
@@ -125,9 +125,16 @@ export function app(options: AppOptions, builder: (app: App) => void): App {
   globalApp = appInstance;
   globalContext = (appInstance as any).ctx;
 
-  builder(appInstance);
+  // Handle both sync and async builders
+  const builderResult = builder(appInstance);
 
-  appInstance.run();
+  if (builderResult && typeof (builderResult as any).then === 'function') {
+    // Builder is async - wait for it to complete before showing windows
+    (builderResult as Promise<void>).then(() => appInstance.run());
+  } else {
+    // Builder is sync - run immediately
+    appInstance.run();
+  }
 
   return appInstance;
 }
