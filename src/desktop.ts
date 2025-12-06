@@ -20,6 +20,7 @@ import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI } from './wid
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
+import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
 
 // Desktop configuration
@@ -37,6 +38,7 @@ export interface DesktopOptions {
 // Desktop state
 interface DesktopIcon {
   metadata: AppMetadata;
+  resourceName?: string;
   x: number;
   y: number;
   selected: boolean;
@@ -64,6 +66,8 @@ class Desktop {
   private appInstanceCounter: Map<string, number> = new Map();
   /** Apps pinned to the dock/launch bar */
   private dockedApps: string[] = [];
+  /** Cache of registered icon resources keyed by source file */
+  private iconResourceCache: Map<string, string> = new Map();
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
@@ -150,6 +154,83 @@ class Desktop {
   }
 
   /**
+   * Render an inline SVG into a PNG data URI for desktop icons
+   */
+  private renderSvgIconToDataUri(svg: string, size: number = ICON_SIZE): string {
+    const normalized = this.normalizeSvg(svg, size);
+    const renderer = new Resvg(normalized, {
+      fitTo: {
+        mode: 'width',
+        value: size
+      },
+      background: 'rgba(0,0,0,0)'
+    });
+    const png = renderer.render().asPng();
+    const buffer = Buffer.from(png);
+    return `data:image/png;base64,${buffer.toString('base64')}`;
+  }
+
+  /**
+   * Ensure inline SVG has the basics resvg expects (xmlns, width/height)
+   */
+  private normalizeSvg(svg: string, size: number): string {
+    let s = svg.trim();
+    if (!s.toLowerCase().startsWith('<svg')) {
+      return s;
+    }
+
+    const match = s.match(/^<svg[^>]*>/i);
+    if (!match) {
+      return s;
+    }
+
+    let tag = match[0];
+    const ensureAttr = (attr: string, value: string) => {
+      if (tag.toLowerCase().includes(`${attr.toLowerCase()}=`)) {
+        return;
+      }
+      tag = tag.slice(0, -1) + ` ${attr}="${value}">`;
+    };
+
+    ensureAttr('xmlns', 'http://www.w3.org/2000/svg');
+    ensureAttr('width', size.toString());
+    ensureAttr('height', size.toString());
+    if (!/viewbox=/i.test(tag)) {
+      ensureAttr('viewBox', `0 0 ${size} ${size}`);
+    }
+    ensureAttr('preserveAspectRatio', 'xMidYMid meet');
+
+    s = tag + s.slice(tag.length);
+    return s;
+  }
+
+  /**
+   * Convert an app's @tsyne-app:icon into a registered resource (if possible)
+   */
+  private async prepareIconResource(metadata: AppMetadata): Promise<string | undefined> {
+    const cacheKey = metadata.filePath;
+    if (this.iconResourceCache.has(cacheKey)) {
+      return this.iconResourceCache.get(cacheKey);
+    }
+
+    if (!metadata.iconIsSvg || !metadata.icon) {
+      return undefined;
+    }
+
+    try {
+      const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
+      const baseName = path.basename(metadata.filePath, '.ts');
+      const resourceName = `desktop-icon-${this.getIconKey(`${metadata.name}-${baseName}`)}`;
+      await this.a.resources.registerResource(resourceName, dataUri);
+      this.iconResourceCache.set(cacheKey, resourceName);
+      return resourceName;
+    } catch (err) {
+      console.error(`Failed to register desktop icon for ${metadata.name}:`, err);
+      return undefined;
+    }
+  }
+
+  /**
    * Save icon position to preferences
    */
   private saveIconPosition(appName: string, x: number, y: number) {
@@ -220,9 +301,11 @@ class Desktop {
       const savedPos = await this.loadIconPosition(metadata.name);
       const defaultX = col * ICON_SPACING + 20;
       const defaultY = row * ICON_SPACING + 20;
+      const resourceName = await this.prepareIconResource(metadata);
 
       this.icons.push({
         metadata,
+        resourceName,
         x: savedPos?.x ?? defaultX,
         y: savedPos?.y ?? defaultY,
         selected: false
@@ -473,6 +556,7 @@ class Desktop {
       this.desktopMDI.addIcon({
         id: `app-${i}`,
         label: icon.metadata.name,
+        resource: icon.resourceName,
         x: icon.x,
         y: icon.y,
         color,

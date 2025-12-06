@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"image"
 	"image/color"
+	"image/draw"
 	"log"
 	"os"
 	"sync"
@@ -682,10 +684,11 @@ type DesktopIconContainer interface {
 type TsyneDraggableIcon struct {
 	widget.BaseWidget
 
-	ID       string
-	Label    string
-	IconRect *canvas.Rectangle
-	TextObj  *canvas.Text
+	ID        string
+	Label     string
+	IconRect  *canvas.Rectangle
+	IconImage *canvas.Image
+	TextObj   *canvas.Text
 
 	// Position tracking
 	PosX, PosY float32
@@ -710,8 +713,71 @@ type TsyneDraggableIcon struct {
 	onDblClickCallbackId string
 }
 
+// trimTransparentPadding crops transparent edges to reduce visual padding differences across icons
+func trimTransparentPadding(img image.Image) image.Image {
+	b := img.Bounds()
+	nrgba, ok := img.(*image.NRGBA)
+	if !ok {
+		nrgba = image.NewNRGBA(b)
+		draw.Draw(nrgba, b, img, b.Min, draw.Src)
+	}
+
+	minX, minY := b.Max.X, b.Max.Y
+	maxX, maxY := b.Min.X, b.Min.Y
+	found := false
+
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			a := nrgba.NRGBAAt(x, y).A
+			if a > 8 { // small threshold to ignore tiny antialiasing specks
+				if x < minX {
+					minX = x
+				}
+				if y < minY {
+					minY = y
+				}
+				if x >= maxX {
+					maxX = x + 1
+				}
+				if y >= maxY {
+					maxY = y + 1
+				}
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		return img
+	}
+
+	// Add a small padding to avoid touching edges
+	const pad = 2
+	minX -= pad
+	minY -= pad
+	maxX += pad
+	maxY += pad
+	if minX < b.Min.X {
+		minX = b.Min.X
+	}
+	if minY < b.Min.Y {
+		minY = b.Min.Y
+	}
+	if maxX > b.Max.X {
+		maxX = b.Max.X
+	}
+	if maxY > b.Max.Y {
+		maxY = b.Max.Y
+	}
+
+	crop := image.Rect(minX, minY, maxX, maxY)
+	cropped := image.NewNRGBA(image.Rect(0, 0, crop.Dx(), crop.Dy()))
+	draw.Draw(cropped, cropped.Bounds(), nrgba, crop.Min, draw.Src)
+	return cropped
+}
+
 // NewTsyneDraggableIcon creates a new draggable icon
-func NewTsyneDraggableIcon(id, label string, iconColor color.Color, x, y float32, desktop *TsyneDesktopCanvas, bridge *Bridge) *TsyneDraggableIcon {
+func NewTsyneDraggableIcon(id, label string, iconColor color.Color, x, y float32, desktop *TsyneDesktopCanvas, bridge *Bridge, iconImage image.Image) *TsyneDraggableIcon {
 	icon := &TsyneDraggableIcon{
 		ID:      id,
 		Label:   label,
@@ -721,10 +787,17 @@ func NewTsyneDraggableIcon(id, label string, iconColor color.Color, x, y float32
 		bridge:  bridge,
 	}
 
-	// Create the icon rectangle (64x64)
+	// Create the icon rectangle (larger to reduce padding)
+	const iconBoxSize float32 = 80
 	icon.IconRect = canvas.NewRectangle(iconColor)
-	icon.IconRect.SetMinSize(fyne.NewSize(64, 64))
+	icon.IconRect.SetMinSize(fyne.NewSize(iconBoxSize, iconBoxSize))
 	icon.IconRect.CornerRadius = 8
+
+	if iconImage != nil {
+		icon.IconImage = canvas.NewImageFromImage(iconImage)
+		icon.IconImage.FillMode = canvas.ImageFillContain
+		icon.IconImage.SetMinSize(fyne.NewSize(iconBoxSize, iconBoxSize))
+	}
 
 	// Create the text label
 	icon.TextObj = canvas.NewText(label, color.White)
@@ -736,7 +809,7 @@ func NewTsyneDraggableIcon(id, label string, iconColor color.Color, x, y float32
 }
 
 // NewTsyneDraggableIconForMDI creates a new draggable icon for a DesktopMDI container
-func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y float32, container DesktopIconContainer, bridge *Bridge) *TsyneDraggableIcon {
+func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y float32, container DesktopIconContainer, bridge *Bridge, iconImage image.Image) *TsyneDraggableIcon {
 	icon := &TsyneDraggableIcon{
 		ID:               id,
 		Label:            label,
@@ -746,10 +819,17 @@ func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y f
 		bridge:           bridge,
 	}
 
-	// Create the icon rectangle (64x64)
+	// Create the icon rectangle (larger to reduce padding)
+	const iconBoxSize float32 = 80
 	icon.IconRect = canvas.NewRectangle(iconColor)
-	icon.IconRect.SetMinSize(fyne.NewSize(64, 64))
+	icon.IconRect.SetMinSize(fyne.NewSize(iconBoxSize, iconBoxSize))
 	icon.IconRect.CornerRadius = 8
+
+	if iconImage != nil {
+		icon.IconImage = canvas.NewImageFromImage(iconImage)
+		icon.IconImage.FillMode = canvas.ImageFillContain
+		icon.IconImage.SetMinSize(fyne.NewSize(iconBoxSize, iconBoxSize))
+	}
 
 	// Create the text label
 	icon.TextObj = canvas.NewText(label, color.White)
@@ -772,7 +852,12 @@ func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick strin
 func (d *TsyneDraggableIcon) CreateRenderer() fyne.WidgetRenderer {
 	// Stack icon and text vertically
 	content := container.NewVBox(
-		container.NewCenter(d.IconRect),
+		func() fyne.CanvasObject {
+			if d.IconImage != nil {
+				return container.NewMax(d.IconRect, container.NewCenter(d.IconImage))
+			}
+			return container.NewCenter(d.IconRect)
+		}(),
 		container.NewCenter(d.TextObj),
 	)
 	return widget.NewSimpleRenderer(content)
@@ -780,7 +865,7 @@ func (d *TsyneDraggableIcon) CreateRenderer() fyne.WidgetRenderer {
 
 // MinSize returns the minimum size of the icon
 func (d *TsyneDraggableIcon) MinSize() fyne.Size {
-	return fyne.NewSize(80, 90)
+	return fyne.NewSize(90, 105)
 }
 
 // Tapped handles single tap/click - used for double-click detection

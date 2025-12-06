@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"image"
 	"image/color"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -823,6 +826,7 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 	x, _ := msg.Payload["x"].(float64)
 	y, _ := msg.Payload["y"].(float64)
 	colorStr, _ := msg.Payload["color"].(string)
+	resourceName, _ := msg.Payload["resource"].(string)
 
 	// Extract callback IDs
 	onDragCallbackId, _ := msg.Payload["onDragCallbackId"].(string)
@@ -858,8 +862,23 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 		iconColor = parseColorHex(colorStr)
 	}
 
+	// Decode optional image resource
+	var iconImage image.Image
+	if resourceName != "" {
+		if resourceData, exists := b.getResource(resourceName); exists {
+			decoded, _, err := image.Decode(bytes.NewReader(resourceData))
+			if err != nil {
+				log.Printf("Failed to decode desktop icon resource %s: %v", resourceName, err)
+			} else {
+				iconImage = trimTransparentPadding(decoded)
+			}
+		} else {
+			log.Printf("Desktop icon resource not found: %s", resourceName)
+		}
+	}
+
 	// Create the icon
-	icon := NewTsyneDraggableIcon(iconID, label, iconColor, float32(x), float32(y), desktop, b)
+	icon := NewTsyneDraggableIcon(iconID, label, iconColor, float32(x), float32(y), desktop, b, iconImage)
 	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
 
 	// Add to desktop
@@ -1022,6 +1041,7 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 	x, _ := msg.Payload["x"].(float64)
 	y, _ := msg.Payload["y"].(float64)
 	colorStr, _ := msg.Payload["color"].(string)
+	resourceName, _ := msg.Payload["resource"].(string)
 
 	// Extract callback IDs
 	onDragCallbackId, _ := msg.Payload["onDragCallbackId"].(string)
@@ -1057,8 +1077,23 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 		iconColor = parseColorHex(colorStr)
 	}
 
+	// Decode optional image resource
+	var iconImage image.Image
+	if resourceName != "" {
+		if resourceData, exists := b.getResource(resourceName); exists {
+			decoded, _, err := image.Decode(bytes.NewReader(resourceData))
+			if err != nil {
+				log.Printf("Failed to decode desktop icon resource %s: %v", resourceName, err)
+			} else {
+				iconImage = trimTransparentPadding(decoded)
+			}
+		} else {
+			log.Printf("Desktop icon resource not found: %s", resourceName)
+		}
+	}
+
 	// Create the icon using the MDI constructor
-	icon := NewTsyneDraggableIconForMDI(iconID, label, iconColor, float32(x), float32(y), desktop, b)
+	icon := NewTsyneDraggableIconForMDI(iconID, label, iconColor, float32(x), float32(y), desktop, b, iconImage)
 	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
 
 	// Add to desktop MDI

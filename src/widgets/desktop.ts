@@ -22,6 +22,8 @@ export interface DesktopIconOptions {
   id: string;
   /** Display label */
   label: string;
+  /** Optional registered resource name for the icon image */
+  resource?: string;
   /** X position */
   x: number;
   /** Y position */
@@ -61,6 +63,9 @@ export class DesktopIcon {
 
     if (options.color) {
       payload.color = options.color;
+    }
+    if (options.resource) {
+      payload.resource = options.resource;
     }
 
     // Register callbacks
@@ -215,6 +220,9 @@ export class DesktopMDIIcon {
 
     if (options.color) {
       payload.color = options.color;
+    }
+    if (options.resource) {
+      payload.resource = options.resource;
     }
 
     // Register callbacks
