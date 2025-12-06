@@ -6,6 +6,7 @@
  * - Apps are arranged in a grid (e.g., 4 columns x 4 rows = 16 apps per page)
  * - Moving an icon displaces another icon (swap positions)
  * - Has left/right navigation for multiple pages
+ * - Supports phone-apps with logging services
  *
  * Run with: ./scripts/tsyne src/tablet-top.ts
  */
@@ -16,7 +17,15 @@ import { Label, Button } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
 import { ScopedResourceManager, ResourceManager } from './resources';
+import { SandboxedApp } from './sandboxed-app';
 import * as path from 'path';
+
+// Import logging services for phone apps
+import {
+  modemLog,
+  ModemLogEntry,
+  createLoggingServices,
+} from '../phone-apps/logging-services';
 
 // Grid configuration for tablet
 const GRID_COLS = 4;
@@ -65,6 +74,10 @@ class TabletTop {
   private rows: number;
   private appsPerPage: number;
   private appInstanceCounter: Map<string, number> = new Map();
+  private services: ReturnType<typeof createLoggingServices>;
+  private modemWin: Window | null = null;
+  private modemLogLabel: Label | null = null;
+  private modemLogLines: string[] = [];
 
   constructor(app: App, options: TabletTopOptions = {}) {
     this.a = app;
@@ -72,6 +85,25 @@ class TabletTop {
     this.cols = options.columns || GRID_COLS;
     this.rows = options.rows || GRID_ROWS;
     this.appsPerPage = this.cols * this.rows;
+    this.services = createLoggingServices();
+
+    // Subscribe to modem log for phone apps
+    modemLog.subscribe((entry) => this.handleModemLog(entry));
+  }
+
+  private handleModemLog(entry: ModemLogEntry): void {
+    const time = entry.timestamp.toLocaleTimeString('en-US', { hour12: false });
+    const arrow = entry.direction === 'TX' ? '→' : entry.direction === 'RX' ? '←' : '•';
+    const line = `[${time}] ${arrow} ${entry.subsystem}: ${entry.message}`;
+
+    this.modemLogLines.push(line);
+    if (this.modemLogLines.length > 50) {
+      this.modemLogLines.shift();
+    }
+
+    if (this.modemLogLabel) {
+      this.modemLogLabel.setText(this.modemLogLines.join('\n'));
+    }
   }
 
   /**
@@ -80,11 +112,13 @@ class TabletTop {
   init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
     const portedAppsDir = path.join(process.cwd(), 'ported-apps');
+    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
 
-    // Scan for apps
+    // Scan for apps from all directories
     const exampleApps = scanForApps(appDir);
     const portedApps = scanPortedApps(portedAppsDir);
-    const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
+    const phoneApps = scanForApps(phoneAppsDir);
+    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Position apps in grid across pages
     let page = 0;
@@ -126,6 +160,8 @@ class TabletTop {
           items: [
             { label: 'Light Theme', onSelected: () => this.a.setTheme('light') },
             { label: 'Dark Theme', onSelected: () => this.a.setTheme('dark') },
+            { label: '', isSeparator: true },
+            { label: 'Modem Console', onSelected: () => this.showModemConsole() },
             { label: '', isSeparator: true },
             { label: 'Fullscreen', onSelected: () => win.setFullScreen(true) }
           ]
@@ -224,6 +260,14 @@ class TabletTop {
   }
 
   /**
+   * Check if an app is a phone app (has phone-specific args)
+   */
+  private isPhoneApp(metadata: AppMetadata): boolean {
+    const phoneArgs = ['telephony', 'contacts', 'clock', 'notifications', 'storage', 'settings', 'sms'];
+    return metadata.args.some(arg => phoneArgs.includes(arg));
+  }
+
+  /**
    * Launch an app
    */
   async launchApp(metadata: AppMetadata) {
@@ -265,7 +309,30 @@ class TabletTop {
       (this.a as any).resources = scopedResources;
       this.a.getContext().setResourceScope(appScope);
 
-      await builder(this.a);
+      // Check if this is a phone app that needs service injection
+      if (this.isPhoneApp(metadata)) {
+        // Create sandboxed app for phone apps
+        const sandboxedApp = new SandboxedApp(this.a, metadata.name.toLowerCase());
+
+        // Build argument map with logging services
+        const argMap: Record<string, any> = {
+          'app': sandboxedApp,
+          'resources': scopedResources,
+          'telephony': this.services.telephony,
+          'contacts': this.services.contacts,
+          'clock': this.services.clock,
+          'notifications': this.services.notifications,
+          'storage': this.services.storage,
+          'settings': this.services.settings,
+          'sms': this.services.sms,
+        };
+
+        const args = metadata.args.map(name => argMap[name]);
+        await builder(...args);
+      } else {
+        // Regular app - just pass the App instance
+        await builder(this.a);
+      }
 
       (this.a as any).window = originalWindow;
       (this.a as any).resources = originalResources;
@@ -293,6 +360,52 @@ class TabletTop {
     this.icons[app2Index].position = temp;
 
     this.rebuildContent();
+  }
+
+  /**
+   * Show the Modem Console window for phone app activity
+   */
+  private showModemConsole(): void {
+    if (this.modemWin) {
+      // Already open
+      return;
+    }
+
+    this.a.window({
+      title: 'Modem Console',
+      width: 500,
+      height: 400,
+    }, (win) => {
+      this.modemWin = win as Window;
+
+      win.setContent(() => {
+        this.a.vbox(() => {
+          this.a.hbox(() => {
+            this.a.label('📡 Baseband Modem - Human Readable Mode');
+            this.a.spacer();
+            this.a.button('Clear').onClick(() => {
+              modemLog.clear();
+              this.modemLogLines = [];
+              if (this.modemLogLabel) {
+                this.modemLogLabel.setText('(log cleared)');
+              }
+            });
+          });
+
+          this.a.separator();
+
+          this.a.label('Legend: → TX (to hardware)  ← RX (from hardware)  • INFO');
+
+          this.a.separator();
+
+          this.a.scroll(() => {
+            this.modemLogLabel = this.a.label(this.modemLogLines.join('\n') || '(waiting for phone app activity...)');
+          });
+        });
+      });
+
+      win.show();
+    });
   }
 }
 
