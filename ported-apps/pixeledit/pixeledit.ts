@@ -1,3 +1,8 @@
+// @tsyne-app:name Pixel Editor
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" fill="currentColor"/><rect x="8" y="8" width="4" height="4" fill="currentColor"/><rect x="12" y="12" width="4" height="4" fill="currentColor"/><rect x="16" y="4" width="4" height="4"/><rect x="4" y="16" width="4" height="4"/><path d="M2 2h20v20H2z"/></svg>
+// @tsyne-app:category creativity
+// @tsyne-app:builder createPixelEditorApp
+
 /**
  * Pixel Editor for Tsyne
  *

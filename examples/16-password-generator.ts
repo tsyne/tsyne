@@ -1,10 +1,15 @@
+// @tsyne-app:name Password Generator
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder buildPasswordGenerator
+
 // Password Generator - Generate secure random passwords
 // Demonstrates checkboxes, sliders, and string manipulation
 
-import { app } from '../src';
+import { app, App, Window } from '../src';
 
-app({ title: 'Password Generator' }, (a) => {
-  a.window({ title: 'Password Generator', width: 450, height: 500 }, (win) => {
+export function buildPasswordGenerator(a: App) {
+  a.window({ title: 'Password Generator', width: 450, height: 500 }, (win: Window) => {
     let length = 12;
     let useUppercase = true;
     let useLowercase = true;
@@ -96,4 +101,11 @@ app({ title: 'Password Generator' }, (a) => {
 
     win.show();
   });
-});
+}
+
+// Skip auto-run when imported by test framework or desktop
+const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+if (!isTestEnvironment) {
+  app({ title: 'Password Generator' }, buildPasswordGenerator);
+}

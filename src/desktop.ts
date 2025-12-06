@@ -25,6 +25,8 @@ import * as path from 'path';
 // Desktop configuration
 const ICON_SIZE = 80;
 const ICON_SPACING = 100;
+const ICON_POSITION_PREFIX = 'desktop.icon.';
+const DOCK_APPS_KEY = 'desktop.dock.apps';
 
 // Desktop options
 export interface DesktopOptions {
@@ -60,10 +62,140 @@ class Desktop {
   private options: DesktopOptions;
   /** Counter for generating unique app instance scopes */
   private appInstanceCounter: Map<string, number> = new Map();
+  /** Apps pinned to the dock/launch bar */
+  private dockedApps: string[] = [];
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
     this.options = options;
+    this.loadDockedApps();
+  }
+
+  /**
+   * Load docked apps from preferences
+   */
+  private loadDockedApps() {
+    const saved = this.a.getPreference(DOCK_APPS_KEY, '');
+    if (saved) {
+      try {
+        this.dockedApps = JSON.parse(saved);
+      } catch {
+        this.dockedApps = [];
+      }
+    }
+  }
+
+  /**
+   * Save docked apps to preferences
+   */
+  private saveDockedApps() {
+    this.a.setPreference(DOCK_APPS_KEY, JSON.stringify(this.dockedApps));
+  }
+
+  /**
+   * Add an app to the dock
+   */
+  addToDock(appName: string) {
+    if (!this.dockedApps.includes(appName)) {
+      this.dockedApps.push(appName);
+      this.saveDockedApps();
+      this.rebuildLaunchBar();
+    }
+  }
+
+  /**
+   * Remove an app from the dock
+   */
+  removeFromDock(appName: string) {
+    const index = this.dockedApps.indexOf(appName);
+    if (index >= 0) {
+      this.dockedApps.splice(index, 1);
+      this.saveDockedApps();
+      this.rebuildLaunchBar();
+    }
+  }
+
+  /**
+   * Check if an app is in the dock
+   */
+  isInDock(appName: string): boolean {
+    return this.dockedApps.includes(appName);
+  }
+
+  /**
+   * Rebuild just the launch bar (after dock changes)
+   */
+  private rebuildLaunchBar() {
+    // For now, rebuild the whole content - could be optimized later
+    if (this.win) {
+      this.win.setContent(() => {
+        this.a.border(() => {
+          this.a.borderCenter(() => {
+            this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
+            this.createDesktopIcons();
+          });
+          this.a.borderBottom(() => {
+            this.createLaunchBar();
+          });
+        });
+      });
+    }
+  }
+
+  /**
+   * Get a sanitized key for an app name (for use in preferences)
+   */
+  private getIconKey(appName: string): string {
+    return appName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  }
+
+  /**
+   * Save icon position to preferences
+   */
+  private saveIconPosition(appName: string, x: number, y: number) {
+    const key = this.getIconKey(appName);
+    this.a.setPreference(`${ICON_POSITION_PREFIX}${key}.x`, x.toString());
+    this.a.setPreference(`${ICON_POSITION_PREFIX}${key}.y`, y.toString());
+  }
+
+  /**
+   * Load icon position from preferences
+   * Returns null if no saved position exists
+   */
+  private loadIconPosition(appName: string): { x: number; y: number } | null {
+    const key = this.getIconKey(appName);
+    const xStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.x`, '');
+    const yStr = this.a.getPreference(`${ICON_POSITION_PREFIX}${key}.y`, '');
+
+    if (xStr && yStr) {
+      const x = parseInt(xStr, 10);
+      const y = parseInt(yStr, 10);
+      if (!isNaN(x) && !isNaN(y)) {
+        return { x, y };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Reset all icon positions to default grid layout
+   */
+  resetIconLayout() {
+    const GRID_COLS = 8;
+    let col = 0;
+    let row = 0;
+
+    for (const icon of this.icons) {
+      icon.x = col * ICON_SPACING + 20;
+      icon.y = row * ICON_SPACING + 20;
+      this.saveIconPosition(icon.metadata.name, icon.x, icon.y);
+
+      col++;
+      if (col >= GRID_COLS) {
+        col = 0;
+        row++;
+      }
+    }
   }
 
   /**
@@ -78,16 +210,21 @@ class Desktop {
     const portedApps = scanPortedApps(portedAppsDir);
     const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
 
-    // Position icons in a grid (8 columns)
+    // Position icons in a grid (8 columns), but use saved positions if available
     const GRID_COLS = 8;
     let col = 0;
     let row = 0;
 
     for (const metadata of apps) {
+      // Try to load saved position, otherwise use default grid position
+      const savedPos = this.loadIconPosition(metadata.name);
+      const defaultX = col * ICON_SPACING + 20;
+      const defaultY = row * ICON_SPACING + 20;
+
       this.icons.push({
         metadata,
-        x: col * ICON_SPACING + 20,
-        y: row * ICON_SPACING + 20,
+        x: savedPos?.x ?? defaultX,
+        y: savedPos?.y ?? defaultY,
         selected: false
       });
 
@@ -107,13 +244,209 @@ class Desktop {
   build() {
     this.a.window({ title: 'Tsyne Desktop', width: 1024, height: 768 }, (win) => {
       this.win = win as Window;
+
+      // Set up the main menu with hamburger-style options
+      win.setMainMenu([
+        {
+          label: 'Desktop',
+          items: [
+            { label: 'Re-layout Icons', onClick: () => this.relayoutAndRefresh() },
+            { isSeparator: true },
+            { label: 'Light Theme', onClick: () => this.setTheme('light') },
+            { label: 'Dark Theme', onClick: () => this.setTheme('dark') },
+            { isSeparator: true },
+            { label: 'About', onClick: () => this.showAbout() }
+          ]
+        },
+        {
+          label: 'Dock',
+          items: [
+            { label: 'Add Selected to Dock', onClick: () => this.addSelectedToDock() },
+            { label: 'Remove Selected from Dock', onClick: () => this.removeSelectedFromDock() },
+            { isSeparator: true },
+            { label: 'Move Selected Left in Dock', onClick: () => this.moveDockItemLeft() },
+            { label: 'Move Selected Right in Dock', onClick: () => this.moveDockItemRight() },
+            { isSeparator: true },
+            { label: 'Clear Dock', onClick: () => this.clearDock() }
+          ]
+        },
+        {
+          label: 'View',
+          items: [
+            { label: 'Show All Windows', onClick: () => this.showAllWindows() },
+            { label: 'Hide All Windows', onClick: () => this.hideAllWindows() },
+            { isSeparator: true },
+            { label: 'Fullscreen', onClick: () => win.setFullScreen(true) }
+          ]
+        }
+      ]);
+
       win.setContent(() => {
-        // Use unified DesktopMDI container that combines desktop icons with MDI
-        // This solves the layering problem - both drag and double-click work
-        this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
-        this.createDesktopIcons();
+        // Use border layout: desktop in center, launch bar at bottom
+        this.a.border(() => {
+          // Center: Desktop MDI with icons and windows
+          this.a.borderCenter(() => {
+            this.desktopMDI = this.a.desktopMDI({ bgColor: '#2d5a87' });
+            this.createDesktopIcons();
+          });
+
+          // Bottom: Launch bar
+          this.a.borderBottom(() => {
+            this.createLaunchBar();
+          });
+        });
       });
     });
+  }
+
+  /**
+   * Re-layout icons and refresh the desktop display
+   */
+  private relayoutAndRefresh() {
+    this.resetIconLayout();
+    // Rebuild the UI to show new positions
+    if (this.win && this.desktopMDI) {
+      // Update icon positions in the MDI container
+      for (let i = 0; i < this.icons.length; i++) {
+        const icon = this.icons[i];
+        this.desktopMDI.updateIconPosition(`app-${i}`, icon.x, icon.y);
+      }
+    }
+  }
+
+  /**
+   * Set the application theme
+   */
+  private setTheme(theme: 'light' | 'dark') {
+    this.a.setTheme(theme);
+  }
+
+  /**
+   * Show an about dialog
+   */
+  private async showAbout() {
+    if (this.win) {
+      await this.win.showInfo('About Tsyne Desktop',
+        'Tsyne Desktop Environment\n\n' +
+        'A desktop-like environment for launching Tsyne apps.\n\n' +
+        'Features:\n' +
+        '- Drag icons to arrange them\n' +
+        '- Double-click to launch apps\n' +
+        '- Positions are saved across restarts\n\n' +
+        `Apps available: ${this.icons.length}`
+      );
+    }
+  }
+
+  /**
+   * Show all open windows
+   */
+  private showAllWindows() {
+    for (const [, openApp] of this.openApps) {
+      openApp.tsyneWindow.show();
+    }
+  }
+
+  /**
+   * Hide all open windows
+   */
+  private hideAllWindows() {
+    for (const [, openApp] of this.openApps) {
+      openApp.tsyneWindow.hide();
+    }
+  }
+
+  /**
+   * Add the currently selected icon to the dock
+   */
+  private async addSelectedToDock() {
+    if (this.selectedIcon) {
+      this.addToDock(this.selectedIcon.metadata.name);
+    } else if (this.win) {
+      await this.win.showInfo('No Selection', 'Click on an app icon first, then use Dock > Add Selected to Dock');
+    }
+  }
+
+  /**
+   * Remove the currently selected icon from the dock
+   */
+  private async removeSelectedFromDock() {
+    if (this.selectedIcon) {
+      if (this.isInDock(this.selectedIcon.metadata.name)) {
+        this.removeFromDock(this.selectedIcon.metadata.name);
+      } else if (this.win) {
+        await this.win.showInfo('Not in Dock', `${this.selectedIcon.metadata.name} is not in the dock`);
+      }
+    } else if (this.win) {
+      await this.win.showInfo('No Selection', 'Click on an app icon first');
+    }
+  }
+
+  /**
+   * Clear all apps from the dock
+   */
+  private clearDock() {
+    this.dockedApps = [];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
+  }
+
+  /**
+   * Move the selected app left in the dock
+   */
+  private async moveDockItemLeft() {
+    if (!this.selectedIcon) {
+      if (this.win) await this.win.showInfo('No Selection', 'Click on an app icon first');
+      return;
+    }
+
+    const appName = this.selectedIcon.metadata.name;
+    const index = this.dockedApps.indexOf(appName);
+
+    if (index < 0) {
+      if (this.win) await this.win.showInfo('Not in Dock', `${appName} is not in the dock`);
+      return;
+    }
+
+    if (index === 0) {
+      // Already at the leftmost position
+      return;
+    }
+
+    // Swap with the item to the left
+    [this.dockedApps[index - 1], this.dockedApps[index]] =
+      [this.dockedApps[index], this.dockedApps[index - 1]];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
+  }
+
+  /**
+   * Move the selected app right in the dock
+   */
+  private async moveDockItemRight() {
+    if (!this.selectedIcon) {
+      if (this.win) await this.win.showInfo('No Selection', 'Click on an app icon first');
+      return;
+    }
+
+    const appName = this.selectedIcon.metadata.name;
+    const index = this.dockedApps.indexOf(appName);
+
+    if (index < 0) {
+      if (this.win) await this.win.showInfo('Not in Dock', `${appName} is not in the dock`);
+      return;
+    }
+
+    if (index === this.dockedApps.length - 1) {
+      // Already at the rightmost position
+      return;
+    }
+
+    // Swap with the item to the right
+    [this.dockedApps[index], this.dockedApps[index + 1]] =
+      [this.dockedApps[index + 1], this.dockedApps[index]];
+    this.saveDockedApps();
+    this.rebuildLaunchBar();
   }
 
   /**
@@ -151,9 +484,10 @@ class Desktop {
           this.launchApp(icon.metadata);
         },
         onDragEnd: (iconId, x, y) => {
-          // Update stored position
+          // Update stored position and persist to preferences
           icon.x = x;
           icon.y = y;
+          this.saveIconPosition(icon.metadata.name, x, y);
         }
       });
     }
@@ -317,19 +651,26 @@ class Desktop {
 
       this.a.separator();
 
+      // Docked apps section
+      if (this.dockedApps.length > 0) {
+        for (const appName of this.dockedApps) {
+          const icon = this.icons.find(i => i.metadata.name === appName);
+          if (icon) {
+            // Get first letter as icon placeholder
+            const firstLetter = appName.charAt(0).toUpperCase();
+            this.a.button(`[${firstLetter}] ${appName}`)
+              .withId(`dock-${this.getIconKey(appName)}`)
+              .onClick(() => this.launchApp(icon.metadata));
+          }
+        }
+        this.a.separator();
+      }
+
       // Running apps label
       this.a.label('Running: ');
       this.runningAppsLabel = this.a.label('None').withId('runningAppsLabel');
 
       this.a.spacer();
-
-      // Quick launch for Calculator (demo)
-      this.a.button('\u{1F5A9} Calc').withId('quickCalcBtn').onClick(() => {
-        const calcApp = this.icons.find(i => i.metadata.name === 'Calculator');
-        if (calcApp) {
-          this.launchApp(calcApp.metadata);
-        }
-      });
 
       // App launcher
       this.a.button('All Apps').withId('allAppsBtn').onClick(() => {

@@ -393,4 +393,14 @@ export class DesktopMDI extends Widget {
   getWindowIds(): string[] {
     return Array.from(this.windowIds);
   }
+
+  /**
+   * Update an icon's position
+   */
+  async updateIconPosition(iconId: string, x: number, y: number): Promise<void> {
+    const icon = this.icons.get(iconId);
+    if (icon) {
+      await icon.move(x, y);
+    }
+  }
 }

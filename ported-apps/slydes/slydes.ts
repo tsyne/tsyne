@@ -1,3 +1,8 @@
+// @tsyne-app:name Slydes
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M12 18v4"/><path d="M8 22h8"/><path d="M7 8h10"/><path d="M7 12h6"/></svg>
+// @tsyne-app:category creativity
+// @tsyne-app:builder createSlydesApp
+
 /**
  * Slydes - Markdown Presentation App for Tsyne
  *

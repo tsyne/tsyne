@@ -1,10 +1,15 @@
+// @tsyne-app:name Stopwatch
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M12 5V3"/><path d="M10 3h4"/><path d="M18 7l1.5-1.5"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder buildStopwatch
+
 // Stopwatch - Precise time tracking with lap times
 // Demonstrates timers, state management, and dynamic lists
 
-import { app } from '../src';
+import { app, App, Window } from '../src';
 
-app({ title: 'Stopwatch' }, (a) => {
-  a.window({ title: 'Stopwatch', width: 350, height: 450 }, (win) => {
+export function buildStopwatch(a: App) {
+  a.window({ title: 'Stopwatch', width: 350, height: 450 }, (win: Window) => {
     let startTime = 0;
     let elapsedTime = 0;
     let timerInterval: NodeJS.Timeout | null = null;
@@ -137,4 +142,11 @@ app({ title: 'Stopwatch' }, (a) => {
 
     win.show();
   });
-});
+}
+
+// Skip auto-run when imported by test framework or desktop
+const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+if (!isTestEnvironment) {
+  app({ title: 'Stopwatch' }, buildStopwatch);
+}
