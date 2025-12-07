@@ -54,7 +54,7 @@ describe('Daily Medication Checklist', () => {
     await ctx.getByID('itemsTextArea').within(500).shouldExist();
 
     // Enter some medications
-    await ctx.getByID('itemsTextArea').setText('Morning pill\nEvening pill\nVitamins');
+    await ctx.getByID('itemsTextArea').type('Morning pill\nEvening pill\nVitamins');
 
     // Save
     await ctx.getByID('saveBtn').click();
@@ -128,7 +128,7 @@ describe('Daily Medication Checklist', () => {
     await ctx.getByID('editBtn').click();
 
     // Change the text
-    await ctx.getByID('itemsTextArea').setText('Changed item\nNew item');
+    await ctx.getByID('itemsTextArea').type('Changed item\nNew item');
 
     // Cancel without saving
     await ctx.getByID('cancelBtn').click();
@@ -173,7 +173,7 @@ describe('Daily Medication Checklist', () => {
 
     // Enter edit mode and add items
     await ctx.getByID('editBtn').click();
-    await ctx.getByID('itemsTextArea').setText('Saved medication');
+    await ctx.getByID('itemsTextArea').type('Saved medication');
     await ctx.getByID('saveBtn').click();
 
     // Wait for save to complete
