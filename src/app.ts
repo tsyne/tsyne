@@ -3,7 +3,7 @@ import { GrpcBridgeConnection } from './grpcbridge';
 import { MsgpackBridgeConnection } from './msgpackbridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
-import { ITsyneWindow, createTsyneWindow, isDesktopMode } from './tsyne-window';
+import { ITsyneWindow, createTsyneWindow, isDesktopMode, isPhoneMode } from './tsyne-window';
 import {
   // Inputs
   Button,
@@ -272,8 +272,8 @@ export class App {
   window(options: WindowOptions, builder: (win: Window) => void): Window;
   window(options: WindowOptions, builder: (win: ITsyneWindow) => void): ITsyneWindow;
   window(options: WindowOptions, builder: (win: any) => void): Window | ITsyneWindow {
-    if (isDesktopMode()) {
-      // Desktop mode - create InnerWindow via factory
+    if (isDesktopMode() || isPhoneMode()) {
+      // Desktop/Phone mode - create InnerWindow or StackPane via factory
       const win = createTsyneWindow(this.ctx, options, builder);
       return win;
     } else {

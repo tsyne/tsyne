@@ -32,6 +32,9 @@ const GRID_COLS = 4;
 const GRID_ROWS = 4;
 const APPS_PER_PAGE = GRID_COLS * GRID_ROWS;
 
+// Tablet layout scale (800px tablet width is same as typical desktop)
+const TABLET_LAYOUT_SCALE = 1.0;
+
 // Tablet options
 export interface TabletTopOptions {
   /** Directory to scan for apps */
@@ -308,6 +311,7 @@ class TabletTop {
 
       (this.a as any).resources = scopedResources;
       this.a.getContext().setResourceScope(appScope);
+      this.a.getContext().setLayoutScale(TABLET_LAYOUT_SCALE);
 
       // Check if this is a phone app that needs service injection
       if (this.isPhoneApp(metadata)) {
@@ -337,6 +341,7 @@ class TabletTop {
       (this.a as any).window = originalWindow;
       (this.a as any).resources = originalResources;
       this.a.getContext().setResourceScope(null);
+      this.a.getContext().setLayoutScale(1.0);
 
       if (createdWindow) {
         this.openApps.set(metadata.filePath, { metadata, tsyneWindow: createdWindow });
@@ -345,6 +350,7 @@ class TabletTop {
     } finally {
       (this.a as any).resources = originalResources;
       this.a.getContext().setResourceScope(null);
+      this.a.getContext().setLayoutScale(1.0);
     }
   }
 

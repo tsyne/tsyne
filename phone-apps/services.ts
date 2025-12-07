@@ -350,7 +350,7 @@ export interface ISettingsService {
 }
 
 export class MockSettingsService implements ISettingsService {
-  private settings: Map<string, any> = new Map([
+  private settings: Map<string, any> = new Map<string, any>([
     ['theme', 'system'],
     ['brightness', 80],
     ['volume', 70],

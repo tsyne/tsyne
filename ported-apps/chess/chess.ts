@@ -10,7 +10,7 @@
  */
 
 // @tsyne-app:name Chess
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a2 2 0 012 2c0 .7-.4 1.4-1 1.7V9h2v3h-6V9h2V6.7A2 2 0 0112 3z"/><path d="M5 21h14l-2-8H7l-2 8z"/><path d="M12 16v5"/></svg>
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 22H5v-2h14v2M13 2c-1.25 0-2.42.62-3.11 1.66L7 8l2 2 2.06-1.37c.44-.29.94-.46 1.44-.51V14H7v2h3.5v3h3v-3H17v-2h-4.5V8.12c.5.05 1 .22 1.44.51L16 10l2-2-2.89-4.34C14.42 2.62 13.25 2 12 2h1z"/><path d="M5 22h14v-2H5v2z"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createChessApp
 // @tsyne-app:args app,resources
@@ -39,6 +39,11 @@ const imageCache = new Map<string, string>();
  * Cache for pre-rendered piece faces (shared across all ChessUI instances)
  */
 let pieceFacesCache: Map<string, string> | null = null;
+
+/**
+ * Cache for scaled piece images, keyed by "size:filename"
+ */
+const scaledPiecesCache: Map<string, string> = new Map();
 
 /**
  * Render an SVG file to a base64-encoded PNG
@@ -138,6 +143,12 @@ class ChessUI {
   private readonly SELECTED_COLOR = '#7fc97f';
   private readonly VALID_MOVE_COLOR = '#9fdf9f';
 
+  // Base square size (scales with layout context)
+  private readonly BASE_SQUARE_SIZE = 100;
+
+  // Captured scale factor at initialization (stored because PhoneTop may restore scale later)
+  private scaleFactor: number = 1.0;
+
   // Configurable AI response delay (default 500ms for natural feel, tests can use 10ms)
   private readonly aiDelayMs: number;
 
@@ -163,12 +174,27 @@ class ChessUI {
   }
 
   /**
+   * Get the scaled square size based on captured layout scale.
+   * Returns BASE_SQUARE_SIZE * layout scale (e.g., 50 on phone, 100 on desktop)
+   * Uses stored scaleFactor to ensure consistent sizing even after PhoneTop restores scale.
+   */
+  private get squareSize(): number {
+    return Math.round(this.BASE_SQUARE_SIZE * this.scaleFactor);
+  }
+
+  /**
    * Register all chess resources (squares and pieces) with the injected resource manager
    * This should be called once before building the UI
    */
   private async registerChessResources(): Promise<void> {
     if (this.resourcesRegistered) {
       return; // Already registered
+    }
+
+    // Capture scale factor now (context is available after app initialization)
+    // Store it for consistent sizing even after PhoneTop restores scale to 1.0
+    if (this.a.getContext) {
+      this.scaleFactor = this.a.getContext().getLayoutScale();
     }
 
     // Register empty light and dark squares (100x100px)
@@ -187,7 +213,8 @@ class ChessUI {
     ];
 
     for (const { color, type } of pieceTypes) {
-      const pieceImage = this.getPieceImage(color, type);
+      // Render piece at current scale (not from 80px cache)
+      const pieceImage = this.renderPieceAtScale(color, type);
       const resourceName = `chess-piece-${color}-${type}`;
       await this.resources.registerResource(resourceName, pieceImage);
     }
@@ -196,7 +223,7 @@ class ChessUI {
   }
 
   /**
-   * Get the base64 PNG data for a piece
+   * Get the base64 PNG data for a piece (from pre-rendered cache at 80px)
    */
   private getPieceImage(color: Color, piece: PieceSymbol): string {
     const colorName = color === 'w' ? 'white' : 'black';
@@ -217,6 +244,63 @@ class ChessUI {
       return '';
     }
     return data;
+  }
+
+  /**
+   * Render a piece at the current scaled size (for resource registration)
+   * Pieces are rendered at 80% of squareSize with 10% margin on each side
+   * Results are cached globally by size+filename for performance
+   */
+  private renderPieceAtScale(color: Color, piece: PieceSymbol): string {
+    const colorName = color === 'w' ? 'white' : 'black';
+    const pieceNames: Record<PieceSymbol, string> = {
+      'k': 'King',
+      'q': 'Queen',
+      'r': 'Rook',
+      'b': 'Bishop',
+      'n': 'Knight',
+      'p': 'Pawn'
+    };
+    const pieceName = pieceNames[piece];
+    const filename = `${colorName}${pieceName}.svg`;
+
+    // Render at scaled size (80% of square size for piece with 10% margin)
+    const pieceSize = Math.round(this.squareSize * 0.8);
+
+    // Check cache first
+    const cacheKey = `${pieceSize}:${filename}`;
+    if (scaledPiecesCache.has(cacheKey)) {
+      return scaledPiecesCache.get(cacheKey)!;
+    }
+
+    // Find the pieces directory
+    const possiblePaths = [
+      path.join(process.cwd(), 'pieces'),
+      path.join(process.cwd(), 'examples/chess/pieces'),
+      path.join(process.cwd(), '../examples/chess/pieces'),
+      path.join(__dirname, 'pieces')
+    ];
+    const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
+    const svgPath = path.join(piecesDir, filename);
+
+    if (!fs.existsSync(svgPath)) {
+      console.warn(`Piece SVG not found: ${svgPath}`);
+      return '';
+    }
+
+    const svgBuffer = fs.readFileSync(svgPath);
+    const resvg = new Resvg(svgBuffer, {
+      fitTo: { mode: 'width', value: pieceSize }
+    });
+    const pngData = resvg.render();
+    const pngBuffer = pngData.asPng();
+    const base64 = pngBuffer.toString('base64');
+    const dataUri = `data:image/png;base64,${base64}`;
+
+    // Cache for next time
+    scaledPiecesCache.set(cacheKey, dataUri);
+
+    return dataUri;
   }
 
   /**
@@ -344,21 +428,21 @@ class ChessUI {
 
     // Determine which square was dropped on
     // Board starts after status label
-    // Each square is 100x100
-    const boardStartY = 20;  // Account for status label
-    const squareSize = 100;
+    const boardStartY = this.a.getContext().scale(20);  // Account for status label (scaled)
+    const sqSize = this.squareSize;
+    const boardSize = sqSize * 8;
 
     const boardX = x;
     const boardY = y - boardStartY;
 
-    if (boardX < 0 || boardX >= 800 || boardY < 0 || boardY >= 800) {
+    if (boardX < 0 || boardX >= boardSize || boardY < 0 || boardY >= boardSize) {
       await this.updateStatus('Invalid drop location');
       // No board update needed - nothing changed
       return;
     }
 
-    const file = Math.floor(boardX / squareSize);
-    const rank = Math.floor(boardY / squareSize);
+    const file = Math.floor(boardX / sqSize);
+    const rank = Math.floor(boardY / sqSize);
     const to = this.coordsToSquare(file, rank);
 
     try {
@@ -467,16 +551,19 @@ class ChessUI {
   }
 
   /**
-   * Create a colored square image
+   * Create a colored square image at the scaled size
    */
   private createSquareImage(color: string, pieceImage?: string): string {
-    const size = 100;
+    const size = this.squareSize;
+    const pieceSize = Math.round(size * 0.8);  // Piece is 80% of square
+    const pieceOffset = Math.round(size * 0.1);  // 10% margin
+
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`;
     svg += `<rect width="${size}" height="${size}" fill="${color}"/>`;
 
     if (pieceImage) {
       // Embed the piece image
-      svg += `<image href="${pieceImage}" x="10" y="10" width="80" height="80"/>`;
+      svg += `<image href="${pieceImage}" x="${pieceOffset}" y="${pieceOffset}" width="${pieceSize}" height="${pieceSize}"/>`;
     }
 
     svg += '</svg>';
@@ -588,13 +675,15 @@ class ChessUI {
 
     const board = this.game.board();
 
-    this.a.vbox(() => {
-      // Status
-      this.statusLabel = this.a.label(this.currentStatus);
+    // Use max to fill available space and prevent white border
+    this.a.max(() => {
+      this.a.vbox(() => {
+        // Status
+        this.statusLabel = this.a.label(this.currentStatus);
 
-      // Chess board - 8x8 grid
-      for (let rank = 0; rank < 8; rank++) {
-        this.a.hbox(() => {
+        // Chess board - 8x8 grid
+        for (let rank = 0; rank < 8; rank++) {
+          this.a.hbox(() => {
           for (let file = 0; file < 8; file++) {
             const square = this.coordsToSquare(file, rank);
             const squareData = board[rank][file];
@@ -661,7 +750,8 @@ class ChessUI {
           }
         });
       }
-    });
+      });  // close vbox
+    });  // close max
   }
 
   /**

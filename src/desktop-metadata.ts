@@ -36,8 +36,8 @@ export interface AppMetadata {
   builder: string;
   /** The exported content builder function name (creates content only, for desktop) */
   contentBuilder?: string;
-  /** Instance count: 'one' (default) or 'many' for multi-instance apps */
-  count: 'one' | 'many';
+  /** Instance count: 'one' (default), 'many', or 'desktop-many' (multi on desktop only) */
+  count: 'one' | 'many' | 'desktop-many';
   /** Builder function arguments in order (e.g., ['app', 'resources']) - poor man's reflection */
   args: string[];
 }
@@ -64,7 +64,7 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
     let category: string | undefined;
     let builder: string | null = null;
     let contentBuilder: string | undefined;
-    let count: 'one' | 'many' = 'one';
+    let count: 'one' | 'many' | 'desktop-many' = 'one';
     let args: string[] = ['app'];  // Default: just app
 
     for (const line of lines) {
@@ -112,12 +112,14 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
         continue;
       }
 
-      // Parse @tsyne-app:count (one or many)
+      // Parse @tsyne-app:count (one, many, or desktop-many)
       const countMatch = trimmed.match(/^\/\/\s*@tsyne-app:count\s+(.+)$/);
       if (countMatch) {
         const countValue = countMatch[1].trim().toLowerCase();
         if (countValue === 'many') {
           count = 'many';
+        } else if (countValue === 'desktop-many') {
+          count = 'desktop-many';
         }
         continue;
       }

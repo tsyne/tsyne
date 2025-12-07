@@ -1,13 +1,14 @@
 /**
- * Tsyne PhoneTop - Phone Shell Environment
+ * Tsyne Phone Modem Simulator
  *
- * A phone-like environment for launching phone apps.
+ * A phone simulator environment for phone apps with hardware logging.
  * Features:
  * - Portrait phone interface with app grid
  * - "Modem Console" window showing human-readable hardware interactions
  * - Apps use LoggingServices that report what they'd do to real phone hardware
+ * - Injects telephony, SMS, contacts, clock, notifications, storage, settings services
  *
- * Run with: ./scripts/tsyne src/PhoneTop.ts
+ * Run with: ./scripts/tsyne src/phone-modem-simulator.ts
  */
 
 import { App } from './app';
@@ -42,7 +43,7 @@ interface PhoneApp {
   win: Window | null;
 }
 
-class PhoneTop {
+class PhoneModemSimulator {
   private a: App;
   private mainWin: Window | null = null;
   private modemWin: Window | null = null;
@@ -275,19 +276,19 @@ class PhoneTop {
 /**
  * Build the phone environment
  */
-export async function buildPhoneTop(a: App): Promise<void> {
-  const phone = new PhoneTop(a);
+export async function buildPhoneModemSimulator(a: App): Promise<void> {
+  const phone = new PhoneModemSimulator(a);
   await phone.init();
   phone.build();
 }
 
-export { PhoneTop };
+export { PhoneModemSimulator };
 
 // Entry point
 if (require.main === module) {
   const { app } = require('./index');
 
-  app({ title: 'Tsyne Phone' }, async (a: App) => {
-    await buildPhoneTop(a);
+  app({ title: 'Phone Simulator' }, async (a: App) => {
+    await buildPhoneModemSimulator(a);
   });
 }

@@ -239,6 +239,146 @@ export class InnerWindowAdapter implements ITsyneWindow {
 }
 
 /**
+ * Adapter that renders window content as a stack pane (full-screen layer).
+ * Used by PhoneTop for phone-style app rendering.
+ */
+export class StackPaneAdapter implements ITsyneWindow {
+  private ctx: Context;
+  private parentWindow: Window;
+  private _id: string;
+  private _title: string;
+  private _contentBuilder: (() => void) | null = null;
+  private closeInterceptCallback?: () => Promise<boolean> | boolean;
+  private onShow?: (adapter: StackPaneAdapter) => void;
+  private onClose?: (adapter: StackPaneAdapter) => void;
+
+  constructor(
+    ctx: Context,
+    parentWindow: Window,
+    options: WindowOptions,
+    callbacks: {
+      onShow?: (adapter: StackPaneAdapter) => void;
+      onClose?: (adapter: StackPaneAdapter) => void;
+    },
+    builder?: (win: ITsyneWindow) => void
+  ) {
+    this.ctx = ctx;
+    this.parentWindow = parentWindow;
+    this._id = ctx.generateId('stackpane');
+    this._title = options.title;
+    this.onShow = callbacks.onShow;
+    this.onClose = callbacks.onClose;
+
+    // If builder is provided, call it - it will typically call setContent()
+    if (builder) {
+      builder(this);
+    }
+
+    // In phone mode, automatically notify that the adapter was created
+    // (most apps don't explicitly call show())
+    if (this.onShow) {
+      this.onShow(this);
+    }
+  }
+
+  get id(): string {
+    return this._id;
+  }
+
+  get title(): string {
+    return this._title;
+  }
+
+  /**
+   * Get the captured content builder
+   */
+  get contentBuilder(): (() => void) | null {
+    return this._contentBuilder;
+  }
+
+  /**
+   * Set the content - captures the builder for later rendering
+   */
+  async setContent(builder: () => void | Promise<void>): Promise<void> {
+    this._contentBuilder = builder as () => void;
+  }
+
+  async show(): Promise<void> {
+    if (this.onShow) {
+      this.onShow(this);
+    }
+  }
+
+  async hide(): Promise<void> {
+    // Stack panes don't hide - they switch away
+  }
+
+  async close(): Promise<void> {
+    if (this.closeInterceptCallback) {
+      const shouldClose = await this.closeInterceptCallback();
+      if (shouldClose === false) {
+        return;
+      }
+    }
+    if (this.onClose) {
+      this.onClose(this);
+    }
+  }
+
+  setTitle(title: string): void {
+    this._title = title;
+  }
+
+  // === Window-specific methods (no-op in stack pane) ===
+
+  async resize(_width: number, _height: number): Promise<void> {}
+  async centerOnScreen(): Promise<void> {}
+  async setFullScreen(_fullscreen: boolean): Promise<void> {}
+  async setIcon(_resourceName: string): Promise<void> {}
+
+  setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
+    this.closeInterceptCallback = callback;
+  }
+
+  async setMainMenu(_menuDefinition: Array<{
+    label: string;
+    items: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
+  }>): Promise<void> {
+    // Menus not displayed in stack pane mode
+  }
+
+  // === Dialogs - delegate to parent window ===
+
+  async showInfo(title: string, message: string): Promise<void> {
+    return this.parentWindow.showInfo(title, message);
+  }
+
+  async showError(title: string, message: string): Promise<void> {
+    return this.parentWindow.showError(title, message);
+  }
+
+  async showConfirm(title: string, message: string): Promise<boolean> {
+    return this.parentWindow.showConfirm(title, message);
+  }
+
+  async showFileOpen(): Promise<string | null> {
+    return this.parentWindow.showFileOpen();
+  }
+
+  async showFileSave(filename?: string): Promise<string | null> {
+    return this.parentWindow.showFileSave(filename);
+  }
+
+  async showFolderOpen(): Promise<string | null> {
+    return this.parentWindow.showFolderOpen();
+  }
+
+  async showEntryDialog(title: string, message: string): Promise<string | null> {
+    return this.parentWindow.showEntryDialog(title, message);
+  }
+}
+
+/**
  * Desktop context for creating windows as InnerWindows
  */
 export interface DesktopContext {
@@ -254,15 +394,31 @@ export interface DesktopContext {
 }
 
 /**
+ * PhoneTop context for creating windows as stack panes
+ */
+export interface PhoneTopContext {
+  parentWindow: Window;
+  phoneApp: any;  // The PhoneTop's App instance
+  onShow: (adapter: StackPaneAdapter) => void;
+  onClose: (adapter: StackPaneAdapter) => void;
+}
+
+/**
  * Global desktop context - set when running in desktop mode
  */
 let desktopContext: DesktopContext | null = null;
+
+/**
+ * Global phone context - set when running in phone mode
+ */
+let phoneContext: PhoneTopContext | null = null;
 
 /**
  * Enable desktop mode - subsequent window() calls create InnerWindows
  */
 export function enableDesktopMode(ctx: DesktopContext): void {
   desktopContext = ctx;
+  phoneContext = null;  // Mutually exclusive
 }
 
 /**
@@ -273,10 +429,32 @@ export function disableDesktopMode(): void {
 }
 
 /**
+ * Enable phone mode - subsequent window() calls create StackPanes
+ */
+export function enablePhoneMode(ctx: PhoneTopContext): void {
+  phoneContext = ctx;
+  desktopContext = null;  // Mutually exclusive
+}
+
+/**
+ * Disable phone mode
+ */
+export function disablePhoneMode(): void {
+  phoneContext = null;
+}
+
+/**
  * Check if currently in desktop mode
  */
 export function isDesktopMode(): boolean {
   return desktopContext !== null;
+}
+
+/**
+ * Check if currently in phone mode
+ */
+export function isPhoneMode(): boolean {
+  return phoneContext !== null;
 }
 
 /**
@@ -287,7 +465,14 @@ export function getDesktopContext(): DesktopContext | null {
 }
 
 /**
- * Create a TsyneWindow - either a real Window or an InnerWindowAdapter
+ * Get the current phone context (if in phone mode)
+ */
+export function getPhoneContext(): PhoneTopContext | null {
+  return phoneContext;
+}
+
+/**
+ * Create a TsyneWindow - either a real Window, InnerWindowAdapter, or StackPaneAdapter
  * based on the current runtime mode.
  */
 export function createTsyneWindow(
@@ -295,7 +480,19 @@ export function createTsyneWindow(
   options: WindowOptions,
   builder?: (win: ITsyneWindow) => void
 ): ITsyneWindow {
-  if (desktopContext) {
+  if (phoneContext) {
+    // Phone mode - create StackPaneAdapter
+    return new StackPaneAdapter(
+      ctx,
+      phoneContext.parentWindow,
+      options,
+      {
+        onShow: phoneContext.onShow,
+        onClose: phoneContext.onClose
+      },
+      builder
+    );
+  } else if (desktopContext) {
     // Desktop mode - create InnerWindowAdapter
     // Use desktopMDI if available (preferred), otherwise fall back to mdiContainer
     const container = desktopContext.desktopMDI || desktopContext.mdiContainer;

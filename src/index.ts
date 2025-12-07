@@ -1,6 +1,6 @@
 import { App, AppOptions } from './app';
 import { Context } from './context';
-import { isDesktopMode, getDesktopContext } from './tsyne-window';
+import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from './tsyne-window';
 import {
   // Inputs
   Button,
@@ -116,6 +116,17 @@ export function app(options: AppOptions, builder: (app: App) => void | Promise<v
       // Return the desktop's App but DON'T call the builder
       // The desktop will call the builder itself via loadAppBuilder()
       return desktopCtx.desktopApp;
+    }
+  }
+
+  // In phone mode, app() is also a no-op - PhoneTop will call the builder
+  // to create the app's UI as a stack pane
+  if (isPhoneMode()) {
+    const phoneCtx = getPhoneContext();
+    if (phoneCtx && phoneCtx.phoneApp) {
+      // Return the phone's App but DON'T call the builder
+      // PhoneTop will call the builder itself via loadAppBuilder()
+      return phoneCtx.phoneApp;
     }
   }
 

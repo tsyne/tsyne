@@ -25,6 +25,7 @@ export class Context {
   private _testHarness: TestHarness | null = null;
   private pendingRegistrations: Promise<void>[] = [];
   private _resourceScope: string | null = null;
+  private _layoutScale: number = 1.0;
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
@@ -54,6 +55,31 @@ export class Context {
    */
   scopeResourceName(name: string): string {
     return this._resourceScope ? `${this._resourceScope}:${name}` : name;
+  }
+
+  /**
+   * Set layout scale for responsive sizing.
+   * 1.0 = desktop (default), 0.5 = phone, 0.7 = tablet, etc.
+   * Apps can use this to scale UI elements proportionally.
+   */
+  setLayoutScale(scale: number): void {
+    this._layoutScale = scale;
+  }
+
+  /**
+   * Get the current layout scale.
+   * Returns 1.0 for desktop, smaller values for phone/tablet.
+   */
+  getLayoutScale(): number {
+    return this._layoutScale;
+  }
+
+  /**
+   * Scale a value by the current layout scale.
+   * Convenience method: scale(100) returns 50 when layoutScale is 0.5
+   */
+  scale(value: number): number {
+    return Math.round(value * this._layoutScale);
   }
 
   /**
@@ -216,6 +242,20 @@ class ScopedContext extends Context {
    */
   override get testHarness() {
     return this.parentCtx.testHarness;
+  }
+
+  /**
+   * Layout scale comes from parent
+   */
+  override getLayoutScale(): number {
+    return this.parentCtx.getLayoutScale();
+  }
+
+  /**
+   * Scale using parent's layout scale
+   */
+  override scale(value: number): number {
+    return this.parentCtx.scale(value);
   }
 
   // ============================================================================
