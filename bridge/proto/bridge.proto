@@ -56,6 +56,8 @@ service BridgeService {
   rpc CreateVBox(CreateVBoxRequest) returns (Response);
   rpc CreateHBox(CreateHBoxRequest) returns (Response);
   rpc CreateScroll(CreateScrollRequest) returns (Response);
+  rpc SetScrollMinHeight(SetScrollMinHeightRequest) returns (Response);
+  rpc SetScrollMinSize(SetScrollMinSizeRequest) returns (Response);
   rpc CreateGrid(CreateGridRequest) returns (Response);
   rpc CreateCenter(CreateCenterRequest) returns (Response);
   rpc CreateClip(CreateClipRequest) returns (Response);
@@ -467,6 +469,17 @@ message CreateSelectRequest {
 message CreateScrollRequest {
   string widget_id = 1;
   string content_id = 2;  // ID of widget to scroll
+}
+
+message SetScrollMinHeightRequest {
+  string widget_id = 1;
+  float min_height = 2;
+}
+
+message SetScrollMinSizeRequest {
+  string widget_id = 1;
+  float min_width = 2;
+  float min_height = 3;
 }
 
 message CreateGridRequest {

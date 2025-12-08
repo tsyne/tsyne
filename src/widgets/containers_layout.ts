@@ -58,6 +58,34 @@ export class Scroll {
     ctx.bridge.send('createScroll', { id: this.id, contentId });
     ctx.addToCurrentContainer(this.id);
   }
+
+  /**
+   * Set minimum height for the scroll container
+   */
+  withMinHeight(height: number): Scroll {
+    this.ctx.bridge.send('setScrollMinHeight', { id: this.id, minHeight: height });
+    return this;
+  }
+
+  /**
+   * Set minimum size (width and height) for the scroll container
+   */
+  withMinSize(width: number, height: number): Scroll {
+    this.ctx.bridge.send('setScrollMinSize', { id: this.id, minWidth: width, minHeight: height });
+    return this;
+  }
+
+  /**
+   * Set a custom widget ID for testing
+   * @returns this for method chaining
+   */
+  withId(customId: string): Scroll {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
 }
 
 /**
@@ -295,6 +323,18 @@ export class Border {
 
     ctx.bridge.send('createBorder', payload);
     ctx.addToCurrentContainer(this.id);
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
   }
 }
 

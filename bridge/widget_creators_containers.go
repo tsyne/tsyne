@@ -106,6 +106,77 @@ func (b *Bridge) handleCreateScroll(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleSetScrollMinHeight(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	minHeight := toFloat32(msg.Payload["minHeight"])
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scroll widget not found",
+		}
+	}
+
+	scroll, ok := widget.(*container.Scroll)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a scroll container",
+		}
+	}
+
+	fyne.Do(func() {
+		scroll.SetMinSize(fyne.NewSize(scroll.MinSize().Width, minHeight))
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleSetScrollMinSize(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	minWidth := toFloat32(msg.Payload["minWidth"])
+	minHeight := toFloat32(msg.Payload["minHeight"])
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scroll widget not found",
+		}
+	}
+
+	scroll, ok := widget.(*container.Scroll)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a scroll container",
+		}
+	}
+
+	fyne.Do(func() {
+		scroll.SetMinSize(fyne.NewSize(minWidth, minHeight))
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleCreateGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	columns := int(msg.Payload["columns"].(float64))

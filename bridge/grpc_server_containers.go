@@ -29,6 +29,45 @@ func (s *grpcBridgeService) CreateScroll(ctx context.Context, req *pb.CreateScro
 	}, nil
 }
 
+// SetScrollMinHeight sets minimum height for a scroll container
+func (s *grpcBridgeService) SetScrollMinHeight(ctx context.Context, req *pb.SetScrollMinHeightRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setScrollMinHeight",
+		Payload: map[string]interface{}{
+			"id":        req.WidgetId,
+			"minHeight": float64(req.MinHeight),
+		},
+	}
+
+	resp := s.bridge.handleSetScrollMinHeight(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetScrollMinSize sets minimum width and height for a scroll container
+func (s *grpcBridgeService) SetScrollMinSize(ctx context.Context, req *pb.SetScrollMinSizeRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setScrollMinSize",
+		Payload: map[string]interface{}{
+			"id":        req.WidgetId,
+			"minWidth":  float64(req.MinWidth),
+			"minHeight": float64(req.MinHeight),
+		},
+	}
+
+	resp := s.bridge.handleSetScrollMinSize(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // CreateGrid creates a grid container
 func (s *grpcBridgeService) CreateGrid(ctx context.Context, req *pb.CreateGridRequest) (*pb.Response, error) {
 	payload := map[string]interface{}{

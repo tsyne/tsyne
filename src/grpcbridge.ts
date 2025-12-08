@@ -105,6 +105,8 @@ export class GrpcBridgeConnection implements BridgeInterface {
   private authToken?: string;
   // Cached metadata object - reused for all requests
   private cachedMetadata?: grpc.Metadata;
+  // Message queue to ensure sequential processing (preserves ordering like stdio/msgpack)
+  private messageQueue: Promise<unknown> = Promise.resolve();
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -258,6 +260,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
   /**
    * Send a message via gRPC - maps message types to gRPC methods
+   * Messages are queued and processed sequentially to preserve ordering (like stdio/msgpack)
    */
   async send(type: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     await this.readyPromise;
@@ -266,6 +269,17 @@ export class GrpcBridgeConnection implements BridgeInterface {
       throw new Error('gRPC client not connected');
     }
 
+    // Queue this message to ensure sequential processing
+    const messagePromise = this.messageQueue.then(() => this.sendGrpcCall(type, payload));
+    // Update queue to wait for this message (but catch errors to prevent queue breakage)
+    this.messageQueue = messagePromise.catch(() => {});
+    return messagePromise;
+  }
+
+  /**
+   * Internal method to make the actual gRPC call
+   */
+  private sendGrpcCall(type: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
       // Map message type to gRPC method and request
       const { method, request } = this.mapMessageToGrpc(type, payload);
@@ -295,18 +309,9 @@ export class GrpcBridgeConnection implements BridgeInterface {
             // Return the relevant response fields based on response type
             // For responses with specific fields (widgetIds, text, etc.) return those directly
             // For generic responses with result map, return result
-            if (response?.widgetIds !== undefined) {
-              resolve({ widgetIds: response.widgetIds });
-            } else if (response?.text !== undefined) {
-              resolve({ text: response.text });
-            } else if (response?.value !== undefined) {
-              resolve({ value: response.value });
-            } else if (response?.checked !== undefined) {
-              resolve({ checked: response.checked });
-            } else if (response?.widgets !== undefined) {
-              resolve({ widgets: response.widgets });
-            } else if (response?.id !== undefined) {
-              // WidgetInfoResponse
+            // Note: Check WidgetInfoResponse FIRST because it has text/id/type fields too
+            if (response?.width !== undefined || response?.height !== undefined) {
+              // WidgetInfoResponse (has width/height which are unique to it)
               resolve({
                 id: response.id,
                 type: response.type,
@@ -316,6 +321,16 @@ export class GrpcBridgeConnection implements BridgeInterface {
                 width: response.width,
                 height: response.height
               });
+            } else if (response?.widgetIds !== undefined) {
+              resolve({ widgetIds: response.widgetIds });
+            } else if (response?.text !== undefined) {
+              resolve({ text: response.text });
+            } else if (response?.value !== undefined) {
+              resolve({ value: response.value });
+            } else if (response?.checked !== undefined) {
+              resolve({ checked: response.checked });
+            } else if (response?.widgets !== undefined) {
+              resolve({ widgets: response.widgets });
             } else {
               resolve((response as { result?: Record<string, unknown> })?.result || {});
             }
@@ -425,9 +440,206 @@ export class GrpcBridgeConnection implements BridgeInterface {
           }
         };
       case 'createVBox':
-        return { method: 'createVBox', request: { widgetId: payload.widgetId || payload.id } };
+        return {
+          method: 'createVBox',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            children: payload.children || []
+          }
+        };
       case 'createHBox':
-        return { method: 'createHBox', request: { widgetId: payload.widgetId || payload.id } };
+        return {
+          method: 'createHBox',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            children: payload.children || []
+          }
+        };
+      case 'createScroll':
+        return {
+          method: 'createScroll',
+          request: { widgetId: payload.widgetId || payload.id, contentId: payload.contentId }
+        };
+      case 'setScrollMinHeight':
+        return {
+          method: 'setScrollMinHeight',
+          request: { widgetId: payload.id, minHeight: payload.minHeight }
+        };
+      case 'setScrollMinSize':
+        return {
+          method: 'setScrollMinSize',
+          request: { widgetId: payload.id, minWidth: payload.minWidth, minHeight: payload.minHeight }
+        };
+      case 'createGrid':
+        return {
+          method: 'createGrid',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            columns: payload.columns || 1,
+            children: payload.children || []
+          }
+        };
+      case 'createCenter':
+        return {
+          method: 'createCenter',
+          request: { widgetId: payload.widgetId || payload.id, childId: payload.childId }
+        };
+      case 'createClip':
+        return {
+          method: 'createClip',
+          request: { widgetId: payload.widgetId || payload.id, childId: payload.childId }
+        };
+      case 'createMax':
+        return {
+          method: 'createMax',
+          request: { widgetId: payload.widgetId || payload.id, childIds: payload.childIds || [] }
+        };
+      case 'createStack':
+        return {
+          method: 'createStack',
+          request: { widgetId: payload.widgetId || payload.id, childIds: payload.childIds || [] }
+        };
+      case 'createPadded':
+        return {
+          method: 'createPadded',
+          request: { widgetId: payload.widgetId || payload.id, childId: payload.childId }
+        };
+      case 'createBorder':
+        return {
+          method: 'createBorder',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            topId: payload.topId || '',
+            bottomId: payload.bottomId || '',
+            leftId: payload.leftId || '',
+            rightId: payload.rightId || '',
+            centerId: payload.centerId || ''
+          }
+        };
+      case 'createGridWrap':
+        return {
+          method: 'createGridWrap',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            itemWidth: payload.itemWidth || 0,
+            itemHeight: payload.itemHeight || 0,
+            children: payload.children || []
+          }
+        };
+      case 'createAdaptiveGrid':
+        return {
+          method: 'createAdaptiveGrid',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            rowcols: payload.rowcols || 1,
+            children: payload.children || []
+          }
+        };
+      case 'createSplit':
+        return {
+          method: 'createSplit',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            orientation: payload.orientation === 'horizontal' ? 1 : 0,
+            leadingId: payload.leadingId || '',
+            trailingId: payload.trailingId || '',
+            offset: payload.offset || 0.5
+          }
+        };
+      case 'createCard':
+        return {
+          method: 'createCard',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            title: payload.title || '',
+            subtitle: payload.subtitle || '',
+            contentId: payload.contentId || ''
+          }
+        };
+      case 'createAccordion':
+        return {
+          method: 'createAccordion',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            items: (payload.items as Array<{title: string; contentId: string}>) || []
+          }
+        };
+      case 'createForm':
+        return {
+          method: 'createForm',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            items: (payload.items as Array<{label: string; widgetId: string}>) || [],
+            submitCallbackId: payload.submitCallbackId || '',
+            cancelCallbackId: payload.cancelCallbackId || ''
+          }
+        };
+      case 'createTabs':
+        return {
+          method: 'createTabs',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            tabs: (payload.tabs as Array<{title: string; contentId: string}>) || [],
+            location: payload.location === 'bottom' ? 1 : payload.location === 'leading' ? 2 : payload.location === 'trailing' ? 3 : 0
+          }
+        };
+      case 'createDocTabs':
+        return {
+          method: 'createDocTabs',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            tabs: (payload.tabs as Array<{title: string; contentId: string}>) || [],
+            closeCallbackId: payload.closeCallbackId || '',
+            location: payload.location === 'bottom' ? 1 : payload.location === 'leading' ? 2 : payload.location === 'trailing' ? 3 : 0
+          }
+        };
+      case 'createThemeOverride':
+        return {
+          method: 'createThemeOverride',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            childId: payload.childId || '',
+            variant: payload.variant === 'dark' ? 1 : 0
+          }
+        };
+      case 'createInnerWindow':
+        return {
+          method: 'createInnerWindow',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            title: payload.title || '',
+            contentId: payload.contentId || '',
+            onCloseCallbackId: payload.onCloseCallbackId || ''
+          }
+        };
+      case 'createNavigation':
+        return {
+          method: 'createNavigation',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            rootId: payload.rootId || '',
+            title: payload.title || '',
+            onBackCallbackId: payload.onBackCallbackId || '',
+            onForwardCallbackId: payload.onForwardCallbackId || ''
+          }
+        };
+      case 'createPopup':
+        return {
+          method: 'createPopup',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            contentId: payload.contentId || '',
+            windowId: payload.windowId || ''
+          }
+        };
+      case 'createMultipleWindows':
+        return {
+          method: 'createMultipleWindows',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            children: payload.children || []
+          }
+        };
       case 'createCheckbox':
         return {
           method: 'createCheckbox',
@@ -467,6 +679,336 @@ export class GrpcBridgeConnection implements BridgeInterface {
           }
         }
         return { method: 'createImage', request: imgRequest };
+
+      // Display widgets
+      case 'createSeparator':
+        return { method: 'createSeparator', request: { widgetId: payload.widgetId || payload.id } };
+      case 'createSpacer':
+        return { method: 'createSpacer', request: { widgetId: payload.widgetId || payload.id } };
+      case 'createHyperlink':
+        return {
+          method: 'createHyperlink',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            text: payload.text || '',
+            url: payload.url || ''
+          }
+        };
+      case 'createProgressBar':
+        return {
+          method: 'createProgressBar',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            value: payload.value || 0,
+            infinite: payload.infinite || false
+          }
+        };
+      case 'createActivity':
+        return { method: 'createActivity', request: { widgetId: payload.widgetId || payload.id } };
+      case 'createRichText':
+        return {
+          method: 'createRichText',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            segments: (payload.segments as Array<{text: string; bold?: boolean; italic?: boolean; monospace?: boolean; hyperlink?: string}>) || []
+          }
+        };
+      case 'createIcon':
+        return {
+          method: 'createIcon',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            iconName: payload.iconName || payload.name || ''
+          }
+        };
+      case 'createFileIcon':
+        return {
+          method: 'createFileIcon',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            path: payload.path || ''
+          }
+        };
+      case 'createCalendar':
+        return {
+          method: 'createCalendar',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            callbackId: payload.callbackId || '',
+            date: payload.date || ''
+          }
+        };
+
+      // Input widgets
+      case 'createSlider':
+        return {
+          method: 'createSlider',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            min: payload.min || 0,
+            max: payload.max || 100,
+            value: payload.value || 0,
+            step: payload.step || 1,
+            callbackId: payload.callbackId || ''
+          }
+        };
+      case 'createRadioGroup':
+        return {
+          method: 'createRadioGroup',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            options: payload.options || [],
+            selected: payload.selected || '',
+            callbackId: payload.callbackId || '',
+            horizontal: payload.horizontal || false
+          }
+        };
+      case 'createCheckGroup':
+        return {
+          method: 'createCheckGroup',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            options: payload.options || [],
+            selected: payload.selected || [],
+            callbackId: payload.callbackId || '',
+            horizontal: payload.horizontal || false
+          }
+        };
+      case 'createSelectEntry':
+        return {
+          method: 'createSelectEntry',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            options: payload.options || [],
+            placeholder: payload.placeholder || '',
+            onChangedCallbackId: payload.onChangedCallbackId || '',
+            onSubmittedCallbackId: payload.onSubmittedCallbackId || '',
+            onSelectedCallbackId: payload.onSelectedCallbackId || ''
+          }
+        };
+      case 'createDateEntry':
+        return {
+          method: 'createDateEntry',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            callbackId: payload.callbackId || '',
+            date: payload.date || ''
+          }
+        };
+
+      // Data widgets
+      case 'createTree':
+        return {
+          method: 'createTree',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            rootLabel: payload.rootLabel || ''
+          }
+        };
+      case 'createTable':
+        return {
+          method: 'createTable',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            headers: payload.headers || [],
+            data: (payload.data as Array<{cells: string[]}>) || []
+          }
+        };
+      case 'createList':
+        return {
+          method: 'createList',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            items: payload.items || [],
+            callbackId: payload.callbackId || '',
+            onUnselectedCallbackId: payload.onUnselectedCallbackId || ''
+          }
+        };
+      case 'createMenu':
+        return {
+          method: 'createMenu',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            items: (payload.items as Array<{label: string; callbackId?: string; isSeparator?: boolean}>) || []
+          }
+        };
+      case 'createToolbar':
+        return {
+          method: 'createToolbar',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            items: (payload.items as Array<{label: string; iconResource?: string; callbackId?: string; isSeparator?: boolean; isSpacer?: boolean}>) || []
+          }
+        };
+      case 'createTextGrid':
+        return {
+          method: 'createTextGrid',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            text: payload.text || '',
+            showLineNumbers: payload.showLineNumbers || false,
+            showWhitespace: payload.showWhitespace || false,
+            onKeyDownCallbackId: payload.onKeyDownCallbackId || '',
+            onKeyUpCallbackId: payload.onKeyUpCallbackId || '',
+            onTypedCallbackId: payload.onTypedCallbackId || '',
+            onFocusCallbackId: payload.onFocusCallbackId || ''
+          }
+        };
+
+      // Canvas widgets
+      case 'createCanvasLine':
+        return {
+          method: 'createCanvasLine',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            x1: payload.x1 || 0,
+            y1: payload.y1 || 0,
+            x2: payload.x2 || 0,
+            y2: payload.y2 || 0,
+            strokeColor: payload.strokeColor || '',
+            strokeWidth: payload.strokeWidth || 1
+          }
+        };
+      case 'createCanvasCircle':
+        return {
+          method: 'createCanvasCircle',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            x: payload.x || 0,
+            y: payload.y || 0,
+            x2: payload.x2 || 0,
+            y2: payload.y2 || 0,
+            fillColor: payload.fillColor || '',
+            strokeColor: payload.strokeColor || '',
+            strokeWidth: payload.strokeWidth || 0
+          }
+        };
+      case 'createCanvasRectangle':
+        return {
+          method: 'createCanvasRectangle',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            width: payload.width || 0,
+            height: payload.height || 0,
+            fillColor: payload.fillColor || '',
+            strokeColor: payload.strokeColor || '',
+            strokeWidth: payload.strokeWidth || 0,
+            cornerRadius: payload.cornerRadius || 0
+          }
+        };
+      case 'createCanvasText':
+        return {
+          method: 'createCanvasText',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            text: payload.text || '',
+            color: payload.color || '',
+            textSize: payload.textSize || 12,
+            bold: payload.bold || false,
+            italic: payload.italic || false,
+            monospace: payload.monospace || false,
+            alignment: payload.alignment || 0
+          }
+        };
+      case 'createCanvasRaster':
+        return {
+          method: 'createCanvasRaster',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            width: payload.width || 0,
+            height: payload.height || 0,
+            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0)
+          }
+        };
+      case 'createCanvasLinearGradient':
+        return {
+          method: 'createCanvasLinearGradient',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            startColor: payload.startColor || '',
+            endColor: payload.endColor || '',
+            angle: payload.angle || 0,
+            width: payload.width || 0,
+            height: payload.height || 0
+          }
+        };
+      case 'createCanvasRadialGradient':
+        return {
+          method: 'createCanvasRadialGradient',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            startColor: payload.startColor || '',
+            endColor: payload.endColor || '',
+            centerOffsetX: payload.centerOffsetX || 0,
+            centerOffsetY: payload.centerOffsetY || 0,
+            width: payload.width || 0,
+            height: payload.height || 0
+          }
+        };
+      case 'createCanvasArc':
+        return {
+          method: 'createCanvasArc',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            x: payload.x || 0,
+            y: payload.y || 0,
+            x2: payload.x2 || 0,
+            y2: payload.y2 || 0,
+            startAngle: payload.startAngle || 0,
+            endAngle: payload.endAngle || 0,
+            fillColor: payload.fillColor || '',
+            strokeColor: payload.strokeColor || '',
+            strokeWidth: payload.strokeWidth || 0
+          }
+        };
+      case 'createCanvasPolygon':
+        return {
+          method: 'createCanvasPolygon',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            points: (payload.points as Array<{x: number; y: number}>) || [],
+            fillColor: payload.fillColor || '',
+            strokeColor: payload.strokeColor || '',
+            strokeWidth: payload.strokeWidth || 0
+          }
+        };
+      case 'createTappableCanvasRaster':
+        return {
+          method: 'createTappableCanvasRaster',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            width: payload.width || 0,
+            height: payload.height || 0,
+            pixels: payload.pixels ? Buffer.from(String(payload.pixels), 'base64') : Buffer.alloc(0),
+            callbackId: payload.callbackId || ''
+          }
+        };
+
+      // Desktop widgets
+      case 'createDesktopCanvas':
+        return {
+          method: 'createDesktopCanvas',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            bgColor: payload.bgColor || ''
+          }
+        };
+      case 'createDesktopIcon':
+        return {
+          method: 'createDesktopIcon',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            desktopId: payload.desktopId || '',
+            label: payload.label || '',
+            x: payload.x || 0,
+            y: payload.y || 0,
+            color: payload.color || '',
+            onClickCallbackId: payload.onClickCallbackId || '',
+            onDblClickCallbackId: payload.onDblClickCallbackId || '',
+            dragCallbackId: payload.dragCallbackId || '',
+            dragEndCallbackId: payload.dragEndCallbackId || ''
+          }
+        };
 
       // Resources
       case 'registerResource':

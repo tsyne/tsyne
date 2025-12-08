@@ -382,6 +382,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetWidgetHoverable(msg)
 	case "createMenu":
 		return b.handleCreateMenu(msg)
+	case "setScrollMinHeight":
+		return b.handleSetScrollMinHeight(msg)
+	case "setScrollMinSize":
+		return b.handleSetScrollMinSize(msg)
 	// Canvas primitives
 	case "createCanvasLine":
 		return b.handleCreateCanvasLine(msg)

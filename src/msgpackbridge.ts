@@ -89,6 +89,8 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   private receiveBuffer = Buffer.allocUnsafe(65536); // Pre-allocated 64KB buffer
   private receiveLength = 0; // Track how much data is in the buffer
   private bufferPool = new BufferPool(); // Pool for send frame buffers
+  // Message queue to ensure sequential processing (preserves ordering)
+  private messageQueue: Promise<unknown> = Promise.resolve();
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -290,6 +292,10 @@ export class MsgpackBridgeConnection implements BridgeInterface {
     return this.readyPromise;
   }
 
+  /**
+   * Send a message via MessagePack over UDS
+   * Messages are queued and processed sequentially to preserve ordering
+   */
   async send(type: string, payload: Record<string, unknown>): Promise<unknown> {
     await this.readyPromise;
 
@@ -297,6 +303,17 @@ export class MsgpackBridgeConnection implements BridgeInterface {
       throw new Error('Socket not connected');
     }
 
+    // Queue this message to ensure sequential processing
+    const messagePromise = this.messageQueue.then(() => this.sendMsgpackMessage(type, payload));
+    // Update queue to wait for this message (but catch errors to prevent queue breakage)
+    this.messageQueue = messagePromise.catch(() => {});
+    return messagePromise;
+  }
+
+  /**
+   * Internal method to send the actual MessagePack message
+   */
+  private sendMsgpackMessage(type: string, payload: Record<string, unknown>): Promise<unknown> {
     const id = `msg_${this.messageId++}`;
     const message: MsgpackMessage = { id, type, payload };
 

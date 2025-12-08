@@ -33,9 +33,10 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 		b.mu.Unlock()
 
 		// Set window size if provided
-		if width, ok := msg.Payload["width"].(float64); ok {
-			if height, ok := msg.Payload["height"].(float64); ok {
-				win.Resize(fyne.NewSize(float32(width), float32(height)))
+		// Use toFloat32 helper to handle msgpack numeric encoding (int64, uint16, etc.)
+		if widthVal, ok := msg.Payload["width"]; ok {
+			if heightVal, ok := msg.Payload["height"]; ok {
+				win.Resize(fyne.NewSize(toFloat32(widthVal), toFloat32(heightVal)))
 			}
 		}
 

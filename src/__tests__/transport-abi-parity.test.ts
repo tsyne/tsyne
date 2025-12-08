@@ -22,6 +22,7 @@ const bridgePath = path.join(__dirname, '../../bridge');
 const protoPath = path.join(bridgePath, 'proto/bridge.proto');
 const handlerPath = path.join(bridgePath, 'widget_creators_display.go');
 const labelTsPath = path.join(__dirname, '../widgets/display_basic.ts');
+const grpcBridgeTsPath = path.join(__dirname, '../grpcbridge.ts');
 
 // gRPC server is now split across multiple files - we need to search all of them
 function getGrpcServerFiles(): string[] {
@@ -556,6 +557,15 @@ describe('Transport ABI Parity', () => {
           if (skipInGrpcMapping.includes(payloadField)) continue;
           expect(mappedFields).toContain(payloadField);
         }
+      });
+
+      test('TypeScript gRPC client has case mapping for message type', () => {
+        const grpcBridgeContent = fs.readFileSync(grpcBridgeTsPath, 'utf-8');
+        // Convert goHandler name to message type: handleCreateScroll -> createScroll
+        const messageType = goHandler.replace('handle', '').replace(/^C/, 'c');
+        // Look for case 'createScroll': in the switch statement
+        const caseRegex = new RegExp(`case\\s+['"]${messageType}['"]:`);
+        expect(grpcBridgeContent).toMatch(caseRegex);
       });
     }
   );

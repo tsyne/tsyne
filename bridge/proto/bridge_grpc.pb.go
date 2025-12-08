@@ -54,6 +54,8 @@ const (
 	BridgeService_CreateVBox_FullMethodName                  = "/bridge.BridgeService/CreateVBox"
 	BridgeService_CreateHBox_FullMethodName                  = "/bridge.BridgeService/CreateHBox"
 	BridgeService_CreateScroll_FullMethodName                = "/bridge.BridgeService/CreateScroll"
+	BridgeService_SetScrollMinHeight_FullMethodName          = "/bridge.BridgeService/SetScrollMinHeight"
+	BridgeService_SetScrollMinSize_FullMethodName            = "/bridge.BridgeService/SetScrollMinSize"
 	BridgeService_CreateGrid_FullMethodName                  = "/bridge.BridgeService/CreateGrid"
 	BridgeService_CreateCenter_FullMethodName                = "/bridge.BridgeService/CreateCenter"
 	BridgeService_CreateClip_FullMethodName                  = "/bridge.BridgeService/CreateClip"
@@ -291,6 +293,8 @@ type BridgeServiceClient interface {
 	CreateVBox(ctx context.Context, in *CreateVBoxRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateHBox(ctx context.Context, in *CreateHBoxRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateScroll(ctx context.Context, in *CreateScrollRequest, opts ...grpc.CallOption) (*Response, error)
+	SetScrollMinHeight(ctx context.Context, in *SetScrollMinHeightRequest, opts ...grpc.CallOption) (*Response, error)
+	SetScrollMinSize(ctx context.Context, in *SetScrollMinSizeRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateGrid(ctx context.Context, in *CreateGridRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateCenter(ctx context.Context, in *CreateCenterRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateClip(ctx context.Context, in *CreateClipRequest, opts ...grpc.CallOption) (*Response, error)
@@ -882,6 +886,26 @@ func (c *bridgeServiceClient) CreateScroll(ctx context.Context, in *CreateScroll
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateScroll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetScrollMinHeight(ctx context.Context, in *SetScrollMinHeightRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetScrollMinHeight_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetScrollMinSize(ctx context.Context, in *SetScrollMinSizeRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetScrollMinSize_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2770,6 +2794,8 @@ type BridgeServiceServer interface {
 	CreateVBox(context.Context, *CreateVBoxRequest) (*Response, error)
 	CreateHBox(context.Context, *CreateHBoxRequest) (*Response, error)
 	CreateScroll(context.Context, *CreateScrollRequest) (*Response, error)
+	SetScrollMinHeight(context.Context, *SetScrollMinHeightRequest) (*Response, error)
+	SetScrollMinSize(context.Context, *SetScrollMinSizeRequest) (*Response, error)
 	CreateGrid(context.Context, *CreateGridRequest) (*Response, error)
 	CreateCenter(context.Context, *CreateCenterRequest) (*Response, error)
 	CreateClip(context.Context, *CreateClipRequest) (*Response, error)
@@ -3121,6 +3147,12 @@ func (UnimplementedBridgeServiceServer) CreateHBox(context.Context, *CreateHBoxR
 }
 func (UnimplementedBridgeServiceServer) CreateScroll(context.Context, *CreateScrollRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateScroll not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetScrollMinHeight(context.Context, *SetScrollMinHeightRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetScrollMinHeight not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetScrollMinSize(context.Context, *SetScrollMinSizeRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetScrollMinSize not implemented")
 }
 func (UnimplementedBridgeServiceServer) CreateGrid(context.Context, *CreateGridRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateGrid not implemented")
@@ -4315,6 +4347,42 @@ func _BridgeService_CreateScroll_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateScroll(ctx, req.(*CreateScrollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetScrollMinHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetScrollMinHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetScrollMinHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetScrollMinHeight_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetScrollMinHeight(ctx, req.(*SetScrollMinHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetScrollMinSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetScrollMinSizeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetScrollMinSize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetScrollMinSize_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetScrollMinSize(ctx, req.(*SetScrollMinSizeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7734,6 +7802,14 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateScroll",
 			Handler:    _BridgeService_CreateScroll_Handler,
+		},
+		{
+			MethodName: "SetScrollMinHeight",
+			Handler:    _BridgeService_SetScrollMinHeight_Handler,
+		},
+		{
+			MethodName: "SetScrollMinSize",
+			Handler:    _BridgeService_SetScrollMinSize_Handler,
 		},
 		{
 			MethodName: "CreateGrid",
