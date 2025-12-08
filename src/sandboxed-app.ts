@@ -21,7 +21,7 @@ import {
   ProgressBar, ProgressBarInfinite, RichText, Separator, Spacer, TextGrid,
   List, Menu, MenuItem, Table, Toolbar, ToolbarAction, Tree,
   AdaptiveGrid, Border, Center, Clip, Grid, GridWrap, WithoutLayout,
-  HBox, Max, Padded, Scroll, Split, Stack, VBox,
+  HBox, Max, Padded, PaddedOptions, Scroll, Split, Stack, VBox,
   Accordion, Card, DocTabs, Form, InnerWindow, MultipleWindows,
   Navigation, Popup, Tabs, ThemeOverride,
   CanvasArc, CanvasCircle, CanvasLine, CanvasLinearGradient,
@@ -56,7 +56,7 @@ export interface IApp {
   withoutLayout(builder: () => void): WithoutLayout;
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split;
   vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split;
-  padded(builder: () => void): Padded;
+  padded(builder: () => void, options?: PaddedOptions): Padded;
   clip(builder: () => void): Clip;
   adaptivegrid(rowcols: number, builder: () => void): AdaptiveGrid;
 
@@ -235,8 +235,8 @@ export class SandboxedApp implements IApp {
     return new Split(this.ctx, 'vertical', leadingBuilder, trailingBuilder, offset);
   }
 
-  padded(builder: () => void): Padded {
-    return new Padded(this.ctx, builder);
+  padded(builder: () => void, options?: PaddedOptions): Padded {
+    return new Padded(this.ctx, builder, options);
   }
 
   clip(builder: () => void): Clip {

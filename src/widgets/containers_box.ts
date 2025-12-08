@@ -100,6 +100,14 @@ export class ModelBoundList<T> {
 }
 
 /**
+ * Options for VBox container
+ */
+export interface VBoxOptions {
+  /** Spacing between items (in pixels). Default uses theme padding. Set to 0 for no spacing. */
+  spacing?: number;
+}
+
+/**
  * VBox container (vertical box layout)
  */
 export class VBox {
@@ -107,7 +115,7 @@ export class VBox {
   public id: string;
   private visibilityCondition?: () => Promise<void>;
 
-  constructor(ctx: Context, builder: () => void) {
+  constructor(ctx: Context, builder: () => void, options?: VBoxOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('vbox');
 
@@ -121,7 +129,11 @@ export class VBox {
     const children = ctx.popContainer();
 
     // Create the VBox with the children
-    ctx.bridge.send('createVBox', { id: this.id, children });
+    const payload: any = { id: this.id, children };
+    if (options?.spacing !== undefined) {
+      payload.spacing = options.spacing;
+    }
+    ctx.bridge.send('createVBox', payload);
     ctx.addToCurrentContainer(this.id);
   }
 
@@ -254,6 +266,14 @@ export class VBox {
 }
 
 /**
+ * Options for HBox container
+ */
+export interface HBoxOptions {
+  /** Spacing between items (in pixels). Default uses theme padding. Set to 0 for no spacing. */
+  spacing?: number;
+}
+
+/**
  * HBox container (horizontal box layout)
  */
 export class HBox {
@@ -261,7 +281,7 @@ export class HBox {
   public id: string;
   private visibilityCondition?: () => Promise<void>;
 
-  constructor(ctx: Context, builder: () => void) {
+  constructor(ctx: Context, builder: () => void, options?: HBoxOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('hbox');
 
@@ -275,7 +295,11 @@ export class HBox {
     const children = ctx.popContainer();
 
     // Create the HBox with the children
-    ctx.bridge.send('createHBox', { id: this.id, children });
+    const payload: any = { id: this.id, children };
+    if (options?.spacing !== undefined) {
+      payload.spacing = options.spacing;
+    }
+    ctx.bridge.send('createHBox', payload);
     ctx.addToCurrentContainer(this.id);
   }
 

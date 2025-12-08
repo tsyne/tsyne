@@ -431,6 +431,64 @@ function containerWidget(type: string, props: any, builder: () => void): any {
         }
       };
     },
+    // bindTo() - supports both options object and positional args
+    bindTo: (optionsOrGetItems: any, renderItem?: any, onDelete?: any, trackBy?: any) => {
+      // Normalize to options object format
+      let opts: any;
+      if (typeof optionsOrGetItems === 'object' && 'items' in optionsOrGetItems) {
+        // Options object API: { items, render, empty, trackBy, onDelete }
+        opts = optionsOrGetItems;
+      } else {
+        // Positional args API: (getItems, renderItem, onDelete?, trackBy?)
+        opts = {
+          items: optionsOrGetItems,
+          render: renderItem,
+          onDelete: onDelete,
+          trackBy: trackBy
+        };
+      }
+
+      // Store binding metadata
+      metadata.eventHandlers.bindTo = {
+        hasItems: !!opts.items,
+        hasRender: !!opts.render,
+        hasEmpty: !!opts.empty,
+        hasTrackBy: !!opts.trackBy,
+        hasOnDelete: !!opts.onDelete
+      };
+
+      // In designer mode, execute to capture metadata
+      try {
+        const items = opts.items ? opts.items() : [];
+        if (items.length === 0 && opts.empty) {
+          // Execute empty callback to capture empty state widgets
+          const prev = currentParent;
+          currentParent = internalId;
+          opts.empty();
+          currentParent = prev;
+        } else {
+          // Execute render for each item to capture widgets
+          const prev = currentParent;
+          currentParent = internalId;
+          items.forEach((item: any, index: number) => {
+            opts.render(item, index, null);
+          });
+          currentParent = prev;
+        }
+      } catch (err: any) {
+        console.log(`[Designer] bindTo execution error (metadata may be partial): ${err.message}`);
+      }
+
+      // Return BoundList-like API
+      return {
+        update: () => {
+          // No-op in designer mode
+        },
+        refreshAllBindings: () => {
+          // No-op in designer mode
+        }
+      };
+    },
     // Dynamic container methods - execute builder with this container as parent
     add: (builder: () => void) => {
       console.log(`[Designer] container.add() called on ${type}:${internalId}`);
@@ -789,6 +847,49 @@ const designer = {
 
   toolbarAction(label: string, onAction: () => void) {
     return { label, onAction, type: 'action' };
+  },
+
+  // Canvas primitives
+  rectangle(color: string, width?: number, height?: number): any {
+    const result = captureWidget('rectangle', { color, width, height });
+    // Add bindFillColor for declarative color binding
+    result.bindFillColor = (colorFn: () => string) => {
+      const widget = metadataStore.get(result.__internalId);
+      if (widget) widget.eventHandlers.bindFillColor = colorFn.toString();
+      return result;
+    };
+    return result;
+  },
+
+  circle(color: string, radius: number): any {
+    return captureWidget('circle', { color, radius });
+  },
+
+  canvasText(text: string, options?: any): any {
+    const result = captureWidget('canvasText', { text, ...options });
+    // Add bindColor for declarative color binding
+    result.bindColor = (colorFn: () => string) => {
+      const widget = metadataStore.get(result.__internalId);
+      if (widget) widget.eventHandlers.bindColor = colorFn.toString();
+      return result;
+    };
+    return result;
+  },
+
+  // max container - fills available space
+  max(builder: () => void): any {
+    return containerWidget('max', {}, builder);
+  },
+
+  // padded container
+  padded(padding: number | { top?: number; right?: number; bottom?: number; left?: number }, builder: () => void): any {
+    const props = typeof padding === 'number' ? { padding } : padding;
+    return containerWidget('padded', props, builder);
+  },
+
+  // clip container
+  clip(builder: () => void): any {
+    return containerWidget('clip', {}, builder);
   },
 
   // Screenshot helper - no-op in designer mode

@@ -98,6 +98,8 @@ export class Window {
     if (options.icon !== undefined) {
       payload.icon = options.icon;
     }
+    // Pass inspector enabled state to Go side
+    payload.inspectorEnabled = ctx.isInspectorEnabled();
 
     // Store the creation promise to ensure window exists before subsequent operations
     this.creationPromise = ctx.bridge.send('createWindow', payload);

@@ -47,15 +47,19 @@ import {
   Center,
   Clip,
   Grid,
+  GridOptions,
   GridWrap,
   WithoutLayout,
   HBox,
+  HBoxOptions,
   Max,
   Padded,
+  PaddedOptions,
   Scroll,
   Split,
   Stack,
   VBox,
+  VBoxOptions,
   // Containers - Organizational
   Accordion,
   Card,
@@ -86,7 +90,7 @@ import {
   // Types
   ThemeIconName,
 } from './widgets';
-export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName };
+export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -96,6 +100,8 @@ export interface AppOptions {
   title?: string;
   /** Bridge communication mode: 'stdio' (default), 'grpc' (binary protocol), or 'msgpack-uds' (fastest) */
   bridgeMode?: BridgeMode;
+  /** Enable/disable the Ctrl+Shift+I inspector shortcut (default: true) */
+  inspector?: boolean;
 }
 
 /**
@@ -216,6 +222,11 @@ export class App {
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);
+
+    // Set inspector enabled state (defaults to true if not specified)
+    if (options?.inspector === false) {
+      this.ctx.setInspectorEnabled(false);
+    }
   }
 
   getContext(): Context {
@@ -289,19 +300,31 @@ export class App {
   /**
    * Create a vertical box container that stacks children vertically.
    * @param builder - Function to create child widgets
+   * @param options - Optional settings (spacing)
    * @returns VBox container
+   * @example
+   * // Default spacing (theme-based)
+   * a.vbox(() => { ... });
+   * // No spacing between items
+   * a.vbox(() => { ... }, { spacing: 0 });
    */
-  vbox(builder: () => void): VBox {
-    return new VBox(this.ctx, builder);
+  vbox(builder: () => void, options?: VBoxOptions): VBox {
+    return new VBox(this.ctx, builder, options);
   }
 
   /**
    * Create a horizontal box container that arranges children horizontally.
    * @param builder - Function to create child widgets
+   * @param options - Optional settings (spacing)
    * @returns HBox container
+   * @example
+   * // Default spacing (theme-based)
+   * a.hbox(() => { ... });
+   * // No spacing between items
+   * a.hbox(() => { ... }, { spacing: 0 });
    */
-  hbox(builder: () => void): HBox {
-    return new HBox(this.ctx, builder);
+  hbox(builder: () => void, options?: HBoxOptions): HBox {
+    return new HBox(this.ctx, builder, options);
   }
 
   /**
@@ -475,8 +498,20 @@ export class App {
     return new Scroll(this.ctx, builder);
   }
 
-  grid(columns: number, builder: () => void): Grid {
-    return new Grid(this.ctx, columns, builder);
+  /**
+   * Create a grid layout container.
+   * @param columns - Number of columns
+   * @param builder - Function to create child widgets
+   * @param options - Optional settings (spacing)
+   * @returns Grid container
+   * @example
+   * // Default spacing (theme-based)
+   * a.grid(3, () => { ... });
+   * // No spacing between items (for chess boards, etc.)
+   * a.grid(8, () => { ... }, { spacing: 0 });
+   */
+  grid(columns: number, builder: () => void, options?: GridOptions): Grid {
+    return new Grid(this.ctx, columns, builder, options);
   }
 
   radiogroup(
@@ -823,8 +858,8 @@ export class App {
     return new AdaptiveGrid(this.ctx, rowcols, builder);
   }
 
-  padded(builder: () => void): Padded {
-    return new Padded(this.ctx, builder);
+  padded(builder: () => void, options?: PaddedOptions): Padded {
+    return new Padded(this.ctx, builder, options);
   }
 
   themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {

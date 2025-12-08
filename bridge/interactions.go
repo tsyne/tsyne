@@ -983,6 +983,17 @@ func (b *Bridge) handleGetAllWidgets(msg Message) Response {
 				"text": wd.meta.Text,
 			}
 
+			// Add padding info if set
+			if wd.meta.PaddingTop != 0 || wd.meta.PaddingRight != 0 ||
+				wd.meta.PaddingBottom != 0 || wd.meta.PaddingLeft != 0 {
+				widgetInfo["padding"] = map[string]interface{}{
+					"top":    wd.meta.PaddingTop,
+					"right":  wd.meta.PaddingRight,
+					"bottom": wd.meta.PaddingBottom,
+					"left":   wd.meta.PaddingLeft,
+				}
+			}
+
 			// Get current text value from widget
 			switch w := wd.obj.(type) {
 			case *widget.Label:
@@ -1125,4 +1136,178 @@ func (b *Bridge) handleDragWidget(msg Message) Response {
 			Error:   "Widget is not draggable",
 		}
 	}
+}
+
+// handleDumpWidgetTree dumps the widget tree structure with sizes for debugging
+func (b *Bridge) handleDumpWidgetTree(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	// Dump the tree
+	var sb strings.Builder
+	b.dumpWidget(&sb, obj, widgetID, 0)
+
+	fmt.Println("=== WIDGET TREE DUMP ===")
+	fmt.Println(sb.String())
+	fmt.Println("=== END DUMP ===")
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"tree": sb.String()},
+	}
+}
+
+func (b *Bridge) dumpWidget(sb *strings.Builder, obj fyne.CanvasObject, id string, depth int) {
+	indent := strings.Repeat("  ", depth)
+	size := obj.Size()
+	minSize := obj.MinSize()
+	pos := obj.Position()
+
+	// Get type name
+	typeName := fmt.Sprintf("%T", obj)
+	// Strip package prefix
+	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
+		typeName = typeName[idx+1:]
+	}
+
+	// Get metadata if available
+	b.mu.RLock()
+	meta, hasMeta := b.widgetMeta[id]
+	b.mu.RUnlock()
+
+	metaStr := ""
+	if hasMeta {
+		metaStr = fmt.Sprintf(" [%s: %q]", meta.Type, meta.Text)
+	}
+
+	sb.WriteString(fmt.Sprintf("%s%s%s pos=(%.0f,%.0f) size=(%.0f,%.0f) minSize=(%.0f,%.0f)\n",
+		indent, typeName, metaStr,
+		pos.X, pos.Y, size.Width, size.Height, minSize.Width, minSize.Height))
+
+	// Recurse into containers - only *fyne.Container is a pointer type
+	if container, ok := obj.(*fyne.Container); ok {
+		for i, child := range container.Objects {
+			childID := fmt.Sprintf("%s_child%d", id, i)
+			b.dumpWidget(sb, child, childID, depth+1)
+		}
+	}
+}
+
+// handleGetWidgetTree returns a structured JSON tree of widget hierarchy
+func (b *Bridge) handleGetWidgetTree(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	var tree map[string]interface{}
+
+	fyne.DoAndWait(func() {
+		tree = b.buildWidgetTree(obj, widgetID)
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"tree": tree},
+	}
+}
+
+// buildWidgetTree recursively builds a JSON-friendly widget tree
+func (b *Bridge) buildWidgetTree(obj fyne.CanvasObject, widgetID string) map[string]interface{} {
+	size := obj.Size()
+	minSize := obj.MinSize()
+	pos := obj.Position()
+
+	// Get type name
+	typeName := fmt.Sprintf("%T", obj)
+	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
+		typeName = typeName[idx+1:]
+	}
+
+	// Look up widget ID and custom ID
+	actualID := widgetID
+	customID := ""
+	b.mu.RLock()
+	// Try to find actual widget ID by reverse lookup
+	for id, widget := range b.widgets {
+		if widget == obj {
+			actualID = id
+			break
+		}
+	}
+	// Look up custom ID
+	for cid, wid := range b.customIds {
+		if wid == actualID {
+			customID = cid
+			break
+		}
+	}
+	meta, hasMeta := b.widgetMeta[actualID]
+	b.mu.RUnlock()
+
+	node := map[string]interface{}{
+		"id":   actualID,
+		"type": typeName,
+		"x":    pos.X,
+		"y":    pos.Y,
+		"w":    size.Width,
+		"h":    size.Height,
+		"minW": minSize.Width,
+		"minH": minSize.Height,
+	}
+
+	if customID != "" {
+		node["customId"] = customID
+	}
+
+	if hasMeta {
+		node["widgetType"] = meta.Type
+		if meta.Text != "" {
+			node["text"] = meta.Text
+		}
+		// Add padding if set
+		if meta.PaddingTop != 0 || meta.PaddingRight != 0 ||
+			meta.PaddingBottom != 0 || meta.PaddingLeft != 0 {
+			node["padding"] = map[string]interface{}{
+				"top":    meta.PaddingTop,
+				"right":  meta.PaddingRight,
+				"bottom": meta.PaddingBottom,
+				"left":   meta.PaddingLeft,
+			}
+		}
+	}
+
+	// Recurse into containers
+	if container, ok := obj.(*fyne.Container); ok {
+		children := make([]map[string]interface{}, 0, len(container.Objects))
+		for _, child := range container.Objects {
+			childTree := b.buildWidgetTree(child, "")
+			children = append(children, childTree)
+		}
+		node["children"] = children
+	}
+
+	return node
 }

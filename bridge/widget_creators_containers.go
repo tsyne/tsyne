@@ -30,7 +30,14 @@ func (b *Bridge) handleCreateVBox(msg Message) Response {
 	}
 	b.mu.RUnlock()
 
-	vbox := container.NewVBox(children...)
+	// Check for custom spacing parameter
+	var vbox *fyne.Container
+	if spacingVal, hasSpacing := msg.Payload["spacing"]; hasSpacing {
+		spacing := toFloat32(spacingVal)
+		vbox = container.New(NewSpacedVBoxLayout(spacing), children...)
+	} else {
+		vbox = container.NewVBox(children...)
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = vbox
@@ -59,7 +66,14 @@ func (b *Bridge) handleCreateHBox(msg Message) Response {
 	}
 	b.mu.RUnlock()
 
-	hbox := container.NewHBox(children...)
+	// Check for custom spacing parameter
+	var hbox *fyne.Container
+	if spacingVal, hasSpacing := msg.Payload["spacing"]; hasSpacing {
+		spacing := toFloat32(spacingVal)
+		hbox = container.New(NewSpacedHBoxLayout(spacing), children...)
+	} else {
+		hbox = container.NewHBox(children...)
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = hbox
@@ -191,7 +205,25 @@ func (b *Bridge) handleCreateGrid(msg Message) Response {
 	}
 	b.mu.RUnlock()
 
-	grid := container.NewGridWithColumns(columns, children...)
+	// Check for custom spacing and/or cellSize parameters
+	var grid *fyne.Container
+	spacingVal, hasSpacing := msg.Payload["spacing"]
+	cellSizeVal, hasCellSize := msg.Payload["cellSize"]
+
+	if hasSpacing || hasCellSize {
+		spacing := float32(0)
+		if hasSpacing {
+			spacing = toFloat32(spacingVal)
+		}
+		if hasCellSize {
+			cellSize := toFloat32(cellSizeVal)
+			grid = container.New(NewFixedCellGridLayout(columns, cellSize, spacing), children...)
+		} else {
+			grid = container.New(NewSpacedGridLayout(columns, spacing), children...)
+		}
+	} else {
+		grid = container.NewGridWithColumns(columns, children...)
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = grid
@@ -672,11 +704,45 @@ func (b *Bridge) handleCreatePadded(msg Message) Response {
 		}
 	}
 
-	padded := container.NewPadded(child)
+	// Check for custom padding values
+	var padded *fyne.Container
+	var pt, pr, pb, pl float32
+
+	// Support uniform padding (p) or individual values (pt, pr, pb, pl)
+	if pVal, hasP := msg.Payload["p"]; hasP {
+		p := toFloat32(pVal)
+		pt, pr, pb, pl = p, p, p, p
+		padded = container.New(NewUniformPaddedLayout(p), child)
+	} else if hasPadding := msg.Payload["pt"] != nil || msg.Payload["pr"] != nil ||
+		msg.Payload["pb"] != nil || msg.Payload["pl"] != nil; hasPadding {
+		if v, ok := msg.Payload["pt"]; ok {
+			pt = toFloat32(v)
+		}
+		if v, ok := msg.Payload["pr"]; ok {
+			pr = toFloat32(v)
+		}
+		if v, ok := msg.Payload["pb"]; ok {
+			pb = toFloat32(v)
+		}
+		if v, ok := msg.Payload["pl"]; ok {
+			pl = toFloat32(v)
+		}
+		padded = container.New(NewCustomPaddedLayout(pt, pr, pb, pl), child)
+	} else {
+		// Use default Fyne padded container (theme-based padding)
+		padded = container.NewPadded(child)
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = padded
-	b.widgetMeta[widgetID] = WidgetMetadata{Type: "padded", Text: ""}
+	b.widgetMeta[widgetID] = WidgetMetadata{
+		Type:          "padded",
+		Text:          "",
+		PaddingTop:    pt,
+		PaddingRight:  pr,
+		PaddingBottom: pb,
+		PaddingLeft:   pl,
+	}
 	b.childToParent[childID] = widgetID
 	b.mu.Unlock()
 

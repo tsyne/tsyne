@@ -4,10 +4,83 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
+	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 )
+
+// dumpCanvasObjectTree recursively dumps the canvas object tree with positions and sizes
+func (b *Bridge) dumpCanvasObjectTree(obj fyne.CanvasObject, depth int) {
+	indent := strings.Repeat("  ", depth)
+	pos := obj.Position()
+	size := obj.Size()
+	minSize := obj.MinSize()
+
+	// Get type name (strip package prefix)
+	typeName := fmt.Sprintf("%T", obj)
+	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
+		typeName = typeName[idx+1:]
+	}
+
+	// Reverse lookup widget ID, custom ID, and metadata
+	widgetID := ""
+	customID := ""
+	var meta WidgetMetadata
+	hasMeta := false
+	b.mu.RLock()
+	for id, widget := range b.widgets {
+		if widget == obj {
+			widgetID = id
+			break
+		}
+	}
+	// Also look up custom ID (reverse lookup: find custom ID that maps to this widget ID)
+	if widgetID != "" {
+		for cid, wid := range b.customIds {
+			if wid == widgetID {
+				customID = cid
+				break
+			}
+		}
+		// Look up metadata for padding info
+		meta, hasMeta = b.widgetMeta[widgetID]
+	}
+	b.mu.RUnlock()
+
+	idStr := ""
+	if customID != "" {
+		idStr = fmt.Sprintf(" id=%s", customID)
+	} else if widgetID != "" {
+		idStr = fmt.Sprintf(" id=%s", widgetID)
+	}
+
+	// Build padding string if padding is set
+	paddingStr := ""
+	if hasMeta {
+		pt, pr, pb, pl := meta.PaddingTop, meta.PaddingRight, meta.PaddingBottom, meta.PaddingLeft
+		if pt != 0 || pr != 0 || pb != 0 || pl != 0 {
+			// Check if all padding values are the same
+			if pt == pr && pr == pb && pb == pl {
+				paddingStr = fmt.Sprintf(" p=%.0f", pt)
+			} else {
+				paddingStr = fmt.Sprintf(" pt=%.0f pr=%.0f pb=%.0f pl=%.0f", pt, pr, pb, pl)
+			}
+		}
+	}
+
+	log.Printf("%s%s%s x=%.0f y=%.0f w=%.0f h=%.0f (min=%.0f,%.0f)%s",
+		indent, typeName, idStr, pos.X, pos.Y, size.Width, size.Height, minSize.Width, minSize.Height, paddingStr)
+
+	// Recurse into containers
+	if container, ok := obj.(*fyne.Container); ok {
+		for _, child := range container.Objects {
+			b.dumpCanvasObjectTree(child, depth+1)
+		}
+	}
+}
 
 func (b *Bridge) handleCreateWindow(msg Message) Response {
 	title := msg.Payload["title"].(string)
@@ -54,6 +127,23 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 				resource := fyne.NewStaticResource(iconName, iconData)
 				win.SetIcon(resource)
 			}
+		}
+
+		// Register Ctrl+Shift+I shortcut to open inspector (unless disabled)
+		inspectorEnabled := true
+		if val, ok := msg.Payload["inspectorEnabled"].(bool); ok {
+			inspectorEnabled = val
+		}
+		if inspectorEnabled {
+			inspectorShortcut := &desktop.CustomShortcut{
+				KeyName:  fyne.KeyI,
+				Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift,
+			}
+			win.Canvas().AddShortcut(inspectorShortcut, func(shortcut fyne.Shortcut) {
+				log.Printf("[Inspector] Ctrl+Shift+I pressed for window: %s", windowID)
+				inspector := NewInspector(b, windowID)
+				inspector.Show()
+			})
 		}
 
 		// Handle window close - quit app when last window is closed
@@ -146,6 +236,25 @@ func (b *Bridge) handleShowWindow(msg Message) Response {
 	// Showing window must happen on the main thread
 	fyne.DoAndWait(func() {
 		win.Show()
+
+		// Debug: Print window and content sizes
+		winSize := win.Canvas().Size()
+		content := win.Content()
+		var contentSize, contentMinSize fyne.Size
+		if content != nil {
+			contentSize = content.Size()
+			contentMinSize = content.MinSize()
+		}
+		log.Printf("[DEBUG] Window shown: canvas=(%v x %v), content=(%v x %v), contentMin=(%v x %v)",
+			winSize.Width, winSize.Height,
+			contentSize.Width, contentSize.Height,
+			contentMinSize.Width, contentMinSize.Height)
+
+		// Dump widget tree if content exists
+		if content != nil {
+			log.Printf("[DEBUG] Widget tree:")
+			b.dumpCanvasObjectTree(content, 0)
+		}
 	})
 
 	return Response{

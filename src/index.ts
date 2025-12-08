@@ -42,6 +42,7 @@ import {
   GridWrap,
   HBox,
   Padded,
+  PaddedOptions,
   Scroll,
   Split,
   VBox,
@@ -674,12 +675,14 @@ export function adaptivegrid(rowcols: number, builder: () => void): AdaptiveGrid
 
 /**
  * Create a padded container (adds theme-aware padding)
+ * @param builder Builder function for content
+ * @param options Optional padding configuration (p for uniform, or pt/pr/pb/pl for individual sides)
  */
-export function padded(builder: () => void): Padded {
+export function padded(builder: () => void, options?: PaddedOptions): Padded {
   if (!globalContext) {
     throw new Error('padded() must be called within an app context');
   }
-  return new Padded(globalContext, builder);
+  return new Padded(globalContext, builder, options);
 }
 
 /**
@@ -833,6 +836,7 @@ export {
   MultipleWindows,
   AdaptiveGrid,
   Padded,
+  PaddedOptions,
   Popup,
   ThemeOverride,
   DateEntry,
@@ -944,3 +948,7 @@ export type { ITsyneWindow, DesktopContext } from './tsyne-window';
 // Export Desktop environment
 export { buildDesktop, Desktop } from './desktop';
 export type { DesktopOptions } from './desktop';
+
+// Export Inspector for widget tree exploration
+export { Inspector } from './inspector';
+export type { WidgetNode } from './inspector';

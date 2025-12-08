@@ -320,6 +320,16 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleGetWidgetInfo(msg)
 	case "getAllWidgets":
 		return b.handleGetAllWidgets(msg)
+	case "dumpWidgetTree":
+		return b.handleDumpWidgetTree(msg)
+	case "getWidgetTree":
+		return b.handleGetWidgetTree(msg)
+	case "openInspector":
+		return b.handleOpenInspector(msg)
+	case "getInspectorTree":
+		return b.handleGetInspectorTree(msg)
+	case "listWindows":
+		return b.handleListWindows(msg)
 	case "captureWindow":
 		return b.handleCaptureWindow(msg)
 	case "doubleTapWidget":

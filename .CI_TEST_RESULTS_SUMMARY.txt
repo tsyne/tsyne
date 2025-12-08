@@ -4,11 +4,11 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Root Tsyne                          484      484        0        0  29|29|0
+Root Tsyne                          573      573        0        0  31|31|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      21       21        0        0    1|1|0
-Examples: GUI                       333      312        0       21  67|61|0
+Examples: GUI                       349      328        0       21  69|63|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
@@ -17,20 +17,24 @@ Ported: pixeledit                    86       86        0        0    6|6|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                    94       94        0        0    7|7|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              1343     1312        0       31      134
+TOTAL                              1448     1417        0       31      138
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 19450ms (19.45s)
-Total ctx.wait() calls: 236
+Total wait time: 21150ms (21.15s)
+Total ctx.wait() calls: 247
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
   Live Clock Example should display current time and update
     └─ 600ms (1 calls)
+  PhoneTop Integration Tests should preserve app state when returning
+    └─ 600ms (4 calls)
+  PhoneTop Integration Tests should show quit button and close app when clicked
+    └─ 600ms (4 calls)
   TodoMVC Tests should handle multiple completed todos
     └─ 550ms (7 calls)
   TodoMVC Tests should show all todos when filter is all
@@ -45,11 +49,7 @@ Top 10 tests by wait time:
     └─ 350ms (3 calls)
   Calculator Tests should handle chain operations
     └─ 300ms (6 calls)
-  Contact Manager - showForm Dialog Demo should handle button clicks
-    └─ 300ms (3 calls)
-  Custom Dialog should open custom confirm dialog and show content
-    └─ 300ms (1 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 1312 tests passed
+✅ SUCCESS: All 1417 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

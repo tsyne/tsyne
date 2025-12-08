@@ -90,6 +90,16 @@ export class Scroll {
 }
 
 /**
+ * Options for Grid container
+ */
+export interface GridOptions {
+  /** Spacing between items (in pixels). Default uses theme padding. Set to 0 for no spacing. */
+  spacing?: number;
+  /** Fixed cell size (in pixels). If set, all cells will be this size. Useful for chess boards, etc. */
+  cellSize?: number;
+}
+
+/**
  * Grid layout container
  */
 export class Grid {
@@ -97,7 +107,7 @@ export class Grid {
   public id: string;
   private visibilityCondition?: () => Promise<void>;
 
-  constructor(ctx: Context, columns: number, builder: () => void) {
+  constructor(ctx: Context, columns: number, builder: () => void, options?: GridOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('grid');
 
@@ -111,7 +121,14 @@ export class Grid {
     const children = ctx.popContainer();
 
     // Create the Grid with the children
-    ctx.bridge.send('createGrid', { id: this.id, columns, children });
+    const payload: any = { id: this.id, columns, children };
+    if (options?.spacing !== undefined) {
+      payload.spacing = options.spacing;
+    }
+    if (options?.cellSize !== undefined) {
+      payload.cellSize = options.cellSize;
+    }
+    ctx.bridge.send('createGrid', payload);
     ctx.addToCurrentContainer(this.id);
   }
 
@@ -317,14 +334,40 @@ export class Max {
 }
 
 /**
+ * Options for padded container
+ */
+export interface PaddedOptions {
+  /** Uniform padding on all sides */
+  p?: number;
+  /** Padding top */
+  pt?: number;
+  /** Padding right */
+  pr?: number;
+  /** Padding bottom */
+  pb?: number;
+  /** Padding left */
+  pl?: number;
+}
+
+/**
  * Padded container - adds standard inset padding around content
  * Wraps a single child with Fyne's theme-aware padding
+ *
+ * @example
+ * // Default theme padding
+ * padded(() => { label('Content'); });
+ *
+ * // Uniform 20px padding
+ * padded(() => { label('Content'); }, { p: 20 });
+ *
+ * // Individual padding values
+ * padded(() => { label('Content'); }, { pt: 10, pr: 20, pb: 10, pl: 20 });
  */
 export class Padded {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, builder: () => void) {
+  constructor(ctx: Context, builder: () => void, options?: PaddedOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('padded');
 
@@ -337,10 +380,24 @@ export class Padded {
       throw new Error('Padded must have exactly one child');
     }
 
-    ctx.bridge.send('createPadded', {
+    const payload: Record<string, unknown> = {
       id: this.id,
       childId: children[0]
-    });
+    };
+
+    // Add padding options if provided
+    if (options) {
+      if (options.p !== undefined) {
+        payload.p = options.p;
+      } else {
+        if (options.pt !== undefined) payload.pt = options.pt;
+        if (options.pr !== undefined) payload.pr = options.pr;
+        if (options.pb !== undefined) payload.pb = options.pb;
+        if (options.pl !== undefined) payload.pl = options.pl;
+      }
+    }
+
+    ctx.bridge.send('createPadded', payload);
 
     ctx.addToCurrentContainer(this.id);
   }

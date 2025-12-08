@@ -675,16 +675,14 @@ class ChessUI {
 
     const board = this.game.board();
 
-    // Use max to fill available space and prevent white border
-    this.a.max(() => {
-      this.a.vbox(() => {
+    this.a.vbox(() => {
         // Status
         this.statusLabel = this.a.label(this.currentStatus);
 
-        // Chess board - 8x8 grid
-        for (let rank = 0; rank < 8; rank++) {
-          this.a.hbox(() => {
-          for (let file = 0; file < 8; file++) {
+        // Chess board - 8x8 grid with zero spacing for tight square layout
+        this.a.grid(8, () => {
+          for (let rank = 0; rank < 8; rank++) {
+            for (let file = 0; file < 8; file++) {
             const square = this.coordsToSquare(file, rank);
             const squareData = board[rank][file];
             const isLight = (file + rank) % 2 === 0;
@@ -747,11 +745,10 @@ class ChessUI {
             this.squareImages.set(square, imageWidget);
             this.squareBackgrounds.set(square, squareBackground);
             this.pieceForegrounds.set(square, pieceForeground);
+            }
           }
-        });
-      }
-      });  // close vbox
-    });  // close max
+        }, { spacing: 0, cellSize: 100 });  // zero spacing, fixed 100px cells
+    }, { spacing: 0 });  // zero spacing between status label and board
   }
 
   /**
@@ -920,7 +917,8 @@ export async function createChessApp(a: App, resources: IResourceManager, aiDela
   // Register chess resources before building UI
   await ui['registerChessResources']();
 
-  a.window({ title: 'Chess', width: 800, height: 820 }, (win: Window) => {
+  // No explicit size - window will size to fit content
+  a.window({ title: 'Chess' }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });

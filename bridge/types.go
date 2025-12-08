@@ -106,6 +106,11 @@ type WidgetMetadata struct {
 	Placeholder string                 // For entry widgets
 	TestId      string                 // For test framework getByTestId
 	CustomData  map[string]interface{} // For storing additional metadata like accessibility info
+	// Padding values (0 means not set/default)
+	PaddingTop    float32
+	PaddingRight  float32
+	PaddingBottom float32
+	PaddingLeft   float32
 }
 
 // ToolbarItemsMetadata stores metadata about toolbar items for traversal

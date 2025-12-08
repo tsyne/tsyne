@@ -371,6 +371,17 @@ func (b *Bridge) GetAllWidgetsSync() AllWidgetsResult {
 				"text": wd.meta.Text,
 			}
 
+			// Add padding info if set
+			if wd.meta.PaddingTop != 0 || wd.meta.PaddingRight != 0 ||
+				wd.meta.PaddingBottom != 0 || wd.meta.PaddingLeft != 0 {
+				widgetInfo["padding"] = map[string]interface{}{
+					"top":    wd.meta.PaddingTop,
+					"right":  wd.meta.PaddingRight,
+					"bottom": wd.meta.PaddingBottom,
+					"left":   wd.meta.PaddingLeft,
+				}
+			}
+
 			switch w := wd.obj.(type) {
 			case *widget.Label:
 				widgetInfo["text"] = w.Text

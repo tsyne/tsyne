@@ -26,6 +26,7 @@ export class Context {
   private pendingRegistrations: Promise<void>[] = [];
   private _resourceScope: string | null = null;
   private _layoutScale: number = 1.0;
+  private _inspectorEnabled: boolean = true;
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
@@ -80,6 +81,21 @@ export class Context {
    */
   scale(value: number): number {
     return Math.round(value * this._layoutScale);
+  }
+
+  /**
+   * Set whether the Ctrl+Shift+I inspector shortcut is enabled.
+   * Default is true.
+   */
+  setInspectorEnabled(enabled: boolean): void {
+    this._inspectorEnabled = enabled;
+  }
+
+  /**
+   * Get whether the inspector shortcut is enabled.
+   */
+  isInspectorEnabled(): boolean {
+    return this._inspectorEnabled;
   }
 
   /**
