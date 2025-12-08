@@ -484,29 +484,31 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 		}
 	}
 
-	// Update position if provided
-	if x1, ok := msg.Payload["x1"].(float64); ok {
-		if y1, ok := msg.Payload["y1"].(float64); ok {
-			line.Position1 = fyne.NewPos(float32(x1), float32(y1))
+	fyne.DoAndWait(func() {
+		// Update position if provided
+		if x1, ok := msg.Payload["x1"].(float64); ok {
+			if y1, ok := msg.Payload["y1"].(float64); ok {
+				line.Position1 = fyne.NewPos(float32(x1), float32(y1))
+			}
 		}
-	}
-	if x2, ok := msg.Payload["x2"].(float64); ok {
-		if y2, ok := msg.Payload["y2"].(float64); ok {
-			line.Position2 = fyne.NewPos(float32(x2), float32(y2))
+		if x2, ok := msg.Payload["x2"].(float64); ok {
+			if y2, ok := msg.Payload["y2"].(float64); ok {
+				line.Position2 = fyne.NewPos(float32(x2), float32(y2))
+			}
 		}
-	}
 
-	// Update stroke color if provided
-	if colorHex, ok := msg.Payload["strokeColor"].(string); ok {
-		line.StrokeColor = parseHexColorSimple(colorHex)
-	}
+		// Update stroke color if provided
+		if colorHex, ok := msg.Payload["strokeColor"].(string); ok {
+			line.StrokeColor = parseHexColorSimple(colorHex)
+		}
 
-	// Update stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-		line.StrokeWidth = float32(strokeWidth)
-	}
+		// Update stroke width if provided
+		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+			line.StrokeWidth = float32(strokeWidth)
+		}
 
-	line.Refresh()
+		line.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -538,34 +540,36 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) Response {
 		}
 	}
 
-	// Update fill color if provided
-	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		circle.FillColor = parseHexColorSimple(fillHex)
-	}
-
-	// Update stroke color if provided
-	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		circle.StrokeColor = parseHexColorSimple(strokeHex)
-	}
-
-	// Update stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-		circle.StrokeWidth = float32(strokeWidth)
-	}
-
-	// Update position if provided
-	if x, ok := msg.Payload["x"].(float64); ok {
-		if y, ok := msg.Payload["y"].(float64); ok {
-			circle.Position1 = fyne.NewPos(float32(x), float32(y))
+	fyne.DoAndWait(func() {
+		// Update fill color if provided
+		if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+			circle.FillColor = parseHexColorSimple(fillHex)
 		}
-	}
-	if x2, ok := msg.Payload["x2"].(float64); ok {
-		if y2, ok := msg.Payload["y2"].(float64); ok {
-			circle.Position2 = fyne.NewPos(float32(x2), float32(y2))
-		}
-	}
 
-	circle.Refresh()
+		// Update stroke color if provided
+		if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+			circle.StrokeColor = parseHexColorSimple(strokeHex)
+		}
+
+		// Update stroke width if provided
+		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+			circle.StrokeWidth = float32(strokeWidth)
+		}
+
+		// Update position if provided
+		if x, ok := msg.Payload["x"].(float64); ok {
+			if y, ok := msg.Payload["y"].(float64); ok {
+				circle.Position1 = fyne.NewPos(float32(x), float32(y))
+			}
+		}
+		if x2, ok := msg.Payload["x2"].(float64); ok {
+			if y2, ok := msg.Payload["y2"].(float64); ok {
+				circle.Position2 = fyne.NewPos(float32(x2), float32(y2))
+			}
+		}
+
+		circle.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -597,34 +601,36 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 		}
 	}
 
-	// Update fill color if provided
-	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-		rect.FillColor = parseHexColorSimple(fillHex)
-	}
-
-	// Update stroke color if provided
-	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-		rect.StrokeColor = parseHexColorSimple(strokeHex)
-	}
-
-	// Update stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-		rect.StrokeWidth = float32(strokeWidth)
-	}
-
-	// Update corner radius if provided
-	if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
-		rect.CornerRadius = float32(radius)
-	}
-
-	// Update size if provided
-	if width, ok := msg.Payload["width"].(float64); ok {
-		if height, ok := msg.Payload["height"].(float64); ok {
-			rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+	fyne.DoAndWait(func() {
+		// Update fill color if provided
+		if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+			rect.FillColor = parseHexColorSimple(fillHex)
 		}
-	}
 
-	rect.Refresh()
+		// Update stroke color if provided
+		if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+			rect.StrokeColor = parseHexColorSimple(strokeHex)
+		}
+
+		// Update stroke width if provided
+		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+			rect.StrokeWidth = float32(strokeWidth)
+		}
+
+		// Update corner radius if provided
+		if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+			rect.CornerRadius = float32(radius)
+		}
+
+		// Update size if provided
+		if width, ok := msg.Payload["width"].(float64); ok {
+			if height, ok := msg.Payload["height"].(float64); ok {
+				rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+			}
+		}
+
+		rect.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -656,22 +662,24 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) Response {
 		}
 	}
 
-	// Update text if provided
-	if text, ok := msg.Payload["text"].(string); ok {
-		canvasText.Text = text
-	}
+	fyne.DoAndWait(func() {
+		// Update text if provided
+		if text, ok := msg.Payload["text"].(string); ok {
+			canvasText.Text = text
+		}
 
-	// Update color if provided
-	if colorHex, ok := msg.Payload["color"].(string); ok {
-		canvasText.Color = parseHexColorSimple(colorHex)
-	}
+		// Update color if provided
+		if colorHex, ok := msg.Payload["color"].(string); ok {
+			canvasText.Color = parseHexColorSimple(colorHex)
+		}
 
-	// Update text size if provided
-	if textSize, ok := msg.Payload["textSize"].(float64); ok {
-		canvasText.TextSize = float32(textSize)
-	}
+		// Update text size if provided
+		if textSize, ok := msg.Payload["textSize"].(float64); ok {
+			canvasText.TextSize = float32(textSize)
+		}
 
-	canvasText.Refresh()
+		canvasText.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -703,22 +711,24 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) Response {
 		}
 	}
 
-	// Update start color if provided
-	if startHex, ok := msg.Payload["startColor"].(string); ok {
-		gradient.StartColor = parseHexColorSimple(startHex)
-	}
+	fyne.DoAndWait(func() {
+		// Update start color if provided
+		if startHex, ok := msg.Payload["startColor"].(string); ok {
+			gradient.StartColor = parseHexColorSimple(startHex)
+		}
 
-	// Update end color if provided
-	if endHex, ok := msg.Payload["endColor"].(string); ok {
-		gradient.EndColor = parseHexColorSimple(endHex)
-	}
+		// Update end color if provided
+		if endHex, ok := msg.Payload["endColor"].(string); ok {
+			gradient.EndColor = parseHexColorSimple(endHex)
+		}
 
-	// Update angle if provided
-	if angle, ok := msg.Payload["angle"].(float64); ok {
-		gradient.Angle = angle
-	}
+		// Update angle if provided
+		if angle, ok := msg.Payload["angle"].(float64); ok {
+			gradient.Angle = angle
+		}
 
-	gradient.Refresh()
+		gradient.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -919,7 +929,9 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) Response {
 	}
 	b.mu.Unlock()
 
-	raster.Refresh()
+	fyne.DoAndWait(func() {
+		raster.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -1101,7 +1113,9 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) Response {
 	}
 	b.mu.Unlock()
 
-	raster.Refresh()
+	fyne.DoAndWait(func() {
+		raster.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -1176,25 +1190,27 @@ func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) Response {
 		}
 	}
 
-	// Update start color if provided
-	if startHex, ok := msg.Payload["startColor"].(string); ok {
-		gradient.StartColor = parseHexColorSimple(startHex)
-	}
+	fyne.DoAndWait(func() {
+		// Update start color if provided
+		if startHex, ok := msg.Payload["startColor"].(string); ok {
+			gradient.StartColor = parseHexColorSimple(startHex)
+		}
 
-	// Update end color if provided
-	if endHex, ok := msg.Payload["endColor"].(string); ok {
-		gradient.EndColor = parseHexColorSimple(endHex)
-	}
+		// Update end color if provided
+		if endHex, ok := msg.Payload["endColor"].(string); ok {
+			gradient.EndColor = parseHexColorSimple(endHex)
+		}
 
-	// Update center offset if provided
-	if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
-		gradient.CenterOffsetX = offsetX
-	}
-	if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
-		gradient.CenterOffsetY = offsetY
-	}
+		// Update center offset if provided
+		if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
+			gradient.CenterOffsetX = offsetX
+		}
+		if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
+			gradient.CenterOffsetY = offsetY
+		}
 
-	gradient.Refresh()
+		gradient.Refresh()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -1261,6 +1277,8 @@ func parseHexColorSimple(hexStr string) color.Color {
 
 	// Handle named colors
 	switch strings.ToLower(hexStr) {
+	case "transparent":
+		return color.RGBA{R: 0, G: 0, B: 0, A: 0}
 	case "black":
 		return color.RGBA{R: 0, G: 0, B: 0, A: 255}
 	case "white":

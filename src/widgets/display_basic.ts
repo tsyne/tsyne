@@ -141,6 +141,25 @@ export class Label extends Widget {
       this.applyStyles('label').catch(() => {});
     }
   }
+
+  /**
+   * MVC-style binding: bind text to a reactive function
+   * Text updates automatically when refreshBindings() is called
+   * @param textFn Function returning the text to display
+   * @returns this for method chaining
+   * @example
+   * a.label('').bindText(() => `Count: ${store.getCount()}`);
+   */
+  bindText(textFn: () => string): this {
+    const binding = async () => {
+      await this.setText(textFn());
+    };
+
+    this.registerBinding(binding);
+    binding(); // Initial evaluation
+
+    return this;
+  }
 }
 
 /**

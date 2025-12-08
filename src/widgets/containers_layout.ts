@@ -1,5 +1,6 @@
 import { Context } from '../context';
 import { AccessibilityOptions } from './base';
+import { BoundList } from './containers_box';
 
 /**
  * Stack container - stacks widgets on top of each other
@@ -94,6 +95,7 @@ export class Scroll {
 export class Grid {
   private ctx: Context;
   public id: string;
+  private visibilityCondition?: () => Promise<void>;
 
   constructor(ctx: Context, columns: number, builder: () => void) {
     this.ctx = ctx;
@@ -137,6 +139,105 @@ export class Grid {
       ...options
     });
     return this;
+  }
+
+  /**
+   * Dynamically add a widget to this container
+   * @param builder Function that creates the widget to add
+   */
+  add(builder: () => void): void {
+    this.ctx.pushContainer();
+    builder();
+    const newChildren = this.ctx.popContainer();
+
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Declarative visibility control - show container when condition is true
+   * @param conditionFn Function that returns whether container should be visible
+   * @returns this for method chaining
+   */
+  when(conditionFn: () => boolean): this {
+    const updateVisibility = async () => {
+      const shouldShow = conditionFn();
+      if (shouldShow) {
+        await this.show();
+      } else {
+        await this.hide();
+      }
+    };
+
+    this.visibilityCondition = updateVisibility;
+    updateVisibility();
+
+    return this;
+  }
+
+  /**
+   * Refresh the container - re-evaluates visibility conditions
+   */
+  async refreshVisibility(): Promise<void> {
+    if (this.visibilityCondition) {
+      await this.visibilityCondition();
+    }
+  }
+
+  /**
+   * Bind container to a data source with render/delete callbacks (ng-repeat style)
+   * Smart diffing avoids flicker by reusing existing widgets.
+   * Supports both MVVM (return widget) and MVC (return void with bindings) modes.
+   *
+   * @param getItems Function that returns the current items array
+   * @param renderItem Function called to render each item. Receives (item, index, existing).
+   *                   MVVM: return widget reference for reuse
+   *                   MVC: return void, use bindFillColor/bindText for reactive updates
+   * @param onDelete Optional function called when an item is removed
+   * @param trackBy Optional function to extract unique key from item
+   * @returns BoundList controller with update() method
+   */
+  bindTo<T, W = any>(
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W | void,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ): BoundList<T, W> {
+    return new BoundList(this.ctx, this as any, getItems, renderItem, onDelete, trackBy);
   }
 }
 
@@ -344,6 +445,7 @@ export class Border {
 export class GridWrap {
   private ctx: Context;
   public id: string;
+  private visibilityCondition?: () => Promise<void>;
 
   constructor(ctx: Context, itemWidth: number, itemHeight: number, builder: () => void) {
     this.ctx = ctx;
@@ -362,6 +464,101 @@ export class GridWrap {
     });
 
     ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this container
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    });
+    return this;
+  }
+
+  /**
+   * Dynamically add a widget to this container
+   */
+  add(builder: () => void): void {
+    this.ctx.pushContainer();
+    builder();
+    const newChildren = this.ctx.popContainer();
+
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Declarative visibility control
+   */
+  when(conditionFn: () => boolean): this {
+    const updateVisibility = async () => {
+      const shouldShow = conditionFn();
+      if (shouldShow) {
+        await this.show();
+      } else {
+        await this.hide();
+      }
+    };
+
+    this.visibilityCondition = updateVisibility;
+    updateVisibility();
+
+    return this;
+  }
+
+  async refreshVisibility(): Promise<void> {
+    if (this.visibilityCondition) {
+      await this.visibilityCondition();
+    }
+  }
+
+  /**
+   * Bind container to a data source (ng-repeat style)
+   * Supports both MVVM and MVC modes.
+   */
+  bindTo<T, W = any>(
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W | void,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ): BoundList<T, W> {
+    return new BoundList(this.ctx, this as any, getItems, renderItem, onDelete, trackBy);
   }
 }
 
@@ -429,6 +626,7 @@ export class Clip {
 export class AdaptiveGrid {
   private ctx: Context;
   public id: string;
+  private visibilityCondition?: () => Promise<void>;
 
   constructor(ctx: Context, rowcols: number, builder: () => void) {
     this.ctx = ctx;
@@ -459,6 +657,90 @@ export class AdaptiveGrid {
       customId
     });
     return this;
+  }
+
+  /**
+   * Dynamically add a widget to this container
+   */
+  add(builder: () => void): void {
+    this.ctx.pushContainer();
+    builder();
+    const newChildren = this.ctx.popContainer();
+
+    for (const childId of newChildren) {
+      this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Remove all widgets from this container
+   */
+  removeAll(): void {
+    this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Refresh the container display
+   */
+  refresh(): void {
+    this.ctx.bridge.send('containerRefresh', {
+      containerId: this.id
+    });
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Declarative visibility control
+   */
+  when(conditionFn: () => boolean): this {
+    const updateVisibility = async () => {
+      const shouldShow = conditionFn();
+      if (shouldShow) {
+        await this.show();
+      } else {
+        await this.hide();
+      }
+    };
+
+    this.visibilityCondition = updateVisibility;
+    updateVisibility();
+
+    return this;
+  }
+
+  async refreshVisibility(): Promise<void> {
+    if (this.visibilityCondition) {
+      await this.visibilityCondition();
+    }
+  }
+
+  /**
+   * Bind container to a data source (ng-repeat style)
+   * Supports both MVVM and MVC modes.
+   */
+  bindTo<T, W = any>(
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W | void,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ): BoundList<T, W> {
+    return new BoundList(this.ctx, this as any, getItems, renderItem, onDelete, trackBy);
   }
 }
 

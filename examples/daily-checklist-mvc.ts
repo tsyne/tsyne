@@ -1,28 +1,25 @@
 /**
- * Daily Checklist (MVVM Style)
+ * Daily Checklist (MVC Style)
  *
- * A simple daily checklist app for tracking recurring tasks.
- * - Items are stored in ~/.daily-checklist.txt (one per line)
- * - Auto-saves when you edit the list
- * - Checked state is held in memory only (resets each session)
- * - Unchecked items show in scarlet red with white bold text
+ * Same functionality as daily-checklist.ts but using pure 1978 MVC pattern.
  *
- * KEY DIFFERENCE FROM MVC VERSION:
- * - Render callback returns widget reference for reuse
- * - Uses if(existing) check to update vs create
- * - Manual update logic in the View (existing.bg.update(...))
- * - Smart diffing passes existing widget refs for efficiency
+ * KEY DIFFERENCE FROM MVVM VERSION:
+ * - View is "dumb" - just declares bindings to Model
+ * - Render callback returns void (not widget references)
+ * - Uses bindFillColor() instead of manual update logic
+ * - No if(existing) check - framework handles widget lifecycle
+ * - refreshAllBindings() automatically updates all bound properties
  *
- * Compare with daily-checklist-mvc.ts (MVC) to see the two approaches.
+ * Compare with daily-checklist.ts (MVVM) to see the two approaches.
  *
- * @tsyne-app:name Daily Checklist
+ * @tsyne-app:name Daily Checklist MVC
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
  * @tsyne-app:category productivity
- * @tsyne-app:builder buildDailyChecklist
+ * @tsyne-app:builder buildDailyChecklistMVC
  * @tsyne-app:count one
  */
 
-import { app, App, Window, Label, MultiLineEntry, CanvasRectangle, CanvasText } from '../src';
+import { app, App, Window, Label, MultiLineEntry } from '../src';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -34,7 +31,8 @@ const CHECKLIST_FILE = path.join(os.homedir(), '.daily-checklist.txt');
 const SCARLET_COLOR = '#DC143C'; // Scarlet/Crimson for unchecked items
 
 // ============================================================================
-// Checklist Store - Observable state management
+// Checklist Store - Observable state management (MODEL)
+// The Model knows nothing about the View - pure data and business logic
 // ============================================================================
 
 type ChangeListener = () => void | Promise<void>;
@@ -135,13 +133,14 @@ class ChecklistStore {
 }
 
 // ============================================================================
-// UI Application
+// UI Application (VIEW)
+// Pure MVC: View just declares bindings to Model, no update logic
 // ============================================================================
 
 /**
- * Build the Daily Checklist app
+ * Build the Daily Checklist app (MVC style)
  */
-export function buildDailyChecklist(a: App) {
+export function buildDailyChecklistMVC(a: App) {
   const store = new ChecklistStore();
 
   // Widget references
@@ -151,10 +150,6 @@ export function buildDailyChecklist(a: App) {
   let checklistModeContainer: any;
   let emptyStateContainer: any;
   let boundList: any;
-
-  // Map of background rectangles and text labels for reactive color updates
-  const backgrounds = new Map<number, CanvasRectangle>();
-  const textLabels = new Map<number, CanvasText>();
 
   // Mode flag
   let isEditMode = false;
@@ -219,14 +214,14 @@ export function buildDailyChecklist(a: App) {
   }
 
   // Build the UI
-  a.window({ title: 'Daily Checklist', width: 400, height: 500 }, (win: Window) => {
+  a.window({ title: 'Daily Checklist (MVC)', width: 400, height: 500 }, (win: Window) => {
     win.setContent(() => {
       // Use border layout at top level so center can expand
       a.border({
         top: () => {
           a.vbox(() => {
             // Header
-            a.label('Daily Checklist').withId('title');
+            a.label('Daily Checklist (MVC)').withId('title');
             a.separator();
 
             // Status bar
@@ -248,59 +243,47 @@ export function buildDailyChecklist(a: App) {
                     a.label('Click "Edit List" to add items.');
                   });
 
-                  // Scrollable checklist with inline bindTo (ng-repeat style)
+                  // ============================================================
+                  // PURE MVC STYLE - View just declares bindings
+                  // Compare this to daily-checklist.ts (MVVM) to see the difference
+                  // ============================================================
                   a.scroll(() => {
                     boundList = a.vbox(() => {
                       // Empty initially
                     }).bindTo(
                       () => store.getItems(),
 
-                      // Render callback with smart update (existing = reuse, null = create)
-                      (item: string, index: number, existing: { bg: CanvasRectangle; txt: CanvasText } | null) => {
-                        const isChecked = store.isChecked(index);
-                        if (existing) {
-                          // Update existing - refresh background and text colors (no flicker!)
-                          existing.bg.update({
-                            fillColor: isChecked ? 'transparent' : SCARLET_COLOR
-                          });
-                          existing.txt.update({
-                            color: isChecked ? '#000000' : '#FFFFFF'
-                          });
-                          backgrounds.set(index, existing.bg);
-                          textLabels.set(index, existing.txt);
-                          return existing;
-                        } else {
-                          // Create new widget - capture refs via closure
-                          let bgRef: CanvasRectangle;
-                          let txtRef: CanvasText;
-                          a.max(() => {
-                            bgRef = a.rectangle(
-                              isChecked ? 'transparent' : SCARLET_COLOR
+                      // MVC: Render callback runs ONCE per item, sets up bindings
+                      // No if(existing) check - View is "dumb"
+                      // Returns void - framework handles widget lifecycle
+                      (item: string, index: number) => {
+                        a.max(() => {
+                          // Pure binding: background color bound to Model state
+                          // View just declares "what should be", not "how to update"
+                          a.rectangle(SCARLET_COLOR).bindFillColor(() =>
+                            store.isChecked(index) ? 'transparent' : SCARLET_COLOR
+                          );
+
+                          a.hbox(() => {
+                            // Checkbox with empty label (just the checkmark)
+                            // Controller: user action -> Model update
+                            a.checkbox('', async () => {
+                              await store.toggleChecked(index);
+                            }).withId(`checklist-item-${index}`);
+
+                            // Canvas text with reactive color binding
+                            // Bold white on scarlet, black on transparent
+                            a.canvasText(item, { bold: true }).bindColor(() =>
+                              store.isChecked(index) ? '#000000' : '#FFFFFF'
                             );
-                            backgrounds.set(index, bgRef);
-
-                            a.hbox(() => {
-                              // Checkbox with empty label (just the checkmark)
-                              a.checkbox('', async () => {
-                                await store.toggleChecked(index);
-                              }).withId(`checklist-item-${index}`);
-
-                              // Canvas text for styled label
-                              txtRef = a.canvasText(item, {
-                                color: isChecked ? '#000000' : '#FFFFFF',
-                                bold: !isChecked
-                              });
-                              textLabels.set(index, txtRef);
-                            });
                           });
-                          return { bg: bgRef!, txt: txtRef! };
-                        }
+                        });
+                        // No return! This signals MVC mode to the framework
                       },
 
                       // Delete callback - called when item removed
                       (item: string, index: number) => {
-                        backgrounds.delete(index);
-                        textLabels.delete(index);
+                        // Cleanup if needed (bindings auto-cleanup)
                       },
 
                       // trackBy - use item value as key
@@ -312,7 +295,7 @@ export function buildDailyChecklist(a: App) {
               bottom: () => {
                 a.vbox(() => {
                   a.separator();
-                  // Action buttons
+                  // Action buttons (Controller - forwards user actions to Model)
                   a.hbox(() => {
                     a.button('Reset All').withId('resetBtn').onClick(async () => {
                       await store.resetAll();
@@ -357,11 +340,10 @@ export function buildDailyChecklist(a: App) {
 
     win.show();
 
-    // Reactive updates - smart diffing handles both item changes and state changes
+    // MVC: Model changes trigger binding refresh
+    // No manual update logic in View - bindings handle it automatically
     store.subscribe(async () => {
-      // Smart update: if same items, just updates backgrounds (no flicker)
-      // If items changed, rebuilds only what's needed
-      boundList.update();
+      boundList.update(); // Triggers refreshAllBindings() in MVC mode
       await updateEmptyState();
       await updateStatusLabel();
     });
@@ -379,5 +361,5 @@ export function buildDailyChecklist(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Daily Checklist' }, buildDailyChecklist);
+  app({ title: 'Daily Checklist (MVC)' }, buildDailyChecklistMVC);
 }

@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { applyStyleForWidget, WidgetSelector } from '../styles';
+import { applyStyleForWidget, applyStyleToWidget, WidgetSelector, WidgetStyle } from '../styles';
 
 /**
  * Context menu item
@@ -29,15 +29,87 @@ export interface AccessibilityOptions {
 /**
  * Base class for all widgets
  */
+/**
+ * Reactive binding - stores a function that updates a widget property
+ */
+export type ReactiveBinding = () => void | Promise<void>;
+
+/**
+ * Global registry of all reactive bindings (for MVC-style updates)
+ */
+const globalBindings: Set<ReactiveBinding> = new Set();
+
+/**
+ * Register a binding in the global registry
+ * @param binding The binding function to register
+ */
+export function registerGlobalBinding(binding: ReactiveBinding): void {
+  globalBindings.add(binding);
+}
+
+/**
+ * Refresh all reactive bindings globally
+ * Call this to trigger all MVC-style bindings to re-evaluate
+ */
+export async function refreshAllBindings(): Promise<void> {
+  for (const binding of globalBindings) {
+    await binding();
+  }
+}
+
 export abstract class Widget {
   protected ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
+  private styleCondition?: () => Promise<void>;
   private styleClass?: WidgetSelector;
+  private bindings: ReactiveBinding[] = [];
 
   constructor(ctx: Context, id: string) {
     this.ctx = ctx;
     this.id = id;
+  }
+
+  /**
+   * Register a reactive binding for this widget
+   * @internal
+   */
+  protected registerBinding(binding: ReactiveBinding): void {
+    this.bindings.push(binding);
+    globalBindings.add(binding);
+  }
+
+  /**
+   * Refresh all reactive bindings on this widget
+   */
+  async refreshBindings(): Promise<void> {
+    for (const binding of this.bindings) {
+      await binding();
+    }
+  }
+
+  /**
+   * MVC-style binding: bind visibility to a reactive condition
+   * Unlike when(), this registers globally for automatic refresh
+   * @param conditionFn Function returning whether widget should be visible
+   * @returns this for method chaining
+   * @example
+   * a.label('Error').bindVisible(() => hasError);
+   */
+  bindVisible(conditionFn: () => boolean): this {
+    const binding = async () => {
+      const shouldShow = conditionFn();
+      if (shouldShow) {
+        await this.show();
+      } else {
+        await this.hide();
+      }
+    };
+
+    this.registerBinding(binding);
+    binding(); // Initial evaluation
+
+    return this;
   }
 
   /**
@@ -460,11 +532,70 @@ export abstract class Widget {
   }
 
   /**
-   * Refresh the widget - re-evaluates visibility conditions
+   * Refresh the widget - re-evaluates visibility conditions and style conditions
    */
   async refresh(): Promise<void> {
     if (this.visibilityCondition) {
       await this.visibilityCondition();
+    }
+    if (this.styleCondition) {
+      await this.styleCondition();
+    }
+  }
+
+  /**
+   * Apply inline styles to this widget
+   * @param style WidgetStyle object with styling properties
+   * @returns this for method chaining
+   * @example
+   * a.label('Error').withStyle({ color: 0xFF0000, font_weight: 'bold' });
+   */
+  withStyle(style: WidgetStyle): this {
+    applyStyleToWidget(this.ctx, this.id, style);
+    return this;
+  }
+
+  /**
+   * Declarative conditional styling - apply different styles based on condition
+   * @param conditionFn Function that returns true/false for condition
+   * @param trueStyle Style to apply when condition is true
+   * @param falseStyle Style to apply when condition is false (optional)
+   * @returns this for method chaining
+   * @example
+   * // Scarlet background when unchecked, default when checked
+   * checkbox.styleWhen(
+   *   () => !isChecked,
+   *   { background_color: 0xDC143C, color: 0xFFFFFF, font_weight: 'bold' },
+   *   { background_color: undefined, color: undefined, font_weight: 'normal' }
+   * );
+   */
+  styleWhen(
+    conditionFn: () => boolean,
+    trueStyle: WidgetStyle,
+    falseStyle?: WidgetStyle
+  ): this {
+    const updateStyle = async () => {
+      const condition = conditionFn();
+      if (condition) {
+        await applyStyleToWidget(this.ctx, this.id, trueStyle);
+      } else if (falseStyle) {
+        await applyStyleToWidget(this.ctx, this.id, falseStyle);
+      }
+    };
+
+    // Store for reactive re-evaluation
+    this.styleCondition = updateStyle;
+    updateStyle(); // Initial evaluation
+
+    return this;
+  }
+
+  /**
+   * Refresh only the style condition without affecting visibility
+   */
+  async refreshStyle(): Promise<void> {
+    if (this.styleCondition) {
+      await this.styleCondition();
     }
   }
 

@@ -860,6 +860,9 @@ export type { BindingOptions } from './state';
 export { styles, clearStyles, getStyleSheet, StyleSheet, FontFamily, FontStyle } from './styles';
 export type { WidgetStyle, WidgetSelector } from './styles';
 
+// Export reactive bindings (MVC-style)
+export { refreshAllBindings } from './widgets/base';
+
 // Export context menu
 export type { ContextMenuItem } from './widgets';
 

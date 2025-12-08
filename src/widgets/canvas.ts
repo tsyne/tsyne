@@ -1,4 +1,5 @@
 import { Context } from '../context';
+import { ReactiveBinding, registerGlobalBinding } from './base';
 
 /**
  * Canvas Line - draws a line between two points
@@ -96,6 +97,7 @@ export class CanvasCircle {
 export class CanvasRectangle {
   private ctx: Context;
   public id: string;
+  private bindings: ReactiveBinding[] = [];
 
   constructor(ctx: Context, options?: {
     width?: number;
@@ -136,6 +138,35 @@ export class CanvasRectangle {
       ...options
     });
   }
+
+  /**
+   * MVC-style binding: bind fill color to a reactive function
+   * Color updates automatically when refreshAllBindings() is called
+   * @param colorFn Function returning the fill color (hex string or 'transparent')
+   * @returns this for method chaining
+   * @example
+   * a.rectangle().bindFillColor(() => isError ? '#FF0000' : 'transparent');
+   */
+  bindFillColor(colorFn: () => string): this {
+    const binding = async () => {
+      await this.update({ fillColor: colorFn() });
+    };
+
+    this.bindings.push(binding);
+    registerGlobalBinding(binding);
+    binding(); // Initial evaluation
+
+    return this;
+  }
+
+  /**
+   * Refresh all reactive bindings on this rectangle
+   */
+  async refreshBindings(): Promise<void> {
+    for (const binding of this.bindings) {
+      await binding();
+    }
+  }
 }
 
 /**
@@ -144,6 +175,7 @@ export class CanvasRectangle {
 export class CanvasText {
   private ctx: Context;
   public id: string;
+  private bindings: ReactiveBinding[] = [];
 
   constructor(ctx: Context, text: string, options?: {
     color?: string;
@@ -180,6 +212,35 @@ export class CanvasText {
       widgetId: this.id,
       ...options
     });
+  }
+
+  /**
+   * Reactive binding for text color (MVC pattern)
+   * @param colorFn Function that returns the color value
+   * @returns this for method chaining
+   *
+   * @example
+   * a.canvasText('Label').bindColor(() => isError ? '#FF0000' : '#000000');
+   */
+  bindColor(colorFn: () => string): this {
+    const binding = async () => {
+      await this.update({ color: colorFn() });
+    };
+
+    this.bindings.push(binding);
+    registerGlobalBinding(binding);
+    binding(); // Initial evaluation
+
+    return this;
+  }
+
+  /**
+   * Refresh all reactive bindings on this text
+   */
+  async refreshBindings(): Promise<void> {
+    for (const binding of this.bindings) {
+      await binding();
+    }
   }
 }
 

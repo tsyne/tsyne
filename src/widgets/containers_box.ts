@@ -1,4 +1,5 @@
 import { Context } from '../context';
+import { refreshAllBindings } from './base';
 
 /**
  * ModelBoundList - Smart list binding for containers (inspired by AngularJS ng-repeat)
@@ -174,6 +175,44 @@ export class VBox {
     return new ModelBoundList(this.ctx, this, items);
   }
 
+  /**
+   * Bind container to a data source with render/delete callbacks (ng-repeat style)
+   * Smart diffing avoids flicker by reusing existing widgets.
+   *
+   * @param getItems Function that returns the current items array
+   * @param renderItem Function called to render each item. Receives (item, index, existing).
+   *                   If existing is null, create and return new widget.
+   *                   If existing is provided, update it and return it (or return as-is).
+   * @param onDelete Optional function called when an item is removed (receives item and index)
+   * @param trackBy Optional function to extract unique key from item (default: item itself)
+   * @returns BoundList controller with update() method
+   *
+   * @example
+   * const list = checklistContainer.bindTo(
+   *   () => store.getItems(),
+   *   (item, index, existing) => {
+   *     if (existing) {
+   *       existing.setText(item.text);
+   *       return existing;
+   *     }
+   *     return a.checkbox(item, () => store.toggle(index));
+   *   },
+   *   (item, index) => console.log('Removed:', item),
+   *   (item) => item.id  // trackBy key
+   * );
+   *
+   * // Call when data changes:
+   * list.update();
+   */
+  bindTo<T, W = any>(
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ): BoundList<T, W> {
+    return new BoundList(this.ctx, this, getItems, renderItem, onDelete, trackBy);
+  }
+
   async hide(): Promise<void> {
     await this.ctx.bridge.send('hideWidget', {
       widgetId: this.id
@@ -326,5 +365,173 @@ export class HBox {
     if (this.visibilityCondition) {
       await this.visibilityCondition();
     }
+  }
+
+  /**
+   * Bind container to a data source with render/delete callbacks (ng-repeat style)
+   * Smart diffing avoids flicker by reusing existing widgets.
+   *
+   * @param getItems Function that returns the current items array
+   * @param renderItem Function called to render each item. Receives (item, index, existing).
+   *                   If existing is null, create and return new widget.
+   *                   If existing is provided, update it and return it (or return as-is).
+   * @param onDelete Optional function called when an item is removed (receives item and index)
+   * @param trackBy Optional function to extract unique key from item (default: item itself)
+   * @returns BoundList controller with update() method
+   *
+   * @example
+   * a.vbox(() => {}).bindTo(
+   *   () => store.getItems(),
+   *   (item, index, existing) => {
+   *     if (existing) {
+   *       // Update existing widget
+   *       existing.setText(item.text);
+   *       return existing;
+   *     } else {
+   *       // Create new widget
+   *       return a.label(item.text);
+   *     }
+   *   },
+   *   (item, index) => console.log('deleted:', item),
+   *   (item) => item.id  // trackBy key
+   * );
+   */
+  bindTo<T, W = any>(
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ): BoundList<T, W> {
+    return new BoundList(this.ctx, this, getItems, renderItem, onDelete, trackBy);
+  }
+}
+
+/**
+ * BoundList - Declarative list binding for containers (ng-repeat style)
+ * Supports two modes:
+ * - MVVM mode: render callback returns widget reference, called on updates with existing widget
+ * - MVC mode: render callback returns void, uses reactive bindings for updates (pure 1978 MVC)
+ */
+export class BoundList<T, W = any> {
+  private ctx: Context;
+  private container: VBox | HBox;
+  private getItems: () => T[];
+  private renderItem: (item: T, index: number, existing: W | null) => W | void;
+  private onDelete?: (item: T, index: number) => void;
+  private trackBy: (item: T) => any;
+
+  // Track widgets by key for smart updates (MVVM mode)
+  private widgetsByKey = new Map<any, W>();
+  private currentKeys: any[] = [];
+
+  // MVC mode detection - true if render callback returns void
+  private mvcMode: boolean = false;
+
+  constructor(
+    ctx: Context,
+    container: VBox | HBox,
+    getItems: () => T[],
+    renderItem: (item: T, index: number, existing: W | null) => W | void,
+    onDelete?: (item: T, index: number) => void,
+    trackBy?: (item: T) => any
+  ) {
+    this.ctx = ctx;
+    this.container = container;
+    this.getItems = getItems;
+    this.renderItem = renderItem;
+    this.onDelete = onDelete;
+    this.trackBy = trackBy || ((item: T) => item);
+
+    // Initial render
+    this.initialRender();
+  }
+
+  /**
+   * Update the list with smart diffing - only modifies what changed
+   * In MVC mode, refreshes reactive bindings instead of calling renderItem
+   */
+  update(): void {
+    const items = this.getItems();
+    const newKeys = items.map(item => this.trackBy(item));
+    const oldKeys = new Set(this.currentKeys);
+    const newKeysSet = new Set(newKeys);
+
+    // Find what changed
+    const toRemove = this.currentKeys.filter(key => !newKeysSet.has(key));
+    const toAdd = newKeys.filter(key => !oldKeys.has(key));
+
+    // If only updates (no structural changes)
+    if (toRemove.length === 0 && toAdd.length === 0) {
+      if (this.mvcMode) {
+        // MVC mode: just refresh all bindings (View updates from Model automatically)
+        refreshAllBindings();
+      } else {
+        // MVVM mode: call renderItem with existing widgets for manual updates
+        items.forEach((item, index) => {
+          const key = this.trackBy(item);
+          const existing = this.widgetsByKey.get(key);
+          if (existing) {
+            this.renderItem(item, index, existing);
+          }
+        });
+      }
+      return;
+    }
+
+    // Structural changes - need to rebuild
+    // First, call onDelete for removed items
+    if (this.onDelete) {
+      toRemove.forEach(key => {
+        const oldIndex = this.currentKeys.indexOf(key);
+        this.onDelete!(key as T, oldIndex);
+      });
+    }
+
+    // Clear old widget tracking for removed items
+    toRemove.forEach(key => {
+      this.widgetsByKey.delete(key);
+    });
+
+    // Rebuild the container (unfortunately Fyne doesn't support reordering)
+    this.container.removeAll();
+
+    items.forEach((item, index) => {
+      const key = this.trackBy(item);
+      const existing = this.widgetsByKey.get(key) || null;
+
+      this.container.add(() => {
+        const widget = this.renderItem(item, index, existing);
+        if (widget !== undefined) {
+          this.widgetsByKey.set(key, widget);
+        }
+      });
+    });
+
+    this.container.refresh();
+    this.currentKeys = newKeys;
+  }
+
+  /**
+   * Initial render - create all widgets
+   */
+  private initialRender(): void {
+    const items = this.getItems();
+    this.currentKeys = items.map(item => this.trackBy(item));
+
+    items.forEach((item, index) => {
+      const key = this.trackBy(item);
+
+      this.container.add(() => {
+        const widget = this.renderItem(item, index, null);
+        if (widget !== undefined) {
+          this.widgetsByKey.set(key, widget);
+        } else {
+          // First item returned void = MVC mode
+          this.mvcMode = true;
+        }
+      });
+    });
+
+    this.container.refresh();
   }
 }
