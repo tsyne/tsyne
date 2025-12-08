@@ -1,6 +1,7 @@
 import { BridgeConnection, BridgeInterface } from './fynebridge';
 import { GrpcBridgeConnection } from './grpcbridge';
 import { MsgpackBridgeConnection } from './msgpackbridge';
+import { FfiBridgeConnection } from './ffibridge';
 import { Context } from './context';
 import { Window, WindowOptions } from './window';
 import { ITsyneWindow, createTsyneWindow, isDesktopMode, isPhoneMode } from './tsyne-window';
@@ -94,7 +95,7 @@ export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, 
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
-export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds';
+export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi';
 
 export interface AppOptions {
   title?: string;
@@ -181,7 +182,7 @@ export interface FontInfo {
 function getBridgeMode(options?: AppOptions): BridgeMode {
   // Environment variable takes precedence
   const envMode = process.env.TSYNE_BRIDGE_MODE;
-  if (envMode === 'grpc' || envMode === 'stdio' || envMode === 'msgpack-uds') {
+  if (envMode === 'grpc' || envMode === 'stdio' || envMode === 'msgpack-uds' || envMode === 'ffi') {
     return envMode;
   }
   // Fall back to options or default
@@ -198,6 +199,8 @@ function createBridge(mode: BridgeMode, testMode: boolean): BridgeInterface {
       return new GrpcBridgeConnection(testMode);
     case 'msgpack-uds':
       return new MsgpackBridgeConnection(testMode);
+    case 'ffi':
+      return new FfiBridgeConnection(testMode);
     default:
       return new BridgeConnection(testMode);
   }

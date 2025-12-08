@@ -237,24 +237,6 @@ func (b *Bridge) handleShowWindow(msg Message) Response {
 	fyne.DoAndWait(func() {
 		win.Show()
 
-		// Debug: Print window and content sizes
-		winSize := win.Canvas().Size()
-		content := win.Content()
-		var contentSize, contentMinSize fyne.Size
-		if content != nil {
-			contentSize = content.Size()
-			contentMinSize = content.MinSize()
-		}
-		log.Printf("[DEBUG] Window shown: canvas=(%v x %v), content=(%v x %v), contentMin=(%v x %v)",
-			winSize.Width, winSize.Height,
-			contentSize.Width, contentSize.Height,
-			contentMinSize.Width, contentMinSize.Height)
-
-		// Dump widget tree if content exists
-		if content != nil {
-			log.Printf("[DEBUG] Widget tree:")
-			b.dumpCanvasObjectTree(content, 0)
-		}
 	})
 
 	return Response{

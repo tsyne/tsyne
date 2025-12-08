@@ -1,14 +1,20 @@
 /**
- * gRPC vs stdio Latency Benchmark
+ * Transport Protocol Latency Benchmark
  *
- * Measures per-message round-trip latency for both protocols.
+ * Measures per-message round-trip latency for all four transport protocols.
  * This test creates many small messages to isolate protocol overhead.
+ *
+ * Transports tested:
+ * - stdio: JSON over stdin/stdout with length+CRC framing
+ * - grpc: Protocol Buffers over gRPC
+ * - msgpack-uds: MessagePack over Unix Domain Sockets
+ * - ffi: Direct function calls to Go shared library (requires libtsyne.so)
  */
 
 import { TsyneTest } from './index-test';
 
 interface LatencyResult {
-  protocol: 'stdio' | 'grpc' | 'msgpack-uds';
+  protocol: 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi';
   messageCount: number;
   totalTimeMs: number;
   avgLatencyMs: number;
@@ -26,7 +32,7 @@ function percentile(sorted: number[], p: number): number {
 }
 
 async function measureLatency(
-  protocol: 'stdio' | 'grpc' | 'msgpack-uds',
+  protocol: 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi',
   messageCount: number
 ): Promise<LatencyResult> {
   const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
@@ -108,7 +114,7 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure stdio latency', async () => {
     const result = await measureLatency('stdio', MESSAGE_COUNT);
-// console.log(formatResult(result));
+    console.log(formatResult(result));
 
     // Basic sanity check
     expect(result.avgLatencyMs).toBeGreaterThan(0);
@@ -117,7 +123,7 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure gRPC latency', async () => {
     const result = await measureLatency('grpc', MESSAGE_COUNT);
-// console.log(formatResult(result));
+    console.log(formatResult(result));
 
     expect(result.avgLatencyMs).toBeGreaterThan(0);
     expect(result.avgLatencyMs).toBeLessThan(100);
@@ -125,59 +131,70 @@ describe('Protocol Latency Benchmark', () => {
 
   test('measure msgpack-uds latency', async () => {
     const result = await measureLatency('msgpack-uds', MESSAGE_COUNT);
-// console.log(formatResult(result));
+    console.log(formatResult(result));
+
+    expect(result.avgLatencyMs).toBeGreaterThan(0);
+    expect(result.avgLatencyMs).toBeLessThan(100);
+  }, 60000);
+
+  test('measure ffi latency', async () => {
+    const result = await measureLatency('ffi', MESSAGE_COUNT);
+    console.log(formatResult(result));
 
     expect(result.avgLatencyMs).toBeGreaterThan(0);
     expect(result.avgLatencyMs).toBeLessThan(100);
   }, 60000);
 
   test('compare all protocols latency', async () => {
-// console.log('\n========================================');
-// console.log('     PROTOCOL LATENCY COMPARISON');
-// console.log('========================================');
-
-    // Run all three protocols
+    // Run all four protocols
     const stdioResult = await measureLatency('stdio', MESSAGE_COUNT);
     const grpcResult = await measureLatency('grpc', MESSAGE_COUNT);
     const msgpackResult = await measureLatency('msgpack-uds', MESSAGE_COUNT);
-
-// console.log(formatResult(stdioResult));
-// console.log(formatResult(grpcResult));
-// console.log(formatResult(msgpackResult));
+    const ffiResult = await measureLatency('ffi', MESSAGE_COUNT);
 
     // Find winner (lowest latency)
     const results = [
       { name: 'stdio', result: stdioResult },
       { name: 'gRPC', result: grpcResult },
       { name: 'msgpack-uds', result: msgpackResult },
+      { name: 'ffi', result: ffiResult },
     ];
     results.sort((a, b) => a.result.avgLatencyMs - b.result.avgLatencyMs);
     const winner = results[0];
     const slowest = results[results.length - 1];
 
-// console.log('\n=== COMPARISON ===');
-// console.log(`Winner: ${winner.name}`);
-// console.log(`Speedup vs slowest: ${(slowest.result.avgLatencyMs / winner.result.avgLatencyMs).toFixed(2)}x`);
-// console.log('');
-// console.log('Average latencies:');
-// console.log(`  stdio:       ${stdioResult.avgLatencyMs.toFixed(3)}ms`);
-// console.log(`  gRPC:        ${grpcResult.avgLatencyMs.toFixed(3)}ms`);
-// console.log(`  msgpack-uds: ${msgpackResult.avgLatencyMs.toFixed(3)}ms`);
-// console.log('');
-// console.log('Throughput (msg/sec):');
-// console.log(`  stdio:       ${stdioResult.messagesPerSecond.toFixed(1)}`);
-// console.log(`  gRPC:        ${grpcResult.messagesPerSecond.toFixed(1)}`);
-// console.log(`  msgpack-uds: ${msgpackResult.messagesPerSecond.toFixed(1)}`);
+    console.log([
+      '\n========================================',
+      '     PROTOCOL LATENCY COMPARISON',
+      '========================================',
+      formatResult(stdioResult),
+      formatResult(grpcResult),
+      formatResult(msgpackResult),
+      formatResult(ffiResult),
+      '\n=== COMPARISON ===',
+      `Winner: ${winner.name}`,
+      `Speedup vs slowest: ${(slowest.result.avgLatencyMs / winner.result.avgLatencyMs).toFixed(2)}x`,
+      '',
+      'Average latencies:',
+      `  stdio:       ${stdioResult.avgLatencyMs.toFixed(3)}ms`,
+      `  gRPC:        ${grpcResult.avgLatencyMs.toFixed(3)}ms`,
+      `  msgpack-uds: ${msgpackResult.avgLatencyMs.toFixed(3)}ms`,
+      `  ffi:         ${ffiResult.avgLatencyMs.toFixed(3)}ms`,
+      '',
+      'Throughput (msg/sec):',
+      `  stdio:       ${stdioResult.messagesPerSecond.toFixed(1)}`,
+      `  gRPC:        ${grpcResult.messagesPerSecond.toFixed(1)}`,
+      `  msgpack-uds: ${msgpackResult.messagesPerSecond.toFixed(1)}`,
+      `  ffi:         ${ffiResult.messagesPerSecond.toFixed(1)}`,
+    ].join('\n'));
 
     // No assertion on which is faster - just report
-  }, 180000);
+  }, 240000);
 
   test('burst message test (rapid fire)', async () => {
-// console.log('\n========================================');
-// console.log('     BURST MESSAGE TEST (50 rapid)');
-// console.log('========================================');
+    const burstResults: string[] = [];
 
-    for (const protocol of ['stdio', 'grpc', 'msgpack-uds'] as const) {
+    for (const protocol of ['stdio', 'grpc', 'msgpack-uds', 'ffi'] as const) {
       const tsyneTest = new TsyneTest({ headed: false, bridgeMode: protocol });
 
       try {
@@ -206,10 +223,17 @@ describe('Protocol Latency Benchmark', () => {
         await Promise.all(promises);
         const elapsed = performance.now() - start;
 
-// console.log(`${protocol}: 50 burst messages in ${elapsed.toFixed(2)}ms (${(50000 / elapsed).toFixed(1)} msg/sec)`);
+        burstResults.push(`${protocol}: 50 burst messages in ${elapsed.toFixed(2)}ms (${(50000 / elapsed).toFixed(1)} msg/sec)`);
       } finally {
         await tsyneTest.cleanup();
       }
     }
-  }, 60000);
+
+    console.log([
+      '\n========================================',
+      '     BURST MESSAGE TEST (50 rapid)',
+      '========================================',
+      ...burstResults,
+    ].join('\n'));
+  }, 80000);
 });

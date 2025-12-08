@@ -5,7 +5,7 @@ import { recordHeadlessScreenshot } from './headless-screenshot-tracker';
 export interface TestOptions {
   headed?: boolean;
   timeout?: number;
-  bridgeMode?: 'stdio' | 'grpc' | 'msgpack-uds';
+  bridgeMode?: 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi';
 }
 
 /**

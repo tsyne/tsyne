@@ -584,7 +584,6 @@ func startGrpcServer(port int, token string, bridge *Bridge, readyChan chan<- bo
 	// Signal ready immediately after registering - no artificial delay
 	readyChan <- true
 
-	log.Printf("[gRPC] Server listening on port %d", port)
 	return grpcServer.Serve(lis)
 }
 
@@ -622,8 +621,6 @@ func runGrpcMode(testMode bool) {
 	os.Stdout.Write(jsonData)
 	os.Stdout.Write([]byte("\n"))
 	os.Stdout.Sync()
-
-	log.Printf("[gRPC] Sent connection info: port=%d", port)
 
 	// 6. Keep stdin open for shutdown signal
 	shutdownChan := make(chan bool)
@@ -671,8 +668,6 @@ func runMsgpackUdsMode(testMode bool) {
 	os.Stdout.Write(jsonData)
 	os.Stdout.Write([]byte("\n"))
 	os.Stdout.Sync()
-
-	log.Printf("[msgpack-uds] Server listening on %s", msgpackServer.GetSocketPath())
 
 	// 5. Keep stdin open for shutdown signal (in background)
 	shutdownChan := make(chan bool)
@@ -797,8 +792,6 @@ func main() {
 		}
 	}
 	flag.CommandLine.Parse(filteredArgs)
-
-	log.Printf("[main] Starting in mode: %s (testMode: %v)", *mode, testMode)
 
 	// Run in the specified mode
 	switch *mode {

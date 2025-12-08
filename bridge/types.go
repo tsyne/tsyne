@@ -70,6 +70,12 @@ type Bridge struct {
 	polygonData     map[string]*PolygonData          // polygon widget ID -> polygon data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)
+	ffiEventCallback func(Event)                     // FFI event callback (when in FFI mode)
+}
+
+// SetEventCallback sets the callback for FFI event delivery
+func (b *Bridge) SetEventCallback(callback func(Event)) {
+	b.ffiEventCallback = callback
 }
 
 // ProgressDialogInfo stores information about a progress dialog
@@ -1359,6 +1365,14 @@ func NewBridge(testMode bool) *Bridge {
 
 func (b *Bridge) sendEvent(event Event) {
 	log.Printf("[SEND-EVENT] Type: %s, WidgetID: %s, Data: %v", event.Type, event.WidgetID, event.Data)
+
+	// Check for FFI callback first (highest priority)
+	if b.ffiEventCallback != nil {
+		log.Printf("[SEND-EVENT-FFI] Sending via FFI callback: %s", event.Type)
+		b.ffiEventCallback(event)
+		return
+	}
+
 	// In gRPC mode, events are sent via the gRPC stream channel
 	if b.grpcMode {
 		// Check for MessagePack server first (msgpack-uds mode)

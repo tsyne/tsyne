@@ -25,3 +25,7 @@ docs/api
 # Compiled Go binary (use bin/tsyne-bridge instead)
 bridge/bridge
 bridge/bridge
+
+# iOS build artifacts
+forios/bundle/
+forios/ios-project/

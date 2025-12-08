@@ -1,11 +1,18 @@
 /**
  * Transport ABI Parity Test
  *
- * Verifies that all three transport protocols (stdio/JSON, msgpack-uds, gRPC)
- * support the same message fields.
+ * Verifies that all four transport protocols support the same message fields:
+ * - stdio/JSON: JSON messages over stdin/stdout with length+CRC framing
+ * - msgpack-uds: MessagePack over Unix Domain Sockets
+ * - gRPC: Protocol Buffers over gRPC
+ * - FFI: Direct function calls to Go shared library (uses same handlers as stdio)
  *
  * SOURCE OF TRUTH: The Go handler defines what fields are actually used.
  * All other implementations must support the same fields.
+ *
+ * FFI Transport Note: FFI has automatic ABI parity with stdio because it calls
+ * the same handleMessage() function directly - there's no separate serialization
+ * layer. The only difference is FFI uses JSON for the message payload format.
  *
  * If a developer adds a field to the Go handler but forgets to add it to
  * gRPC proto or TypeScript, this test will fail.
