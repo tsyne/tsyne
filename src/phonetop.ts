@@ -14,7 +14,7 @@ import { App } from './app';
 import { Window } from './window';
 import { Label, Button } from './widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from './tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager } from './resources';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';

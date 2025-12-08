@@ -18,7 +18,7 @@ import { App } from './app';
 import { Window } from './window';
 import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import { SandboxedApp, IApp } from './sandboxed-app';
 import { Resvg } from '@resvg/resvg-js';

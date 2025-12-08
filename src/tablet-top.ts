@@ -15,7 +15,7 @@ import { App } from './app';
 import { Window } from './window';
 import { Label, Button } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager } from './resources';
 import { SandboxedApp } from './sandboxed-app';
 import * as path from 'path';

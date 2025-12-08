@@ -921,14 +921,14 @@ export type { TsyneLocation, TsyneHistory, TsyneNavigator } from './globals';
 // Export screenshot helper (useful for demos and testing)
 export { screenshotIfRequested } from './screenshot-helper';
 
-// Export desktop metadata utilities (for building desktop environments)
+// Export app metadata utilities (for building desktop/phone/tablet environments)
 export {
   parseAppMetadata,
   scanForApps,
   loadAppBuilder,
   loadContentBuilder,
-} from './desktop-metadata';
-export type { AppMetadata } from './desktop-metadata';
+} from './app-metadata';
+export type { AppMetadata } from './app-metadata';
 
 // Export TsyneWindow abstraction (for apps that work in both standalone and desktop modes)
 export {

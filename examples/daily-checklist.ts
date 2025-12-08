@@ -16,7 +16,12 @@
  * Compare with daily-checklist-mvc.ts (MVC) to see the two approaches.
  *
  * @tsyne-app:name Daily Checklist
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+ *   <path d="M9 11l3 3L22 4"/>
+ *   <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+ * </svg>
+ * SVG
  * @tsyne-app:category productivity
  * @tsyne-app:builder buildDailyChecklist
  * @tsyne-app:count one

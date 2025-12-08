@@ -12,6 +12,13 @@
  *   // @tsyne-app:builder buildCalculator
  *   // @tsyne-app:args app,resources
  *
+ * Heredoc syntax for multi-line values (in JSDoc comments):
+ *   * @tsyne-app:icon <<SVG
+ *   * <svg viewBox="0 0 24 24">
+ *   *   <path d="M9 11l3 3L22 4"/>
+ *   * </svg>
+ *   * SVG
+ *
  * The icon can be:
  *   - An inline SVG (for custom icons)
  *   - A Fyne theme icon name (confirm, delete, home, etc.)
@@ -67,24 +74,69 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
     let count: 'one' | 'many' | 'desktop-many' = 'one';
     let args: string[] = ['app'];  // Default: just app
 
-    for (const line of lines) {
+    // Heredoc state
+    let heredocField: string | null = null;
+    let heredocTag: string | null = null;
+    let heredocLines: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
 
-      // Parse @tsyne-app:name
-      const nameMatch = trimmed.match(/^\/\/\s*@tsyne-app:name\s+(.+)$/);
+      // If we're inside a heredoc, collect lines until we hit the closing tag
+      if (heredocTag) {
+        // Check for closing tag: "* TAG" or "TAG" at end of line
+        const closingMatch = trimmed.match(/^\*?\s*(\w+)\s*$/);
+        if (closingMatch && closingMatch[1] === heredocTag) {
+          // End of heredoc - join collected lines
+          const value = heredocLines.join('\n').trim();
+
+          // Assign to the appropriate field
+          if (heredocField === 'icon') {
+            icon = value;
+            iconIsSvg = value.startsWith('<svg') || value.startsWith('<SVG');
+          }
+          // Reset heredoc state
+          heredocField = null;
+          heredocTag = null;
+          heredocLines = [];
+          continue;
+        }
+
+        // Strip JSDoc prefix ("* " or " * ") and collect line
+        let contentLine = trimmed;
+        if (contentLine.startsWith('*')) {
+          contentLine = contentLine.substring(1).trimStart();
+        }
+        heredocLines.push(contentLine);
+        continue;
+      }
+
+      // Check for heredoc start: "@tsyne-app:FIELD <<TAG"
+      // Supports both // comments and * JSDoc style
+      const heredocMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:(\w+)\s+<<(\w+)\s*$/);
+      if (heredocMatch) {
+        heredocField = heredocMatch[1];
+        heredocTag = heredocMatch[2];
+        heredocLines = [];
+        continue;
+      }
+
+      // Parse @tsyne-app:name (single line)
+      const nameMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:name\s+(.+)$/);
       if (nameMatch) {
         name = nameMatch[1].trim();
         continue;
       }
 
-      // Parse @tsyne-app:icon (can be SVG or icon name)
-      const iconMatch = trimmed.match(/^\/\/\s*@tsyne-app:icon\s+(.+)$/);
+      // Parse @tsyne-app:icon (single line - can be SVG or icon name)
+      const iconMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:icon\s+(.+)$/);
       if (iconMatch) {
         const iconValue = iconMatch[1].trim();
         if (iconValue.startsWith('<svg') || iconValue.startsWith('<SVG')) {
           icon = iconValue;
           iconIsSvg = true;
-        } else {
+        } else if (!iconValue.startsWith('<<')) {
           icon = iconValue;
           iconIsSvg = false;
         }
@@ -92,28 +144,28 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       }
 
       // Parse @tsyne-app:category
-      const categoryMatch = trimmed.match(/^\/\/\s*@tsyne-app:category\s+(.+)$/);
+      const categoryMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:category\s+(.+)$/);
       if (categoryMatch) {
         category = categoryMatch[1].trim();
         continue;
       }
 
       // Parse @tsyne-app:builder
-      const builderMatch = trimmed.match(/^\/\/\s*@tsyne-app:builder\s+(.+)$/);
+      const builderMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:builder\s+(.+)$/);
       if (builderMatch) {
         builder = builderMatch[1].trim();
         continue;
       }
 
       // Parse @tsyne-app:contentBuilder
-      const contentBuilderMatch = trimmed.match(/^\/\/\s*@tsyne-app:contentBuilder\s+(.+)$/);
+      const contentBuilderMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:contentBuilder\s+(.+)$/);
       if (contentBuilderMatch) {
         contentBuilder = contentBuilderMatch[1].trim();
         continue;
       }
 
       // Parse @tsyne-app:count (one, many, or desktop-many)
-      const countMatch = trimmed.match(/^\/\/\s*@tsyne-app:count\s+(.+)$/);
+      const countMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:count\s+(.+)$/);
       if (countMatch) {
         const countValue = countMatch[1].trim().toLowerCase();
         if (countValue === 'many') {
@@ -125,7 +177,7 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
       }
 
       // Parse @tsyne-app:args (comma-separated list of argument names)
-      const argsMatch = trimmed.match(/^\/\/\s*@tsyne-app:args\s+(.+)$/);
+      const argsMatch = trimmed.match(/^(?:\/\/|\*)\s*@tsyne-app:args\s+(.+)$/);
       if (argsMatch) {
         args = argsMatch[1].split(',').map(a => a.trim());
         continue;

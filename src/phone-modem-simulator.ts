@@ -14,7 +14,7 @@
 import { App } from './app';
 import { Window } from './window';
 import { Label } from './widgets';
-import { scanForApps, loadAppBuilder, AppMetadata } from './desktop-metadata';
+import { scanForApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { SandboxedApp } from './sandboxed-app';
 import * as path from 'path';
 

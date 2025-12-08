@@ -227,5 +227,5 @@ Or launch from desktop - same code, different context!
 
 - **`src/desktop.ts`** - Main desktop environment (Desktop class, buildDesktop)
 - **`src/tsyne-window.ts`** - ITsyneWindow interface and InnerWindowAdapter
-- **`src/desktop-metadata.ts`** - Parser for `@tsyne-app` metadata
+- **`src/app-metadata.ts`** - Parser for `@tsyne-app` metadata
 - **`test/desktop.test.ts`** - Integration tests for the desktop
