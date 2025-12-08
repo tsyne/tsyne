@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { refreshAllBindings } from './base';
+import { refreshAllBindings, registerGlobalBinding } from './base';
 
 /**
  * ModelBoundList - Smart list binding for containers (inspired by AngularJS ng-repeat)
@@ -227,8 +227,13 @@ export class VBox {
 
   /**
    * Declarative visibility control - show container when condition is true
+   * MVC-style: automatically re-evaluates when refreshAllBindings() is called
    * @param conditionFn Function that returns whether container should be visible
    * @returns this for method chaining
+   * @example
+   * a.vbox(() => {
+   *   a.label('No items');
+   * }).when(() => items.length === 0);
    */
   when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
@@ -242,6 +247,10 @@ export class VBox {
 
     // Store for reactive re-evaluation
     this.visibilityCondition = updateVisibility;
+
+    // Register as global binding for MVC-style auto-refresh
+    registerGlobalBinding(updateVisibility);
+
     updateVisibility(); // Initial evaluation
 
     return this;
@@ -338,8 +347,13 @@ export class HBox {
 
   /**
    * Declarative visibility control - show container when condition is true
+   * MVC-style: automatically re-evaluates when refreshAllBindings() is called
    * @param conditionFn Function that returns whether container should be visible
    * @returns this for method chaining
+   * @example
+   * a.vbox(() => {
+   *   a.label('No items');
+   * }).when(() => items.length === 0);
    */
   when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
@@ -353,6 +367,10 @@ export class HBox {
 
     // Store for reactive re-evaluation
     this.visibilityCondition = updateVisibility;
+
+    // Register as global binding for MVC-style auto-refresh
+    registerGlobalBinding(updateVisibility);
+
     updateVisibility(); // Initial evaluation
 
     return this;

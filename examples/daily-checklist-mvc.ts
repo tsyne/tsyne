@@ -153,7 +153,6 @@ export function buildDailyChecklistMVC(a: App) {
   let statusLabel: Label;
   let editModeContainer: any;
   let checklistModeContainer: any;
-  let emptyStateContainer: any;
   let boundList: any;
 
   // Mode flag
@@ -174,18 +173,6 @@ export function buildDailyChecklistMVC(a: App) {
       const remaining = total - done;
       const itemWord = remaining === 1 ? 'item' : 'items';
       await statusLabel.setText(`${remaining} ${itemWord} remaining (${done}/${total} done)`);
-    }
-  }
-
-  /**
-   * Update empty state visibility
-   */
-  async function updateEmptyState(): Promise<void> {
-    const hasItems = store.getItems().length > 0;
-    if (hasItems) {
-      await emptyStateContainer.hide();
-    } else {
-      await emptyStateContainer.show();
     }
   }
 
@@ -242,11 +229,11 @@ export function buildDailyChecklistMVC(a: App) {
               center: () => {
                 // Stack for empty state overlay
                 a.stack(() => {
-                  // Empty state (shown when no items)
-                  emptyStateContainer = a.vbox(() => {
+                  // Empty state - declaratively shown when no items
+                  a.vbox(() => {
                     a.label('No tasks configured.');
                     a.label('Click "Edit List" to add items.');
-                  });
+                  }).when(() => store.getItems().length === 0);
 
                   // ============================================================
                   // PURE MVC STYLE - View just declares bindings
@@ -348,15 +335,13 @@ export function buildDailyChecklistMVC(a: App) {
     // MVC: Model changes trigger binding refresh
     // No manual update logic in View - bindings handle it automatically
     store.subscribe(async () => {
-      boundList.update(); // Triggers refreshAllBindings() in MVC mode
-      await updateEmptyState();
+      boundList.update(); // Triggers refreshAllBindings() in MVC mode (including when() bindings)
       await updateStatusLabel();
     });
 
     // Initialize
     (async () => {
       await editModeContainer.hide();
-      await updateEmptyState();
       await updateStatusLabel();
     })();
   });

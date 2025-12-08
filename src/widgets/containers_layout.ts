@@ -1,5 +1,5 @@
 import { Context } from '../context';
-import { AccessibilityOptions } from './base';
+import { AccessibilityOptions, registerGlobalBinding } from './base';
 import { BoundList } from './containers_box';
 
 /**
@@ -190,6 +190,7 @@ export class Grid {
 
   /**
    * Declarative visibility control - show container when condition is true
+   * MVC-style: automatically re-evaluates when refreshAllBindings() is called
    * @param conditionFn Function that returns whether container should be visible
    * @returns this for method chaining
    */
@@ -204,6 +205,7 @@ export class Grid {
     };
 
     this.visibilityCondition = updateVisibility;
+    registerGlobalBinding(updateVisibility);
     updateVisibility();
 
     return this;
@@ -525,6 +527,7 @@ export class GridWrap {
 
   /**
    * Declarative visibility control
+   * MVC-style: automatically re-evaluates when refreshAllBindings() is called
    */
   when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
@@ -537,6 +540,7 @@ export class GridWrap {
     };
 
     this.visibilityCondition = updateVisibility;
+    registerGlobalBinding(updateVisibility);
     updateVisibility();
 
     return this;
@@ -707,6 +711,7 @@ export class AdaptiveGrid {
 
   /**
    * Declarative visibility control
+   * MVC-style: automatically re-evaluates when refreshAllBindings() is called
    */
   when(conditionFn: () => boolean): this {
     const updateVisibility = async () => {
@@ -719,6 +724,7 @@ export class AdaptiveGrid {
     };
 
     this.visibilityCondition = updateVisibility;
+    registerGlobalBinding(updateVisibility);
     updateVisibility();
 
     return this;
