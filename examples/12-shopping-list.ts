@@ -22,34 +22,7 @@ app({ title: 'Shopping List' }, (a) => {
     ];
 
     let inputEntry: any;
-    let listContainer: any;
-
-    const renderList = () => {
-      listContainer.removeAll();
-
-      items.forEach((item) => {
-        listContainer.add(() => {
-          a.hbox(() => {
-            const checkbox = a.checkbox(item.text, async (checked: boolean) => {
-              item.checked = checked;
-            });
-            (async () => {
-              await checkbox.setChecked(item.checked);
-            })();
-
-            a.button('Delete').onClick(async () => {
-              const index = items.findIndex(i => i.id === item.id);
-              if (index !== -1) {
-                items.splice(index, 1);
-                renderList();
-              }
-            });
-          });
-        });
-      });
-
-      listContainer.refresh();
-    };
+    let boundList: any;
 
     win.setContent(() => {
       a.vbox(() => {
@@ -61,22 +34,44 @@ app({ title: 'Shopping List' }, (a) => {
           if (text && text.trim()) {
             items.push({ id: nextId++, text: text.trim(), checked: false });
             await inputEntry.setText('');
-            renderList();
+            boundList.update();
           }
         }, 250);
 
         a.separator();
 
-        listContainer = a.scroll(() => {
-          a.vbox(() => {
-            // Items will be added here
+        a.scroll(() => {
+          boundList = a.vbox(() => {}).bindTo({
+            items: () => items,
+
+            empty: () => {
+              a.label('No items. Add something above!');
+            },
+
+            render: (item: ShoppingItem) => {
+              a.hbox(() => {
+                const checkbox = a.checkbox(item.text, async (checked: boolean) => {
+                  item.checked = checked;
+                });
+                (async () => {
+                  await checkbox.setChecked(item.checked);
+                })();
+
+                a.button('Delete').onClick(async () => {
+                  const index = items.findIndex(i => i.id === item.id);
+                  if (index !== -1) {
+                    items.splice(index, 1);
+                    boundList.update();
+                  }
+                });
+              });
+            },
+
+            trackBy: (item: ShoppingItem) => item.id
           });
         });
       });
     });
-
-    // Initial render
-    renderList();
 
     win.show();
   });

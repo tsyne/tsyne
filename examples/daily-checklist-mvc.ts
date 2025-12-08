@@ -227,60 +227,42 @@ export function buildDailyChecklistMVC(a: App) {
             // Checklist mode container - use border so scroll in center expands
             checklistModeContainer = a.border({
               center: () => {
-                // Stack for empty state overlay
-                a.stack(() => {
-                  // Empty state - declaratively shown when no items
-                  a.vbox(() => {
-                    a.label('No tasks configured.');
-                    a.label('Click "Edit List" to add items.');
-                  }).when(() => store.getItems().length === 0);
+                // ============================================================
+                // PURE MVC STYLE - single bindTo with empty state
+                // Compare this to daily-checklist.ts (MVVM) to see the difference
+                // ============================================================
+                a.scroll(() => {
+                  boundList = a.vbox(() => {}).bindTo({
+                    items: () => store.getItems(),
 
-                  // ============================================================
-                  // PURE MVC STYLE - View just declares bindings
-                  // Compare this to daily-checklist.ts (MVVM) to see the difference
-                  // ============================================================
-                  a.scroll(() => {
-                    boundList = a.vbox(() => {
-                      // Empty initially
-                    }).bindTo(
-                      () => store.getItems(),
+                    // Empty state - shown when no items
+                    empty: () => {
+                      a.label('No tasks configured.');
+                      a.label('Click "Edit List" to add items.');
+                    },
 
-                      // MVC: Render callback runs ONCE per item, sets up bindings
-                      // No if(existing) check - View is "dumb"
-                      // Returns void - framework handles widget lifecycle
-                      (item: string, index: number) => {
-                        a.max(() => {
-                          // Pure binding: background color bound to Model state
-                          // View just declares "what should be", not "how to update"
-                          a.rectangle(SCARLET_COLOR).bindFillColor(() =>
-                            store.isChecked(index) ? 'transparent' : SCARLET_COLOR
+                    // MVC: Render runs ONCE per item, sets up bindings
+                    // Returns void - framework handles widget lifecycle
+                    render: (item: string, index: number) => {
+                      a.max(() => {
+                        // Background color bound to Model state
+                        a.rectangle(SCARLET_COLOR).bindFillColor(() =>
+                          store.isChecked(index) ? 'transparent' : SCARLET_COLOR
+                        );
+
+                        a.hbox(() => {
+                          a.checkbox('', async () => {
+                            await store.toggleChecked(index);
+                          }).withId(`checklist-item-${index}`);
+
+                          a.canvasText(item, { bold: true }).bindColor(() =>
+                            store.isChecked(index) ? '#000000' : '#FFFFFF'
                           );
-
-                          a.hbox(() => {
-                            // Checkbox with empty label (just the checkmark)
-                            // Controller: user action -> Model update
-                            a.checkbox('', async () => {
-                              await store.toggleChecked(index);
-                            }).withId(`checklist-item-${index}`);
-
-                            // Canvas text with reactive color binding
-                            // Bold white on scarlet, black on transparent
-                            a.canvasText(item, { bold: true }).bindColor(() =>
-                              store.isChecked(index) ? '#000000' : '#FFFFFF'
-                            );
-                          });
                         });
-                        // No return! This signals MVC mode to the framework
-                      },
+                      });
+                    },
 
-                      // Delete callback - called when item removed
-                      (item: string, index: number) => {
-                        // Cleanup if needed (bindings auto-cleanup)
-                      },
-
-                      // trackBy - use item value as key
-                      (item: string) => item
-                    );
+                    trackBy: (item: string) => item
                   });
                 });
               },

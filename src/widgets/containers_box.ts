@@ -176,41 +176,28 @@ export class VBox {
   }
 
   /**
-   * Bind container to a data source with render/delete callbacks (ng-repeat style)
-   * Smart diffing avoids flicker by reusing existing widgets.
+   * Bind container to a data source (ng-repeat style).
+   * Supports options object or positional args.
    *
-   * @param getItems Function that returns the current items array
-   * @param renderItem Function called to render each item. Receives (item, index, existing).
-   *                   If existing is null, create and return new widget.
-   *                   If existing is provided, update it and return it (or return as-is).
-   * @param onDelete Optional function called when an item is removed (receives item and index)
-   * @param trackBy Optional function to extract unique key from item (default: item itself)
-   * @returns BoundList controller with update() method
-   *
-   * @example
-   * const list = checklistContainer.bindTo(
-   *   () => store.getItems(),
-   *   (item, index, existing) => {
-   *     if (existing) {
-   *       existing.setText(item.text);
-   *       return existing;
-   *     }
-   *     return a.checkbox(item, () => store.toggle(index));
-   *   },
-   *   (item, index) => console.log('Removed:', item),
-   *   (item) => item.id  // trackBy key
-   * );
-   *
-   * // Call when data changes:
-   * list.update();
+   * @example Options object (terse):
+   * a.vbox().bindTo({
+   *   items: () => store.getItems(),
+   *   render: (item, index) => { a.label(item); },
+   *   empty: () => { a.label('No items'); },
+   *   trackBy: (item) => item.id
+   * });
    */
   bindTo<T, W = any>(
-    getItems: () => T[],
-    renderItem: (item: T, index: number, existing: W | null) => W,
+    optionsOrGetItems: BindToOptions<T, W> | (() => T[]),
+    renderItem?: (item: T, index: number, existing: W | null) => W | void,
     onDelete?: (item: T, index: number) => void,
     trackBy?: (item: T) => any
   ): BoundList<T, W> {
-    return new BoundList(this.ctx, this, getItems, renderItem, onDelete, trackBy);
+    if (typeof optionsOrGetItems === 'object') {
+      const opts = optionsOrGetItems;
+      return new BoundList(this.ctx, this, opts.items, opts.render, opts.onDelete, opts.trackBy, opts.empty);
+    }
+    return new BoundList(this.ctx, this, optionsOrGetItems, renderItem!, onDelete, trackBy);
   }
 
   async hide(): Promise<void> {
@@ -389,39 +376,63 @@ export class HBox {
    * Bind container to a data source with render/delete callbacks (ng-repeat style)
    * Smart diffing avoids flicker by reusing existing widgets.
    *
-   * @param getItems Function that returns the current items array
-   * @param renderItem Function called to render each item. Receives (item, index, existing).
-   *                   If existing is null, create and return new widget.
-   *                   If existing is provided, update it and return it (or return as-is).
-   * @param onDelete Optional function called when an item is removed (receives item and index)
-   * @param trackBy Optional function to extract unique key from item (default: item itself)
-   * @returns BoundList controller with update() method
+   * Supports two API styles:
+   * 1. Options object (terse): bindTo({ items, render, empty?, trackBy?, onDelete? })
+   * 2. Positional args: bindTo(getItems, renderItem, onDelete?, trackBy?)
    *
-   * @example
-   * a.vbox(() => {}).bindTo(
+   * @example Options object (recommended):
+   * a.vbox().bindTo({
+   *   items: () => store.getItems(),
+   *   render: (item, index) => { a.label(item.text); },
+   *   empty: () => { a.label('No items'); },
+   *   trackBy: (item) => item.id
+   * });
+   *
+   * @example Positional args:
+   * a.vbox().bindTo(
    *   () => store.getItems(),
-   *   (item, index, existing) => {
-   *     if (existing) {
-   *       // Update existing widget
-   *       existing.setText(item.text);
-   *       return existing;
-   *     } else {
-   *       // Create new widget
-   *       return a.label(item.text);
-   *     }
-   *   },
-   *   (item, index) => console.log('deleted:', item),
-   *   (item) => item.id  // trackBy key
+   *   (item, index, existing) => existing || a.label(item.text),
+   *   undefined,
+   *   (item) => item.id
    * );
    */
   bindTo<T, W = any>(
-    getItems: () => T[],
-    renderItem: (item: T, index: number, existing: W | null) => W,
+    optionsOrGetItems: BindToOptions<T, W> | (() => T[]),
+    renderItem?: (item: T, index: number, existing: W | null) => W | void,
     onDelete?: (item: T, index: number) => void,
     trackBy?: (item: T) => any
   ): BoundList<T, W> {
-    return new BoundList(this.ctx, this, getItems, renderItem, onDelete, trackBy);
+    // Options object API
+    if (typeof optionsOrGetItems === 'object') {
+      const opts = optionsOrGetItems;
+      return new BoundList(
+        this.ctx, this,
+        opts.items,
+        opts.render,
+        opts.onDelete,
+        opts.trackBy,
+        opts.empty
+      );
+    }
+    // Positional args API (backward compatible)
+    return new BoundList(this.ctx, this, optionsOrGetItems, renderItem!, onDelete, trackBy);
   }
+}
+
+/**
+ * Options for bindTo() - terse alternative to positional args
+ */
+export interface BindToOptions<T, W = any> {
+  /** Function returning current items array */
+  items: () => T[];
+  /** Render callback for each item. Return widget (MVVM) or void (MVC) */
+  render: (item: T, index: number, existing: W | null) => W | void;
+  /** Optional: render when list is empty */
+  empty?: () => void;
+  /** Optional: called when item is removed */
+  onDelete?: (item: T, index: number) => void;
+  /** Optional: extract unique key from item (default: item itself) */
+  trackBy?: (item: T) => any;
 }
 
 /**
@@ -435,6 +446,7 @@ export class BoundList<T, W = any> {
   private container: VBox | HBox;
   private getItems: () => T[];
   private renderItem: (item: T, index: number, existing: W | null) => W | void;
+  private renderEmpty?: () => void;
   private onDelete?: (item: T, index: number) => void;
   private trackBy: (item: T) => any;
 
@@ -445,18 +457,23 @@ export class BoundList<T, W = any> {
   // MVC mode detection - true if render callback returns void
   private mvcMode: boolean = false;
 
+  // Track if currently showing empty state
+  private showingEmpty: boolean = false;
+
   constructor(
     ctx: Context,
     container: VBox | HBox,
     getItems: () => T[],
     renderItem: (item: T, index: number, existing: W | null) => W | void,
     onDelete?: (item: T, index: number) => void,
-    trackBy?: (item: T) => any
+    trackBy?: (item: T) => any,
+    renderEmpty?: () => void
   ) {
     this.ctx = ctx;
     this.container = container;
     this.getItems = getItems;
     this.renderItem = renderItem;
+    this.renderEmpty = renderEmpty;
     this.onDelete = onDelete;
     this.trackBy = trackBy || ((item: T) => item);
 
@@ -470,6 +487,31 @@ export class BoundList<T, W = any> {
    */
   update(): void {
     const items = this.getItems();
+
+    // Handle empty state transitions
+    if (items.length === 0 && this.renderEmpty) {
+      if (!this.showingEmpty) {
+        // Transition to empty state
+        this.container.removeAll();
+        this.container.add(() => {
+          this.renderEmpty!();
+        });
+        this.container.refresh();
+        this.widgetsByKey.clear();
+        this.currentKeys = [];
+        this.showingEmpty = true;
+      }
+      // Already showing empty, nothing to do
+      return;
+    }
+
+    // Transition from empty to items
+    if (this.showingEmpty && items.length > 0) {
+      this.container.removeAll();
+      this.showingEmpty = false;
+      // Fall through to render items
+    }
+
     const newKeys = items.map(item => this.trackBy(item));
     const oldKeys = new Set(this.currentKeys);
     const newKeysSet = new Set(newKeys);
@@ -479,7 +521,7 @@ export class BoundList<T, W = any> {
     const toAdd = newKeys.filter(key => !oldKeys.has(key));
 
     // If only updates (no structural changes)
-    if (toRemove.length === 0 && toAdd.length === 0) {
+    if (toRemove.length === 0 && toAdd.length === 0 && !this.showingEmpty) {
       if (this.mvcMode) {
         // MVC mode: just refresh all bindings (View updates from Model automatically)
         refreshAllBindings();
@@ -530,10 +572,21 @@ export class BoundList<T, W = any> {
   }
 
   /**
-   * Initial render - create all widgets
+   * Initial render - create all widgets or empty state
    */
   private initialRender(): void {
     const items = this.getItems();
+
+    // Show empty state if no items and empty callback provided
+    if (items.length === 0 && this.renderEmpty) {
+      this.container.add(() => {
+        this.renderEmpty!();
+      });
+      this.container.refresh();
+      this.showingEmpty = true;
+      return;
+    }
+
     this.currentKeys = items.map(item => this.trackBy(item));
 
     items.forEach((item, index) => {

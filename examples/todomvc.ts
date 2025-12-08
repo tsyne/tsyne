@@ -223,13 +223,11 @@ export function createTodoApp(a: any, storePath?: string) {
   const store = new TodoStore(storePath);
 
   let newTodoEntry: any;
-  let todoContainer: any;
+  let boundList: any;
   let statusLabel: any;
   let filterAllButton: any;
   let filterActiveButton: any;
   let filterCompletedButton: any;
-
-  const todoViews = new Map<number, { container: any; checkbox: any; textEntry: any; deleteButton: any }>();
 
   async function updateStatusLabel() {
     const activeCount = store.getActiveCount();
@@ -243,127 +241,6 @@ export function createTodoApp(a: any, storePath?: string) {
     await filterAllButton.setText(currentFilter === 'all' ? '[All]' : 'All');
     await filterActiveButton.setText(currentFilter === 'active' ? '[Active]' : 'Active');
     await filterCompletedButton.setText(currentFilter === 'completed' ? '[Completed]' : 'Completed');
-  }
-
-  function addTodoView(todo: TodoItem) {
-    let todoHBox: any;
-    let checkbox: any;
-    let textEntry: any;
-    let deleteButton: any;
-    let originalText = todo.text;
-    let isEditing = false;
-
-    const saveEdit = async () => {
-      const newText = await textEntry.getText();
-      if (newText && newText.trim()) {
-        await store.updateTodo(todo.id, newText);
-        originalText = newText.trim();
-        await checkbox.setText(originalText);
-      } else {
-        await textEntry.setText(originalText);
-      }
-      await textEntry.hide();
-      await checkbox.show();
-      isEditing = false;
-    };
-
-    const startEdit = async () => {
-      isEditing = true;
-      originalText = await checkbox.getText();
-      await textEntry.setText(originalText);
-      await checkbox.hide();
-      await textEntry.show();
-      await textEntry.focus();
-    };
-
-    const ifEditingSaveEdit = async () => {
-      if (isEditing) await saveEdit();
-    };
-
-    const ifNotEditingStartEdit = async () => {
-      if (!isEditing) await startEdit();
-    };
-
-    // Helper function to check if this todo should be visible based on current filter
-    // Looks up current state from store to handle completion status changes
-    const shouldShowTodo = () => {
-      const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
-      if (!currentTodo) return false; // Todo was deleted
-
-      const filter = store.getFilter();
-      if (filter === 'all') return true;
-      if (filter === 'active') return !currentTodo.completed;
-      if (filter === 'completed') return currentTodo.completed;
-      return true;
-    };
-
-    // Pseudo-declarative todo item - event handlers just update model
-    todoContainer.add(() => {
-      todoHBox = a.hbox(() => {
-        checkbox = a.checkbox(todo.text, async (checked: boolean) => {
-          await store.toggleTodo(todo.id);
-        }).withId(`todo-checkbox-${todo.id}`);
-
-        textEntry = a.entry('', ifEditingSaveEdit, 300);
-
-        a.button('Edit').onClick(ifNotEditingStartEdit);
-
-        deleteButton = a.button('Delete').onClick(async () => {
-          await store.deleteTodo(todo.id);
-        });
-      });
-    });
-
-    (async () => {
-      await checkbox.setChecked(todo.completed);
-      await checkbox.setText(todo.text);
-      await textEntry.setText('');
-      await textEntry.hide();
-
-      // Apply when() for declarative visibility based on filter
-      todoHBox.when(shouldShowTodo);
-    })();
-
-    todoViews.set(todo.id, { container: todoHBox, checkbox, textEntry, deleteButton });
-  }
-
-  function removeTodoView(todoId: number) {
-    const view = todoViews.get(todoId);
-    if (view) {
-      todoViews.delete(todoId);
-      rebuildTodoList();
-    }
-  }
-
-  function showEmptyState() {
-    const currentFilter = store.getFilter();
-    todoContainer.add(() => {
-      a.label(currentFilter === 'all' ? 'No todos yet. Add one above!' : `No ${currentFilter} todos`);
-    });
-    todoContainer.refresh();
-  }
-
-  function rebuildTodoList() {
-    const allTodos = store.getAllTodos();
-    todoViews.clear();
-    todoContainer.removeAll();
-
-    if (allTodos.length === 0) {
-      showEmptyState();
-    } else {
-      allTodos.forEach((todo) => {
-        addTodoView(todo);
-      });
-    }
-
-    todoContainer.refresh();
-  }
-
-  // Refresh visibility of all todo items without rebuilding
-  async function refreshTodoVisibility() {
-    for (const view of todoViews.values()) {
-      await view.container.refreshVisibility();
-    }
   }
 
   // Pseudo-declarative UI construction
@@ -406,7 +283,81 @@ export function createTodoApp(a: any, storePath?: string) {
         statusLabel = a.label('').withId('statusLabel');
         a.spacer();
 
-        todoContainer = a.vbox(() => a.label('Loading...'));
+        // Declarative todo list with bindTo
+        boundList = a.vbox(() => {}).bindTo({
+          items: () => store.getAllTodos(),
+
+          empty: () => {
+            const currentFilter = store.getFilter();
+            a.label(currentFilter === 'all' ? 'No todos yet. Add one above!' : `No ${currentFilter} todos`);
+          },
+
+          render: (todo: TodoItem) => {
+            let checkbox: any;
+            let textEntry: any;
+            let originalText = todo.text;
+            let isEditing = false;
+
+            const saveEdit = async () => {
+              const newText = await textEntry.getText();
+              if (newText && newText.trim()) {
+                await store.updateTodo(todo.id, newText);
+                originalText = newText.trim();
+                await checkbox.setText(originalText);
+              } else {
+                await textEntry.setText(originalText);
+              }
+              await textEntry.hide();
+              await checkbox.show();
+              isEditing = false;
+            };
+
+            const startEdit = async () => {
+              isEditing = true;
+              originalText = await checkbox.getText();
+              await textEntry.setText(originalText);
+              await checkbox.hide();
+              await textEntry.show();
+              await textEntry.focus();
+            };
+
+            // Helper to check if todo should be visible based on filter
+            const shouldShowTodo = () => {
+              const currentTodo = store.getAllTodos().find(t => t.id === todo.id);
+              if (!currentTodo) return false;
+              const filter = store.getFilter();
+              if (filter === 'all') return true;
+              if (filter === 'active') return !currentTodo.completed;
+              if (filter === 'completed') return currentTodo.completed;
+              return true;
+            };
+
+            const todoHBox = a.hbox(() => {
+              checkbox = a.checkbox(todo.text, async () => {
+                await store.toggleTodo(todo.id);
+              }).withId(`todo-checkbox-${todo.id}`);
+
+              textEntry = a.entry('', async () => {
+                if (isEditing) await saveEdit();
+              }, 300);
+
+              a.button('Edit').onClick(async () => {
+                if (!isEditing) await startEdit();
+              });
+
+              a.button('Delete').onClick(async () => {
+                await store.deleteTodo(todo.id);
+              });
+            }).when(shouldShowTodo);
+
+            (async () => {
+              await checkbox.setChecked(todo.completed);
+              await textEntry.hide();
+            })();
+          },
+
+          trackBy: (todo: TodoItem) => todo.id
+        });
 
         a.spacer();
         a.separator();
@@ -423,15 +374,14 @@ export function createTodoApp(a: any, storePath?: string) {
     win.show();
     win.centerOnScreen();
 
-    // Pseudo-declarative binding - model changes auto-update view
+    // Declarative binding - model changes auto-update view via bindTo
     store.subscribe(async () => {
-      rebuildTodoList();
+      boundList.update();
       await updateStatusLabel();
       await updateFilterButtons();
     });
 
     (async () => {
-      rebuildTodoList();
       await updateStatusLabel();
       await updateFilterButtons();
     })();
