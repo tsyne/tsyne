@@ -177,29 +177,34 @@ export function buildDailyMedChecklist(a: App) {
         statusLabel = a.label('Loading...').withId('statusLabel');
         a.separator();
 
-        // Checklist mode container
+        // Checklist mode container - wrap border in vbox for hide/show support
         checklistModeContainer = a.vbox(() => {
-          // Scrollable checklist
-          a.scroll(() => {
-            checklistContainer = a.vbox(() => {
-              a.label('Loading...');
-            });
-          });
+          a.border({
+            center: () => {
+              // Scrollable checklist (center expands to fill available space)
+              a.scroll(() => {
+                checklistContainer = a.vbox(() => {
+                  a.label('Loading...');
+                });
+              });
+            },
+            bottom: () => {
+              a.vbox(() => {
+                a.separator();
+                // Action buttons
+                a.hbox(() => {
+                  a.button('Reset All').withId('resetBtn').onClick(async () => {
+                    await resetChecks();
+                  });
 
-          a.spacer();
-          a.separator();
+                  a.spacer();
 
-          // Action buttons
-          a.hbox(() => {
-            a.button('Reset All').withId('resetBtn').onClick(async () => {
-              await resetChecks();
-            });
-
-            a.spacer();
-
-            a.button('Edit List').withId('editBtn').onClick(async () => {
-              await enterEditMode();
-            });
+                  a.button('Edit List').withId('editBtn').onClick(async () => {
+                    await enterEditMode();
+                  });
+                });
+              });
+            }
           });
         });
 
