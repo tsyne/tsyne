@@ -46,11 +46,12 @@ export function buildDailyMedChecklist(a: App) {
   let isEditMode = false;
 
   /**
-   * Parse CR-delimited text into items array
+   * Parse newline-delimited text into items array
+   * Handles \n, \r\n, and \r line endings
    */
   function parseItems(text: string): string[] {
     return text
-      .split('\n')
+      .split(/\r?\n|\r/)
       .map(line => line.trim())
       .filter(line => line.length > 0);
   }
