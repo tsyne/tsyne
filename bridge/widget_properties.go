@@ -79,7 +79,6 @@ func (b *Bridge) handleGetText(msg Message) Response {
 func (b *Bridge) handleSetText(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	text := msg.Payload["text"].(string)
-	log.Printf("[SET-TEXT-START] Widget ID: %s, New text: %s, Message ID: %s", widgetID, text, msg.ID)
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
@@ -88,7 +87,6 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	b.mu.RUnlock()
 
 	if !exists {
-		log.Printf("[SET-TEXT-ERROR] Widget not found: %s", widgetID)
 		return Response{
 			ID:      msg.ID,
 			Success: false,
@@ -104,7 +102,6 @@ func (b *Bridge) handleSetText(msg Message) Response {
 
 	// UI updates must happen on the main thread
 	fyne.DoAndWait(func() {
-		log.Printf("[SET-TEXT-UPDATING] Updating widget %s (type: %T) to text: %s", widgetID, actualWidget, text)
 		switch w := actualWidget.(type) {
 		case *widget.Label:
 			w.SetText(text)
@@ -113,9 +110,7 @@ func (b *Bridge) handleSetText(msg Message) Response {
 		case *widget.SelectEntry:
 			w.SetText(text)
 		case *widget.Button:
-			log.Printf("[SET-TEXT-BUTTON] Setting button text to: %s (was: %s)", text, w.Text)
 			w.SetText(text)
-			log.Printf("[SET-TEXT-BUTTON-DONE] Button text set. Current text: %s", w.Text)
 		case *HoverableButton:
 			w.SetText(text)
 			w.Refresh() // Added Refresh for HoverableButton

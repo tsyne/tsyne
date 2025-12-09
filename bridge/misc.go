@@ -5,8 +5,23 @@ import (
 	"image/color"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
+
+// colorToHex converts a color.Color to a hex string (#RRGGBBAA or #RRGGBB)
+func colorToHex(c color.Color) string {
+	r, g, b, a := c.RGBA()
+	// RGBA returns 16-bit values, scale to 8-bit
+	r8 := uint8(r >> 8)
+	g8 := uint8(g >> 8)
+	b8 := uint8(b >> 8)
+	a8 := uint8(a >> 8)
+	if a8 == 255 {
+		return fmt.Sprintf("#%02X%02X%02X", r8, g8, b8)
+	}
+	return fmt.Sprintf("#%02X%02X%02X%02X", r8, g8, b8, a8)
+}
 
 func (b *Bridge) handleSetMainMenu(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
@@ -397,43 +412,70 @@ func importanceFromString(importance string) widget.Importance {
 }
 
 func (b *Bridge) handleSetTheme(msg Message) Response {
-	theme := msg.Payload["theme"].(string)
+	themeName := msg.Payload["theme"].(string)
 
-	// Note: Fyne v2 doesn't have NewDarkTheme/NewLightTheme
-	// Theme switching is handled automatically by the system
-	// We'll just store the preference for future use
-	switch theme {
-	case "dark", "light":
-		// Theme switching in Fyne v2 is handled by the system
-		// Apps automatically follow system theme preferences
+	if b.scalableTheme == nil {
 		return Response{
 			ID:      msg.ID,
-			Success: true,
+			Success: false,
+			Error:   "Scalable theme not initialized",
 		}
+	}
+
+	switch themeName {
+	case "dark":
+		b.scalableTheme.SetVariant(theme.VariantDark)
+	case "light":
+		b.scalableTheme.SetVariant(theme.VariantLight)
 	default:
 		return Response{
 			ID:      msg.ID,
 			Success: false,
-			Error:   fmt.Sprintf("Unknown theme: %s. Use 'dark' or 'light'", theme),
+			Error:   fmt.Sprintf("Unknown theme: %s. Use 'dark' or 'light'", themeName),
 		}
+	}
+
+	// Refresh all windows to apply the theme change
+	b.mu.RLock()
+	windows := make([]fyne.Window, 0, len(b.windows))
+	for _, win := range b.windows {
+		windows = append(windows, win)
+	}
+	b.mu.RUnlock()
+
+	fyne.DoAndWait(func() {
+		for _, win := range windows {
+			win.Canvas().Refresh(win.Content())
+		}
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
 	}
 }
 
 func (b *Bridge) handleGetTheme(msg Message) Response {
-	// Fyne v2 follows system theme preferences
-	// We can check the current variant (0 = light, 1 = dark)
-	variant := b.app.Settings().ThemeVariant()
+	themeName := "light"
 
-	theme := "light"
-	if variant == 1 { // Dark variant
-		theme = "dark"
+	if b.scalableTheme != nil {
+		variant := b.scalableTheme.GetVariant()
+		if variant == theme.VariantDark {
+			themeName = "dark"
+		}
+	} else {
+		// Fallback to system theme
+		variant := b.app.Settings().ThemeVariant()
+		if variant == 1 { // Dark variant
+			themeName = "dark"
+		}
 	}
 
 	return Response{
 		ID:      msg.ID,
 		Success: true,
 		Result: map[string]interface{}{
-			"theme": theme,
+			"theme": themeName,
 		},
 	}
 }
@@ -585,6 +627,181 @@ func (b *Bridge) handleClearCustomTheme(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+func (b *Bridge) handleSetCustomSizes(msg Message) Response {
+	if b.scalableTheme == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		}
+	}
+
+	sizes, ok := msg.Payload["sizes"].(map[string]interface{})
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Missing or invalid 'sizes' parameter",
+		}
+	}
+
+	customSizes := &CustomSizes{}
+
+	// Parse each size from the payload
+	sizeMap := map[string]*float32{
+		"captionText":        &customSizes.CaptionText,
+		"inlineIcon":         &customSizes.InlineIcon,
+		"innerPadding":       &customSizes.InnerPadding,
+		"lineSpacing":        &customSizes.LineSpacing,
+		"padding":            &customSizes.Padding,
+		"scrollBar":          &customSizes.ScrollBar,
+		"scrollBarSmall":     &customSizes.ScrollBarSmall,
+		"separatorThickness": &customSizes.SeparatorThickness,
+		"text":               &customSizes.Text,
+		"headingText":        &customSizes.HeadingText,
+		"subHeadingText":     &customSizes.SubHeadingText,
+		"inputBorder":        &customSizes.InputBorder,
+		"inputRadius":        &customSizes.InputRadius,
+		"selectionRadius":    &customSizes.SelectionRadius,
+		"scrollBarRadius":    &customSizes.ScrollBarRadius,
+	}
+
+	for name, ptr := range sizeMap {
+		if value, ok := sizes[name]; ok {
+			*ptr = toFloat32(value)
+		}
+	}
+
+	b.scalableTheme.SetCustomSizes(customSizes)
+
+	// Refresh all windows
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleClearCustomSizes(msg Message) Response {
+	if b.scalableTheme == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		}
+	}
+
+	b.scalableTheme.ClearCustomSizes()
+
+	// Refresh all windows
+	fyne.DoAndWait(func() {
+		for _, window := range b.windows {
+			window.Canvas().Refresh(window.Content())
+		}
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleGetThemeConfig(msg Message) Response {
+	if b.scalableTheme == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scalable theme not initialized",
+		}
+	}
+
+	config := map[string]interface{}{
+		"fontScale": b.scalableTheme.GetFontScale(),
+		"variant":   "light",
+	}
+
+	if b.scalableTheme.GetVariant() == 1 { // VariantDark
+		config["variant"] = "dark"
+	}
+
+	// Get current custom colors
+	customColors := b.scalableTheme.GetCustomColors()
+	if customColors != nil {
+		colors := map[string]string{}
+		colorMap := map[string]color.Color{
+			"background":        customColors.Background,
+			"foreground":        customColors.Foreground,
+			"button":            customColors.Button,
+			"disabledButton":    customColors.DisabledButton,
+			"disabled":          customColors.Disabled,
+			"hover":             customColors.Hover,
+			"focus":             customColors.Focus,
+			"placeholder":       customColors.Placeholder,
+			"primary":           customColors.Primary,
+			"pressed":           customColors.Pressed,
+			"scrollBar":         customColors.ScrollBar,
+			"selection":         customColors.Selection,
+			"separator":         customColors.Separator,
+			"shadow":            customColors.Shadow,
+			"inputBackground":   customColors.InputBackground,
+			"inputBorder":       customColors.InputBorder,
+			"menuBackground":    customColors.MenuBackground,
+			"overlayBackground": customColors.OverlayBackground,
+			"error":             customColors.Error,
+			"success":           customColors.Success,
+			"warning":           customColors.Warning,
+			"hyperlink":         customColors.Hyperlink,
+			"headerBackground":  customColors.HeaderBackground,
+		}
+		for name, c := range colorMap {
+			if c != nil {
+				colors[name] = colorToHex(c)
+			}
+		}
+		config["colors"] = colors
+	}
+
+	// Get current custom sizes
+	customSizes := b.scalableTheme.GetCustomSizes()
+	if customSizes != nil {
+		sizes := map[string]float32{}
+		sizeMap := map[string]float32{
+			"captionText":        customSizes.CaptionText,
+			"inlineIcon":         customSizes.InlineIcon,
+			"innerPadding":       customSizes.InnerPadding,
+			"lineSpacing":        customSizes.LineSpacing,
+			"padding":            customSizes.Padding,
+			"scrollBar":          customSizes.ScrollBar,
+			"scrollBarSmall":     customSizes.ScrollBarSmall,
+			"separatorThickness": customSizes.SeparatorThickness,
+			"text":               customSizes.Text,
+			"headingText":        customSizes.HeadingText,
+			"subHeadingText":     customSizes.SubHeadingText,
+			"inputBorder":        customSizes.InputBorder,
+			"inputRadius":        customSizes.InputRadius,
+			"selectionRadius":    customSizes.SelectionRadius,
+			"scrollBarRadius":    customSizes.ScrollBarRadius,
+		}
+		for name, value := range sizeMap {
+			if value > 0 {
+				sizes[name] = value
+			}
+		}
+		config["sizes"] = sizes
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  config,
 	}
 }
 

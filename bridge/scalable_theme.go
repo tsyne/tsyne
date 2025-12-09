@@ -74,11 +74,32 @@ type CustomColors struct {
 	HeaderBackground   color.Color
 }
 
+// CustomSizes defines custom size overrides for a theme
+// Use -1 to indicate "not set" (will fall back to default)
+type CustomSizes struct {
+	CaptionText        float32
+	InlineIcon         float32
+	InnerPadding       float32
+	LineSpacing        float32
+	Padding            float32
+	ScrollBar          float32
+	ScrollBarSmall     float32
+	SeparatorThickness float32
+	Text               float32
+	HeadingText        float32
+	SubHeadingText     float32
+	InputBorder        float32
+	InputRadius        float32
+	SelectionRadius    float32
+	ScrollBarRadius    float32
+}
+
 // ScalableTheme wraps the default theme and allows font size scaling
 type ScalableTheme struct {
 	base         fyne.Theme
 	fontScale    float32
 	customColors *CustomColors
+	customSizes  *CustomSizes
 	customFonts  map[fyne.TextStyle]fyne.Resource
 	fontMu       sync.RWMutex
 	variant      fyne.ThemeVariant // 0 = light, 1 = dark
@@ -110,13 +131,47 @@ func (st *ScalableTheme) ClearCustomColors() {
 	st.customColors = nil
 }
 
+// SetCustomSizes sets custom size overrides
+func (st *ScalableTheme) SetCustomSizes(sizes *CustomSizes) {
+	st.customSizes = sizes
+}
+
+// ClearCustomSizes clears all custom size overrides
+func (st *ScalableTheme) ClearCustomSizes() {
+	st.customSizes = nil
+}
+
+// GetCustomColors returns the current custom colors (for theme editor)
+func (st *ScalableTheme) GetCustomColors() *CustomColors {
+	return st.customColors
+}
+
+// GetCustomSizes returns the current custom sizes (for theme editor)
+func (st *ScalableTheme) GetCustomSizes() *CustomSizes {
+	return st.customSizes
+}
+
+// GetFontScale returns the current font scale
+func (st *ScalableTheme) GetFontScale() float32 {
+	return st.fontScale
+}
+
+// GetVariant returns the current theme variant
+func (st *ScalableTheme) GetVariant() fyne.ThemeVariant {
+	return st.variant
+}
+
 // SetVariant sets the theme variant (light or dark)
 func (st *ScalableTheme) SetVariant(variant fyne.ThemeVariant) {
 	st.variant = variant
 }
 
 // Color returns a color from the custom colors if set, otherwise from the base theme
-func (st *ScalableTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+// Note: We ignore the variant parameter and use our stored variant instead
+func (st *ScalableTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+	// Use our stored variant
+	variant := st.variant
+
 	// Use custom colors if set
 	if st.customColors != nil {
 		switch name {
@@ -274,8 +329,75 @@ func (st *ScalableTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	return st.base.Icon(name)
 }
 
-// Size returns a scaled size value
+// Size returns a custom size if set, otherwise a scaled size value
 func (st *ScalableTheme) Size(name fyne.ThemeSizeName) float32 {
+	// Check custom sizes first (values > 0 are set)
+	if st.customSizes != nil {
+		switch name {
+		case theme.SizeNameCaptionText:
+			if st.customSizes.CaptionText > 0 {
+				return st.customSizes.CaptionText
+			}
+		case theme.SizeNameInlineIcon:
+			if st.customSizes.InlineIcon > 0 {
+				return st.customSizes.InlineIcon
+			}
+		case theme.SizeNameInnerPadding:
+			if st.customSizes.InnerPadding > 0 {
+				return st.customSizes.InnerPadding
+			}
+		case theme.SizeNameLineSpacing:
+			if st.customSizes.LineSpacing > 0 {
+				return st.customSizes.LineSpacing
+			}
+		case theme.SizeNamePadding:
+			if st.customSizes.Padding > 0 {
+				return st.customSizes.Padding
+			}
+		case theme.SizeNameScrollBar:
+			if st.customSizes.ScrollBar > 0 {
+				return st.customSizes.ScrollBar
+			}
+		case theme.SizeNameScrollBarSmall:
+			if st.customSizes.ScrollBarSmall > 0 {
+				return st.customSizes.ScrollBarSmall
+			}
+		case theme.SizeNameSeparatorThickness:
+			if st.customSizes.SeparatorThickness > 0 {
+				return st.customSizes.SeparatorThickness
+			}
+		case theme.SizeNameText:
+			if st.customSizes.Text > 0 {
+				return st.customSizes.Text
+			}
+		case theme.SizeNameHeadingText:
+			if st.customSizes.HeadingText > 0 {
+				return st.customSizes.HeadingText
+			}
+		case theme.SizeNameSubHeadingText:
+			if st.customSizes.SubHeadingText > 0 {
+				return st.customSizes.SubHeadingText
+			}
+		case theme.SizeNameInputBorder:
+			if st.customSizes.InputBorder > 0 {
+				return st.customSizes.InputBorder
+			}
+		case theme.SizeNameInputRadius:
+			if st.customSizes.InputRadius > 0 {
+				return st.customSizes.InputRadius
+			}
+		case theme.SizeNameSelectionRadius:
+			if st.customSizes.SelectionRadius > 0 {
+				return st.customSizes.SelectionRadius
+			}
+		case theme.SizeNameScrollBarRadius:
+			if st.customSizes.ScrollBarRadius > 0 {
+				return st.customSizes.ScrollBarRadius
+			}
+		}
+	}
+
+	// Fall back to base size with scaling
 	baseSize := st.base.Size(name)
 
 	// Scale text-related sizes

@@ -1364,11 +1364,8 @@ func NewBridge(testMode bool) *Bridge {
 }
 
 func (b *Bridge) sendEvent(event Event) {
-	log.Printf("[SEND-EVENT] Type: %s, WidgetID: %s, Data: %v", event.Type, event.WidgetID, event.Data)
-
 	// Check for FFI callback first (highest priority)
 	if b.ffiEventCallback != nil {
-		log.Printf("[SEND-EVENT-FFI] Sending via FFI callback: %s", event.Type)
 		b.ffiEventCallback(event)
 		return
 	}
@@ -1377,20 +1374,17 @@ func (b *Bridge) sendEvent(event Event) {
 	if b.grpcMode {
 		// Check for MessagePack server first (msgpack-uds mode)
 		if b.msgpackServer != nil {
-			log.Printf("[SEND-EVENT-MSGPACK] Sending via msgpack: %s", event.Type)
 			b.msgpackServer.SendEvent(event)
 			return
 		}
 		// Otherwise use gRPC channel
 		if b.grpcEventChan != nil {
-			log.Printf("[SEND-EVENT-GRPC] Sending via gRPC channel: %s", event.Type)
 			select {
 			case b.grpcEventChan <- event:
-				log.Printf("[SEND-EVENT-GRPC-OK] Event sent successfully: %s", event.Type)
 				// Event sent successfully
 			default:
 				// Channel full or closed, log and drop
-				log.Printf("[SEND-EVENT-GRPC-ERROR] gRPC event channel full, dropping event: %s", event.Type)
+				log.Printf("[SEND-EVENT-ERROR] gRPC event channel full, dropping event: %s", event.Type)
 			}
 		}
 		return
@@ -1407,12 +1401,9 @@ func (b *Bridge) sendEvent(event Event) {
 		return
 	}
 
-	log.Printf("[SEND-EVENT-STDIO] Writing to stdout, event type: %s, payload size: %d", event.Type, len(jsonData))
 	// IPC Safeguard #3 & #4: Write with length-prefix framing and CRC32 validation
 	if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
-		log.Printf("[SEND-EVENT-ERROR-WRITE] Error sending event: %v", err)
-	} else {
-		log.Printf("[SEND-EVENT-SUCCESS] Event sent successfully: %s", event.Type)
+		log.Printf("[SEND-EVENT-ERROR] Error sending event: %v", err)
 	}
 }
 

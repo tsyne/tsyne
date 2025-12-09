@@ -144,6 +144,17 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 				inspector := NewInspector(b, windowID)
 				inspector.Show()
 			})
+
+			// Register Ctrl+Shift+T shortcut to open theme editor
+			themeEditorShortcut := &desktop.CustomShortcut{
+				KeyName:  fyne.KeyT,
+				Modifier: fyne.KeyModifierControl | fyne.KeyModifierShift,
+			}
+			win.Canvas().AddShortcut(themeEditorShortcut, func(shortcut fyne.Shortcut) {
+				log.Printf("[ThemeEditor] Ctrl+Shift+T pressed")
+				editor := NewThemeEditor(b)
+				editor.Show()
+			})
 		}
 
 		// Handle window close - quit app when last window is closed

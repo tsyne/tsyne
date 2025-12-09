@@ -177,6 +177,53 @@ export interface FontInfo {
 }
 
 /**
+ * Custom theme size definitions
+ * All sizes are in pixels (float32)
+ */
+export interface CustomThemeSizes {
+  /** Caption/helper text size */
+  captionText?: number;
+  /** Inline icon size */
+  inlineIcon?: number;
+  /** Inner padding for widgets */
+  innerPadding?: number;
+  /** Line spacing between text */
+  lineSpacing?: number;
+  /** Standard padding around elements */
+  padding?: number;
+  /** Scrollbar width */
+  scrollBar?: number;
+  /** Small/minimized scrollbar width */
+  scrollBarSmall?: number;
+  /** Separator line thickness */
+  separatorThickness?: number;
+  /** Regular text size */
+  text?: number;
+  /** Heading text size */
+  headingText?: number;
+  /** Sub-heading text size */
+  subHeadingText?: number;
+  /** Input field border width */
+  inputBorder?: number;
+  /** Input field corner radius */
+  inputRadius?: number;
+  /** Selection highlight corner radius */
+  selectionRadius?: number;
+  /** Scrollbar corner radius */
+  scrollBarRadius?: number;
+}
+
+/**
+ * Complete theme configuration (for save/load)
+ */
+export interface ThemeConfig {
+  variant: 'light' | 'dark';
+  fontScale: number;
+  colors?: CustomThemeColors;
+  sizes?: CustomThemeSizes;
+}
+
+/**
  * Get bridge mode from environment variable or options
  */
 function getBridgeMode(options?: AppOptions): BridgeMode {
@@ -939,6 +986,30 @@ export class App {
    */
   async clearCustomTheme(): Promise<void> {
     await this.ctx.bridge.send('clearCustomTheme', {});
+  }
+
+  /**
+   * Set custom theme sizes
+   * @param sizes - Object with size names and pixel values
+   */
+  async setCustomSizes(sizes: CustomThemeSizes): Promise<void> {
+    await this.ctx.bridge.send('setCustomSizes', { sizes });
+  }
+
+  /**
+   * Clear custom sizes and revert to default
+   */
+  async clearCustomSizes(): Promise<void> {
+    await this.ctx.bridge.send('clearCustomSizes', {});
+  }
+
+  /**
+   * Get current theme configuration (colors, sizes, variant, fontScale)
+   * Useful for theme editor or saving themes
+   */
+  async getThemeConfig(): Promise<ThemeConfig> {
+    const result = await this.ctx.bridge.send('getThemeConfig', {}) as ThemeConfig;
+    return result;
   }
 
   /**

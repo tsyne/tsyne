@@ -295,6 +295,12 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetCustomTheme(msg)
 	case "clearCustomTheme":
 		return b.handleClearCustomTheme(msg)
+	case "setCustomSizes":
+		return b.handleSetCustomSizes(msg)
+	case "clearCustomSizes":
+		return b.handleClearCustomSizes(msg)
+	case "getThemeConfig":
+		return b.handleGetThemeConfig(msg)
 	case "setCustomFont":
 		return b.handleSetCustomFont(msg)
 	case "clearCustomFont":
