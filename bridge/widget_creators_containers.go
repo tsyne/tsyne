@@ -393,10 +393,9 @@ func (b *Bridge) handleCreateStack(msg Message) Response {
 		}
 	}
 
-	// Use NewWithoutLayout for Stack - this allows canvas objects to keep their
-	// absolute Position1/Position2 values. NewStack would call Move(0,0) and Resize()
-	// which corrupts canvas.Line coordinates.
-	stackContainer := container.NewWithoutLayout(children...)
+	// Use NewStack to properly resize children to fill the container.
+	// This is needed for nested layouts where children (like scroll) have MinSize(0,0).
+	stackContainer := container.NewStack(children...)
 
 	b.mu.Lock()
 	b.widgets[widgetID] = stackContainer

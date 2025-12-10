@@ -80,17 +80,19 @@ class SettingsUI {
       this.a.hbox(() => {
         this.a.label('Wi-Fi');
         this.a.spacer();
-        this.a.checkbox('', this.settings.isWifiEnabled(), (checked) => {
+        const wifiCheckbox = this.a.checkbox('', (checked: boolean) => {
           this.handleWifiToggle(checked);
         }).withId('toggle-wifi');
+        wifiCheckbox.setChecked(this.settings.isWifiEnabled());
       });
 
       this.a.hbox(() => {
         this.a.label('Bluetooth');
         this.a.spacer();
-        this.a.checkbox('', this.settings.isBluetoothEnabled(), (checked) => {
+        const btCheckbox = this.a.checkbox('', (checked: boolean) => {
           this.handleBluetoothToggle(checked);
         }).withId('toggle-bluetooth');
+        btCheckbox.setChecked(this.settings.isBluetoothEnabled());
       });
 
       this.a.separator();
@@ -101,9 +103,10 @@ class SettingsUI {
       this.a.hbox(() => {
         this.a.label('Theme');
         this.a.spacer();
-        this.a.select(['system', 'light', 'dark'], this.settings.getTheme(), (value) => {
+        const themeSelect = this.a.select(['system', 'light', 'dark'], (value: string) => {
           this.handleThemeChange(value);
         }).withId('select-theme');
+        themeSelect.setSelected(this.settings.getTheme());
       });
 
       this.a.hbox(() => {

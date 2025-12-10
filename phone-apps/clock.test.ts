@@ -4,19 +4,21 @@
 
 import { TsyneTest, TestContext } from '../src/index-test';
 import { createClockApp } from './clock';
-import { MockClockService, MockNotificationService } from './services';
+import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
 
 describe('Clock App', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let clock: MockClockService;
   let notifications: MockNotificationService;
+  let lifecycle: DesktopAppLifecycle;
 
   beforeEach(async () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
     clock = new MockClockService();
     notifications = new MockNotificationService();
+    lifecycle = new DesktopAppLifecycle();
   });
 
   afterEach(async () => {
@@ -25,7 +27,7 @@ describe('Clock App', () => {
 
   test('should display time on Clock tab', async () => {
     const testApp = await tsyneTest.createApp((app) => {
-      createClockApp(app, clock, notifications);
+      createClockApp(app, clock, notifications, lifecycle);
     });
 
     ctx = tsyneTest.getContext();
@@ -37,7 +39,7 @@ describe('Clock App', () => {
 
   test('should display date on Clock tab', async () => {
     const testApp = await tsyneTest.createApp((app) => {
-      createClockApp(app, clock, notifications);
+      createClockApp(app, clock, notifications, lifecycle);
     });
 
     ctx = tsyneTest.getContext();
@@ -49,7 +51,7 @@ describe('Clock App', () => {
 
   test('should have timer and stopwatch displays', async () => {
     const testApp = await tsyneTest.createApp((app) => {
-      createClockApp(app, clock, notifications);
+      createClockApp(app, clock, notifications, lifecycle);
     });
 
     ctx = tsyneTest.getContext();
@@ -65,7 +67,7 @@ describe('Clock App', () => {
     clock.setTime(new Date(2025, 0, 15, 15, 0, 0));
 
     const testApp = await tsyneTest.createApp((app) => {
-      createClockApp(app, clock, notifications);
+      createClockApp(app, clock, notifications, lifecycle);
     });
 
     ctx = tsyneTest.getContext();

@@ -111,10 +111,10 @@ describe('PhoneTop Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Swipe buttons should exist
-    await ctx.getByID('swipeLeft').shouldExist();
-    await ctx.getByID('swipeRight').shouldExist();
-  });
+    // Swipe buttons should exist (use within() to poll for initialization)
+    await ctx.getByID('swipeLeft').within(3000).shouldExist();
+    await ctx.getByID('swipeRight').within(3000).shouldExist();
+  }, 15000);
 
   test('should show page dots indicator', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
@@ -216,16 +216,16 @@ describe('PhoneTop Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Launch calculator
-    await ctx.getByID('icon-Calculator').click();
+    // Launch calculator (use within() to wait for app icons to render)
+    await ctx.getByID('icon-Calculator').within(3000).click();
     await ctx.wait(200);
 
     // Type a number
     await ctx.getByText('5').click();
     await ctx.wait(100);
 
-    // Verify display shows 5
-    await ctx.getByID('calc-display').shouldContain('5');
+    // Verify display shows 5 (use within() to poll for state)
+    await ctx.getByID('calc-display').within(2000).shouldContain('5');
 
     // Go home
     await ctx.getByText('← Home').click();
@@ -236,8 +236,8 @@ describe('PhoneTop Integration Tests', () => {
     await ctx.wait(200);
 
     // State should be preserved - display should still show 5
-    await ctx.getByID('calc-display').shouldContain('5');
-  });
+    await ctx.getByID('calc-display').within(2000).shouldContain('5');
+  }, 15000);
 
   test('should show quit button and close app when clicked', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {

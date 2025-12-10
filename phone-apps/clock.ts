@@ -5,10 +5,14 @@
  * Uses ClockService for time/alarms and NotificationService for alerts.
  *
  * @tsyne-app:name Clock
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 18 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+ *   <polyline points="12 6 12 12 18 12" fill="none" stroke="currentColor" stroke-width="2"/>
+ * </svg>
+ * SVG
  * @tsyne-app:category utilities
  * @tsyne-app:builder createClockApp
- * @tsyne-app:args app,clock,notifications
+ * @tsyne-app:args app,clock,notifications,lifecycle
  * @tsyne-app:count single
  */
 
@@ -21,8 +25,10 @@ import type { CanvasLine } from '../src/widgets/canvas';
 import {
   IClockService,
   INotificationService,
+  IAppLifecycle,
   MockClockService,
   MockNotificationService,
+  StandaloneAppLifecycle,
   Alarm,
 } from './services';
 
@@ -603,19 +609,21 @@ export class ClockUI {
  * @param a - App instance
  * @param clock - Clock service for time and alarms
  * @param notifications - Notification service for timer alerts
+ * @param lifecycle - App lifecycle service for close behavior
  */
 export function createClockApp(
   a: App,
   clock: IClockService,
-  notifications: INotificationService
+  notifications: INotificationService,
+  lifecycle: IAppLifecycle
 ): ClockUI {
   const ui = new ClockUI(a, clock, notifications);
 
   a.window({ title: 'Clock' }, (win: Window) => {
-    // Handle window close - stop intervals and quit app
+    // Handle window close - stop intervals and delegate close to lifecycle
     win.setCloseIntercept(() => {
       ui.stop();
-      a.quit();
+      lifecycle.requestClose();
       return true; // Allow the close
     });
 
@@ -633,6 +641,7 @@ if (require.main === module) {
   app({ title: 'Clock' }, (a: App) => {
     const clock = new MockClockService();
     const notifications = new MockNotificationService();
-    createClockApp(a, clock, notifications);
+    const lifecycle = new StandaloneAppLifecycle(() => a.quit());
+    createClockApp(a, clock, notifications, lifecycle);
   });
 }

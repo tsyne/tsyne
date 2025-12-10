@@ -16,6 +16,7 @@ import { app } from '../src';
 import type { App } from '../src/app';
 import type { Window } from '../src/window';
 import type { Label } from '../src/widgets/display';
+import type { MultiLineEntry } from '../src/widgets/inputs';
 import { IStorageService, MockStorageService } from './services';
 
 interface Note {
@@ -36,6 +37,7 @@ class NotesUI {
   private notes: Note[] = [];
   private selectedNoteId: string | null = null;
   private nextId = 1;
+  private contentEntry: MultiLineEntry | null = null;
 
   constructor(
     private a: App,
@@ -70,7 +72,8 @@ class NotesUI {
     }
   }
 
-  private createNote(): void {
+  private async createNote(): Promise<void> {
+    await this.saveCurrentContent();
     const note: Note = {
       id: `note-${this.nextId++}`,
       title: 'New Note',
@@ -84,7 +87,20 @@ class NotesUI {
     this.refreshUI();
   }
 
-  private selectNote(noteId: string): void {
+  private async saveCurrentContent(): Promise<void> {
+    if (this.contentEntry && this.selectedNoteId) {
+      const content = await this.contentEntry.getText();
+      const note = this.notes.find(n => n.id === this.selectedNoteId);
+      if (note && note.content !== content) {
+        note.content = content;
+        note.updatedAt = Date.now();
+        this.saveNotes();
+      }
+    }
+  }
+
+  private async selectNote(noteId: string): Promise<void> {
+    await this.saveCurrentContent();
     this.selectedNoteId = noteId;
     this.refreshUI();
   }
@@ -93,15 +109,6 @@ class NotesUI {
     const note = this.notes.find(n => n.id === noteId);
     if (note) {
       note.title = title;
-      note.updatedAt = Date.now();
-      this.saveNotes();
-    }
-  }
-
-  private updateNoteContent(noteId: string, content: string): void {
-    const note = this.notes.find(n => n.id === noteId);
-    if (note) {
-      note.content = content;
       note.updatedAt = Date.now();
       this.saveNotes();
     }
@@ -204,10 +211,10 @@ class NotesUI {
 
           this.a.separator();
 
-          this.a.multilineEntry(selectedNote.content, (value) => {
-            this.updateNoteContent(selectedNote.id, value);
-          }).withId('note-content-entry');
+          this.contentEntry = this.a.multilineentry().withId('note-content-entry');
+          this.contentEntry.setText(selectedNote.content);
         } else {
+          this.contentEntry = null;
           this.a.spacer();
           this.a.label('Select a note or create a new one');
           this.a.spacer();

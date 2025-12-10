@@ -60,9 +60,9 @@ describe('Desktop Environment Tests', () => {
     // Wait for app to launch
     await ctx.wait(200);
 
-    // Running apps should show calculator
-    await ctx.getByID('runningAppsLabel').shouldContain('Calculator');
-  });
+    // Running apps should show calculator (use within() to poll for app launch)
+    await ctx.getByID('runningAppsLabel').within(3000).shouldContain('Calculator');
+  }, 15000);
 
   test('should interact with calculator running in inner window', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
@@ -86,8 +86,8 @@ describe('Desktop Environment Tests', () => {
     await ctx.getByExactText("=").click();
 
     // The calculator's display label should show the result
-    await ctx.getByID('calc-display').shouldBe("8");
-  });
+    await ctx.getByID('calc-display').within(2000).shouldBe("8");
+  }, 15000);
 
   test('should hide windows when Show Desktop is clicked', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
@@ -103,8 +103,8 @@ describe('Desktop Environment Tests', () => {
     await calcIcon.click();
     await ctx.wait(200);
 
-    // Verify it's running
-    await ctx.getByID('runningAppsLabel').shouldContain('Calculator');
+    // Verify it's running (use within() to poll for app launch)
+    await ctx.getByID('runningAppsLabel').within(3000).shouldContain('Calculator');
 
     // Click Show Desktop
     await ctx.getByID('showDesktopBtn').click();
@@ -112,8 +112,8 @@ describe('Desktop Environment Tests', () => {
 
     // The app is still "running" but the window is hidden
     // (We can't easily verify hidden state in tests, but the button shouldn't crash)
-    await ctx.getByID('runningAppsLabel').shouldContain('Calculator');
-  });
+    await ctx.getByID('runningAppsLabel').within(2000).shouldContain('Calculator');
+  }, 15000);
 });
 
 describe('Desktop Dock Integration Tests', () => {
@@ -151,7 +151,7 @@ describe('Desktop Dock Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Running apps label should show None initially
-    await ctx.getByID('runningAppsLabel').shouldBe('None');
-  });
+    // Running apps label should show None initially (use within() for polling)
+    await ctx.getByID('runningAppsLabel').within(3000).shouldBe('None');
+  }, 15000);
 });

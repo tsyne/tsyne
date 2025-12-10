@@ -121,7 +121,7 @@ class ContactsUI {
 
     if (result.submitted && result.values.message) {
       await this.sms.send(contact.phone, result.values.message as string);
-      await this.window.showAlert('Sent', `Message sent to ${contact.name}`);
+      await this.window.showInfo('Sent', `Message sent to ${contact.name}`);
     }
   }
 

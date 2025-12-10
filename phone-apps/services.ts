@@ -448,6 +448,47 @@ export interface ISMSService {
   setAutoReply(enabled: boolean): void;
 }
 
+// ============================================================================
+// App Lifecycle Service - Controls how app closes behave
+// ============================================================================
+
+/**
+ * App lifecycle service - handles app close behavior differently
+ * depending on whether the app is running standalone or within the desktop.
+ */
+export interface IAppLifecycle {
+  /**
+   * Request the app to close. In standalone mode this quits the process.
+   * In desktop mode this just closes the inner window (handled by MDI).
+   */
+  requestClose(): void;
+}
+
+/**
+ * Standalone lifecycle - calls app.quit() to exit the entire process
+ */
+export class StandaloneAppLifecycle implements IAppLifecycle {
+  constructor(private quitFn: () => void) {}
+
+  requestClose(): void {
+    this.quitFn();
+  }
+}
+
+/**
+ * Desktop lifecycle - closes the inner window via callback
+ * The callback is provided by desktop.ts to close the specific inner window
+ */
+export class DesktopAppLifecycle implements IAppLifecycle {
+  constructor(private closeCallback?: () => void) {}
+
+  requestClose(): void {
+    if (this.closeCallback) {
+      this.closeCallback();
+    }
+  }
+}
+
 export class MockSMSService implements ISMSService {
   private messages: Message[] = [];
   private nextId = 1;

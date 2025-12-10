@@ -729,6 +729,12 @@ class Desktop {
         'storage': services.MockStorageService ? new services.MockStorageService() : null,
         'settings': services.MockSettingsService ? new services.MockSettingsService() : null,
         'sms': services.MockSMSService ? new services.MockSMSService() : null,
+        // Desktop lifecycle - closes the inner window (closure captures createdWindow)
+        'lifecycle': services.DesktopAppLifecycle ? new services.DesktopAppLifecycle(() => {
+          if (createdWindow) {
+            createdWindow.close();
+          }
+        }) : null,
       };
       const args = metadata.args.map(name => argMap[name]);
 
