@@ -224,6 +224,7 @@ export interface IClockService {
 export class MockClockService implements IClockService {
   private alarms: Map<string, Alarm> = new Map();
   private nextId = 1;
+  private mockedTime: Date | null = null;
 
   constructor() {
     // Add sample alarms
@@ -231,8 +232,13 @@ export class MockClockService implements IClockService {
     this.addAlarm({ time: '08:30', label: 'Meeting', enabled: false, days: [] });
   }
 
+  /** Set a fixed time for testing. Pass null to use real time. */
+  setTime(time: Date | null): void {
+    this.mockedTime = time;
+  }
+
   getCurrentTime(): Date {
-    return new Date();
+    return this.mockedTime ?? new Date();
   }
 
   getTimezone(): string {

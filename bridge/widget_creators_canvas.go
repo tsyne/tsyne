@@ -119,6 +119,7 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) Response {
 	y2 := toFloat32(msg.Payload["y2"])
 
 	line := canvas.NewLine(color.Black)
+	// Position1 and Position2 are absolute coordinates in the parent's space
 	line.Position1 = fyne.NewPos(x1, y1)
 	line.Position2 = fyne.NewPos(x2, y2)
 

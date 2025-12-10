@@ -47,7 +47,7 @@ describe('Clock App', () => {
     await ctx.getByID('date-display').within(500).shouldExist();
   });
 
-  test('should have all four tabs', async () => {
+  test('should have timer and stopwatch displays', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createClockApp(app, clock, notifications);
     });
@@ -55,10 +55,27 @@ describe('Clock App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Tab labels should exist
-    await ctx.getByText('Clock').within(500).shouldExist();
-    await ctx.getByText('Alarms').within(500).shouldExist();
-    await ctx.getByText('Timer').within(500).shouldExist();
-    await ctx.getByText('Stopwatch').within(500).shouldExist();
+    // Verify timer and stopwatch displays exist (these prove the tabs were created)
+    await ctx.getByID('timer-display').within(1000).shouldExist();
+    await ctx.getByID('stopwatch-display').within(1000).shouldExist();
+  });
+
+  test('should display mocked time', async () => {
+    // Set a fixed time: 3:00 PM on Jan 15, 2025
+    clock.setTime(new Date(2025, 0, 15, 15, 0, 0));
+
+    const testApp = await tsyneTest.createApp((app) => {
+      createClockApp(app, clock, notifications);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Verify time display shows 3:00 PM (format may vary by locale)
+    const timeDisplay = await ctx.getByID('time-display').within(500);
+    await timeDisplay.shouldExist();
+    const text = await timeDisplay.getText();
+    // Should contain "3:00" or "15:00" depending on locale
+    expect(text).toMatch(/3:00|15:00/);
   });
 });

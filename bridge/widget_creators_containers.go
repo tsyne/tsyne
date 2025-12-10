@@ -393,9 +393,10 @@ func (b *Bridge) handleCreateStack(msg Message) Response {
 		}
 	}
 
-	// NewStack stacks all widgets on top of each other (Z-layering)
-	// Unlike Max, Stack preserves natural sizes - children are not forced to fill
-	stackContainer := container.NewStack(children...)
+	// Use NewWithoutLayout for Stack - this allows canvas objects to keep their
+	// absolute Position1/Position2 values. NewStack would call Move(0,0) and Resize()
+	// which corrupts canvas.Line coordinates.
+	stackContainer := container.NewWithoutLayout(children...)
 
 	b.mu.Lock()
 	b.widgets[widgetID] = stackContainer

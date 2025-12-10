@@ -1712,6 +1712,44 @@ func (b *Bridge) handleSetSelectEntryOptions(msg Message) Response {
 	}
 }
 
+// handleGetWidgetSize returns the current rendered size of a widget
+func (b *Bridge) handleGetWidgetSize(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	// Get the size from the canvas object
+	canvasObj, ok := obj.(fyne.CanvasObject)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a canvas object",
+		}
+	}
+
+	size := canvasObj.Size()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"width":  size.Width,
+			"height": size.Height,
+		},
+	}
+}
+
 // handleSetWidgetCallback sets or updates the callback for a widget
 // This allows callbacks to be set after widget creation, supporting the chainable .onClick() pattern
 func (b *Bridge) handleSetWidgetCallback(msg Message) Response {

@@ -169,6 +169,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetValue(msg)
 	case "getValue":
 		return b.handleGetValue(msg)
+	case "getWidgetSize":
+		return b.handleGetWidgetSize(msg)
+	case "setWidgetOnResize":
+		return b.handleSetWidgetOnResize(msg)
 	case "setRadioSelected":
 		return b.handleSetRadioSelected(msg)
 	case "getRadioSelected":

@@ -599,6 +599,47 @@ export abstract class Widget {
     }
   }
 
+  // ==================== Size & Resize ====================
+
+  /**
+   * Get the current rendered size of the widget
+   * @returns Promise resolving to {width, height} in pixels
+   * @example
+   * const size = await container.getSize();
+   * console.log(`Container is ${size.width}x${size.height}`);
+   */
+  async getSize(): Promise<{ width: number; height: number }> {
+    const result = await this.ctx.bridge.send('getWidgetSize', {
+      widgetId: this.id
+    }) as { width: number; height: number };
+    return { width: result.width, height: result.height };
+  }
+
+  /**
+   * Register a callback for when this container's size changes
+   * Only works on container widgets (vbox, hbox, stack, etc.)
+   * @param callback Function called with new width and height when container resizes
+   * @returns this for method chaining
+   * @example
+   * a.stack(() => {
+   *   // canvas elements
+   * }).onResize((width, height) => {
+   *   // Recalculate canvas element positions based on new size
+   *   updateCanvasPositions(width, height);
+   * });
+   */
+  onResize(callback: (width: number, height: number) => void): this {
+    const callbackId = this.ctx.generateId('resize');
+    this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      callback(data.width, data.height);
+    });
+    this.ctx.bridge.send('setWidgetOnResize', {
+      widgetId: this.id,
+      callbackId
+    });
+    return this;
+  }
+
   // ==================== Drag & Drop ====================
 
   /**

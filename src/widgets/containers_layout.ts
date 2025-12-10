@@ -331,6 +331,7 @@ export class Max {
     });
     return this;
   }
+
 }
 
 /**

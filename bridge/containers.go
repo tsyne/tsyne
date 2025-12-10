@@ -4,6 +4,55 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+// ResizableLayout wraps a fyne.Layout and fires events when layout occurs
+type ResizableLayout struct {
+	wrapped    fyne.Layout
+	widgetID   string
+	callbackID string
+	lastSize   fyne.Size
+	bridge     *Bridge
+}
+
+// NewResizableLayout creates a layout that notifies TypeScript on resize
+func NewResizableLayout(wrapped fyne.Layout, widgetID, callbackID string, bridge *Bridge) *ResizableLayout {
+	return &ResizableLayout{
+		wrapped:    wrapped,
+		widgetID:   widgetID,
+		callbackID: callbackID,
+		bridge:     bridge,
+	}
+}
+
+// Layout implements fyne.Layout
+func (r *ResizableLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	// Check if size changed
+	if size.Width != r.lastSize.Width || size.Height != r.lastSize.Height {
+		r.lastSize = size
+		// Send resize event to TypeScript asynchronously
+		// This avoids blocking the Fyne layout thread and prevents EPIPE crashes
+		if r.callbackID != "" && r.bridge != nil {
+			go func(w, h float32) {
+				r.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": r.callbackID,
+						"widgetId":   r.widgetID,
+						"width":      w,
+						"height":     h,
+					},
+				})
+			}(size.Width, size.Height)
+		}
+	}
+	// Delegate to wrapped layout
+	r.wrapped.Layout(objects, size)
+}
+
+// MinSize implements fyne.Layout
+func (r *ResizableLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return r.wrapped.MinSize(objects)
+}
+
 func (b *Bridge) handleSetContent(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
 	widgetID := msg.Payload["widgetId"].(string)
@@ -232,5 +281,42 @@ func (b *Bridge) handleClearWidgets(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+// handleSetWidgetOnResize wraps a container's layout to fire resize events
+func (b *Bridge) handleSetWidgetOnResize(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	containerObj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	// Cast to container and wrap its layout
+	if cont, ok := containerObj.(*fyne.Container); ok {
+		// Wrap the layout with ResizableLayout
+		if cont.Layout != nil {
+			cont.Layout = NewResizableLayout(cont.Layout, widgetID, callbackID, b)
+		}
+
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: false,
+		Error:   "Widget is not a container",
 	}
 }
