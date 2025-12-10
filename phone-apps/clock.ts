@@ -5,7 +5,7 @@
  * Uses ClockService for time/alarms and NotificationService for alerts.
  *
  * @tsyne-app:name Clock
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 18 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
  * @tsyne-app:category utilities
  * @tsyne-app:builder createClockApp
  * @tsyne-app:args app,clock,notifications
