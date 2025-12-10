@@ -10,7 +10,7 @@
  */
 
 // @tsyne-app:name Chess
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 22H5v-2h14v2M13 2c-1.25 0-2.42.62-3.11 1.66L7 8l2 2 2.06-1.37c.44-.29.94-.46 1.44-.51V14H7v2h3.5v3h3v-3H17v-2h-4.5V8.12c.5.05 1 .22 1.44.51L16 10l2-2-2.89-4.34C14.42 2.62 13.25 2 12 2h1z"/><path d="M5 22h14v-2H5v2z"/></svg>
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,22H10A1,1 0 0,1 9,21V19C9,18.45 9.45,18 10,18H14C14.55,18 15,18.45 15,19V21A1,1 0 0,1 14,22M18.6,8.47C18.6,8.47 17.5,10.5 15.5,10.5C13.5,10.5 12.89,8.78 12.89,8.78C12.89,8.78 12.22,7.34 11.22,6.5C10.22,5.66 9,5 9,5C9,5 8.5,6.5 8.5,7.5C8.5,8.5 9.5,9.5 9.5,9.5C9.5,9.5 9,11 8,11H6V5H7C7,5 7,2 11,2C15,2 16.5,5.75 16.5,5.75C16.5,5.75 18.6,5.82 18.6,8.47Z" /></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createChessApp
 // @tsyne-app:args app,resources
