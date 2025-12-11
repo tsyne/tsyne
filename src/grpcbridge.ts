@@ -1058,6 +1058,76 @@ export class GrpcBridgeConnection implements BridgeInterface {
           }
         };
 
+      // Sprite system
+      case 'saveRasterBackground':
+        return {
+          method: 'saveRasterBackground',
+          request: { widgetId: payload.widgetId }
+        };
+      case 'createRasterSprite':
+        return {
+          method: 'createRasterSprite',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name,
+            resourceName: payload.resourceName,
+            x: payload.x || 0,
+            y: payload.y || 0,
+            zIndex: payload.zIndex || 0,
+            visible: payload.visible !== false
+          }
+        };
+      case 'moveRasterSprite':
+        return {
+          method: 'moveRasterSprite',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name,
+            x: payload.x || 0,
+            y: payload.y || 0
+          }
+        };
+      case 'setRasterSpriteResource':
+        return {
+          method: 'setRasterSpriteResource',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name,
+            resourceName: payload.resourceName
+          }
+        };
+      case 'setRasterSpriteVisible':
+        return {
+          method: 'setRasterSpriteVisible',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name,
+            visible: payload.visible
+          }
+        };
+      case 'setRasterSpriteZIndex':
+        return {
+          method: 'setRasterSpriteZIndex',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name,
+            zIndex: payload.zIndex || 0
+          }
+        };
+      case 'removeRasterSprite':
+        return {
+          method: 'removeRasterSprite',
+          request: {
+            widgetId: payload.widgetId,
+            name: payload.name
+          }
+        };
+      case 'flushRasterSprites':
+        return {
+          method: 'flushRasterSprites',
+          request: { widgetId: payload.widgetId }
+        };
+
       // Widget updates
       case 'setText':
         return {

@@ -109,6 +109,14 @@ const (
 	BridgeService_UpdateCanvasArc_FullMethodName             = "/bridge.BridgeService/UpdateCanvasArc"
 	BridgeService_UpdateCanvasPolygon_FullMethodName         = "/bridge.BridgeService/UpdateCanvasPolygon"
 	BridgeService_UpdateTappableCanvasRaster_FullMethodName  = "/bridge.BridgeService/UpdateTappableCanvasRaster"
+	BridgeService_SaveRasterBackground_FullMethodName        = "/bridge.BridgeService/SaveRasterBackground"
+	BridgeService_CreateRasterSprite_FullMethodName          = "/bridge.BridgeService/CreateRasterSprite"
+	BridgeService_MoveRasterSprite_FullMethodName            = "/bridge.BridgeService/MoveRasterSprite"
+	BridgeService_SetRasterSpriteResource_FullMethodName     = "/bridge.BridgeService/SetRasterSpriteResource"
+	BridgeService_SetRasterSpriteVisible_FullMethodName      = "/bridge.BridgeService/SetRasterSpriteVisible"
+	BridgeService_SetRasterSpriteZIndex_FullMethodName       = "/bridge.BridgeService/SetRasterSpriteZIndex"
+	BridgeService_RemoveRasterSprite_FullMethodName          = "/bridge.BridgeService/RemoveRasterSprite"
+	BridgeService_FlushRasterSprites_FullMethodName          = "/bridge.BridgeService/FlushRasterSprites"
 	BridgeService_RegisterResource_FullMethodName            = "/bridge.BridgeService/RegisterResource"
 	BridgeService_UnregisterResource_FullMethodName          = "/bridge.BridgeService/UnregisterResource"
 	BridgeService_UpdateImage_FullMethodName                 = "/bridge.BridgeService/UpdateImage"
@@ -360,6 +368,15 @@ type BridgeServiceClient interface {
 	UpdateCanvasArc(ctx context.Context, in *UpdateCanvasArcRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasPolygon(ctx context.Context, in *UpdateCanvasPolygonRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateTappableCanvasRaster(ctx context.Context, in *UpdateTappableCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error)
+	// Sprite system - efficient dirty-rectangle based animation
+	SaveRasterBackground(ctx context.Context, in *SaveRasterBackgroundRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateRasterSprite(ctx context.Context, in *CreateRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error)
+	MoveRasterSprite(ctx context.Context, in *MoveRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error)
+	SetRasterSpriteResource(ctx context.Context, in *SetRasterSpriteResourceRequest, opts ...grpc.CallOption) (*Response, error)
+	SetRasterSpriteVisible(ctx context.Context, in *SetRasterSpriteVisibleRequest, opts ...grpc.CallOption) (*Response, error)
+	SetRasterSpriteZIndex(ctx context.Context, in *SetRasterSpriteZIndexRequest, opts ...grpc.CallOption) (*Response, error)
+	RemoveRasterSprite(ctx context.Context, in *RemoveRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error)
+	FlushRasterSprites(ctx context.Context, in *FlushRasterSpritesRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Resources
 	// ============================================================================
@@ -1440,6 +1457,86 @@ func (c *bridgeServiceClient) UpdateTappableCanvasRaster(ctx context.Context, in
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_UpdateTappableCanvasRaster_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SaveRasterBackground(ctx context.Context, in *SaveRasterBackgroundRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SaveRasterBackground_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateRasterSprite(ctx context.Context, in *CreateRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateRasterSprite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) MoveRasterSprite(ctx context.Context, in *MoveRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_MoveRasterSprite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetRasterSpriteResource(ctx context.Context, in *SetRasterSpriteResourceRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetRasterSpriteResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetRasterSpriteVisible(ctx context.Context, in *SetRasterSpriteVisibleRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetRasterSpriteVisible_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetRasterSpriteZIndex(ctx context.Context, in *SetRasterSpriteZIndexRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetRasterSpriteZIndex_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) RemoveRasterSprite(ctx context.Context, in *RemoveRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_RemoveRasterSprite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) FlushRasterSprites(ctx context.Context, in *FlushRasterSpritesRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_FlushRasterSprites_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2883,6 +2980,15 @@ type BridgeServiceServer interface {
 	UpdateCanvasArc(context.Context, *UpdateCanvasArcRequest) (*Response, error)
 	UpdateCanvasPolygon(context.Context, *UpdateCanvasPolygonRequest) (*Response, error)
 	UpdateTappableCanvasRaster(context.Context, *UpdateTappableCanvasRasterRequest) (*Response, error)
+	// Sprite system - efficient dirty-rectangle based animation
+	SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error)
+	CreateRasterSprite(context.Context, *CreateRasterSpriteRequest) (*Response, error)
+	MoveRasterSprite(context.Context, *MoveRasterSpriteRequest) (*Response, error)
+	SetRasterSpriteResource(context.Context, *SetRasterSpriteResourceRequest) (*Response, error)
+	SetRasterSpriteVisible(context.Context, *SetRasterSpriteVisibleRequest) (*Response, error)
+	SetRasterSpriteZIndex(context.Context, *SetRasterSpriteZIndexRequest) (*Response, error)
+	RemoveRasterSprite(context.Context, *RemoveRasterSpriteRequest) (*Response, error)
+	FlushRasterSprites(context.Context, *FlushRasterSpritesRequest) (*Response, error)
 	// ============================================================================
 	// Resources
 	// ============================================================================
@@ -3338,6 +3444,30 @@ func (UnimplementedBridgeServiceServer) UpdateCanvasPolygon(context.Context, *Up
 }
 func (UnimplementedBridgeServiceServer) UpdateTappableCanvasRaster(context.Context, *UpdateTappableCanvasRasterRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateTappableCanvasRaster not implemented")
+}
+func (UnimplementedBridgeServiceServer) SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveRasterBackground not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateRasterSprite(context.Context, *CreateRasterSpriteRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateRasterSprite not implemented")
+}
+func (UnimplementedBridgeServiceServer) MoveRasterSprite(context.Context, *MoveRasterSpriteRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method MoveRasterSprite not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetRasterSpriteResource(context.Context, *SetRasterSpriteResourceRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetRasterSpriteResource not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetRasterSpriteVisible(context.Context, *SetRasterSpriteVisibleRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetRasterSpriteVisible not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetRasterSpriteZIndex(context.Context, *SetRasterSpriteZIndexRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetRasterSpriteZIndex not implemented")
+}
+func (UnimplementedBridgeServiceServer) RemoveRasterSprite(context.Context, *RemoveRasterSpriteRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveRasterSprite not implemented")
+}
+func (UnimplementedBridgeServiceServer) FlushRasterSprites(context.Context, *FlushRasterSpritesRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method FlushRasterSprites not implemented")
 }
 func (UnimplementedBridgeServiceServer) RegisterResource(context.Context, *RegisterResourceRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterResource not implemented")
@@ -5369,6 +5499,150 @@ func _BridgeService_UpdateTappableCanvasRaster_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).UpdateTappableCanvasRaster(ctx, req.(*UpdateTappableCanvasRasterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SaveRasterBackground_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveRasterBackgroundRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SaveRasterBackground(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SaveRasterBackground_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SaveRasterBackground(ctx, req.(*SaveRasterBackgroundRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateRasterSprite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRasterSpriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateRasterSprite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateRasterSprite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateRasterSprite(ctx, req.(*CreateRasterSpriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_MoveRasterSprite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoveRasterSpriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).MoveRasterSprite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_MoveRasterSprite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).MoveRasterSprite(ctx, req.(*MoveRasterSpriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetRasterSpriteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRasterSpriteResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetRasterSpriteResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetRasterSpriteResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetRasterSpriteResource(ctx, req.(*SetRasterSpriteResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetRasterSpriteVisible_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRasterSpriteVisibleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetRasterSpriteVisible(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetRasterSpriteVisible_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetRasterSpriteVisible(ctx, req.(*SetRasterSpriteVisibleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetRasterSpriteZIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetRasterSpriteZIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetRasterSpriteZIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetRasterSpriteZIndex_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetRasterSpriteZIndex(ctx, req.(*SetRasterSpriteZIndexRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_RemoveRasterSprite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveRasterSpriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).RemoveRasterSprite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_RemoveRasterSprite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).RemoveRasterSprite(ctx, req.(*RemoveRasterSpriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_FlushRasterSprites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FlushRasterSpritesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).FlushRasterSprites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_FlushRasterSprites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).FlushRasterSprites(ctx, req.(*FlushRasterSpritesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8090,6 +8364,38 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateTappableCanvasRaster",
 			Handler:    _BridgeService_UpdateTappableCanvasRaster_Handler,
+		},
+		{
+			MethodName: "SaveRasterBackground",
+			Handler:    _BridgeService_SaveRasterBackground_Handler,
+		},
+		{
+			MethodName: "CreateRasterSprite",
+			Handler:    _BridgeService_CreateRasterSprite_Handler,
+		},
+		{
+			MethodName: "MoveRasterSprite",
+			Handler:    _BridgeService_MoveRasterSprite_Handler,
+		},
+		{
+			MethodName: "SetRasterSpriteResource",
+			Handler:    _BridgeService_SetRasterSpriteResource_Handler,
+		},
+		{
+			MethodName: "SetRasterSpriteVisible",
+			Handler:    _BridgeService_SetRasterSpriteVisible_Handler,
+		},
+		{
+			MethodName: "SetRasterSpriteZIndex",
+			Handler:    _BridgeService_SetRasterSpriteZIndex_Handler,
+		},
+		{
+			MethodName: "RemoveRasterSprite",
+			Handler:    _BridgeService_RemoveRasterSprite_Handler,
+		},
+		{
+			MethodName: "FlushRasterSprites",
+			Handler:    _BridgeService_FlushRasterSprites_Handler,
 		},
 		{
 			MethodName: "RegisterResource",

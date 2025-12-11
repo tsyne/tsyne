@@ -69,6 +69,7 @@ type Bridge struct {
 	arcData         map[string]*ArcData              // arc widget ID -> arc data
 	polygonData     map[string]*PolygonData          // polygon widget ID -> polygon data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
+	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
 	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)
 	ffiEventCallback func(Event)                     // FFI event callback (when in FFI mode)
 }

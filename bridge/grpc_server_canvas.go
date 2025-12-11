@@ -701,3 +701,167 @@ func (s *grpcBridgeService) UpdateDesktopIconColor(ctx context.Context, req *pb.
 		Error:   resp.Error,
 	}, nil
 }
+
+// ============================================================================
+// Sprite System - Efficient dirty-rectangle based animation
+// ============================================================================
+
+// SaveRasterBackground saves the current raster contents as static background
+func (s *grpcBridgeService) SaveRasterBackground(ctx context.Context, req *pb.SaveRasterBackgroundRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "saveRasterBackground",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+		},
+	}
+
+	resp := s.bridge.handleSaveRasterBackground(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// CreateRasterSprite creates a new sprite on a CanvasRaster
+func (s *grpcBridgeService) CreateRasterSprite(ctx context.Context, req *pb.CreateRasterSpriteRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "createRasterSprite",
+		Payload: map[string]interface{}{
+			"widgetId":     req.WidgetId,
+			"name":         req.Name,
+			"resourceName": req.ResourceName,
+			"x":            float64(req.X),
+			"y":            float64(req.Y),
+			"zIndex":       float64(req.ZIndex),
+			"visible":      req.Visible,
+		},
+	}
+
+	resp := s.bridge.handleCreateRasterSprite(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// MoveRasterSprite moves a sprite to a new position
+func (s *grpcBridgeService) MoveRasterSprite(ctx context.Context, req *pb.MoveRasterSpriteRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "moveRasterSprite",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"name":     req.Name,
+			"x":        float64(req.X),
+			"y":        float64(req.Y),
+		},
+	}
+
+	resp := s.bridge.handleMoveRasterSprite(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetRasterSpriteResource changes a sprite's image
+func (s *grpcBridgeService) SetRasterSpriteResource(ctx context.Context, req *pb.SetRasterSpriteResourceRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setRasterSpriteResource",
+		Payload: map[string]interface{}{
+			"widgetId":     req.WidgetId,
+			"name":         req.Name,
+			"resourceName": req.ResourceName,
+		},
+	}
+
+	resp := s.bridge.handleSetRasterSpriteResource(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetRasterSpriteVisible shows or hides a sprite
+func (s *grpcBridgeService) SetRasterSpriteVisible(ctx context.Context, req *pb.SetRasterSpriteVisibleRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setRasterSpriteVisible",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"name":     req.Name,
+			"visible":  req.Visible,
+		},
+	}
+
+	resp := s.bridge.handleSetRasterSpriteVisible(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetRasterSpriteZIndex changes a sprite's z-index
+func (s *grpcBridgeService) SetRasterSpriteZIndex(ctx context.Context, req *pb.SetRasterSpriteZIndexRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setRasterSpriteZIndex",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"name":     req.Name,
+			"zIndex":   float64(req.ZIndex),
+		},
+	}
+
+	resp := s.bridge.handleSetRasterSpriteZIndex(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// RemoveRasterSprite removes a sprite
+func (s *grpcBridgeService) RemoveRasterSprite(ctx context.Context, req *pb.RemoveRasterSpriteRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "removeRasterSprite",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"name":     req.Name,
+		},
+	}
+
+	resp := s.bridge.handleRemoveRasterSprite(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// FlushRasterSprites redraws only dirty regions
+func (s *grpcBridgeService) FlushRasterSprites(ctx context.Context, req *pb.FlushRasterSpritesRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "flushRasterSprites",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+		},
+	}
+
+	resp := s.bridge.handleFlushRasterSprites(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}

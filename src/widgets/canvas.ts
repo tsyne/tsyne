@@ -516,14 +516,39 @@ export class CanvasText {
   }
 }
 
+// ============================================================================
+// Sprite System - Efficient animated graphics with dirty rectangle tracking
+// ============================================================================
+
 /**
- * Canvas Raster - pixel-level drawing
+ * Sprite reference returned by CanvasRaster.createSprite()
+ * Sprites are image layers that can be efficiently moved and z-ordered
+ */
+export interface Sprite {
+  name: string;
+  x: number;
+  y: number;
+  zIndex: number;
+  visible: boolean;
+}
+
+/**
+ * Canvas Raster - pixel-level drawing with optional sprite/dirty-rect support
+ *
+ * For animated graphics, use the sprite system:
+ * 1. Call saveBackground() after drawing static elements (grid, etc.)
+ * 2. Create sprites with createSprite() - they reference registered resources
+ * 3. Move sprites with moveSprite() - automatically tracks dirty rectangles
+ * 4. Call flush() to efficiently redraw only dirty regions
+ *
+ * This reduces per-frame work from O(canvas_size) to O(sprite_area * num_sprites)
  */
 export class CanvasRaster {
   private ctx: Context;
   public id: string;
   private _width: number;
   private _height: number;
+  private _sprites: Map<string, Sprite> = new Map();
 
   constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>) {
     this.ctx = ctx;
@@ -599,6 +624,168 @@ export class CanvasRaster {
       x, y,
       alpha: options?.alpha ?? 255
     });
+  }
+
+  // ==========================================================================
+  // Sprite System - Efficient dirty-rectangle based animation
+  // ==========================================================================
+
+  /**
+   * Save the current raster contents as the static background
+   * Call this after drawing grid lines, static elements, etc.
+   * The background is used to restore pixels under moving sprites
+   */
+  async saveBackground(): Promise<void> {
+    await this.ctx.bridge.send('saveRasterBackground', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Create a sprite from a registered resource
+   * Sprites are image layers that can be efficiently moved and z-ordered
+   * @param name Unique name for this sprite
+   * @param resourceName Name of the registered image resource
+   * @param x Initial X position
+   * @param y Initial Y position
+   * @param options zIndex for layering (higher = front), visible to show/hide
+   */
+  async createSprite(name: string, resourceName: string, x: number, y: number, options?: {
+    zIndex?: number;
+    visible?: boolean;
+  }): Promise<Sprite> {
+    const sprite: Sprite = {
+      name,
+      x,
+      y,
+      zIndex: options?.zIndex ?? 0,
+      visible: options?.visible ?? true
+    };
+    this._sprites.set(name, sprite);
+
+    await this.ctx.bridge.send('createRasterSprite', {
+      widgetId: this.id,
+      name,
+      resourceName,
+      x, y,
+      zIndex: sprite.zIndex,
+      visible: sprite.visible
+    });
+
+    return sprite;
+  }
+
+  /**
+   * Move a sprite to a new position
+   * Automatically marks both old and new positions as dirty
+   * @param name Sprite name
+   * @param x New X position
+   * @param y New Y position
+   */
+  async moveSprite(name: string, x: number, y: number): Promise<void> {
+    const sprite = this._sprites.get(name);
+    if (sprite) {
+      sprite.x = x;
+      sprite.y = y;
+    }
+
+    await this.ctx.bridge.send('moveRasterSprite', {
+      widgetId: this.id,
+      name,
+      x, y
+    });
+  }
+
+  /**
+   * Change a sprite's image resource (e.g., for animation frames)
+   * @param name Sprite name
+   * @param resourceName New resource name
+   */
+  async setSpriteResource(name: string, resourceName: string): Promise<void> {
+    await this.ctx.bridge.send('setRasterSpriteResource', {
+      widgetId: this.id,
+      name,
+      resourceName
+    });
+  }
+
+  /**
+   * Show or hide a sprite
+   * @param name Sprite name
+   * @param visible Whether the sprite should be visible
+   */
+  async setSpriteVisible(name: string, visible: boolean): Promise<void> {
+    const sprite = this._sprites.get(name);
+    if (sprite) {
+      sprite.visible = visible;
+    }
+
+    await this.ctx.bridge.send('setRasterSpriteVisible', {
+      widgetId: this.id,
+      name,
+      visible
+    });
+  }
+
+  /**
+   * Change a sprite's z-index for layering
+   * Higher z-index = drawn on top
+   * @param name Sprite name
+   * @param zIndex New z-index value
+   */
+  async setSpriteZIndex(name: string, zIndex: number): Promise<void> {
+    const sprite = this._sprites.get(name);
+    if (sprite) {
+      sprite.zIndex = zIndex;
+    }
+
+    await this.ctx.bridge.send('setRasterSpriteZIndex', {
+      widgetId: this.id,
+      name,
+      zIndex
+    });
+  }
+
+  /**
+   * Remove a sprite
+   * @param name Sprite name to remove
+   */
+  async removeSprite(name: string): Promise<void> {
+    this._sprites.delete(name);
+
+    await this.ctx.bridge.send('removeRasterSprite', {
+      widgetId: this.id,
+      name
+    });
+  }
+
+  /**
+   * Flush pending sprite changes - redraws only dirty rectangles
+   * This is the efficient update path:
+   * 1. For each dirty rect: restore background pixels
+   * 2. Re-draw sprites that overlap dirty rects (in z-order)
+   * 3. Refresh the raster widget
+   *
+   * Call this once per frame after moving sprites
+   */
+  async flush(): Promise<void> {
+    await this.ctx.bridge.send('flushRasterSprites', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Get a sprite by name
+   */
+  getSprite(name: string): Sprite | undefined {
+    return this._sprites.get(name);
+  }
+
+  /**
+   * Get all sprites
+   */
+  getSprites(): Sprite[] {
+    return Array.from(this._sprites.values());
   }
 }
 

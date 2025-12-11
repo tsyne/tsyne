@@ -132,13 +132,20 @@ class BallPhysics {
 /**
  * Boing Demo - renders the classic bouncing ball animation
  *
- * Uses texture blitting for efficient rendering:
+ * Uses the sprite/dirty-rectangle system for efficient rendering:
  * - Pre-renders ball frames and shadow as PNG sprites
  * - Registers them as resources at startup
- * - Uses blitImage() to draw sprites instead of individual setPixels()
- * - Uses fillRect() to efficiently clear previous positions
+ * - Creates sprites for ball and shadow
+ * - Uses moveSprite() and setSpriteResource() to animate
+ * - Uses flush() to redraw only dirty rectangles
  *
- * This reduces per-frame bridge traffic from ~14,000 pixel updates to just 4-5 blit/fill calls.
+ * This is the most efficient approach - the Go bridge:
+ * 1. Tracks dirty rectangles automatically when sprites move
+ * 2. Restores background pixels only in dirty regions
+ * 3. Re-blits sprites that overlap dirty regions
+ * 4. Single refresh at the end
+ *
+ * Per-frame work is O(sprite_area) instead of O(canvas_size).
  */
 class BoingDemo {
   private a: App;
@@ -148,17 +155,13 @@ class BoingDemo {
   private physics: BallPhysics;
   private frameIndex: number = 0;
   private animationTimer: ReturnType<typeof setInterval> | null = null;
-
-  // Previous positions for dirty rect clearing
-  private prevBallX: number = 0;
-  private prevBallY: number = 0;
-  private prevShadowX: number = 0;
-  private prevShadowY: number = 0;
-  private isFirstFrame: boolean = true;
+  private spritesCreated: boolean = false;
 
   // Resource names for sprites
   private readonly SHADOW_RESOURCE = 'boing-shadow';
   private readonly BALL_RESOURCE_PREFIX = 'boing-frame-';
+  private readonly SHADOW_SPRITE = 'shadow';
+  private readonly BALL_SPRITE = 'ball';
 
   constructor(a: App) {
     this.a = a;
@@ -228,7 +231,7 @@ class BoingDemo {
   }
 
   /**
-   * Render the entire scene using sprite blitting
+   * Render the scene using sprite system with dirty rectangles
    */
   private async render(): Promise<void> {
     if (!this.canvas) return;
@@ -245,56 +248,26 @@ class BoingDemo {
     const shadowSpriteY = shadowY - Math.floor(BALL_RADIUS / 2);
 
     try {
-      if (this.isFirstFrame) {
-        // First frame: render entire background with grid
-        await this.renderFullBackground();
-        this.isFirstFrame = false;
-      } else {
-        // Clear previous ball position (black background - grid will be redrawn by blit)
-        const prevBallSpriteX = this.prevBallX - BALL_RADIUS;
-        const prevBallSpriteY = this.prevBallY - BALL_RADIUS;
-        await this.canvas.fillRect(
-          prevBallSpriteX - 1, prevBallSpriteY - 1,
-          SPRITE_SIZE + 2, SPRITE_SIZE + 2,
-          BLACK.r, BLACK.g, BLACK.b
-        );
+      // Move sprites to new positions (this marks dirty rectangles)
+      await this.canvas.moveSprite(this.SHADOW_SPRITE, shadowSpriteX, shadowSpriteY);
+      await this.canvas.moveSprite(this.BALL_SPRITE, ballSpriteX, ballSpriteY);
 
-        // Clear previous shadow position
-        const prevShadowSpriteX = this.prevShadowX - BALL_RADIUS;
-        const prevShadowSpriteY = this.prevShadowY - Math.floor(BALL_RADIUS / 2);
-        await this.canvas.fillRect(
-          prevShadowSpriteX - 1, prevShadowSpriteY - 1,
-          SHADOW_WIDTH + 2, SHADOW_HEIGHT + 2,
-          BLACK.r, BLACK.g, BLACK.b
-        );
-
-        // Redraw grid lines in cleared areas
-        await this.redrawGridInRegion(prevBallSpriteX - 1, prevBallSpriteY - 1, SPRITE_SIZE + 2, SPRITE_SIZE + 2);
-        await this.redrawGridInRegion(prevShadowSpriteX - 1, prevShadowSpriteY - 1, SHADOW_WIDTH + 2, SHADOW_HEIGHT + 2);
-      }
-
-      // Draw shadow first (so ball appears on top)
-      await this.canvas.blitImage(this.SHADOW_RESOURCE, shadowSpriteX, shadowSpriteY);
-
-      // Draw ball
+      // Change ball frame (for rotation animation)
       const ballResource = `${this.BALL_RESOURCE_PREFIX}${this.frameIndex}`;
-      await this.canvas.blitImage(ballResource, ballSpriteX, ballSpriteY);
+      await this.canvas.setSpriteResource(this.BALL_SPRITE, ballResource);
 
-      // Save current positions for next frame
-      this.prevBallX = ballX;
-      this.prevBallY = ballY;
-      this.prevShadowX = shadowX;
-      this.prevShadowY = shadowY;
+      // Flush - this does the efficient dirty-rect redraw
+      await this.canvas.flush();
     } catch (e) {
       // Ignore errors during shutdown
     }
   }
 
   /**
-   * Render the full background (black with grid)
-   * Uses fillRect for efficient initial fill, then draws grid lines
+   * Render the static background (black with grid)
+   * This is saved as the background for the sprite system to restore
    */
-  private async renderFullBackground(): Promise<void> {
+  private async renderBackground(): Promise<void> {
     if (!this.canvas) return;
 
     // Fill entire canvas with black
@@ -308,36 +281,6 @@ class BoingDemo {
     // Draw vertical grid lines
     for (let x = 0; x < CANVAS_WIDTH; x += GRID_SPACING) {
       await this.canvas.fillRect(x, 0, 1, CANVAS_HEIGHT, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
-    }
-  }
-
-  /**
-   * Redraw grid lines in a specific region (after clearing)
-   */
-  private async redrawGridInRegion(x: number, y: number, width: number, height: number): Promise<void> {
-    if (!this.canvas) return;
-
-    const x1 = Math.max(0, x);
-    const y1 = Math.max(0, y);
-    const x2 = Math.min(CANVAS_WIDTH, x + width);
-    const y2 = Math.min(CANVAS_HEIGHT, y + height);
-
-    // Find grid lines that intersect this region
-    const startGridX = Math.floor(x1 / GRID_SPACING) * GRID_SPACING;
-    const startGridY = Math.floor(y1 / GRID_SPACING) * GRID_SPACING;
-
-    // Draw horizontal grid lines
-    for (let gy = startGridY; gy < y2; gy += GRID_SPACING) {
-      if (gy >= y1 && gy < y2) {
-        await this.canvas.fillRect(x1, gy, x2 - x1, 1, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
-      }
-    }
-
-    // Draw vertical grid lines
-    for (let gx = startGridX; gx < x2; gx += GRID_SPACING) {
-      if (gx >= x1 && gx < x2) {
-        await this.canvas.fillRect(gx, y1, 1, y2 - y1, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
-      }
     }
   }
 
@@ -365,11 +308,46 @@ class BoingDemo {
    * Initialize after widgets are created
    */
   async initialize(): Promise<void> {
+    if (!this.canvas) return;
+
     // Register sprite resources
     await this.registerResources();
 
-    // Render initial frame
-    await this.render();
+    // Render static background (grid)
+    await this.renderBackground();
+
+    // Save background for dirty-rect restoration
+    await this.canvas.saveBackground();
+
+    // Initial sprite positions
+    const ballX = Math.round(this.physics.x);
+    const ballY = Math.round(this.physics.y);
+    const shadowX = ballX + SHADOW_OFFSET_X;
+    const shadowY = ballY + SHADOW_OFFSET_Y;
+    const ballSpriteX = ballX - BALL_RADIUS;
+    const ballSpriteY = ballY - BALL_RADIUS;
+    const shadowSpriteX = shadowX - BALL_RADIUS;
+    const shadowSpriteY = shadowY - Math.floor(BALL_RADIUS / 2);
+
+    // Create sprites (shadow behind ball, lower z-index)
+    await this.canvas.createSprite(
+      this.SHADOW_SPRITE,
+      this.SHADOW_RESOURCE,
+      shadowSpriteX,
+      shadowSpriteY,
+      { zIndex: 0 }
+    );
+    await this.canvas.createSprite(
+      this.BALL_SPRITE,
+      `${this.BALL_RESOURCE_PREFIX}0`,
+      ballSpriteX,
+      ballSpriteY,
+      { zIndex: 1 }
+    );
+    this.spritesCreated = true;
+
+    // Initial flush to draw sprites
+    await this.canvas.flush();
 
     // Start animation
     this.start();

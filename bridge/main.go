@@ -455,6 +455,23 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasRadialGradient(msg)
 	case "updateCanvasRadialGradient":
 		return b.handleUpdateCanvasRadialGradient(msg)
+	// Sprite system
+	case "saveRasterBackground":
+		return b.handleSaveRasterBackground(msg)
+	case "createRasterSprite":
+		return b.handleCreateRasterSprite(msg)
+	case "moveRasterSprite":
+		return b.handleMoveRasterSprite(msg)
+	case "setRasterSpriteResource":
+		return b.handleSetRasterSpriteResource(msg)
+	case "setRasterSpriteVisible":
+		return b.handleSetRasterSpriteVisible(msg)
+	case "setRasterSpriteZIndex":
+		return b.handleSetRasterSpriteZIndex(msg)
+	case "removeRasterSprite":
+		return b.handleRemoveRasterSprite(msg)
+	case "flushRasterSprites":
+		return b.handleFlushRasterSprites(msg)
 	// Platform integration
 	case "setSystemTray":
 		return b.handleSetSystemTray(msg)
