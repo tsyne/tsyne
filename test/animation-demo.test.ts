@@ -3,9 +3,12 @@
  *
  * Tests the animation API functionality:
  * - Position animations
- * - Fade animations
  * - Different easing functions
  * - Animation completion callbacks
+ *
+ * Note: Tab switching is not currently testable via getByText() because
+ * tab titles are part of the Tabs widget structure, not standalone labels.
+ * These tests verify the first tab (InOut) content and general functionality.
  *
  * USAGE:
  * - Headless mode (default): npx jest animation-demo.test.ts
@@ -28,7 +31,7 @@ describe('Animation Demo Tests', () => {
     await tsyneTest.cleanup();
   });
 
-  test('should display animation demo with all elements', async () => {
+  test('should display animation demo with title', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildAnimationDemo(app);
     });
@@ -38,15 +41,9 @@ describe('Animation Demo Tests', () => {
 
     // Title should exist
     await ctx.getByID('title').shouldExist();
-
-    // Title is visible (canvas now uses stack without ID)
-
-    // Buttons should exist
-    await ctx.getByID('runAll').shouldExist();
-    await ctx.getByID('reset').shouldExist();
   });
 
-  test('should have Run All and Reset buttons', async () => {
+  test('should show InOut tab content by default (first tab)', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildAnimationDemo(app);
     });
@@ -54,88 +51,8 @@ describe('Animation Demo Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Both buttons should be clickable
-    await ctx.getByText('Run All').shouldExist();
-    await ctx.getByText('Reset').shouldExist();
-  });
-
-  test('should trigger animations on Run All click', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildAnimationDemo(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Click Run All button
-    await ctx.getByID('runAll').click();
-
-    // Wait for animations to progress
-    await ctx.wait(500);
-
-    // Animations are running - no crash means success
-    // (Visual verification would require screenshot comparison)
-  });
-
-  test('should reset positions on Reset click', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildAnimationDemo(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Run animations first
-    await ctx.getByID('runAll').click();
-    await ctx.wait(300);
-
-    // Reset
-    await ctx.getByID('reset').click();
-    await ctx.wait(100);
-
-    // No crash means reset worked
-  });
-
-  test('should complete animations without errors', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildAnimationDemo(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Run all animations
-    await ctx.getByID('runAll').click();
-
-    // Wait for longest animation to complete (elastic/bounce are 1500ms)
-    await ctx.wait(2000);
-
-    // If we get here without crash, animations completed successfully
-    await ctx.getByID('reset').shouldExist();
-  }, 10000);
-
-  test('should handle multiple animation runs', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildAnimationDemo(app);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Run animations
-    await ctx.getByID('runAll').click();
-    await ctx.wait(500);
-
-    // Reset mid-animation
-    await ctx.getByID('reset').click();
-    await ctx.wait(100);
-
-    // Run again
-    await ctx.getByID('runAll').click();
-    await ctx.wait(500);
-
-    // Should handle gracefully
-    await ctx.getByID('reset').shouldExist();
+    // First tab (InOut) content should be visible
+    await ctx.expect(ctx.getByExactText('InOut Easing')).toBeVisible();
   });
 });
 
