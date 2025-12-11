@@ -1099,6 +1099,50 @@ func (b *Bridge) handleDocTabsSelect(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleTabsSelect(msg Message) Response {
+	id := msg.Payload["id"].(string)
+	tabIndex := int(msg.Payload["tabIndex"].(float64))
+
+	b.mu.RLock()
+	widgetObj, exists := b.widgets[id]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Tabs not found: %s", id),
+		}
+	}
+
+	tabs, ok := widgetObj.(*container.AppTabs)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Widget is not a Tabs: %s", id),
+		}
+	}
+
+	items := tabs.Items
+	if tabIndex < 0 || tabIndex >= len(items) {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Tab index out of range: %d", tabIndex),
+		}
+	}
+
+	fyne.Do(func() {
+		tabs.Select(items[tabIndex])
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleCreateThemeOverride(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)

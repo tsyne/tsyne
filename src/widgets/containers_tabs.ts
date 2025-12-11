@@ -42,6 +42,17 @@ export class Tabs {
     ctx.bridge.send('createTabs', payload);
     ctx.addToCurrentContainer(this.id);
   }
+
+  /**
+   * Select a tab by index
+   * @param tabIndex Index of the tab to select (0-based)
+   */
+  async select(tabIndex: number): Promise<void> {
+    await this.ctx.bridge.send('tabsSelect', {
+      id: this.id,
+      tabIndex
+    });
+  }
 }
 
 /**

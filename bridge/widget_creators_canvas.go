@@ -233,6 +233,62 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 	}
 }
 
+// handleCreateTappableCanvasRectangle creates a tappable canvas rectangle widget
+func (b *Bridge) handleCreateTappableCanvasRectangle(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+
+	// Get dimensions
+	width := toFloat32(msg.Payload["width"])
+	height := toFloat32(msg.Payload["height"])
+
+	// Get fill color
+	var fillColor color.Color = color.Transparent
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		fillColor = parseHexColorSimple(fillHex)
+	}
+
+	// Get stroke color
+	var strokeColor color.Color = nil
+	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+		strokeColor = parseHexColorSimple(strokeHex)
+	}
+
+	// Get stroke width
+	var strokeWidth float32 = 0
+	if sw, ok := msg.Payload["strokeWidth"]; ok {
+		strokeWidth = toFloat32(sw)
+	}
+
+	// Get corner radius
+	var cornerRadius float32 = 0
+	if radius, ok := msg.Payload["cornerRadius"]; ok {
+		cornerRadius = toFloat32(radius)
+	}
+
+	// Create the tappable rectangle with callback
+	tappable := NewTappableCanvasRectangle(width, height, fillColor, strokeColor, strokeWidth, cornerRadius, func(x, y int) {
+		b.sendEvent(Event{
+			Type:     "canvasRectangleTapped",
+			WidgetID: widgetID,
+			Data: map[string]interface{}{
+				"x": x,
+				"y": y,
+			},
+		})
+	})
+
+	b.mu.Lock()
+	b.widgets[widgetID] = tappable
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tappablecanvasrectangle", Text: ""}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
 func (b *Bridge) handleCreateCanvasText(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)

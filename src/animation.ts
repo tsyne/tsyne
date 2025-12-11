@@ -11,9 +11,15 @@
 
 export type EasingType = 'linear' | 'inOut' | 'in' | 'out' | 'elastic' | 'bounce';
 
+// Custom easing function type
+export type EasingFunction = (t: number) => number;
+
+// Can pass either a named easing or a custom function
+export type EasingSpec = EasingType | EasingFunction;
+
 export interface AnimateOptions {
   ms: number;
-  ease?: EasingType;
+  ease?: EasingSpec;
   delay?: number;
   onEnd?: () => void;
 }
@@ -43,6 +49,123 @@ const easings: Record<EasingType, (t: number) => number> = {
     return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
   }
 };
+
+// ============================================================================
+// Cubic Bezier Easing - CSS cubic-bezier(x1, y1, x2, y2) style
+// ============================================================================
+
+/**
+ * Creates a cubic-bezier easing function like CSS cubic-bezier(x1, y1, x2, y2).
+ * Control points P0=(0,0) and P3=(1,1) are implicit.
+ *
+ * Usage:
+ *   const ease = cubicBezier(0.42, 0, 0.58, 1);  // ease-in-out
+ *   circle.to({ x: 100 }, { ms: 500, ease });
+ */
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number): EasingFunction {
+  // Pre-calculate polynomial coefficients for the bezier curve
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+
+  // Sample x(t) - the x coordinate at parameter t
+  const sampleX = (t: number) => ((ax * t + bx) * t + cx) * t;
+
+  // Sample y(t) - the y coordinate at parameter t
+  const sampleY = (t: number) => ((ay * t + by) * t + cy) * t;
+
+  // Derivative of x(t)
+  const sampleDerivX = (t: number) => (3 * ax * t + 2 * bx) * t + cx;
+
+  // Find t for a given x using Newton-Raphson iteration
+  const solveForT = (x: number): number => {
+    // Initial guess using linear interpolation
+    let t = x;
+
+    // Newton-Raphson iteration (usually converges in 4-5 iterations)
+    for (let i = 0; i < 8; i++) {
+      const xEst = sampleX(t) - x;
+      if (Math.abs(xEst) < 1e-6) return t;
+
+      const deriv = sampleDerivX(t);
+      if (Math.abs(deriv) < 1e-6) break;
+
+      t -= xEst / deriv;
+    }
+
+    // Fall back to binary search if Newton-Raphson fails
+    let lo = 0, hi = 1;
+    t = x;
+    while (lo < hi) {
+      const xEst = sampleX(t);
+      if (Math.abs(xEst - x) < 1e-6) return t;
+      if (x > xEst) lo = t;
+      else hi = t;
+      t = (lo + hi) / 2;
+    }
+    return t;
+  };
+
+  return (x: number): number => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    return sampleY(solveForT(x));
+  };
+}
+
+// Common CSS easing presets as cubic-bezier curves
+export const bezier = {
+  // CSS named easings
+  ease: cubicBezier(0.25, 0.1, 0.25, 1),
+  easeIn: cubicBezier(0.42, 0, 1, 1),
+  easeOut: cubicBezier(0, 0, 0.58, 1),
+  easeInOut: cubicBezier(0.42, 0, 0.58, 1),
+
+  // Material Design / standard curves
+  standard: cubicBezier(0.4, 0, 0.2, 1),
+  decelerate: cubicBezier(0, 0, 0.2, 1),
+  accelerate: cubicBezier(0.4, 0, 1, 1),
+
+  // Dramatic curves
+  snappy: cubicBezier(0.5, 0, 0.1, 1),
+  overshoot: cubicBezier(0.34, 1.56, 0.64, 1),
+  anticipate: cubicBezier(0.68, -0.55, 0.265, 1.55),
+
+  // Sine curves
+  inSine: cubicBezier(0.47, 0, 0.745, 0.715),
+  outSine: cubicBezier(0.39, 0.575, 0.565, 1),
+  inOutSine: cubicBezier(0.445, 0.05, 0.55, 0.95),
+
+  // Quad curves
+  inQuad: cubicBezier(0.55, 0.085, 0.68, 0.53),
+  outQuad: cubicBezier(0.25, 0.46, 0.45, 0.94),
+  inOutQuad: cubicBezier(0.455, 0.03, 0.515, 0.955),
+
+  // Cubic curves
+  inCubic: cubicBezier(0.55, 0.055, 0.675, 0.19),
+  outCubic: cubicBezier(0.215, 0.61, 0.355, 1),
+  inOutCubic: cubicBezier(0.645, 0.045, 0.355, 1),
+
+  // Expo curves
+  inExpo: cubicBezier(0.95, 0.05, 0.795, 0.035),
+  outExpo: cubicBezier(0.19, 1, 0.22, 1),
+  inOutExpo: cubicBezier(1, 0, 0, 1),
+
+  // Back curves (with overshoot)
+  inBack: cubicBezier(0.6, -0.28, 0.735, 0.045),
+  outBack: cubicBezier(0.175, 0.885, 0.32, 1.275),
+  inOutBack: cubicBezier(0.68, -0.55, 0.265, 1.55),
+};
+
+/** Helper to resolve easing spec to function */
+function resolveEasing(ease: EasingSpec): EasingFunction {
+  if (typeof ease === 'function') return ease;
+  return easings[ease] || easings.inOut;
+}
 
 /**
  * Interpolate between two values
@@ -92,7 +215,7 @@ export class Animation {
   private from: Record<string, any> = {};
   private toValues: Record<string, any>;
   private duration: number;
-  private easing: EasingType;
+  private easingFn: EasingFunction;
   private delayMs: number;
   private onEndCallback?: () => void;
   private frameCallback?: FrameCallback;
@@ -114,11 +237,11 @@ export class Animation {
 
     if (typeof options === 'number') {
       this.duration = options;
-      this.easing = 'inOut';
+      this.easingFn = easings.inOut;
       this.delayMs = 0;
     } else {
       this.duration = options.ms;
-      this.easing = options.ease || 'inOut';
+      this.easingFn = resolveEasing(options.ease || 'inOut');
       this.delayMs = options.delay || 0;
       this.onEndCallback = options.onEnd;
     }
@@ -158,7 +281,7 @@ export class Animation {
 
       const animElapsed = elapsed - this.delayMs;
       const rawProgress = Math.min(1, animElapsed / this.duration);
-      const progress = easings[this.easing](rawProgress);
+      const progress = this.easingFn(rawProgress);
 
       // Interpolate values
       const currentValues: Record<string, any> = {};

@@ -6,10 +6,12 @@ import { ReactiveBinding, registerGlobalBinding } from './base';
 // ============================================================================
 
 export type EasingType = 'linear' | 'inOut' | 'in' | 'out' | 'elastic' | 'bounce';
+export type EasingFunction = (t: number) => number;
+export type EasingSpec = EasingType | EasingFunction;
 
 export interface AnimateOptions {
   ms: number;
-  ease?: EasingType;
+  ease?: EasingSpec;
   delay?: number;
   onEnd?: () => void;
 }
@@ -33,6 +35,12 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /**
  * Animation handle for chaining - returned by .to()
  */
+/** Helper to resolve easing spec to function */
+function resolveEasing(ease: EasingSpec): EasingFunction {
+  if (typeof ease === 'function') return ease;
+  return easings[ease] || easings.inOut;
+}
+
 export class Tween<T> {
   private target: T;
   private updateFn: (values: Record<string, any>) => void;
@@ -40,7 +48,7 @@ export class Tween<T> {
   private queue: Array<{
     toValues: Record<string, any>;
     duration: number;
-    ease: EasingType;
+    easeFn: EasingFunction;
     delay: number;
     onEnd?: () => void;
   }> = [];
@@ -66,8 +74,9 @@ export class Tween<T> {
     const ease = typeof options === 'object' && options.ease ? options.ease : 'inOut';
     const delay = typeof options === 'object' && options.delay ? options.delay : 0;
     const onEnd = typeof options === 'object' ? options.onEnd : undefined;
+    const easeFn = resolveEasing(ease);
 
-    this.queue.push({ toValues, duration, ease, delay, onEnd });
+    this.queue.push({ toValues, duration, easeFn, delay, onEnd });
 
     if (!this.running) {
       this.runNext();
@@ -83,7 +92,7 @@ export class Tween<T> {
     }
 
     this.running = true;
-    const { toValues, duration, ease, delay, onEnd } = this.queue.shift()!;
+    const { toValues, duration, easeFn, delay, onEnd } = this.queue.shift()!;
     const from = this.getValuesFn();
     const startTime = Date.now() + delay;
 
@@ -96,7 +105,7 @@ export class Tween<T> {
 
       const elapsed = now - startTime;
       const rawProgress = Math.min(1, elapsed / duration);
-      const progress = easings[ease](rawProgress);
+      const progress = easeFn(rawProgress);
 
       const current: Record<string, any> = {};
       for (const key of Object.keys(toValues)) {
@@ -302,6 +311,13 @@ export class CanvasCircle {
    *   circle.to({ x: 100 }, { ms: 500, ease: 'elastic' });
    *   circle.to({ x: 0 }, 300).to({ y: 100 }, 300);  // Chaining
    */
+  /**
+   * Get current position values (for testing)
+   */
+  getPosition(): { x: number; y: number; x2: number; y2: number } {
+    return { x: this._x, y: this._y, x2: this._x2, y2: this._y2 };
+  }
+
   to(toValues: { x?: number; y?: number; x2?: number; y2?: number; strokeWidth?: number },
      options: number | AnimateOptions): Tween<CanvasCircle> {
     if (!this._tween) {
@@ -330,11 +346,15 @@ export class CanvasCircle {
 
 /**
  * Canvas Rectangle - draws a rectangle
+ *
+ * Supports onClick for interactive rectangles:
+ *   a.canvasRectangle({ width: 400, height: 200, onClick: (x, y) => console.log(x, y) });
  */
 export class CanvasRectangle {
   private ctx: Context;
   public id: string;
   private bindings: ReactiveBinding[] = [];
+  private onClickCallback?: (x: number, y: number) => void;
 
   constructor(ctx: Context, options?: {
     width?: number;
@@ -343,9 +363,11 @@ export class CanvasRectangle {
     strokeColor?: string;
     strokeWidth?: number;
     cornerRadius?: number;
+    onClick?: (x: number, y: number) => void;
   }) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvasrectangle');
+    this.onClickCallback = options?.onClick;
 
     const payload: any = { id: this.id };
 
@@ -358,7 +380,20 @@ export class CanvasRectangle {
       if (options.cornerRadius !== undefined) payload.cornerRadius = options.cornerRadius;
     }
 
-    ctx.bridge.send('createCanvasRectangle', payload);
+    // Use tappable version if onClick is provided
+    if (options?.onClick) {
+      ctx.bridge.send('createTappableCanvasRectangle', payload);
+
+      // Register event listener for tapped events
+      ctx.bridge.on('canvasRectangleTapped', (event: any) => {
+        if (event.widgetId === this.id && this.onClickCallback) {
+          this.onClickCallback(event.data.x, event.data.y);
+        }
+      });
+    } else {
+      ctx.bridge.send('createCanvasRectangle', payload);
+    }
+
     ctx.addToCurrentContainer(this.id);
   }
 

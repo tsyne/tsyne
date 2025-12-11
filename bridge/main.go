@@ -125,6 +125,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleDocTabsRemove(msg)
 	case "docTabsSelect":
 		return b.handleDocTabsSelect(msg)
+	case "tabsSelect":
+		return b.handleTabsSelect(msg)
 	case "createThemeOverride":
 		return b.handleCreateThemeOverride(msg)
 	case "createNavigation":
@@ -413,6 +415,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasCircle(msg)
 	case "createCanvasRectangle":
 		return b.handleCreateCanvasRectangle(msg)
+	case "createTappableCanvasRectangle":
+		return b.handleCreateTappableCanvasRectangle(msg)
 	case "createCanvasText":
 		return b.handleCreateCanvasText(msg)
 	case "createCanvasRaster":
