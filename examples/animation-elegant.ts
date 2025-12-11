@@ -14,7 +14,7 @@
 
 import { app } from '../src';
 import { CanvasCircle, CanvasLine, CanvasRectangle, EasingType } from '../src/widgets/canvas';
-import { cubicBezier, bezier, EasingFunction } from '../src/animation';
+import { cubicBezier, bezier, EasingFunction, getPointOnBezier } from '../src/animation';
 
 // ============================================================================
 // Spring Physics Animation (QML SpringAnimation style)
@@ -664,7 +664,91 @@ export function buildElegantDemo(a: any) {
             }
           },
 
-          // Tab 7: Code Examples
+          // Tab 7: Bezier Path
+          {
+            title: 'Bezier Path',
+            builder: () => {
+              a.vbox(() => {
+                a.label('Animation along a Bezier Path').withId('bezier-path-tab-header');
+                a.label('Animating X and Y concurrently to follow a curve of any degree');
+
+                let pathCircle: CanvasCircle;
+                const circleSize = 40;
+                const initialPoint = { x: 50, y: 100 };
+
+                const animateOnPath = (points: {x: number, y: number}[]) => {
+                  // Reset circle to the start of the path
+                  pathCircle.update({
+                    x: points[0].x - circleSize / 2, y: points[0].y - circleSize / 2,
+                    x2: points[0].x + circleSize / 2, y2: points[0].y + circleSize / 2,
+                  });
+
+                  const pathPoints = [];
+                  for (let i = 0; i <= 100; i++) {
+                    pathPoints.push(getPointOnBezier(points, i / 100));
+                  }
+
+                  const duration = 1500;
+                  const keyframes: Keyframe[] = pathPoints.map((p, i) => ({
+                    at: (i / (pathPoints.length -1)) * duration,
+                    props: {
+                      x: p.x - circleSize / 2,
+                      y: p.y - circleSize / 2,
+                      x2: p.x + circleSize / 2,
+                      y2: p.y + circleSize / 2,
+                    },
+                    ease: 'linear'
+                  }));
+
+                  if (keyframes.length > 0) {
+                    delete keyframes[0].ease;
+                  }
+                  timeline(pathCircle, keyframes).play();
+                }
+
+                a.stack(() => {
+                  a.canvasRectangle({
+                    width: 600, height: 200,
+                    fillColor: '#0f172a',
+                    strokeColor: '#1e293b',
+                    strokeWidth: 2
+                  });
+
+                  // The circle to animate
+                  pathCircle = a.canvasCircle({
+                    x: initialPoint.x - circleSize / 2, y: initialPoint.y - circleSize / 2,
+                    x2: initialPoint.x + circleSize / 2, y2: initialPoint.y + circleSize / 2,
+                    fillColor: '#f472b6'
+                  });
+                });
+
+                a.label('Animate on different curve types:');
+                a.hbox(() => {
+                  a.button('Linear (2pt)').onClick(() => {
+                    const points = [{x: 50, y: 100}, {x: 550, y: 100}];
+                    animateOnPath(points);
+                  }).withId('bezier-linear-btn');
+
+                  a.button('Quadratic (3pt)').onClick(() => {
+                    const points = [{x: 50, y: 150}, {x: 300, y: 20}, {x: 550, y: 150}];
+                    animateOnPath(points);
+                  }).withId('bezier-quadratic-btn');
+
+                  a.button('Cubic (4pt)').onClick(() => {
+                    const points = [{ x: 50, y: 100 }, { x: 200, y: 20 }, { x: 400, y: 180 }, { x: 550, y: 100 }];
+                    animateOnPath(points);
+                  }).withId('bezier-cubic-btn');
+
+                  a.button('Quartic (5pt)').onClick(() => {
+                    const points = [{ x: 50, y: 100 }, { x: 150, y: 20 }, { x: 300, y: 100 }, { x: 450, y: 180 }, { x: 550, y: 100 }];
+                    animateOnPath(points);
+                  }).withId('bezier-quartic-btn');
+                });
+              });
+            }
+          },
+
+          // Tab 8: Code Examples
           {
             title: 'API',
             builder: () => {

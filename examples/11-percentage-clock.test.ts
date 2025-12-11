@@ -114,11 +114,13 @@ describe('Percentage Clock Example', () => {
     expect(initialValue).toBeLessThanOrEqual(1);
 
     // Poll until progress bar value changes (interval fires)
+    // Timeout needs to be >1s since value is based on seconds (can take up to 1s to change)
+    // plus the 500ms interval = up to 1.5s before a change is visible
     await ctx.waitForCondition(async () => {
       const currentValue = await secondProgress.getValue();
       // Value has updated if it changed OR if we've waited long enough for the interval
       return currentValue !== initialValue;
-    }, { timeout: 1000, description: 'progress bar to update' });
+    }, { timeout: 2000, description: 'progress bar to update' });
 
     // Value should still be valid (now changed)
     const updatedValue = await secondProgress.getValue();

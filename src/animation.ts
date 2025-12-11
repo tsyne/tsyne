@@ -161,6 +161,34 @@ export const bezier = {
   inOutBack: cubicBezier(0.68, -0.55, 0.265, 1.55),
 };
 
+/**
+ * Calculates the coordinates of a point on a Bezier curve of any degree.
+ *
+ * @param points An array of control points {x, y}. The degree of the curve is `points.length - 1`.
+ * @param t The interpolation parameter, from 0 to 1.
+ * @returns The {x, y} coordinates of the point on the curve.
+ */
+export function getPointOnBezier(
+  points: { x: number; y: number }[],
+  t: number
+): { x: number; y: number } {
+  if (!points || points.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  let interpolated = points;
+  while (interpolated.length > 1) {
+    const newPoints = [];
+    for (let i = 0; i < interpolated.length - 1; i++) {
+      const x = (1 - t) * interpolated[i].x + t * interpolated[i + 1].x;
+      const y = (1 - t) * interpolated[i].y + t * interpolated[i + 1].y;
+      newPoints.push({ x, y });
+    }
+    interpolated = newPoints;
+  }
+  return interpolated[0];
+}
+
 /** Helper to resolve easing spec to function */
 function resolveEasing(ease: EasingSpec): EasingFunction {
   if (typeof ease === 'function') return ease;

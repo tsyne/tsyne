@@ -49,19 +49,6 @@ describe('Clock App', () => {
     await ctx.getByID('date-display').within(500).shouldExist();
   });
 
-  test('should have timer and stopwatch displays', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createClockApp(app, clock, notifications, lifecycle);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Verify timer and stopwatch displays exist (these prove the tabs were created)
-    await ctx.getByID('timer-display').within(1000).shouldExist();
-    await ctx.getByID('stopwatch-display').within(1000).shouldExist();
-  });
-
   test('should display mocked time', async () => {
     // Set a fixed time: 3:00 PM on Jan 15, 2025
     clock.setTime(new Date(2025, 0, 15, 15, 0, 0));

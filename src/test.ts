@@ -248,6 +248,8 @@ export interface WidgetInfo {
   value?: unknown;
   selected?: string;
   disabled?: boolean;
+  x2?: number; // Added for canvas elements
+  y2?: number; // Added for canvas elements
 }
 
 /**
@@ -1238,6 +1240,22 @@ export class Locator {
   }
 
   /**
+   * Get the bounding box of the first widget.
+   * Primarily for Canvas elements that define x, y, x2, y2.
+   *
+   * @example
+   * const bounds = await ctx.getByID('myCircle').getBounds();
+   * expect(bounds.x).toBe(10);
+   */
+  async getBounds(): Promise<{ x: number; y: number; x2: number; y2: number }> {
+    const info = await this.getInfo();
+    if (info.x === undefined || info.y === undefined || info.x2 === undefined || info.y2 === undefined) {
+      throwCallerError(`Widget ${info.id} (type: ${info.type}) does not have x, y, x2, y2 bounds.`, this.getBounds);
+    }
+    return { x: info.x, y: info.y, x2: info.x2, y2: info.y2 };
+  }
+
+  /**
    * Access a specific item in a list widget by index
    * Returns a ListItemLocator for fluent assertions
    * @example
@@ -1646,6 +1664,29 @@ export class TestContext {
   async getAllTextAsString(): Promise<string> {
     const textArray = await this.getAllText();
     return textArray.join('\n');
+  }
+
+  /**
+   * Get all canvas circle locators
+   * @returns An array of Locators, one for each canvas circle
+   */
+  async getAllCanvasCircles(): Promise<Locator[]> {
+    const typeLocator = new Locator(this.bridge, 'canvasCircle', 'type');
+    const widgetIds = await typeLocator.findAll();
+    return widgetIds.map(id => new Locator(this.bridge, id, 'id'));
+  }
+
+  /**
+   * Get a specific canvas circle locator by index
+   * @param index The 0-based index of the canvas circle
+   * @returns A Locator for the specified canvas circle
+   */
+  async getCanvasCircle(index: number): Promise<Locator> {
+    const circles = await this.getAllCanvasCircles();
+    if (index < 0 || index >= circles.length) {
+      throwCallerError(`Canvas circle index ${index} out of bounds (found ${circles.length} circles).`, this.getCanvasCircle);
+    }
+    return circles[index];
   }
 
   /**

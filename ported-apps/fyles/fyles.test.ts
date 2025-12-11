@@ -120,13 +120,18 @@ describe('Fyles File Browser Tests', () => {
   });
 
   test('should navigate up to parent directory', async () => {
-    // First navigate into subfolder - use within() to wait for it to be clickable
-    await ctx.getByText('subfolder').within(500).click();
+    // Tests share state - previous test "should navigate into subfolder" left us in the subfolder
+    // So we should already see nested.txt from being inside the subfolder
+    // If not in subfolder, navigate there first using ID selector
+    try {
+      await ctx.getByText('nested.txt').within(500).shouldExist();
+    } catch {
+      // Not in subfolder yet, navigate there
+      await ctx.getByID('panel-0-grid-folder-subfolder').within(2000).click();
+      await ctx.getByText('nested.txt').within(2000).shouldExist();
+    }
 
-    // Verify we're in subfolder
-    await ctx.getByText('nested.txt').within(2000).shouldExist();
-
-    // Click parent button (..)
+    // Click parent button (..) to navigate up
     await ctx.getByID('parent-dir-btn').within(500).click();
 
     // Should be back in test directory
