@@ -1,12 +1,153 @@
 import { Context } from '../context';
 import { ReactiveBinding, registerGlobalBinding } from './base';
 
+// ============================================================================
+// Animation System - D3/QML-inspired declarative animations
+// ============================================================================
+
+export type EasingType = 'linear' | 'inOut' | 'in' | 'out' | 'elastic' | 'bounce';
+
+export interface AnimateOptions {
+  ms: number;
+  ease?: EasingType;
+  delay?: number;
+  onEnd?: () => void;
+}
+
+const easings: Record<EasingType, (t: number) => number> = {
+  linear: (t) => t,
+  in: (t) => t * t,
+  out: (t) => t * (2 - t),
+  inOut: (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  elastic: (t) => t === 0 || t === 1 ? t : Math.pow(2, -10 * t) * Math.sin((t - 0.1) * 5 * Math.PI) + 1,
+  bounce: (t) => {
+    if (t < 1 / 2.75) return 7.5625 * t * t;
+    if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+    if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+    return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
+  }
+};
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/**
+ * Animation handle for chaining - returned by .to()
+ */
+export class Tween<T> {
+  private target: T;
+  private updateFn: (values: Record<string, any>) => void;
+  private getValuesFn: () => Record<string, any>;
+  private queue: Array<{
+    toValues: Record<string, any>;
+    duration: number;
+    ease: EasingType;
+    delay: number;
+    onEnd?: () => void;
+  }> = [];
+  private running = false;
+
+  constructor(
+    target: T,
+    updateFn: (values: Record<string, any>) => void,
+    getValuesFn: () => Record<string, any>
+  ) {
+    this.target = target;
+    this.updateFn = updateFn;
+    this.getValuesFn = getValuesFn;
+  }
+
+  /**
+   * Animate to target values
+   * @param toValues - Properties to animate to
+   * @param options - Duration in ms, or options object
+   */
+  to(toValues: Record<string, any>, options: number | AnimateOptions): Tween<T> {
+    const duration = typeof options === 'number' ? options : options.ms;
+    const ease = typeof options === 'object' && options.ease ? options.ease : 'inOut';
+    const delay = typeof options === 'object' && options.delay ? options.delay : 0;
+    const onEnd = typeof options === 'object' ? options.onEnd : undefined;
+
+    this.queue.push({ toValues, duration, ease, delay, onEnd });
+
+    if (!this.running) {
+      this.runNext();
+    }
+
+    return this;
+  }
+
+  private runNext(): void {
+    if (this.queue.length === 0) {
+      this.running = false;
+      return;
+    }
+
+    this.running = true;
+    const { toValues, duration, ease, delay, onEnd } = this.queue.shift()!;
+    const from = this.getValuesFn();
+    const startTime = Date.now() + delay;
+
+    const tick = () => {
+      const now = Date.now();
+      if (now < startTime) {
+        setTimeout(tick, 16);
+        return;
+      }
+
+      const elapsed = now - startTime;
+      const rawProgress = Math.min(1, elapsed / duration);
+      const progress = easings[ease](rawProgress);
+
+      const current: Record<string, any> = {};
+      for (const key of Object.keys(toValues)) {
+        if (key in from && typeof from[key] === 'number' && typeof toValues[key] === 'number') {
+          current[key] = lerp(from[key], toValues[key], progress);
+        }
+      }
+
+      this.updateFn(current);
+
+      if (rawProgress < 1) {
+        setTimeout(tick, 16);
+      } else {
+        if (onEnd) onEnd();
+        this.runNext();
+      }
+    };
+
+    setTimeout(tick, 16);
+  }
+
+  /**
+   * Stop all animations
+   */
+  stop(): Tween<T> {
+    this.queue = [];
+    this.running = false;
+    return this;
+  }
+}
+
+// ============================================================================
+// Canvas Widgets
+// ============================================================================
+
 /**
  * Canvas Line - draws a line between two points
+ *
+ * Supports D3-style animation:
+ *   line.to({ x2: 500 }, 1000);
+ *   line.to({ x1: 100, y1: 200 }, { ms: 500, ease: 'elastic' });
  */
 export class CanvasLine {
   private ctx: Context;
   public id: string;
+  private _x1 = 0;
+  private _y1 = 0;
+  private _x2 = 0;
+  private _y2 = 0;
+  private _strokeWidth = 0;
+  private _tween?: Tween<CanvasLine>;
 
   constructor(ctx: Context, x1: number, y1: number, x2: number, y2: number, options?: {
     strokeColor?: string;
@@ -14,6 +155,10 @@ export class CanvasLine {
   }) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvasline');
+    this._x1 = x1;
+    this._y1 = y1;
+    this._x2 = x2;
+    this._y2 = y2;
 
     const payload: any = {
       id: this.id,
@@ -25,6 +170,7 @@ export class CanvasLine {
     }
     if (options?.strokeWidth) {
       payload.strokeWidth = options.strokeWidth;
+      this._strokeWidth = options.strokeWidth;
     }
 
     ctx.bridge.send('createCanvasLine', payload);
@@ -37,19 +183,69 @@ export class CanvasLine {
     strokeColor?: string;
     strokeWidth?: number;
   }): Promise<void> {
+    // Track current values for animation
+    if (options.x1 !== undefined) this._x1 = options.x1;
+    if (options.y1 !== undefined) this._y1 = options.y1;
+    if (options.x2 !== undefined) this._x2 = options.x2;
+    if (options.y2 !== undefined) this._y2 = options.y2;
+    if (options.strokeWidth !== undefined) this._strokeWidth = options.strokeWidth;
+
     await this.ctx.bridge.send('updateCanvasLine', {
       widgetId: this.id,
       ...options
     });
   }
+
+  /**
+   * Animate to target values (D3-style)
+   * @param toValues - Properties to animate: x1, y1, x2, y2, strokeWidth
+   * @param options - Duration in ms, or options object with ease, delay, onEnd
+   * @example
+   *   line.to({ x2: 500 }, 1000);
+   *   line.to({ x1: 100, y1: 200 }, { ms: 500, ease: 'elastic' });
+   */
+  to(toValues: { x1?: number; y1?: number; x2?: number; y2?: number; strokeWidth?: number },
+     options: number | AnimateOptions): Tween<CanvasLine> {
+    if (!this._tween) {
+      this._tween = new Tween<CanvasLine>(
+        this,
+        (values) => {
+          // Go bridge requires both x1/y1 and x2/y2 pairs together
+          // Always include partner coordinate with current value
+          const updateValues: Record<string, any> = { ...values };
+          if ('x1' in values || 'y1' in values) {
+            updateValues.x1 = values.x1 ?? this._x1;
+            updateValues.y1 = values.y1 ?? this._y1;
+          }
+          if ('x2' in values || 'y2' in values) {
+            updateValues.x2 = values.x2 ?? this._x2;
+            updateValues.y2 = values.y2 ?? this._y2;
+          }
+          this.update(updateValues);
+        },
+        () => ({ x1: this._x1, y1: this._y1, x2: this._x2, y2: this._y2, strokeWidth: this._strokeWidth })
+      );
+    }
+    return this._tween.to(toValues, options);
+  }
 }
 
 /**
  * Canvas Circle - draws a circle/ellipse
+ *
+ * Supports D3-style animation:
+ *   circle.to({ x: 400, x2: 440 }, 1000);
+ *   circle.to({ x: 100 }, { ms: 500, ease: 'elastic' });
  */
 export class CanvasCircle {
   private ctx: Context;
   public id: string;
+  private _x = 0;
+  private _y = 0;
+  private _x2 = 0;
+  private _y2 = 0;
+  private _strokeWidth = 0;
+  private _tween?: Tween<CanvasCircle>;
 
   constructor(ctx: Context, options?: {
     x?: number; y?: number;
@@ -64,13 +260,13 @@ export class CanvasCircle {
     const payload: any = { id: this.id };
 
     if (options) {
-      if (options.x !== undefined) payload.x = options.x;
-      if (options.y !== undefined) payload.y = options.y;
-      if (options.x2 !== undefined) payload.x2 = options.x2;
-      if (options.y2 !== undefined) payload.y2 = options.y2;
+      if (options.x !== undefined) { payload.x = options.x; this._x = options.x; }
+      if (options.y !== undefined) { payload.y = options.y; this._y = options.y; }
+      if (options.x2 !== undefined) { payload.x2 = options.x2; this._x2 = options.x2; }
+      if (options.y2 !== undefined) { payload.y2 = options.y2; this._y2 = options.y2; }
       if (options.fillColor) payload.fillColor = options.fillColor;
       if (options.strokeColor) payload.strokeColor = options.strokeColor;
-      if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
+      if (options.strokeWidth !== undefined) { payload.strokeWidth = options.strokeWidth; this._strokeWidth = options.strokeWidth; }
     }
 
     ctx.bridge.send('createCanvasCircle', payload);
@@ -84,10 +280,51 @@ export class CanvasCircle {
     strokeColor?: string;
     strokeWidth?: number;
   }): Promise<void> {
+    // Track current values for animation
+    if (options.x !== undefined) this._x = options.x;
+    if (options.y !== undefined) this._y = options.y;
+    if (options.x2 !== undefined) this._x2 = options.x2;
+    if (options.y2 !== undefined) this._y2 = options.y2;
+    if (options.strokeWidth !== undefined) this._strokeWidth = options.strokeWidth;
+
     await this.ctx.bridge.send('updateCanvasCircle', {
       widgetId: this.id,
       ...options
     });
+  }
+
+  /**
+   * Animate to target values (D3-style)
+   * @param toValues - Properties to animate: x, y, x2, y2, strokeWidth
+   * @param options - Duration in ms, or options object with ease, delay, onEnd
+   * @example
+   *   circle.to({ x: 400, x2: 440 }, 1000);
+   *   circle.to({ x: 100 }, { ms: 500, ease: 'elastic' });
+   *   circle.to({ x: 0 }, 300).to({ y: 100 }, 300);  // Chaining
+   */
+  to(toValues: { x?: number; y?: number; x2?: number; y2?: number; strokeWidth?: number },
+     options: number | AnimateOptions): Tween<CanvasCircle> {
+    if (!this._tween) {
+      this._tween = new Tween<CanvasCircle>(
+        this,
+        (values) => {
+          // Go bridge requires both x/y and x2/y2 pairs together
+          // Always include partner coordinate with current value
+          const updateValues: Record<string, any> = { ...values };
+          if ('x' in values || 'y' in values) {
+            updateValues.x = values.x ?? this._x;
+            updateValues.y = values.y ?? this._y;
+          }
+          if ('x2' in values || 'y2' in values) {
+            updateValues.x2 = values.x2 ?? this._x2;
+            updateValues.y2 = values.y2 ?? this._y2;
+          }
+          this.update(updateValues);
+        },
+        () => ({ x: this._x, y: this._y, x2: this._x2, y2: this._y2, strokeWidth: this._strokeWidth })
+      );
+    }
+    return this._tween.to(toValues, options);
   }
 }
 
