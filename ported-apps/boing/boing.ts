@@ -30,6 +30,7 @@ import { app } from '../../src';
 import type { App } from '../../src/app';
 import type { Window } from '../../src/window';
 import type { CanvasRaster } from '../../src/widgets/canvas';
+import * as zlib from 'zlib';
 
 // Constants
 const CANVAS_WIDTH = 640;
@@ -47,6 +48,104 @@ const WHITE = { r: 255, g: 255, b: 255 };
 const BLACK = { r: 0, g: 0, b: 0 };
 const GRID_COLOR = { r: 100, g: 100, b: 100 };
 const SHADOW_ALPHA = 100;    // Shadow transparency
+
+// Sprite dimensions (ball fits in a square, shadow is elliptical)
+const SPRITE_SIZE = BALL_RADIUS * 2 + 1;  // 97x97 for ball
+const SHADOW_WIDTH = BALL_RADIUS * 2 + 1;
+const SHADOW_HEIGHT = BALL_RADIUS + 1;     // Half height for ellipse
+
+// ============================================================================
+// PNG Encoder - Creates PNG images from RGBA pixel data
+// ============================================================================
+
+/**
+ * Create a CRC32 lookup table for PNG chunk checksums
+ */
+const crcTable = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[n] = c;
+  }
+  return table;
+})();
+
+/**
+ * Calculate CRC32 for PNG chunk
+ */
+function crc32(data: Buffer): number {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) {
+    crc = crcTable[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+/**
+ * Create a PNG chunk with type, data, and CRC
+ */
+function createChunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+
+  const typeBuffer = Buffer.from(type, 'ascii');
+  const crcData = Buffer.concat([typeBuffer, data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(crcData), 0);
+
+  return Buffer.concat([length, typeBuffer, data, crc]);
+}
+
+/**
+ * Encode RGBA pixel data as a PNG image
+ * @param width Image width
+ * @param height Image height
+ * @param rgba RGBA pixel data (width * height * 4 bytes)
+ * @returns PNG data as base64 data URI
+ */
+function encodePNG(width: number, height: number, rgba: Uint8Array): string {
+  // PNG signature
+  const signature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+  // IHDR chunk
+  const ihdrData = Buffer.alloc(13);
+  ihdrData.writeUInt32BE(width, 0);
+  ihdrData.writeUInt32BE(height, 4);
+  ihdrData.writeUInt8(8, 8);   // Bit depth
+  ihdrData.writeUInt8(6, 9);   // Color type: RGBA
+  ihdrData.writeUInt8(0, 10);  // Compression method
+  ihdrData.writeUInt8(0, 11);  // Filter method
+  ihdrData.writeUInt8(0, 12);  // Interlace method
+  const ihdr = createChunk('IHDR', ihdrData);
+
+  // IDAT chunk - filtered scanlines compressed with zlib
+  // Each scanline has a filter byte (0 = no filter) followed by RGBA pixels
+  const rawData = Buffer.alloc(height * (1 + width * 4));
+  for (let y = 0; y < height; y++) {
+    const rowOffset = y * (1 + width * 4);
+    rawData[rowOffset] = 0; // Filter byte: none
+    for (let x = 0; x < width; x++) {
+      const srcOffset = (y * width + x) * 4;
+      const dstOffset = rowOffset + 1 + x * 4;
+      rawData[dstOffset] = rgba[srcOffset];       // R
+      rawData[dstOffset + 1] = rgba[srcOffset + 1]; // G
+      rawData[dstOffset + 2] = rgba[srcOffset + 2]; // B
+      rawData[dstOffset + 3] = rgba[srcOffset + 3]; // A
+    }
+  }
+  const compressed = zlib.deflateSync(rawData);
+  const idat = createChunk('IDAT', compressed);
+
+  // IEND chunk
+  const iend = createChunk('IEND', Buffer.alloc(0));
+
+  // Combine all chunks
+  const png = Buffer.concat([signature, ihdr, idat, iend]);
+  return 'data:image/png;base64,' + png.toString('base64');
+}
 
 /**
  * Pre-rendered ball frame - array of colored pixels relative to ball center
@@ -140,6 +239,79 @@ function generateAllFrames(): BallFrame[] {
   return frames;
 }
 
+// ============================================================================
+// Sprite Generation - Convert ball frames to PNG sprites
+// ============================================================================
+
+/**
+ * Generate a PNG sprite from a ball frame
+ * The sprite is centered in a SPRITE_SIZE x SPRITE_SIZE image with transparent background
+ */
+function generateBallSprite(frame: BallFrame): string {
+  const rgba = new Uint8Array(SPRITE_SIZE * SPRITE_SIZE * 4);
+  // Initialize all pixels as transparent
+  rgba.fill(0);
+
+  const center = Math.floor(SPRITE_SIZE / 2);
+
+  for (const pixel of frame.pixels) {
+    if (!pixel.visible) continue;
+
+    const x = center + pixel.dx;
+    const y = center + pixel.dy;
+
+    if (x < 0 || x >= SPRITE_SIZE || y < 0 || y >= SPRITE_SIZE) continue;
+
+    const offset = (y * SPRITE_SIZE + x) * 4;
+    rgba[offset] = pixel.r;
+    rgba[offset + 1] = pixel.g;
+    rgba[offset + 2] = pixel.b;
+    rgba[offset + 3] = 255; // Fully opaque
+  }
+
+  return encodePNG(SPRITE_SIZE, SPRITE_SIZE, rgba);
+}
+
+/**
+ * Generate all ball frame sprites as PNG data URIs
+ */
+function generateAllBallSprites(frames: BallFrame[]): string[] {
+  return frames.map(frame => generateBallSprite(frame));
+}
+
+/**
+ * Generate the shadow sprite - a semi-transparent ellipse
+ */
+function generateShadowSprite(): string {
+  const rgba = new Uint8Array(SHADOW_WIDTH * SHADOW_HEIGHT * 4);
+  // Initialize all pixels as transparent
+  rgba.fill(0);
+
+  const centerX = Math.floor(SHADOW_WIDTH / 2);
+  const centerY = Math.floor(SHADOW_HEIGHT / 2);
+  const radiusX = BALL_RADIUS;
+  const radiusY = BALL_RADIUS / 2;
+
+  for (let y = 0; y < SHADOW_HEIGHT; y++) {
+    for (let x = 0; x < SHADOW_WIDTH; x++) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+
+      // Ellipse equation: (x/a)^2 + (y/b)^2 <= 1
+      const ellipseVal = (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY);
+      if (ellipseVal <= 1) {
+        const offset = (y * SHADOW_WIDTH + x) * 4;
+        rgba[offset] = 0;     // R
+        rgba[offset + 1] = 0; // G
+        rgba[offset + 2] = 0; // B
+        rgba[offset + 3] = SHADOW_ALPHA; // Semi-transparent
+      }
+    }
+  }
+
+  return encodePNG(SHADOW_WIDTH, SHADOW_HEIGHT, rgba);
+}
+
 /**
  * Ball physics simulation
  */
@@ -203,6 +375,14 @@ class BallPhysics {
 
 /**
  * Boing Demo - renders the classic bouncing ball animation
+ *
+ * Uses texture blitting for efficient rendering:
+ * - Pre-renders ball frames and shadow as PNG sprites
+ * - Registers them as resources at startup
+ * - Uses blitImage() to draw sprites instead of individual setPixels()
+ * - Uses fillRect() to efficiently clear previous positions
+ *
+ * This reduces per-frame bridge traffic from ~14,000 pixel updates to just 4-5 blit/fill calls.
  */
 class BoingDemo {
   private a: App;
@@ -213,21 +393,38 @@ class BoingDemo {
   private frameIndex: number = 0;
   private animationTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Previous positions for dirty rect tracking
+  // Previous positions for dirty rect clearing
   private prevBallX: number = 0;
   private prevBallY: number = 0;
   private prevShadowX: number = 0;
   private prevShadowY: number = 0;
   private isFirstFrame: boolean = true;
 
-  // Dirty pixels to update
-  private dirtyPixels: Array<{x: number; y: number; r: number; g: number; b: number; a: number}> = [];
+  // Resource names for sprites
+  private readonly SHADOW_RESOURCE = 'boing-shadow';
+  private readonly BALL_RESOURCE_PREFIX = 'boing-frame-';
 
   constructor(a: App) {
     this.a = a;
     this.frames = generateAllFrames();
     // Start ball at top-left area
     this.physics = new BallPhysics(BALL_RADIUS + 50, BALL_RADIUS + 50);
+  }
+
+  /**
+   * Register all sprite resources (ball frames and shadow)
+   * Must be called before rendering starts
+   */
+  async registerResources(): Promise<void> {
+    // Generate and register ball frame sprites
+    const sprites = generateAllBallSprites(this.frames);
+    for (let i = 0; i < sprites.length; i++) {
+      await this.a.resources.registerResource(`${this.BALL_RESOURCE_PREFIX}${i}`, sprites[i]);
+    }
+
+    // Generate and register shadow sprite
+    const shadowSprite = generateShadowSprite();
+    await this.a.resources.registerResource(this.SHADOW_RESOURCE, shadowSprite);
   }
 
   /**
@@ -275,154 +472,116 @@ class BoingDemo {
   }
 
   /**
-   * Add a pixel to the dirty list
-   */
-  private setPixel(x: number, y: number, r: number, g: number, b: number, a: number = 255): void {
-    if (x < 0 || x >= CANVAS_WIDTH || y < 0 || y >= CANVAS_HEIGHT) return;
-    this.dirtyPixels.push({ x: Math.floor(x), y: Math.floor(y), r, g, b, a });
-  }
-
-  /**
-   * Get the background color at a pixel (grid or black)
-   */
-  private getBackgroundColor(x: number, y: number): { r: number; g: number; b: number } {
-    const onGridH = y % GRID_SPACING === 0;
-    const onGridV = x % GRID_SPACING === 0;
-    return (onGridH || onGridV) ? GRID_COLOR : BLACK;
-  }
-
-  /**
-   * Alpha-blend a color onto the background
-   */
-  private blendWithBackground(x: number, y: number, r: number, g: number, b: number, a: number): void {
-    if (x < 0 || x >= CANVAS_WIDTH || y < 0 || y >= CANVAS_HEIGHT) return;
-
-    const bg = this.getBackgroundColor(x, y);
-    const alpha = a / 255;
-    const invAlpha = 1 - alpha;
-
-    const newR = Math.round(r * alpha + bg.r * invAlpha);
-    const newG = Math.round(g * alpha + bg.g * invAlpha);
-    const newB = Math.round(b * alpha + bg.b * invAlpha);
-
-    this.dirtyPixels.push({ x: Math.floor(x), y: Math.floor(y), r: newR, g: newG, b: newB, a: 255 });
-  }
-
-  /**
-   * Clear a rectangular region to background (grid + black)
-   */
-  private clearRegion(centerX: number, centerY: number, radiusX: number, radiusY: number): void {
-    const x1 = Math.max(0, Math.floor(centerX - radiusX - 2));
-    const y1 = Math.max(0, Math.floor(centerY - radiusY - 2));
-    const x2 = Math.min(CANVAS_WIDTH - 1, Math.ceil(centerX + radiusX + 2));
-    const y2 = Math.min(CANVAS_HEIGHT - 1, Math.ceil(centerY + radiusY + 2));
-
-    for (let y = y1; y <= y2; y++) {
-      for (let x = x1; x <= x2; x++) {
-        const bg = this.getBackgroundColor(x, y);
-        this.setPixel(x, y, bg.r, bg.g, bg.b);
-      }
-    }
-  }
-
-  /**
-   * Render the entire scene
+   * Render the entire scene using sprite blitting
    */
   private async render(): Promise<void> {
     if (!this.canvas) return;
-
-    this.dirtyPixels = [];
 
     const ballX = Math.round(this.physics.x);
     const ballY = Math.round(this.physics.y);
     const shadowX = ballX + SHADOW_OFFSET_X;
     const shadowY = ballY + SHADOW_OFFSET_Y;
 
-    if (this.isFirstFrame) {
-      // First frame: render entire background
-      this.renderFullBackground();
-      this.isFirstFrame = false;
-    } else {
-      // Subsequent frames: only clear previous positions
-      // Clear old shadow position
-      this.clearRegion(this.prevShadowX, this.prevShadowY, BALL_RADIUS, BALL_RADIUS / 2);
-      // Clear old ball position
-      this.clearRegion(this.prevBallX, this.prevBallY, BALL_RADIUS, BALL_RADIUS);
-    }
+    // Sprite positions (top-left corner)
+    const ballSpriteX = ballX - BALL_RADIUS;
+    const ballSpriteY = ballY - BALL_RADIUS;
+    const shadowSpriteX = shadowX - BALL_RADIUS;
+    const shadowSpriteY = shadowY - Math.floor(BALL_RADIUS / 2);
 
-    // Draw shadow first (so ball appears on top)
-    this.renderShadow(shadowX, shadowY);
+    try {
+      if (this.isFirstFrame) {
+        // First frame: render entire background with grid
+        await this.renderFullBackground();
+        this.isFirstFrame = false;
+      } else {
+        // Clear previous ball position (black background - grid will be redrawn by blit)
+        const prevBallSpriteX = this.prevBallX - BALL_RADIUS;
+        const prevBallSpriteY = this.prevBallY - BALL_RADIUS;
+        await this.canvas.fillRect(
+          prevBallSpriteX - 1, prevBallSpriteY - 1,
+          SPRITE_SIZE + 2, SPRITE_SIZE + 2,
+          BLACK.r, BLACK.g, BLACK.b
+        );
 
-    // Draw ball
-    this.renderBall(ballX, ballY);
+        // Clear previous shadow position
+        const prevShadowSpriteX = this.prevShadowX - BALL_RADIUS;
+        const prevShadowSpriteY = this.prevShadowY - Math.floor(BALL_RADIUS / 2);
+        await this.canvas.fillRect(
+          prevShadowSpriteX - 1, prevShadowSpriteY - 1,
+          SHADOW_WIDTH + 2, SHADOW_HEIGHT + 2,
+          BLACK.r, BLACK.g, BLACK.b
+        );
 
-    // Save current positions for next frame
-    this.prevBallX = ballX;
-    this.prevBallY = ballY;
-    this.prevShadowX = shadowX;
-    this.prevShadowY = shadowY;
-
-    // Send all dirty pixels to the canvas
-    if (this.dirtyPixels.length > 0 && this.canvas) {
-      try {
-        // Batch pixels in chunks to avoid overwhelming the bridge
-        const BATCH_SIZE = 20000;
-        for (let i = 0; i < this.dirtyPixels.length; i += BATCH_SIZE) {
-          const batch = this.dirtyPixels.slice(i, i + BATCH_SIZE);
-          await this.canvas.setPixels(batch);
-        }
-      } catch (e) {
-        // Ignore errors during shutdown
+        // Redraw grid lines in cleared areas
+        await this.redrawGridInRegion(prevBallSpriteX - 1, prevBallSpriteY - 1, SPRITE_SIZE + 2, SPRITE_SIZE + 2);
+        await this.redrawGridInRegion(prevShadowSpriteX - 1, prevShadowSpriteY - 1, SHADOW_WIDTH + 2, SHADOW_HEIGHT + 2);
       }
+
+      // Draw shadow first (so ball appears on top)
+      await this.canvas.blitImage(this.SHADOW_RESOURCE, shadowSpriteX, shadowSpriteY);
+
+      // Draw ball
+      const ballResource = `${this.BALL_RESOURCE_PREFIX}${this.frameIndex}`;
+      await this.canvas.blitImage(ballResource, ballSpriteX, ballSpriteY);
+
+      // Save current positions for next frame
+      this.prevBallX = ballX;
+      this.prevBallY = ballY;
+      this.prevShadowX = shadowX;
+      this.prevShadowY = shadowY;
+    } catch (e) {
+      // Ignore errors during shutdown
     }
   }
 
   /**
-   * Render the full background (grid on black) - only for first frame
+   * Render the full background (black with grid)
+   * Uses fillRect for efficient initial fill, then draws grid lines
    */
-  private renderFullBackground(): void {
-    for (let y = 0; y < CANVAS_HEIGHT; y++) {
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        const bg = this.getBackgroundColor(x, y);
-        this.setPixel(x, y, bg.r, bg.g, bg.b);
-      }
+  private async renderFullBackground(): Promise<void> {
+    if (!this.canvas) return;
+
+    // Fill entire canvas with black
+    await this.canvas.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, BLACK.r, BLACK.g, BLACK.b);
+
+    // Draw horizontal grid lines
+    for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SPACING) {
+      await this.canvas.fillRect(0, y, CANVAS_WIDTH, 1, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
+    }
+
+    // Draw vertical grid lines
+    for (let x = 0; x < CANVAS_WIDTH; x += GRID_SPACING) {
+      await this.canvas.fillRect(x, 0, 1, CANVAS_HEIGHT, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
     }
   }
 
   /**
-   * Render the ball shadow (semi-transparent ellipse)
+   * Redraw grid lines in a specific region (after clearing)
    */
-  private renderShadow(centerX: number, centerY: number): void {
-    const radiusX = BALL_RADIUS;
-    const radiusY = BALL_RADIUS / 2; // Flattened for perspective
+  private async redrawGridInRegion(x: number, y: number, width: number, height: number): Promise<void> {
+    if (!this.canvas) return;
 
-    for (let dy = -radiusY; dy <= radiusY; dy++) {
-      for (let dx = -radiusX; dx <= radiusX; dx++) {
-        // Ellipse equation: (x/a)^2 + (y/b)^2 <= 1
-        const ellipseVal = (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY);
-        if (ellipseVal <= 1) {
-          const x = centerX + dx;
-          const y = centerY + dy;
-          // Blend dark gray/black with some transparency
-          this.blendWithBackground(x, y, 0, 0, 0, SHADOW_ALPHA);
-        }
+    const x1 = Math.max(0, x);
+    const y1 = Math.max(0, y);
+    const x2 = Math.min(CANVAS_WIDTH, x + width);
+    const y2 = Math.min(CANVAS_HEIGHT, y + height);
+
+    // Find grid lines that intersect this region
+    const startGridX = Math.floor(x1 / GRID_SPACING) * GRID_SPACING;
+    const startGridY = Math.floor(y1 / GRID_SPACING) * GRID_SPACING;
+
+    // Draw horizontal grid lines
+    for (let gy = startGridY; gy < y2; gy += GRID_SPACING) {
+      if (gy >= y1 && gy < y2) {
+        await this.canvas.fillRect(x1, gy, x2 - x1, 1, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
       }
     }
-  }
 
-  /**
-   * Render the ball at the specified position
-   */
-  private renderBall(centerX: number, centerY: number): void {
-    const frame = this.frames[this.frameIndex];
-
-    for (const pixel of frame.pixels) {
-      if (!pixel.visible) continue;
-
-      const x = centerX + pixel.dx;
-      const y = centerY + pixel.dy;
-
-      this.setPixel(x, y, pixel.r, pixel.g, pixel.b);
+    // Draw vertical grid lines
+    for (let gx = startGridX; gx < x2; gx += GRID_SPACING) {
+      if (gx >= x1 && gx < x2) {
+        await this.canvas.fillRect(gx, y1, 1, y2 - y1, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b);
+      }
     }
   }
 
@@ -450,6 +609,9 @@ class BoingDemo {
    * Initialize after widgets are created
    */
   async initialize(): Promise<void> {
+    // Register sprite resources
+    await this.registerResources();
+
     // Render initial frame
     await this.render();
 
@@ -486,13 +648,14 @@ export function createBoingApp(a: App): BoingDemo {
 }
 
 // Export for testing
-export { BoingDemo, BallPhysics, generateBallFrame, generateAllFrames };
+export { BoingDemo, BallPhysics, generateBallFrame, generateAllFrames, generateBallSprite, generateShadowSprite, encodePNG };
 
 /**
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Boing Ball Demo' }, async (a: App) => {
+  // Use msgpack-uds for best performance (this app sends many pixels per frame)
+  app({ title: 'Boing Ball Demo', bridgeMode: 'msgpack-uds' }, async (a: App) => {
     const demo = createBoingApp(a);
     await a.run();
     await demo.initialize();

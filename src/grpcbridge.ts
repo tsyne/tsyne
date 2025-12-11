@@ -1022,6 +1022,42 @@ export class GrpcBridgeConnection implements BridgeInterface {
       case 'unregisterResource':
         return { method: 'unregisterResource', request: { name: payload.name } };
 
+      // Canvas raster operations
+      case 'updateCanvasRaster':
+        return {
+          method: 'updateCanvasRaster',
+          request: {
+            widgetId: payload.widgetId,
+            updates: payload.updates || []
+          }
+        };
+      case 'fillCanvasRasterRect':
+        return {
+          method: 'fillCanvasRasterRect',
+          request: {
+            widgetId: payload.widgetId,
+            x: payload.x || 0,
+            y: payload.y || 0,
+            width: payload.width || 0,
+            height: payload.height || 0,
+            r: payload.r || 0,
+            g: payload.g || 0,
+            b: payload.b || 0,
+            a: payload.a || 255
+          }
+        };
+      case 'blitToCanvasRaster':
+        return {
+          method: 'blitToCanvasRaster',
+          request: {
+            widgetId: payload.widgetId,
+            resourceName: payload.resourceName,
+            x: payload.x || 0,
+            y: payload.y || 0,
+            alpha: payload.alpha || 255
+          }
+        };
+
       // Widget updates
       case 'setText':
         return {

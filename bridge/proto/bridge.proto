@@ -118,6 +118,8 @@ service BridgeService {
   rpc UpdateCanvasRectangle(UpdateCanvasRectangleRequest) returns (Response);
   rpc UpdateCanvasText(UpdateCanvasTextRequest) returns (Response);
   rpc UpdateCanvasRaster(UpdateCanvasRasterRequest) returns (Response);
+  rpc FillCanvasRasterRect(FillCanvasRasterRectRequest) returns (Response);
+  rpc BlitToCanvasRaster(BlitToCanvasRasterRequest) returns (Response);
   rpc UpdateCanvasLinearGradient(UpdateCanvasLinearGradientRequest) returns (Response);
   rpc UpdateCanvasRadialGradient(UpdateCanvasRadialGradientRequest) returns (Response);
   rpc UpdateCanvasArc(UpdateCanvasArcRequest) returns (Response);
@@ -1187,6 +1189,26 @@ message UpdateCanvasTextRequest {
 message UpdateCanvasRasterRequest {
   string widget_id = 1;
   repeated PixelData updates = 2;
+}
+
+message FillCanvasRasterRectRequest {
+  string widget_id = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 width = 4;
+  int32 height = 5;
+  int32 r = 6;
+  int32 g = 7;
+  int32 b = 8;
+  int32 a = 9;
+}
+
+message BlitToCanvasRasterRequest {
+  string widget_id = 1;
+  string resource_name = 2;
+  int32 x = 3;
+  int32 y = 4;
+  int32 alpha = 5;
 }
 
 message UpdateCanvasLinearGradientRequest {

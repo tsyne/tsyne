@@ -561,6 +561,45 @@ export class CanvasRaster {
   async setPixel(x: number, y: number, r: number, g: number, b: number, a: number = 255): Promise<void> {
     await this.setPixels([{x, y, r, g, b, a}]);
   }
+
+  /**
+   * Fill a rectangular region with a solid color
+   * Much more efficient than calling setPixel for each pixel
+   * @param x Top-left X coordinate
+   * @param y Top-left Y coordinate
+   * @param width Rectangle width
+   * @param height Rectangle height
+   * @param r Red component (0-255)
+   * @param g Green component (0-255)
+   * @param b Blue component (0-255)
+   * @param a Alpha component (0-255), defaults to 255
+   */
+  async fillRect(x: number, y: number, width: number, height: number,
+                 r: number, g: number, b: number, a: number = 255): Promise<void> {
+    await this.ctx.bridge.send('fillCanvasRasterRect', {
+      widgetId: this.id,
+      x, y, width, height, r, g, b, a
+    });
+  }
+
+  /**
+   * Blit (copy) a pre-registered image resource onto the raster at the specified position
+   * The resource should be registered via app.resources.registerResource() with PNG/image data
+   * @param resourceName Name of the registered resource
+   * @param x Destination X coordinate (top-left)
+   * @param y Destination Y coordinate (top-left)
+   * @param options Optional settings: alpha for transparency blending (0-255)
+   */
+  async blitImage(resourceName: string, x: number, y: number, options?: {
+    alpha?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('blitToCanvasRaster', {
+      widgetId: this.id,
+      resourceName,
+      x, y,
+      alpha: options?.alpha ?? 255
+    });
+  }
 }
 
 /**

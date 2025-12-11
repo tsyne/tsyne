@@ -418,6 +418,54 @@ func (s *grpcBridgeService) UpdateCanvasRaster(ctx context.Context, req *pb.Upda
 	}, nil
 }
 
+// FillCanvasRasterRect fills a rectangular region with a solid color
+func (s *grpcBridgeService) FillCanvasRasterRect(ctx context.Context, req *pb.FillCanvasRasterRectRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "fillCanvasRasterRect",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"x":        float64(req.X),
+			"y":        float64(req.Y),
+			"width":    float64(req.Width),
+			"height":   float64(req.Height),
+			"r":        float64(req.R),
+			"g":        float64(req.G),
+			"b":        float64(req.B),
+			"a":        float64(req.A),
+		},
+	}
+
+	resp := s.bridge.handleFillCanvasRasterRect(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// BlitToCanvasRaster copies a registered image resource onto the raster
+func (s *grpcBridgeService) BlitToCanvasRaster(ctx context.Context, req *pb.BlitToCanvasRasterRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "blitToCanvasRaster",
+		Payload: map[string]interface{}{
+			"widgetId":     req.WidgetId,
+			"resourceName": req.ResourceName,
+			"x":            float64(req.X),
+			"y":            float64(req.Y),
+			"alpha":        float64(req.Alpha),
+		},
+	}
+
+	resp := s.bridge.handleBlitToCanvasRaster(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // UpdateCanvasLinearGradient updates a linear gradient
 func (s *grpcBridgeService) UpdateCanvasLinearGradient(ctx context.Context, req *pb.UpdateCanvasLinearGradientRequest) (*pb.Response, error) {
 	msg := Message{

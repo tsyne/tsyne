@@ -423,6 +423,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasRaster(msg)
 	case "updateCanvasRaster":
 		return b.handleUpdateCanvasRaster(msg)
+	case "fillCanvasRasterRect":
+		return b.handleFillCanvasRasterRect(msg)
+	case "blitToCanvasRaster":
+		return b.handleBlitToCanvasRaster(msg)
 	case "createTappableCanvasRaster":
 		return b.handleCreateTappableCanvasRaster(msg)
 	case "updateTappableCanvasRaster":

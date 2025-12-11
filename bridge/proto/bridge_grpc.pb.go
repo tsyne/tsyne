@@ -102,6 +102,8 @@ const (
 	BridgeService_UpdateCanvasRectangle_FullMethodName       = "/bridge.BridgeService/UpdateCanvasRectangle"
 	BridgeService_UpdateCanvasText_FullMethodName            = "/bridge.BridgeService/UpdateCanvasText"
 	BridgeService_UpdateCanvasRaster_FullMethodName          = "/bridge.BridgeService/UpdateCanvasRaster"
+	BridgeService_FillCanvasRasterRect_FullMethodName        = "/bridge.BridgeService/FillCanvasRasterRect"
+	BridgeService_BlitToCanvasRaster_FullMethodName          = "/bridge.BridgeService/BlitToCanvasRaster"
 	BridgeService_UpdateCanvasLinearGradient_FullMethodName  = "/bridge.BridgeService/UpdateCanvasLinearGradient"
 	BridgeService_UpdateCanvasRadialGradient_FullMethodName  = "/bridge.BridgeService/UpdateCanvasRadialGradient"
 	BridgeService_UpdateCanvasArc_FullMethodName             = "/bridge.BridgeService/UpdateCanvasArc"
@@ -351,6 +353,8 @@ type BridgeServiceClient interface {
 	UpdateCanvasRectangle(ctx context.Context, in *UpdateCanvasRectangleRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasText(ctx context.Context, in *UpdateCanvasTextRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasRaster(ctx context.Context, in *UpdateCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error)
+	FillCanvasRasterRect(ctx context.Context, in *FillCanvasRasterRectRequest, opts ...grpc.CallOption) (*Response, error)
+	BlitToCanvasRaster(ctx context.Context, in *BlitToCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasLinearGradient(ctx context.Context, in *UpdateCanvasLinearGradientRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasRadialGradient(ctx context.Context, in *UpdateCanvasRadialGradientRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasArc(ctx context.Context, in *UpdateCanvasArcRequest, opts ...grpc.CallOption) (*Response, error)
@@ -1366,6 +1370,26 @@ func (c *bridgeServiceClient) UpdateCanvasRaster(ctx context.Context, in *Update
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_UpdateCanvasRaster_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) FillCanvasRasterRect(ctx context.Context, in *FillCanvasRasterRectRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_FillCanvasRasterRect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) BlitToCanvasRaster(ctx context.Context, in *BlitToCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_BlitToCanvasRaster_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2852,6 +2876,8 @@ type BridgeServiceServer interface {
 	UpdateCanvasRectangle(context.Context, *UpdateCanvasRectangleRequest) (*Response, error)
 	UpdateCanvasText(context.Context, *UpdateCanvasTextRequest) (*Response, error)
 	UpdateCanvasRaster(context.Context, *UpdateCanvasRasterRequest) (*Response, error)
+	FillCanvasRasterRect(context.Context, *FillCanvasRasterRectRequest) (*Response, error)
+	BlitToCanvasRaster(context.Context, *BlitToCanvasRasterRequest) (*Response, error)
 	UpdateCanvasLinearGradient(context.Context, *UpdateCanvasLinearGradientRequest) (*Response, error)
 	UpdateCanvasRadialGradient(context.Context, *UpdateCanvasRadialGradientRequest) (*Response, error)
 	UpdateCanvasArc(context.Context, *UpdateCanvasArcRequest) (*Response, error)
@@ -3291,6 +3317,12 @@ func (UnimplementedBridgeServiceServer) UpdateCanvasText(context.Context, *Updat
 }
 func (UnimplementedBridgeServiceServer) UpdateCanvasRaster(context.Context, *UpdateCanvasRasterRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCanvasRaster not implemented")
+}
+func (UnimplementedBridgeServiceServer) FillCanvasRasterRect(context.Context, *FillCanvasRasterRectRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method FillCanvasRasterRect not implemented")
+}
+func (UnimplementedBridgeServiceServer) BlitToCanvasRaster(context.Context, *BlitToCanvasRasterRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method BlitToCanvasRaster not implemented")
 }
 func (UnimplementedBridgeServiceServer) UpdateCanvasLinearGradient(context.Context, *UpdateCanvasLinearGradientRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCanvasLinearGradient not implemented")
@@ -5211,6 +5243,42 @@ func _BridgeService_UpdateCanvasRaster_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).UpdateCanvasRaster(ctx, req.(*UpdateCanvasRasterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_FillCanvasRasterRect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FillCanvasRasterRectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).FillCanvasRasterRect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_FillCanvasRasterRect_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).FillCanvasRasterRect(ctx, req.(*FillCanvasRasterRectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_BlitToCanvasRaster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BlitToCanvasRasterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).BlitToCanvasRaster(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_BlitToCanvasRaster_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).BlitToCanvasRaster(ctx, req.(*BlitToCanvasRasterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7994,6 +8062,14 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateCanvasRaster",
 			Handler:    _BridgeService_UpdateCanvasRaster_Handler,
+		},
+		{
+			MethodName: "FillCanvasRasterRect",
+			Handler:    _BridgeService_FillCanvasRasterRect_Handler,
+		},
+		{
+			MethodName: "BlitToCanvasRaster",
+			Handler:    _BridgeService_BlitToCanvasRaster_Handler,
 		},
 		{
 			MethodName: "UpdateCanvasLinearGradient",

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"image/color"
+	_ "image/png" // Register PNG decoder for blitImage
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -467,6 +470,212 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) Response {
 	}
 
 	// Refresh the raster to show updates (must be done on main thread)
+	fyne.Do(func() {
+		raster.Refresh()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleFillCanvasRasterRect fills a rectangular region with a solid color
+func (b *Bridge) handleFillCanvasRasterRect(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Raster widget not found",
+		}
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a raster",
+		}
+	}
+
+	// Get fill parameters
+	x := toInt(msg.Payload["x"])
+	y := toInt(msg.Payload["y"])
+	width := toInt(msg.Payload["width"])
+	height := toInt(msg.Payload["height"])
+	r := uint8(toInt(msg.Payload["r"]))
+	g := uint8(toInt(msg.Payload["g"]))
+	bl := uint8(toInt(msg.Payload["b"]))
+	a := uint8(toInt(msg.Payload["a"]))
+
+	fillColor := color.RGBA{R: r, G: g, B: bl, A: a}
+
+	b.mu.Lock()
+	buf := b.rasterData[widgetID]
+	if buf != nil {
+		bufHeight := len(buf)
+		bufWidth := 0
+		if bufHeight > 0 {
+			bufWidth = len(buf[0])
+		}
+
+		// Fill the rectangle with bounds checking
+		for dy := 0; dy < height; dy++ {
+			py := y + dy
+			if py < 0 || py >= bufHeight {
+				continue
+			}
+			for dx := 0; dx < width; dx++ {
+				px := x + dx
+				if px < 0 || px >= bufWidth {
+					continue
+				}
+				buf[py][px] = fillColor
+			}
+		}
+	}
+	b.mu.Unlock()
+
+	// Refresh the raster
+	fyne.Do(func() {
+		raster.Refresh()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleBlitToCanvasRaster copies a registered image resource onto the raster
+func (b *Bridge) handleBlitToCanvasRaster(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	resourceName := msg.Payload["resourceName"].(string)
+	destX := toInt(msg.Payload["x"])
+	destY := toInt(msg.Payload["y"])
+	alpha := 255
+	if a, ok := msg.Payload["alpha"].(float64); ok {
+		alpha = int(a)
+	}
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Raster widget not found",
+		}
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a raster",
+		}
+	}
+
+	// Get the resource image data
+	imgData, resourceExists := b.getResource(resourceName)
+	if !resourceExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Resource '%s' not found", resourceName),
+		}
+	}
+
+	// Decode the image
+	decoded, _, err := image.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Failed to decode resource image: %v", err),
+		}
+	}
+
+	bounds := decoded.Bounds()
+
+	b.mu.Lock()
+	buf := b.rasterData[widgetID]
+	if buf != nil {
+		bufHeight := len(buf)
+		bufWidth := 0
+		if bufHeight > 0 {
+			bufWidth = len(buf[0])
+		}
+
+		// Blit the image onto the raster buffer
+		for dy := 0; dy < bounds.Dy(); dy++ {
+			srcY := bounds.Min.Y + dy
+			dstY := destY + dy
+			if dstY < 0 || dstY >= bufHeight {
+				continue
+			}
+			for dx := 0; dx < bounds.Dx(); dx++ {
+				srcX := bounds.Min.X + dx
+				dstX := destX + dx
+				if dstX < 0 || dstX >= bufWidth {
+					continue
+				}
+
+				srcColor := decoded.At(srcX, srcY)
+				sr, sg, sb, sa := srcColor.RGBA()
+
+				// Convert from 16-bit to 8-bit
+				sr8 := uint8(sr >> 8)
+				sg8 := uint8(sg >> 8)
+				sb8 := uint8(sb >> 8)
+				sa8 := uint8(sa >> 8)
+
+				// Apply alpha parameter
+				if alpha < 255 {
+					sa8 = uint8((int(sa8) * alpha) / 255)
+				}
+
+				// Skip fully transparent pixels
+				if sa8 == 0 {
+					continue
+				}
+
+				// Alpha blending if source is not fully opaque
+				if sa8 < 255 {
+					dstColor := buf[dstY][dstX]
+					dr, dg, db, da := dstColor.RGBA()
+					dr8 := uint8(dr >> 8)
+					dg8 := uint8(dg >> 8)
+					db8 := uint8(db >> 8)
+					da8 := uint8(da >> 8)
+
+					// Standard alpha blending: out = src * srcAlpha + dst * (1 - srcAlpha)
+					srcAlpha := float64(sa8) / 255.0
+					invAlpha := 1.0 - srcAlpha
+
+					sr8 = uint8(float64(sr8)*srcAlpha + float64(dr8)*invAlpha)
+					sg8 = uint8(float64(sg8)*srcAlpha + float64(dg8)*invAlpha)
+					sb8 = uint8(float64(sb8)*srcAlpha + float64(db8)*invAlpha)
+					sa8 = uint8(float64(sa8) + float64(da8)*invAlpha)
+				}
+
+				buf[dstY][dstX] = color.RGBA{R: sr8, G: sg8, B: sb8, A: sa8}
+			}
+		}
+	}
+	b.mu.Unlock()
+
+	// Refresh the raster
 	fyne.Do(func() {
 		raster.Refresh()
 	})
