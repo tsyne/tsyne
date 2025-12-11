@@ -232,6 +232,9 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
 /usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
+echo "Building Go shared library for FFI..."
+env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -buildmode=c-shared -o ../bin/libtsyne.so .
+
 # ============================================================================
 # STEP 2: Root Tsyne (Core Library)
 # ============================================================================
