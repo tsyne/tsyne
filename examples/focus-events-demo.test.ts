@@ -1,4 +1,4 @@
-import { TsyneTest } from '../src/index-test';
+import { TsyneTest } from '../core/src/index-test';
 import * as path from 'path';
 
 describe.skip('Focus Events Demo', () => {

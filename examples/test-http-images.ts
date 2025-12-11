@@ -9,7 +9,7 @@
  * Run: npx ts-node examples/test-http-images.ts
  */
 
-import { createBrowser } from '../src';
+import { createBrowser } from '../core/src';
 
 async function testHttpImages() {
   console.log('╔════════════════════════════════════════════════════════╗');

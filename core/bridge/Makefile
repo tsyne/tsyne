@@ -2,11 +2,11 @@
 
 # Build the bridge binary to the correct location
 build:
-	go build -o ../bin/tsyne-bridge
+	go build -o ./bin/tsyne-bridge
 
 # Clean up binaries (including accidental ./bridge)
 clean:
-	rm -f bridge ../bin/tsyne-bridge
+	rm -f bridge ./bin/tsyne-bridge
 
 # Regenerate protobuf code
 proto:

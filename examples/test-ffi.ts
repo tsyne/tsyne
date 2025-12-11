@@ -1,7 +1,7 @@
 // Test script for FFI bridge
 // Run with: npx ts-node examples/test-ffi.ts
 
-import { FfiBridgeConnection } from '../src/ffibridge';
+import { FfiBridgeConnection } from '../core/src/ffibridge';
 
 async function main() {
   console.log('Testing FFI Bridge...\n');

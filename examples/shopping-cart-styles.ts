@@ -1,4 +1,4 @@
-import { app, window, vbox, button, label, styles } from '../src';
+import { app, window, vbox, button, label, styles } from '../core/src';
 
 // Define custom CSS classes for your shopping cart UI
 styles({

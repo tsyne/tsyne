@@ -5,7 +5,7 @@
  * Note: Native folder dialogs cannot be tested automatically,
  * but we verify the UI and simulated project selection work correctly.
  */
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 describe('Project Opener Example', () => {

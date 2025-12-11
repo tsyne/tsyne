@@ -6,8 +6,8 @@
  *
  * Run: npx ts-node examples/icon-gallery.ts
  */
-import { app } from '../src/index';
-import { ThemeIconName } from '../src/app';
+import { app } from '../core/src/index';
+import { ThemeIconName } from '../core/src/app';
 
 // All available theme icon names organized by category
 const iconCategories: { [category: string]: ThemeIconName[] } = {

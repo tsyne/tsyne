@@ -5,7 +5,7 @@
  * on subsequent navigations to avoid redundant HTTP requests.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 
 describeBrowser('Browser Page Caching Functionality', () => {
   browserTest(

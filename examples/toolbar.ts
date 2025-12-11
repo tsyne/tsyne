@@ -5,7 +5,7 @@
  * actions, separators, and spacers.
  */
 
-import { app, window, vbox, label, entry, toolbar } from '../src';
+import { app, window, vbox, label, entry, toolbar } from '../core/src';
 
 let statusLabel: any;
 let textEntry: any;

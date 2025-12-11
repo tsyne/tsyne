@@ -1,8 +1,8 @@
 /**
  * Test for DocTabs (text-editor.ts example)
  */
-import { TsyneTest, TestContext } from '../src/index-test';
-import { App, DocTabs } from '../src';
+import { TsyneTest, TestContext } from '../core/src/index-test';
+import { App, DocTabs } from '../core/src';
 
 describe('DocTabs - Text Editor Example', () => {
   let tsyneTest: TsyneTest;

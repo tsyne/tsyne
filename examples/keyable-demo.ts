@@ -1,4 +1,4 @@
-import { app } from '../src';
+import { app } from '../core/src';
 
 /**
  * Keyable Demo - Demonstrates the desktop.Keyable interface

@@ -5,7 +5,7 @@
  * Shows how to use entry, password, multiline, select, and check field types.
  */
 
-import { app, window, vbox, hbox, label, button, scroll, separator } from '../src';
+import { app, window, vbox, hbox, label, button, scroll, separator } from '../core/src';
 
 interface Contact {
   firstName: string;

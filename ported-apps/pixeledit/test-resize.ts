@@ -1,7 +1,7 @@
 /**
  * Test canvas resize functionality
  */
-import { app } from '../../src';
+import { app } from '../../core/src';
 
 app({ title: 'Canvas Resize Test' }, async (a) => {
   await a.window({ title: 'Test', width: 400, height: 400 }, async (win) => {

@@ -5,7 +5,7 @@
  * perfect for calculator-style UIs and button grids.
  */
 
-import { app, window, vbox, label, button, grid } from '../src';
+import { app, window, vbox, label, button, grid } from '../core/src';
 
 let displayLabel: any;
 let currentValue = '0';

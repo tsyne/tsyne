@@ -7,7 +7,7 @@
  *   TSYNE_HEADED=1 npm test ported-apps/pixeledit/pixeledit-layers-selection.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createPixelEditorApp } from './pixeledit';
 import * as path from 'path';
 

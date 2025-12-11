@@ -11,11 +11,11 @@
  * Run with: ./scripts/tsyne src/phone-modem-simulator.ts
  */
 
-import { App } from './app';
-import { Window } from './window';
-import { Label } from './widgets';
-import { scanForApps, loadAppBuilder, AppMetadata } from './app-metadata';
-import { SandboxedApp } from './sandboxed-app';
+import { App } from '../core/src/app';
+import { Window } from '../core/src/window';
+import { Label } from '../core/src/widgets';
+import { scanForApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { SandboxedApp } from '../core/src/sandboxed-app';
 import * as path from 'path';
 
 // Import logging services
@@ -30,7 +30,7 @@ import {
   LoggingNotificationService,
   LoggingSettingsService,
   LoggingStorageService,
-} from '../phone-apps/logging-services';
+} from './logging-services';
 
 // Phone configuration
 const PHONE_WIDTH = 375;

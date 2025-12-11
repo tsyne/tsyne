@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Simple hello world example demonstrating basic Tsyne application structure
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Hello' }, (a) => {
   a.window({ title: 'Hello', width: 400, height: 200 }, (win) => {

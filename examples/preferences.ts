@@ -1,7 +1,7 @@
 // Preferences demo app - demonstrates CheckGroup widget for grouped options
 // This example shows how to use CheckGroup for a settings panel with multiple selections
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Preferences' }, (a) => {
   a.window({ title: 'Application Preferences', width: 500, height: 450 }, (win) => {

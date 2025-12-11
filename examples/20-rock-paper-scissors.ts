@@ -6,7 +6,7 @@
 // Rock Paper Scissors - Classic game with score tracking
 // Demonstrates game logic, state management, and visual feedback
 
-import { app, App, Window } from '../src';
+import { app, App, Window } from '../core/src';
 
 export function buildRockPaperScissors(a: App) {
   a.window({ title: 'Rock Paper Scissors', width: 400, height: 500 }, (win: Window) => {

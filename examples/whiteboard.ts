@@ -7,7 +7,7 @@
  * - Dynamic line creation
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Whiteboard' }, (a) => {
   // Store lines for the drawing

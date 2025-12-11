@@ -2,7 +2,7 @@
  * Test the new updateImage API with path and SVG
  */
 
-import { app } from '../src';
+import { app } from '../core/src';
 import * as path from 'path';
 
 app({ title: 'UpdateImage API Test' }, async (a) => {

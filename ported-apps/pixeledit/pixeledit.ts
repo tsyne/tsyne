@@ -23,11 +23,11 @@
  * - Multi-layer support with visibility, opacity, and compositing
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
-import type { CanvasRectangle } from '../../src/widgets/canvas';
-import { TappableCanvasRaster } from '../../src/widgets/canvas';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { CanvasRectangle } from '../../core/src/widgets/canvas';
+import { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 import * as fs from 'fs';
 import * as path from 'path';
 

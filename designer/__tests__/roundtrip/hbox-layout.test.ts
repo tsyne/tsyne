@@ -12,7 +12,7 @@ import {
 
 describe('RoundTrip: HBox Horizontal Layout', () => {
   test('load and save with no edits', async () => {
-    const code = `import { app, window, vbox, hbox, button } from '../src';
+    const code = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -35,7 +35,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to hbox container', async () => {
-    const original = `import { app, window, vbox, hbox, button } from '../src';
+    const original = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -54,7 +54,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button } from '../src';
+    const expected = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -70,7 +70,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to buttons inside hbox', async () => {
-    const original = `import { app, window, vbox, hbox, button } from '../src';
+    const original = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -97,7 +97,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button } from '../src';
+    const expected = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -115,7 +115,7 @@ app({ title: "Test" }, () => {
   });
 
   test('nested vbox inside hbox', async () => {
-    const original = `import { app, window, vbox, hbox, label } from '../src';
+    const original = `import { app, window, vbox, hbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -141,7 +141,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to nested vbox inside hbox', async () => {
-    const original = `import { app, window, vbox, hbox, label } from '../src';
+    const original = `import { app, window, vbox, hbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -167,7 +167,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, label } from '../src';
+    const expected = `import { app, window, vbox, hbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -185,7 +185,7 @@ app({ title: "Test" }, () => {
   });
 
   test('renaming .withId() on hbox', async () => {
-    const original = `import { app, window, vbox, hbox, button } from '../src';
+    const original = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -204,7 +204,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button } from '../src';
+    const expected = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -220,7 +220,7 @@ app({ title: "Test" }, () => {
   });
 
   test('removing .withId() from hbox', async () => {
-    const original = `import { app, window, vbox, hbox, button } from '../src';
+    const original = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -239,7 +239,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button } from '../src';
+    const expected = `import { app, window, vbox, hbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -255,7 +255,7 @@ app({ title: "Test" }, () => {
   });
 
   test('multiple hbox containers', async () => {
-    const original = `import { app, window, vbox, hbox, button, label } from '../src';
+    const original = `import { app, window, vbox, hbox, button, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -282,7 +282,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button, label } from '../src';
+    const expected = `import { app, window, vbox, hbox, button, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

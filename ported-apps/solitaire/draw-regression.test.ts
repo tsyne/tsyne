@@ -13,9 +13,9 @@
  * If the layout shifts, the button will become unclickable and the test will fail.
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createSolitaireApp } from './solitaire';
-import { App } from '../../src/app';
+import { App } from '../../core/src/app';
 
 describe('Draw Button Layout Regression Test', () => {
   let tsyneTest: TsyneTest;

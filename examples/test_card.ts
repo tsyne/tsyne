@@ -8,9 +8,9 @@
  * and displays it in multiple configurations to test different sizing approaches.
  */
 
-import { app } from '../src';
-import type { App } from '../src/app';
-import type { Window } from '../src/window';
+import { app } from '../core/src';
+import type { App } from '../core/src/app';
+import type { Window } from '../core/src/window';
 import * as path from 'path';
 import { renderSVGToBase64 } from './solitaire/svg-renderer';
 

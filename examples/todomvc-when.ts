@@ -21,7 +21,7 @@
  *   "test:todomvc-when": "jest examples/todomvc-when.test.ts"
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../src';
+import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../core/src';
 import * as fs from 'fs';
 import * as path from 'path';
 

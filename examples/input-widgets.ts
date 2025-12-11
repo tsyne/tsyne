@@ -4,7 +4,7 @@
  * Demonstrates MultiLineEntry, PasswordEntry, Separator, and Hyperlink widgets.
  */
 
-import { app, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink } from '../src';
+import { app, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink } from '../core/src';
 
 let statusLabel: any;
 let multilineEntry: any;

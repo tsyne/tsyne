@@ -1,5 +1,5 @@
 // Test for Photo Gallery example - demonstrates AdaptiveGrid and Padded containers
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 describe('Photo Gallery Example', () => {

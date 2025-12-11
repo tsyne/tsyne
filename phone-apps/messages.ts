@@ -12,10 +12,10 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../src';
-import type { App } from '../src/app';
-import type { Window } from '../src/window';
-import type { Entry } from '../src/widgets/inputs';
+import { app } from '../../../../../../../../../core/src';
+import type { App } from '../core/src/app';
+import type { Window } from '../core/src/window';
+import type { Entry } from '../core/src/widgets/inputs';
 import { ISMSService, MockSMSService, IContactsService, MockContactsService, Message, Thread } from './services';
 
 /**

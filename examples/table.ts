@@ -5,7 +5,7 @@
  * headers and data rows.
  */
 
-import { app, window, vbox, hbox, label, button, table } from '../src';
+import { app, window, vbox, hbox, label, button, table } from '../core/src';
 
 let employeeTable: any;
 let statusLabel: any;

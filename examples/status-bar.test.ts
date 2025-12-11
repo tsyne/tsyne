@@ -5,7 +5,7 @@
  * Full status bar testing with browser integration is done in browser-status-bar.test.ts
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Status Bar Label Tests', () => {
   let tsyneTest: TsyneTest;
@@ -23,7 +23,7 @@ describe('Status Bar Label Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Status Bar Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             // Main content
@@ -54,7 +54,7 @@ describe('Status Bar Label Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Status Update Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             tsyne.label('Application');
@@ -99,7 +99,7 @@ describe('Status Bar Label Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Multiple Status Updates Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             const btn = tsyne.button('Cycle Status').onClick(() => {

@@ -32,10 +32,10 @@
 // @tsyne-app:builder createTerminalApp
 // @tsyne-app:count many
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
-import type { TextGrid, TextGridStyle } from '../../src/widgets';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { TextGrid, TextGridStyle } from '../../core/src/widgets';
 import * as pty from 'node-pty';
 import type { IPty } from 'node-pty';
 import * as os from 'os';

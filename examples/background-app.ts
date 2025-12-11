@@ -10,7 +10,7 @@
  * to the system tray and continue running in the background.
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Background App' }, (a) => {
   let mainWindow: any;

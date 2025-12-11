@@ -5,7 +5,7 @@
  * indeterminate progress during async operations.
  */
 
-import { app, Activity } from '../src';
+import { app, Activity } from '../core/src';
 
 app({ title: 'Loading States Demo' }, (a) => {
   a.window({ title: 'Loading States', width: 500, height: 550 }, (win) => {

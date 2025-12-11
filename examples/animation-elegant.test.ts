@@ -1,4 +1,4 @@
-import { TsyneTest } from '../src/index-test';
+import { TsyneTest } from '../core/src/index-test';
 import { buildElegantDemo, demoTabs } from './animation-elegant';
 
 describe('Elegant Animations Demo', () => {

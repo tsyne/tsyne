@@ -10,8 +10,8 @@
  * - focusPrevious() for test.FocusPrevious()
  */
 
-import { app } from '../src';
-import { TsyneTest, TestContext } from '../src/index-test';
+import { app } from '../core/src';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Advanced Interaction APIs', () => {
   let tsyneTest: TsyneTest;

@@ -5,7 +5,7 @@
  * during navigation and allows pages to set custom status text.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 
 describeBrowser('Browser Status Bar Functionality', () => {
   browserTest(

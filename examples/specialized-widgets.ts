@@ -4,7 +4,7 @@
  * Demonstrates Tree, RichText, Image, Border layout, and GridWrap layout.
  */
 
-import { app, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap } from '../src';
+import { app, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap } from '../core/src';
 
 let statusLabel: any;
 

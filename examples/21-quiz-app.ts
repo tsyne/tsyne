@@ -6,7 +6,7 @@
 // Quiz App - Interactive trivia quiz with scoring
 // Demonstrates complex state management, navigation, and conditional UI
 
-import { app, App, Window } from '../src';
+import { app, App, Window } from '../core/src';
 
 interface Question {
   question: string;

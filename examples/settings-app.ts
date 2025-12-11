@@ -8,7 +8,7 @@
  * - Settings categories with tabs
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Settings App' }, (a) => {
   let statusLabel: any;

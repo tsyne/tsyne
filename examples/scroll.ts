@@ -5,7 +5,7 @@
  * that doesn't fit in the visible area.
  */
 
-import { app, window, vbox, label, button, scroll } from '../src';
+import { app, window, vbox, label, button, scroll } from '../core/src';
 
 app({ title: 'Scroll Demo' }, () => {
   window({ title: 'Scroll Container Example', width: 400, height: 300 }, (win) => {

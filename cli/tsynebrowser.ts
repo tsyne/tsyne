@@ -18,7 +18,7 @@
  *   Terminal 2: npx tsyne-browser http://localhost:3000/
  */
 
-import { createBrowser } from '../src/browser';
+import { createBrowser } from '../core/src/browser';
 
 async function main() {
   // Get URL from command-line arguments

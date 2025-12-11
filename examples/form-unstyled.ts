@@ -5,7 +5,7 @@
  * Compare this with form-styled.ts to see the power of the styling system.
  */
 
-import { app, window, vbox, hbox, label, entry, button } from '../src';
+import { app, window, vbox, hbox, label, entry, button } from '../core/src';
 
 let nameEntry: any;
 let emailEntry: any;

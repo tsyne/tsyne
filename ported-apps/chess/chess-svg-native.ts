@@ -9,9 +9,9 @@
  * Much simpler and faster than the original SVG→PNG conversion approach.
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Chess } from 'chess.js';

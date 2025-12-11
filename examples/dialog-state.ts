@@ -10,7 +10,7 @@
  * 3. Using promises to handle async dialog results
  */
 
-import { app, window, vbox, hbox, label, entry, button, StateStore } from '../src';
+import { app, window, vbox, hbox, label, entry, button, StateStore } from '../core/src';
 
 // ============================================================================
 // Dialog State Management

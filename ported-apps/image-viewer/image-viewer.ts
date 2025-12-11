@@ -23,10 +23,10 @@
  * We've replaced it with Jimp, a well-maintained pure JavaScript library.
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
-import type { Image as ImageWidget, Slider } from '../../src/widgets';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { Image as ImageWidget, Slider } from '../../core/src/widgets';
 import { Jimp, type JimpInstance } from 'jimp';
 import * as fs from 'fs/promises';
 import * as path from 'path';

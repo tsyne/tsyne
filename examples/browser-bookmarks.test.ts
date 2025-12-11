@@ -5,7 +5,7 @@
  * and persist them across browser sessions.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -234,7 +234,7 @@ vbox(() => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Create second browser instance (simulates restart)
-      const { Browser } = require('../src/browser');
+      const { Browser } = require('../core/src/browser');
       const browser2 = new Browser({ testMode: true });
 
       // Check bookmarks were loaded

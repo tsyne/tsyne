@@ -1,6 +1,6 @@
 // Test for Popup widget (tooltips and popovers)
-import { TsyneTest, TestContext } from '../src/index-test';
-import { Popup } from '../src';
+import { TsyneTest, TestContext } from '../core/src/index-test';
+import { Popup } from '../core/src';
 import * as path from 'path';
 
 describe('Popup Widget Demo', () => {

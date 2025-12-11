@@ -1,4 +1,4 @@
-import { app, window, vbox, button, label, styles, screenshotIfRequested } from '../src';
+import { app, window, vbox, button, label, styles, screenshotIfRequested } from '../core/src';
 
 // CSS Classes for styling widgets
 styles({

@@ -15,7 +15,7 @@
  * Based on the original solitaire from https://github.com/fyne-io/solitaire
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createSolitaireApp } from './solitaire';
 import * as path from 'path';
 

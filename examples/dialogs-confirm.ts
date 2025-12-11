@@ -5,7 +5,7 @@
  * (Yes/No) for critical actions requiring user consent.
  */
 
-import { app, window, vbox, hbox, label, button, entry } from '../src';
+import { app, window, vbox, hbox, label, button, entry } from '../core/src';
 
 let itemsToDelete: string[] = ['Document1.txt', 'Image.png', 'Video.mp4'];
 let statusLabel: any;

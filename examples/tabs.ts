@@ -5,7 +5,7 @@
  * into multiple switchable panels.
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, slider, tabs } from '../src';
+import { app, window, vbox, hbox, label, button, entry, checkbox, slider, tabs } from '../core/src';
 
 let statusLabel: any;
 

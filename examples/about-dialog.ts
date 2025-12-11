@@ -1,7 +1,7 @@
 // About Dialog - Demonstrates custom dialogs with arbitrary content
 // This example shows how to use showCustom() and showCustomConfirm()
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 const APP_NAME = 'My Awesome App';
 const APP_VERSION = '1.0.0';

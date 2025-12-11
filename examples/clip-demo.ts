@@ -10,7 +10,7 @@
  * - Right: Clipped content (text is cut off at boundaries)
  */
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Clip Demo' }, (a) => {
   a.window({ title: 'Clip Container Example', width: 600, height: 400 }, (win) => {

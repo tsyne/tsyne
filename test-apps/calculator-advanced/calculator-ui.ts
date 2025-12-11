@@ -1,4 +1,4 @@
-import { app, App } from '../../src';
+import { app, App } from '../../../../../../../../../../../../../../../../../../../../core/src';
 import { CalculatorLogic } from './calculator-logic';
 import { styles, FontStyle } from '../../src/styles';
 

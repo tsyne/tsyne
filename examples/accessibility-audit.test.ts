@@ -11,8 +11,8 @@
  * Uses the new getByRole, getByLabel, and getByTestId selectors.
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
-import { App } from '../src/app';
+import { TsyneTest, TestContext } from '../core/src/index-test';
+import { App } from '../core/src/app';
 
 // Accessibility audit result types
 interface A11yViolation {

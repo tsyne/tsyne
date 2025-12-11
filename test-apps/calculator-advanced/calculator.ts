@@ -1,4 +1,4 @@
-import { app, App } from '../../src';
+import { app, App } from '../../core/src';
 
 /**
  * Calculator application - Testable implementation

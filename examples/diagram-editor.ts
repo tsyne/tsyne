@@ -8,7 +8,7 @@
  * - canvas.Line for connections
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Diagram Editor' }, (a) => {
   let selectedShape = 'rectangle';

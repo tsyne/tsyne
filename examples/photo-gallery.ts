@@ -6,7 +6,7 @@
  *
  * Padded adds theme-aware padding around content.
  */
-import { app } from '../src';
+import { app } from '../core/src';
 
 // Create a simple photo gallery with colored placeholder cards
 app({ title: 'Photo Gallery' }, (a) => {

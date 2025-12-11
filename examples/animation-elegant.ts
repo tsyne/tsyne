@@ -12,9 +12,9 @@
  * Run with: TSYNE_HEADED=1 npx ts-node examples/animation-elegant.ts
  */
 
-import { app } from '../src';
-import { CanvasCircle, CanvasLine, CanvasRectangle, EasingType } from '../src/widgets/canvas';
-import { cubicBezier, bezier, EasingFunction, getPointOnBezier } from '../src/animation';
+import { app } from '../core/src';
+import { CanvasCircle, CanvasLine, CanvasRectangle, EasingType } from '../core/src/widgets/canvas';
+import { cubicBezier, bezier, EasingFunction, getPointOnBezier } from '../core/src/animation';
 
 // ============================================================================
 // Spring Physics Animation (QML SpringAnimation style)

@@ -1,4 +1,4 @@
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 /**
  * Stack Container Demo

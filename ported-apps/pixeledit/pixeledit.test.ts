@@ -17,7 +17,7 @@
  * Based on the original pixeledit from https://github.com/fyne-io/pixeledit
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createPixelEditorApp } from './pixeledit';
 import * as path from 'path';
 

@@ -5,7 +5,7 @@
  * and dynamic interaction.
  */
 
-import { app, window, vbox, hbox, label, select, button, screenshotIfRequested } from '../src';
+import { app, window, vbox, hbox, label, select, button, screenshotIfRequested } from '../core/src';
 
 let colorSelect: any;
 let sizeSelect: any;

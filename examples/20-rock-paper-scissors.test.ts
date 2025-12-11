@@ -1,5 +1,5 @@
 // Test for Rock Paper Scissors example
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 describe('Rock Paper Scissors Example', () => {

@@ -9,7 +9,7 @@
  * - ANSI-style color support
  */
 
-import { App, TextGrid, TextGridStyle } from '../src/index';
+import { App, TextGrid, TextGridStyle } from '../core/src/index';
 
 // Terminal state
 const COLS = 80;

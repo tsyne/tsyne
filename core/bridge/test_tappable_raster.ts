@@ -1,5 +1,5 @@
-import { App } from '../src/app';
-import { TappableCanvasRaster } from '../src/widgets/canvas';
+import { App } from '../core/src/app';
+import { TappableCanvasRaster } from '../core/src/widgets/canvas';
 
 const app = new App('Tappable Raster Test');
 const win = app.createWindow('Tappable Raster Test', 400, 400);

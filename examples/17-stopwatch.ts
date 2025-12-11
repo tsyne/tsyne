@@ -6,7 +6,7 @@
 // Stopwatch - Precise time tracking with lap times
 // Demonstrates timers, state management, and dynamic lists
 
-import { app, App, Window } from '../src';
+import { app, App, Window } from '../core/src';
 
 export function buildStopwatch(a: App) {
   a.window({ title: 'Stopwatch', width: 350, height: 450 }, (win: Window) => {

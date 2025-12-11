@@ -1,7 +1,7 @@
 // Script to capture screenshots of all examples using their test files
 // This leverages the existing test infrastructure which already creates apps programmatically
 
-import { TsyneTest } from '../src/index-test';
+import { TsyneTest } from '../core/src/index-test';
 import * as path from 'path';
 import * as fs from 'fs';
 

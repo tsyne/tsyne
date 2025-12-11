@@ -5,7 +5,7 @@
  * File, Edit, and Help menus.
  */
 
-import { app, window, vbox, label, entry } from '../src';
+import { app, window, vbox, label, entry } from '../core/src';
 
 let statusLabel: any;
 let textEntry: any;

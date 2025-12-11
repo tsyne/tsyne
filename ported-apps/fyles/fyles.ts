@@ -34,9 +34,9 @@
  * - Background image detection (.background.png/jpg/svg)
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
 import * as os from 'os';
 import * as path from 'path';
 import { FylesStore } from './fyles-store';

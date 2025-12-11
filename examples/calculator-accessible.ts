@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager } from '../src';
+import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager } from '../core/src';
 // In production: import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager } from 'tsyne';
 
 /**

@@ -5,7 +5,7 @@
  * multi-document text editor interface.
  */
 
-import { app, App, DocTabs } from '../src';
+import { app, App, DocTabs } from '../core/src';
 
 // Document state
 interface Document {

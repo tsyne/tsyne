@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Tabbed settings panel demonstrating tabs widget with multiple panes
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Settings Panel' }, (a) => {
   a.window({ title: 'Settings Panel', width: 400, height: 350 }, (win) => {

@@ -8,7 +8,7 @@
  * - Preview sample text with custom fonts
  */
 
-import { app, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry } from '../src';
+import { app, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry } from '../core/src';
 
 let statusLabel: any;
 let fontPathEntry: any;

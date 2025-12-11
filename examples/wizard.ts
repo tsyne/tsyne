@@ -7,7 +7,7 @@
  * - Multi-step wizard workflows
  */
 
-import { App, Navigation, VBox, Entry, Label, Button, RadioGroup, Checkbox, Select } from '../src/index';
+import { App, Navigation, VBox, Entry, Label, Button, RadioGroup, Checkbox, Select } from '../core/src/index';
 
 // Wizard state to collect data across steps
 interface WizardData {

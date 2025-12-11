@@ -21,7 +21,7 @@ import {
 describe('RoundTrip: WYSIWYG Features', () => {
   describe('when() Preservation', () => {
     test('simple when() is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -44,7 +44,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('when() with complex condition is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -70,7 +70,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('when() chained with withId is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -93,7 +93,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('multiple widgets with different when() conditions are preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -120,7 +120,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Style Classes Preservation', () => {
     test('widget with single style class is preserved', async () => {
-      const code = `import { app, styles } from '../src';
+      const code = `import { app, styles } from '../core/src';
 
 styles({
   primary: {
@@ -148,7 +148,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('multiple style classes are preserved', async () => {
-      const code = `import { app, styles } from '../src';
+      const code = `import { app, styles } from '../core/src';
 
 styles({
   title: {
@@ -189,7 +189,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Fluent API Chaining', () => {
     test('button with onClick and withId chained is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -212,7 +212,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('entry with placeholder and onSubmit is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -237,7 +237,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Container Properties', () => {
     test('vbox with alignment properties is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -258,7 +258,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('grid layout configuration is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -284,7 +284,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('ModelBoundList Preservation', () => {
     test('simple model binding is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -311,7 +311,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('model binding with complex objects is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 interface Todo {
   id: number;
@@ -352,7 +352,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Mixed Features', () => {
     test('button with onClick, when(), style, and withId all preserved', async () => {
-      const code = `import { app, styles } from '../src';
+      const code = `import { app, styles } from '../core/src';
 
 styles({
   primary: {
@@ -384,7 +384,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('complex form with multiple widget types is preserved', async () => {
-      const code = `import { app, styles } from '../src';
+      const code = `import { app, styles } from '../core/src';
 
 styles({
   formLabel: {
@@ -434,7 +434,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Widget-Specific Properties', () => {
     test('checkbox with initial state is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -457,7 +457,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('slider with range and onChange is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -480,7 +480,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('select dropdown with options is preserved', async () => {
-      const code = `import { app } from '../src';
+      const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

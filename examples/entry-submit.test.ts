@@ -5,7 +5,7 @@
  * Full Enter key testing is done in browser tests where actual key presses can be simulated.
  */
 
-import { TsyneTest, TestContext, Entry } from '../src/index-test';
+import { TsyneTest, TestContext, Entry } from '../core/src/index-test';
 
 describe('Entry onSubmit Tests', () => {
   let tsyneTest: TsyneTest;
@@ -25,7 +25,7 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry Submit Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             // Entry with onSubmit callback using new API
@@ -56,7 +56,7 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry No Submit Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             // Entry without onSubmit callback (backward compatible)
@@ -80,7 +80,7 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry Type Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             const textEntry = tsyne.entry('Type here');

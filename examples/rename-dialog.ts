@@ -1,7 +1,7 @@
 // Entry dialog demo - demonstrates showEntryDialog for quick text input
 // This example shows a list of files that can be renamed using the entry dialog
 
-import { app, Label } from '../src';
+import { app, Label } from '../core/src';
 
 interface FileItem {
   id: number;

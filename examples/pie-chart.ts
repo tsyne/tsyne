@@ -1,7 +1,7 @@
 // Demo: Pie Chart using CanvasArc primitives
 // Shows how to create pie chart segments using arcs
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Pie Chart Demo' }, (a) => {
   a.window({ title: 'Pie Chart', width: 500, height: 400 }, (win) => {

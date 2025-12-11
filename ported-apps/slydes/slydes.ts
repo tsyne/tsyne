@@ -18,12 +18,12 @@
  * - About dialog
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
-import type { Label } from '../../src/widgets';
-import type { MultiLineEntry } from '../../src/widgets';
-import type { VBox } from '../../src/widgets';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { Label } from '../../core/src/widgets';
+import type { MultiLineEntry } from '../../core/src/widgets';
+import type { VBox } from '../../core/src/widgets';
 import { SlideStore } from './store';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Players list demonstrating list widget with structured data
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 interface Player {
   name: string;

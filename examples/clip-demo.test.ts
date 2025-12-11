@@ -6,7 +6,7 @@
  * 2. Renders its child content
  * 3. Works properly in the widget tree
  */
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 describe('Clip Container', () => {

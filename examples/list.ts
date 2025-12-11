@@ -5,7 +5,7 @@
  * selection callbacks and dynamic items.
  */
 
-import { app, window, vbox, hbox, label, button, entry, list } from '../src';
+import { app, window, vbox, hbox, label, button, entry, list } from '../core/src';
 
 let todoList: any;
 let statusLabel: any;

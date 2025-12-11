@@ -8,7 +8,7 @@
  * - Quick paste from history
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Clipboard Manager' }, (a) => {
   const clipboardHistory: string[] = [];

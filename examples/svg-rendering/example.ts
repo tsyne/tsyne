@@ -16,7 +16,7 @@
  * - Manipulate SVG content programmatically
  */
 
-import { app } from '../../src';
+import { app } from '../../core/src';
 import { renderSVGToBase64, createCompositeSVG } from './svg-renderer';
 import * as path from 'path';
 

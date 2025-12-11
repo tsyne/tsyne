@@ -5,7 +5,7 @@
  * applying preset color schemes, and using the theme editor.
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select } from '../src';
+import { app, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select } from '../core/src';
 
 let statusLabel: any;
 let themeLabel: any;

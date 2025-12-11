@@ -6,7 +6,7 @@
  *
  * Run: npx ts-node examples/file-browser.ts
  */
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 // Sample file entries with different types
 const sampleFiles = [

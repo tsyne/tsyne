@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label, styles } from '../src';
+import { app, window, vbox, hbox, button, label, styles } from '../core/src';
 
 // CSS Classes for styling
 styles({

@@ -2,7 +2,7 @@
  * Tests for window features: close intercept, multiple windows, window icon
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Window Close Intercept', () => {
   let tsyneTest: TsyneTest;

@@ -4,7 +4,7 @@
  * This test verifies that window titles can be set and updated.
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Window Title Tests', () => {
   let tsyneTest: TsyneTest;
@@ -22,7 +22,7 @@ describe('Window Title Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Test Window' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
           tsyne.vbox(() => {
             tsyne.label('Window with default title');
           });
@@ -45,7 +45,7 @@ describe('Window Title Tests', () => {
       app.window({ title: 'Initial Title' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
           tsyne.vbox(() => {
             const btn = tsyne.button('Change Title').onClick(() => {
               windowInstance.setTitle('New Title');
@@ -76,7 +76,7 @@ describe('Window Title Tests', () => {
       app.window({ title: 'Test Window' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
           tsyne.vbox(() => {
             const btn = tsyne.button('Change Title Multiple Times').onClick(() => {
               clickCount++;
@@ -113,7 +113,7 @@ describe('Window Title Tests', () => {
       app.window({ title: 'Has Title' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
           tsyne.vbox(() => {
             const btn = tsyne.button('Clear Title').onClick(() => {
               windowInstance.setTitle('');

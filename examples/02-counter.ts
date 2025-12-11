@@ -5,7 +5,7 @@
 
 // Simple counter example demonstrating state management
 
-import { app, App, Window } from '../src';
+import { app, App, Window } from '../core/src';
 
 export function buildCounter(a: App) {
   a.window({ title: 'Counter', width: 300, height: 150 }, (win: Window) => {

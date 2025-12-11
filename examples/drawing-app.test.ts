@@ -4,7 +4,7 @@
  * Tests the color picker dialog integration and drawing functionality.
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 // Grid configuration (must match drawing-app.ts)

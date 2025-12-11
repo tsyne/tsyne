@@ -2,7 +2,7 @@
  * TsyneTest UI tests for Settings app
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createSettingsApp } from './settings';
 import { MockSettingsService } from './services';
 

@@ -1,7 +1,7 @@
 /**
  * Test for Contact Manager (showForm dialog demo)
  */
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 describe('Contact Manager - showForm Dialog Demo', () => {

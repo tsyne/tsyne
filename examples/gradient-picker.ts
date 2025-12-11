@@ -7,7 +7,7 @@
  * - Angle and color adjustments
  */
 
-import { app, CanvasLinearGradient } from '../src/index';
+import { app, CanvasLinearGradient } from '../core/src/index';
 
 app({ title: 'Gradient Picker' }, (a) => {
   let gradient: CanvasLinearGradient;

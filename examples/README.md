@@ -499,4 +499,4 @@ When adding new examples:
 - [Tsyne Documentation](../README.md)
 - [LLM Quick Reference](../LLM.md)
 - [MVC Pattern Guide](../more_mvc_like_for_todomvc_app.md)
-- [Widget Reference](../src/widgets.ts)
+- [Widget Reference](../core/src/widgets.ts)

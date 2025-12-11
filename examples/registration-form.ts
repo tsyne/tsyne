@@ -16,9 +16,9 @@
  *   npx ts-node examples/registration-form.ts
  */
 
-import { app, Entry, Label, Button, PasswordEntry, Window } from '../src';
-import { validators, createFormValidator, FormValidator, ValidatedField } from '../src/validation';
-import { StringBinding } from '../src/binding';
+import { app, Entry, Label, Button, PasswordEntry, Window } from '../core/src';
+import { validators, createFormValidator, FormValidator, ValidatedField } from '../core/src/validation';
+import { StringBinding } from '../core/src/binding';
 
 // ============================================================================
 // Application Setup

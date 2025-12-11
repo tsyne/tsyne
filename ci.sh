@@ -228,7 +228,7 @@ if [ ! -d "/tmp/systray-master" ]; then
 fi
 
 # Use go mod replace to point to local systray
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/bridge
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
 /usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
@@ -236,14 +236,14 @@ echo "Building Go shared library for FFI..."
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -buildmode=c-shared -o ../bin/libtsyne.so .
 
 # ============================================================================
-# STEP 2: Root Tsyne (Core Library)
+# STEP 2: Core (Tsyne Core Library)
 # ============================================================================
-echo "--- :nodejs: Root Tsyne - Install & Build"
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
+echo "--- :nodejs: Core - Install & Build"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
 npm install --ignore-scripts
 npm run build
 
-echo "--- :test_tube: Root Tsyne - Unit Tests"
+echo "--- :test_tube: Core - Unit Tests"
 # Check if headed mode is requested
 if [ "${TSYNE_HEADED}" = "1" ]; then
   echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
@@ -265,15 +265,15 @@ else
   fi
 fi
 
-timeout 600 npm run test:unit -- --json --outputFile=/tmp/root-test-results.json || {
+timeout 600 npm run test:unit -- --json --outputFile=/tmp/core-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Root unit tests timed out after 600 seconds"
+    echo "❌ Core unit tests timed out after 600 seconds"
   else
-    echo "❌ Root unit tests failed (exit code: $EXIT_CODE)"
+    echo "❌ Core unit tests failed (exit code: $EXIT_CODE)"
   fi
 }
-capture_test_results "Root Tsyne" "/tmp/root-test-results.json" || true
+capture_test_results "Core" "/tmp/core-test-results.json" || true
 
 # ============================================================================
 # STEP 3: Designer Sub-Project

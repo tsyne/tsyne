@@ -1,7 +1,7 @@
 // Padded container demo - demonstrates container.NewPadded functionality
 // Shows the difference between padded and non-padded content
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Padded Demo' }, (a) => {
   a.window({ title: 'Padded Container Demo', width: 500, height: 400 }, (win) => {

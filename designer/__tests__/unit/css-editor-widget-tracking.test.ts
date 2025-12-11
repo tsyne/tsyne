@@ -11,7 +11,7 @@ import {
 
 describe('CSS Editor Widget Tracking', () => {
   test('findWidgetsUsingClass identifies widgets by className', async () => {
-    const source = `import { app } from '../src';
+    const source = `import { app } from '../core/src';
 
 const styles = {
   title: {
@@ -62,7 +62,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('getWidgetPath returns ID when available', async () => {
-    const source = `import { app } from '../src';
+    const source = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -86,7 +86,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('getWidgetPath builds path for widgets without ID', async () => {
-    const source = `import { app } from '../src';
+    const source = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -113,7 +113,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('CSS classes are extracted from source', async () => {
-    const source = `import { app } from '../src';
+    const source = `import { app } from '../core/src';
 
 const styles = {
   header: {
@@ -147,7 +147,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('unused CSS classes are identified', async () => {
-    const source = `import { app } from '../src';
+    const source = `import { app } from '../core/src';
 
 const styles = {
   used: { fontSize: 20 },

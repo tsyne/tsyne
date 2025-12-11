@@ -3,9 +3,9 @@
  * This proves whether the status label is masking the issue or actually fixing it
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createSolitaireApp } from './solitaire';
-import { App } from '../../src/app';
+import { App } from '../../core/src/app';
 
 describe('Draw Button Layout Test (No Status Label Dependency)', () => {
   let tsyneTest: TsyneTest;

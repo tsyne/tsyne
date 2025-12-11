@@ -16,7 +16,7 @@ import {
 
 describe('RoundTrip: onClick Preservation', () => {
   test('simple onClick handler is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -39,7 +39,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with multiple statements is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -68,7 +68,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with async/await is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -93,7 +93,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with widget reference and setText is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -121,7 +121,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with complex conditional logic is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -151,7 +151,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with try-catch error handling is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -180,7 +180,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with array operations is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -207,7 +207,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick preserved after adding .withId()', async () => {
-    const original = `import { app } from '../src';
+    const original = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -230,7 +230,7 @@ app({ title: 'Test' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../src';
+    const expected = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -250,7 +250,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick preserved after changing button text', async () => {
-    const original = `import { app } from '../src';
+    const original = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -272,7 +272,7 @@ app({ title: 'Test' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../src';
+    const expected = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -291,7 +291,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('multiple different onClick handlers are preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -326,7 +326,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with closure over variables is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -354,7 +354,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('onClick with object destructuring is preserved', async () => {
-    const code = `import { app } from '../src';
+    const code = `import { app } from '../core/src';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

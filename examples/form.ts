@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label, entry } from '../src';
+import { app, window, vbox, hbox, button, label, entry } from '../core/src';
 
 // Form example showing input handling
 let nameEntry: any;

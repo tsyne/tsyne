@@ -1,7 +1,7 @@
 // Demo: Spacer widget for flexible spacing in layouts
 // Demonstrates the use of layout.NewSpacer() via a.spacer()
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Spacer Demo' }, (a) => {
   a.window({ title: 'Spacer Layout Demo', width: 400, height: 300 }, (win) => {

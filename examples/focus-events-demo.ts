@@ -1,4 +1,4 @@
-import { app, Label } from '../src/index';
+import { app, Label } from '../core/src/index';
 
 /**
  * Focus Events Demo

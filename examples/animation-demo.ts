@@ -14,8 +14,8 @@
  * Or headed: TSYNE_HEADED=1 npx ts-node examples/animation-demo.ts
  */
 
-import { app } from '../src';
-import { CanvasCircle, CanvasLine, AnimateOptions } from '../src/widgets/canvas';
+import { app } from '../core/src';
+import { CanvasCircle, CanvasLine, AnimateOptions } from '../core/src/widgets/canvas';
 
 // Main app
 export function buildAnimationDemo(a: any) {

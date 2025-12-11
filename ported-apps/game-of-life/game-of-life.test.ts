@@ -16,7 +16,7 @@
  * Based on the original Game of Life from https://github.com/fyne-io/life
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createGameOfLifeApp } from './game-of-life';
 import * as path from 'path';
 

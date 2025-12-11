@@ -14,7 +14,7 @@ import {
   NumberBinding,
   ComputedBinding,
   ListBinding
-} from '../src/binding';
+} from '../core/src/binding';
 
 describe('Data Binding Unit Tests', () => {
   describe('StringBinding', () => {

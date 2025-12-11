@@ -8,7 +8,7 @@
  * - Move tasks between columns
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 interface Task {
   id: string;

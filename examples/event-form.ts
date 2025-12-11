@@ -1,7 +1,7 @@
 // Event Form Demo - Demonstrates DateEntry widget for event creation
 // This example shows how to use the DateEntry widget for date selection
 
-import { app, dialog } from '../src';
+import { app, dialog } from '../core/src';
 
 app({ title: 'Event Form' }, (a) => {
   a.window({ title: 'Create Event', width: 450, height: 400 }, (win) => {

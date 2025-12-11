@@ -26,10 +26,10 @@
  * have audio playback support.
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
-import type { CanvasRaster } from '../../src/widgets/canvas';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { CanvasRaster } from '../../core/src/widgets/canvas';
 
 // Import sprite generation from sibling module
 // (The original ChrysaLisp app used proprietary .cpm image files;

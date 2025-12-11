@@ -6,9 +6,9 @@
  * Target: 5-8 tests covering essential user flows
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createChessApp } from './chess';
-import type { IResourceManager } from '../../src/resources';
+import type { IResourceManager } from '../../core/src/resources';
 import * as path from 'path';
 
 describe('Chess E2E Tests (Critical Paths)', () => {

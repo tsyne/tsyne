@@ -53,7 +53,7 @@ function toSource(metadata: { widgets: any[] }, styles: Record<string, any> | nu
     imports.push('styles');
   }
 
-  lines.push(`import { ${imports.join(', ')} } from '../src';`);
+  lines.push(`import { ${imports.join(', ')} } from '../core/src';`);
   lines.push('');
 
   // 2. Generate styles() call if present
@@ -1034,8 +1034,8 @@ async function loadSourceInDesignerMode(sourceCode: string, virtualPath: string 
     // TypeScript transpiles: import { foo } from 'bar' → const bar_1 = require('bar'); (0, bar_1.foo)()
     // We need to replace the module reference with global.designer
     let executableCode = transpileResult.outputText
-      // Replace: const src_1 = require("../src"); → (nothing, we'll use global.designer)
-      .replace(/(?:var|const|let)\s+(\w+)\s*=\s*require\(['"]\.\.\/src['"]\);?\s*\n?/g, '')
+      // Replace: const src_1 = require("../src"); or require("../core/src") → (nothing, we'll use global.designer)
+      .replace(/(?:var|const|let)\s+(\w+)\s*=\s*require\(['"]\.\.\/(?:core\/)?src['"]\);?\s*\n?/g, '')
       // Replace: (0, src_1.foo) → global.designer.foo
       .replace(/\(0,\s*\w+\.(\w+)\)/g, 'global.designer.$1')
       // Replace standalone: src_1.foo → global.designer.foo

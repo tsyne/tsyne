@@ -7,7 +7,7 @@
  * Run with: npx ts-node examples/theme-zones.ts
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Theme Zones' }, (a) => {
   a.window({ title: 'Theme Zones Demo', width: 700, height: 500 }, (win) => {

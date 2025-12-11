@@ -28,7 +28,7 @@ describe('RoundTrip: Known Limitations', () => {
       // WHAT: Comments like "// TODO: fix this" disappear
       // FIX: Store comments in metadata or use AST-preserving approach
 
-      const snippet = `import { app, window, vbox, button } from '../src';
+      const snippet = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -60,7 +60,7 @@ app({ title: "Test" }, () => {
       // WHAT: JSDoc-style comments disappear
       // FIX: Parse and preserve comment nodes in AST
 
-      const snippet = `import { app, window, vbox, button } from '../src';
+      const snippet = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -95,7 +95,7 @@ app({ title: "Test" }, () => {
       // WHAT: User's 4-space or tab preferences get normalized
       // FIX: Detect and preserve indentation style from source
 
-      const snippet = `import { app, window, vbox, button } from '../src';
+      const snippet = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
     window({ title: "Test" }, () => {
@@ -130,7 +130,7 @@ app({ title: "Test" }, () => {
       // WHAT: Trailing spaces/tabs on lines are removed
       // FIX: May not be worth preserving - often undesirable
 
-      const snippet = `import { app, window, vbox, button } from '../src';
+      const snippet = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -161,7 +161,7 @@ app({ title: "Test" }, () => {
       // WHAT: Original formatting of multi-line callbacks is lost
       // FIX: Use AST to preserve original handler code
 
-      const snippet = `import { app, window, vbox, button } from '../src';
+      const snippet = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -200,7 +200,7 @@ app({ title: "Test" }, () => {
       // WHAT: Type annotations like `: string` disappear
       // FIX: Parse and preserve type annotations during editing
 
-      const snippet = `import { app, window, vbox, label } from '../src';
+      const snippet = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -231,7 +231,7 @@ app({ title: "Test" }, () => {
       // WHAT: Unused interfaces/types are removed
       // FIX: Preserve all top-level type definitions
 
-      const snippet = `import { app, window, vbox, label } from '../src';
+      const snippet = `import { app, window, vbox, label } from '../core/src';
 
 interface User {
   name: string;
@@ -267,7 +267,7 @@ app({ title: "Test" }, () => {
       // WHAT: Imports for widgets that aren't in the tree disappear
       // FIX: Preserve all original imports or use smart import management
 
-      const snippet = `import { app, window, vbox, hbox, label, button, entry } from '../src';
+      const snippet = `import { app, window, vbox, hbox, label, button, entry } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -298,7 +298,7 @@ app({ title: "Test" }, () => {
       // WHAT: Original import ordering is lost
       // FIX: Preserve original import statement exactly
 
-      const snippet = `import { window, vbox, label, button, app } from '../src';
+      const snippet = `import { window, vbox, label, button, app } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -336,7 +336,7 @@ app({ title: "Test" }, () => {
       // WHAT: `label(message)` becomes `label("Hello")` if message = "Hello"
       // FIX: Preserve original source expressions for properties
 
-      const snippet = `import { app, window, vbox, label } from '../src';
+      const snippet = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -369,7 +369,7 @@ app({ title: "Test" }, () => {
       // WHAT: Visual spacing/grouping via blank lines is lost
       // FIX: Store "spacing hints" in metadata or preserve original line positions
 
-      const snippet = `import { app, window, vbox, label, separator } from '../src';
+      const snippet = `import { app, window, vbox, label, separator } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

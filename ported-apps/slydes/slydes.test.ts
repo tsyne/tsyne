@@ -4,9 +4,9 @@
  * Tests the complete UI interaction using fluent assertions
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createSlydesApp, SlydesUI } from './slydes';
-import type { App } from '../../src/app';
+import type { App } from '../../core/src/app';
 import * as path from 'path';
 
 describe('Slydes Functional Tests', () => {

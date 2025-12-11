@@ -6,8 +6,8 @@
  * Run with: npm test examples/theme-zones.test.ts
  */
 
-import { TsyneTest } from '../src/index-test';
-import { App } from '../src/index';
+import { TsyneTest } from '../core/src/index-test';
+import { App } from '../core/src/index';
 
 describe('Theme Zones Demo', () => {
   let tsyneTest: TsyneTest;

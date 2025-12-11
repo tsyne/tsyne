@@ -7,8 +7,8 @@
  * the menu widget is created and the app structure is correct.
  */
 
-import { TsyneTest } from '../src/index-test';
-import { App, MenuItem, Menu } from '../src';
+import { TsyneTest } from '../core/src/index-test';
+import { App, MenuItem, Menu } from '../core/src';
 
 // All available commands (subset for testing)
 const testCommands: Array<{ label: string; action: string; category: string }> = [

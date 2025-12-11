@@ -1,4 +1,4 @@
-import { app } from '../../src';
+import { app } from '../../../../../../core/src';
 import { TsyneTest, TestContext } from '../../src/index-test';
 import { Calculator } from './calculator';
 

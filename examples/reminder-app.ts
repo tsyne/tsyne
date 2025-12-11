@@ -7,7 +7,7 @@
  * - Integration with system notification center
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 interface Reminder {
   id: number;

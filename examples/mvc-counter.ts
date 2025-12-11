@@ -7,7 +7,7 @@
  * - Controller: Handles user input and updates the model
  */
 
-import { app, window, vbox, label, button, hbox, Model } from '../src';
+import { app, window, vbox, label, button, hbox, Model } from '../core/src';
 
 // ============================================================================
 // MODEL - Holds data and business logic

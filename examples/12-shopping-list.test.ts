@@ -1,5 +1,5 @@
 // Test for shopping-list example
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 interface ShoppingItem {

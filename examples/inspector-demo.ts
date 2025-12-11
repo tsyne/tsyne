@@ -1,7 +1,7 @@
 /**
  * Inspector Demo - shows how to use the visual widget inspector
  */
-import { app, Inspector } from '../src';
+import { app, Inspector } from '../core/src';
 
 app({ title: 'Inspector Demo' }, async (a) => {
   // Create an Inspector instance

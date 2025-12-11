@@ -6,7 +6,7 @@
  * work with project folders.
  */
 
-import { app, window, vbox, hbox, label, button } from '../src';
+import { app, window, vbox, hbox, label, button } from '../core/src';
 
 app({ title: 'Project Opener' }, () => {
   window({ title: 'Project Opener', width: 500, height: 350 }, (win) => {

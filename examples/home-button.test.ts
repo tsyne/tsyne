@@ -5,7 +5,7 @@
  * Full home navigation testing is done in browser-home.test.ts
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Home Button Tests', () => {
   let tsyneTest: TsyneTest;
@@ -25,7 +25,7 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Home Button Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             // Create home button with house icon
@@ -59,7 +59,7 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Navigation Buttons Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             tsyne.hbox(() => {
@@ -99,7 +99,7 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Button Click Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../src/index');
+          const tsyne = require('../core/src/index');
 
           tsyne.vbox(() => {
             const btn1 = tsyne.button('First').onClick(() => clickOrder.push('first'));

@@ -1,7 +1,7 @@
 // Demo: Modal Overlay using showCustomWithoutButtons
 // Shows how to create a non-dismissable loading overlay
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Modal Overlay Demo' }, (a) => {
   a.window({ title: 'Modal Overlay', width: 500, height: 400 }, async (win) => {

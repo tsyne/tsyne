@@ -5,7 +5,7 @@
  * keeping them synchronized automatically.
  */
 
-import { app, window, vbox, label, entry, button, ObservableState, ComputedState } from '../src';
+import { app, window, vbox, label, entry, button, ObservableState, ComputedState } from '../core/src';
 
 // Create observable states
 const firstName = new ObservableState('John');

@@ -1,7 +1,7 @@
 // BMI Calculator - Calculate Body Mass Index with visual feedback
 // Demonstrates unit conversion, sliders, and conditional display
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'BMI Calculator' }, (a) => {
   a.window({ title: 'BMI Calculator', width: 400, height: 550 }, (win) => {

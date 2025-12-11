@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Interactive shopping list with add, check, and delete functionality
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 interface ShoppingItem {
   id: number;

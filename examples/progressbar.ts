@@ -5,7 +5,7 @@
  * for showing progress and loading states.
  */
 
-import { app, window, vbox, hbox, label, button, progressbar } from '../src';
+import { app, window, vbox, hbox, label, button, progressbar } from '../core/src';
 
 let downloadProgress: any;
 let uploadProgress: any;

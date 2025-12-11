@@ -8,7 +8,7 @@
  * - alert() and confirm() dialog functions
  */
 
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 app({ title: 'Browser Globals Test' }, (a) => {
   a.window({ title: 'Browser Globals Test', width: 600, height: 500 }, (win) => {

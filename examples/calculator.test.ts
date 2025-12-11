@@ -20,8 +20,8 @@
  * - Visual debugging mode: TSYNE_HEADED=1 npm run test:calculator
  */
 
-import { app } from '../src';
-import { TsyneTest, TestContext } from '../src/index-test';
+import { app } from '../core/src';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { buildCalculator } from './calculator';
 
 describe('Simple Calculator Tests', () => {

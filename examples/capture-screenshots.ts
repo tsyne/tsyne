@@ -1,5 +1,5 @@
 // Script to capture screenshots of all examples for documentation
-import { TsyneTest } from '../src/index-test';
+import { TsyneTest } from '../core/src/index-test';
 import * as path from 'path';
 
 interface ExampleInfo {

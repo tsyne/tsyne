@@ -1,6 +1,6 @@
 // Test for MDI (Multiple Document Interface) Demo
-import { TsyneTest, TestContext } from '../src/index-test';
-import { InnerWindow } from '../src';
+import { TsyneTest, TestContext } from '../core/src/index-test';
+import { InnerWindow } from '../core/src';
 import * as path from 'path';
 
 describe('MDI Demo - InnerWindow Container', () => {

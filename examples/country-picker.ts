@@ -5,7 +5,7 @@
  * a text entry with a dropdown menu. Users can type to filter options or
  * select from the dropdown list.
  */
-import { app } from '../src';
+import { app } from '../core/src';
 
 // Sample list of countries
 const countries = [

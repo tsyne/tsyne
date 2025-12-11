@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Percentage clock showing time progress as percentage bars
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Percentage Clock' }, (a) => {
   a.window({ title: 'Percentage Clock', width: 300, height: 300 }, (win) => {

@@ -4,37 +4,33 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Root Tsyne                          683      683        0        0  43|43|0
+Core                                524      524        0        0  30|30|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      21       21        0        0    1|1|0
-Examples: GUI                       355      334        0       21  70|64|0
+Examples: GUI                       362      341        0       21  71|65|0
 Ported: chess                        60       57        0        3    3|3|0
-Ported: fyles                        89       85        1        3    5|4|1
+Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: pixeledit                    86       86        0        0    6|6|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                    94       94        0        0    7|7|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              1564     1532        1       31      151
+TOTAL                              1412     1381        0       31      139
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 24650ms (24.65s)
-Total ctx.wait() calls: 258
+Total wait time: 20350ms (20.35s)
+Total ctx.wait() calls: 202
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
   Live Clock Example should display current time and update
     └─ 600ms (1 calls)
-  PhoneTop Integration Tests should preserve app state when returning
-    └─ 600ms (4 calls)
-  PhoneTop Integration Tests should show quit button and close app when clicked
-    └─ 600ms (4 calls)
   TodoMVC Tests should handle multiple completed todos
     └─ 550ms (7 calls)
   Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
@@ -49,7 +45,11 @@ Top 10 tests by wait time:
     └─ 500ms (1 calls)
   Canvas Fill Color should render multiple overlapping canvas elements like clock
     └─ 500ms (1 calls)
+  TodoMVC Tests should show all todos when filter is all
+    └─ 500ms (6 calls)
+  TodoMVC Tests should add multiple todos
+    └─ 450ms (6 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 1 tests failed
+✅ SUCCESS: All 1381 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

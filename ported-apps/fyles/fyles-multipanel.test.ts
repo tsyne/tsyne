@@ -11,7 +11,7 @@
  *   TSYNE_HEADED=1 npm test examples/fyles/fyles-multipanel.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createFylesApp, createMultiPanelFylesApp } from './fyles';
 import * as path from 'path';
 import * as fs from 'fs';

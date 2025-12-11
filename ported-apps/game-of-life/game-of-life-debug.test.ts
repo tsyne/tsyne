@@ -2,7 +2,7 @@
  * Debug test to see what's actually rendering
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createGameOfLifeApp } from './game-of-life';
 import * as path from 'path';
 

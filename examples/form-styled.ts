@@ -7,7 +7,7 @@
  * This demonstrates the Swiby-like approach where styles are separate from structure.
  */
 
-import { app, window, vbox, hbox, label, entry, button } from '../src';
+import { app, window, vbox, hbox, label, entry, button } from '../core/src';
 
 // Import the stylesheet - this is the only difference from form-unstyled.ts!
 import './form-styles';

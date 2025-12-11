@@ -4,7 +4,7 @@
  * Demonstrates window sizing, positioning, and fullscreen features.
  */
 
-import { app, window, vbox, hbox, label, button, entry } from '../src';
+import { app, window, vbox, hbox, label, button, entry } from '../core/src';
 
 let win1: any;
 let win2: any;

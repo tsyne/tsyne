@@ -5,7 +5,7 @@
  * Shows both determinate and infinite progress dialogs.
  */
 
-import { app, window, vbox, hbox, label, button, separator, ProgressDialog } from '../src';
+import { app, window, vbox, hbox, label, button, separator, ProgressDialog } from '../core/src';
 
 interface Download {
   name: string;

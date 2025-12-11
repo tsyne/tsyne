@@ -4,7 +4,7 @@
  * Demonstrates Card, Accordion, Form, and Center layout widgets.
  */
 
-import { app, window, vbox, hbox, label, entry, button, card, accordion, form, center } from '../src';
+import { app, window, vbox, hbox, label, entry, button, card, accordion, form, center } from '../core/src';
 
 let nameField: any;
 let emailField: any;

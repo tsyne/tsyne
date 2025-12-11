@@ -1,7 +1,7 @@
 // Demo: Simplified Canvas Primitive Factory Methods
 // Shows the new simple APIs: rectangle(), circle(), line(), linearGradient(), radialGradient(), text()
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Canvas Primitives' }, (a) => {
   a.window({ title: 'Canvas Primitives - Simple APIs', width: 600, height: 500 }, (win) => {

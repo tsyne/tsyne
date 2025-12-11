@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label, screenshotIfRequested } from '../src';
+import { app, window, vbox, hbox, button, label, screenshotIfRequested } from '../core/src';
 
 // Counter example demonstrating state management with Tsyne
 let countLabel: any;

@@ -10,7 +10,7 @@
  * All updates flow through the Presenter.
  */
 
-import { app, window, vbox, hbox, label, entry, button } from '../src';
+import { app, window, vbox, hbox, label, entry, button } from '../core/src';
 
 // ============================================================================
 // MODEL - Business logic and data

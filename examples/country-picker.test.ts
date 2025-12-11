@@ -1,7 +1,7 @@
 /**
  * Test for SelectEntry (Country Picker) widget
  */
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import * as path from 'path';
 
 // Sample list of countries for testing

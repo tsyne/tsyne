@@ -1,7 +1,7 @@
 // Multi-window example demonstrating multiple Window instances
 // This example shows how to create and manage multiple windows
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Multi-Window Demo' }, (a) => {
   let windowCount = 0;

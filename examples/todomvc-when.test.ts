@@ -16,7 +16,7 @@
  *   TSYNE_HEADED=1 npm test examples/todomvc-when.test.ts  # Visual debugging
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createTodoApp } from './todomvc-when';
 import * as fs from 'fs';
 import * as path from 'path';

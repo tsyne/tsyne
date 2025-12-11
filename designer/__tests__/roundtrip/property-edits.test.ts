@@ -14,7 +14,7 @@ import {
 
 describe('RoundTrip: Property Edits', () => {
   test('changing button text property', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -31,7 +31,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../src';
+    const expected = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -45,7 +45,7 @@ app({ title: "Test" }, () => {
   });
 
   test('changing button className property', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -62,7 +62,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../src';
+    const expected = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -76,7 +76,7 @@ app({ title: "Test" }, () => {
   });
 
   test('changing label text property', async () => {
-    const original = `import { app, window, vbox, label } from '../src';
+    const original = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -93,7 +93,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../src';
+    const expected = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -107,7 +107,7 @@ app({ title: "Test" }, () => {
   });
 
   test('changing label className property', async () => {
-    const original = `import { app, window, vbox, label } from '../src';
+    const original = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -124,7 +124,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../src';
+    const expected = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -138,7 +138,7 @@ app({ title: "Test" }, () => {
   });
 
   test('multiple property changes in sequence', async () => {
-    const original = `import { app, window, vbox, button, label } from '../src';
+    const original = `import { app, window, vbox, button, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -159,7 +159,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button, label } from '../src';
+    const expected = `import { app, window, vbox, button, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -174,7 +174,7 @@ app({ title: "Test" }, () => {
   });
 
   test('property change combined with .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -192,7 +192,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../src';
+    const expected = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -206,7 +206,7 @@ app({ title: "Test" }, () => {
   });
 
   test('changing text to empty string', async () => {
-    const original = `import { app, window, vbox, label } from '../src';
+    const original = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -223,7 +223,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../src';
+    const expected = `import { app, window, vbox, label } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -237,7 +237,7 @@ app({ title: "Test" }, () => {
   });
 
   test('changing text with special characters', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -254,7 +254,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../src';
+    const expected = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -268,7 +268,7 @@ app({ title: "Test" }, () => {
   });
 
   test('property change preserves other properties', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -285,7 +285,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../src';
+    const expected = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -299,7 +299,7 @@ app({ title: "Test" }, () => {
   });
 
   test('verify metadata reflects property change before save', async () => {
-    const original = `import { app, window, vbox, button } from '../src';
+    const original = `import { app, window, vbox, button } from '../core/src';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

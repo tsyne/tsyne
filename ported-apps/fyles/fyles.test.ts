@@ -15,7 +15,7 @@
  * Based on the original fyles from https://github.com/FyshOS/fyles
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createFylesApp } from './fyles';
 import * as path from 'path';
 import * as fs from 'fs';

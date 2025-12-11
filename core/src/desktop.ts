@@ -29,7 +29,8 @@ let phoneServices: any = null;
 function getPhoneServices() {
   if (!phoneServices) {
     try {
-      phoneServices = require('../phone-apps/services');
+      // Path relative to core/src/ - goes up to repo root then into phone-apps
+      phoneServices = require('../../../phone-apps/services');
     } catch {
       phoneServices = {};
     }
@@ -297,9 +298,9 @@ class Desktop {
    * Initialize the desktop by scanning for apps
    */
   async init() {
-    const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
-    const portedAppsDir = path.join(process.cwd(), 'ported-apps');
-    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
+    const appDir = this.options.appDirectory || path.join(process.cwd(), '../examples');
+    const portedAppsDir = path.join(process.cwd(), '../ported-apps');
+    const phoneAppsDir = path.join(process.cwd(), '../phone-apps');
 
     // Scan examples, ported-apps, and phone-apps directories
     const exampleApps = scanForApps(appDir);

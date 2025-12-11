@@ -5,7 +5,7 @@
  * and shows appropriate error messages for invalid URLs.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 
 describeBrowser('Browser URL Validation', () => {
   browserTest(

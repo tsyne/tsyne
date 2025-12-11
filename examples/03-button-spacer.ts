@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Demonstrates button interaction and spacer layout
 
-import { app } from '../src';
+import { app } from '../core/src';
 
 app({ title: 'Button Demo' }, (a) => {
   a.window({ title: 'Button', width: 200, height: 100 }, (win) => {

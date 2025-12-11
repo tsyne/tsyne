@@ -6,7 +6,7 @@
  *
  * Run: npx ts-node examples/appointment-scheduler.ts
  */
-import { app } from '../src/index';
+import { app } from '../core/src/index';
 
 // Sample appointments
 interface Appointment {

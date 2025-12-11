@@ -15,14 +15,14 @@
  *   npx ts-node examples/reactive-form.ts
  */
 
-import { app } from '../src';
+import { app } from '../core/src';
 import {
   StringBinding,
   BoolBinding,
   NumberBinding,
   ComputedBinding,
   createFormBindings
-} from '../src/binding';
+} from '../core/src/binding';
 
 // ============================================================================
 // Application Setup

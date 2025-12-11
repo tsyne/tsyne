@@ -5,7 +5,7 @@
  * Users can filter commands by typing in the search box.
  */
 
-import { app, App, MenuItem } from '../src';
+import { app, App, MenuItem } from '../core/src';
 
 // All available commands
 const allCommands: Array<{ label: string; action: string; category: string }> = [

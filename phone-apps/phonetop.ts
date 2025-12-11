@@ -10,12 +10,12 @@
  * Run with: ./scripts/tsyne src/phonetop.ts
  */
 
-import { App } from './app';
-import { Window } from './window';
-import { Label, Button } from './widgets';
-import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from './tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
-import { ScopedResourceManager, ResourceManager } from './resources';
+import { App } from '../core/src/app';
+import { Window } from '../core/src/window';
+import { Label, Button } from '../core/src/widgets';
+import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
 

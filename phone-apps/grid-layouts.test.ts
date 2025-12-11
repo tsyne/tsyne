@@ -10,9 +10,9 @@
  * - Visual debugging mode: TSYNE_HEADED=1 npx jest grid-layouts.test.ts
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
-import { buildTabletTop } from '../src/tablet-top';
-import { buildPhoneTop } from '../src/phonetop';
+import { TsyneTest, TestContext } from '../core/src/index-test';
+import { buildTabletTop } from './tablet-top';
+import { buildPhoneTop } from './phonetop';
 
 describe('TabletTop Integration Tests', () => {
   let tsyneTest: TsyneTest;

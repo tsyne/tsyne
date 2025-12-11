@@ -2,7 +2,7 @@
  * TsyneTest UI tests for Stopwatch app
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createStopwatchApp } from './stopwatch';
 import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
 

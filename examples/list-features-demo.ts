@@ -1,4 +1,4 @@
-import { app, Label, List } from '../src/index';
+import { app, Label, List } from '../core/src/index';
 
 /**
  * List Features Demo

@@ -2,7 +2,7 @@
  * TsyneTest UI tests for Notes app
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createNotesApp } from './notes';
 import { MockStorageService } from './services';
 

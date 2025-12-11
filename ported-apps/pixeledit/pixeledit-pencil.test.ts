@@ -2,7 +2,7 @@
  * Test for pixeledit pencil drawing functionality
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createPixelEditorApp } from './pixeledit';
 import * as path from 'path';
 

@@ -2,7 +2,7 @@
  * TsyneTest UI tests for Dialer app
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createDialerApp } from './dialer';
 import { MockTelephonyService, MockContactsService } from './services';
 

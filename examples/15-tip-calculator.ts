@@ -6,7 +6,7 @@
 // Tip Calculator - Calculate tips and split bills
 // Demonstrates entry widgets, radio groups, and real-time calculations
 
-import { app, App, Window } from '../src';
+import { app, App, Window } from '../core/src';
 
 export function buildTipCalculator(a: App) {
   a.window({ title: 'Tip Calculator', width: 400, height: 400 }, (win: Window) => {

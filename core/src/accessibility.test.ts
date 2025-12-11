@@ -1,5 +1,5 @@
-import { AccessibilityManager } from '../src/accessibility';
-import { Context } from '../src/context';
+import { AccessibilityManager } from './accessibility';
+import { Context } from './context';
 
 describe('AccessibilityManager', () => {
   let ctx: Context;

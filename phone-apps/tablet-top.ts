@@ -11,13 +11,13 @@
  * Run with: ./scripts/tsyne src/tablet-top.ts
  */
 
-import { App } from './app';
-import { Window } from './window';
-import { Label, Button } from './widgets';
-import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
-import { ScopedResourceManager, ResourceManager } from './resources';
-import { SandboxedApp } from './sandboxed-app';
+import { App } from '../core/src/app';
+import { Window } from '../core/src/window';
+import { Label, Button } from '../core/src/widgets';
+import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../core/src/tsyne-window';
+import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
+import { SandboxedApp } from '../core/src/sandboxed-app';
 import * as path from 'path';
 
 // Import logging services for phone apps
@@ -25,7 +25,7 @@ import {
   modemLog,
   ModemLogEntry,
   createLoggingServices,
-} from '../phone-apps/logging-services';
+} from './logging-services';
 
 // Grid configuration for tablet
 const GRID_COLS = 4;

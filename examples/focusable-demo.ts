@@ -1,4 +1,4 @@
-import { app } from '../src';
+import { app } from '../core/src';
 
 /**
  * Focusable Demo - Demonstrates the fyne.Focusable interface (required for Keyable)

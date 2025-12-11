@@ -5,7 +5,7 @@
  * and restores it when a new browser session starts.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

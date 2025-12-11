@@ -9,7 +9,7 @@
  *   TSYNE_HEADED=1 npm test examples/reactive-form.test.ts  # Visual debugging
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 import { createReactiveFormApp } from './reactive-form';
 
 describe('Reactive Form Integration Tests', () => {

@@ -5,7 +5,7 @@
  * Users can pick colors using the native color picker and paint on a grid canvas.
  */
 
-import { app, window, vbox, hbox, label, button, separator } from '../src';
+import { app, window, vbox, hbox, label, button, separator } from '../core/src';
 
 // Grid size for the canvas
 const GRID_COLS = 16;

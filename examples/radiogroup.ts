@@ -5,7 +5,7 @@
  * from a list of mutually exclusive choices.
  */
 
-import { app, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested } from '../src';
+import { app, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested } from '../core/src';
 
 let themeRadio: any;
 let languageRadio: any;

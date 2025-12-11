@@ -16,9 +16,9 @@
  * declarative API and uses a simplified interaction model.
  */
 
-import { app } from '../../src';
-import type { App } from '../../src/app';
-import type { Window } from '../../src/window';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Resvg } from '@resvg/resvg-js';

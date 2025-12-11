@@ -1,4 +1,4 @@
-import { app } from '../src';
+import { app } from '../core/src';
 
 /**
  * Cursorable Demo - Demonstrates the desktop.Cursorable interface

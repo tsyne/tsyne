@@ -5,7 +5,7 @@
  * import bookmarks from a file, and handle merge/replace modes correctly.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -482,7 +482,7 @@ vbox(() => {
         fs.unlinkSync(bookmarksFilePath);
         console.log('Cleared bookmarks file (keeping export file)');
       }
-      const { Browser } = require('../src/browser');
+      const { Browser } = require('../core/src/browser');
       const browser2 = new Browser({ testMode: true });
 
       // Verify no bookmarks initially

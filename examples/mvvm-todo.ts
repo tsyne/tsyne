@@ -20,7 +20,7 @@ import {
   ObservableState,
   ComputedState,
   ViewModel
-} from '../src';
+} from '../core/src';
 
 // ============================================================================
 // MODEL - Domain data

@@ -1,4 +1,4 @@
-import { app } from '../src';
+import { app } from '../core/src';
 
 /**
  * Mouseable Demo - Demonstrates the desktop.Mouseable interface

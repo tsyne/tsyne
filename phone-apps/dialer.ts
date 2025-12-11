@@ -12,10 +12,10 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../src';
-import type { App } from '../src/app';
-import type { Window } from '../src/window';
-import type { Label } from '../src/widgets/display';
+import { app, styles, FontStyle } from '../../../../../core/src';
+import type { App } from '../core/src/app';
+import type { Window } from '../core/src/window';
+import type { Label } from '../core/src/widgets/display';
 import {
   ITelephonyService,
   IContactsService,

@@ -10,7 +10,7 @@
  * @description Draggable icons demo
  */
 
-import { app, App } from '../src';
+import { app, App } from '../core/src';
 
 export async function build(a: App) {
   a.window({ title: 'Desktop Canvas Demo', width: 800, height: 600 }, (win) => {
