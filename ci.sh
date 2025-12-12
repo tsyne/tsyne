@@ -388,6 +388,40 @@ test_ported_app "terminal" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
+# STEP 6: Phone Apps Sub-Projects
+# ============================================================================
+echo "--- :iphone: Phone Apps - Install & Test"
+
+# Helper function to build and test a phone app
+test_phone_app() {
+  local app_name=$1
+  local json_file="/tmp/phone-${app_name}-test-results.json"
+  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/phone-apps/${app_name}"
+
+  if [ ! -f "${app_dir}/package.json" ]; then
+    echo "⚠️  ${app_name}: No package.json - skipping"
+    return 0
+  fi
+
+  echo "--- :iphone: Phone App: ${app_name}"
+  cd "${app_dir}"
+  npm install --ignore-scripts
+  timeout 300 npm test -- --json --outputFile="$json_file" || {
+    capture_test_results "Phone: ${app_name}" "$json_file"
+    return 1
+  }
+  capture_test_results "Phone: ${app_name}" "$json_file"
+}
+
+# Test each phone app (continue even if some fail to collect all results)
+set +e  # Temporarily disable exit-on-error to collect all test results
+test_phone_app "eyes" || true
+test_phone_app "hexview" || true
+test_phone_app "mandelbrot" || true
+test_phone_app "minefield" || true
+set -e  # Re-enable exit-on-error
+
+# ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
