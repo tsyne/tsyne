@@ -1,0 +1,17 @@
+{
+  "name": "tsyne-falling-letters",
+  "version": "0.1.0",
+  "description": "Falling Letters word game ported to Tsyne",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  }
+}
