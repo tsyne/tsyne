@@ -83,6 +83,8 @@ import {
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
+  TappableCanvasRaster,
+  TappableCanvasRasterOptions,
   // Desktop
   DesktopCanvas,
   DesktopCanvasOptions,
@@ -782,6 +784,14 @@ export class App {
     pixels?: Array<[number, number, number, number]>
   ): CanvasRaster {
     return new CanvasRaster(this.ctx, width, height, pixels);
+  }
+
+  tappableCanvasRaster(
+    width: number,
+    height: number,
+    options?: TappableCanvasRasterOptions
+  ): TappableCanvasRaster {
+    return new TappableCanvasRaster(this.ctx, width, height, options);
   }
 
   canvasLinearGradient(options?: {

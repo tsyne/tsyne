@@ -27,12 +27,16 @@ export interface ITsyneWindow {
   // Title
   setTitle(title: string): void;
 
-  // Window-specific (no-op in InnerWindow)
+  // Window-specific (no-op in InnerWindow/StackPane where not applicable)
   resize(width: number, height: number): Promise<void>;
   centerOnScreen(): Promise<void>;
   setFullScreen(fullscreen: boolean): Promise<void>;
   setIcon(resourceName: string): Promise<void>;
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void;
+
+  // Resize callback - fires when window/container size changes
+  // No-op for StackPaneAdapter (phone screens don't resize)
+  onResize(callback: (width: number, height: number) => void): this;
 
   // Menus (may be limited in InnerWindow)
   setMainMenu(menuDefinition: Array<{
@@ -183,6 +187,13 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
     this.closeInterceptCallback = callback;
+  }
+
+  onResize(callback: (width: number, height: number) => void): this {
+    // InnerWindow resize - delegate to the inner window's content container
+    // For now, this is a no-op since InnerWindow doesn't expose resize events
+    // TODO: Could be implemented by wrapping inner window content with ResizableLayout
+    return this;
   }
 
   private async closeInnerWindow(): Promise<void> {
@@ -338,6 +349,11 @@ export class StackPaneAdapter implements ITsyneWindow {
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
     this.closeInterceptCallback = callback;
+  }
+
+  onResize(_callback: (width: number, height: number) => void): this {
+    // No-op: Phone screens don't resize - they're fixed size
+    return this;
   }
 
   async setMainMenu(_menuDefinition: Array<{

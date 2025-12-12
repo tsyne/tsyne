@@ -320,3 +320,32 @@ func (b *Bridge) handleSetWidgetOnResize(msg Message) Response {
 		Error:   "Widget is not a container",
 	}
 }
+
+// handleSetWindowOnResize sets up a resize callback for a window
+func (b *Bridge) handleSetWindowOnResize(msg Message) Response {
+	windowID := msg.Payload["windowId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	winObj, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		}
+	}
+
+	// Get the window's content container and wrap its layout
+	content := winObj.Content()
+	if cont, ok := content.(*fyne.Container); ok && cont.Layout != nil {
+		cont.Layout = NewResizableLayout(cont.Layout, windowID, callbackID, b)
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}

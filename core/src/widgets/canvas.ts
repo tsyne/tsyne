@@ -790,7 +790,19 @@ export class CanvasRaster {
 }
 
 /**
- * Tappable Canvas Raster - an interactive raster that responds to tap/click events
+ * Options for TappableCanvasRaster
+ */
+export interface TappableCanvasRasterOptions {
+  pixels?: Array<[number, number, number, number]>;
+  onTap?: (x: number, y: number) => void;
+  onKeyDown?: (key: string) => void;
+  onKeyUp?: (key: string) => void;
+  /** Called on scroll/mousewheel/touchpad two-finger scroll. deltaY > 0 = scroll up, < 0 = scroll down */
+  onScroll?: (deltaX: number, deltaY: number, x: number, y: number) => void;
+}
+
+/**
+ * Tappable Canvas Raster - an interactive raster that responds to tap/click and keyboard events
  */
 export class TappableCanvasRaster {
   private ctx: Context;
@@ -798,13 +810,37 @@ export class TappableCanvasRaster {
   private _width: number;
   private _height: number;
   private onTapCallback?: (x: number, y: number) => void;
+  private onKeyDownCallback?: (key: string) => void;
+  private onKeyUpCallback?: (key: string) => void;
+  private onScrollCallback?: (deltaX: number, deltaY: number, x: number, y: number) => void;
 
-  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>, onTap?: (x: number, y: number) => void) {
+  constructor(ctx: Context, width: number, height: number, options?: TappableCanvasRasterOptions);
+  /** @deprecated Use options object instead */
+  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>, onTap?: (x: number, y: number) => void);
+  constructor(ctx: Context, width: number, height: number, pixelsOrOptions?: Array<[number, number, number, number]> | TappableCanvasRasterOptions, onTap?: (x: number, y: number) => void) {
     this.ctx = ctx;
     this.id = ctx.generateId('tappablecanvasraster');
     this._width = width;
     this._height = height;
-    this.onTapCallback = onTap;
+
+    // Handle both old and new API
+    let pixels: Array<[number, number, number, number]> | undefined;
+    let options: TappableCanvasRasterOptions = {};
+
+    if (Array.isArray(pixelsOrOptions)) {
+      // Old API: pixels array
+      pixels = pixelsOrOptions;
+      options = { pixels, onTap };
+    } else if (pixelsOrOptions) {
+      // New API: options object
+      options = pixelsOrOptions;
+      pixels = options.pixels;
+    }
+
+    this.onTapCallback = options.onTap;
+    this.onKeyDownCallback = options.onKeyDown;
+    this.onKeyUpCallback = options.onKeyUp;
+    this.onScrollCallback = options.onScroll;
 
     const payload: any = { id: this.id, width, height };
 
@@ -812,14 +848,47 @@ export class TappableCanvasRaster {
       payload.pixels = pixels;
     }
 
+    // Set up keyboard callbacks
+    if (options.onKeyDown) {
+      const callbackId = ctx.generateId('callback');
+      payload.onKeyDownCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onKeyDownCallback) {
+          this.onKeyDownCallback(data.key);
+        }
+      });
+    }
+
+    if (options.onKeyUp) {
+      const callbackId = ctx.generateId('callback');
+      payload.onKeyUpCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onKeyUpCallback) {
+          this.onKeyUpCallback(data.key);
+        }
+      });
+    }
+
+    // Set up scroll callback
+    if (options.onScroll) {
+      const callbackId = ctx.generateId('callback');
+      payload.onScrollCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onScrollCallback) {
+          this.onScrollCallback(data.deltaX, data.deltaY, data.x, data.y);
+        }
+      });
+    }
+
     ctx.bridge.send('createTappableCanvasRaster', payload);
     ctx.addToCurrentContainer(this.id);
 
     // Register event listener for tap events
-    if (onTap) {
+    if (options.onTap) {
       ctx.bridge.on('canvasRasterTapped', (event: any) => {
         if (event.widgetId === this.id && this.onTapCallback) {
-          this.onTapCallback(event.data.x, event.data.y);
+          // event is already the data object with x, y, widgetId properties
+          this.onTapCallback(event.x, event.y);
         }
       });
     }
@@ -851,6 +920,37 @@ export class TappableCanvasRaster {
    */
   onTap(callback: (x: number, y: number) => void): void {
     this.onTapCallback = callback;
+  }
+
+  /**
+   * Resize the canvas to new dimensions
+   * The canvas will be cleared after resize
+   * @param width New width in pixels
+   * @param height New height in pixels
+   */
+  async resize(width: number, height: number): Promise<void> {
+    this._width = width;
+    this._height = height;
+    await this.ctx.bridge.send('resizeTappableCanvasRaster', {
+      widgetId: this.id,
+      width,
+      height
+    });
+  }
+
+  /**
+   * Set all pixels at once from a Uint8Array buffer (RGBA format)
+   * This is much more efficient than setPixels for full-canvas updates.
+   * Buffer must be width * height * 4 bytes (RGBA for each pixel).
+   * @param buffer Raw pixel data in RGBA format
+   */
+  async setPixelBuffer(buffer: Uint8Array): Promise<void> {
+    // Convert Uint8Array to base64
+    const base64 = Buffer.from(buffer).toString('base64');
+    await this.ctx.bridge.send('setTappableCanvasBuffer', {
+      widgetId: this.id,
+      buffer: base64
+    });
   }
 }
 

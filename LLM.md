@@ -733,6 +733,13 @@ Fyne uses OpenGL for rendering, which requires GPU hardware acceleration. Xvfb p
 
 See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 
+## Window Abstraction (ITsyneWindow)
+
+`ITsyneWindow` interface (`src/tsyne-window.ts`) unifies window APIs across contexts:
+- `Window` - real OS window (resizable)
+- `InnerWindowAdapter` - desktop MDI inner window (resizable)
+- `StackPaneAdapter` - phone stack pane (fixed size, `onResize` is no-op)
+
 ## Desktop Mode & App Sandboxing
 
 Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from `ported-apps/` and `examples/` directories.

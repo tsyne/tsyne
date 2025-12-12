@@ -25,6 +25,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateWindow(msg)
 	case "setContent":
 		return b.handleSetContent(msg)
+	case "setWindowOnResize":
+		return b.handleSetWindowOnResize(msg)
 	case "clearWidgets":
 		return b.handleClearWidgets(msg)
 	case "showWindow":
@@ -431,6 +433,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateTappableCanvasRaster(msg)
 	case "updateTappableCanvasRaster":
 		return b.handleUpdateTappableCanvasRaster(msg)
+	case "resizeTappableCanvasRaster":
+		return b.handleResizeTappableCanvasRaster(msg)
+	case "setTappableCanvasBuffer":
+		return b.handleSetTappableCanvasBuffer(msg)
 	case "createCanvasLinearGradient":
 		return b.handleCreateCanvasLinearGradient(msg)
 	case "updateCanvasLine":

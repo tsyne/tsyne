@@ -263,6 +263,23 @@ export class VBox {
       await this.visibilityCondition();
     }
   }
+
+  /**
+   * Register a callback for when this container's size changes
+   * @param callback Function called with new width and height when container resizes
+   * @returns this for method chaining
+   */
+  onResize(callback: (width: number, height: number) => void): this {
+    const callbackId = this.ctx.generateId('resize');
+    this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      callback(data.width, data.height);
+    });
+    this.ctx.bridge.send('setWidgetOnResize', {
+      widgetId: this.id,
+      callbackId
+    });
+    return this;
+  }
 }
 
 /**

@@ -6,10 +6,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
-// TappableCanvasRaster is a canvas raster that can respond to taps and provides position information.
+// TappableCanvasRaster is a canvas raster that can respond to taps, keyboard, and scroll events.
+// It implements fyne.Focusable, desktop.Keyable, and fyne.Scrollable for input handling.
 type TappableCanvasRaster struct {
 	widget.BaseWidget
 	raster      *canvas.Raster
@@ -17,6 +19,16 @@ type TappableCanvasRaster struct {
 	width       int
 	height      int
 	onTapped    func(x, y int)
+	focused     bool
+
+	// Keyboard callback IDs
+	onKeyDownCallbackId string
+	onKeyUpCallbackId   string
+
+	// Scroll callback ID
+	onScrollCallbackId string
+
+	bridge *Bridge
 }
 
 // NewTappableCanvasRaster creates a new tappable raster canvas.
@@ -88,6 +100,37 @@ func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {
 	}
 }
 
+// ResizeBuffer resizes the pixel buffer to the new dimensions.
+// The canvas will be cleared to white after resize.
+func (t *TappableCanvasRaster) ResizeBuffer(width, height int) {
+	t.width = width
+	t.height = height
+	t.pixelBuffer = make([]byte, width*height*4)
+
+	// Initialize with white pixels
+	for i := 0; i < len(t.pixelBuffer); i += 4 {
+		t.pixelBuffer[i] = 255   // R
+		t.pixelBuffer[i+1] = 255 // G
+		t.pixelBuffer[i+2] = 255 // B
+		t.pixelBuffer[i+3] = 255 // A
+	}
+
+	fyne.Do(func() {
+		t.raster.Refresh()
+		t.Refresh()
+	})
+}
+
+// GetWidth returns the current width of the canvas
+func (t *TappableCanvasRaster) GetWidth() int {
+	return t.width
+}
+
+// GetHeight returns the current height of the canvas
+func (t *TappableCanvasRaster) GetHeight() int {
+	return t.height
+}
+
 // CreateRenderer is a private method to Fyne which links this widget to its renderer.
 func (t *TappableCanvasRaster) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.raster)
@@ -108,3 +151,102 @@ func (t *TappableCanvasRaster) Tapped(ev *fyne.PointEvent) {
 func (t *TappableCanvasRaster) MinSize() fyne.Size {
 	return fyne.NewSize(float32(t.width), float32(t.height))
 }
+
+// SetKeyCallbacks sets the callback IDs for keyboard events
+func (t *TappableCanvasRaster) SetKeyCallbacks(bridge *Bridge, keyDown, keyUp string) {
+	t.bridge = bridge
+	t.onKeyDownCallbackId = keyDown
+	t.onKeyUpCallbackId = keyUp
+}
+
+// --- fyne.Focusable interface ---
+
+// FocusGained is called when this widget gains keyboard focus
+func (t *TappableCanvasRaster) FocusGained() {
+	t.focused = true
+}
+
+// FocusLost is called when this widget loses keyboard focus
+func (t *TappableCanvasRaster) FocusLost() {
+	t.focused = false
+}
+
+// TypedRune is called when a printable character is typed while focused
+func (t *TappableCanvasRaster) TypedRune(r rune) {
+	// Forward as key event
+	if t.onKeyDownCallbackId != "" && t.bridge != nil {
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onKeyDownCallbackId,
+				"key":        string(r),
+			},
+		})
+	}
+}
+
+// TypedKey handles special key input (arrows, function keys, etc.)
+func (t *TappableCanvasRaster) TypedKey(e *fyne.KeyEvent) {
+	// Forward to KeyDown for unified handling
+	t.KeyDown(e)
+}
+
+// --- desktop.Keyable interface ---
+
+// KeyDown is called when a key is pressed while focused
+func (t *TappableCanvasRaster) KeyDown(e *fyne.KeyEvent) {
+	if t.onKeyDownCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyDownCallbackId,
+			"key":        string(e.Name),
+		},
+	})
+}
+
+// KeyUp is called when a key is released while focused
+func (t *TappableCanvasRaster) KeyUp(e *fyne.KeyEvent) {
+	if t.onKeyUpCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyUpCallbackId,
+			"key":        string(e.Name),
+		},
+	})
+}
+
+// --- fyne.Scrollable interface ---
+
+// Scrolled is called when a scroll event occurs (e.g., mouse wheel, touchpad two-finger scroll)
+func (t *TappableCanvasRaster) Scrolled(e *fyne.ScrollEvent) {
+	if t.onScrollCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onScrollCallbackId,
+			"deltaX":     float64(e.Scrolled.DX),
+			"deltaY":     float64(e.Scrolled.DY),
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+		},
+	})
+}
+
+// SetOnScrollCallback sets the callback ID for scroll events
+func (t *TappableCanvasRaster) SetOnScrollCallback(bridge *Bridge, callbackId string) {
+	t.bridge = bridge
+	t.onScrollCallbackId = callbackId
+}
+
+// Ensure TappableCanvasRaster implements the required interfaces
+var _ fyne.Focusable = (*TappableCanvasRaster)(nil)
+var _ desktop.Keyable = (*TappableCanvasRaster)(nil)
+var _ fyne.Scrollable = (*TappableCanvasRaster)(nil)

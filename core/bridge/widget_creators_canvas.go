@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -1661,6 +1662,19 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 		})
 	})
 
+	// Set up keyboard callbacks if provided
+	onKeyDownCallbackId, _ := msg.Payload["onKeyDownCallbackId"].(string)
+	onKeyUpCallbackId, _ := msg.Payload["onKeyUpCallbackId"].(string)
+	if onKeyDownCallbackId != "" || onKeyUpCallbackId != "" {
+		tappable.SetKeyCallbacks(b, onKeyDownCallbackId, onKeyUpCallbackId)
+	}
+
+	// Set up scroll callback if provided
+	onScrollCallbackId, _ := msg.Payload["onScrollCallbackId"].(string)
+	if onScrollCallbackId != "" {
+		tappable.SetOnScrollCallback(b, onScrollCallbackId)
+	}
+
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
 		pixelBytes := make([]byte, width*height*4)
@@ -1729,6 +1743,90 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 			}
 		}
 	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleResizeTappableCanvasRaster resizes the pixel buffer of a tappable canvas raster
+func (b *Bridge) handleResizeTappableCanvasRaster(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	width := toInt(msg.Payload["width"])
+	height := toInt(msg.Payload["height"])
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	tappable.ResizeBuffer(width, height)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"width":  width,
+			"height": height,
+		},
+	}
+}
+
+// handleSetTappableCanvasBuffer sets all pixels at once from a base64-encoded RGBA buffer
+func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	bufferB64 := msg.Payload["buffer"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 buffer
+	pixels, err := base64.StdEncoding.DecodeString(bufferB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode pixel buffer: " + err.Error(),
+		}
+	}
+
+	// Set all pixels at once
+	tappable.SetPixels(pixels)
 
 	return Response{
 		ID:      msg.ID,

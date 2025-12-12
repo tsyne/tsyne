@@ -246,11 +246,11 @@ if [ "$IS_DEV_CHECKOUT" = true ]; then
         ln -s "$TSYNE_SOURCE" "$TSYNE_DEV/tsyne"
     fi
 
-    # Use source's bin/ for bridge
-    BRIDGE_PATH="$TSYNE_SOURCE/bin/tsyne-bridge"
+    # Use source's core/bin/ for bridge
+    BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
     if [ ! -f "$BRIDGE_PATH" ]; then
         log_info "Building tsyne-bridge..."
-        (cd "$TSYNE_SOURCE/bridge" && /usr/local/go/bin/go build -o "$BRIDGE_PATH")
+        (cd "$TSYNE_SOURCE/core/bridge" && make build)
         log_success "Bridge built"
     fi
 
@@ -273,18 +273,12 @@ else
         log_success "Tsyne runtime installed"
     fi
 
-    # Ensure tsyne-bridge exists in runtime
-    BRIDGE_PATH="$TSYNE_RUNTIME/tsyne-bridge"
+    # Use source's core/bin/ for bridge (same as dev mode)
+    BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
     if [ ! -f "$BRIDGE_PATH" ]; then
-        # First, check if pre-built bridge exists in source
-        if [ -f "$TSYNE_SOURCE/bin/tsyne-bridge" ]; then
-            log_info "Copying tsyne-bridge to runtime..."
-            cp "$TSYNE_SOURCE/bin/tsyne-bridge" "$BRIDGE_PATH"
-            log_success "Bridge installed"
-        # Otherwise try to build from source
-        elif [ -d "$TSYNE_SOURCE/bridge" ]; then
+        if [ -d "$TSYNE_SOURCE/core/bridge" ]; then
             log_info "Building tsyne-bridge..."
-            (cd "$TSYNE_SOURCE/bridge" && /usr/local/go/bin/go build -o "$BRIDGE_PATH")
+            (cd "$TSYNE_SOURCE/core/bridge" && make build)
             log_success "Bridge built"
         else
             log_error "tsyne-bridge not found and cannot build"

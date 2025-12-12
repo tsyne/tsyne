@@ -837,4 +837,24 @@ export class Window {
       content
     });
   }
+
+  // ==================== Resize ====================
+
+  /**
+   * Register a callback for when this window's size changes.
+   * The callback receives the new width and height.
+   * @param callback Function called with new width and height when window resizes
+   * @returns this for method chaining
+   */
+  onResize(callback: (width: number, height: number) => void): this {
+    const callbackId = this.ctx.generateId('resize');
+    this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+      callback(data.width, data.height);
+    });
+    this.ctx.bridge.send('setWindowOnResize', {
+      windowId: this.id,
+      callbackId
+    });
+    return this;
+  }
 }

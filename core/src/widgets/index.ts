@@ -91,7 +91,9 @@ export {
   CanvasLinearGradient,
   CanvasArc,
   CanvasPolygon,
-  CanvasRadialGradient
+  CanvasRadialGradient,
+  TappableCanvasRaster,
+  TappableCanvasRasterOptions
 } from './canvas';
 
 // Desktop widgets
