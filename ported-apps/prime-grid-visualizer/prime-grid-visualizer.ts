@@ -8,6 +8,7 @@
  *
  * Ported from https://abhrankan-chakrabarti.github.io/prime-grid-visualizer/
  * Original author: Abhrankan Chakrabarti
+ * License: Please see https://github.com/abhrankan-chakrabarti/prime-grid-visualizer for original license
  *
  * This application visualizes prime numbers in a customizable grid layout.
  * Features include:
@@ -15,6 +16,10 @@
  * - Customizable parameters (max number, grid columns, cell size)
  * - Statistics display (prime count, percentage)
  * - Screenshot/export capability
+ *
+ * This Tsyne port adapts the original web-based visualization to work with
+ * Tsyne's TypeScript-to-Fyne bridge architecture while maintaining the same
+ * core prime number calculation and visualization capabilities.
  */
 
 import { app } from '../../core/src';
