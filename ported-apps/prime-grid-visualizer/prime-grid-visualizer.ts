@@ -27,6 +27,7 @@ import { app } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRaster } from '../../core/src/widgets/canvas';
+import type { Entry } from '../../core/src/widgets/inputs_text';
 
 // Color constants (RGB)
 const COLOR_PRIME = { r: 34, g: 197, b: 94 };        // Green
@@ -111,7 +112,7 @@ async function drawCell(
   await raster.fillRect(startX + cellSize - 1, startY, 1, cellSize, COLOR_BORDER.r, COLOR_BORDER.g, COLOR_BORDER.b, 255); // Right
 }
 
-export function createPrimeGridApp(a: App, win: Window): void {
+export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
   let state: GridState = {
     n: 100,
     columns: 10,
@@ -122,6 +123,13 @@ export function createPrimeGridApp(a: App, win: Window): void {
 
   let raster: CanvasRaster | null = null;
   let statsLabel: any;
+  let maxNEntry: Entry;
+  let columnsEntry: Entry;
+  let cellSizeEntry: Entry;
+
+  // Pre-compute primes so dimensions are correct when building UI
+  state.isPrimes = sieveOfEratosthenes(state.n);
+  state.primeCount = state.isPrimes.filter((v, i) => i >= 2 && v).length;
 
   /**
    * Calculate the number of rows needed
@@ -142,7 +150,7 @@ export function createPrimeGridApp(a: App, win: Window): void {
   /**
    * Generate the grid
    */
-  function generateGrid() {
+  async function generateGrid() {
     if (state.n < 2) {
       state.n = 2;
     }
@@ -161,7 +169,7 @@ export function createPrimeGridApp(a: App, win: Window): void {
       }
     }
 
-    updateDisplay();
+    await updateDisplay();
   }
 
   /**
@@ -171,14 +179,12 @@ export function createPrimeGridApp(a: App, win: Window): void {
     if (!raster || !state.isPrimes.length) return;
 
     try {
-      const dims = getCanvasDimensions();
-
-      // Draw background
+      // Clear entire canvas (800x800) to handle grid size changes
       await raster.fillRect(
         0,
         0,
-        dims.width,
-        dims.height,
+        800,
+        800,
         COLOR_WHITE.r,
         COLOR_WHITE.g,
         COLOR_WHITE.b,
@@ -231,94 +237,93 @@ export function createPrimeGridApp(a: App, win: Window): void {
     }
   }
 
-  // Build UI
-  a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (winCtx) => {
-    winCtx.setContent(() => {
-      a.vbox(() => {
-        // Title
-        a.label('Prime Grid Visualizer').setFontSize(18);
+  // Build UI using the provided window
+  await win.setContent(() => {
+    a.vbox(() => {
+      // Title
+      a.label('Prime Grid Visualizer', undefined, undefined, undefined, { bold: true });
 
-        // Control Panel
-        a.padded(() => {
-          a.vbox(() => {
-            // Row 1: Input controls
-            a.hbox(() => {
-              a.label('Max Number:').withId('labelMaxN');
-              a.entry(
-                state.n.toString(),
-                (val) => {
-                  const newN = parseInt(val, 10) || 100;
-                  if (newN > 1) {
-                    state.n = newN;
-                  }
-                },
-                80
-              ).withId('inputMaxN');
+      // Control Panel
+      a.padded(() => {
+        a.vbox(() => {
+          // Row 1: Input controls
+          a.hbox(() => {
+            a.label('Max Number:').withId('labelMaxN');
+            maxNEntry = a.entry(state.n.toString(), undefined, 80).withId('inputMaxN') as Entry;
 
-              a.label('  Columns:').withId('labelColumns');
-              a.entry(
-                state.columns.toString(),
-                (val) => {
-                  const newCols = parseInt(val, 10) || 10;
-                  if (newCols > 0) {
-                    state.columns = newCols;
-                  }
-                },
-                80
-              ).withId('inputColumns');
+            a.label('  Columns:').withId('labelColumns');
+            columnsEntry = a.entry(state.columns.toString(), undefined, 80).withId('inputColumns') as Entry;
 
-              a.label('  Cell Size:').withId('labelCellSize');
-              a.entry(
-                state.cellSize.toString(),
-                (val) => {
-                  const newSize = parseInt(val, 10) || 20;
-                  if (newSize >= 5) {
-                    state.cellSize = newSize;
-                  }
-                },
-                80
-              ).withId('inputCellSize');
+            a.label('  Cell Size:').withId('labelCellSize');
+            cellSizeEntry = a.entry(state.cellSize.toString(), undefined, 80).withId('inputCellSize') as Entry;
 
-              a.button('Generate').onClick(() => {
-                generateGrid();
-              }).withId('btnGenerate');
-            });
+            a.button('Generate').onClick(async () => {
+              // Read current values from entry widgets
+              const maxNText = await maxNEntry.getText();
+              const columnsText = await columnsEntry.getText();
+              const cellSizeText = await cellSizeEntry.getText();
 
-            // Row 2: Statistics
-            statsLabel = a.label('Ready to generate...').withId('statsLabel');
+              const newN = parseInt(maxNText, 10) || 100;
+              const newCols = parseInt(columnsText, 10) || 10;
+              const newSize = parseInt(cellSizeText, 10) || 20;
 
-            // Row 3: Export button
-            a.button('Export as Screenshot').onClick(() => {
-              exportScreenshot();
-            }).withId('btnExport');
+              if (newN > 1) state.n = newN;
+              if (newCols > 0) state.columns = newCols;
+              if (newSize >= 5) state.cellSize = newSize;
 
-            // Legend
-            a.hbox(() => {
-              a.label('Legend: ').setFontSize(10);
-              a.rectangle('#22c55e', 12, 12); // Prime
-              a.label(' Prime  ', '', 10);
+              await generateGrid();
+            }).withId('btnGenerate');
+          });
 
-              a.rectangle('#ef4444', 12, 12); // Composite
-              a.label(' Composite  ', '', 10);
+          // Row 2: Statistics
+          statsLabel = a.label('Ready to generate...').withId('statsLabel');
 
-              a.rectangle('#3b82f6', 12, 12); // One
-              a.label(' One  ', '', 10);
-            });
+          // Row 3: Export button
+          a.button('Export as Screenshot').onClick(() => {
+            exportScreenshot();
+          }).withId('btnExport');
+
+          // Legend
+          a.hbox(() => {
+            a.label('Legend: ');
+            a.rectangle('#22c55e', 12, 12); // Prime
+            a.label(' Prime  ');
+
+            a.rectangle('#ef4444', 12, 12); // Composite
+            a.label(' Composite  ');
+
+            a.rectangle('#3b82f6', 12, 12); // One
+            a.label(' One  ');
           });
         });
+      });
 
-        // Grid Display Area
-        a.scroll(() => {
-          const dims = getCanvasDimensions();
-          raster = a.canvasRaster(dims.width, dims.height);
-          raster.withId('gridRaster');
-        });
+      // Grid Display Area - use fixed max size so regenerating with larger values works
+      a.center(() => {
+        // Use max canvas size (800x800) so regenerating with different params fits
+        raster = a.canvasRaster(800, 800);
       });
     });
-
-    winCtx.show();
   });
 
+  await win.show();
+
   // Initialize with default grid
-  generateGrid();
+  await generateGrid();
+}
+
+/**
+ * Main application entry point
+ */
+if (require.main === module) {
+  app({ title: 'Prime Grid Visualizer' }, async (a: App) => {
+    let capturedWin: Window | null = null;
+    a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (win: Window) => {
+      capturedWin = win;
+    });
+    if (capturedWin) {
+      await createPrimeGridApp(a, capturedWin);
+    }
+    await a.run();
+  });
 }
