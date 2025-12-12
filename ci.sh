@@ -422,6 +422,37 @@ test_phone_app "minefield" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
+# STEP 7: Larger Apps Sub-Projects
+# ============================================================================
+echo "--- :rocket: Larger Apps - Install & Test"
+
+# Helper function to build and test a larger app
+test_larger_app() {
+  local app_name=$1
+  local json_file="/tmp/larger-${app_name}-test-results.json"
+  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/larger-apps/${app_name}"
+
+  if [ ! -f "${app_dir}/package.json" ]; then
+    echo "⚠️  ${app_name}: No package.json - skipping"
+    return 0
+  fi
+
+  echo "--- :rocket: Larger App: ${app_name}"
+  cd "${app_dir}"
+  npm install --ignore-scripts
+  timeout 300 npm test -- --json --outputFile="$json_file" || {
+    capture_test_results "Larger: ${app_name}" "$json_file"
+    return 1
+  }
+  capture_test_results "Larger: ${app_name}" "$json_file"
+}
+
+# Test each larger app (continue even if some fail to collect all results)
+set +e  # Temporarily disable exit-on-error to collect all test results
+test_larger_app "literate-programming" || true
+set -e  # Re-enable exit-on-error
+
+# ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}

@@ -1,0 +1,19 @@
+{
+  "name": "tsyne-litprog",
+  "version": "0.1.0",
+  "description": "Literate programming editor for Tsyne - supports Noweb, Org-mode, and Markdown fence syntax",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest parser.test.ts store.test.ts",
+    "test:gui": "jest litprog.test.ts",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  }
+}
