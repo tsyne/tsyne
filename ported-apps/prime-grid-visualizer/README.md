@@ -1,13 +1,15 @@
 # Prime Grid Visualizer for Tsyne
 
-A mathematical visualization application that displays prime numbers in an interactive grid format, ported from [Abhrankan Chakrabarti's Prime Grid Visualizer](https://abhrankan-chakrabarti.github.io/prime-grid-visualizer/) to the Tsyne framework.
+A mathematical visualization application that displays prime numbers in an interactive grid format, ported from [Abhrankan Chakrabarti's Prime Grid Visualizer](https://github.com/abhrankan-chakrabarti/prime-grid-visualizer) to the Tsyne framework.
 
 ## Original Project
 
 This application is based on the Prime Grid Visualizer:
-- **Original Project**: https://abhrankan-chakrabarti.github.io/prime-grid-visualizer/
+- **Repository**: https://github.com/abhrankan-chakrabarti/prime-grid-visualizer
+- **Live Demo**: https://abhrankan-chakrabarti.github.io/prime-grid-visualizer/
 - **Original Author**: Abhrankan Chakrabarti
 - **Original Implementation**: HTML5/Canvas-based web application
+- **Portions copyright (c) Abhrankan Chakrabarti**
 
 ## About This Port
 
@@ -240,8 +242,10 @@ For large n, the "prime number theorem" tells us the density of primes near n is
 
 ## Attribution
 
-- **Original Visualization**: Abhrankan Chakrabarti's Prime Grid Visualizer
-- **Algorithm**: Sieve of Eratosthenes (ancient algorithm)
+- **Original Visualization**: [Abhrankan Chakrabarti's Prime Grid Visualizer](https://github.com/abhrankan-chakrabarti/prime-grid-visualizer)
+  - Portions copyright (c) Abhrankan Chakrabarti
+  - See original repository for full license details
+- **Algorithm**: Sieve of Eratosthenes (ancient algorithm by Eratosthenes of Cyrene, c. 276–194 BC)
 - **Tsyne Framework**: Paul Hammant and contributors
 - **Fyne GUI Toolkit**: fyne.io team
 

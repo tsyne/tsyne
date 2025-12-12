@@ -6,9 +6,10 @@
 /**
  * Prime Grid Visualizer for Tsyne
  *
- * Ported from https://abhrankan-chakrabarti.github.io/prime-grid-visualizer/
+ * Ported from https://github.com/abhrankan-chakrabarti/prime-grid-visualizer
  * Original author: Abhrankan Chakrabarti
- * License: Please see https://github.com/abhrankan-chakrabarti/prime-grid-visualizer for original license
+ * Portions copyright (c) Abhrankan Chakrabarti
+ * License: See original repository for license details
  *
  * This application visualizes prime numbers in a customizable grid layout.
  * Features include:
