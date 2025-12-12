@@ -17,6 +17,7 @@
 import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createPrimeGridApp } from './prime-grid-visualizer';
 import * as path from 'path';
+import * as fs from 'fs';
 
 describe('Prime Grid Visualizer Tests', () => {
   let tsyneTest: TsyneTest;
@@ -306,11 +307,12 @@ describe('Prime Grid Visualizer Tests', () => {
     await ctx.wait(800);
 
     // Capture screenshot
-    const screenshotPath = path.join(
-      __dirname,
-      '../screenshots',
-      'prime-grid-visualizer.png'
-    );
+    const screenshotsDir = path.join(__dirname, '../screenshots');
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+
+    const screenshotPath = path.join(screenshotsDir, 'prime-grid-visualizer.png');
     await tsyneTest.screenshot(screenshotPath);
     console.error(`📸 Screenshot saved: ${screenshotPath}`);
   });

@@ -26,6 +26,12 @@ The Prime Grid Visualizer displays prime numbers in a customizable grid. Each nu
 
 The application includes statistics about the prime distribution and supports exporting visualizations as screenshots.
 
+### Screenshot
+
+![Prime Grid Visualizer](../screenshots/prime-grid-visualizer.png)
+
+*Visualization of the first 200 numbers in a 14-column grid (to generate: run tests with `TAKE_SCREENSHOTS=1`)*
+
 ## Features
 
 ✅ **Implemented:**
