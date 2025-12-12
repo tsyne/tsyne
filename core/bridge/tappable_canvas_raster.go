@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// TappableCanvasRaster is a canvas raster that can respond to taps, keyboard, and scroll events.
-// It implements fyne.Focusable, desktop.Keyable, and fyne.Scrollable for input handling.
+// TappableCanvasRaster is a canvas raster that can respond to taps, keyboard, scroll, and mouse events.
+// It implements fyne.Focusable, desktop.Keyable, fyne.Scrollable, and desktop.Hoverable for input handling.
 type TappableCanvasRaster struct {
 	widget.BaseWidget
 	raster      *canvas.Raster
@@ -27,6 +27,9 @@ type TappableCanvasRaster struct {
 
 	// Scroll callback ID
 	onScrollCallbackId string
+
+	// Mouse move callback ID
+	onMouseMoveCallbackId string
 
 	bridge *Bridge
 }
@@ -246,7 +249,41 @@ func (t *TappableCanvasRaster) SetOnScrollCallback(bridge *Bridge, callbackId st
 	t.onScrollCallbackId = callbackId
 }
 
+// --- desktop.Hoverable interface ---
+
+// MouseIn is called when the mouse enters the widget
+func (t *TappableCanvasRaster) MouseIn(e *desktop.MouseEvent) {
+	// We don't need to do anything special on mouse enter
+}
+
+// MouseOut is called when the mouse leaves the widget
+func (t *TappableCanvasRaster) MouseOut() {
+	// We don't need to do anything special on mouse exit
+}
+
+// MouseMoved is called when the mouse moves within the widget
+func (t *TappableCanvasRaster) MouseMoved(e *desktop.MouseEvent) {
+	if t.onMouseMoveCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseMoveCallbackId,
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+		},
+	})
+}
+
+// SetOnMouseMoveCallback sets the callback ID for mouse move events
+func (t *TappableCanvasRaster) SetOnMouseMoveCallback(bridge *Bridge, callbackId string) {
+	t.bridge = bridge
+	t.onMouseMoveCallbackId = callbackId
+}
+
 // Ensure TappableCanvasRaster implements the required interfaces
 var _ fyne.Focusable = (*TappableCanvasRaster)(nil)
 var _ desktop.Keyable = (*TappableCanvasRaster)(nil)
 var _ fyne.Scrollable = (*TappableCanvasRaster)(nil)
+var _ desktop.Hoverable = (*TappableCanvasRaster)(nil)

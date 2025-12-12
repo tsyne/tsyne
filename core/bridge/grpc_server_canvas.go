@@ -266,13 +266,14 @@ func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req 
 		ID:   req.WidgetId,
 		Type: "createTappableCanvasRaster",
 		Payload: map[string]interface{}{
-			"id":                    req.WidgetId,
-			"width":                 float64(req.Width),
-			"height":                float64(req.Height),
-			"pixels":                pixelData,
-			"onKeyDownCallbackId":   req.OnKeyDownCallbackId,
-			"onKeyUpCallbackId":     req.OnKeyUpCallbackId,
-			"onScrollCallbackId":    req.OnScrollCallbackId,
+			"id":                     req.WidgetId,
+			"width":                  float64(req.Width),
+			"height":                 float64(req.Height),
+			"pixels":                 pixelData,
+			"onKeyDownCallbackId":    req.OnKeyDownCallbackId,
+			"onKeyUpCallbackId":      req.OnKeyUpCallbackId,
+			"onScrollCallbackId":     req.OnScrollCallbackId,
+			"onMouseMoveCallbackId":  req.OnMouseMoveCallbackId,
 		},
 	}
 

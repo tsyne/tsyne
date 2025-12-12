@@ -7652,16 +7652,17 @@ func (x *CreateCanvasPolygonRequest) GetStrokeWidth() float32 {
 }
 
 type CreateTappableCanvasRasterRequest struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId            string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Width               int32                  `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
-	Height              int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-	Pixels              []byte                 `protobuf:"bytes,4,opt,name=pixels,proto3" json:"pixels,omitempty"`
-	OnKeyDownCallbackId string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
-	OnKeyUpCallbackId   string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
-	OnScrollCallbackId  string                 `protobuf:"bytes,7,opt,name=on_scroll_callback_id,json=onScrollCallbackId,proto3" json:"on_scroll_callback_id,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId              string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Width                 int32                  `protobuf:"varint,2,opt,name=width,proto3" json:"width,omitempty"`
+	Height                int32                  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	Pixels                []byte                 `protobuf:"bytes,4,opt,name=pixels,proto3" json:"pixels,omitempty"`
+	OnKeyDownCallbackId   string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
+	OnKeyUpCallbackId     string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
+	OnScrollCallbackId    string                 `protobuf:"bytes,7,opt,name=on_scroll_callback_id,json=onScrollCallbackId,proto3" json:"on_scroll_callback_id,omitempty"`
+	OnMouseMoveCallbackId string                 `protobuf:"bytes,8,opt,name=on_mouse_move_callback_id,json=onMouseMoveCallbackId,proto3" json:"on_mouse_move_callback_id,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *CreateTappableCanvasRasterRequest) Reset() {
@@ -7739,6 +7740,13 @@ func (x *CreateTappableCanvasRasterRequest) GetOnKeyUpCallbackId() string {
 func (x *CreateTappableCanvasRasterRequest) GetOnScrollCallbackId() string {
 	if x != nil {
 		return x.OnScrollCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTappableCanvasRasterRequest) GetOnMouseMoveCallbackId() string {
+	if x != nil {
+		return x.OnMouseMoveCallbackId
 	}
 	return ""
 }
@@ -16721,7 +16729,7 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\n" +
 	"fill_color\x18\x03 \x01(\tR\tfillColor\x12!\n" +
 	"\fstroke_color\x18\x04 \x01(\tR\vstrokeColor\x12!\n" +
-	"\fstroke_width\x18\x05 \x01(\x02R\vstrokeWidth\"\xa1\x02\n" +
+	"\fstroke_width\x18\x05 \x01(\x02R\vstrokeWidth\"\xdb\x02\n" +
 	"!CreateTappableCanvasRasterRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x14\n" +
 	"\x05width\x18\x02 \x01(\x05R\x05width\x12\x16\n" +
@@ -16729,7 +16737,8 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\x06pixels\x18\x04 \x01(\fR\x06pixels\x124\n" +
 	"\x17on_key_down_callback_id\x18\x05 \x01(\tR\x13onKeyDownCallbackId\x120\n" +
 	"\x15on_key_up_callback_id\x18\x06 \x01(\tR\x11onKeyUpCallbackId\x121\n" +
-	"\x15on_scroll_callback_id\x18\a \x01(\tR\x12onScrollCallbackId\"\xbc\x01\n" +
+	"\x15on_scroll_callback_id\x18\a \x01(\tR\x12onScrollCallbackId\x128\n" +
+	"\x19on_mouse_move_callback_id\x18\b \x01(\tR\x15onMouseMoveCallbackId\"\xbc\x01\n" +
 	"\x17UpdateCanvasLineRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x0e\n" +
 	"\x02x1\x18\x02 \x01(\x02R\x02x1\x12\x0e\n" +

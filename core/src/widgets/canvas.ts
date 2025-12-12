@@ -799,6 +799,8 @@ export interface TappableCanvasRasterOptions {
   onKeyUp?: (key: string) => void;
   /** Called on scroll/mousewheel/touchpad two-finger scroll. deltaY > 0 = scroll up, < 0 = scroll down */
   onScroll?: (deltaX: number, deltaY: number, x: number, y: number) => void;
+  /** Called when mouse moves over the canvas */
+  onMouseMove?: (x: number, y: number) => void;
 }
 
 /**
@@ -813,6 +815,7 @@ export class TappableCanvasRaster {
   private onKeyDownCallback?: (key: string) => void;
   private onKeyUpCallback?: (key: string) => void;
   private onScrollCallback?: (deltaX: number, deltaY: number, x: number, y: number) => void;
+  private onMouseMoveCallback?: (x: number, y: number) => void;
 
   constructor(ctx: Context, width: number, height: number, options?: TappableCanvasRasterOptions);
   /** @deprecated Use options object instead */
@@ -841,6 +844,7 @@ export class TappableCanvasRaster {
     this.onKeyDownCallback = options.onKeyDown;
     this.onKeyUpCallback = options.onKeyUp;
     this.onScrollCallback = options.onScroll;
+    this.onMouseMoveCallback = options.onMouseMove;
 
     const payload: any = { id: this.id, width, height };
 
@@ -876,6 +880,17 @@ export class TappableCanvasRaster {
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         if (this.onScrollCallback) {
           this.onScrollCallback(data.deltaX, data.deltaY, data.x, data.y);
+        }
+      });
+    }
+
+    // Set up mouse move callback
+    if (options.onMouseMove) {
+      const callbackId = ctx.generateId('callback');
+      payload.onMouseMoveCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onMouseMoveCallback) {
+          this.onMouseMoveCallback(data.x, data.y);
         }
       });
     }

@@ -16,15 +16,20 @@
 import { app } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
-import type { CanvasCircle, CanvasRaster } from '../../core/src/widgets/canvas';
+import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 
 // Default configuration
 const DEFAULT_WIDTH = 400;
 const DEFAULT_HEIGHT = 200;
-const IRIS_COLOR = '#4CAF50'; // Green
-const PUPIL_COLOR = '#000000'; // Black
-const SCLERA_COLOR = '#FFFFFF'; // White
-const HIGHLIGHT_COLOR = '#FFFFFF'; // White highlight
+
+// Colors as RGBA values
+const SKY_BLUE: [number, number, number, number] = [135, 206, 235, 255];
+const SCLERA_COLOR: [number, number, number, number] = [255, 255, 255, 255];
+const SCLERA_OUTLINE: [number, number, number, number] = [51, 51, 51, 255];
+const IRIS_COLOR: [number, number, number, number] = [76, 175, 80, 255]; // Green
+const IRIS_OUTLINE: [number, number, number, number] = [46, 125, 50, 255];
+const PUPIL_COLOR: [number, number, number, number] = [0, 0, 0, 255];
+const HIGHLIGHT_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 
 // Scale factors
 const IRIS_SCALE = 0.4; // Iris radius relative to eye
@@ -39,7 +44,6 @@ export class Eyes {
   private height: number;
   private mouseX: number = 0;
   private mouseY: number = 0;
-  private animationFrame: NodeJS.Timeout | null = null;
 
   // Eye positions
   private leftEye: { x: number; y: number; radius: number } = { x: 0, y: 0, radius: 0 };
@@ -53,6 +57,9 @@ export class Eyes {
     this.width = width;
     this.height = height;
     this.calculateEyePositions();
+    // Initialize mouse at center
+    this.mouseX = width / 2;
+    this.mouseY = height / 2;
   }
 
   private calculateEyePositions(): void {
@@ -136,6 +143,93 @@ export class Eyes {
   getHighlightRadius(pupilRadius: number): number {
     return pupilRadius * HIGHLIGHT_SCALE;
   }
+
+  getWidth(): number {
+    return this.width;
+  }
+
+  getHeight(): number {
+    return this.height;
+  }
+}
+
+/**
+ * Render eyes to a pixel buffer
+ */
+function renderEyes(eyes: Eyes, buffer: Uint8Array): void {
+  const width = eyes.getWidth();
+  const height = eyes.getHeight();
+
+  // Fill background with sky blue
+  for (let i = 0; i < buffer.length; i += 4) {
+    buffer[i] = SKY_BLUE[0];
+    buffer[i + 1] = SKY_BLUE[1];
+    buffer[i + 2] = SKY_BLUE[2];
+    buffer[i + 3] = SKY_BLUE[3];
+  }
+
+  const leftEye = eyes.getLeftEye();
+  const rightEye = eyes.getRightEye();
+  const leftOffset = eyes.getLeftIrisOffset();
+  const rightOffset = eyes.getRightIrisOffset();
+
+  const irisRadius = eyes.getIrisRadius(leftEye.radius);
+  const pupilRadius = eyes.getPupilRadius(irisRadius);
+  const highlightRadius = eyes.getHighlightRadius(pupilRadius);
+
+  // Helper to draw a filled circle
+  const fillCircle = (cx: number, cy: number, r: number, color: [number, number, number, number]) => {
+    const r2 = r * r;
+    for (let py = Math.max(0, Math.floor(cy - r)); py <= Math.min(height - 1, Math.ceil(cy + r)); py++) {
+      for (let px = Math.max(0, Math.floor(cx - r)); px <= Math.min(width - 1, Math.ceil(cx + r)); px++) {
+        const dx = px - cx;
+        const dy = py - cy;
+        if (dx * dx + dy * dy <= r2) {
+          const idx = (py * width + px) * 4;
+          buffer[idx] = color[0];
+          buffer[idx + 1] = color[1];
+          buffer[idx + 2] = color[2];
+          buffer[idx + 3] = color[3];
+        }
+      }
+    }
+  };
+
+  // Helper to draw a circle outline
+  const strokeCircle = (cx: number, cy: number, r: number, color: [number, number, number, number], strokeWidth: number = 2) => {
+    const outerR2 = r * r;
+    const innerR2 = (r - strokeWidth) * (r - strokeWidth);
+    for (let py = Math.max(0, Math.floor(cy - r)); py <= Math.min(height - 1, Math.ceil(cy + r)); py++) {
+      for (let px = Math.max(0, Math.floor(cx - r)); px <= Math.min(width - 1, Math.ceil(cx + r)); px++) {
+        const dx = px - cx;
+        const dy = py - cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 <= outerR2 && d2 >= innerR2) {
+          const idx = (py * width + px) * 4;
+          buffer[idx] = color[0];
+          buffer[idx + 1] = color[1];
+          buffer[idx + 2] = color[2];
+          buffer[idx + 3] = color[3];
+        }
+      }
+    }
+  };
+
+  // Draw left eye
+  fillCircle(leftEye.x, leftEye.y, leftEye.radius, SCLERA_COLOR);
+  strokeCircle(leftEye.x, leftEye.y, leftEye.radius, SCLERA_OUTLINE, 2);
+  fillCircle(leftEye.x + leftOffset.x, leftEye.y + leftOffset.y, irisRadius, IRIS_COLOR);
+  strokeCircle(leftEye.x + leftOffset.x, leftEye.y + leftOffset.y, irisRadius, IRIS_OUTLINE, 1);
+  fillCircle(leftEye.x + leftOffset.x, leftEye.y + leftOffset.y, pupilRadius, PUPIL_COLOR);
+  fillCircle(leftEye.x + leftOffset.x - pupilRadius * 0.3, leftEye.y + leftOffset.y - pupilRadius * 0.3, highlightRadius, HIGHLIGHT_COLOR);
+
+  // Draw right eye
+  fillCircle(rightEye.x, rightEye.y, rightEye.radius, SCLERA_COLOR);
+  strokeCircle(rightEye.x, rightEye.y, rightEye.radius, SCLERA_OUTLINE, 2);
+  fillCircle(rightEye.x + rightOffset.x, rightEye.y + rightOffset.y, irisRadius, IRIS_COLOR);
+  strokeCircle(rightEye.x + rightOffset.x, rightEye.y + rightOffset.y, irisRadius, IRIS_OUTLINE, 1);
+  fillCircle(rightEye.x + rightOffset.x, rightEye.y + rightOffset.y, pupilRadius, PUPIL_COLOR);
+  fillCircle(rightEye.x + rightOffset.x - pupilRadius * 0.3, rightEye.y + rightOffset.y - pupilRadius * 0.3, highlightRadius, HIGHLIGHT_COLOR);
 }
 
 /**
@@ -147,244 +241,52 @@ export class EyesUI {
   private eyes: Eyes;
   private canvasWidth: number = DEFAULT_WIDTH;
   private canvasHeight: number = DEFAULT_HEIGHT;
-  private animationInterval: NodeJS.Timeout | null = null;
-
-  // Canvas elements for dynamic updates
-  private leftSclera: CanvasCircle | null = null;
-  private rightSclera: CanvasCircle | null = null;
-  private leftIris: CanvasCircle | null = null;
-  private rightIris: CanvasCircle | null = null;
-  private leftPupil: CanvasCircle | null = null;
-  private rightPupil: CanvasCircle | null = null;
-  private leftHighlight: CanvasCircle | null = null;
-  private rightHighlight: CanvasCircle | null = null;
+  private canvas: TappableCanvasRaster | null = null;
+  private pixelBuffer: Uint8Array;
+  private trackingMouse: boolean = true;
 
   constructor(a: App) {
     this.a = a;
     this.eyes = new Eyes(this.canvasWidth, this.canvasHeight);
+    this.pixelBuffer = new Uint8Array(this.canvasWidth * this.canvasHeight * 4);
   }
 
-  private startAnimation(): void {
-    // Simulate mouse movement for demo (since we can't track real mouse in canvas)
-    let angle = 0;
-    this.animationInterval = setInterval(() => {
-      // Circular motion around center
-      const centerX = this.canvasWidth / 2;
-      const centerY = this.canvasHeight / 2;
-      const radius = Math.min(this.canvasWidth, this.canvasHeight) * 0.3;
-
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      this.eyes.setMousePosition(x, y);
-      this.updateEyes();
-
-      angle += 0.05;
-    }, 33); // ~30 FPS
-  }
-
-  private stopAnimation(): void {
-    if (this.animationInterval) {
-      clearInterval(this.animationInterval);
-      this.animationInterval = null;
-    }
-  }
-
-  private updateEyes(): void {
-    const leftEye = this.eyes.getLeftEye();
-    const rightEye = this.eyes.getRightEye();
-    const leftOffset = this.eyes.getLeftIrisOffset();
-    const rightOffset = this.eyes.getRightIrisOffset();
-
-    const irisRadius = this.eyes.getIrisRadius(leftEye.radius);
-    const pupilRadius = this.eyes.getPupilRadius(irisRadius);
-    const highlightRadius = this.eyes.getHighlightRadius(pupilRadius);
-
-    // Update left iris position
-    if (this.leftIris) {
-      const x = leftEye.x + leftOffset.x;
-      const y = leftEye.y + leftOffset.y;
-      this.leftIris.update({
-        x: x - irisRadius,
-        y: y - irisRadius,
-        x2: x + irisRadius,
-        y2: y + irisRadius,
-      });
-    }
-
-    // Update left pupil position
-    if (this.leftPupil) {
-      const x = leftEye.x + leftOffset.x;
-      const y = leftEye.y + leftOffset.y;
-      this.leftPupil.update({
-        x: x - pupilRadius,
-        y: y - pupilRadius,
-        x2: x + pupilRadius,
-        y2: y + pupilRadius,
-      });
-    }
-
-    // Update left highlight position
-    if (this.leftHighlight) {
-      const x = leftEye.x + leftOffset.x - pupilRadius * 0.3;
-      const y = leftEye.y + leftOffset.y - pupilRadius * 0.3;
-      this.leftHighlight.update({
-        x: x - highlightRadius,
-        y: y - highlightRadius,
-        x2: x + highlightRadius,
-        y2: y + highlightRadius,
-      });
-    }
-
-    // Update right iris position
-    if (this.rightIris) {
-      const x = rightEye.x + rightOffset.x;
-      const y = rightEye.y + rightOffset.y;
-      this.rightIris.update({
-        x: x - irisRadius,
-        y: y - irisRadius,
-        x2: x + irisRadius,
-        y2: y + irisRadius,
-      });
-    }
-
-    // Update right pupil position
-    if (this.rightPupil) {
-      const x = rightEye.x + rightOffset.x;
-      const y = rightEye.y + rightOffset.y;
-      this.rightPupil.update({
-        x: x - pupilRadius,
-        y: y - pupilRadius,
-        x2: x + pupilRadius,
-        y2: y + pupilRadius,
-      });
-    }
-
-    // Update right highlight position
-    if (this.rightHighlight) {
-      const x = rightEye.x + rightOffset.x - pupilRadius * 0.3;
-      const y = rightEye.y + rightOffset.y - pupilRadius * 0.3;
-      this.rightHighlight.update({
-        x: x - highlightRadius,
-        y: y - highlightRadius,
-        x2: x + highlightRadius,
-        y2: y + highlightRadius,
-      });
-    }
+  private async updateCanvas(): Promise<void> {
+    if (!this.canvas) return;
+    renderEyes(this.eyes, this.pixelBuffer);
+    await this.canvas.setPixelBuffer(this.pixelBuffer);
   }
 
   cleanup(): void {
-    this.stopAnimation();
+    // Nothing to clean up now that we don't have animation
   }
 
   buildUI(win: Window): void {
     this.win = win;
 
-    const leftEye = this.eyes.getLeftEye();
-    const rightEye = this.eyes.getRightEye();
-    const irisRadius = this.eyes.getIrisRadius(leftEye.radius);
-    const pupilRadius = this.eyes.getPupilRadius(irisRadius);
-    const highlightRadius = this.eyes.getHighlightRadius(pupilRadius);
-
     this.a.vbox(() => {
       this.a.center(() => {
-        this.a.stack(() => {
-          // Background rectangle for sizing
-          this.a.canvasRectangle({
-            width: this.canvasWidth,
-            height: this.canvasHeight,
-            fillColor: '#87CEEB', // Sky blue background
-          });
-
-          // Left eye sclera (white part)
-          this.leftSclera = this.a.canvasCircle({
-            x: leftEye.x - leftEye.radius,
-            y: leftEye.y - leftEye.radius,
-            x2: leftEye.x + leftEye.radius,
-            y2: leftEye.y + leftEye.radius,
-            fillColor: SCLERA_COLOR,
-            strokeColor: '#333333',
-            strokeWidth: 2,
-          });
-
-          // Left eye iris
-          this.leftIris = this.a.canvasCircle({
-            x: leftEye.x - irisRadius,
-            y: leftEye.y - irisRadius,
-            x2: leftEye.x + irisRadius,
-            y2: leftEye.y + irisRadius,
-            fillColor: IRIS_COLOR,
-            strokeColor: '#2E7D32',
-            strokeWidth: 1,
-          });
-
-          // Left eye pupil
-          this.leftPupil = this.a.canvasCircle({
-            x: leftEye.x - pupilRadius,
-            y: leftEye.y - pupilRadius,
-            x2: leftEye.x + pupilRadius,
-            y2: leftEye.y + pupilRadius,
-            fillColor: PUPIL_COLOR,
-          });
-
-          // Left eye highlight
-          this.leftHighlight = this.a.canvasCircle({
-            x: leftEye.x - pupilRadius * 0.3 - highlightRadius,
-            y: leftEye.y - pupilRadius * 0.3 - highlightRadius,
-            x2: leftEye.x - pupilRadius * 0.3 + highlightRadius,
-            y2: leftEye.y - pupilRadius * 0.3 + highlightRadius,
-            fillColor: HIGHLIGHT_COLOR,
-          });
-
-          // Right eye sclera (white part)
-          this.rightSclera = this.a.canvasCircle({
-            x: rightEye.x - rightEye.radius,
-            y: rightEye.y - rightEye.radius,
-            x2: rightEye.x + rightEye.radius,
-            y2: rightEye.y + rightEye.radius,
-            fillColor: SCLERA_COLOR,
-            strokeColor: '#333333',
-            strokeWidth: 2,
-          });
-
-          // Right eye iris
-          this.rightIris = this.a.canvasCircle({
-            x: rightEye.x - irisRadius,
-            y: rightEye.y - irisRadius,
-            x2: rightEye.x + irisRadius,
-            y2: rightEye.y + irisRadius,
-            fillColor: IRIS_COLOR,
-            strokeColor: '#2E7D32',
-            strokeWidth: 1,
-          });
-
-          // Right eye pupil
-          this.rightPupil = this.a.canvasCircle({
-            x: rightEye.x - pupilRadius,
-            y: rightEye.y - pupilRadius,
-            x2: rightEye.x + pupilRadius,
-            y2: rightEye.y + pupilRadius,
-            fillColor: PUPIL_COLOR,
-          });
-
-          // Right eye highlight
-          this.rightHighlight = this.a.canvasCircle({
-            x: rightEye.x - pupilRadius * 0.3 - highlightRadius,
-            y: rightEye.y - pupilRadius * 0.3 - highlightRadius,
-            x2: rightEye.x - pupilRadius * 0.3 + highlightRadius,
-            y2: rightEye.y - pupilRadius * 0.3 + highlightRadius,
-            fillColor: HIGHLIGHT_COLOR,
-          });
+        this.canvas = this.a.tappableCanvasRaster(this.canvasWidth, this.canvasHeight, {
+          onMouseMove: (x, y) => {
+            if (this.trackingMouse) {
+              this.eyes.setMousePosition(x, y);
+              this.updateCanvas();
+            }
+          },
+          onTap: (x, y) => {
+            // Toggle tracking mode on tap
+            this.trackingMouse = !this.trackingMouse;
+          }
         });
       });
 
       this.a.separator();
 
-      this.a.label('Eyes follow a circular path (simulated mouse movement)');
+      this.a.label('Move mouse over the eyes - tap to toggle tracking');
     });
 
-    // Start the animation
-    this.startAnimation();
+    // Initial render
+    this.updateCanvas();
   }
 }
 

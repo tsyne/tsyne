@@ -1675,6 +1675,12 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 		tappable.SetOnScrollCallback(b, onScrollCallbackId)
 	}
 
+	// Set up mouse move callback if provided
+	onMouseMoveCallbackId, _ := msg.Payload["onMouseMoveCallbackId"].(string)
+	if onMouseMoveCallbackId != "" {
+		tappable.SetOnMouseMoveCallback(b, onMouseMoveCallbackId)
+	}
+
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
 		pixelBytes := make([]byte, width*height*4)

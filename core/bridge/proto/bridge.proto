@@ -1158,6 +1158,7 @@ message CreateTappableCanvasRasterRequest {
   string on_key_down_callback_id = 5;
   string on_key_up_callback_id = 6;
   string on_scroll_callback_id = 7;
+  string on_mouse_move_callback_id = 8;
 }
 
 // Canvas update messages
