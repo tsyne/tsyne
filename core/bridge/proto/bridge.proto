@@ -1155,6 +1155,9 @@ message CreateTappableCanvasRasterRequest {
   int32 width = 2;
   int32 height = 3;
   bytes pixels = 4;
+  string on_key_down_callback_id = 5;
+  string on_key_up_callback_id = 6;
+  string on_scroll_callback_id = 7;
 }
 
 // Canvas update messages
