@@ -35,6 +35,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateButton(msg)
 	case "createLabel":
 		return b.handleCreateLabel(msg)
+	case "createColorCell":
+		return b.handleCreateColorCell(msg)
+	case "updateColorCell":
+		return b.handleUpdateColorCell(msg)
 	case "createEntry":
 		return b.handleCreateEntry(msg)
 	case "createMultiLineEntry":
@@ -410,6 +414,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetScrollMinHeight(msg)
 	case "setScrollMinSize":
 		return b.handleSetScrollMinSize(msg)
+	case "setWidgetMinSize":
+		return b.handleSetWidgetMinSize(msg)
 	// Canvas primitives
 	case "createCanvasLine":
 		return b.handleCreateCanvasLine(msg)

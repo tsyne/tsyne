@@ -78,7 +78,9 @@ export {
   Menu,
   TextGridStyle,
   TextGridOptions,
-  TextGrid
+  TextGrid,
+  ColorCell,
+  ColorCellOptions
 } from './display';
 
 // Canvas primitives

@@ -21,6 +21,8 @@ import {
   // Display
   Activity,
   Calendar,
+  ColorCell,
+  ColorCellOptions,
   FileIcon,
   Hyperlink,
   Icon,
@@ -597,6 +599,18 @@ export class App {
 
   fileicon(path: string): FileIcon {
     return new FileIcon(this.ctx, path);
+  }
+
+  /**
+   * Create a color cell widget - tappable cell with colored background and centered text.
+   * Useful for game boards (Sudoku, chess), spreadsheets, color pickers, etc.
+   * @param options - Configuration options (width, height, text, fillColor, textColor, onClick)
+   * @returns ColorCell widget
+   * @example
+   * a.colorCell({ width: 36, height: 36, text: '5', fillColor: '#FFFFFF', onClick: () => selectCell() });
+   */
+  colorCell(options?: ColorCellOptions): ColorCell {
+    return new ColorCell(this.ctx, options);
   }
 
   hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {

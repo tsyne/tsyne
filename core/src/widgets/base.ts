@@ -602,6 +602,24 @@ export abstract class Widget {
   // ==================== Size & Resize ====================
 
   /**
+   * Set the minimum size of this widget
+   * @param width Minimum width in pixels
+   * @param height Minimum height in pixels
+   * @returns this for method chaining
+   * @example
+   * a.button('1').withMinSize(40, 40); // Fixed 40x40 button
+   * a.label('X').withMinSize(50, 0);   // Min width 50, height auto
+   */
+  withMinSize(width: number, height: number): this {
+    this.ctx.bridge.send('setWidgetMinSize', {
+      widgetId: this.id,
+      minWidth: width,
+      minHeight: height
+    });
+    return this;
+  }
+
+  /**
    * Get the current rendered size of the widget
    * @returns Promise resolving to {width, height} in pixels
    * @example

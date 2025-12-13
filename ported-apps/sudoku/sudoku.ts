@@ -26,11 +26,10 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets/display';
-import type { Button } from '../../core/src/widgets/inputs';
+import {app} from '../../core/src';
+import type {App} from '../../core/src/app';
+import type {Window} from '../../core/src/window';
+import type {Label, ColorCell} from '../../core/src/widgets/display';
 
 // ============================================================================
 // Constants
@@ -494,7 +493,7 @@ export class SudokuUI {
   private game: SudokuGame;
   private a: App;
   private win: Window | null = null;
-  private cellButtons: Button[][] = [];
+  private cellWidgets: ColorCell[][] = [];
   private statusLabel: Label | null = null;
   private emptyLabel: Label | null = null;
   private timerLabel: Label | null = null;
@@ -569,31 +568,48 @@ export class SudokuUI {
 
       this.a.separator();
 
-      // Sudoku Grid
+      // Initialize cellWidgets array
+      for (let row = 0; row < GRID_SIZE; row++) {
+        this.cellWidgets[row] = [];
+      }
+
+      // Sudoku Grid: vbox of 3 rows, each row is a grid of 3 boxes
       this.a.vbox(() => {
-        for (let row = 0; row < GRID_SIZE; row++) {
-          this.cellButtons[row] = [];
-          this.a.hbox(() => {
-            for (let col = 0; col < GRID_SIZE; col++) {
-              const cell = this.game.getCell(row, col);
-              const cellId = `cell-${row}-${col}`;
-
-              const btn = this.a.button(cell.value === 0 ? '' : String(cell.value))
-                .onClick(() => this.onCellClick(row, col))
-                .withId(cellId);
-
-              this.cellButtons[row][col] = btn;
-            }
-          });
-
-          // Add separator after every 3 rows
-          if ((row + 1) % 3 === 0 && row < GRID_SIZE - 1) {
-            this.a.separator();
+        for (let boxRow = 0; boxRow < 3; boxRow++) {
+          // Add vertical gap between box rows (not before first)
+          if (boxRow > 0) {
+            this.a.label('').withMinSize(1, 8);
           }
+          // Each row contains 3 boxes horizontally
+          this.a.grid(3, () => {
+            for (let boxCol = 0; boxCol < 3; boxCol++) {
+              // Each box is a 3x3 grid
+              this.a.grid(3, () => {
+                for (let innerRow = 0; innerRow < 3; innerRow++) {
+                  for (let innerCol = 0; innerCol < 3; innerCol++) {
+                    const row = boxRow * 3 + innerRow;
+                    const col = boxCol * 3 + innerCol;
+                    const cell = this.game.getCell(row, col);
+                    const widget = this.a.colorCell({
+                      width: 36,
+                      height: 36,
+                      text: cell.value === 0 ? '' : String(cell.value),
+                      fillColor: '#FFFFFF',
+                      textColor: cell.isFixed ? '#000080' : '#000000',
+                      borderColor: '#404040',
+                      borderWidth: 1,
+                      centerText: true,
+                      onClick: () => this.onCellClick(row, col)
+                    }).withId(`cell-${row}-${col}`);
+
+                    this.cellWidgets[row][col] = widget;
+                  }
+                }
+              }, { cellSize: 36, spacing: 1 });
+            }
+          }, { spacing: 4 });
         }
-      });
-      // Grid marker for testing
-      this.a.label('').withId('sudokuGrid');
+      }, { spacing: 0 });
 
       this.a.separator();
 
@@ -647,18 +663,29 @@ export class SudokuUI {
   private async updateDisplay(): Promise<void> {
     const selected = this.game.getSelectedCell();
 
-    // Update cell buttons
+    // Update cell widgets
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         const cell = this.game.getCell(row, col);
-        const btn = this.cellButtons[row]?.[col];
-        if (!btn) continue;
+        const widget = this.cellWidgets[row]?.[col];
+        if (!widget) continue;
 
-        await btn.setText(cell.value === 0 ? '' : String(cell.value));
+        await widget.setText(cell.value === 0 ? '' : String(cell.value));
 
-        // Highlight selected cell
+        // Determine cell color based on state
         const isSelected = selected && selected.row === row && selected.col === col;
-        // Note: Color changes would require a different approach in Tsyne
+        let fillColor = '#FFFFFF'; // Default white
+        if (isSelected) {
+          fillColor = '#4488FF'; // Blue for selected
+        } else if (cell.isConflict) {
+          fillColor = '#FF8888'; // Red for conflict
+        } else if (cell.isHinted) {
+          fillColor = '#88FF88'; // Green for hinted
+        }
+        await widget.setFillColor(fillColor);
+
+        // Set text color: navy for fixed, black for user-entered
+        await widget.setTextColor(cell.isFixed ? '#000080' : '#000000');
       }
     }
 

@@ -319,6 +319,38 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) Response {
 	}
 }
 
+// handleSetWidgetMinSize sets the minimum size on any widget
+func (b *Bridge) handleSetWidgetMinSize(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	minWidth := toFloat32(msg.Payload["minWidth"])
+	minHeight := toFloat32(msg.Payload["minHeight"])
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found: " + widgetID,
+		}
+	}
+
+	fyne.Do(func() {
+		// Try to call SetMinSize if the widget supports it
+		if sizable, ok := obj.(interface{ SetMinSize(fyne.Size) }); ok {
+			sizable.SetMinSize(fyne.NewSize(minWidth, minHeight))
+			obj.Refresh()
+		}
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 // mapColorToImportance maps a CSS color string to a Fyne importance level
 // This is a workaround for Fyne's limitation of not supporting per-widget colors
 func mapColorToImportance(colorStr string) string {
