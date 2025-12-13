@@ -1795,6 +1795,41 @@ func (b *Bridge) handleResizeTappableCanvasRaster(msg Message) Response {
 	}
 }
 
+// handleFocusTappableCanvasRaster requests keyboard focus for a tappable canvas raster
+func (b *Bridge) handleFocusTappableCanvasRaster(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	fyne.Do(func() {
+		tappable.RequestFocus()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 // handleSetTappableCanvasBuffer sets all pixels at once from a base64-encoded RGBA buffer
 func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)

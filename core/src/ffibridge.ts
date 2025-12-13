@@ -22,6 +22,7 @@ export class FfiBridgeConnection implements BridgeInterface {
   private messageId = 0;
   private eventPollInterval?: NodeJS.Timeout;
   private isShutdown = false;
+  private onExitCallback?: () => void; // Callback when bridge exits
 
   constructor(testMode: boolean = false) {
     // Load koffi dynamically
@@ -179,6 +180,14 @@ export class FfiBridgeConnection implements BridgeInterface {
     this.eventHandlers.delete(eventType);
   }
 
+  /**
+   * Register a callback to be called when the bridge exits
+   * Note: In FFI mode, the bridge runs in the same process, so this is called on shutdown
+   */
+  setOnExit(callback: () => void): void {
+    this.onExitCallback = callback;
+  }
+
   async registerCustomId(widgetId: string, customId: string): Promise<unknown> {
     return this.send('registerCustomId', { widgetId, customId });
   }
@@ -223,6 +232,11 @@ export class FfiBridgeConnection implements BridgeInterface {
       this._TsyneShutdown();
     } catch (err) {
       // Ignore shutdown errors
+    }
+
+    // Call exit callback if registered
+    if (this.onExitCallback) {
+      this.onExitCallback();
     }
   }
 }

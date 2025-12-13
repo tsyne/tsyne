@@ -36,6 +36,8 @@ export interface BridgeInterface {
   quit(): void;
   waitForPendingRequests(timeoutMs?: number): Promise<boolean>;
   shutdown(): void;
+  /** Register a callback to be called when the bridge process exits */
+  setOnExit(callback: () => void): void;
 }
 
 export class BridgeConnection implements BridgeInterface {
@@ -54,6 +56,7 @@ export class BridgeConnection implements BridgeInterface {
   private quitTimeout?: NodeJS.Timeout;
   private bridgeExiting = false; // Track when bridge is shutting down
   private stdinClosed = false; // Track when stdin pipe is closed
+  private onExitCallback?: () => void; // Callback when bridge process exits
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -115,6 +118,10 @@ export class BridgeConnection implements BridgeInterface {
         pending.reject(new Error('Bridge process exited'));
       }
       this.pendingRequests.clear();
+      // Call exit callback if registered (allows app to cleanup and exit)
+      if (this.onExitCallback) {
+        this.onExitCallback();
+      }
     });
 
     // Handle stdin errors (EPIPE when bridge closes unexpectedly)
@@ -316,6 +323,13 @@ export class BridgeConnection implements BridgeInterface {
    */
   off(eventType: string, handler?: (data: unknown) => void): void {
     this.eventHandlers.delete(eventType);
+  }
+
+  /**
+   * Register a callback to be called when the bridge process exits
+   */
+  setOnExit(callback: () => void): void {
+    this.onExitCallback = callback;
   }
 
   async registerCustomId(widgetId: string, customId: string): Promise<unknown> {

@@ -65,6 +65,39 @@ app({ title: 'My App' }, (a) => {
 **Display:** label, hyperlink, separator, spacer, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon
 **Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient, canvasArc, canvasPolygon, canvasRadialGradient
 
+**TappableCanvasRaster (pixel-based rendering):**
+```typescript
+// Create tappable canvas with callbacks
+const canvas = a.tappableCanvasRaster(width, height, {
+  onTap: (x, y) => handleClick(x, y),
+  onKeyDown: (key) => handleKey(key),  // Requires focus
+});
+
+// ✅ CORRECT: Use setPixelBuffer() with Uint8Array for full-canvas rendering
+const buffer = new Uint8Array(width * height * 4);  // RGBA
+for (let i = 0; i < width * height; i++) {
+  const offset = i * 4;
+  buffer[offset] = r;      // Red
+  buffer[offset + 1] = g;  // Green
+  buffer[offset + 2] = b;  // Blue
+  buffer[offset + 3] = 255; // Alpha
+}
+await canvas.setPixelBuffer(buffer);  // Single efficient call
+
+// ❌ WRONG: Never use setPixels() with object arrays for full canvas
+// This creates 80,000+ objects and crashes the bridge!
+const pixels = [];
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++) {
+    pixels.push({ x, y, r, g, b, a: 255 });  // BAD - massive array
+  }
+}
+await canvas.setPixels(pixels);  // CRASHES with large canvases
+
+// Request keyboard focus (required for onKeyDown to work)
+await canvas.requestFocus();
+```
+
 **All widgets support:**
 - `hide()` / `show()` - Imperative visibility control
 - `when(() => boolean)` - Declarative visibility (returns `this` for chaining)

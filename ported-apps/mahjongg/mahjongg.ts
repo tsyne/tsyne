@@ -623,21 +623,37 @@ export class MahjonggUI {
   }
 
   /**
+   * Set a pixel in the buffer (helper for efficient rendering)
+   */
+  private setPixel(buffer: Uint8Array, x: number, y: number, r: number, g: number, b: number): void {
+    if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+      const offset = (y * CANVAS_WIDTH + x) * 4;
+      buffer[offset] = r;
+      buffer[offset + 1] = g;
+      buffer[offset + 2] = b;
+      buffer[offset + 3] = 255;
+    }
+  }
+
+  /**
    * Render the entire board to the canvas
    */
   async renderBoard(): Promise<void> {
     if (!this.canvas) return;
 
-    const pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> = [];
+    // Use efficient buffer-based rendering
+    const buffer = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT * 4);
 
     // Wood background color
     const woodBg = this.hexToRgb('#8B4513');
 
     // Fill background
-    for (let y = 0; y < CANVAS_HEIGHT; y++) {
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        pixels.push({ x, y, r: woodBg.r, g: woodBg.g, b: woodBg.b, a: 255 });
-      }
+    for (let i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+      const offset = i * 4;
+      buffer[offset] = woodBg.r;
+      buffer[offset + 1] = woodBg.g;
+      buffer[offset + 2] = woodBg.b;
+      buffer[offset + 3] = 255;
     }
 
     // Sort tiles by z-index (lowest first, so higher tiles are drawn on top)
@@ -647,27 +663,20 @@ export class MahjonggUI {
 
     // Draw each tile
     for (const tile of sortedTiles) {
-      this.drawTile(pixels, tile);
+      this.drawTileToBuffer(buffer, tile);
     }
 
-    // Update canvas in batches
-    const BATCH_SIZE = 50000;
-    for (let i = 0; i < pixels.length; i += BATCH_SIZE) {
-      const batch = pixels.slice(i, i + BATCH_SIZE);
-      await this.canvas.setPixels(batch);
-    }
+    // Update canvas with single efficient call
+    await this.canvas.setPixelBuffer(buffer);
 
     // Update status labels
     await this.updateStatus();
   }
 
   /**
-   * Draw a single tile to the pixel array
+   * Draw a single tile to the buffer
    */
-  private drawTile(
-    pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }>,
-    tile: Tile
-  ): void {
+  private drawTileToBuffer(buffer: Uint8Array, tile: Tile): void {
     const pos = this.game.getTileScreenPosition(tile);
     const colors = MahjonggGame.getTileColors(tile.typeId);
     const bgColor = tile.selected ? this.hexToRgb('#FFE4B5') : this.hexToRgb(colors.bg);
@@ -677,46 +686,26 @@ export class MahjonggUI {
     // Draw 3D shadow (bottom-left offset)
     for (let dy = 0; dy < TILE_HEIGHT; dy++) {
       for (let dx = 0; dx < TILE_OFFSET_3D; dx++) {
-        const px = pos.x - TILE_OFFSET_3D + dx;
-        const py = pos.y + dy;
-        if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
-          const idx = pixels.findIndex(p => p.x === px && p.y === py);
-          if (idx >= 0) {
-            pixels[idx] = { x: px, y: py, r: shadowColor.r, g: shadowColor.g, b: shadowColor.b, a: 255 };
-          }
-        }
+        this.setPixel(buffer, pos.x - TILE_OFFSET_3D + dx, pos.y + dy,
+          shadowColor.r, shadowColor.g, shadowColor.b);
       }
     }
 
     // Draw bottom shadow
     for (let dy = 0; dy < TILE_OFFSET_3D; dy++) {
       for (let dx = 0; dx < TILE_WIDTH; dx++) {
-        const px = pos.x - TILE_OFFSET_3D + dx;
-        const py = pos.y + TILE_HEIGHT + dy - TILE_OFFSET_3D;
-        if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
-          const idx = pixels.findIndex(p => p.x === px && p.y === py);
-          if (idx >= 0) {
-            pixels[idx] = { x: px, y: py, r: shadowColor.r, g: shadowColor.g, b: shadowColor.b, a: 255 };
-          }
-        }
+        this.setPixel(buffer, pos.x - TILE_OFFSET_3D + dx, pos.y + TILE_HEIGHT + dy - TILE_OFFSET_3D,
+          shadowColor.r, shadowColor.g, shadowColor.b);
       }
     }
 
     // Draw tile background
     for (let dy = 0; dy < TILE_HEIGHT; dy++) {
       for (let dx = 0; dx < TILE_WIDTH; dx++) {
-        const px = pos.x + dx;
-        const py = pos.y + dy;
-        if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
-          // Border
-          const isBorder = dx === 0 || dx === TILE_WIDTH - 1 || dy === 0 || dy === TILE_HEIGHT - 1;
-          const color = isBorder ? borderColor : bgColor;
-
-          const idx = pixels.findIndex(p => p.x === px && p.y === py);
-          if (idx >= 0) {
-            pixels[idx] = { x: px, y: py, r: color.r, g: color.g, b: color.b, a: 255 };
-          }
-        }
+        // Border
+        const isBorder = dx === 0 || dx === TILE_WIDTH - 1 || dy === 0 || dy === TILE_HEIGHT - 1;
+        const color = isBorder ? borderColor : bgColor;
+        this.setPixel(buffer, pos.x + dx, pos.y + dy, color.r, color.g, color.b);
       }
     }
 
@@ -728,14 +717,7 @@ export class MahjonggUI {
 
     for (let dy = 0; dy < indicatorSize; dy++) {
       for (let dx = 0; dx < indicatorSize; dx++) {
-        const px = startX + dx;
-        const py = startY + dy;
-        if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
-          const idx = pixels.findIndex(p => p.x === px && p.y === py);
-          if (idx >= 0) {
-            pixels[idx] = { x: px, y: py, r: fgColor.r, g: fgColor.g, b: fgColor.b, a: 255 };
-          }
-        }
+        this.setPixel(buffer, startX + dx, startY + dy, fgColor.r, fgColor.g, fgColor.b);
       }
     }
   }

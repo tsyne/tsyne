@@ -91,6 +91,7 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   private bufferPool = new BufferPool(); // Pool for send frame buffers
   // Message queue to ensure sequential processing (preserves ordering)
   private messageQueue: Promise<unknown> = Promise.resolve();
+  private onExitCallback?: () => void; // Callback when bridge process exits
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -149,6 +150,10 @@ export class MsgpackBridgeConnection implements BridgeInterface {
     this.process.on('exit', (code) => {
       if (code !== null && code !== 0) {
         console.error(`Bridge process exited with code ${code}`);
+      }
+      // Call exit callback if registered (allows app to cleanup and exit)
+      if (this.onExitCallback) {
+        this.onExitCallback();
       }
     });
   }
@@ -349,6 +354,13 @@ export class MsgpackBridgeConnection implements BridgeInterface {
 
   off(eventType: string, handler?: (data: unknown) => void): void {
     this.eventHandlers.delete(eventType);
+  }
+
+  /**
+   * Register a callback to be called when the bridge process exits
+   */
+  setOnExit(callback: () => void): void {
+    this.onExitCallback = callback;
   }
 
   async registerCustomId(widgetId: string, customId: string): Promise<unknown> {

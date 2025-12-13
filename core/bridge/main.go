@@ -441,6 +441,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleUpdateTappableCanvasRaster(msg)
 	case "resizeTappableCanvasRaster":
 		return b.handleResizeTappableCanvasRaster(msg)
+	case "focusTappableCanvasRaster":
+		return b.handleFocusTappableCanvasRaster(msg)
 	case "setTappableCanvasBuffer":
 		return b.handleSetTappableCanvasBuffer(msg)
 	case "createCanvasLinearGradient":

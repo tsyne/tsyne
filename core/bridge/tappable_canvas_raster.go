@@ -141,6 +141,11 @@ func (t *TappableCanvasRaster) CreateRenderer() fyne.WidgetRenderer {
 
 // Tapped is called when the raster is tapped/clicked.
 func (t *TappableCanvasRaster) Tapped(ev *fyne.PointEvent) {
+	// Request focus so we receive keyboard events
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
+
 	if t.onTapped != nil {
 		// Convert the position to pixel coordinates
 		// For now, we'll use direct position - zooming will be handled in the app layer
@@ -189,15 +194,8 @@ func (t *TappableCanvasRaster) TypedRune(r rune) {
 }
 
 // TypedKey handles special key input (arrows, function keys, etc.)
+// This is called repeatedly when a key is held down, so we use it for key-down events.
 func (t *TappableCanvasRaster) TypedKey(e *fyne.KeyEvent) {
-	// Forward to KeyDown for unified handling
-	t.KeyDown(e)
-}
-
-// --- desktop.Keyable interface ---
-
-// KeyDown is called when a key is pressed while focused
-func (t *TappableCanvasRaster) KeyDown(e *fyne.KeyEvent) {
 	if t.onKeyDownCallbackId == "" || t.bridge == nil {
 		return
 	}
@@ -208,6 +206,14 @@ func (t *TappableCanvasRaster) KeyDown(e *fyne.KeyEvent) {
 			"key":        string(e.Name),
 		},
 	})
+}
+
+// --- desktop.Keyable interface ---
+
+// KeyDown is called when a key is first pressed (no repeat)
+// We use TypedKey instead for repeated key events, so this is a no-op
+func (t *TappableCanvasRaster) KeyDown(e *fyne.KeyEvent) {
+	// Using TypedKey for key handling as it supports key repeat
 }
 
 // KeyUp is called when a key is released while focused
@@ -280,6 +286,13 @@ func (t *TappableCanvasRaster) MouseMoved(e *desktop.MouseEvent) {
 func (t *TappableCanvasRaster) SetOnMouseMoveCallback(bridge *Bridge, callbackId string) {
 	t.bridge = bridge
 	t.onMouseMoveCallbackId = callbackId
+}
+
+// RequestFocus requests keyboard focus for this canvas
+func (t *TappableCanvasRaster) RequestFocus() {
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
 }
 
 // Ensure TappableCanvasRaster implements the required interfaces

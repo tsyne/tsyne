@@ -137,6 +137,13 @@ export function app(options: AppOptions, builder: (app: App) => void | Promise<v
   globalApp = appInstance;
   globalContext = (appInstance as any).ctx;
 
+  // Register exit handler to cleanup and exit when bridge process closes
+  // (e.g., when user closes the window)
+  appInstance.getBridge().setOnExit(async () => {
+    await appInstance.runCleanupCallbacks();
+    process.exit(0);
+  });
+
   // Handle both sync and async builders
   const builderResult = builder(appInstance);
 

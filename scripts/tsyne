@@ -151,14 +151,12 @@ fi
 
 # Parse @Grab directives
 # Format: // @Grab('package@version')
-log_info "Parsing @Grab directives from $SOURCE_FILE..."
 
 # Extract package@version strings, then split them
 # Pattern matches: // @Grab('package@version')
 GRAB_SPECS=$(grep -oP "// @Grab\('\K[^']+(?='\))" "$SOURCE_FILE" 2>/dev/null || true)
 
 if [ -z "$GRAB_SPECS" ]; then
-    log_info "No @Grab directives found"
     if [ "$DRY_RUN" = true ]; then
         exit 0
     fi
@@ -291,8 +289,6 @@ else
 fi
 
 # Run the application with NODE_PATH including our cache
-log_info "Starting application..."
-echo ""
 
 # Add any existing NODE_PATH
 if [ -n "$NODE_PATH" ]; then

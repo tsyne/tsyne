@@ -967,6 +967,16 @@ export class TappableCanvasRaster {
       buffer: base64
     });
   }
+
+  /**
+   * Request keyboard focus for this canvas.
+   * Once focused, the canvas will receive keyboard events.
+   */
+  async requestFocus(): Promise<void> {
+    await this.ctx.bridge.send('focusTappableCanvasRaster', {
+      widgetId: this.id
+    });
+  }
 }
 
 /**

@@ -107,6 +107,7 @@ export class GrpcBridgeConnection implements BridgeInterface {
   private cachedMetadata?: grpc.Metadata;
   // Message queue to ensure sequential processing (preserves ordering like stdio/msgpack)
   private messageQueue: Promise<unknown> = Promise.resolve();
+  private onExitCallback?: () => void; // Callback when bridge process exits
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -171,6 +172,10 @@ export class GrpcBridgeConnection implements BridgeInterface {
       // code can be null when process is killed
       if (code !== null && code !== 0) {
         console.error(`Bridge process exited with code ${code}`);
+      }
+      // Call exit callback if registered (allows app to cleanup and exit)
+      if (this.onExitCallback) {
+        this.onExitCallback();
       }
     });
   }
@@ -1220,6 +1225,13 @@ export class GrpcBridgeConnection implements BridgeInterface {
 
   off(eventType: string, handler?: (data: Record<string, unknown>) => void): void {
     this.eventHandlers.delete(eventType);
+  }
+
+  /**
+   * Register a callback to be called when the bridge process exits
+   */
+  setOnExit(callback: () => void): void {
+    this.onExitCallback = callback;
   }
 
   async registerCustomId(widgetId: string, customId: string): Promise<Record<string, unknown>> {

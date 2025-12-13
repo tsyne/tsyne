@@ -377,11 +377,15 @@ export class FallingBlocksGame {
 // UI Class
 // ============================================================================
 
+// Preview canvas size (4x4 blocks)
+const PREVIEW_SIZE = 4 * BLOCK_SIZE; // 80 pixels
+
 export class FallingBlocksUI {
   private game: FallingBlocksGame;
   private a: App;
   private win: Window | null = null;
   private canvas: TappableCanvasRaster | null = null;
+  private nextCanvas: TappableCanvasRaster | null = null;
   private scoreLabel: Label | null = null;
   private linesLabel: Label | null = null;
   private levelLabel: Label | null = null;
@@ -439,9 +443,19 @@ export class FallingBlocksUI {
 
       this.statusLabel = this.a.label('Press New Game to start').withId('statusLabel');
 
-      // Game board
-      this.canvas = this.a.tappableCanvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT, {
-        onTap: (x) => this.handleTap(x),
+      // Game board and next piece preview side by side
+      this.a.hbox(() => {
+        // Main game board
+        this.canvas = this.a.tappableCanvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT, {
+          onTap: (x) => this.handleTap(x),
+          onKeyDown: (key) => this.handleKeyDown(key),
+        });
+
+        // Next piece panel
+        this.a.vbox(() => {
+          this.a.label('Next:');
+          this.nextCanvas = this.a.tappableCanvasRaster(PREVIEW_SIZE, PREVIEW_SIZE, {});
+        });
       });
 
       this.a.separator();
@@ -454,7 +468,7 @@ export class FallingBlocksUI {
         this.a.button('Drop').onClick(() => this.game.hardDrop()).withId('dropBtn');
       });
 
-      this.a.label('Tap left/right side to move, center to rotate');
+      this.a.label('Arrow keys or WASD to move, Space to drop');
     });
   }
 
@@ -470,11 +484,48 @@ export class FallingBlocksUI {
     }
   }
 
+  private handleKeyDown(key: string): void {
+    // Handle keyboard controls
+    switch (key) {
+      case 'Left':
+      case 'a':
+      case 'A':
+        this.game.moveLeft();
+        break;
+      case 'Right':
+      case 'd':
+      case 'D':
+        this.game.moveRight();
+        break;
+      case 'Up':
+      case 'w':
+      case 'W':
+        this.game.rotate();
+        break;
+      case 'Down':
+      case 's':
+      case 'S':
+        this.game.softDrop();
+        break;
+      case 'Space':
+      case ' ':
+        this.game.hardDrop();
+        break;
+      case 'p':
+      case 'P':
+      case 'Escape':
+        this.game.togglePause();
+        break;
+    }
+  }
+
   private async startGame(): Promise<void> {
     this.game.startGame();
     if (this.statusLabel) await this.statusLabel.setText('Playing...');
     this.startGameLoop();
     await this.render();
+    // Request focus so keyboard controls work immediately
+    if (this.canvas) await this.canvas.requestFocus();
   }
 
   private startGameLoop(): void {
@@ -487,24 +538,27 @@ export class FallingBlocksUI {
   private async render(): Promise<void> {
     if (!this.canvas) return;
 
-    const pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> = [];
+    // Use efficient buffer-based rendering (RGBA format)
+    const buffer = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT * 4);
     const board = this.game.getBoard();
     const piece = this.game.getCurrentPiece();
 
-    // Background
+    // Background - dark gray
     const bgColor = { r: 40, g: 40, b: 40 };
-    for (let y = 0; y < CANVAS_HEIGHT; y++) {
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        pixels.push({ x, y, r: bgColor.r, g: bgColor.g, b: bgColor.b, a: 255 });
-      }
+    for (let i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+      const offset = i * 4;
+      buffer[offset] = bgColor.r;
+      buffer[offset + 1] = bgColor.g;
+      buffer[offset + 2] = bgColor.b;
+      buffer[offset + 3] = 255;
     }
 
-    // Draw grid
+    // Draw grid (locked pieces)
     for (let row = 0; row < BOARD_HEIGHT; row++) {
       for (let col = 0; col < BOARD_WIDTH; col++) {
         const cellValue = board[row][col];
         if (cellValue !== null) {
-          this.drawBlock(pixels, col, row, SHAPE_COLORS[cellValue]);
+          this.drawBlockToBuffer(buffer, col, row, SHAPE_COLORS[cellValue]);
         }
       }
     }
@@ -517,13 +571,16 @@ export class FallingBlocksUI {
         const col = piece.col + block.col;
         const row = piece.row + block.row;
         if (row >= 0) {
-          this.drawBlock(pixels, col, row, color);
+          this.drawBlockToBuffer(buffer, col, row, color);
         }
       }
     }
 
-    // Update canvas
-    await this.canvas.setPixels(pixels);
+    // Update canvas with buffer (much more efficient than setPixels)
+    await this.canvas.setPixelBuffer(buffer);
+
+    // Render next piece preview
+    await this.renderNextPiece();
 
     // Update labels
     if (this.scoreLabel) await this.scoreLabel.setText(String(this.game.getScore()));
@@ -538,8 +595,8 @@ export class FallingBlocksUI {
     }
   }
 
-  private drawBlock(
-    pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }>,
+  private drawBlockToBuffer(
+    buffer: Uint8Array,
     col: number, row: number,
     color: { r: number; g: number; b: number }
   ): void {
@@ -552,18 +609,73 @@ export class FallingBlocksUI {
         const py = y0 + dy;
         if (px < 0 || px >= CANVAS_WIDTH || py < 0 || py >= CANVAS_HEIGHT) continue;
 
-        // Border
+        // Border (darker shade)
         const isBorder = dx === 0 || dx === BLOCK_SIZE - 1 || dy === 0 || dy === BLOCK_SIZE - 1;
         const r = isBorder ? Math.floor(color.r * 0.6) : color.r;
         const g = isBorder ? Math.floor(color.g * 0.6) : color.g;
         const b = isBorder ? Math.floor(color.b * 0.6) : color.b;
 
-        const idx = pixels.findIndex(p => p.x === px && p.y === py);
-        if (idx >= 0) {
-          pixels[idx] = { x: px, y: py, r, g, b, a: 255 };
+        // Write directly to buffer (RGBA format, row-major order)
+        const offset = (py * CANVAS_WIDTH + px) * 4;
+        buffer[offset] = r;
+        buffer[offset + 1] = g;
+        buffer[offset + 2] = b;
+        buffer[offset + 3] = 255;
+      }
+    }
+  }
+
+  /**
+   * Render the next piece preview
+   */
+  private async renderNextPiece(): Promise<void> {
+    if (!this.nextCanvas) return;
+
+    const buffer = new Uint8Array(PREVIEW_SIZE * PREVIEW_SIZE * 4);
+    const nextShape = this.game.getNextPiece();
+
+    // Background - dark gray
+    const bgColor = { r: 40, g: 40, b: 40 };
+    for (let i = 0; i < PREVIEW_SIZE * PREVIEW_SIZE; i++) {
+      const offset = i * 4;
+      buffer[offset] = bgColor.r;
+      buffer[offset + 1] = bgColor.g;
+      buffer[offset + 2] = bgColor.b;
+      buffer[offset + 3] = 255;
+    }
+
+    // Draw next piece (use rotation 0, centered in preview)
+    const blocks = SHAPES[nextShape][0];
+    const color = SHAPE_COLORS[nextShape];
+
+    for (const block of blocks) {
+      // Center the piece in the 4x4 preview area
+      const px = block.col * BLOCK_SIZE;
+      const py = block.row * BLOCK_SIZE;
+
+      // Draw the block
+      for (let dy = 0; dy < BLOCK_SIZE; dy++) {
+        for (let dx = 0; dx < BLOCK_SIZE; dx++) {
+          const x = px + dx;
+          const y = py + dy;
+          if (x < 0 || x >= PREVIEW_SIZE || y < 0 || y >= PREVIEW_SIZE) continue;
+
+          // Border (darker shade)
+          const isBorder = dx === 0 || dx === BLOCK_SIZE - 1 || dy === 0 || dy === BLOCK_SIZE - 1;
+          const r = isBorder ? Math.floor(color.r * 0.6) : color.r;
+          const g = isBorder ? Math.floor(color.g * 0.6) : color.g;
+          const b = isBorder ? Math.floor(color.b * 0.6) : color.b;
+
+          const offset = (y * PREVIEW_SIZE + x) * 4;
+          buffer[offset] = r;
+          buffer[offset + 1] = g;
+          buffer[offset + 2] = b;
+          buffer[offset + 3] = 255;
         }
       }
     }
+
+    await this.nextCanvas.setPixelBuffer(buffer);
   }
 
   private async handleGameEnd(): Promise<void> {

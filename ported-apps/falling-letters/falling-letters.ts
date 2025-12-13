@@ -227,12 +227,20 @@ interface LetterCell {
   selected: boolean;
 }
 
+interface FallingLetter {
+  letter: string;
+  col: number;
+  y: number;        // Current visual Y position (0 = top of screen)
+  targetY: number;  // Target visual Y position where it will land
+}
+
 // ============================================================================
 // Game Logic
 // ============================================================================
 
 export class FallingLettersGame {
   private columns: LetterCell[][];
+  private fallingLetters: FallingLetter[] = [];
   private selectedCells: Array<{ col: number; row: number }> = [];
   private currentWord: string = '';
   private gameState: GameState = 'ready';
@@ -243,6 +251,8 @@ export class FallingLettersGame {
   private lastDrop: number = 0;
   private onUpdate?: () => void;
   private onGameEnd?: () => void;
+
+  private static readonly FALL_SPEED = 0.15; // Rows per tick (adjustable)
 
   constructor() {
     this.columns = [];
@@ -288,6 +298,7 @@ export class FallingLettersGame {
    */
   startGame(): void {
     this.initColumns();
+    this.fallingLetters = [];
     this.selectedCells = [];
     this.currentWord = '';
     this.score = 0;
@@ -305,30 +316,73 @@ export class FallingLettersGame {
     const col = Math.floor(Math.random() * NUM_COLUMNS);
     const letter = this.getRandomWeightedLetter();
 
-    this.columns[col].push({ letter, selected: false });
+    // Calculate target row (array index where this letter will land)
+    // Also count falling letters heading to this column
+    const fallingToThisCol = this.fallingLetters.filter(f => f.col === col).length;
+    const targetRow = this.columns[col].length + fallingToThisCol;
 
-    // Check for game over
-    if (this.columns[col].length >= MAX_ROWS) {
+    // Check for game over before spawning
+    if (targetRow >= MAX_ROWS) {
       this.gameState = 'gameover';
       if (this.score > this.bestScore) {
         this.bestScore = this.score;
       }
       this.onGameEnd?.();
+      return;
     }
+
+    // Convert target row (array index) to visual Y position
+    // Row 0 in array displays at bottom (visual row MAX_ROWS-1)
+    const targetY = MAX_ROWS - 1 - targetRow;
+
+    // Create a falling letter starting at the top
+    this.fallingLetters.push({
+      letter,
+      col,
+      y: 0,
+      targetY,
+    });
   }
 
   /**
-   * Game tick - drop letters periodically
+   * Game tick - drop letters periodically and animate falling
    */
   tick(): void {
     if (this.gameState !== 'playing') return;
 
     const now = Date.now();
+
+    // Spawn new letters periodically
     if (now - this.lastDrop >= this.dropInterval) {
       this.lastDrop = now;
       this.tickCount += 5;
       this.dropInterval = Math.max(500, 2000 - this.tickCount);
       this.dropLetter();
+    }
+
+    // Animate falling letters
+    let needsUpdate = false;
+    const landed: FallingLetter[] = [];
+
+    for (const falling of this.fallingLetters) {
+      falling.y += FallingLettersGame.FALL_SPEED;
+
+      // Check if letter has landed (y increases downward visually)
+      if (falling.y >= falling.targetY) {
+        falling.y = falling.targetY;
+        landed.push(falling);
+      }
+      needsUpdate = true;
+    }
+
+    // Move landed letters to columns
+    for (const letter of landed) {
+      this.columns[letter.col].push({ letter: letter.letter, selected: false });
+      const idx = this.fallingLetters.indexOf(letter);
+      if (idx >= 0) this.fallingLetters.splice(idx, 1);
+    }
+
+    if (needsUpdate) {
       this.onUpdate?.();
     }
   }
@@ -421,6 +475,7 @@ export class FallingLettersGame {
 
   // Getters
   getColumns(): LetterCell[][] { return this.columns; }
+  getFallingLetters(): FallingLetter[] { return this.fallingLetters; }
   getCurrentWord(): string { return this.currentWord; }
   getGameState(): GameState { return this.gameState; }
   getScore(): number { return this.score; }
@@ -546,38 +601,52 @@ export class FallingLettersUI {
     }, 100);
   }
 
+  /**
+   * Set a pixel in the buffer (helper for efficient rendering)
+   */
+  private setPixel(buffer: Uint8Array, x: number, y: number, r: number, g: number, b: number): void {
+    if (x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT) {
+      const offset = (y * CANVAS_WIDTH + x) * 4;
+      buffer[offset] = r;
+      buffer[offset + 1] = g;
+      buffer[offset + 2] = b;
+      buffer[offset + 3] = 255;
+    }
+  }
+
   private async render(): Promise<void> {
     if (!this.canvas) return;
 
-    const pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> = [];
+    // Use efficient buffer-based rendering
+    const buffer = new Uint8Array(CANVAS_WIDTH * CANVAS_HEIGHT * 4);
     const columns = this.game.getColumns();
     const currentWord = this.game.getCurrentWord();
     const isValidWord = this.game.isValidWord(currentWord);
 
     // Background (gray)
-    for (let y = 0; y < CANVAS_HEIGHT; y++) {
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        pixels.push({ x, y, r: 239, g: 239, b: 239, a: 255 });
-      }
+    for (let i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+      const offset = i * 4;
+      buffer[offset] = 239;
+      buffer[offset + 1] = 239;
+      buffer[offset + 2] = 239;
+      buffer[offset + 3] = 255;
     }
 
     // Draw grid lines
     for (let col = 0; col <= NUM_COLUMNS; col++) {
       const x = col * CELL_SIZE;
-      for (let y = 0; y < CANVAS_HEIGHT; y++) {
-        if (x < CANVAS_WIDTH) {
-          const idx = pixels.findIndex(p => p.x === x && p.y === y);
-          if (idx >= 0) pixels[idx] = { x, y, r: 200, g: 200, b: 200, a: 255 };
+      if (x < CANVAS_WIDTH) {
+        for (let y = 0; y < CANVAS_HEIGHT; y++) {
+          this.setPixel(buffer, x, y, 200, 200, 200);
         }
       }
     }
 
     for (let row = 0; row <= MAX_ROWS; row++) {
       const y = row * CELL_SIZE;
-      for (let x = 0; x < CANVAS_WIDTH; x++) {
-        if (y < CANVAS_HEIGHT) {
-          const idx = pixels.findIndex(p => p.x === x && p.y === y);
-          if (idx >= 0) pixels[idx] = { x, y, r: 200, g: 200, b: 200, a: 255 };
+      if (y < CANVAS_HEIGHT) {
+        for (let x = 0; x < CANVAS_WIDTH; x++) {
+          this.setPixel(buffer, x, y, 200, 200, 200);
         }
       }
     }
@@ -592,45 +661,56 @@ export class FallingLettersUI {
         const y0 = displayRow * CELL_SIZE + 1;
 
         // Determine color based on selection state
-        let color: { r: number; g: number; b: number };
+        let r: number, g: number, b: number;
         if (columns[col].length >= MAX_ROWS) {
-          color = { r: 255, g: 0, b: 0 }; // Red for full column
+          r = 255; g = 0; b = 0; // Red for full column
         } else if (cell.selected) {
           if (isValidWord) {
-            color = { r: 76, g: 175, b: 80 }; // Green for valid word
+            r = 76; g = 175; b = 80; // Green for valid word
           } else {
-            color = { r: 244, g: 67, b: 54 }; // Red for invalid
+            r = 244; g = 67; b = 54; // Red for invalid
           }
         } else {
           // Blue gradient based on row
-          const lightness = 0.25 + (row * 0.05);
-          color = {
-            r: Math.floor(26 + row * 15),
-            g: Math.floor(82 + row * 15),
-            b: Math.floor(118 + row * 10)
-          };
+          r = Math.floor(26 + row * 15);
+          g = Math.floor(82 + row * 15);
+          b = Math.floor(118 + row * 10);
         }
 
         // Draw cell background
         for (let dy = 0; dy < CELL_SIZE - 2; dy++) {
           for (let dx = 0; dx < CELL_SIZE - 2; dx++) {
-            const px = x0 + dx;
-            const py = y0 + dy;
-            if (px < CANVAS_WIDTH && py < CANVAS_HEIGHT) {
-              const idx = pixels.findIndex(p => p.x === px && p.y === py);
-              if (idx >= 0) {
-                pixels[idx] = { x: px, y: py, ...color, a: 255 };
-              }
-            }
+            this.setPixel(buffer, x0 + dx, y0 + dy, r, g, b);
           }
         }
 
         // Draw letter (simple block representation)
-        this.drawLetter(pixels, cell.letter, x0 + 8, y0 + 8, { r: 255, g: 255, b: 255 });
+        this.drawLetterToBuffer(buffer, cell.letter, x0 + 8, y0 + 8, 255, 255, 255);
       }
     }
 
-    await this.canvas.setPixels(pixels);
+    // Draw falling letters
+    const fallingLetters = this.game.getFallingLetters();
+    for (const falling of fallingLetters) {
+      const x0 = falling.col * CELL_SIZE + 1;
+      // y is already in visual coordinates (0 = top)
+      const y0 = Math.floor(falling.y * CELL_SIZE) + 1;
+
+      // Falling letters are orange/yellow to distinguish from settled letters
+      const r = 255, g = 152, b = 0;
+
+      // Draw cell background
+      for (let dy = 0; dy < CELL_SIZE - 2; dy++) {
+        for (let dx = 0; dx < CELL_SIZE - 2; dx++) {
+          this.setPixel(buffer, x0 + dx, y0 + dy, r, g, b);
+        }
+      }
+
+      // Draw letter
+      this.drawLetterToBuffer(buffer, falling.letter, x0 + 8, y0 + 8, 255, 255, 255);
+    }
+
+    await this.canvas.setPixelBuffer(buffer);
 
     // Update labels
     if (this.scoreLabel) await this.scoreLabel.setText(String(this.game.getScore()));
@@ -648,46 +728,46 @@ export class FallingLettersUI {
     }
   }
 
+  // 5x7 pixel font patterns for letters
+  private static readonly LETTER_PATTERNS: Record<string, number[]> = {
+    'A': [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+    'B': [0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110],
+    'C': [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110],
+    'D': [0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110],
+    'E': [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
+    'F': [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
+    'G': [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
+    'H': [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+    'I': [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111],
+    'J': [0b00111, 0b00010, 0b00010, 0b00010, 0b00010, 0b10010, 0b01100],
+    'K': [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
+    'L': [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111],
+    'M': [0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001],
+    'N': [0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001],
+    'O': [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+    'P': [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
+    'Q': [0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101],
+    'R': [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001],
+    'S': [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110],
+    'T': [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
+    'U': [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+    'V': [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100],
+    'W': [0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001],
+    'X': [0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001],
+    'Y': [0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100],
+    'Z': [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111],
+  };
+
   /**
-   * Draw a simple letter representation using pixels
+   * Draw a letter to the buffer using efficient direct indexing
    */
-  private drawLetter(
-    pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }>,
+  private drawLetterToBuffer(
+    buffer: Uint8Array,
     letter: string,
     x0: number, y0: number,
-    color: { r: number; g: number; b: number }
+    r: number, g: number, b: number
   ): void {
-    // Simple 5x7 pixel font patterns for letters
-    const patterns: Record<string, number[]> = {
-      'A': [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
-      'B': [0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110],
-      'C': [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110],
-      'D': [0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110],
-      'E': [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
-      'F': [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
-      'G': [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
-      'H': [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
-      'I': [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111],
-      'J': [0b00111, 0b00010, 0b00010, 0b00010, 0b00010, 0b10010, 0b01100],
-      'K': [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
-      'L': [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111],
-      'M': [0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001],
-      'N': [0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001],
-      'O': [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-      'P': [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
-      'Q': [0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101],
-      'R': [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001],
-      'S': [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110],
-      'T': [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
-      'U': [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-      'V': [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100],
-      'W': [0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001],
-      'X': [0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001],
-      'Y': [0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100],
-      'Z': [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111],
-    };
-
-    const pattern = patterns[letter] || patterns['A'];
+    const pattern = FallingLettersUI.LETTER_PATTERNS[letter] || FallingLettersUI.LETTER_PATTERNS['A'];
     for (let row = 0; row < 7; row++) {
       for (let col = 0; col < 5; col++) {
         if ((pattern[row] >> (4 - col)) & 1) {
@@ -696,14 +776,7 @@ export class FallingLettersUI {
           // Draw 2x2 pixel for each bit
           for (let dy = 0; dy < 2; dy++) {
             for (let dx = 0; dx < 2; dx++) {
-              const ppx = px + dx;
-              const ppy = py + dy;
-              if (ppx < CANVAS_WIDTH && ppy < CANVAS_HEIGHT) {
-                const idx = pixels.findIndex(p => p.x === ppx && p.y === ppy);
-                if (idx >= 0) {
-                  pixels[idx] = { x: ppx, y: ppy, ...color, a: 255 };
-                }
-              }
+              this.setPixel(buffer, px + dx, py + dy, r, g, b);
             }
           }
         }
