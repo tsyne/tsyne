@@ -15,7 +15,7 @@
  */
 
 import { TsyneTest, TestContext } from '../../core/src/index-test';
-import { createPrimeGridApp } from './prime-grid-visualizer';
+import { createPrimeGridAppStandalone } from './prime-grid-visualizer';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -33,8 +33,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should display initial UI with default parameters', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -62,8 +62,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should generate grid with default parameters (100 numbers, 10 columns)', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -90,8 +90,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should calculate primes correctly for small numbers', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -121,8 +121,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should update parameters and regenerate grid', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -156,8 +156,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should handle edge case of very small n', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -176,8 +176,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should maintain percentage calculation accuracy', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -197,8 +197,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should render legend with color indicators', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -212,8 +212,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should validate input parameters', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -234,8 +234,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should handle medium-sized grids efficiently', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -262,8 +262,8 @@ describe('Prime Grid Visualizer Tests', () => {
   });
 
   test('should display initial grid on app load', async () => {
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();
@@ -286,8 +286,8 @@ describe('Prime Grid Visualizer Tests', () => {
       return;
     }
 
-    const testApp = await tsyneTest.createApp((app, win) => {
-      createPrimeGridApp(app, win);
+    const testApp = await tsyneTest.createApp(async (app) => {
+      await createPrimeGridAppStandalone(app);
     });
 
     ctx = tsyneTest.getContext();

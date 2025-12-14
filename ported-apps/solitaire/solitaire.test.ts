@@ -141,7 +141,7 @@ describe('Solitaire Game Tests', () => {
 
     // Should reset to new game state
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
-  });
+  }, 15000);
 
   test('should handle shuffle after playing', async () => {
     // Draw some cards

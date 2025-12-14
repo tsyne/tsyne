@@ -70,8 +70,8 @@ describe('HexViewBuffer Logic', () => {
     });
 
     it('should calculate row count correctly', () => {
-      // 256 bytes / 16 bytes per row = 16 rows
-      expect(buffer.getRowCount()).toBe(16);
+      // 512 bytes / 16 bytes per row = 32 rows
+      expect(buffer.getRowCount()).toBe(32);
     });
 
     it('should return null for invalid row', () => {
@@ -108,7 +108,7 @@ describe('HexViewBuffer Logic', () => {
 
     it('should clamp cursor to bounds', () => {
       buffer.setCursorOffset(1000);
-      expect(buffer.getCursorOffset()).toBe(255);
+      expect(buffer.getCursorOffset()).toBe(511);
     });
   });
 

@@ -4,33 +4,39 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                524      523        1        0  30|29|1
+Core                                524      524        0        0  30|30|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      21       21        0        0    1|1|0
 Examples: GUI                         0        0        0        0  71|0|71
+Ported: 3d-cube                     392      392        0        0    3|3|0
 Ported: chess                        60       57        0        3    3|3|0
+Ported: falling-blocks               36       36        0        0    1|1|0
+Ported: falling-letters              39       39        0        0    1|1|0
 Ported: fyles                        89       86        0        3    5|5|0
-Ported: game-of-life                 11        9        2        0    3|2|1
+Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
+Ported: mahjongg                     47       47        0        0    2|2|0
 Ported: pixeledit                    86       86        0        0    6|6|0
+Ported: prime-grid-visualizer         0        0        0        0    1|0|1
 Ported: slydes                       53       53        0        0    3|3|0
-Ported: solitaire                    94       82       12        0    7|4|3
+Ported: solitaire                    94       93        1        0    7|6|1
+Ported: sudoku                       27       27        0        0    2|2|0
 Phone: eyes                          12       12        0        0    1|1|0
-Phone: hexview                       20       19        1        0    1|0|1
+Phone: hexview                       20       18        2        0    1|0|1
 Phone: mandelbrot                     9        9        0        0    1|1|0
 Phone: minefield                     16       16        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              1209     1183       16       10      146
+TOTAL                              1750     1737        3       10      156
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 10 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 30650ms (30.65s)
-Total ctx.wait() calls: 196
+Total wait time: 36450ms (36.45s)
+Total ctx.wait() calls: 222
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -44,17 +50,17 @@ Top 10 tests by wait time:
     └─ 2000ms (2 calls)
   Mandelbrot Explorer should zoom in when clicking Zoom In button
     └─ 2000ms (2 calls)
-  Mandelbrot Explorer should display mandelbrot window with controls
-    └─ 1000ms (1 calls)
-  TodoMVC Tests should handle multiple completed todos
-    └─ 550ms (7 calls)
   Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
-    └─ 500ms (1 calls)
+    └─ 1000ms (2 calls)
   Canvas Fill Color should draw vertical line from center downward
-    └─ 500ms (1 calls)
+    └─ 1000ms (2 calls)
   Canvas Fill Color should fill a circle with specified color
-    └─ 500ms (1 calls)
+    └─ 1000ms (2 calls)
+  Canvas Fill Color should fill a rectangle with specified color
+    └─ 1000ms (2 calls)
+  Canvas Fill Color should fill circle with light gray like clock face
+    └─ 1000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 16 tests failed
+❌ FAILED: 3 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

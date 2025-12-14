@@ -313,17 +313,24 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
 }
 
 /**
+ * Wrapper function that creates window internally - for use with test framework
+ */
+export async function createPrimeGridAppStandalone(a: App): Promise<void> {
+  let capturedWin: Window | null = null;
+  a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (win: Window) => {
+    capturedWin = win;
+  });
+  if (capturedWin) {
+    await createPrimeGridApp(a, capturedWin);
+  }
+}
+
+/**
  * Main application entry point
  */
 if (require.main === module) {
   app({ title: 'Prime Grid Visualizer' }, async (a: App) => {
-    let capturedWin: Window | null = null;
-    a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (win: Window) => {
-      capturedWin = win;
-    });
-    if (capturedWin) {
-      await createPrimeGridApp(a, capturedWin);
-    }
+    await createPrimeGridAppStandalone(a);
     await a.run();
   });
 }

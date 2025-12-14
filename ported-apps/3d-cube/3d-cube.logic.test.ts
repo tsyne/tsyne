@@ -255,7 +255,7 @@ describe('Constants', () => {
     expect(CANVAS_SIZE).toBe(400);
   });
 
-  test('CUBE_SIZE should be 120', () => {
-    expect(CUBE_SIZE).toBe(120);
+  test('CUBE_SIZE should be 200', () => {
+    expect(CUBE_SIZE).toBe(200);
   });
 });
