@@ -376,6 +376,10 @@ export function createBoingApp(a: App): BoingDemo {
     win.setContent(() => {
       demo.buildContent();
     });
+
+    win.show();
+    // Trigger initial render after UI is set up (needed for phonetop)
+    setTimeout(() => demo.initialize(), 0);
   });
 
   return demo;

@@ -739,6 +739,8 @@ export function createFallingBlocksApp(a: App): FallingBlocksUI {
     ui.setupWindow(win);
     win.setContent(() => ui.buildContent());
     win.show();
+    // Trigger initial render after UI is set up (needed for phonetop)
+    setTimeout(() => ui.initialize(), 0);
   });
 
   return ui;

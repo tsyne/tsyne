@@ -846,6 +846,8 @@ export function createFallingLettersApp(a: App): FallingLettersUI {
     ui.setupWindow(win);
     win.setContent(() => ui.buildContent());
     win.show();
+    // Trigger initial render after UI is set up (needed for phonetop)
+    setTimeout(() => ui.initialize(), 0);
   });
 
   return ui;

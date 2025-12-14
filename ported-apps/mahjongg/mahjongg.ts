@@ -862,6 +862,8 @@ export function createMahjonggApp(a: App): MahjonggUI {
     });
 
     win.show();
+    // Trigger initial render after UI is set up (needed for phonetop)
+    setTimeout(() => ui.initialize(), 0);
   });
 
   return ui;
