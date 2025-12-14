@@ -582,6 +582,7 @@ export class CubeUI {
   private processingTap: boolean = false;
   private rendering: boolean = false;
   private renderPending: boolean = false;
+  private showCellLabels: boolean = false;
 
   constructor(a: App) {
     this.a = a;
@@ -630,6 +631,7 @@ export class CubeUI {
         this.a.button('Reset').onClick(() => this.resetCube()).withId('resetBtn');
         this.a.button('Shuffle').onClick(() => this.shuffleCube()).withId('shuffleBtn');
         this.a.button('Solve').onClick(() => this.solveCube()).withId('solveBtn');
+        this.a.button('Labels').onClick(() => this.toggleLabels()).withId('labelsBtn');
       });
 
       // Status display
@@ -909,6 +911,16 @@ export class CubeUI {
     return { side: from.face, clockwise: true };
   }
 
+  /**
+   * Convert internal face/row/col to user-friendly notation
+   * T = Top (Up/white), L = Left (Front/green), R = Right (red)
+   * Cells numbered 11-33 (row-col, 1-based)
+   */
+  private cellNotation(sel: TapSelection): string {
+    const faceChar = sel.face === Side.Up ? 'T' : sel.face === Side.Front ? 'L' : sel.face === Side.Right ? 'R' : '?';
+    return `${faceChar}${sel.row + 1}${sel.col + 1}`;
+  }
+
   private handleTap(x: number, y: number): void {
     if (this.processingTap) {
       console.log(`[TAP] BLOCKED - already processing`);
@@ -917,40 +929,43 @@ export class CubeUI {
     this.processingTap = true;
 
     try {
-      console.log(`[TAP] x=${x}, y=${y}`);
       const tapped = this.detectTappedCell(x, y);
-      console.log(`[TAP] detected:`, tapped);
+      console.log(`[TAP] detected: ${tapped ? this.cellNotation(tapped) : 'none'} (x=${x}, y=${y})`);
 
       if (!tapped) {
-        console.log(`[TAP] no cell detected, clearing selection`);
+        console.log(`[TAP] clearing selection`);
         this.selectedCell = null;
       } else if (!this.selectedCell) {
-        console.log(`[TAP] first tap, selecting cell`);
+        console.log(`[TAP] selected: ${this.cellNotation(tapped)}`);
         this.selectedCell = tapped;
       } else {
-        console.log(`[TAP] second tap, from:`, this.selectedCell, `to:`, tapped);
-        const rotation = this.determineRotation(this.selectedCell, tapped);
-        console.log(`[TAP] rotation determined:`, rotation);
+        const fromNotation = this.cellNotation(this.selectedCell);
+        const toNotation = this.cellNotation(tapped);
+        console.log(`[TAP] move: ${fromNotation} → ${toNotation}`);
 
+        const rotation = this.determineRotation(this.selectedCell, tapped);
         const from = this.selectedCell;
         this.selectedCell = null;
 
         if (rotation) {
-          console.log(`[TAP] from face=${from.face} row=${from.row} col=${from.col}, to face=${tapped.face} row=${tapped.row} col=${tapped.col}`);
-
           if (rotation.side === -1) {
             // E slice (middle horizontal row)
-            console.log(`[TAP] executing: E-slice ${rotation.clockwise ? '(Front→Right)' : '(Front→Left)'}`);
+            const dir = rotation.clockwise ? 'L→R' : 'L←R';
+            console.log(`[TAP] exec: E-slice (${dir})`);
             this.cube.rotateESlice(rotation.clockwise);
           } else if (rotation.side === -2) {
             // M slice (middle vertical column)
-            console.log(`[TAP] executing: M-slice ${rotation.clockwise ? '(Front→Down)' : '(Front→Up)'}`);
+            const dir = rotation.clockwise ? 'L→down' : 'L→up';
+            console.log(`[TAP] exec: M-slice (${dir})`);
             this.cube.rotateMSlice(rotation.clockwise);
           } else {
-            const sideName = ['Up', 'Front', 'Right', 'Back', 'Left', 'Down'][rotation.side];
-            console.log(`[TAP] executing: ${sideName} ${rotation.clockwise ? 'clockwise' : 'counter-clockwise'}`);
+            const sideName = ['U', 'F', 'R', 'B', 'L', 'D'][rotation.side];
+            const dir = rotation.clockwise ? '' : "'";
+            console.log(`[TAP] exec: ${sideName}${dir}`);
             this.cube.rotateSide(rotation.side, rotation.clockwise);
           }
+        } else {
+          console.log(`[TAP] no rotation (same cell or invalid)`);
         }
       }
 
@@ -963,6 +978,11 @@ export class CubeUI {
       this.selectedCell = null;
       this.processingTap = false;
     }
+  }
+
+  private toggleLabels(): void {
+    this.showCellLabels = !this.showCellLabels;
+    this.render();
   }
 
   private resetCube(): void {
@@ -1075,6 +1095,67 @@ export class CubeUI {
       }
     }
     return inside;
+  }
+
+  /**
+   * Simple 3x5 bitmap font for cell labels
+   */
+  private readonly FONT: Record<string, number[]> = {
+    'T': [0b111, 0b010, 0b010, 0b010, 0b010],
+    'L': [0b100, 0b100, 0b100, 0b100, 0b111],
+    'R': [0b110, 0b101, 0b110, 0b101, 0b101],
+    '1': [0b010, 0b110, 0b010, 0b010, 0b111],
+    '2': [0b111, 0b001, 0b111, 0b100, 0b111],
+    '3': [0b111, 0b001, 0b111, 0b001, 0b111],
+  };
+
+  /**
+   * Draw a character at position using bitmap font with scale
+   */
+  private drawChar(
+    buffer: Uint8Array,
+    char: string,
+    x: number,
+    y: number,
+    color: { r: number; g: number; b: number },
+    scale: number = 1
+  ): void {
+    const bitmap = this.FONT[char];
+    if (!bitmap) return;
+
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 3; col++) {
+        if (bitmap[row] & (0b100 >> col)) {
+          // Draw a scale x scale block for each pixel
+          for (let sy = 0; sy < scale; sy++) {
+            for (let sx = 0; sx < scale; sx++) {
+              this.setPixel(buffer, x + col * scale + sx, y + row * scale + sy, color.r, color.g, color.b);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Draw a cell label (e.g., "L11") at position
+   */
+  private drawLabel(
+    buffer: Uint8Array,
+    label: string,
+    centerX: number,
+    centerY: number,
+    color: { r: number; g: number; b: number }
+  ): void {
+    const scale = 3;  // 3x scale for readability
+    const charWidth = 3 * scale + 1;  // 3 pixels wide * scale + 1 pixel gap
+    const charHeight = 5 * scale;
+    const startX = Math.round(centerX - (label.length * charWidth) / 2);
+    const startY = Math.round(centerY - charHeight / 2);
+
+    for (let i = 0; i < label.length; i++) {
+      this.drawChar(buffer, label[i], startX + i * charWidth, startY, color, scale);
+    }
   }
 
   /**
@@ -1230,6 +1311,53 @@ export class CubeUI {
         this.project({ x: HALF, y: HALF, z: HALF - i * CELL_SIZE }),
         this.project({ x: HALF, y: -HALF, z: HALF - i * CELL_SIZE }),
         { r: 0, g: 0, b: 0 });
+    }
+
+    // Draw cell labels if enabled
+    if (this.showCellLabels) {
+      const labelColor = { r: 0, g: 0, b: 0 };
+
+      // Labels for Up (T) face
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const x0 = col * CELL_SIZE - HALF;
+          const z0 = row * CELL_SIZE - HALF;
+          const center = this.project({
+            x: x0 + CELL_SIZE / 2,
+            y: HALF,
+            z: z0 + CELL_SIZE / 2,
+          });
+          this.drawLabel(buffer, `T${row + 1}${col + 1}`, center.x, center.y, labelColor);
+        }
+      }
+
+      // Labels for Front (L) face
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const x0 = col * CELL_SIZE - HALF;
+          const y0 = HALF - row * CELL_SIZE;
+          const center = this.project({
+            x: x0 + CELL_SIZE / 2,
+            y: y0 - CELL_SIZE / 2,
+            z: HALF,
+          });
+          this.drawLabel(buffer, `L${row + 1}${col + 1}`, center.x, center.y, labelColor);
+        }
+      }
+
+      // Labels for Right (R) face
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const z0 = HALF - col * CELL_SIZE;
+          const y0 = HALF - row * CELL_SIZE;
+          const center = this.project({
+            x: HALF,
+            y: y0 - CELL_SIZE / 2,
+            z: z0 - CELL_SIZE / 2,
+          });
+          this.drawLabel(buffer, `R${row + 1}${col + 1}`, center.x, center.y, labelColor);
+        }
+      }
     }
 
     // Highlight selected cell
