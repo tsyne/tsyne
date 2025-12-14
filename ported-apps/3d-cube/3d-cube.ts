@@ -220,6 +220,62 @@ export class RubiksCube {
   }
 
   /**
+   * Rotate the middle standing slice (S slice - between Front and Back)
+   * Direction is as viewed from the Front face
+   * clockwise=true: Up row 1 → Right col 1 → Down row 1 → Left col 1
+   */
+  rotateSSlice(clockwise: boolean): void {
+    const temp: Side[] = [];
+
+    if (clockwise) {
+      // Up row 1 → Right col 1 → Down row 1 → Left col 1 → Up row 1
+      temp[0] = this.faces[Side.Up][1][0];
+      temp[1] = this.faces[Side.Up][1][1];
+      temp[2] = this.faces[Side.Up][1][2];
+      // Up row 1 ← Left col 1 (reversed)
+      this.faces[Side.Up][1][0] = this.faces[Side.Left][2][1];
+      this.faces[Side.Up][1][1] = this.faces[Side.Left][1][1];
+      this.faces[Side.Up][1][2] = this.faces[Side.Left][0][1];
+      // Left col 1 ← Down row 1
+      this.faces[Side.Left][0][1] = this.faces[Side.Down][1][0];
+      this.faces[Side.Left][1][1] = this.faces[Side.Down][1][1];
+      this.faces[Side.Left][2][1] = this.faces[Side.Down][1][2];
+      // Down row 1 ← Right col 1 (reversed)
+      this.faces[Side.Down][1][0] = this.faces[Side.Right][2][1];
+      this.faces[Side.Down][1][1] = this.faces[Side.Right][1][1];
+      this.faces[Side.Down][1][2] = this.faces[Side.Right][0][1];
+      // Right col 1 ← Up row 1 (temp)
+      this.faces[Side.Right][0][1] = temp[0];
+      this.faces[Side.Right][1][1] = temp[1];
+      this.faces[Side.Right][2][1] = temp[2];
+    } else {
+      // Reverse direction
+      temp[0] = this.faces[Side.Up][1][0];
+      temp[1] = this.faces[Side.Up][1][1];
+      temp[2] = this.faces[Side.Up][1][2];
+      // Up row 1 ← Right col 1
+      this.faces[Side.Up][1][0] = this.faces[Side.Right][0][1];
+      this.faces[Side.Up][1][1] = this.faces[Side.Right][1][1];
+      this.faces[Side.Up][1][2] = this.faces[Side.Right][2][1];
+      // Right col 1 ← Down row 1 (reversed)
+      this.faces[Side.Right][0][1] = this.faces[Side.Down][1][2];
+      this.faces[Side.Right][1][1] = this.faces[Side.Down][1][1];
+      this.faces[Side.Right][2][1] = this.faces[Side.Down][1][0];
+      // Down row 1 ← Left col 1
+      this.faces[Side.Down][1][0] = this.faces[Side.Left][0][1];
+      this.faces[Side.Down][1][1] = this.faces[Side.Left][1][1];
+      this.faces[Side.Down][1][2] = this.faces[Side.Left][2][1];
+      // Left col 1 ← Up row 1 (temp, reversed)
+      this.faces[Side.Left][0][1] = temp[2];
+      this.faces[Side.Left][1][1] = temp[1];
+      this.faces[Side.Left][2][1] = temp[0];
+    }
+
+    this.moveHistory.push({ side: Side.Front, clockwise }); // Track as a move
+    this.onUpdate?.();
+  }
+
+  /**
    * Rotate the middle vertical slice (M slice - between Left and Right)
    * Direction is as viewed from the Right face
    * clockwise=true: Front col 1 → Up col 1 → Back col 1 → Down col 1
@@ -677,6 +733,7 @@ export class CubeUI {
    */
   private detectTappedCell(x: number, y: number): TapSelection | null {
     const HALF = CUBE_SIZE / 2;
+    const PAD = 20;  // Padding for more forgiving hit detection (in 3D space)
 
     // Check each face's cells (check in reverse draw order - front to back)
     // Right face first (drawn last, so on top)
@@ -686,10 +743,10 @@ export class CubeUI {
         const y0 = HALF - row * CELL_SIZE;
 
         const points = [
-          this.project({ x: HALF, y: y0, z: z0 }),
-          this.project({ x: HALF, y: y0, z: z0 - CELL_SIZE }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 - CELL_SIZE }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 }),
+          this.project({ x: HALF, y: y0 + PAD, z: z0 + PAD }),
+          this.project({ x: HALF, y: y0 + PAD, z: z0 - CELL_SIZE - PAD }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE - PAD, z: z0 - CELL_SIZE - PAD }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE - PAD, z: z0 + PAD }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Right, row, col };
@@ -704,10 +761,10 @@ export class CubeUI {
         const y0 = HALF - row * CELL_SIZE;
 
         const points = [
-          this.project({ x: x0, y: y0, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE, y: y0, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE, y: y0 - CELL_SIZE, z: HALF }),
-          this.project({ x: x0, y: y0 - CELL_SIZE, z: HALF }),
+          this.project({ x: x0 - PAD, y: y0 + PAD, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE + PAD, y: y0 + PAD, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE + PAD, y: y0 - CELL_SIZE - PAD, z: HALF }),
+          this.project({ x: x0 - PAD, y: y0 - CELL_SIZE - PAD, z: HALF }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Front, row, col };
@@ -722,10 +779,10 @@ export class CubeUI {
         const z0 = row * CELL_SIZE - HALF;
 
         const points = [
-          this.project({ x: x0, y: HALF, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 + CELL_SIZE }),
-          this.project({ x: x0, y: HALF, z: z0 + CELL_SIZE }),
+          this.project({ x: x0 - PAD, y: HALF, z: z0 - PAD }),
+          this.project({ x: x0 + CELL_SIZE + PAD, y: HALF, z: z0 - PAD }),
+          this.project({ x: x0 + CELL_SIZE + PAD, y: HALF, z: z0 + CELL_SIZE + PAD }),
+          this.project({ x: x0 - PAD, y: HALF, z: z0 + CELL_SIZE + PAD }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Up, row, col };
@@ -782,24 +839,32 @@ export class CubeUI {
             return { side: -1 as Side, clockwise: movingRight };
           }
         } else if (from.face === Side.Up) {
-          // Up face: horizontal swipe in isometric goes left-right
-          // Note: Up face row 2 (front edge) connects to Front face
-          // Swipe right → want cells to move right → affects Back/Front faces
-          if (from.row <= 1) {
+          // Up face: horizontal swipe affects Front/Back/S-slice
+          // Row 0 (back) → Back face rotation
+          // Row 1 (middle) → S-slice
+          // Row 2 (front) → Front face rotation
+          if (from.row === 0) {
             return { side: Side.Back, clockwise: !movingRight };
-          } else {
+          } else if (from.row === 2) {
             return { side: Side.Front, clockwise: movingRight };
+          } else {
+            // Middle row - use S slice (side: -3 as special marker)
+            return { side: -3 as Side, clockwise: movingRight };
           }
         } else if (from.face === Side.Right) {
           // Right face: col 0 is front edge, col 2 is back edge
           // Horizontal swipe (changing col) means front-to-back movement
-          // Swipe right (increasing col, towards back) → Up clockwise rotates the row
+          // Row 0 → Up rotation
+          // Row 1 → E-slice
+          // Row 2 → Down rotation
           if (from.row === 0) {
             return { side: Side.Up, clockwise: !movingRight };
           } else if (from.row === 2) {
             return { side: Side.Down, clockwise: movingRight };
           } else {
-            return { side: Side.Up, clockwise: !movingRight };
+            // Middle row - use E slice (side: -1 as special marker)
+            // On Right face, swipe right (increasing col) = moving towards back = E clockwise
+            return { side: -1 as Side, clockwise: movingRight };
           }
         } else {
           return { side: Side.Up, clockwise: movingRight };
@@ -958,6 +1023,11 @@ export class CubeUI {
             const dir = rotation.clockwise ? 'L→down' : 'L→up';
             console.log(`[TAP] exec: M-slice (${dir})`);
             this.cube.rotateMSlice(rotation.clockwise);
+          } else if (rotation.side === -3) {
+            // S slice (middle standing slice - between Front and Back)
+            const dir = rotation.clockwise ? 'T→R' : 'T←R';
+            console.log(`[TAP] exec: S-slice (${dir})`);
+            this.cube.rotateSSlice(rotation.clockwise);
           } else {
             const sideName = ['U', 'F', 'R', 'B', 'L', 'D'][rotation.side];
             const dir = rotation.clockwise ? '' : "'";
