@@ -808,7 +808,7 @@ export class CubeUI {
    * - Down clockwise: Front row 2 → Right, Left → Front, Back → Left, Right → Back
    * - Down counter-clockwise: Front row 2 → Left, Right → Front, Back → Right, Left → Back
    */
-  private determineRotation(from: TapSelection, to: TapSelection): { side: Side; clockwise: boolean } | null {
+  private determineRotation(from: TapSelection, to: TapSelection): { side: number; clockwise: boolean } | null {
     // Same cell tapped twice - cancel selection
     if (from.face === to.face && from.row === to.row && from.col === to.col) {
       return null;
@@ -836,7 +836,7 @@ export class CubeUI {
             return { side: Side.Down, clockwise: movingRight };
           } else {
             // Middle row - use E slice (side: -1 as special marker)
-            return { side: -1 as Side, clockwise: movingRight };
+            return { side: -1, clockwise: movingRight };
           }
         } else if (from.face === Side.Up) {
           // Up face: horizontal swipe affects Front/Back/S-slice
@@ -849,7 +849,7 @@ export class CubeUI {
             return { side: Side.Front, clockwise: movingRight };
           } else {
             // Middle row - use S slice (side: -3 as special marker)
-            return { side: -3 as Side, clockwise: movingRight };
+            return { side: -3, clockwise: movingRight };
           }
         } else if (from.face === Side.Right) {
           // Right face: col 0 is front edge, col 2 is back edge
@@ -864,7 +864,7 @@ export class CubeUI {
           } else {
             // Middle row - use E slice (side: -1 as special marker)
             // On Right face, swipe right (increasing col) = moving towards back = E clockwise
-            return { side: -1 as Side, clockwise: movingRight };
+            return { side: -1, clockwise: movingRight };
           }
         } else {
           return { side: Side.Up, clockwise: movingRight };
@@ -885,7 +885,7 @@ export class CubeUI {
             return { side: Side.Right, clockwise: movingDown };
           } else {
             // Middle column - use M slice (side: -2 as special marker)
-            return { side: -2 as Side, clockwise: movingDown };
+            return { side: -2, clockwise: movingDown };
           }
         } else if (from.face === Side.Up) {
           // Up face: vertical swipe (row change) means front-to-back on top
@@ -1032,7 +1032,7 @@ export class CubeUI {
             const sideName = ['U', 'F', 'R', 'B', 'L', 'D'][rotation.side];
             const dir = rotation.clockwise ? '' : "'";
             console.log(`[TAP] exec: ${sideName}${dir}`);
-            this.cube.rotateSide(rotation.side, rotation.clockwise);
+            this.cube.rotateSide(rotation.side as Side, rotation.clockwise);
           }
         } else {
           console.log(`[TAP] no rotation (same cell or invalid)`);
