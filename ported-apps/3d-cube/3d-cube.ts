@@ -34,7 +34,7 @@ import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 // ============================================================================
 
 const CANVAS_SIZE = 400;
-const CUBE_SIZE = 120;  // Size of entire cube
+const CUBE_SIZE = 200;  // Size of entire cube
 const CELL_SIZE = CUBE_SIZE / 3;  // Size of each cell
 
 // Sides of the cube
@@ -621,10 +621,23 @@ export class CubeUI {
   }
 
   /**
+   * Set a pixel in the buffer
+   */
+  private setPixel(buffer: Uint8Array, x: number, y: number, r: number, g: number, b: number): void {
+    if (x >= 0 && x < CANVAS_SIZE && y >= 0 && y < CANVAS_SIZE) {
+      const offset = (y * CANVAS_SIZE + x) * 4;
+      buffer[offset] = r;
+      buffer[offset + 1] = g;
+      buffer[offset + 2] = b;
+      buffer[offset + 3] = 255;
+    }
+  }
+
+  /**
    * Draw a filled quadrilateral
    */
   private fillQuad(
-    pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }>,
+    buffer: Uint8Array,
     points: Point2D[],
     color: { r: number; g: number; b: number }
   ): void {
@@ -643,10 +656,7 @@ export class CubeUI {
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
         if (this.pointInPolygon({ x, y }, points)) {
-          const idx = pixels.findIndex(p => p.x === x && p.y === y);
-          if (idx >= 0) {
-            pixels[idx] = { x, y, ...color, a: 255 };
-          }
+          this.setPixel(buffer, x, y, color.r, color.g, color.b);
         }
       }
     }
@@ -673,7 +683,7 @@ export class CubeUI {
    * Draw a line
    */
   private drawLine(
-    pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }>,
+    buffer: Uint8Array,
     p1: Point2D, p2: Point2D,
     color: { r: number; g: number; b: number }
   ): void {
@@ -689,12 +699,7 @@ export class CubeUI {
     const y2 = Math.round(p2.y);
 
     while (true) {
-      if (x >= 0 && x < CANVAS_SIZE && y >= 0 && y < CANVAS_SIZE) {
-        const idx = pixels.findIndex(p => p.x === x && p.y === y);
-        if (idx >= 0) {
-          pixels[idx] = { x, y, ...color, a: 255 };
-        }
-      }
+      this.setPixel(buffer, x, y, color.r, color.g, color.b);
 
       if (x === x2 && y === y2) break;
 
@@ -707,13 +712,15 @@ export class CubeUI {
   private async render(): Promise<void> {
     if (!this.canvas) return;
 
-    const pixels: Array<{ x: number; y: number; r: number; g: number; b: number; a: number }> = [];
+    const buffer = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE * 4);
 
     // Background (dark gray)
-    for (let y = 0; y < CANVAS_SIZE; y++) {
-      for (let x = 0; x < CANVAS_SIZE; x++) {
-        pixels.push({ x, y, r: 30, g: 30, b: 30, a: 255 });
-      }
+    for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
+      const offset = i * 4;
+      buffer[offset] = 30;
+      buffer[offset + 1] = 30;
+      buffer[offset + 2] = 30;
+      buffer[offset + 3] = 255;
     }
 
     const faces = this.cube.getFaces();
@@ -721,71 +728,100 @@ export class CubeUI {
     // Draw three visible faces: Up, Front, Right (isometric view)
     // Draw in order from back to front for correct overlap
 
-    // Draw Up face (top)
+    // Small overlap to prevent gaps from floating-point precision issues
+    const OVERLAP = 2;
+    const HALF = CUBE_SIZE / 2;
+
+    // Draw Up face (top) - at y = +HALF
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Up][row][col]];
-        const x0 = (col - 1) * CELL_SIZE;
-        const z0 = (row - 1) * CELL_SIZE;
-        const y0 = CUBE_SIZE / 2;
+        // Center the cells: col 0,1,2 -> x starts at -60, -20, +20
+        const x0 = col * CELL_SIZE - HALF;
+        const z0 = row * CELL_SIZE - HALF;
 
-        const points = [
-          this.project({ x: x0, y: y0, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE - 2, y: y0, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE - 2, y: y0, z: z0 + CELL_SIZE - 2 }),
-          this.project({ x: x0, y: y0, z: z0 + CELL_SIZE - 2 }),
+        const fillPoints = [
+          this.project({ x: x0 - OVERLAP, y: HALF, z: z0 - OVERLAP }),
+          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: HALF, z: z0 - OVERLAP }),
+          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: HALF, z: z0 + CELL_SIZE + OVERLAP }),
+          this.project({ x: x0 - OVERLAP, y: HALF, z: z0 + CELL_SIZE + OVERLAP }),
         ];
-        this.fillQuad(pixels, points, color);
-        // Draw border
-        for (let i = 0; i < 4; i++) {
-          this.drawLine(pixels, points[i], points[(i + 1) % 4], { r: 0, g: 0, b: 0 });
-        }
+        this.fillQuad(buffer, fillPoints, color);
       }
     }
+    // Draw grid lines on top face
+    for (let i = 0; i <= 3; i++) {
+      const pos = i * CELL_SIZE - HALF;
+      this.drawLine(buffer,
+        this.project({ x: -HALF, y: HALF, z: pos }),
+        this.project({ x: HALF, y: HALF, z: pos }),
+        { r: 0, g: 0, b: 0 });
+      this.drawLine(buffer,
+        this.project({ x: pos, y: HALF, z: -HALF }),
+        this.project({ x: pos, y: HALF, z: HALF }),
+        { r: 0, g: 0, b: 0 });
+    }
 
-    // Draw Front face
+    // Draw Front face - at z = +HALF
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Front][row][col]];
-        const x0 = (col - 1) * CELL_SIZE;
-        const y0 = (1 - row) * CELL_SIZE;
-        const z0 = CUBE_SIZE / 2;
+        const x0 = col * CELL_SIZE - HALF;
+        // row 0 is top (y = +HALF), row 2 is bottom (y = -HALF)
+        const y0 = HALF - row * CELL_SIZE;
 
-        const points = [
-          this.project({ x: x0, y: y0, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE - 2, y: y0, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE - 2, y: y0 - CELL_SIZE + 2, z: z0 }),
-          this.project({ x: x0, y: y0 - CELL_SIZE + 2, z: z0 }),
+        const fillPoints = [
+          this.project({ x: x0 - OVERLAP, y: y0 + OVERLAP, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: y0 + OVERLAP, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: y0 - CELL_SIZE - OVERLAP, z: HALF }),
+          this.project({ x: x0 - OVERLAP, y: y0 - CELL_SIZE - OVERLAP, z: HALF }),
         ];
-        this.fillQuad(pixels, points, color);
-        for (let i = 0; i < 4; i++) {
-          this.drawLine(pixels, points[i], points[(i + 1) % 4], { r: 0, g: 0, b: 0 });
-        }
+        this.fillQuad(buffer, fillPoints, color);
       }
     }
+    // Draw grid lines on front face
+    for (let i = 0; i <= 3; i++) {
+      const pos = i * CELL_SIZE - HALF;
+      this.drawLine(buffer,
+        this.project({ x: -HALF, y: HALF - i * CELL_SIZE, z: HALF }),
+        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: HALF }),
+        { r: 0, g: 0, b: 0 });
+      this.drawLine(buffer,
+        this.project({ x: pos, y: HALF, z: HALF }),
+        this.project({ x: pos, y: -HALF, z: HALF }),
+        { r: 0, g: 0, b: 0 });
+    }
 
-    // Draw Right face
+    // Draw Right face - at x = +HALF
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Right][row][col]];
-        const x0 = CUBE_SIZE / 2;
-        const y0 = (1 - row) * CELL_SIZE;
-        const z0 = (1 - col) * CELL_SIZE;
+        // col 0 is front (z = +HALF), col 2 is back (z = -HALF)
+        const z0 = HALF - col * CELL_SIZE;
+        const y0 = HALF - row * CELL_SIZE;
 
-        const points = [
-          this.project({ x: x0, y: y0, z: z0 }),
-          this.project({ x: x0, y: y0, z: z0 - CELL_SIZE + 2 }),
-          this.project({ x: x0, y: y0 - CELL_SIZE + 2, z: z0 - CELL_SIZE + 2 }),
-          this.project({ x: x0, y: y0 - CELL_SIZE + 2, z: z0 }),
+        const fillPoints = [
+          this.project({ x: HALF, y: y0 + OVERLAP, z: z0 + OVERLAP }),
+          this.project({ x: HALF, y: y0 + OVERLAP, z: z0 - CELL_SIZE - OVERLAP }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE - OVERLAP, z: z0 - CELL_SIZE - OVERLAP }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE - OVERLAP, z: z0 + OVERLAP }),
         ];
-        this.fillQuad(pixels, points, color);
-        for (let i = 0; i < 4; i++) {
-          this.drawLine(pixels, points[i], points[(i + 1) % 4], { r: 0, g: 0, b: 0 });
-        }
+        this.fillQuad(buffer, fillPoints, color);
       }
     }
+    // Draw grid lines on right face
+    for (let i = 0; i <= 3; i++) {
+      this.drawLine(buffer,
+        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: HALF }),
+        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: -HALF }),
+        { r: 0, g: 0, b: 0 });
+      this.drawLine(buffer,
+        this.project({ x: HALF, y: HALF, z: HALF - i * CELL_SIZE }),
+        this.project({ x: HALF, y: -HALF, z: HALF - i * CELL_SIZE }),
+        { r: 0, g: 0, b: 0 });
+    }
 
-    await this.canvas.setPixels(pixels);
+    await this.canvas.setPixelBuffer(buffer);
 
     // Update labels
     if (this.moveLabel) await this.moveLabel.setText(String(this.cube.getMoveCount()));
