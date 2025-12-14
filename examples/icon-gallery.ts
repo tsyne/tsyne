@@ -4,7 +4,7 @@
  * This example demonstrates the Icon widget which displays themed icons
  * that automatically adapt to light/dark system themes.
  *
- * Run: npx ts-node examples/icon-gallery.ts
+ * Run: npx tsx examples/icon-gallery.ts
  */
 import { app } from '../core/src/index';
 import { ThemeIconName } from '../core/src/app';

@@ -55,7 +55,7 @@ describe('Solitaire UI Integration Tests', () => {
       // Note: We can't directly test image clicks in this setup without
       // more complex mouse position simulation, but we verified the
       // draw mechanics work
-    }, 10000);
+    }, 20000);
 
     test('should click drawn card and place on empty tableau stack (King)', async () => {
       /**

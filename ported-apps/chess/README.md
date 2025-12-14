@@ -113,7 +113,7 @@ The easiest way to run the chess game:
 npm run run:chess
 ```
 
-This command runs the TypeScript source directly using `ts-node`, without requiring a build step.
+This command runs the TypeScript source directly using `tsx`, without requiring a build step.
 
 ### Alternative: Build and Run
 

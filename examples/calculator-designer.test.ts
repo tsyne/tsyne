@@ -209,14 +209,8 @@ function loadFileInDesignerMode(filePath: string): WidgetMetadata[] {
   (global as any).FontStyle = { BOLD: 1, ITALIC: 2 }; // Mock FontStyle enum
 
   try {
-    // Use ts-node to compile and run the TypeScript file
-    require('ts-node').register({
-      transpileOnly: true,
-      compilerOptions: {
-        module: 'commonjs',
-        target: 'es2017'
-      }
-    });
+    // Use tsx to compile and run the TypeScript file
+    require('tsx/cjs');
 
     // Clear module cache
     delete require.cache[require.resolve(fullPath)];

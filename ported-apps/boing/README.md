@@ -33,7 +33,7 @@ The original ChrysaLisp version uses `.cpm` (ChrysaLisp pixel map) files for the
 ## Running
 
 ```bash
-npx ts-node ported-apps/boing/boing.ts
+npx tsx ported-apps/boing/boing.ts
 ```
 
 ## Source

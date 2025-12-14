@@ -4,7 +4,7 @@
  * Demonstrates the ThemeOverride container which allows different
  * regions of the UI to have different themes (dark/light).
  *
- * Run with: npx ts-node examples/theme-zones.ts
+ * Run with: npx tsx examples/theme-zones.ts
  */
 
 import { app } from '../core/src/index';

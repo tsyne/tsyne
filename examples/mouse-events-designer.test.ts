@@ -200,14 +200,8 @@ function loadFileInDesignerMode(filePath: string): WidgetMetadata[] {
   currentParent = null;
 
   try {
-    // Use ts-node to compile and run the TypeScript file
-    require('ts-node').register({
-      transpileOnly: true,
-      compilerOptions: {
-        module: 'commonjs',
-        target: 'es2017'
-      }
-    });
+    // Use tsx to compile and run the TypeScript file
+    require('tsx/cjs');
 
     // Mock the '../src' module
     const Module = require('module');

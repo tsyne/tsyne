@@ -16,7 +16,7 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check for ts-node
+# Check for npx (tsx)
 if ! command -v npx &> /dev/null; then
     echo "Error: npx is not available. Please install Node.js 16 or higher."
     exit 1
@@ -41,9 +41,9 @@ if [ -z "$URL" ]; then
     echo "Starting Tsyne Browser..."
     echo "Enter a URL in the address bar to navigate."
     echo ""
-    npx ts-node examples/run-browser.ts
+    npx tsx examples/run-browser.ts
 else
     echo "Starting Tsyne Browser with URL: $URL"
     echo ""
-    npx ts-node examples/run-browser.ts "$URL"
+    npx tsx examples/run-browser.ts "$URL"
 fi

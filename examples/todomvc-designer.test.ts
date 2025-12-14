@@ -242,17 +242,11 @@ function loadFileInDesignerMode(filePath: string): WidgetMetadata[] {
   };
 
   try {
-    // Use ts-node to compile and run the TypeScript file
+    // Use tsx to compile and run the TypeScript file
     // Only register if not already registered
-    if (!(global as any).tsNodeRegistered) {
-      require('ts-node').register({
-        transpileOnly: true,
-        compilerOptions: {
-          module: 'commonjs',
-          target: 'es2017'
-        }
-      });
-      (global as any).tsNodeRegistered = true;
+    if (!(global as any).tsxRegistered) {
+      require('tsx/cjs');
+      (global as any).tsxRegistered = true;
     }
 
     // Clear module cache

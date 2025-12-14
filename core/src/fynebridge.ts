@@ -71,8 +71,8 @@ export class BridgeConnection implements BridgeInterface {
       const execDir = path.dirname(process.execPath);
       bridgePath = path.join(execDir, 'tsyne-bridge');
     } else {
-      // Find project root by detecting if running from compiled code or ts-node
-      // __dirname could be either dist/src (compiled) or src (ts-node)
+      // Find project root by detecting if running from compiled code or tsx
+      // __dirname could be either dist/src (compiled) or src (tsx)
       const isCompiled = __dirname.includes(path.sep + 'dist' + path.sep);
       const projectRoot = isCompiled
         ? path.join(__dirname, '..', '..') // dist/src -> up 2 levels

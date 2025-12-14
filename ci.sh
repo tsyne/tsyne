@@ -359,6 +359,8 @@ test_ported_app() {
   local json_file="/tmp/ported-${app_name}-test-results.json"
   echo "--- :package: Ported App: ${app_name}"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+  # Clean corrupted node_modules to avoid tar extraction errors
+  rm -rf node_modules
   npm install --ignore-scripts
   if [ -n "$bridge_mode" ]; then
     echo "Using bridge mode: $bridge_mode"
@@ -377,13 +379,20 @@ test_ported_app() {
 
 # Test each ported app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
+test_ported_app "3d-cube" || true
+test_ported_app "boing" || true
 test_ported_app "chess" || true
+test_ported_app "falling-blocks" || true
+test_ported_app "falling-letters" || true
 test_ported_app "fyles" || true
 test_ported_app "game-of-life" "msgpack-uds" || true
 test_ported_app "image-viewer" || true
+test_ported_app "mahjongg" || true
 test_ported_app "pixeledit" || true
+test_ported_app "prime-grid-visualizer" || true
 test_ported_app "slydes" || true
 test_ported_app "solitaire" || true
+test_ported_app "sudoku" || true
 test_ported_app "terminal" || true
 set -e  # Re-enable exit-on-error
 
@@ -405,6 +414,8 @@ test_phone_app() {
 
   echo "--- :iphone: Phone App: ${app_name}"
   cd "${app_dir}"
+  # Clean corrupted node_modules to avoid tar extraction errors
+  rm -rf node_modules
   npm install --ignore-scripts
   timeout 300 npm test -- --json --outputFile="$json_file" || {
     capture_test_results "Phone: ${app_name}" "$json_file"
@@ -439,6 +450,8 @@ test_larger_app() {
 
   echo "--- :rocket: Larger App: ${app_name}"
   cd "${app_dir}"
+  # Clean corrupted node_modules to avoid tar extraction errors
+  rm -rf node_modules
   npm install --ignore-scripts
   timeout 300 npm test -- --json --outputFile="$json_file" || {
     capture_test_results "Larger: ${app_name}" "$json_file"

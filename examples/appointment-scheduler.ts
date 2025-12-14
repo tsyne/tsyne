@@ -4,7 +4,7 @@
  * This example demonstrates the standalone Calendar widget which shows
  * a full calendar month view for inline date selection.
  *
- * Run: npx ts-node examples/appointment-scheduler.ts
+ * Run: npx tsx examples/appointment-scheduler.ts
  */
 import { app } from '../core/src/index';
 

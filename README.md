@@ -165,7 +165,7 @@ Tsyne works seamlessly with both TypeScript and JavaScript!
 
 ## Single-File Distribution
 
-This builds on single file applications that required Node.js running ts-node. 
+This builds on single file applications that required Node.js running tsx. 
 
 Distribute standalone `.ts` apps with npm dependencies declared inline in a similar way as ([Groovy's Grapes](https://docs.groovy-lang.org/latest/html/documentation/grape.html) technology does it.
 

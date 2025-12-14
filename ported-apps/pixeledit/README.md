@@ -71,10 +71,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ```bash
 # Run the pixel editor
-npx ts-node ported-apps/pixeledit/pixeledit.ts
+npx tsx ported-apps/pixeledit/pixeledit.ts
 
 # Load a file from command line
-npx ts-node ported-apps/pixeledit/pixeledit.ts /path/to/image.png
+npx tsx ported-apps/pixeledit/pixeledit.ts /path/to/image.png
 ```
 
 ## Testing

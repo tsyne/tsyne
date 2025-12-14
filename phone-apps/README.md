@@ -54,11 +54,11 @@ if (require.main === module) {
 
 ```bash
 # Run individual apps standalone
-npx ts-node phone-apps/dialer.ts
-npx ts-node phone-apps/contacts.ts
-npx ts-node phone-apps/clock.ts
-npx ts-node phone-apps/notes.ts
-npx ts-node phone-apps/settings.ts
+npx tsx phone-apps/dialer.ts
+npx tsx phone-apps/contacts.ts
+npx tsx phone-apps/clock.ts
+npx tsx phone-apps/notes.ts
+npx tsx phone-apps/settings.ts
 ```
 
 ## Testing

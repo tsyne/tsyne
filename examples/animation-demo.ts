@@ -10,8 +10,8 @@
  * - Chained animations
  * - Animation callbacks
  *
- * Run with: npx ts-node examples/animation-demo.ts
- * Or headed: TSYNE_HEADED=1 npx ts-node examples/animation-demo.ts
+ * Run with: npx tsx examples/animation-demo.ts
+ * Or headed: TSYNE_HEADED=1 npx tsx examples/animation-demo.ts
  */
 
 import { app } from '../core/src';

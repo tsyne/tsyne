@@ -67,7 +67,7 @@ cd bridge && go build -o ../bin/tsyne-bridge && cd ..
 npm run build
 
 # Run the terminal
-npx ts-node ported-apps/terminal/terminal.ts
+npx tsx ported-apps/terminal/terminal.ts
 ```
 
 ## Testing

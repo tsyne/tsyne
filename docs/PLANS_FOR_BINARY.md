@@ -15,7 +15,7 @@ We measured the actual size requirements for various distribution approaches:
 | Node.js binary | 116 MB | Just the `node` executable from v22.17.0 |
 | Node.js distribution | 189 MB | Full distribution with npm, lib/, etc. |
 | Tsyne runtime (dist/) | 72 MB | Compiled TypeScript code |
-| Tsyne node_modules/ | 145 MB | Dependencies: ts-node, TypeScript, etc. |
+| Tsyne node_modules/ | 145 MB | Dependencies: tsx, TypeScript, etc. |
 | tsyne-bridge binary | 40 MB | Go/Fyne GUI bridge (per platform) |
 
 **Total for fully embedded binary**: ~372 MB uncompressed (~100-130 MB compressed)
@@ -158,7 +158,7 @@ If we want to reduce size in the far future:
 
 **Bun advantages:**
 - Bun binary: ~90 MB (vs Node.js 116 MB)
-- Built-in TypeScript support (no ts-node needed)
+- Built-in TypeScript support (no tsx needed)
 - Built-in bundler (smaller dependencies)
 - Single executable
 
@@ -170,7 +170,7 @@ If we want to reduce size in the far future:
 - **Total: ~222 MB** (vs 372 MB with Node.js)
 
 **Trade-offs:**
-- Would require porting from ts-node to Bun's runtime
+- Would require porting from tsx to Bun's runtime
 - Smaller ecosystem than Node.js (for now)
 - Still ~80-100 MB compressed
 

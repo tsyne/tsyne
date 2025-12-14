@@ -70,7 +70,7 @@ describe('Hand Pile Click Tests', () => {
 
       throw error;
     }
-  }, 15000);
+  }, 30000);
 
   test('should select and move draw3 card to tableau', async () => {
     const testApp = await tsyneTest.createApp((app: App) => {

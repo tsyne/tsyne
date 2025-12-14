@@ -53,7 +53,7 @@ Use the utilities in this example ONLY when you need to:
 
 ```bash
 npm test -- svg-renderer.test.ts  # Run tests
-npx ts-node examples/svg-rendering/example.ts  # Run demo
+npx tsx examples/svg-rendering/example.ts  # Run demo
 ```
 
 ## History

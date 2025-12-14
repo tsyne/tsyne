@@ -1,9 +1,9 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env npx tsx
 /**
  * Screenshot capture for widget demo scripts
  *
  * Usage:
- *   npx ts-node examples/screenshots/take-screenshots-widgets.ts
+ *   npx tsx examples/screenshots/take-screenshots-widgets.ts
  */
 
 import { execSync } from 'child_process';
@@ -42,7 +42,7 @@ for (const example of examples) {
 
   try {
     execSync(
-      `timeout 8 npx ts-node ${scriptPath} --screenshot`,
+      `timeout 8 npx tsx ${scriptPath} --screenshot`,
       { cwd: rootDir, stdio: 'inherit' }
     );
   } catch (error) {

@@ -9,7 +9,7 @@
  *     screenshotIfRequested(win);
  *   });
  *
- * Then run: npx ts-node examples/my-demo.ts --screenshot
+ * Then run: npx tsx examples/my-demo.ts --screenshot
  */
 
 import * as path from 'path';

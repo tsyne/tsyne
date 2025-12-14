@@ -250,10 +250,8 @@ EFFECTIVE_NODE_PATH="$TSYNE_RUNTIME:$TSYNE_RUNTIME/node_modules:$TSYNE_CACHE/nod
 [ -n "$NODE_PATH" ] && EFFECTIVE_NODE_PATH="$EFFECTIVE_NODE_PATH:$NODE_PATH"
 
 export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
-TS_NODE_TRANSPILE_ONLY=true \
-TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node","esModuleInterop":true}' \
 NODE_PATH="$EFFECTIVE_NODE_PATH" \
-npx ts-node --skipProject "$SOURCE_FILE"
+npx tsx "$SOURCE_FILE"
 SCRIPT_EOF
 
 # Replace version placeholder

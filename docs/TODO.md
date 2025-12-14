@@ -56,7 +56,7 @@ Currently, running standalone Tsyne apps requires Node.js/npm installed on the s
 
 **Production executable would bundle**:
 - Node.js runtime (~40-80 MB)
-- ts-node + TypeScript compiler (~10-20 MB)
+- tsx + TypeScript compiler (~10-20 MB)
 - tsyne npm package (JS sources) (~1 MB)
 - tsyne-bridge binary (~39 MB)
 
@@ -72,7 +72,7 @@ Currently, running standalone Tsyne apps requires Node.js/npm installed on the s
 - This approach is more practical than embedding everything
 
 **Implementation options**:
-1. **Tauri**: Bundle Node.js + ts-node + tsyne as a Tauri app
+1. **Tauri**: Bundle Node.js + tsx + tsyne as a Tauri app
 2. **pkg/nexe**: Package Node.js runtime with embedded modules
 3. **Deno-style**: Custom TypeScript runtime (major undertaking)
 

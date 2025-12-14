@@ -34,7 +34,7 @@ import _ from 'lodash';
 
 ### 1. The `tsyne` Executable
 
-A `tsyne` executable (Tauri + Node.js + ts-node, or a shell wrapper) handles the complete lifecycle:
+A `tsyne` executable (Tauri + Node.js + tsx, or a shell wrapper) handles the complete lifecycle:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -44,7 +44,7 @@ A `tsyne` executable (Tauri + Node.js + ts-node, or a shell wrapper) handles the
 │  2. Check ~/.tsyne/packages/ for installed deps         │
 │  3. npm install missing deps to cache directory         │
 │  4. Set NODE_PATH to include cache                      │
-│  5. Execute with ts-node (bridge starts automatically)  │
+│  5. Execute with tsx (bridge starts automatically)      │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -125,7 +125,7 @@ for spec in $GRAB_SPECS; do
 done
 
 # Run with NODE_PATH set
-NODE_PATH="$TSYNE_CACHE/node_modules:$NODE_PATH" npx ts-node "$SOURCE_FILE"
+NODE_PATH="$TSYNE_CACHE/node_modules:$NODE_PATH" npx tsx "$SOURCE_FILE"
 ```
 
 ### Tauri/Node.js Executable (Production)
@@ -134,7 +134,7 @@ A production `tsyne.exe` would be built with:
 
 - **Tauri**: For native packaging and distribution
 - **Node.js**: Embedded runtime (or use system Node)
-- **ts-node**: For TypeScript execution
+- **tsx**: For TypeScript execution
 - **Go bridge**: Bundled `tsyne-bridge` for Fyne GUI
 
 The executable would:

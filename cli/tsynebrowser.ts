@@ -7,7 +7,7 @@
  * Usage:
  *   npx tsyne-browser <url>
  *   OR
- *   npx ts-node cli/tsynebrowser.ts <url>
+ *   npx tsx cli/tsynebrowser.ts <url>
  *
  * Examples:
  *   npx tsyne-browser http://localhost:3000/

@@ -1,9 +1,9 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env npx tsx
 /**
  * Screenshot capture script for Interactive Apps (examples 14-21)
  *
  * Usage:
- *   npx ts-node examples/screenshots/take-screenshots-14-thru-21.ts
+ *   npx tsx examples/screenshots/take-screenshots-14-thru-21.ts
  *
  * Or via npm script:
  *   npm run test:screenshots:interactive

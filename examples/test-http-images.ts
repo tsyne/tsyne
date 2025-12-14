@@ -3,10 +3,10 @@
  * Tests the dual-execution discovery pattern for fetching images from HTTP server
  *
  * Prerequisites:
- * 1. Demo server must be running: npx ts-node examples/demo-server.ts
+ * 1. Demo server must be running: npx tsx examples/demo-server.ts
  * 2. Build must be up to date: npm run build
  *
- * Run: npx ts-node examples/test-http-images.ts
+ * Run: npx tsx examples/test-http-images.ts
  */
 
 import { createBrowser } from '../core/src';

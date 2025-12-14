@@ -2,7 +2,7 @@
  * Widget classes for Tsyne GUI framework
  *
  * This file re-exports all widget classes from the decomposed widget modules.
- * For better ts-node performance, the widgets are organized into smaller files:
+ * For better performance, the widgets are organized into smaller files:
  *
  * - widgets/base.ts - Widget base class and shared interfaces
  * - widgets/containers.ts - Layout containers (VBox, HBox, Grid, etc.)

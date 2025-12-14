@@ -12,7 +12,25 @@
  */
 
 import { TsyneTest, TestContext } from '../src/index-test';
-import { buildDesktop } from '../src/desktop';
+import { buildDesktop, DesktopOptions } from '../src/desktop';
+import { AppMetadata } from '../src/app-metadata';
+import * as path from 'path';
+
+// Mock calculator app for fast testing (avoids scanning directories)
+const mockCalculatorApp: AppMetadata = {
+  filePath: path.resolve(__dirname, '../../examples/calculator.ts'),
+  name: 'Calculator',
+  icon: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  iconIsSvg: true,
+  category: 'utilities',
+  builder: 'buildCalculator',
+  count: 'desktop-many',
+  args: ['app'],
+};
+
+const testDesktopOptions: DesktopOptions = {
+  apps: [mockCalculatorApp],
+};
 
 describe('Desktop Environment Tests', () => {
   let tsyneTest: TsyneTest;
@@ -29,7 +47,7 @@ describe('Desktop Environment Tests', () => {
 
   test('should display desktop with app icons', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -42,11 +60,11 @@ describe('Desktop Environment Tests', () => {
     // Launch bar should be visible
     await ctx.getByID('showDesktopBtn').shouldExist();
     await ctx.getByID('allAppsBtn').shouldExist();
-  }, 15000); // Desktop initialization can take longer due to app scanning
+  }, 5000); // Desktop initialization can take longer due to app scanning
 
   test('should launch calculator via double-click on icon', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -62,11 +80,11 @@ describe('Desktop Environment Tests', () => {
 
     // Running apps should show calculator (use within() to poll for app launch)
     await ctx.getByID('runningAppsLabel').within(3000).shouldContain('Calculator');
-  }, 15000);
+  }, 5000);
 
   test('should interact with calculator running in inner window', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -87,11 +105,11 @@ describe('Desktop Environment Tests', () => {
 
     // The calculator's display label should show the result
     await ctx.getByID('calc-display').within(2000).shouldBe("8");
-  }, 15000);
+  }, 5000);
 
   test('should hide windows when Show Desktop is clicked', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -113,7 +131,7 @@ describe('Desktop Environment Tests', () => {
     // The app is still "running" but the window is hidden
     // (We can't easily verify hidden state in tests, but the button shouldn't crash)
     await ctx.getByID('runningAppsLabel').within(2000).shouldContain('Calculator');
-  }, 15000);
+  }, 5000);
 });
 
 describe('Desktop Dock Integration Tests', () => {
@@ -131,7 +149,7 @@ describe('Desktop Dock Integration Tests', () => {
 
   test('should show launch bar components', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -141,11 +159,11 @@ describe('Desktop Dock Integration Tests', () => {
     await ctx.getByID('showDesktopBtn').shouldExist();
     await ctx.getByID('allAppsBtn').shouldExist();
     await ctx.getByID('runningAppsLabel').shouldExist();
-  });
+  }, 5000);
 
   test('should show running apps count as None initially', async () => {
     const testApp = await tsyneTest.createApp(async (app) => {
-      await buildDesktop(app);
+      await buildDesktop(app, testDesktopOptions);
     });
 
     ctx = tsyneTest.getContext();
@@ -153,5 +171,5 @@ describe('Desktop Dock Integration Tests', () => {
 
     // Running apps label should show None initially (use within() for polling)
     await ctx.getByID('runningAppsLabel').within(3000).shouldBe('None');
-  }, 15000);
+  }, 5000);
 });

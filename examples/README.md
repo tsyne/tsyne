@@ -16,8 +16,8 @@ These examples are designed to:
 ## Running Examples
 
 ```bash
-# Run an example directly with ts-node (recommended)
-npx ts-node examples/01-hello-world.ts
+# Run an example directly with tsx (recommended)
+npx tsx examples/01-hello-world.ts
 
 # Run tests for an example
 npm test examples/01-hello-world.test.ts

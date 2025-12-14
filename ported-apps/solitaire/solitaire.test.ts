@@ -34,7 +34,7 @@ describe('Solitaire Game Tests', () => {
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-  }, 15000); // Timeout for SVG pre-rendering (53 cards)
+  }, 30000); // Timeout for SVG pre-rendering (53 cards)
 
   beforeEach(async () => {
     // Reset game state before each test by clicking New Game

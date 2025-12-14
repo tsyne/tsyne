@@ -78,4 +78,4 @@ win.OnTappedBar = func() {
 
 **TypeScript** (`src/widgets/desktop.ts`) remains a thin wrapper that issues bridge commands (`createDesktopMDI`, `desktopMDIAddIcon`, `desktopMDIAddWindow`, etc.) and listens for callbacks.
 
-The original proof of concept for draggable icons lives in `bridge/cmd/draggable-icons/main.go`. Run the full desktop with `TSYNE_HEADED=1 npx ts-node src/desktop.ts`.
+The original proof of concept for draggable icons lives in `bridge/cmd/draggable-icons/main.go`. Run the full desktop with `TSYNE_HEADED=1 npx tsx src/desktop.ts`.

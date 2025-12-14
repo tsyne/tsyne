@@ -14,7 +14,7 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check for ts-node
+# Check for npx (tsx)
 if ! command -v npx &> /dev/null; then
     echo "Error: npx is not available. Please install Node.js 16 or higher."
     exit 1
@@ -30,4 +30,4 @@ fi
 # Launch demo server
 echo "Starting Tsyne Demo Server..."
 echo ""
-npx ts-node examples/demo-server.ts
+npx tsx examples/demo-server.ts

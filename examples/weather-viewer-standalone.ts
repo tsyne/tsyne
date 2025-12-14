@@ -8,7 +8,7 @@
 // When run with `tsyne weather-viewer-standalone.ts`, the tsyne runtime will:
 //   1. Parse the @Grab directives below
 //   2. Install missing dependencies to ~/.tsyne/packages/
-//   3. Configure NODE_PATH and run the app with ts-node
+//   3. Configure NODE_PATH and run the app with tsx
 //
 // Inspired by Groovy's Grapes: https://docs.groovy-lang.org/latest/html/documentation/grape.html
 

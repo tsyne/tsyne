@@ -13,7 +13,7 @@
  * - Submit button enabling/disabling based on validity
  *
  * Usage:
- *   npx ts-node examples/registration-form.ts
+ *   npx tsx examples/registration-form.ts
  */
 
 import { app, Entry, Label, Button, PasswordEntry, Window } from '../core/src';

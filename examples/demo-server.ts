@@ -1,7 +1,7 @@
 /**
  * Demo Server - Simple HTTP server for manually testing Tsyne Browser
  *
- * Run: npm run build && npx ts-node examples/demo-server.ts
+ * Run: npm run build && npx tsx examples/demo-server.ts
  */
 
 import http from 'http';
@@ -246,7 +246,7 @@ Server running at: http://localhost:${PORT}
 
 To browse:
   1. Open another terminal
-  2. Run: npm run build && npx ts-node examples/run-browser.ts
+  2. Run: npm run build && npx tsx examples/run-browser.ts
 
 The browser will start and you can type the URL in the address bar.
 

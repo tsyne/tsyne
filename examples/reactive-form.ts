@@ -12,7 +12,7 @@
  * - Two-way binding between widgets and data
  *
  * Usage:
- *   npx ts-node examples/reactive-form.ts
+ *   npx tsx examples/reactive-form.ts
  */
 
 import { app } from '../core/src';

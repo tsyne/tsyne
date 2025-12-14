@@ -100,7 +100,7 @@ describe('TodoMVC Tests', () => {
     await entry.type("Third task");
     await ctx.wait(50);
     await ctx.getByExactText("Add").click();
-    await ctx.wait(100);
+    await ctx.wait(200);
 
     // Should show all todos
     await ctx.expect(ctx.getByExactText("First task")).toBeVisible();

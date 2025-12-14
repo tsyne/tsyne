@@ -1,7 +1,7 @@
 /**
  * Run Browser - Launch Tsyne Browser for manual testing
  *
- * Run: npm run build && npx ts-node examples/run-browser.ts
+ * Run: npm run build && npx tsx examples/run-browser.ts
  */
 
 import { createBrowser } from '../core/src';

@@ -4,7 +4,7 @@
  * This example demonstrates the FileIcon widget which displays
  * appropriate icons based on file type/extension.
  *
- * Run: npx ts-node examples/file-browser.ts
+ * Run: npx tsx examples/file-browser.ts
  */
 import { app } from '../core/src/index';
 

@@ -1,5 +1,5 @@
 // Test script for FFI bridge
-// Run with: npx ts-node examples/test-ffi.ts
+// Run with: npx tsx examples/test-ffi.ts
 
 import { FfiBridgeConnection } from '../core/src/ffibridge';
 

@@ -23,8 +23,8 @@ For complete accessibility documentation, see **[docs/ACCESSIBILITY.md](docs/ACC
 
 ```bash
 npm run build
-npx ts-node examples/calculator-fully-accessible.ts
-npx ts-node examples/tictactoe.ts
+npx tsx examples/calculator-fully-accessible.ts
+npx tsx examples/tictactoe.ts
 ```
 
 ## Key Features

@@ -9,7 +9,7 @@
  * - D3 transitions (chainable, data-driven)
  * - Spring physics (natural motion)
  *
- * Run with: TSYNE_HEADED=1 npx ts-node examples/animation-elegant.ts
+ * Run with: TSYNE_HEADED=1 npx tsx examples/animation-elegant.ts
  */
 
 import { app } from '../core/src';

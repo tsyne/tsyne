@@ -87,7 +87,7 @@ async function main() {
 
   if (!shouldContinue) {
     console.log('To create placeholder screenshots anyway, run:');
-    console.log('   npx ts-node examples/capture-screenshots-v2.ts --placeholder');
+    console.log('   npx tsx examples/capture-screenshots-v2.ts --placeholder');
     return;
   }
 

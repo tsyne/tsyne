@@ -48,6 +48,8 @@ const DOCK_APPS_KEY = 'desktop.dock.apps';
 export interface DesktopOptions {
   /** Directory to scan for apps with @tsyne-app metadata. Defaults to 'examples/' relative to cwd */
   appDirectory?: string;
+  /** Pre-defined apps to use instead of scanning directories. For testing. */
+  apps?: AppMetadata[];
 }
 
 // Desktop state
@@ -298,15 +300,22 @@ class Desktop {
    * Initialize the desktop by scanning for apps
    */
   async init() {
-    const appDir = this.options.appDirectory || path.join(process.cwd(), '../examples');
-    const portedAppsDir = path.join(process.cwd(), '../ported-apps');
-    const phoneAppsDir = path.join(process.cwd(), '../phone-apps');
+    let apps: AppMetadata[];
 
-    // Scan examples, ported-apps, and phone-apps directories
-    const exampleApps = scanForApps(appDir);
-    const portedApps = scanPortedApps(portedAppsDir);
-    const phoneApps = scanForApps(phoneAppsDir);
-    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+    if (this.options.apps) {
+      // Use pre-defined apps (for testing)
+      apps = this.options.apps;
+    } else {
+      // Scan directories for apps
+      const appDir = this.options.appDirectory || path.join(process.cwd(), '../examples');
+      const portedAppsDir = path.join(process.cwd(), '../ported-apps');
+      const phoneAppsDir = path.join(process.cwd(), '../phone-apps');
+
+      const exampleApps = scanForApps(appDir);
+      const portedApps = scanPortedApps(portedAppsDir);
+      const phoneApps = scanForApps(phoneAppsDir);
+      apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     // Position icons in a grid (8 columns), but use saved positions if available
     const GRID_COLS = 8;

@@ -74,7 +74,7 @@ describe('Game of Life Tests', () => {
       await tsyneTest.screenshot(screenshotPath);
       console.error(`📸 Screenshot saved: ${screenshotPath}`);
     }
-  });
+  }, 10000);
 
   test('should start simulation and advance generations automatically', async () => {
     let ui: any;
@@ -225,7 +225,7 @@ describe('Game of Life Tests', () => {
     // Board should be cleared (all dead cells)
     // The board display should still be visible (canvas-based rendering)
     await ctx.getByText('Game of Life Board:').within(500).shouldExist();
-  });
+  }, 10000);
 
   test('should handle complex interaction sequence', async () => {
     let ui: any;

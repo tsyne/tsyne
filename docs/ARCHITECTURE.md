@@ -613,13 +613,13 @@ async send(type: string, payload: Record<string, any>): Promise<any> {
 
 Tsyne: TypeScript as a Native Scripting Language
 
-  Tsyne's model (ts-node):
-  npx ts-node examples/todomvc.ts /tmp/todos.json
+  Tsyne's model (tsx):
+  npx tsx examples/todomvc.ts /tmp/todos.json
   # ↑ TypeScript executes directly, feels like Python/Ruby
 
   - TypeScript is the source of truth
   - No build artifacts to manage
-  - Direct execution: ts-node → TypeScript interpreter
+  - Direct execution: tsx → TypeScript interpreter (via esbuild)
   - Changes to .ts files take effect immediately on next run
   - Feels like a scripting language (Python, Ruby, Lua)
 
@@ -636,14 +636,14 @@ Tsyne: TypeScript as a Native Scripting Language
 
   Native desktop apps benefit from scripting-style development:
   1. Rapid iteration: Change code → run → see results (no bundling wait)
-  2. Deployment simplicity: Ship .ts files + ts-node + bridge binary
+  2. Deployment simplicity: Ship .ts files + tsx + bridge binary
   3. Debugging: Source maps aren't needed - you're debugging the actual TS code
   4. Clarity: What you write is what executes (no transpilation mystery)
 
   It's like Electron + Node, but with:
   - Go/Fyne for native UI (not Chromium)
   - TypeScript as the direct runtime (not compiled JS)
-  - ts-node as the interpreter (not V8 executing bundled JS)
+  - tsx as the interpreter (not V8 executing bundled JS)
 
   This makes Tsyne feel more like PyQt/wxPython (scripting language + native UI) than Electron (web tech + Chromium).
 

@@ -14,10 +14,11 @@ describe('HexViewBuffer Logic', () => {
 
   beforeAll(() => {
     // Create a temp file with known content
+    // Use 512 bytes (32 rows) to allow scroll testing with DEFAULT_VISIBLE_ROWS=20
     tempFile = path.join(os.tmpdir(), 'hexview-test.bin');
-    const data = Buffer.alloc(256);
-    for (let i = 0; i < 256; i++) {
-      data[i] = i;
+    const data = Buffer.alloc(512);
+    for (let i = 0; i < 512; i++) {
+      data[i] = i % 256;
     }
     fs.writeFileSync(tempFile, data);
   });
@@ -38,7 +39,7 @@ describe('HexViewBuffer Logic', () => {
 
   describe('file loading', () => {
     it('should load file correctly', () => {
-      expect(buffer.getSize()).toBe(256);
+      expect(buffer.getSize()).toBe(512);
       expect(buffer.getFilePath()).toBe(tempFile);
     });
 
@@ -50,7 +51,7 @@ describe('HexViewBuffer Logic', () => {
 
     it('should return null for out of bounds', () => {
       expect(buffer.getByte(-1)).toBe(null);
-      expect(buffer.getByte(256)).toBe(null);
+      expect(buffer.getByte(512)).toBe(null);
     });
 
     it('should get multiple bytes', () => {

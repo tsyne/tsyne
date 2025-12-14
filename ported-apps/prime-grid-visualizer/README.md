@@ -76,10 +76,10 @@ Time complexity: **O(n log log n)** - Very efficient!
 
 ```bash
 # If in the tsyne root directory
-npx ts-node ported-apps/prime-grid-visualizer/prime-grid-visualizer.ts
+npx tsx ported-apps/prime-grid-visualizer/prime-grid-visualizer.ts
 
 # Or via the desktop environment
-npx ts-node examples/desktop-demo.ts
+npx tsx examples/desktop-demo.ts
 # Then launch "Prime Grid Visualizer" from the desktop
 ```
 
