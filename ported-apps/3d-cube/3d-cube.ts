@@ -1274,6 +1274,7 @@ export class CubeUI {
     }
     this.rendering = true;
 
+    const t0 = Date.now();
     const buffer = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE * 4);
 
     // Background (dark gray)
@@ -1473,7 +1474,9 @@ export class CubeUI {
       }
     }
 
+    const t1 = Date.now();
     await this.canvas.setPixelBuffer(buffer);
+    const t2 = Date.now();
 
     // Update labels
     if (this.moveLabel) await this.moveLabel.setText(String(this.cube.getMoveCount()));
@@ -1481,6 +1484,9 @@ export class CubeUI {
       const status = this.cube.isSolved() ? 'Solved!' : (this.solving ? 'Solving...' : 'Scrambled');
       await this.statusLabel.setText(status);
     }
+    const t3 = Date.now();
+
+    console.log(`[RENDER] draw=${t1-t0}ms, setPixelBuffer=${t2-t1}ms, labels=${t3-t2}ms, total=${t3-t0}ms`);
 
     this.rendering = false;
 
@@ -1548,6 +1554,8 @@ export function create3DCubeApp(a: App): CubeUI {
     ui.setupWindow(win);
     win.setContent(() => ui.buildContent());
     win.show();
+    // Trigger initial render after UI is set up (needed for phonetop)
+    setTimeout(() => ui.initialize(), 0);
   });
 
   return ui;
@@ -1558,9 +1566,15 @@ export { Side, SIDE_COLORS, CANVAS_SIZE, CUBE_SIZE };
 
 // Standalone entry point
 if (require.main === module) {
+  const startTime = Date.now();
+  console.log(`[STARTUP] beginning at ${(Date.now() / 1000).toFixed(3)}...`);
   app({ title: '3D Cube' }, async (a: App) => {
+    console.log(`[STARTUP] app callback: ${Date.now() - startTime}ms`);
     const ui = create3DCubeApp(a);
+    console.log(`[STARTUP] UI created: ${Date.now() - startTime}ms`);
     await a.run();
+    console.log(`[STARTUP] a.run() done: ${Date.now() - startTime}ms`);
     await ui.initialize();
+    console.log(`[STARTUP] initialized: ${Date.now() - startTime}ms`);
   });
 }

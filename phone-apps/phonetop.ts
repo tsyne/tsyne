@@ -602,7 +602,7 @@ export { PhoneTop };
 
 // Entry point
 if (require.main === module) {
-  const { app } = require('./index');
+  const { app } = require('../core/src/index');
   app({ title: 'App Launcher' }, async (a: App) => {
     await buildPhoneTop(a);
   });

@@ -1,5 +1,12 @@
 #!/bin/bash
 # tsyne - TypeScript native GUI runner with embedded dependency support
+
+# Timing for performance debugging
+TSYNE_START_TIME=$(date +%s%3N)
+tsyne_elapsed() {
+    local now=$(date +%s%3N)
+    echo "$((now - TSYNE_START_TIME))ms"
+}
 #
 # Usage: tsyne [options] <app.ts>
 #
@@ -298,12 +305,15 @@ fi
 # Export bridge path so tsyne can find it
 export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 
-# Run with ts-node
-# Use TS_NODE_TRANSPILE_ONLY to skip type checking (external modules from @grab
-# won't have types visible to TypeScript without modifying tsconfig.json)
-# Use --skipProject to avoid picking up any tsconfig.json files
-# Use TS_NODE_COMPILER_OPTIONS to set module resolution explicitly
-TS_NODE_TRANSPILE_ONLY=true \
-TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node","esModuleInterop":true}' \
-NODE_PATH="$EFFECTIVE_NODE_PATH" \
-npx ts-node --skipProject "$SOURCE_FILE"
+# Run with tsx (fast esbuild-based) - use local install to avoid npx overhead
+echo "[TSYNE] script setup done: $(tsyne_elapsed)"
+echo "[TSYNE] launching tsx at $(date +%s.%3N)..."
+
+# Prefer locally installed tsx, fall back to npx
+if [ -x "$TSYNE_SOURCE/node_modules/.bin/tsx" ]; then
+    NODE_PATH="$EFFECTIVE_NODE_PATH" \
+    "$TSYNE_SOURCE/node_modules/.bin/tsx" "$SOURCE_FILE"
+else
+    NODE_PATH="$EFFECTIVE_NODE_PATH" \
+    npx --prefer-offline tsx "$SOURCE_FILE"
+fi
