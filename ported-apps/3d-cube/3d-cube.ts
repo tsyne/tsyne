@@ -172,6 +172,102 @@ export class RubiksCube {
   }
 
   /**
+   * Rotate the middle horizontal slice (E slice - between Up and Down)
+   * Direction is as viewed from the Up face (opposite of standard E notation)
+   * clockwise=true: Front row 1 → Right row 1 → Back row 1 → Left row 1
+   */
+  rotateESlice(clockwise: boolean): void {
+    const temp: Side[] = [];
+
+    if (clockwise) {
+      // Front → Right → Back → Left → Front (clockwise from above)
+      temp[0] = this.faces[Side.Front][1][0];
+      temp[1] = this.faces[Side.Front][1][1];
+      temp[2] = this.faces[Side.Front][1][2];
+      this.faces[Side.Front][1][0] = this.faces[Side.Left][1][0];
+      this.faces[Side.Front][1][1] = this.faces[Side.Left][1][1];
+      this.faces[Side.Front][1][2] = this.faces[Side.Left][1][2];
+      this.faces[Side.Left][1][0] = this.faces[Side.Back][1][0];
+      this.faces[Side.Left][1][1] = this.faces[Side.Back][1][1];
+      this.faces[Side.Left][1][2] = this.faces[Side.Back][1][2];
+      this.faces[Side.Back][1][0] = this.faces[Side.Right][1][0];
+      this.faces[Side.Back][1][1] = this.faces[Side.Right][1][1];
+      this.faces[Side.Back][1][2] = this.faces[Side.Right][1][2];
+      this.faces[Side.Right][1][0] = temp[0];
+      this.faces[Side.Right][1][1] = temp[1];
+      this.faces[Side.Right][1][2] = temp[2];
+    } else {
+      // Front → Left → Back → Right → Front (counter-clockwise from above)
+      temp[0] = this.faces[Side.Front][1][0];
+      temp[1] = this.faces[Side.Front][1][1];
+      temp[2] = this.faces[Side.Front][1][2];
+      this.faces[Side.Front][1][0] = this.faces[Side.Right][1][0];
+      this.faces[Side.Front][1][1] = this.faces[Side.Right][1][1];
+      this.faces[Side.Front][1][2] = this.faces[Side.Right][1][2];
+      this.faces[Side.Right][1][0] = this.faces[Side.Back][1][0];
+      this.faces[Side.Right][1][1] = this.faces[Side.Back][1][1];
+      this.faces[Side.Right][1][2] = this.faces[Side.Back][1][2];
+      this.faces[Side.Back][1][0] = this.faces[Side.Left][1][0];
+      this.faces[Side.Back][1][1] = this.faces[Side.Left][1][1];
+      this.faces[Side.Back][1][2] = this.faces[Side.Left][1][2];
+      this.faces[Side.Left][1][0] = temp[0];
+      this.faces[Side.Left][1][1] = temp[1];
+      this.faces[Side.Left][1][2] = temp[2];
+    }
+
+    this.moveHistory.push({ side: Side.Up, clockwise }); // Track as a move
+    this.onUpdate?.();
+  }
+
+  /**
+   * Rotate the middle vertical slice (M slice - between Left and Right)
+   * Direction is as viewed from the Right face
+   * clockwise=true: Front col 1 → Up col 1 → Back col 1 → Down col 1
+   */
+  rotateMSlice(clockwise: boolean): void {
+    const temp: Side[] = [];
+
+    if (clockwise) {
+      // Front → Up → Back → Down → Front (clockwise from Right)
+      temp[0] = this.faces[Side.Front][0][1];
+      temp[1] = this.faces[Side.Front][1][1];
+      temp[2] = this.faces[Side.Front][2][1];
+      this.faces[Side.Front][0][1] = this.faces[Side.Down][0][1];
+      this.faces[Side.Front][1][1] = this.faces[Side.Down][1][1];
+      this.faces[Side.Front][2][1] = this.faces[Side.Down][2][1];
+      this.faces[Side.Down][0][1] = this.faces[Side.Back][2][1];
+      this.faces[Side.Down][1][1] = this.faces[Side.Back][1][1];
+      this.faces[Side.Down][2][1] = this.faces[Side.Back][0][1];
+      this.faces[Side.Back][0][1] = this.faces[Side.Up][2][1];
+      this.faces[Side.Back][1][1] = this.faces[Side.Up][1][1];
+      this.faces[Side.Back][2][1] = this.faces[Side.Up][0][1];
+      this.faces[Side.Up][0][1] = temp[0];
+      this.faces[Side.Up][1][1] = temp[1];
+      this.faces[Side.Up][2][1] = temp[2];
+    } else {
+      // Front → Down → Back → Up → Front (counter-clockwise from Right)
+      temp[0] = this.faces[Side.Front][0][1];
+      temp[1] = this.faces[Side.Front][1][1];
+      temp[2] = this.faces[Side.Front][2][1];
+      this.faces[Side.Front][0][1] = this.faces[Side.Up][0][1];
+      this.faces[Side.Front][1][1] = this.faces[Side.Up][1][1];
+      this.faces[Side.Front][2][1] = this.faces[Side.Up][2][1];
+      this.faces[Side.Up][0][1] = this.faces[Side.Back][2][1];
+      this.faces[Side.Up][1][1] = this.faces[Side.Back][1][1];
+      this.faces[Side.Up][2][1] = this.faces[Side.Back][0][1];
+      this.faces[Side.Back][0][1] = this.faces[Side.Down][2][1];
+      this.faces[Side.Back][1][1] = this.faces[Side.Down][1][1];
+      this.faces[Side.Back][2][1] = this.faces[Side.Down][0][1];
+      this.faces[Side.Down][0][1] = temp[0];
+      this.faces[Side.Down][1][1] = temp[1];
+      this.faces[Side.Down][2][1] = temp[2];
+    }
+
+    this.moveHistory.push({ side: Side.Right, clockwise }); // Track as a move
+    this.onUpdate?.();
+  }
+
+  /**
    * Rotate the edges adjacent to a face
    */
   private rotateAdjacentEdges(side: Side, clockwise: boolean): void {
@@ -466,6 +562,12 @@ export class RubiksCube {
 // UI Class
 // ============================================================================
 
+interface TapSelection {
+  face: Side;
+  row: number;
+  col: number;
+}
+
 export class CubeUI {
   private cube: RubiksCube;
   private a: App;
@@ -476,6 +578,10 @@ export class CubeUI {
   private solving: boolean = false;
   private solutionQueue: CubeCommand[] = [];
   private solveInterval: NodeJS.Timeout | null = null;
+  private selectedCell: TapSelection | null = null;
+  private processingTap: boolean = false;
+  private rendering: boolean = false;
+  private renderPending: boolean = false;
 
   constructor(a: App) {
     this.a = a;
@@ -564,18 +670,310 @@ export class CubeUI {
     });
   }
 
+  /**
+   * Detect which cell was tapped using hit testing
+   */
+  private detectTappedCell(x: number, y: number): TapSelection | null {
+    const HALF = CUBE_SIZE / 2;
+
+    // Check each face's cells (check in reverse draw order - front to back)
+    // Right face first (drawn last, so on top)
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const z0 = HALF - col * CELL_SIZE;
+        const y0 = HALF - row * CELL_SIZE;
+
+        const points = [
+          this.project({ x: HALF, y: y0, z: z0 }),
+          this.project({ x: HALF, y: y0, z: z0 - CELL_SIZE }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 - CELL_SIZE }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 }),
+        ];
+        if (this.pointInPolygon({ x, y }, points)) {
+          return { face: Side.Right, row, col };
+        }
+      }
+    }
+
+    // Front face
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const x0 = col * CELL_SIZE - HALF;
+        const y0 = HALF - row * CELL_SIZE;
+
+        const points = [
+          this.project({ x: x0, y: y0, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE, y: y0, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE, y: y0 - CELL_SIZE, z: HALF }),
+          this.project({ x: x0, y: y0 - CELL_SIZE, z: HALF }),
+        ];
+        if (this.pointInPolygon({ x, y }, points)) {
+          return { face: Side.Front, row, col };
+        }
+      }
+    }
+
+    // Up face (top)
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const x0 = col * CELL_SIZE - HALF;
+        const z0 = row * CELL_SIZE - HALF;
+
+        const points = [
+          this.project({ x: x0, y: HALF, z: z0 }),
+          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 }),
+          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 + CELL_SIZE }),
+          this.project({ x: x0, y: HALF, z: z0 + CELL_SIZE }),
+        ];
+        if (this.pointInPolygon({ x, y }, points)) {
+          return { face: Side.Up, row, col };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Determine rotation based on two tapped cells
+   * User expectation: tap a cell, then tap where you want that row/column to move
+   *
+   * Cube orientation:
+   * - Up (white) face on top
+   * - Front (green) face facing viewer (lower-left in isometric)
+   * - Right (red) face on right side (lower-right in isometric)
+   *
+   * Edge rotation directions (where the values visually move TO):
+   * - Up clockwise: Front row 0 → Left, Right row 0 → Front, Back → Right, Left → Back
+   * - Up counter-clockwise: Front row 0 → Right, Left row 0 → Front, Back → Left, Right → Back
+   * - Down clockwise: Front row 2 → Right, Left → Front, Back → Left, Right → Back
+   * - Down counter-clockwise: Front row 2 → Left, Right → Front, Back → Right, Left → Back
+   */
+  private determineRotation(from: TapSelection, to: TapSelection): { side: Side; clockwise: boolean } | null {
+    // Same cell tapped twice - cancel selection
+    if (from.face === to.face && from.row === to.row && from.col === to.col) {
+      return null;
+    }
+
+    // Tapping on the same face - rotate the row or column
+    if (from.face === to.face) {
+      const dRow = to.row - from.row;
+      const dCol = to.col - from.col;
+
+      // Determine if movement is more horizontal or vertical
+      if (Math.abs(dCol) >= Math.abs(dRow)) {
+        // Horizontal movement - rotate the row
+        // User swipes right = wants cells to move towards Right face
+        const movingRight = dCol > 0;
+
+        if (from.face === Side.Front) {
+          // Front face: horizontal swipe rotates top/bottom/middle rows
+          // Swipe right on row 0 → want Front→Right → Up counter-clockwise (clockwise=false)
+          // Swipe right on row 1 → want Front→Right → E slice (clockwise=true means Front→Right)
+          // Swipe right on row 2 → want Front→Right → Down clockwise (clockwise=true)
+          if (from.row === 0) {
+            return { side: Side.Up, clockwise: !movingRight };
+          } else if (from.row === 2) {
+            return { side: Side.Down, clockwise: movingRight };
+          } else {
+            // Middle row - use E slice (side: -1 as special marker)
+            return { side: -1 as Side, clockwise: movingRight };
+          }
+        } else if (from.face === Side.Up) {
+          // Up face: horizontal swipe in isometric goes left-right
+          // Note: Up face row 2 (front edge) connects to Front face
+          // Swipe right → want cells to move right → affects Back/Front faces
+          if (from.row <= 1) {
+            return { side: Side.Back, clockwise: !movingRight };
+          } else {
+            return { side: Side.Front, clockwise: movingRight };
+          }
+        } else if (from.face === Side.Right) {
+          // Right face: col 0 is front edge, col 2 is back edge
+          // Horizontal swipe (changing col) means front-to-back movement
+          // Swipe right (increasing col, towards back) → Up clockwise rotates the row
+          if (from.row === 0) {
+            return { side: Side.Up, clockwise: !movingRight };
+          } else if (from.row === 2) {
+            return { side: Side.Down, clockwise: movingRight };
+          } else {
+            return { side: Side.Up, clockwise: !movingRight };
+          }
+        } else {
+          return { side: Side.Up, clockwise: movingRight };
+        }
+      } else {
+        // Vertical movement - rotate the column
+        // User swipes down = wants cells to move down
+        const movingDown = dRow > 0;
+
+        if (from.face === Side.Front) {
+          // Front face: vertical swipe rotates left/right/middle columns
+          // Swipe down on col 0 → want Front→Down → Left counter-clockwise
+          // Swipe down on col 1 → want Front→Down → M slice (clockwise=true means Front→Down)
+          // Swipe down on col 2 → want Front→Down → Right clockwise
+          if (from.col === 0) {
+            return { side: Side.Left, clockwise: !movingDown };
+          } else if (from.col === 2) {
+            return { side: Side.Right, clockwise: movingDown };
+          } else {
+            // Middle column - use M slice (side: -2 as special marker)
+            return { side: -2 as Side, clockwise: movingDown };
+          }
+        } else if (from.face === Side.Up) {
+          // Up face: vertical swipe (row change) means front-to-back on top
+          // Swipe down (row increases, towards front) → Left or Right rotation
+          if (from.col === 0) {
+            return { side: Side.Left, clockwise: !movingDown };
+          } else if (from.col === 2) {
+            return { side: Side.Right, clockwise: movingDown };
+          } else {
+            return { side: Side.Right, clockwise: movingDown };
+          }
+        } else if (from.face === Side.Right) {
+          // Right face: vertical swipe rotates front/back faces
+          // Swipe down on col 0 → Front clockwise (moves Right cells to Down)
+          // Swipe down on col 2 → Back counter-clockwise
+          if (from.col === 0) {
+            return { side: Side.Front, clockwise: movingDown };
+          } else if (from.col === 2) {
+            return { side: Side.Back, clockwise: !movingDown };
+          } else {
+            return { side: Side.Front, clockwise: movingDown };
+          }
+        } else {
+          return { side: Side.Right, clockwise: movingDown };
+        }
+      }
+    }
+
+    // Tapping across faces - rotate based on the edge relationship
+    // The rotation should move cells from 'from' face towards 'to' face
+
+    // Front to Up: user wants to move cell from front to top (upward)
+    if (from.face === Side.Front && to.face === Side.Up) {
+      // Need column rotation: Left or Right face
+      // Left clockwise: moves Front col 0 down, so counter-clockwise moves it up
+      // Right clockwise: moves Front col 2 up
+      if (from.col === 0) return { side: Side.Left, clockwise: false };
+      if (from.col === 2) return { side: Side.Right, clockwise: true };
+      return { side: Side.Right, clockwise: true };
+    }
+
+    // Up to Front: user wants to move cell from top to front (downward)
+    if (from.face === Side.Up && to.face === Side.Front) {
+      // Opposite of Front→Up
+      if (from.col === 0) return { side: Side.Left, clockwise: true };
+      if (from.col === 2) return { side: Side.Right, clockwise: false };
+      return { side: Side.Right, clockwise: false };
+    }
+
+    // Front to Right: user wants to move cell from front to right
+    if (from.face === Side.Front && to.face === Side.Right) {
+      // Need row rotation: Up or Down face
+      // Up counter-clockwise: moves Front row 0 to Right (clockwise=false)
+      // Down clockwise: moves Front row 2 to Right (clockwise=true)
+      if (from.row === 0) return { side: Side.Up, clockwise: false };
+      if (from.row === 2) return { side: Side.Down, clockwise: true };
+      return { side: Side.Up, clockwise: false };
+    }
+
+    // Right to Front: user wants to move cell from right to front
+    if (from.face === Side.Right && to.face === Side.Front) {
+      // Opposite of Front→Right
+      // Up clockwise: moves Right row 0 to Front (clockwise=true)
+      // Down counter-clockwise: moves Right row 2 to Front (clockwise=false)
+      if (from.row === 0) return { side: Side.Up, clockwise: true };
+      if (from.row === 2) return { side: Side.Down, clockwise: false };
+      return { side: Side.Up, clockwise: true };
+    }
+
+    // Up to Right: user wants to move cell from top to right side
+    if (from.face === Side.Up && to.face === Side.Right) {
+      // Right face connects to Up face via Right rotation
+      // Right counter-clockwise: moves Up col 2 to Front, then need to continue...
+      // Actually, this moves cells from Up to Back. For Up→Right we need different logic
+      // Front clockwise moves Up's bottom row onto Right
+      if (from.row === 2) return { side: Side.Front, clockwise: true };
+      return { side: Side.Right, clockwise: false };
+    }
+
+    // Right to Up: user wants to move cell from right to top
+    if (from.face === Side.Right && to.face === Side.Up) {
+      // Opposite direction
+      if (from.row === 0) return { side: Side.Front, clockwise: false };
+      return { side: Side.Right, clockwise: true };
+    }
+
+    // Default: rotate the face that was first tapped
+    return { side: from.face, clockwise: true };
+  }
+
   private handleTap(x: number, y: number): void {
-    // Simple tap handling - could be expanded to detect which face was clicked
-    // For now, just log the position
+    if (this.processingTap) {
+      console.log(`[TAP] BLOCKED - already processing`);
+      return;
+    }
+    this.processingTap = true;
+
+    try {
+      console.log(`[TAP] x=${x}, y=${y}`);
+      const tapped = this.detectTappedCell(x, y);
+      console.log(`[TAP] detected:`, tapped);
+
+      if (!tapped) {
+        console.log(`[TAP] no cell detected, clearing selection`);
+        this.selectedCell = null;
+      } else if (!this.selectedCell) {
+        console.log(`[TAP] first tap, selecting cell`);
+        this.selectedCell = tapped;
+      } else {
+        console.log(`[TAP] second tap, from:`, this.selectedCell, `to:`, tapped);
+        const rotation = this.determineRotation(this.selectedCell, tapped);
+        console.log(`[TAP] rotation determined:`, rotation);
+
+        const from = this.selectedCell;
+        this.selectedCell = null;
+
+        if (rotation) {
+          console.log(`[TAP] from face=${from.face} row=${from.row} col=${from.col}, to face=${tapped.face} row=${tapped.row} col=${tapped.col}`);
+
+          if (rotation.side === -1) {
+            // E slice (middle horizontal row)
+            console.log(`[TAP] executing: E-slice ${rotation.clockwise ? '(Front→Right)' : '(Front→Left)'}`);
+            this.cube.rotateESlice(rotation.clockwise);
+          } else if (rotation.side === -2) {
+            // M slice (middle vertical column)
+            console.log(`[TAP] executing: M-slice ${rotation.clockwise ? '(Front→Down)' : '(Front→Up)'}`);
+            this.cube.rotateMSlice(rotation.clockwise);
+          } else {
+            const sideName = ['Up', 'Front', 'Right', 'Back', 'Left', 'Down'][rotation.side];
+            console.log(`[TAP] executing: ${sideName} ${rotation.clockwise ? 'clockwise' : 'counter-clockwise'}`);
+            this.cube.rotateSide(rotation.side, rotation.clockwise);
+          }
+        }
+      }
+
+      this.render().finally(() => {
+        this.processingTap = false;
+        console.log(`[TAP] render complete, ready for next tap`);
+      });
+    } catch (e) {
+      console.log(`[TAP] ERROR:`, e);
+      this.selectedCell = null;
+      this.processingTap = false;
+    }
   }
 
   private resetCube(): void {
     this.stopSolving();
+    this.selectedCell = null;
     this.cube.reset();
   }
 
   private shuffleCube(): void {
     this.stopSolving();
+    this.selectedCell = null;
     this.cube.shuffle(20);
   }
 
@@ -680,37 +1078,50 @@ export class CubeUI {
   }
 
   /**
-   * Draw a line
+   * Draw a line using simple DDA algorithm (more robust)
    */
   private drawLine(
     buffer: Uint8Array,
     p1: Point2D, p2: Point2D,
     color: { r: number; g: number; b: number }
   ): void {
-    const dx = Math.abs(p2.x - p1.x);
-    const dy = Math.abs(p2.y - p1.y);
-    const sx = p1.x < p2.x ? 1 : -1;
-    const sy = p1.y < p2.y ? 1 : -1;
-    let err = dx - dy;
+    if (!p1 || !p2) return;
 
-    let x = Math.round(p1.x);
-    let y = Math.round(p1.y);
+    const x1 = Math.round(p1.x);
+    const y1 = Math.round(p1.y);
     const x2 = Math.round(p2.x);
     const y2 = Math.round(p2.y);
 
-    while (true) {
-      this.setPixel(buffer, x, y, color.r, color.g, color.b);
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const steps = Math.max(Math.abs(dx), Math.abs(dy));
 
-      if (x === x2 && y === y2) break;
+    if (steps === 0) {
+      this.setPixel(buffer, x1, y1, color.r, color.g, color.b);
+      return;
+    }
 
-      const e2 = 2 * err;
-      if (e2 > -dy) { err -= dy; x += sx; }
-      if (e2 < dx) { err += dx; y += sy; }
+    const xInc = dx / steps;
+    const yInc = dy / steps;
+
+    let x = x1;
+    let y = y1;
+    for (let i = 0; i <= steps; i++) {
+      this.setPixel(buffer, Math.round(x), Math.round(y), color.r, color.g, color.b);
+      x += xInc;
+      y += yInc;
     }
   }
 
   private async render(): Promise<void> {
     if (!this.canvas) return;
+
+    // Prevent concurrent renders
+    if (this.rendering) {
+      this.renderPending = true;
+      return;
+    }
+    this.rendering = true;
 
     const buffer = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE * 4);
 
@@ -821,6 +1232,49 @@ export class CubeUI {
         { r: 0, g: 0, b: 0 });
     }
 
+    // Highlight selected cell
+    if (this.selectedCell) {
+      const sel = this.selectedCell;
+      const highlightColor = { r: 255, g: 255, b: 0 }; // Yellow highlight
+      let points: Point2D[] = [];
+
+      if (sel.face === Side.Up) {
+        const x0 = sel.col * CELL_SIZE - HALF;
+        const z0 = sel.row * CELL_SIZE - HALF;
+        points = [
+          this.project({ x: x0, y: HALF, z: z0 }),
+          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 }),
+          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 + CELL_SIZE }),
+          this.project({ x: x0, y: HALF, z: z0 + CELL_SIZE }),
+        ];
+      } else if (sel.face === Side.Front) {
+        const x0 = sel.col * CELL_SIZE - HALF;
+        const y0 = HALF - sel.row * CELL_SIZE;
+        points = [
+          this.project({ x: x0, y: y0, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE, y: y0, z: HALF }),
+          this.project({ x: x0 + CELL_SIZE, y: y0 - CELL_SIZE, z: HALF }),
+          this.project({ x: x0, y: y0 - CELL_SIZE, z: HALF }),
+        ];
+      } else if (sel.face === Side.Right) {
+        const z0 = HALF - sel.col * CELL_SIZE;
+        const y0 = HALF - sel.row * CELL_SIZE;
+        points = [
+          this.project({ x: HALF, y: y0, z: z0 }),
+          this.project({ x: HALF, y: y0, z: z0 - CELL_SIZE }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 - CELL_SIZE }),
+          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 }),
+        ];
+      }
+
+      // Draw thick highlight border
+      if (points.length === 4) {
+        for (let i = 0; i < 4; i++) {
+          this.drawLine(buffer, points[i], points[(i + 1) % 4], highlightColor);
+        }
+      }
+    }
+
     await this.canvas.setPixelBuffer(buffer);
 
     // Update labels
@@ -829,12 +1283,26 @@ export class CubeUI {
       const status = this.cube.isSolved() ? 'Solved!' : (this.solving ? 'Solving...' : 'Scrambled');
       await this.statusLabel.setText(status);
     }
+
+    this.rendering = false;
+
+    // Handle pending render request
+    if (this.renderPending) {
+      this.renderPending = false;
+      this.render();
+    }
   }
 
   private async showControls(): Promise<void> {
     if (!this.win) return;
     await this.win.showInfo('Controls',
       'Rubik\'s Cube Controls:\n\n' +
+      'TAP TO ROTATE:\n' +
+      '1. Tap a cell to select it (yellow highlight)\n' +
+      '2. Tap another cell to rotate\n' +
+      '   - Same face: rotates that face\n' +
+      '   - Different face: rotates shared edge\n\n' +
+      'BUTTONS:\n' +
       'U/U\' - Rotate Up face (clockwise/counter)\n' +
       'D/D\' - Rotate Down face\n' +
       'F/F\' - Rotate Front face\n' +
