@@ -819,7 +819,12 @@ export class CubeUI {
       const dRow = to.row - from.row;
       const dCol = to.col - from.col;
 
-      // Determine if movement is more horizontal or vertical
+      // Reject diagonal movements - require clear horizontal or vertical intent
+      if (dRow !== 0 && dCol !== 0) {
+        return null;
+      }
+
+      // Determine if movement is horizontal or vertical
       if (Math.abs(dCol) >= Math.abs(dRow)) {
         // Horizontal movement - rotate the row
         // User swipes right = wants cells to move towards Right face
@@ -978,11 +983,11 @@ export class CubeUI {
 
   /**
    * Convert internal face/row/col to user-friendly notation
-   * T = Top (Up/white), L = Left (Front/green), R = Right (red)
+   * U = Up (white), F = Front (green), R = Right (red)
    * Cells numbered 11-33 (row-col, 1-based)
    */
   private cellNotation(sel: TapSelection): string {
-    const faceChar = sel.face === Side.Up ? 'T' : sel.face === Side.Front ? 'L' : sel.face === Side.Right ? 'R' : '?';
+    const faceChar = sel.face === Side.Up ? 'U' : sel.face === Side.Front ? 'F' : sel.face === Side.Right ? 'R' : '?';
     return `${faceChar}${sel.row + 1}${sel.col + 1}`;
   }
 
@@ -1035,7 +1040,15 @@ export class CubeUI {
             this.cube.rotateSide(rotation.side as Side, rotation.clockwise);
           }
         } else {
-          console.log(`[TAP] no rotation (same cell or invalid)`);
+          // No rotation - could be same cell, diagonal movement, or cross-face that's not handled
+          const dRow = tapped.row - from.row;
+          const dCol = tapped.col - from.col;
+          const isDiagonal = from.face === tapped.face && dRow !== 0 && dCol !== 0;
+          if (isDiagonal) {
+            console.log(`[TAP] rejected: diagonal movement (use horizontal or vertical swipe)`);
+          } else {
+            console.log(`[TAP] no rotation (same cell or unhandled)`);
+          }
         }
       }
 
