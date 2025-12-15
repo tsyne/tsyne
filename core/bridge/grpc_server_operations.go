@@ -118,6 +118,25 @@ func (s *grpcBridgeService) GetText(ctx context.Context, req *pb.GetTextRequest)
 	}, nil
 }
 
+// SetWidgetCallback sets a callback ID for a widget
+func (s *grpcBridgeService) SetWidgetCallback(ctx context.Context, req *pb.SetWidgetCallbackRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setWidgetCallback",
+		Payload: map[string]interface{}{
+			"widgetId":   req.WidgetId,
+			"callbackId": req.CallbackId,
+		},
+	}
+
+	resp := s.bridge.handleSetWidgetCallback(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // SetProgress sets progress value
 func (s *grpcBridgeService) SetProgress(ctx context.Context, req *pb.SetProgressRequest) (*pb.Response, error) {
 	msg := Message{

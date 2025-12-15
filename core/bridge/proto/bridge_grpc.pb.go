@@ -122,6 +122,7 @@ const (
 	BridgeService_UpdateImage_FullMethodName                 = "/bridge.BridgeService/UpdateImage"
 	BridgeService_SetText_FullMethodName                     = "/bridge.BridgeService/SetText"
 	BridgeService_GetText_FullMethodName                     = "/bridge.BridgeService/GetText"
+	BridgeService_SetWidgetCallback_FullMethodName           = "/bridge.BridgeService/SetWidgetCallback"
 	BridgeService_SetProgress_FullMethodName                 = "/bridge.BridgeService/SetProgress"
 	BridgeService_GetProgress_FullMethodName                 = "/bridge.BridgeService/GetProgress"
 	BridgeService_SetChecked_FullMethodName                  = "/bridge.BridgeService/SetChecked"
@@ -388,6 +389,7 @@ type BridgeServiceClient interface {
 	UpdateImage(ctx context.Context, in *UpdateImageRequest, opts ...grpc.CallOption) (*Response, error)
 	SetText(ctx context.Context, in *SetTextRequest, opts ...grpc.CallOption) (*Response, error)
 	GetText(ctx context.Context, in *GetTextRequest, opts ...grpc.CallOption) (*GetTextResponse, error)
+	SetWidgetCallback(ctx context.Context, in *SetWidgetCallbackRequest, opts ...grpc.CallOption) (*Response, error)
 	SetProgress(ctx context.Context, in *SetProgressRequest, opts ...grpc.CallOption) (*Response, error)
 	GetProgress(ctx context.Context, in *GetProgressRequest, opts ...grpc.CallOption) (*GetProgressResponse, error)
 	SetChecked(ctx context.Context, in *SetCheckedRequest, opts ...grpc.CallOption) (*Response, error)
@@ -1587,6 +1589,16 @@ func (c *bridgeServiceClient) GetText(ctx context.Context, in *GetTextRequest, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTextResponse)
 	err := c.cc.Invoke(ctx, BridgeService_GetText_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetWidgetCallback(ctx context.Context, in *SetWidgetCallbackRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetWidgetCallback_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -3000,6 +3012,7 @@ type BridgeServiceServer interface {
 	UpdateImage(context.Context, *UpdateImageRequest) (*Response, error)
 	SetText(context.Context, *SetTextRequest) (*Response, error)
 	GetText(context.Context, *GetTextRequest) (*GetTextResponse, error)
+	SetWidgetCallback(context.Context, *SetWidgetCallbackRequest) (*Response, error)
 	SetProgress(context.Context, *SetProgressRequest) (*Response, error)
 	GetProgress(context.Context, *GetProgressRequest) (*GetProgressResponse, error)
 	SetChecked(context.Context, *SetCheckedRequest) (*Response, error)
@@ -3483,6 +3496,9 @@ func (UnimplementedBridgeServiceServer) SetText(context.Context, *SetTextRequest
 }
 func (UnimplementedBridgeServiceServer) GetText(context.Context, *GetTextRequest) (*GetTextResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetText not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetWidgetCallback(context.Context, *SetWidgetCallbackRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetWidgetCallback not implemented")
 }
 func (UnimplementedBridgeServiceServer) SetProgress(context.Context, *SetProgressRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetProgress not implemented")
@@ -5733,6 +5749,24 @@ func _BridgeService_GetText_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).GetText(ctx, req.(*GetTextRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetWidgetCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetWidgetCallbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetWidgetCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetWidgetCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetWidgetCallback(ctx, req.(*SetWidgetCallbackRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8416,6 +8450,10 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetText",
 			Handler:    _BridgeService_GetText_Handler,
+		},
+		{
+			MethodName: "SetWidgetCallback",
+			Handler:    _BridgeService_SetWidgetCallback_Handler,
 		},
 		{
 			MethodName: "SetProgress",

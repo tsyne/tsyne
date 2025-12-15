@@ -148,6 +148,7 @@ service BridgeService {
   rpc UpdateImage(UpdateImageRequest) returns (Response);
   rpc SetText(SetTextRequest) returns (Response);
   rpc GetText(GetTextRequest) returns (GetTextResponse);
+  rpc SetWidgetCallback(SetWidgetCallbackRequest) returns (Response);
   rpc SetProgress(SetProgressRequest) returns (Response);
   rpc GetProgress(GetProgressRequest) returns (GetProgressResponse);
   rpc SetChecked(SetCheckedRequest) returns (Response);
@@ -689,6 +690,11 @@ message GetTextResponse {
   bool success = 1;
   string error = 2;
   string text = 3;
+}
+
+message SetWidgetCallbackRequest {
+  string widget_id = 1;
+  string callback_id = 2;
 }
 
 message SetProgressRequest {

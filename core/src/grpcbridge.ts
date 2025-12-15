@@ -1141,6 +1141,11 @@ export class GrpcBridgeConnection implements BridgeInterface {
         };
       case 'getText':
         return { method: 'getText', request: { widgetId: payload.widgetId } };
+      case 'setWidgetCallback':
+        return {
+          method: 'setWidgetCallback',
+          request: { widgetId: payload.widgetId, callbackId: payload.callbackId }
+        };
       case 'setProgress':
         return {
           method: 'setProgress',
