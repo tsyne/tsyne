@@ -28,8 +28,8 @@ describe('Button', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    await tsyneTest.cleanup();
   });
 
   it('should create buttons with different importance levels', async () => {

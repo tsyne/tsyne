@@ -26,8 +26,8 @@ describe('Label Wrapping', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    await tsyneTest.cleanup();
   });
 
   it('should create labels with different wrapping settings', async () => {

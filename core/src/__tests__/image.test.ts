@@ -27,8 +27,8 @@ describe('Image', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    await tsyneTest.cleanup();
   });
 
   it('should call onDrag and onDragEnd when the image is dragged', async () => {

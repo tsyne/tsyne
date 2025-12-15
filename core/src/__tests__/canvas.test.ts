@@ -5,9 +5,9 @@ describe('Canvas Primitives', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
-  afterEach(() => {
+  afterEach(async () => {
     if (tsyneTest) {
-      tsyneTest.cleanup();
+      await tsyneTest.cleanup();
     }
   });
 

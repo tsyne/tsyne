@@ -25,8 +25,8 @@ describe('PasswordEntry', () => {
     await testApp.run();
   });
 
-  afterEach(() => {
-    tsyneTest.cleanup();
+  afterEach(async () => {
+    await tsyneTest.cleanup();
   });
 
   it('should call onSubmit with the entry text', async () => {
