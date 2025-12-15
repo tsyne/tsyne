@@ -570,6 +570,21 @@ export class CanvasRaster {
   get height(): number { return this._height; }
 
   /**
+   * Register a custom ID for this widget (for test framework getByID)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    return this;
+  }
+
+  /**
    * Update individual pixels
    * @param updates Array of pixel updates {x, y, r, g, b, a}
    */

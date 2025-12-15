@@ -123,9 +123,9 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
 
   let raster: CanvasRaster | null = null;
   let statsLabel: any;
-  let maxNEntry: Entry;
-  let columnsEntry: Entry;
-  let cellSizeEntry: Entry;
+  let maxNEntry!: Entry;
+  let columnsEntry!: Entry;
+  let cellSizeEntry!: Entry;
 
   // Pre-compute primes so dimensions are correct when building UI
   state.isPrimes = sieveOfEratosthenes(state.n);
@@ -249,13 +249,14 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
           // Row 1: Input controls
           a.hbox(() => {
             a.label('Max Number:').withId('labelMaxN');
-            maxNEntry = a.entry(state.n.toString(), undefined, 80).withId('inputMaxN') as Entry;
+            // Note: entry() first param is placeholder, use setText() for initial value
+            maxNEntry = a.entry('', undefined, 80).withId('inputMaxN') as Entry;
 
             a.label('  Columns:').withId('labelColumns');
-            columnsEntry = a.entry(state.columns.toString(), undefined, 80).withId('inputColumns') as Entry;
+            columnsEntry = a.entry('', undefined, 80).withId('inputColumns') as Entry;
 
             a.label('  Cell Size:').withId('labelCellSize');
-            cellSizeEntry = a.entry(state.cellSize.toString(), undefined, 80).withId('inputCellSize') as Entry;
+            cellSizeEntry = a.entry('', undefined, 80).withId('inputCellSize') as Entry;
 
             a.button('Generate').onClick(async () => {
               // Read current values from entry widgets
@@ -301,12 +302,17 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
       // Grid Display Area - use fixed max size so regenerating with larger values works
       a.center(() => {
         // Use max canvas size (800x800) so regenerating with different params fits
-        raster = a.canvasRaster(800, 800);
+        raster = a.canvasRaster(800, 800).withId('gridRaster');
       });
     });
   });
 
   await win.show();
+
+  // Set initial values for entry fields (entry() first param is placeholder, not initial value)
+  await maxNEntry.setText(state.n.toString());
+  await columnsEntry.setText(state.columns.toString());
+  await cellSizeEntry.setText(state.cellSize.toString());
 
   // Initialize with default grid
   await generateGrid();
