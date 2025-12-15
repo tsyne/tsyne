@@ -25,6 +25,25 @@ import { Resvg } from '@resvg/resvg-js';
 import { detectDropZone } from './drop-zone';
 
 // ============================================================================
+// Card Image Provider Interface (Dependency Injection)
+// ============================================================================
+
+/**
+ * Interface for providing card images.
+ * Production uses SvgCardImageProvider (renders SVGs to PNG).
+ * Tests can inject StubCardImageProvider for fast execution.
+ */
+export interface CardImageProvider {
+  getCardImage(filename: string): string;
+  getOverlappedCardsImage(
+    cardImages: string[],
+    cardWidth: number,
+    cardHeight: number,
+    overlapOffset: number
+  ): string;
+}
+
+// ============================================================================
 // Pseudo-declarative Observable System (like todomvc-ngshow.ts)
 // ============================================================================
 
@@ -34,11 +53,6 @@ type GameChangeListener = (changeType: GameChangeType) => void;
 // ============================================================================
 // SVG to PNG Rendering (merged from svg-renderer.ts)
 // ============================================================================
-
-/**
- * Cache for rendered card images
- */
-const imageCache = new Map<string, string>();
 
 /**
  * Cache for pre-rendered card faces Map (shared across all SolitaireUI instances)
@@ -53,12 +67,6 @@ let cardFacesCache: Map<string, string> | null = null;
  * @returns Base64-encoded PNG data with data URI prefix
  */
 function renderSVGToBase64(svgPath: string, width?: number, height?: number): string {
-  // Check cache first
-  const cacheKey = `${svgPath}:${width}:${height}`;
-  if (imageCache.has(cacheKey)) {
-    return imageCache.get(cacheKey)!;
-  }
-
   // Read SVG file
   const svgBuffer = fs.readFileSync(svgPath);
 
@@ -76,12 +84,7 @@ function renderSVGToBase64(svgPath: string, width?: number, height?: number): st
 
   // Convert to base64
   const base64 = pngBuffer.toString('base64');
-  const dataUri = `data:image/png;base64,${base64}`;
-
-  // Cache it
-  imageCache.set(cacheKey, dataUri);
-
-  return dataUri;
+  return `data:image/png;base64,${base64}`;
 }
 
 /**
@@ -176,6 +179,81 @@ function createOverlappedCardsImage(
   // Convert to base64
   const base64 = pngBuffer.toString('base64');
   return `data:image/png;base64,${base64}`;
+}
+
+// ============================================================================
+// Card Image Provider Implementations
+// ============================================================================
+
+/**
+ * Production card image provider that renders SVGs to PNG.
+ * Expensive but produces real card images.
+ */
+export class SvgCardImageProvider implements CardImageProvider {
+  private renderedCards: Map<string, string>;
+
+  constructor(facesDir: string, cardWidth: number = 120, cardHeight: number = 174) {
+    this.renderedCards = preRenderAllCards(facesDir, cardWidth, cardHeight);
+  }
+
+  getCardImage(filename: string): string {
+    const data = this.renderedCards.get(filename);
+    if (!data) {
+      console.warn(`Card image not found: ${filename}`);
+      return this.renderedCards.get('back.svg') || '';
+    }
+    return data;
+  }
+
+  getOverlappedCardsImage(
+    cardImages: string[],
+    cardWidth: number,
+    cardHeight: number,
+    overlapOffset: number
+  ): string {
+    return createOverlappedCardsImage(cardImages, cardWidth, cardHeight, overlapOffset);
+  }
+}
+
+/**
+ * Stub card image provider for fast tests.
+ * Returns minimal placeholder images instantly.
+ */
+export class StubCardImageProvider implements CardImageProvider {
+  private static placeholder: string | null = null;
+
+  private getPlaceholder(): string {
+    if (!StubCardImageProvider.placeholder) {
+      // Minimal valid 1x1 transparent PNG (67 bytes)
+      const minimalPng = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+        0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41,
+        0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+        0x42, 0x60, 0x82
+      ]);
+      StubCardImageProvider.placeholder = `data:image/png;base64,${minimalPng.toString('base64')}`;
+    }
+    return StubCardImageProvider.placeholder;
+  }
+
+  getCardImage(_filename: string): string {
+    return this.getPlaceholder();
+  }
+
+  getOverlappedCardsImage(
+    cardImages: string[],
+    _cardWidth: number,
+    _cardHeight: number,
+    _overlapOffset: number
+  ): string {
+    // Just return first image - no expensive composite rendering
+    return cardImages.length > 0 ? cardImages[0] : this.getPlaceholder();
+  }
 }
 
 // ============================================================================
@@ -332,10 +410,6 @@ class Deck {
   deal(): Card | null {
     if (this.cards.length === 0) return null;
     return this.cards.pop() || null;
-  }
-
-  remaining(): number {
-    return this.cards.length;
   }
 }
 
@@ -711,7 +785,7 @@ class SolitaireUI {
   private game: Game;
   private statusLabel: any = null;
   private currentStatus: string = 'New game started'; // Current status message preserved across rebuilds
-  private renderedCards: Map<string, string>; // Cache of base64-rendered PNGs
+  private cardImageProvider: CardImageProvider;
   private selectedCard: { type: 'draw' | 'stack' | 'build', index: number, cardIndex?: number } | null = null;
   private draggedCard: { type: 'draw' | 'stack' | 'build', index: number } | null = null;
   private window: Window | null = null;
@@ -722,33 +796,30 @@ class SolitaireUI {
   private draw2Image: any = null;
   private draw3Image: any = null;
 
-  constructor(private a: App) {
+  constructor(private a: App, cardImageProvider?: CardImageProvider) {
     this.game = new Game();
 
-    // Pre-render all card SVGs to PNG (hoisting SVG rendering to TypeScript)
-    // Try multiple possible paths to handle different working directories
-    const possiblePaths = [
-      path.join(process.cwd(), 'faces'),                        // Running from examples/solitaire/
-      path.join(process.cwd(), 'examples/solitaire/faces'),     // Running from project root
-      path.join(process.cwd(), '../examples/solitaire/faces'),  // Running from bridge/
-      path.join(__dirname, 'faces')                             // Relative to this file
-    ];
-
-    const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
-
-    this.renderedCards = preRenderAllCards(facesDir, 120, 174); // Double size cards
+    if (cardImageProvider) {
+      // Use injected provider (e.g., StubCardImageProvider for tests)
+      this.cardImageProvider = cardImageProvider;
+    } else {
+      // Default: use SVG renderer (production)
+      const possiblePaths = [
+        path.join(process.cwd(), 'faces'),
+        path.join(process.cwd(), 'examples/solitaire/faces'),
+        path.join(process.cwd(), '../examples/solitaire/faces'),
+        path.join(__dirname, 'faces')
+      ];
+      const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
+      this.cardImageProvider = new SvgCardImageProvider(facesDir, 120, 174);
+    }
   }
 
   /**
    * Get the base64 PNG data for a card
    */
   private getCardImage(filename: string): string {
-    const data = this.renderedCards.get(filename);
-    if (!data) {
-      console.warn(`Card image not found: ${filename}`);
-      return this.renderedCards.get('back.svg') || '';
-    }
-    return data;
+    return this.cardImageProvider.getCardImage(filename);
   }
 
   /**
@@ -1086,7 +1157,7 @@ class SolitaireUI {
                   // pseudo-declarative lines: pre-computed values before declarative use
                   // Create overlapped composite image
                   const cardImages = cards.map(card => this.getCardImage(card.imageFilename()));
-                  const compositeImage = createOverlappedCardsImage(cardImages, 120, 174, 87); // Half card height
+                  const compositeImage = this.cardImageProvider.getOverlappedCardsImage(cardImages, 120, 174, 87);
 
                   // Display composite image with click handler for top card
                   const topCard = cards[cards.length - 1];
@@ -1196,9 +1267,11 @@ class SolitaireUI {
 /**
  * Create the solitaire app
  * Based on: main.go
+ * @param a The Tsyne App instance
+ * @param cardImageProvider Optional card image provider (inject StubCardImageProvider for fast tests)
  */
-export function createSolitaireApp(a: App): SolitaireUI {
-  const ui = new SolitaireUI(a);
+export function createSolitaireApp(a: App, cardImageProvider?: CardImageProvider): SolitaireUI {
+  const ui = new SolitaireUI(a, cardImageProvider);
 
   a.window({ title: 'Solitaire', width: 1000, height: 700 }, (win: Window) => {
     win.setContent(() => {

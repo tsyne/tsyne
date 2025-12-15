@@ -16,7 +16,7 @@
  */
 
 import { TsyneTest, TestContext } from '../../core/src/index-test';
-import { createSolitaireApp } from './solitaire';
+import { createSolitaireApp, StubCardImageProvider } from './solitaire';
 import * as path from 'path';
 
 describe('Solitaire Game Tests', () => {
@@ -27,14 +27,17 @@ describe('Solitaire Game Tests', () => {
     const headed = process.env.TSYNE_HEADED === '1';
     tsyneTest = new TsyneTest({ headed });
 
+    // Use StubCardImageProvider for fast tests (skips expensive SVG rendering)
+    const stubImageProvider = new StubCardImageProvider();
+
     // Create app once for all tests
     const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app);
+      createSolitaireApp(app, stubImageProvider);
     });
 
     ctx = tsyneTest.getContext();
     await testApp.run();
-  }, 30000); // Timeout for SVG pre-rendering (53 cards)
+  }, 15000); // Reduced timeout - no SVG rendering with stub provider
 
   beforeEach(async () => {
     // Reset game state before each test by clicking New Game
@@ -60,7 +63,7 @@ describe('Solitaire Game Tests', () => {
 
     // Verify status
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
-  });
+  }, 10000);
 
   test('should start a new game', async () => {
     // Initial status
@@ -73,7 +76,7 @@ describe('Solitaire Game Tests', () => {
 
     // Should still show new game started
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
-  });
+  }, 10000);
 
   test('should shuffle the deck', async () => {
     // Click shuffle button
@@ -83,7 +86,7 @@ describe('Solitaire Game Tests', () => {
 
     // Should show deck shuffled message
     await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
-  });
+  }, 10000);
 
   test('should draw cards from hand', async () => {
     // Click draw button
@@ -93,7 +96,7 @@ describe('Solitaire Game Tests', () => {
 
     // Should show drew cards message
     await ctx.getByID('status-label').shouldContain('Drew cards');
-  });
+  }, 10000);
 
   test('should display all game sections', async () => {
     // Toolbar
@@ -107,7 +110,7 @@ describe('Solitaire Game Tests', () => {
 
     // Status bar
     await ctx.expect(ctx.getByText('New game started')).toBeVisible();
-  });
+  }, 10000);
 
   test('should maintain state after multiple draws', async () => {
     // Draw multiple times
@@ -125,7 +128,7 @@ describe('Solitaire Game Tests', () => {
 
     // Game sections should still be visible
     await ctx.expect(ctx.getByText('Foundations:')).toBeVisible();
-  });
+  }, 15000);
 
   test('should handle new game after playing', async () => {
     // Draw some cards
@@ -154,14 +157,14 @@ describe('Solitaire Game Tests', () => {
 
     // Should show shuffle message
     await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
-  });
+  }, 15000);
 
   test('should display correct window title', async () => {
     // Window title should be "Solitaire"
     // Note: Window title testing may not be directly supported
     // This test verifies the app launches successfully
     await ctx.expect(ctx.getByText('New Game')).toBeVisible();
-  });
+  }, 10000);
 
   test('should capture screenshot', async () => {
     // Wait for UI to settle and images to load

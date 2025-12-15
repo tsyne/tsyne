@@ -519,6 +519,17 @@ export class Locator {
   }
 
   /**
+   * Clear the text in the first widget matching this locator (fast fail)
+   */
+  async clear(): Promise<void> {
+    const widgetId = await this.find();
+    if (!widgetId) {
+      throwCallerError(`No widget found with ${this.selectorType}: ${this.selector}`, this.clear);
+    }
+    await this.bridge.send('setText', { widgetId, text: '' }, this.clear);
+  }
+
+  /**
    * Double-click the first widget matching this locator (fast fail)
    */
   async doubleClick(): Promise<void> {

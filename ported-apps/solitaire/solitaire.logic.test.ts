@@ -5,7 +5,140 @@
  * to ensure deterministic, repeatable results.
  */
 
-import { Game, Card, Suit } from './solitaire';
+import { Game, Card, Suit, SuitColor } from './solitaire';
+
+// ============================================================================
+// Card Class Tests
+// ============================================================================
+
+describe('Card', () => {
+  describe('constructor', () => {
+    test('should create card with valid value and suit', () => {
+      const card = new Card(5, Suit.Hearts);
+      expect(card.value).toBe(5);
+      expect(card.suit).toBe(Suit.Hearts);
+      expect(card.faceUp).toBe(false);
+    });
+
+    test('should create card with faceUp parameter', () => {
+      const card = new Card(10, Suit.Spades, true);
+      expect(card.faceUp).toBe(true);
+    });
+
+    test('should reject value below 1', () => {
+      expect(() => new Card(0, Suit.Hearts)).toThrow('Card value must be between 1 and 13');
+    });
+
+    test('should reject value above 13', () => {
+      expect(() => new Card(14, Suit.Hearts)).toThrow('Card value must be between 1 and 13');
+    });
+  });
+
+  describe('color', () => {
+    test('should return Black for Clubs', () => {
+      expect(new Card(1, Suit.Clubs).color()).toBe(SuitColor.Black);
+    });
+
+    test('should return Black for Spades', () => {
+      expect(new Card(1, Suit.Spades).color()).toBe(SuitColor.Black);
+    });
+
+    test('should return Red for Hearts', () => {
+      expect(new Card(1, Suit.Hearts).color()).toBe(SuitColor.Red);
+    });
+
+    test('should return Red for Diamonds', () => {
+      expect(new Card(1, Suit.Diamonds).color()).toBe(SuitColor.Red);
+    });
+  });
+
+  describe('suitSymbol', () => {
+    test('should return ♣ for Clubs', () => {
+      expect(new Card(1, Suit.Clubs).suitSymbol()).toBe('♣');
+    });
+
+    test('should return ♦ for Diamonds', () => {
+      expect(new Card(1, Suit.Diamonds).suitSymbol()).toBe('♦');
+    });
+
+    test('should return ♥ for Hearts', () => {
+      expect(new Card(1, Suit.Hearts).suitSymbol()).toBe('♥');
+    });
+
+    test('should return ♠ for Spades', () => {
+      expect(new Card(1, Suit.Spades).suitSymbol()).toBe('♠');
+    });
+  });
+
+  describe('valueName', () => {
+    test('should return A for Ace', () => {
+      expect(new Card(1, Suit.Hearts).valueName()).toBe('A');
+    });
+
+    test('should return number string for 2-10', () => {
+      expect(new Card(2, Suit.Hearts).valueName()).toBe('2');
+      expect(new Card(5, Suit.Hearts).valueName()).toBe('5');
+      expect(new Card(10, Suit.Hearts).valueName()).toBe('10');
+    });
+
+    test('should return J for Jack', () => {
+      expect(new Card(11, Suit.Hearts).valueName()).toBe('J');
+    });
+
+    test('should return Q for Queen', () => {
+      expect(new Card(12, Suit.Hearts).valueName()).toBe('Q');
+    });
+
+    test('should return K for King', () => {
+      expect(new Card(13, Suit.Hearts).valueName()).toBe('K');
+    });
+  });
+
+  describe('toString', () => {
+    test('should return [??] for face-down card', () => {
+      const card = new Card(5, Suit.Hearts, false);
+      expect(card.toString()).toBe('[??]');
+    });
+
+    test('should return value and suit symbol for face-up card', () => {
+      expect(new Card(1, Suit.Hearts, true).toString()).toBe('A♥');
+      expect(new Card(10, Suit.Spades, true).toString()).toBe('10♠');
+      expect(new Card(13, Suit.Diamonds, true).toString()).toBe('K♦');
+    });
+  });
+
+  describe('imageFilename', () => {
+    test('should return back.svg for face-down card', () => {
+      const card = new Card(5, Suit.Hearts, false);
+      expect(card.imageFilename()).toBe('back.svg');
+    });
+
+    test('should return correct filename for face-up card', () => {
+      expect(new Card(1, Suit.Hearts, true).imageFilename()).toBe('AH.svg');
+      expect(new Card(10, Suit.Spades, true).imageFilename()).toBe('10S.svg');
+      expect(new Card(13, Suit.Clubs, true).imageFilename()).toBe('KC.svg');
+      expect(new Card(12, Suit.Diamonds, true).imageFilename()).toBe('QD.svg');
+    });
+  });
+
+  describe('turnFaceUp/turnFaceDown', () => {
+    test('should turn card face up', () => {
+      const card = new Card(5, Suit.Hearts, false);
+      card.turnFaceUp();
+      expect(card.faceUp).toBe(true);
+    });
+
+    test('should turn card face down', () => {
+      const card = new Card(5, Suit.Hearts, true);
+      card.turnFaceDown();
+      expect(card.faceUp).toBe(false);
+    });
+  });
+});
+
+// ============================================================================
+// Game Logic Tests
+// ============================================================================
 
 describe('Solitaire Game Logic', () => {
   let game: Game;
@@ -307,6 +440,26 @@ describe('Solitaire Game Logic', () => {
       expect(draws.draw2?.value).toBe(4);
       expect(draws.draw1?.value).toBe(3);
     });
+
+    test('should handle draw when both hand and waste are empty', () => {
+      // Setup: No cards anywhere - completely empty deck
+      game.setupFixedState({
+        handCards: [],
+        draw1: null,
+        draw2: null,
+        draw3: null
+      });
+
+      // Act: Try to draw from empty deck
+      game.drawThree();
+
+      // Assert: Should do nothing, no crash
+      const draws = game.getDrawCards();
+      expect(draws.draw1).toBeNull();
+      expect(draws.draw2).toBeNull();
+      expect(draws.draw3).toBeNull();
+      expect(game.getHandCount()).toBe(0);
+    });
   });
 
   describe('Stack to Stack Moves', () => {
@@ -504,6 +657,38 @@ describe('Solitaire Game Logic', () => {
       // Assert: Should fail because sequence is invalid
       expect(result).toBe(false);
     });
+
+    test('should reject invalid cardIndex (negative)', () => {
+      const blackKing = new Card(13, Suit.Spades, true);
+      game.setupFixedState({
+        stacks: [[blackKing], []]
+      });
+
+      // Act: Try with negative index
+      const result = game.moveStackSequenceToStack(0, 1, -1);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    test('should reject sequence with non-descending values', () => {
+      // Setup: Cards with wrong value progression (8 -> 6 instead of 8 -> 7)
+      const black8 = new Card(8, Suit.Spades, true);
+      const red6 = new Card(6, Suit.Hearts, true); // Skips 7!
+      const black9 = new Card(9, Suit.Clubs, true);
+      game.setupFixedState({
+        stacks: [
+          [black8, red6],
+          [black9]
+        ]
+      });
+
+      // Act: Try to move sequence with skipped value
+      const result = game.moveStackSequenceToStack(0, 1, 0);
+
+      // Assert: Should fail - values must descend by exactly 1
+      expect(result).toBe(false);
+    });
   });
 
   describe('Stack to Foundation Moves', () => {
@@ -522,6 +707,25 @@ describe('Solitaire Game Logic', () => {
       const buildCards = game.getBuildCards(0);
       expect(buildCards.length).toBe(1);
       expect(buildCards[0].value).toBe(1);
+    });
+
+    test('should flip face-down card after moving to foundation', () => {
+      // Setup: Stack with face-down card and Ace on top
+      const hiddenCard = new Card(5, Suit.Hearts, false);
+      const aceHearts = new Card(1, Suit.Hearts, true);
+      game.setupFixedState({
+        stacks: [[hiddenCard, aceHearts]],
+        builds: [[]]
+      });
+
+      // Act: Move Ace to foundation
+      const result = game.moveStackToBuild(0, 0);
+
+      // Assert
+      expect(result).toBe(true);
+      const stack = game.getStackCards(0);
+      expect(stack.length).toBe(1);
+      expect(stack[0].faceUp).toBe(true); // Hidden card should be flipped
     });
   });
 
