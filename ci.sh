@@ -466,6 +466,39 @@ test_larger_app "literate-programming" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
+# STEP 8: Test Apps (Pure Logic Tests)
+# ============================================================================
+echo "--- :test_tube: Test Apps - Logic Tests"
+
+# Helper function to test a test-app with pure logic tests
+test_test_app() {
+  local app_name=$1
+  local json_file="/tmp/test-app-${app_name}-test-results.json"
+  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
+
+  if [ ! -d "${app_dir}" ]; then
+    echo "⚠️  ${app_name}: Directory not found - skipping"
+    return 0
+  fi
+
+  echo "--- :test_tube: Test App: ${app_name}"
+  cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
+
+  # Run pure logic tests using roots override to include test-apps directory
+  timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
+    --json --outputFile="$json_file" || {
+    capture_test_results "TestApp: ${app_name}" "$json_file"
+    return 1
+  }
+  capture_test_results "TestApp: ${app_name}" "$json_file"
+}
+
+# Test each test-app (continue even if some fail to collect all results)
+set +e  # Temporarily disable exit-on-error to collect all test results
+test_test_app "calculator-advanced" || true
+set -e  # Re-enable exit-on-error
+
+# ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
