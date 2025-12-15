@@ -466,14 +466,14 @@ test_larger_app "literate-programming" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
-# STEP 8: Test Apps (Pure Logic Tests)
+# STEP 8: Test Apps (Logic + GUI Tests)
 # ============================================================================
-echo "--- :test_tube: Test Apps - Logic Tests"
+echo "--- :test_tube: Test Apps - Tests"
 
-# Helper function to test a test-app with pure logic tests
-test_test_app() {
+# Helper function to test a test-app with logic tests (pure JS, no GUI)
+test_test_app_logic() {
   local app_name=$1
-  local json_file="/tmp/test-app-${app_name}-test-results.json"
+  local json_file="/tmp/test-app-${app_name}-logic-test-results.json"
   local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
 
   if [ ! -d "${app_dir}" ]; then
@@ -481,21 +481,51 @@ test_test_app() {
     return 0
   fi
 
-  echo "--- :test_tube: Test App: ${app_name}"
+  echo "--- :test_tube: Test App: ${app_name} (Logic)"
   cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
   # Run pure logic tests using roots override to include test-apps directory
   timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
     --json --outputFile="$json_file" || {
-    capture_test_results "TestApp: ${app_name}" "$json_file"
+    capture_test_results "TestApp: ${app_name} Logic" "$json_file"
     return 1
   }
-  capture_test_results "TestApp: ${app_name}" "$json_file"
+  capture_test_results "TestApp: ${app_name} Logic" "$json_file"
+}
+
+# Helper function to test a test-app with GUI tests (requires Tsyne bridge)
+test_test_app_gui() {
+  local app_name=$1
+  local json_file="/tmp/test-app-${app_name}-gui-test-results.json"
+  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
+
+  if [ ! -d "${app_dir}" ]; then
+    echo "⚠️  ${app_name}: Directory not found - skipping"
+    return 0
+  fi
+
+  # Check if calculator.test.ts exists (GUI test)
+  if [ ! -f "${app_dir}/calculator.test.ts" ]; then
+    echo "⚠️  ${app_name}: No GUI test found - skipping"
+    return 0
+  fi
+
+  echo "--- :test_tube: Test App: ${app_name} (GUI)"
+  cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
+
+  # Run GUI tests using roots override
+  timeout 120 npx jest --roots="${app_dir}" --testMatch='**/calculator.test.ts' \
+    --json --outputFile="$json_file" || {
+    capture_test_results "TestApp: ${app_name} GUI" "$json_file"
+    return 1
+  }
+  capture_test_results "TestApp: ${app_name} GUI" "$json_file"
 }
 
 # Test each test-app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
-test_test_app "calculator-advanced" || true
+test_test_app_logic "calculator-advanced" || true
+test_test_app_gui "calculator-advanced" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
