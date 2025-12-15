@@ -4,7 +4,7 @@
  * This test verifies that window titles can be set and updated.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext, Window } from '../core/src/index-test';
 
 describe('Window Title Tests', () => {
   let tsyneTest: TsyneTest;
@@ -22,9 +22,8 @@ describe('Window Title Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Test Window' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-          tsyne.vbox(() => {
-            tsyne.label('Window with default title');
+          app.vbox(() => {
+            app.label('Window with default title');
           });
         });
         win.show();
@@ -39,18 +38,16 @@ describe('Window Title Tests', () => {
   });
 
   test('should update window title', async () => {
-    let windowInstance: any = null;
+    let windowInstance: Window;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Initial Title' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-          tsyne.vbox(() => {
-            const btn = tsyne.button('Change Title').onClick(() => {
+          app.vbox(() => {
+            app.button('Change Title').onClick(() => {
               windowInstance.setTitle('New Title');
-            });
-            btn.id = 'change-title-btn';
+            }).withId('change-title-btn');
           });
         });
         win.show();
@@ -69,23 +66,20 @@ describe('Window Title Tests', () => {
   });
 
   test('should handle multiple title changes', async () => {
-    let windowInstance: any = null;
+    let windowInstance: Window;
     let clickCount = 0;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Test Window' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-          tsyne.vbox(() => {
-            const btn = tsyne.button('Change Title Multiple Times').onClick(() => {
+          app.vbox(() => {
+            app.button('Change Title Multiple Times').onClick(() => {
               clickCount++;
               windowInstance.setTitle(`Title ${clickCount}`);
-            });
-            btn.id = 'multi-title-btn';
+            }).withId('multi-title-btn');
 
-            const lbl = tsyne.label('Click count: 0');
-            lbl.id = 'count-label';
+            app.label('Click count: 0').withId('count-label');
           });
         });
         win.show();
@@ -107,18 +101,16 @@ describe('Window Title Tests', () => {
   });
 
   test('should handle empty title', async () => {
-    let windowInstance: any = null;
+    let windowInstance: Window;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Has Title' }, (win) => {
         windowInstance = win;
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-          tsyne.vbox(() => {
-            const btn = tsyne.button('Clear Title').onClick(() => {
+          app.vbox(() => {
+            app.button('Clear Title').onClick(() => {
               windowInstance.setTitle('');
-            });
-            btn.id = 'clear-title-btn';
+            }).withId('clear-title-btn');
           });
         });
         win.show();

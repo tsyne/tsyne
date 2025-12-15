@@ -5,7 +5,7 @@
  * Full Enter key testing is done in browser tests where actual key presses can be simulated.
  */
 
-import { TsyneTest, TestContext, Entry } from '../core/src/index-test';
+import { TsyneTest, TestContext } from '../core/src/index-test';
 
 describe('Entry onSubmit Tests', () => {
   let tsyneTest: TsyneTest;
@@ -25,16 +25,14 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry Submit Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
-            // Entry with onSubmit callback using new API
-            new Entry((win as any).ctx, 'Type here and press Enter', () => {
+          app.vbox(() => {
+            // Entry with onSubmit callback
+            app.entry('Type here and press Enter', () => {
               submitted = true;
             });
 
             // Label to show widget was created
-            tsyne.label('Entry widget created');
+            app.label('Entry widget created');
           });
         });
         win.show();
@@ -56,12 +54,10 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry No Submit Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
+          app.vbox(() => {
             // Entry without onSubmit callback (backward compatible)
-            tsyne.entry('Plain entry');
-            tsyne.label('Plain entry works');
+            app.entry('Plain entry');
+            app.label('Plain entry works');
           });
         });
         win.show();
@@ -80,11 +76,8 @@ describe('Entry onSubmit Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Entry Type Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
-            const textEntry = tsyne.entry('Type here');
-            textEntry.id = 'test-entry';
+          app.vbox(() => {
+            app.entry('Type here').withId('test-entry');
           });
         });
         win.show();

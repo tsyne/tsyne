@@ -25,16 +25,13 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Home Button Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
+          app.vbox(() => {
             // Create home button with house icon
-            const homeBtn = tsyne.button('🏠').onClick(() => {
+            app.button('🏠').onClick(() => {
               homeClicked = true;
-            });
-            homeBtn.id = 'home-button';
+            }).withId('home-button');
 
-            tsyne.label('Home button test');
+            app.label('Home button test');
           });
         });
         win.show();
@@ -59,24 +56,15 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Navigation Buttons Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
-            tsyne.hbox(() => {
-              const backBtn = tsyne.button('←').onClick(() => {});
-              backBtn.id = 'back-btn';
-
-              const forwardBtn = tsyne.button('→').onClick(() => {});
-              forwardBtn.id = 'forward-btn';
-
-              const reloadBtn = tsyne.button('⟳').onClick(() => {});
-              reloadBtn.id = 'reload-btn';
-
-              const homeBtn = tsyne.button('🏠').onClick(() => {});
-              homeBtn.id = 'home-btn';
+          app.vbox(() => {
+            app.hbox(() => {
+              app.button('←').onClick(() => {}).withId('back-btn');
+              app.button('→').onClick(() => {}).withId('forward-btn');
+              app.button('⟳').onClick(() => {}).withId('reload-btn');
+              app.button('🏠').onClick(() => {}).withId('home-btn');
             });
 
-            tsyne.label('All navigation buttons');
+            app.label('All navigation buttons');
           });
         });
         win.show();
@@ -99,17 +87,10 @@ describe('Home Button Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Button Click Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
-            const btn1 = tsyne.button('First').onClick(() => clickOrder.push('first'));
-            btn1.id = 'btn1';
-
-            const homeBtn = tsyne.button('🏠').onClick(() => clickOrder.push('home'));
-            homeBtn.id = 'home-btn';
-
-            const btn2 = tsyne.button('Last').onClick(() => clickOrder.push('last'));
-            btn2.id = 'btn2';
+          app.vbox(() => {
+            app.button('First').onClick(() => { clickOrder.push('first'); }).withId('btn1');
+            app.button('🏠').onClick(() => { clickOrder.push('home'); }).withId('home-btn');
+            app.button('Last').onClick(() => { clickOrder.push('last'); }).withId('btn2');
           });
         });
         win.show();

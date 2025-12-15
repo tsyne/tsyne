@@ -5,7 +5,7 @@
  * Full status bar testing with browser integration is done in browser-status-bar.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext, Label } from '../core/src/index-test';
 
 describe('Status Bar Label Tests', () => {
   let tsyneTest: TsyneTest;
@@ -23,16 +23,13 @@ describe('Status Bar Label Tests', () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Status Bar Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
+          app.vbox(() => {
             // Main content
-            tsyne.label('Application Content');
+            app.label('Application Content');
 
             // Status bar at bottom (simulated)
-            tsyne.separator();
-            const statusLabel = tsyne.label('Ready');
-            statusLabel.id = 'status-label';
+            app.separator();
+            app.label('Ready').withId('status-label');
           });
         });
         win.show();
@@ -49,26 +46,20 @@ describe('Status Bar Label Tests', () => {
   });
 
   test('should update status label text', async () => {
-    let statusLabel: any = null;
+    let statusLabel: Label;
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Status Update Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
+          app.vbox(() => {
+            app.label('Application');
 
-          tsyne.vbox(() => {
-            tsyne.label('Application');
+            app.button('Update Status').onClick(() => {
+              statusLabel.setText('Loading...');
+            }).withId('update-btn');
 
-            const btn = tsyne.button('Update Status').onClick(() => {
-              if (statusLabel) {
-                statusLabel.setText('Loading...');
-              }
-            });
-            btn.id = 'update-btn';
-
-            tsyne.separator();
-            statusLabel = tsyne.label('Ready');
-            statusLabel.id = 'status-label';
+            app.separator();
+            statusLabel = app.label('Ready').withId('status-label');
           });
         });
         win.show();
@@ -85,42 +76,33 @@ describe('Status Bar Label Tests', () => {
     // Click button to update status
     await ctx.getByID('update-btn').click();
 
-    // Wait a bit for the update
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     // Status should be updated
-    await ctx.expect(status).toHaveText('Loading...');
+    await status.within(500).shouldBe('Loading...');
   });
 
   test('should handle multiple status updates', async () => {
-    let statusLabel: any = null;
+    let statusLabel: Label;
     let currentStatus = 'Ready';
 
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'Multiple Status Updates Test' }, (win) => {
         win.setContent(() => {
-          const tsyne = require('../core/src/index');
-
-          tsyne.vbox(() => {
-            const btn = tsyne.button('Cycle Status').onClick(() => {
-              if (statusLabel) {
-                if (currentStatus === 'Ready') {
-                  currentStatus = 'Loading...';
-                  statusLabel.setText('Loading...');
-                } else if (currentStatus === 'Loading...') {
-                  currentStatus = 'Done';
-                  statusLabel.setText('Done');
-                } else {
-                  currentStatus = 'Ready';
-                  statusLabel.setText('Ready');
-                }
+          app.vbox(() => {
+            app.button('Cycle Status').onClick(() => {
+              if (currentStatus === 'Ready') {
+                currentStatus = 'Loading...';
+                statusLabel.setText('Loading...');
+              } else if (currentStatus === 'Loading...') {
+                currentStatus = 'Done';
+                statusLabel.setText('Done');
+              } else {
+                currentStatus = 'Ready';
+                statusLabel.setText('Ready');
               }
-            });
-            btn.id = 'cycle-btn';
+            }).withId('cycle-btn');
 
-            tsyne.separator();
-            statusLabel = tsyne.label(currentStatus);
-            statusLabel.id = 'status-label';
+            app.separator();
+            statusLabel = app.label(currentStatus).withId('status-label');
           });
         });
         win.show();
@@ -138,17 +120,14 @@ describe('Status Bar Label Tests', () => {
 
     // Click 1: Loading...
     await button.click();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await ctx.expect(status).toHaveText('Loading...');
+    await status.within(500).shouldBe('Loading...');
 
     // Click 2: Done
     await button.click();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await ctx.expect(status).toHaveText('Done');
+    await status.within(500).shouldBe('Done');
 
     // Click 3: Back to Ready
     await button.click();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await ctx.expect(status).toHaveText('Ready');
+    await status.within(500).shouldBe('Ready');
   });
 });
