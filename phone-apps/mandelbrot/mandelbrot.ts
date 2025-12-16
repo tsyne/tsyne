@@ -21,6 +21,7 @@ import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 import type { Label } from '../../core/src/widgets/display';
 import type { Center } from '../../core/src/widgets/containers';
+import { palettes, paletteNames, mandelbrot } from '../fractal-utils';
 
 // Initial canvas dimensions - will resize with window
 const INITIAL_CANVAS_WIDTH = 200;
@@ -28,76 +29,6 @@ const INITIAL_CANVAS_HEIGHT = 200;
 
 // Mandelbrot parameters
 const MAX_ITERATIONS = 256;
-
-// Color palettes
-type ColorPalette = (iteration: number, maxIter: number) => [number, number, number, number];
-
-const palettes: Record<string, ColorPalette> = {
-  classic: (iter, maxIter) => {
-    if (iter === maxIter) return [0, 0, 0, 255]; // Black for points in set
-    const t = iter / maxIter;
-    const r = Math.floor(9 * (1 - t) * t * t * t * 255);
-    const g = Math.floor(15 * (1 - t) * (1 - t) * t * t * 255);
-    const b = Math.floor(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
-    return [r, g, b, 255];
-  },
-  fire: (iter, maxIter) => {
-    if (iter === maxIter) return [0, 0, 0, 255];
-    const t = iter / maxIter;
-    const r = Math.min(255, Math.floor(t * 3 * 255));
-    const g = Math.min(255, Math.floor(Math.max(0, t * 3 - 1) * 255));
-    const b = Math.min(255, Math.floor(Math.max(0, t * 3 - 2) * 255));
-    return [r, g, b, 255];
-  },
-  ocean: (iter, maxIter) => {
-    if (iter === maxIter) return [0, 0, 0, 255];
-    const t = iter / maxIter;
-    const r = Math.floor(t * 100);
-    const g = Math.floor(t * 150 + 50);
-    const b = Math.floor(t * 200 + 55);
-    return [r, g, b, 255];
-  },
-  rainbow: (iter, maxIter) => {
-    if (iter === maxIter) return [0, 0, 0, 255];
-    const h = (iter / maxIter) * 360;
-    // HSV to RGB (s=1, v=1)
-    const c = 1;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    let r = 0, g = 0, b = 0;
-    if (h < 60) { r = c; g = x; }
-    else if (h < 120) { r = x; g = c; }
-    else if (h < 180) { g = c; b = x; }
-    else if (h < 240) { g = x; b = c; }
-    else if (h < 300) { r = x; b = c; }
-    else { r = c; b = x; }
-    return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255), 255];
-  },
-  grayscale: (iter, maxIter) => {
-    if (iter === maxIter) return [0, 0, 0, 255];
-    const v = Math.floor((iter / maxIter) * 255);
-    return [v, v, v, 255];
-  },
-};
-
-const paletteNames = Object.keys(palettes);
-
-/**
- * Calculate Mandelbrot iterations for a point
- */
-function mandelbrot(cx: number, cy: number, maxIter: number): number {
-  let x = 0;
-  let y = 0;
-  let iter = 0;
-
-  while (x * x + y * y <= 4 && iter < maxIter) {
-    const xTemp = x * x - y * y + cx;
-    y = 2 * x * y + cy;
-    x = xTemp;
-    iter++;
-  }
-
-  return iter;
-}
 
 /**
  * Mandelbrot Explorer UI
