@@ -7,8 +7,8 @@ Section                           Tests   Passed   Failed  Skipped   Suites
 Core                                524      524        0        0  30|30|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
-Examples: Logic                      21       21        0        0    1|1|0
-Examples: GUI                       362      341        0       21  71|65|0
+Examples: Logic                      30       30        0        0    2|2|0
+Examples: GUI                       366      345        0       21  74|68|0
 Ported: 3d-cube                     392      392        0        0    3|3|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
@@ -27,16 +27,18 @@ Phone: hexview                       20       20        0        0    1|1|0
 Phone: mandelbrot                     9        9        0        0    1|1|0
 Phone: minefield                     16       16        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
+TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
+TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2169     2138        0       31      157
+TOTAL                              2232     2201        0       31      163
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 26050ms (26.05s)
-Total ctx.wait() calls: 113
+Total wait time: 41450ms (41.45s)
+Total ctx.wait() calls: 278
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -61,6 +63,6 @@ Top 10 tests by wait time:
   Canvas Fill Color should fill circle with light gray like clock face
     └─ 1000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 2138 tests passed
+✅ SUCCESS: All 2201 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

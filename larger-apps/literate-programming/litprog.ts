@@ -481,7 +481,7 @@ export function createLitProgApp(a: App): LitProgUI {
                 );
                 a.scroll(() => {
                   editorEntry = a.multilineentry(store.getSource()).withId('editor');
-                });
+                }).withMinSize(300, 400);
                 a.hbox(() => {
                   a.button('Parse').onClick(async () => {
                     if (editorEntry) {
@@ -522,7 +522,7 @@ export function createLitProgApp(a: App): LitProgUI {
                           .label('', undefined, undefined, 'word', undefined)
                           .withId('preview-weave');
                       });
-                    });
+                    }).withMinSize(300, 200);
                   });
                 },
                 () => {
@@ -548,7 +548,7 @@ export function createLitProgApp(a: App): LitProgUI {
                           chunkListLabel = a
                             .label('', undefined, undefined, 'word', undefined)
                             .withId('chunk-list');
-                        });
+                        }).withMinSize(100, 150);
                       },
                       () => {
                         // Chunk content
@@ -556,7 +556,7 @@ export function createLitProgApp(a: App): LitProgUI {
                           chunkContentLabel = a
                             .label('', undefined, undefined, 'word', undefined)
                             .withId('chunk-content');
-                        });
+                        }).withMinSize(200, 150);
                       },
                       0.3
                     );

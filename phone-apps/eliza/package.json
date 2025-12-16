@@ -1,0 +1,12 @@
+{
+  "name": "eliza",
+  "version": "1.0.0",
+  "description": "ELIZA - Classic Pattern Matching Chatbot",
+  "main": "eliza.ts",
+  "scripts": {
+    "start": "ts-node eliza.ts",
+    "test": "jest"
+  },
+  "keywords": ["eliza", "chatbot", "ai", "pattern-matching"],
+  "license": "BSD-3-Clause"
+}

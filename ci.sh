@@ -427,6 +427,7 @@ test_phone_app() {
 # Test each phone app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
 test_phone_app "burning-ship" || true
+test_phone_app "eliza" || true
 test_phone_app "eyes" || true
 test_phone_app "hexview" || true
 test_phone_app "julia-set" || true
