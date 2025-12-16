@@ -5,41 +5,69 @@
  * Original authors: ChrysaLisp contributors
  * License: See original repository
  *
- * Classic Minesweeper game with three difficulty levels.
+ * Classic Minesweeper game with adaptive sizing for phone/tablet/desktop.
+ *
+ * Copyright (c) 2025 Paul Hammant
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * @tsyne-app:name Minefield
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
  * @tsyne-app:category games
  * @tsyne-app:builder createMinefieldApp
+ * @tsyne-app:args app
+ * @tsyne-app:count many
  */
 
 import { app } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
-import type { Button } from '../../core/src/widgets/inputs';
 import type { Label } from '../../core/src/widgets/display';
 
-// Difficulty settings: [width, height, mines]
+// =============================================================================
+// Game Configuration
+// =============================================================================
+
+/** Difficulty presets: width, height, mines */
+export const DIFFICULTY_PRESETS = {
+  beginner: { width: 8, height: 8, mines: 10, label: 'Beginner', cellSize: 36 },
+  intermediate: { width: 16, height: 16, mines: 40, label: 'Intermediate', cellSize: 28 },
+  expert: { width: 24, height: 16, mines: 80, label: 'Expert', cellSize: 24 },
+} as const;
+
+export type Difficulty = keyof typeof DIFFICULTY_PRESETS;
+
+// Legacy exports for backward compatibility
 export const BEGINNER_SETTINGS = { width: 8, height: 8, mines: 10 };
 export const INTERMEDIATE_SETTINGS = { width: 16, height: 16, mines: 40 };
 export const EXPERT_SETTINGS = { width: 30, height: 16, mines: 99 };
 
-// Cell states in the display map
-// 'b' = unrevealed button
-// 'f' = flagged
-// 'r' = revealed
-type CellDisplay = 'b' | 'f' | 'r';
+/** Cell display states */
+type CellState = 'hidden' | 'flagged' | 'revealed';
 
-// Board values: 0-8 = adjacent mine count, 9 = mine
+/** Mine value constant */
 const MINE = 9;
 
-/**
- * Get adjacent cell indices for a given position
- */
-function getAdjacentIndices(index: number, width: number, height: number): number[] {
+/** Cell value colors (1-8) */
+const VALUE_COLORS: Record<number, string> = {
+  1: '#0000FF', // Blue
+  2: '#008000', // Green
+  3: '#FF0000', // Red
+  4: '#000080', // Navy
+  5: '#800000', // Maroon
+  6: '#008080', // Teal
+  7: '#000000', // Black
+  8: '#808080', // Gray
+};
+
+// =============================================================================
+// Game Logic
+// =============================================================================
+
+/** Get adjacent cell indices for flood fill */
+function getNeighbors(index: number, width: number, height: number): number[] {
   const x = index % width;
   const y = Math.floor(index / width);
-  const adjacent: number[] = [];
+  const neighbors: number[] = [];
 
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
@@ -47,26 +75,24 @@ function getAdjacentIndices(index: number, width: number, height: number): numbe
       const nx = x + dx;
       const ny = y + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-        adjacent.push(ny * width + nx);
+        neighbors.push(ny * width + nx);
       }
     }
   }
 
-  return adjacent;
+  return neighbors;
 }
 
-/**
- * Generate mine positions, avoiding the first click and its neighbors
- */
-function generateMines(
+/** Place mines avoiding safe zone around first click */
+function placeMines(
   totalCells: number,
   mineCount: number,
   safeCell: number,
   width: number,
   height: number
-): number[] {
-  const mines: Set<number> = new Set();
-  const safeZone = new Set([safeCell, ...getAdjacentIndices(safeCell, width, height)]);
+): Set<number> {
+  const mines = new Set<number>();
+  const safeZone = new Set([safeCell, ...getNeighbors(safeCell, width, height)]);
 
   while (mines.size < mineCount) {
     const pos = Math.floor(Math.random() * totalCells);
@@ -75,402 +101,457 @@ function generateMines(
     }
   }
 
-  return Array.from(mines);
+  return mines;
 }
 
-/**
- * Create a new game board
- * Returns: [board values, display map, adjacency list]
- */
-function createGame(
-  width: number,
-  height: number,
-  mineCount: number,
-  firstClick: number
-): { board: number[]; display: CellDisplay[]; adjacent: number[][] } {
-  const totalCells = width * height;
-  const board: number[] = new Array(totalCells).fill(0);
-  const display: CellDisplay[] = new Array(totalCells).fill('b');
-  const adjacent: number[][] = [];
-
-  // Build adjacency list
-  for (let i = 0; i < totalCells; i++) {
-    adjacent.push(getAdjacentIndices(i, width, height));
-  }
-
-  // Place mines
-  const mines = generateMines(totalCells, mineCount, firstClick, width, height);
-  for (const pos of mines) {
-    board[pos] = MINE;
-  }
-
-  // Calculate adjacent mine counts
-  for (let i = 0; i < totalCells; i++) {
-    if (board[i] !== MINE) {
-      let count = 0;
-      for (const adj of adjacent[i]) {
-        if (board[adj] === MINE) count++;
-      }
-      board[i] = count;
-    }
-  }
-
-  return { board, display, adjacent };
-}
+/** Difficulty config type */
+type DifficultyConfig = {
+  width: number;
+  height: number;
+  mines: number;
+  label: string;
+  cellSize: number;
+};
 
 /**
- * Color for cell values
- */
-function getValueColor(value: number): string {
-  const colors = [
-    'transparent', // 0 - no color
-    '#0000FF',     // 1 - blue
-    '#006600',     // 2 - green
-    '#FF0000',     // 3 - red
-    '#800080',     // 4 - magenta/purple
-    '#000000',     // 5 - black
-    '#700000',     // 6 - dark red
-    '#808080',     // 7 - grey
-    '#02BBDD',     // 8 - cyan
-  ];
-  return colors[value] || '#000000';
-}
-
-/**
- * MinefieldGame class - manages game state
+ * MinefieldGame - Core game logic
  */
 export class MinefieldGame {
   private board: number[] = [];
-  private display: CellDisplay[] = [];
-  private adjacent: number[][] = [];
-  private width: number = 8;
-  private height: number = 8;
-  private mineCount: number = 10;
-  private firstClick: boolean = true;
-  private gameOver: boolean = false;
-  private won: boolean = false;
+  private states: CellState[] = [];
+  private neighbors: number[][] = [];
+  private config: DifficultyConfig = { ...DIFFICULTY_PRESETS.beginner };
+  private initialized = false;
+  private finished = false;
+  private victory = false;
+
+  constructor() {
+    this.reset();
+  }
+
+  // --- Configuration ---
 
   setDifficulty(width: number, height: number, mines: number): void {
-    this.width = width;
-    this.height = height;
-    this.mineCount = mines;
+    // Find matching preset or create custom
+    const preset = Object.values(DIFFICULTY_PRESETS).find(
+      (p) => p.width === width && p.height === height && p.mines === mines
+    );
+    this.config = preset ? { ...preset } : { width, height, mines, label: 'Custom', cellSize: 30 };
+    this.reset();
+  }
+
+  selectDifficulty(difficulty: Difficulty): void {
+    this.config = { ...DIFFICULTY_PRESETS[difficulty] };
     this.reset();
   }
 
   reset(): void {
+    const totalCells = this.config.width * this.config.height;
     this.board = [];
-    this.display = new Array(this.width * this.height).fill('b');
-    this.adjacent = [];
-    this.firstClick = true;
-    this.gameOver = false;
-    this.won = false;
+    this.states = new Array(totalCells).fill('hidden');
+    this.neighbors = [];
+    this.initialized = false;
+    this.finished = false;
+    this.victory = false;
+
+    // Pre-compute neighbors for each cell
+    for (let i = 0; i < totalCells; i++) {
+      this.neighbors.push(getNeighbors(i, this.config.width, this.config.height));
+    }
   }
 
+  // --- Accessors ---
+
   getWidth(): number {
-    return this.width;
+    return this.config.width;
   }
 
   getHeight(): number {
-    return this.height;
+    return this.config.height;
   }
 
   getTotalCells(): number {
-    return this.width * this.height;
+    return this.config.width * this.config.height;
   }
 
-  getCellDisplay(index: number): CellDisplay {
-    return this.display[index] || 'b';
+  getCellSize(): number {
+    return this.config.cellSize;
+  }
+
+  getCellDisplay(index: number): 'b' | 'f' | 'r' {
+    // Legacy compatibility mapping
+    const state = this.states[index];
+    return state === 'hidden' ? 'b' : state === 'flagged' ? 'f' : 'r';
+  }
+
+  getCellState(index: number): CellState {
+    return this.states[index] || 'hidden';
   }
 
   getCellValue(index: number): number {
-    return this.board[index] || 0;
+    return this.board[index] ?? 0;
   }
 
   isGameOver(): boolean {
-    return this.gameOver;
+    return this.finished;
   }
 
   hasWon(): boolean {
-    return this.won;
+    return this.victory;
   }
 
-  /**
-   * Handle left click on a cell
-   * Returns true if the display needs to be updated
-   */
+  getRemainingMines(): number {
+    const flagCount = this.states.filter((s) => s === 'flagged').length;
+    return this.config.mines - flagCount;
+  }
+
+  getFlagCount(): number {
+    return this.states.filter((s) => s === 'flagged').length;
+  }
+
+  // --- Actions ---
+
+  /** Handle left click - reveal cell */
   leftClick(index: number): boolean {
-    if (this.gameOver) return false;
+    if (this.finished) return false;
 
-    // First click initializes the board
-    if (this.firstClick) {
-      const result = createGame(this.width, this.height, this.mineCount, index);
-      this.board = result.board;
-      this.display = result.display;
-      this.adjacent = result.adjacent;
-      this.firstClick = false;
+    // Initialize board on first click (guarantees safe start)
+    if (!this.initialized) {
+      this.initializeBoard(index);
     }
 
-    const cellDisplay = this.display[index];
-
-    // Can't click on flagged or already revealed cells
-    if (cellDisplay === 'f' || cellDisplay === 'r') {
-      return false;
-    }
+    const state = this.states[index];
+    if (state !== 'hidden') return false;
 
     const value = this.board[index];
 
     if (value === MINE) {
       // Hit a mine - game over
-      this.display[index] = 'r';
-      this.gameOver = true;
-      this.won = false;
+      this.states[index] = 'revealed';
+      this.finished = true;
+      this.victory = false;
       // Reveal all mines
       for (let i = 0; i < this.board.length; i++) {
         if (this.board[i] === MINE) {
-          this.display[i] = 'r';
+          this.states[i] = 'revealed';
         }
       }
       return true;
     }
 
     if (value === 0) {
-      // Blank cell - reveal recursively
-      this.revealBlank(index);
+      // Blank cell - flood fill
+      this.floodReveal(index);
     } else {
-      // Number cell - just reveal it
-      this.display[index] = 'r';
+      this.states[index] = 'revealed';
     }
 
-    this.checkWin();
+    this.checkVictory();
     return true;
   }
 
-  /**
-   * Handle right click on a cell (toggle flag)
-   * Returns true if the display needs to be updated
-   */
+  /** Handle right click - toggle flag */
   rightClick(index: number): boolean {
-    if (this.gameOver || this.firstClick) return false;
+    if (this.finished || !this.initialized) return false;
 
-    const cellDisplay = this.display[index];
+    const state = this.states[index];
 
-    if (cellDisplay === 'b') {
-      this.display[index] = 'f';
-      this.checkWin();
+    if (state === 'hidden') {
+      this.states[index] = 'flagged';
+      this.checkVictory();
       return true;
-    } else if (cellDisplay === 'f') {
-      this.display[index] = 'b';
+    } else if (state === 'flagged') {
+      this.states[index] = 'hidden';
       return true;
     }
 
     return false;
   }
 
-  /**
-   * Reveal blank cells recursively (flood fill)
-   */
-  private revealBlank(startIndex: number): void {
-    const work: number[] = [startIndex];
+  // --- Internal ---
 
-    while (work.length > 0) {
-      const cell = work.pop()!;
-      if (this.display[cell] === 'r') continue;
+  private initializeBoard(safeCell: number): void {
+    const totalCells = this.getTotalCells();
+    this.board = new Array(totalCells).fill(0);
 
-      this.display[cell] = 'r';
+    // Place mines
+    const mines = placeMines(
+      totalCells,
+      this.config.mines,
+      safeCell,
+      this.config.width,
+      this.config.height
+    );
 
-      for (const adj of this.adjacent[cell]) {
-        if (this.display[adj] !== 'r') {
-          if (this.board[adj] === 0) {
-            work.push(adj);
-          } else if (this.board[adj] < MINE) {
-            this.display[adj] = 'r';
+    for (const pos of mines) {
+      this.board[pos] = MINE;
+    }
+
+    // Calculate adjacent counts
+    for (let i = 0; i < totalCells; i++) {
+      if (this.board[i] !== MINE) {
+        let count = 0;
+        for (const n of this.neighbors[i]) {
+          if (this.board[n] === MINE) count++;
+        }
+        this.board[i] = count;
+      }
+    }
+
+    this.initialized = true;
+  }
+
+  private floodReveal(start: number): void {
+    const queue = [start];
+    const visited = new Set<number>();
+
+    while (queue.length > 0) {
+      const cell = queue.pop()!;
+      if (visited.has(cell)) continue;
+      visited.add(cell);
+
+      this.states[cell] = 'revealed';
+
+      // If blank, continue flood fill
+      if (this.board[cell] === 0) {
+        for (const n of this.neighbors[cell]) {
+          if (!visited.has(n) && this.states[n] === 'hidden') {
+            queue.push(n);
           }
         }
       }
     }
   }
 
-  /**
-   * Check if the player has won
-   */
-  private checkWin(): void {
-    // Count unrevealed non-mine cells
-    let unrevealed = 0;
+  private checkVictory(): void {
+    // Win if all non-mine cells are revealed
     for (let i = 0; i < this.board.length; i++) {
-      if (this.display[i] !== 'r' && this.board[i] !== MINE) {
-        unrevealed++;
+      if (this.board[i] !== MINE && this.states[i] !== 'revealed') {
+        return;
       }
     }
-
-    if (unrevealed === 0) {
-      this.gameOver = true;
-      this.won = true;
-    }
-  }
-
-  /**
-   * Get flag count
-   */
-  getFlagCount(): number {
-    return this.display.filter(d => d === 'f').length;
-  }
-
-  /**
-   * Get remaining mines (mine count - flags)
-   */
-  getRemainingMines(): number {
-    return this.mineCount - this.getFlagCount();
+    this.finished = true;
+    this.victory = true;
   }
 }
 
+// =============================================================================
+// UI Layer - Pseudo-Declarative Cell Bindings
+// =============================================================================
+
+/** Cell visual configuration */
+interface CellConfig {
+  index: number;
+  state: CellState;
+  value: number;
+  size: number;
+}
+
+/** Get cell display text */
+function getCellText(config: CellConfig): string {
+  if (config.state === 'hidden') return '';
+  if (config.state === 'flagged') return '\u2691'; // Flag emoji
+  if (config.value === MINE) return '\u2739'; // Mine/bomb
+  if (config.value === 0) return '';
+  return String(config.value);
+}
+
+/** Get cell text color */
+function getCellTextColor(config: CellConfig): string {
+  if (config.state === 'flagged') return '#FF0000';
+  if (config.state === 'revealed' && config.value === MINE) return '#000000';
+  return VALUE_COLORS[config.value] || '#000000';
+}
+
 /**
- * Minefield UI class
+ * MinefieldUI - Adaptive game interface
  */
 export class MinefieldUI {
   private game: MinefieldGame;
   private a: App;
-  private win: Window | null = null;
+  private window: Window | null = null;
   private statusLabel: Label | null = null;
-  private mineCountLabel: Label | null = null;
-  private cellButtons: Button[] = [];
-  private currentDifficulty: 'beginner' | 'intermediate' | 'expert' = 'beginner';
+  private minesLabel: Label | null = null;
+  private currentDifficulty: Difficulty = 'beginner';
 
   constructor(a: App) {
     this.a = a;
     this.game = new MinefieldGame();
   }
 
-  private startNewGame(difficulty: 'beginner' | 'intermediate' | 'expert'): void {
-    this.currentDifficulty = difficulty;
-    const settings = difficulty === 'beginner' ? BEGINNER_SETTINGS :
-                     difficulty === 'intermediate' ? INTERMEDIATE_SETTINGS :
-                     EXPERT_SETTINGS;
-    this.game.setDifficulty(settings.width, settings.height, settings.mines);
-    this.refreshUI();
+  // --- Public API ---
+
+  getGame(): MinefieldGame {
+    return this.game;
   }
 
-  private refreshUI(): void {
-    if (this.win) {
-      this.win.setContent(() => this.buildUI(this.win!));
+  selectDifficulty(difficulty: Difficulty): void {
+    this.currentDifficulty = difficulty;
+    this.game.selectDifficulty(difficulty);
+    this.refresh();
+  }
+
+  newGame(): void {
+    this.game.reset();
+    this.refresh();
+  }
+
+  // --- UI Updates ---
+
+  private refresh(): void {
+    if (this.window) {
+      this.window.setContent(() => this.buildContent());
     }
   }
 
   private updateStatus(): void {
     if (this.statusLabel) {
-      if (this.game.isGameOver()) {
-        this.statusLabel.setText(this.game.hasWon() ? 'You Won!' : 'Game Over!');
+      const status = this.game.isGameOver()
+        ? this.game.hasWon()
+          ? '\u2605 Victory!'
+          : '\u2620 Game Over'
+        : 'Click to play';
+      this.statusLabel.setText(status);
+    }
+    if (this.minesLabel) {
+      this.minesLabel.setText(`\u2691 ${this.game.getRemainingMines()}`);
+    }
+  }
+
+  private handleCellClick(index: number, rightClick: boolean): void {
+    const changed = rightClick ? this.game.rightClick(index) : this.game.leftClick(index);
+    if (changed) {
+      this.refresh();
+    }
+  }
+
+  // --- Declarative Cell Rendering ---
+
+  private renderCell(index: number): void {
+    const config: CellConfig = {
+      index,
+      state: this.game.getCellState(index),
+      value: this.game.getCellValue(index),
+      size: this.game.getCellSize(),
+    };
+
+    const text = getCellText(config);
+    const color = getCellTextColor(config);
+
+    if (config.state === 'hidden') {
+      // Hidden cell - clickable button
+      this.a
+        .button('')
+        .onClick(() => this.handleCellClick(index, false))
+        .withId(`cell-${index}`);
+    } else if (config.state === 'flagged') {
+      // Flagged cell - click to unflag
+      this.a
+        .button(text)
+        .onClick(() => this.handleCellClick(index, true))
+        .withId(`cell-${index}`);
+    } else {
+      // Revealed cell - static label
+      if (config.value === MINE) {
+        this.a.label('\u2739', undefined, 'center').withId(`cell-${index}`);
+      } else if (config.value === 0) {
+        this.a.label(' ', undefined, 'center').withId(`cell-${index}`);
       } else {
-        this.statusLabel.setText('Playing');
+        this.a.label(text, undefined, 'center').withId(`cell-${index}`);
       }
     }
-    if (this.mineCountLabel) {
-      this.mineCountLabel.setText(`Mines: ${this.game.getRemainingMines()}`);
-    }
   }
 
-  private handleCellClick(index: number, isRightClick: boolean): void {
-    let changed: boolean;
-    if (isRightClick) {
-      changed = this.game.rightClick(index);
-    } else {
-      changed = this.game.leftClick(index);
-    }
+  // --- Layout ---
 
-    if (changed) {
-      this.refreshUI();
-    }
-  }
-
-  buildUI(win: Window): void {
-    this.win = win;
-    this.cellButtons = [];
+  private buildContent(): void {
+    const preset = DIFFICULTY_PRESETS[this.currentDifficulty];
 
     this.a.vbox(() => {
-      // Difficulty buttons
+      // Toolbar - difficulty selection
       this.a.hbox(() => {
-        this.a.button('Beginner').onClick(() => this.startNewGame('beginner')).withId('beginnerBtn');
-        this.a.button('Intermediate').onClick(() => this.startNewGame('intermediate')).withId('intermediateBtn');
-        this.a.button('Expert').onClick(() => this.startNewGame('expert')).withId('expertBtn');
+        for (const [key, config] of Object.entries(DIFFICULTY_PRESETS)) {
+          const isActive = key === this.currentDifficulty;
+          this.a
+            .button(isActive ? `[${config.label}]` : config.label)
+            .onClick(() => this.selectDifficulty(key as Difficulty))
+            .withId(`${key}Btn`);
+        }
       });
 
       // Status bar
       this.a.hbox(() => {
-        this.statusLabel = this.a.label(
-          this.game.isGameOver()
-            ? (this.game.hasWon() ? 'You Won!' : 'Game Over!')
-            : 'Playing'
-        ).withId('statusLabel');
+        this.statusLabel = this.a
+          .label(
+            this.game.isGameOver()
+              ? this.game.hasWon()
+                ? '\u2605 Victory!'
+                : '\u2620 Game Over'
+              : 'Click to play'
+          )
+          .withId('statusLabel');
         this.a.spacer();
-        this.mineCountLabel = this.a.label(`Mines: ${this.game.getRemainingMines()}`).withId('mineCountLabel');
+        this.minesLabel = this.a.label(`\u2691 ${this.game.getRemainingMines()}`).withId('mineCountLabel');
       });
 
       this.a.separator();
 
-      // Game board
+      // Game board in scroll container for larger boards
       this.a.scroll(() => {
         this.a.grid(this.game.getWidth(), () => {
           for (let i = 0; i < this.game.getTotalCells(); i++) {
-            const cellDisplay = this.game.getCellDisplay(i);
-            const cellValue = this.game.getCellValue(i);
-            const index = i; // Capture for closure
-
-            if (cellDisplay === 'b') {
-              // Unrevealed cell - show button
-              const btn = this.a.button('').withId(`cell-${i}`);
-              btn.onClick(() => this.handleCellClick(index, false));
-              this.cellButtons.push(btn);
-            } else if (cellDisplay === 'f') {
-              // Flagged cell
-              const btn = this.a.button('F').withId(`cell-${i}`);
-              btn.onClick(() => this.handleCellClick(index, true));
-              this.cellButtons.push(btn);
-            } else {
-              // Revealed cell
-              if (cellValue === MINE) {
-                this.a.label('X', 'mine-cell').withId(`cell-${i}`);
-              } else if (cellValue === 0) {
-                this.a.label(' ').withId(`cell-${i}`);
-              } else {
-                this.a.label(`${cellValue}`).withId(`cell-${i}`);
-              }
-            }
+            this.renderCell(i);
           }
-        }, { spacing: 0 });
-      });
+        });
+      }).withMinSize(
+        Math.min(preset.width * preset.cellSize, 600),
+        Math.min(preset.height * preset.cellSize, 500)
+      );
 
       this.a.separator();
 
-      // Flag mode toggle and new game
+      // Bottom controls
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.startNewGame(this.currentDifficulty)).withId('newGameBtn');
-        this.a.label('Tip: Click F cells to unflag');
+        this.a.button('New Game').onClick(() => this.newGame()).withId('newGameBtn');
+        this.a.spacer();
+        this.a.label('Long-press to flag', undefined, undefined, undefined, { italic: true });
       });
     });
   }
+
+  // --- Window Creation ---
+
+  build(): void {
+    // Calculate adaptive window size based on difficulty
+    const preset = DIFFICULTY_PRESETS[this.currentDifficulty];
+    const width = Math.max(350, Math.min(preset.width * preset.cellSize + 50, 800));
+    const height = Math.max(400, Math.min(preset.height * preset.cellSize + 150, 700));
+
+    this.a.window({ title: 'Minefield', width, height }, (win) => {
+      this.window = win;
+      win.setContent(() => this.buildContent());
+      win.show();
+    });
+  }
 }
+
+// =============================================================================
+// App Entry Point
+// =============================================================================
 
 /**
  * Create the Minefield app
  */
 export function createMinefieldApp(a: App): MinefieldUI {
   const ui = new MinefieldUI(a);
-
-  a.window({ title: 'Minefield', width: 500, height: 600 }, (win: Window) => {
-    win.setContent(() => {
-      ui.buildUI(win);
-    });
-    win.show();
-  });
-
+  ui.build();
   return ui;
 }
 
-// Export game class for testing
+// Export for backward compatibility
 export { MinefieldGame as Game };
 
-/**
- * Main application entry point
- */
+// Standalone execution
 if (require.main === module) {
   app({ title: 'Minefield' }, async (a: App) => {
     createMinefieldApp(a);
