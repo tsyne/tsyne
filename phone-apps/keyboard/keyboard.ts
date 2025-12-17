@@ -2,6 +2,7 @@
  * Virtual Keyboard for Mobile Phone Form Factor
  *
  * Port of QtFreeVirtualKeyboard to Tsyne TypeScript.
+ * Supports multiple locale layouts defined in pure TypeScript.
  * See LICENSE for copyright information.
  *
  * @tsyne-app:name Keyboard
@@ -14,228 +15,296 @@
 import { app } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets/display';
-import type { Button } from '../../core/src/widgets/inputs';
+import type { Button, MultiLineEntry } from '../../core/src/widgets/inputs';
 
-// Key layouts - QWERTY standard
-const ROWS = {
-  letters: [
-    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
-  ],
-  symbols: [
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-    ['!', '@', '#', '$', '%', '&', '*', '?', '/'],
-    ['_', '"', "'", '(', ')', '-', '+'],
-  ],
-};
+// ═══════════════════════════════════════════════════════════════════════════
+// KEYBOARD LAYOUT TYPE - Pure TypeScript, no JSON/YAML configuration
+// ═══════════════════════════════════════════════════════════════════════════
 
-/** Keyboard mode */
+export interface KeyboardLayout {
+  name: string;
+  locale: string;
+  letters: string[][];
+  symbols: string[][];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KEYBOARD MODE
+// ═══════════════════════════════════════════════════════════════════════════
+
 type KeyboardMode = 'letters' | 'symbols';
 
-/** Callback when text is produced */
 export type OnTextCallback = (text: string) => void;
-
-/** Callback when enter is pressed */
 export type OnEnterCallback = () => void;
 
-/**
- * Virtual keyboard state and logic
- */
+// ═══════════════════════════════════════════════════════════════════════════
+// VIRTUAL KEYBOARD CLASS
+// ═══════════════════════════════════════════════════════════════════════════
+
 export class VirtualKeyboard {
   private mode: KeyboardMode = 'letters';
   private shift = false;
-  private inputBuffer = '';
+  private layout: KeyboardLayout;
   private onText: OnTextCallback;
   private onEnter: OnEnterCallback;
-  private displayLabel: Label | null = null;
   private shiftBtn: Button | null = null;
   private modeBtn: Button | null = null;
+  private keyButtons: Map<string, Button> = new Map();
 
-  constructor(onText: OnTextCallback, onEnter: OnEnterCallback) {
+  constructor(layout: KeyboardLayout, onText: OnTextCallback, onEnter: OnEnterCallback) {
+    this.layout = layout;
     this.onText = onText;
     this.onEnter = onEnter;
   }
 
-  /** Get current display text */
-  getText(): string { return this.inputBuffer; }
+  getLayout(): KeyboardLayout { return this.layout; }
 
-  /** Set display text externally */
-  setText(text: string): void {
-    this.inputBuffer = text;
-    this.updateDisplay();
-  }
-
-  /** Clear all text */
-  clear(): void { this.setText(''); }
-
-  /** Handle key press by row and index (resolves character dynamically) */
   private pressKeyAt(row: number, index: number): void {
-    const char = ROWS[this.mode][row]?.[index];
+    const rows = this.mode === 'letters' ? this.layout.letters : this.layout.symbols;
+    const char = rows[row]?.[index];
     if (!char) return;
-    const output = this.shift ? char.toUpperCase() : char;
-    this.inputBuffer += output;
+    const output = this.shift && this.mode === 'letters' ? char.toUpperCase() : char;
     this.onText(output);
-    this.updateDisplay();
-    // Auto-disable shift after letter
+    this.flashKey(`key-r${row + 1}-${index}`);
     if (this.shift && this.mode === 'letters') {
       this.shift = false;
       this.updateShiftButton();
+      this.updateKeyLabels();
     }
   }
 
-  /** Handle direct character press (for punctuation that doesn't change) */
-  private pressChar(char: string): void {
-    this.inputBuffer += char;
+  private pressChar(char: string, keyId: string): void {
     this.onText(char);
-    this.updateDisplay();
+    this.flashKey(keyId);
   }
 
-  /** Handle backspace */
-  private backspace(): void {
-    if (this.inputBuffer.length > 0) {
-      this.inputBuffer = this.inputBuffer.slice(0, -1);
-      this.updateDisplay();
+  private keyLabels: Map<string, string> = new Map();
+
+  private flashKey(keyId: string): void {
+    const btn = this.keyButtons.get(keyId);
+    const original = this.keyLabels.get(keyId);
+    if (btn && original) {
+      btn.setText(`»${original}«`);
+      setTimeout(() => btn.setText(original), 150);
     }
   }
 
-  /** Handle space */
-  private space(): void {
-    this.inputBuffer += ' ';
-    this.onText(' ');
-    this.updateDisplay();
+  private backspace(): void {
+    this.onText('\b');
+    this.flashKey('key-backspace');
   }
 
-  /** Handle enter */
+  private space(): void {
+    this.onText(' ');
+    this.flashKey('key-space');
+  }
+
   private enter(): void {
     this.onEnter();
+    this.flashKey('key-enter');
   }
 
-  /** Toggle shift state */
   private toggleShift(): void {
     if (this.mode === 'symbols') {
       this.mode = 'letters';
+      this.updateModeButton();
     }
     this.shift = !this.shift;
     this.updateShiftButton();
+    this.updateKeyLabels();
   }
 
-  /** Toggle between letters and symbols */
   private toggleMode(): void {
     this.mode = this.mode === 'letters' ? 'symbols' : 'letters';
     this.shift = false;
     this.updateModeButton();
     this.updateShiftButton();
+    this.updateKeyLabels();
   }
 
-  /** Update display label */
-  private updateDisplay(): void {
-    this.displayLabel?.setText(this.inputBuffer || ' ');
-  }
-
-  /** Update shift button appearance */
   private updateShiftButton(): void {
-    this.shiftBtn?.setText(this.shift ? 'SHIFT' : 'shift');
+    this.shiftBtn?.setText(this.shift ? '⇧' : '⇪');
   }
 
-  /** Update mode button label */
   private updateModeButton(): void {
     this.modeBtn?.setText(this.mode === 'letters' ? '123' : 'ABC');
   }
 
-  /**
-   * Build keyboard UI
-   */
-  buildUI(a: App, win: Window, showDisplay = true): void {
-    a.vbox(() => {
-      // Optional text display
-      if (showDisplay) {
-        a.padded(() => {
-          this.displayLabel = a.label(' ').withId('keyboard-display');
-        });
-        a.separator();
+  private updateKeyLabels(): void {
+    const rows = this.mode === 'letters' ? this.layout.letters : this.layout.symbols;
+    for (let r = 0; r < rows.length; r++) {
+      for (let i = 0; i < rows[r].length; i++) {
+        const keyId = `key-r${r + 1}-${i}`;
+        const btn = this.keyButtons.get(keyId);
+        if (btn) {
+          const char = rows[r][i];
+          const label = this.shift && this.mode === 'letters' ? char.toUpperCase() : char;
+          btn.setText(label);
+          this.keyLabels.set(keyId, label);
+        }
       }
+    }
+  }
 
-      // Row 1: QWERTYUIOP or 1234567890 (10 keys)
+  buildUI(a: App): void {
+    const rows = this.layout.letters;
+    this.keyButtons.clear();
+    this.keyLabels.clear();
+
+    const setKey = (id: string, label: string, btn: Button) => {
+      this.keyButtons.set(id, btn);
+      this.keyLabels.set(id, label);
+    };
+
+    a.vbox(() => {
+      // Row 1: Top row (10 keys)
       a.hbox(() => {
-        for (let i = 0; i < 10; i++) {
-          const char = ROWS.letters[0][i];
-          a.button(char)
+        for (let i = 0; i < rows[0].length; i++) {
+          const label = rows[0][i];
+          const btn = a.button(label)
             .onClick(() => this.pressKeyAt(0, i))
             .withId(`key-r1-${i}`);
+          setKey(`key-r1-${i}`, label, btn);
         }
       });
 
-      // Row 2: ASDFGHJKL or symbols (9 keys)
+      // Row 2: Middle row (centered)
       a.hbox(() => {
-        a.spacer(); // Center shorter row
-        for (let i = 0; i < 9; i++) {
-          const char = ROWS.letters[1][i];
-          a.button(char)
+        a.spacer();
+        for (let i = 0; i < rows[1].length; i++) {
+          const label = rows[1][i];
+          const btn = a.button(label)
             .onClick(() => this.pressKeyAt(1, i))
             .withId(`key-r2-${i}`);
+          setKey(`key-r2-${i}`, label, btn);
         }
         a.spacer();
       });
 
-      // Row 3: Shift + ZXCVBNM + Backspace (7 letter keys)
+      // Row 3: Shift + letters + Backspace
       a.hbox(() => {
-        this.shiftBtn = a.button('shift')
+        this.shiftBtn = a.button('⇪')
           .onClick(() => this.toggleShift())
           .withId('key-shift');
-        for (let i = 0; i < 7; i++) {
-          const char = ROWS.letters[2][i];
-          a.button(char)
+        setKey('key-shift', '⇪', this.shiftBtn);
+
+        for (let i = 0; i < rows[2].length; i++) {
+          const label = rows[2][i];
+          const btn = a.button(label)
             .onClick(() => this.pressKeyAt(2, i))
             .withId(`key-r3-${i}`);
+          setKey(`key-r3-${i}`, label, btn);
         }
-        a.button('<=')
+
+        const backBtn = a.button('⌫')
           .onClick(() => this.backspace())
           .withId('key-backspace');
+        setKey('key-backspace', '⌫', backBtn);
       });
 
-      // Row 4: Mode + , + Space + . + Enter
+      // Row 4: Mode + comma + WIDE SPACE + period + Enter
       a.hbox(() => {
         this.modeBtn = a.button('123')
           .onClick(() => this.toggleMode())
           .withId('key-mode');
-        a.button(',')
-          .onClick(() => this.pressChar(','))
+        setKey('key-mode', '123', this.modeBtn);
+
+        const commaBtn = a.button(',')
+          .onClick(() => this.pressChar(',', 'key-comma'))
           .withId('key-comma');
-        a.button('space')
+        setKey('key-comma', ',', commaBtn);
+
+        // Wide spacebar
+        const spaceBtn = a.button('―――――――')
           .onClick(() => this.space())
           .withId('key-space');
-        a.button('.')
-          .onClick(() => this.pressChar('.'))
+        setKey('key-space', '―――――――', spaceBtn);
+
+        const periodBtn = a.button('.')
+          .onClick(() => this.pressChar('.', 'key-period'))
           .withId('key-period');
-        a.button('Enter')
+        setKey('key-period', '.', periodBtn);
+
+        const enterBtn = a.button('↵')
           .onClick(() => this.enter())
           .withId('key-enter');
+        setKey('key-enter', '↵', enterBtn);
       });
     });
   }
 }
 
-/**
- * Create standalone keyboard demo app
- */
-export function createKeyboardApp(a: App): VirtualKeyboard {
-  const output: string[] = [];
+// ═══════════════════════════════════════════════════════════════════════════
+// TEST HARNESS - Text area + keyboard for testing
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface KeyboardTestHarness {
+  keyboard: VirtualKeyboard;
+  textArea: MultiLineEntry;
+  getContent: () => Promise<string>;
+}
+
+export function createKeyboardTestHarness(
+  a: App,
+  layout: KeyboardLayout
+): KeyboardTestHarness {
+  let textArea: MultiLineEntry;
+  let textContent = '';
 
   const keyboard = new VirtualKeyboard(
-    (text) => { output.push(text); },
-    () => { console.log('Enter pressed, text:', keyboard.getText()); }
+    layout,
+    (char) => {
+      if (char === '\b') {
+        textContent = textContent.slice(0, -1);
+      } else {
+        textContent += char;
+      }
+      textArea?.setText(textContent);
+    },
+    () => {
+      textContent += '\n';
+      textArea?.setText(textContent);
+    }
   );
 
-  a.window({ title: 'Keyboard', width: 400, height: 300 }, (win: Window) => {
+  a.vbox(() => {
+    // Text area at top - receives keyboard input
+    a.padded(() => {
+      a.vbox(() => {
+        a.label('Output:').withId('output-label');
+        textArea = a.multilineentry().withId('text-area');
+      });
+    });
+    a.separator();
+
+    // Keyboard below
+    keyboard.buildUI(a);
+  });
+
+  return {
+    keyboard,
+    textArea: textArea!,
+    getContent: async () => textArea?.getText() ?? '',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STANDALONE APP
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function createKeyboardApp(a: App, layout?: KeyboardLayout): VirtualKeyboard {
+  const { EnUS } = require('./locales/en-us');
+  const useLayout = layout ?? EnUS;
+  let harness: KeyboardTestHarness;
+
+  a.window({ title: `Keyboard - ${useLayout.name}`, width: 400, height: 450 }, (win: Window) => {
     win.setContent(() => {
-      keyboard.buildUI(a, win, true);
+      harness = createKeyboardTestHarness(a, useLayout);
     });
     win.show();
   });
 
-  return keyboard;
+  return harness!.keyboard;
 }
 
 // Standalone execution
