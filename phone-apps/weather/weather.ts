@@ -13,10 +13,10 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../../../../core/src';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
-import type { Label } from '../core/src/widgets/display';
+import { app, styles, FontStyle } from '../../core/src';
+import type { App } from '../../core/src';
+import type { Window } from '../../core/src';
+import type { Label } from '../../core/src';
 
 // Weather API interface
 export interface WeatherData {
