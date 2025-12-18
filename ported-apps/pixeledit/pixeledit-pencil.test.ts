@@ -27,20 +27,19 @@ describe('pixeledit - pencil drawing', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for the app to load
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Picker')).toBeVisible();
+    // Wait for the app to load - Pencil is selected by default so has ▶ prefix
+    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
 
     // Verify the tools are still visible
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Picker')).toBeVisible();
+    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
 
-    // Verify color controls
-    await ctx.expect(ctx.getByText('#000000')).toBeVisible();
-    await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
+    // Verify color controls - FG color label
+    await ctx.expect(ctx.getByText('FG')).toBeVisible();
   }, 30000);
 
-  test('should switch between pencil and picker', async () => {
+  test('should switch between pencil and eyedropper', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createPixelEditorApp(app);
     });
@@ -48,13 +47,13 @@ describe('pixeledit - pencil drawing', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for tools to be visible
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Picker')).toBeVisible();
+    // Wait for tools to be visible - Pencil is selected by default
+    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
 
     // Verify the app is still responsive
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Picker')).toBeVisible();
+    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
   }, 30000);
 
   test('should have color controls visible when pencil is selected', async () => {
@@ -65,9 +64,10 @@ describe('pixeledit - pencil drawing', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify color controls are visible
-    await ctx.expect(ctx.getByText('#000000')).toBeVisible();
-    await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
+    // Verify color controls are visible - FG, BG, Fill labels
+    await ctx.expect(ctx.getByText('FG')).toBeVisible();
+    await ctx.expect(ctx.getByText('BG')).toBeVisible();
+    await ctx.expect(ctx.getByText('Fill')).toBeVisible();
   }, 30000);
 
   test('should render pencil UI - screenshot', async () => {
@@ -78,15 +78,15 @@ describe('pixeledit - pencil drawing', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Wait for the app to fully load
-    await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Picker')).toBeVisible();
-    await ctx.expect(ctx.getByText('#000000')).toBeVisible();
+    // Wait for the app to fully load - Pencil is selected by default
+    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
+    await ctx.expect(ctx.getByText('FG')).toBeVisible();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-pencil.png');
-      await ctx.getByText('#000000').within(500).shouldExist();
+      await ctx.getByText('FG').within(500).shouldExist();
       await tsyneTest.screenshot(screenshotPath);
       console.error(`Screenshot saved: ${screenshotPath}`);
     }

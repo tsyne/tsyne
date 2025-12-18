@@ -453,6 +453,8 @@ func (b *Bridge) handleTypeText(msg Message) Response {
 		}
 	} else if e, ok := obj.(*widget.Entry); ok {
 		entry = e
+	} else if te, ok := obj.(*TsyneEntry); ok {
+		entry = &te.Entry
 	}
 
 	if entry != nil {
@@ -525,6 +527,20 @@ func (b *Bridge) handleSubmitEntry(msg Message) Response {
 			// Trigger the OnSubmitted callback
 			fyne.DoAndWait(func() {
 				entry.OnSubmitted(entry.Text)
+			})
+			return Response{
+				ID:      msg.ID,
+				Success: true,
+			}
+		}
+	}
+
+	// Check if it's a TsyneEntry widget with OnSubmitted callback
+	if te, ok := obj.(*TsyneEntry); ok {
+		if te.OnSubmitted != nil {
+			// Trigger the OnSubmitted callback
+			fyne.DoAndWait(func() {
+				te.OnSubmitted(te.Text)
 			})
 			return Response{
 				ID:      msg.ID,

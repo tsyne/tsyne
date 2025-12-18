@@ -449,6 +449,7 @@ message CreateEntryRequest {
   string on_cursor_changed_callback_id = 8; // OnCursorChanged callback
   float min_width = 9; // Minimum width for the entry
   string double_click_callback_id = 10; // Double-click callback
+  string on_focus_callback_id = 11; // Focus gained/lost callback
 }
 
 message CreateVBoxRequest {

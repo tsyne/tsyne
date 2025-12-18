@@ -45,6 +45,8 @@ func (b *Bridge) handleGetText(msg Message) Response {
 		text = w.Text
 	case *widget.Entry:
 		text = w.Text
+	case *TsyneEntry:
+		text = w.Text
 	case *widget.SelectEntry:
 		text = w.Text
 	case *widget.Button:
@@ -107,6 +109,8 @@ func (b *Bridge) handleSetText(msg Message) Response {
 			w.SetText(text)
 		case *widget.Entry:
 			w.SetText(text)
+		case *TsyneEntry:
+			w.SetText(text)
 		case *widget.SelectEntry:
 			w.SetText(text)
 		case *widget.Button:
@@ -140,7 +144,7 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
+	case *widget.Label, *widget.Entry, *TsyneEntry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
 		supported = true
 	}
 

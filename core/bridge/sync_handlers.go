@@ -157,6 +157,8 @@ func (b *Bridge) GetTextSync(widgetID string) GetTextResult {
 		switch w := obj.(type) {
 		case *widget.Entry:
 			text = w.Text
+		case *TsyneEntry:
+			text = w.Text
 		case *widget.Label:
 			text = w.Text
 		case *widget.Button:
