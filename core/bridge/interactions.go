@@ -1234,6 +1234,154 @@ func (b *Bridge) handleGetWidgetTree(msg Message) Response {
 	}
 }
 
+// handleTypeRune injects a character keystroke to the currently focused widget
+// This enables virtual keyboards to type into any focusable text entry
+func (b *Bridge) handleTypeRune(msg Message) Response {
+	runeStr := msg.Payload["rune"].(string)
+
+	if len(runeStr) == 0 {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Empty rune string",
+		}
+	}
+
+	r := []rune(runeStr)[0]
+
+	// Find the main window's canvas to get the focused widget
+	b.mu.RLock()
+	var focused fyne.Focusable
+	for _, win := range b.windows {
+		if win != nil && win.Canvas() != nil {
+			focused = win.Canvas().Focused()
+			if focused != nil {
+				break
+			}
+		}
+	}
+	b.mu.RUnlock()
+
+	if focused == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "No widget is currently focused",
+		}
+	}
+
+	// Inject the rune to the focused widget
+	fyne.DoAndWait(func() {
+		focused.TypedRune(r)
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleTypeKey injects a special key event to the currently focused widget
+// Supports: BackSpace, Return, Tab, Escape, Delete, Insert, Home, End,
+// PageUp, PageDown, Up, Down, Left, Right, F1-F12
+func (b *Bridge) handleTypeKey(msg Message) Response {
+	keyName := msg.Payload["key"].(string)
+
+	// Map common key names to Fyne KeyName constants
+	var fyneKey fyne.KeyName
+	switch keyName {
+	case "BackSpace", "Backspace":
+		fyneKey = fyne.KeyBackspace
+	case "Return", "Enter":
+		fyneKey = fyne.KeyReturn
+	case "Tab":
+		fyneKey = fyne.KeyTab
+	case "Escape", "Esc":
+		fyneKey = fyne.KeyEscape
+	case "Delete", "Del":
+		fyneKey = fyne.KeyDelete
+	case "Insert", "Ins":
+		fyneKey = fyne.KeyInsert
+	case "Home":
+		fyneKey = fyne.KeyHome
+	case "End":
+		fyneKey = fyne.KeyEnd
+	case "PageUp", "PgUp":
+		fyneKey = fyne.KeyPageUp
+	case "PageDown", "PgDn":
+		fyneKey = fyne.KeyPageDown
+	case "Up", "ArrowUp":
+		fyneKey = fyne.KeyUp
+	case "Down", "ArrowDown":
+		fyneKey = fyne.KeyDown
+	case "Left", "ArrowLeft":
+		fyneKey = fyne.KeyLeft
+	case "Right", "ArrowRight":
+		fyneKey = fyne.KeyRight
+	case "F1":
+		fyneKey = fyne.KeyF1
+	case "F2":
+		fyneKey = fyne.KeyF2
+	case "F3":
+		fyneKey = fyne.KeyF3
+	case "F4":
+		fyneKey = fyne.KeyF4
+	case "F5":
+		fyneKey = fyne.KeyF5
+	case "F6":
+		fyneKey = fyne.KeyF6
+	case "F7":
+		fyneKey = fyne.KeyF7
+	case "F8":
+		fyneKey = fyne.KeyF8
+	case "F9":
+		fyneKey = fyne.KeyF9
+	case "F10":
+		fyneKey = fyne.KeyF10
+	case "F11":
+		fyneKey = fyne.KeyF11
+	case "F12":
+		fyneKey = fyne.KeyF12
+	default:
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Unknown key name: %s", keyName),
+		}
+	}
+
+	// Find the main window's canvas to get the focused widget
+	b.mu.RLock()
+	var focused fyne.Focusable
+	for _, win := range b.windows {
+		if win != nil && win.Canvas() != nil {
+			focused = win.Canvas().Focused()
+			if focused != nil {
+				break
+			}
+		}
+	}
+	b.mu.RUnlock()
+
+	if focused == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "No widget is currently focused",
+		}
+	}
+
+	// Inject the key event to the focused widget
+	fyne.DoAndWait(func() {
+		focused.TypedKey(&fyne.KeyEvent{Name: fyneKey})
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 // buildWidgetTree recursively builds a JSON-friendly widget tree
 func (b *Bridge) buildWidgetTree(obj fyne.CanvasObject, widgetID string) map[string]interface{} {
 	size := obj.Size()

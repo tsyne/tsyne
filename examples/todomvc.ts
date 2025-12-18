@@ -230,6 +230,7 @@ export function createTodoApp(a: any, storePath?: string) {
   let filterCompletedButton: any;
 
   async function updateStatusLabel() {
+    if (!statusLabel) return;  // Guard for deferred content building (PhoneTop)
     const activeCount = store.getActiveCount();
     const currentFilter = store.getFilter();
     const itemText = activeCount === 1 ? 'item' : 'items';
@@ -237,6 +238,7 @@ export function createTodoApp(a: any, storePath?: string) {
   }
 
   async function updateFilterButtons() {
+    if (!filterAllButton) return;  // Guard for deferred content building (PhoneTop)
     const currentFilter = store.getFilter();
     await filterAllButton.setText(currentFilter === 'all' ? '[All]' : 'All');
     await filterActiveButton.setText(currentFilter === 'active' ? '[Active]' : 'Active');

@@ -872,7 +872,7 @@ export { styles, clearStyles, getStyleSheet, StyleSheet, FontFamily, FontStyle }
 export type { WidgetStyle, WidgetSelector } from './styles';
 
 // Export reactive bindings (MVC-style)
-export { refreshAllBindings } from './widgets/base';
+export { refreshAllBindings, clearAllBindings } from './widgets/base';
 
 // Export context menu
 export type { ContextMenuItem } from './widgets';

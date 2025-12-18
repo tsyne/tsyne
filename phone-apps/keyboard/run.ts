@@ -5,7 +5,7 @@
  */
 
 import { app } from '../../core/src/index';
-import { createTestHarness } from './controller';
+import { createTestHarness, resetTestHarnessState } from './controller';
 
 // Import all locale keyboards
 import { buildKeyboard as buildEnUS } from './en-us/keyboard';
@@ -31,9 +31,18 @@ if (!keyboard) {
   process.exit(1);
 }
 
+// Reset state for fresh start
+resetTestHarnessState();
+
 app({ title: `Keyboard: ${keyboard.name}` }, (a) => {
-  a.window({ title: `Keyboard: ${keyboard.name}`, width: 420, height: 520 }, (win) => {
-    win.setContent(() => createTestHarness(a, keyboard.build));
+  a.window({ title: `Keyboard: ${keyboard.name}`, width: 420, height: 550 }, (win) => {
+    // Rebuild function for mode toggle
+    const rebuild = () => {
+      win.setContent(() => createTestHarness(a, keyboard.build, rebuild));
+    };
+
+    // Initial build
+    win.setContent(() => createTestHarness(a, keyboard.build, rebuild));
     win.show();
   });
 });

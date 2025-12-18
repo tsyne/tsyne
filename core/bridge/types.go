@@ -484,6 +484,87 @@ func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID str
 	return NewTsyneButton(text, tapped, bridge, widgetID)
 }
 
+// ============================================================================
+// TsyneEntry - Entry with focus callbacks for virtual keyboard support
+// ============================================================================
+
+// TsyneEntry wraps widget.Entry to add focus change callbacks
+// Needed for PhoneTop to show/hide virtual keyboard when text fields are focused
+type TsyneEntry struct {
+	widget.Entry
+	bridge            *Bridge
+	widgetID          string
+	onFocusCallbackId string
+}
+
+// NewTsyneEntry creates a new entry with focus callback support
+func NewTsyneEntry(bridge *Bridge, widgetID string) *TsyneEntry {
+	e := &TsyneEntry{
+		bridge:   bridge,
+		widgetID: widgetID,
+	}
+	e.ExtendBaseWidget(e)
+	return e
+}
+
+// SetOnFocusCallbackId sets the callback ID for focus change events
+func (e *TsyneEntry) SetOnFocusCallbackId(callbackId string) {
+	e.onFocusCallbackId = callbackId
+}
+
+// FocusGained is called when the entry gains focus
+func (e *TsyneEntry) FocusGained() {
+	e.Entry.FocusGained()
+
+	// Always send global textInputFocus event (for PhoneTop keyboard show/hide)
+	e.bridge.sendEvent(Event{
+		Type:     "textInputFocus",
+		WidgetID: e.widgetID,
+		Data: map[string]interface{}{
+			"focused": true,
+		},
+	})
+
+	// Also call widget-specific callback if registered
+	if e.onFocusCallbackId != "" {
+		e.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": e.onFocusCallbackId,
+				"focused":    true,
+			},
+		})
+	}
+}
+
+// FocusLost is called when the entry loses focus
+func (e *TsyneEntry) FocusLost() {
+	e.Entry.FocusLost()
+
+	// Always send global textInputFocus event (for PhoneTop keyboard show/hide)
+	e.bridge.sendEvent(Event{
+		Type:     "textInputFocus",
+		WidgetID: e.widgetID,
+		Data: map[string]interface{}{
+			"focused": false,
+		},
+	})
+
+	// Also call widget-specific callback if registered
+	if e.onFocusCallbackId != "" {
+		e.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": e.onFocusCallbackId,
+				"focused":    false,
+			},
+		})
+	}
+}
+
+// Ensure TsyneEntry implements fyne.Focusable
+var _ fyne.Focusable = (*TsyneEntry)(nil)
+
 // TsyneTextGrid wraps widget.TextGrid and implements fyne.Focusable and desktop.Keyable
 // for keyboard input support (needed for terminal emulator)
 type TsyneTextGrid struct {

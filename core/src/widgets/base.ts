@@ -52,9 +52,24 @@ export function registerGlobalBinding(binding: ReactiveBinding): void {
  * Call this to trigger all MVC-style bindings to re-evaluate
  */
 export async function refreshAllBindings(): Promise<void> {
-  for (const binding of globalBindings) {
-    await binding();
+  // Copy to array to avoid issues if bindings are removed during iteration
+  const bindings = Array.from(globalBindings);
+  for (const binding of bindings) {
+    try {
+      await binding();
+    } catch (err) {
+      // Widget may have been destroyed - remove stale binding
+      globalBindings.delete(binding);
+    }
   }
+}
+
+/**
+ * Clear all global bindings
+ * Call this when rebuilding UI to prevent stale bindings from causing errors
+ */
+export function clearAllBindings(): void {
+  globalBindings.clear();
 }
 
 export abstract class Widget {

@@ -544,6 +544,11 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleHidePopup(msg)
 	case "movePopup":
 		return b.handleMovePopup(msg)
+	// Virtual keyboard keystroke injection
+	case "typeRune":
+		return b.handleTypeRune(msg)
+	case "typeKey":
+		return b.handleTypeKey(msg)
 	default:
 		return Response{
 			ID:      msg.ID,

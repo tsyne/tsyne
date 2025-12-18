@@ -426,6 +426,9 @@ export class App {
    * @param onSubmit - Submit handler (Enter key pressed)
    * @param minWidth - Minimum width in pixels
    * @param onDoubleClick - Double-click handler
+   * @param onChange - Called when text changes
+   * @param onCursorChanged - Called when cursor position changes
+   * @param onFocus - Called when focus state changes (focused: boolean)
    * @returns Entry widget
    */
   entry(
@@ -434,9 +437,10 @@ export class App {
     minWidth?: number,
     onDoubleClick?: () => void,
     onChange?: (text: string) => void,
-    onCursorChanged?: () => void
+    onCursorChanged?: () => void,
+    onFocus?: (focused: boolean) => void
   ): Entry {
-    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged);
+    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged, onFocus);
   }
 
   /**

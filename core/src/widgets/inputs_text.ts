@@ -71,7 +71,8 @@ export class Entry extends Widget {
     minWidth?: number,
     onDoubleClick?: () => void,
     onChange?: (text: string) => void,
-    onCursorChanged?: () => void
+    onCursorChanged?: () => void,
+    onFocus?: (focused: boolean) => void
   ) {
     const id = ctx.generateId('entry');
     super(ctx, id);
@@ -109,6 +110,15 @@ export class Entry extends Widget {
       payload.onCursorChangedCallbackId = cursorChangedCallbackId;
       ctx.bridge.registerEventHandler(cursorChangedCallbackId, () => {
         onCursorChanged();
+      });
+    }
+
+    if (onFocus) {
+      const onFocusCallbackId = ctx.generateId('callback');
+      payload.onFocusCallbackId = onFocusCallbackId;
+      ctx.bridge.registerEventHandler(onFocusCallbackId, (data: unknown) => {
+        const eventData = data as { focused: boolean };
+        onFocus(eventData.focused);
       });
     }
 

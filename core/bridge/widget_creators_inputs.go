@@ -71,9 +71,16 @@ func (b *Bridge) handleCreateButton(msg Message) Response {
 func (b *Bridge) handleCreateEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	placeholder, _ := msg.Payload["placeholder"].(string)
+	onFocusCallbackID, _ := msg.Payload["onFocusCallbackId"].(string)
 
-	entry := widget.NewEntry()
-	entry.SetPlaceHolder(placeholder)
+	// ALWAYS use TsyneEntry so we get global textInputFocus events
+	// This enables PhoneTop to show/hide the virtual keyboard for any Entry
+	tsyneEntry := NewTsyneEntry(b, widgetID)
+	if onFocusCallbackID != "" {
+		tsyneEntry.SetOnFocusCallbackId(onFocusCallbackID)
+	}
+	tsyneEntry.SetPlaceHolder(placeholder)
+	entry := &tsyneEntry.Entry
 
 	// Set onSubmit callback if provided (triggered on Enter key)
 	if callbackID, ok := msg.Payload["callbackId"].(string); ok {
@@ -114,14 +121,15 @@ func (b *Bridge) handleCreateEntry(msg Message) Response {
 	}
 
 	// Set minimum width if provided
-	var widgetToStore fyne.CanvasObject = entry
+	// tsyneEntry is always set (embeds Entry)
+	var widgetToStore fyne.CanvasObject = tsyneEntry
 	var needsEntryRef bool = false
 
 	if minWidth, ok := msg.Payload["minWidth"].(float64); ok && minWidth > 0 {
 		// Create a sized container with the entry
 		sizedEntry := canvas.NewRectangle(color.Transparent)
 		sizedEntry.SetMinSize(fyne.NewSize(float32(minWidth), entry.MinSize().Height))
-		widgetToStore = container.NewMax(sizedEntry, entry)
+		widgetToStore = container.NewMax(sizedEntry, tsyneEntry)
 		needsEntryRef = true // Entry is now wrapped, so we need a separate reference
 	}
 

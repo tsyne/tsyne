@@ -12,12 +12,14 @@
 
 import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
-import { Label, Button } from '../core/src/widgets';
+import { Label, Button, VBox } from '../core/src/widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
+import { BridgeKeyboardController } from './keyboard/controller';
+import { buildKeyboard } from './keyboard/en-gb/keyboard';
 
 // Grid configuration for phone (portrait orientation)
 const GRID_COLS = 3;
@@ -78,6 +80,12 @@ class PhoneTop {
   private appInstanceCounter: Map<string, number> = new Map();
   /** Cache of registered icon resources keyed by source file */
   private iconResourceCache: Map<string, string> = new Map();
+  /** Keyboard controller using bridge injection for cross-app typing */
+  private keyboardController: BridgeKeyboardController | null = null;
+  /** Whether the virtual keyboard is visible */
+  private keyboardVisible: boolean = false;
+  /** Keyboard container for show/hide */
+  private keyboardContainer: VBox | null = null;
 
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
@@ -85,6 +93,48 @@ class PhoneTop {
     this.cols = options.columns || GRID_COLS;
     this.rows = options.rows || GRID_ROWS;
     this.appsPerPage = this.cols * this.rows;
+
+    // Create bridge keyboard controller for cross-app keystroke injection
+    this.keyboardController = new BridgeKeyboardController(this.a.getContext().bridge);
+
+    // Listen for global textInputFocus events from any Entry widget
+    // This enables showing/hiding the virtual keyboard when any text field is focused
+    this.a.getContext().bridge.on('textInputFocus', (data: unknown) => {
+      const eventData = data as { focused: boolean };
+      this.handleFocusChange(eventData.focused);
+    });
+  }
+
+  /**
+   * Handle focus change from Entry widgets
+   * Shows keyboard when an Entry gains focus, hides when it loses focus
+   */
+  handleFocusChange(focused: boolean) {
+    if (focused && !this.keyboardVisible) {
+      this.showKeyboard();
+    } else if (!focused && this.keyboardVisible) {
+      this.hideKeyboard();
+    }
+  }
+
+  /**
+   * Show the virtual keyboard
+   */
+  private showKeyboard() {
+    if (this.keyboardContainer) {
+      this.keyboardVisible = true;
+      this.keyboardContainer.show();
+    }
+  }
+
+  /**
+   * Hide the virtual keyboard
+   */
+  private hideKeyboard() {
+    if (this.keyboardContainer) {
+      this.keyboardVisible = false;
+      this.keyboardContainer.hide();
+    }
   }
 
   /**
@@ -242,25 +292,39 @@ class PhoneTop {
     if (!this.win) return;
 
     this.win.setContent(() => {
-      // Use border layout: grid fills center, controls at bottom
-      this.a.border({
-        center: () => {
-          // App grid fills available space
-          this.createAppGrid();
-        },
-        bottom: () => {
-          this.a.vbox(() => {
-            // Page dots indicator (like iOS/Android)
-            this.createPageIndicator();
+      // Main layout: app content fills space, keyboard at bottom (hidden by default)
+      this.a.vbox(() => {
+        // Use border layout: grid fills center, controls at bottom
+        this.a.max(() => {
+          this.a.border({
+            center: () => {
+              // App grid fills available space
+              this.createAppGrid();
+            },
+            bottom: () => {
+              this.a.vbox(() => {
+                // Page dots indicator (like iOS/Android)
+                this.createPageIndicator();
 
-            // Swipe navigation buttons
-            this.a.hbox(() => {
-              this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
-              this.a.spacer();
-              this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
-            });
+                // Swipe navigation buttons
+                this.a.hbox(() => {
+                  this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
+                  this.a.spacer();
+                  this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
+                });
+              });
+            }
           });
-        }
+        });
+
+        // Virtual keyboard (hidden by default, shown on Entry focus)
+        this.keyboardContainer = this.a.vbox(() => {
+          this.a.separator();
+          if (this.keyboardController) {
+            buildKeyboard(this.a, this.keyboardController as any);
+          }
+        });
+        this.keyboardContainer.hide();  // Start hidden
       });
     });
   }
@@ -513,35 +577,54 @@ class PhoneTop {
     const originalResources = this.a.resources;
 
     this.win.setContent(() => {
-      // Restore the app's resource scope and layout scale for content building
-      (this.a as any).resources = runningApp.scopedResources;
-      this.a.getContext().setResourceScope(runningApp.resourceScope);
-      this.a.getContext().setLayoutScale(PHONE_LAYOUT_SCALE);
-
+      // Main layout: app content fills space, keyboard at bottom
       this.a.vbox(() => {
-        // Header with back button, quit button, and app name
-        this.a.hbox(() => {
-          this.a.button('← Home').onClick(() => this.goHome());
-          this.a.button('✕ Quit').onClick(() => {
-            if (appId) this.quitApp(appId);
-          });
-          this.a.spacer();
-          this.a.label(runningApp.adapter.title);
-          this.a.spacer();
-        });
-
-        this.a.separator();
-
-        // App content fills the rest
+        // App content with header
         this.a.max(() => {
-          contentBuilder();
-        });
-      });
+          // Restore the app's resource scope and layout scale for content building
+          (this.a as any).resources = runningApp.scopedResources;
+          this.a.getContext().setResourceScope(runningApp.resourceScope);
+          this.a.getContext().setLayoutScale(PHONE_LAYOUT_SCALE);
 
-      // Restore original resources and layout scale after content build
-      (this.a as any).resources = originalResources;
-      this.a.getContext().setResourceScope(null);
-      this.a.getContext().setLayoutScale(1.0);
+          this.a.vbox(() => {
+            // Header with back button, quit button, and app name
+            this.a.hbox(() => {
+              this.a.button('← Home').onClick(() => {
+                this.hideKeyboard();  // Hide keyboard when going home
+                this.goHome();
+              });
+              this.a.button('✕ Quit').onClick(() => {
+                this.hideKeyboard();  // Hide keyboard when quitting
+                if (appId) this.quitApp(appId);
+              });
+              this.a.spacer();
+              this.a.label(runningApp.adapter.title);
+              this.a.spacer();
+            });
+
+            this.a.separator();
+
+            // App content fills the rest
+            this.a.max(() => {
+              contentBuilder();
+            });
+          });
+
+          // Restore original resources and layout scale after content build
+          (this.a as any).resources = originalResources;
+          this.a.getContext().setResourceScope(null);
+          this.a.getContext().setLayoutScale(1.0);
+        });
+
+        // Virtual keyboard (hidden by default, shown on Entry focus)
+        this.keyboardContainer = this.a.vbox(() => {
+          this.a.separator();
+          if (this.keyboardController) {
+            buildKeyboard(this.a, this.keyboardController as any);
+          }
+        });
+        this.keyboardContainer.hide();  // Start hidden
+      });
     });
   }
 
