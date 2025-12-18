@@ -114,6 +114,7 @@ export class VBox {
   private ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
+  private childWidgets: any[] = [];
 
   constructor(ctx: Context, builder: () => void, options?: VBoxOptions) {
     this.ctx = ctx;
@@ -125,8 +126,9 @@ export class VBox {
     // Execute the builder function to collect children
     builder();
 
-    // Pop the container and get the children
-    const children = ctx.popContainer();
+    // Pop the container and get the children (IDs and widget references)
+    const { ids: children, widgets } = ctx.popContainerWithWidgets();
+    this.childWidgets = widgets;
 
     // Create the VBox with the children
     const payload: any = { id: this.id, children };
@@ -134,7 +136,7 @@ export class VBox {
       payload.spacing = options.spacing;
     }
     ctx.bridge.send('createVBox', payload);
-    ctx.addToCurrentContainer(this.id);
+    ctx.addToCurrentContainer(this.id, this);
   }
 
   /**
@@ -256,11 +258,17 @@ export class VBox {
   }
 
   /**
-   * Refresh the container - re-evaluates visibility conditions
+   * Refresh the container - re-evaluates visibility conditions for self and all children
    */
   async refreshVisibility(): Promise<void> {
     if (this.visibilityCondition) {
       await this.visibilityCondition();
+    }
+    // Recurse into children
+    for (const child of this.childWidgets) {
+      if (child && typeof child.refreshVisibility === 'function') {
+        await child.refreshVisibility();
+      }
     }
   }
 
@@ -297,6 +305,7 @@ export class HBox {
   private ctx: Context;
   public id: string;
   private visibilityCondition?: () => Promise<void>;
+  private childWidgets: any[] = [];
 
   constructor(ctx: Context, builder: () => void, options?: HBoxOptions) {
     this.ctx = ctx;
@@ -308,8 +317,9 @@ export class HBox {
     // Execute the builder function to collect children
     builder();
 
-    // Pop the container and get the children
-    const children = ctx.popContainer();
+    // Pop the container and get the children (IDs and widget references)
+    const { ids: children, widgets } = ctx.popContainerWithWidgets();
+    this.childWidgets = widgets;
 
     // Create the HBox with the children
     const payload: any = { id: this.id, children };
@@ -317,7 +327,7 @@ export class HBox {
       payload.spacing = options.spacing;
     }
     ctx.bridge.send('createHBox', payload);
-    ctx.addToCurrentContainer(this.id);
+    ctx.addToCurrentContainer(this.id, this);
   }
 
   /**
@@ -405,11 +415,17 @@ export class HBox {
   }
 
   /**
-   * Refresh the container - re-evaluates visibility conditions
+   * Refresh the container - re-evaluates visibility conditions for self and all children
    */
   async refreshVisibility(): Promise<void> {
     if (this.visibilityCondition) {
       await this.visibilityCondition();
+    }
+    // Recurse into children
+    for (const child of this.childWidgets) {
+      if (child && typeof child.refreshVisibility === 'function') {
+        await child.refreshVisibility();
+      }
     }
   }
 

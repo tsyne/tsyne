@@ -238,6 +238,15 @@ export abstract class Widget {
   }
 
   /**
+   * Refresh visibility - re-evaluates when() condition
+   */
+  async refreshVisibility(): Promise<void> {
+    if (this.visibilityCondition) {
+      await this.visibilityCondition();
+    }
+  }
+
+  /**
    * Set accessibility properties for assistive technologies
    * Automatically enables hover announcements so the accessibility info is announced on hover
    * @param options Accessibility options (label, description, role, hint)

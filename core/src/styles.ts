@@ -217,6 +217,10 @@ export async function applyStyleToWidget(
     stylePayload.textAlign = style.text_align;
   }
 
+  if (style.importance !== undefined) {
+    stylePayload.importance = style.importance;
+  }
+
   // Send style to bridge
   if (Object.keys(stylePayload).length > 1) { // More than just widgetId
     await ctx.bridge.send('setWidgetStyle', stylePayload);

@@ -53,5 +53,3 @@ require (
 
 // Vs human maintained workstation...
 // replace fyne.io/systray => /tmp/systray-master
-
-replace fyne.io/systray => /tmp/systray-master

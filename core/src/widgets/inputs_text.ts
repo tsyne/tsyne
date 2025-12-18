@@ -12,7 +12,7 @@ export class Button extends Widget {
     const payload: any = { id, text };
 
     ctx.bridge.send('createButton', payload);
-    ctx.addToCurrentContainer(id);
+    ctx.addToCurrentContainer(id, this);
 
     if (className) {
       this.applyStyles(className).catch(() => {});
@@ -21,12 +21,12 @@ export class Button extends Widget {
     }
   }
 
-  onClick(callback: (this: Button) => void | Promise<void>): this {
+  onClick(callback: (btn: Button) => void | Promise<void>): this {
     const callbackId = this.ctx.generateId('callback');
 
-    // Register callback with 'this' bound to the button instance
+    // Register callback, passing the button as argument
     this.ctx.bridge.registerEventHandler(callbackId, async () => {
-      await callback.call(this);
+      await callback(this);
     });
 
     // Tell the bridge to use this callback ID for this button

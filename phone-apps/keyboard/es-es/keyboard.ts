@@ -1,135 +1,162 @@
 /**
  * Spanish (es-ES) Keyboard
- * QWERTY with ñ, Spanish punctuation (¿ ¡), and Fn layer
+ * QWERTY with ñ, Spanish punctuation (¿ ¡), symbols layer, and Fn layer
+ * Uses when() for ng-if style layer switching
  * See LICENSE for copyright information.
  */
 
 import type { App } from '../../../core/src/app';
-import type { Button } from '../../../core/src/widgets/inputs';
 import { KeyboardController } from '../controller';
+import { styles, FontFamily } from '../../../core/src/styles';
 
 export const locale = 'es-ES';
 export const name = 'Español';
 
+// Set monospace font for buttons so all letters have equal width
+styles({
+  button: {
+    font_family: FontFamily.MONOSPACE
+  }
+});
+
 /**
  * Build the Spanish keyboard UI
+ * Purely declarative - when() bindings auto-refresh via controller
  */
 export function buildKeyboard(a: App, k: KeyboardController): void {
-  let modeBtn: Button;
+  const isAbc = () => k.mode === 'abc';
+  const isSymbols = () => k.mode === 'symbols';
+  const isFn = () => k.mode === 'fn';
+  const isLower = () => !k.shift;
+  const isUpper = () => k.shift;
 
   a.vbox(() => {
     // ═══════════════════════════════════════════════════════════════════════
-    // ABC LAYER - QWERTY with ñ
+    // ABC LAYER - QWERTY with ñ (mode === 'abc')
     // ═══════════════════════════════════════════════════════════════════════
+    a.vbox(() => {
+      // ROW 1: Q W E R T Y U I O P
+      a.hbox(() => {
+        for (const c of ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p']) {
+          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
+          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+        }
+      });
 
-    // ROW 1: Q W E R T Y U I O P
-    a.hbox(() => {
-      k.register('q', a.button('q').onClick(() => k.key('q', 'q')).withId('key-q'), 'q');
-      k.register('w', a.button('w').onClick(() => k.key('w', 'w')).withId('key-w'), 'w');
-      k.register('e', a.button('e').onClick(() => k.key('e', 'e')).withId('key-e'), 'e');
-      k.register('r', a.button('r').onClick(() => k.key('r', 'r')).withId('key-r'), 'r');
-      k.register('t', a.button('t').onClick(() => k.key('t', 't')).withId('key-t'), 't');
-      k.register('y', a.button('y').onClick(() => k.key('y', 'y')).withId('key-y'), 'y');
-      k.register('u', a.button('u').onClick(() => k.key('u', 'u')).withId('key-u'), 'u');
-      k.register('i', a.button('i').onClick(() => k.key('i', 'i')).withId('key-i'), 'i');
-      k.register('o', a.button('o').onClick(() => k.key('o', 'o')).withId('key-o'), 'o');
-      k.register('p', a.button('p').onClick(() => k.key('p', 'p')).withId('key-p'), 'p');
-    });
+      // ROW 2: A S D F G H J K L Ñ
+      a.hbox(() => {
+        for (const c of ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ñ']) {
+          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
+          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+        }
+      });
 
-    // ROW 2: A S D F G H J K L Ñ
-    a.hbox(() => {
-      k.register('a', a.button('a').onClick(() => k.key('a', 'a')).withId('key-a'), 'a');
-      k.register('s', a.button('s').onClick(() => k.key('s', 's')).withId('key-s'), 's');
-      k.register('d', a.button('d').onClick(() => k.key('d', 'd')).withId('key-d'), 'd');
-      k.register('f', a.button('f').onClick(() => k.key('f', 'f')).withId('key-f'), 'f');
-      k.register('g', a.button('g').onClick(() => k.key('g', 'g')).withId('key-g'), 'g');
-      k.register('h', a.button('h').onClick(() => k.key('h', 'h')).withId('key-h'), 'h');
-      k.register('j', a.button('j').onClick(() => k.key('j', 'j')).withId('key-j'), 'j');
-      k.register('k', a.button('k').onClick(() => k.key('k', 'k')).withId('key-k'), 'k');
-      k.register('l', a.button('l').onClick(() => k.key('l', 'l')).withId('key-l'), 'l');
-      k.register('ñ', a.button('ñ').onClick(() => k.key('ñ', 'ñ')).withId('key-ñ'), 'ñ');
-    });
+      // ROW 3: ⇪ Z X C V B N M ⌫
+      a.hbox(() => {
+        a.button('⇪').onClick(() => k.toggleShift());
+        for (const c of ['z', 'x', 'c', 'v', 'b', 'n', 'm']) {
+          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
+          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+        }
+        a.button('⌫').onClick((b) => k.backspace(b));
+      });
 
-    // ROW 3: ⇪ Z X C V B N M ⌫
-    a.hbox(() => {
-      k.register('shift', a.button('⇪').onClick(() => k.toggleShift()).withId('key-shift'), '⇪');
-      k.register('z', a.button('z').onClick(() => k.key('z', 'z')).withId('key-z'), 'z');
-      k.register('x', a.button('x').onClick(() => k.key('x', 'x')).withId('key-x'), 'x');
-      k.register('c', a.button('c').onClick(() => k.key('c', 'c')).withId('key-c'), 'c');
-      k.register('v', a.button('v').onClick(() => k.key('v', 'v')).withId('key-v'), 'v');
-      k.register('b', a.button('b').onClick(() => k.key('b', 'b')).withId('key-b'), 'b');
-      k.register('n', a.button('n').onClick(() => k.key('n', 'n')).withId('key-n'), 'n');
-      k.register('m', a.button('m').onClick(() => k.key('m', 'm')).withId('key-m'), 'm');
-      k.register('back', a.button('⌫').onClick(() => k.backspace('back')).withId('key-back'), '⌫');
-    });
-
-    // ROW 4: mode ¿ ¡ ―――――― . ↵
-    a.hbox(() => {
-      modeBtn = a.button('123').onClick(() => {
-        k.cycleMode();
-        modeBtn.setText(k.getModeLabel());
-      }).withId('key-mode');
-      k.register('mode', modeBtn, '123');
-      k.register('quest-inv', a.button('¿').onClick(() => k.symbol('¿', 'quest-inv')).withId('key-quest-inv'), '¿');
-      k.register('excl-inv', a.button('¡').onClick(() => k.symbol('¡', 'excl-inv')).withId('key-excl-inv'), '¡');
-      k.register('space', a.button('――――――').onClick(() => k.space('space')).withId('key-space'), '――――――');
-      k.register('dot', a.button('.').onClick(() => k.symbol('.', 'dot')).withId('key-dot'), '.');
-      k.register('enter', a.button('↵').onClick(() => k.enter('enter')).withId('key-enter'), '↵');
-    });
-
-    a.separator();
+      // ROW 4: mode ¿ ¡ ―――――― . ↵
+      a.hbox(() => {
+        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
+        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
+        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
+        a.button('¿').onClick((b) => k.symbol('¿', b));
+        a.button('¡').onClick((b) => k.symbol('¡', b));
+        a.button('――――――').onClick((b) => k.space(b, '――――――'));
+        a.button('.').onClick((b) => k.symbol('.', b));
+        a.button('↵').onClick((b) => k.enter(b));
+      });
+    }).when(isAbc);
 
     // ═══════════════════════════════════════════════════════════════════════
-    // FN LAYER - Function keys, cursor keys, navigation
+    // SYMBOLS/NUMBERS LAYER (mode === 'symbols')
     // ═══════════════════════════════════════════════════════════════════════
+    a.vbox(() => {
+      // ROW 1: 1 2 3 4 5 6 7 8 9 0
+      a.hbox(() => {
+        for (const c of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']) {
+          a.button(c).onClick((b) => k.symbol(c, b));
+        }
+      });
 
-    // F-KEYS ROW 1: F1 F2 F3 F4 F5 F6
-    a.hbox(() => {
-      k.register('f1', a.button('F1').onClick(() => k.fkey(1, 'f1')).withId('key-f1'), 'F1');
-      k.register('f2', a.button('F2').onClick(() => k.fkey(2, 'f2')).withId('key-f2'), 'F2');
-      k.register('f3', a.button('F3').onClick(() => k.fkey(3, 'f3')).withId('key-f3'), 'F3');
-      k.register('f4', a.button('F4').onClick(() => k.fkey(4, 'f4')).withId('key-f4'), 'F4');
-      k.register('f5', a.button('F5').onClick(() => k.fkey(5, 'f5')).withId('key-f5'), 'F5');
-      k.register('f6', a.button('F6').onClick(() => k.fkey(6, 'f6')).withId('key-f6'), 'F6');
-    });
+      // ROW 2: @ # € $ % ^ & * ( )
+      a.hbox(() => {
+        for (const c of ['@', '#', '€', '$', '%', '^', '&', '*', '(', ')']) {
+          a.button(c).onClick((b) => k.symbol(c, b));
+        }
+      });
 
-    // F-KEYS ROW 2: F7 F8 F9 F10 F11 F12
-    a.hbox(() => {
-      k.register('f7', a.button('F7').onClick(() => k.fkey(7, 'f7')).withId('key-f7'), 'F7');
-      k.register('f8', a.button('F8').onClick(() => k.fkey(8, 'f8')).withId('key-f8'), 'F8');
-      k.register('f9', a.button('F9').onClick(() => k.fkey(9, 'f9')).withId('key-f9'), 'F9');
-      k.register('f10', a.button('F10').onClick(() => k.fkey(10, 'f10')).withId('key-f10'), 'F10');
-      k.register('f11', a.button('F11').onClick(() => k.fkey(11, 'f11')).withId('key-f11'), 'F11');
-      k.register('f12', a.button('F12').onClick(() => k.fkey(12, 'f12')).withId('key-f12'), 'F12');
-    });
+      // ROW 3: - + = _ " ' : ; ⌫
+      a.hbox(() => {
+        for (const c of ['-', '+', '=', '_', '"', "'", ':', ';']) {
+          a.button(c).onClick((b) => k.symbol(c, b));
+        }
+        a.button('⌫').onClick((b) => k.backspace(b));
+      });
 
-    // NAVIGATION: Esc Tab | Ins Del | Home End | PgUp PgDn
-    a.hbox(() => {
-      k.register('esc', a.button('Esc').onClick(() => k.escape('esc')).withId('key-esc'), 'Esc');
-      k.register('tab', a.button('Tab').onClick(() => k.tab('tab')).withId('key-tab'), 'Tab');
-      k.register('ins', a.button('Ins').onClick(() => k.insert('ins')).withId('key-ins'), 'Ins');
-      k.register('del', a.button('Del').onClick(() => k.delete('del')).withId('key-del'), 'Del');
-      k.register('home', a.button('Home').onClick(() => k.home('home')).withId('key-home'), 'Home');
-      k.register('end', a.button('End').onClick(() => k.end('end')).withId('key-end'), 'End');
-      k.register('pgup', a.button('PgUp').onClick(() => k.pageUp('pgup')).withId('key-pgup'), 'PgUp');
-      k.register('pgdn', a.button('PgDn').onClick(() => k.pageDown('pgdn')).withId('key-pgdn'), 'PgDn');
-    });
+      // ROW 4: mode / \ , ―――― . ! ? ↵
+      a.hbox(() => {
+        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
+        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
+        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
+        for (const c of ['/', '\\', ',']) {
+          a.button(c).onClick((b) => k.symbol(c, b));
+        }
+        a.button('――――').onClick((b) => k.space(b, '――――'));
+        for (const c of ['.', '!', '?']) {
+          a.button(c).onClick((b) => k.symbol(c, b));
+        }
+        a.button('↵').onClick((b) => k.enter(b));
+      });
+    }).when(isSymbols);
 
-    // CURSOR KEYS (inverted T) + CTRL
-    a.hbox(() => {
-      a.spacer();
-      a.spacer();
-      k.register('up', a.button('↑').onClick(() => k.cursorUp('up')).withId('key-up'), '↑');
-      a.spacer();
-      a.spacer();
-      k.register('ctrl', a.button('Ctrl').onClick(() => k.toggleCtrl()).withId('key-ctrl'), 'Ctrl');
-    });
-    a.hbox(() => {
-      a.spacer();
-      k.register('left', a.button('←').onClick(() => k.cursorLeft('left')).withId('key-left'), '←');
-      k.register('down', a.button('↓').onClick(() => k.cursorDown('down')).withId('key-down'), '↓');
-      k.register('right', a.button('→').onClick(() => k.cursorRight('right')).withId('key-right'), '→');
-      a.spacer();
-    });
+    // ═══════════════════════════════════════════════════════════════════════
+    // FN LAYER - Function keys, cursor keys, navigation (mode === 'fn')
+    // ═══════════════════════════════════════════════════════════════════════
+    a.vbox(() => {
+      // F-KEYS ROW 1: F1 F2 F3 F4 F5 F6
+      a.hbox(() => {
+        for (const n of [1, 2, 3, 4, 5, 6]) {
+          a.button(`F${n}`).onClick((b) => k.fkey(n, b));
+        }
+      });
+
+      // F-KEYS ROW 2: F7 F8 F9 F10 F11 F12
+      a.hbox(() => {
+        for (const n of [7, 8, 9, 10, 11, 12]) {
+          a.button(`F${n}`).onClick((b) => k.fkey(n, b));
+        }
+      });
+
+      // NAVIGATION: Esc Tab Ins Del Home End PgUp PgDn
+      a.hbox(() => {
+        a.button('Esc').onClick((b) => k.escape(b));
+        a.button('Tab').onClick((b) => k.tab(b));
+        a.button('Ins').onClick((b) => k.insert(b));
+        a.button('Del').onClick((b) => k.delete(b));
+        a.button('Home').onClick((b) => k.home(b));
+        a.button('End').onClick((b) => k.end(b));
+        a.button('PgUp').onClick((b) => k.pageUp(b));
+        a.button('PgDn').onClick((b) => k.pageDown(b));
+      });
+
+      // CURSOR + MODE: abc ← ↑ ↓ → Ctrl
+      a.hbox(() => {
+        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
+        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
+        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
+        a.button('←').onClick((b) => k.cursorLeft(b));
+        a.button('↑').onClick((b) => k.cursorUp(b));
+        a.button('↓').onClick((b) => k.cursorDown(b));
+        a.button('→').onClick((b) => k.cursorRight(b));
+        a.button('Ctrl').onClick(() => k.toggleCtrl());
+      });
+    }).when(isFn);
   });
 }

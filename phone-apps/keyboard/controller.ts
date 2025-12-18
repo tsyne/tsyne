@@ -6,6 +6,7 @@
 
 import type { App } from '../../core/src/app';
 import type { Button, MultiLineEntry } from '../../core/src/widgets/inputs';
+import { refreshAllBindings } from '../../core/src/widgets/base';
 
 export type OnTextCallback = (char: string) => void;
 export type OnEnterCallback = () => void;
@@ -23,8 +24,8 @@ export class KeyboardController {
   private onText: OnTextCallback;
   private onEnter: OnEnterCallback;
   private onSpecial: OnSpecialCallback;
-  private buttons: Map<string, { btn: Button; label: string }> = new Map();
   private modeChangeListeners: Array<(mode: KeyboardMode) => void> = [];
+  private shiftChangeListeners: Array<(shift: boolean) => void> = [];
 
   constructor(onText: OnTextCallback, onEnter: OnEnterCallback, onSpecial?: OnSpecialCallback) {
     this.onText = onText;
@@ -36,23 +37,16 @@ export class KeyboardController {
   get ctrl() { return this._ctrl; }
   get mode() { return this._mode; }
 
-  /** Register a button for flash feedback */
-  register(id: string, btn: Button, label: string) {
-    this.buttons.set(id, { btn, label });
-  }
-
   /** Flash a key to show it was pressed */
-  flash(id: string) {
-    const entry = this.buttons.get(id);
-    if (entry) {
-      entry.btn.setText(`»${entry.label}«`);
-      setTimeout(() => entry.btn.setText(entry.label), 120);
-    }
+  flash(btn: Button, label: string) {
+    btn.withStyle({ importance: 'warning' });
+    setTimeout(() => btn.withStyle({ importance: 'medium' }), 120);
   }
 
   /** Press a character key */
-  key(char: string, id: string) {
-    let out = this._shift ? char.toUpperCase() : char;
+  key(char: string, btn: Button) {
+    const label = this._shift ? char.toUpperCase() : char;
+    let out = label;
     if (this._ctrl) {
       // Ctrl+letter sends control character (ASCII 1-26)
       const code = out.toUpperCase().charCodeAt(0) - 64;
@@ -62,121 +56,130 @@ export class KeyboardController {
       this._ctrl = false;
     }
     this.onText(out);
-    this.flash(id);
+    this.flash(btn, label);
     if (this._shift) {
       this._shift = false;
+      this.shiftChangeListeners.forEach(cb => cb(false));
+      refreshAllBindings();
     }
   }
 
   /** Press a symbol (no shift transformation) */
-  symbol(char: string, id: string) {
+  symbol(char: string, btn: Button) {
     this.onText(char);
-    this.flash(id);
+    this.flash(btn, char);
   }
 
   /** Backspace */
-  backspace(id: string) {
+  backspace(btn: Button) {
     this.onText('\b');
-    this.flash(id);
+    this.flash(btn, '⌫');
   }
 
   /** Space */
-  space(id: string) {
+  space(btn: Button, label: string) {
     this.onText(' ');
-    this.flash(id);
+    this.flash(btn, label);
   }
 
   /** Enter */
-  enter(id: string) {
+  enter(btn: Button) {
     this.onEnter();
-    this.flash(id);
+    this.flash(btn, '↵');
   }
 
   /** Tab */
-  tab(id: string) {
+  tab(btn: Button) {
     this.onText('\t');
-    this.flash(id);
+    this.flash(btn, 'Tab');
   }
 
   /** Escape */
-  escape(id: string) {
+  escape(btn: Button) {
     this.onSpecial('Escape', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'Esc');
     this._ctrl = false;
   }
 
   /** Function key (F1-F12) */
-  fkey(n: number, id: string) {
+  fkey(n: number, btn: Button) {
     this.onSpecial(`F${n}`, this._ctrl);
-    this.flash(id);
+    this.flash(btn, `F${n}`);
     this._ctrl = false;
   }
 
   /** Cursor keys */
-  cursorUp(id: string) {
+  cursorUp(btn: Button) {
     this.onSpecial('ArrowUp', this._ctrl);
-    this.flash(id);
+    this.flash(btn, '↑');
     this._ctrl = false;
   }
 
-  cursorDown(id: string) {
+  cursorDown(btn: Button) {
     this.onSpecial('ArrowDown', this._ctrl);
-    this.flash(id);
+    this.flash(btn, '↓');
     this._ctrl = false;
   }
 
-  cursorLeft(id: string) {
+  cursorLeft(btn: Button) {
     this.onSpecial('ArrowLeft', this._ctrl);
-    this.flash(id);
+    this.flash(btn, '←');
     this._ctrl = false;
   }
 
-  cursorRight(id: string) {
+  cursorRight(btn: Button) {
     this.onSpecial('ArrowRight', this._ctrl);
-    this.flash(id);
+    this.flash(btn, '→');
     this._ctrl = false;
   }
 
   /** Navigation keys */
-  home(id: string) {
+  home(btn: Button) {
     this.onSpecial('Home', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'Home');
     this._ctrl = false;
   }
 
-  end(id: string) {
+  end(btn: Button) {
     this.onSpecial('End', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'End');
     this._ctrl = false;
   }
 
-  pageUp(id: string) {
+  pageUp(btn: Button) {
     this.onSpecial('PageUp', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'PgUp');
     this._ctrl = false;
   }
 
-  pageDown(id: string) {
+  pageDown(btn: Button) {
     this.onSpecial('PageDown', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'PgDn');
     this._ctrl = false;
   }
 
-  insert(id: string) {
+  insert(btn: Button) {
     this.onSpecial('Insert', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'Ins');
     this._ctrl = false;
   }
 
-  delete(id: string) {
+  delete(btn: Button) {
     this.onSpecial('Delete', this._ctrl);
-    this.flash(id);
+    this.flash(btn, 'Del');
     this._ctrl = false;
   }
 
   /** Toggle shift */
   toggleShift() {
     this._shift = !this._shift;
+    this.shiftChangeListeners.forEach(cb => cb(this._shift));
+    refreshAllBindings();
+  }
+
+  /** Register a shift change listener */
+  onShiftChange(callback: (shift: boolean) => void) {
+    this.shiftChangeListeners.push(callback);
   }
 
   /** Toggle ctrl */
@@ -196,6 +199,7 @@ export class KeyboardController {
     this._shift = false;
     this._ctrl = false;
     this.modeChangeListeners.forEach(cb => cb(this._mode));
+    refreshAllBindings();
     return this._mode;
   }
 

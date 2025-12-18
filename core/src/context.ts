@@ -20,6 +20,7 @@ export class Context {
   private usedIds: Set<string> = new Set();
   private windowStack: string[] = [];
   private containerStack: string[][] = [];
+  private widgetStack: any[][] = [];  // Track widget objects alongside IDs
   private resourceMap: Map<string, string> = new Map();
   private _accessibilityManager: AccessibilityManagerType | null = null;
   private _testHarness: TestHarness | null = null;
@@ -187,16 +188,31 @@ export class Context {
 
   pushContainer(): void {
     this.containerStack.push([]);
+    this.widgetStack.push([]);
   }
 
   popContainer(): string[] {
+    this.widgetStack.pop();
     return this.containerStack.pop() || [];
   }
 
-  addToCurrentContainer(widgetId: string): void {
-    const current = this.containerStack[this.containerStack.length - 1];
-    if (current) {
-      current.push(widgetId);
+  /**
+   * Pop container and return both IDs and widget objects
+   */
+  popContainerWithWidgets(): { ids: string[], widgets: any[] } {
+    const widgets = this.widgetStack.pop() || [];
+    const ids = this.containerStack.pop() || [];
+    return { ids, widgets };
+  }
+
+  addToCurrentContainer(widgetId: string, widget?: any): void {
+    const currentIds = this.containerStack[this.containerStack.length - 1];
+    const currentWidgets = this.widgetStack[this.widgetStack.length - 1];
+    if (currentIds) {
+      currentIds.push(widgetId);
+    }
+    if (currentWidgets && widget) {
+      currentWidgets.push(widget);
     }
   }
 
@@ -293,9 +309,16 @@ class ScopedContext extends Context {
   }
 
   /**
+   * Pop container with widgets from parent's stack
+   */
+  override popContainerWithWidgets(): { ids: string[], widgets: any[] } {
+    return this.parentCtx.popContainerWithWidgets();
+  }
+
+  /**
    * Add to parent's current container
    */
-  override addToCurrentContainer(id: string): void {
-    this.parentCtx.addToCurrentContainer(id);
+  override addToCurrentContainer(id: string, widget?: any): void {
+    this.parentCtx.addToCurrentContainer(id, widget);
   }
 }

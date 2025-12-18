@@ -307,6 +307,14 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) Response {
 				}
 			}
 		}
+
+		// Apply importance directly if specified
+		if importance, ok := msg.Payload["importance"].(string); ok {
+			if btn, ok := obj.(*widget.Button); ok {
+				btn.Importance = importanceFromString(importance)
+				btn.Refresh()
+			}
+		}
 	})
 
 	// Note: Color and text color styling in Fyne requires custom themes
