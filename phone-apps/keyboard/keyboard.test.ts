@@ -10,12 +10,14 @@ import { buildKeyboard as buildEnUS } from './en-us/keyboard';
 import { buildKeyboard as buildEnGB } from './en-gb/keyboard';
 import { buildKeyboard as buildFrFR } from './fr-fr/keyboard';
 import { buildKeyboard as buildEsES } from './es-es/keyboard';
+import { buildKeyboard as buildEnDvorak } from './en-dvorak/keyboard';
 
 // Create locale-specific test harness factories (return void for setContent compatibility)
 const createEnUSTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnUS); };
 const createEnGBTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnGB); };
 const createFrFRTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildFrFR); };
 const createEsESTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEsES); };
+const createEnDvorakTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnDvorak); };
 
 describe('Virtual Keyboard', () => {
   let tsyneTest: TsyneTest;
@@ -349,6 +351,80 @@ describe('Virtual Keyboard', () => {
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-es-es.png');
+      }
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ENGLISH DVORAK
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('English Dvorak (en-dvorak)', () => {
+    test('type "hello" using Dvorak layout', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.window({ title: 'Test', width: 400, height: 400 }, (win) => {
+          win.setContent(() => createEnDvorakTestHarness(app));
+          win.show();
+        });
+      });
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // In Dvorak: h=d row2, e=row2, l=row1, l=row1, o=row2
+      await ctx.getByID('key-h').click();
+      await ctx.getByID('key-e').click();
+      await ctx.getByID('key-l').click();
+      await ctx.getByID('key-l').click();
+      await ctx.getByID('key-o').click();
+
+      await ctx.getByID('text-area').within(500).shouldBe('hello');
+    });
+
+    test('type "aoeui" (Dvorak home row vowels)', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.window({ title: 'Test', width: 400, height: 400 }, (win) => {
+          win.setContent(() => createEnDvorakTestHarness(app));
+          win.show();
+        });
+      });
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      await ctx.getByID('key-a').click();
+      await ctx.getByID('key-o').click();
+      await ctx.getByID('key-e').click();
+      await ctx.getByID('key-u').click();
+      await ctx.getByID('key-i').click();
+
+      await ctx.getByID('text-area').within(500).shouldBe('aoeui');
+    });
+
+    test('screenshot: The quick', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.window({ title: 'Test', width: 400, height: 400 }, (win) => {
+          win.setContent(() => createEnDvorakTestHarness(app));
+          win.show();
+        });
+      });
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // The
+      await ctx.getByID('key-shift').click();
+      await ctx.getByID('key-t').click();
+      await ctx.getByID('key-h').click();
+      await ctx.getByID('key-e').click();
+      await ctx.getByID('key-space').click();
+      // quick
+      await ctx.getByID('key-q').click();
+      await ctx.getByID('key-u').click();
+      await ctx.getByID('key-i').click();
+      await ctx.getByID('key-c').click();
+      await ctx.getByID('key-k').click();
+
+      await ctx.getByID('text-area').within(500).shouldBe('The quick');
+
+      if (process.env.TAKE_SCREENSHOTS === '1') {
+        await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-en-dvorak.png');
       }
     });
   });
