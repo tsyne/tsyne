@@ -384,10 +384,11 @@ export class CanvasRectangle {
     if (options?.onClick) {
       ctx.bridge.send('createTappableCanvasRectangle', payload);
 
-      // Register event listener for tapped events
-      ctx.bridge.on('canvasRectangleTapped', (event: any) => {
-        if (event.widgetId === this.id && this.onClickCallback) {
-          this.onClickCallback(event.data.x, event.data.y);
+      // Register event listener for tapped events using widget-specific key
+      // to avoid overwriting handlers when multiple tappable rectangles exist
+      ctx.bridge.on(`canvasRectangleTapped:${this.id}`, (event: any) => {
+        if (this.onClickCallback) {
+          this.onClickCallback(event.x, event.y);
         }
       });
     } else {
@@ -409,6 +410,20 @@ export class CanvasRectangle {
       widgetId: this.id,
       ...options
     });
+  }
+
+  /**
+   * Set the fill color
+   */
+  async setFillColor(color: string): Promise<void> {
+    await this.update({ fillColor: color });
+  }
+
+  /**
+   * Set the stroke color
+   */
+  async setStrokeColor(color: string): Promise<void> {
+    await this.update({ strokeColor: color });
   }
 
   /**
@@ -913,10 +928,11 @@ export class TappableCanvasRaster {
     ctx.bridge.send('createTappableCanvasRaster', payload);
     ctx.addToCurrentContainer(this.id);
 
-    // Register event listener for tap events
+    // Register event listener for tap events using widget-specific key
+    // to avoid overwriting handlers when multiple TappableCanvasRaster exist
     if (options.onTap) {
-      ctx.bridge.on('canvasRasterTapped', (event: any) => {
-        if (event.widgetId === this.id && this.onTapCallback) {
+      ctx.bridge.on(`canvasRasterTapped:${this.id}`, (event: any) => {
+        if (this.onTapCallback) {
           // event is already the data object with x, y, widgetId properties
           this.onTapCallback(event.x, event.y);
         }

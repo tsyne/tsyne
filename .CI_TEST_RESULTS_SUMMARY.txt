@@ -17,28 +17,32 @@ Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: mahjongg                     47       47        0        0    2|2|0
-Ported: pixeledit                    86       86        0        0    6|6|0
+Ported: pixeledit                    28       28        0        0    6|2|4
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   140      140        0        0    8|8|0
 Ported: sudoku                       27       27        0        0    2|2|0
+Phone: burning-ship                   0        0        0        0    1|0|1
 Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
+Phone: julia-set                      0        0        0        0    1|0|1
 Phone: mandelbrot                     9        9        0        0    1|1|0
-Phone: minefield                     16       16        0        0    1|1|0
+Phone: minefield                     22       22        0        0    1|1|0
+Phone: newton-fractal                 0        0        0        0    1|0|1
+Phone: tricorn                        0        0        0        0    1|0|1
 Larger: literate-programming        102      102        0        0    3|3|0
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2232     2201        0       31      163
+TOTAL                              2180     2149        0       31      167
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 41450ms (41.45s)
-Total ctx.wait() calls: 278
+Total wait time: 43400ms (43.40s)
+Total ctx.wait() calls: 234
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -63,6 +67,6 @@ Top 10 tests by wait time:
   Canvas Fill Color should fill circle with light gray like clock face
     └─ 1000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 2201 tests passed
+✅ SUCCESS: All 2149 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

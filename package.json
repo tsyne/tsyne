@@ -27,6 +27,10 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+<<<<<<< Updated upstream
     "@resvg/resvg-js": "^2.6.2"
+=======
+    "sharp": "^0.34.5"
+>>>>>>> Stashed changes
   }
 }

@@ -1631,6 +1631,16 @@ export class TestContext {
   }
 
   /**
+   * Click a widget at specific coordinates (for canvas/raster widgets)
+   * @param widgetId The widget ID to click
+   * @param x The X coordinate within the widget
+   * @param y The Y coordinate within the widget
+   */
+  async clickWidgetAt(widgetId: string, x: number, y: number): Promise<void> {
+    await this.bridge.send('clickWidget', { widgetId, x, y }, this.clickWidgetAt);
+  }
+
+  /**
    * Get table data for a table widget
    * Returns the raw table data (array of rows)
    */

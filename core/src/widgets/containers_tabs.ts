@@ -189,12 +189,12 @@ export class Accordion {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, items: Array<{title: string, builder: () => void}>) {
+  constructor(ctx: Context, items: Array<{title: string, open?: boolean, builder: () => void}>) {
     this.ctx = ctx;
     this.id = ctx.generateId('accordion');
 
     // Build each accordion item's content
-    const accordionItems: Array<{title: string, contentId: string}> = [];
+    const accordionItems: Array<{title: string, contentId: string, open?: boolean}> = [];
 
     for (const item of items) {
       ctx.pushContainer();
@@ -207,7 +207,8 @@ export class Accordion {
 
       accordionItems.push({
         title: item.title,
-        contentId: children[0]
+        contentId: children[0],
+        open: item.open
       });
     }
 

@@ -452,11 +452,17 @@ func (b *Bridge) handleCreateAccordion(msg Message) Response {
 	itemsInterface := msg.Payload["items"].([]interface{})
 
 	var accordionItems []*widget.AccordionItem
+	var openIndexes []int
 
-	for _, itemInterface := range itemsInterface {
+	for i, itemInterface := range itemsInterface {
 		itemData := itemInterface.(map[string]interface{})
 		title := itemData["title"].(string)
 		contentID := itemData["contentId"].(string)
+
+		// Check if this item should be open by default
+		if open, ok := itemData["open"].(bool); ok && open {
+			openIndexes = append(openIndexes, i)
+		}
 
 		b.mu.RLock()
 		content, exists := b.widgets[contentID]
@@ -469,6 +475,14 @@ func (b *Bridge) handleCreateAccordion(msg Message) Response {
 	}
 
 	accordion := widget.NewAccordion(accordionItems...)
+
+	// Allow multiple items to be open at once
+	accordion.MultiOpen = true
+
+	// Open items that should be open by default
+	for _, idx := range openIndexes {
+		accordion.Open(idx)
+	}
 
 	b.mu.Lock()
 	b.widgets[widgetID] = accordion

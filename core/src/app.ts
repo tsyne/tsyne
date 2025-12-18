@@ -674,7 +674,7 @@ export class App {
     return new Card(this.ctx, title, subtitle, builder);
   }
 
-  accordion(items: Array<{ title: string; builder: () => void }>): Accordion {
+  accordion(items: Array<{ title: string; open?: boolean; builder: () => void }>): Accordion {
     return new Accordion(this.ctx, items);
   }
 
@@ -778,6 +778,7 @@ export class App {
     strokeColor?: string;
     strokeWidth?: number;
     cornerRadius?: number;
+    onClick?: (x: number, y: number) => void;
   }): CanvasRectangle {
     return new CanvasRectangle(this.ctx, options);
   }

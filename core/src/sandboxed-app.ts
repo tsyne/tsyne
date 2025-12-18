@@ -109,7 +109,7 @@ export interface IApp {
   // Canvas
   canvasLine(x1: number, y1: number, x2: number, y2: number, options?: { strokeColor?: string; strokeWidth?: number }): CanvasLine;
   canvasCircle(options?: { x?: number; y?: number; x2?: number; y2?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasCircle;
-  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number }): CanvasRectangle;
+  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; onClick?: (x: number, y: number) => void }): CanvasRectangle;
   canvasText(text: string, options?: { color?: string; textSize?: number; bold?: boolean; italic?: boolean; monospace?: boolean; alignment?: 'leading' | 'center' | 'trailing' }): CanvasText;
   canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster;
   canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number }): CanvasLinearGradient;
@@ -431,7 +431,7 @@ export class SandboxedApp implements IApp {
     return new CanvasCircle(this.ctx, options);
   }
 
-  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number }): CanvasRectangle {
+  canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; onClick?: (x: number, y: number) => void }): CanvasRectangle {
     return new CanvasRectangle(this.ctx, options);
   }
 

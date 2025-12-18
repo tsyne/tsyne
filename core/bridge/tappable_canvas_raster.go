@@ -87,8 +87,18 @@ func (t *TappableCanvasRaster) SetPixels(pixels []byte) {
 	}
 }
 
-// SetPixel sets a single pixel at the given coordinates.
+// SetPixel sets a single pixel at the given coordinates and refreshes.
+// For setting many pixels, use SetPixelNoRefresh followed by Refresh().
 func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {
+	t.SetPixelNoRefresh(x, y, r, g, b, a)
+	fyne.Do(func() {
+		t.raster.Refresh()
+	})
+}
+
+// SetPixelNoRefresh sets a single pixel without triggering a refresh.
+// Call Refresh() after setting all pixels.
+func (t *TappableCanvasRaster) SetPixelNoRefresh(x, y int, r, g, b, a uint8) {
 	if x >= 0 && x < t.width && y >= 0 && y < t.height {
 		idx := (y*t.width + x) * 4
 		if idx+3 < len(t.pixelBuffer) {
@@ -96,11 +106,15 @@ func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {
 			t.pixelBuffer[idx+1] = g
 			t.pixelBuffer[idx+2] = b
 			t.pixelBuffer[idx+3] = a
-			fyne.Do(func() {
-				t.raster.Refresh()
-			})
 		}
 	}
+}
+
+// RefreshCanvas triggers a visual refresh of the canvas.
+func (t *TappableCanvasRaster) RefreshCanvas() {
+	fyne.Do(func() {
+		t.raster.Refresh()
+	})
 }
 
 // ResizeBuffer resizes the pixel buffer to the new dimensions.
@@ -296,6 +310,7 @@ func (t *TappableCanvasRaster) RequestFocus() {
 }
 
 // Ensure TappableCanvasRaster implements the required interfaces
+var _ fyne.Tappable = (*TappableCanvasRaster)(nil)
 var _ fyne.Focusable = (*TappableCanvasRaster)(nil)
 var _ desktop.Keyable = (*TappableCanvasRaster)(nil)
 var _ fyne.Scrollable = (*TappableCanvasRaster)(nil)

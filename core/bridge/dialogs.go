@@ -606,53 +606,55 @@ func (b *Bridge) handleShowColorPicker(msg Message) Response {
 		}
 	}
 
-	// Create the color picker dialog
-	picker := dialog.NewColorPicker(title, "Select a color", func(c color.Color) {
-		if c == nil {
-			// User cancelled
+	// Create and show the color picker dialog on the main thread
+	fyne.Do(func() {
+		picker := dialog.NewColorPicker(title, "Select a color", func(c color.Color) {
+			if c == nil {
+				// User cancelled
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": callbackID,
+						"cancelled":  true,
+					},
+				})
+				return
+			}
+
+			// Convert color to hex and RGBA
+			r, g, bl, a := c.RGBA()
+			// RGBA() returns 16-bit values (0-65535), convert to 8-bit (0-255)
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(bl >> 8)
+			a8 := uint8(a >> 8)
+
+			hexColor := fmt.Sprintf("#%02x%02x%02x", r8, g8, b8)
+
 			b.sendEvent(Event{
 				Type: "callback",
 				Data: map[string]interface{}{
 					"callbackId": callbackID,
-					"cancelled":  true,
+					"cancelled":  false,
+					"hex":        hexColor,
+					"r":          r8,
+					"g":          g8,
+					"b":          b8,
+					"a":          a8,
 				},
 			})
-			return
+		}, win)
+
+		// Set the advanced (full) picker mode for more color options
+		picker.Advanced = true
+
+		// Set initial color if provided
+		if nrgba, ok := initialColor.(color.NRGBA); ok {
+			picker.SetColor(nrgba)
 		}
 
-		// Convert color to hex and RGBA
-		r, g, bl, a := c.RGBA()
-		// RGBA() returns 16-bit values (0-65535), convert to 8-bit (0-255)
-		r8 := uint8(r >> 8)
-		g8 := uint8(g >> 8)
-		b8 := uint8(bl >> 8)
-		a8 := uint8(a >> 8)
-
-		hexColor := fmt.Sprintf("#%02x%02x%02x", r8, g8, b8)
-
-		b.sendEvent(Event{
-			Type: "callback",
-			Data: map[string]interface{}{
-				"callbackId": callbackID,
-				"cancelled":  false,
-				"hex":        hexColor,
-				"r":          r8,
-				"g":          g8,
-				"b":          b8,
-				"a":          a8,
-			},
-		})
-	}, win)
-
-	// Set the advanced (full) picker mode for more color options
-	picker.Advanced = true
-
-	// Set initial color if provided
-	if nrgba, ok := initialColor.(color.NRGBA); ok {
-		picker.SetColor(nrgba)
-	}
-
-	picker.Show()
+		picker.Show()
+	})
 
 	return Response{
 		ID:      msg.ID,

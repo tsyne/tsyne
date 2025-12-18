@@ -13,6 +13,18 @@ import (
 func (b *Bridge) handleClickWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
+	// Extract optional coordinates for click position
+	var clickX, clickY float32
+	if x, ok := msg.Payload["x"]; ok {
+		clickX = float32(toFloat64(x))
+	}
+	if y, ok := msg.Payload["y"]; ok {
+		clickY = float32(toFloat64(y))
+	}
+	pointEvent := &fyne.PointEvent{
+		Position: fyne.NewPos(clickX, clickY),
+	}
+
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
 	b.mu.RUnlock()
@@ -71,7 +83,7 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 			})
 		} else {
 			// External URL - invoke hyperlink callback
-			hyperlink.Tapped(&fyne.PointEvent{})
+			hyperlink.Tapped(pointEvent)
 		}
 
 		return Response{
@@ -80,21 +92,35 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 		}
 	} else if draggable, ok := obj.(*DraggableContainer); ok {
 		// Handle DraggableContainer clicks (images with both onClick and onDrag)
-		draggable.Tapped(&fyne.PointEvent{})
+		draggable.Tapped(pointEvent)
 		return Response{
 			ID:      msg.ID,
 			Success: true,
 		}
 	} else if clickable, ok := obj.(*ClickableContainer); ok {
 		// Handle ClickableContainer clicks (images with onClick only)
-		clickable.Tapped(&fyne.PointEvent{})
+		clickable.Tapped(pointEvent)
 		return Response{
 			ID:      msg.ID,
 			Success: true,
 		}
 	} else if desktopIcon, ok := obj.(*TsyneDraggableIcon); ok {
 		// Handle TsyneDraggableIcon clicks (desktop icons)
-		desktopIcon.Tapped(&fyne.PointEvent{})
+		desktopIcon.Tapped(pointEvent)
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
+	} else if tappableRaster, ok := obj.(*TappableCanvasRaster); ok {
+		// Handle TappableCanvasRaster clicks - use coordinates for precise pixel targeting
+		tappableRaster.Tapped(pointEvent)
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
+	} else if tappableRect, ok := obj.(*TappableCanvasRectangle); ok {
+		// Handle TappableCanvasRectangle clicks
+		tappableRect.Tapped(pointEvent)
 		return Response{
 			ID:      msg.ID,
 			Success: true,
@@ -113,7 +139,7 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 		// This allows tests to click on container IDs and have clicks propagate to interactive content
 		tappable := b.findFirstTappableChild(container)
 		if tappable != nil {
-			tappable.Tapped(&fyne.PointEvent{})
+			tappable.Tapped(pointEvent)
 			return Response{
 				ID:      msg.ID,
 				Success: true,
@@ -124,6 +150,13 @@ func (b *Bridge) handleClickWidget(msg Message) Response {
 				Success: false,
 				Error:   fmt.Sprintf("Container has no tappable children (id: %s)", widgetID),
 			}
+		}
+	} else if tappable, ok := obj.(fyne.Tappable); ok {
+		// Generic fallback for any widget implementing fyne.Tappable
+		tappable.Tapped(pointEvent)
+		return Response{
+			ID:      msg.ID,
+			Success: true,
 		}
 	} else {
 		// Get widget type for debugging

@@ -914,45 +914,51 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 		}
 	}
 
-	rect, ok := w.(*canvas.Rectangle)
-	if !ok {
+	// Handle both regular canvas.Rectangle and TappableCanvasRectangle
+	if rect, ok := w.(*canvas.Rectangle); ok {
+		fyne.DoAndWait(func() {
+			if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+				rect.FillColor = parseHexColorSimple(fillHex)
+			}
+			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+				rect.StrokeColor = parseHexColorSimple(strokeHex)
+			}
+			if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+				rect.StrokeWidth = float32(strokeWidth)
+			}
+			if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+				rect.CornerRadius = float32(radius)
+			}
+			if width, ok := msg.Payload["width"].(float64); ok {
+				if height, ok := msg.Payload["height"].(float64); ok {
+					rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+				}
+			}
+			rect.Refresh()
+		})
+	} else if tappable, ok := w.(*TappableCanvasRectangle); ok {
+		fyne.DoAndWait(func() {
+			if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+				tappable.SetFillColor(parseHexColorSimple(fillHex))
+			}
+			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+				tappable.SetStrokeColor(parseHexColorSimple(strokeHex))
+			}
+			if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+				tappable.SetStrokeWidth(float32(strokeWidth))
+			}
+			if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+				tappable.SetCornerRadius(float32(radius))
+			}
+			tappable.Refresh()
+		})
+	} else {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
 			Error:   "Widget is not a rectangle",
 		}
 	}
-
-	fyne.DoAndWait(func() {
-		// Update fill color if provided
-		if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-			rect.FillColor = parseHexColorSimple(fillHex)
-		}
-
-		// Update stroke color if provided
-		if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-			rect.StrokeColor = parseHexColorSimple(strokeHex)
-		}
-
-		// Update stroke width if provided
-		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
-			rect.StrokeWidth = float32(strokeWidth)
-		}
-
-		// Update corner radius if provided
-		if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
-			rect.CornerRadius = float32(radius)
-		}
-
-		// Update size if provided
-		if width, ok := msg.Payload["width"].(float64); ok {
-			if height, ok := msg.Payload["height"].(float64); ok {
-				rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
-			}
-		}
-
-		rect.Refresh()
-	})
 
 	return Response{
 		ID:      msg.ID,
@@ -1735,6 +1741,7 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 	}
 
 	// Handle pixel updates (format: [{x, y, r, g, b, a}, ...])
+	// Use SetPixelNoRefresh for all pixels, then refresh once at the end
 	if updates, ok := msg.Payload["updates"].([]interface{}); ok {
 		for _, u := range updates {
 			if update, ok := u.(map[string]interface{}); ok {
@@ -1745,9 +1752,11 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 				b := uint8(toInt(update["b"]))
 				a := uint8(toInt(update["a"]))
 
-				tappable.SetPixel(x, y, r, g, b, a)
+				tappable.SetPixelNoRefresh(x, y, r, g, b, a)
 			}
 		}
+		// Single refresh after all pixels are set
+		tappable.RefreshCanvas()
 	}
 
 	return Response{
