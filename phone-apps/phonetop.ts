@@ -227,11 +227,13 @@ class PhoneTop {
   async init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
     const portedAppsDir = path.join(process.cwd(), 'ported-apps');
+    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
 
     // Scan for apps
     const exampleApps = scanForApps(appDir);
     const portedApps = scanPortedApps(portedAppsDir);
-    const apps = [...exampleApps, ...portedApps].sort((a, b) => a.name.localeCompare(b.name));
+    const phoneApps = scanForApps(phoneAppsDir);
+    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Position apps in grid across pages
     let page = 0;
