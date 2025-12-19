@@ -15,6 +15,7 @@
 
 import { app } from '../../core/src';
 import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 import type { Label } from '../../core/src/widgets/display';
 import { palettes, paletteNames, burningShip } from '../fractal-utils';
@@ -32,6 +33,12 @@ export class BurningShipUI {
   private zoom = 0.8;
   private currentPalette = 1; // Fire palette default
   private pixelBuffer: Uint8Array;
+
+  // Debounce timer for resize
+  private resizeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Flag to prevent resize until initial render is complete
+  private initialRenderComplete = false;
 
   constructor() {
     this.pixelBuffer = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE * 4);
@@ -92,6 +99,15 @@ export class BurningShipUI {
     await this.updateCanvas();
   }
 
+  async pan(dx: number, dy: number): Promise<void> {
+    const minDim = Math.min(this.canvasWidth, this.canvasHeight);
+    const scale = 3 / (minDim * this.zoom);
+    this.centerX += dx * scale * 50;
+    this.centerY += dy * scale * 50;
+    this.render();
+    await this.updateCanvas();
+  }
+
   async handleTap(x: number, y: number): Promise<void> {
     const scale = 3 / (Math.min(this.canvasWidth, this.canvasHeight) * this.zoom);
     this.centerX += (x - this.canvasWidth / 2) * scale;
@@ -116,12 +132,94 @@ export class BurningShipUI {
     await this.updateCanvas();
   }
 
+  handleKey(key: string): void {
+    switch (key) {
+      case '+':
+      case '=':
+      case 'KP_Add':
+        this.zoomIn();
+        break;
+      case '-':
+      case 'KP_Subtract':
+        this.zoomOut();
+        break;
+      case 'Left':
+        this.pan(-1, 0);
+        break;
+      case 'Right':
+        this.pan(1, 0);
+        break;
+      case 'Up':
+        this.pan(0, -1);
+        break;
+      case 'Down':
+        this.pan(0, 1);
+        break;
+      case 'r':
+      case 'R':
+        this.reset();
+        break;
+      case 'p':
+      case 'P':
+      case ' ':
+        this.nextPalette();
+        break;
+    }
+  }
+
+  /**
+   * Handle canvas resize - debounced to avoid too many re-renders
+   */
+  private handleResize(width: number, height: number): void {
+    if (!this.initialRenderComplete) {
+      return;
+    }
+
+    if (!Number.isFinite(width) || !Number.isFinite(height) ||
+        width <= 0 || height <= 0 || width > 4000 || height > 4000) {
+      return;
+    }
+
+    if (this.resizeTimer) {
+      clearTimeout(this.resizeTimer);
+    }
+
+    const pendingWidth = width;
+    const pendingHeight = height;
+
+    this.resizeTimer = setTimeout(async () => {
+      const padding = 100;
+      const availableWidth = Math.max(100, Math.min(pendingWidth - 20, 1000));
+      const availableHeight = Math.max(100, Math.min(pendingHeight - padding, 800));
+
+      const newSize = Math.min(availableWidth, availableHeight);
+      const newWidth = Math.floor(newSize);
+      const newHeight = Math.floor(newSize);
+
+      if (Math.abs(newWidth - this.canvasWidth) > 50 ||
+          Math.abs(newHeight - this.canvasHeight) > 50) {
+        this.canvasWidth = newWidth;
+        this.canvasHeight = newHeight;
+
+        this.pixelBuffer = new Uint8Array(this.canvasWidth * this.canvasHeight * 4);
+
+        if (this.canvas) {
+          await this.canvas.resize(this.canvasWidth, this.canvasHeight);
+        }
+
+        this.render();
+        await this.updateCanvas();
+      }
+    }, 500);
+  }
+
   build(a: App): void {
-    a.window({ title: 'Burning Ship', width: 400, height: 450 }, (win) => {
+    a.window({ title: 'Burning Ship', width: 400, height: 520 }, (win) => {
       win.setContent(() => {
         a.vbox(() => {
           a.center(() => {
             this.canvas = a.tappableCanvasRaster(CANVAS_SIZE, CANVAS_SIZE, {
+              onKeyDown: (key) => this.handleKey(key),
               onTap: (x, y) => this.handleTap(x, y),
               onScroll: (dx, dy, x, y) => this.handleScroll(dx, dy, x, y)
             });
@@ -133,12 +231,25 @@ export class BurningShipUI {
             a.button('Zoom +').withId('zoom-in').onClick(() => this.zoomIn());
             a.button('Zoom -').withId('zoom-out').onClick(() => this.zoomOut());
             a.button('Reset').withId('reset').onClick(() => this.reset());
+          });
+          a.hbox(() => {
+            a.button('← Left').withId('pan-left').onClick(() => this.pan(-1, 0));
+            a.button('↑ Up').withId('pan-up').onClick(() => this.pan(0, -1));
+            a.button('↓ Down').withId('pan-down').onClick(() => this.pan(0, 1));
+            a.button('→ Right').withId('pan-right').onClick(() => this.pan(1, 0));
+          });
+          a.hbox(() => {
             a.button('Palette').withId('next-palette').onClick(() => this.nextPalette());
           });
         });
       });
       win.show();
-      setTimeout(() => { this.render(); this.updateCanvas(); }, 100);
+      setTimeout(async () => {
+        this.render();
+        await this.updateCanvas();
+        win.onResize((width, height) => this.handleResize(width, height));
+        this.initialRenderComplete = true;
+      }, 100);
     });
   }
 }

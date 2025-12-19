@@ -2,7 +2,7 @@
  * Shared utilities for clock-related apps (clock, timer, stopwatch, alarms)
  */
 
-import { styles, FontStyle } from '../../../../../../../../../../../../../../../core/src';
+import { styles, FontStyle } from '../core/src';
 import type { CanvasLine } from '../core/src/widgets/canvas';
 
 // Define shared clock styles

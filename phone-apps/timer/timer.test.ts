@@ -2,9 +2,10 @@
  * TsyneTest UI tests for Timer app
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import * as path from 'path';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createTimerApp } from './timer';
-import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
+import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 
 describe('Timer App', () => {
   let tsyneTest: TsyneTest;
@@ -94,5 +95,25 @@ describe('Timer App', () => {
     // Reset
     await ctx.getByID('timer-reset').click();
     await ctx.getByID('timer-display').within(500).shouldBe('00:00:00');
+  });
+
+  test('should render timer UI - screenshot', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createTimerApp(app, clock, notifications, lifecycle);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Add some time for a nice screenshot
+    await ctx.getByID('timer-add-5').click();
+    await ctx.getByID('timer-display').within(500).shouldExist();
+
+    // Take screenshot if requested
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'timer.png');
+      await tsyneTest.screenshot(screenshotPath);
+      console.error(`Screenshot saved: ${screenshotPath}`);
+    }
   });
 });

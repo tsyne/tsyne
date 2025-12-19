@@ -2,9 +2,10 @@
  * TsyneTest UI tests for Stopwatch app
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import * as path from 'path';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createStopwatchApp } from './stopwatch';
-import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
+import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 
 describe('Stopwatch App', () => {
   let tsyneTest: TsyneTest;
@@ -93,5 +94,25 @@ describe('Stopwatch App', () => {
     // Reset
     await ctx.getByID('stopwatch-reset').click();
     await ctx.getByID('stopwatch-display').within(500).shouldBe('00:00.00');
+  });
+
+  test('should render stopwatch UI - screenshot', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createStopwatchApp(app, clock, notifications, lifecycle);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Wait for UI to be fully rendered
+    await ctx.getByID('stopwatch-display').within(500).shouldExist();
+    await ctx.getByID('stopwatch-startstop').within(500).shouldExist();
+
+    // Take screenshot if requested
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'stopwatch.png');
+      await tsyneTest.screenshot(screenshotPath);
+      console.error(`Screenshot saved: ${screenshotPath}`);
+    }
   });
 });

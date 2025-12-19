@@ -426,10 +426,12 @@ test_phone_app() {
 
 # Test each phone app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
+test_phone_app "alarms" || true
 test_phone_app "audio-recorder" || true
 test_phone_app "burning-ship" || true
 test_phone_app "calendar" || true
 test_phone_app "camera" || true
+test_phone_app "clock" || true
 test_phone_app "contacts" || true
 test_phone_app "dialer" || true
 test_phone_app "eliza" || true
@@ -440,6 +442,8 @@ test_phone_app "mandelbrot" || true
 test_phone_app "minefield" || true
 test_phone_app "music-player" || true
 test_phone_app "newton-fractal" || true
+test_phone_app "stopwatch" || true
+test_phone_app "timer" || true
 test_phone_app "tricorn" || true
 test_phone_app "weather" || true
 set -e  # Re-enable exit-on-error

@@ -18,9 +18,9 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../../../../../../../../../../../../../../../../../../../../../core/src';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
 import {
   IClockService,
   INotificationService,
@@ -29,7 +29,7 @@ import {
   MockNotificationService,
   StandaloneAppLifecycle,
   Alarm,
-} from './services';
+} from '../services';
 
 /**
  * Alarms UI class - manages alarms

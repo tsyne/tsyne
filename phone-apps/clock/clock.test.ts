@@ -2,9 +2,10 @@
  * TsyneTest UI tests for Clock app
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import * as path from 'path';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createClockApp } from './clock';
-import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
+import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 
 describe('Clock App', () => {
   let tsyneTest: TsyneTest;
@@ -66,5 +67,28 @@ describe('Clock App', () => {
     const text = await timeDisplay.getText();
     // Should contain "3:00" or "15:00" depending on locale
     expect(text).toMatch(/3:00|15:00/);
+  });
+
+  test('should render clock UI - screenshot', async () => {
+    // Set a nice time for the screenshot: 10:10:30
+    clock.setTime(new Date(2025, 0, 15, 10, 10, 30));
+
+    const testApp = await tsyneTest.createApp((app) => {
+      createClockApp(app, clock, notifications, lifecycle);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Wait for UI to be fully rendered
+    await ctx.getByID('time-display').within(500).shouldExist();
+    await ctx.getByID('date-display').within(500).shouldExist();
+
+    // Take screenshot if requested
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'clock.png');
+      await tsyneTest.screenshot(screenshotPath);
+      console.error(`Screenshot saved: ${screenshotPath}`);
+    }
   });
 });

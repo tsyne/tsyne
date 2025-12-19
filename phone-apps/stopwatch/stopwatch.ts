@@ -18,12 +18,12 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../../../../../../../../../../../../../../../../../../../../../../../core/src';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
-import type { Label } from '../core/src/widgets/display';
-import type { Button } from '../core/src/widgets/inputs';
-import type { CanvasLine } from '../core/src/widgets/canvas';
+import { app } from '../../core/src';
+import type { App } from '../../core/src/app';
+import type { Window } from '../../core/src/window';
+import type { Label } from '../../core/src/widgets/display';
+import type { Button } from '../../core/src/widgets/inputs';
+import type { CanvasLine } from '../../core/src/widgets/canvas';
 import {
   IClockService,
   INotificationService,
@@ -31,7 +31,7 @@ import {
   MockClockService,
   MockNotificationService,
   StandaloneAppLifecycle,
-} from './services';
+} from '../services';
 import {
   STOPWATCH_SIZE,
   STOPWATCH_CENTER,
@@ -39,7 +39,7 @@ import {
   calcStopwatchHandLine,
   calcSecondMarkerLine,
   formatStopwatchTime,
-} from './clock-shared';
+} from '../clock-shared';
 
 /**
  * Stopwatch UI class - stopwatch with laps

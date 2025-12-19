@@ -2,9 +2,10 @@
  * TsyneTest UI tests for Alarms app
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import * as path from 'path';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createAlarmsApp } from './alarms';
-import { MockClockService, MockNotificationService, DesktopAppLifecycle } from './services';
+import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 
 describe('Alarms App', () => {
   let tsyneTest: TsyneTest;
@@ -66,5 +67,24 @@ describe('Alarms App', () => {
     // Toggle and delete buttons should exist
     await ctx.getByID('alarm-0-toggle').within(500).shouldExist();
     await ctx.getByID('alarm-0-delete').within(500).shouldExist();
+  });
+
+  test('should render alarms UI - screenshot', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createAlarmsApp(app, clock, notifications, lifecycle);
+    });
+
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Wait for UI to be fully rendered with default alarms
+    await ctx.getByID('btn-add-alarm').within(500).shouldExist();
+
+    // Take screenshot if requested
+    if (process.env.TAKE_SCREENSHOTS === '1') {
+      const screenshotPath = path.join(__dirname, 'screenshots', 'alarms.png');
+      await tsyneTest.screenshot(screenshotPath);
+      console.error(`Screenshot saved: ${screenshotPath}`);
+    }
   });
 });
