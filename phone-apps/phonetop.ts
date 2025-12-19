@@ -858,56 +858,99 @@ class PhoneTop {
     // Store original resources to restore after content build
     const originalResources = this.a.resources;
 
-    this.win.setContent(() => {
-      // Main layout: app content fills space, keyboard at bottom
-      this.a.vbox(() => {
-        // App content with header
-        this.a.max(() => {
-          // Restore the app's resource scope and layout scale for content building
-          // Use orientation-aware layout scale
-          (this.a as any).resources = runningApp.scopedResources;
-          this.a.getContext().setResourceScope(runningApp.resourceScope);
-          this.a.getContext().setLayoutScale(this.getLayoutScale());
+    this.win.setContent(async () => {
+      // Set up resource scope for app content
+      (this.a as any).resources = runningApp.scopedResources;
+      this.a.getContext().setResourceScope(runningApp.resourceScope);
+      this.a.getContext().setLayoutScale(this.getLayoutScale());
 
-          this.a.vbox(() => {
-            // Header with back button, quit button, and app name
-            this.a.hbox(() => {
-              this.a.button('← Home').onClick(() => {
-                this.hideKeyboard();  // Hide keyboard when going home
-                this.goHome();
-              });
-              this.a.button('✕ Quit').onClick(() => {
-                this.hideKeyboard();  // Hide keyboard when quitting
-                if (appId) this.quitApp(appId);
-              });
-              this.a.spacer();
-              this.a.label(runningApp.adapter.title);
-              this.a.spacer();
-            });
-
-            this.a.separator();
-
-            // App content fills the rest
-            this.a.max(() => {
-              contentBuilder();
-            });
+      // Create ONE top-level vbox to hold everything
+      const outerVbox = this.a.vbox(() => {
+        // Header with back button, quit button, menu button, and app name
+        this.a.hbox(() => {
+          this.a.button('← Home').onClick(() => {
+            this.hideKeyboard();
+            this.goHome();
+          });
+          this.a.button('✕ Quit').onClick(() => {
+            this.hideKeyboard();
+            if (appId) this.quitApp(appId);
           });
 
-          // Restore original resources and layout scale after content build
-          (this.a as any).resources = originalResources;
-          this.a.getContext().setResourceScope(null);
-          this.a.getContext().setLayoutScale(1.0);
-        });
+          // Menu button if app has menus
+          const menuDef = runningApp.adapter.menuDefinition;
+          if (menuDef && menuDef.length > 0) {
+            this.a.button('☰').onClick(async () => {
+              // Build menu options for form dialog
+              const allOptions: string[] = [];
+              const allCallbacks: Map<string, () => void> = new Map();
 
-        // Virtual keyboard (hidden by default, shown on Entry focus)
+              for (const menu of menuDef) {
+                for (const item of menu.items) {
+                  if (!item.isSeparator && item.label) {
+                    const label = `${menu.label} → ${item.label}`;
+                    allOptions.push(label);
+                    const callback = item.onSelected || item.onClick;
+                    if (callback) {
+                      allCallbacks.set(label, callback);
+                    }
+                  }
+                }
+              }
+
+              // Show as selection dialog
+              if (this.win && allOptions.length > 0) {
+                const result = await this.win.showForm('Menu', [{
+                  name: 'action',
+                  type: 'select',
+                  label: 'Action',
+                  options: allOptions
+                }]);
+
+                if (result?.submitted && result.values?.action) {
+                  const selected = result.values.action as string;
+                  const callback = allCallbacks.get(selected);
+                  if (callback) callback();
+                }
+              }
+            });
+          }
+
+          this.a.spacer();
+          this.a.label(runningApp.adapter.title);
+          this.a.spacer();
+        });
+        this.a.separator();
+      });
+
+      // Build app content asynchronously, capturing created widgets
+      this.a.getContext().pushContainer();
+      await contentBuilder();
+      const appWidgetIds = this.a.getContext().popContainer();
+
+      // Add app widgets to the outer vbox
+      for (const childId of appWidgetIds) {
+        this.a.getContext().bridge.send('containerAdd', {
+          containerId: outerVbox.id,
+          childId
+        });
+      }
+
+      // Add keyboard (hidden by default)
+      outerVbox.add(() => {
         this.keyboardContainer = this.a.vbox(() => {
           this.a.separator();
           if (this.keyboardController) {
             buildKeyboard(this.a, this.keyboardController as any);
           }
         });
-        this.keyboardContainer.hide();  // Start hidden
+        this.keyboardContainer.hide();
       });
+
+      // Restore original resources and layout scale
+      (this.a as any).resources = originalResources;
+      this.a.getContext().setResourceScope(null);
+      this.a.getContext().setLayoutScale(1.0);
     });
   }
 

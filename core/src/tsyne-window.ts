@@ -52,6 +52,8 @@ export interface ITsyneWindow {
   showFileSave(filename?: string): Promise<string | null>;
   showFolderOpen(): Promise<string | null>;
   showEntryDialog(title: string, message: string): Promise<string | null>;
+  showColorPicker(title?: string, initialColor?: string): Promise<{ r: number; g: number; b: number; a: number } | null>;
+  showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null>;
 }
 
 /**
@@ -247,6 +249,14 @@ export class InnerWindowAdapter implements ITsyneWindow {
   async showEntryDialog(title: string, message: string): Promise<string | null> {
     return this.parentWindow.showEntryDialog(title, message);
   }
+
+  async showColorPicker(title?: string, initialColor?: string): Promise<{ r: number; g: number; b: number; a: number } | null> {
+    return this.parentWindow.showColorPicker(title, initialColor);
+  }
+
+  async showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null> {
+    return this.parentWindow.showForm(title, fields);
+  }
 }
 
 /**
@@ -262,6 +272,10 @@ export class StackPaneAdapter implements ITsyneWindow {
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
   private onShow?: (adapter: StackPaneAdapter) => void;
   private onClose?: (adapter: StackPaneAdapter) => void;
+  private _menuDefinition: Array<{
+    label: string;
+    items: Array<{ label: string; onClick?: () => void; onSelected?: () => void; isSeparator?: boolean }>;
+  }> | null = null;
 
   constructor(
     ctx: Context,
@@ -305,6 +319,16 @@ export class StackPaneAdapter implements ITsyneWindow {
    */
   get contentBuilder(): (() => void) | null {
     return this._contentBuilder;
+  }
+
+  /**
+   * Get the captured menu definition (for phone-style menu rendering)
+   */
+  get menuDefinition(): Array<{
+    label: string;
+    items: Array<{ label: string; onClick?: () => void; onSelected?: () => void; isSeparator?: boolean }>;
+  }> | null {
+    return this._menuDefinition;
   }
 
   /**
@@ -356,11 +380,12 @@ export class StackPaneAdapter implements ITsyneWindow {
     return this;
   }
 
-  async setMainMenu(_menuDefinition: Array<{
+  async setMainMenu(menuDefinition: Array<{
     label: string;
-    items: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
+    items: Array<{ label: string; onClick?: () => void; onSelected?: () => void; isSeparator?: boolean }>;
   }>): Promise<void> {
-    // Menus not displayed in stack pane mode
+    // Store menu for phonetop to render as dropdown
+    this._menuDefinition = menuDefinition;
   }
 
   // === Dialogs - delegate to parent window ===
@@ -391,6 +416,14 @@ export class StackPaneAdapter implements ITsyneWindow {
 
   async showEntryDialog(title: string, message: string): Promise<string | null> {
     return this.parentWindow.showEntryDialog(title, message);
+  }
+
+  async showColorPicker(title?: string, initialColor?: string): Promise<{ r: number; g: number; b: number; a: number } | null> {
+    return this.parentWindow.showColorPicker(title, initialColor);
+  }
+
+  async showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null> {
+    return this.parentWindow.showForm(title, fields);
   }
 }
 
