@@ -10,6 +10,7 @@ This directory contains phone-style applications built with Tsyne, demonstrating
 | **contacts.ts** | Contact manager with search and edit | `ContactsService` |
 | **clock.ts** | Clock with alarms, timer, and stopwatch | `ClockService`, `NotificationService` |
 | **notes.ts** | Simple note-taking app | `StorageService` |
+| **pomodoro.ts** | Pomodoro productivity timer | `NotificationService` (built-in) |
 | **settings.ts** | System settings (Wi-Fi, Bluetooth, theme) | `SettingsService` |
 
 ## Services
