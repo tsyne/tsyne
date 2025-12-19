@@ -15,6 +15,7 @@ This directory contains phone-style applications built with Tsyne, demonstrating
 | **notes.ts** | Simple note-taking app with create/edit/delete | Preferences (built-in) |
 | **pixyne.ts** | Photo manager with marking and batch deletion | Preferences (built-in) |
 | **pomodoro.ts** | Pomodoro productivity timer | `NotificationService` (built-in) |
+| **snowflake.ts** | Festive snowflake visualization with animation | Preferences (built-in) |
 | **settings.ts** | System settings (Wi-Fi, Bluetooth, theme) | `SettingsService` |
 
 ## Services
