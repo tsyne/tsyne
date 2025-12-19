@@ -89,16 +89,30 @@ Progressive learning examples from basic to advanced concepts.
 |-------------|-------------|-------------|------------|
 | [**todomvc.ts**](todomvc.ts) | Full TodoMVC implementation with MVC pattern | Original | [📷](screenshots/todomvc.png) |
 | [**todomvc-when.ts**](todomvc-when.ts) | TodoMVC with declarative when() visibility | Original | |
-| [**calculator.ts**](calculator.ts) | Calculator with full operations | Original | [📷](screenshots/calculator.png) |
-| [**calculator-accessible.ts**](calculator-accessible.ts) | Accessible calculator with screen reader | Original | |
-| [**calculator-fully-accessible.ts**](calculator-fully-accessible.ts) | Fully accessible calculator | Original | |
 | [**text-editor.ts**](text-editor.ts) | Text editor with file operations | Original | |
-| [**kanban-board.ts**](kanban-board.ts) | Kanban-style task board | Original | |
-| [**clipboard-manager.ts**](clipboard-manager.ts) | Clipboard history manager | Original | |
-| [**reminder-app.ts**](reminder-app.ts) | Reminder/notification app | Original | |
-| [**appointment-scheduler.ts**](appointment-scheduler.ts) | Appointment scheduling app | Original | |
-| [**diagram-editor.ts**](diagram-editor.ts) | Diagram/flowchart editor | Original | |
-| [**whiteboard.ts**](whiteboard.ts) | Collaborative whiteboard | Original | |
+
+### Calculator Variants
+
+Five calculator implementations demonstrating different aspects of Tsyne development:
+
+| Calculator | Purpose | Key Features | Screenshot |
+|------------|---------|--------------|------------|
+| [**calculator.ts**](calculator.ts) | Simple intro example | Basic 4-function arithmetic (+, -, ×, ÷), minimal code (~110 lines) | [📷](screenshots/calculator.png) |
+| [**calculator-accessible.ts**](calculator-accessible.ts) | Accessibility basics | TTS toggle, screen reader support | |
+| [**calculator-fully-accessible.ts**](calculator-fully-accessible.ts) | Comprehensive accessibility | TTS, keyboard shortcuts (0-9, +, -, *, /, =, C), high contrast mode, font size controls, calculation history, ARIA labels | |
+| [**full-calculator.ts**](full-calculator.ts) | Programmer's calculator | Multi-base (dec/hex/bin/oct), bitwise ops (AND, OR, XOR, NOT, shifts), memory (MC/MR/M±), inspired by [ChrysaLisp](https://github.com/vygr/ChrysaLisp) | [📷](screenshots/full-calculator.png) |
+| [**../test-apps/calculator-advanced/**](../test-apps/calculator-advanced/) | Testing patterns demo | IoC/DI, separated logic (`calculator-logic.ts`), unit-testable business logic, integration tests | |
+
+### Other Productivity Apps
+
+| Application | Description | Attribution |
+|-------------|-------------|-------------|
+| [**kanban-board.ts**](kanban-board.ts) | Kanban-style task board | Original |
+| [**clipboard-manager.ts**](clipboard-manager.ts) | Clipboard history manager | Original |
+| [**reminder-app.ts**](reminder-app.ts) | Reminder/notification app | Original |
+| [**appointment-scheduler.ts**](appointment-scheduler.ts) | Appointment scheduling app | Original |
+| [**diagram-editor.ts**](diagram-editor.ts) | Diagram/flowchart editor | Original |
+| [**whiteboard.ts**](whiteboard.ts) | Collaborative whiteboard | Original |
 
 ### Tools
 
