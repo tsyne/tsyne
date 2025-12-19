@@ -4,11 +4,11 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                524      524        0        0  30|30|0
+Core                                535      535        0        0  31|31|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
-Examples: GUI                       366      345        0       21  74|68|0
+Examples: GUI                       392      371        0       21  75|69|0
 Ported: 3d-cube                     392      392        0        0    3|3|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
@@ -17,7 +17,7 @@ Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: mahjongg                     47       47        0        0    2|2|0
-Ported: pixeledit                    92       85        7        0    6|5|1
+Ported: pixeledit                    92       84        8        0    6|4|2
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   140      140        0        0    8|8|0
@@ -38,7 +38,7 @@ Larger: literate-programming        102      102        0        0    3|3|0
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2288     2250        7       31      171
+TOTAL                              2325     2286        8       31      173
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
@@ -71,6 +71,6 @@ Top 10 tests by wait time:
   Tricorn Explorer should cycle palettes
     └─ 2000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 7 tests failed
+❌ FAILED: 8 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

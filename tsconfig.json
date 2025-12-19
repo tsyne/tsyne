@@ -17,5 +17,5 @@
   },
   "include": [
     "core/src/**/*", "cli/**/*"],
-  "exclude": ["node_modules", "dist", "examples", "test-apps", "bridge"]
+  "exclude": ["node_modules", "dist", "examples", "test-apps", "bridge", "**/*.test.ts", "**/__tests__"]
 }

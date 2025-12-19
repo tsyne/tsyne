@@ -559,19 +559,25 @@ class PhoneTop {
    * Create the folder contents view (grid of apps)
    */
   private createFolderView(folder: Folder) {
-    // Apps grid inside folder - match createAppGrid structure
-    this.a.grid(this.cols, () => {
-      for (let row = 0; row < this.rows; row++) {
-        for (let col = 0; col < this.cols; col++) {
-          const index = row * this.cols + col;
-          if (index < folder.apps.length) {
-            this.createAppIcon(folder.apps[index]);
-          } else {
-            // Empty cell
-            this.a.label('');
+    // Wrap grid in scroll for proper sizing within border center
+    this.a.scroll(() => {
+      this.a.grid(this.cols, () => {
+        // Show all apps in folder, using multiple "pages" worth of rows if needed
+        const totalApps = folder.apps.length;
+        const rowsNeeded = Math.ceil(totalApps / this.cols);
+
+        for (let row = 0; row < rowsNeeded; row++) {
+          for (let col = 0; col < this.cols; col++) {
+            const index = row * this.cols + col;
+            if (index < totalApps) {
+              this.createAppIcon(folder.apps[index]);
+            } else {
+              // Empty cell to complete the row
+              this.a.label('');
+            }
           }
         }
-      }
+      });
     });
   }
 
