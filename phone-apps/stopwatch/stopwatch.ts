@@ -141,7 +141,7 @@ export class StopwatchUI {
     this.a.vbox(() => {
       // Analog stopwatch dial
       this.a.center(() => {
-        this.a.stack(() => {
+        this.a.canvasStack(() => {
           // Sizing rectangle (transparent) to give the stack a minimum size
           this.a.canvasRectangle({
             width: STOPWATCH_SIZE, height: STOPWATCH_SIZE,

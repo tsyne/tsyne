@@ -393,14 +393,74 @@ func (b *Bridge) handleCreateStack(msg Message) Response {
 		}
 	}
 
-	// Use NewWithoutLayout for Stack - this allows canvas objects to keep their
-	// absolute Position1/Position2 values. NewStack would call Move(0,0) and Resize()
-	// which corrupts canvas.Line coordinates.
-	stackContainer := container.NewWithoutLayout(children...)
+	// Use NewStack to properly resize children to fill the container.
+	// This is needed for nested layouts where children (like scroll) have MinSize(0,0).
+	// NOTE: This breaks canvas.Line absolute positioning in stacks - clock app needs
+	// a different approach (e.g., use container.NewWithoutLayout via a separate widget type).
+	stackContainer := container.NewStack(children...)
 
 	b.mu.Lock()
 	b.widgets[widgetID] = stackContainer
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "stack", Text: ""}
+	for _, childIDInterface := range childIDs {
+		if childID, ok := childIDInterface.(string); ok {
+			b.childToParent[childID] = widgetID
+		}
+	}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+// handleCreateCanvasStack creates a stack container specifically for canvas primitives.
+// Unlike regular stack (which uses NewStack and resizes children), this uses NewWithoutLayout
+// to preserve absolute Position1/Position2 coordinates for canvas.Line, canvas.Circle, etc.
+func (b *Bridge) handleCreateCanvasStack(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	childIDs, ok := msg.Payload["childIds"].([]interface{})
+
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "childIds must be an array",
+		}
+	}
+
+	var children []fyne.CanvasObject
+
+	b.mu.RLock()
+	for _, childIDInterface := range childIDs {
+		childID, ok := childIDInterface.(string)
+		if !ok {
+			continue
+		}
+		child, exists := b.widgets[childID]
+		if exists {
+			children = append(children, child)
+		}
+	}
+	b.mu.RUnlock()
+
+	if len(children) == 0 {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "No valid child widgets found",
+		}
+	}
+
+	// Use NewWithoutLayout for canvas stacks - this preserves absolute Position1/Position2
+	// values for canvas primitives like Line, Circle, etc.
+	stackContainer := container.NewWithoutLayout(children...)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = stackContainer
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasstack", Text: ""}
 	for _, childIDInterface := range childIDs {
 		if childID, ok := childIDInterface.(string); ok {
 			b.childToParent[childID] = widgetID

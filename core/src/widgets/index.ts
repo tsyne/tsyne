@@ -13,6 +13,7 @@ export {
   HBox,
   HBoxOptions,
   Stack,
+  CanvasStack,
   Scroll,
   Grid,
   GridOptions,

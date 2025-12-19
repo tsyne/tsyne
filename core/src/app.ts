@@ -61,6 +61,7 @@ import {
   Scroll,
   Split,
   Stack,
+  CanvasStack,
   VBox,
   VBoxOptions,
   // Containers - Organizational
@@ -389,6 +390,18 @@ export class App {
    */
   stack(builder: () => void): Stack {
     return new Stack(this.ctx, builder);
+  }
+
+  /**
+   * Create a canvas stack container specifically for layering canvas primitives.
+   * Unlike regular stack (which resizes children), this preserves absolute
+   * Position coordinates for canvas.Line, canvas.Circle, etc.
+   * Use this for clock faces, analog gauges, and other canvas-based graphics.
+   * @param builder - Function to create canvas child widgets
+   * @returns CanvasStack container
+   */
+  canvasStack(builder: () => void): CanvasStack {
+    return new CanvasStack(this.ctx, builder);
   }
 
   /**

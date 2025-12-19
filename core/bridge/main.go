@@ -57,6 +57,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateHBox(msg)
 	case "createStack":
 		return b.handleCreateStack(msg)
+	case "createCanvasStack":
+		return b.handleCreateCanvasStack(msg)
 	case "createCheckbox":
 		return b.handleCreateCheckbox(msg)
 	case "createSelect":

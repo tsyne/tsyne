@@ -85,36 +85,40 @@ export class AlarmsUI {
   buildUI(win: Window): void {
     this.window = win;
 
-    this.a.vbox(() => {
-      this.a.hbox(() => {
-        this.a.label('Alarms');
-        this.a.spacer();
-        this.a.button('+').onClick(() => this.handleAddAlarm()).withId('btn-add-alarm');
-      });
-
-      this.a.separator();
-
-      this.a.scroll(() => {
+    this.a.border({
+      top: () => {
         this.a.vbox(() => {
-          const alarms = this.clock.getAlarms();
+          this.a.hbox(() => {
+            this.a.label('Alarms');
+            this.a.spacer();
+            this.a.button('+').onClick(() => this.handleAddAlarm()).withId('btn-add-alarm');
+          });
+          this.a.separator();
+        });
+      },
+      center: () => {
+        const alarms = this.clock.getAlarms();
 
-          if (alarms.length === 0) {
-            this.a.label('No alarms set').withId('no-alarms-label');
-          } else {
-            alarms.forEach((alarm, index) => {
-              this.a.hbox(() => {
-                this.a.checkbox('', () => this.handleToggleAlarm(alarm)).withId(`alarm-${index}-toggle`).setChecked(alarm.enabled);
-                this.a.vbox(() => {
-                  this.a.label(alarm.time).withId(`alarm-${index}-time`);
-                  this.a.label(alarm.label).withId(`alarm-${index}-label`);
+        if (alarms.length === 0) {
+          this.a.label('No alarms set').withId('no-alarms-label');
+        } else {
+          this.a.scroll(() => {
+            this.a.vbox(() => {
+              alarms.forEach((alarm, index) => {
+                this.a.hbox(() => {
+                  this.a.checkbox('', () => this.handleToggleAlarm(alarm)).withId(`alarm-${index}-toggle`).setChecked(alarm.enabled);
+                  this.a.vbox(() => {
+                    this.a.label(alarm.time).withId(`alarm-${index}-time`);
+                    this.a.label(alarm.label).withId(`alarm-${index}-label`);
+                  });
+                  this.a.spacer();
+                  this.a.button('Del').onClick(() => this.handleDeleteAlarm(alarm)).withId(`alarm-${index}-delete`);
                 });
-                this.a.spacer();
-                this.a.button('Del').onClick(() => this.handleDeleteAlarm(alarm)).withId(`alarm-${index}-delete`);
               });
             });
-          }
-        });
-      });
+          });
+        }
+      },
     });
   }
 }
@@ -130,7 +134,7 @@ export function createAlarmsApp(
 ): AlarmsUI {
   const ui = new AlarmsUI(a, clock, notifications);
 
-  a.window({ title: 'Alarms' }, (win: Window) => {
+  a.window({ title: 'Alarms', width: 300, height: 400 }, (win: Window) => {
     win.setCloseIntercept(() => {
       ui.stop();
       lifecycle.requestClose();

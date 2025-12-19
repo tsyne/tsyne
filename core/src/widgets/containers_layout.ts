@@ -30,6 +30,34 @@ export class Stack {
 }
 
 /**
+ * Canvas Stack container - stacks canvas primitives on top of each other
+ * Unlike regular Stack, this preserves absolute Position coordinates for
+ * canvas.Line, canvas.Circle, etc. Use for clock faces, gauges, etc.
+ */
+export class CanvasStack {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasstack');
+
+    // Push a new container context
+    ctx.pushContainer();
+
+    // Execute the builder function to collect children
+    builder();
+
+    // Pop the container and get the children
+    const childIds = ctx.popContainer();
+
+    // Create the CanvasStack with the children
+    ctx.bridge.send('createCanvasStack', { id: this.id, childIds });
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
  * Scroll container
  */
 export class Scroll {

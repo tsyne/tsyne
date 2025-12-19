@@ -119,7 +119,7 @@ export class ClockUI {
     this.a.vbox(() => {
       // Analog clock face
       this.a.center(() => {
-        this.a.stack(() => {
+        this.a.canvasStack(() => {
           // Sizing rectangle (transparent) to give the stack a minimum size
           this.a.canvasRectangle({
             width: CLOCK_SIZE, height: CLOCK_SIZE,
