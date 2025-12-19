@@ -12,7 +12,7 @@ This directory contains phone-style applications built with Tsyne, demonstrating
 | **disk-tree.ts** | Visualize disk usage by folders and files | File system (built-in) |
 | **image-resizer.ts** | Batch image resizing with custom dimensions | File system (built-in) |
 | **nomad.ts** | Time zone conversion and multi-timezone tracking | Time system (built-in) |
-| **notes.ts** | Simple note-taking app | `StorageService` |
+| **notes.ts** | Simple note-taking app with create/edit/delete | Preferences (built-in) |
 | **pomodoro.ts** | Pomodoro productivity timer | `NotificationService` (built-in) |
 | **settings.ts** | System settings (Wi-Fi, Bluetooth, theme) | `SettingsService` |
 
