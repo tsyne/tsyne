@@ -442,6 +442,11 @@ test_phone_app "mandelbrot" || true
 test_phone_app "minefield" || true
 test_phone_app "music-player" || true
 test_phone_app "newton-fractal" || true
+test_phone_app "notes" || true
+test_phone_app "pixyne" || true
+test_phone_app "snowflake" || true
+test_phone_app "sonic3" || true
+test_phone_app "sshterm" || true
 test_phone_app "stopwatch" || true
 test_phone_app "timer" || true
 test_phone_app "tricorn" || true

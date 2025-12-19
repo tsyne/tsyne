@@ -9,7 +9,15 @@ This directory contains phone-style applications built with Tsyne, demonstrating
 | **dialer.ts** | Phone dialer with keypad and call log | `TelephonyService`, `ContactsService` |
 | **contacts.ts** | Contact manager with search and edit | `ContactsService` |
 | **clock.ts** | Clock with alarms, timer, and stopwatch | `ClockService`, `NotificationService` |
-| **notes.ts** | Simple note-taking app | `StorageService` |
+| **disk-tree.ts** | Visualize disk usage by folders and files | File system (built-in) |
+| **image-resizer.ts** | Batch image resizing with custom dimensions | File system (built-in) |
+| **nomad.ts** | Time zone conversion and multi-timezone tracking | Time system (built-in) |
+| **notes.ts** | Simple note-taking app with create/edit/delete | Preferences (built-in) |
+| **pixyne.ts** | Photo manager with marking and batch deletion | Preferences (built-in) |
+| **pomodoro.ts** | Pomodoro productivity timer | `NotificationService` (built-in) |
+| **snowflake.ts** | Festive snowflake visualization with animation | Preferences (built-in) |
+| **sonic3.ts** | Archive compression and file management | Preferences (built-in) |
+| **sshterm.ts** | SSH terminal session manager | Preferences (built-in) |
 | **settings.ts** | System settings (Wi-Fi, Bluetooth, theme) | `SettingsService` |
 
 ## Services
