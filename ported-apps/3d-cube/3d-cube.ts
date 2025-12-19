@@ -10,12 +10,10 @@
  *
  * @tsyne-app:name 3D Cube
  * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
- *   <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="#228B22" stroke="#333"/>
- *   <path d="M12 2L22 7v10" fill="#FF4500" stroke="#333"/>
- *   <path d="M12 22V12L2 7" fill="#FFD700" stroke="#333"/>
- *   <path d="M12 12L22 7" stroke="#333"/>
- *   <path d="M12 12v10" stroke="#333"/>
+ * <svg viewBox="0 0 24 24">
+ *   <polygon points="2,7 2,17 12,22 12,12" fill="#228B22" stroke="#333" stroke-width="1"/>
+ *   <polygon points="22,7 12,12 12,22 22,17" fill="#DC143C" stroke="#333" stroke-width="1"/>
+ *   <polygon points="12,2 2,7 12,12 22,7" fill="#FFD700" stroke="#333" stroke-width="1"/>
  * </svg>
  * SVG
  * @tsyne-app:category games
@@ -721,9 +719,14 @@ export class CubeUI {
 
       this.a.separator();
 
-      // Cube canvas
-      this.canvas = this.a.tappableCanvasRaster(CANVAS_SIZE, CANVAS_SIZE, {
-        onTap: (x, y) => this.handleTap(x, y),
+      // Cube canvas - centered with letterboxing to maintain square aspect ratio
+      // The max() fills available space, center() centers the square canvas within it
+      this.a.max(() => {
+        this.a.center(() => {
+          this.canvas = this.a.tappableCanvasRaster(CANVAS_SIZE, CANVAS_SIZE, {
+            onTap: (x, y) => this.handleTap(x, y),
+          });
+        });
       });
     });
   }

@@ -11,7 +11,7 @@
 
 /*
  * @tsyne-app:name Chess
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,22H10A1,1 0 0,1 9,21V19C9,18.45 9.45,18 10,18H14C14.55,18 15,18.45 15,19V21A1,1 0 0,1 14,22M18.6,8.47C18.6,8.47 17.5,10.5 15.5,10.5C13.5,10.5 12.89,8.78 12.89,8.78C12.89,8.78 12.22,7.34 11.22,6.5C10.22,5.66 9,5 9,5C9,5 8.5,6.5 8.5,7.5C8.5,8.5 9.5,9.5 9.5,9.5C9.5,9.5 9,11 8,11H6V5H7C7,5 7,2 11,2C15,2 16.5,5.75 16.5,5.75C16.5,5.75 18.6,5.82 18.6,8.47Z" /></svg>
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="#333333"><path d="M19 22H5v-2h14v2zm-3-4H8l-1-4 2-1v-2c0-1 1-3 2-4l-1-2 1-1 1 1c1-1 2-1 3 0l1-1 1 1-1 2c1 1 2 3 2 4v2l2 1-1 4z"/></svg>
  * @tsyne-app:category games
  * @tsyne-app:builder createChessApp
  * @tsyne-app:args app,resources
@@ -165,12 +165,13 @@ class ChessUI {
     // Pre-render all piece SVGs to PNG
     const possiblePaths = [
       path.join(process.cwd(), 'pieces'),
+      path.join(process.cwd(), 'ported-apps/chess/pieces'),
       path.join(process.cwd(), 'examples/chess/pieces'),
       path.join(process.cwd(), '../examples/chess/pieces'),
       path.join(__dirname, 'pieces')
     ];
 
-    const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
+    const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[4];
 
     this.renderedPieces = preRenderAllPieces(piecesDir, 80);
   }
@@ -278,11 +279,12 @@ class ChessUI {
     // Find the pieces directory
     const possiblePaths = [
       path.join(process.cwd(), 'pieces'),
+      path.join(process.cwd(), 'ported-apps/chess/pieces'),
       path.join(process.cwd(), 'examples/chess/pieces'),
       path.join(process.cwd(), '../examples/chess/pieces'),
       path.join(__dirname, 'pieces')
     ];
-    const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
+    const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[4];
     const svgPath = path.join(piecesDir, filename);
 
     if (!fs.existsSync(svgPath)) {

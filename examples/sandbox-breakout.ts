@@ -2,7 +2,7 @@
  * Sandbox Breakout Attacker
  *
  * @tsyne-app:name Sandbox Breakout
- * @tsyne-app:icon Skull
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M12 17v4"/><path d="M8 21h8"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="9" r="1.5" fill="currentColor"/><path d="M9 13c0 1 1.5 2 3 2s3-1 3-2"/></svg>
  * @tsyne-app:category Security
  * @tsyne-app:args (a: IApp) => void
  */

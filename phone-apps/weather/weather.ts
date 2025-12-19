@@ -32,7 +32,7 @@
  * Implements pseudo-declarative pattern following calculator.ts style.
  *
  * @tsyne-app:name Weather
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.41-1.41C3.674 2.5 2.5 3.674 2.5 5.15s1.174 2.65 2.65 4.15l1.41-1.41C6.366 7.66 6 6.62 6 5.5s.366-2.16 1.06-2.86zM21.86 19.56l1.41 1.41C23.5 21.826 24.674 20.652 24.674 19.172s-1.174-2.65-2.65-4.15l-1.41 1.41c.694.7 1.06 1.74 1.06 2.86s-.366 2.16-1.06 2.86zM12 5.5c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5-2.91-6.5-6.5-6.5zm0 11c-2.486 0-4.5-2.014-4.5-4.5s2.014-4.5 4.5-4.5 4.5 2.014 4.5 4.5-2.014 4.5-4.5 4.5zm0-13C6.477 3.5 3.5 6.477 3.5 12s2.977 8.5 8.5 8.5 8.5-2.977 8.5-8.5S17.523 3.5 12 3.5z"/></svg>
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
  * @tsyne-app:category utilities
  * @tsyne-app:builder createWeatherApp
  * @tsyne-app:args app

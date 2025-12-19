@@ -215,7 +215,10 @@ class PhoneTop {
       return s;
     }
 
-    let tag = match[0];
+    const originalTag = match[0];
+    const originalTagLength = originalTag.length;
+    let tag = originalTag;
+
     const ensureAttr = (attr: string, value: string) => {
       if (tag.toLowerCase().includes(`${attr.toLowerCase()}=`)) {
         return;
@@ -231,7 +234,12 @@ class PhoneTop {
     }
     ensureAttr('preserveAspectRatio', 'xMidYMid meet');
 
-    s = tag + s.slice(tag.length);
+    // Use original tag length to correctly slice the rest of the SVG content
+    s = tag + s.slice(originalTagLength);
+
+    // Replace "currentColor" with a visible color - resvg doesn't resolve CSS currentColor
+    s = s.replace(/currentColor/gi, '#333333');
+
     return s;
   }
 
