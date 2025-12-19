@@ -53,12 +53,25 @@ interface GridPosition {
   col: number;
 }
 
-// Grid icon state
+// Folder containing apps grouped by category
+interface Folder {
+  name: string;
+  category: string;
+  apps: GridIcon[];
+  position: GridPosition;
+}
+
+// Grid icon state (can be an app or a folder)
 interface GridIcon {
   metadata: AppMetadata;
   position: GridPosition;
   resourceName?: string;  // Registered icon resource name (for SVG icons)
 }
+
+// Grid item can be either an app icon or a folder
+type GridItem =
+  | { type: 'app'; icon: GridIcon }
+  | { type: 'folder'; folder: Folder };
 
 interface RunningApp {
   metadata: AppMetadata;
@@ -68,10 +81,27 @@ interface RunningApp {
   scopedResources: ScopedResourceManager;  // The scoped resource manager for this app
 }
 
+// Category display names and folder icons
+const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string }> = {
+  'utilities': { displayName: 'Utilities', icon: '🔧' },
+  'graphics': { displayName: 'Graphics', icon: '🎨' },
+  'games': { displayName: 'Games', icon: '🎮' },
+  'media': { displayName: 'Media', icon: '🎵' },
+  'phone': { displayName: 'Phone', icon: '📱' },
+  'system': { displayName: 'System', icon: '⚙️' },
+  'fun': { displayName: 'Fun', icon: '🎉' },
+  'productivity': { displayName: 'Productivity', icon: '📋' },
+  'creativity': { displayName: 'Creativity', icon: '✨' },
+  'development': { displayName: 'Development', icon: '💻' },
+};
+
 class PhoneTop {
   private a: App;
   private win: Window | null = null;
-  private icons: GridIcon[] = [];
+  private icons: GridIcon[] = [];  // All app icons (for reference)
+  private gridItems: GridItem[] = [];  // Items on the home grid (apps + folders)
+  private folders: Map<string, Folder> = new Map();  // Folders by category
+  private openFolder: Folder | null = null;  // Currently open folder
   private runningApps: Map<string, RunningApp> = new Map();
   private frontAppId: string | null = null;  // Currently visible app (null = home)
   private currentPage: number = 0;
@@ -277,7 +307,7 @@ class PhoneTop {
   }
 
   /**
-   * Initialize the phone by scanning for apps
+   * Initialize the phone by scanning for apps and grouping into folders
    */
   async init() {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
@@ -290,47 +320,81 @@ class PhoneTop {
     const phoneApps = scanForApps(phoneAppsDir);
     const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
 
-    // Position apps in grid across pages
-    let page = 0;
-    let row = 0;
-    let col = 0;
-
+    // Prepare all app icons
     for (const metadata of apps) {
-      // Prepare icon resource (render SVG to PNG)
       const resourceName = await this.prepareIconResource(metadata);
-
       this.icons.push({
         metadata,
-        position: { page, row, col },
+        position: { page: 0, row: 0, col: 0 },  // Will be set later
         resourceName
       });
+    }
 
-      col++;
-      if (col >= this.cols) {
-        col = 0;
-        row++;
-        if (row >= this.rows) {
-          row = 0;
-          page++;
+    // Group apps by category
+    const appsByCategory = new Map<string, GridIcon[]>();
+    const uncategorizedApps: GridIcon[] = [];
+
+    for (const icon of this.icons) {
+      const category = icon.metadata.category;
+      if (category && CATEGORY_CONFIG[category]) {
+        if (!appsByCategory.has(category)) {
+          appsByCategory.set(category, []);
         }
+        appsByCategory.get(category)!.push(icon);
+      } else {
+        uncategorizedApps.push(icon);
       }
     }
 
-    this.totalPages = Math.max(1, page + (row > 0 || col > 0 ? 1 : 0));
-    console.log(`Found ${apps.length} apps across ${this.totalPages} pages`);
+    // Create folders for categories with apps
+    this.folders.clear();
+    for (const [category, categoryApps] of appsByCategory) {
+      const config = CATEGORY_CONFIG[category];
+      this.folders.set(category, {
+        name: config.displayName,
+        category,
+        apps: categoryApps,
+        position: { page: 0, row: 0, col: 0 }  // Will be set during layout
+      });
+    }
+
+    // Build grid items: folders first (sorted by name), then uncategorized apps
+    this.gridItems = [];
+
+    // Add folders
+    const sortedFolders = Array.from(this.folders.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+    for (const folder of sortedFolders) {
+      this.gridItems.push({ type: 'folder', folder });
+    }
+
+    // Add uncategorized apps
+    for (const icon of uncategorizedApps) {
+      this.gridItems.push({ type: 'app', icon });
+    }
+
+    // Position grid items across pages
+    this.layoutGridItems();
+
+    console.log(`Found ${apps.length} apps: ${this.folders.size} folders, ${uncategorizedApps.length} uncategorized`);
   }
 
   /**
-   * Re-layout icons when grid configuration changes (orientation change)
-   * Preserves the order of apps but repositions them for new grid dimensions
+   * Layout grid items across pages
    */
-  private relayoutIconsForNewGrid() {
+  private layoutGridItems() {
     let page = 0;
     let row = 0;
     let col = 0;
 
-    for (const icon of this.icons) {
-      icon.position = { page, row, col };
+    for (const item of this.gridItems) {
+      const position = { page, row, col };
+
+      if (item.type === 'folder') {
+        item.folder.position = position;
+      } else {
+        item.icon.position = position;
+      }
 
       col++;
       if (col >= this.cols) {
@@ -345,12 +409,19 @@ class PhoneTop {
 
     this.totalPages = Math.max(1, page + (row > 0 || col > 0 ? 1 : 0));
 
-    // Ensure current page is valid after relayout
+    // Ensure current page is valid
     if (this.currentPage >= this.totalPages) {
       this.currentPage = this.totalPages - 1;
     }
+  }
 
-    console.log(`[phonetop] Relaid out ${this.icons.length} apps for ${this.cols}x${this.rows} grid across ${this.totalPages} pages`);
+  /**
+   * Re-layout grid items when grid configuration changes (orientation change)
+   * Preserves the order but repositions for new grid dimensions
+   */
+  private relayoutIconsForNewGrid() {
+    this.layoutGridItems();
+    console.log(`[phonetop] Relaid out ${this.gridItems.length} items for ${this.cols}x${this.rows} grid across ${this.totalPages} pages`);
   }
 
   /**
@@ -400,7 +471,7 @@ class PhoneTop {
   }
 
   /**
-   * Rebuild the content to show current page
+   * Rebuild the content to show current page or open folder
    */
   private rebuildContent() {
     if (!this.win) return;
@@ -411,22 +482,47 @@ class PhoneTop {
         // Use border layout: grid fills center, controls at bottom
         this.a.max(() => {
           this.a.border({
+            top: this.openFolder ? () => {
+              // Folder header when a folder is open
+              const config = CATEGORY_CONFIG[this.openFolder!.category];
+              this.a.vbox(() => {
+                this.a.center(() => {
+                  this.a.hbox(() => {
+                    this.a.label(`${config?.icon || '📁'} ${this.openFolder!.name}`);
+                    this.a.label(` (${this.openFolder!.apps.length} apps)`);
+                  });
+                });
+                this.a.separator();
+              });
+            } : undefined,
             center: () => {
-              // App grid fills available space
-              this.createAppGrid();
+              if (this.openFolder) {
+                // Show folder contents (just the scrollable grid)
+                this.createFolderView(this.openFolder);
+              } else {
+                // App grid fills available space
+                this.createAppGrid();
+              }
             },
             bottom: () => {
-              this.a.vbox(() => {
-                // Page dots indicator (like iOS/Android)
-                this.createPageIndicator();
-
-                // Swipe navigation buttons
-                this.a.hbox(() => {
-                  this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
-                  this.a.spacer();
-                  this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
+              if (this.openFolder) {
+                // Folder view: just a close button
+                this.a.center(() => {
+                  this.a.button('← Back to Home').onClick(() => this.closeFolder());
                 });
-              });
+              } else {
+                this.a.vbox(() => {
+                  // Page dots indicator (like iOS/Android)
+                  this.createPageIndicator();
+
+                  // Swipe navigation buttons
+                  this.a.hbox(() => {
+                    this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
+                    this.a.spacer();
+                    this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
+                  });
+                });
+              }
             }
           });
         });
@@ -440,6 +536,42 @@ class PhoneTop {
         });
         this.keyboardContainer.hide();  // Start hidden
       });
+    });
+  }
+
+  /**
+   * Open a folder to show its contents
+   */
+  private openFolderView(folder: Folder) {
+    this.openFolder = folder;
+    this.rebuildContent();
+  }
+
+  /**
+   * Close the currently open folder
+   */
+  private closeFolder() {
+    this.openFolder = null;
+    this.rebuildContent();
+  }
+
+  /**
+   * Create the folder contents view (grid of apps)
+   */
+  private createFolderView(folder: Folder) {
+    // Apps grid inside folder - match createAppGrid structure
+    this.a.grid(this.cols, () => {
+      for (let row = 0; row < this.rows; row++) {
+        for (let col = 0; col < this.cols; col++) {
+          const index = row * this.cols + col;
+          if (index < folder.apps.length) {
+            this.createAppIcon(folder.apps[index]);
+          } else {
+            // Empty cell
+            this.a.label('');
+          }
+        }
+      }
     });
   }
 
@@ -461,26 +593,58 @@ class PhoneTop {
   }
 
   /**
-   * Create the app grid for current page
+   * Create the app grid for current page (shows folders and uncategorized apps)
    */
   private createAppGrid() {
-    // Get apps for current page
-    const pageApps = this.icons.filter(icon => icon.position.page === this.currentPage);
+    // Get items for current page
+    const pageItems = this.gridItems.filter(item => {
+      const pos = item.type === 'folder' ? item.folder.position : item.icon.position;
+      return pos.page === this.currentPage;
+    });
 
     // Create grid
     this.a.grid(this.cols, () => {
       for (let row = 0; row < this.rows; row++) {
         for (let col = 0; col < this.cols; col++) {
-          const app = pageApps.find(a => a.position.row === row && a.position.col === col);
+          const item = pageItems.find(i => {
+            const pos = i.type === 'folder' ? i.folder.position : i.icon.position;
+            return pos.row === row && pos.col === col;
+          });
 
-          if (app) {
-            this.createAppIcon(app);
+          if (item) {
+            if (item.type === 'folder') {
+              this.createFolderIcon(item.folder);
+            } else {
+              this.createAppIcon(item.icon);
+            }
           } else {
             // Empty cell
             this.a.label('');
           }
         }
       }
+    });
+  }
+
+  /**
+   * Create a folder icon showing up to 4 mini app icons
+   */
+  private createFolderIcon(folder: Folder) {
+    const config = CATEGORY_CONFIG[folder.category];
+
+    this.a.center(() => {
+      this.a.vbox(() => {
+        // Folder icon - show emoji or mini grid preview
+        this.a.button(config?.icon || '📁')
+          .withId(`folder-${folder.category}`)
+          .onClick(() => this.openFolderView(folder));
+
+        // Folder name
+        const shortName = folder.name.length > 10
+          ? folder.name.substring(0, 9) + '...'
+          : folder.name;
+        this.a.label(shortName);
+      });
     });
   }
 
