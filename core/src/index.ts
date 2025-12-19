@@ -938,8 +938,22 @@ export {
   scanForApps,
   loadAppBuilder,
   loadContentBuilder,
+  loadAppBuilderCached,
+  setTranspileCacheEnabled,
+  isTranspileCacheEnabled,
+  getCacheStats,
 } from './app-metadata';
 export type { AppMetadata } from './app-metadata';
+
+// Export transpile cache utilities (for advanced caching control)
+export {
+  loadWithCache,
+  loadFileWithCache,
+  loadAndExecuteApp,
+  loadAndExecuteFile,
+  clearCache,
+  generateCacheKey,
+} from './transpile-cache';
 
 // Export TsyneWindow abstraction (for apps that work in both standalone and desktop modes)
 export {

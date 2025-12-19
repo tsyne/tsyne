@@ -14,7 +14,7 @@ import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
 import { Label, Button, VBox } from '../core/src/widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { scanForApps, scanPortedApps, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { Resvg } from '@resvg/resvg-js';
 import * as path from 'path';
@@ -22,12 +22,16 @@ import { BridgeKeyboardController } from './keyboard/controller';
 import { buildKeyboard } from './keyboard/en-gb/keyboard';
 
 // Grid configuration for phone (portrait orientation)
-const GRID_COLS = 3;
-const GRID_ROWS = 4;
-const APPS_PER_PAGE = GRID_COLS * GRID_ROWS;
+const GRID_COLS_PORTRAIT = 3;
+const GRID_ROWS_PORTRAIT = 4;
 
-// Phone layout scale (400px phone width vs 800px typical desktop)
-const PHONE_LAYOUT_SCALE = 0.5;
+// Grid configuration for landscape orientation
+const GRID_COLS_LANDSCAPE = 5;
+const GRID_ROWS_LANDSCAPE = 2;
+
+// Phone layout scale - varies by orientation
+const PHONE_LAYOUT_SCALE_PORTRAIT = 0.5;
+const PHONE_LAYOUT_SCALE_LANDSCAPE = 0.8;  // Larger scale in landscape to use space better
 
 // Icon size for phone (slightly smaller than desktop's 80px)
 const ICON_SIZE = 64;
@@ -86,12 +90,19 @@ class PhoneTop {
   private keyboardVisible: boolean = false;
   /** Keyboard container for show/hide */
   private keyboardContainer: VBox | null = null;
+  /** Current window dimensions */
+  private windowWidth: number = 540;
+  private windowHeight: number = 960;
+  /** Whether currently in landscape orientation */
+  private isLandscape: boolean = false;
 
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
     this.options = options;
-    this.cols = options.columns || GRID_COLS;
-    this.rows = options.rows || GRID_ROWS;
+
+    // Initialize with portrait defaults (will be updated on window creation)
+    this.cols = options.columns || GRID_COLS_PORTRAIT;
+    this.rows = options.rows || GRID_ROWS_PORTRAIT;
     this.appsPerPage = this.cols * this.rows;
 
     // Create bridge keyboard controller for cross-app keystroke injection
@@ -103,6 +114,42 @@ class PhoneTop {
       const eventData = data as { focused: boolean };
       this.handleFocusChange(eventData.focused);
     });
+  }
+
+  /**
+   * Update orientation based on window dimensions
+   * Returns true if orientation changed
+   */
+  private updateOrientation(width: number, height: number): boolean {
+    const wasLandscape = this.isLandscape;
+    this.windowWidth = width;
+    this.windowHeight = height;
+    this.isLandscape = width > height;
+
+    // Update grid configuration based on orientation (unless overridden by options)
+    if (!this.options.columns && !this.options.rows) {
+      if (this.isLandscape) {
+        this.cols = GRID_COLS_LANDSCAPE;
+        this.rows = GRID_ROWS_LANDSCAPE;
+      } else {
+        this.cols = GRID_COLS_PORTRAIT;
+        this.rows = GRID_ROWS_PORTRAIT;
+      }
+      this.appsPerPage = this.cols * this.rows;
+    }
+
+    const orientationChanged = wasLandscape !== this.isLandscape;
+    if (orientationChanged) {
+      console.log(`[phonetop] Orientation changed to ${this.isLandscape ? 'landscape' : 'portrait'} (${width}x${height})`);
+    }
+    return orientationChanged;
+  }
+
+  /**
+   * Get the current layout scale based on orientation
+   */
+  private getLayoutScale(): number {
+    return this.isLandscape ? PHONE_LAYOUT_SCALE_LANDSCAPE : PHONE_LAYOUT_SCALE_PORTRAIT;
   }
 
   /**
@@ -266,11 +313,68 @@ class PhoneTop {
   }
 
   /**
+   * Re-layout icons when grid configuration changes (orientation change)
+   * Preserves the order of apps but repositions them for new grid dimensions
+   */
+  private relayoutIconsForNewGrid() {
+    let page = 0;
+    let row = 0;
+    let col = 0;
+
+    for (const icon of this.icons) {
+      icon.position = { page, row, col };
+
+      col++;
+      if (col >= this.cols) {
+        col = 0;
+        row++;
+        if (row >= this.rows) {
+          row = 0;
+          page++;
+        }
+      }
+    }
+
+    this.totalPages = Math.max(1, page + (row > 0 || col > 0 ? 1 : 0));
+
+    // Ensure current page is valid after relayout
+    if (this.currentPage >= this.totalPages) {
+      this.currentPage = this.totalPages - 1;
+    }
+
+    console.log(`[phonetop] Relaid out ${this.icons.length} apps for ${this.cols}x${this.rows} grid across ${this.totalPages} pages`);
+  }
+
+  /**
    * Build the phone UI
    */
   build() {
-    this.a.window({ title: 'Tsyne Phone', width: 400, height: 700 }, (win) => {
+    // Use phone-sized window (default portrait, but responsive to actual size)
+    this.a.window({ title: 'Tsyne Phone', width: 540, height: 960 }, (win) => {
       this.win = win as Window;
+
+      // Set initial orientation based on requested dimensions
+      // onResize will correct this if window manager overrides the size
+      this.updateOrientation(540, 960);
+
+      // Listen for window resize to detect orientation changes
+      win.onResize((width, height) => {
+        const orientationChanged = this.updateOrientation(width, height);
+        if (orientationChanged) {
+          // Re-layout icons for new grid configuration
+          this.relayoutIconsForNewGrid();
+          // Rebuild the content to reflect new orientation
+          if (this.frontAppId === null) {
+            this.rebuildContent();
+          } else {
+            // If an app is open, rebuild its content with new layout
+            const runningApp = this.runningApps.get(this.frontAppId);
+            if (runningApp) {
+              this.showAppContent(runningApp);
+            }
+          }
+        }
+      });
 
       // Set up menu (minimal for phone)
       win.setMainMenu([
@@ -489,16 +593,20 @@ class PhoneTop {
     });
 
     try {
-      const builder = await loadAppBuilder(metadata);
+      // Use cached loading for faster app startup
+      const { builder, cached } = await loadAppBuilderCached(metadata);
       if (!builder) {
         console.error(`Could not load builder for ${metadata.name}`);
         disablePhoneMode();
         return;
       }
+      if (!cached) {
+        console.log(`[phonetop] Transpiled and cached: ${metadata.name}`);
+      }
 
       (this.a as any).resources = scopedResources;
       this.a.getContext().setResourceScope(appScope);
-      this.a.getContext().setLayoutScale(PHONE_LAYOUT_SCALE);
+      this.a.getContext().setLayoutScale(this.getLayoutScale());
 
       // Build argument map based on @tsyne-app:args metadata
       const argMap: Record<string, any> = {
@@ -584,9 +692,10 @@ class PhoneTop {
         // App content with header
         this.a.max(() => {
           // Restore the app's resource scope and layout scale for content building
+          // Use orientation-aware layout scale
           (this.a as any).resources = runningApp.scopedResources;
           this.a.getContext().setResourceScope(runningApp.resourceScope);
-          this.a.getContext().setLayoutScale(PHONE_LAYOUT_SCALE);
+          this.a.getContext().setLayoutScale(this.getLayoutScale());
 
           this.a.vbox(() => {
             // Header with back button, quit button, and app name
