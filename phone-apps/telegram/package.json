@@ -1,0 +1,21 @@
+{
+  "name": "@tsyne/phone-apps-telegram",
+  "version": "0.1.0",
+  "description": "Telegram messaging client for Tsyne platform",
+  "main": "telegram.ts",
+  "scripts": {
+    "test": "jest",
+    "dev": "npx tsx telegram.ts"
+  },
+  "keywords": ["telegram", "messaging", "chat"],
+  "author": "Portions copyright Development@bendingtherules.nl and portions copyright Paul Hammant 2025",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^3.14.0",
+    "typescript": "^5.0.0"
+  }
+}

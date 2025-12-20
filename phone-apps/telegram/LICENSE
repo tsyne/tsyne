@@ -1,0 +1,31 @@
+GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+Copyright (C) 2025 Paul Hammant
+Portions copyright Development@bendingtherules.nl
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+This is a Tsyne platform port of:
+https://github.com/bendingthemrules/ubtouch-telegram
+
+Original copyright: Copyright (C) 2022 Development@bendingtherules.nl
+Original license: GNU General Public License v3
+
+Port to Tsyne platform: Copyright (C) 2025 Paul Hammant
+
+The GPL v3 full license text can be found at:
+https://www.gnu.org/licenses/gpl-3.0.txt
