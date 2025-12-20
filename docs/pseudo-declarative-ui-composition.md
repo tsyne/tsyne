@@ -235,3 +235,12 @@ This approach is perfectly suitable for cases like the clock, where the change i
 ## Conclusion
 
 Tsyne's pseudo-declarative style provides a flexible and powerful way to build user interfaces. By combining a declarative builder pattern for layout with fluent method chaining for configuration, you can create readable and maintainable UI code. The framework supports a range of patterns from simple self-contained state to observable stores and fully programmatic UI generation. With support for both reactive data binding and direct imperative updates, you have the tools to build dynamic and responsive applications efficiently.
+
+---
+
+**TODO: Possible improvements to this doc**
+
+1. **"Implicit Context" could be a footgun** - The doc mentions the builder tracks the current container automatically. This is convenient but could cause confusion if someone accidentally nests widgets in the wrong scope. Might be worth a brief caution.
+2. **Missing: error handling patterns** - What happens when a `.bindTo()` render function throws? How do you handle async errors in `onClick` handlers?
+3. **The `async` in handlers** - Several examples show `async () => {}` handlers but the doc doesn't explain why/when async is needed vs. sync handlers.
+4. **Comparison to alternatives** - A brief "why not just use React/Flutter/etc." section could help readers understand when Tsyne's approach shines (single-file scripts, native desktop, quick prototypes).
