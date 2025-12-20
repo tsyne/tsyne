@@ -229,6 +229,8 @@ fi
 
 # Use go mod replace to point to local systray
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
+# Reset go.mod to git-committed version first (clean up any stale replacements from failed builds)
+git checkout -- go.mod go.sum || true
 /usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
