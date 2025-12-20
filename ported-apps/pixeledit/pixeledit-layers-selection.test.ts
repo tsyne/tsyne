@@ -33,8 +33,7 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify the Select tool button is visible
-      await ctx.expect(ctx.getByText('Select')).toBeVisible();
+      await ctx.getByText('Select').within(2000).shouldExist();
     });
 
     test('should switch to Select tool', async () => {
@@ -45,12 +44,8 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Click on Select tool
-      await ctx.getByText('Select').click();
-      await ctx.wait(50);
-
-      // Tool should still be visible (UI is functional)
-      await ctx.expect(ctx.getByText('Select')).toBeVisible();
+      await ctx.getByText('Select').within(2000).click();
+      await ctx.getByText('Select').within(500).shouldExist();
     });
   });
 
@@ -63,15 +58,14 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify all tools are visible
-      await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Picker')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eraser')).toBeVisible();
-      await ctx.expect(ctx.getByText('Bucket')).toBeVisible();
-      await ctx.expect(ctx.getByText('Line')).toBeVisible();
-      await ctx.expect(ctx.getByText('Rectangle')).toBeVisible();
-      await ctx.expect(ctx.getByText('Circle')).toBeVisible();
-      await ctx.expect(ctx.getByText('Select')).toBeVisible();
+      await ctx.getByText('Pencil').within(2000).shouldExist();
+      await ctx.getByText('Eyedropper').within(500).shouldExist();
+      await ctx.getByText('Eraser').within(500).shouldExist();
+      await ctx.getByText('Bucket').within(500).shouldExist();
+      await ctx.getByText('Line').within(500).shouldExist();
+      await ctx.getByText('Rectangle').within(500).shouldExist();
+      await ctx.getByText('Circle').within(500).shouldExist();
+      await ctx.getByText('Select').within(500).shouldExist();
     });
 
     test('should maintain UI when switching between all tools', async () => {
@@ -82,16 +76,15 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      const tools = ['Pencil', 'Picker', 'Eraser', 'Bucket', 'Line', 'Rectangle', 'Circle', 'Select'];
+      const tools = ['Pencil', 'Eyedropper', 'Eraser', 'Bucket', 'Line', 'Rectangle', 'Circle', 'Select'];
 
-      // Verify all tools are visible first
-      for (const tool of tools) {
-        await ctx.expect(ctx.getByText(tool)).toBeVisible();
+      // Verify all tools are visible (first one gets longer timeout for app startup)
+      await ctx.getByText(tools[0]).within(2000).shouldExist();
+      for (const tool of tools.slice(1)) {
+        await ctx.getByText(tool).within(500).shouldExist();
       }
 
-      // UI should still be fully functional
-      await ctx.expect(ctx.getByText('Tools')).toBeVisible();
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(1000).shouldExist();
     });
   });
 
@@ -104,15 +97,12 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify color controls
-      await ctx.expect(ctx.getByText('FG Color')).toBeVisible();
-      await ctx.expect(ctx.getByText('BG Color')).toBeVisible();
-      await ctx.expect(ctx.getByText('Pick FG')).toBeVisible();
-      await ctx.expect(ctx.getByText('Pick BG')).toBeVisible();
-      await ctx.expect(ctx.getByText('Swap FG/BG')).toBeVisible();
+      await ctx.getByText('FG').within(2000).shouldExist();
+      await ctx.getByText('BG').within(500).shouldExist();
+      await ctx.getByText('Fill').within(500).shouldExist();
     });
 
-    test('should have Swap FG/BG button', async () => {
+    test('should have swap colors button', async () => {
       const testApp = await tsyneTest.createApp((app) => {
         createPixelEditorApp(app);
       });
@@ -120,12 +110,9 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Click swap button
-      await ctx.getByText('Swap FG/BG').click();
-      await ctx.wait(50);
-
-      // UI should still be functional
-      await ctx.expect(ctx.getByText('Swap FG/BG')).toBeVisible();
+      // The swap button uses ⇄ symbol
+      await ctx.getByText('⇄').within(2000).click();
+      await ctx.getByText('⇄').within(500).shouldExist();
     });
   });
 
@@ -138,10 +125,9 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Verify toolbar buttons
-      await ctx.expect(ctx.getByText('Open')).toBeVisible();
-      await ctx.expect(ctx.getByText('Reset')).toBeVisible();
-      await ctx.expect(ctx.getByText('Save')).toBeVisible();
+      await ctx.getByText('Open').within(2000).shouldExist();
+      await ctx.getByText('Reset').within(500).shouldExist();
+      await ctx.getByText('Save').within(500).shouldExist();
     });
   });
 
@@ -154,9 +140,9 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
-      await ctx.expect(ctx.getByText('+')).toBeVisible();
-      await ctx.expect(ctx.getByText('-')).toBeVisible();
+      await ctx.getByID('zoom-level').within(2000).shouldExist();
+      await ctx.getByID('zoom-in').within(500).shouldExist();
+      await ctx.getByID('zoom-out').within(500).shouldExist();
     });
 
     test('should zoom in and out', async () => {
@@ -167,15 +153,11 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Zoom in
-      await ctx.getByText('+').click();
-      await ctx.wait(50);
-      await ctx.expect(ctx.getByText('200%')).toBeVisible();
+      await ctx.getByID('zoom-in').within(2000).click();
+      await ctx.getByID('zoom-level').within(1000).shouldBe('200%');
 
-      // Zoom out
-      await ctx.getByText('-').click();
-      await ctx.wait(50);
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-out').within(500).click();
+      await ctx.getByID('zoom-level').within(1000).shouldBe('100%');
     });
   });
 
@@ -188,7 +170,7 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.expect(ctx.getByExactText('Open a file')).toBeVisible();
+      await ctx.getByExactText('Open a file').within(2000).shouldExist();
     });
   });
 
@@ -202,29 +184,24 @@ describe('Pixel Editor - Selection and Layers', () => {
       await testApp.run();
 
       // Rapid tool switching
-      await ctx.getByText('Select').click();
-      await ctx.wait(20);
-      await ctx.getByText('Rectangle').click();
-      await ctx.wait(20);
-      await ctx.getByText('Circle').click();
-      await ctx.wait(20);
+      await ctx.getByText('Select').within(2000).click();
+      await ctx.getByText('Rectangle').within(500).click();
+      await ctx.getByText('Circle').within(500).click();
 
       // Zoom while using a tool
-      await ctx.getByText('+').click();
-      await ctx.wait(20);
-      await ctx.getByText('+').click();
-      await ctx.wait(50);
+      await ctx.getByID('zoom-in').within(500).click();
+      await ctx.getByID('zoom-level').within(1000).shouldBe('200%');
+      await ctx.getByID('zoom-in').within(500).click();
 
       // Should be at 400%
-      await ctx.expect(ctx.getByText('400%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(1000).shouldBe('400%');
 
       // Switch back to pencil
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(50);
+      await ctx.getByText('Pencil').within(500).click();
 
       // UI should still be functional
-      await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Select')).toBeVisible();
+      await ctx.getByText('Pencil').within(500).shouldExist();
+      await ctx.getByText('Select').within(500).shouldExist();
     });
   });
 
@@ -237,19 +214,40 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Wait for full UI load
-      await ctx.expect(ctx.getByText('Tools')).toBeVisible();
-      await ctx.expect(ctx.getByText('Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Select')).toBeVisible();
-      await ctx.expect(ctx.getByText('FG Color')).toBeVisible();
-      await ctx.expect(ctx.getByText('BG Color')).toBeVisible();
+      // Wait for full UI load - wait for first tool button and color labels
+      await ctx.getByText('Pencil').within(2000).shouldExist();
+      await ctx.getByText('Select').within(500).shouldExist();
+      await ctx.getByText('FG').within(500).shouldExist();
+      await ctx.getByText('BG').within(500).shouldExist();
 
       // Take screenshot if requested
       if (process.env.TAKE_SCREENSHOTS === '1') {
-        const screenshotPath = path.join(__dirname, '../screenshots', 'pixeledit-advanced-features.png');
-        await ctx.wait(500);
+        const screenshotPath = path.join(__dirname, 'screenshots', 'pixeledit-advanced-features.png');
         await tsyneTest.screenshot(screenshotPath);
         console.error(`Screenshot saved: ${screenshotPath}`);
+      }
+    }, 30000);
+
+    test('should load image from URL for README screenshot', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        const editor = createPixelEditorApp(app);
+        // Load NGA artwork after UI is built
+        setTimeout(async () => {
+          await editor.loadFromURL('https://api.nga.gov/iiif/382f0d18-13f7-4d42-8a39-053b781541e3/full/!400,400/0/default.jpg');
+        }, 500);
+      });
+
+      ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Wait for image to load - check for "Loaded:" in status
+      await ctx.getByText('Loaded:').within(10000).shouldExist();
+
+      // Take screenshot for README
+      if (process.env.TAKE_SCREENSHOTS === '1') {
+        const screenshotPath = path.join(__dirname, 'screenshots', 'pixeledit-readme.png');
+        await tsyneTest.screenshot(screenshotPath);
+        console.error(`README screenshot saved: ${screenshotPath}`);
       }
     }, 30000);
   });

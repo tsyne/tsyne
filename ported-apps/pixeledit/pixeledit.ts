@@ -1611,6 +1611,11 @@ class PixelEditor {
    * Supports: PNG, JPEG, WebP, AVIF, TIFF, GIF
    */
   async loadFile(filepath: string): Promise<void> {
+    // Show loading status
+    if (this.statusLabel) {
+      await this.statusLabel.setText('Loading...');
+    }
+
     try {
       // Use sharp for broad format support including AVIF, WebP
       const image = sharp(filepath);
@@ -1667,6 +1672,90 @@ class PixelEditor {
       // Fallback to blank image
       this.createBlankImage(32, 32);
       this.currentFile = filepath;
+    }
+
+    this.updateStatus();
+  }
+
+  /**
+   * Load image from URL
+   * Fetches the image data and loads it into the editor
+   */
+  async loadFromURL(url: string): Promise<void> {
+    // Show loading status
+    if (this.statusLabel) {
+      await this.statusLabel.setText('Loading...');
+    }
+
+    try {
+      // Fetch the image data
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      // Use sharp to process the image buffer
+      const image = sharp(buffer);
+      const metadata = await image.metadata();
+
+      if (!metadata.width || !metadata.height) {
+        throw new Error('Could not determine image dimensions');
+      }
+
+      this.imageWidth = metadata.width;
+      this.imageHeight = metadata.height;
+      const size = this.imageWidth * this.imageHeight * 4;
+      this.pixels = new Uint8ClampedArray(size);
+
+      // Extract raw RGBA pixel data
+      const { data } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      // Copy pixel data
+      for (let i = 0; i < size; i++) {
+        this.pixels[i] = data[i];
+      }
+
+      // Store original for reload
+      this.originalPixels = new Uint8ClampedArray(this.pixels);
+
+      // Extract filename from URL for display
+      const urlPath = new URL(url).pathname;
+      const filename = urlPath.split('/').pop() || 'remote-image';
+      this.currentFile = filename;
+      this.hasUnsavedChanges = false;
+
+      // Detect format from URL or content-type
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('jpeg') || contentType.includes('jpg')) {
+        this.currentFormat = 'jpeg';
+      } else if (contentType.includes('png')) {
+        this.currentFormat = 'png';
+      } else if (contentType.includes('webp')) {
+        this.currentFormat = 'webp';
+      } else {
+        this.currentFormat = 'png'; // Default
+      }
+
+      // Clear undo/redo history
+      this.undoStack = [];
+      this.redoStack = [];
+
+      // Rebuild UI if it was already built
+      await this.rebuildCanvasIfNeeded();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to load image from URL: ${errorMessage}`);
+
+      if (this.win) {
+        await this.win.showError('Load Error', `Failed to load image from URL: ${errorMessage}`);
+      }
+
+      // Fallback to blank image
+      this.createBlankImage(32, 32);
     }
 
     this.updateStatus();
@@ -1916,6 +2005,24 @@ class PixelEditor {
   }
 
   /**
+   * Open URL dialog - prompts user for URL and loads image
+   */
+  async fileOpenURL(): Promise<void> {
+    if (!this.win) return;
+    const result = await this.win.showForm('Open URL', [
+      { name: 'url', type: 'entry', label: 'Image URL', placeholder: 'https://example.com/image.png' }
+    ]);
+    if (result?.submitted && result.values?.url) {
+      const url = result.values.url as string;
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        await this.loadFromURL(url);
+      } else {
+        await this.win.showError('Invalid URL', 'Please enter a valid HTTP or HTTPS URL');
+      }
+    }
+  }
+
+  /**
    * Reset to original image with confirmation
    * Based on: ui/main.go fileReset()
    */
@@ -1992,7 +2099,8 @@ class PixelEditor {
       const filename = this.currentFile ? this.currentFile.split('/').pop() : 'New Image';
       const unsaved = this.hasUnsavedChanges ? '*' : '';
       const formatLabel = this.currentFormat.toUpperCase();
-      const msg = `${filename}${unsaved} | ${this.imageWidth}x${this.imageHeight} | ${formatLabel} | ${this.zoom * 100}%`;
+      const prefix = this.currentFile ? 'Loaded: ' : '';
+      const msg = `${prefix}${filename}${unsaved} | ${this.imageWidth}x${this.imageHeight} | ${formatLabel} | ${this.zoom * 100}%`;
       await this.statusLabel.setText(msg);
     }
     if (this.toolLabel) {
@@ -2026,6 +2134,7 @@ class PixelEditor {
     const fileMenuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
       { label: 'New ...', onSelected: () => this.newImage() },
       { label: 'Open ...', onSelected: () => this.fileOpen() },
+      { label: 'Open URL ...', onSelected: () => this.fileOpenURL() },
       { label: 'isSeparator', isSeparator: true },
     ];
 
@@ -2161,11 +2270,12 @@ class PixelEditor {
       },
       {
         title: 'Zoom',
+        open: true,
         builder: () => {
           this.a.hbox(() => {
-            this.a.button('-').onClick(() => this.zoomOut());
-            this.zoomLabel = this.a.label(`${this.zoom * 100}%`);
-            this.a.button('+').onClick(() => this.zoomIn());
+            this.a.button('-').withId('zoom-out').onClick(() => this.zoomOut());
+            this.zoomLabel = this.a.label(`${this.zoom * 100}%`).withId('zoom-level');
+            this.a.button('+').withId('zoom-in').onClick(() => this.zoomIn());
           });
         }
       },
@@ -2364,7 +2474,7 @@ class PixelEditor {
 export function createPixelEditorApp(a: App): PixelEditor {
   const editor = new PixelEditor(a);
 
-  a.window({ title: 'Pixel Editor', width: 520, height: 320 }, (win: Window) => {
+  a.window({ title: 'Pixel Editor', width: 640, height: 480 }, (win: Window) => {
     win.setContent(async () => {
       await editor.buildUI(win);
     });
@@ -2383,23 +2493,27 @@ export type { Selection, ClipboardData, Layer, BlendMode, ImageFormat };
  */
 if (require.main === module) {
   app({ title: 'Pixel Editor' }, async (a: App) => {
-    // Pre-load file from command line if provided (before building UI)
+    // Pre-load file or URL from command line if provided (before building UI)
     // This ensures the canvas is created with the correct dimensions
-    let preloadedFile: string | null = null;
+    let preloadArg: string | null = null;
     if (process.argv.length > 2) {
-      preloadedFile = process.argv[2];
+      preloadArg = process.argv[2];
     }
 
     const editor = new PixelEditor(a);
 
-    // Load file before creating window to get correct dimensions
-    if (preloadedFile) {
+    // Load file or URL before creating window to get correct dimensions
+    if (preloadArg) {
       try {
-        await editor.loadFile(preloadedFile);
+        if (preloadArg.startsWith('http://') || preloadArg.startsWith('https://')) {
+          await editor.loadFromURL(preloadArg);
+        } else {
+          await editor.loadFile(preloadArg);
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to load file from command line: ${errorMessage}`);
-        // Continue with blank canvas - error will be handled in loadFile
+        console.error(`Failed to load from command line: ${errorMessage}`);
+        // Continue with blank canvas - error will be handled in load methods
       }
     }
 

@@ -80,6 +80,7 @@ log_error() {
 }
 
 # Parse command line arguments
+APP_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         --dry-run)
@@ -116,6 +117,9 @@ while [[ $# -gt 0 ]]; do
         *)
             SOURCE_FILE="$1"
             shift
+            # Remaining args are for the app
+            APP_ARGS=("$@")
+            break
             ;;
     esac
 done
@@ -312,8 +316,8 @@ echo "[TSYNE] launching tsx at $(date +%s.%3N)..."
 # Prefer locally installed tsx, fall back to npx
 if [ -x "$TSYNE_SOURCE/node_modules/.bin/tsx" ]; then
     NODE_PATH="$EFFECTIVE_NODE_PATH" \
-    "$TSYNE_SOURCE/node_modules/.bin/tsx" "$SOURCE_FILE"
+    "$TSYNE_SOURCE/node_modules/.bin/tsx" "$SOURCE_FILE" "${APP_ARGS[@]}"
 else
     NODE_PATH="$EFFECTIVE_NODE_PATH" \
-    npx --prefer-offline tsx "$SOURCE_FILE"
+    npx --prefer-offline tsx "$SOURCE_FILE" "${APP_ARGS[@]}"
 fi

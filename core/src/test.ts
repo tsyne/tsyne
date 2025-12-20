@@ -674,18 +674,6 @@ export class Locator {
   }
 
   /**
-   * Fluent API: Set timeout for expecting element to disappear (chainable like within)
-   * Use with assertion methods to poll until element disappears
-   * @param timeoutMs - Time in milliseconds to wait for element to disappear
-   * @example
-   * await ctx.getByID("loading").without(500).shouldNotExist(); // Poll until gone
-   */
-  without(timeoutMs: number): Locator {
-    this.withinTimeout = timeoutMs; // Use same timeout as within()
-    return this;
-  }
-
-  /**
    * Fluent API: Assert text equals expected value
    * Fast fail by default, or use .within(timeout) to poll
    * @example
@@ -968,18 +956,18 @@ export class Locator {
     }
 
     if (!widget) {
-      throwCallerError('Expected widget to exist\nReceived: not found', this.shouldExist);
+      throwCallerError(`Expected widget to exist, but not found: ${this.selectorType}="${this.selector}"`, this.shouldExist);
     }
     return this;
   }
 
   /**
    * Fluent API: Assert widget does not exist
-   * Fast fail by default, or use .without(timeout) to poll until gone
+   * Fast fail by default, or use .within(timeout) to poll until gone
    * Returns this locator for chaining
    * @example
    * await ctx.getByID("modal").shouldNotExist(); // Fast fail
-   * await ctx.getByID("modal").without(500).shouldNotExist(); // Poll 500ms until gone
+   * await ctx.getByID("modal").within(500).shouldNotExist(); // Poll 500ms until gone
    */
   async shouldNotExist(): Promise<Locator> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -992,7 +980,7 @@ export class Locator {
       // Fast fail - no retry
       widget = await this.find();
     } else {
-      // without() drives explicit retry polling until element disappears
+      // within() drives explicit retry polling until element disappears
       const startTime = Date.now();
       while (Date.now() - startTime < timeout) {
         widget = await this.find();
@@ -1002,7 +990,7 @@ export class Locator {
     }
 
     if (widget) {
-      throwCallerError('Expected widget not to exist', this.shouldNotExist);
+      throwCallerError(`Expected widget NOT to exist, but found: ${this.selectorType}="${this.selector}"`, this.shouldNotExist);
     }
     return this;
   }
@@ -1407,7 +1395,9 @@ export class Expect {
 
     try {
       const widget = await locator.findWithRetry();
-      expect(widget).toBeTruthy();
+      if (!widget) {
+        throw new Error(`Expected widget to be visible, but not found: ${locator.selectorType}="${locator.selector}"`);
+      }
     } finally {
       // Clean up temporary timeout if we set it
       if (!hasTimeout) {
@@ -1418,23 +1408,35 @@ export class Expect {
 
   async toNotBeVisible(): Promise<void> {
     // For "not visible", we want immediate check (no retry)
+    const locator = this.locator as any;
     const widget = await this.locator.find();
-    expect(widget).toBeFalsy();
+    if (widget) {
+      throw new Error(`Expected widget to NOT be visible, but found: ${locator.selectorType}="${locator.selector}"`);
+    }
   }
 
   async toExist(): Promise<void> {
+    const locator = this.locator as any;
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBeGreaterThan(0);
+    if (widgets.length === 0) {
+      throw new Error(`Expected widget to exist, but not found: ${locator.selectorType}="${locator.selector}"`);
+    }
   }
 
   async toNotExist(): Promise<void> {
+    const locator = this.locator as any;
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBe(0);
+    if (widgets.length > 0) {
+      throw new Error(`Expected widget to NOT exist, but found ${widgets.length}: ${locator.selectorType}="${locator.selector}"`);
+    }
   }
 
   async toHaveCount(count: number): Promise<void> {
+    const locator = this.locator as any;
     const widgets = await this.locator.findAll();
-    expect(widgets.length).toBe(count);
+    if (widgets.length !== count) {
+      throw new Error(`Expected ${count} widget(s), but found ${widgets.length}: ${locator.selectorType}="${locator.selector}"`);
+    }
   }
 
   async toHaveCountGreaterThan(count: number): Promise<void> {

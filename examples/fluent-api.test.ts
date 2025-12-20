@@ -211,8 +211,8 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       // Verify loading appears
       await ctx.expect(ctx.getByID("loading")).toHaveText("Loading...");
 
-      // Use without() to wait for loading to disappear
-      await ctx.getByID("loading").without(2000);
+      // Use within() to wait for loading to disappear
+      await ctx.getByID("loading").within(2000).shouldNotExist();
 
       // Verify result appears
       await ctx.expect(ctx.getByID("result")).toHaveText("Data loaded successfully");
