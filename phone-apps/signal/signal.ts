@@ -30,50 +30,12 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../src';
-import type { App } from '../../src';
-import type { Window } from '../../src';
-import type { Label } from '../../src';
-import type { VBox } from '../../src';
+import type { App } from '../../core/src';
+import type { Window } from '../../core/src';
+import type { Label } from '../../core/src';
+import type { VBox } from '../../core/src';
 import type { Conversation, Message } from './signal-service';
 import { ISignalService, MockSignalService } from './signal-service';
-
-// Define Signal app styles
-styles({
-  'signal-header': {
-    text_align: 'center',
-    font_style: FontStyle.BOLD,
-    font_size: 20,
-  },
-  'signal-subtitle': {
-    text_align: 'center',
-    font_style: FontStyle.ITALIC,
-    font_size: 10,
-  },
-  'conversation-name': {
-    font_style: FontStyle.BOLD,
-    font_size: 14,
-  },
-  'conversation-preview': {
-    font_size: 12,
-  },
-  'message-own': {
-    text_align: 'right',
-    font_size: 11,
-  },
-  'message-other': {
-    text_align: 'left',
-    font_size: 11,
-  },
-  'timestamp': {
-    font_size: 9,
-    font_style: FontStyle.ITALIC,
-  },
-  'unread-badge': {
-    font_style: FontStyle.BOLD,
-    font_size: 10,
-  },
-});
 
 /**
  * Build the Signal messaging app
@@ -115,8 +77,6 @@ export function createSignalApp(a: App): void {
   function updateConversationList() {
     if (!conversationListContainer) return;
 
-    conversationListContainer.destroyChildren?.();
-
     const conversations = signal.getConversations();
 
     if (conversations.length === 0) {
@@ -134,32 +94,27 @@ export function createSignalApp(a: App): void {
       a.vbox(() => {
         a.hbox(() => {
           a.label(conv.participantName)
-            .withId(`conv-${conv.id}-name`)
-            .addClass('conversation-name');
+            .withId(`conv-${conv.id}-name`);
 
           a.spacer();
 
           if (conv.unreadCount > 0) {
             a.label(`(${conv.unreadCount})`)
-              .withId(`conv-${conv.id}-unread`)
-              .addClass('unread-badge');
+              .withId(`conv-${conv.id}-unread`);
           }
 
           a.label('🔒')
-            .withId(`conv-${conv.id}-encrypted`)
-            .addClass('timestamp');
+            .withId(`conv-${conv.id}-encrypted`);
         });
 
         const preview = conv.lastMessage?.content.substring(0, 50) || 'No messages';
         const time = conv.lastMessageTime ? formatTime(conv.lastMessageTime) : '';
 
         a.label(`${preview}...`)
-          .withId(`conv-${conv.id}-preview`)
-          .addClass('conversation-preview');
+          .withId(`conv-${conv.id}-preview`);
 
         a.label(time)
-          .withId(`conv-${conv.id}-time`)
-          .addClass('timestamp');
+          .withId(`conv-${conv.id}-time`);
       });
 
       a.spacer();
@@ -187,8 +142,6 @@ export function createSignalApp(a: App): void {
   function updateMessages() {
     if (!messagesContainer || !currentConversationId) return;
 
-    messagesContainer.destroyChildren?.();
-
     const messages = signal.getMessages(currentConversationId);
 
     if (messages.length === 0) {
@@ -208,20 +161,17 @@ export function createSignalApp(a: App): void {
     a.hbox(() => {
       if (!isOwn) {
         a.label(senderLabel)
-          .withId(`msg-${msg.id}-sender`)
-          .addClass('conversation-name');
+          .withId(`msg-${msg.id}-sender`);
       } else {
         a.spacer();
       }
 
       a.vbox(() => {
         a.label(msg.content)
-          .withId(`msg-${msg.id}-content`)
-          .addClass(isOwn ? 'message-own' : 'message-other');
+          .withId(`msg-${msg.id}-content`);
 
         a.label(`${msg.senderName} • ${formatTime(msg.timestamp)}${msg.isEncrypted ? ' 🔒' : ''}`)
-          .withId(`msg-${msg.id}-meta`)
-          .addClass('timestamp');
+          .withId(`msg-${msg.id}-meta`);
       });
 
       if (isOwn) {
@@ -239,12 +189,11 @@ export function createSignalApp(a: App): void {
   function showNewConversationDialog() {
     const contacts = signal.getContacts();
     if (contacts.length === 0) {
-      // In a real app, would show a dialog
       console.log('No contacts available');
       return;
     }
 
-    // Simple selection - in real app would be a list dialog
+    // Simple selection - use first available contact
     const contact = contacts[0];
     const conversation = signal.createConversation(contact.id);
     currentConversationId = conversation.id;
@@ -270,16 +219,15 @@ export function createSignalApp(a: App): void {
     win.setContent(() => {
       a.vbox(() => {
         // Header
-        a.label('📱 Signal').withId('signal-title').addClass('signal-header');
-        a.label('End-to-End Encrypted Messaging').withId('signal-subtitle').addClass('signal-subtitle');
+        a.label('📱 Signal').withId('signal-title');
+        a.label('End-to-End Encrypted Messaging').withId('signal-subtitle');
         a.separator();
 
         // View state indicator
         a.hbox(() => {
           currentViewLabel = a
             .label('💬 Conversations')
-            .withId('signal-view-label')
-            .addClass('conversation-name');
+            .withId('signal-view-label');
 
           a.spacer();
 
@@ -290,27 +238,25 @@ export function createSignalApp(a: App): void {
 
         a.separator();
 
-        // Messages area (hidden initially, shown when conversation selected)
+        // Messages area
         a.scroll(() => {
           messagesContainer = a.vbox(() => {
             // Messages will be populated here
           }) as any;
         })
-          .when(() => currentConversationId !== null)
           .withId('messages-scroll');
 
-        // Conversations list (hidden when viewing messages)
+        // Conversations list
         a.scroll(() => {
           conversationListContainer = a.vbox(() => {
             // Conversations will be populated here
           }) as any;
         })
-          .when(() => currentConversationId === null)
           .withId('conversations-scroll');
 
         a.separator();
 
-        // Input area (only shown when viewing a conversation)
+        // Input area
         a.hbox(() => {
           messageInputEntry = a
             .entry('Type message...')
@@ -319,11 +265,10 @@ export function createSignalApp(a: App): void {
           a.button('Send')
             .onClick(() => sendMessage())
             .withId('btn-send-message');
-        })
-          .when(() => currentConversationId !== null)
-          .withId('input-area');
+        });
+        a.label('').withId('input-area');  // Marker for input area
 
-        // Conversation list controls (only shown when viewing list)
+        // Conversation list controls
         a.hbox(() => {
           statusLabel = a.label(`${signal.getConversations().length} conversations`).withId('signal-status');
 
@@ -339,11 +284,9 @@ export function createSignalApp(a: App): void {
               currentConversationName = null;
               updateCurrentViewLabel();
             })
-            .when(() => currentConversationId !== null)
             .withId('btn-back');
-        })
-          .when(() => currentConversationId === null)
-          .withId('control-area');
+        });
+        a.label('').withId('control-area');  // Marker for control area
       });
     });
 
@@ -364,7 +307,8 @@ export function createSignalApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Signal' }, (a: App) => {
+  const { app } = require('../../core/src');
+  app({ title: 'Signal' }, (a: any) => {
     createSignalApp(a);
   });
 }

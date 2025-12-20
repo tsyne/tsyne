@@ -362,17 +362,21 @@ describe('MockSignalService', () => {
   describe('Integration Scenarios', () => {
     test('should handle complete conversation workflow', () => {
       const contacts = service.getContacts();
-      const targetContact = contacts[0];
+      // Use a contact that doesn't have a conversation yet
+      const newContact = contacts[contacts.length - 1];
 
       // Create conversation
-      const conversation = service.createConversation(targetContact.id);
+      const conversation = service.createConversation(newContact.id);
       expect(conversation).toBeDefined();
+
+      // Get initial message count
+      const initialMessageCount = service.getMessages(conversation.id).length;
 
       // Send messages
       const msg1 = service.sendMessage(conversation.id, 'Hi there!');
       const msg2 = service.sendMessage(conversation.id, 'How are you?');
 
-      expect(service.getMessages(conversation.id).length).toBe(2);
+      expect(service.getMessages(conversation.id).length).toBe(initialMessageCount + 2);
 
       // Check conversation metadata
       const updated = service.getConversation(conversation.id);
@@ -380,7 +384,7 @@ describe('MockSignalService', () => {
 
       // Delete message
       service.deleteMessage(msg1.id);
-      expect(service.getMessages(conversation.id).length).toBe(1);
+      expect(service.getMessages(conversation.id).length).toBe(initialMessageCount + 1);
 
       // Delete conversation
       service.deleteConversation(conversation.id);

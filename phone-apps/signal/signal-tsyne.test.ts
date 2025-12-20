@@ -20,8 +20,9 @@
  * TsyneTest integration tests for Signal app UI
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { createSignalApp } from './signal';
+import type { App } from '../../core/src';
 
 describe('Signal App UI', () => {
   let tsyneTest: TsyneTest;
@@ -38,7 +39,7 @@ describe('Signal App UI', () => {
 
   describe('Initial State', () => {
     test('should display Signal title', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -49,7 +50,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display Signal subtitle', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -60,7 +61,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display view label', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -71,7 +72,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display refresh button', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -82,7 +83,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display status label', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -93,7 +94,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display new conversation button', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -106,7 +107,7 @@ describe('Signal App UI', () => {
 
   describe('Conversation List', () => {
     test('should display conversations scroll area', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -117,7 +118,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display conversation items', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -130,7 +131,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display conversation preview text', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -141,7 +142,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display conversation timestamp', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -152,7 +153,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display encryption indicator', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -163,7 +164,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display unread badge for conversations with unread messages', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -176,7 +177,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display open button for each conversation', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -187,7 +188,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display delete button for each conversation', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -200,7 +201,7 @@ describe('Signal App UI', () => {
 
   describe('Conversation Navigation', () => {
     test('should open conversation when clicking open button', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -215,7 +216,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display messages when conversation is opened', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -231,7 +232,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display back button when viewing conversation', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -246,7 +247,7 @@ describe('Signal App UI', () => {
     });
 
     test('should return to conversation list when clicking back', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -266,7 +267,7 @@ describe('Signal App UI', () => {
 
   describe('Messaging', () => {
     test('should display message input area when viewing conversation', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -281,7 +282,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display message input field', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -296,7 +297,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display send button', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -311,7 +312,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display message content', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -326,7 +327,7 @@ describe('Signal App UI', () => {
     });
 
     test('should display message metadata', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -343,7 +344,7 @@ describe('Signal App UI', () => {
 
   describe('Conversation Deletion', () => {
     test('should delete conversation when clicking delete button', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -359,23 +360,22 @@ describe('Signal App UI', () => {
     });
   });
 
-  describe('Screenshot Capture', () => {
-    test('should capture screenshot of conversations list', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+  describe('Complete UI Rendering', () => {
+    test('should render conversations list successfully', async () => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      if (process.env.TAKE_SCREENSHOTS === '1') {
-        const screenshot = await ctx.screenshot();
-        console.log(`Signal conversations screenshot saved: ${screenshot}`);
-      }
+      // Verify the UI is fully rendered
+      await ctx.getByID('signal-title').within(500).shouldExist();
+      await ctx.getByID('conversations-scroll').within(500).shouldExist();
     });
 
-    test('should capture screenshot of message view', async () => {
-      const testApp = await tsyneTest.createApp((app) => {
+    test('should render message view successfully', async () => {
+      const testApp = await tsyneTest.createApp((app: App) => {
         createSignalApp(app);
       });
 
@@ -385,10 +385,9 @@ describe('Signal App UI', () => {
       // Open a conversation
       await ctx.getByID('conv-conv1-open').click();
 
-      if (process.env.TAKE_SCREENSHOTS === '1') {
-        const screenshot = await ctx.screenshot();
-        console.log(`Signal messages screenshot saved: ${screenshot}`);
-      }
+      // Verify message view is rendered
+      await ctx.getByID('messages-scroll').within(500).shouldExist();
+      await ctx.getByID('input-area').within(500).shouldExist();
     });
   });
 });
