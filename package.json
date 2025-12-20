@@ -18,6 +18,7 @@
     "clean": "rm -rf node_modules && cd core && rm -rf node_modules dist && cd ../designer && rm -rf node_modules dist"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "jest-environment-node": "^29.7.0",
     "ts-jest": "^29.4.6",
