@@ -50,13 +50,13 @@ describe('Pixel Editor Tests', () => {
 
     // Verify tools - Pencil is selected by default so has ▶ prefix
     // Note: Accordion section titles like 'Tools' are not exposed as widgets
-    await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-    await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
+    await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
+    await ctx.getByID('tool-eyedropper').within(500).shouldExist();
 
     // Verify power-of-2 zoom controls (shown as percentage)
-    await ctx.expect(ctx.getByText('100%')).toBeVisible();
-    await ctx.expect(ctx.getByText('-')).toBeVisible();
-    await ctx.expect(ctx.getByText('+')).toBeVisible();
+    await ctx.getByID('zoom-level').within(500).shouldExist();
+    await ctx.getByID('zoom-out').within(500).shouldExist();
+    await ctx.getByID('zoom-in').within(500).shouldExist();
 
     // Verify color labels are visible
     await ctx.expect(ctx.getByText('FG')).toBeVisible();
@@ -84,18 +84,18 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Initial zoom should be 100%
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(2000).shouldBe('100%');
 
-      // Click zoom in - test that button is clickable
-      await ctx.getByText('+').click();
-      await ctx.wait(50);
+      // Click zoom in
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
 
-      // Verify zoom buttons are still functional
-      await ctx.expect(ctx.getByText('+')).toBeVisible();
-      await ctx.expect(ctx.getByText('-')).toBeVisible();
+      // Zoom in again
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('400%');
     });
 
-    test('should zoom out by halving (800% -> 400% -> 200%)', async () => {
+    test('should zoom out by halving (400% -> 200% -> 100%)', async () => {
       const testApp = await tsyneTest.createApp((app) => {
         createPixelEditorApp(app);
       });
@@ -103,19 +103,19 @@ describe('Pixel Editor Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Initial zoom should be 100%
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      // Zoom in to 400% first
+      await ctx.getByID('zoom-in').within(2000).click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('400%');
 
-      // Click zoom out - at minimum it should stay at 100%
-      await ctx.getByText('-').click();
-      await ctx.wait(50);
+      // Zoom out
+      await ctx.getByID('zoom-out').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
 
-      // Verify zoom buttons are still functional
-      await ctx.expect(ctx.getByText('+')).toBeVisible();
-      await ctx.expect(ctx.getByText('-')).toBeVisible();
-
-      // At minimum zoom, should still show 100%
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      // Zoom out again
+      await ctx.getByID('zoom-out').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('100%');
     });
 
     test('should not zoom below 100%', async () => {
@@ -127,14 +127,13 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Initial zoom is 100%
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(2000).shouldBe('100%');
 
       // Try to zoom out below minimum
-      await ctx.getByText('-').click();
-      await ctx.wait(100);
+      await ctx.getByID('zoom-out').click();
 
       // Should still be 100%
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(500).shouldBe('100%');
     });
 
     test('should not zoom above 1600%', async () => {
@@ -146,14 +145,18 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Zoom in many times to reach maximum (1 -> 2 -> 4 -> 8 -> 16)
-      for (let i = 0; i < 10; i++) {
-        await ctx.getByText('+').click();
-        await ctx.wait(20);
-      }
-      await ctx.wait(100);
+      await ctx.getByID('zoom-in').within(2000).click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('400%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('800%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('1600%');
 
-      // Should be at maximum 1600%
-      await ctx.expect(ctx.getByText('1600%')).toBeVisible();
+      // Try to zoom past maximum - should stay at 1600%
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('1600%');
     });
   });
 
@@ -167,18 +170,16 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Pencil is selected by default (has ▶ prefix), Eyedropper is not
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
+      await ctx.getByID('tool-pencil').within(2000).shouldContain('▶');
+      await ctx.getByID('tool-eyedropper').within(500).shouldExist();
 
       // Click on Eyedropper tool - now it gets the ▶ prefix
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(30);
-      await ctx.expect(ctx.getByText('▶ Eyedropper')).toBeVisible();
+      await ctx.getByID('tool-eyedropper').click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
 
       // Click back on Pencil - now Pencil gets the ▶ prefix again
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(30);
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
     });
 
     test('should maintain UI consistency after rapid tool switching', async () => {
@@ -189,21 +190,19 @@ describe('Pixel Editor Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // Rapid tool switching - after each click, the clicked tool gets ▶ prefix
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(20);
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(20);
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(20);
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(50);
+      // Rapid tool switching
+      await ctx.getByID('tool-eyedropper').within(2000).click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
+      await ctx.getByID('tool-eyedropper').click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
 
-      // UI should still be functional - Pencil is now selected
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
-      await ctx.expect(ctx.getByText('FG')).toBeVisible();
+      // UI should still be functional
+      await ctx.getByID('zoom-level').within(500).shouldExist();
+      await ctx.getByText('FG').within(500).shouldExist();
     });
   });
 
@@ -278,31 +277,30 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Start at 100% zoom
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
+      await ctx.getByID('zoom-level').within(2000).shouldBe('100%');
 
-      // Perform mixed operations: zoom and tool switching
-      await ctx.getByText('+').click();
-      await ctx.wait(30);
+      // Zoom in
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
 
       // Switch to Eyedropper tool
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(50);
+      await ctx.getByID('tool-eyedropper').within(500).click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
 
       // Color label should still be visible
-      await ctx.expect(ctx.getByText('FG')).toBeVisible();
+      await ctx.getByText('FG').within(500).shouldExist();
 
       // Zoom out once
-      await ctx.getByText('-').click();
-      await ctx.wait(30);
+      await ctx.getByID('zoom-out').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('100%');
 
       // Switch back to Pencil
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(100);
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
 
       // Verify UI is still responsive after mixed operations
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
-      await ctx.expect(ctx.getByText('FG')).toBeVisible();
+      await ctx.getByID('tool-eyedropper').within(500).shouldExist();
+      await ctx.getByText('FG').within(500).shouldExist();
     });
 
     test('should maintain UI consistency after rapid operations', async () => {
@@ -314,33 +312,33 @@ describe('Pixel Editor Tests', () => {
       await testApp.run();
 
       // Rapid tool switching
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(20);
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(20);
-      await ctx.getByText('Eyedropper').click();
-      await ctx.wait(20);
-      await ctx.getByText('Pencil').click();
-      await ctx.wait(50);
+      await ctx.getByID('tool-eyedropper').within(2000).click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
+      await ctx.getByID('tool-eyedropper').click();
+      await ctx.getByID('tool-eyedropper').within(500).shouldContain('▶');
+      await ctx.getByID('tool-pencil').click();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
 
       // Rapid zoom operations
-      await ctx.getByText('+').click();
-      await ctx.wait(20);
-      await ctx.getByText('+').click();
-      await ctx.wait(20);
-      await ctx.getByText('-').click();
-      await ctx.wait(20);
-      await ctx.getByText('+').click();
-      await ctx.wait(100);
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('400%');
+      await ctx.getByID('zoom-out').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('200%');
+      await ctx.getByID('zoom-in').click();
+      await ctx.getByID('zoom-level').within(500).shouldBe('400%');
 
       // UI should still be functional - Pencil is selected
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
-      await ctx.expect(ctx.getByText('+')).toBeVisible();
-      await ctx.expect(ctx.getByText('-')).toBeVisible();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
+      await ctx.getByID('tool-eyedropper').within(500).shouldExist();
+      await ctx.getByID('zoom-in').within(500).shouldExist();
+      await ctx.getByID('zoom-out').within(500).shouldExist();
 
       // Color label should still be visible
-      await ctx.expect(ctx.getByText('FG')).toBeVisible();
+      await ctx.getByText('FG').within(500).shouldExist();
     });
   });
 
@@ -356,25 +354,25 @@ describe('Pixel Editor Tests', () => {
       // Note: Accordion section titles like 'Tools' are not exposed as widgets
 
       // Bottom status section
-      await ctx.expect(ctx.getByExactText('Open a file')).toBeVisible();
+      await ctx.getByExactText('Open a file').within(2000).shouldExist();
 
       // Tools - Pencil is selected by default
-      await ctx.expect(ctx.getByText('▶ Pencil')).toBeVisible();
-      await ctx.expect(ctx.getByText('Eyedropper')).toBeVisible();
+      await ctx.getByID('tool-pencil').within(500).shouldContain('▶');
+      await ctx.getByID('tool-eyedropper').within(500).shouldExist();
 
       // Zoom controls
-      await ctx.expect(ctx.getByText('100%')).toBeVisible();
-      await ctx.expect(ctx.getByText('+')).toBeVisible();
-      await ctx.expect(ctx.getByText('-')).toBeVisible();
+      await ctx.getByID('zoom-level').within(500).shouldBe('100%');
+      await ctx.getByID('zoom-in').within(500).shouldExist();
+      await ctx.getByID('zoom-out').within(500).shouldExist();
 
       // Color controls - labels only, colors are rectangle previews
-      await ctx.expect(ctx.getByText('FG')).toBeVisible();
-      await ctx.expect(ctx.getByText('BG')).toBeVisible();
+      await ctx.getByText('FG').within(500).shouldExist();
+      await ctx.getByText('BG').within(500).shouldExist();
 
       // Toolbar
-      await ctx.expect(ctx.getByText('Open')).toBeVisible();
-      await ctx.expect(ctx.getByText('Reset')).toBeVisible();
-      await ctx.expect(ctx.getByText('Save')).toBeVisible();
+      await ctx.getByText('Open').within(500).shouldExist();
+      await ctx.getByText('Reset').within(500).shouldExist();
+      await ctx.getByText('Save').within(500).shouldExist();
     });
   });
 

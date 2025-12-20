@@ -2260,7 +2260,8 @@ class PixelEditor {
             for (const tool of this.tools) {
               const isSelected = tool === this.currentTool;
               const buttonLabel = isSelected ? `▶ ${tool.name}` : tool.name;
-              const btn = this.a.button(buttonLabel).onClick(() => {
+              const toolId = `tool-${tool.name.toLowerCase()}`;
+              const btn = this.a.button(buttonLabel).withId(toolId).onClick(() => {
                 this.setTool(tool);
               });
               this.toolButtons.set(tool.name, btn);
