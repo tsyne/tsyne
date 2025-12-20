@@ -35,6 +35,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
+    "@types/pngjs": "^6.0.5",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
     "eslint": "^9.39.1",
@@ -74,7 +75,6 @@
     "outputPath": "pkg"
   },
   "dependencies": {
-    "esbuild": "^0.24.0",
     "@grpc/grpc-js": "^1.12.4",
     "@grpc/proto-loader": "^0.7.15",
     "@msgpack/msgpack": "^3.0.0",
@@ -82,6 +82,7 @@
     "@types/marked": "^5.0.2",
     "buffer-crc32": "^1.0.0",
     "chess.js": "^1.4.0",
+    "esbuild": "^0.24.0",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
     "jimp": "^1.6.0",

@@ -109,6 +109,7 @@ const (
 	BridgeService_UpdateCanvasArc_FullMethodName             = "/bridge.BridgeService/UpdateCanvasArc"
 	BridgeService_UpdateCanvasPolygon_FullMethodName         = "/bridge.BridgeService/UpdateCanvasPolygon"
 	BridgeService_UpdateTappableCanvasRaster_FullMethodName  = "/bridge.BridgeService/UpdateTappableCanvasRaster"
+	BridgeService_SetTappableCanvasImage_FullMethodName      = "/bridge.BridgeService/SetTappableCanvasImage"
 	BridgeService_SaveRasterBackground_FullMethodName        = "/bridge.BridgeService/SaveRasterBackground"
 	BridgeService_CreateRasterSprite_FullMethodName          = "/bridge.BridgeService/CreateRasterSprite"
 	BridgeService_MoveRasterSprite_FullMethodName            = "/bridge.BridgeService/MoveRasterSprite"
@@ -369,6 +370,7 @@ type BridgeServiceClient interface {
 	UpdateCanvasArc(ctx context.Context, in *UpdateCanvasArcRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateCanvasPolygon(ctx context.Context, in *UpdateCanvasPolygonRequest, opts ...grpc.CallOption) (*Response, error)
 	UpdateTappableCanvasRaster(ctx context.Context, in *UpdateTappableCanvasRasterRequest, opts ...grpc.CallOption) (*Response, error)
+	SetTappableCanvasImage(ctx context.Context, in *SetTappableCanvasImageRequest, opts ...grpc.CallOption) (*Response, error)
 	// Sprite system - efficient dirty-rectangle based animation
 	SaveRasterBackground(ctx context.Context, in *SaveRasterBackgroundRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateRasterSprite(ctx context.Context, in *CreateRasterSpriteRequest, opts ...grpc.CallOption) (*Response, error)
@@ -1459,6 +1461,16 @@ func (c *bridgeServiceClient) UpdateTappableCanvasRaster(ctx context.Context, in
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_UpdateTappableCanvasRaster_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetTappableCanvasImage(ctx context.Context, in *SetTappableCanvasImageRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetTappableCanvasImage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2992,6 +3004,7 @@ type BridgeServiceServer interface {
 	UpdateCanvasArc(context.Context, *UpdateCanvasArcRequest) (*Response, error)
 	UpdateCanvasPolygon(context.Context, *UpdateCanvasPolygonRequest) (*Response, error)
 	UpdateTappableCanvasRaster(context.Context, *UpdateTappableCanvasRasterRequest) (*Response, error)
+	SetTappableCanvasImage(context.Context, *SetTappableCanvasImageRequest) (*Response, error)
 	// Sprite system - efficient dirty-rectangle based animation
 	SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error)
 	CreateRasterSprite(context.Context, *CreateRasterSpriteRequest) (*Response, error)
@@ -3457,6 +3470,9 @@ func (UnimplementedBridgeServiceServer) UpdateCanvasPolygon(context.Context, *Up
 }
 func (UnimplementedBridgeServiceServer) UpdateTappableCanvasRaster(context.Context, *UpdateTappableCanvasRasterRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateTappableCanvasRaster not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetTappableCanvasImage(context.Context, *SetTappableCanvasImageRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTappableCanvasImage not implemented")
 }
 func (UnimplementedBridgeServiceServer) SaveRasterBackground(context.Context, *SaveRasterBackgroundRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveRasterBackground not implemented")
@@ -5515,6 +5531,24 @@ func _BridgeService_UpdateTappableCanvasRaster_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).UpdateTappableCanvasRaster(ctx, req.(*UpdateTappableCanvasRasterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetTappableCanvasImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTappableCanvasImageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetTappableCanvasImage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetTappableCanvasImage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetTappableCanvasImage(ctx, req.(*SetTappableCanvasImageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8398,6 +8432,10 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateTappableCanvasRaster",
 			Handler:    _BridgeService_UpdateTappableCanvasRaster_Handler,
+		},
+		{
+			MethodName: "SetTappableCanvasImage",
+			Handler:    _BridgeService_SetTappableCanvasImage_Handler,
 		},
 		{
 			MethodName: "SaveRasterBackground",

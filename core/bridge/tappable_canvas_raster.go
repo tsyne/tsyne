@@ -31,6 +31,10 @@ type TappableCanvasRaster struct {
 	// Mouse move callback ID
 	onMouseMoveCallbackId string
 
+	// Drag callback IDs
+	onDragCallbackId    string
+	onDragEndCallbackId string
+
 	bridge *Bridge
 }
 
@@ -302,6 +306,45 @@ func (t *TappableCanvasRaster) SetOnMouseMoveCallback(bridge *Bridge, callbackId
 	t.onMouseMoveCallbackId = callbackId
 }
 
+// --- fyne.Draggable interface ---
+
+// Dragged is called when the user drags on the canvas
+func (t *TappableCanvasRaster) Dragged(e *fyne.DragEvent) {
+	if t.onDragCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onDragCallbackId,
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+			"deltaX":     float64(e.Dragged.DX),
+			"deltaY":     float64(e.Dragged.DY),
+		},
+	})
+}
+
+// DragEnd is called when a drag gesture ends
+func (t *TappableCanvasRaster) DragEnd() {
+	if t.onDragEndCallbackId == "" || t.bridge == nil {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onDragEndCallbackId,
+		},
+	})
+}
+
+// SetOnDragCallback sets the callback IDs for drag events
+func (t *TappableCanvasRaster) SetOnDragCallback(bridge *Bridge, dragId, dragEndId string) {
+	t.bridge = bridge
+	t.onDragCallbackId = dragId
+	t.onDragEndCallbackId = dragEndId
+}
+
 // RequestFocus requests keyboard focus for this canvas
 func (t *TappableCanvasRaster) RequestFocus() {
 	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
@@ -315,3 +358,4 @@ var _ fyne.Focusable = (*TappableCanvasRaster)(nil)
 var _ desktop.Keyable = (*TappableCanvasRaster)(nil)
 var _ fyne.Scrollable = (*TappableCanvasRaster)(nil)
 var _ desktop.Hoverable = (*TappableCanvasRaster)(nil)
+var _ fyne.Draggable = (*TappableCanvasRaster)(nil)

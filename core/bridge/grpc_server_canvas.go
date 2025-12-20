@@ -274,6 +274,8 @@ func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req 
 			"onKeyUpCallbackId":      req.OnKeyUpCallbackId,
 			"onScrollCallbackId":     req.OnScrollCallbackId,
 			"onMouseMoveCallbackId":  req.OnMouseMoveCallbackId,
+			"onDragCallbackId":       req.OnDragCallbackId,
+			"onDragEndCallbackId":    req.OnDragEndCallbackId,
 		},
 	}
 
@@ -590,6 +592,28 @@ func (s *grpcBridgeService) UpdateTappableCanvasRaster(ctx context.Context, req 
 	}
 
 	resp := s.bridge.handleUpdateTappableCanvasRaster(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetTappableCanvasImage sets canvas from PNG image bytes
+func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.SetTappableCanvasImageRequest) (*pb.Response, error) {
+	// Encode raw image bytes to base64 for message handler
+	imageB64 := base64.StdEncoding.EncodeToString(req.Image)
+
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setTappableCanvasImage",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"image":    imageB64,
+		},
+	}
+
+	resp := s.bridge.handleSetTappableCanvasImage(msg)
 
 	return &pb.Response{
 		Success: resp.Success,

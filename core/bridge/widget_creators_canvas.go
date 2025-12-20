@@ -1687,6 +1687,13 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 		tappable.SetOnMouseMoveCallback(b, onMouseMoveCallbackId)
 	}
 
+	// Set up drag callbacks if provided
+	onDragCallbackId, _ := msg.Payload["onDragCallbackId"].(string)
+	onDragEndCallbackId, _ := msg.Payload["onDragEndCallbackId"].(string)
+	if onDragCallbackId != "" || onDragEndCallbackId != "" {
+		tappable.SetOnDragCallback(b, onDragCallbackId, onDragEndCallbackId)
+	}
+
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {
 		pixelBytes := make([]byte, width*height*4)
@@ -1836,6 +1843,83 @@ func (b *Bridge) handleFocusTappableCanvasRaster(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+// handleSetTappableCanvasImage sets the canvas from a base64-encoded PNG image
+// This allows sending PNG bytes directly without TS-side decoding
+func (b *Bridge) handleSetTappableCanvasImage(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	imageB64 := msg.Payload["image"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 image data
+	imageBytes, err := base64.StdEncoding.DecodeString(imageB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode image data: " + err.Error(),
+		}
+	}
+
+	// Decode the PNG image
+	img, _, err := image.Decode(bytes.NewReader(imageBytes))
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode PNG image: " + err.Error(),
+		}
+	}
+
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Convert image to RGBA pixels
+	pixels := make([]byte, width*height*4)
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			r, g, bl, a := img.At(bounds.Min.X+x, bounds.Min.Y+y).RGBA()
+			idx := (y*width + x) * 4
+			pixels[idx] = uint8(r >> 8)
+			pixels[idx+1] = uint8(g >> 8)
+			pixels[idx+2] = uint8(bl >> 8)
+			pixels[idx+3] = uint8(a >> 8)
+		}
+	}
+
+	// Set all pixels at once
+	tappable.SetPixels(pixels)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"width":  width,
+			"height": height,
+		},
 	}
 }
 

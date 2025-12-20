@@ -125,6 +125,7 @@ service BridgeService {
   rpc UpdateCanvasArc(UpdateCanvasArcRequest) returns (Response);
   rpc UpdateCanvasPolygon(UpdateCanvasPolygonRequest) returns (Response);
   rpc UpdateTappableCanvasRaster(UpdateTappableCanvasRasterRequest) returns (Response);
+  rpc SetTappableCanvasImage(SetTappableCanvasImageRequest) returns (Response);
 
   // Sprite system - efficient dirty-rectangle based animation
   rpc SaveRasterBackground(SaveRasterBackgroundRequest) returns (Response);
@@ -1166,6 +1167,8 @@ message CreateTappableCanvasRasterRequest {
   string on_key_up_callback_id = 6;
   string on_scroll_callback_id = 7;
   string on_mouse_move_callback_id = 8;
+  string on_drag_callback_id = 9;
+  string on_drag_end_callback_id = 10;
 }
 
 // Canvas update messages
@@ -1267,6 +1270,12 @@ message UpdateCanvasPolygonRequest {
 message UpdateTappableCanvasRasterRequest {
   string widget_id = 1;
   repeated PixelData updates = 2;
+}
+
+// Set canvas image from PNG data (allows skipping TS-side PNG decoding)
+message SetTappableCanvasImageRequest {
+  string widget_id = 1;
+  bytes image = 2;  // Raw PNG image bytes
 }
 
 // Sprite system messages

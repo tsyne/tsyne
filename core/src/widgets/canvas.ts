@@ -831,6 +831,10 @@ export interface TappableCanvasRasterOptions {
   onScroll?: (deltaX: number, deltaY: number, x: number, y: number) => void;
   /** Called when mouse moves over the canvas */
   onMouseMove?: (x: number, y: number) => void;
+  /** Called during drag with position and delta */
+  onDrag?: (x: number, y: number, deltaX: number, deltaY: number) => void;
+  /** Called when drag ends */
+  onDragEnd?: () => void;
 }
 
 /**
@@ -846,6 +850,8 @@ export class TappableCanvasRaster {
   private onKeyUpCallback?: (key: string) => void;
   private onScrollCallback?: (deltaX: number, deltaY: number, x: number, y: number) => void;
   private onMouseMoveCallback?: (x: number, y: number) => void;
+  private onDragCallback?: (x: number, y: number, deltaX: number, deltaY: number) => void;
+  private onDragEndCallback?: () => void;
 
   constructor(ctx: Context, width: number, height: number, options?: TappableCanvasRasterOptions);
   /** @deprecated Use options object instead */
@@ -875,6 +881,8 @@ export class TappableCanvasRaster {
     this.onKeyUpCallback = options.onKeyUp;
     this.onScrollCallback = options.onScroll;
     this.onMouseMoveCallback = options.onMouseMove;
+    this.onDragCallback = options.onDrag;
+    this.onDragEndCallback = options.onDragEnd;
 
     const payload: any = { id: this.id, width, height };
 
@@ -921,6 +929,28 @@ export class TappableCanvasRaster {
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         if (this.onMouseMoveCallback) {
           this.onMouseMoveCallback(data.x, data.y);
+        }
+      });
+    }
+
+    // Set up drag callback
+    if (options.onDrag) {
+      const callbackId = ctx.generateId('callback');
+      payload.onDragCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        if (this.onDragCallback) {
+          this.onDragCallback(data.x, data.y, data.deltaX, data.deltaY);
+        }
+      });
+    }
+
+    // Set up drag end callback
+    if (options.onDragEnd) {
+      const callbackId = ctx.generateId('callback');
+      payload.onDragEndCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, () => {
+        if (this.onDragEndCallback) {
+          this.onDragEndCallback();
         }
       });
     }
@@ -997,6 +1027,28 @@ export class TappableCanvasRaster {
       widgetId: this.id,
       buffer: base64
     });
+  }
+
+  /**
+   * Set canvas from PNG image bytes.
+   * This allows sending PNG data directly without TypeScript-side decoding.
+   * The Go bridge will decode the PNG and update the canvas.
+   * @param pngBytes Raw PNG image data (as Uint8Array or ArrayBuffer)
+   * @returns Promise with the decoded image dimensions
+   */
+  async setImageFromPNG(pngBytes: Uint8Array | ArrayBuffer): Promise<{ width: number; height: number }> {
+    // Ensure we have a Uint8Array
+    const bytes = pngBytes instanceof ArrayBuffer ? new Uint8Array(pngBytes) : pngBytes;
+    // Convert to base64
+    const base64 = Buffer.from(bytes).toString('base64');
+    const response = await this.ctx.bridge.send('setTappableCanvasImage', {
+      widgetId: this.id,
+      image: base64
+    }) as { result?: { width?: number; height?: number } };
+    return {
+      width: response?.result?.width ?? this._width,
+      height: response?.result?.height ?? this._height
+    };
   }
 
   /**
