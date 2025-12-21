@@ -4489,6 +4489,20 @@ class PixelEditor {
   }
 
   /**
+   * Get the current pixel buffer (for testing)
+   */
+  getPixels(): Uint8ClampedArray | null {
+    return this.pixels;
+  }
+
+  /**
+   * Apply grayscale effect (public wrapper for testing)
+   */
+  async applyGrayscale(): Promise<void> {
+    await this.effectGrayscale();
+  }
+
+  /**
    * Update coordinate display (called on mouse move/click)
    */
   async updateCoordinates(x: number, y: number): Promise<void> {

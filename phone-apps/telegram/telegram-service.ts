@@ -15,6 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Re-export real service for convenience
+export { RealTelegramService, TelegramCredentials, loadCredentialsFromEnv } from './real-telegram-service';
+
 export interface TelegramMessage {
   id: string;
   chatId: string;
@@ -33,10 +36,17 @@ export interface TelegramChat {
   avatar?: string;
 }
 
+export interface QrLoginResult {
+  token: string;      // Base64 token for QR code
+  url: string;        // tg://login?token=... URL to encode as QR
+  expiresAt: Date;    // When this QR code expires
+}
+
 export interface ITelegramService {
   getChats(): TelegramChat[];
   getChat(id: string): TelegramChat | null;
   getMessages(chatId: string): TelegramMessage[];
+  loadMessagesForChat?(chatId: string): Promise<TelegramMessage[]>;
   sendMessage(chatId: string, text: string): TelegramMessage;
   addChat(name: string): TelegramChat;
   deleteChat(id: string): boolean;
@@ -44,6 +54,17 @@ export interface ITelegramService {
   onChatAdded(handler: (chat: TelegramChat) => void): () => void;
   onMessageAdded(handler: (msg: TelegramMessage) => void): () => void;
   onChatUpdated(handler: (chat: TelegramChat) => void): () => void;
+  // Login functionality
+  isLoggedIn(): boolean;
+  // QR code login (primary method)
+  startQrLogin(): Promise<{ success: boolean; qr?: QrLoginResult; error?: string }>;
+  onQrCodeUpdate(handler: (qr: QrLoginResult) => void): () => void;
+  cancelQrLogin(): void;
+  // Phone+code login (fallback)
+  login(phoneNumber: string): Promise<{ success: boolean; error?: string }>;
+  verifyCode(code: string): Promise<{ success: boolean; error?: string }>;
+  logout(): void;
+  onLoginStateChanged(handler: (loggedIn: boolean) => void): () => void;
 }
 
 export class MockTelegramService implements ITelegramService {
@@ -52,10 +73,14 @@ export class MockTelegramService implements ITelegramService {
   private chatAddedListeners: ((chat: TelegramChat) => void)[] = [];
   private messageAddedListeners: ((msg: TelegramMessage) => void)[] = [];
   private chatUpdatedListeners: ((chat: TelegramChat) => void)[] = [];
+  private loginStateListeners: ((loggedIn: boolean) => void)[] = [];
+  private qrCodeListeners: ((qr: QrLoginResult) => void)[] = [];
+  private loggedIn: boolean = false;
+  private pendingPhoneNumber: string | null = null;
+  private qrLoginTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    // Initialize with sample chats
-    this.initializeSampleChats();
+    // Sample chats are initialized after login
   }
 
   private initializeSampleChats() {
@@ -290,6 +315,95 @@ export class MockTelegramService implements ITelegramService {
     return () => {
       const index = this.chatUpdatedListeners.indexOf(handler);
       if (index > -1) this.chatUpdatedListeners.splice(index, 1);
+    };
+  }
+
+  isLoggedIn(): boolean {
+    return this.loggedIn;
+  }
+
+  async startQrLogin(): Promise<{ success: boolean; qr?: QrLoginResult; error?: string }> {
+    // Generate mock QR data
+    const token = Buffer.from(`mock_token_${Date.now()}`).toString('base64');
+    const qr: QrLoginResult = {
+      token,
+      url: `tg://login?token=${token}`,
+      expiresAt: new Date(Date.now() + 30000), // 30 seconds
+    };
+
+    // Simulate auto-login after 3 seconds (mock "scan")
+    this.qrLoginTimer = setTimeout(() => {
+      this.loggedIn = true;
+      this.initializeSampleChats();
+      this.loginStateListeners.forEach((listener) => listener(true));
+    }, 3000);
+
+    return { success: true, qr };
+  }
+
+  onQrCodeUpdate(handler: (qr: QrLoginResult) => void): () => void {
+    this.qrCodeListeners.push(handler);
+    return () => {
+      const index = this.qrCodeListeners.indexOf(handler);
+      if (index > -1) this.qrCodeListeners.splice(index, 1);
+    };
+  }
+
+  cancelQrLogin(): void {
+    if (this.qrLoginTimer) {
+      clearTimeout(this.qrLoginTimer);
+      this.qrLoginTimer = null;
+    }
+  }
+
+  async login(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Basic validation
+    const cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    if (!/^\+?\d{10,15}$/.test(cleanNumber)) {
+      return { success: false, error: 'Invalid phone number format' };
+    }
+
+    this.pendingPhoneNumber = cleanNumber;
+    return { success: true };
+  }
+
+  async verifyCode(code: string): Promise<{ success: boolean; error?: string }> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    if (!this.pendingPhoneNumber) {
+      return { success: false, error: 'No pending login' };
+    }
+
+    // Accept any 5-digit code for mock
+    if (!/^\d{5}$/.test(code)) {
+      return { success: false, error: 'Invalid code format (5 digits required)' };
+    }
+
+    // Simulate successful login
+    this.loggedIn = true;
+    this.pendingPhoneNumber = null;
+    this.initializeSampleChats();
+    this.loginStateListeners.forEach((listener) => listener(true));
+    return { success: true };
+  }
+
+  logout(): void {
+    this.cancelQrLogin();
+    this.loggedIn = false;
+    this.chats = [];
+    this.messages.clear();
+    this.loginStateListeners.forEach((listener) => listener(false));
+  }
+
+  onLoginStateChanged(handler: (loggedIn: boolean) => void): () => void {
+    this.loginStateListeners.push(handler);
+    return () => {
+      const index = this.loginStateListeners.indexOf(handler);
+      if (index > -1) this.loginStateListeners.splice(index, 1);
     };
   }
 }

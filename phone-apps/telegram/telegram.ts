@@ -32,74 +32,328 @@
 import { app } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
-import { ITelegramService, MockTelegramService, TelegramChat } from './telegram-service';
+import { ITelegramService, MockTelegramService, TelegramChat, QrLoginResult, RealTelegramService, loadCredentialsFromEnv } from './telegram-service';
+import * as QRCode from 'qrcode';
 
 /**
  * Build the Telegram UI - Pseudo-declarative style
  */
 export function createTelegramApp(a: App, telegram?: ITelegramService): void {
-  const telegramService = telegram || new MockTelegramService();
+  // Use provided service, or try real service with env credentials, or fall back to mock
+  let telegramService: ITelegramService;
+  if (telegram) {
+    telegramService = telegram;
+  } else {
+    const creds = loadCredentialsFromEnv();
+    if (creds) {
+      console.log('Using real Telegram service with credentials from environment');
+      telegramService = new RealTelegramService(creds);
+    } else {
+      console.log('No TELEGRAM_API_ID/TELEGRAM_API_HASH found, using mock service');
+      telegramService = new MockTelegramService();
+    }
+  }
 
   // Instance-local state
   let currentChatId: string | null = null;
   let titleLabel: any = undefined;
   let messageInputEntry: any = undefined;
   let contentContainer: any = undefined;
+  let mainWindow: any = undefined;
+  let loginState: 'qr' | 'phone' | 'code' | 'logged_in' = telegramService.isLoggedIn() ? 'logged_in' : 'qr';
+  let phoneInputEntry: any = undefined;
+  let codeInputEntry: any = undefined;
+  let loginErrorLabel: any = undefined;
+  let qrCodeImage: any = undefined;
+  let currentQrData: QrLoginResult | null = null;
 
   // Subscribe to telegram service events
   const unsubscribeChatAdded = telegramService.onChatAdded(() => rebuildUI());
   const unsubscribeMessageAdded = telegramService.onMessageAdded(() => {
     if (currentChatId) {
-      rebuildMessageView();
+      rebuildUI();
     }
   });
   const unsubscribeChatUpdated = telegramService.onChatUpdated(() => rebuildUI());
+  const unsubscribeLoginState = telegramService.onLoginStateChanged((loggedIn) => {
+    console.log('Login state changed:', loggedIn);
+    loginState = loggedIn ? 'logged_in' : 'qr';
+    currentQrData = null;
+    console.log('Calling rebuildUI, loginState is now:', loginState);
+    rebuildUI();
+  });
+  const unsubscribeQrCode = telegramService.onQrCodeUpdate(async (qr) => {
+    currentQrData = qr;
+    await updateQrCodeImage();
+  });
+
+  async function updateQrCodeImage(): Promise<void> {
+    if (!qrCodeImage || !currentQrData) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(currentQrData.url, {
+        width: 200,
+        margin: 2,
+        color: { dark: '#000000', light: '#ffffff' }
+      });
+      qrCodeImage.updateImage?.(dataUrl);
+    } catch (e) {
+      console.error('Failed to generate QR code:', e);
+    }
+  }
 
   function rebuildUI() {
-    if (!contentContainer) return;
-    contentContainer.destroyChildren?.();
-    buildChatListView();
+    if (!mainWindow) return;
+    mainWindow.setContent(() => {
+      buildWindowContent();
+    });
   }
 
-  function rebuildMessageView() {
-    if (!contentContainer) return;
-    contentContainer.destroyChildren?.();
-    buildMessageView();
+  function buildWindowContent() {
+    // Split view: chat list/login on left, messages on right
+    a.hsplit(
+      // Left: chat list or login
+      () => {
+        contentContainer = a.vbox(() => {
+          if (loginState === 'logged_in') {
+            buildChatListView();
+          } else {
+            buildLoginView();
+          }
+        });
+      },
+      // Right: message view
+      () => {
+        a.border({
+          top: () => {
+            a.vbox(() => {
+              // Chat header
+              titleLabel = a.label('💬 Telegram')
+                .withId('chat-title');
+              a.separator();
+            });
+          },
+          center: () => {
+            // Message list - use bindTo for dynamic updates
+            a.scroll(() => {
+              a.vbox(() => {}).bindTo({
+                items: () => currentChatId ? telegramService.getMessages(currentChatId) : [],
+                empty: () => {
+                  if (loginState === 'logged_in') {
+                    a.label(currentChatId ? 'No messages yet' : 'Select a chat to view messages')
+                      .withId('select-chat-label');
+                  } else {
+                    a.label('Please log in to start messaging')
+                      .withId('login-prompt-label');
+                  }
+                },
+                render: (msg: any) => {
+                  buildMessageRow(msg);
+                },
+                trackBy: (msg: any) => msg.id
+              });
+            });
+          },
+          bottom: () => {
+            a.vbox(() => {
+              a.separator();
+              // Message input
+              a.hbox(() => {
+                messageInputEntry = a.entry(loginState === 'logged_in' ? 'Type a message...' : 'Log in to send messages', undefined, 400)
+                  .withId('message-input');
+
+                a.button('↩️')
+                  .onClick(() => sendMessage())
+                  .withId('btn-send');
+              });
+            });
+          }
+        });
+      },
+      0.35 // left pane takes 35% of width
+    );
   }
 
-  function buildChatListView() {
-    const chats = telegramService.getChats();
 
+  function buildLoginView() {
     a.vbox(() => {
       // Header
       a.label('💬 Telegram').withId('telegram-title');
 
       a.separator();
 
-      // Action buttons
-      a.hbox(() => {
-        a.button('🔍').withId('btn-search');
-        a.spacer();
-        a.button('✏️').onClick(() => {
-          showNewChatDialog();
-        }).withId('btn-new-chat');
-      });
+      a.spacer();
 
-      a.separator();
-
-      // Chat list
-      a.scroll(() => {
+      if (loginState === 'qr') {
+        // QR code login (primary method)
         a.vbox(() => {
-          if (chats.length === 0) {
-            a.label('No chats yet').withId('no-chats-label');
-            return;
-          }
+          a.label('Sign in to Telegram').withId('login-header');
+          a.label('Scan QR code with your phone').withId('login-subtitle');
 
-          chats.forEach((chat) => {
-            buildChatRow(chat);
+          a.separator();
+
+          // QR code image placeholder (200x200)
+          qrCodeImage = a.image('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')
+            .withId('qr-code');
+
+          loginErrorLabel = a.label('').withId('login-error');
+
+          a.label('Open Telegram on your phone').withId('qr-step-1');
+          a.label('Go to Settings > Devices > Link Desktop Device').withId('qr-step-2');
+          a.label('Point your phone at this screen').withId('qr-step-3');
+
+          a.separator();
+
+          a.hbox(() => {
+            a.button('Use Phone Number')
+              .onClick(() => {
+                telegramService.cancelQrLogin();
+                loginState = 'phone';
+                rebuildUI();
+              })
+              .withId('btn-use-phone');
+          });
+
+          // Start QR login automatically
+          setTimeout(async () => {
+            loginErrorLabel?.setText?.('Generating QR code...');
+            const result = await telegramService.startQrLogin();
+            if (result.success && result.qr) {
+              currentQrData = result.qr;
+              await updateQrCodeImage();
+              loginErrorLabel?.setText?.('Scan to log in');
+            } else if (result.error) {
+              loginErrorLabel?.setText?.(result.error);
+            }
+          }, 100);
+        });
+      } else if (loginState === 'phone') {
+        // Phone number entry (fallback)
+        a.vbox(() => {
+          a.label('Sign in to Telegram').withId('login-header');
+          a.label('Enter your phone number').withId('login-subtitle');
+
+          a.separator();
+
+          phoneInputEntry = a.entry('+1 234 567 8900')
+            .withId('phone-input');
+
+          loginErrorLabel = a.label('').withId('login-error');
+
+          a.hbox(() => {
+            a.button('Back to QR')
+              .onClick(() => {
+                loginState = 'qr';
+                rebuildUI();
+              })
+              .withId('btn-back-qr');
+
+            a.button('Next')
+              .onClick(async () => {
+                const phone = phoneInputEntry?.getText?.() || '';
+                if (!phone.trim()) {
+                  loginErrorLabel?.setText?.('Please enter a phone number');
+                  return;
+                }
+
+                loginErrorLabel?.setText?.('Sending code...');
+                const result = await telegramService.login(phone);
+                if (result.success) {
+                  loginState = 'code';
+                  rebuildUI();
+                } else {
+                  loginErrorLabel?.setText?.(result.error || 'Login failed');
+                }
+              })
+              .withId('btn-next');
           });
         });
-      });
+      } else if (loginState === 'code') {
+        // Verification code entry
+        a.vbox(() => {
+          a.label('Enter verification code').withId('code-header');
+          a.label('We sent a code to your phone').withId('code-subtitle');
+
+          a.separator();
+
+          codeInputEntry = a.entry('12345')
+            .withId('code-input');
+
+          loginErrorLabel = a.label('').withId('login-error');
+
+          a.hbox(() => {
+            a.button('Back')
+              .onClick(() => {
+                loginState = 'phone';
+                rebuildUI();
+              })
+              .withId('btn-back');
+
+            a.button('Verify')
+              .onClick(async () => {
+                const code = codeInputEntry?.getText?.() || '';
+                if (!code.trim()) {
+                  loginErrorLabel?.setText?.('Please enter the code');
+                  return;
+                }
+
+                loginErrorLabel?.setText?.('Verifying...');
+                const result = await telegramService.verifyCode(code);
+                if (result.success) {
+                  loginState = 'logged_in';
+                  rebuildUI();
+                } else {
+                  loginErrorLabel?.setText?.(result.error || 'Verification failed');
+                }
+              })
+              .withId('btn-verify');
+          });
+        });
+      }
+
+      a.spacer();
+    });
+  }
+
+  function buildChatListView() {
+    // Use border layout so scroll in center expands
+    a.border({
+      top: () => {
+        a.vbox(() => {
+          // Header
+          a.label('💬 Telegram').withId('telegram-title');
+
+          a.separator();
+
+          // Action buttons
+          a.hbox(() => {
+            a.button('🔍').withId('btn-search');
+            a.spacer();
+            a.button('🚪').onClick(() => {
+              telegramService.logout();
+            }).withId('btn-logout');
+            a.button('✏️').onClick(() => {
+              showNewChatDialog();
+            }).withId('btn-new-chat');
+          });
+
+          a.separator();
+        });
+      },
+      center: () => {
+        // Chat list using bindTo for dynamic updates
+        a.scroll(() => {
+          a.vbox(() => {}).bindTo({
+            items: () => telegramService.getChats(),
+            empty: () => {
+              a.label('No chats yet').withId('no-chats-label');
+            },
+            render: (chat: TelegramChat) => {
+              buildChatRow(chat);
+            },
+            trackBy: (chat: TelegramChat) => chat.id
+          });
+        });
+      }
     });
   }
 
@@ -108,24 +362,13 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
       // Avatar
       a.label(chat.avatar || '👤').withId(`chat-${chat.id}-avatar`);
 
-      // Chat info
-      a.vbox(() => {
-        // Name and unread count
-        a.hbox(() => {
-          a.label(chat.name).withId(`chat-${chat.id}-name`);
+      // Name
+      a.label(chat.name).withId(`chat-${chat.id}-name`);
 
-          if (chat.unreadCount > 0) {
-            a.label(`(${chat.unreadCount})`).withId(`chat-${chat.id}-unread`);
-          }
-        });
-
-        // Last message preview
-        a.label(chat.lastMessage).withId(`chat-${chat.id}-message`);
-
-        // Time
-        const timeStr = formatTime(chat.lastMessageTime);
-        a.label(timeStr).withId(`chat-${chat.id}-time`);
-      });
+      // Unread count if any
+      if (chat.unreadCount > 0) {
+        a.label(`(${chat.unreadCount})`).withId(`chat-${chat.id}-unread`);
+      }
 
       a.spacer();
 
@@ -137,45 +380,6 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           showChatView(chat);
         })
         .withId(`chat-${chat.id}-open`);
-    });
-  }
-
-  function buildMessageView() {
-    const messages = currentChatId ? telegramService.getMessages(currentChatId) : [];
-    const currentChat = currentChatId ? telegramService.getChat(currentChatId) : null;
-
-    a.vbox(() => {
-      // Chat header
-      titleLabel = a.label(`💬 ${currentChat?.name || 'Telegram'}`)
-        .withId('chat-title');
-
-      a.separator();
-
-      // Messages
-      a.scroll(() => {
-        a.vbox(() => {
-          if (messages.length === 0) {
-            a.label('No messages yet').withId('no-messages-label');
-            return;
-          }
-
-          messages.forEach((msg) => {
-            buildMessageRow(msg);
-          });
-        });
-      });
-
-      a.separator();
-
-      // Message input
-      a.hbox(() => {
-        messageInputEntry = a.entry('Type a message...')
-          .withId('message-input');
-
-        a.button('↩️')
-          .onClick(() => sendMessage())
-          .withId('btn-send');
-      });
     });
   }
 
@@ -214,27 +418,29 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
     return date.toLocaleDateString();
   }
 
-  function showChatView(chat: TelegramChat) {
-    if (titleLabel) {
-      titleLabel.setText(`💬 ${chat.name}`);
+  async function showChatView(chat: TelegramChat) {
+    // Load messages for this chat from Telegram
+    if (telegramService.loadMessagesForChat) {
+      await telegramService.loadMessagesForChat(chat.id);
     }
 
-    rebuildMessageView();
+    // Rebuild UI to show the selected chat's messages
+    rebuildUI();
 
     if (messageInputEntry && messageInputEntry.focus) {
       setTimeout(() => messageInputEntry.focus?.(), 100);
     }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!currentChatId || !messageInputEntry) return;
 
-    const text = messageInputEntry.getText?.() || '';
+    const text = await messageInputEntry.getText?.() || '';
     if (!text.trim()) return;
 
     telegramService.sendMessage(currentChatId, text);
-    messageInputEntry.setText?.('');
-    rebuildMessageView();
+    await messageInputEntry.setText?.('');
+    rebuildUI();
   }
 
   function showNewChatDialog() {
@@ -244,49 +450,10 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
   }
 
   a.window({ title: 'Telegram', width: 800, height: 600 }, (win: Window) => {
+    mainWindow = win;
     win.setContent(() => {
-      // Split view: chat list on left, messages on right
-      a.hsplit(
-        // Left: chat list
-        () => {
-          contentContainer = a.vbox(() => {
-            buildChatListView();
-          });
-        },
-        // Right: message view
-        () => {
-          a.vbox(() => {
-            // Chat header
-            titleLabel = a.label('💬 Telegram')
-              .withId('chat-title');
-
-            a.separator();
-
-            // Messages
-            a.scroll(() => {
-              a.vbox(() => {
-                a.label('Select a chat to view messages')
-                  .withId('select-chat-label');
-              });
-            });
-
-            a.separator();
-
-            // Message input
-            a.hbox(() => {
-              messageInputEntry = a.entry('Type a message...')
-                .withId('message-input');
-
-              a.button('↩️')
-                .onClick(() => sendMessage())
-                .withId('btn-send');
-            });
-          });
-        },
-        350 // offset for left pane
-      );
+      buildWindowContent();
     });
-
     win.show();
   });
 
@@ -295,6 +462,9 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
     unsubscribeChatAdded();
     unsubscribeMessageAdded();
     unsubscribeChatUpdated();
+    unsubscribeLoginState();
+    unsubscribeQrCode();
+    telegramService.cancelQrLogin();
   };
 
   return cleanup as any;
@@ -303,7 +473,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
 // Standalone execution
 if (require.main === module) {
   app({ title: 'Telegram' }, (a: App) => {
-    const telegramService = new MockTelegramService();
-    createTelegramApp(a, telegramService);
+    // Let createTelegramApp auto-detect credentials from environment
+    createTelegramApp(a);
   });
 }

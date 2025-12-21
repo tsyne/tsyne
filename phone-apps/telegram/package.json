@@ -10,9 +10,14 @@
   "keywords": ["telegram", "messaging", "chat"],
   "author": "Portions copyright Development@bendingtherules.nl and portions copyright Paul Hammant 2025",
   "license": "GPL-3.0",
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "telegram": "^2.26.22"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
+    "@types/qrcode": "^1.5.6",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "tsx": "^3.14.0",
