@@ -91,6 +91,51 @@ func (t *TappableCanvasRaster) SetPixels(pixels []byte) {
 	}
 }
 
+// SetPixelRect updates a rectangular region of the pixel buffer.
+// pixels should be rectWidth * rectHeight * 4 bytes (RGBA for each pixel).
+func (t *TappableCanvasRaster) SetPixelRect(x, y, rectWidth, rectHeight int, pixels []byte) {
+	expectedLen := rectWidth * rectHeight * 4
+	if len(pixels) != expectedLen {
+		return // Buffer size mismatch
+	}
+
+	// Copy each row of the source rectangle to the canvas buffer
+	for row := 0; row < rectHeight; row++ {
+		destY := y + row
+		if destY < 0 || destY >= t.height {
+			continue
+		}
+
+		// Calculate source and destination offsets
+		srcOffset := row * rectWidth * 4
+
+		// Determine the actual x range to copy (handle clipping)
+		startX := x
+		endX := x + rectWidth
+		srcStartOffset := 0
+
+		if startX < 0 {
+			srcStartOffset = -startX * 4
+			startX = 0
+		}
+		if endX > t.width {
+			endX = t.width
+		}
+		if startX >= endX {
+			continue
+		}
+
+		destOffset := (destY*t.width + startX) * 4
+		copyLen := (endX - startX) * 4
+
+		copy(t.pixelBuffer[destOffset:destOffset+copyLen], pixels[srcOffset+srcStartOffset:srcOffset+srcStartOffset+copyLen])
+	}
+
+	fyne.Do(func() {
+		t.raster.Refresh()
+	})
+}
+
 // SetPixel sets a single pixel at the given coordinates and refreshes.
 // For setting many pixels, use SetPixelNoRefresh followed by Refresh().
 func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {

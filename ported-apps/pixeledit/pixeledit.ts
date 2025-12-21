@@ -2530,7 +2530,10 @@ class PixelEditor {
     if (!this.rasterBufferDirty || !this.rasterBuffer) return;
 
     if (this.canvasRaster) {
-      await this.canvasRaster.setPixelBuffer(this.rasterBuffer);
+      const displayWidth = this.imageWidth * this.zoom;
+      const displayHeight = this.imageHeight * this.zoom;
+      // Use stripes for large images to avoid msgpack message size limits
+      await this.canvasRaster.setPixelBufferInStripes(this.rasterBuffer, displayWidth, displayHeight);
     }
 
     this.rasterBufferDirty = false;
@@ -3935,10 +3938,28 @@ class PixelEditor {
    * Based on: editor.go setZoom() - uses power of 2 zoom like original
    */
   async setZoom(level: number): Promise<void> {
-    this.zoom = Math.max(1, Math.min(16, level));
+    const newZoom = Math.max(1, Math.min(16, level));
+    if (newZoom === this.zoom) return; // No change
+
+    // Check if zoomed buffer would be too large (limit to ~100MB to avoid OOM)
+    const maxBufferSize = 100 * 1024 * 1024; // 100MB
+    const zoomedSize = this.imageWidth * newZoom * this.imageHeight * newZoom * 4;
+    if (zoomedSize > maxBufferSize) {
+      console.log(`Zoom ${newZoom * 100}% would require ${Math.round(zoomedSize / 1024 / 1024)}MB - too large`);
+      if (this.win) {
+        await this.win.showError('Zoom Limited', `Cannot zoom to ${newZoom * 100}% - image too large (would need ${Math.round(zoomedSize / 1024 / 1024)}MB)`);
+      }
+      return;
+    }
+
+    this.zoom = newZoom;
     if (this.zoomLabel) {
       await this.zoomLabel.setText(`${this.zoom * 100}%`);
     }
+
+    // Rebuild canvas at new zoom level
+    await this.rebuildCanvasIfNeeded();
+    this.updateStatus();
   }
 
   /**
@@ -4461,6 +4482,13 @@ class PixelEditor {
   }
 
   /**
+   * Public wrapper for updateStatus (called after UI is built)
+   */
+  async updateStatusPublic(): Promise<void> {
+    await this.updateStatus();
+  }
+
+  /**
    * Update coordinate display (called on mouse move/click)
    */
   async updateCoordinates(x: number, y: number): Promise<void> {
@@ -4680,58 +4708,59 @@ class PixelEditor {
       this.createBlankImage(32, 32);
     }
 
-    this.a.vbox(() => {
-      // Top toolbar
-      this.buildToolbar();
+    // Use border layout to pin toolbar at top, status at bottom, canvas fills center
+    this.a.border({
+      top: () => this.buildToolbar(),
+      bottom: () => this.buildStatusBar(),
+      center: () => {
+        // Main area: stack with canvas and hamburger panel overlay
+        this.a.stack(() => {
+          // Bottom layer: canvas (fills available space)
+          this.buildCanvas();
 
-      // Main area: stack with canvas and hamburger panel overlay
-      this.a.stack(() => {
-        // Bottom layer: canvas (fills available space)
-        this.buildCanvas();
-
-        // Top layer: hamburger panel overlay on left
-        this.a.hbox(() => {
-          this.a.themeoverride('dark', () => {
-            this.a.vbox(() => {
-              // Hamburger button row (always visible, with opaque background)
-              this.a.max(() => {
-                this.a.rectangle('#1a1a2e', 150, 36);
-                this.a.hbox(() => {
-                  this.a.button('☰').onClick(() => {
-                    this.panelCollapsed = !this.panelCollapsed;
-                    if (this.panelContainer) {
-                      if (this.panelCollapsed) {
-                        this.panelContainer.hide();
-                      } else {
-                        this.panelContainer.show();
+          // Top layer: hamburger panel overlay on left
+          this.a.hbox(() => {
+            this.a.themeoverride('dark', () => {
+              this.a.vbox(() => {
+                // Hamburger button row (always visible, with opaque background)
+                this.a.max(() => {
+                  this.a.rectangle('#1a1a2e', 150, 36);
+                  this.a.hbox(() => {
+                    this.a.button('☰').onClick(() => {
+                      this.panelCollapsed = !this.panelCollapsed;
+                      if (this.panelContainer) {
+                        if (this.panelCollapsed) {
+                          this.panelContainer.hide();
+                        } else {
+                          this.panelContainer.show();
+                        }
                       }
-                    }
-                  }).withId('hamburgerBtn');
-                  this.a.label(' Tools');
+                    }).withId('hamburgerBtn');
+                    this.a.label(' Tools');
+                  });
                 });
-              });
 
-              // Collapsible panel container
-              this.panelContainer = this.a.max(() => {
-                this.a.rectangle('#1a1a2e', 150, 400);
-                this.a.scroll(() => {
-                  // Accordion palette content
-                  this.buildPalette();
+                // Collapsible panel container with scroll
+                this.panelContainer = this.a.scroll(() => {
+                  this.a.max(() => {
+                    this.a.rectangle('#1a1a2e', 150, 500); // Background for content
+                    this.a.vbox(() => {
+                      // Accordion palette content
+                      this.buildPalette();
+                    });
+                  });
                 });
-              });
 
-              // Hide panel initially since panelCollapsed defaults to true
-              if (this.panelCollapsed && this.panelContainer) {
-                this.panelContainer.hide();
-              }
+                // Hide panel initially since panelCollapsed defaults to true
+                if (this.panelCollapsed && this.panelContainer) {
+                  this.panelContainer.hide();
+                }
+              });
             });
+            this.a.spacer();
           });
-          this.a.spacer();
         });
-      });
-
-      // Bottom status bar
-      this.buildStatusBar();
+      }
     });
 
     // Populate canvas with pixel data after UI is built
@@ -4907,33 +4936,48 @@ class PixelEditor {
     const displayWidth = this.imageWidth * this.zoom;
     const displayHeight = this.imageHeight * this.zoom;
 
-    // Create/resize the raster buffer for the zoomed display
+    // For zoom=1, send original pixels directly (no copy needed)
+    if (this.zoom === 1) {
+      // Use pixels directly as Uint8Array
+      const buffer = new Uint8Array(this.pixels.buffer, this.pixels.byteOffset, this.pixels.byteLength);
+      this.rasterBuffer = buffer;
+      await this.canvasRaster.setPixelBufferInStripes(buffer, displayWidth, displayHeight);
+      this.rasterBufferDirty = false;
+      return;
+    }
+
+    // For zoom > 1, create scaled buffer using row-based copying (more efficient)
     this.rasterBuffer = new Uint8Array(displayWidth * displayHeight * 4);
+    const srcRowBytes = this.imageWidth * 4;
+    const dstRowBytes = displayWidth * 4;
 
-    // Fill buffer with zoomed pixel data
-    for (let dy = 0; dy < displayHeight; dy++) {
-      for (let dx = 0; dx < displayWidth; dx++) {
-        const srcX = Math.floor(dx / this.zoom);
-        const srcY = Math.floor(dy / this.zoom);
-        const srcIdx = (srcY * this.imageWidth + srcX) * 4;
-        const dstIdx = (dy * displayWidth + dx) * 4;
-
-        if (srcIdx >= 0 && srcIdx < this.pixels.length) {
-          this.rasterBuffer[dstIdx] = this.pixels[srcIdx];
-          this.rasterBuffer[dstIdx + 1] = this.pixels[srcIdx + 1];
-          this.rasterBuffer[dstIdx + 2] = this.pixels[srcIdx + 2];
-          this.rasterBuffer[dstIdx + 3] = this.pixels[srcIdx + 3];
-        } else {
-          // White for out of bounds
-          this.rasterBuffer[dstIdx] = 255;
-          this.rasterBuffer[dstIdx + 1] = 255;
-          this.rasterBuffer[dstIdx + 2] = 255;
-          this.rasterBuffer[dstIdx + 3] = 255;
+    for (let srcY = 0; srcY < this.imageHeight; srcY++) {
+      const srcRowStart = srcY * srcRowBytes;
+      // Copy this source row to multiple destination rows (zoom times)
+      for (let z = 0; z < this.zoom; z++) {
+        const dstY = srcY * this.zoom + z;
+        const dstRowStart = dstY * dstRowBytes;
+        // For each pixel in source row, duplicate horizontally
+        for (let srcX = 0; srcX < this.imageWidth; srcX++) {
+          const srcIdx = srcRowStart + srcX * 4;
+          const r = this.pixels[srcIdx];
+          const g = this.pixels[srcIdx + 1];
+          const b = this.pixels[srcIdx + 2];
+          const a = this.pixels[srcIdx + 3];
+          // Write zoom copies horizontally
+          for (let zx = 0; zx < this.zoom; zx++) {
+            const dstIdx = dstRowStart + (srcX * this.zoom + zx) * 4;
+            this.rasterBuffer[dstIdx] = r;
+            this.rasterBuffer[dstIdx + 1] = g;
+            this.rasterBuffer[dstIdx + 2] = b;
+            this.rasterBuffer[dstIdx + 3] = a;
+          }
         }
       }
     }
 
-    await this.canvasRaster.setPixelBuffer(this.rasterBuffer);
+    // Use stripes for large images to avoid msgpack message size limits
+    await this.canvasRaster.setPixelBufferInStripes(this.rasterBuffer, displayWidth, displayHeight);
     this.rasterBufferDirty = false;
   }
 
@@ -5028,6 +5072,8 @@ if (require.main === module) {
     a.window({ title: 'Pixel Editor', width: 520, height: 320 }, async (win: Window) => {
       win.setContent(async () => {
         await editor.buildUI(win);
+        // Update status after UI is built (in case file was pre-loaded)
+        await editor.updateStatusPublic();
       });
       win.show();
     });

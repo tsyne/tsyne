@@ -621,6 +621,32 @@ func (s *grpcBridgeService) SetTappableCanvasImage(ctx context.Context, req *pb.
 	}, nil
 }
 
+// SetTappableCanvasRect sets a rectangular region of pixels
+func (s *grpcBridgeService) SetTappableCanvasRect(ctx context.Context, req *pb.SetTappableCanvasRectRequest) (*pb.Response, error) {
+	// Encode raw pixel bytes to base64 for message handler
+	bufferB64 := base64.StdEncoding.EncodeToString(req.Buffer)
+
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "setTappableCanvasRect",
+		Payload: map[string]interface{}{
+			"widgetId": req.WidgetId,
+			"x":        int(req.X),
+			"y":        int(req.Y),
+			"width":    int(req.Width),
+			"height":   int(req.Height),
+			"buffer":   bufferB64,
+		},
+	}
+
+	resp := s.bridge.handleSetTappableCanvasRect(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // ============================================================================
 // Desktop widgets
 // ============================================================================

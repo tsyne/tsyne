@@ -1030,6 +1030,61 @@ export class TappableCanvasRaster {
   }
 
   /**
+   * Set a rectangular region of pixels (RGBA format).
+   * More efficient than setPixelBuffer for partial updates like selections.
+   * Buffer must be rectWidth * rectHeight * 4 bytes (RGBA for each pixel).
+   * @param x Left edge of rectangle in canvas coordinates
+   * @param y Top edge of rectangle in canvas coordinates
+   * @param rectWidth Width of the rectangle
+   * @param rectHeight Height of the rectangle
+   * @param buffer Raw pixel data in RGBA format for the rectangle
+   */
+  async setPixelRect(x: number, y: number, rectWidth: number, rectHeight: number, buffer: Uint8Array): Promise<void> {
+    const base64 = Buffer.from(buffer).toString('base64');
+    await this.ctx.bridge.send('setTappableCanvasRect', {
+      widgetId: this.id,
+      x,
+      y,
+      width: rectWidth,
+      height: rectHeight,
+      buffer: base64
+    });
+  }
+
+  /**
+   * Set all pixels using horizontal stripes to avoid message size limits.
+   * Use this for large images (> ~10MB raw) that would exceed msgpack frame limits.
+   * Buffer must be width * height * 4 bytes (RGBA for each pixel).
+   * @param buffer Raw pixel data in RGBA format
+   * @param width Image width (defaults to canvas width)
+   * @param height Image height (defaults to canvas height)
+   * @param maxStripeBytes Maximum bytes per stripe (default 1MB raw = ~1.33MB base64)
+   */
+  async setPixelBufferInStripes(
+    buffer: Uint8Array,
+    width?: number,
+    height?: number,
+    maxStripeBytes: number = 1024 * 1024
+  ): Promise<void> {
+    const imgWidth = width ?? this._width;
+    const imgHeight = height ?? this._height;
+    const bytesPerRow = imgWidth * 4;
+
+    // Calculate rows per stripe (minimum 1 row)
+    const rowsPerStripe = Math.max(1, Math.floor(maxStripeBytes / bytesPerRow));
+
+    // Send stripes sequentially
+    for (let y = 0; y < imgHeight; y += rowsPerStripe) {
+      const stripeHeight = Math.min(rowsPerStripe, imgHeight - y);
+      const startOffset = y * bytesPerRow;
+      const endOffset = (y + stripeHeight) * bytesPerRow;
+      const stripeBuffer = buffer.subarray(startOffset, endOffset);
+
+      await this.setPixelRect(0, y, imgWidth, stripeHeight, stripeBuffer);
+    }
+  }
+
+  /**
    * Set canvas from PNG image bytes.
    * This allows sending PNG data directly without TypeScript-side decoding.
    * The Go bridge will decode the PNG and update the canvas.

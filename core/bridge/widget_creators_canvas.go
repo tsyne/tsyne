@@ -1968,6 +1968,55 @@ func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 	}
 }
 
+// handleSetTappableCanvasRect sets a rectangular region of pixels from a base64-encoded RGBA buffer
+func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	x := toInt(msg.Payload["x"])
+	y := toInt(msg.Payload["y"])
+	rectWidth := toInt(msg.Payload["width"])
+	rectHeight := toInt(msg.Payload["height"])
+	bufferB64 := msg.Payload["buffer"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Tappable raster widget not found",
+		}
+	}
+
+	tappable, ok := w.(*TappableCanvasRaster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a tappable canvas raster",
+		}
+	}
+
+	// Decode base64 buffer
+	pixels, err := base64.StdEncoding.DecodeString(bufferB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode pixel buffer: " + err.Error(),
+		}
+	}
+
+	// Set the rectangular region
+	tappable.SetPixelRect(x, y, rectWidth, rectHeight, pixels)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 // ============================================================================
 // Sprite System Handlers
 // ============================================================================
