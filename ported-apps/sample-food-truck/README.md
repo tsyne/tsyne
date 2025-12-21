@@ -28,6 +28,80 @@ This is an idiomatic single-file Tsyne application that demonstrates:
 - Weather emoji icons
 - Random weather updates for testing
 
+## User Interface
+
+### Orders View
+```
+┌──────────────────────────────────────────────────────────┐
+│ 🚚 Food Truck Manager                                    │
+├──────────────────────────────────────────────────────────┤
+│ 📋 Order Management                      Status: Pending:1 Ready:1
+│
+│ [➕ Add Burger] [➕ Tacos] [➕ Pizza] [➕ Random]
+│ ─────────────────────────────────────────────────────────
+│
+│ 🔴 Pending Orders (2)
+│ ├─ order-001: Burger, Tacos                    $22.98 [Mark Ready]
+│ └─ order-003: Hot Dog                           $7.99 [Mark Ready]
+│
+│ 🟢 Ready for Pickup (1)
+│ └─ order-002: Pizza, Pizza                     $11.98 [Mark Complete]
+└──────────────────────────────────────────────────────────┘
+```
+
+### Sales Analytics View
+```
+┌──────────────────────────────────────────────────────────┐
+│ 📊 Sales Analytics                       Pending:1 Ready:1
+│ ─────────────────────────────────────────────────────────
+│ Total Sales: $42.95
+│ Top Menu Items:
+│
+│ 1. Pizza Slice       ███████ 71 sold
+│ 2. Tacos (3)         ██████  62 sold
+│ 3. Burger           █████   45 sold
+│ 4. Hot Dog          ████    38 sold
+│ 5. Garden Salad     ██      22 sold
+└──────────────────────────────────────────────────────────┘
+```
+
+### Weather View
+```
+┌──────────────────────────────────────────────────────────┐
+│ 🌤️ Location Weather                      Pending:1 Ready:1
+│ ─────────────────────────────────────────────────────────
+│ ☀️  📍 Downtown Park
+│     🌡️ 72°F
+│     ☁️ Sunny
+│
+│ [Update Weather]
+│
+│ (Random conditions: Sunny ☀️, Cloudy ☁️, Rainy 🌧️, Windy 🌪️)
+└──────────────────────────────────────────────────────────┘
+```
+
+## Screenshots
+
+To generate live screenshots of the application:
+
+```bash
+# Start app with visual display (requires X11/display)
+npx tsx ported-apps/sample-food-truck/index.ts
+
+# Run tests with screenshot capture
+TAKE_SCREENSHOTS=1 npm test ported-apps/sample-food-truck/index.tsyne.test.ts
+
+# Screenshots saved to:
+# - /tmp/food-truck-orders.png
+# - /tmp/food-truck-sales.png
+# - /tmp/food-truck-weather.png
+```
+
+Screenshots show:
+- **Orders View**: Pending orders in red (🔴), ready orders in green (🟢)
+- **Sales View**: ASCII bar charts with top-selling items
+- **Weather View**: Location, temperature, and condition with emoji indicators
+
 ## Architecture
 
 The app follows Tsyne's MVC pattern with three main components:
