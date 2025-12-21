@@ -308,8 +308,9 @@ fi
 # ============================================================================
 # STEP 4: Examples Sub-Project
 # ============================================================================
-echo "--- :bulb: Examples - Tests"
+echo "--- :bulb: Examples - Install & Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
+npm install --ignore-scripts
 
 echo "--- :test_tube: Examples - Logic Tests"
 timeout 150 npm run test:logic -- --json --outputFile=/tmp/examples-logic-test-results.json || {

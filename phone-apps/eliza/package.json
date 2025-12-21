@@ -1,12 +1,21 @@
 {
-  "name": "eliza",
+  "name": "@tsyne/phone-apps-eliza",
   "version": "1.0.0",
   "description": "ELIZA - Classic Pattern Matching Chatbot",
   "main": "eliza.ts",
   "scripts": {
     "start": "ts-node eliza.ts",
-    "test": "jest"
+    "test": "jest",
+    "dev": "npx tsx eliza.ts"
   },
   "keywords": ["eliza", "chatbot", "ai", "pattern-matching"],
-  "license": "BSD-3-Clause"
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^3.14.0",
+    "typescript": "^5.0.0"
+  }
 }
