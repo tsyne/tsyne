@@ -219,19 +219,10 @@ export PATH=/usr/local/go/bin:$PATH
 # ============================================================================
 echo "--- :golang: Building Go bridge"
 
-# Download fyne.io/systray manually (not on Google's proxy)
-cd /tmp
-if [ ! -d "/tmp/systray-master" ]; then
-  echo "Downloading systray dependency..."
-  wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
-  tar -xzf systray-master.tar.gz
-fi
-
-# Use go mod replace to point to local systray
+# Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
 # Reset go.mod to git-committed version first (clean up any stale replacements from failed builds)
 git checkout -- go.mod go.sum || true
-/usr/local/go/bin/go mod edit -replace=fyne.io/systray=/tmp/systray-master
 env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
 
 echo "Building Go shared library for FFI..."

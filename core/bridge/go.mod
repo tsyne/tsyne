@@ -65,7 +65,3 @@ require (
 // Commented out - /tmp directories don't persist in agentic environments
 // replace fyne.io/systray => /tmp/systray-master
 // replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
-
-replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
-
-replace fyne.io/systray => /tmp/systray-master
