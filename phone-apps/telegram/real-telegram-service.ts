@@ -18,6 +18,9 @@ import {
 } from './telegram-service';
 
 const SESSION_FILE = path.join(os.homedir(), '.tsyne', 'telegram-session.txt');
+const CACHE_DIR = path.join(os.homedir(), '.tsyne', 'telegram-cache');
+const MESSAGES_CACHE_DIR = path.join(CACHE_DIR, 'messages');
+const MEDIA_CACHE_DIR = path.join(CACHE_DIR, 'media');
 
 export interface TelegramCredentials {
   apiId: number;
@@ -101,19 +104,126 @@ export class RealTelegramService implements ITelegramService {
     }
   }
 
+  // ============================================================================
+  // Cache Management
+  // ============================================================================
+
+  private ensureCacheDirs(): void {
+    for (const dir of [CACHE_DIR, MESSAGES_CACHE_DIR, MEDIA_CACHE_DIR]) {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
+  }
+
+  private getCachedMessages(chatId: string): TelegramMessage[] | null {
+    try {
+      const cacheFile = path.join(MESSAGES_CACHE_DIR, `${chatId}.json`);
+      if (fs.existsSync(cacheFile)) {
+        const data = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+        // Convert date strings back to Date objects
+        return data.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to load cached messages:', e);
+    }
+    return null;
+  }
+
+  private saveCachedMessages(chatId: string, messages: TelegramMessage[]): void {
+    try {
+      this.ensureCacheDirs();
+      const cacheFile = path.join(MESSAGES_CACHE_DIR, `${chatId}.json`);
+      fs.writeFileSync(cacheFile, JSON.stringify(messages, null, 2), 'utf-8');
+    } catch (e) {
+      console.error('Failed to save cached messages:', e);
+    }
+  }
+
+  private getMediaCachePath(chatId: string, messageId: string): string {
+    return path.join(MEDIA_CACHE_DIR, `${chatId}_${messageId}.jpg`);
+  }
+
+  private getCachedMedia(chatId: string, messageId: string): string | null {
+    try {
+      const cachePath = this.getMediaCachePath(chatId, messageId);
+      if (fs.existsSync(cachePath)) {
+        const data = fs.readFileSync(cachePath);
+        return `data:image/jpeg;base64,${data.toString('base64')}`;
+      }
+    } catch (e) {
+      console.error('Failed to load cached media:', e);
+    }
+    return null;
+  }
+
+  private saveCachedMedia(chatId: string, messageId: string, data: Buffer): string {
+    try {
+      this.ensureCacheDirs();
+      const cachePath = this.getMediaCachePath(chatId, messageId);
+      fs.writeFileSync(cachePath, data);
+      return `data:image/jpeg;base64,${data.toString('base64')}`;
+    } catch (e) {
+      console.error('Failed to save cached media:', e);
+    }
+    return `data:image/jpeg;base64,${data.toString('base64')}`;
+  }
+
+  private keepaliveInterval: ReturnType<typeof setInterval> | null = null;
+
   private async ensureClient(): Promise<TelegramClient> {
     if (!this.client) {
       this.client = new TelegramClient(
         this.session,
         this.credentials.apiId,
         this.credentials.apiHash,
-        { connectionRetries: 5 }
+        {
+          connectionRetries: 5,
+          autoReconnect: true,
+          retryDelay: 1000,
+        }
       );
     }
     if (!this.client.connected) {
       await this.client.connect();
+      this.startKeepalive();
     }
     return this.client;
+  }
+
+  private startKeepalive(): void {
+    // Stop any existing keepalive
+    this.stopKeepalive();
+
+    console.log('Starting keepalive timer');
+
+    // Send a ping every 20 seconds to prevent 30-second TCP timeout
+    this.keepaliveInterval = setInterval(async () => {
+      if (this.client?.connected) {
+        try {
+          console.log('Keepalive ping...');
+          // Use getMe() as a lightweight call that keeps the connection alive
+          // Api.Ping may not be available in all GramJS versions
+          await this.client.getMe();
+          console.log('Keepalive ping OK');
+        } catch (e) {
+          console.log('Keepalive ping failed:', e);
+          // Ignore ping errors - auto-reconnect will handle disconnections
+        }
+      } else {
+        console.log('Keepalive: client not connected');
+      }
+    }, 20000);
+  }
+
+  private stopKeepalive(): void {
+    if (this.keepaliveInterval) {
+      clearInterval(this.keepaliveInterval);
+      this.keepaliveInterval = null;
+    }
   }
 
   async startQrLogin(): Promise<{ success: boolean; qr?: QrLoginResult; error?: string }> {
@@ -277,6 +387,7 @@ export class RealTelegramService implements ITelegramService {
 
   logout(): void {
     this.cancelQrLogin();
+    this.stopKeepalive();
     this.loggedIn = false;
     this.chats = [];
     this.messages.clear();
@@ -365,12 +476,67 @@ export class RealTelegramService implements ITelegramService {
   }
 
   async loadMessagesForChat(chatId: string): Promise<TelegramMessage[]> {
+    // First, try to load from cache for instant display
+    const cached = this.getCachedMessages(chatId);
+    if (cached && cached.length > 0) {
+      console.log(`Loaded ${cached.length} messages from cache for chat ${chatId}`);
+      // Restore media URLs from cache
+      for (const msg of cached) {
+        if (msg.mediaType === 'photo' && !msg.mediaUrl) {
+          const cachedMedia = this.getCachedMedia(chatId, msg.id);
+          if (cachedMedia) {
+            msg.mediaUrl = cachedMedia;
+          }
+        }
+      }
+      this.messages.set(chatId, cached);
+
+      // Sync new messages in background (don't await)
+      this.syncMessagesInBackground(chatId, cached);
+
+      return cached;
+    }
+
+    // No cache - load from API
+    return this.fetchAndCacheMessages(chatId);
+  }
+
+  private async syncMessagesInBackground(chatId: string, cached: TelegramMessage[]): Promise<void> {
+    if (!this.client) return;
+
+    try {
+      // Get latest messages to check for new ones
+      const messages = await this.client.getMessages(chatId, { limit: 50 });
+      const cachedIds = new Set(cached.map(m => m.id));
+
+      // Find new messages not in cache
+      const newMessages = messages.filter(msg => !cachedIds.has(String(msg.id)));
+
+      if (newMessages.length > 0) {
+        console.log(`Found ${newMessages.length} new messages for chat ${chatId}`);
+        // Fetch full messages with media and update cache
+        await this.fetchAndCacheMessages(chatId);
+        // Notify listeners of update
+        this.messageAddedListeners.forEach(listener => {
+          const latest = this.messages.get(chatId)?.[this.messages.get(chatId)!.length - 1];
+          if (latest) listener(latest);
+        });
+      }
+    } catch (e) {
+      console.error('Failed to sync messages in background:', e);
+    }
+  }
+
+  private async fetchAndCacheMessages(chatId: string): Promise<TelegramMessage[]> {
     if (!this.client) return [];
 
     try {
+      console.log(`Fetching messages from API for chat ${chatId}`);
       const messages = await this.client.getMessages(chatId, { limit: 50 });
 
-      const mapped: TelegramMessage[] = await Promise.all(messages.map(async (msg) => {
+      // Process messages sequentially to avoid overwhelming the connection
+      const mapped: TelegramMessage[] = [];
+      for (const msg of messages) {
         let sender = 'Unknown';
         const isOwn = msg.out || false;
 
@@ -387,14 +553,25 @@ export class RealTelegramService implements ITelegramService {
         if (msg.media) {
           if (msg.media instanceof Api.MessageMediaPhoto) {
             mediaType = 'photo';
-            // Download the photo
-            try {
-              const buffer = await this.client!.downloadMedia(msg.media, {});
-              if (buffer) {
-                mediaUrl = `data:image/jpeg;base64,${Buffer.from(buffer).toString('base64')}`;
+            const msgId = String(msg.id);
+
+            // Check cache first
+            const cachedMedia = this.getCachedMedia(chatId, msgId);
+            if (cachedMedia) {
+              console.log(`Using cached photo for message ${msgId}`);
+              mediaUrl = cachedMedia;
+            } else {
+              // Download and cache the photo
+              try {
+                console.log(`Downloading photo for message ${msgId}...`);
+                const buffer = await this.client!.downloadMedia(msg.media, {});
+                if (buffer) {
+                  mediaUrl = this.saveCachedMedia(chatId, msgId, Buffer.from(buffer));
+                  console.log(`Cached photo for message ${msgId}`);
+                }
+              } catch (e) {
+                console.error('Failed to download photo:', e);
               }
-            } catch (e) {
-              console.error('Failed to download photo:', e);
             }
           } else if (msg.media instanceof Api.MessageMediaDocument) {
             const doc = msg.media.document;
@@ -413,7 +590,7 @@ export class RealTelegramService implements ITelegramService {
           }
         }
 
-        return {
+        mapped.push({
           id: String(msg.id),
           chatId,
           sender,
@@ -422,12 +599,17 @@ export class RealTelegramService implements ITelegramService {
           isOwn,
           mediaType,
           mediaUrl,
-        };
-      }));
+        });
+      }
 
       // Reverse to get chronological order
       mapped.reverse();
       this.messages.set(chatId, mapped);
+
+      // Save to cache
+      this.saveCachedMessages(chatId, mapped);
+      console.log(`Cached ${mapped.length} messages for chat ${chatId}`);
+
       return mapped;
     } catch (e) {
       console.error('Failed to load messages:', e);
@@ -569,6 +751,8 @@ export class RealTelegramService implements ITelegramService {
     try {
       console.log('tryRestoreSession: connecting...');
       const client = await this.ensureClient();
+      // Ensure keepalive is running after session restore
+      this.startKeepalive();
       console.log('tryRestoreSession: getting user info...');
       const me = await client.getMe();
       console.log('tryRestoreSession: got user:', me?.firstName);

@@ -109,15 +109,18 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
   function buildWindowContent() {
     // Split view: chat list/login on left, messages on right
     a.hsplit(
-      // Left: chat list or login
+      // Left: chat list or login (use border layout directly so it expands)
       () => {
-        contentContainer = a.vbox(() => {
-          if (loginState === 'logged_in') {
-            buildChatListView();
-          } else {
-            buildLoginView();
-          }
-        });
+        if (loginState === 'logged_in') {
+          buildChatListView();
+        } else {
+          // Wrap login view in border so it expands
+          a.border({
+            center: () => {
+              buildLoginView();
+            }
+          });
+        }
       },
       // Right: message view
       () => {
@@ -358,33 +361,27 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
   }
 
   function buildChatRow(chat: TelegramChat) {
-    a.hbox(() => {
-      // Avatar
-      a.label(chat.avatar || '👤').withId(`chat-${chat.id}-avatar`);
-
-      // Chat info
-      a.vbox(() => {
-        // Name row with unread count
-        a.hbox(() => {
-          a.label(chat.name).withId(`chat-${chat.id}-name`);
-          if (chat.unreadCount > 0) {
-            a.label(`(${chat.unreadCount})`).withId(`chat-${chat.id}-unread`);
-          }
-        });
-        // Message preview
-        a.label(chat.lastMessage).withId(`chat-${chat.id}-message`);
-      });
-
-      a.spacer();
-
-      // Open button
-      a.button('→')
-        .onClick(() => {
-          currentChatId = chat.id;
-          telegramService.markChatAsRead(chat.id);
-          showChatView(chat);
-        })
-        .withId(`chat-${chat.id}-open`);
+    // Use border layout: avatar left, name center (expands), button right
+    a.border({
+      left: () => {
+        a.label(chat.avatar || '👤').withId(`chat-${chat.id}-avatar`);
+      },
+      center: () => {
+        // Chat name with unread count - truncate if too long
+        const displayName = chat.unreadCount > 0
+          ? `${chat.name} (${chat.unreadCount})`
+          : chat.name;
+        a.label(displayName, undefined, 'leading', 'break').withId(`chat-${chat.id}-name`);
+      },
+      right: () => {
+        a.button('→')
+          .onClick(() => {
+            currentChatId = chat.id;
+            telegramService.markChatAsRead(chat.id);
+            showChatView(chat);
+          })
+          .withId(`chat-${chat.id}-open`);
+      }
     });
   }
 
