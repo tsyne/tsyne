@@ -274,8 +274,8 @@ func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req 
 			"onKeyUpCallbackId":      req.OnKeyUpCallbackId,
 			"onScrollCallbackId":     req.OnScrollCallbackId,
 			"onMouseMoveCallbackId":  req.OnMouseMoveCallbackId,
-			"onDragCallbackId":       req.OnDragCallbackId,
-			"onDragEndCallbackId":    req.OnDragEndCallbackId,
+			"onDragCallbackId":       req.DragCallbackId,
+			"onDragEndCallbackId":    req.DragEndCallbackId,
 		},
 	}
 

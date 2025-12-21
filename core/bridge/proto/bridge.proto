@@ -1167,8 +1167,8 @@ message CreateTappableCanvasRasterRequest {
   string on_key_up_callback_id = 6;
   string on_scroll_callback_id = 7;
   string on_mouse_move_callback_id = 8;
-  string on_drag_callback_id = 9;
-  string on_drag_end_callback_id = 10;
+  string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (matches Image convention)
+  string drag_end_callback_id = 10;    // no "on_" prefix for drag callbacks (matches Image convention)
 }
 
 // Canvas update messages
