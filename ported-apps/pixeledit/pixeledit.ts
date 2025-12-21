@@ -11,7 +11,7 @@
  * License: See original repository
  *
  * This port demonstrates pixel editing capabilities in Tsyne, including:
- * - Main menu with File, Edit, and Layer operations
+ * - Main menu with File, Edit, Layer, Adjust, Effects, Channels, Transform operations
  * - File dialogs for Open/Save
  * - Recent files history (stored in preferences)
  * - Color picker for foreground/background color selection
@@ -21,6 +21,38 @@
  * - Multiple drawing tools (Pencil, Picker, Eraser, Bucket, Line, Rectangle, Circle, Select)
  * - Selection system with copy/cut/paste clipboard operations
  * - Multi-layer support with visibility, opacity, and compositing
+ *
+ * 35+ Image Effects:
+ *
+ * ADJUSTMENTS:
+ * - Brightness, Contrast, Saturation, Gamma correction
+ * - Auto Levels (normalize), Color Temperature, Tint
+ *
+ * COLOR EFFECTS:
+ * - Grayscale, Sepia, Invert (negative)
+ * - Posterize, Threshold, Solarize, Dither
+ *
+ * BLUR/SHARPEN:
+ * - Box Blur, Sharpen (unsharp mask)
+ *
+ * ARTISTIC:
+ * - Edge Detection (Sobel), Emboss
+ * - Pixelate, Oil Paint, Pencil Sketch, Halftone
+ *
+ * FILM/PHOTO:
+ * - Vignette, Film Grain, Vintage, Cross Process
+ *
+ * SPECIAL:
+ * - Night Vision, Thermal/Heat Map
+ * - Chromatic Aberration, Glitch, Color Splash
+ *
+ * CHANNELS:
+ * - Red/Green/Blue channel isolation
+ * - Channel swapping (RGB ↔ BGR, rotate channels)
+ *
+ * TRANSFORMS:
+ * - Flip Horizontal/Vertical
+ * - Rotate 90° CW, 90° CCW, 180°
  *
  * Supported Image Formats (via sharp):
  * - PNG (load/save)
@@ -626,6 +658,1604 @@ class SelectionTool implements Tool {
 }
 
 /**
+ * ImageEffects - Collection of 30+ image effects
+ * Includes basic adjustments, color effects, artistic filters, and transforms
+ */
+class ImageEffects {
+  /**
+   * Apply brightness adjustment (-100 to +100)
+   */
+  static brightness(pixels: Uint8ClampedArray, amount: number): void {
+    const factor = amount * 2.55; // Convert to 0-255 range
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] + factor));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + factor));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + factor));
+    }
+  }
+
+  /**
+   * Apply contrast adjustment (-100 to +100)
+   */
+  static contrast(pixels: Uint8ClampedArray, amount: number): void {
+    const factor = (259 * (amount + 255)) / (255 * (259 - amount));
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.max(0, Math.min(255, factor * (pixels[i] - 128) + 128));
+      pixels[i + 1] = Math.max(0, Math.min(255, factor * (pixels[i + 1] - 128) + 128));
+      pixels[i + 2] = Math.max(0, Math.min(255, factor * (pixels[i + 2] - 128) + 128));
+    }
+  }
+
+  /**
+   * Apply saturation adjustment (-100 to +100)
+   */
+  static saturation(pixels: Uint8ClampedArray, amount: number): void {
+    const factor = (amount + 100) / 100;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      pixels[i] = Math.max(0, Math.min(255, gray + factor * (pixels[i] - gray)));
+      pixels[i + 1] = Math.max(0, Math.min(255, gray + factor * (pixels[i + 1] - gray)));
+      pixels[i + 2] = Math.max(0, Math.min(255, gray + factor * (pixels[i + 2] - gray)));
+    }
+  }
+
+  /**
+   * Apply gamma correction (0.1 to 3.0)
+   */
+  static gamma(pixels: Uint8ClampedArray, gammaValue: number): void {
+    const invGamma = 1 / gammaValue;
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.pow(pixels[i] / 255, invGamma) * 255;
+      pixels[i + 1] = Math.pow(pixels[i + 1] / 255, invGamma) * 255;
+      pixels[i + 2] = Math.pow(pixels[i + 2] / 255, invGamma) * 255;
+    }
+  }
+
+  /**
+   * Convert to grayscale
+   */
+  static grayscale(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = Math.round(0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]);
+      pixels[i] = gray;
+      pixels[i + 1] = gray;
+      pixels[i + 2] = gray;
+    }
+  }
+
+  /**
+   * Apply sepia tone effect
+   */
+  static sepia(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      pixels[i] = Math.min(255, 0.393 * r + 0.769 * g + 0.189 * b);
+      pixels[i + 1] = Math.min(255, 0.349 * r + 0.686 * g + 0.168 * b);
+      pixels[i + 2] = Math.min(255, 0.272 * r + 0.534 * g + 0.131 * b);
+    }
+  }
+
+  /**
+   * Invert colors (negative)
+   */
+  static invert(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = 255 - pixels[i];
+      pixels[i + 1] = 255 - pixels[i + 1];
+      pixels[i + 2] = 255 - pixels[i + 2];
+    }
+  }
+
+  /**
+   * Posterize effect (reduce color levels)
+   */
+  static posterize(pixels: Uint8ClampedArray, levels: number): void {
+    const step = 255 / (levels - 1);
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.round(Math.round(pixels[i] / step) * step);
+      pixels[i + 1] = Math.round(Math.round(pixels[i + 1] / step) * step);
+      pixels[i + 2] = Math.round(Math.round(pixels[i + 2] / step) * step);
+    }
+  }
+
+  /**
+   * Threshold (black and white based on threshold value)
+   */
+  static threshold(pixels: Uint8ClampedArray, thresholdValue: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      const val = gray >= thresholdValue ? 255 : 0;
+      pixels[i] = val;
+      pixels[i + 1] = val;
+      pixels[i + 2] = val;
+    }
+  }
+
+  /**
+   * Solarize effect
+   */
+  static solarize(pixels: Uint8ClampedArray, thresholdValue: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = pixels[i] > thresholdValue ? 255 - pixels[i] : pixels[i];
+      pixels[i + 1] = pixels[i + 1] > thresholdValue ? 255 - pixels[i + 1] : pixels[i + 1];
+      pixels[i + 2] = pixels[i + 2] > thresholdValue ? 255 - pixels[i + 2] : pixels[i + 2];
+    }
+  }
+
+  /**
+   * Box blur effect
+   */
+  static blur(pixels: Uint8ClampedArray, width: number, height: number, radius: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const size = radius * 2 + 1;
+    const divisor = size * size;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0;
+        for (let ky = -radius; ky <= radius; ky++) {
+          for (let kx = -radius; kx <= radius; kx++) {
+            const px = Math.min(width - 1, Math.max(0, x + kx));
+            const py = Math.min(height - 1, Math.max(0, y + ky));
+            const idx = (py * width + px) * 4;
+            r += pixels[idx];
+            g += pixels[idx + 1];
+            b += pixels[idx + 2];
+            a += pixels[idx + 3];
+          }
+        }
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = r / divisor;
+        output[outIdx + 1] = g / divisor;
+        output[outIdx + 2] = b / divisor;
+        output[outIdx + 3] = a / divisor;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Sharpen effect
+   */
+  static sharpen(pixels: Uint8ClampedArray, width: number, height: number, amount: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const kernel = [
+      0, -amount, 0,
+      -amount, 1 + 4 * amount, -amount,
+      0, -amount, 0
+    ];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let r = 0, g = 0, b = 0;
+        let ki = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            r += pixels[idx] * kernel[ki];
+            g += pixels[idx + 1] * kernel[ki];
+            b += pixels[idx + 2] * kernel[ki];
+            ki++;
+          }
+        }
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = Math.max(0, Math.min(255, r));
+        output[outIdx + 1] = Math.max(0, Math.min(255, g));
+        output[outIdx + 2] = Math.max(0, Math.min(255, b));
+        output[outIdx + 3] = pixels[outIdx + 3];
+      }
+    }
+    // Copy edges
+    for (let x = 0; x < width; x++) {
+      const topIdx = x * 4;
+      const bottomIdx = ((height - 1) * width + x) * 4;
+      for (let c = 0; c < 4; c++) {
+        output[topIdx + c] = pixels[topIdx + c];
+        output[bottomIdx + c] = pixels[bottomIdx + c];
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      const leftIdx = (y * width) * 4;
+      const rightIdx = (y * width + width - 1) * 4;
+      for (let c = 0; c < 4; c++) {
+        output[leftIdx + c] = pixels[leftIdx + c];
+        output[rightIdx + c] = pixels[rightIdx + c];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Edge detection (Sobel operator)
+   */
+  static edgeDetect(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let gxR = 0, gyR = 0;
+        let ki = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            const gray = 0.2989 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
+            gxR += gray * sobelX[ki];
+            gyR += gray * sobelY[ki];
+            ki++;
+          }
+        }
+        const magnitude = Math.min(255, Math.sqrt(gxR * gxR + gyR * gyR));
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = magnitude;
+        output[outIdx + 1] = magnitude;
+        output[outIdx + 2] = magnitude;
+        output[outIdx + 3] = 255;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Emboss effect
+   */
+  static emboss(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const kernel = [-2, -1, 0, -1, 1, 1, 0, 1, 2];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let r = 0, g = 0, b = 0;
+        let ki = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4;
+            r += pixels[idx] * kernel[ki];
+            g += pixels[idx + 1] * kernel[ki];
+            b += pixels[idx + 2] * kernel[ki];
+            ki++;
+          }
+        }
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = Math.max(0, Math.min(255, r + 128));
+        output[outIdx + 1] = Math.max(0, Math.min(255, g + 128));
+        output[outIdx + 2] = Math.max(0, Math.min(255, b + 128));
+        output[outIdx + 3] = pixels[outIdx + 3];
+      }
+    }
+    // Copy edges
+    for (let x = 0; x < width; x++) {
+      for (let c = 0; c < 4; c++) {
+        output[x * 4 + c] = pixels[x * 4 + c];
+        output[((height - 1) * width + x) * 4 + c] = pixels[((height - 1) * width + x) * 4 + c];
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      for (let c = 0; c < 4; c++) {
+        output[(y * width) * 4 + c] = pixels[(y * width) * 4 + c];
+        output[(y * width + width - 1) * 4 + c] = pixels[(y * width + width - 1) * 4 + c];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Pixelate effect
+   */
+  static pixelate(pixels: Uint8ClampedArray, width: number, height: number, blockSize: number): void {
+    for (let y = 0; y < height; y += blockSize) {
+      for (let x = 0; x < width; x += blockSize) {
+        let r = 0, g = 0, b = 0, count = 0;
+        // Sample block
+        for (let by = 0; by < blockSize && y + by < height; by++) {
+          for (let bx = 0; bx < blockSize && x + bx < width; bx++) {
+            const idx = ((y + by) * width + (x + bx)) * 4;
+            r += pixels[idx];
+            g += pixels[idx + 1];
+            b += pixels[idx + 2];
+            count++;
+          }
+        }
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+        // Fill block
+        for (let by = 0; by < blockSize && y + by < height; by++) {
+          for (let bx = 0; bx < blockSize && x + bx < width; bx++) {
+            const idx = ((y + by) * width + (x + bx)) * 4;
+            pixels[idx] = r;
+            pixels[idx + 1] = g;
+            pixels[idx + 2] = b;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Oil painting effect
+   */
+  static oilPaint(pixels: Uint8ClampedArray, width: number, height: number, radius: number, levels: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const intensityCount: number[] = new Array(levels).fill(0);
+        const avgR: number[] = new Array(levels).fill(0);
+        const avgG: number[] = new Array(levels).fill(0);
+        const avgB: number[] = new Array(levels).fill(0);
+
+        for (let ky = -radius; ky <= radius; ky++) {
+          for (let kx = -radius; kx <= radius; kx++) {
+            const px = Math.min(width - 1, Math.max(0, x + kx));
+            const py = Math.min(height - 1, Math.max(0, y + ky));
+            const idx = (py * width + px) * 4;
+            const intensity = Math.floor(((pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3) * levels / 256);
+            const safeIntensity = Math.min(levels - 1, Math.max(0, intensity));
+            intensityCount[safeIntensity]++;
+            avgR[safeIntensity] += pixels[idx];
+            avgG[safeIntensity] += pixels[idx + 1];
+            avgB[safeIntensity] += pixels[idx + 2];
+          }
+        }
+
+        let maxIndex = 0;
+        let maxCount = 0;
+        for (let i = 0; i < levels; i++) {
+          if (intensityCount[i] > maxCount) {
+            maxCount = intensityCount[i];
+            maxIndex = i;
+          }
+        }
+
+        const outIdx = (y * width + x) * 4;
+        if (maxCount > 0) {
+          output[outIdx] = avgR[maxIndex] / maxCount;
+          output[outIdx + 1] = avgG[maxIndex] / maxCount;
+          output[outIdx + 2] = avgB[maxIndex] / maxCount;
+        } else {
+          output[outIdx] = pixels[outIdx];
+          output[outIdx + 1] = pixels[outIdx + 1];
+          output[outIdx + 2] = pixels[outIdx + 2];
+        }
+        output[outIdx + 3] = pixels[outIdx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Vignette effect
+   */
+  static vignette(pixels: Uint8ClampedArray, width: number, height: number, strength: number): void {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const vignette = 1 - (dist / maxDist) * strength;
+        const idx = (y * width + x) * 4;
+        pixels[idx] = Math.max(0, pixels[idx] * vignette);
+        pixels[idx + 1] = Math.max(0, pixels[idx + 1] * vignette);
+        pixels[idx + 2] = Math.max(0, pixels[idx + 2] * vignette);
+      }
+    }
+  }
+
+  /**
+   * Film grain effect
+   */
+  static filmGrain(pixels: Uint8ClampedArray, amount: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const noise = (Math.random() - 0.5) * amount;
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] + noise));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + noise));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + noise));
+    }
+  }
+
+  /**
+   * Vintage/Retro effect
+   */
+  static vintage(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      // Sepia-like with color shift
+      pixels[i] = Math.min(255, r * 0.9 + g * 0.5 + b * 0.1);
+      pixels[i + 1] = Math.min(255, r * 0.3 + g * 0.7 + b * 0.1);
+      pixels[i + 2] = Math.min(255, r * 0.2 + g * 0.3 + b * 0.4);
+    }
+    // Add slight vignette
+    // (handled separately if needed)
+  }
+
+  /**
+   * Cross-process effect (like film cross-processing)
+   */
+  static crossProcess(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      // Boost contrast and shift colors
+      pixels[i] = Math.min(255, Math.max(0, pixels[i] * 1.2 - 20)); // Red boost
+      pixels[i + 1] = Math.min(255, Math.max(0, pixels[i + 1] * 0.9)); // Green reduce
+      pixels[i + 2] = Math.min(255, Math.max(0, pixels[i + 2] * 1.3)); // Blue boost
+    }
+  }
+
+  /**
+   * Color temperature (warm/cool)
+   */
+  static colorTemperature(pixels: Uint8ClampedArray, temperature: number): void {
+    // temperature: -100 (cool/blue) to +100 (warm/orange)
+    const warmFactor = temperature / 100;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (warmFactor > 0) {
+        pixels[i] = Math.min(255, pixels[i] + warmFactor * 30);
+        pixels[i + 2] = Math.max(0, pixels[i + 2] - warmFactor * 30);
+      } else {
+        pixels[i] = Math.max(0, pixels[i] + warmFactor * 30);
+        pixels[i + 2] = Math.min(255, pixels[i + 2] - warmFactor * 30);
+      }
+    }
+  }
+
+  /**
+   * Red channel only
+   */
+  static redChannel(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i + 1] = 0;
+      pixels[i + 2] = 0;
+    }
+  }
+
+  /**
+   * Green channel only
+   */
+  static greenChannel(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = 0;
+      pixels[i + 2] = 0;
+    }
+  }
+
+  /**
+   * Blue channel only
+   */
+  static blueChannel(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = 0;
+      pixels[i + 1] = 0;
+    }
+  }
+
+  /**
+   * Swap RGB channels
+   */
+  static swapChannels(pixels: Uint8ClampedArray, mode: 'rgb-bgr' | 'rgb-gbr' | 'rgb-brg'): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      switch (mode) {
+        case 'rgb-bgr':
+          pixels[i] = b;
+          pixels[i + 2] = r;
+          break;
+        case 'rgb-gbr':
+          pixels[i] = g;
+          pixels[i + 1] = b;
+          pixels[i + 2] = r;
+          break;
+        case 'rgb-brg':
+          pixels[i] = b;
+          pixels[i + 1] = r;
+          pixels[i + 2] = g;
+          break;
+      }
+    }
+  }
+
+  /**
+   * Flip horizontal
+   */
+  static flipHorizontal(pixels: Uint8ClampedArray, width: number, height: number): void {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width / 2; x++) {
+        const leftIdx = (y * width + x) * 4;
+        const rightIdx = (y * width + (width - 1 - x)) * 4;
+        for (let c = 0; c < 4; c++) {
+          const temp = pixels[leftIdx + c];
+          pixels[leftIdx + c] = pixels[rightIdx + c];
+          pixels[rightIdx + c] = temp;
+        }
+      }
+    }
+  }
+
+  /**
+   * Flip vertical
+   */
+  static flipVertical(pixels: Uint8ClampedArray, width: number, height: number): void {
+    for (let y = 0; y < height / 2; y++) {
+      for (let x = 0; x < width; x++) {
+        const topIdx = (y * width + x) * 4;
+        const bottomIdx = ((height - 1 - y) * width + x) * 4;
+        for (let c = 0; c < 4; c++) {
+          const temp = pixels[topIdx + c];
+          pixels[topIdx + c] = pixels[bottomIdx + c];
+          pixels[bottomIdx + c] = temp;
+        }
+      }
+    }
+  }
+
+  /**
+   * Rotate 90 degrees clockwise
+   */
+  static rotate90CW(pixels: Uint8ClampedArray, width: number, height: number): { pixels: Uint8ClampedArray; width: number; height: number } {
+    const newWidth = height;
+    const newHeight = width;
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const srcIdx = (y * width + x) * 4;
+        const dstIdx = (x * newWidth + (newWidth - 1 - y)) * 4;
+        for (let c = 0; c < 4; c++) {
+          output[dstIdx + c] = pixels[srcIdx + c];
+        }
+      }
+    }
+    return { pixels: output, width: newWidth, height: newHeight };
+  }
+
+  /**
+   * Rotate 90 degrees counter-clockwise
+   */
+  static rotate90CCW(pixels: Uint8ClampedArray, width: number, height: number): { pixels: Uint8ClampedArray; width: number; height: number } {
+    const newWidth = height;
+    const newHeight = width;
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const srcIdx = (y * width + x) * 4;
+        const dstIdx = ((newHeight - 1 - x) * newWidth + y) * 4;
+        for (let c = 0; c < 4; c++) {
+          output[dstIdx + c] = pixels[srcIdx + c];
+        }
+      }
+    }
+    return { pixels: output, width: newWidth, height: newHeight };
+  }
+
+  /**
+   * Rotate 180 degrees
+   */
+  static rotate180(pixels: Uint8ClampedArray, width: number, height: number): void {
+    const totalPixels = width * height;
+    for (let i = 0; i < totalPixels / 2; i++) {
+      const srcIdx = i * 4;
+      const dstIdx = (totalPixels - 1 - i) * 4;
+      for (let c = 0; c < 4; c++) {
+        const temp = pixels[srcIdx + c];
+        pixels[srcIdx + c] = pixels[dstIdx + c];
+        pixels[dstIdx + c] = temp;
+      }
+    }
+  }
+
+  /**
+   * Dithering (Floyd-Steinberg)
+   */
+  static dither(pixels: Uint8ClampedArray, width: number, height: number): void {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        for (let c = 0; c < 3; c++) {
+          const oldVal = pixels[idx + c];
+          const newVal = oldVal < 128 ? 0 : 255;
+          pixels[idx + c] = newVal;
+          const error = oldVal - newVal;
+          // Distribute error to neighbors
+          if (x + 1 < width) {
+            pixels[idx + 4 + c] = Math.max(0, Math.min(255, pixels[idx + 4 + c] + error * 7 / 16));
+          }
+          if (y + 1 < height) {
+            if (x > 0) {
+              pixels[idx + width * 4 - 4 + c] = Math.max(0, Math.min(255, pixels[idx + width * 4 - 4 + c] + error * 3 / 16));
+            }
+            pixels[idx + width * 4 + c] = Math.max(0, Math.min(255, pixels[idx + width * 4 + c] + error * 5 / 16));
+            if (x + 1 < width) {
+              pixels[idx + width * 4 + 4 + c] = Math.max(0, Math.min(255, pixels[idx + width * 4 + 4 + c] + error * 1 / 16));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Chromatic aberration effect
+   */
+  static chromaticAberration(pixels: Uint8ClampedArray, width: number, height: number, offset: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+
+        // Red channel shifted left
+        const redX = Math.max(0, x - offset);
+        const redIdx = (y * width + redX) * 4;
+        output[idx] = pixels[redIdx];
+
+        // Green channel stays
+        output[idx + 1] = pixels[idx + 1];
+
+        // Blue channel shifted right
+        const blueX = Math.min(width - 1, x + offset);
+        const blueIdx = (y * width + blueX) * 4;
+        output[idx + 2] = pixels[blueIdx + 2];
+
+        output[idx + 3] = pixels[idx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Glitch effect
+   */
+  static glitch(pixels: Uint8ClampedArray, width: number, height: number, intensity: number): void {
+    const numGlitches = Math.floor(intensity * 10);
+    for (let g = 0; g < numGlitches; g++) {
+      const y = Math.floor(Math.random() * height);
+      const sliceHeight = Math.floor(Math.random() * 10) + 1;
+      const offset = Math.floor((Math.random() - 0.5) * 20);
+
+      for (let dy = 0; dy < sliceHeight && y + dy < height; dy++) {
+        for (let x = 0; x < width; x++) {
+          const srcX = Math.max(0, Math.min(width - 1, x + offset));
+          const srcIdx = ((y + dy) * width + srcX) * 4;
+          const dstIdx = ((y + dy) * width + x) * 4;
+
+          // Shift only red channel for RGB split effect
+          if (Math.random() > 0.5) {
+            pixels[dstIdx] = pixels[srcIdx];
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Tint effect - apply color overlay
+   */
+  static tint(pixels: Uint8ClampedArray, r: number, g: number, b: number, strength: number): void {
+    const factor = strength / 100;
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = pixels[i] * (1 - factor) + r * factor;
+      pixels[i + 1] = pixels[i + 1] * (1 - factor) + g * factor;
+      pixels[i + 2] = pixels[i + 2] * (1 - factor) + b * factor;
+    }
+  }
+
+  /**
+   * Halftone effect
+   */
+  static halftone(pixels: Uint8ClampedArray, width: number, height: number, dotSize: number): void {
+    for (let y = 0; y < height; y += dotSize) {
+      for (let x = 0; x < width; x += dotSize) {
+        let sum = 0, count = 0;
+        // Calculate average brightness in block
+        for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
+          for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
+            const idx = ((y + dy) * width + (x + dx)) * 4;
+            sum += 0.2989 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
+            count++;
+          }
+        }
+        const avgBrightness = sum / count;
+        const radius = (1 - avgBrightness / 255) * (dotSize / 2);
+
+        // Draw dot
+        const centerX = x + dotSize / 2;
+        const centerY = y + dotSize / 2;
+        for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
+          for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
+            const px = x + dx;
+            const py = y + dy;
+            const dist = Math.sqrt((px - centerX) ** 2 + (py - centerY) ** 2);
+            const idx = (py * width + px) * 4;
+            if (dist <= radius) {
+              pixels[idx] = 0;
+              pixels[idx + 1] = 0;
+              pixels[idx + 2] = 0;
+            } else {
+              pixels[idx] = 255;
+              pixels[idx + 1] = 255;
+              pixels[idx + 2] = 255;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Night vision effect
+   */
+  static nightVision(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      const boosted = Math.min(255, gray * 1.5);
+      pixels[i] = 0;
+      pixels[i + 1] = boosted;
+      pixels[i + 2] = 0;
+    }
+    // Add noise
+    ImageEffects.filmGrain(pixels, 30);
+  }
+
+  /**
+   * Thermal/Heat map effect
+   */
+  static thermal(pixels: Uint8ClampedArray): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      const normalized = gray / 255;
+
+      // Create heat map gradient (blue -> cyan -> green -> yellow -> red)
+      let r: number, g: number, b: number;
+      if (normalized < 0.25) {
+        const t = normalized / 0.25;
+        r = 0; g = 0; b = 128 + t * 127;
+      } else if (normalized < 0.5) {
+        const t = (normalized - 0.25) / 0.25;
+        r = 0; g = t * 255; b = 255 - t * 128;
+      } else if (normalized < 0.75) {
+        const t = (normalized - 0.5) / 0.25;
+        r = t * 255; g = 255; b = 0;
+      } else {
+        const t = (normalized - 0.75) / 0.25;
+        r = 255; g = 255 - t * 255; b = 0;
+      }
+      pixels[i] = r;
+      pixels[i + 1] = g;
+      pixels[i + 2] = b;
+    }
+  }
+
+  /**
+   * Pencil sketch effect
+   */
+  static pencilSketch(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    // First grayscale
+    ImageEffects.grayscale(pixels);
+    // Then edge detect and invert
+    const edges = ImageEffects.edgeDetect(pixels, width, height);
+    ImageEffects.invert(edges);
+    return edges;
+  }
+
+  /**
+   * Color splash - keep one color, desaturate rest
+   */
+  static colorSplash(pixels: Uint8ClampedArray, targetR: number, targetG: number, targetB: number, tolerance: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      const dist = Math.sqrt((r - targetR) ** 2 + (g - targetG) ** 2 + (b - targetB) ** 2);
+      if (dist > tolerance) {
+        const gray = Math.round(0.2989 * r + 0.587 * g + 0.114 * b);
+        pixels[i] = gray;
+        pixels[i + 1] = gray;
+        pixels[i + 2] = gray;
+      }
+    }
+  }
+
+  /**
+   * Normalize/Auto-levels
+   */
+  static normalize(pixels: Uint8ClampedArray): void {
+    let minR = 255, maxR = 0;
+    let minG = 255, maxG = 0;
+    let minB = 255, maxB = 0;
+
+    // Find min/max for each channel
+    for (let i = 0; i < pixels.length; i += 4) {
+      minR = Math.min(minR, pixels[i]);
+      maxR = Math.max(maxR, pixels[i]);
+      minG = Math.min(minG, pixels[i + 1]);
+      maxG = Math.max(maxG, pixels[i + 1]);
+      minB = Math.min(minB, pixels[i + 2]);
+      maxB = Math.max(maxB, pixels[i + 2]);
+    }
+
+    // Normalize
+    const rangeR = maxR - minR || 1;
+    const rangeG = maxG - minG || 1;
+    const rangeB = maxB - minB || 1;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = ((pixels[i] - minR) / rangeR) * 255;
+      pixels[i + 1] = ((pixels[i + 1] - minG) / rangeG) * 255;
+      pixels[i + 2] = ((pixels[i + 2] - minB) / rangeB) * 255;
+    }
+  }
+
+  // ============================================
+  // Additional Effects (25+ more)
+  // ============================================
+
+  /**
+   * Gaussian blur (approximated with multiple box blur passes)
+   */
+  static gaussianBlur(pixels: Uint8ClampedArray, width: number, height: number, sigma: number): Uint8ClampedArray {
+    // Approximate Gaussian with 3 box blur passes
+    const radius = Math.ceil(sigma * 2);
+    let result = ImageEffects.blur(pixels, width, height, radius);
+    result = ImageEffects.blur(result, width, height, radius);
+    result = ImageEffects.blur(result, width, height, radius);
+    return result;
+  }
+
+  /**
+   * Motion blur effect
+   */
+  static motionBlur(pixels: Uint8ClampedArray, width: number, height: number, angle: number, distance: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const radians = (angle * Math.PI) / 180;
+    const dx = Math.cos(radians);
+    const dy = Math.sin(radians);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, a = 0, count = 0;
+
+        for (let d = -distance; d <= distance; d++) {
+          const sx = Math.round(x + dx * d);
+          const sy = Math.round(y + dy * d);
+
+          if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
+            const idx = (sy * width + sx) * 4;
+            r += pixels[idx];
+            g += pixels[idx + 1];
+            b += pixels[idx + 2];
+            a += pixels[idx + 3];
+            count++;
+          }
+        }
+
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = r / count;
+        output[outIdx + 1] = g / count;
+        output[outIdx + 2] = b / count;
+        output[outIdx + 3] = a / count;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Radial blur effect (zoom blur from center)
+   */
+  static radialBlur(pixels: Uint8ClampedArray, width: number, height: number, strength: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const samples = Math.max(1, Math.floor(dist * strength / 100));
+
+        let r = 0, g = 0, b = 0, a = 0;
+
+        for (let s = 0; s < samples; s++) {
+          const t = s / samples;
+          const sx = Math.round(centerX + dx * (1 - t * strength / 100));
+          const sy = Math.round(centerY + dy * (1 - t * strength / 100));
+
+          if (sx >= 0 && sx < width && sy >= 0 && sy < height) {
+            const idx = (sy * width + sx) * 4;
+            r += pixels[idx];
+            g += pixels[idx + 1];
+            b += pixels[idx + 2];
+            a += pixels[idx + 3];
+          }
+        }
+
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = r / samples;
+        output[outIdx + 1] = g / samples;
+        output[outIdx + 2] = b / samples;
+        output[outIdx + 3] = a / samples;
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Median filter (noise reduction)
+   */
+  static medianFilter(pixels: Uint8ClampedArray, width: number, height: number, radius: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const rValues: number[] = [];
+        const gValues: number[] = [];
+        const bValues: number[] = [];
+
+        for (let ky = -radius; ky <= radius; ky++) {
+          for (let kx = -radius; kx <= radius; kx++) {
+            const px = Math.min(width - 1, Math.max(0, x + kx));
+            const py = Math.min(height - 1, Math.max(0, y + ky));
+            const idx = (py * width + px) * 4;
+            rValues.push(pixels[idx]);
+            gValues.push(pixels[idx + 1]);
+            bValues.push(pixels[idx + 2]);
+          }
+        }
+
+        rValues.sort((a, b) => a - b);
+        gValues.sort((a, b) => a - b);
+        bValues.sort((a, b) => a - b);
+
+        const mid = Math.floor(rValues.length / 2);
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = rValues[mid];
+        output[outIdx + 1] = gValues[mid];
+        output[outIdx + 2] = bValues[mid];
+        output[outIdx + 3] = pixels[outIdx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * High pass filter (edge enhancement)
+   */
+  static highPass(pixels: Uint8ClampedArray, width: number, height: number, radius: number): Uint8ClampedArray {
+    const blurred = ImageEffects.blur(pixels, width, height, radius);
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      output[i] = Math.max(0, Math.min(255, 128 + (pixels[i] - blurred[i])));
+      output[i + 1] = Math.max(0, Math.min(255, 128 + (pixels[i + 1] - blurred[i + 1])));
+      output[i + 2] = Math.max(0, Math.min(255, 128 + (pixels[i + 2] - blurred[i + 2])));
+      output[i + 3] = pixels[i + 3];
+    }
+    return output;
+  }
+
+  /**
+   * Unsharp mask (sharpen based on blurred difference)
+   */
+  static unsharpMask(pixels: Uint8ClampedArray, width: number, height: number, amount: number, radius: number): Uint8ClampedArray {
+    const blurred = ImageEffects.blur(pixels, width, height, radius);
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      output[i] = Math.max(0, Math.min(255, pixels[i] + (pixels[i] - blurred[i]) * amount));
+      output[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + (pixels[i + 1] - blurred[i + 1]) * amount));
+      output[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + (pixels[i + 2] - blurred[i + 2]) * amount));
+      output[i + 3] = pixels[i + 3];
+    }
+    return output;
+  }
+
+  /**
+   * Hue rotation (shift colors around the color wheel)
+   */
+  static hueRotate(pixels: Uint8ClampedArray, degrees: number): void {
+    const angle = (degrees * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    // Hue rotation matrix
+    const matrix = [
+      0.213 + cos * 0.787 - sin * 0.213,
+      0.715 - cos * 0.715 - sin * 0.715,
+      0.072 - cos * 0.072 + sin * 0.928,
+      0.213 - cos * 0.213 + sin * 0.143,
+      0.715 + cos * 0.285 + sin * 0.140,
+      0.072 - cos * 0.072 - sin * 0.283,
+      0.213 - cos * 0.213 - sin * 0.787,
+      0.715 - cos * 0.715 + sin * 0.715,
+      0.072 + cos * 0.928 + sin * 0.072
+    ];
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      pixels[i] = Math.max(0, Math.min(255, r * matrix[0] + g * matrix[1] + b * matrix[2]));
+      pixels[i + 1] = Math.max(0, Math.min(255, r * matrix[3] + g * matrix[4] + b * matrix[5]));
+      pixels[i + 2] = Math.max(0, Math.min(255, r * matrix[6] + g * matrix[7] + b * matrix[8]));
+    }
+  }
+
+  /**
+   * Vibrance (smart saturation that protects skin tones)
+   */
+  static vibrance(pixels: Uint8ClampedArray, amount: number): void {
+    const factor = amount / 100;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      const max = Math.max(r, g, b);
+      const avg = (r + g + b) / 3;
+      const amt = ((max - avg) / 255) * factor * 2;
+
+      pixels[i] = Math.max(0, Math.min(255, r + (max - r) * amt));
+      pixels[i + 1] = Math.max(0, Math.min(255, g + (max - g) * amt));
+      pixels[i + 2] = Math.max(0, Math.min(255, b + (max - b) * amt));
+    }
+  }
+
+  /**
+   * Duotone effect (two-color gradient based on luminance)
+   */
+  static duotone(pixels: Uint8ClampedArray, darkR: number, darkG: number, darkB: number, lightR: number, lightG: number, lightB: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = (0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]) / 255;
+      pixels[i] = darkR + (lightR - darkR) * gray;
+      pixels[i + 1] = darkG + (lightG - darkG) * gray;
+      pixels[i + 2] = darkB + (lightB - darkB) * gray;
+    }
+  }
+
+  /**
+   * Split toning (different tints for shadows and highlights)
+   */
+  static splitToning(pixels: Uint8ClampedArray, shadowR: number, shadowG: number, shadowB: number, highlightR: number, highlightG: number, highlightB: number, balance: number): void {
+    const threshold = 128 + balance;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      const shadowAmt = Math.max(0, (threshold - gray) / threshold);
+      const highlightAmt = Math.max(0, (gray - threshold) / (255 - threshold));
+
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] + (shadowR - 128) * shadowAmt * 0.5 + (highlightR - 128) * highlightAmt * 0.5));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + (shadowG - 128) * shadowAmt * 0.5 + (highlightG - 128) * highlightAmt * 0.5));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + (shadowB - 128) * shadowAmt * 0.5 + (highlightB - 128) * highlightAmt * 0.5));
+    }
+  }
+
+  /**
+   * Pop Art effect (posterize + high saturation + outline)
+   */
+  static popArt(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    // First posterize
+    const posterized = new Uint8ClampedArray(pixels);
+    ImageEffects.posterize(posterized, 4);
+
+    // Then boost saturation
+    ImageEffects.saturation(posterized, 80);
+
+    // Add edge outlines
+    const edges = ImageEffects.edgeDetect(pixels, width, height);
+
+    for (let i = 0; i < posterized.length; i += 4) {
+      if (edges[i] > 100) {
+        posterized[i] = 0;
+        posterized[i + 1] = 0;
+        posterized[i + 2] = 0;
+      }
+    }
+
+    return posterized;
+  }
+
+  /**
+   * Cartoon/Cel shading effect
+   */
+  static cartoon(pixels: Uint8ClampedArray, width: number, height: number, levels: number, edgeThreshold: number): Uint8ClampedArray {
+    // Posterize colors
+    const output = new Uint8ClampedArray(pixels);
+    ImageEffects.posterize(output, levels);
+
+    // Detect edges
+    const edges = ImageEffects.edgeDetect(pixels, width, height);
+
+    // Draw black outlines
+    for (let i = 0; i < output.length; i += 4) {
+      if (edges[i] > edgeThreshold) {
+        output[i] = 0;
+        output[i + 1] = 0;
+        output[i + 2] = 0;
+      }
+    }
+
+    return output;
+  }
+
+  /**
+   * Scanlines effect (CRT-like horizontal lines)
+   */
+  static scanlines(pixels: Uint8ClampedArray, width: number, height: number, spacing: number, intensity: number): void {
+    const factor = 1 - intensity / 100;
+
+    for (let y = 0; y < height; y++) {
+      if (y % spacing === 0) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          pixels[idx] *= factor;
+          pixels[idx + 1] *= factor;
+          pixels[idx + 2] *= factor;
+        }
+      }
+    }
+  }
+
+  /**
+   * CRT effect (scanlines + vignette + slight blur)
+   */
+  static crt(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    // Apply scanlines
+    ImageEffects.scanlines(pixels, width, height, 2, 30);
+
+    // Apply slight curvature distortion and vignette
+    ImageEffects.vignette(pixels, width, height, 0.4);
+
+    // Add slight chromatic aberration
+    return ImageEffects.chromaticAberration(pixels, width, height, 1);
+  }
+
+  /**
+   * VHS effect (noise + scanlines + color shift)
+   */
+  static vhs(pixels: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
+    // Add noise
+    ImageEffects.filmGrain(pixels, 40);
+
+    // Add scanlines
+    ImageEffects.scanlines(pixels, width, height, 3, 20);
+
+    // Chromatic aberration
+    const result = ImageEffects.chromaticAberration(pixels, width, height, 2);
+
+    // Color shift (reduce green slightly)
+    for (let i = 0; i < result.length; i += 4) {
+      result[i + 1] = Math.max(0, result[i + 1] - 10);
+    }
+
+    return result;
+  }
+
+  /**
+   * Wave distortion effect
+   */
+  static wave(pixels: Uint8ClampedArray, width: number, height: number, amplitude: number, frequency: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const offsetX = Math.round(amplitude * Math.sin(2 * Math.PI * y / frequency));
+        const srcX = Math.min(width - 1, Math.max(0, x + offsetX));
+
+        const srcIdx = (y * width + srcX) * 4;
+        const dstIdx = (y * width + x) * 4;
+
+        output[dstIdx] = pixels[srcIdx];
+        output[dstIdx + 1] = pixels[srcIdx + 1];
+        output[dstIdx + 2] = pixels[srcIdx + 2];
+        output[dstIdx + 3] = pixels[srcIdx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Swirl/Twirl effect
+   */
+  static swirl(pixels: Uint8ClampedArray, width: number, height: number, strength: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        const swirlAngle = angle + (strength * (maxRadius - dist) / maxRadius) * Math.PI / 180;
+        const srcX = Math.round(centerX + dist * Math.cos(swirlAngle));
+        const srcY = Math.round(centerY + dist * Math.sin(swirlAngle));
+
+        const dstIdx = (y * width + x) * 4;
+
+        if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+          const srcIdx = (srcY * width + srcX) * 4;
+          output[dstIdx] = pixels[srcIdx];
+          output[dstIdx + 1] = pixels[srcIdx + 1];
+          output[dstIdx + 2] = pixels[srcIdx + 2];
+          output[dstIdx + 3] = pixels[srcIdx + 3];
+        } else {
+          output[dstIdx] = 0;
+          output[dstIdx + 1] = 0;
+          output[dstIdx + 2] = 0;
+          output[dstIdx + 3] = 255;
+        }
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Spherize effect (bulge)
+   */
+  static spherize(pixels: Uint8ClampedArray, width: number, height: number, strength: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(centerX, centerY);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = (x - centerX) / radius;
+        const dy = (y - centerY) / radius;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        let srcX: number, srcY: number;
+
+        if (dist < 1) {
+          const factor = Math.pow(dist, strength / 100);
+          srcX = Math.round(centerX + dx * factor * radius);
+          srcY = Math.round(centerY + dy * factor * radius);
+        } else {
+          srcX = x;
+          srcY = y;
+        }
+
+        const dstIdx = (y * width + x) * 4;
+        srcX = Math.min(width - 1, Math.max(0, srcX));
+        srcY = Math.min(height - 1, Math.max(0, srcY));
+        const srcIdx = (srcY * width + srcX) * 4;
+
+        output[dstIdx] = pixels[srcIdx];
+        output[dstIdx + 1] = pixels[srcIdx + 1];
+        output[dstIdx + 2] = pixels[srcIdx + 2];
+        output[dstIdx + 3] = pixels[srcIdx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Pinch effect (opposite of spherize)
+   */
+  static pinch(pixels: Uint8ClampedArray, width: number, height: number, strength: number): Uint8ClampedArray {
+    return ImageEffects.spherize(pixels, width, height, -strength);
+  }
+
+  /**
+   * Ripple effect
+   */
+  static ripple(pixels: Uint8ClampedArray, width: number, height: number, amplitude: number, wavelength: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const offset = amplitude * Math.sin(2 * Math.PI * dist / wavelength);
+        const angle = Math.atan2(dy, dx);
+
+        const srcX = Math.round(x + offset * Math.cos(angle));
+        const srcY = Math.round(y + offset * Math.sin(angle));
+
+        const dstIdx = (y * width + x) * 4;
+
+        if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+          const srcIdx = (srcY * width + srcX) * 4;
+          output[dstIdx] = pixels[srcIdx];
+          output[dstIdx + 1] = pixels[srcIdx + 1];
+          output[dstIdx + 2] = pixels[srcIdx + 2];
+          output[dstIdx + 3] = pixels[srcIdx + 3];
+        } else {
+          output[dstIdx] = pixels[dstIdx];
+          output[dstIdx + 1] = pixels[dstIdx + 1];
+          output[dstIdx + 2] = pixels[dstIdx + 2];
+          output[dstIdx + 3] = pixels[dstIdx + 3];
+        }
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Frosted glass effect
+   */
+  static frostedGlass(pixels: Uint8ClampedArray, width: number, height: number, amount: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const offsetX = Math.round((Math.random() - 0.5) * amount);
+        const offsetY = Math.round((Math.random() - 0.5) * amount);
+
+        const srcX = Math.min(width - 1, Math.max(0, x + offsetX));
+        const srcY = Math.min(height - 1, Math.max(0, y + offsetY));
+
+        const srcIdx = (srcY * width + srcX) * 4;
+        const dstIdx = (y * width + x) * 4;
+
+        output[dstIdx] = pixels[srcIdx];
+        output[dstIdx + 1] = pixels[srcIdx + 1];
+        output[dstIdx + 2] = pixels[srcIdx + 2];
+        output[dstIdx + 3] = pixels[srcIdx + 3];
+      }
+    }
+    return output;
+  }
+
+  /**
+   * Mosaic/Stained glass effect
+   */
+  static mosaic(pixels: Uint8ClampedArray, width: number, height: number, cellSize: number): Uint8ClampedArray {
+    const output = new Uint8ClampedArray(pixels.length);
+
+    // Generate random cell centers
+    const cellsX = Math.ceil(width / cellSize);
+    const cellsY = Math.ceil(height / cellSize);
+    const centers: Array<{x: number; y: number; r: number; g: number; b: number}> = [];
+
+    for (let cy = 0; cy < cellsY; cy++) {
+      for (let cx = 0; cx < cellsX; cx++) {
+        const x = cx * cellSize + Math.random() * cellSize;
+        const y = cy * cellSize + Math.random() * cellSize;
+        const px = Math.min(width - 1, Math.max(0, Math.floor(x)));
+        const py = Math.min(height - 1, Math.max(0, Math.floor(y)));
+        const idx = (py * width + px) * 4;
+        centers.push({
+          x, y,
+          r: pixels[idx],
+          g: pixels[idx + 1],
+          b: pixels[idx + 2]
+        });
+      }
+    }
+
+    // For each pixel, find nearest center
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let minDist = Infinity;
+        let nearestCenter = centers[0];
+
+        for (const center of centers) {
+          const dist = (x - center.x) ** 2 + (y - center.y) ** 2;
+          if (dist < minDist) {
+            minDist = dist;
+            nearestCenter = center;
+          }
+        }
+
+        const dstIdx = (y * width + x) * 4;
+        output[dstIdx] = nearestCenter.r;
+        output[dstIdx + 1] = nearestCenter.g;
+        output[dstIdx + 2] = nearestCenter.b;
+        output[dstIdx + 3] = 255;
+      }
+    }
+
+    return output;
+  }
+
+  /**
+   * Pointillism effect
+   */
+  static pointillism(pixels: Uint8ClampedArray, width: number, height: number, dotSize: number, density: number): Uint8ClampedArray {
+    // Start with white background
+    const output = new Uint8ClampedArray(pixels.length);
+    for (let i = 0; i < output.length; i += 4) {
+      output[i] = 255;
+      output[i + 1] = 255;
+      output[i + 2] = 255;
+      output[i + 3] = 255;
+    }
+
+    // Draw random dots
+    const numDots = Math.floor((width * height * density) / 100);
+
+    for (let d = 0; d < numDots; d++) {
+      const x = Math.floor(Math.random() * width);
+      const y = Math.floor(Math.random() * height);
+      const srcIdx = (y * width + x) * 4;
+
+      const r = pixels[srcIdx];
+      const g = pixels[srcIdx + 1];
+      const b = pixels[srcIdx + 2];
+
+      // Draw a dot
+      const radius = Math.floor(dotSize / 2);
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx * dx + dy * dy <= radius * radius) {
+            const px = x + dx;
+            const py = y + dy;
+            if (px >= 0 && px < width && py >= 0 && py < height) {
+              const dstIdx = (py * width + px) * 4;
+              output[dstIdx] = r;
+              output[dstIdx + 1] = g;
+              output[dstIdx + 2] = b;
+            }
+          }
+        }
+      }
+    }
+
+    return output;
+  }
+
+  /**
+   * Color quantize (reduce to N colors using median cut)
+   */
+  static colorQuantize(pixels: Uint8ClampedArray, numColors: number): void {
+    // Simple quantization by rounding to fewer levels per channel
+    const levels = Math.max(2, Math.ceil(Math.pow(numColors, 1/3)));
+    const step = 255 / (levels - 1);
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.round(Math.round(pixels[i] / step) * step);
+      pixels[i + 1] = Math.round(Math.round(pixels[i + 1] / step) * step);
+      pixels[i + 2] = Math.round(Math.round(pixels[i + 2] / step) * step);
+    }
+  }
+
+  /**
+   * Exposure adjustment
+   */
+  static exposure(pixels: Uint8ClampedArray, stops: number): void {
+    const factor = Math.pow(2, stops);
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] * factor));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] * factor));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] * factor));
+    }
+  }
+
+  /**
+   * Shadows/Highlights adjustment
+   */
+  static shadowsHighlights(pixels: Uint8ClampedArray, shadows: number, highlights: number): void {
+    const shadowFactor = 1 + shadows / 100;
+    const highlightFactor = 1 - highlights / 100;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.2989 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+
+      let factor: number;
+      if (gray < 128) {
+        // Shadow region
+        factor = shadowFactor + (1 - shadowFactor) * (gray / 128);
+      } else {
+        // Highlight region
+        factor = 1 + (highlightFactor - 1) * ((gray - 128) / 127);
+      }
+
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] * factor));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] * factor));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] * factor));
+    }
+  }
+
+  /**
+   * Clarity (local contrast enhancement)
+   */
+  static clarity(pixels: Uint8ClampedArray, width: number, height: number, amount: number): Uint8ClampedArray {
+    const blurred = ImageEffects.blur(pixels, width, height, 3);
+    const output = new Uint8ClampedArray(pixels.length);
+    const factor = amount / 100;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const diff = pixels[i] - blurred[i];
+      output[i] = Math.max(0, Math.min(255, pixels[i] + diff * factor));
+      output[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + (pixels[i + 1] - blurred[i + 1]) * factor));
+      output[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + (pixels[i + 2] - blurred[i + 2]) * factor));
+      output[i + 3] = pixels[i + 3];
+    }
+    return output;
+  }
+
+  /**
+   * Color balance (adjust RGB levels for shadows/midtones/highlights)
+   */
+  static colorBalance(pixels: Uint8ClampedArray, redCyan: number, greenMagenta: number, blueYellow: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = Math.max(0, Math.min(255, pixels[i] + redCyan));
+      pixels[i + 1] = Math.max(0, Math.min(255, pixels[i + 1] + greenMagenta));
+      pixels[i + 2] = Math.max(0, Math.min(255, pixels[i + 2] + blueYellow));
+    }
+  }
+
+  /**
+   * Replace color (replace one color with another)
+   */
+  static replaceColor(pixels: Uint8ClampedArray, fromR: number, fromG: number, fromB: number, toR: number, toG: number, toB: number, tolerance: number): void {
+    for (let i = 0; i < pixels.length; i += 4) {
+      const dist = Math.sqrt(
+        (pixels[i] - fromR) ** 2 +
+        (pixels[i + 1] - fromG) ** 2 +
+        (pixels[i + 2] - fromB) ** 2
+      );
+
+      if (dist <= tolerance) {
+        const blend = 1 - dist / tolerance;
+        pixels[i] = Math.round(pixels[i] + (toR - pixels[i]) * blend);
+        pixels[i + 1] = Math.round(pixels[i + 1] + (toG - pixels[i + 1]) * blend);
+        pixels[i + 2] = Math.round(pixels[i + 2] + (toB - pixels[i + 2]) * blend);
+      }
+    }
+  }
+
+  /**
+   * Lens blur (depth-based blur simulation)
+   */
+  static lensBlur(pixels: Uint8ClampedArray, width: number, height: number, radius: number, brightness: number): Uint8ClampedArray {
+    // Simplified lens blur using hexagonal bokeh approximation
+    const output = new Uint8ClampedArray(pixels.length);
+    const kernel: Array<{dx: number; dy: number}> = [];
+
+    // Create hexagonal kernel
+    for (let angle = 0; angle < 360; angle += 60) {
+      for (let r = 1; r <= radius; r++) {
+        const rad = (angle * Math.PI) / 180;
+        kernel.push({
+          dx: Math.round(r * Math.cos(rad)),
+          dy: Math.round(r * Math.sin(rad))
+        });
+      }
+    }
+
+    const boostFactor = 1 + brightness / 100;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0, count = 0;
+
+        for (const k of kernel) {
+          const px = Math.min(width - 1, Math.max(0, x + k.dx));
+          const py = Math.min(height - 1, Math.max(0, y + k.dy));
+          const idx = (py * width + px) * 4;
+
+          // Boost bright pixels (bokeh effect)
+          const lum = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3;
+          const boost = lum > 200 ? boostFactor : 1;
+
+          r += pixels[idx] * boost;
+          g += pixels[idx + 1] * boost;
+          b += pixels[idx + 2] * boost;
+          count++;
+        }
+
+        const outIdx = (y * width + x) * 4;
+        output[outIdx] = Math.min(255, r / count);
+        output[outIdx + 1] = Math.min(255, g / count);
+        output[outIdx + 2] = Math.min(255, b / count);
+        output[outIdx + 3] = pixels[outIdx + 3];
+      }
+    }
+
+    return output;
+  }
+}
+
+/**
  * PixelEditor - main editor class managing image state and operations
  * Based on: internal/api/editor.go and internal/ui/editor.go
  */
@@ -663,6 +2293,10 @@ class PixelEditor {
   private win: Window | null = null;
   private recentFiles: string[] = [];
   private toolButtons: Map<string, Button> = new Map();
+
+  // Hamburger panel state
+  private panelCollapsed: boolean = true;
+  private panelContainer: any = null;
 
   // Undo/Redo system
   private undoStack: UndoOperation[] = [];
@@ -1442,6 +3076,724 @@ class PixelEditor {
     }
   }
 
+  // ============================================
+  // Image Effects System (30+ effects)
+  // ============================================
+
+  /**
+   * Apply an effect and refresh the canvas
+   */
+  private async applyEffect(effectFn: () => void | Uint8ClampedArray, description: string): Promise<void> {
+    if (!this.pixels) return;
+
+    this.beginOperation();
+    // Store old pixels for undo
+    const oldPixels = new Uint8ClampedArray(this.pixels);
+
+    const result = effectFn();
+
+    // If effect returns new pixels (for effects that change dimensions or return new arrays)
+    if (result instanceof Uint8ClampedArray) {
+      this.pixels = result;
+    }
+
+    // Record all changed pixels for undo
+    for (let i = 0; i < this.pixels.length; i += 4) {
+      const x = (i / 4) % this.imageWidth;
+      const y = Math.floor((i / 4) / this.imageWidth);
+      const oldColor = new Color(oldPixels[i], oldPixels[i + 1], oldPixels[i + 2], oldPixels[i + 3]);
+      const newColor = new Color(this.pixels[i], this.pixels[i + 1], this.pixels[i + 2], this.pixels[i + 3]);
+      if (!oldColor.equals(newColor)) {
+        this.currentOperation.push({ x, y, oldColor, newColor });
+      }
+    }
+
+    this.endOperation(description);
+    this.hasUnsavedChanges = true;
+
+    await this.refreshCanvas();
+    this.updateStatus();
+  }
+
+  /**
+   * Apply effect with dimension change (for rotations)
+   */
+  private async applyEffectWithDimensionChange(
+    effectFn: () => { pixels: Uint8ClampedArray; width: number; height: number },
+    description: string
+  ): Promise<void> {
+    if (!this.pixels) return;
+
+    const result = effectFn();
+    this.pixels = result.pixels;
+    this.imageWidth = result.width;
+    this.imageHeight = result.height;
+
+    // Clear undo for dimension changes (too complex to undo)
+    this.undoStack = [];
+    this.redoStack = [];
+    this.hasUnsavedChanges = true;
+
+    await this.rebuildCanvasIfNeeded();
+    this.updateStatus();
+  }
+
+  // --- Basic Adjustments ---
+
+  async effectBrightness(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Brightness', [
+      { name: 'amount', type: 'entry', label: 'Amount (-100 to 100)', placeholder: '20' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = parseInt(result.values.amount as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.brightness(this.pixels!, amount), `Brightness ${amount}`);
+    }
+  }
+
+  async effectContrast(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Contrast', [
+      { name: 'amount', type: 'entry', label: 'Amount (-100 to 100)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = parseInt(result.values.amount as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.contrast(this.pixels!, amount), `Contrast ${amount}`);
+    }
+  }
+
+  async effectSaturation(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Saturation', [
+      { name: 'amount', type: 'entry', label: 'Amount (-100 to 100)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = parseInt(result.values.amount as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.saturation(this.pixels!, amount), `Saturation ${amount}`);
+    }
+  }
+
+  async effectGamma(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Gamma Correction', [
+      { name: 'gamma', type: 'entry', label: 'Gamma (0.1 to 3.0)', placeholder: '1.2' }
+    ]);
+    if (result?.submitted && result.values?.gamma) {
+      const gamma = parseFloat(result.values.gamma as string) || 1.0;
+      await this.applyEffect(() => ImageEffects.gamma(this.pixels!, gamma), `Gamma ${gamma}`);
+    }
+  }
+
+  async effectNormalize(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.normalize(this.pixels!), 'Auto Levels');
+  }
+
+  // --- Color Effects ---
+
+  async effectGrayscale(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.grayscale(this.pixels!), 'Grayscale');
+  }
+
+  async effectSepia(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.sepia(this.pixels!), 'Sepia');
+  }
+
+  async effectInvert(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.invert(this.pixels!), 'Invert');
+  }
+
+  async effectPosterize(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Posterize', [
+      { name: 'levels', type: 'entry', label: 'Color levels (2-16)', placeholder: '4' }
+    ]);
+    if (result?.submitted && result.values?.levels) {
+      const levels = Math.max(2, Math.min(16, parseInt(result.values.levels as string, 10) || 4));
+      await this.applyEffect(() => ImageEffects.posterize(this.pixels!, levels), `Posterize ${levels}`);
+    }
+  }
+
+  async effectThreshold(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Threshold', [
+      { name: 'threshold', type: 'entry', label: 'Threshold (0-255)', placeholder: '128' }
+    ]);
+    if (result?.submitted && result.values?.threshold) {
+      const threshold = parseInt(result.values.threshold as string, 10) || 128;
+      await this.applyEffect(() => ImageEffects.threshold(this.pixels!, threshold), `Threshold ${threshold}`);
+    }
+  }
+
+  async effectSolarize(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Solarize', [
+      { name: 'threshold', type: 'entry', label: 'Threshold (0-255)', placeholder: '128' }
+    ]);
+    if (result?.submitted && result.values?.threshold) {
+      const threshold = parseInt(result.values.threshold as string, 10) || 128;
+      await this.applyEffect(() => ImageEffects.solarize(this.pixels!, threshold), `Solarize ${threshold}`);
+    }
+  }
+
+  async effectDither(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.dither(this.pixels!, this.imageWidth, this.imageHeight), 'Dither');
+  }
+
+  // --- Blur/Sharpen ---
+
+  async effectBlur(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Blur', [
+      { name: 'radius', type: 'entry', label: 'Radius (1-10)', placeholder: '2' }
+    ]);
+    if (result?.submitted && result.values?.radius) {
+      const radius = Math.max(1, Math.min(10, parseInt(result.values.radius as string, 10) || 2));
+      await this.applyEffect(() => ImageEffects.blur(this.pixels!, this.imageWidth, this.imageHeight, radius), `Blur ${radius}`);
+    }
+  }
+
+  async effectSharpen(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Sharpen', [
+      { name: 'amount', type: 'entry', label: 'Amount (0.1-2.0)', placeholder: '0.5' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = Math.max(0.1, Math.min(2.0, parseFloat(result.values.amount as string) || 0.5));
+      await this.applyEffect(() => ImageEffects.sharpen(this.pixels!, this.imageWidth, this.imageHeight, amount), `Sharpen ${amount}`);
+    }
+  }
+
+  // --- Artistic Effects ---
+
+  async effectEdgeDetect(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.edgeDetect(this.pixels!, this.imageWidth, this.imageHeight), 'Edge Detect');
+  }
+
+  async effectEmboss(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.emboss(this.pixels!, this.imageWidth, this.imageHeight), 'Emboss');
+  }
+
+  async effectPixelate(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Pixelate', [
+      { name: 'size', type: 'entry', label: 'Block size (2-32)', placeholder: '4' }
+    ]);
+    if (result?.submitted && result.values?.size) {
+      const size = Math.max(2, Math.min(32, parseInt(result.values.size as string, 10) || 4));
+      await this.applyEffect(() => ImageEffects.pixelate(this.pixels!, this.imageWidth, this.imageHeight, size), `Pixelate ${size}`);
+    }
+  }
+
+  async effectOilPaint(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Oil Paint', [
+      { name: 'radius', type: 'entry', label: 'Radius (1-5)', placeholder: '3' },
+      { name: 'levels', type: 'entry', label: 'Intensity levels (5-30)', placeholder: '20' }
+    ]);
+    if (result?.submitted && result.values?.radius) {
+      const radius = Math.max(1, Math.min(5, parseInt(result.values.radius as string, 10) || 3));
+      const levels = Math.max(5, Math.min(30, parseInt(result.values.levels as string, 10) || 20));
+      await this.applyEffect(() => ImageEffects.oilPaint(this.pixels!, this.imageWidth, this.imageHeight, radius, levels), 'Oil Paint');
+    }
+  }
+
+  async effectPencilSketch(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.pencilSketch(this.pixels!, this.imageWidth, this.imageHeight), 'Pencil Sketch');
+  }
+
+  async effectHalftone(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Halftone', [
+      { name: 'size', type: 'entry', label: 'Dot size (4-16)', placeholder: '6' }
+    ]);
+    if (result?.submitted && result.values?.size) {
+      const size = Math.max(4, Math.min(16, parseInt(result.values.size as string, 10) || 6));
+      await this.applyEffect(() => ImageEffects.halftone(this.pixels!, this.imageWidth, this.imageHeight, size), `Halftone ${size}`);
+    }
+  }
+
+  // --- Film/Photo Effects ---
+
+  async effectVignette(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Vignette', [
+      { name: 'strength', type: 'entry', label: 'Strength (0.1-1.0)', placeholder: '0.5' }
+    ]);
+    if (result?.submitted && result.values?.strength) {
+      const strength = Math.max(0.1, Math.min(1.0, parseFloat(result.values.strength as string) || 0.5));
+      await this.applyEffect(() => ImageEffects.vignette(this.pixels!, this.imageWidth, this.imageHeight, strength), `Vignette ${strength}`);
+    }
+  }
+
+  async effectFilmGrain(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Film Grain', [
+      { name: 'amount', type: 'entry', label: 'Amount (10-100)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = Math.max(10, Math.min(100, parseInt(result.values.amount as string, 10) || 30));
+      await this.applyEffect(() => ImageEffects.filmGrain(this.pixels!, amount), `Film Grain ${amount}`);
+    }
+  }
+
+  async effectVintage(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.vintage(this.pixels!), 'Vintage');
+  }
+
+  async effectCrossProcess(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.crossProcess(this.pixels!), 'Cross Process');
+  }
+
+  async effectColorTemperature(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Color Temperature', [
+      { name: 'temp', type: 'entry', label: 'Temperature (-100 cool, +100 warm)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.temp) {
+      const temp = parseInt(result.values.temp as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.colorTemperature(this.pixels!, temp), `Temperature ${temp}`);
+    }
+  }
+
+  async effectNightVision(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.nightVision(this.pixels!), 'Night Vision');
+  }
+
+  async effectThermal(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.thermal(this.pixels!), 'Thermal');
+  }
+
+  // --- Color Channel Effects ---
+
+  async effectRedChannel(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.redChannel(this.pixels!), 'Red Channel Only');
+  }
+
+  async effectGreenChannel(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.greenChannel(this.pixels!), 'Green Channel Only');
+  }
+
+  async effectBlueChannel(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.blueChannel(this.pixels!), 'Blue Channel Only');
+  }
+
+  async effectSwapRGB_BGR(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.swapChannels(this.pixels!, 'rgb-bgr'), 'Swap R↔B');
+  }
+
+  async effectSwapRGB_GBR(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.swapChannels(this.pixels!, 'rgb-gbr'), 'Rotate RGB→GBR');
+  }
+
+  async effectSwapRGB_BRG(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.swapChannels(this.pixels!, 'rgb-brg'), 'Rotate RGB→BRG');
+  }
+
+  // --- Special Effects ---
+
+  async effectChromaticAberration(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Chromatic Aberration', [
+      { name: 'offset', type: 'entry', label: 'Offset (1-10)', placeholder: '3' }
+    ]);
+    if (result?.submitted && result.values?.offset) {
+      const offset = Math.max(1, Math.min(10, parseInt(result.values.offset as string, 10) || 3));
+      await this.applyEffect(() => ImageEffects.chromaticAberration(this.pixels!, this.imageWidth, this.imageHeight, offset), 'Chromatic Aberration');
+    }
+  }
+
+  async effectGlitch(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Glitch', [
+      { name: 'intensity', type: 'entry', label: 'Intensity (1-10)', placeholder: '5' }
+    ]);
+    if (result?.submitted && result.values?.intensity) {
+      const intensity = Math.max(1, Math.min(10, parseInt(result.values.intensity as string, 10) || 5));
+      await this.applyEffect(() => ImageEffects.glitch(this.pixels!, this.imageWidth, this.imageHeight, intensity), 'Glitch');
+    }
+  }
+
+  async effectTint(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const colorResult = await this.win.showColorPicker('Choose Tint Color', '#FF0000');
+    if (colorResult) {
+      const result = await this.win.showForm('Tint Strength', [
+        { name: 'strength', type: 'entry', label: 'Strength (10-80)', placeholder: '30' }
+      ]);
+      if (result?.submitted && result.values?.strength) {
+        const strength = Math.max(10, Math.min(80, parseInt(result.values.strength as string, 10) || 30));
+        await this.applyEffect(() => ImageEffects.tint(this.pixels!, colorResult.r, colorResult.g, colorResult.b, strength), 'Tint');
+      }
+    }
+  }
+
+  async effectColorSplash(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    await this.win.showInfo('Color Splash', 'Click on a pixel to select the color to keep. All other colors will become grayscale.');
+    const colorResult = await this.win.showColorPicker('Choose Color to Keep', this.fgColor.toHex());
+    if (colorResult) {
+      const result = await this.win.showForm('Tolerance', [
+        { name: 'tolerance', type: 'entry', label: 'Tolerance (10-150)', placeholder: '50' }
+      ]);
+      if (result?.submitted && result.values?.tolerance) {
+        const tolerance = Math.max(10, Math.min(150, parseInt(result.values.tolerance as string, 10) || 50));
+        await this.applyEffect(() => ImageEffects.colorSplash(this.pixels!, colorResult.r, colorResult.g, colorResult.b, tolerance), 'Color Splash');
+      }
+    }
+  }
+
+  // --- Transform Effects ---
+
+  async effectFlipHorizontal(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.flipHorizontal(this.pixels!, this.imageWidth, this.imageHeight), 'Flip Horizontal');
+  }
+
+  async effectFlipVertical(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.flipVertical(this.pixels!, this.imageWidth, this.imageHeight), 'Flip Vertical');
+  }
+
+  async effectRotate90CW(): Promise<void> {
+    await this.applyEffectWithDimensionChange(
+      () => ImageEffects.rotate90CW(this.pixels!, this.imageWidth, this.imageHeight),
+      'Rotate 90° CW'
+    );
+  }
+
+  async effectRotate90CCW(): Promise<void> {
+    await this.applyEffectWithDimensionChange(
+      () => ImageEffects.rotate90CCW(this.pixels!, this.imageWidth, this.imageHeight),
+      'Rotate 90° CCW'
+    );
+  }
+
+  async effectRotate180(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.rotate180(this.pixels!, this.imageWidth, this.imageHeight), 'Rotate 180°');
+  }
+
+  // --- Additional Effects (25+ more) ---
+
+  async effectGaussianBlur(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Gaussian Blur', [
+      { name: 'sigma', type: 'entry', label: 'Sigma (1-10)', placeholder: '2' }
+    ]);
+    if (result?.submitted && result.values?.sigma) {
+      const sigma = Math.max(1, Math.min(10, parseFloat(result.values.sigma as string) || 2));
+      await this.applyEffect(() => ImageEffects.gaussianBlur(this.pixels!, this.imageWidth, this.imageHeight, sigma), 'Gaussian Blur');
+    }
+  }
+
+  async effectMotionBlur(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Motion Blur', [
+      { name: 'angle', type: 'entry', label: 'Angle (0-360)', placeholder: '45' },
+      { name: 'distance', type: 'entry', label: 'Distance (1-20)', placeholder: '10' }
+    ]);
+    if (result?.submitted && result.values?.angle) {
+      const angle = parseInt(result.values.angle as string, 10) || 45;
+      const distance = Math.max(1, Math.min(20, parseInt(result.values.distance as string, 10) || 10));
+      await this.applyEffect(() => ImageEffects.motionBlur(this.pixels!, this.imageWidth, this.imageHeight, angle, distance), 'Motion Blur');
+    }
+  }
+
+  async effectRadialBlur(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Radial Blur', [
+      { name: 'strength', type: 'entry', label: 'Strength (1-50)', placeholder: '10' }
+    ]);
+    if (result?.submitted && result.values?.strength) {
+      const strength = Math.max(1, Math.min(50, parseInt(result.values.strength as string, 10) || 10));
+      await this.applyEffect(() => ImageEffects.radialBlur(this.pixels!, this.imageWidth, this.imageHeight, strength), 'Radial Blur');
+    }
+  }
+
+  async effectMedianFilter(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Median Filter (Noise Reduction)', [
+      { name: 'radius', type: 'entry', label: 'Radius (1-3)', placeholder: '1' }
+    ]);
+    if (result?.submitted && result.values?.radius) {
+      const radius = Math.max(1, Math.min(3, parseInt(result.values.radius as string, 10) || 1));
+      await this.applyEffect(() => ImageEffects.medianFilter(this.pixels!, this.imageWidth, this.imageHeight, radius), 'Median Filter');
+    }
+  }
+
+  async effectHighPass(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('High Pass Filter', [
+      { name: 'radius', type: 'entry', label: 'Radius (1-10)', placeholder: '3' }
+    ]);
+    if (result?.submitted && result.values?.radius) {
+      const radius = Math.max(1, Math.min(10, parseInt(result.values.radius as string, 10) || 3));
+      await this.applyEffect(() => ImageEffects.highPass(this.pixels!, this.imageWidth, this.imageHeight, radius), 'High Pass');
+    }
+  }
+
+  async effectUnsharpMask(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Unsharp Mask', [
+      { name: 'amount', type: 'entry', label: 'Amount (0.5-3)', placeholder: '1.5' },
+      { name: 'radius', type: 'entry', label: 'Radius (1-5)', placeholder: '2' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = Math.max(0.5, Math.min(3, parseFloat(result.values.amount as string) || 1.5));
+      const radius = Math.max(1, Math.min(5, parseInt(result.values.radius as string, 10) || 2));
+      await this.applyEffect(() => ImageEffects.unsharpMask(this.pixels!, this.imageWidth, this.imageHeight, amount, radius), 'Unsharp Mask');
+    }
+  }
+
+  async effectHueRotate(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Hue Rotate', [
+      { name: 'degrees', type: 'entry', label: 'Degrees (0-360)', placeholder: '90' }
+    ]);
+    if (result?.submitted && result.values?.degrees) {
+      const degrees = parseInt(result.values.degrees as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.hueRotate(this.pixels!, degrees), `Hue Rotate ${degrees}°`);
+    }
+  }
+
+  async effectVibrance(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Vibrance', [
+      { name: 'amount', type: 'entry', label: 'Amount (-100 to 100)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = parseInt(result.values.amount as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.vibrance(this.pixels!, amount), `Vibrance ${amount}`);
+    }
+  }
+
+  async effectDuotone(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const darkColor = await this.win.showColorPicker('Choose Dark Color', '#000080');
+    if (!darkColor) return;
+    const lightColor = await this.win.showColorPicker('Choose Light Color', '#FFD700');
+    if (!lightColor) return;
+    await this.applyEffect(() => ImageEffects.duotone(this.pixels!, darkColor.r, darkColor.g, darkColor.b, lightColor.r, lightColor.g, lightColor.b), 'Duotone');
+  }
+
+  async effectPopArt(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.popArt(this.pixels!, this.imageWidth, this.imageHeight), 'Pop Art');
+  }
+
+  async effectCartoon(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Cartoon Effect', [
+      { name: 'levels', type: 'entry', label: 'Color levels (3-8)', placeholder: '5' },
+      { name: 'threshold', type: 'entry', label: 'Edge threshold (50-150)', placeholder: '80' }
+    ]);
+    if (result?.submitted && result.values?.levels) {
+      const levels = Math.max(3, Math.min(8, parseInt(result.values.levels as string, 10) || 5));
+      const threshold = Math.max(50, Math.min(150, parseInt(result.values.threshold as string, 10) || 80));
+      await this.applyEffect(() => ImageEffects.cartoon(this.pixels!, this.imageWidth, this.imageHeight, levels, threshold), 'Cartoon');
+    }
+  }
+
+  async effectScanlines(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Scanlines', [
+      { name: 'spacing', type: 'entry', label: 'Spacing (2-8)', placeholder: '2' },
+      { name: 'intensity', type: 'entry', label: 'Intensity (10-80)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.spacing) {
+      const spacing = Math.max(2, Math.min(8, parseInt(result.values.spacing as string, 10) || 2));
+      const intensity = Math.max(10, Math.min(80, parseInt(result.values.intensity as string, 10) || 30));
+      await this.applyEffect(() => ImageEffects.scanlines(this.pixels!, this.imageWidth, this.imageHeight, spacing, intensity), 'Scanlines');
+    }
+  }
+
+  async effectCRT(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.crt(this.pixels!, this.imageWidth, this.imageHeight), 'CRT');
+  }
+
+  async effectVHS(): Promise<void> {
+    await this.applyEffect(() => ImageEffects.vhs(this.pixels!, this.imageWidth, this.imageHeight), 'VHS');
+  }
+
+  async effectWave(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Wave Distortion', [
+      { name: 'amplitude', type: 'entry', label: 'Amplitude (5-30)', placeholder: '10' },
+      { name: 'frequency', type: 'entry', label: 'Frequency (10-50)', placeholder: '20' }
+    ]);
+    if (result?.submitted && result.values?.amplitude) {
+      const amplitude = Math.max(5, Math.min(30, parseInt(result.values.amplitude as string, 10) || 10));
+      const frequency = Math.max(10, Math.min(50, parseInt(result.values.frequency as string, 10) || 20));
+      await this.applyEffect(() => ImageEffects.wave(this.pixels!, this.imageWidth, this.imageHeight, amplitude, frequency), 'Wave');
+    }
+  }
+
+  async effectSwirl(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Swirl/Twirl', [
+      { name: 'strength', type: 'entry', label: 'Strength (-360 to 360)', placeholder: '90' }
+    ]);
+    if (result?.submitted && result.values?.strength) {
+      const strength = parseInt(result.values.strength as string, 10) || 90;
+      await this.applyEffect(() => ImageEffects.swirl(this.pixels!, this.imageWidth, this.imageHeight, strength), 'Swirl');
+    }
+  }
+
+  async effectSpherize(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Spherize (Bulge)', [
+      { name: 'strength', type: 'entry', label: 'Strength (10-200)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.strength) {
+      const strength = Math.max(10, Math.min(200, parseInt(result.values.strength as string, 10) || 50));
+      await this.applyEffect(() => ImageEffects.spherize(this.pixels!, this.imageWidth, this.imageHeight, strength), 'Spherize');
+    }
+  }
+
+  async effectPinch(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Pinch', [
+      { name: 'strength', type: 'entry', label: 'Strength (10-200)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.strength) {
+      const strength = Math.max(10, Math.min(200, parseInt(result.values.strength as string, 10) || 50));
+      await this.applyEffect(() => ImageEffects.pinch(this.pixels!, this.imageWidth, this.imageHeight, strength), 'Pinch');
+    }
+  }
+
+  async effectRipple(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Ripple', [
+      { name: 'amplitude', type: 'entry', label: 'Amplitude (3-15)', placeholder: '5' },
+      { name: 'wavelength', type: 'entry', label: 'Wavelength (10-50)', placeholder: '20' }
+    ]);
+    if (result?.submitted && result.values?.amplitude) {
+      const amplitude = Math.max(3, Math.min(15, parseInt(result.values.amplitude as string, 10) || 5));
+      const wavelength = Math.max(10, Math.min(50, parseInt(result.values.wavelength as string, 10) || 20));
+      await this.applyEffect(() => ImageEffects.ripple(this.pixels!, this.imageWidth, this.imageHeight, amplitude, wavelength), 'Ripple');
+    }
+  }
+
+  async effectFrostedGlass(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Frosted Glass', [
+      { name: 'amount', type: 'entry', label: 'Amount (2-20)', placeholder: '5' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = Math.max(2, Math.min(20, parseInt(result.values.amount as string, 10) || 5));
+      await this.applyEffect(() => ImageEffects.frostedGlass(this.pixels!, this.imageWidth, this.imageHeight, amount), 'Frosted Glass');
+    }
+  }
+
+  async effectMosaic(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Mosaic/Stained Glass', [
+      { name: 'cellSize', type: 'entry', label: 'Cell size (5-30)', placeholder: '15' }
+    ]);
+    if (result?.submitted && result.values?.cellSize) {
+      const cellSize = Math.max(5, Math.min(30, parseInt(result.values.cellSize as string, 10) || 15));
+      await this.applyEffect(() => ImageEffects.mosaic(this.pixels!, this.imageWidth, this.imageHeight, cellSize), 'Mosaic');
+    }
+  }
+
+  async effectPointillism(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Pointillism', [
+      { name: 'dotSize', type: 'entry', label: 'Dot size (2-8)', placeholder: '4' },
+      { name: 'density', type: 'entry', label: 'Density (20-80)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.dotSize) {
+      const dotSize = Math.max(2, Math.min(8, parseInt(result.values.dotSize as string, 10) || 4));
+      const density = Math.max(20, Math.min(80, parseInt(result.values.density as string, 10) || 50));
+      await this.applyEffect(() => ImageEffects.pointillism(this.pixels!, this.imageWidth, this.imageHeight, dotSize, density), 'Pointillism');
+    }
+  }
+
+  async effectColorQuantize(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Reduce Colors', [
+      { name: 'colors', type: 'entry', label: 'Number of colors (2-64)', placeholder: '8' }
+    ]);
+    if (result?.submitted && result.values?.colors) {
+      const colors = Math.max(2, Math.min(64, parseInt(result.values.colors as string, 10) || 8));
+      await this.applyEffect(() => ImageEffects.colorQuantize(this.pixels!, colors), `Reduce to ${colors} colors`);
+    }
+  }
+
+  async effectExposure(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Exposure', [
+      { name: 'stops', type: 'entry', label: 'Stops (-3 to +3)', placeholder: '1' }
+    ]);
+    if (result?.submitted && result.values?.stops) {
+      const stops = Math.max(-3, Math.min(3, parseFloat(result.values.stops as string) || 0));
+      await this.applyEffect(() => ImageEffects.exposure(this.pixels!, stops), `Exposure ${stops > 0 ? '+' : ''}${stops}`);
+    }
+  }
+
+  async effectShadowsHighlights(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Shadows/Highlights', [
+      { name: 'shadows', type: 'entry', label: 'Shadows (-100 to 100)', placeholder: '30' },
+      { name: 'highlights', type: 'entry', label: 'Highlights (-100 to 100)', placeholder: '-20' }
+    ]);
+    if (result?.submitted && result.values?.shadows) {
+      const shadows = parseInt(result.values.shadows as string, 10) || 0;
+      const highlights = parseInt(result.values.highlights as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.shadowsHighlights(this.pixels!, shadows, highlights), 'Shadows/Highlights');
+    }
+  }
+
+  async effectClarity(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Clarity', [
+      { name: 'amount', type: 'entry', label: 'Amount (0-100)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.amount) {
+      const amount = Math.max(0, Math.min(100, parseInt(result.values.amount as string, 10) || 50));
+      await this.applyEffect(() => ImageEffects.clarity(this.pixels!, this.imageWidth, this.imageHeight, amount), 'Clarity');
+    }
+  }
+
+  async effectColorBalance(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Color Balance', [
+      { name: 'redCyan', type: 'entry', label: 'Red/Cyan (-100 to 100)', placeholder: '0' },
+      { name: 'greenMagenta', type: 'entry', label: 'Green/Magenta (-100 to 100)', placeholder: '0' },
+      { name: 'blueYellow', type: 'entry', label: 'Blue/Yellow (-100 to 100)', placeholder: '0' }
+    ]);
+    if (result?.submitted) {
+      const redCyan = parseInt(result.values?.redCyan as string, 10) || 0;
+      const greenMagenta = parseInt(result.values?.greenMagenta as string, 10) || 0;
+      const blueYellow = parseInt(result.values?.blueYellow as string, 10) || 0;
+      await this.applyEffect(() => ImageEffects.colorBalance(this.pixels!, redCyan, greenMagenta, blueYellow), 'Color Balance');
+    }
+  }
+
+  async effectReplaceColor(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const fromColor = await this.win.showColorPicker('Choose Color to Replace', '#FF0000');
+    if (!fromColor) return;
+    const toColor = await this.win.showColorPicker('Choose Replacement Color', '#00FF00');
+    if (!toColor) return;
+    const result = await this.win.showForm('Tolerance', [
+      { name: 'tolerance', type: 'entry', label: 'Tolerance (10-150)', placeholder: '50' }
+    ]);
+    if (result?.submitted && result.values?.tolerance) {
+      const tolerance = Math.max(10, Math.min(150, parseInt(result.values.tolerance as string, 10) || 50));
+      await this.applyEffect(() => ImageEffects.replaceColor(this.pixels!, fromColor.r, fromColor.g, fromColor.b, toColor.r, toColor.g, toColor.b, tolerance), 'Replace Color');
+    }
+  }
+
+  async effectLensBlur(): Promise<void> {
+    if (!this.win || !this.pixels) return;
+    const result = await this.win.showForm('Lens Blur', [
+      { name: 'radius', type: 'entry', label: 'Radius (2-10)', placeholder: '5' },
+      { name: 'brightness', type: 'entry', label: 'Bokeh brightness (0-100)', placeholder: '30' }
+    ]);
+    if (result?.submitted && result.values?.radius) {
+      const radius = Math.max(2, Math.min(10, parseInt(result.values.radius as string, 10) || 5));
+      const brightness = Math.max(0, Math.min(100, parseInt(result.values.brightness as string, 10) || 30));
+      await this.applyEffect(() => ImageEffects.lensBlur(this.pixels!, this.imageWidth, this.imageHeight, radius, brightness), 'Lens Blur');
+    }
+  }
+
   /**
    * Set foreground color
    * Based on: editor.go SetFGColor()
@@ -2179,6 +4531,108 @@ class PixelEditor {
       { label: 'Toggle Visibility', onSelected: () => this.toggleLayerVisibility(this.activeLayerIndex) },
     ];
 
+    // Build Adjust menu items (basic adjustments)
+    const adjustMenuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
+      { label: 'Brightness ...', onSelected: () => this.effectBrightness() },
+      { label: 'Contrast ...', onSelected: () => this.effectContrast() },
+      { label: 'Saturation ...', onSelected: () => this.effectSaturation() },
+      { label: 'Gamma ...', onSelected: () => this.effectGamma() },
+      { label: 'Exposure ...', onSelected: () => this.effectExposure() },
+      { label: 'Auto Levels', onSelected: () => this.effectNormalize() },
+      { label: 'isSeparator', isSeparator: true },
+      { label: 'Hue/Rotate ...', onSelected: () => this.effectHueRotate() },
+      { label: 'Vibrance ...', onSelected: () => this.effectVibrance() },
+      { label: 'Color Temperature ...', onSelected: () => this.effectColorTemperature() },
+      { label: 'Tint ...', onSelected: () => this.effectTint() },
+      { label: 'Color Balance ...', onSelected: () => this.effectColorBalance() },
+      { label: 'isSeparator', isSeparator: true },
+      { label: 'Shadows/Highlights ...', onSelected: () => this.effectShadowsHighlights() },
+      { label: 'Clarity ...', onSelected: () => this.effectClarity() },
+    ];
+
+    // Build Effects menu items (filters and artistic effects)
+    const effectsMenuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
+      // Color Effects
+      { label: 'Grayscale', onSelected: () => this.effectGrayscale() },
+      { label: 'Sepia', onSelected: () => this.effectSepia() },
+      { label: 'Invert', onSelected: () => this.effectInvert() },
+      { label: 'Posterize ...', onSelected: () => this.effectPosterize() },
+      { label: 'Threshold ...', onSelected: () => this.effectThreshold() },
+      { label: 'Solarize ...', onSelected: () => this.effectSolarize() },
+      { label: 'Dither', onSelected: () => this.effectDither() },
+      { label: 'Duotone ...', onSelected: () => this.effectDuotone() },
+      { label: 'Color Quantize ...', onSelected: () => this.effectColorQuantize() },
+      { label: 'Replace Color ...', onSelected: () => this.effectReplaceColor() },
+      { label: 'isSeparator', isSeparator: true },
+      // Blur/Sharpen
+      { label: 'Box Blur ...', onSelected: () => this.effectBlur() },
+      { label: 'Gaussian Blur ...', onSelected: () => this.effectGaussianBlur() },
+      { label: 'Motion Blur ...', onSelected: () => this.effectMotionBlur() },
+      { label: 'Radial Blur ...', onSelected: () => this.effectRadialBlur() },
+      { label: 'Lens Blur ...', onSelected: () => this.effectLensBlur() },
+      { label: 'Frosted Glass ...', onSelected: () => this.effectFrostedGlass() },
+      { label: 'Median Filter ...', onSelected: () => this.effectMedianFilter() },
+      { label: 'Sharpen ...', onSelected: () => this.effectSharpen() },
+      { label: 'Unsharp Mask ...', onSelected: () => this.effectUnsharpMask() },
+      { label: 'High Pass ...', onSelected: () => this.effectHighPass() },
+      { label: 'isSeparator', isSeparator: true },
+      // Artistic
+      { label: 'Edge Detect', onSelected: () => this.effectEdgeDetect() },
+      { label: 'Emboss', onSelected: () => this.effectEmboss() },
+      { label: 'Pixelate ...', onSelected: () => this.effectPixelate() },
+      { label: 'Mosaic ...', onSelected: () => this.effectMosaic() },
+      { label: 'Oil Paint ...', onSelected: () => this.effectOilPaint() },
+      { label: 'Pencil Sketch', onSelected: () => this.effectPencilSketch() },
+      { label: 'Cartoon ...', onSelected: () => this.effectCartoon() },
+      { label: 'Pop Art', onSelected: () => this.effectPopArt() },
+      { label: 'Pointillism ...', onSelected: () => this.effectPointillism() },
+      { label: 'Halftone ...', onSelected: () => this.effectHalftone() },
+      { label: 'isSeparator', isSeparator: true },
+      // Film/Photo/Retro
+      { label: 'Vignette ...', onSelected: () => this.effectVignette() },
+      { label: 'Film Grain ...', onSelected: () => this.effectFilmGrain() },
+      { label: 'Vintage', onSelected: () => this.effectVintage() },
+      { label: 'Cross Process', onSelected: () => this.effectCrossProcess() },
+      { label: 'Scanlines ...', onSelected: () => this.effectScanlines() },
+      { label: 'CRT Effect', onSelected: () => this.effectCRT() },
+      { label: 'VHS Effect', onSelected: () => this.effectVHS() },
+      { label: 'isSeparator', isSeparator: true },
+      // Special
+      { label: 'Night Vision', onSelected: () => this.effectNightVision() },
+      { label: 'Thermal', onSelected: () => this.effectThermal() },
+      { label: 'Chromatic Aberration ...', onSelected: () => this.effectChromaticAberration() },
+      { label: 'Glitch ...', onSelected: () => this.effectGlitch() },
+      { label: 'Color Splash ...', onSelected: () => this.effectColorSplash() },
+    ];
+
+    // Build Channels menu items
+    const channelsMenuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
+      { label: 'Red Channel Only', onSelected: () => this.effectRedChannel() },
+      { label: 'Green Channel Only', onSelected: () => this.effectGreenChannel() },
+      { label: 'Blue Channel Only', onSelected: () => this.effectBlueChannel() },
+      { label: 'isSeparator', isSeparator: true },
+      { label: 'Swap R ↔ B', onSelected: () => this.effectSwapRGB_BGR() },
+      { label: 'Rotate RGB → GBR', onSelected: () => this.effectSwapRGB_GBR() },
+      { label: 'Rotate RGB → BRG', onSelected: () => this.effectSwapRGB_BRG() },
+    ];
+
+    // Build Transform menu items
+    const transformMenuItems: Array<{label: string; onSelected?: () => void; isSeparator?: boolean}> = [
+      { label: 'Flip Horizontal', onSelected: () => this.effectFlipHorizontal() },
+      { label: 'Flip Vertical', onSelected: () => this.effectFlipVertical() },
+      { label: 'isSeparator', isSeparator: true },
+      { label: 'Rotate 90° CW', onSelected: () => this.effectRotate90CW() },
+      { label: 'Rotate 90° CCW', onSelected: () => this.effectRotate90CCW() },
+      { label: 'Rotate 180°', onSelected: () => this.effectRotate180() },
+      { label: 'isSeparator', isSeparator: true },
+      // Distortions
+      { label: 'Wave ...', onSelected: () => this.effectWave() },
+      { label: 'Swirl ...', onSelected: () => this.effectSwirl() },
+      { label: 'Spherize ...', onSelected: () => this.effectSpherize() },
+      { label: 'Pinch ...', onSelected: () => this.effectPinch() },
+      { label: 'Ripple ...', onSelected: () => this.effectRipple() },
+    ];
+
     this.win.setMainMenu([
       {
         label: 'File',
@@ -2191,6 +4645,22 @@ class PixelEditor {
       {
         label: 'Layer',
         items: layerMenuItems
+      },
+      {
+        label: 'Adjust',
+        items: adjustMenuItems
+      },
+      {
+        label: 'Effects',
+        items: effectsMenuItems
+      },
+      {
+        label: 'Channels',
+        items: channelsMenuItems
+      },
+      {
+        label: 'Transform',
+        items: transformMenuItems
       }
     ]);
   }
@@ -2198,6 +4668,7 @@ class PixelEditor {
   /**
    * Build the UI
    * Based on: ui/main.go BuildUI()
+   * Uses hamburger menu pattern for LHS tools panel (inspired by Paris density simulation)
    */
   async buildUI(win: Window): Promise<void> {
     this.win = win;
@@ -2209,23 +4680,58 @@ class PixelEditor {
       this.createBlankImage(32, 32);
     }
 
-    this.a.border({
-      top: () => {
-        // Top toolbar
-        this.buildToolbar();
-      },
-      left: () => {
-        // Left palette
-        this.buildPalette();
-      },
-      center: () => {
-        // Main canvas area
+    this.a.vbox(() => {
+      // Top toolbar
+      this.buildToolbar();
+
+      // Main area: stack with canvas and hamburger panel overlay
+      this.a.stack(() => {
+        // Bottom layer: canvas (fills available space)
         this.buildCanvas();
-      },
-      bottom: () => {
-        // Bottom status bar
-        this.buildStatusBar();
-      }
+
+        // Top layer: hamburger panel overlay on left
+        this.a.hbox(() => {
+          this.a.themeoverride('dark', () => {
+            this.a.vbox(() => {
+              // Hamburger button row (always visible, with opaque background)
+              this.a.max(() => {
+                this.a.rectangle('#1a1a2e', 150, 36);
+                this.a.hbox(() => {
+                  this.a.button('☰').onClick(() => {
+                    this.panelCollapsed = !this.panelCollapsed;
+                    if (this.panelContainer) {
+                      if (this.panelCollapsed) {
+                        this.panelContainer.hide();
+                      } else {
+                        this.panelContainer.show();
+                      }
+                    }
+                  }).withId('hamburgerBtn');
+                  this.a.label(' Tools');
+                });
+              });
+
+              // Collapsible panel container
+              this.panelContainer = this.a.max(() => {
+                this.a.rectangle('#1a1a2e', 150, 400);
+                this.a.scroll(() => {
+                  // Accordion palette content
+                  this.buildPalette();
+                });
+              });
+
+              // Hide panel initially since panelCollapsed defaults to true
+              if (this.panelCollapsed && this.panelContainer) {
+                this.panelContainer.hide();
+              }
+            });
+          });
+          this.a.spacer();
+        });
+      });
+
+      // Bottom status bar
+      this.buildStatusBar();
     });
 
     // Populate canvas with pixel data after UI is built
