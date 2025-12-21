@@ -58,115 +58,46 @@ app({ title: 'My App' }, (a) => {
 - Context tracks parent container automatically
 - Async operations return promises
 
-## Ported Apps Pattern (7 Complete Apps)
+## Ported Apps Patterns (7 Complete Apps: 314 Tests, 3,963 Lines)
 
-Successfully ported 7 mobile/web apps to Tsyne with consistent patterns:
+**Quick Reference for App Ports**
 
-1. **Food Truck** (Apple WWDC22 sample) - 26 Jest tests, 458 lines
-2. **Expense Tracker** (DimeApp) - 35 Jest tests, 531 lines
-3. **NextCloud iOS** - 37 Jest tests, 544 lines
-4. **DuckDuckGo iOS** - 58 Jest tests, 650 lines
-5. **Wikipedia iOS** - 56 Jest tests, 650 lines
-6. **Element iOS** (Matrix client) - 41 Jest tests, 550 lines
-7. **Ebook Reader** (FlutterEbookApp) - 61 Jest tests, 730 lines
-
-**Total: 314 Jest tests, 3,963 lines of idiomatic Tsyne code**
-
-### Lessons Learned for Next LLM
-
-**Type Safety & Imports:**
-- ❌ Don't: `import { App } from '../../src/index'` in ported-apps - leads to TypeScript errors
-- ✅ Do: Use `app: any` parameter type and let the framework handle injection
-- ✅ Do: Import only data models and store classes, never App type
-
-**Reactive Updates Pattern (All Apps Use This):**
+✅ **Observable Store Pattern** (all apps):
 ```typescript
-class MyStore {
+class Store {
   private changeListeners: ChangeListener[] = [];
-
   subscribe(listener: ChangeListener): () => void {
     this.changeListeners.push(listener);
-    return () => {
-      this.changeListeners = this.changeListeners.filter((l) => l !== listener);
-    };
+    return () => { this.changeListeners = this.changeListeners.filter(l => l !== listener); };
   }
-
-  private notifyChange() {
-    this.changeListeners.forEach((listener) => listener());
-  }
+  private notifyChange() { this.changeListeners.forEach(l => l()); }
 }
-
-// In UI: store.subscribe(async () => {
-//   await updateLabels();
-//   await viewStack.refresh();
-// });
+// Usage: store.subscribe(async () => { await updateUI(); await viewStack.refresh(); });
 ```
 
-**UI Composition with when() & bindTo():**
-- Use `.when(() => condition && data)` for tab visibility
-- Use `.bindTo()` with `trackBy` for smart list rendering
-- Always call `await viewStack.refresh()` after state changes
-- Async label updates in Observable callback
+**Critical Patterns:**
+- ❌ Don't import App type: `import { App }` → TypeScript errors
+- ✅ Use `app: any` parameter + inject store classes only
+- ✅ Defensive copies: `[...array]`, `{...object}` (tests verify immutability)
+- ✅ ID generation: counter pattern `id: 'entity-${String(this.nextId++).padStart(3, '0')}'` (not Date.now())
+- ✅ UI updates: `.when()` + `await viewStack.refresh()` for tabs
+- ✅ Lists: `.bindTo()` with `trackBy: (item) => item.id`
+- ❌ Don't use `prompt()` (returns Promise) → generate default values instead
 
-**Defensive Copying (Critical for Tests):**
-- Always use spread operator: `[...array]` and `{...object}`
-- Tests verify immutability: `expect(arr1).not.toBe(arr2)`
-- Store methods should return defensive copies
+**Test Template:**
+- Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5)
+- Copy test to `core/src/__tests__/ported-apps/[app]/index.test.ts` with updated import path
+- Run: `npm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
 
-**ID Generation Pattern:**
-- ❌ Don't: Use `Date.now()` for IDs (duplicate when called rapidly)
-- ✅ Do: Use counter: `id: 'entity-${String(this.nextCounter++).padStart(3, '0')}'`
-- Results in consistent IDs like `book-001`, `bookmark-002`, etc.
+**Files to Create:**
+1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
+2. `ported-apps/[app]/index.test.ts` (Jest tests)
+3. `ported-apps/[app]/index.tsyne.test.ts` (tab navigation + screenshot)
+4. `ported-apps/[app]/README.md` (ASCII diagrams)
+5. `ported-apps/[app]/LICENSE` (MIT/Apache)
+6. `core/src/__tests__/ported-apps/[app]/index.test.ts` (copy with updated import)
 
-**Form Input Workaround:**
-- ❌ Don't: Use `prompt()` - returns Promise, causes type errors
-- ✅ Do: Generate default values or use dialog forms
-- Example: `const note = 'Bookmark at page ' + currentPage;`
-
-**Test Count Guidelines:**
-- Aim for 40-50 tests initially
-- Categories: CRUD (10), relationships (5-7), edge cases (5-7), observable pattern (5), data integrity (5)
-- Actual test count often higher due to thoroughness
-- All tests should pass before committing
-
-**Testing Strategy:**
-- Jest tests: Model/Store logic (all use same pattern)
-- TsyneTest: Tab navigation, screenshot capture, state preservation
-- Copy test file to `core/src/__tests__/ported-apps/[app]/` with updated import path
-- Run tests before push: `npm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
-
-**Common Gotchas:**
-1. App type import causes TypeScript failures
-2. prompt() returns Promise but callback expects string
-3. Tests fail on timestamp-based IDs due to timing
-4. Must use defensive copies or state mutation breaks tests
-5. Tab state persistence requires careful async handling
-
-**Build & Deploy:**
-- Single file: `ported-apps/[app]/index.ts`
-- License file: `ported-apps/[app]/LICENSE` (MIT, Apache 2.0, etc.)
-- README.md: ASCII art diagrams for each major UI view
-- Test file at: `ported-apps/[app]/index.test.ts` + `core/src/__tests__/ported-apps/[app]/index.test.ts`
-- TsyneTest file: `ported-apps/[app]/index.tsyne.test.ts`
-- All committed together in single commit
-
-### Commit Message Template for Ported Apps
-```
-Port [App Name] to Tsyne as idiomatic single-file application
-
-Implements [key features list]:
-- Feature 1
-- Feature 2
-- Feature 3
-
-Includes:
-- [X] Jest unit tests ([N] tests) covering [areas]
-- [X] TsyneTest UI tests with screenshot capture
-- [X] README.md with ASCII art diagrams
-- [X] License with proper attribution
-
-All tests passing ([N]/[N]).
-```
+**See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps" for detailed patterns
 
 ## Widget Categories
 
