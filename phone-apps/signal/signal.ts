@@ -75,17 +75,30 @@ export function createSignalApp(a: App): void {
   }
 
   function updateConversationList() {
-    if (!conversationListContainer) return;
+    const container = conversationListContainer;
+    if (!container) return;
+
+    // Clear existing conversation rows
+    container.removeAll();
 
     const conversations = signal.getConversations();
 
+    // Update status label
+    if (statusLabel) {
+      statusLabel.setText(`${conversations.length} conversations`);
+    }
+
     if (conversations.length === 0) {
-      a.label('No conversations yet. Start a new one!').withId('label-no-conversations');
+      container.add(() => {
+        a.label('No conversations yet. Start a new one!').withId('label-no-conversations');
+      });
       return;
     }
 
     conversations.forEach((conv) => {
-      buildConversationRow(conv);
+      container.add(() => {
+        buildConversationRow(conv);
+      });
     });
   }
 
@@ -140,17 +153,25 @@ export function createSignalApp(a: App): void {
   }
 
   function updateMessages() {
-    if (!messagesContainer || !currentConversationId) return;
+    const container = messagesContainer;
+    if (!container || !currentConversationId) return;
+
+    // Clear existing messages
+    container.removeAll();
 
     const messages = signal.getMessages(currentConversationId);
 
     if (messages.length === 0) {
-      a.label('No messages yet').withId('label-no-messages');
+      container.add(() => {
+        a.label('No messages yet').withId('label-no-messages');
+      });
       return;
     }
 
     messages.forEach((msg) => {
-      buildMessageRow(msg);
+      container.add(() => {
+        buildMessageRow(msg);
+      });
     });
   }
 

@@ -1,0 +1,21 @@
+{
+  "name": "@tsyne/phone-apps-signal",
+  "version": "0.1.0",
+  "description": "Signal encrypted messaging client for Tsyne platform",
+  "main": "signal.ts",
+  "scripts": {
+    "test": "jest",
+    "dev": "npx tsx signal.ts"
+  },
+  "keywords": ["signal", "messaging", "encrypted", "chat"],
+  "author": "Portions copyright Nico Hickman and portions copyright Paul Hammant 2025",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^3.14.0",
+    "typescript": "^5.0.0"
+  }
+}

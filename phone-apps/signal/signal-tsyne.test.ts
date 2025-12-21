@@ -351,12 +351,14 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
+      // Verify initial state has 3 conversations
+      await ctx.getByID('signal-status').getText().shouldBe('3 conversations');
+
       // Delete first conversation
       await ctx.getByID('conv-conv1-delete').click();
 
-      // Conversation should no longer be visible
-      const result = await ctx.getByID('conv-conv1-name').within(200).shouldExist();
-      expect(result).toBeFalsy();
+      // Status should now show 2 conversations
+      await ctx.getByID('signal-status').getText().within(500).shouldBe('2 conversations');
     });
   });
 
