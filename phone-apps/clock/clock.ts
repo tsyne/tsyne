@@ -208,6 +208,9 @@ export function createClockApp(
 ): ClockUI {
   const ui = new ClockUI(a, clock, notifications);
 
+  // Register cleanup to ensure intervals are cleared when app is cleaned up (e.g., in tests)
+  a.registerCleanup(() => ui.stop());
+
   a.window({ title: 'Clock' }, (win: Window) => {
     win.setCloseIntercept(() => {
       ui.stop();

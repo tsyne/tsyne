@@ -242,6 +242,9 @@ export function createStopwatchApp(
 ): StopwatchUI {
   const ui = new StopwatchUI(a, clock, notifications);
 
+  // Register cleanup to ensure intervals are cleared when app is cleaned up (e.g., in tests)
+  a.registerCleanup(() => ui.stop());
+
   a.window({ title: 'Stopwatch' }, (win: Window) => {
     win.setCloseIntercept(() => {
       ui.stop();
