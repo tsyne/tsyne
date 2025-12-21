@@ -866,7 +866,7 @@ export class Split {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, orientation: 'horizontal' | 'vertical', leadingBuilder: () => void, trailingBuilder: () => void, offset?: number) {
+  constructor(ctx: Context, orientation: 'horizontal' | 'vertical', leadingBuilder: () => void, trailingBuilder: () => void, offset?: number, fixed?: boolean) {
     this.ctx = ctx;
     this.id = ctx.generateId('split');
 
@@ -898,6 +898,10 @@ export class Split {
 
     if (offset !== undefined) {
       payload.offset = offset;
+    }
+
+    if (fixed) {
+      payload.fixed = true;
     }
 
     ctx.bridge.send('createSplit', payload);

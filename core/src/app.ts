@@ -630,12 +630,12 @@ export class App {
     return new ColorCell(this.ctx, options);
   }
 
-  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {
-    return new Split(this.ctx, 'horizontal', leadingBuilder, trailingBuilder, offset);
+  hsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number, fixed?: boolean): Split {
+    return new Split(this.ctx, 'horizontal', leadingBuilder, trailingBuilder, offset, fixed);
   }
 
-  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number): Split {
-    return new Split(this.ctx, 'vertical', leadingBuilder, trailingBuilder, offset);
+  vsplit(leadingBuilder: () => void, trailingBuilder: () => void, offset?: number, fixed?: boolean): Split {
+    return new Split(this.ctx, 'vertical', leadingBuilder, trailingBuilder, offset, fixed);
   }
 
   tabs(

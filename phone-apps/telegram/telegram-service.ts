@@ -25,6 +25,8 @@ export interface TelegramMessage {
   text: string;
   timestamp: Date;
   isOwn: boolean;
+  mediaType?: 'photo' | 'document' | 'video' | 'audio' | 'sticker';
+  mediaUrl?: string; // Data URL or file path for the media
 }
 
 export interface TelegramChat {

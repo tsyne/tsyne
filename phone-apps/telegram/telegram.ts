@@ -144,8 +144,10 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
                       .withId('login-prompt-label');
                   }
                 },
-                render: (msg: any) => {
-                  buildMessageRow(msg);
+                render: (msg: any, index: number) => {
+                  const messages = currentChatId ? telegramService.getMessages(currentChatId) : [];
+                  const isLast = index === messages.length - 1;
+                  buildMessageRow(msg, isLast);
                 },
                 trackBy: (msg: any) => msg.id
               });
@@ -386,24 +388,72 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
     });
   }
 
-  function buildMessageRow(msg: any) {
-    a.hbox(() => {
-      if (msg.isOwn) {
-        a.spacer();
+  function buildMessageRow(msg: any, isLast: boolean = false) {
+    const timeStr = formatTime(msg.timestamp);
+    const alignment = msg.isOwn ? 'trailing' : 'leading';
+
+    // Build message content
+    const buildContent = () => {
+      // For messages with images, use border layout so image expands to fill available space
+      if (msg.mediaUrl && msg.mediaType === 'photo') {
+        a.border({
+          center: () => {
+            // Image in center expands to fill available space
+            a.image({ path: msg.mediaUrl, fillMode: 'contain' }).withId(`message-${msg.id}-image`);
+          },
+          bottom: () => {
+            a.vbox(() => {
+              // Show text if present
+              if (msg.text) {
+                a.label(msg.text, undefined, alignment, 'word').withId(`message-${msg.id}`);
+              }
+              a.label(`${msg.sender} • ${timeStr}`, undefined, alignment)
+                .withId(`message-${msg.id}-time`);
+            });
+          }
+        });
+      } else {
+        // For text-only messages, use simple vbox
+        a.vbox(() => {
+          if (msg.mediaType) {
+            // Show placeholder for other media types
+            a.label(`[${msg.mediaType}]`, undefined, alignment).withId(`message-${msg.id}-media`);
+          }
+
+          // Show text if present
+          if (msg.text) {
+            a.label(msg.text, undefined, alignment, 'word').withId(`message-${msg.id}`);
+          }
+
+          a.label(`${msg.sender} • ${timeStr}`, undefined, alignment)
+            .withId(`message-${msg.id}-time`);
+        });
       }
+    };
 
-      a.vbox(() => {
-        a.label(msg.text).withId(`message-${msg.id}`);
+    // Use fixed hsplit (no draggable divider) for 15:85 / 85:15 layout
+    if (msg.isOwn) {
+      // Own messages: 15% spacer on left, 85% message on right
+      a.hsplit(
+        () => { a.spacer(); },
+        buildContent,
+        0.15,
+        true // fixed - no draggable divider
+      );
+    } else {
+      // Other's messages: 85% message on left, 15% spacer on right
+      a.hsplit(
+        buildContent,
+        () => { a.spacer(); },
+        0.85,
+        true // fixed - no draggable divider
+      );
+    }
 
-        const timeStr = formatTime(msg.timestamp);
-        a.label(`${msg.sender} • ${timeStr}`)
-          .withId(`message-${msg.id}-time`);
-      });
-
-      if (!msg.isOwn) {
-        a.spacer();
-      }
-    });
+    // Add separator between messages (not after the last one)
+    if (!isLast) {
+      a.separator();
+    }
   }
 
   function formatTime(date: Date): string {
@@ -429,10 +479,6 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
 
     // Rebuild UI to show the selected chat's messages
     rebuildUI();
-
-    if (messageInputEntry && messageInputEntry.focus) {
-      setTimeout(() => messageInputEntry.focus?.(), 100);
-    }
   }
 
   async function sendMessage() {

@@ -212,6 +212,140 @@ func (l *SpacedGridLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 }
 
 // ============================================================================
+// Fixed Split Layout - Proportional split without draggable divider
+// ============================================================================
+
+// FixedHSplitLayout positions two children horizontally at a fixed ratio
+type FixedHSplitLayout struct {
+	Offset float32 // 0.0 to 1.0, proportion for the leading (left) child
+}
+
+func NewFixedHSplitLayout(offset float32) *FixedHSplitLayout {
+	return &FixedHSplitLayout{Offset: offset}
+}
+
+func (l *FixedHSplitLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	if len(objects) < 2 {
+		return
+	}
+
+	leading := objects[0]
+	trailing := objects[1]
+
+	leadingWidth := size.Width * l.Offset
+	trailingWidth := size.Width - leadingWidth
+
+	if leading.Visible() {
+		leading.Move(fyne.NewPos(0, 0))
+		leading.Resize(fyne.NewSize(leadingWidth, size.Height))
+	}
+
+	if trailing.Visible() {
+		trailing.Move(fyne.NewPos(leadingWidth, 0))
+		trailing.Resize(fyne.NewSize(trailingWidth, size.Height))
+	}
+}
+
+func (l *FixedHSplitLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	if len(objects) < 2 {
+		return fyne.NewSize(0, 0)
+	}
+
+	leadingMin := objects[0].MinSize()
+	trailingMin := objects[1].MinSize()
+
+	// Min height is the max of both children
+	minHeight := leadingMin.Height
+	if trailingMin.Height > minHeight {
+		minHeight = trailingMin.Height
+	}
+
+	// Min width ensures both children have at least their min width at this ratio
+	// leadingMin.Width = totalWidth * offset  =>  totalWidth = leadingMin.Width / offset
+	// trailingMin.Width = totalWidth * (1-offset)  =>  totalWidth = trailingMin.Width / (1-offset)
+	minWidthFromLeading := float32(0)
+	minWidthFromTrailing := float32(0)
+
+	if l.Offset > 0 {
+		minWidthFromLeading = leadingMin.Width / l.Offset
+	}
+	if l.Offset < 1 {
+		minWidthFromTrailing = trailingMin.Width / (1 - l.Offset)
+	}
+
+	minWidth := minWidthFromLeading
+	if minWidthFromTrailing > minWidth {
+		minWidth = minWidthFromTrailing
+	}
+
+	return fyne.NewSize(minWidth, minHeight)
+}
+
+// FixedVSplitLayout positions two children vertically at a fixed ratio
+type FixedVSplitLayout struct {
+	Offset float32 // 0.0 to 1.0, proportion for the leading (top) child
+}
+
+func NewFixedVSplitLayout(offset float32) *FixedVSplitLayout {
+	return &FixedVSplitLayout{Offset: offset}
+}
+
+func (l *FixedVSplitLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	if len(objects) < 2 {
+		return
+	}
+
+	leading := objects[0]
+	trailing := objects[1]
+
+	leadingHeight := size.Height * l.Offset
+	trailingHeight := size.Height - leadingHeight
+
+	if leading.Visible() {
+		leading.Move(fyne.NewPos(0, 0))
+		leading.Resize(fyne.NewSize(size.Width, leadingHeight))
+	}
+
+	if trailing.Visible() {
+		trailing.Move(fyne.NewPos(0, leadingHeight))
+		trailing.Resize(fyne.NewSize(size.Width, trailingHeight))
+	}
+}
+
+func (l *FixedVSplitLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	if len(objects) < 2 {
+		return fyne.NewSize(0, 0)
+	}
+
+	leadingMin := objects[0].MinSize()
+	trailingMin := objects[1].MinSize()
+
+	// Min width is the max of both children
+	minWidth := leadingMin.Width
+	if trailingMin.Width > minWidth {
+		minWidth = trailingMin.Width
+	}
+
+	// Min height ensures both children have at least their min height at this ratio
+	minHeightFromLeading := float32(0)
+	minHeightFromTrailing := float32(0)
+
+	if l.Offset > 0 {
+		minHeightFromLeading = leadingMin.Height / l.Offset
+	}
+	if l.Offset < 1 {
+		minHeightFromTrailing = trailingMin.Height / (1 - l.Offset)
+	}
+
+	minHeight := minHeightFromLeading
+	if minHeightFromTrailing > minHeight {
+		minHeight = minHeightFromTrailing
+	}
+
+	return fyne.NewSize(minWidth, minHeight)
+}
+
+// ============================================================================
 // Custom Padded Layout with Individual Padding Values
 // ============================================================================
 

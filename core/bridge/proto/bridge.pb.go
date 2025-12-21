@@ -2500,6 +2500,7 @@ type CreateSplitRequest struct {
 	LeadingId     string                 `protobuf:"bytes,3,opt,name=leading_id,json=leadingId,proto3" json:"leading_id,omitempty"`
 	TrailingId    string                 `protobuf:"bytes,4,opt,name=trailing_id,json=trailingId,proto3" json:"trailing_id,omitempty"`
 	Offset        float32                `protobuf:"fixed32,5,opt,name=offset,proto3" json:"offset,omitempty"` // 0.0 to 1.0
+	Fixed         bool                   `protobuf:"varint,6,opt,name=fixed,proto3" json:"fixed,omitempty"`    // If true, no draggable divider
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2567,6 +2568,13 @@ func (x *CreateSplitRequest) GetOffset() float32 {
 		return x.Offset
 	}
 	return 0
+}
+
+func (x *CreateSplitRequest) GetFixed() bool {
+	if x != nil {
+		return x.Fixed
+	}
+	return false
 }
 
 // Tab item for Tabs and DocTabs
@@ -16551,7 +16559,7 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"\bchildren\x18\x03 \x03(\tR\bchildren\"M\n" +
 	"\x13CreatePaddedRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12\x19\n" +
-	"\bchild_id\x18\x02 \x01(\tR\achildId\"\xc5\x01\n" +
+	"\bchild_id\x18\x02 \x01(\tR\achildId\"\xdb\x01\n" +
 	"\x12CreateSplitRequest\x12\x1b\n" +
 	"\twidget_id\x18\x01 \x01(\tR\bwidgetId\x12:\n" +
 	"\vorientation\x18\x02 \x01(\x0e2\x18.bridge.SplitOrientationR\vorientation\x12\x1d\n" +
@@ -16559,7 +16567,8 @@ const file_proto_bridge_proto_rawDesc = "" +
 	"leading_id\x18\x03 \x01(\tR\tleadingId\x12\x1f\n" +
 	"\vtrailing_id\x18\x04 \x01(\tR\n" +
 	"trailingId\x12\x16\n" +
-	"\x06offset\x18\x05 \x01(\x02R\x06offset\">\n" +
+	"\x06offset\x18\x05 \x01(\x02R\x06offset\x12\x14\n" +
+	"\x05fixed\x18\x06 \x01(\bR\x05fixed\">\n" +
 	"\aTabItem\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x1d\n" +
 	"\n" +

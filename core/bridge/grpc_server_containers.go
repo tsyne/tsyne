@@ -412,6 +412,10 @@ func (s *grpcBridgeService) CreateSplit(ctx context.Context, req *pb.CreateSplit
 		payload["offset"] = float64(req.Offset)
 	}
 
+	if req.Fixed {
+		payload["fixed"] = true
+	}
+
 	msg := Message{
 		ID:      req.WidgetId,
 		Type:    "createSplit",

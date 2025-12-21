@@ -370,7 +370,7 @@ export class RealTelegramService implements ITelegramService {
     try {
       const messages = await this.client.getMessages(chatId, { limit: 50 });
 
-      const mapped: TelegramMessage[] = messages.map((msg) => {
+      const mapped: TelegramMessage[] = await Promise.all(messages.map(async (msg) => {
         let sender = 'Unknown';
         const isOwn = msg.out || false;
 
@@ -380,6 +380,39 @@ export class RealTelegramService implements ITelegramService {
           sender = [msg.sender.firstName, msg.sender.lastName].filter(Boolean).join(' ') || 'Unknown';
         }
 
+        // Detect media type
+        let mediaType: TelegramMessage['mediaType'] | undefined;
+        let mediaUrl: string | undefined;
+
+        if (msg.media) {
+          if (msg.media instanceof Api.MessageMediaPhoto) {
+            mediaType = 'photo';
+            // Download the photo
+            try {
+              const buffer = await this.client!.downloadMedia(msg.media, {});
+              if (buffer) {
+                mediaUrl = `data:image/jpeg;base64,${Buffer.from(buffer).toString('base64')}`;
+              }
+            } catch (e) {
+              console.error('Failed to download photo:', e);
+            }
+          } else if (msg.media instanceof Api.MessageMediaDocument) {
+            const doc = msg.media.document;
+            if (doc instanceof Api.Document) {
+              const mimeType = doc.mimeType || '';
+              if (mimeType.startsWith('video/')) {
+                mediaType = 'video';
+              } else if (mimeType.startsWith('audio/')) {
+                mediaType = 'audio';
+              } else if (mimeType === 'application/x-tgsticker' || mimeType === 'image/webp') {
+                mediaType = 'sticker';
+              } else {
+                mediaType = 'document';
+              }
+            }
+          }
+        }
+
         return {
           id: String(msg.id),
           chatId,
@@ -387,8 +420,10 @@ export class RealTelegramService implements ITelegramService {
           text: msg.message || '',
           timestamp: new Date(msg.date * 1000),
           isOwn,
+          mediaType,
+          mediaUrl,
         };
-      });
+      }));
 
       // Reverse to get chronological order
       mapped.reverse();

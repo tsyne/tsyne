@@ -847,20 +847,37 @@ func (b *Bridge) handleCreateSplit(msg Message) Response {
 		}
 	}
 
-	var split *container.Split
-	if orientation == "horizontal" {
-		split = container.NewHSplit(leading, trailing)
-	} else {
-		split = container.NewVSplit(leading, trailing)
+	// Check if this should be a fixed (non-draggable) split
+	fixed, _ := msg.Payload["fixed"].(bool)
+	offset := float64(0.5) // default to 50/50
+	if o, ok := msg.Payload["offset"].(float64); ok {
+		offset = o
 	}
 
-	// Set offset if provided (0.0 to 1.0)
-	if offset, ok := msg.Payload["offset"].(float64); ok {
+	var widget fyne.CanvasObject
+	if fixed {
+		// Use custom fixed layout without draggable divider
+		var layout fyne.Layout
+		if orientation == "horizontal" {
+			layout = NewFixedHSplitLayout(float32(offset))
+		} else {
+			layout = NewFixedVSplitLayout(float32(offset))
+		}
+		widget = container.New(layout, leading, trailing)
+	} else {
+		// Use standard Fyne split with draggable divider
+		var split *container.Split
+		if orientation == "horizontal" {
+			split = container.NewHSplit(leading, trailing)
+		} else {
+			split = container.NewVSplit(leading, trailing)
+		}
 		split.SetOffset(offset)
+		widget = split
 	}
 
 	b.mu.Lock()
-	b.widgets[id] = split
+	b.widgets[id] = widget
 	b.widgetMeta[id] = WidgetMetadata{
 		Type: "split",
 		Text: "",
