@@ -79,8 +79,12 @@ export class MockTelegramService implements ITelegramService {
   private pendingPhoneNumber: string | null = null;
   private qrLoginTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor() {
-    // Sample chats are initialized after login
+  constructor(startLoggedIn: boolean = true) {
+    // For testing, start logged in with sample chats
+    if (startLoggedIn) {
+      this.loggedIn = true;
+      this.initializeSampleChats();
+    }
   }
 
   private initializeSampleChats() {

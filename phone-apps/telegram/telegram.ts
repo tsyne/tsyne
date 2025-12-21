@@ -76,10 +76,8 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
   });
   const unsubscribeChatUpdated = telegramService.onChatUpdated(() => rebuildUI());
   const unsubscribeLoginState = telegramService.onLoginStateChanged((loggedIn) => {
-    console.log('Login state changed:', loggedIn);
     loginState = loggedIn ? 'logged_in' : 'qr';
     currentQrData = null;
-    console.log('Calling rebuildUI, loginState is now:', loginState);
     rebuildUI();
   });
   const unsubscribeQrCode = telegramService.onQrCodeUpdate(async (qr) => {
@@ -362,13 +360,18 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
       // Avatar
       a.label(chat.avatar || '👤').withId(`chat-${chat.id}-avatar`);
 
-      // Name
-      a.label(chat.name).withId(`chat-${chat.id}-name`);
-
-      // Unread count if any
-      if (chat.unreadCount > 0) {
-        a.label(`(${chat.unreadCount})`).withId(`chat-${chat.id}-unread`);
-      }
+      // Chat info
+      a.vbox(() => {
+        // Name row with unread count
+        a.hbox(() => {
+          a.label(chat.name).withId(`chat-${chat.id}-name`);
+          if (chat.unreadCount > 0) {
+            a.label(`(${chat.unreadCount})`).withId(`chat-${chat.id}-unread`);
+          }
+        });
+        // Message preview
+        a.label(chat.lastMessage).withId(`chat-${chat.id}-message`);
+      });
 
       a.spacer();
 
