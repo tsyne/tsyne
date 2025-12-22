@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "npm run build:bridge && npm run build:core",
-    "build:bridge": "cd core/bridge && CGO_ENABLED=1 /usr/local/go/bin/go build -o ../../bin/tsyne-bridge .",
+    "build:bridge": "cd core/bridge && make build",
     "build:core": "cd core && npm run build",
     "build:designer": "cd designer && npm run build",
     "build:all": "npm run build && npm run build:designer",

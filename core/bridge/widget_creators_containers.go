@@ -191,6 +191,74 @@ func (b *Bridge) handleSetScrollMinSize(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleScrollToBottom(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scroll widget not found",
+		}
+	}
+
+	scroll, ok := widget.(*container.Scroll)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a scroll container",
+		}
+	}
+
+	fyne.Do(func() {
+		scroll.ScrollToBottom()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleScrollToTop(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	widget, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Scroll widget not found",
+		}
+	}
+
+	scroll, ok := widget.(*container.Scroll)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a scroll container",
+		}
+	}
+
+	fyne.Do(func() {
+		scroll.ScrollToTop()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleCreateGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	columns := int(msg.Payload["columns"].(float64))

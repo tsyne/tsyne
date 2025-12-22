@@ -127,6 +127,24 @@ export class Scroll {
       widgetId: this.id
     });
   }
+
+  /**
+   * Scroll to the bottom of the content
+   */
+  async scrollToBottom(): Promise<void> {
+    await this.ctx.bridge.send('scrollToBottom', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Scroll to the top of the content
+   */
+  async scrollToTop(): Promise<void> {
+    await this.ctx.bridge.send('scrollToTop', {
+      widgetId: this.id
+    });
+  }
 }
 
 /**

@@ -66,12 +66,19 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
   let loginErrorLabel: any = undefined;
   let qrCodeImage: any = undefined;
   let currentQrData: QrLoginResult | null = null;
+  let messageScrollContainer: any = undefined;
 
   // Subscribe to telegram service events
   const unsubscribeChatAdded = telegramService.onChatAdded(() => rebuildUI());
   const unsubscribeMessageAdded = telegramService.onMessageAdded(() => {
     if (currentChatId) {
       rebuildUI();
+      // Scroll to bottom to show new messages
+      if (messageScrollContainer) {
+        setTimeout(() => {
+          messageScrollContainer.scrollToBottom();
+        }, 100);
+      }
     }
   });
   const unsubscribeChatUpdated = telegramService.onChatUpdated(() => rebuildUI());
@@ -135,7 +142,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           },
           center: () => {
             // Message list - use bindTo for dynamic updates
-            a.scroll(() => {
+            messageScrollContainer = a.scroll(() => {
               a.vbox(() => {}).bindTo({
                 items: () => currentChatId ? telegramService.getMessages(currentChatId) : [],
                 empty: () => {
@@ -476,6 +483,14 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
 
     // Rebuild UI to show the selected chat's messages
     rebuildUI();
+
+    // Scroll to bottom to show latest messages
+    if (messageScrollContainer) {
+      // Small delay to allow UI to render before scrolling
+      setTimeout(() => {
+        messageScrollContainer.scrollToBottom();
+      }, 100);
+    }
   }
 
   async function sendMessage() {

@@ -416,6 +416,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetScrollMinHeight(msg)
 	case "setScrollMinSize":
 		return b.handleSetScrollMinSize(msg)
+	case "scrollToBottom":
+		return b.handleScrollToBottom(msg)
+	case "scrollToTop":
+		return b.handleScrollToTop(msg)
 	case "setWidgetMinSize":
 		return b.handleSetWidgetMinSize(msg)
 	// Canvas primitives
