@@ -58,6 +58,47 @@ app({ title: 'My App' }, (a) => {
 - Context tracks parent container automatically
 - Async operations return promises
 
+## Ported Apps Patterns (7 Complete Apps: 314 Tests, 3,963 Lines)
+
+**Quick Reference for App Ports**
+
+✅ **Observable Store Pattern** (all apps):
+```typescript
+class Store {
+  private changeListeners: ChangeListener[] = [];
+  subscribe(listener: ChangeListener): () => void {
+    this.changeListeners.push(listener);
+    return () => { this.changeListeners = this.changeListeners.filter(l => l !== listener); };
+  }
+  private notifyChange() { this.changeListeners.forEach(l => l()); }
+}
+// Usage: store.subscribe(async () => { await updateUI(); await viewStack.refresh(); });
+```
+
+**Critical Patterns:**
+- ❌ Don't import App type: `import { App }` → TypeScript errors
+- ✅ Use `app: any` parameter + inject store classes only
+- ✅ Defensive copies: `[...array]`, `{...object}` (tests verify immutability)
+- ✅ ID generation: counter pattern `id: 'entity-${String(this.nextId++).padStart(3, '0')}'` (not Date.now())
+- ✅ UI updates: `.when()` + `await viewStack.refresh()` for tabs
+- ✅ Lists: `.bindTo()` with `trackBy: (item) => item.id`
+- ❌ Don't use `prompt()` (returns Promise) → generate default values instead
+
+**Test Template:**
+- Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5)
+- Copy test to `core/src/__tests__/ported-apps/[app]/index.test.ts` with updated import path
+- Run: `npm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
+
+**Files to Create:**
+1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
+2. `ported-apps/[app]/index.test.ts` (Jest tests)
+3. `ported-apps/[app]/index.tsyne.test.ts` (tab navigation + screenshot)
+4. `ported-apps/[app]/README.md` (ASCII diagrams)
+5. `ported-apps/[app]/LICENSE` (MIT/Apache)
+6. `core/src/__tests__/ported-apps/[app]/index.test.ts` (copy with updated import)
+
+**See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps" for detailed patterns
+
 ## Widget Categories
 
 **Containers:** vbox, hbox, stack, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup, multiplewindows

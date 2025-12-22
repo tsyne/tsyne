@@ -232,15 +232,219 @@ setInterval(async () => {
 
 This approach is perfectly suitable for cases like the clock, where the change is isolated and simple.
 
+## Lessons from Ported Apps (7 Complete Real-World Applications)
+
+Seven complete mobile/web applications have been successfully ported to Tsyne, demonstrating the effectiveness of the pseudo-declarative pattern at scale:
+
+### Tab-Based Navigation Pattern
+
+**Apps using this pattern:** All 7 ported apps (Food Truck, Expense Tracker, NextCloud, DuckDuckGo, Wikipedia, Element, Ebook Reader)
+
+A common real-world pattern: multiple tabs where only the selected tab is visible. The pseudo-declarative approach using `.when()` and async refresh makes this elegant:
+
+```typescript
+let selectedTab = 'library';
+
+// Each tab container uses .when() for declarative visibility
+const libraryView = a.vbox(() => {
+  // Library content
+}).when(() => selectedTab === 'library' && store.getBooks());
+
+const readingView = a.vbox(() => {
+  // Reading content
+}).when(() => selectedTab === 'reading');
+
+const favoritesView = a.vbox(() => {
+  // Favorites content
+}).when(() => selectedTab === 'favorites');
+
+// Tab buttons and observable updates
+store.subscribe(async () => {
+  await updateLabels();
+  await viewStack.refresh();  // Re-evaluates all .when() conditions
+});
+
+a.button('📚 Library', async () => {
+  selectedTab = 'library';
+  await viewStack.refresh();
+});
+```
+
+**Key insight:** Using `.when()` with `await refresh()` handles complex tab state elegantly without manual show/hide.
+
+### Observable Store + Reactive UI Pattern
+
+**Observable Pattern Consistency:** All 7 apps use identical observable pattern:
+
+```typescript
+class AppStore {
+  private changeListeners: ChangeListener[] = [];
+
+  subscribe(listener: ChangeListener): () => void {
+    this.changeListeners.push(listener);
+    return () => {
+      this.changeListeners = this.changeListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyChange() {
+    this.changeListeners.forEach((listener) => listener());
+  }
+}
+```
+
+**Why this works:** The return value from `subscribe()` is an unsubscriber function. This is critical for cleanup:
+
+```typescript
+let unsubscribe: () => void;
+
+store.subscribe(async () => {
+  await updateUI();
+});
+
+// When component unmounts or scope ends, cleanup:
+unsubscribe?.();
+```
+
+### Smart List Rendering with `.bindTo()` and `trackBy`
+
+**Efficient List Updates:** All ported apps with collections use `.bindTo()` with `trackBy`:
+
+```typescript
+a.vbox(() => {})
+  .bindTo({
+    items: () => store.getBooks(),
+    render: (book: Ebook) => {
+      return a.hbox(() => {
+        a.label(() => book.title);
+        a.button('Favorite', async () => {
+          store.toggleFavorite(book.id);
+          await updateLabels();
+          await viewStack.refresh();
+        });
+      });
+    },
+    trackBy: (book: Ebook) => book.id  // Critical for diffing!
+  });
+```
+
+**Important:** The `trackBy` function identifies items uniquely. Without it, Tsyne can't diff the list efficiently.
+
+### Defensive Copying for State Management
+
+**Critical Pattern:** All 7 apps strictly enforce immutability:
+
+```typescript
+// ❌ WRONG - mutates returned array
+getBooks(): Ebook[] {
+  return this.books;  // Direct reference!
+}
+
+// ✅ CORRECT - returns defensive copy
+getBooks(): Ebook[] {
+  return [...this.books];  // Spread operator
+}
+
+// ❌ WRONG - mutates returned object
+getPreferences(): Preferences {
+  return this.preferences;
+}
+
+// ✅ CORRECT - returns copy
+getPreferences(): Preferences {
+  return { ...this.preferences };  // Shallow copy
+}
+```
+
+**Why it matters:** Tests verify immutability with `expect(arr1).not.toBe(arr2)`. Mutation breaks Observable pattern and causes state synchronization bugs.
+
+### Counter-Based ID Generation
+
+**Pattern Used in All Ported Apps:**
+
+```typescript
+private nextBookId = 13;  // Start after initial data
+
+addBook(data: BookData): Book {
+  const id = `book-${String(this.nextBookId++).padStart(3, '0')}`;
+  // book-013, book-014, book-015, ...
+}
+```
+
+**Why not timestamp?** IDs generated from `Date.now()` are identical when called rapidly in tests, causing false collisions.
+
+### Async Label Updates in Observable Callbacks
+
+**Pattern for Reactive Stats:**
+
+```typescript
+let userLabel: any;
+let statsLabel: any;
+
+store.subscribe(async () => {
+  // Async operations are safe in callbacks
+  const downloaded = store.getDownloadedCount();
+  const favorites = store.getFavoriteCount();
+
+  userLabel?.setText(`👤 User | Downloaded: ${downloaded}`);
+  statsLabel?.setText(`Favorites: ${favorites}`);
+
+  // Always refresh after updates
+  await viewStack.refresh();
+});
+```
+
+**Key:** Store subscription handler is async, enabling conditional updates based on store state.
+
+### Multi-Level Forms with `.bindTo()`
+
+**Example from Expense Tracker (61 tests):**
+
+```typescript
+// Render categories dynamically
+a.vbox(() => {})
+  .bindTo({
+    items: () => store.getCategories(),
+    render: (category: Category) => {
+      const expenses = store.getExpensesByCategory(category.id);
+      return a.vbox(() => {
+        a.label(() => `${category.emoji} ${category.name}`).withBold();
+
+        // Nested list with .bindTo()
+        a.vbox(() => {})
+          .bindTo({
+            items: () => expenses,
+            render: (expense: Expense) => {
+              return a.label(() => `$${expense.amount} - ${expense.description}`);
+            },
+            trackBy: (e) => e.id
+          });
+      });
+    },
+    trackBy: (cat) => cat.id
+  });
+```
+
 ## Conclusion
 
 Tsyne's pseudo-declarative style provides a flexible and powerful way to build user interfaces. By combining a declarative builder pattern for layout with fluent method chaining for configuration, you can create readable and maintainable UI code. The framework supports a range of patterns from simple self-contained state to observable stores and fully programmatic UI generation. With support for both reactive data binding and direct imperative updates, you have the tools to build dynamic and responsive applications efficiently.
 
+The 7 ported apps demonstrate that these patterns scale from small utilities (400 lines) to feature-rich applications (700+ lines), maintaining code clarity and testability throughout.
+
 ---
 
-**TODO: Possible improvements to this doc**
+**Lessons for Future Ports**
 
-1. **"Implicit Context" could be a footgun** - The doc mentions the builder tracks the current container automatically. This is convenient but could cause confusion if someone accidentally nests widgets in the wrong scope. Might be worth a brief caution.
-2. **Missing: error handling patterns** - What happens when a `.bindTo()` render function throws? How do you handle async errors in `onClick` handlers?
-3. **The `async` in handlers** - Several examples show `async () => {}` handlers but the doc doesn't explain why/when async is needed vs. sync handlers.
-4. **Comparison to alternatives** - A brief "why not just use React/Flutter/etc." section could help readers understand when Tsyne's approach shines (single-file scripts, native desktop, quick prototypes).
+1. **Always use Observable pattern** - Consistent across all 7 apps, proven pattern for reactive updates
+2. **Use `.when()` + `await refresh()` for complex visibility** - More elegant than manual show/hide
+3. **Defensive copies are essential** - Tests depend on it, state synchronization requires it
+4. **Counter-based IDs, not timestamps** - Prevents collision issues in rapid-fire operations
+5. **Tab-based navigation scales well** - Cleaner than modal/stack patterns for most apps
+6. **Store subscriptions handle all view updates** - Never update UI directly in event handlers
+7. **61 tests is achievable for complex features** - Well-structured store makes comprehensive testing easy
+
+**Resources**
+- See `/ported-apps/ebooks/` for the most recent and complete example (Ebook Reader, 730 lines, 61 Jest tests)
+- See `/ported-apps/wikipedia/` for complex data models with language/article management
+- See `/ported-apps/element/` for real-time messaging patterns with sessions
+- See `/ported-apps/duckduckgo/` for search/filter patterns with analytics tracking

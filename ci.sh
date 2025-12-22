@@ -373,6 +373,17 @@ test_ported_app() {
 
 # Test each ported app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
+
+# Mobile/Web App Ports (7 apps: 314 Jest tests, 3,963 lines)
+test_ported_app "sample-food-truck" || true
+test_ported_app "expense-tracker" || true
+test_ported_app "nextcloud" || true
+test_ported_app "duckduckgo" || true
+test_ported_app "wikipedia" || true
+test_ported_app "element" || true
+test_ported_app "ebooks" || true
+
+# Game/Utility Ports
 test_ported_app "3d-cube" || true
 test_ported_app "boing" || true
 test_ported_app "chess" || true
@@ -388,6 +399,7 @@ test_ported_app "slydes" || true
 test_ported_app "solitaire" || true
 test_ported_app "sudoku" || true
 test_ported_app "terminal" || true
+
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
