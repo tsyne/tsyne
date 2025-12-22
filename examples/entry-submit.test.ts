@@ -88,7 +88,7 @@ describe('Entry onSubmit Tests', () => {
     await testApp.run();
 
     // Type text into entry
-    const entryWidget = ctx.getByID('test-entry');
+    const entryWidget = ctx.getById('test-entry');
     await entryWidget.type('Hello World');
 
     // Verify text was entered

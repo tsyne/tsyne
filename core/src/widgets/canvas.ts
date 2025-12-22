@@ -456,7 +456,7 @@ export class CanvasRectangle {
   }
 
   /**
-   * Register a custom ID for this rectangle (for test framework getByID)
+   * Register a custom ID for this rectangle (for test framework getById)
    */
   withId(customId: string): this {
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {
@@ -599,7 +599,7 @@ export class CanvasRaster {
   get height(): number { return this._height; }
 
   /**
-   * Register a custom ID for this widget (for test framework getByID)
+   * Register a custom ID for this widget (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining
    */
@@ -1131,7 +1131,7 @@ export class TappableCanvasRaster {
   }
 
   /**
-   * Register a custom ID for this canvas (for test framework getByID)
+   * Register a custom ID for this canvas (for test framework getById)
    */
   withId(customId: string): this {
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {

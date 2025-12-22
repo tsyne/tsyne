@@ -55,11 +55,11 @@ describe('Desktop Environment Tests', () => {
 
     // Verify desktop window title
     // The calculator icon should be present
-    await ctx.getByID('icon-calculator').shouldExist();
+    await ctx.getById('icon-calculator').shouldExist();
 
     // Launch bar should be visible
-    await ctx.getByID('showDesktopBtn').shouldExist();
-    await ctx.getByID('allAppsBtn').shouldExist();
+    await ctx.getById('showDesktopBtn').shouldExist();
+    await ctx.getById('allAppsBtn').shouldExist();
   }, 5000); // Desktop initialization can take longer due to app scanning
 
   test('should launch calculator via double-click on icon', async () => {
@@ -71,7 +71,7 @@ describe('Desktop Environment Tests', () => {
     await testApp.run();
 
     // Double-click the calculator icon (two rapid clicks)
-    const calcIcon = ctx.getByID('icon-calculator');
+    const calcIcon = ctx.getById('icon-calculator');
     await calcIcon.click();
     await calcIcon.click();  // Second click within 400ms = double-click
 
@@ -79,7 +79,7 @@ describe('Desktop Environment Tests', () => {
     await ctx.wait(200);
 
     // Running apps should show calculator (use within() to poll for app launch)
-    await ctx.getByID('runningAppsLabel').within(3000).shouldContain('Calculator');
+    await ctx.getById('runningAppsLabel').within(3000).shouldContain('Calculator');
   }, 5000);
 
   test('should interact with calculator running in inner window', async () => {
@@ -91,7 +91,7 @@ describe('Desktop Environment Tests', () => {
     await testApp.run();
 
     // Launch calculator via double-click on icon
-    const calcIcon = ctx.getByID('icon-calculator');
+    const calcIcon = ctx.getById('icon-calculator');
     await calcIcon.click();
     await calcIcon.click();  // Double-click
     await ctx.wait(200);
@@ -104,7 +104,7 @@ describe('Desktop Environment Tests', () => {
     await ctx.getByExactText("=").click();
 
     // The calculator's display label should show the result
-    await ctx.getByID('calc-display').within(2000).shouldBe("8");
+    await ctx.getById('calc-display').within(2000).shouldBe("8");
   }, 5000);
 
   test('should hide windows when Show Desktop is clicked', async () => {
@@ -116,21 +116,21 @@ describe('Desktop Environment Tests', () => {
     await testApp.run();
 
     // Launch calculator via double-click
-    const calcIcon = ctx.getByID('icon-calculator');
+    const calcIcon = ctx.getById('icon-calculator');
     await calcIcon.click();
     await calcIcon.click();
     await ctx.wait(200);
 
     // Verify it's running (use within() to poll for app launch)
-    await ctx.getByID('runningAppsLabel').within(3000).shouldContain('Calculator');
+    await ctx.getById('runningAppsLabel').within(3000).shouldContain('Calculator');
 
     // Click Show Desktop
-    await ctx.getByID('showDesktopBtn').click();
+    await ctx.getById('showDesktopBtn').click();
     await ctx.wait(100);
 
     // The app is still "running" but the window is hidden
     // (We can't easily verify hidden state in tests, but the button shouldn't crash)
-    await ctx.getByID('runningAppsLabel').within(2000).shouldContain('Calculator');
+    await ctx.getById('runningAppsLabel').within(2000).shouldContain('Calculator');
   }, 5000);
 });
 
@@ -156,9 +156,9 @@ describe('Desktop Dock Integration Tests', () => {
     await testApp.run();
 
     // The launch bar should exist with its components
-    await ctx.getByID('showDesktopBtn').shouldExist();
-    await ctx.getByID('allAppsBtn').shouldExist();
-    await ctx.getByID('runningAppsLabel').shouldExist();
+    await ctx.getById('showDesktopBtn').shouldExist();
+    await ctx.getById('allAppsBtn').shouldExist();
+    await ctx.getById('runningAppsLabel').shouldExist();
   }, 5000);
 
   test('should show running apps count as None initially', async () => {
@@ -170,6 +170,6 @@ describe('Desktop Dock Integration Tests', () => {
     await testApp.run();
 
     // Running apps label should show None initially (use within() for polling)
-    await ctx.getByID('runningAppsLabel').within(3000).shouldBe('None');
+    await ctx.getById('runningAppsLabel').within(3000).shouldBe('None');
   }, 5000);
 });

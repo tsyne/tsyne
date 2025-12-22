@@ -193,7 +193,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
 
       // Use within() to wait up to 2 seconds for text to update
       // This will retry until the text appears (after 500ms delay)
-      await ctx.getByID("status").within(2000).shouldBe("Clicked 1 times");
+      await ctx.getById("status").within(2000).shouldBe("Clicked 1 times");
     }
   );
 
@@ -209,13 +209,13 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await ctx.wait(50);
 
       // Verify loading appears
-      await ctx.expect(ctx.getByID("loading")).toHaveText("Loading...");
+      await ctx.expect(ctx.getById("loading")).toHaveText("Loading...");
 
       // Use within() to wait for loading to disappear
-      await ctx.getByID("loading").within(2000).shouldNotExist();
+      await ctx.getById("loading").within(2000).shouldNotExist();
 
       // Verify result appears
-      await ctx.expect(ctx.getByID("result")).toHaveText("Data loaded successfully");
+      await ctx.expect(ctx.getById("result")).toHaveText("Data loaded successfully");
     }
   );
 
@@ -227,10 +227,10 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Initial state
-      await ctx.getByID("status").shouldBe("Enter your email");
+      await ctx.getById("status").shouldBe("Enter your email");
 
       // Type valid email
-      await ctx.getByID("email").type("test@example.com");
+      await ctx.getById("email").type("test@example.com");
       await ctx.wait(50);
 
       // Validate
@@ -238,7 +238,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await ctx.wait(50);
 
       // Check result with shouldBe
-      await ctx.getByID("status").shouldBe("Valid email: test@example.com");
+      await ctx.getById("status").shouldBe("Valid email: test@example.com");
     }
   );
 
@@ -250,7 +250,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Type valid email
-      await ctx.getByID("email").type("user@domain.org");
+      await ctx.getById("email").type("user@domain.org");
       await ctx.wait(50);
 
       // Validate
@@ -258,8 +258,8 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await ctx.wait(50);
 
       // Check result contains "Valid"
-      await ctx.getByID("status").shouldContain("Valid");
-      await ctx.getByID("status").shouldContain("user@domain.org");
+      await ctx.getById("status").shouldContain("Valid");
+      await ctx.getById("status").shouldContain("user@domain.org");
     }
   );
 
@@ -271,7 +271,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Type valid email
-      await ctx.getByID("email").type("hello@world.io");
+      await ctx.getById("email").type("hello@world.io");
       await ctx.wait(50);
 
       // Validate
@@ -279,7 +279,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await ctx.wait(50);
 
       // Check result matches pattern
-      await ctx.getByID("status").shouldMatch(/^Valid email: .+@.+\..+$/);
+      await ctx.getById("status").shouldMatch(/^Valid email: .+@.+\..+$/);
     }
   );
 
@@ -291,7 +291,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Type invalid email
-      await ctx.getByID("email").type("notanemail");
+      await ctx.getById("email").type("notanemail");
       await ctx.wait(50);
 
       // Validate
@@ -299,8 +299,8 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await ctx.wait(50);
 
       // Verify it's NOT a success message
-      await ctx.getByID("status").shouldNotBe("Enter your email");
-      await ctx.getByID("status").shouldContain("Invalid");
+      await ctx.getById("status").shouldNotBe("Enter your email");
+      await ctx.getById("status").shouldContain("Invalid");
     }
   );
 
@@ -334,24 +334,24 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Initial state
-      await ctx.getByID("message").shouldBe("Initial message");
+      await ctx.getById("message").shouldBe("Initial message");
 
       // Step 1
       await ctx.getByText("Next Step").click();
       await ctx.wait(50);
-      await ctx.getByID("message").shouldBe("Step 1: Processing").then(async (locator) => {
+      await ctx.getById("message").shouldBe("Step 1: Processing").then(async (locator) => {
         // After assertion passes, can continue chaining
         await ctx.getByText("Next Step").click();
         await ctx.wait(50);
       });
 
       // Step 2
-      await ctx.getByID("message").shouldContain("Step 2");
+      await ctx.getById("message").shouldContain("Step 2");
 
       // Step 3
       await ctx.getByText("Next Step").click();
       await ctx.wait(50);
-      await ctx.getByID("message").shouldMatch(/Step 3.*Complete/);
+      await ctx.getById("message").shouldMatch(/Step 3.*Complete/);
     }
   );
 
@@ -363,19 +363,19 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       const ctx = browserTest.getContext();
 
       // Test toNotHaveText
-      await ctx.expect(ctx.getByID("status")).toNotHaveText("Wrong text");
+      await ctx.expect(ctx.getById("status")).toNotHaveText("Wrong text");
 
       // Test toMatchText
-      await ctx.expect(ctx.getByID("status")).toMatchText(/Enter.*email/);
+      await ctx.expect(ctx.getById("status")).toMatchText(/Enter.*email/);
 
       // Type invalid email
-      await ctx.getByID("email").type("invalid");
+      await ctx.getById("email").type("invalid");
       await ctx.wait(50);
       await ctx.getByText("Validate").click();
       await ctx.wait(50);
 
       // Test toNotContainText
-      await ctx.expect(ctx.getByID("status")).toNotContainText("Valid email:");
+      await ctx.expect(ctx.getById("status")).toNotContainText("Valid email:");
     }
   );
 
@@ -388,13 +388,13 @@ describeBrowser('Fluent-Selenium API Tests', () => {
 
       // Click multiple times with within() retry
       await ctx.getByText("Click Me").click();
-      await ctx.getByID("status").within(2000).shouldContain("Clicked");
+      await ctx.getById("status").within(2000).shouldContain("Clicked");
 
       await ctx.getByText("Click Me").click();
-      await ctx.getByID("status").within(2000).shouldBe("Clicked 2 times");
+      await ctx.getById("status").within(2000).shouldBe("Clicked 2 times");
 
       await ctx.getByText("Click Me").click();
-      await ctx.getByID("status").within(2000).shouldMatch(/Clicked \d+ times/);
+      await ctx.getById("status").within(2000).shouldMatch(/Clicked \d+ times/);
     }
   );
 
@@ -405,7 +405,7 @@ describeBrowser('Fluent-Selenium API Tests', () => {
       await browserTest.createBrowser('/fluent-chaining');
       const ctx = browserTest.getContext();
 
-      const messageLocator = ctx.getByID("message");
+      const messageLocator = ctx.getById("message");
 
       // Positive assertions
       await ctx.expect(messageLocator).toHaveText("Initial message");

@@ -84,7 +84,7 @@ describe('Pixel Editor - Selection and Layers', () => {
         await ctx.getByText(tool).within(500).shouldExist();
       }
 
-      await ctx.getByID('zoom-level').within(1000).shouldExist();
+      await ctx.getById('zoom-level').within(1000).shouldExist();
     });
   });
 
@@ -140,9 +140,9 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('zoom-level').within(2000).shouldExist();
-      await ctx.getByID('zoom-in').within(500).shouldExist();
-      await ctx.getByID('zoom-out').within(500).shouldExist();
+      await ctx.getById('zoom-level').within(2000).shouldExist();
+      await ctx.getById('zoom-in').within(500).shouldExist();
+      await ctx.getById('zoom-out').within(500).shouldExist();
     });
 
     test('should zoom in and out', async () => {
@@ -153,11 +153,11 @@ describe('Pixel Editor - Selection and Layers', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('zoom-in').within(2000).click();
-      await ctx.getByID('zoom-level').within(1000).shouldBe('200%');
+      await ctx.getById('zoom-in').within(2000).click();
+      await ctx.getById('zoom-level').within(1000).shouldBe('200%');
 
-      await ctx.getByID('zoom-out').within(500).click();
-      await ctx.getByID('zoom-level').within(1000).shouldBe('100%');
+      await ctx.getById('zoom-out').within(500).click();
+      await ctx.getById('zoom-level').within(1000).shouldBe('100%');
     });
   });
 
@@ -189,12 +189,12 @@ describe('Pixel Editor - Selection and Layers', () => {
       await ctx.getByText('Circle').within(500).click();
 
       // Zoom while using a tool
-      await ctx.getByID('zoom-in').within(500).click();
-      await ctx.getByID('zoom-level').within(1000).shouldBe('200%');
-      await ctx.getByID('zoom-in').within(500).click();
+      await ctx.getById('zoom-in').within(500).click();
+      await ctx.getById('zoom-level').within(1000).shouldBe('200%');
+      await ctx.getById('zoom-in').within(500).click();
 
       // Should be at 400%
-      await ctx.getByID('zoom-level').within(1000).shouldBe('400%');
+      await ctx.getById('zoom-level').within(1000).shouldBe('400%');
 
       // Switch back to pencil
       await ctx.getByText('Pencil').within(500).click();

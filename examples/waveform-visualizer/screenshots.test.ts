@@ -37,14 +37,14 @@ describe('Waveform Visualizer - Screenshot Generation', () => {
 
     // Wait for waveform to load
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(2000)
       .shouldBe('Ready - tap waveform to seek');
 
     // Play to show scrubber movement
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
@@ -81,11 +81,11 @@ describe('Waveform Visualizer - Screenshot Generation', () => {
     await testApp.run();
 
     // Wait for waveform to load
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play to show slice progression
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Playing...');
+    await ctx.getById('playBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Playing...');
 
     // Wait for playback to progress
     await new Promise((resolve) => setTimeout(resolve, 1500));

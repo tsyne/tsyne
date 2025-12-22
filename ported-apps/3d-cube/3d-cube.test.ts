@@ -38,13 +38,13 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Verify control buttons
-    await ctx.getByID('resetBtn').within(500).shouldExist();
-    await ctx.getByID('shuffleBtn').within(500).shouldExist();
-    await ctx.getByID('solveBtn').within(500).shouldExist();
+    await ctx.getById('resetBtn').within(500).shouldExist();
+    await ctx.getById('shuffleBtn').within(500).shouldExist();
+    await ctx.getById('solveBtn').within(500).shouldExist();
 
     // Verify status labels
-    await ctx.getByID('moveLabel').within(500).shouldExist();
-    await ctx.getByID('statusLabel').within(500).shouldExist();
+    await ctx.getById('moveLabel').within(500).shouldExist();
+    await ctx.getById('statusLabel').within(500).shouldExist();
   });
 
   test('should display rotation buttons', async () => {
@@ -58,9 +58,9 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Check rotation buttons
-    await ctx.getByID('rotateU').within(500).shouldExist();
-    await ctx.getByID('rotateF').within(500).shouldExist();
-    await ctx.getByID('rotateR').within(500).shouldExist();
+    await ctx.getById('rotateU').within(500).shouldExist();
+    await ctx.getById('rotateF').within(500).shouldExist();
+    await ctx.getById('rotateR').within(500).shouldExist();
   });
 
   test('should start with solved status', async () => {
@@ -74,8 +74,8 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Status should show solved
-    await ctx.getByID('statusLabel').within(100).shouldBe('Solved!');
-    await ctx.getByID('moveLabel').within(100).shouldBe('0');
+    await ctx.getById('statusLabel').within(100).shouldBe('Solved!');
+    await ctx.getById('moveLabel').within(100).shouldBe('0');
   });
 
   test('should have working Shuffle button', async () => {
@@ -89,11 +89,11 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Click Shuffle
-    await ctx.getByID('shuffleBtn').click();
+    await ctx.getById('shuffleBtn').click();
     await ctx.wait(200);
 
     // Status should show scrambled
-    const status = await ctx.getByID('statusLabel').getText();
+    const status = await ctx.getById('statusLabel').getText();
     expect(status).toBe('Scrambled');
   });
 
@@ -108,15 +108,15 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Shuffle first
-    await ctx.getByID('shuffleBtn').click();
+    await ctx.getById('shuffleBtn').click();
     await ctx.wait(200);
 
     // Then reset
-    await ctx.getByID('resetBtn').click();
+    await ctx.getById('resetBtn').click();
     await ctx.wait(100);
 
     // Should be solved again
-    await ctx.getByID('statusLabel').within(100).shouldBe('Solved!');
+    await ctx.getById('statusLabel').within(100).shouldBe('Solved!');
   });
 
   test('should capture screenshot for documentation', async () => {
@@ -130,7 +130,7 @@ describe('3D Cube Integration Tests', () => {
     await ui!.initialize();
 
     // Shuffle for interesting view
-    await ctx.getByID('shuffleBtn').click();
+    await ctx.getById('shuffleBtn').click();
     await ctx.wait(500);
 
     // Capture screenshot if requested

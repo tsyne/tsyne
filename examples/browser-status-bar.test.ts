@@ -67,10 +67,10 @@ vbox(() => {
       await ctx.expect(ctx.getByText('Custom Status Page')).toBeVisible();
 
       // Click button to update status
-      await ctx.getByID('update-status-btn').click();
+      await ctx.getById('update-status-btn').click();
 
       // Verify button still works after status update
-      await ctx.expect(ctx.getByID('update-status-btn')).toBeVisible();
+      await ctx.expect(ctx.getById('update-status-btn')).toBeVisible();
     },
     { timeout: 30000 }
   );
@@ -156,7 +156,7 @@ vbox(() => {
       await ctx.expect(ctx.getByText('Dynamic Status Updates')).toBeVisible();
 
       // Click button multiple times
-      const button = ctx.getByID('increment-btn');
+      const button = ctx.getById('increment-btn');
       await button.click();
       await button.click();
       await button.click();

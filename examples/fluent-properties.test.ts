@@ -170,21 +170,21 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Initially unchecked
-      await ctx.getByID("agree").shouldNotBeChecked();
+      await ctx.getById("agree").shouldNotBeChecked();
 
       // Toggle it
       await ctx.getByText("Toggle").click();
       await ctx.wait(50);
 
       // Now checked
-      await ctx.getByID("agree").shouldBeChecked();
+      await ctx.getById("agree").shouldBeChecked();
 
       // Toggle again
       await ctx.getByText("Toggle").click();
       await ctx.wait(50);
 
       // Unchecked again
-      await ctx.getByID("agree").shouldNotBeChecked();
+      await ctx.getById("agree").shouldNotBeChecked();
     }
   );
 
@@ -196,19 +196,19 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Initial value
-      await ctx.getByID("volume").shouldHaveValue(50);
+      await ctx.getById("volume").shouldHaveValue(50);
 
       // Set to max
       await ctx.getByText("Set Max").click();
       await ctx.wait(50);
-      await ctx.getByID("volume").shouldHaveValue(100);
-      await ctx.getByID("volumeLabel").shouldBe("Volume: 100");
+      await ctx.getById("volume").shouldHaveValue(100);
+      await ctx.getById("volumeLabel").shouldBe("Volume: 100");
 
       // Set to min
       await ctx.getByText("Set Min").click();
       await ctx.wait(50);
-      await ctx.getByID("volume").shouldHaveValue(0);
-      await ctx.getByID("volumeLabel").shouldBe("Volume: 0");
+      await ctx.getById("volume").shouldHaveValue(0);
+      await ctx.getById("volumeLabel").shouldBe("Volume: 0");
     }
   );
 
@@ -220,17 +220,17 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Submit button starts disabled
-      await ctx.getByID("submit").shouldBeDisabled();
+      await ctx.getById("submit").shouldBeDisabled();
 
       // Enable it by checking the checkbox
-      await ctx.getByID("enableSubmit").click();
+      await ctx.getById("enableSubmit").click();
       await ctx.wait(50);
-      await ctx.getByID("submit").shouldBeEnabled();
+      await ctx.getById("submit").shouldBeEnabled();
 
       // Disable it again
-      await ctx.getByID("enableSubmit").click();
+      await ctx.getById("enableSubmit").click();
       await ctx.wait(50);
-      await ctx.getByID("submit").shouldBeDisabled();
+      await ctx.getById("submit").shouldBeDisabled();
     }
   );
 
@@ -242,10 +242,10 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Verify each widget has correct type
-      await ctx.getByID("myButton").shouldHaveType("button");
-      await ctx.getByID("myLabel").shouldHaveType("label");
-      await ctx.getByID("myEntry").shouldHaveType("entry");
-      await ctx.getByID("myCheckbox").shouldHaveType("checkbox");
+      await ctx.getById("myButton").shouldHaveType("button");
+      await ctx.getById("myLabel").shouldHaveType("label");
+      await ctx.getById("myEntry").shouldHaveType("entry");
+      await ctx.getById("myCheckbox").shouldHaveType("checkbox");
     }
   );
 
@@ -257,16 +257,16 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Initial state
-      await ctx.getByID("hidden").shouldNotBeVisible();
-      await ctx.getByID("visible").shouldBeVisible();
+      await ctx.getById("hidden").shouldNotBeVisible();
+      await ctx.getById("visible").shouldBeVisible();
 
       // Toggle
       await ctx.getByText("Toggle").click();
       await ctx.wait(50);
 
       // Swapped visibility
-      await ctx.getByID("hidden").shouldBeVisible();
-      await ctx.getByID("visible").shouldNotBeVisible();
+      await ctx.getById("hidden").shouldBeVisible();
+      await ctx.getById("visible").shouldNotBeVisible();
     }
   );
 
@@ -278,23 +278,23 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Start unchecked
-      await ctx.getByID("status").shouldNotBeChecked();
+      await ctx.getById("status").shouldNotBeChecked();
 
       // Click to check after delay
       await ctx.getByText("Check After Delay").click();
       await ctx.wait(50);
 
       // Use within() to wait for checkbox to be checked (up to 2 seconds)
-      await ctx.getByID("status").within(2000).shouldBeChecked();
-      await ctx.getByID("statusLabel").shouldBe("Checked!");
+      await ctx.getById("status").within(2000).shouldBeChecked();
+      await ctx.getById("statusLabel").shouldBe("Checked!");
 
       // Click to uncheck after delay
       await ctx.getByText("Uncheck After Delay").click();
       await ctx.wait(50);
 
       // Use within() to wait for checkbox to be unchecked
-      await ctx.getByID("status").within(2000).shouldNotBeChecked();
-      await ctx.getByID("statusLabel").shouldBe("Unchecked!");
+      await ctx.getById("status").within(2000).shouldNotBeChecked();
+      await ctx.getById("statusLabel").shouldBe("Unchecked!");
     }
   );
 
@@ -306,13 +306,13 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Chain type and visibility checks
-      await ctx.getByID("myButton")
+      await ctx.getById("myButton")
         .shouldHaveType("button")
         .then(async (loc) => {
           await loc.shouldBeVisible();
         });
 
-      await ctx.getByID("myLabel")
+      await ctx.getById("myLabel")
         .shouldHaveType("label")
         .then(async (loc) => {
           await loc.shouldBe("Status");
@@ -327,8 +327,8 @@ describeBrowser('Fluent Property Assertions', () => {
       await browserTest.createBrowser('/enabled-disabled');
       const ctx = browserTest.getContext();
 
-      const submitBtn = ctx.getByID("submit");
-      const enableChk = ctx.getByID("enableSubmit");
+      const submitBtn = ctx.getById("submit");
+      const enableChk = ctx.getById("enableSubmit");
 
       // Multiple assertions on submit button
       await submitBtn.shouldHaveType("button");
@@ -359,18 +359,18 @@ describeBrowser('Fluent Property Assertions', () => {
       const ctx = browserTest.getContext();
 
       // Fluent style
-      await ctx.getByID("agree").shouldNotBeChecked();
+      await ctx.getById("agree").shouldNotBeChecked();
 
       // Can also use traditional expect style for consistency
-      await ctx.expect(ctx.getByID("agree")).toBeVisible();
+      await ctx.expect(ctx.getById("agree")).toBeVisible();
 
       // Toggle
       await ctx.getByText("Toggle").click();
       await ctx.wait(50);
 
       // Mix fluent and traditional
-      await ctx.getByID("agree").shouldBeChecked();
-      await ctx.expect(ctx.getByID("agree")).toExist();
+      await ctx.getById("agree").shouldBeChecked();
+      await ctx.expect(ctx.getById("agree")).toExist();
     }
   );
 });

@@ -157,7 +157,7 @@ export class InnerWindow {
   }
 
   /**
-   * Register a custom ID for this inner window (for test framework getByID)
+   * Register a custom ID for this inner window (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining
    */

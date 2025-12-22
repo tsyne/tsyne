@@ -343,7 +343,7 @@ const tsyneTest = new TsyneTest({ headed: true });
 // Find widgets by text
 ctx.getByExactText("Submit")
 ctx.getByText("Counter:") // partial match
-ctx.getByID("widget-id")   // by ID
+ctx.getById("widget-id")   // by ID
 
 // Find by type
 ctx.getByType("button")
@@ -358,16 +358,16 @@ await locator.getText()
 // Fluent-Selenium Style API - Text Assertions
 await ctx.getByText("Submit").within(5000).click()  // Retry for 5 seconds
 await ctx.getByText("Loading...").without(3000)     // Wait for disappearance
-await ctx.getByID("status").shouldBe("Success")     // Fluent assertion
-await ctx.getByID("message").shouldContain("error") // Partial match
-await ctx.getByID("email").shouldMatch(/^.+@.+$/)   // Regex match
+await ctx.getById("status").shouldBe("Success")     // Fluent assertion
+await ctx.getById("message").shouldContain("error") // Partial match
+await ctx.getById("email").shouldMatch(/^.+@.+$/)   // Regex match
 
 // Fluent-Selenium Style API - Property Assertions
-await ctx.getByID("agree").shouldBeChecked()        // Checkbox state
-await ctx.getByID("volume").shouldHaveValue(75)     // Slider/entry value
-await ctx.getByID("submit").shouldBeEnabled()       // Enabled state
-await ctx.getByID("myWidget").shouldHaveType("button") // Widget type
-await ctx.getByID("modal").shouldBeVisible()        // Visibility
+await ctx.getById("agree").shouldBeChecked()        // Checkbox state
+await ctx.getById("volume").shouldHaveValue(75)     // Slider/entry value
+await ctx.getById("submit").shouldBeEnabled()       // Enabled state
+await ctx.getById("myWidget").shouldHaveType("button") // Widget type
+await ctx.getById("modal").shouldBeVisible()        // Visibility
 
 // Assertions (Traditional style)
 await ctx.expect(locator).toHaveText("exact text")

@@ -161,8 +161,8 @@ const testApp = await tsyneTest.createApp((app) => {
 const ctx = tsyneTest.getContext();
 await testApp.run();
 
-await ctx.getByID('helloBtn').click(); // Always prefer getByID
-await ctx.getByID('resultLabel').within(500).shouldBe('Result');
+await ctx.getById('helloBtn').click(); // Always prefer getById
+await ctx.getById('resultLabel').within(500).shouldBe('Result');
 ```
 
 **Browser mode (TsyneBrowserTest):**
@@ -178,7 +178,7 @@ const test = new TsyneBrowserTest({ headed: false });
 ### TsyneTest Do's and Don'ts
 
 **✅ DO:**
-- **ALWAYS use `ctx.getByID()` as your primary selector** - it's unique, stable, and reliable
+- **ALWAYS use `ctx.getById()` as your primary selector** - it's unique, stable, and reliable
 - Use `.withId('elementId')` to register custom IDs on all widgets that tests interact with
 - Use `.within(timeout).shouldBe(value)` pattern for assertions with polling
 - Use `.getText()` to retrieve text values directly
@@ -188,9 +188,9 @@ const test = new TsyneBrowserTest({ headed: false });
 - Don't increase Jest timeouts - find the root cause instead - lengthening timeouts almost never works
 - Don't use `.getValue()` - use `.getText()` or `.within().shouldBe()`
 
-**❌ AVOID getByText() - Use getByID() instead**
+**❌ AVOID getByText() - Use getById() instead**
 
-Why `getByID()` is strongly preferred:
+Why `getById()` is strongly preferred:
 - **Uniqueness**: IDs are guaranteed unique. Text can be duplicated (e.g., multiple "Reset" buttons)
 - **Stability**: IDs don't change. Text changes with UI updates, i18n, or localization
 - **Reliability**: Text-based selectors can randomly find the wrong widget when labels overlap
@@ -215,7 +215,7 @@ const label = a.label('Hello');  // Gets ID like "_label_k7m2z9"
 
 // Custom ID (explicit, use this in tests)
 const label = a.label('Hello').withId('greeting');  // Queryable as 'greeting'
-await ctx.getByID('greeting').shouldBe('Hello');  // ✅ Stable
+await ctx.getById('greeting').shouldBe('Hello');  // ✅ Stable
 ```
 
 **Examples:**
@@ -223,31 +223,31 @@ await ctx.getByID('greeting').shouldBe('Hello');  // ✅ Stable
 // ❌ WRONG - using getByText can find the wrong widget
 await ctx.getByText('Reset').click();  // Multiple "Reset" buttons? Random behavior!
 
-// ✅ CORRECT - using getByID is unique and reliable
+// ✅ CORRECT - using getById is unique and reliable
 this.resetBtn = this.a.button('Reset').onClick(() => this.reset()).withId('resetBtn');
-await ctx.getByID('resetBtn').click();
+await ctx.getById('resetBtn').click();
 
 // ❌ WRONG - using getByText for dynamic content
 await ctx.getByText('Generation: 0').shouldExist();
 
-// ✅ CORRECT - using withId and getByID
+// ✅ CORRECT - using withId and getById
 this.generationLabel = this.a.label('0').withId('generationNum');
-await ctx.getByID('generationNum').within(100).shouldBe('0');
+await ctx.getById('generationNum').within(100).shouldBe('0');
 
 // ❌ WRONG - trying to use className as ID
 this.label = this.a.label('text', 'myId');  // Second param is className, not ID!
-await ctx.getByID('myId').shouldBe('text');  // Won't work
+await ctx.getById('myId').shouldBe('text');  // Won't work
 
 // ✅ CORRECT - using withId for custom ID
 this.label = this.a.label('text').withId('myId');
-await ctx.getByID('myId').within(100).shouldBe('text');
+await ctx.getById('myId').within(100).shouldBe('text');
 
 // ❌ WRONG - using wait() for timing
 await ctx.wait(1000);
 await ctx.getByText('Loaded').shouldExist();
 
-// ✅ CORRECT - using within() for polling with getByID
-await ctx.getByID('statusLabel').within(500).shouldBe('Loaded');
+// ✅ CORRECT - using within() for polling with getById
+await ctx.getById('statusLabel').within(500).shouldBe('Loaded');
 ```
 
 ## MVC Pattern
@@ -908,11 +908,11 @@ const testApp = await tsyneTest.createApp(async (app) => {
 });
 
 // Interact with desktop icons
-await ctx.getByID('icon-calculator').click();
-await ctx.getByID('icon-calculator').click(); // Double-click to launch
+await ctx.getById('icon-calculator').click();
+await ctx.getById('icon-calculator').click(); // Double-click to launch
 
 // Interact with launched app
-await ctx.getByID('calc-display').shouldBe('0');
+await ctx.getById('calc-display').shouldBe('0');
 ```
 
 ## References

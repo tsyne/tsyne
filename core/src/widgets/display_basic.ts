@@ -196,7 +196,7 @@ export class Spacer {
   }
 
   /**
-   * Register a custom ID for this spacer (for test framework getByID)
+   * Register a custom ID for this spacer (for test framework getById)
    */
   withId(customId: string): this {
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {

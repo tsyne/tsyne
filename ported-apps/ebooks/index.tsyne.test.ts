@@ -23,7 +23,7 @@ describe('Ebook App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const title = await ctx.getByID('user-label').getText();
+    const title = await ctx.getById('user-label').getText();
     expect(title).toBeDefined();
     expect(title).toContain('Ebook Reader');
   });
@@ -35,7 +35,7 @@ describe('Ebook App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const stats = await ctx.getByID('stats-label').getText();
+    const stats = await ctx.getById('stats-label').getText();
     expect(stats).toBeDefined();
     expect(stats).toContain('Total');
   });
@@ -47,7 +47,7 @@ describe('Ebook App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const title = await ctx.getByID('library-title').getText();
+    const title = await ctx.getById('library-title').getText();
     expect(title).toContain('Library');
   });
 
@@ -61,7 +61,7 @@ describe('Ebook App UI Tests', () => {
     const readingBtn = await ctx.getByPattern(/Reading/);
     await readingBtn.click();
 
-    const title = await ctx.getByID('reading-title').within(1000).getText();
+    const title = await ctx.getById('reading-title').within(1000).getText();
     expect(title).toContain('Reading');
   });
 
@@ -75,7 +75,7 @@ describe('Ebook App UI Tests', () => {
     const favBtn = await ctx.getByPattern(/Favorites/);
     await favBtn.click();
 
-    const title = await ctx.getByID('favorites-title').within(1000).getText();
+    const title = await ctx.getById('favorites-title').within(1000).getText();
     expect(title).toContain('Favorites');
   });
 
@@ -89,7 +89,7 @@ describe('Ebook App UI Tests', () => {
     const dlBtn = await ctx.getByPattern(/Downloads/);
     await dlBtn.click();
 
-    const title = await ctx.getByID('downloads-title').within(1000).getText();
+    const title = await ctx.getById('downloads-title').within(1000).getText();
     expect(title).toContain('Downloads');
   });
 
@@ -103,7 +103,7 @@ describe('Ebook App UI Tests', () => {
     const settingsBtn = await ctx.getByPattern(/Settings/);
     await settingsBtn.click();
 
-    const title = await ctx.getByID('settings-title').within(1000).getText();
+    const title = await ctx.getById('settings-title').within(1000).getText();
     expect(title).toContain('Settings');
   });
 
@@ -114,7 +114,7 @@ describe('Ebook App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const initialStats = await ctx.getByID('stats-label').getText();
+    const initialStats = await ctx.getById('stats-label').getText();
 
     const readingBtn = await ctx.getByPattern(/Reading/);
     await readingBtn.click();
@@ -128,7 +128,7 @@ describe('Ebook App UI Tests', () => {
     const libraryBtn = await ctx.getByPattern(/Library/);
     await libraryBtn.click();
 
-    const finalStats = await ctx.getByID('stats-label').within(500).getText();
+    const finalStats = await ctx.getById('stats-label').within(500).getText();
     expect(finalStats).toBe(initialStats);
   });
 
@@ -139,7 +139,7 @@ describe('Ebook App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const booksList = await ctx.getByID('books-list');
+    const booksList = await ctx.getById('books-list');
     expect(booksList).toBeDefined();
   });
 
@@ -153,7 +153,7 @@ describe('Ebook App UI Tests', () => {
     const dlBtn = await ctx.getByPattern(/Downloads/);
     await dlBtn.click();
 
-    const title = await ctx.getByID('downloads-title').within(1000).getText();
+    const title = await ctx.getById('downloads-title').within(1000).getText();
     expect(title).toContain('Downloads');
   });
 
@@ -167,7 +167,7 @@ describe('Ebook App UI Tests', () => {
     const favBtn = await ctx.getByPattern(/Favorites/);
     await favBtn.click();
 
-    const title = await ctx.getByID('favorites-title').within(1000).getText();
+    const title = await ctx.getById('favorites-title').within(1000).getText();
     expect(title).toContain('Favorites');
   });
 
@@ -181,7 +181,7 @@ describe('Ebook App UI Tests', () => {
     const readingBtn = await ctx.getByPattern(/Reading/);
     await readingBtn.click();
 
-    const title = await ctx.getByID('reading-title').within(1000).getText();
+    const title = await ctx.getById('reading-title').within(1000).getText();
     expect(title).toContain('Reading');
   });
 
@@ -195,7 +195,7 @@ describe('Ebook App UI Tests', () => {
     const settingsBtn = await ctx.getByPattern(/Settings/);
     await settingsBtn.click();
 
-    const title = await ctx.getByID('settings-title').within(1000).getText();
+    const title = await ctx.getById('settings-title').within(1000).getText();
     expect(title).toContain('Settings');
   });
 
@@ -221,7 +221,7 @@ describe('Ebook App UI Tests', () => {
 
     const readingBtn = await ctx.getByPattern(/Reading/);
     await readingBtn.click();
-    await ctx.getByID('reading-title').within(1000).shouldExist();
+    await ctx.getById('reading-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -238,7 +238,7 @@ describe('Ebook App UI Tests', () => {
 
     const favBtn = await ctx.getByPattern(/Favorites/);
     await favBtn.click();
-    await ctx.getByID('favorites-title').within(1000).shouldExist();
+    await ctx.getById('favorites-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -255,7 +255,7 @@ describe('Ebook App UI Tests', () => {
 
     const dlBtn = await ctx.getByPattern(/Downloads/);
     await dlBtn.click();
-    await ctx.getByID('downloads-title').within(1000).shouldExist();
+    await ctx.getById('downloads-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -272,7 +272,7 @@ describe('Ebook App UI Tests', () => {
 
     const settingsBtn = await ctx.getByPattern(/Settings/);
     await settingsBtn.click();
-    await ctx.getByID('settings-title').within(1000).shouldExist();
+    await ctx.getById('settings-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {

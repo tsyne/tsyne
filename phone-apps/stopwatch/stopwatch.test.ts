@@ -34,7 +34,7 @@ describe('Stopwatch App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('stopwatch-display').within(500).shouldBe('00:00.00');
+    await ctx.getById('stopwatch-display').within(500).shouldBe('00:00.00');
   });
 
   test('should have control buttons', async () => {
@@ -45,9 +45,9 @@ describe('Stopwatch App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('stopwatch-startstop').within(500).shouldExist();
-    await ctx.getByID('stopwatch-lap').within(500).shouldExist();
-    await ctx.getByID('stopwatch-reset').within(500).shouldExist();
+    await ctx.getById('stopwatch-startstop').within(500).shouldExist();
+    await ctx.getById('stopwatch-lap').within(500).shouldExist();
+    await ctx.getById('stopwatch-reset').within(500).shouldExist();
   });
 
   test('should start with Start button label', async () => {
@@ -58,7 +58,7 @@ describe('Stopwatch App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('stopwatch-startstop').within(500).shouldBe('Start');
+    await ctx.getById('stopwatch-startstop').within(500).shouldBe('Start');
   });
 
   test('should change button to Stop when started', async () => {
@@ -70,8 +70,8 @@ describe('Stopwatch App', () => {
     await testApp.run();
 
     // Click start
-    await ctx.getByID('stopwatch-startstop').click();
-    await ctx.getByID('stopwatch-startstop').within(500).shouldBe('Stop');
+    await ctx.getById('stopwatch-startstop').click();
+    await ctx.getById('stopwatch-startstop').within(500).shouldBe('Stop');
   });
 
   test('should reset stopwatch to zero', async () => {
@@ -83,17 +83,17 @@ describe('Stopwatch App', () => {
     await testApp.run();
 
     // Start the stopwatch
-    await ctx.getByID('stopwatch-startstop').click();
+    await ctx.getById('stopwatch-startstop').click();
 
     // Wait a bit for time to accumulate
     await ctx.wait(100);
 
     // Stop it
-    await ctx.getByID('stopwatch-startstop').click();
+    await ctx.getById('stopwatch-startstop').click();
 
     // Reset
-    await ctx.getByID('stopwatch-reset').click();
-    await ctx.getByID('stopwatch-display').within(500).shouldBe('00:00.00');
+    await ctx.getById('stopwatch-reset').click();
+    await ctx.getById('stopwatch-display').within(500).shouldBe('00:00.00');
   });
 
   test('should render stopwatch UI - screenshot', async () => {
@@ -105,8 +105,8 @@ describe('Stopwatch App', () => {
     await testApp.run();
 
     // Wait for UI to be fully rendered
-    await ctx.getByID('stopwatch-display').within(500).shouldExist();
-    await ctx.getByID('stopwatch-startstop').within(500).shouldExist();
+    await ctx.getById('stopwatch-display').within(500).shouldExist();
+    await ctx.getById('stopwatch-startstop').within(500).shouldExist();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

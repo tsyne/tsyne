@@ -27,12 +27,12 @@ describe('Newton Fractal Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').shouldExist();
-    await ctx.getByID('zoom-out').shouldExist();
-    await ctx.getByID('reset').shouldExist();
-    await ctx.getByID('next-palette').shouldExist();
+    await ctx.getById('zoom-in').shouldExist();
+    await ctx.getById('zoom-out').shouldExist();
+    await ctx.getById('reset').shouldExist();
+    await ctx.getById('next-palette').shouldExist();
 
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('z³-1=0');
   }, 30000);

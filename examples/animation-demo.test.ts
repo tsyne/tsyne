@@ -40,7 +40,7 @@ describe('Animation Demo Tests', () => {
     await testApp.run();
 
     // Title should exist
-    await ctx.getByID('title').shouldExist();
+    await ctx.getById('title').shouldExist();
   });
 
   test('should show InOut tab content by default (first tab)', async () => {

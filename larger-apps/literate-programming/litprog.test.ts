@@ -32,9 +32,9 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Check that main UI elements are visible
-      await ctx.getByID('source-label').within(2000).shouldBe('Source');
-      await ctx.getByID('output-preview-label').within(2000).shouldBe('Output Preview');
-      await ctx.getByID('chunks-label').within(2000).shouldBe('Chunks');
+      await ctx.getById('source-label').within(2000).shouldBe('Source');
+      await ctx.getById('output-preview-label').within(2000).shouldBe('Output Preview');
+      await ctx.getById('chunks-label').within(2000).shouldBe('Chunks');
     }, 15000);
 
     test('should show default template with chunks', async () => {
@@ -46,7 +46,7 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Stats should show some chunks from the default template
-      await ctx.getByID('stats-label').within(2000).shouldContain('Chunks:');
+      await ctx.getById('stats-label').within(2000).shouldContain('Chunks:');
     }, 15000);
 
     test('should display document title', async () => {
@@ -58,7 +58,7 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Title label should show something
-      await ctx.getByID('title-label').within(2000).shouldContain('Hello');
+      await ctx.getById('title-label').within(2000).shouldContain('Hello');
     }, 15000);
   });
 
@@ -73,15 +73,15 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Get initial state
-      const initialChunkLabel = await ctx.getByID('current-chunk-label').getText();
+      const initialChunkLabel = await ctx.getById('current-chunk-label').getText();
       expect(initialChunkLabel).toBeTruthy();
 
       // Click next chunk
-      await ctx.getByID('btn-next-chunk').click();
+      await ctx.getById('btn-next-chunk').click();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Chunk should have changed (or stayed if only one)
-      const newChunkLabel = await ctx.getByID('current-chunk-label').getText();
+      const newChunkLabel = await ctx.getById('current-chunk-label').getText();
       expect(newChunkLabel).toBeTruthy();
     }, 15000);
 
@@ -94,7 +94,7 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Chunk list should contain at least one chunk name
-      const chunkList = await ctx.getByID('chunk-list').getText();
+      const chunkList = await ctx.getById('chunk-list').getText();
       expect(chunkList.length).toBeGreaterThan(0);
     }, 15000);
   });
@@ -109,11 +109,11 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Click tangle button
-      await ctx.getByID('btn-tangle').click();
+      await ctx.getById('btn-tangle').click();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Tangle preview should be visible
-      const tanglePreview = await ctx.getByID('preview-tangle').getText();
+      const tanglePreview = await ctx.getById('preview-tangle').getText();
       expect(tanglePreview).toBeTruthy();
     }, 15000);
 
@@ -126,7 +126,7 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Click weave button
-      await ctx.getByID('btn-weave').click();
+      await ctx.getById('btn-weave').click();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Weave preview should be visible (though might be hidden)
@@ -146,7 +146,7 @@ describe('LitProg Functional Tests', () => {
       await testApp.run();
 
       // Click parse button
-      await ctx.getByID('btn-parse').click();
+      await ctx.getById('btn-parse').click();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Document should be parsed
@@ -176,11 +176,11 @@ x = 1
 `);
 
       // Click parse
-      await ctx.getByID('btn-parse').click();
+      await ctx.getById('btn-parse').click();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Stats should update
-      await ctx.getByID('stats-label').within(2000).shouldContain('Chunks:');
+      await ctx.getById('stats-label').within(2000).shouldContain('Chunks:');
     }, 15000);
   });
 
@@ -194,7 +194,7 @@ x = 1
       await testApp.run();
 
       // Syntax select should exist
-      const syntaxLabel = await ctx.getByID('syntax-label').getText();
+      const syntaxLabel = await ctx.getById('syntax-label').getText();
       expect(syntaxLabel).toBe('Syntax:');
     }, 15000);
   });
@@ -209,7 +209,7 @@ x = 1
       await testApp.run();
 
       // Output label should exist
-      const outputLabel = await ctx.getByID('output-label').getText();
+      const outputLabel = await ctx.getById('output-label').getText();
       expect(outputLabel).toBe('Output:');
     }, 15000);
   });
@@ -224,9 +224,9 @@ x = 1
       await testApp.run();
 
       // All toolbar buttons should be clickable
-      await ctx.getByID('btn-new').shouldExist();
-      await ctx.getByID('btn-open').shouldExist();
-      await ctx.getByID('btn-save').shouldExist();
+      await ctx.getById('btn-new').shouldExist();
+      await ctx.getById('btn-open').shouldExist();
+      await ctx.getById('btn-save').shouldExist();
     }, 15000);
 
     test('should have export buttons', async () => {
@@ -237,8 +237,8 @@ x = 1
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-export-code').shouldExist();
-      await ctx.getByID('btn-export-docs').shouldExist();
+      await ctx.getById('btn-export-code').shouldExist();
+      await ctx.getById('btn-export-docs').shouldExist();
     }, 15000);
   });
 
@@ -266,7 +266,7 @@ new code
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Title should update
-      await ctx.getByID('title-label').within(2000).shouldBe('New Title');
+      await ctx.getById('title-label').within(2000).shouldBe('New Title');
     }, 15000);
 
     test('should track dirty state', async () => {
@@ -308,7 +308,7 @@ code
       uiController.refreshPreview();
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      await ctx.getByID('errors-label').within(2000).shouldBe('No errors');
+      await ctx.getById('errors-label').within(2000).shouldBe('No errors');
     }, 15000);
 
     test('should display parse errors', async () => {
@@ -329,7 +329,7 @@ code
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Should show error message
-      const errorsText = await ctx.getByID('errors-label').getText();
+      const errorsText = await ctx.getById('errors-label').getText();
       expect(errorsText).toContain('undefined');
     }, 15000);
   });
@@ -353,7 +353,7 @@ specific content here
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Chunk content should be displayed
-      await ctx.getByID('chunk-content').within(2000).shouldContain('specific content here');
+      await ctx.getById('chunk-content').within(2000).shouldContain('specific content here');
     }, 15000);
   });
 
@@ -372,7 +372,7 @@ specific content here
       uiController.refreshPreview();
 
       // Click new button (creates markdown template)
-      await ctx.getByID('btn-new').click();
+      await ctx.getById('btn-new').click();
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Should have new template content

@@ -237,11 +237,11 @@ describe('Activity Widget', () => {
     await ctx.expect(ctx.getByExactText('Activity created')).toBeVisible();
 
     // Click start button
-    await ctx.getByID('startBtn').click();
+    await ctx.getById('startBtn').click();
     await ctx.getByExactText('Activity started').within(100).shouldExist();
 
     // Click stop button
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
     await ctx.getByExactText('Activity stopped').within(100).shouldExist();
 
     // Capture screenshot if TAKE_SCREENSHOTS=1
@@ -291,11 +291,11 @@ describe('Activity Widget', () => {
     await ctx.expect(ctx.getByExactText('Activity 2')).toBeVisible();
 
     // Start both activities
-    await ctx.getByID('startBoth').click();
+    await ctx.getById('startBoth').click();
     await ctx.getByExactText('Activity 1').within(100).shouldExist();
 
     // Stop both activities
-    await ctx.getByID('stopBoth').click();
+    await ctx.getById('stopBoth').click();
     await ctx.getByExactText('Activity 2').within(100).shouldExist();
   });
 });

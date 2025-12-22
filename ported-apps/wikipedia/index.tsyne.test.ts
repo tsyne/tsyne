@@ -23,7 +23,7 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const title = await ctx.getByID('app-title').getText();
+    const title = await ctx.getById('app-title').getText();
     expect(title).toContain('Wikipedia');
   });
 
@@ -34,10 +34,10 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const langLabel = await ctx.getByID('language-label').getText();
+    const langLabel = await ctx.getById('language-label').getText();
     expect(langLabel).toContain('Language');
 
-    const statsLabel = await ctx.getByID('stats-label').getText();
+    const statsLabel = await ctx.getById('stats-label').getText();
     expect(statsLabel).toContain('Articles Viewed');
   });
 
@@ -48,7 +48,7 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchTitle = await ctx.getByID('search-title').getText();
+    const searchTitle = await ctx.getById('search-title').getText();
     expect(searchTitle).toContain('Search Results');
   });
 
@@ -59,8 +59,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-explore').click();
-    const exploreTitle = await ctx.getByID('explore-title').within(1000).getText();
+    await ctx.getById('tab-explore').click();
+    const exploreTitle = await ctx.getById('explore-title').within(1000).getText();
     expect(exploreTitle).toContain('Featured Content');
   });
 
@@ -71,8 +71,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-saved').click();
-    const savedTitle = await ctx.getByID('saved-title').within(1000).getText();
+    await ctx.getById('tab-saved').click();
+    const savedTitle = await ctx.getById('saved-title').within(1000).getText();
     expect(savedTitle).toContain('Saved Articles');
   });
 
@@ -83,8 +83,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-history').click();
-    const historyTitle = await ctx.getByID('history-title').within(1000).getText();
+    await ctx.getById('tab-history').click();
+    const historyTitle = await ctx.getById('history-title').within(1000).getText();
     expect(historyTitle).toContain('Reading History');
   });
 
@@ -96,27 +96,27 @@ describe('Wikipedia App UI Tests', () => {
     await testApp.run();
 
     // Search
-    let title = await ctx.getByID('search-title').getText();
+    let title = await ctx.getById('search-title').getText();
     expect(title).toContain('Search Results');
 
     // Explore
-    await ctx.getByID('tab-explore').click();
-    title = await ctx.getByID('explore-title').within(500).getText();
+    await ctx.getById('tab-explore').click();
+    title = await ctx.getById('explore-title').within(500).getText();
     expect(title).toContain('Featured Content');
 
     // Saved
-    await ctx.getByID('tab-saved').click();
-    title = await ctx.getByID('saved-title').within(500).getText();
+    await ctx.getById('tab-saved').click();
+    title = await ctx.getById('saved-title').within(500).getText();
     expect(title).toContain('Saved Articles');
 
     // History
-    await ctx.getByID('tab-history').click();
-    title = await ctx.getByID('history-title').within(500).getText();
+    await ctx.getById('tab-history').click();
+    title = await ctx.getById('history-title').within(500).getText();
     expect(title).toContain('Reading History');
 
     // Back to Search
-    await ctx.getByID('tab-search').click();
-    title = await ctx.getByID('search-title').within(500).getText();
+    await ctx.getById('tab-search').click();
+    title = await ctx.getById('search-title').within(500).getText();
     expect(title).toContain('Search Results');
   });
 
@@ -127,7 +127,7 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchInput = await ctx.getByID('search-input');
+    const searchInput = await ctx.getById('search-input');
     expect(searchInput).toBeDefined();
   });
 
@@ -140,7 +140,7 @@ describe('Wikipedia App UI Tests', () => {
 
     const elements = ['app-title', 'language-label', 'stats-label', 'search-input', 'tab-search', 'tab-explore', 'tab-saved', 'tab-history'];
     for (const id of elements) {
-      const element = await ctx.getByID(id);
+      const element = await ctx.getById(id);
       expect(element).toBeDefined();
     }
   });
@@ -152,13 +152,13 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const initialLang = await ctx.getByID('language-label').getText();
-    await ctx.getByID('tab-explore').click();
-    await ctx.getByID('tab-saved').click();
-    await ctx.getByID('tab-history').click();
-    await ctx.getByID('tab-search').click();
+    const initialLang = await ctx.getById('language-label').getText();
+    await ctx.getById('tab-explore').click();
+    await ctx.getById('tab-saved').click();
+    await ctx.getById('tab-history').click();
+    await ctx.getById('tab-search').click();
 
-    const finalLang = await ctx.getByID('language-label').within(500).getText();
+    const finalLang = await ctx.getById('language-label').within(500).getText();
     expect(finalLang).toBe(initialLang);
   });
 
@@ -182,8 +182,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-explore').click();
-    await ctx.getByID('explore-title').within(1000).shouldExist();
+    await ctx.getById('tab-explore').click();
+    await ctx.getById('explore-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -198,8 +198,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-saved').click();
-    await ctx.getByID('saved-title').within(1000).shouldExist();
+    await ctx.getById('tab-saved').click();
+    await ctx.getById('saved-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -214,8 +214,8 @@ describe('Wikipedia App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('tab-history').click();
-    await ctx.getByID('history-title').within(1000).shouldExist();
+    await ctx.getById('tab-history').click();
+    await ctx.getById('history-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {

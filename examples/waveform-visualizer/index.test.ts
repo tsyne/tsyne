@@ -37,18 +37,18 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
 
     // Check title indicates canvas mode
     await ctx
-      .getByID('titleLabel')
+      .getById('titleLabel')
       .within(1000)
       .shouldBe('Waveform Visualizer - Canvas Mode');
 
     // Check mode indicator
     await ctx
-      .getByID('modeLabel')
+      .getById('modeLabel')
       .within(1000)
       .shouldBe('🎨 Canvas-based rendering (tap to seek)');
 
     // Canvas should be tappable
-    await ctx.getByID('waveformCanvas').within(1000).shouldExist();
+    await ctx.getById('waveformCanvas').within(1000).shouldExist();
   });
 
   test('should handle tap on waveform to seek', async () => {
@@ -60,15 +60,15 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     await testApp.run();
 
     // Wait for initialization
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Initial position should be 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
 
     // Tap somewhere in the middle of the waveform (position should update)
     // Note: In Fyne, tappable canvas reports (x, y) coordinates
     // Tapping at x=480 (middle of 960px canvas) should seek to middle of audio
-    const canvas = await ctx.getByID('waveformCanvas');
+    const canvas = await ctx.getById('waveformCanvas');
 
     // Simulate tap - this would require actual tap event handling
     // For now, we verify the canvas is tappable (interactive)
@@ -84,12 +84,12 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     await testApp.run();
 
     // Wait for initialization
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
@@ -97,7 +97,7 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Position should advance
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     const [, seconds] = position.split(':');
     expect(parseInt(seconds, 10)).toBeGreaterThan(0);
   });
@@ -110,27 +110,27 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for 1 second
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Pause
-    await ctx.getByID('pauseBtn').click();
-    const pausedPosition = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    const pausedPosition = await ctx.getById('positionLabel').getText();
 
     // Wait and resume
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Position should be same immediately after resume
-    let resumedPosition = await ctx.getByID('positionLabel').getText();
+    let resumedPosition = await ctx.getById('positionLabel').getText();
     expect(resumedPosition).toBe(pausedPosition);
 
     // But advance after some playback
     await new Promise((resolve) => setTimeout(resolve, 500));
-    resumedPosition = await ctx.getByID('positionLabel').getText();
+    resumedPosition = await ctx.getById('positionLabel').getText();
     expect(resumedPosition).not.toBe(pausedPosition);
   });
 
@@ -142,18 +142,18 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for 1.5 seconds
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Stop
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should reset to 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
   });
 
   test('should complete playback and auto-stop', async () => {
@@ -164,18 +164,18 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play (8-second audio clip)
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for playback to complete
     // (plus some buffer for timing variations)
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should auto-stop and show finished
-    await ctx.getByID('statusLabel').within(500).shouldBe('Finished');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Finished');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('should display duration correctly', async () => {
@@ -186,10 +186,10 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Duration should be 8 seconds (synthetic audio is 8 seconds)
-    const duration = await ctx.getByID('durationLabel').getText();
+    const duration = await ctx.getById('durationLabel').getText();
     expect(duration).toMatch(/8:00|0:08/);
   });
 
@@ -201,25 +201,25 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Initially play button visible
-    await ctx.getByID('playBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').within(500).shouldExist();
 
     // Click play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for state update
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Pause button should be visible
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getById('pauseBtn').within(500).shouldExist();
 
     // Click pause
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Play button should be visible again
-    await ctx.getByID('playBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').within(500).shouldExist();
   });
 
   test('should capture screenshot if requested', async () => {
@@ -230,7 +230,7 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(
@@ -272,7 +272,7 @@ describe('AudioProcessor - Waveform Processing', () => {
 
     // App successfully initializes with downsampled waveform
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(2000)
       .shouldBe('Ready - tap waveform to seek');
 
@@ -305,46 +305,46 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
     await testApp.run();
 
     // Step 1: Initialize
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
 
     // Step 2: Start playing
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
     // Step 3: Let it play for 1 second
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    let position = await ctx.getByID('positionLabel').getText();
+    let position = await ctx.getById('positionLabel').getText();
     const firstTime = parseInt(position.split(':')[1], 10);
     expect(firstTime).toBeGreaterThan(0);
 
     // Step 4: Pause
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Paused');
-    const pausedTime = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Paused');
+    const pausedTime = await ctx.getById('positionLabel').getText();
 
     // Step 5: Resume (position should be same initially)
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
-    position = await ctx.getByID('positionLabel').getText();
+    position = await ctx.getById('positionLabel').getText();
     expect(position).toBe(pausedTime);
 
     // Step 6: Let it play a bit more
     await new Promise((resolve) => setTimeout(resolve, 800));
-    position = await ctx.getByID('positionLabel').getText();
+    position = await ctx.getById('positionLabel').getText();
     const secondTime = parseInt(position.split(':')[1], 10);
     expect(secondTime).toBeGreaterThan(firstTime);
 
     // Step 7: Stop
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('multiple play cycles', async () => {
@@ -355,28 +355,28 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Cycle 1
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Cycle 2
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Verify still functional
-    const finalPosition = await ctx.getByID('positionLabel').getText();
+    const finalPosition = await ctx.getById('positionLabel').getText();
     expect(finalPosition).not.toBe('0:00');
   });
 
@@ -388,13 +388,13 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play and verify MM:SS format
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     expect(position).toMatch(/^\d+:\d{2}$/); // MM:SS or M:SS format
   });
 });
@@ -423,22 +423,22 @@ describe('Waveform Visualizer - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Rapid clicks
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Should end in playing state
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('stop during playback resets position', async () => {
@@ -449,18 +449,18 @@ describe('Waveform Visualizer - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play briefly
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Get current position
-    const beforeStop = await ctx.getByID('positionLabel').getText();
+    const beforeStop = await ctx.getById('positionLabel').getText();
     expect(beforeStop).not.toBe('0:00');
 
     // Stop immediately resets
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 });

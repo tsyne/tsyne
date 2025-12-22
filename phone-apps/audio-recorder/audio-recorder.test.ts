@@ -56,7 +56,7 @@ describe('Audio Recorder App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('recorder-title').within(500).shouldExist();
+    await ctx.getById('recorder-title').within(500).shouldExist();
   });
 
   test('should display time display', async () => {
@@ -68,7 +68,7 @@ describe('Audio Recorder App', () => {
     await testApp.run();
 
     // Initial time should be 0:00
-    await ctx.getByID('time-display').within(500).shouldBe('0:00');
+    await ctx.getById('time-display').within(500).shouldBe('0:00');
   });
 
   test('should display status label', async () => {
@@ -79,7 +79,7 @@ describe('Audio Recorder App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('recorder-status').within(500).shouldBe('Ready');
+    await ctx.getById('recorder-status').within(500).shouldBe('Ready');
   });
 
   test('should have record button', async () => {
@@ -90,7 +90,7 @@ describe('Audio Recorder App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-record').within(500).shouldExist();
+    await ctx.getById('btn-record').within(500).shouldExist();
   });
 
   test('should have pause button', async () => {
@@ -101,7 +101,7 @@ describe('Audio Recorder App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-pause').within(500).shouldExist();
+    await ctx.getById('btn-pause').within(500).shouldExist();
   });
 
   test('should have quality selector', async () => {
@@ -112,7 +112,7 @@ describe('Audio Recorder App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-quality').within(500).shouldExist();
+    await ctx.getById('btn-quality').within(500).shouldExist();
   });
 
   test('should display recordings list', async () => {
@@ -124,7 +124,7 @@ describe('Audio Recorder App', () => {
     await testApp.run();
 
     // Recordings label should exist
-    await ctx.getByID('label-recordings').within(500).shouldExist();
+    await ctx.getById('label-recordings').within(500).shouldExist();
   });
 
   test('should start recording when record button clicked', async () => {
@@ -139,7 +139,7 @@ describe('Audio Recorder App', () => {
     expect(recording.getRecordingState()).toBe('idle');
 
     // Click record button
-    await ctx.getByID('btn-record').click();
+    await ctx.getById('btn-record').click();
 
     // Should be recording
     expect(recording.getRecordingState()).toBe('recording');
@@ -154,11 +154,11 @@ describe('Audio Recorder App', () => {
     await testApp.run();
 
     // Start recording
-    await ctx.getByID('btn-record').click();
+    await ctx.getById('btn-record').click();
     expect(recording.getRecordingState()).toBe('recording');
 
     // Pause recording
-    await ctx.getByID('btn-pause').click();
+    await ctx.getById('btn-pause').click();
     expect(recording.getRecordingState()).toBe('paused');
   });
 
@@ -171,7 +171,7 @@ describe('Audio Recorder App', () => {
     await testApp.run();
 
     // Start recording
-    await ctx.getByID('btn-record').click();
+    await ctx.getById('btn-record').click();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

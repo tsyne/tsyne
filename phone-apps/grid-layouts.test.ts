@@ -36,9 +36,9 @@ describe('TabletTop Integration Tests', () => {
     await testApp.run();
 
     // Navigation buttons should exist
-    await ctx.getByID('prevPage').shouldExist();
-    await ctx.getByID('nextPage').shouldExist();
-    await ctx.getByID('pageLabel').shouldExist();
+    await ctx.getById('prevPage').shouldExist();
+    await ctx.getById('nextPage').shouldExist();
+    await ctx.getById('pageLabel').shouldExist();
   });
 
   test('should show page 1 of N initially', async () => {
@@ -50,7 +50,7 @@ describe('TabletTop Integration Tests', () => {
     await testApp.run();
 
     // Page label should show page 1
-    await ctx.getByID('pageLabel').shouldContain('Page 1');
+    await ctx.getById('pageLabel').shouldContain('Page 1');
   });
 
   test('should navigate to next page', async () => {
@@ -62,11 +62,11 @@ describe('TabletTop Integration Tests', () => {
     await testApp.run();
 
     // Click next page button
-    await ctx.getByID('nextPage').click();
+    await ctx.getById('nextPage').click();
     await ctx.wait(100);
 
     // Should now show page 2
-    await ctx.getByID('pageLabel').shouldContain('Page 2');
+    await ctx.getById('pageLabel').shouldContain('Page 2');
   });
 
   test('should navigate back to previous page', async () => {
@@ -78,15 +78,15 @@ describe('TabletTop Integration Tests', () => {
     await testApp.run();
 
     // Go to page 2
-    await ctx.getByID('nextPage').click();
+    await ctx.getById('nextPage').click();
     await ctx.wait(100);
 
     // Go back to page 1
-    await ctx.getByID('prevPage').click();
+    await ctx.getById('prevPage').click();
     await ctx.wait(100);
 
     // Should show page 1
-    await ctx.getByID('pageLabel').shouldContain('Page 1');
+    await ctx.getById('pageLabel').shouldContain('Page 1');
   });
 });
 
@@ -112,8 +112,8 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Swipe buttons should exist (use within() to poll for initialization)
-    await ctx.getByID('swipeLeft').within(3000).shouldExist();
-    await ctx.getByID('swipeRight').within(3000).shouldExist();
+    await ctx.getById('swipeLeft').within(3000).shouldExist();
+    await ctx.getById('swipeRight').within(3000).shouldExist();
   }, 15000);
 
   test('should show page dots indicator', async () => {
@@ -125,7 +125,7 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // First page dot should exist and be filled
-    await ctx.getByID('page-dot-0').shouldExist();
+    await ctx.getById('page-dot-0').shouldExist();
   });
 
   test('should navigate via swipe right button', async () => {
@@ -137,15 +137,15 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Get initial dot state
-    const initialDot = ctx.getByID('page-dot-0');
+    const initialDot = ctx.getById('page-dot-0');
     await initialDot.shouldContain('●');  // Filled dot for current page
 
     // Swipe right (next page)
-    await ctx.getByID('swipeRight').click();
+    await ctx.getById('swipeRight').click();
     await ctx.wait(100);
 
     // First dot should now be empty
-    await ctx.getByID('page-dot-0').shouldContain('○');
+    await ctx.getById('page-dot-0').shouldContain('○');
   });
 
   test('should navigate via swipe left button', async () => {
@@ -157,15 +157,15 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Go to page 2
-    await ctx.getByID('swipeRight').click();
+    await ctx.getById('swipeRight').click();
     await ctx.wait(100);
 
     // Go back to page 1
-    await ctx.getByID('swipeLeft').click();
+    await ctx.getById('swipeLeft').click();
     await ctx.wait(100);
 
     // First dot should be filled again
-    await ctx.getByID('page-dot-0').shouldContain('●');
+    await ctx.getById('page-dot-0').shouldContain('●');
   });
 
   test('should launch app as stack pane with home button', async () => {
@@ -177,14 +177,14 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Find and click the Calculator app icon
-    await ctx.getByID('icon-Calculator').click();
+    await ctx.getById('icon-Calculator').click();
     await ctx.wait(200);
 
     // App should be rendered as stack pane with "← Home" button
     await ctx.getByText('← Home').shouldExist();
 
     // Calculator content should be visible (the display)
-    await ctx.getByID('calc-display').shouldExist();
+    await ctx.getById('calc-display').shouldExist();
   });
 
   test('should return to home when clicking home button', async () => {
@@ -196,7 +196,7 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Launch calculator
-    await ctx.getByID('icon-Calculator').click();
+    await ctx.getById('icon-Calculator').click();
     await ctx.wait(200);
 
     // Click home button
@@ -204,8 +204,8 @@ describe('PhoneTop Integration Tests', () => {
     await ctx.wait(100);
 
     // Should be back at the home screen with page dots
-    await ctx.getByID('page-dot-0').shouldExist();
-    await ctx.getByID('swipeLeft').shouldExist();
+    await ctx.getById('page-dot-0').shouldExist();
+    await ctx.getById('swipeLeft').shouldExist();
   });
 
   test('should preserve app state when returning', async () => {
@@ -217,7 +217,7 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Launch calculator (use within() to wait for app icons to render)
-    await ctx.getByID('icon-Calculator').within(3000).click();
+    await ctx.getById('icon-Calculator').within(3000).click();
     await ctx.wait(200);
 
     // Type a number
@@ -225,18 +225,18 @@ describe('PhoneTop Integration Tests', () => {
     await ctx.wait(100);
 
     // Verify display shows 5 (use within() to poll for state)
-    await ctx.getByID('calc-display').within(2000).shouldContain('5');
+    await ctx.getById('calc-display').within(2000).shouldContain('5');
 
     // Go home
     await ctx.getByText('← Home').click();
     await ctx.wait(100);
 
     // Return to calculator
-    await ctx.getByID('icon-Calculator').click();
+    await ctx.getById('icon-Calculator').click();
     await ctx.wait(200);
 
     // State should be preserved - display should still show 5
-    await ctx.getByID('calc-display').within(2000).shouldContain('5');
+    await ctx.getById('calc-display').within(2000).shouldContain('5');
   }, 15000);
 
   test('should show quit button and close app when clicked', async () => {
@@ -248,7 +248,7 @@ describe('PhoneTop Integration Tests', () => {
     await testApp.run();
 
     // Launch calculator
-    await ctx.getByID('icon-Calculator').click();
+    await ctx.getById('icon-Calculator').click();
     await ctx.wait(200);
 
     // Quit button should exist
@@ -263,14 +263,14 @@ describe('PhoneTop Integration Tests', () => {
     await ctx.wait(100);
 
     // Should be back at home
-    await ctx.getByID('page-dot-0').shouldExist();
+    await ctx.getById('page-dot-0').shouldExist();
 
     // Launch calculator again - should be fresh (not the same instance)
-    await ctx.getByID('icon-Calculator').click();
+    await ctx.getById('icon-Calculator').click();
     await ctx.wait(200);
 
     // Display should be 0 (fresh start, not 7)
-    await ctx.getByID('calc-display').shouldContain('0');
+    await ctx.getById('calc-display').shouldContain('0');
   });
 
   test('should launch app with resources without error (Chess)', async () => {
@@ -283,7 +283,7 @@ describe('PhoneTop Integration Tests', () => {
 
     // Chess starts with "C" so it's on page 1 (apps sorted alphabetically)
     // Launch Chess app (uses @tsyne-app:args app,resources)
-    await ctx.getByID('icon-Chess').click();
+    await ctx.getById('icon-Chess').click();
 
     // Wait for app to render with home button (no resource error thrown)
     await ctx.getByText('← Home').within(3000).shouldExist();
@@ -292,7 +292,7 @@ describe('PhoneTop Integration Tests', () => {
     await ctx.getByText('← Home').click();
 
     // Return to Chess - resource scope should be restored correctly
-    await ctx.getByID('icon-Chess').within(500).click();
+    await ctx.getById('icon-Chess').within(500).click();
 
     // Should still have home button (didn't crash on resource lookup)
     await ctx.getByText('← Home').within(1000).shouldExist();

@@ -56,7 +56,7 @@ describe('Draw Button Layout Regression Test', () => {
       const currentY = infoAfter.absoluteY;
 
       // Verify the click worked by checking status message
-      await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
+      await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
 
       if (i === 0) {
         initialY = currentY;
@@ -90,10 +90,10 @@ describe('Draw Button Layout Regression Test', () => {
 
     // Press Draw immediately after - this is a common scenario where layout shift occurs
     await ctx.getByText('Draw').click();
-    await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
+    await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
 
     // Press Draw again
     await ctx.getByText('Draw').click();
-    await ctx.getByID('status-label').within(1000).shouldBe('Drew cards');
+    await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
   }, 15000);
 });

@@ -217,13 +217,13 @@ Fluent-selenium style methods allow you to write tests that are:
 
 ```typescript
 // Traditional style
-const locator = ctx.getByID("status");
+const locator = ctx.getById("status");
 await new Promise(resolve => setTimeout(resolve, 5000));
 const text = await locator.getText();
 if (text !== "Success") throw new Error("Wrong text");
 
 // Fluent-selenium style
-await ctx.getByID("status").within(5000).shouldBe("Success");
+await ctx.getById("status").within(5000).shouldBe("Success");
 ```
 
 ### Retry with within()
@@ -235,10 +235,10 @@ The `within()` method retries element location for a specified period. This is e
 await ctx.getByText("Submit").within(5000).click();
 
 // Wait for text to update after async operation
-await ctx.getByID("status").within(3000).shouldBe("Complete");
+await ctx.getById("status").within(3000).shouldBe("Complete");
 
 // Combine with type action
-await ctx.getByID("search").within(2000).type("query");
+await ctx.getById("search").within(2000).type("query");
 ```
 
 **How it works:**
@@ -262,7 +262,7 @@ The `without()` method waits for an element to disappear from the DOM. Perfect f
 await ctx.getByText("Loading...").without(5000);
 
 // Wait for modal to close
-await ctx.getByID("modal").without(3000);
+await ctx.getById("modal").without(3000);
 
 // Wait for error message to fade out
 await ctx.getByText("Error").without(2000);
@@ -287,13 +287,13 @@ Fluent assertions allow you to assert text content directly on locators, with au
 
 ```typescript
 // Assert exact text (retries automatically if within() was used)
-await ctx.getByID("status").shouldBe("Success");
+await ctx.getById("status").shouldBe("Success");
 
 // With retry
-await ctx.getByID("counter").within(5000).shouldBe("Count: 10");
+await ctx.getById("counter").within(5000).shouldBe("Count: 10");
 
 // Chain multiple assertions
-await ctx.getByID("message")
+await ctx.getById("message")
   .within(3000)
   .shouldBe("Processing complete")
   .then(async (loc) => {
@@ -305,39 +305,39 @@ await ctx.getByID("message")
 
 ```typescript
 // Assert text contains substring
-await ctx.getByID("message").shouldContain("success");
+await ctx.getById("message").shouldContain("success");
 
 // With retry for delayed content
-await ctx.getByID("result").within(5000).shouldContain("found 10 items");
+await ctx.getById("result").within(5000).shouldContain("found 10 items");
 
 // Case-sensitive substring matching
-await ctx.getByID("error").shouldContain("404");
+await ctx.getById("error").shouldContain("404");
 ```
 
 #### shouldMatch() - Regex Pattern Match
 
 ```typescript
 // Assert text matches regex pattern
-await ctx.getByID("email").shouldMatch(/^.+@.+\..+$/);
+await ctx.getById("email").shouldMatch(/^.+@.+\..+$/);
 
 // Validate numeric formats
-await ctx.getByID("price").shouldMatch(/^\$\d+\.\d{2}$/);
+await ctx.getById("price").shouldMatch(/^\$\d+\.\d{2}$/);
 
 // With retry
-await ctx.getByID("timestamp").within(3000).shouldMatch(/^\d{4}-\d{2}-\d{2}/);
+await ctx.getById("timestamp").within(3000).shouldMatch(/^\d{4}-\d{2}-\d{2}/);
 ```
 
 #### shouldNotBe() - Negative Assertion
 
 ```typescript
 // Assert text does NOT equal value
-await ctx.getByID("status").shouldNotBe("Error");
+await ctx.getById("status").shouldNotBe("Error");
 
 // Verify state changed
-await ctx.getByID("status").shouldNotBe("Pending");
+await ctx.getById("status").shouldNotBe("Pending");
 
 // With retry
-await ctx.getByID("loading").within(5000).shouldNotBe("Loading...");
+await ctx.getById("loading").within(5000).shouldNotBe("Loading...");
 ```
 
 ### Property Assertions
@@ -348,39 +348,39 @@ Beyond text, you can assert widget properties like checked state, values, enable
 
 ```typescript
 // Assert checkbox is checked
-await ctx.getByID("agree").shouldBeChecked();
+await ctx.getById("agree").shouldBeChecked();
 
 // Assert checkbox is not checked
-await ctx.getByID("agree").shouldNotBeChecked();
+await ctx.getById("agree").shouldNotBeChecked();
 
 // With retry for delayed state changes
-await ctx.getByID("terms").within(5000).shouldBeChecked();
+await ctx.getById("terms").within(5000).shouldBeChecked();
 ```
 
 #### Values (Entry, Slider, Select)
 
 ```typescript
 // Assert entry has specific text value
-await ctx.getByID("username").shouldHaveValue("john_doe");
+await ctx.getById("username").shouldHaveValue("john_doe");
 
 // Assert slider has specific numeric value
-await ctx.getByID("volume").shouldHaveValue(75);
+await ctx.getById("volume").shouldHaveValue(75);
 
 // Assert select has specific selected value
-await ctx.getByID("country").shouldHaveValue("US");
+await ctx.getById("country").shouldHaveValue("US");
 
 // With retry for async updates
-await ctx.getByID("result").within(3000).shouldHaveValue("success");
+await ctx.getById("result").within(3000).shouldHaveValue("success");
 ```
 
 #### Selected Text (Select/RadioGroup)
 
 ```typescript
 // Assert select has specific selected text (display text, not value)
-await ctx.getByID("country").shouldHaveSelected("United States");
+await ctx.getById("country").shouldHaveSelected("United States");
 
 // Assert radiogroup selection
-await ctx.getByID("payment").shouldHaveSelected("Credit Card");
+await ctx.getById("payment").shouldHaveSelected("Credit Card");
 ```
 
 #### Enabled/Disabled State
@@ -400,22 +400,22 @@ await ctx.getByText("Submit").within(5000).shouldBeEnabled();
 
 ```typescript
 // Assert widget has specific type
-await ctx.getByID("myWidget").shouldHaveType("button");
-await ctx.getByID("input").shouldHaveType("entry");
-await ctx.getByID("agree").shouldHaveType("checkbox");
+await ctx.getById("myWidget").shouldHaveType("button");
+await ctx.getById("input").shouldHaveType("entry");
+await ctx.getById("agree").shouldHaveType("checkbox");
 ```
 
 #### Visibility (Fluent Style)
 
 ```typescript
 // Assert widget is visible
-await ctx.getByID("modal").shouldBeVisible();
+await ctx.getById("modal").shouldBeVisible();
 
 // Assert widget is not visible
-await ctx.getByID("modal").shouldNotBeVisible();
+await ctx.getById("modal").shouldNotBeVisible();
 
 // With retry - wait for element to appear
-await ctx.getByID("notification").within(3000).shouldBeVisible();
+await ctx.getById("notification").within(3000).shouldBeVisible();
 ```
 
 ### Complete Property Assertion Example
@@ -467,28 +467,28 @@ await browserTest(
     const ctx = bt.getContext();
 
     // Check initial states
-    await ctx.getByID("agree").shouldNotBeChecked();
-    await ctx.getByID("volume").shouldHaveValue(50);
-    await ctx.getByID("submit").shouldBeDisabled();
-    await ctx.getByID("status").shouldBe("Disabled");
+    await ctx.getById("agree").shouldNotBeChecked();
+    await ctx.getById("volume").shouldHaveValue(50);
+    await ctx.getById("submit").shouldBeDisabled();
+    await ctx.getById("status").shouldBe("Disabled");
 
     // Type in entry
-    await ctx.getByID("name").type("John");
-    await ctx.getByID("name").shouldHaveValue("John");
+    await ctx.getById("name").type("John");
+    await ctx.getById("name").shouldHaveValue("John");
 
     // Check the checkbox
-    await ctx.getByID("agree").click();
+    await ctx.getById("agree").click();
     await ctx.wait(50);
 
     // Verify state changes
-    await ctx.getByID("agree").shouldBeChecked();
-    await ctx.getByID("submit").shouldBeEnabled();
-    await ctx.getByID("status").shouldBe("Enabled");
+    await ctx.getById("agree").shouldBeChecked();
+    await ctx.getById("submit").shouldBeEnabled();
+    await ctx.getById("status").shouldBe("Enabled");
 
     // Verify widget types
-    await ctx.getByID("agree").shouldHaveType("checkbox");
-    await ctx.getByID("submit").shouldHaveType("button");
-    await ctx.getByID("name").shouldHaveType("entry");
+    await ctx.getById("agree").shouldHaveType("checkbox");
+    await ctx.getById("submit").shouldHaveType("button");
+    await ctx.getById("name").shouldHaveType("entry");
 
     console.log('✓ Property assertions test passed');
   }
@@ -535,21 +535,21 @@ await browserTest(
     const ctx = bt.getContext();
 
     // Initial state check
-    await ctx.getByID("status").shouldBe("Ready");
+    await ctx.getById("status").shouldBe("Ready");
 
     // Click button to start processing
     await ctx.getByText("Process Data").click();
 
     // Wait for loading indicator to appear
-    await ctx.getByID("loading").within(1000).shouldBe("Loading...");
+    await ctx.getById("loading").within(1000).shouldBe("Loading...");
 
     // Wait for loading to disappear (up to 5 seconds)
-    await ctx.getByID("loading").without(5000);
+    await ctx.getById("loading").without(5000);
 
     // Verify final status with multiple assertion styles
-    await ctx.getByID("status").within(1000).shouldContain("Complete");
-    await ctx.getByID("status").shouldMatch(/\d+ items processed/);
-    await ctx.getByID("status").shouldNotBe("Ready");
+    await ctx.getById("status").within(1000).shouldContain("Complete");
+    await ctx.getById("status").shouldMatch(/\d+ items processed/);
+    await ctx.getById("status").shouldNotBe("Ready");
 
     console.log('✓ Fluent API test passed');
   }
@@ -562,7 +562,7 @@ In addition to fluent assertions, TestContext provides enhanced `expect()` metho
 
 ```typescript
 const ctx = bt.getContext();
-const locator = ctx.getByID("status");
+const locator = ctx.getById("status");
 
 // Positive assertions
 await ctx.expect(locator).toHaveText("Success");
@@ -611,17 +611,17 @@ Both styles are supported - choose based on your preference and team conventions
 **Fluent Style** (fluent-selenium inspired):
 ```typescript
 // Concise, reads like English
-await ctx.getByID("status").within(5000).shouldBe("Success");
+await ctx.getById("status").within(5000).shouldBe("Success");
 await ctx.getByText("Loading...").without(3000);
-await ctx.getByID("email").shouldMatch(/^.+@.+$/);
+await ctx.getById("email").shouldMatch(/^.+@.+$/);
 ```
 
 **Traditional Style** (Playwright/Jest inspired):
 ```typescript
 // More explicit, familiar to Playwright users
-await ctx.expect(ctx.getByID("status")).toHaveText("Success");
+await ctx.expect(ctx.getById("status")).toHaveText("Success");
 await ctx.expect(ctx.getByText("Loading...")).toNotBeVisible();
-await ctx.expect(ctx.getByID("email")).toMatchText(/^.+@.+$/);
+await ctx.expect(ctx.getById("email")).toMatchText(/^.+@.+$/);
 ```
 
 **When to use each:**
@@ -634,10 +634,10 @@ await ctx.expect(ctx.getByID("email")).toMatchText(/^.+@.+$/);
 
 ```typescript
 // ✓ Good - handles async updates
-await ctx.getByID("status").within(5000).shouldBe("Complete");
+await ctx.getById("status").within(5000).shouldBe("Complete");
 
 // ✗ Bad - may fail on slow machines
-await ctx.getByID("status").shouldBe("Complete");
+await ctx.getById("status").shouldBe("Complete");
 ```
 
 #### 2. Use without() for Loading States
@@ -645,18 +645,18 @@ await ctx.getByID("status").shouldBe("Complete");
 ```typescript
 // ✓ Good - waits for loading to finish
 await ctx.getByText("Loading...").without(5000);
-await ctx.getByID("results").shouldContain("10 items");
+await ctx.getById("results").shouldContain("10 items");
 
 // ✗ Bad - may check results while still loading
 await new Promise(resolve => setTimeout(resolve, 2000));
-await ctx.getByID("results").shouldContain("10 items");
+await ctx.getById("results").shouldContain("10 items");
 ```
 
 #### 3. Chain Fluent Methods
 
 ```typescript
 // ✓ Good - concise and readable
-await ctx.getByID("status")
+await ctx.getById("status")
   .within(5000)
   .shouldContain("Complete")
   .then(async () => {
@@ -664,7 +664,7 @@ await ctx.getByID("status")
   });
 
 // ✗ Verbose - multiple statements
-const locator = ctx.getByID("status").within(5000);
+const locator = ctx.getById("status").within(5000);
 await locator.shouldContain("Complete");
 await bt.waitForNavigation();
 ```
@@ -674,12 +674,12 @@ await bt.waitForNavigation();
 ```typescript
 // ✓ Good - reasonable timeouts for operations
 await ctx.getByText("Submit").within(3000).click();    // 3s for form
-await ctx.getByID("loading").without(10000);           // 10s for API call
-await ctx.getByID("result").within(2000).shouldBe("OK"); // 2s for update
+await ctx.getById("loading").without(10000);           // 10s for API call
+await ctx.getById("result").within(2000).shouldBe("OK"); // 2s for update
 
 // ✗ Bad - too short or too long
 await ctx.getByText("Submit").within(100).click();     // Too short
-await ctx.getByID("loading").without(60000);           // Too long
+await ctx.getById("loading").without(60000);           // Too long
 ```
 
 ### Implementation Note

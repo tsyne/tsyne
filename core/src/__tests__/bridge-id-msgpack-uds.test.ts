@@ -22,7 +22,7 @@ describe('Bridge custom ID support – msgpack-uds', () => {
     ctx = t.getContext();
     await app.run();
 
-    await ctx.getByID('testBtn').within(1000).shouldExist();
+    await ctx.getById('testBtn').within(1000).shouldExist();
     await t.cleanup();
   }, 15000);
 });

@@ -38,7 +38,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
 
     // Title should indicate canvas mode
     await ctx
-      .getByID('titleLabel')
+      .getById('titleLabel')
       .within(1000)
       .shouldBe('Waveform Visualizer - Canvas Mode');
   });
@@ -53,7 +53,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
 
     // Mode indicator should show canvas
     await ctx
-      .getByID('modeLabel')
+      .getById('modeLabel')
       .within(1000)
       .shouldBe('🎨 Canvas-based rendering (tap to seek)');
   });
@@ -67,7 +67,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
     await testApp.run();
 
     // Description should list key patterns
-    const desc = await ctx.getByID('descLabel').getText();
+    const desc = await ctx.getById('descLabel').getText();
     expect(desc).toContain('tappableCanvasRaster');
     expect(desc).toContain('setPixelBuffer');
     expect(desc).toContain('seeking');
@@ -82,7 +82,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
     await testApp.run();
 
     // Canvas should exist
-    await ctx.getByID('waveformCanvas').within(1000).shouldExist();
+    await ctx.getById('waveformCanvas').within(1000).shouldExist();
   });
 
   test('should load and prepare waveform on initialization', async () => {
@@ -95,7 +95,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
 
     // Should show ready status after loading
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(2000)
       .shouldBe('Ready - tap waveform to seek');
   });
@@ -108,10 +108,10 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Duration should be 8 seconds
-    const duration = await ctx.getByID('durationLabel').getText();
+    const duration = await ctx.getById('durationLabel').getText();
     expect(duration).toMatch(/8:00|0:08/);
   });
 
@@ -123,10 +123,10 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Initial position should be 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 });
 
@@ -151,12 +151,12 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
@@ -164,7 +164,7 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Position should update
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     const [, seconds] = position.split(':');
     expect(parseInt(seconds, 10)).toBeGreaterThan(0);
   });
@@ -177,21 +177,21 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for 1 second
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Pause
-    await ctx.getByID('pauseBtn').click();
-    const pausedPosition = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    const pausedPosition = await ctx.getById('positionLabel').getText();
 
     // Wait without playing
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Position should not have changed
-    const stillPausedPosition = await ctx.getByID('positionLabel').getText();
+    const stillPausedPosition = await ctx.getById('positionLabel').getText();
     expect(stillPausedPosition).toBe(pausedPosition);
   });
 
@@ -203,27 +203,27 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for 1 second
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const firstTime = parseInt(
-      (await ctx.getByID('positionLabel').getText()).split(':')[1],
+      (await ctx.getById('positionLabel').getText()).split(':')[1],
       10
     );
 
     // Pause then resume
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 300));
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Play for more time
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const secondTime = parseInt(
-      (await ctx.getByID('positionLabel').getText()).split(':')[1],
+      (await ctx.getById('positionLabel').getText()).split(':')[1],
       10
     );
 
@@ -239,18 +239,18 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for a bit
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Stop
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should reset
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
   });
 });
 
@@ -275,10 +275,10 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play button should be visible
-    await ctx.getByID('playBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').within(500).shouldExist();
   });
 
   test('should toggle to pause button when playing', async () => {
@@ -289,16 +289,16 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Click play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for state update
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Pause button should be visible
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getById('pauseBtn').within(500).shouldExist();
   });
 
   test('should always show stop button', async () => {
@@ -309,14 +309,14 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Stop button always visible
-    await ctx.getByID('stopBtn').within(500).shouldExist();
+    await ctx.getById('stopBtn').within(500).shouldExist();
 
     // Even after playing
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('stopBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('stopBtn').within(500).shouldExist();
   });
 
   test('should handle rapid play/pause clicks', async () => {
@@ -327,23 +327,23 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Rapid clicks
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Should be in playing state
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
     // Stop to clean up
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should auto-finish at end of audio', async () => {
@@ -354,17 +354,17 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play (8-second audio)
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for completion (plus buffer)
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should show finished
-    await ctx.getByID('statusLabel').within(500).shouldBe('Finished');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Finished');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 });
 
@@ -389,13 +389,13 @@ describe('Canvas Mode - Time Display and Formatting', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play and check format
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     expect(position).toMatch(/^\d+:\d{2}$/); // M:SS or MM:SS
   });
 
@@ -407,25 +407,25 @@ describe('Canvas Mode - Time Display and Formatting', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play for 2 seconds
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const position1 = await ctx.getByID('positionLabel').getText();
+    const position1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(position1.split(':')[1], 10);
 
     // Wait and check again
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const position2 = await ctx.getByID('positionLabel').getText();
+    const position2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(position2.split(':')[1], 10);
 
     // Time should advance
     expect(time2).toBeGreaterThan(time1);
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should show duration label', async () => {
@@ -436,12 +436,12 @@ describe('Canvas Mode - Time Display and Formatting', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Duration label exists
-    await ctx.getByID('durationLabel').within(500).shouldExist();
+    await ctx.getById('durationLabel').within(500).shouldExist();
 
-    const duration = await ctx.getByID('durationLabel').getText();
+    const duration = await ctx.getById('durationLabel').getText();
     expect(duration).toBeTruthy();
   });
 });
@@ -469,50 +469,50 @@ describe('Canvas Mode - Integration Tests', () => {
 
     // Step 1: Initialize
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(2000)
       .shouldBe('Ready - tap waveform to seek');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
 
     // Step 2: Play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
     // Step 3: Let play for 1 second
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const position1 = await ctx.getByID('positionLabel').getText();
+    const position1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(position1.split(':')[1], 10);
     expect(time1).toBeGreaterThan(0);
 
     // Step 4: Pause
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Paused');
-    const pausedTime = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Paused');
+    const pausedTime = await ctx.getById('positionLabel').getText();
 
     // Step 5: Resume
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await ctx
-      .getByID('statusLabel')
+      .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
     // Step 6: Verify position is same initially
-    const resumedTime = await ctx.getByID('positionLabel').getText();
+    const resumedTime = await ctx.getById('positionLabel').getText();
     expect(resumedTime).toBe(pausedTime);
 
     // Step 7: Play for more
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const position2 = await ctx.getByID('positionLabel').getText();
+    const position2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(position2.split(':')[1], 10);
     expect(time2).toBeGreaterThan(time1);
 
     // Step 8: Stop
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('multiple play/pause cycles', async () => {
@@ -523,28 +523,28 @@ describe('Canvas Mode - Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Cycle 1
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Cycle 2
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Cycle 3
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Verify still functional
-    const finalPosition = await ctx.getByID('positionLabel').getText();
+    const finalPosition = await ctx.getById('positionLabel').getText();
     expect(finalPosition).not.toBe('0:00');
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should capture screenshot if TAKE_SCREENSHOTS set', async () => {
@@ -555,7 +555,7 @@ describe('Canvas Mode - Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(
@@ -590,13 +590,13 @@ describe('Canvas Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Click stop without playing
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should remain at 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('should handle multiple stops', async () => {
@@ -607,17 +607,17 @@ describe('Canvas Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Play, then multiple stops
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should be stable at 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('should handle pause without playing', async () => {
@@ -628,12 +628,12 @@ describe('Canvas Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
     // Pause button should be hidden initially
     // (clicking it without playing should have no effect)
 
     // Verify initial state
-    await ctx.getByID('playBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').within(500).shouldExist();
   });
 });

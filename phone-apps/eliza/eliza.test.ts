@@ -28,10 +28,10 @@ describe('ELIZA Chatbot', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('btn-clear').shouldExist();
-    await ctx.getByID('btn-debug').shouldExist();
-    await ctx.getByID('btn-send').shouldExist();
-    await ctx.getByID('input').shouldExist();
+    await ctx.getById('btn-clear').shouldExist();
+    await ctx.getById('btn-debug').shouldExist();
+    await ctx.getById('btn-send').shouldExist();
+    await ctx.getById('input').shouldExist();
   }, 30000);
 
   test('should show initial greeting', async () => {
@@ -41,7 +41,7 @@ describe('ELIZA Chatbot', () => {
     await ctx.wait(1000);
 
     // The help text should be visible
-    await ctx.getByID('help-text').shouldExist();
+    await ctx.getById('help-text').shouldExist();
   }, 30000);
 
   test('should toggle debug mode', async () => {
@@ -50,10 +50,10 @@ describe('ELIZA Chatbot', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('btn-debug').click();
+    await ctx.getById('btn-debug').click();
     await ctx.wait(500);
 
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('Debug mode');
   }, 30000);
@@ -64,10 +64,10 @@ describe('ELIZA Chatbot', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('btn-clear').click();
+    await ctx.getById('btn-clear').click();
     await ctx.wait(500);
 
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('cleared');
   }, 30000);

@@ -33,6 +33,6 @@ describe('Game of Life Screenshot Debug', () => {
     // Verify generation number using ID (correct approach)
     // Give time for async window setup
     await ctx.getByText('Start').within(500).shouldExist();
-    await ctx.getByID('generationNum').within(500).shouldBe('0');
+    await ctx.getById('generationNum').within(500).shouldBe('0');
   }, 15000);
 });

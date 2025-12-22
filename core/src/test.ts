@@ -470,8 +470,8 @@ export class Locator {
    * Click the first widget matching this locator
    * Fast fail by default, or use .within(timeout) to poll until found
    * @example
-   * await ctx.getByID("btn").click(); // Fast fail
-   * await ctx.getByID("btn").within(500).click(); // Poll 500ms
+   * await ctx.getById("btn").click(); // Fast fail
+   * await ctx.getById("btn").within(500).click(); // Poll 500ms
    */
   async click(): Promise<void> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -559,7 +559,7 @@ export class Locator {
   /**
    * Set the value of a slider or progress bar (fast fail)
    * @example
-   * await ctx.getByID("volume").setValue(75);
+   * await ctx.getById("volume").setValue(75);
    */
   async setValue(value: number): Promise<void> {
     const widgetId = await this.find();
@@ -677,8 +677,8 @@ export class Locator {
    * Fluent API: Assert text equals expected value
    * Fast fail by default, or use .within(timeout) to poll
    * @example
-   * await ctx.getByID("status").shouldBe("Success"); // Fast fail
-   * await ctx.getByID("status").within(500).shouldBe("Success"); // Poll 500ms
+   * await ctx.getById("status").shouldBe("Success"); // Fast fail
+   * await ctx.getById("status").within(500).shouldBe("Success"); // Poll 500ms
    */
   async shouldBe(expected: string): Promise<Locator> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -718,8 +718,8 @@ export class Locator {
    * Fast fail by default, or use .within(timeout) to poll
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("message").shouldContain("success");
-   * await ctx.getByID("status").within(500).shouldContain("Done");
+   * await ctx.getById("message").shouldContain("success");
+   * await ctx.getById("status").within(500).shouldContain("Done");
    */
   async shouldContain(expected: string): Promise<Locator> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -758,7 +758,7 @@ export class Locator {
    * Fluent API: Assert text matches regex pattern (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("email").shouldMatch(/^[a-z]+@[a-z]+\.[a-z]+$/);
+   * await ctx.getById("email").shouldMatch(/^[a-z]+@[a-z]+\.[a-z]+$/);
    */
   async shouldMatch(pattern: RegExp): Promise<Locator> {
     const actual = await this.getText();
@@ -772,7 +772,7 @@ export class Locator {
    * Fluent API: Assert text does not equal expected value (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("status").shouldNotBe("Error");
+   * await ctx.getById("status").shouldNotBe("Error");
    */
   async shouldNotBe(expected: string): Promise<Locator> {
     const actual = await this.getText();
@@ -786,8 +786,8 @@ export class Locator {
    * Fluent API: Assert checkbox is checked
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("agree").shouldBeChecked();
-   * await ctx.getByID("agree").within(5000).shouldBeChecked();
+   * await ctx.getById("agree").shouldBeChecked();
+   * await ctx.getById("agree").within(5000).shouldBeChecked();
    */
   async shouldBeChecked(): Promise<Locator> {
     const widgetId = await this.find();
@@ -803,7 +803,7 @@ export class Locator {
    * Fluent API: Assert checkbox is not checked (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("agree").shouldNotBeChecked();
+   * await ctx.getById("agree").shouldNotBeChecked();
    */
   async shouldNotBeChecked(): Promise<Locator> {
     const widgetId = await this.find();
@@ -819,8 +819,8 @@ export class Locator {
    * Fluent API: Assert widget has specific value (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("volume").shouldHaveValue(75);
-   * await ctx.getByID("country").shouldHaveValue("US");
+   * await ctx.getById("volume").shouldHaveValue(75);
+   * await ctx.getById("country").shouldHaveValue("US");
    */
   async shouldHaveValue(expected: string | number): Promise<Locator> {
     const widgetId = await this.find();
@@ -839,7 +839,7 @@ export class Locator {
    * Fluent API: Assert select/radiogroup has specific selected text (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("country").shouldHaveSelected("United States");
+   * await ctx.getById("country").shouldHaveSelected("United States");
    */
   async shouldHaveSelected(expected: string): Promise<Locator> {
     const widgetId = await this.find();
@@ -887,7 +887,7 @@ export class Locator {
    * Fluent API: Assert widget has specific type (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("myWidget").shouldHaveType("button");
+   * await ctx.getById("myWidget").shouldHaveType("button");
    */
   async shouldHaveType(expected: string): Promise<Locator> {
     const widgetId = await this.find();
@@ -903,7 +903,7 @@ export class Locator {
    * Fluent API: Assert widget is visible (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("modal").shouldBeVisible();
+   * await ctx.getById("modal").shouldBeVisible();
    */
   async shouldBeVisible(): Promise<Locator> {
     const widget = await this.find();
@@ -917,7 +917,7 @@ export class Locator {
    * Fluent API: Assert widget is not visible (fast fail)
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("modal").shouldNotBeVisible();
+   * await ctx.getById("modal").shouldNotBeVisible();
    */
   async shouldNotBeVisible(): Promise<Locator> {
     const widget = await this.find();
@@ -932,8 +932,8 @@ export class Locator {
    * Fast fail by default, or use .within(timeout) to poll
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("modal").shouldExist(); // Fast fail
-   * await ctx.getByID("modal").within(500).shouldExist(); // Poll 500ms
+   * await ctx.getById("modal").shouldExist(); // Fast fail
+   * await ctx.getById("modal").within(500).shouldExist(); // Poll 500ms
    */
   async shouldExist(): Promise<Locator> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -966,8 +966,8 @@ export class Locator {
    * Fast fail by default, or use .within(timeout) to poll until gone
    * Returns this locator for chaining
    * @example
-   * await ctx.getByID("modal").shouldNotExist(); // Fast fail
-   * await ctx.getByID("modal").within(500).shouldNotExist(); // Poll 500ms until gone
+   * await ctx.getById("modal").shouldNotExist(); // Fast fail
+   * await ctx.getById("modal").within(500).shouldNotExist(); // Poll 500ms until gone
    */
   async shouldNotExist(): Promise<Locator> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -999,8 +999,8 @@ export class Locator {
    * Find widget and return it (for assertion on test line)
    * Fast fail by default, or use .within(timeout) to poll
    * @example
-   * await ctx.getByID("myWidget").shouldExist(); // Fast fail
-   * await ctx.getByID("myWidget").within(500).shouldExist(); // Poll 500ms
+   * await ctx.getById("myWidget").shouldExist(); // Fast fail
+   * await ctx.getById("myWidget").within(500).shouldExist(); // Poll 500ms
    */
   async exists(): Promise<string | null> {
     // Consume and clear timeout immediately so it doesn't leak to next operation
@@ -1243,7 +1243,7 @@ export class Locator {
    * Primarily for Canvas elements that define x, y, x2, y2.
    *
    * @example
-   * const bounds = await ctx.getByID('myCircle').getBounds();
+   * const bounds = await ctx.getById('myCircle').getBounds();
    * expect(bounds.x).toBe(10);
    */
   async getBounds(): Promise<{ x: number; y: number; x2: number; y2: number }> {
@@ -1258,8 +1258,8 @@ export class Locator {
    * Access a specific item in a list widget by index
    * Returns a ListItemLocator for fluent assertions
    * @example
-   * await ctx.getByID("playerList").item(0).shouldBe("Alice");
-   * await ctx.getByID("playerList").item(2).shouldContain("Bob");
+   * await ctx.getById("playerList").item(0).shouldBe("Alice");
+   * await ctx.getById("playerList").item(2).shouldContain("Bob");
    */
   item(index: number): ListItemLocator {
     return new ListItemLocator(this.bridge, this, index);
@@ -1296,7 +1296,7 @@ export class ListItemLocator {
   /**
    * Assert this list item equals expected value
    * @example
-   * await ctx.getByID("playerList").item(0).shouldBe("Alice");
+   * await ctx.getById("playerList").item(0).shouldBe("Alice");
    */
   async shouldBe(expected: string): Promise<ListItemLocator> {
     const actual = await this.getText();
@@ -1309,7 +1309,7 @@ export class ListItemLocator {
   /**
    * Assert this list item contains expected substring
    * @example
-   * await ctx.getByID("playerList").item(0).shouldContain("Ali");
+   * await ctx.getById("playerList").item(0).shouldContain("Ali");
    */
   async shouldContain(expected: string): Promise<ListItemLocator> {
     const actual = await this.getText();
@@ -1322,7 +1322,7 @@ export class ListItemLocator {
   /**
    * Assert this list item matches regex pattern
    * @example
-   * await ctx.getByID("emails").item(0).shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
+   * await ctx.getById("emails").item(0).shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
    */
   async shouldMatch(pattern: RegExp): Promise<ListItemLocator> {
     const actual = await this.getText();
@@ -1507,11 +1507,11 @@ export class TestContext {
    * Returns a locator that finds a single widget with the specified ID
    *
    * @example
-   * const submitButton = ctx.getByID('submit-btn');
+   * const submitButton = ctx.getById('submit-btn');
    * await submitButton.click();
    * await ctx.expect(submitButton).toBeVisible();
    */
-  getByID(id: string): Locator {
+  getById(id: string): Locator {
     return new Locator(this.bridge, id, 'id');
   }
 

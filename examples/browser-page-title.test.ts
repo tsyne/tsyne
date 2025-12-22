@@ -171,7 +171,7 @@ vbox(() => {
       await ctx.expect(ctx.getByText('Dynamic Title Updates')).toBeVisible();
 
       // Click button to update title
-      const button = ctx.getByID('update-title-btn');
+      const button = ctx.getById('update-title-btn');
       await button.click();
 
       // Should not crash

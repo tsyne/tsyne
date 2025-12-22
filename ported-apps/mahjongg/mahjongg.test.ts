@@ -45,16 +45,16 @@ describe('Mahjongg Integration Tests', () => {
     await ui!.initialize();
 
     // Verify control buttons
-    await ctx.getByID('newGameBtn').within(500).shouldExist();
-    await ctx.getByID('hintBtn').within(500).shouldExist();
+    await ctx.getById('newGameBtn').within(500).shouldExist();
+    await ctx.getById('hintBtn').within(500).shouldExist();
 
     // Verify status elements
-    await ctx.getByID('tilesCount').within(100).shouldBe('144');
-    await ctx.getByID('movesCount').within(100).shouldBe('0');
-    await ctx.getByID('gameStatus').within(500).shouldExist();
+    await ctx.getById('tilesCount').within(100).shouldBe('144');
+    await ctx.getById('movesCount').within(100).shouldBe('0');
+    await ctx.getById('gameStatus').within(500).shouldExist();
 
     // Verify game board marker exists
-    await ctx.getByID('gameBoard').within(500).shouldExist();
+    await ctx.getById('gameBoard').within(500).shouldExist();
 
     // Verify instructions
     await ctx.getByText('Click matching pairs of free tiles to remove them').within(500).shouldExist();
@@ -71,13 +71,13 @@ describe('Mahjongg Integration Tests', () => {
     await ui!.initialize();
 
     // Check initial tile count
-    await ctx.getByID('tilesCount').within(100).shouldBe('144');
+    await ctx.getById('tilesCount').within(100).shouldBe('144');
 
     // Check initial move count
-    await ctx.getByID('movesCount').within(100).shouldBe('0');
+    await ctx.getById('movesCount').within(100).shouldBe('0');
 
     // Game should be in playing state (status shows available moves)
-    const statusText = await ctx.getByID('gameStatus').getText();
+    const statusText = await ctx.getById('gameStatus').getText();
     expect(statusText).toContain('Playing');
   });
 
@@ -92,11 +92,11 @@ describe('Mahjongg Integration Tests', () => {
     await ui!.initialize();
 
     // Click New Game
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
 
     // Should still show 144 tiles (new game)
-    await ctx.getByID('tilesCount').within(100).shouldBe('144');
-    await ctx.getByID('movesCount').within(100).shouldBe('0');
+    await ctx.getById('tilesCount').within(100).shouldBe('144');
+    await ctx.getById('movesCount').within(100).shouldBe('0');
   });
 
   test('should have working Hint button', async () => {
@@ -110,10 +110,10 @@ describe('Mahjongg Integration Tests', () => {
     await ui!.initialize();
 
     // Click Hint button - should not crash
-    await ctx.getByID('hintBtn').click();
+    await ctx.getById('hintBtn').click();
 
     // Game should still be in playing state
-    const statusText = await ctx.getByID('gameStatus').getText();
+    const statusText = await ctx.getById('gameStatus').getText();
     expect(statusText).toContain('Playing');
   });
 
@@ -132,10 +132,10 @@ describe('Mahjongg Integration Tests', () => {
     await ctx.getByText('Moves:').within(500).shouldExist();
 
     // Verify counts are displayed
-    const tilesCount = await ctx.getByID('tilesCount').getText();
+    const tilesCount = await ctx.getById('tilesCount').getText();
     expect(parseInt(tilesCount)).toBe(144);
 
-    const movesCount = await ctx.getByID('movesCount').getText();
+    const movesCount = await ctx.getById('movesCount').getText();
     expect(parseInt(movesCount)).toBe(0);
   });
 
@@ -150,7 +150,7 @@ describe('Mahjongg Integration Tests', () => {
     await ui!.initialize();
 
     // Message label should exist (empty initially)
-    await ctx.getByID('gameMessage').within(500).shouldExist();
+    await ctx.getById('gameMessage').within(500).shouldExist();
   });
 
   test('should capture screenshot for documentation', async () => {

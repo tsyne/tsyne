@@ -42,7 +42,7 @@ describe('Home Button Tests', () => {
     await testApp.run();
 
     // Verify home button exists
-    const homeButton = ctx.getByID('home-button');
+    const homeButton = ctx.getById('home-button');
     await ctx.expect(homeButton).toBeVisible();
 
     // Click the home button
@@ -75,10 +75,10 @@ describe('Home Button Tests', () => {
     await testApp.run();
 
     // Verify all buttons exist
-    await ctx.expect(ctx.getByID('back-btn')).toBeVisible();
-    await ctx.expect(ctx.getByID('forward-btn')).toBeVisible();
-    await ctx.expect(ctx.getByID('reload-btn')).toBeVisible();
-    await ctx.expect(ctx.getByID('home-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('back-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('forward-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('reload-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('home-btn')).toBeVisible();
   });
 
   test('should handle button clicks in sequence', async () => {
@@ -101,9 +101,9 @@ describe('Home Button Tests', () => {
     await testApp.run();
 
     // Click buttons in order
-    await ctx.getByID('btn1').click();
-    await ctx.getByID('home-btn').click();
-    await ctx.getByID('btn2').click();
+    await ctx.getById('btn1').click();
+    await ctx.getById('home-btn').click();
+    await ctx.getById('btn2').click();
 
     // Verify callbacks were called in order
     expect(clickOrder).toEqual(['first', 'home', 'last']);

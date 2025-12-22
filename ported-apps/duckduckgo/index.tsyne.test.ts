@@ -29,11 +29,11 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Check app title
-    const title = await ctx.getByID('app-title').getText();
+    const title = await ctx.getById('app-title').getText();
     expect(title).toContain('DuckDuckGo');
 
     // Check search input
-    const searchInput = await ctx.getByID('search-input');
+    const searchInput = await ctx.getById('search-input');
     expect(searchInput).toBeDefined();
   });
 
@@ -45,7 +45,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const privacyLabel = await ctx.getByID('privacy-label').getText();
+    const privacyLabel = await ctx.getById('privacy-label').getText();
     expect(privacyLabel).toMatch(/Privacy Score|Trackers/);
   });
 
@@ -57,7 +57,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const statsLabel = await ctx.getByID('stats-label').getText();
+    const statsLabel = await ctx.getById('stats-label').getText();
     expect(statsLabel).toMatch(/Searches|Daily/);
   });
 
@@ -69,7 +69,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchTitle = await ctx.getByID('search-title').getText();
+    const searchTitle = await ctx.getById('search-title').getText();
     expect(searchTitle).toBe('📋 Search History');
   });
 
@@ -82,10 +82,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Click privacy tab
-    await ctx.getByID('tab-privacy').click();
+    await ctx.getById('tab-privacy').click();
 
     // Privacy title should be visible (use within to wait)
-    const privacyTitle = await ctx.getByID('privacy-title').within(1000).getText();
+    const privacyTitle = await ctx.getById('privacy-title').within(1000).getText();
     expect(privacyTitle).toBe('🛡️ Privacy Dashboard');
   });
 
@@ -98,10 +98,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Click bookmarks tab
-    await ctx.getByID('tab-bookmarks').click();
+    await ctx.getById('tab-bookmarks').click();
 
     // Bookmarks title should be visible
-    const bookmarksTitle = await ctx.getByID('bookmarks-title').within(1000).getText();
+    const bookmarksTitle = await ctx.getById('bookmarks-title').within(1000).getText();
     expect(bookmarksTitle).toBe('🔖 Bookmarks');
   });
 
@@ -114,10 +114,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Click settings tab
-    await ctx.getByID('tab-settings').click();
+    await ctx.getById('tab-settings').click();
 
     // Settings title should be visible
-    const settingsTitle = await ctx.getByID('settings-title').within(1000).getText();
+    const settingsTitle = await ctx.getById('settings-title').within(1000).getText();
     expect(settingsTitle).toBe('⚙️ Settings');
   });
 
@@ -130,27 +130,27 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Start in search
-    let title = await ctx.getByID('search-title').getText();
+    let title = await ctx.getById('search-title').getText();
     expect(title).toBe('📋 Search History');
 
     // Go to privacy
-    await ctx.getByID('tab-privacy').click();
-    title = await ctx.getByID('privacy-title').within(500).getText();
+    await ctx.getById('tab-privacy').click();
+    title = await ctx.getById('privacy-title').within(500).getText();
     expect(title).toBe('🛡️ Privacy Dashboard');
 
     // Go to bookmarks
-    await ctx.getByID('tab-bookmarks').click();
-    title = await ctx.getByID('bookmarks-title').within(500).getText();
+    await ctx.getById('tab-bookmarks').click();
+    title = await ctx.getById('bookmarks-title').within(500).getText();
     expect(title).toBe('🔖 Bookmarks');
 
     // Go to settings
-    await ctx.getByID('tab-settings').click();
-    title = await ctx.getByID('settings-title').within(500).getText();
+    await ctx.getById('tab-settings').click();
+    title = await ctx.getById('settings-title').within(500).getText();
     expect(title).toBe('⚙️ Settings');
 
     // Back to search
-    await ctx.getByID('tab-search').click();
-    title = await ctx.getByID('search-title').within(500).getText();
+    await ctx.getById('tab-search').click();
+    title = await ctx.getById('search-title').within(500).getText();
     expect(title).toBe('📋 Search History');
   });
 
@@ -163,7 +163,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Should have search title visible
-    const searchTitle = await ctx.getByID('search-title').within(500).getText();
+    const searchTitle = await ctx.getById('search-title').within(500).getText();
     expect(searchTitle).toBeDefined();
   });
 
@@ -176,10 +176,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Go to privacy tab
-    await ctx.getByID('tab-privacy').click();
+    await ctx.getById('tab-privacy').click();
 
     // Should have privacy title
-    const privacyTitle = await ctx.getByID('privacy-title').within(500).getText();
+    const privacyTitle = await ctx.getById('privacy-title').within(500).getText();
     expect(privacyTitle).toBe('🛡️ Privacy Dashboard');
   });
 
@@ -192,10 +192,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Go to bookmarks tab
-    await ctx.getByID('tab-bookmarks').click();
+    await ctx.getById('tab-bookmarks').click();
 
     // Should have bookmarks title
-    const bookmarksTitle = await ctx.getByID('bookmarks-title').within(500).getText();
+    const bookmarksTitle = await ctx.getById('bookmarks-title').within(500).getText();
     expect(bookmarksTitle).toBe('🔖 Bookmarks');
   });
 
@@ -208,10 +208,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Go to settings
-    await ctx.getByID('tab-settings').click();
+    await ctx.getById('tab-settings').click();
 
     // Should have settings title
-    const settingsTitle = await ctx.getByID('settings-title').within(500).getText();
+    const settingsTitle = await ctx.getById('settings-title').within(500).getText();
     expect(settingsTitle).toBe('⚙️ Settings');
   });
 
@@ -223,7 +223,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchInput = await ctx.getByID('search-input');
+    const searchInput = await ctx.getById('search-input');
     expect(searchInput).toBeDefined();
   });
 
@@ -236,18 +236,18 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Get initial privacy label
-    const initialPrivacy = await ctx.getByID('privacy-label').getText();
+    const initialPrivacy = await ctx.getById('privacy-label').getText();
 
     // Switch tabs
-    await ctx.getByID('tab-privacy').click();
-    await ctx.getByID('tab-bookmarks').click();
-    await ctx.getByID('tab-settings').click();
+    await ctx.getById('tab-privacy').click();
+    await ctx.getById('tab-bookmarks').click();
+    await ctx.getById('tab-settings').click();
 
     // Back to search
-    await ctx.getByID('tab-search').click();
+    await ctx.getById('tab-search').click();
 
     // Privacy label should be same
-    const finalPrivacy = await ctx.getByID('privacy-label').within(500).getText();
+    const finalPrivacy = await ctx.getById('privacy-label').within(500).getText();
     expect(finalPrivacy).toBe(initialPrivacy);
   });
 
@@ -273,7 +273,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ];
 
     for (const id of elements) {
-      const element = await ctx.getByID(id);
+      const element = await ctx.getById(id);
       expect(element).toBeDefined();
     }
   });
@@ -286,10 +286,10 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchTab = await ctx.getByID('tab-search');
-    const privacyTab = await ctx.getByID('tab-privacy');
-    const bookmarksTab = await ctx.getByID('tab-bookmarks');
-    const settingsTab = await ctx.getByID('tab-settings');
+    const searchTab = await ctx.getById('tab-search');
+    const privacyTab = await ctx.getById('tab-privacy');
+    const bookmarksTab = await ctx.getById('tab-bookmarks');
+    const settingsTab = await ctx.getById('tab-settings');
 
     expect(searchTab).toBeDefined();
     expect(privacyTab).toBeDefined();
@@ -305,7 +305,7 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const privacyLabel = await ctx.getByID('privacy-label').getText();
+    const privacyLabel = await ctx.getById('privacy-label').getText();
     expect(privacyLabel).toMatch(/\d+%/); // Should contain a percentage
   });
 
@@ -333,8 +333,8 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Switch to privacy
-    await ctx.getByID('tab-privacy').click();
-    await ctx.getByID('privacy-title').within(1000).shouldExist();
+    await ctx.getById('tab-privacy').click();
+    await ctx.getById('privacy-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -352,8 +352,8 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Switch to bookmarks
-    await ctx.getByID('tab-bookmarks').click();
-    await ctx.getByID('bookmarks-title').within(1000).shouldExist();
+    await ctx.getById('tab-bookmarks').click();
+    await ctx.getById('bookmarks-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -371,8 +371,8 @@ describe('DuckDuckGo Privacy Browser UI Tests', () => {
     await testApp.run();
 
     // Switch to settings
-    await ctx.getByID('tab-settings').click();
-    await ctx.getByID('settings-title').within(1000).shouldExist();
+    await ctx.getById('tab-settings').click();
+    await ctx.getById('settings-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();

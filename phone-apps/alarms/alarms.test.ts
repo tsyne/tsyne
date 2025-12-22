@@ -35,7 +35,7 @@ describe('Alarms App', () => {
     await testApp.run();
 
     // Add alarm button should exist
-    await ctx.getByID('btn-add-alarm').within(500).shouldExist();
+    await ctx.getById('btn-add-alarm').within(500).shouldExist();
   });
 
   test('should display default alarms from MockClockService', async () => {
@@ -48,10 +48,10 @@ describe('Alarms App', () => {
     await testApp.run();
 
     // Verify default alarms are displayed (sorted by time)
-    await ctx.getByID('alarm-0-time').within(500).shouldBe('07:00');
-    await ctx.getByID('alarm-0-label').within(500).shouldBe('Wake up');
-    await ctx.getByID('alarm-1-time').within(500).shouldBe('08:30');
-    await ctx.getByID('alarm-1-label').within(500).shouldBe('Meeting');
+    await ctx.getById('alarm-0-time').within(500).shouldBe('07:00');
+    await ctx.getById('alarm-0-label').within(500).shouldBe('Wake up');
+    await ctx.getById('alarm-1-time').within(500).shouldBe('08:30');
+    await ctx.getById('alarm-1-label').within(500).shouldBe('Meeting');
   });
 
   test('should have toggle and delete buttons for alarms', async () => {
@@ -65,8 +65,8 @@ describe('Alarms App', () => {
     await testApp.run();
 
     // Toggle and delete buttons should exist
-    await ctx.getByID('alarm-0-toggle').within(500).shouldExist();
-    await ctx.getByID('alarm-0-delete').within(500).shouldExist();
+    await ctx.getById('alarm-0-toggle').within(500).shouldExist();
+    await ctx.getById('alarm-0-delete').within(500).shouldExist();
   });
 
   test('should render alarms UI - screenshot', async () => {
@@ -78,7 +78,7 @@ describe('Alarms App', () => {
     await testApp.run();
 
     // Wait for UI to be fully rendered with default alarms
-    await ctx.getByID('btn-add-alarm').within(500).shouldExist();
+    await ctx.getById('btn-add-alarm').within(500).shouldExist();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

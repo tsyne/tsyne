@@ -56,7 +56,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('camera-title').within(500).shouldExist();
+    await ctx.getById('camera-title').within(500).shouldExist();
   });
 
   test('should display preview area', async () => {
@@ -67,7 +67,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('preview-placeholder').within(500).shouldExist();
+    await ctx.getById('preview-placeholder').within(500).shouldExist();
   });
 
   test('should have capture button', async () => {
@@ -78,7 +78,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-capture').within(500).shouldExist();
+    await ctx.getById('btn-capture').within(500).shouldExist();
   });
 
   test('should display camera status', async () => {
@@ -89,7 +89,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('camera-status').within(500).shouldBe('Ready');
+    await ctx.getById('camera-status').within(500).shouldBe('Ready');
   });
 
   test('should have resolution selector', async () => {
@@ -100,7 +100,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-resolution').within(500).shouldExist();
+    await ctx.getById('btn-resolution').within(500).shouldExist();
   });
 
   test('should have flash selector', async () => {
@@ -111,7 +111,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-flash').within(500).shouldExist();
+    await ctx.getById('btn-flash').within(500).shouldExist();
   });
 
   test('should display photo count', async () => {
@@ -123,7 +123,7 @@ describe('Camera App', () => {
     await testApp.run();
 
     // Should show photo count
-    await ctx.getByID('photo-count-display').within(500).shouldExist();
+    await ctx.getById('photo-count-display').within(500).shouldExist();
   });
 
   test('should have clear all button', async () => {
@@ -134,7 +134,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-clear-all').within(500).shouldExist();
+    await ctx.getById('btn-clear-all').within(500).shouldExist();
   });
 
   test('should have refresh button', async () => {
@@ -145,7 +145,7 @@ describe('Camera App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-refresh').within(500).shouldExist();
+    await ctx.getById('btn-refresh').within(500).shouldExist();
   });
 
   test('should display sample photos', async () => {

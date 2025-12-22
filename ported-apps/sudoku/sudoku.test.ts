@@ -38,12 +38,12 @@ describe('Sudoku Integration Tests', () => {
     await ui!.initialize();
 
     // Verify control buttons
-    await ctx.getByID('newGameBtn').within(500).shouldExist();
-    await ctx.getByID('hintBtn').within(500).shouldExist();
+    await ctx.getById('newGameBtn').within(500).shouldExist();
+    await ctx.getById('hintBtn').within(500).shouldExist();
 
     // Verify status elements
-    await ctx.getByID('statusLabel').within(500).shouldExist();
-    await ctx.getByID('timerLabel').within(500).shouldExist();
+    await ctx.getById('statusLabel').within(500).shouldExist();
+    await ctx.getById('timerLabel').within(500).shouldExist();
   });
 
   test('should display number buttons', async () => {
@@ -57,10 +57,10 @@ describe('Sudoku Integration Tests', () => {
     await ui!.initialize();
 
     // Check number buttons
-    await ctx.getByID('numBtn1').within(500).shouldExist();
-    await ctx.getByID('numBtn5').within(500).shouldExist();
-    await ctx.getByID('numBtn9').within(500).shouldExist();
-    await ctx.getByID('clearBtn').within(500).shouldExist();
+    await ctx.getById('numBtn1').within(500).shouldExist();
+    await ctx.getById('numBtn5').within(500).shouldExist();
+    await ctx.getById('numBtn9').within(500).shouldExist();
+    await ctx.getById('clearBtn').within(500).shouldExist();
   });
 
   test('should have working New Game button', async () => {
@@ -74,10 +74,10 @@ describe('Sudoku Integration Tests', () => {
     await ui!.initialize();
 
     // Click New Game
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
 
     // Status should still show difficulty
-    const status = await ctx.getByID('statusLabel').getText();
+    const status = await ctx.getById('statusLabel').getText();
     expect(status).toBeDefined();
   });
 
@@ -92,10 +92,10 @@ describe('Sudoku Integration Tests', () => {
     await ui!.initialize();
 
     // Click Hint button - should not crash
-    await ctx.getByID('hintBtn').click();
+    await ctx.getById('hintBtn').click();
 
     // Timer should still be running
-    await ctx.getByID('timerLabel').within(100).shouldExist();
+    await ctx.getById('timerLabel').within(100).shouldExist();
   });
 
   test('should capture screenshot for documentation', async () => {

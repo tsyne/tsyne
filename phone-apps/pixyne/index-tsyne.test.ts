@@ -29,28 +29,28 @@ describe('Pixyne Photo Manager UI', () => {
   });
 
   test('should render title', async () => {
-    const title = await ctx.getByID('pixyneTitle').getText();
+    const title = await ctx.getById('pixyneTitle').getText();
     expect(title).toContain('Pixyne');
   }, 30000);
 
   test('should show marked count', async () => {
-    const count = await ctx.getByID('pixyneMarkedCount').getText();
+    const count = await ctx.getById('pixyneMarkedCount').getText();
     expect(count).toBe('Marked: 0');
   }, 30000);
 
   test('should show empty state', async () => {
-    const empty = await ctx.getByID('pixyneEmpty').getText();
+    const empty = await ctx.getById('pixyneEmpty').getText();
     expect(empty).toBe('No photos loaded');
   }, 30000);
 
   test('should have load button', async () => {
-    await ctx.getByID('pixyneLoadBtn').within(500).shouldExist();
+    await ctx.getById('pixyneLoadBtn').within(500).shouldExist();
   }, 30000);
 
   test('should have all required UI elements', async () => {
-    await ctx.getByID('pixyneTitle').within(500).shouldExist();
-    await ctx.getByID('pixyneMarkedCount').within(500).shouldExist();
-    await ctx.getByID('pixyneEmpty').within(500).shouldExist();
-    await ctx.getByID('pixyneLoadBtn').within(500).shouldExist();
+    await ctx.getById('pixyneTitle').within(500).shouldExist();
+    await ctx.getById('pixyneMarkedCount').within(500).shouldExist();
+    await ctx.getById('pixyneEmpty').within(500).shouldExist();
+    await ctx.getById('pixyneLoadBtn').within(500).shouldExist();
   }, 30000);
 });

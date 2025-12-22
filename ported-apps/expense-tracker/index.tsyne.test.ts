@@ -29,11 +29,11 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Check app title
-    const title = await ctx.getByID('app-title').getText();
+    const title = await ctx.getById('app-title').getText();
     expect(title).toContain('Expense Tracker');
 
     // Check tabs exist
-    const expensesTab = await ctx.getByID('tab-expenses');
+    const expensesTab = await ctx.getById('tab-expenses');
     expect(expensesTab).toBeDefined();
   });
 
@@ -45,10 +45,10 @@ describe('Expense Tracker App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const todayLabel = await ctx.getByID('total-today').getText();
+    const todayLabel = await ctx.getById('total-today').getText();
     expect(todayLabel).toMatch(/Today:/);
 
-    const monthLabel = await ctx.getByID('total-month').getText();
+    const monthLabel = await ctx.getById('total-month').getText();
     expect(monthLabel).toMatch(/This Month:/);
   });
 
@@ -60,7 +60,7 @@ describe('Expense Tracker App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const expensesTitle = await ctx.getByID('expenses-title').getText();
+    const expensesTitle = await ctx.getById('expenses-title').getText();
     expect(expensesTitle).toBe('Recent Expenses');
   });
 
@@ -73,10 +73,10 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Click budgets tab
-    await ctx.getByID('tab-budgets').click();
+    await ctx.getById('tab-budgets').click();
 
     // Budgets title should be visible
-    const budgetsTitle = await ctx.getByID('budgets-title').within(1000).getText();
+    const budgetsTitle = await ctx.getById('budgets-title').within(1000).getText();
     expect(budgetsTitle).toBe('Budget Overview');
   });
 
@@ -89,10 +89,10 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Click analytics tab
-    await ctx.getByID('tab-analytics').click();
+    await ctx.getById('tab-analytics').click();
 
     // Analytics title should be visible
-    const analyticsTitle = await ctx.getByID('analytics-title').within(1000).getText();
+    const analyticsTitle = await ctx.getById('analytics-title').within(1000).getText();
     expect(analyticsTitle).toBe('Spending Analytics');
   });
 
@@ -105,22 +105,22 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Start in expenses
-    let title = await ctx.getByID('expenses-title').getText();
+    let title = await ctx.getById('expenses-title').getText();
     expect(title).toBe('Recent Expenses');
 
     // Go to budgets
-    await ctx.getByID('tab-budgets').click();
-    title = await ctx.getByID('budgets-title').within(500).getText();
+    await ctx.getById('tab-budgets').click();
+    title = await ctx.getById('budgets-title').within(500).getText();
     expect(title).toBe('Budget Overview');
 
     // Go to analytics
-    await ctx.getByID('tab-analytics').click();
-    title = await ctx.getByID('analytics-title').within(500).getText();
+    await ctx.getById('tab-analytics').click();
+    title = await ctx.getById('analytics-title').within(500).getText();
     expect(title).toBe('Spending Analytics');
 
     // Back to expenses
-    await ctx.getByID('tab-expenses').click();
-    title = await ctx.getByID('expenses-title').within(500).getText();
+    await ctx.getById('tab-expenses').click();
+    title = await ctx.getById('expenses-title').within(500).getText();
     expect(title).toBe('Recent Expenses');
   });
 
@@ -133,7 +133,7 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Should have some expenses visible
-    const expenseCategory = await ctx.getByID('expenses-title').within(500).getText();
+    const expenseCategory = await ctx.getById('expenses-title').within(500).getText();
     expect(expenseCategory).toBeDefined();
   });
 
@@ -146,10 +146,10 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Go to budgets tab
-    await ctx.getByID('tab-budgets').click();
+    await ctx.getById('tab-budgets').click();
 
     // Should have budget title
-    const budgetsTitle = await ctx.getByID('budgets-title').within(500).getText();
+    const budgetsTitle = await ctx.getById('budgets-title').within(500).getText();
     expect(budgetsTitle).toBe('Budget Overview');
   });
 
@@ -162,10 +162,10 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Go to analytics tab
-    await ctx.getByID('tab-analytics').click();
+    await ctx.getById('tab-analytics').click();
 
     // Check for analytics elements
-    const totalLabel = await ctx.getByID('analytics-total').within(500).getText();
+    const totalLabel = await ctx.getById('analytics-total').within(500).getText();
     expect(totalLabel).toMatch(/Total Spent:/);
   });
 
@@ -177,7 +177,7 @@ describe('Expense Tracker App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const addBtn = await ctx.getByID('btn-add-expense');
+    const addBtn = await ctx.getById('btn-add-expense');
     expect(addBtn).toBeDefined();
   });
 
@@ -189,10 +189,10 @@ describe('Expense Tracker App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const todayBtn = await ctx.getByID('filter-today');
+    const todayBtn = await ctx.getById('filter-today');
     expect(todayBtn).toBeDefined();
 
-    const monthBtn = await ctx.getByID('filter-month');
+    const monthBtn = await ctx.getById('filter-month');
     expect(monthBtn).toBeDefined();
   });
 
@@ -205,9 +205,9 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Go to budgets
-    await ctx.getByID('tab-budgets').click();
+    await ctx.getById('tab-budgets').click();
 
-    const newBudgetBtn = await ctx.getByID('btn-new-budget');
+    const newBudgetBtn = await ctx.getById('btn-new-budget');
     expect(newBudgetBtn).toBeDefined();
   });
 
@@ -220,10 +220,10 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Go to analytics
-    await ctx.getByID('tab-analytics').click();
+    await ctx.getById('tab-analytics').click();
 
     // Recurring section should exist
-    const recurringLabel = await ctx.getByID('recurring-label').within(500).getText();
+    const recurringLabel = await ctx.getById('recurring-label').within(500).getText();
     expect(recurringLabel).toBe('🔄 Recurring Expenses');
   });
 
@@ -236,17 +236,17 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Get initial total
-    const initialTotal = await ctx.getByID('total-month').getText();
+    const initialTotal = await ctx.getById('total-month').getText();
 
     // Switch tabs
-    await ctx.getByID('tab-budgets').click();
-    await ctx.getByID('tab-analytics').click();
+    await ctx.getById('tab-budgets').click();
+    await ctx.getById('tab-analytics').click();
 
     // Back to expenses
-    await ctx.getByID('tab-expenses').click();
+    await ctx.getById('tab-expenses').click();
 
     // Total should be same
-    const finalTotal = await ctx.getByID('total-month').within(500).getText();
+    const finalTotal = await ctx.getById('total-month').within(500).getText();
     expect(finalTotal).toBe(initialTotal);
   });
 
@@ -271,7 +271,7 @@ describe('Expense Tracker App UI Tests', () => {
     ];
 
     for (const id of elements) {
-      const element = await ctx.getByID(id);
+      const element = await ctx.getById(id);
       expect(element).toBeDefined();
     }
   });
@@ -300,8 +300,8 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Switch to budgets
-    await ctx.getByID('tab-budgets').click();
-    await ctx.getByID('budgets-title').within(1000).shouldExist();
+    await ctx.getById('tab-budgets').click();
+    await ctx.getById('budgets-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -319,8 +319,8 @@ describe('Expense Tracker App UI Tests', () => {
     await testApp.run();
 
     // Switch to analytics
-    await ctx.getByID('tab-analytics').click();
-    await ctx.getByID('analytics-title').within(1000).shouldExist();
+    await ctx.getById('tab-analytics').click();
+    await ctx.getById('analytics-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();

@@ -47,7 +47,7 @@ describe('Image Viewer Tests', () => {
 
     // Verify initial state
     await ctx.expect(ctx.getByText('No image loaded')).toBeVisible();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
 
     // Capture screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -111,16 +111,16 @@ describe('Image Viewer Tests', () => {
 
     // All editing control labels and sliders should be visible
     await ctx.expect(ctx.getByText('Brightness')).toBeVisible();
-    await ctx.getByID('edit-brightness').shouldHaveValue(0);
+    await ctx.getById('edit-brightness').shouldHaveValue(0);
 
     await ctx.expect(ctx.getByText('Contrast')).toBeVisible();
-    await ctx.getByID('edit-contrast').shouldHaveValue(0);
+    await ctx.getById('edit-contrast').shouldHaveValue(0);
 
     await ctx.expect(ctx.getByText('Saturation')).toBeVisible();
-    await ctx.getByID('edit-saturation').shouldHaveValue(0);
+    await ctx.getById('edit-saturation').shouldHaveValue(0);
 
     await ctx.expect(ctx.getByText('Hue')).toBeVisible();
-    await ctx.getByID('edit-hue').shouldHaveValue(0);
+    await ctx.getById('edit-hue').shouldHaveValue(0);
   });
 
   test('should show zoom status', async () => {
@@ -132,7 +132,7 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Zoom status should be visible
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
   });
 
   test('should handle zoom in', async () => {
@@ -144,13 +144,13 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Initial zoom
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
 
     // Click zoom in (using toolbar action ID)
-    await ctx.getByID('zoom-in-btn').click();
+    await ctx.getById('zoom-in-btn').click();
 
     // Zoom should increase to 110%
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
   });
 
   test('should handle zoom out', async () => {
@@ -162,14 +162,14 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Zoom in first
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
 
     // Now zoom out
-    await ctx.getByID('zoom-out-btn').click();
+    await ctx.getById('zoom-out-btn').click();
 
     // Should be back to 100%
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
   });
 
   test('should handle reset zoom', async () => {
@@ -181,18 +181,18 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Zoom in multiple times
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('120%');
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('130%');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('120%');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('130%');
 
     // Reset zoom
-    await ctx.getByID('reset-zoom-btn').click();
+    await ctx.getById('reset-zoom-btn').click();
 
     // Should be back to 100%
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
   });
 
   test('should adjust brightness values correctly', async () => {
@@ -204,19 +204,19 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Initial brightness should be 0
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
 
     // Set brightness to 10
-    await ctx.getByID('edit-brightness').setValue(10);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-brightness').setValue(10);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(10);
 
     // Set brightness to 20
-    await ctx.getByID('edit-brightness').setValue(20);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(20);
+    await ctx.getById('edit-brightness').setValue(20);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(20);
 
     // Set brightness back to 10
-    await ctx.getByID('edit-brightness').setValue(10);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-brightness').setValue(10);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(10);
   });
 
   test('should adjust contrast values correctly', async () => {
@@ -228,19 +228,19 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Initial contrast should be 0
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(0);
 
     // Set contrast to -10
-    await ctx.getByID('edit-contrast').setValue(-10);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(-10);
+    await ctx.getById('edit-contrast').setValue(-10);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(-10);
 
     // Set contrast to -20
-    await ctx.getByID('edit-contrast').setValue(-20);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(-20);
+    await ctx.getById('edit-contrast').setValue(-20);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(-20);
 
     // Set contrast back to -10
-    await ctx.getByID('edit-contrast').setValue(-10);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(-10);
+    await ctx.getById('edit-contrast').setValue(-10);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(-10);
   });
 
   test('should adjust saturation values correctly', async () => {
@@ -252,17 +252,17 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Initial saturation should be 0
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(0);
 
     // Set saturation to 10
-    await ctx.getByID('edit-saturation').setValue(10);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-saturation').setValue(10);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(10);
 
     // Set saturation to 0 then -10
-    await ctx.getByID('edit-saturation').setValue(0);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(0);
-    await ctx.getByID('edit-saturation').setValue(-10);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(-10);
+    await ctx.getById('edit-saturation').setValue(0);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-saturation').setValue(-10);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(-10);
   });
 
   test('should adjust hue values correctly', async () => {
@@ -274,19 +274,19 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Initial hue should be 0
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(0);
 
     // Set hue to 10
-    await ctx.getByID('edit-hue').setValue(10);
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-hue').setValue(10);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(10);
 
     // Set hue to 20
-    await ctx.getByID('edit-hue').setValue(20);
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(20);
+    await ctx.getById('edit-hue').setValue(20);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(20);
 
     // Set hue back to 10
-    await ctx.getByID('edit-hue').setValue(10);
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-hue').setValue(10);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(10);
   });
 
   test.skip('should handle open image', async () => {
@@ -305,11 +305,11 @@ describe('Image Viewer Tests', () => {
     tsyneTest.mockFileDialog('open', sampleImagePath);
 
     // Open image (using toolbar action ID)
-    await ctx.getByID('open-btn').click();
+    await ctx.getById('open-btn').click();
 
     // Image info should be populated (allow extra time for Jimp processing)
-    await ctx.getByID('info-width').within(10000).shouldContain('1920px');
-    await ctx.getByID('info-height').within(10000).shouldContain('1080px');
+    await ctx.getById('info-width').within(10000).shouldContain('1920px');
+    await ctx.getById('info-height').within(10000).shouldContain('1080px');
   });
 
   test('should reset all edits to zero', async () => {
@@ -321,23 +321,23 @@ describe('Image Viewer Tests', () => {
     await testApp.run();
 
     // Adjust ALL parameters using sliders
-    await ctx.getByID('edit-brightness').setValue(10);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(10);
-    await ctx.getByID('edit-contrast').setValue(10);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(10);
-    await ctx.getByID('edit-saturation').setValue(10);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(10);
-    await ctx.getByID('edit-hue').setValue(10);
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-brightness').setValue(10);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-contrast').setValue(10);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-saturation').setValue(10);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-hue').setValue(10);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(10);
 
     // Reset edits (using toolbar action ID)
-    await ctx.getByID('reset-edits-btn').click();
+    await ctx.getById('reset-edits-btn').click();
 
     // All parameters should be back to 0
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(0);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(0);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(0);
-    await ctx.getByID('edit-hue').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(0);
+    await ctx.getById('edit-hue').within(2000).shouldHaveValue(0);
   });
 
   test.skip('should handle complex editing sequence', async () => {
@@ -353,31 +353,31 @@ describe('Image Viewer Tests', () => {
     tsyneTest.mockFileDialog('open', sampleImagePath);
 
     // Load image (using toolbar action ID)
-    await ctx.getByID('open-btn').click();
-    await ctx.getByID('info-width').within(10000).shouldContain('1920px');
+    await ctx.getById('open-btn').click();
+    await ctx.getById('info-width').within(10000).shouldContain('1920px');
 
     // Apply multiple edits using sliders
-    await ctx.getByID('edit-brightness').setValue(20);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(20);
-    await ctx.getByID('edit-contrast').setValue(10);
-    await ctx.getByID('edit-contrast').within(2000).shouldHaveValue(10);
-    await ctx.getByID('edit-saturation').setValue(-10);
-    await ctx.getByID('edit-saturation').within(2000).shouldHaveValue(-10);
+    await ctx.getById('edit-brightness').setValue(20);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(20);
+    await ctx.getById('edit-contrast').setValue(10);
+    await ctx.getById('edit-contrast').within(2000).shouldHaveValue(10);
+    await ctx.getById('edit-saturation').setValue(-10);
+    await ctx.getById('edit-saturation').within(2000).shouldHaveValue(-10);
 
     // Zoom in (using toolbar action ID)
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
 
     // Reset edits (zoom should persist)
-    await ctx.getByID('reset-edits-btn').click();
+    await ctx.getById('reset-edits-btn').click();
 
     // Edit values reset but zoom persists
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(0);
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
 
     // Reset zoom (using toolbar action ID)
-    await ctx.getByID('reset-zoom-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('100%');
+    await ctx.getById('reset-zoom-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('100%');
   });
 
   test.skip('should maintain UI after multiple operations', async () => {
@@ -393,14 +393,14 @@ describe('Image Viewer Tests', () => {
     tsyneTest.mockFileDialog('open', sampleImagePath);
 
     // Perform various operations (using toolbar action IDs)
-    await ctx.getByID('open-btn').click();
-    await ctx.getByID('info-width').within(10000).shouldContain('1920px');
-    await ctx.getByID('zoom-in-btn').click();
-    await ctx.getByID('zoom-status').within(2000).shouldContain('110%');
-    await ctx.getByID('edit-brightness').setValue(10);
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(10);
-    await ctx.getByID('reset-edits-btn').click();
-    await ctx.getByID('edit-brightness').within(2000).shouldHaveValue(0);
+    await ctx.getById('open-btn').click();
+    await ctx.getById('info-width').within(10000).shouldContain('1920px');
+    await ctx.getById('zoom-in-btn').click();
+    await ctx.getById('zoom-status').within(2000).shouldContain('110%');
+    await ctx.getById('edit-brightness').setValue(10);
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(10);
+    await ctx.getById('reset-edits-btn').click();
+    await ctx.getById('edit-brightness').within(2000).shouldHaveValue(0);
 
     // Key UI elements should still be visible
     await ctx.expect(ctx.getByText('Information')).toBeVisible();

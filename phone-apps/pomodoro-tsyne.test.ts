@@ -28,13 +28,13 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Verify initial display
-    const displayText = await ctx.getByID('pomodoroDisplay').getText();
+    const displayText = await ctx.getById('pomodoroDisplay').getText();
     expect(displayText).toBe('25:00');
 
-    const sessionText = await ctx.getByID('pomodoroSession').getText();
+    const sessionText = await ctx.getById('pomodoroSession').getText();
     expect(sessionText).toBe('Focus Session');
 
-    const statusText = await ctx.getByID('pomodoroStatus').getText();
+    const statusText = await ctx.getById('pomodoroStatus').getText();
     expect(statusText).toContain('Paused');
     expect(statusText).toContain('0 sessions');
   });
@@ -48,14 +48,14 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Initial state
-    let buttonText = await ctx.getByID('pomodoroStartBtn').getText();
+    let buttonText = await ctx.getById('pomodoroStartBtn').getText();
     expect(buttonText).toBe('Start');
 
     // Click start
-    await ctx.getByID('pomodoroStartBtn').click();
+    await ctx.getById('pomodoroStartBtn').click();
 
     // Button should change to Pause
-    buttonText = await ctx.getByID('pomodoroStartBtn').within(500).shouldBe('Pause');
+    buttonText = await ctx.getById('pomodoroStartBtn').within(500).shouldBe('Pause');
     expect(buttonText).toBe('Pause');
   });
 
@@ -68,14 +68,14 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Click reset
-    await ctx.getByID('pomodoroResetBtn').click();
+    await ctx.getById('pomodoroResetBtn').click();
 
     // Display should still show 25:00
-    const displayText = await ctx.getByID('pomodoroDisplay').getText();
+    const displayText = await ctx.getById('pomodoroDisplay').getText();
     expect(displayText).toBe('25:00');
 
     // Status should show paused
-    const statusText = await ctx.getByID('pomodoroStatus').getText();
+    const statusText = await ctx.getById('pomodoroStatus').getText();
     expect(statusText).toContain('Paused');
   });
 
@@ -88,18 +88,18 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Verify settings inputs exist
-    await ctx.getByID('pomodoroWorkInput').within(500).shouldExist();
-    await ctx.getByID('pomodoroBreakInput').within(500).shouldExist();
-    await ctx.getByID('pomodoroLongBreakInput').within(500).shouldExist();
+    await ctx.getById('pomodoroWorkInput').within(500).shouldExist();
+    await ctx.getById('pomodoroBreakInput').within(500).shouldExist();
+    await ctx.getById('pomodoroLongBreakInput').within(500).shouldExist();
 
     // Verify labels
-    const workLabel = await ctx.getByID('pomodoroWorkLabel').getText();
+    const workLabel = await ctx.getById('pomodoroWorkLabel').getText();
     expect(workLabel).toBe('Work:');
 
-    const breakLabel = await ctx.getByID('pomodoroBreakLabel').getText();
+    const breakLabel = await ctx.getById('pomodoroBreakLabel').getText();
     expect(breakLabel).toBe('Break:');
 
-    const longBreakLabel = await ctx.getByID('pomodoroLongBreakLabel').getText();
+    const longBreakLabel = await ctx.getById('pomodoroLongBreakLabel').getText();
     expect(longBreakLabel).toBe('Long Break:');
   });
 
@@ -112,7 +112,7 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Verify skip button exists
-    const skipButtonText = await ctx.getByID('pomodoroSkipBtn').getText();
+    const skipButtonText = await ctx.getById('pomodoroSkipBtn').getText();
     expect(skipButtonText).toBe('Skip');
   });
 
@@ -125,7 +125,7 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Verify title
-    const title = await ctx.getByID('pomodoroTitle').getText();
+    const title = await ctx.getById('pomodoroTitle').getText();
     expect(title).toBe('Pomodoro Timer');
   });
 
@@ -138,7 +138,7 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Verify settings title
-    const settingsTitle = await ctx.getByID('pomodoroSettingsTitle').getText();
+    const settingsTitle = await ctx.getById('pomodoroSettingsTitle').getText();
     expect(settingsTitle).toBe('Settings');
   });
 
@@ -162,7 +162,7 @@ describe('Pomodoro Timer UI', () => {
     }
 
     // Verify app is still running and display is correct
-    const displayText = await ctx.getByID('pomodoroDisplay').getText();
+    const displayText = await ctx.getById('pomodoroDisplay').getText();
     expect(displayText).toBe('25:00');
   });
 
@@ -175,19 +175,19 @@ describe('Pomodoro Timer UI', () => {
     await testApp.run();
 
     // Check all major UI elements exist
-    await ctx.getByID('pomodoroTitle').within(500).shouldExist();
-    await ctx.getByID('pomodoroSession').within(500).shouldExist();
-    await ctx.getByID('pomodoroDisplay').within(500).shouldExist();
-    await ctx.getByID('pomodoroStatus').within(500).shouldExist();
-    await ctx.getByID('pomodoroStartBtn').within(500).shouldExist();
-    await ctx.getByID('pomodoroResetBtn').within(500).shouldExist();
-    await ctx.getByID('pomodoroSkipBtn').within(500).shouldExist();
-    await ctx.getByID('pomodoroSettingsTitle').within(500).shouldExist();
-    await ctx.getByID('pomodoroWorkLabel').within(500).shouldExist();
-    await ctx.getByID('pomodoroBreakLabel').within(500).shouldExist();
-    await ctx.getByID('pomodoroLongBreakLabel').within(500).shouldExist();
-    await ctx.getByID('pomodoroWorkInput').within(500).shouldExist();
-    await ctx.getByID('pomodoroBreakInput').within(500).shouldExist();
-    await ctx.getByID('pomodoroLongBreakInput').within(500).shouldExist();
+    await ctx.getById('pomodoroTitle').within(500).shouldExist();
+    await ctx.getById('pomodoroSession').within(500).shouldExist();
+    await ctx.getById('pomodoroDisplay').within(500).shouldExist();
+    await ctx.getById('pomodoroStatus').within(500).shouldExist();
+    await ctx.getById('pomodoroStartBtn').within(500).shouldExist();
+    await ctx.getById('pomodoroResetBtn').within(500).shouldExist();
+    await ctx.getById('pomodoroSkipBtn').within(500).shouldExist();
+    await ctx.getById('pomodoroSettingsTitle').within(500).shouldExist();
+    await ctx.getById('pomodoroWorkLabel').within(500).shouldExist();
+    await ctx.getById('pomodoroBreakLabel').within(500).shouldExist();
+    await ctx.getById('pomodoroLongBreakLabel').within(500).shouldExist();
+    await ctx.getById('pomodoroWorkInput').within(500).shouldExist();
+    await ctx.getById('pomodoroBreakInput').within(500).shouldExist();
+    await ctx.getById('pomodoroLongBreakInput').within(500).shouldExist();
   });
 });

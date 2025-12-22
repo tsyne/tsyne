@@ -29,11 +29,11 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Check app title
-    const title = await ctx.getByID('app-title').getText();
+    const title = await ctx.getById('app-title').getText();
     expect(title).toContain('NextCloud');
 
     // Check tabs exist
-    const filesTab = await ctx.getByID('tab-files');
+    const filesTab = await ctx.getById('tab-files');
     expect(filesTab).toBeDefined();
   });
 
@@ -45,7 +45,7 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const accountLabel = await ctx.getByID('account-label').getText();
+    const accountLabel = await ctx.getById('account-label').getText();
     expect(accountLabel).toMatch(/john\.doe|Connected/);
   });
 
@@ -57,7 +57,7 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const filesTitle = await ctx.getByID('files-title').getText();
+    const filesTitle = await ctx.getById('files-title').getText();
     expect(filesTitle).toBe('File Browser');
   });
 
@@ -70,10 +70,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Click sync tab
-    await ctx.getByID('tab-sync').click();
+    await ctx.getById('tab-sync').click();
 
     // Sync title should be visible
-    const syncTitle = await ctx.getByID('sync-title').within(1000).getText();
+    const syncTitle = await ctx.getById('sync-title').within(1000).getText();
     expect(syncTitle).toBe('Sync Status');
   });
 
@@ -86,10 +86,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Click shared tab
-    await ctx.getByID('tab-shared').click();
+    await ctx.getById('tab-shared').click();
 
     // Shared title should be visible
-    const sharedTitle = await ctx.getByID('shared-title').within(1000).getText();
+    const sharedTitle = await ctx.getById('shared-title').within(1000).getText();
     expect(sharedTitle).toBe('Shared Files');
   });
 
@@ -102,10 +102,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Click account tab
-    await ctx.getByID('tab-account').click();
+    await ctx.getById('tab-account').click();
 
     // Account title should be visible
-    const accountTitle = await ctx.getByID('account-title').within(1000).getText();
+    const accountTitle = await ctx.getById('account-title').within(1000).getText();
     expect(accountTitle).toBe('Account Settings');
   });
 
@@ -118,27 +118,27 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Start in files
-    let title = await ctx.getByID('files-title').getText();
+    let title = await ctx.getById('files-title').getText();
     expect(title).toBe('File Browser');
 
     // Go to sync
-    await ctx.getByID('tab-sync').click();
-    title = await ctx.getByID('sync-title').within(500).getText();
+    await ctx.getById('tab-sync').click();
+    title = await ctx.getById('sync-title').within(500).getText();
     expect(title).toBe('Sync Status');
 
     // Go to shared
-    await ctx.getByID('tab-shared').click();
-    title = await ctx.getByID('shared-title').within(500).getText();
+    await ctx.getById('tab-shared').click();
+    title = await ctx.getById('shared-title').within(500).getText();
     expect(title).toBe('Shared Files');
 
     // Go to account
-    await ctx.getByID('tab-account').click();
-    title = await ctx.getByID('account-title').within(500).getText();
+    await ctx.getById('tab-account').click();
+    title = await ctx.getById('account-title').within(500).getText();
     expect(title).toBe('Account Settings');
 
     // Back to files
-    await ctx.getByID('tab-files').click();
-    title = await ctx.getByID('files-title').within(500).getText();
+    await ctx.getById('tab-files').click();
+    title = await ctx.getById('files-title').within(500).getText();
     expect(title).toBe('File Browser');
   });
 
@@ -151,7 +151,7 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Should have some files visible
-    const fileTitle = await ctx.getByID('files-title').within(500).getText();
+    const fileTitle = await ctx.getById('files-title').within(500).getText();
     expect(fileTitle).toBeDefined();
   });
 
@@ -164,10 +164,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Go to sync tab
-    await ctx.getByID('tab-sync').click();
+    await ctx.getById('tab-sync').click();
 
     // Should have sync title
-    const syncTitle = await ctx.getByID('sync-title').within(500).getText();
+    const syncTitle = await ctx.getById('sync-title').within(500).getText();
     expect(syncTitle).toBe('Sync Status');
   });
 
@@ -180,10 +180,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Go to shared tab
-    await ctx.getByID('tab-shared').click();
+    await ctx.getById('tab-shared').click();
 
     // Should have shared title
-    const sharedTitle = await ctx.getByID('shared-title').within(500).getText();
+    const sharedTitle = await ctx.getById('shared-title').within(500).getText();
     expect(sharedTitle).toBe('Shared Files');
   });
 
@@ -196,10 +196,10 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Go to account tab
-    await ctx.getByID('tab-account').click();
+    await ctx.getById('tab-account').click();
 
     // Check for account elements
-    const accountTitle = await ctx.getByID('account-title').within(500).getText();
+    const accountTitle = await ctx.getById('account-title').within(500).getText();
     expect(accountTitle).toBe('Account Settings');
   });
 
@@ -211,7 +211,7 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const uploadBtn = await ctx.getByID('btn-upload');
+    const uploadBtn = await ctx.getById('btn-upload');
     expect(uploadBtn).toBeDefined();
   });
 
@@ -223,7 +223,7 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const folderBtn = await ctx.getByID('btn-new-folder');
+    const folderBtn = await ctx.getById('btn-new-folder');
     expect(folderBtn).toBeDefined();
   });
 
@@ -235,7 +235,7 @@ describe('NextCloud App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const searchInput = await ctx.getByID('search-files');
+    const searchInput = await ctx.getById('search-files');
     expect(searchInput).toBeDefined();
   });
 
@@ -248,9 +248,9 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Go to sync
-    await ctx.getByID('tab-sync').click();
+    await ctx.getById('tab-sync').click();
 
-    const syncBtn = await ctx.getByID('btn-sync-all');
+    const syncBtn = await ctx.getById('btn-sync-all');
     expect(syncBtn).toBeDefined();
   });
 
@@ -263,9 +263,9 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Go to account
-    await ctx.getByID('tab-account').click();
+    await ctx.getById('tab-account').click();
 
-    const connectBtn = await ctx.getByID('btn-connect');
+    const connectBtn = await ctx.getById('btn-connect');
     expect(connectBtn).toBeDefined();
   });
 
@@ -278,18 +278,18 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Get initial account status
-    const initialAccount = await ctx.getByID('account-label').getText();
+    const initialAccount = await ctx.getById('account-label').getText();
 
     // Switch tabs
-    await ctx.getByID('tab-sync').click();
-    await ctx.getByID('tab-shared').click();
-    await ctx.getByID('tab-account').click();
+    await ctx.getById('tab-sync').click();
+    await ctx.getById('tab-shared').click();
+    await ctx.getById('tab-account').click();
 
     // Back to files
-    await ctx.getByID('tab-files').click();
+    await ctx.getById('tab-files').click();
 
     // Account status should be same
-    const finalAccount = await ctx.getByID('account-label').within(500).getText();
+    const finalAccount = await ctx.getById('account-label').within(500).getText();
     expect(finalAccount).toBe(initialAccount);
   });
 
@@ -314,7 +314,7 @@ describe('NextCloud App UI Tests', () => {
     ];
 
     for (const id of elements) {
-      const element = await ctx.getByID(id);
+      const element = await ctx.getById(id);
       expect(element).toBeDefined();
     }
   });
@@ -328,7 +328,7 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Storage info should be visible
-    const storageLabel = await ctx.getByID('storage-label').getText();
+    const storageLabel = await ctx.getById('storage-label').getText();
     expect(storageLabel).toMatch(/Storage|Used/);
   });
 
@@ -356,8 +356,8 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Switch to sync
-    await ctx.getByID('tab-sync').click();
-    await ctx.getByID('sync-title').within(1000).shouldExist();
+    await ctx.getById('tab-sync').click();
+    await ctx.getById('sync-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -375,8 +375,8 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Switch to shared
-    await ctx.getByID('tab-shared').click();
-    await ctx.getByID('shared-title').within(1000).shouldExist();
+    await ctx.getById('tab-shared').click();
+    await ctx.getById('shared-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -394,8 +394,8 @@ describe('NextCloud App UI Tests', () => {
     await testApp.run();
 
     // Switch to account
-    await ctx.getByID('tab-account').click();
-    await ctx.getByID('account-title').within(1000).shouldExist();
+    await ctx.getById('tab-account').click();
+    await ctx.getById('account-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();

@@ -44,21 +44,21 @@ describe('Prime Grid Visualizer Tests', () => {
     await ctx.getByText('Prime Grid Visualizer').within(500).shouldExist();
 
     // Verify control labels
-    await ctx.getByID('labelMaxN').within(500).shouldExist();
-    await ctx.getByID('labelColumns').within(500).shouldExist();
-    await ctx.getByID('labelCellSize').within(500).shouldExist();
+    await ctx.getById('labelMaxN').within(500).shouldExist();
+    await ctx.getById('labelColumns').within(500).shouldExist();
+    await ctx.getById('labelCellSize').within(500).shouldExist();
 
     // Verify input fields with default values
-    await ctx.getByID('inputMaxN').within(500).shouldBe('100');
-    await ctx.getByID('inputColumns').within(500).shouldBe('10');
-    await ctx.getByID('inputCellSize').within(500).shouldBe('20');
+    await ctx.getById('inputMaxN').within(500).shouldBe('100');
+    await ctx.getById('inputColumns').within(500).shouldBe('10');
+    await ctx.getById('inputCellSize').within(500).shouldBe('20');
 
     // Verify buttons
-    await ctx.getByID('btnGenerate').within(500).shouldExist();
-    await ctx.getByID('btnExport').within(500).shouldExist();
+    await ctx.getById('btnGenerate').within(500).shouldExist();
+    await ctx.getById('btnExport').within(500).shouldExist();
 
     // Verify statistics label
-    await ctx.getByID('statsLabel').within(500).shouldExist();
+    await ctx.getById('statsLabel').within(500).shouldExist();
   });
 
   test('should generate grid with default parameters (100 numbers, 10 columns)', async () => {
@@ -73,20 +73,20 @@ describe('Prime Grid Visualizer Tests', () => {
     await ctx.wait(500);
 
     // Click Generate button
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
 
     // Wait for generation to complete
     await ctx.wait(500);
 
     // Verify statistics are displayed
     // For n=100, there should be 25 primes (up to 97)
-    const statsText = await ctx.getByID('statsLabel').within(1000).getText();
+    const statsText = await ctx.getById('statsLabel').within(1000).getText();
     expect(statsText).toContain('Primes:');
     expect(statsText).toContain('Composites:');
     expect(statsText).toContain('prime');
 
     // Canvas should exist
-    await ctx.getByID('gridRaster').within(500).shouldExist();
+    await ctx.getById('gridRaster').within(500).shouldExist();
   });
 
   test('should calculate primes correctly for small numbers', async () => {
@@ -98,21 +98,21 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Set n to 20 (primes: 2,3,5,7,11,13,17,19 = 8 primes)
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('20');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('20');
 
     // Set columns to 5 for easy visualization
-    await ctx.getByID('inputColumns').clear();
-    await ctx.getByID('inputColumns').type('5');
+    await ctx.getById('inputColumns').clear();
+    await ctx.getById('inputColumns').type('5');
 
     // Generate
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
 
     // Wait for generation
     await ctx.wait(500);
 
     // Verify statistics
-    const statsText = await ctx.getByID('statsLabel').within(1000).getText();
+    const statsText = await ctx.getById('statsLabel').within(1000).getText();
 
     // Should have 8 primes (2,3,5,7,11,13,17,19)
     expect(statsText).toContain('Primes: 8');
@@ -129,26 +129,26 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Initial generation
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(300);
 
     // Get initial stats
-    let statsText = await ctx.getByID('statsLabel').within(500).getText();
+    let statsText = await ctx.getById('statsLabel').within(500).getText();
     const initialStats = statsText;
 
     // Change parameters
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('50');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('50');
 
-    await ctx.getByID('inputColumns').clear();
-    await ctx.getByID('inputColumns').type('7');
+    await ctx.getById('inputColumns').clear();
+    await ctx.getById('inputColumns').type('7');
 
     // Regenerate
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(300);
 
     // Stats should have changed
-    statsText = await ctx.getByID('statsLabel').within(500).getText();
+    statsText = await ctx.getById('statsLabel').within(500).getText();
     expect(statsText).not.toEqual(initialStats);
 
     // For n=50, there are 15 primes (2,3,5,7,11,13,17,19,23,29,31,37,41,43,47)
@@ -164,14 +164,14 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Set n to 2 (minimum valid)
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('2');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('2');
 
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(300);
 
     // Should have exactly 1 prime (2)
-    const statsText = await ctx.getByID('statsLabel').within(500).getText();
+    const statsText = await ctx.getById('statsLabel').within(500).getText();
     expect(statsText).toContain('Primes: 1');
   });
 
@@ -184,15 +184,15 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Set n to 10
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('10');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('10');
 
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(300);
 
     // Primes up to 10: 2,3,5,7 = 4 primes
     // Percentage: 4/10 = 40%
-    const statsText = await ctx.getByID('statsLabel').within(500).getText();
+    const statsText = await ctx.getById('statsLabel').within(500).getText();
     expect(statsText).toContain('40.0%');
   });
 
@@ -220,17 +220,17 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Try setting invalid values (too small)
-    await ctx.getByID('inputCellSize').clear();
-    await ctx.getByID('inputCellSize').type('2'); // Less than minimum of 5
+    await ctx.getById('inputCellSize').clear();
+    await ctx.getById('inputCellSize').type('2'); // Less than minimum of 5
 
-    await ctx.getByID('inputColumns').clear();
-    await ctx.getByID('inputColumns').type('0'); // Less than minimum of 1
+    await ctx.getById('inputColumns').clear();
+    await ctx.getById('inputColumns').type('0'); // Less than minimum of 1
 
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(300);
 
     // App should handle gracefully without crashing
-    await ctx.getByID('statsLabel').within(500).shouldExist();
+    await ctx.getById('statsLabel').within(500).shouldExist();
   });
 
   test('should handle medium-sized grids efficiently', async () => {
@@ -242,14 +242,14 @@ describe('Prime Grid Visualizer Tests', () => {
     await testApp.run();
 
     // Set n to 500
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('500');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('500');
 
-    await ctx.getByID('inputColumns').clear();
-    await ctx.getByID('inputColumns').type('20');
+    await ctx.getById('inputColumns').clear();
+    await ctx.getById('inputColumns').type('20');
 
     const startTime = Date.now();
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(1000);
     const endTime = Date.now();
 
@@ -257,7 +257,7 @@ describe('Prime Grid Visualizer Tests', () => {
     expect(endTime - startTime).toBeLessThan(3000);
 
     // Should have statistics (95 primes up to 500)
-    const statsText = await ctx.getByID('statsLabel').within(500).getText();
+    const statsText = await ctx.getById('statsLabel').within(500).getText();
     expect(statsText).toContain('Primes:');
   });
 
@@ -273,10 +273,10 @@ describe('Prime Grid Visualizer Tests', () => {
     await ctx.wait(500);
 
     // Grid should be visible
-    await ctx.getByID('gridRaster').within(500).shouldExist();
+    await ctx.getById('gridRaster').within(500).shouldExist();
 
     // Statistics should show default primes
-    const statsText = await ctx.getByID('statsLabel').within(500).getText();
+    const statsText = await ctx.getById('statsLabel').within(500).getText();
     expect(statsText).not.toContain('Ready to generate');
   });
 
@@ -297,13 +297,13 @@ describe('Prime Grid Visualizer Tests', () => {
     await ctx.wait(500);
 
     // Generate a nice visualization
-    await ctx.getByID('inputMaxN').clear();
-    await ctx.getByID('inputMaxN').type('200');
+    await ctx.getById('inputMaxN').clear();
+    await ctx.getById('inputMaxN').type('200');
 
-    await ctx.getByID('inputColumns').clear();
-    await ctx.getByID('inputColumns').type('14');
+    await ctx.getById('inputColumns').clear();
+    await ctx.getById('inputColumns').type('14');
 
-    await ctx.getByID('btnGenerate').click();
+    await ctx.getById('btnGenerate').click();
     await ctx.wait(800);
 
     // Capture screenshot

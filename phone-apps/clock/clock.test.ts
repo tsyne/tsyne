@@ -35,7 +35,7 @@ describe('Clock App', () => {
     await testApp.run();
 
     // Time display should exist
-    await ctx.getByID('time-display').within(500).shouldExist();
+    await ctx.getById('time-display').within(500).shouldExist();
   });
 
   test('should display date on Clock tab', async () => {
@@ -47,7 +47,7 @@ describe('Clock App', () => {
     await testApp.run();
 
     // Date display should exist
-    await ctx.getByID('date-display').within(500).shouldExist();
+    await ctx.getById('date-display').within(500).shouldExist();
   });
 
   test('should display mocked time', async () => {
@@ -62,7 +62,7 @@ describe('Clock App', () => {
     await testApp.run();
 
     // Verify time display shows 3:00 PM (format may vary by locale)
-    const timeDisplay = await ctx.getByID('time-display').within(500);
+    const timeDisplay = await ctx.getById('time-display').within(500);
     await timeDisplay.shouldExist();
     const text = await timeDisplay.getText();
     // Should contain "3:00" or "15:00" depending on locale
@@ -81,8 +81,8 @@ describe('Clock App', () => {
     await testApp.run();
 
     // Wait for UI to be fully rendered
-    await ctx.getByID('time-display').within(500).shouldExist();
-    await ctx.getByID('date-display').within(500).shouldExist();
+    await ctx.getById('time-display').within(500).shouldExist();
+    await ctx.getById('date-display').within(500).shouldExist();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

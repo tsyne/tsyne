@@ -40,7 +40,7 @@ describe('Status Bar Label Tests', () => {
     await testApp.run();
 
     // Verify status label exists with default text
-    const statusLabel = ctx.getByID('status-label');
+    const statusLabel = ctx.getById('status-label');
     await ctx.expect(statusLabel).toBeVisible();
     await ctx.expect(statusLabel).toHaveText('Ready');
   });
@@ -70,11 +70,11 @@ describe('Status Bar Label Tests', () => {
     await testApp.run();
 
     // Initial status
-    const status = ctx.getByID('status-label');
+    const status = ctx.getById('status-label');
     await ctx.expect(status).toHaveText('Ready');
 
     // Click button to update status
-    await ctx.getByID('update-btn').click();
+    await ctx.getById('update-btn').click();
 
     // Status should be updated
     await status.within(500).shouldBe('Loading...');
@@ -112,8 +112,8 @@ describe('Status Bar Label Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const button = ctx.getByID('cycle-btn');
-    const status = ctx.getByID('status-label');
+    const button = ctx.getById('cycle-btn');
+    const status = ctx.getById('status-label');
 
     // Initial: Ready
     await ctx.expect(status).toHaveText('Ready');

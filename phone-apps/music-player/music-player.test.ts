@@ -56,7 +56,7 @@ describe('Music Player App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('player-title').within(500).shouldExist();
+    await ctx.getById('player-title').within(500).shouldExist();
   });
 
   test('should display now playing track info', async () => {
@@ -68,8 +68,8 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Should show first track from default playlist
-    await ctx.getByID('now-playing-title').within(500).shouldExist();
-    await ctx.getByID('now-playing-artist').within(500).shouldExist();
+    await ctx.getById('now-playing-title').within(500).shouldExist();
+    await ctx.getById('now-playing-artist').within(500).shouldExist();
   });
 
   test('should display playback controls', async () => {
@@ -81,9 +81,9 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Control buttons should be visible
-    await ctx.getByID('btn-previous').within(500).shouldExist();
-    await ctx.getByID('btn-play').within(500).shouldExist();
-    await ctx.getByID('btn-next').within(500).shouldExist();
+    await ctx.getById('btn-previous').within(500).shouldExist();
+    await ctx.getById('btn-play').within(500).shouldExist();
+    await ctx.getById('btn-next').within(500).shouldExist();
   });
 
   test('should start playing when play button clicked', async () => {
@@ -98,7 +98,7 @@ describe('Music Player App', () => {
     expect(music.getPlaybackState()).toBe('stopped');
 
     // Click play button
-    await ctx.getByID('btn-play').click();
+    await ctx.getById('btn-play').click();
 
     // Should be playing
     expect(music.getPlaybackState()).toBe('playing');
@@ -113,11 +113,11 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Play
-    await ctx.getByID('btn-play').click();
+    await ctx.getById('btn-play').click();
     expect(music.getPlaybackState()).toBe('playing');
 
     // Pause
-    await ctx.getByID('btn-play').click();
+    await ctx.getById('btn-play').click();
     expect(music.getPlaybackState()).toBe('paused');
   });
 
@@ -130,7 +130,7 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Time display should show format "0:00 / 4:05" (or similar)
-    const timeText = await ctx.getByID('player-time').getText();
+    const timeText = await ctx.getById('player-time').getText();
     expect(timeText).toMatch(/^\d+:\d{2} \/ \d+:\d{2}$/);
   });
 
@@ -143,9 +143,9 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Volume display and slider should exist
-    await ctx.getByID('label-volume').within(500).shouldExist();
-    await ctx.getByID('volume-display').within(500).shouldExist();
-    await ctx.getByID('volume-slider').within(500).shouldExist();
+    await ctx.getById('label-volume').within(500).shouldExist();
+    await ctx.getById('volume-display').within(500).shouldExist();
+    await ctx.getById('volume-slider').within(500).shouldExist();
   });
 
   test('should have shuffle button', async () => {
@@ -156,7 +156,7 @@ describe('Music Player App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-shuffle').within(500).shouldExist();
+    await ctx.getById('btn-shuffle').within(500).shouldExist();
   });
 
   test('should have repeat button', async () => {
@@ -167,7 +167,7 @@ describe('Music Player App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-repeat').within(500).shouldExist();
+    await ctx.getById('btn-repeat').within(500).shouldExist();
   });
 
   test('should have search functionality', async () => {
@@ -179,8 +179,8 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Search input should exist
-    await ctx.getByID('search-tracks').within(500).shouldExist();
-    await ctx.getByID('btn-clear-search').within(500).shouldExist();
+    await ctx.getById('search-tracks').within(500).shouldExist();
+    await ctx.getById('btn-clear-search').within(500).shouldExist();
   });
 
   test('should display playlist', async () => {
@@ -192,7 +192,7 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Playlist label should exist
-    await ctx.getByID('label-playlist').within(500).shouldExist();
+    await ctx.getById('label-playlist').within(500).shouldExist();
   });
 
   test('should take screenshot for documentation', async () => {
@@ -204,7 +204,7 @@ describe('Music Player App', () => {
     await testApp.run();
 
     // Start playing to show active state
-    await ctx.getByID('btn-play').click();
+    await ctx.getById('btn-play').click();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

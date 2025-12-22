@@ -55,15 +55,15 @@ describe('Popup Widget Demo', () => {
     await ctx.expect(ctx.getByExactText('Popup Test')).toBeVisible();
 
     // Click show button to display popup
-    await ctx.getByID('showBtn').click();
+    await ctx.getById('showBtn').click();
     await ctx.wait(100);
     expect(popupShown).toBe(true);
 
     // Verify popup content is visible
-    await ctx.expect(ctx.getByID('popupContent')).toBeVisible();
+    await ctx.expect(ctx.getById('popupContent')).toBeVisible();
 
     // Click hide button to hide popup
-    await ctx.getByID('hideBtn').click();
+    await ctx.getById('hideBtn').click();
     await ctx.wait(100);
     expect(popupHidden).toBe(true);
 
@@ -105,14 +105,14 @@ describe('Popup Widget Demo', () => {
     await testApp.run();
 
     // Show at first position
-    await ctx.getByID('pos50').click();
+    await ctx.getById('pos50').click();
     await ctx.wait(100);
-    await ctx.expect(ctx.getByID('positionedPopup')).toBeVisible();
+    await ctx.expect(ctx.getById('positionedPopup')).toBeVisible();
 
     // Move to second position
-    await ctx.getByID('pos200').click();
+    await ctx.getById('pos200').click();
     await ctx.wait(100);
-    await ctx.expect(ctx.getByID('positionedPopup')).toBeVisible();
+    await ctx.expect(ctx.getById('positionedPopup')).toBeVisible();
   });
 
   test('should show centered popup', async () => {
@@ -148,12 +148,12 @@ describe('Popup Widget Demo', () => {
     await testApp.run();
 
     // Show centered popup
-    await ctx.getByID('showCentered').click();
+    await ctx.getById('showCentered').click();
     await ctx.wait(100);
-    await ctx.expect(ctx.getByID('centeredContent')).toBeVisible();
+    await ctx.expect(ctx.getById('centeredContent')).toBeVisible();
 
     // Close it
-    await ctx.getByID('closeBtn').click();
+    await ctx.getById('closeBtn').click();
     await ctx.wait(100);
   });
 
@@ -187,7 +187,7 @@ describe('Popup Widget Demo', () => {
     await testApp.run();
 
     // Verify the button is visible
-    await ctx.expect(ctx.getByID('hoverBtn')).toBeVisible();
+    await ctx.expect(ctx.getById('hoverBtn')).toBeVisible();
 
     // Simulate hover by clicking (since test framework may not have full hover support)
     // The actual hover tooltip behavior would work in a real UI

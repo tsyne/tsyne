@@ -208,12 +208,12 @@ export abstract class Widget {
   }
 
   /**
-   * Register a custom ID for this widget (for test framework getByID)
+   * Register a custom ID for this widget (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining
    * @example
    * const statusLabel = a.label('').withId('statusLabel');
-   * // In tests: ctx.getByID('statusLabel')
+   * // In tests: ctx.getById('statusLabel')
    */
   withId(customId: string): this {
     // Send registration and track the promise so app.run() can wait for it

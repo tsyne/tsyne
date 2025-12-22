@@ -24,20 +24,20 @@ describe('Snowflake App UI', () => {
   });
 
   test('should render title', async () => {
-    const title = await ctx.getByID('snowflakeTitle').getText();
+    const title = await ctx.getById('snowflakeTitle').getText();
     expect(title).toContain('Snowflake');
   }, 30000);
 
   test('should show snowflake count', async () => {
-    await ctx.getByID('snowflakeCount').within(500).shouldExist();
+    await ctx.getById('snowflakeCount').within(500).shouldExist();
   }, 30000);
 
   test('should have animation toggle', async () => {
-    await ctx.getByID('snowflakeAnimToggle').within(500).shouldExist();
+    await ctx.getById('snowflakeAnimToggle').within(500).shouldExist();
   }, 30000);
 
   test('should have controls', async () => {
-    await ctx.getByID('snowflakeDensityLabel').within(500).shouldExist();
-    await ctx.getByID('snowflakeSpeedLabel').within(500).shouldExist();
+    await ctx.getById('snowflakeDensityLabel').within(500).shouldExist();
+    await ctx.getById('snowflakeSpeedLabel').within(500).shouldExist();
   }, 30000);
 });

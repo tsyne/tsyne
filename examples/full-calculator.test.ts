@@ -35,7 +35,7 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('0');
+      await ctx.getById('calc-display').within(500).shouldBe('0');
     });
 
     test('should perform addition', async () => {
@@ -46,12 +46,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-add').click();
-      await ctx.getByID('btn-3').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-add').click();
+      await ctx.getById('btn-3').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('8');
+      await ctx.getById('calc-display').within(500).shouldBe('8');
     });
 
     test('should perform subtraction', async () => {
@@ -62,12 +62,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-9').click();
-      await ctx.getByID('btn-sub').click();
-      await ctx.getByID('btn-4').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-9').click();
+      await ctx.getById('btn-sub').click();
+      await ctx.getById('btn-4').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('5');
+      await ctx.getById('calc-display').within(500).shouldBe('5');
     });
 
     test('should perform multiplication', async () => {
@@ -78,12 +78,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-6').click();
-      await ctx.getByID('btn-mul').click();
-      await ctx.getByID('btn-7').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-6').click();
+      await ctx.getById('btn-mul').click();
+      await ctx.getById('btn-7').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('42');
+      await ctx.getById('calc-display').within(500).shouldBe('42');
     });
 
     test('should perform division', async () => {
@@ -94,12 +94,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-8').click();
-      await ctx.getByID('btn-div').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-8').click();
+      await ctx.getById('btn-div').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('4');
+      await ctx.getById('calc-display').within(500).shouldBe('4');
     });
 
     test('should handle division by zero', async () => {
@@ -110,12 +110,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-div').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-div').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('Error');
+      await ctx.getById('calc-display').within(500).shouldBe('Error');
     });
 
     test('should perform modulo', async () => {
@@ -126,13 +126,13 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-7').click();
-      await ctx.getByID('btn-mod').click();
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-7').click();
+      await ctx.getById('btn-mod').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('2');
+      await ctx.getById('calc-display').within(500).shouldBe('2');
     });
   });
 
@@ -145,12 +145,12 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-3').click();
-      await ctx.getByID('btn-ce').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-3').click();
+      await ctx.getById('btn-ce').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('0');
+      await ctx.getById('calc-display').within(500).shouldBe('0');
     });
 
     test('should all clear with AC', async () => {
@@ -161,16 +161,16 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-add').click();
-      await ctx.getByID('btn-3').click();
-      await ctx.getByID('btn-ac').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-add').click();
+      await ctx.getById('btn-3').click();
+      await ctx.getById('btn-ac').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('0');
+      await ctx.getById('calc-display').within(500).shouldBe('0');
 
       // Verify operator was cleared by pressing = (should not compute)
-      await ctx.getByID('btn-eq').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('0');
+      await ctx.getById('btn-eq').click();
+      await ctx.getById('calc-display').within(500).shouldBe('0');
     });
   });
 
@@ -183,10 +183,10 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-neg').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-neg').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('-5');
+      await ctx.getById('calc-display').within(500).shouldBe('-5');
     });
 
     test('should perform bitwise NOT', async () => {
@@ -197,11 +197,11 @@ describe('Full Calculator Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-not').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-not').click();
 
       // NOT 0 = -1 (all bits set in two's complement)
-      await ctx.getByID('calc-display').within(500).shouldBe('-1');
+      await ctx.getById('calc-display').within(500).shouldBe('-1');
     });
   });
 
@@ -215,14 +215,14 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 12 AND 10 = 8 (1100 & 1010 = 1000)
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-and').click();
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-and').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('8');
+      await ctx.getById('calc-display').within(500).shouldBe('8');
     });
 
     test('should perform OR', async () => {
@@ -234,14 +234,14 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 12 OR 10 = 14 (1100 | 1010 = 1110)
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-or').click();
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-or').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('14');
+      await ctx.getById('calc-display').within(500).shouldBe('14');
     });
 
     test('should perform XOR', async () => {
@@ -253,14 +253,14 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 12 XOR 10 = 6 (1100 ^ 1010 = 0110)
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-xor').click();
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-xor').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('6');
+      await ctx.getById('calc-display').within(500).shouldBe('6');
     });
 
     test('should perform left shift', async () => {
@@ -272,12 +272,12 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 5 << 2 = 20
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-shl').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-shl').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('20');
+      await ctx.getById('calc-display').within(500).shouldBe('20');
     });
 
     test('should perform right shift', async () => {
@@ -289,13 +289,13 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 20 >> 2 = 5
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-shr').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-eq').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-shr').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-eq').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('5');
+      await ctx.getById('calc-display').within(500).shouldBe('5');
     });
   });
 
@@ -309,18 +309,18 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Store 42 in memory
-      await ctx.getByID('btn-4').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-madd').click();
+      await ctx.getById('btn-4').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-madd').click();
 
       // Memory indicator should show 'M'
-      await ctx.getByID('memory-indicator').within(500).shouldBe('M');
+      await ctx.getById('memory-indicator').within(500).shouldBe('M');
 
       // Clear and recall
-      await ctx.getByID('btn-ac').click();
-      await ctx.getByID('btn-mr').click();
+      await ctx.getById('btn-ac').click();
+      await ctx.getById('btn-mr').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('42');
+      await ctx.getById('calc-display').within(500).shouldBe('42');
     });
 
     test('should add to memory with M+', async () => {
@@ -332,17 +332,17 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Add 10 to memory
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-madd').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-madd').click();
 
       // Add 5 more to memory
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-madd').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-madd').click();
 
       // Recall should be 15
-      await ctx.getByID('btn-mr').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('15');
+      await ctx.getById('btn-mr').click();
+      await ctx.getById('calc-display').within(500).shouldBe('15');
     });
 
     test('should subtract from memory with M-', async () => {
@@ -354,17 +354,17 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Add 10 to memory
-      await ctx.getByID('btn-1').click();
-      await ctx.getByID('btn-0').click();
-      await ctx.getByID('btn-madd').click();
+      await ctx.getById('btn-1').click();
+      await ctx.getById('btn-0').click();
+      await ctx.getById('btn-madd').click();
 
       // Subtract 3 from memory
-      await ctx.getByID('btn-3').click();
-      await ctx.getByID('btn-msub').click();
+      await ctx.getById('btn-3').click();
+      await ctx.getById('btn-msub').click();
 
       // Recall should be 7
-      await ctx.getByID('btn-mr').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('7');
+      await ctx.getById('btn-mr').click();
+      await ctx.getById('calc-display').within(500).shouldBe('7');
     });
 
     test('should clear memory with MC', async () => {
@@ -376,18 +376,18 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Add 42 to memory
-      await ctx.getByID('btn-4').click();
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-madd').click();
-      await ctx.getByID('memory-indicator').within(500).shouldBe('M');
+      await ctx.getById('btn-4').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-madd').click();
+      await ctx.getById('memory-indicator').within(500).shouldBe('M');
 
       // Clear memory
-      await ctx.getByID('btn-mc').click();
-      await ctx.getByID('memory-indicator').within(500).shouldBe(' ');
+      await ctx.getById('btn-mc').click();
+      await ctx.getById('memory-indicator').within(500).shouldBe(' ');
 
       // Recall should be 0
-      await ctx.getByID('btn-mr').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('0');
+      await ctx.getById('btn-mr').click();
+      await ctx.getById('calc-display').within(500).shouldBe('0');
     });
   });
 
@@ -401,15 +401,15 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Enter 255 in decimal
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-5').click();
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-5').click();
 
       // Switch to hex
-      await ctx.getByID('btn-hex').click();
+      await ctx.getById('btn-hex').click();
 
-      await ctx.getByID('base-label').within(500).shouldBe('HEX');
-      await ctx.getByID('calc-display').within(500).shouldBe('FF');
+      await ctx.getById('base-label').within(500).shouldBe('HEX');
+      await ctx.getById('calc-display').within(500).shouldBe('FF');
     });
 
     test('should switch to binary and display correctly', async () => {
@@ -421,13 +421,13 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Enter 5 in decimal
-      await ctx.getByID('btn-5').click();
+      await ctx.getById('btn-5').click();
 
       // Switch to binary
-      await ctx.getByID('btn-bin').click();
+      await ctx.getById('btn-bin').click();
 
-      await ctx.getByID('base-label').within(500).shouldBe('BIN');
-      await ctx.getByID('calc-display').within(500).shouldBe('101');
+      await ctx.getById('base-label').within(500).shouldBe('BIN');
+      await ctx.getById('calc-display').within(500).shouldBe('101');
     });
 
     test('should switch to octal and display correctly', async () => {
@@ -439,14 +439,14 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Enter 64 in decimal
-      await ctx.getByID('btn-6').click();
-      await ctx.getByID('btn-4').click();
+      await ctx.getById('btn-6').click();
+      await ctx.getById('btn-4').click();
 
       // Switch to octal
-      await ctx.getByID('btn-oct').click();
+      await ctx.getById('btn-oct').click();
 
-      await ctx.getByID('base-label').within(500).shouldBe('OCT');
-      await ctx.getByID('calc-display').within(500).shouldBe('100');
+      await ctx.getById('base-label').within(500).shouldBe('OCT');
+      await ctx.getById('calc-display').within(500).shouldBe('100');
     });
 
     test('should use hex digits A-F in hex mode', async () => {
@@ -458,19 +458,19 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Switch to hex
-      await ctx.getByID('btn-hex').click();
+      await ctx.getById('btn-hex').click();
 
       // Enter CAFE
-      await ctx.getByID('btn-C').click();
-      await ctx.getByID('btn-A').click();
-      await ctx.getByID('btn-F').click();
-      await ctx.getByID('btn-E').click();
+      await ctx.getById('btn-C').click();
+      await ctx.getById('btn-A').click();
+      await ctx.getById('btn-F').click();
+      await ctx.getById('btn-E').click();
 
-      await ctx.getByID('calc-display').within(500).shouldBe('CAFE');
+      await ctx.getById('calc-display').within(500).shouldBe('CAFE');
 
       // Switch to decimal to verify value
-      await ctx.getByID('btn-dec').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('51966');
+      await ctx.getById('btn-dec').click();
+      await ctx.getById('calc-display').within(500).shouldBe('51966');
     });
   });
 
@@ -484,16 +484,16 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // 5 + 3 * 2 = (5+3)*2 = 16 (left-to-right, no precedence)
-      await ctx.getByID('btn-5').click();
-      await ctx.getByID('btn-add').click();
-      await ctx.getByID('btn-3').click();
-      await ctx.getByID('btn-mul').click();
+      await ctx.getById('btn-5').click();
+      await ctx.getById('btn-add').click();
+      await ctx.getById('btn-3').click();
+      await ctx.getById('btn-mul').click();
       // After pressing *, the 5+3 should evaluate to 8
-      await ctx.getByID('calc-display').within(500).shouldBe('8');
+      await ctx.getById('calc-display').within(500).shouldBe('8');
 
-      await ctx.getByID('btn-2').click();
-      await ctx.getByID('btn-eq').click();
-      await ctx.getByID('calc-display').within(500).shouldBe('16');
+      await ctx.getById('btn-2').click();
+      await ctx.getById('btn-eq').click();
+      await ctx.getById('calc-display').within(500).shouldBe('16');
     });
   });
 
@@ -507,11 +507,11 @@ describe('Full Calculator Tests', () => {
       await testApp.run();
 
       // Enter some value for visual interest
-      await ctx.getByID('btn-hex').click();
-      await ctx.getByID('btn-D').click();
-      await ctx.getByID('btn-E').click();
-      await ctx.getByID('btn-A').click();
-      await ctx.getByID('btn-D').click();
+      await ctx.getById('btn-hex').click();
+      await ctx.getById('btn-D').click();
+      await ctx.getById('btn-E').click();
+      await ctx.getById('btn-A').click();
+      await ctx.getById('btn-D').click();
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         const screenshotPath = path.join(__dirname, 'screenshots', 'full-calculator.png');

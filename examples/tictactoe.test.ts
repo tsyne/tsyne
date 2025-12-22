@@ -47,13 +47,13 @@ describe('Basic Tic-Tac-Toe', () => {
     await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // X's turn - click center
-    await ctx.getByID('cell4').click();
+    await ctx.getById('cell4').click();
 
     // Should now be O's turn - poll for state change
     await ctx.getByText("Player O's turn").within(200).shouldExist();
 
     // O's turn - click top-left
-    await ctx.getByID('cell0').click();
+    await ctx.getById('cell0').click();
 
     // Should be X's turn again - poll for state change
     await ctx.getByText("Player X's turn").within(200).shouldExist();
@@ -74,7 +74,7 @@ describe('Basic Tic-Tac-Toe', () => {
     const moves = [0, 3, 1, 4, 2]; // X wins top row
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).within(200).click();
+      await ctx.getById(`cell${move}`).within(200).click();
     }
 
     // Verify X wins - poll for win message
@@ -102,7 +102,7 @@ describe('Basic Tic-Tac-Toe', () => {
     ];
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).within(200).click();
+      await ctx.getById(`cell${move}`).within(200).click();
     }
 
     // Verify X wins - poll for win message
@@ -130,7 +130,7 @@ describe('Basic Tic-Tac-Toe', () => {
     ];
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).within(200).click();
+      await ctx.getById(`cell${move}`).within(200).click();
     }
 
     // Verify X wins - poll for win message
@@ -152,7 +152,7 @@ describe('Basic Tic-Tac-Toe', () => {
     const moves = [0, 2, 1, 3, 5, 4, 6, 8, 7];
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).within(200).click();
+      await ctx.getById(`cell${move}`).within(200).click();
     }
 
     // Verify draw - poll for draw message
@@ -171,7 +171,7 @@ describe('Basic Tic-Tac-Toe', () => {
     await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Make a move
-    await ctx.getByID('cell4').click();
+    await ctx.getById('cell4').click();
 
     // Should be O's turn - poll for state change
     await ctx.getByText("Player O's turn").within(200).shouldExist();
@@ -198,7 +198,7 @@ describe('Basic Tic-Tac-Toe', () => {
     const moves = [0, 3, 1, 4, 2]; // X wins top row
 
     for (const move of moves) {
-      await ctx.getByID(`cell${move}`).within(200).click();
+      await ctx.getById(`cell${move}`).within(200).click();
     }
 
     // Game should be over - poll for win message
@@ -224,7 +224,7 @@ describe('Basic Tic-Tac-Toe', () => {
       // Make some moves for a better screenshot
       const moves = [4, 0, 2, 6]; // Some X's and O's
       for (const move of moves) {
-        await ctx.getByID(`cell${move}`).within(200).click();
+        await ctx.getById(`cell${move}`).within(200).click();
       }
 
       // Wait for final state before screenshot

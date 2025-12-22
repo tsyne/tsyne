@@ -46,7 +46,7 @@ describe('Telegram App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('telegram-title').within(500).shouldExist();
+    await ctx.getById('telegram-title').within(500).shouldExist();
   });
 
   test('should display search button', async () => {
@@ -57,7 +57,7 @@ describe('Telegram App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-search').within(500).shouldExist();
+    await ctx.getById('btn-search').within(500).shouldExist();
   });
 
   test('should display new chat button', async () => {
@@ -68,7 +68,7 @@ describe('Telegram App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-new-chat').within(500).shouldExist();
+    await ctx.getById('btn-new-chat').within(500).shouldExist();
   });
 
   test('should display chat list', async () => {
@@ -81,7 +81,7 @@ describe('Telegram App', () => {
 
     const chats = telegram.getChats();
     if (chats.length > 0) {
-      await ctx.getByID(`chat-${chats[0].id}-name`).within(500).shouldExist();
+      await ctx.getById(`chat-${chats[0].id}-name`).within(500).shouldExist();
     }
   });
 
@@ -95,7 +95,7 @@ describe('Telegram App', () => {
 
     const chats = telegram.getChats();
     for (const chat of chats) {
-      await ctx.getByID(`chat-${chat.id}-name`).within(500).shouldExist();
+      await ctx.getById(`chat-${chat.id}-name`).within(500).shouldExist();
     }
   });
 
@@ -109,7 +109,7 @@ describe('Telegram App', () => {
 
     const chats = telegram.getChats();
     if (chats.length > 0) {
-      await ctx.getByID(`chat-${chats[0].id}-avatar`).within(500).shouldExist();
+      await ctx.getById(`chat-${chats[0].id}-avatar`).within(500).shouldExist();
     }
   });
 
@@ -124,7 +124,7 @@ describe('Telegram App', () => {
     const chats = telegram.getChats();
     if (chats.length > 0) {
       // Chat name label shows name (and unread count if any)
-      await ctx.getByID(`chat-${chats[0].id}-name`).within(500).shouldExist();
+      await ctx.getById(`chat-${chats[0].id}-name`).within(500).shouldExist();
     }
   });
 
@@ -140,7 +140,7 @@ describe('Telegram App', () => {
     const unreadChat = chats.find((c) => c.unreadCount > 0);
     if (unreadChat) {
       // Unread count is shown in the name label text, e.g. "Alice (3)"
-      await ctx.getByID(`chat-${unreadChat.id}-name`).within(500).shouldExist();
+      await ctx.getById(`chat-${unreadChat.id}-name`).within(500).shouldExist();
     }
   });
 
@@ -154,7 +154,7 @@ describe('Telegram App', () => {
 
     const chats = telegram.getChats();
     if (chats.length > 0) {
-      await ctx.getByID(`chat-${chats[0].id}-open`).within(500).shouldExist();
+      await ctx.getById(`chat-${chats[0].id}-open`).within(500).shouldExist();
     }
   });
 
@@ -166,7 +166,7 @@ describe('Telegram App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('message-input').within(500).shouldExist();
+    await ctx.getById('message-input').within(500).shouldExist();
   });
 
   test('should display send button', async () => {
@@ -177,7 +177,7 @@ describe('Telegram App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-send').within(500).shouldExist();
+    await ctx.getById('btn-send').within(500).shouldExist();
   });
 
   test('should take screenshot for documentation', async () => {

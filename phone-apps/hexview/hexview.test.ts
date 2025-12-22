@@ -153,7 +153,7 @@ describe('HexView UI', () => {
     await testApp.run();
 
     // Check Open button exists
-    await ctx.getByID('openBtn').shouldExist();
+    await ctx.getById('openBtn').shouldExist();
   }, 30000);
 
   it('should have navigation buttons', async () => {
@@ -165,12 +165,12 @@ describe('HexView UI', () => {
     await testApp.run();
 
     // Check navigation buttons exist
-    await ctx.getByID('topBtn').shouldExist();
-    await ctx.getByID('pageUpBtn').shouldExist();
-    await ctx.getByID('upBtn').shouldExist();
-    await ctx.getByID('downBtn').shouldExist();
-    await ctx.getByID('pageDownBtn').shouldExist();
-    await ctx.getByID('bottomBtn').shouldExist();
+    await ctx.getById('topBtn').shouldExist();
+    await ctx.getById('pageUpBtn').shouldExist();
+    await ctx.getById('upBtn').shouldExist();
+    await ctx.getById('downBtn').shouldExist();
+    await ctx.getById('pageDownBtn').shouldExist();
+    await ctx.getById('bottomBtn').shouldExist();
   }, 30000);
 
   it('should show no file loaded status initially', async () => {
@@ -181,7 +181,7 @@ describe('HexView UI', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(500).shouldBe('No file loaded');
+    await ctx.getById('statusLabel').within(500).shouldBe('No file loaded');
   }, 30000);
 
   it('should have header row', async () => {
@@ -192,8 +192,8 @@ describe('HexView UI', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('addrHeader').shouldExist();
-    await ctx.getByID('hexHeader').shouldExist();
-    await ctx.getByID('asciiHeader').shouldExist();
+    await ctx.getById('addrHeader').shouldExist();
+    await ctx.getById('hexHeader').shouldExist();
+    await ctx.getById('asciiHeader').shouldExist();
   }, 30000);
 });

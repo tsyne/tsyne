@@ -55,7 +55,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('contacts-title').within(500).shouldExist();
+    await ctx.getById('contacts-title').within(500).shouldExist();
   });
 
   test('should display search entry', async () => {
@@ -66,7 +66,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('search-entry').within(500).shouldExist();
+    await ctx.getById('search-entry').within(500).shouldExist();
   });
 
   test('should display add contact button', async () => {
@@ -77,7 +77,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-add-contact').within(500).shouldExist();
+    await ctx.getById('btn-add-contact').within(500).shouldExist();
   });
 
   test('should display contacts status', async () => {
@@ -88,7 +88,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('contacts-status').within(500).shouldExist();
+    await ctx.getById('contacts-status').within(500).shouldExist();
   });
 
   test('should display favorites section', async () => {
@@ -99,7 +99,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('label-favorites').within(500).shouldExist();
+    await ctx.getById('label-favorites').within(500).shouldExist();
   });
 
   test('should display all contacts section', async () => {
@@ -110,7 +110,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('label-all-contacts').within(500).shouldExist();
+    await ctx.getById('label-all-contacts').within(500).shouldExist();
   });
 
   test('should display first contact name', async () => {
@@ -124,7 +124,7 @@ describe('Contacts App', () => {
     // First contact in favorites should be visible
     const allContacts = contacts.getContacts();
     if (allContacts.length > 0) {
-      await ctx.getByID(`contact-${allContacts[0].id}-name`).within(500).shouldExist();
+      await ctx.getById(`contact-${allContacts[0].id}-name`).within(500).shouldExist();
     }
   });
 
@@ -138,7 +138,7 @@ describe('Contacts App', () => {
 
     const allContacts = contacts.getContacts();
     if (allContacts.length > 0) {
-      await ctx.getByID(`contact-${allContacts[0].id}-phone`).within(500).shouldExist();
+      await ctx.getById(`contact-${allContacts[0].id}-phone`).within(500).shouldExist();
     }
   });
 
@@ -152,7 +152,7 @@ describe('Contacts App', () => {
 
     const allContacts = contacts.getContacts();
     if (allContacts.length > 0) {
-      await ctx.getByID(`contact-${allContacts[0].id}-edit`).within(500).shouldExist();
+      await ctx.getById(`contact-${allContacts[0].id}-edit`).within(500).shouldExist();
     }
   });
 
@@ -166,7 +166,7 @@ describe('Contacts App', () => {
 
     const allContacts = contacts.getContacts();
     if (allContacts.length > 0) {
-      await ctx.getByID(`contact-${allContacts[0].id}-delete`).within(500).shouldExist();
+      await ctx.getById(`contact-${allContacts[0].id}-delete`).within(500).shouldExist();
     }
   });
 
@@ -180,7 +180,7 @@ describe('Contacts App', () => {
 
     const allContacts = contacts.getContacts();
     if (allContacts.length > 0) {
-      await ctx.getByID(`contact-${allContacts[0].id}-favorite`).within(500).shouldExist();
+      await ctx.getById(`contact-${allContacts[0].id}-favorite`).within(500).shouldExist();
     }
   });
 

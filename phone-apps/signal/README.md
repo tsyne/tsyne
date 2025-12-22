@@ -168,7 +168,7 @@ a.button('Send')
   .withId('btn-send-message');
 
 // In tests:
-await ctx.getByID('btn-send-message').click();
+await ctx.getById('btn-send-message').click();
 ```
 
 ## Testing

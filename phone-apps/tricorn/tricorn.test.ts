@@ -27,12 +27,12 @@ describe('Tricorn Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').shouldExist();
-    await ctx.getByID('zoom-out').shouldExist();
-    await ctx.getByID('reset').shouldExist();
-    await ctx.getByID('next-palette').shouldExist();
+    await ctx.getById('zoom-in').shouldExist();
+    await ctx.getById('zoom-out').shouldExist();
+    await ctx.getById('reset').shouldExist();
+    await ctx.getById('next-palette').shouldExist();
 
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('Tricorn');
   }, 30000);
@@ -44,14 +44,14 @@ describe('Tricorn Explorer', () => {
     await ctx.wait(1000);
 
     // Initial palette is ice
-    let status = await ctx.getByID('status');
+    let status = await ctx.getById('status');
     let text = await status.getText();
     expect(text).toContain('ice');
 
-    await ctx.getByID('next-palette').click();
+    await ctx.getById('next-palette').click();
     await ctx.wait(1000);
 
-    status = await ctx.getByID('status');
+    status = await ctx.getById('status');
     text = await status.getText();
     expect(text).toContain('rainbow');
   }, 30000);
@@ -62,7 +62,7 @@ describe('Tricorn Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
 
     const screenshotDir = path.join(__dirname, 'screenshots');

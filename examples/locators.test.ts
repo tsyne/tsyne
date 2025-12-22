@@ -1,8 +1,8 @@
 /**
- * Test demonstrating various locator methods including getByID()
+ * Test demonstrating various locator methods including getById()
  *
  * This test demonstrates:
- * 1. Using ctx.getByID() to find widgets by their unique ID
+ * 1. Using ctx.getById() to find widgets by their unique ID
  * 2. The difference between .find() (single element, like Selenium's findElement)
  *    and .findAll() (multiple elements, like Selenium's findElements)
  * 3. Practical examples of when to use each locator type
@@ -10,7 +10,7 @@
 
 import { TsyneTest, TestContext } from '../core/src/index-test';
 
-describe('Locator Tests - getByID and find/findAll patterns', () => {
+describe('Locator Tests - getById and find/findAll patterns', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
 
@@ -28,7 +28,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await tsyneTest.cleanup();
   });
 
-  test('should find widgets by ID using getByID()', async () => {
+  test('should find widgets by ID using getById()', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       app.window({ title: 'ID Locator Test', width: 400, height: 300 }, (win) => {
         win.setContent(() => {
@@ -59,12 +59,12 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await testApp.run();
 
     // Test 1: Find submit button by ID and click it
-    const submitLocator = ctx.getByID(submitButtonId);
+    const submitLocator = ctx.getById(submitButtonId);
     await submitLocator.click();
     await ctx.wait(50);
 
     // Verify status changed
-    const statusLocator = ctx.getByID(statusLabelId);
+    const statusLocator = ctx.getById(statusLabelId);
     await ctx.expect(statusLocator).toHaveText("Submitted!");
   });
 
@@ -137,7 +137,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await testApp.run();
 
     // Find entry by ID and type into it
-    const entryLocator = ctx.getByID(usernameEntryId);
+    const entryLocator = ctx.getById(usernameEntryId);
     await entryLocator.type("Hello World");
     await ctx.wait(50);
 
@@ -146,7 +146,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await ctx.wait(50);
 
     // Verify the text was typed
-    const displayLocator = ctx.getByID(statusLabelId);
+    const displayLocator = ctx.getById(statusLabelId);
     await ctx.expect(displayLocator).toHaveText("You typed: Hello World");
   });
 
@@ -203,7 +203,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await testApp.run();
 
     // Get widget info using ID
-    const buttonLocator = ctx.getByID(submitButtonId);
+    const buttonLocator = ctx.getById(submitButtonId);
     const info = await buttonLocator.getInfo();
 
     expect(info.id).toBe(submitButtonId);
@@ -236,7 +236,7 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await testApp.run();
 
     // Test toHaveText
-    const labelLocator = ctx.getByID(statusLabelId);
+    const labelLocator = ctx.getById(statusLabelId);
     await ctx.expect(labelLocator).toHaveText("Test Label");
 
     // Test toContainText
@@ -273,14 +273,14 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     await testApp.run();
 
     // Try to click a non-existent widget by ID
-    const fakeLocator = ctx.getByID("non-existent-id");
+    const fakeLocator = ctx.getById("non-existent-id");
 
     await expect(async () => {
       await fakeLocator.click();
     }).rejects.toThrow("No widget found with id: non-existent-id");
   });
 
-  test('should compare getByID vs getByText vs getByType', async () => {
+  test('should compare getById vs getByText vs getByType', async () => {
     let button1Id: string = '';
     let button2Id: string = '';
 
@@ -313,9 +313,9 @@ describe('Locator Tests - getByID and find/findAll patterns', () => {
     const allButtonIds = await typeLocator.findAll();
     expect(allButtonIds.length).toBe(2);
 
-    // Method 3: getByID finds exact widget (most precise)
-    const id1Locator = ctx.getByID(button1Id);
-    const id2Locator = ctx.getByID(button2Id);
+    // Method 3: getById finds exact widget (most precise)
+    const id1Locator = ctx.getById(button1Id);
+    const id2Locator = ctx.getById(button2Id);
 
     const foundId1 = await id1Locator.find();
     const foundId2 = await id2Locator.find();

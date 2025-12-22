@@ -155,12 +155,12 @@ export class Image {
   }
 
   /**
-   * Register a custom ID for this image widget (for test framework getByID)
+   * Register a custom ID for this image widget (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining
    * @example
    * const cardImage = a.image('card.png').withId('draw3-card');
-   * // In tests: ctx.getByID('draw3-card').click()
+   * // In tests: ctx.getById('draw3-card').click()
    */
   withId(customId: string): this {
     this.ctx.bridge.send('registerCustomId', {

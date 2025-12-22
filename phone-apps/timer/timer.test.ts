@@ -34,7 +34,7 @@ describe('Timer App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('timer-display').within(500).shouldBe('00:00:00');
+    await ctx.getById('timer-display').within(500).shouldBe('00:00:00');
   });
 
   test('should have quick add buttons', async () => {
@@ -45,9 +45,9 @@ describe('Timer App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('timer-add-1').within(500).shouldExist();
-    await ctx.getByID('timer-add-5').within(500).shouldExist();
-    await ctx.getByID('timer-add-10').within(500).shouldExist();
+    await ctx.getById('timer-add-1').within(500).shouldExist();
+    await ctx.getById('timer-add-5').within(500).shouldExist();
+    await ctx.getById('timer-add-10').within(500).shouldExist();
   });
 
   test('should have control buttons', async () => {
@@ -58,9 +58,9 @@ describe('Timer App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('timer-start').within(500).shouldExist();
-    await ctx.getByID('timer-stop').within(500).shouldExist();
-    await ctx.getByID('timer-reset').within(500).shouldExist();
+    await ctx.getById('timer-start').within(500).shouldExist();
+    await ctx.getById('timer-stop').within(500).shouldExist();
+    await ctx.getById('timer-reset').within(500).shouldExist();
   });
 
   test('should add time when quick add buttons clicked', async () => {
@@ -72,12 +72,12 @@ describe('Timer App', () => {
     await testApp.run();
 
     // Click +1m button
-    await ctx.getByID('timer-add-1').click();
-    await ctx.getByID('timer-display').within(500).shouldBe('00:01:00');
+    await ctx.getById('timer-add-1').click();
+    await ctx.getById('timer-display').within(500).shouldBe('00:01:00');
 
     // Click +5m button
-    await ctx.getByID('timer-add-5').click();
-    await ctx.getByID('timer-display').within(500).shouldBe('00:06:00');
+    await ctx.getById('timer-add-5').click();
+    await ctx.getById('timer-display').within(500).shouldBe('00:06:00');
   });
 
   test('should reset timer', async () => {
@@ -89,12 +89,12 @@ describe('Timer App', () => {
     await testApp.run();
 
     // Add some time
-    await ctx.getByID('timer-add-5').click();
-    await ctx.getByID('timer-display').within(500).shouldBe('00:05:00');
+    await ctx.getById('timer-add-5').click();
+    await ctx.getById('timer-display').within(500).shouldBe('00:05:00');
 
     // Reset
-    await ctx.getByID('timer-reset').click();
-    await ctx.getByID('timer-display').within(500).shouldBe('00:00:00');
+    await ctx.getById('timer-reset').click();
+    await ctx.getById('timer-display').within(500).shouldBe('00:00:00');
   });
 
   test('should render timer UI - screenshot', async () => {
@@ -106,8 +106,8 @@ describe('Timer App', () => {
     await testApp.run();
 
     // Add some time for a nice screenshot
-    await ctx.getByID('timer-add-5').click();
-    await ctx.getByID('timer-display').within(500).shouldExist();
+    await ctx.getById('timer-add-5').click();
+    await ctx.getById('timer-display').within(500).shouldExist();
 
     // Take screenshot if requested
     if (process.env.TAKE_SCREENSHOTS === '1') {

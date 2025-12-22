@@ -23,9 +23,9 @@ const ctx = tsyneTest.getContext();
 await testApp.run();
 
 // Fluent assertions
-await ctx.getByID("counter").shouldBe("Counter: 0");
+await ctx.getById("counter").shouldBe("Counter: 0");
 await ctx.getByExactText("Increment").click();
-await ctx.getByID("counter").within(500).shouldBe("Counter: 1");
+await ctx.getById("counter").within(500).shouldBe("Counter: 1");
 
 await tsyneTest.cleanup();
 ```
@@ -35,7 +35,7 @@ await tsyneTest.cleanup();
 ### Finding Widgets
 
 ```typescript
-ctx.getByID("submit-btn")       // By widget ID (fastest)
+ctx.getById("submit-btn")       // By widget ID (fastest)
 ctx.getByExactText("Submit")    // Exact text match
 ctx.getByText("Counter:")       // Partial text match
 ctx.getByType("button")         // By widget type
@@ -48,17 +48,17 @@ ctx.getByLabel("Username")      // By accessibility label
 ### Locator Actions
 
 ```typescript
-await ctx.getByID("btn").click();           // Click
-await ctx.getByID("btn").doubleClick();     // Double-click
-await ctx.getByID("btn").rightClick();      // Right-click
-await ctx.getByID("input").type("Hello");   // Type text
-await ctx.getByID("input").submit();        // Submit entry
-await ctx.getByID("slider").setValue(75);   // Set slider value
-await ctx.getByID("widget").hover();        // Hover over widget
-await ctx.getByID("item").drag(50, 0);      // Drag widget
+await ctx.getById("btn").click();           // Click
+await ctx.getById("btn").doubleClick();     // Double-click
+await ctx.getById("btn").rightClick();      // Right-click
+await ctx.getById("input").type("Hello");   // Type text
+await ctx.getById("input").submit();        // Submit entry
+await ctx.getById("slider").setValue(75);   // Set slider value
+await ctx.getById("widget").hover();        // Hover over widget
+await ctx.getById("item").drag(50, 0);      // Drag widget
 
-const text = await ctx.getByID("label").getText();  // Get text
-const info = await ctx.getByID("widget").getInfo(); // Get widget info
+const text = await ctx.getById("label").getText();  // Get text
+const info = await ctx.getById("widget").getInfo(); // Get widget info
 ```
 
 ## Fluent Assertions
@@ -68,31 +68,31 @@ TsyneTest provides fluent `should*` assertions that read naturally:
 ### Text Assertions
 
 ```typescript
-await ctx.getByID("status").shouldBe("Success");
-await ctx.getByID("message").shouldContain("welcome");
-await ctx.getByID("email").shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
-await ctx.getByID("error").shouldNotBe("Fatal");
+await ctx.getById("status").shouldBe("Success");
+await ctx.getById("message").shouldContain("welcome");
+await ctx.getById("email").shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
+await ctx.getById("error").shouldNotBe("Fatal");
 ```
 
 ### State Assertions
 
 ```typescript
-await ctx.getByID("checkbox").shouldBeChecked();
-await ctx.getByID("checkbox").shouldNotBeChecked();
-await ctx.getByID("submit").shouldBeEnabled();
-await ctx.getByID("submit").shouldBeDisabled();
-await ctx.getByID("slider").shouldHaveValue(50);
-await ctx.getByID("dropdown").shouldHaveSelected("Option A");
-await ctx.getByID("widget").shouldHaveType("button");
+await ctx.getById("checkbox").shouldBeChecked();
+await ctx.getById("checkbox").shouldNotBeChecked();
+await ctx.getById("submit").shouldBeEnabled();
+await ctx.getById("submit").shouldBeDisabled();
+await ctx.getById("slider").shouldHaveValue(50);
+await ctx.getById("dropdown").shouldHaveSelected("Option A");
+await ctx.getById("widget").shouldHaveType("button");
 ```
 
 ### Visibility & Existence Assertions
 
 ```typescript
-await ctx.getByID("modal").shouldBeVisible();
-await ctx.getByID("modal").shouldNotBeVisible();
-await ctx.getByID("widget").shouldExist();
-await ctx.getByID("widget").shouldNotExist();
+await ctx.getById("modal").shouldBeVisible();
+await ctx.getById("modal").shouldNotBeVisible();
+await ctx.getById("widget").shouldExist();
+await ctx.getById("widget").shouldNotExist();
 ```
 
 ## Polling with within() and without()
@@ -101,13 +101,13 @@ Use `within(ms)` to retry assertions until they pass or timeout:
 
 ```typescript
 // Poll for up to 500ms until text equals "Success"
-await ctx.getByID("status").within(500).shouldBe("Success");
+await ctx.getById("status").within(500).shouldBe("Success");
 
 // Poll for up to 1000ms until element exists
-await ctx.getByID("modal").within(1000).shouldExist();
+await ctx.getById("modal").within(1000).shouldExist();
 
 // Poll for up to 500ms until element is gone
-await ctx.getByID("loading").without(500).shouldNotExist();
+await ctx.getById("loading").without(500).shouldNotExist();
 ```
 
 This is essential for testing async UI updates without arbitrary `wait()` calls.
@@ -118,12 +118,12 @@ Access specific items in list widgets:
 
 ```typescript
 // Assert specific list items
-await ctx.getByID("playerList").item(0).shouldBe("Alice");
-await ctx.getByID("playerList").item(1).shouldContain("Bob");
-await ctx.getByID("emails").item(2).shouldMatch(/^[\w]+@/);
+await ctx.getById("playerList").item(0).shouldBe("Alice");
+await ctx.getById("playerList").item(1).shouldContain("Bob");
+await ctx.getById("emails").item(2).shouldMatch(/^[\w]+@/);
 
 // Get item text
-const name = await ctx.getByID("playerList").item(0).getText();
+const name = await ctx.getById("playerList").item(0).getText();
 ```
 
 ## Legacy Expect-Style Assertions
@@ -131,10 +131,10 @@ const name = await ctx.getByID("playerList").item(0).getText();
 The `ctx.expect()` API is still available:
 
 ```typescript
-await ctx.expect(ctx.getByID("label")).toHaveText("Hello");
-await ctx.expect(ctx.getByID("label")).toContainText("ell");
-await ctx.expect(ctx.getByID("widget")).toBeVisible();
-await ctx.expect(ctx.getByID("widget")).toExist();
+await ctx.expect(ctx.getById("label")).toHaveText("Hello");
+await ctx.expect(ctx.getById("label")).toContainText("ell");
+await ctx.expect(ctx.getById("widget")).toBeVisible();
+await ctx.expect(ctx.getById("widget")).toExist();
 await ctx.expect(ctx.getByType("button")).toHaveCount(3);
 ```
 
@@ -177,11 +177,11 @@ label("Status").withId("status-label");
 entry().withId("username-input");
 
 // In your test code
-await ctx.getByID("submit-btn").click();
-await ctx.getByID("status-label").shouldBe("Success");
+await ctx.getById("submit-btn").click();
+await ctx.getById("status-label").shouldBe("Success");
 ```
 
-Using `getByID()` is faster than text-based lookups and more resilient to text changes.
+Using `getById()` is faster than text-based lookups and more resilient to text changes.
 
 ## Complete Example
 
@@ -203,11 +203,11 @@ describe('Counter App', () => {
           hbox(() => {
             button("-").withId("dec").onClick(() => {
               count--;
-              ctx.getByID("count").setText(`Count: ${count}`);
+              ctx.getById("count").setText(`Count: ${count}`);
             });
             button("+").withId("inc").onClick(() => {
               count++;
-              ctx.getByID("count").setText(`Count: ${count}`);
+              ctx.getById("count").setText(`Count: ${count}`);
             });
           });
         });
@@ -223,17 +223,17 @@ describe('Counter App', () => {
   });
 
   test('should start at zero', async () => {
-    await ctx.getByID("count").shouldBe("Count: 0");
+    await ctx.getById("count").shouldBe("Count: 0");
   });
 
   test('should increment', async () => {
-    await ctx.getByID("inc").click();
-    await ctx.getByID("count").within(100).shouldBe("Count: 1");
+    await ctx.getById("inc").click();
+    await ctx.getById("count").within(100).shouldBe("Count: 1");
   });
 
   test('should decrement', async () => {
-    await ctx.getByID("dec").click();
-    await ctx.getByID("count").within(100).shouldBe("Count: -1");
+    await ctx.getById("dec").click();
+    await ctx.getById("count").within(100).shouldBe("Count: -1");
   });
 });
 ```
@@ -266,7 +266,7 @@ const tsyneTest = new TsyneTest({ headed: true });
 
 ```typescript
 // Good - fast and resilient
-await ctx.getByID("submit-btn").click();
+await ctx.getById("submit-btn").click();
 
 // Less reliable - breaks if text changes
 await ctx.getByExactText("Submit").click();
@@ -276,22 +276,22 @@ await ctx.getByExactText("Submit").click();
 
 ```typescript
 // Good - polls until ready
-await ctx.getByID("status").within(500).shouldBe("Done");
+await ctx.getById("status").within(500).shouldBe("Done");
 
 // Bad - arbitrary wait
 await ctx.wait(500);
-await ctx.getByID("status").shouldBe("Done");
+await ctx.getById("status").shouldBe("Done");
 ```
 
 ### 3. One Assertion Per Line
 
 ```typescript
 // Good - clear what failed
-await ctx.getByID("name").shouldBe("Alice");
-await ctx.getByID("score").shouldBe("100");
+await ctx.getById("name").shouldBe("Alice");
+await ctx.getById("score").shouldBe("100");
 
 // Hard to debug
-await ctx.getByID("name").shouldBe("Alice") && await ctx.getByID("score").shouldBe("100");
+await ctx.getById("name").shouldBe("Alice") && await ctx.getById("score").shouldBe("100");
 ```
 
 ### 4. Always Clean Up

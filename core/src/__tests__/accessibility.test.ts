@@ -68,10 +68,10 @@ describe('Accessibility', () => {
 
   it('should support fluent chaining with accessibility', async () => {
     // Verify that widgets with .accessibility() chained after .withId() work correctly
-    await ctx.expect(ctx.getByID('submitBtn')).toBeVisible();
-    await ctx.expect(ctx.getByID('usernameLabel')).toBeVisible();
-    await ctx.expect(ctx.getByID('usernameEntry')).toBeVisible();
-    await ctx.expect(ctx.getByID('containerLabel')).toBeVisible();
+    await ctx.expect(ctx.getById('submitBtn')).toBeVisible();
+    await ctx.expect(ctx.getById('usernameLabel')).toBeVisible();
+    await ctx.expect(ctx.getById('usernameEntry')).toBeVisible();
+    await ctx.expect(ctx.getById('containerLabel')).toBeVisible();
   });
 });
 

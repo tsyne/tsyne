@@ -47,12 +47,12 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // Scroll should exist
-    await ctx.getByID('test-scroll').shouldExist();
+    await ctx.getById('test-scroll').shouldExist();
 
     // First and some middle items should exist
-    await ctx.getByID('item-1').shouldExist();
-    await ctx.getByID('item-10').shouldExist();
-    await ctx.getByID('item-20').shouldExist();
+    await ctx.getById('item-1').shouldExist();
+    await ctx.getById('item-10').shouldExist();
+    await ctx.getById('item-20').shouldExist();
   });
 
   test('scroll with withMinHeight should have specified minimum height', async () => {
@@ -81,7 +81,7 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // Get scroll info and verify height
-    const scrollInfo = await ctx.getByID('test-scroll').getInfo();
+    const scrollInfo = await ctx.getById('test-scroll').getInfo();
     expect(scrollInfo.height).toBeGreaterThanOrEqual(150);
   });
 
@@ -111,7 +111,7 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // Get scroll info and verify dimensions
-    const scrollInfo = await ctx.getByID('test-scroll').getInfo();
+    const scrollInfo = await ctx.getById('test-scroll').getInfo();
     expect(scrollInfo.width).toBeGreaterThanOrEqual(200);
     expect(scrollInfo.height).toBeGreaterThanOrEqual(100);
   });
@@ -146,12 +146,12 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // All elements should exist
-    await ctx.getByID('header').shouldExist();
-    await ctx.getByID('test-scroll').shouldExist();
-    await ctx.getByID('footer').shouldExist();
+    await ctx.getById('header').shouldExist();
+    await ctx.getById('test-scroll').shouldExist();
+    await ctx.getById('footer').shouldExist();
 
     // Scroll should have significant height (filling center)
-    const scrollInfo = await ctx.getByID('test-scroll').getInfo();
+    const scrollInfo = await ctx.getById('test-scroll').getInfo();
     expect(scrollInfo.height).toBeGreaterThan(100);
   });
 
@@ -189,8 +189,8 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // Both scrolls should exist with different heights
-    const scroll1Info = await ctx.getByID('scroll-1').getInfo();
-    const scroll2Info = await ctx.getByID('scroll-2').getInfo();
+    const scroll1Info = await ctx.getById('scroll-1').getInfo();
+    const scroll2Info = await ctx.getById('scroll-2').getInfo();
 
     expect(scroll1Info.height).toBeGreaterThanOrEqual(100);
     expect(scroll2Info.height).toBeGreaterThanOrEqual(200);
@@ -219,10 +219,10 @@ describe('Scroll Container Height Tests', () => {
     await testApp.run();
 
     // Single item should exist
-    await ctx.getByID('single-item').shouldExist();
+    await ctx.getById('single-item').shouldExist();
 
     // Scroll should still have the minimum height even with small content
-    const scrollInfo = await ctx.getByID('test-scroll').getInfo();
+    const scrollInfo = await ctx.getById('test-scroll').getInfo();
     expect(scrollInfo.height).toBeGreaterThanOrEqual(200);
   });
 
@@ -282,12 +282,12 @@ describe('Scroll Container Height Tests', () => {
     }
 
     // All items should exist
-    await ctx.getByID('item-1').shouldExist();
-    await ctx.getByID('item-2').shouldExist();
-    await ctx.getByID('item-3').shouldExist();
+    await ctx.getById('item-1').shouldExist();
+    await ctx.getById('item-2').shouldExist();
+    await ctx.getById('item-3').shouldExist();
 
     // Get scroll dimensions
-    const scrollInfo = await ctx.getByID('test-scroll').getInfo();
+    const scrollInfo = await ctx.getById('test-scroll').getInfo();
     console.log('Scroll info:', JSON.stringify(scrollInfo, null, 2));
 
     // The scroll should have significant height - filling most of the center area

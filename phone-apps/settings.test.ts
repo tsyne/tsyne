@@ -53,7 +53,7 @@ describe('Settings App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('toggle-wifi').within(500).shouldExist();
+    await ctx.getById('toggle-wifi').within(500).shouldExist();
   });
 
   test('should have Bluetooth toggle', async () => {
@@ -64,7 +64,7 @@ describe('Settings App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('toggle-bluetooth').within(500).shouldExist();
+    await ctx.getById('toggle-bluetooth').within(500).shouldExist();
   });
 
   test('should display Display section', async () => {
@@ -88,7 +88,7 @@ describe('Settings App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('select-theme').within(500).shouldExist();
+    await ctx.getById('select-theme').within(500).shouldExist();
   });
 
   test('should have brightness slider', async () => {
@@ -99,7 +99,7 @@ describe('Settings App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('slider-brightness').within(500).shouldExist();
+    await ctx.getById('slider-brightness').within(500).shouldExist();
   });
 
   test('should display brightness value', async () => {
@@ -111,7 +111,7 @@ describe('Settings App', () => {
     await testApp.run();
 
     // Default brightness is 80%
-    await ctx.getByID('brightness-value').within(500).shouldBe('80%');
+    await ctx.getById('brightness-value').within(500).shouldBe('80%');
   });
 
   test('should display Sound section', async () => {
@@ -134,7 +134,7 @@ describe('Settings App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('slider-volume').within(500).shouldExist();
+    await ctx.getById('slider-volume').within(500).shouldExist();
   });
 
   test('should display volume value', async () => {
@@ -146,7 +146,7 @@ describe('Settings App', () => {
     await testApp.run();
 
     // Default volume is 70%
-    await ctx.getByID('volume-value').within(500).shouldBe('70%');
+    await ctx.getById('volume-value').within(500).shouldBe('70%');
   });
 
   test('should display About section', async () => {

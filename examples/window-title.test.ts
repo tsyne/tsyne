@@ -58,11 +58,11 @@ describe('Window Title Tests', () => {
     await testApp.run();
 
     // Click button to change title
-    await ctx.getByID('change-title-btn').click();
+    await ctx.getById('change-title-btn').click();
 
     // We can't directly test window title in headless mode,
     // but we can verify the button works and doesn't crash
-    await ctx.expect(ctx.getByID('change-title-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('change-title-btn')).toBeVisible();
   });
 
   test('should handle multiple title changes', async () => {
@@ -90,7 +90,7 @@ describe('Window Title Tests', () => {
     await testApp.run();
 
     // Click button multiple times
-    const button = ctx.getByID('multi-title-btn');
+    const button = ctx.getById('multi-title-btn');
     await button.click();
     await button.click();
     await button.click();
@@ -121,9 +121,9 @@ describe('Window Title Tests', () => {
     await testApp.run();
 
     // Click button to set empty title
-    await ctx.getByID('clear-title-btn').click();
+    await ctx.getById('clear-title-btn').click();
 
     // Should not crash
-    await ctx.expect(ctx.getByID('clear-title-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('clear-title-btn')).toBeVisible();
   });
 });

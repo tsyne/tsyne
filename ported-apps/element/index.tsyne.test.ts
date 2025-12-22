@@ -23,7 +23,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const title = await ctx.getByID('user-label').getText();
+    const title = await ctx.getById('user-label').getText();
     expect(title).toBeDefined();
   });
 
@@ -34,7 +34,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const stats = await ctx.getByID('stats-label').getText();
+    const stats = await ctx.getById('stats-label').getText();
     expect(stats).toContain('Rooms');
   });
 
@@ -45,7 +45,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const title = await ctx.getByID('rooms-title').getText();
+    const title = await ctx.getById('rooms-title').getText();
     expect(title).toContain('Rooms');
   });
 
@@ -59,7 +59,7 @@ describe('Element App UI Tests', () => {
     const dmBtn = await ctx.getByPattern(/Direct Messages/);
     await dmBtn.click();
 
-    const title = await ctx.getByID('directs-title').within(1000).getText();
+    const title = await ctx.getById('directs-title').within(1000).getText();
     expect(title).toContain('Direct Messages');
   });
 
@@ -73,7 +73,7 @@ describe('Element App UI Tests', () => {
     const settingsBtn = await ctx.getByPattern(/Settings/);
     await settingsBtn.click();
 
-    const title = await ctx.getByID('settings-title').within(1000).getText();
+    const title = await ctx.getById('settings-title').within(1000).getText();
     expect(title).toContain('Settings');
   });
 
@@ -84,7 +84,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const userName = await ctx.getByID('user-name').getText();
+    const userName = await ctx.getById('user-name').getText();
     expect(userName).toBeDefined();
   });
 
@@ -95,7 +95,7 @@ describe('Element App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const initialStats = await ctx.getByID('stats-label').getText();
+    const initialStats = await ctx.getById('stats-label').getText();
 
     const dmBtn = await ctx.getByPattern(/Direct Messages/);
     await dmBtn.click();
@@ -106,7 +106,7 @@ describe('Element App UI Tests', () => {
     const roomsBtn = await ctx.getByPattern(/Rooms/);
     await roomsBtn.click();
 
-    const finalStats = await ctx.getByID('stats-label').within(500).getText();
+    const finalStats = await ctx.getById('stats-label').within(500).getText();
     expect(finalStats).toBe(initialStats);
   });
 
@@ -132,7 +132,7 @@ describe('Element App UI Tests', () => {
 
     const dmBtn = await ctx.getByPattern(/Direct Messages/);
     await dmBtn.click();
-    await ctx.getByID('directs-title').within(1000).shouldExist();
+    await ctx.getById('directs-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {
@@ -149,7 +149,7 @@ describe('Element App UI Tests', () => {
 
     const settingsBtn = await ctx.getByPattern(/Settings/);
     await settingsBtn.click();
-    await ctx.getByID('settings-title').within(1000).shouldExist();
+    await ctx.getById('settings-title').within(1000).shouldExist();
 
     const win = testApp.getWindow();
     if (win && process.env.TAKE_SCREENSHOTS) {

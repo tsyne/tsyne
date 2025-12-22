@@ -204,12 +204,12 @@ describe('Minefield UI', () => {
     await ctx.wait(500);
 
     // Check difficulty buttons exist
-    await ctx.getByID('beginnerBtn').shouldExist();
-    await ctx.getByID('intermediateBtn').shouldExist();
-    await ctx.getByID('expertBtn').shouldExist();
+    await ctx.getById('beginnerBtn').shouldExist();
+    await ctx.getById('intermediateBtn').shouldExist();
+    await ctx.getById('expertBtn').shouldExist();
 
     // Check status label exists
-    await ctx.getByID('statusLabel').shouldExist();
+    await ctx.getById('statusLabel').shouldExist();
   }, 30000);
 
   it('should show Click to play status initially', async () => {
@@ -221,7 +221,7 @@ describe('Minefield UI', () => {
     await testApp.run();
     await ctx.wait(500);
 
-    const status = await ctx.getByID('statusLabel');
+    const status = await ctx.getById('statusLabel');
     const text = await status.getText();
     expect(text).toContain('Click to play');
   }, 30000);
@@ -235,7 +235,7 @@ describe('Minefield UI', () => {
     await testApp.run();
     await ctx.wait(500);
 
-    await ctx.getByID('newGameBtn').shouldExist();
+    await ctx.getById('newGameBtn').shouldExist();
   }, 30000);
 
   it('should have mine count display', async () => {
@@ -247,7 +247,7 @@ describe('Minefield UI', () => {
     await testApp.run();
     await ctx.wait(500);
 
-    const mineLabel = await ctx.getByID('mineCountLabel');
+    const mineLabel = await ctx.getById('mineCountLabel');
     const text = await mineLabel.getText();
     expect(text).toContain('10'); // Beginner has 10 mines
   }, 30000);
@@ -277,7 +277,7 @@ describe('Minefield UI', () => {
 
     // Click on a few cells to start gameplay
     // Click on center-ish cells for better visual
-    await ctx.getByID('cell-27').click(); // Row 3, col 3
+    await ctx.getById('cell-27').click(); // Row 3, col 3
     await ctx.wait(300);
 
     const screenshotDir = path.join(__dirname, 'screenshots');

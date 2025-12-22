@@ -112,7 +112,7 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 - Store pattern with change listeners
 
 ### Testing ✅
-- `getByID()` (preferred), `getByText()`, `getByExactText()`
+- `getById()` (preferred), `getByText()`, `getByExactText()`
 - `within(timeout).shouldBe()` - Polling assertions
 - Screenshot capture
 

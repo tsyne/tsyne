@@ -108,12 +108,12 @@ describe('Accessible Tic-Tac-Toe', () => {
     await ctx.getByText('No moves yet').within(500).shouldExist();
 
     // Make some moves
-    await ctx.getByID('cell4').click(); // X center
+    await ctx.getById('cell4').click(); // X center
 
     // History should update - poll for state change
     await ctx.getByText('X at center').within(300).shouldExist();
 
-    await ctx.getByID('cell0').click(); // O top-left
+    await ctx.getById('cell0').click(); // O top-left
 
     // Both moves in history - poll for state change
     await ctx.getByText('O at top left').within(300).shouldExist();
@@ -131,7 +131,7 @@ describe('Accessible Tic-Tac-Toe', () => {
     await ctx.getByText("Player X's turn").within(500).shouldExist();
 
     // Make a move
-    await ctx.getByID('cell4').click();
+    await ctx.getById('cell4').click();
 
     // Should be O's turn - poll for state change
     await ctx.getByText("Player O's turn").within(300).shouldExist();
@@ -184,7 +184,7 @@ describe('Accessible Tic-Tac-Toe', () => {
     // Play a winning game
     const moves = [0, 3, 1, 4, 2]; // X wins top row
     for (const moveIdx of moves) {
-      await ctx.getByID(`cell${moveIdx}`).within(300).click();
+      await ctx.getById(`cell${moveIdx}`).within(300).click();
     }
 
     // Verify win - poll for win message
@@ -217,7 +217,7 @@ describe('Accessible Tic-Tac-Toe', () => {
 
     // Rapid moves with short polling
     for (let i = 0; i < 5; i++) {
-      await ctx.getByID(`cell${i}`).within(100).click();
+      await ctx.getById(`cell${i}`).within(100).click();
     }
 
     // Game should still be functional - poll for UI state
@@ -242,13 +242,13 @@ describe('Accessible Tic-Tac-Toe', () => {
       await ctx.getByText('High Contrast: ON').within(500).shouldExist();
 
       // Make some moves
-      await ctx.getByID('cell4').click();
+      await ctx.getById('cell4').click();
       await ctx.getByText("Player O's turn").within(200).shouldExist();
 
-      await ctx.getByID('cell0').click();
+      await ctx.getById('cell0').click();
       await ctx.getByText("Player X's turn").within(200).shouldExist();
 
-      await ctx.getByID('cell2').click();
+      await ctx.getById('cell2').click();
       await ctx.getByText("Player O's turn").within(200).shouldExist();
 
       const screenshotPath = path.join(__dirname, 'screenshots', 'tictactoe-accessible-full.png');

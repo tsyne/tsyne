@@ -133,7 +133,7 @@ await ctx.getByType('entry').type('test@example.com');
 
 ### Playwright's Influence on TsyneTest
 
-1. **Fluent locator API**: `getByText()`, `getByID()`, `getByType()` - readable and chainable
+1. **Fluent locator API**: `getByText()`, `getById()`, `getByType()` - readable and chainable
 2. **Expect assertions**: Natural language assertions that read like English
 3. **Retry logic built-in**: Automatic retries for flaky tests (adapted in `within()`)
 4. **Headed/headless modes**: Visual debugging vs CI/CD speed

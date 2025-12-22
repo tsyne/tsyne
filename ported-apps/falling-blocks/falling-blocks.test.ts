@@ -38,14 +38,14 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Verify control buttons
-    await ctx.getByID('newGameBtn').within(500).shouldExist();
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getById('newGameBtn').within(500).shouldExist();
+    await ctx.getById('pauseBtn').within(500).shouldExist();
 
     // Verify status elements
-    await ctx.getByID('scoreLabel').within(500).shouldExist();
-    await ctx.getByID('linesLabel').within(500).shouldExist();
-    await ctx.getByID('levelLabel').within(500).shouldExist();
-    await ctx.getByID('statusLabel').within(500).shouldExist();
+    await ctx.getById('scoreLabel').within(500).shouldExist();
+    await ctx.getById('linesLabel').within(500).shouldExist();
+    await ctx.getById('levelLabel').within(500).shouldExist();
+    await ctx.getById('statusLabel').within(500).shouldExist();
   });
 
   test('should display control buttons', async () => {
@@ -59,10 +59,10 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Check game control buttons
-    await ctx.getByID('leftBtn').within(500).shouldExist();
-    await ctx.getByID('rotateBtn').within(500).shouldExist();
-    await ctx.getByID('rightBtn').within(500).shouldExist();
-    await ctx.getByID('dropBtn').within(500).shouldExist();
+    await ctx.getById('leftBtn').within(500).shouldExist();
+    await ctx.getById('rotateBtn').within(500).shouldExist();
+    await ctx.getById('rightBtn').within(500).shouldExist();
+    await ctx.getById('dropBtn').within(500).shouldExist();
   });
 
   test('should have working New Game button', async () => {
@@ -76,13 +76,13 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Click New Game
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
 
     // Wait for game to start
     await ctx.wait(500);
 
     // Score should exist
-    const score = await ctx.getByID('scoreLabel').getText();
+    const score = await ctx.getById('scoreLabel').getText();
     expect(score).toBeDefined();
   });
 
@@ -97,14 +97,14 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Start game first
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
     await ctx.wait(200);
 
     // Click Pause - should not crash
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Status should show paused
-    const status = await ctx.getByID('statusLabel').getText();
+    const status = await ctx.getById('statusLabel').getText();
     expect(status).toContain('PAUSED');
   });
 
@@ -119,9 +119,9 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Initial score should be 0
-    await ctx.getByID('scoreLabel').within(100).shouldBe('0');
-    await ctx.getByID('linesLabel').within(100).shouldBe('0');
-    await ctx.getByID('levelLabel').within(100).shouldBe('1');
+    await ctx.getById('scoreLabel').within(100).shouldBe('0');
+    await ctx.getById('linesLabel').within(100).shouldBe('0');
+    await ctx.getById('levelLabel').within(100).shouldBe('1');
   });
 
   test('should capture screenshot for documentation', async () => {
@@ -135,7 +135,7 @@ describe('Falling Blocks Integration Tests', () => {
     await ui!.initialize();
 
     // Start game and wait for piece
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
     await ctx.wait(1000);
 
     // Capture screenshot if requested

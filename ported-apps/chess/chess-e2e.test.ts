@@ -43,10 +43,10 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await ctx.expect(ctx.getByText('White to move')).toBeVisible();
 
     // Verify board structure (corner squares)
-    await ctx.expect(ctx.getByID('square-a8')).toBeVisible(); // Top-left
-    await ctx.expect(ctx.getByID('square-h8')).toBeVisible(); // Top-right
-    await ctx.expect(ctx.getByID('square-a1')).toBeVisible(); // Bottom-left
-    await ctx.expect(ctx.getByID('square-h1')).toBeVisible(); // Bottom-right
+    await ctx.expect(ctx.getById('square-a8')).toBeVisible(); // Top-left
+    await ctx.expect(ctx.getById('square-h8')).toBeVisible(); // Top-right
+    await ctx.expect(ctx.getById('square-a1')).toBeVisible(); // Bottom-left
+    await ctx.expect(ctx.getById('square-h1')).toBeVisible(); // Bottom-right
 
     // Verify all pieces are in starting position using smart queries
     expect(chessUI.countPawnsInRow(2)).toBe(8);  // White pawns
@@ -65,9 +65,9 @@ describe('Chess E2E Tests (Critical Paths)', () => {
 
   test('completes full move sequence: player move → computer response → player move', async () => {
     // Player move 1: e4
-    await ctx.getByID('square-e2').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
     await ctx.expect(ctx.getByText('Selected').within(5000)).toBeVisible();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
 
     // Wait for computer to respond
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
@@ -78,9 +78,9 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     expect(chessUI.countPawnsInRow(2)).toBe(7);  // Only 7 white pawns on row 2 now
 
     // Player move 2: d4
-    await ctx.getByID('square-d2').within(5000).click();
+    await ctx.getById('square-d2').within(5000).click();
     await ctx.expect(ctx.getByText('Selected').within(5000)).toBeVisible();
-    await ctx.getByID('square-d4').within(5000).click();
+    await ctx.getById('square-d4').within(5000).click();
 
     // Wait for computer to respond again
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
@@ -98,16 +98,16 @@ describe('Chess E2E Tests (Critical Paths)', () => {
   test.skip('resets game to initial state after moves', async () => {
     // SKIPPED: rebuildUI() timing issue - even with 300ms wait, widgets not findable after rebuild
     // Make several moves
-    await ctx.getByID('square-e2').within(5000).click();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
-    await ctx.getByID('square-d2').within(5000).click();
-    await ctx.getByID('square-d4').within(5000).click();
+    await ctx.getById('square-d2').within(5000).click();
+    await ctx.getById('square-d4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
-    await ctx.getByID('square-g1').within(5000).click();
-    await ctx.getByID('square-f3').within(5000).click();
+    await ctx.getById('square-g1').within(5000).click();
+    await ctx.getById('square-f3').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Reset game programmatically (no button needed!)
@@ -117,10 +117,10 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Verify pieces are back at starting positions
-    await ctx.expect(ctx.getByID('square-e2').within(5000)).toBeVisible();
+    await ctx.expect(ctx.getById('square-e2').within(5000)).toBeVisible();
 
     // Verify we can make a move again
-    await ctx.getByID('square-e2').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
     await ctx.expect(ctx.getByText('Selected').within(5000)).toBeVisible();
   }, 15000);
 
@@ -131,8 +131,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
   test.skip('handles multiple consecutive games correctly', async () => {
     // SKIPPED: Multiple newGame() calls hit rebuildUI() timing issues
     // Game 1: Make a move
-    await ctx.getByID('square-e2').within(5000).click();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Reset via newGame()
@@ -141,8 +141,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Game 2: Make a different move
-    await ctx.getByID('square-d2').within(5000).click();
-    await ctx.getByID('square-d4').within(5000).click();
+    await ctx.getById('square-d2').within(5000).click();
+    await ctx.getById('square-d4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Reset via newGame()
@@ -151,8 +151,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Game 3: Make another move
-    await ctx.getByID('square-g1').within(5000).click();
-    await ctx.getByID('square-f3').within(5000).click();
+    await ctx.getById('square-g1').within(5000).click();
+    await ctx.getById('square-f3').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
   }, 15000);
 
@@ -163,8 +163,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
   test.skip('supports standard chess opening moves', async () => {
     // SKIPPED: Multiple newGame() calls hit rebuildUI() timing issues
     // Test King's Pawn Opening (e4)
-    await ctx.getByID('square-e2').within(5000).click();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Reset and test Queen's Pawn Opening (d4)
@@ -172,8 +172,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
-    await ctx.getByID('square-d2').within(5000).click();
-    await ctx.getByID('square-d4').within(5000).click();
+    await ctx.getById('square-d2').within(5000).click();
+    await ctx.getById('square-d4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Reset and test Knight Development
@@ -181,8 +181,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
-    await ctx.getByID('square-g1').within(5000).click();
-    await ctx.getByID('square-f3').within(5000).click();
+    await ctx.getById('square-g1').within(5000).click();
+    await ctx.getById('square-f3').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
   }, 15000);
 
@@ -198,9 +198,9 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     const initialPawnsRow2 = chessUI.countPawnsInRow(2);
 
     // Try invalid move (pawn moving 3 squares)
-    await ctx.getByID('square-e2').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
     await ctx.expect(ctx.getByText('Selected').within(5000)).toBeVisible();
-    await ctx.getByID('square-e5').within(5000).click();
+    await ctx.getById('square-e5').within(5000).click();
 
     // Verify board state unchanged after invalid move
     expect(chessUI.getPiece('e2')).toEqual({ color: 'w', type: 'p' });  // Pawn still on e2
@@ -208,9 +208,9 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     expect(chessUI.countPawnsInRow(2)).toBe(initialPawnsRow2);  // No pawns moved
 
     // Make a valid move after the invalid attempt
-    await ctx.getByID('square-e2').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
     await ctx.expect(ctx.getByText('Selected').within(5000)).toBeVisible();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Verify valid move succeeded
@@ -224,7 +224,7 @@ describe('Chess E2E Tests (Critical Paths)', () => {
 
   test('renders correctly (visual regression)', async () => {
     // Wait for UI to be fully ready - check for a board square
-    await ctx.expect(ctx.getByID('square-e2')).toBeVisible();
+    await ctx.expect(ctx.getById('square-e2')).toBeVisible();
 
     // Capture screenshot if TAKE_SCREENSHOTS=1
     if (process.env.TAKE_SCREENSHOTS === '1') {
@@ -245,8 +245,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     // Verify knight in starting position
     expect(chessUI.getPiece('b1')).toEqual({ color: 'w', type: 'n' });
 
-    await ctx.getByID('square-b1').within(5000).click();
-    await ctx.getByID('square-c3').within(5000).click();
+    await ctx.getById('square-b1').within(5000).click();
+    await ctx.getById('square-c3').within(5000).click();
     // Wait for computer to respond (status will change to "White to move")
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
@@ -263,8 +263,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     // Start fresh
     await chessUI.newGame();
 
-    await ctx.getByID('square-d2').within(5000).click();
-    await ctx.getByID('square-d4').within(5000).click();
+    await ctx.getById('square-d2').within(5000).click();
+    await ctx.getById('square-d4').within(5000).click();
 
     // Wait for computer to finish and return control to player
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
@@ -279,14 +279,14 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     // Despite comments about "Start fresh" and "New Game", test was passing before
 
     // Make a move and wait for computer
-    await ctx.getByID('square-f2').within(5000).click();
-    await ctx.getByID('square-f4').within(5000).click();
+    await ctx.getById('square-f2').within(5000).click();
+    await ctx.getById('square-f4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Comments suggest New Game button click here, but test passes without it
 
     // Verify we're back to initial state (just checks square exists)
-    await ctx.expect(ctx.getByID('square-e2').within(5000)).toBeVisible();
+    await ctx.expect(ctx.getById('square-e2').within(5000)).toBeVisible();
   }, 15000);
 
   // ============================================================================
@@ -298,13 +298,13 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     await chessUI.newGame();
 
     // Move 1
-    await ctx.getByID('square-c2').within(5000).click();
-    await ctx.getByID('square-c4').within(5000).click();
+    await ctx.getById('square-c2').within(5000).click();
+    await ctx.getById('square-c4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // Move 2
-    await ctx.getByID('square-g1').within(5000).click();
-    await ctx.getByID('square-f3').within(5000).click();
+    await ctx.getById('square-g1').within(5000).click();
+    await ctx.getById('square-f3').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
   }, 15000);
 
@@ -334,8 +334,8 @@ describe('Chess E2E Tests (Critical Paths)', () => {
     expect(chessUI.countPiecesInRow(1, 'w', 'k')).toBe(1); // White king on row 1
 
     // Make a move and verify board state changed
-    await ctx.getByID('square-e2').within(5000).click();
-    await ctx.getByID('square-e4').within(5000).click();
+    await ctx.getById('square-e2').within(5000).click();
+    await ctx.getById('square-e4').within(5000).click();
     await ctx.expect(ctx.getByText('White to move').within(5000)).toBeVisible();
 
     // After e2-e4, row 2 should have 7 white pawns, row 4 should have 1

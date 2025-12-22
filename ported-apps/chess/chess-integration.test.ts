@@ -44,14 +44,14 @@ describe('Chess Integration Tests', () => {
   test('selecting a piece shows selection message', async () => {
     // Just verify clicking any starting piece shows selection
     // Don't rely on specific board state
-    await ctx.getByID('square-g1').click(); // Knight always available at start
+    await ctx.getById('square-g1').click(); // Knight always available at start
     await ctx.expect(ctx.getByText('Selected')).toBeVisible();
   });
 
   test('deselecting a piece removes selection', async () => {
     // g1 is already selected from previous test
     // Click to deselect
-    await ctx.getByID('square-g1').click();
+    await ctx.getById('square-g1').click();
     await ctx.expect(ctx.getByText('to move').within(2000)).toBeVisible();
   });
 

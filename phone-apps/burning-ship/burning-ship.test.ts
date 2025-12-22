@@ -27,10 +27,10 @@ describe('Burning Ship Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').shouldExist();
-    await ctx.getByID('zoom-out').shouldExist();
-    await ctx.getByID('reset').shouldExist();
-    await ctx.getByID('next-palette').shouldExist();
+    await ctx.getById('zoom-in').shouldExist();
+    await ctx.getById('zoom-out').shouldExist();
+    await ctx.getById('reset').shouldExist();
+    await ctx.getById('next-palette').shouldExist();
   }, 30000);
 
   test('should zoom and take screenshot', async () => {
@@ -39,7 +39,7 @@ describe('Burning Ship Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
 
     const screenshotDir = path.join(__dirname, 'screenshots');
@@ -53,14 +53,14 @@ describe('Burning Ship Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(500);
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(500);
-    await ctx.getByID('reset').click();
+    await ctx.getById('reset').click();
     await ctx.wait(1000);
 
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('Zoom: 0.8x');
   }, 30000);

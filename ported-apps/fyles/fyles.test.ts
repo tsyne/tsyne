@@ -50,7 +50,7 @@ describe('Fyles File Browser Tests', () => {
     await testApp.run();
 
     // Wait for initial UI to render by polling for home button
-    await ctx.getByID('panel-0-home').within(2000).shouldExist();
+    await ctx.getById('panel-0-home').within(2000).shouldExist();
   }, 15000);
 
   afterAll(async () => {
@@ -66,12 +66,12 @@ describe('Fyles File Browser Tests', () => {
 
   test('should display toolbar with home button', async () => {
     // Verify home button - use ID for reliability
-    await ctx.getByID('panel-0-home').within(2000).shouldExist();
+    await ctx.getById('panel-0-home').within(2000).shouldExist();
   });
 
   test('should display toolbar with new folder button', async () => {
     // Verify new folder button - use ID for reliability
-    await ctx.getByID('panel-0-newfolder').within(2000).shouldExist();
+    await ctx.getById('panel-0-newfolder').within(2000).shouldExist();
   });
 
   test('should display current directory path', async () => {
@@ -127,12 +127,12 @@ describe('Fyles File Browser Tests', () => {
       await ctx.getByText('nested.txt').within(500).shouldExist();
     } catch {
       // Not in subfolder yet, navigate there
-      await ctx.getByID('panel-0-grid-folder-subfolder').within(2000).click();
+      await ctx.getById('panel-0-grid-folder-subfolder').within(2000).click();
       await ctx.getByText('nested.txt').within(2000).shouldExist();
     }
 
     // Click parent button (..) to navigate up
-    await ctx.getByID('parent-dir-btn').within(500).click();
+    await ctx.getById('parent-dir-btn').within(500).click();
 
     // Should be back in test directory
     await ctx.getByText(testDir).within(2000).shouldExist();
@@ -142,7 +142,7 @@ describe('Fyles File Browser Tests', () => {
   test.skip('should navigate to home directory', async () => {
     // FIXME: Test has inter-dependency issues - previous tests leave app in unknown state
     // Click home button - use ID for reliability
-    await ctx.getByID('panel-0-home').within(500).click();
+    await ctx.getById('panel-0-home').within(500).click();
 
     // Path should show home directory
     const homeDir = os.homedir();

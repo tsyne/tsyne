@@ -258,7 +258,7 @@ export class VBox {
   }
 
   /**
-   * Register a custom ID for this VBox (for test framework getByID)
+   * Register a custom ID for this VBox (for test framework getById)
    */
   withId(customId: string): this {
     const registrationPromise = this.ctx.bridge.send('registerCustomId', {

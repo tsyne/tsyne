@@ -71,18 +71,18 @@ describe('Fyles Multi-Panel Tests', () => {
 
   test('should display toolbar buttons for both panels', async () => {
     // Both panels should have home buttons - check by ID
-    await ctx.getByID('panel-0-home').within(2000).shouldExist();
-    await ctx.getByID('panel-1-home').within(2000).shouldExist();
+    await ctx.getById('panel-0-home').within(2000).shouldExist();
+    await ctx.getById('panel-1-home').within(2000).shouldExist();
 
     // Both panels should have split buttons - check by ID
-    await ctx.getByID('panel-0-split').within(2000).shouldExist();
-    await ctx.getByID('panel-1-split').within(2000).shouldExist();
+    await ctx.getById('panel-0-split').within(2000).shouldExist();
+    await ctx.getById('panel-1-split').within(2000).shouldExist();
   });
 
   test('should display close buttons for both panels', async () => {
     // With two panels, both should have close buttons - check by ID
-    await ctx.getByID('panel-0-close').within(2000).shouldExist();
-    await ctx.getByID('panel-1-close').within(2000).shouldExist();
+    await ctx.getById('panel-0-close').within(2000).shouldExist();
+    await ctx.getById('panel-1-close').within(2000).shouldExist();
   });
 
   test('should display files from first panel', async () => {
@@ -151,10 +151,10 @@ describe('Fyles Single Panel with Split', () => {
     await ctx.getByText(testDir).within(2000).shouldExist();
 
     // Should show split button - use ID
-    await ctx.getByID('panel-0-split').within(2000).shouldExist();
+    await ctx.getById('panel-0-split').within(2000).shouldExist();
 
     // Should have home button - use ID
-    await ctx.getByID('panel-0-home').within(2000).shouldExist();
+    await ctx.getById('panel-0-home').within(2000).shouldExist();
   });
 
   test('should show files in single panel', async () => {
@@ -164,12 +164,12 @@ describe('Fyles Single Panel with Split', () => {
 
   test('should split into two panels when split button clicked', async () => {
     // Click split button - use ID
-    await ctx.getByID('panel-0-split').click();
+    await ctx.getById('panel-0-split').click();
     await ctx.wait(500);
 
     // Now there should be two panels showing the same directory
     // We should see close button for panel-1 now
-    await ctx.getByID('panel-1-close').within(2000).shouldExist();
+    await ctx.getById('panel-1-close').within(2000).shouldExist();
 
     // Both panels should show the same directory
     // (The path appears twice now)
@@ -178,10 +178,10 @@ describe('Fyles Single Panel with Split', () => {
 
   test('should close panel when close button clicked', async () => {
     // There should be close buttons now (from previous test)
-    await ctx.getByID('panel-1-close').within(2000).shouldExist();
+    await ctx.getById('panel-1-close').within(2000).shouldExist();
 
     // Click a close button - use ID
-    await ctx.getByID('panel-1-close').click();
+    await ctx.getById('panel-1-close').click();
     await ctx.wait(500);
 
     // Should be back to single panel - close button should be gone

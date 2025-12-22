@@ -30,43 +30,43 @@ describe('Disk Tree UI', () => {
 
   test('should render initial UI with title', async () => {
     // Verify title
-    const title = await ctx.getByID('diskTreeTitle').getText();
+    const title = await ctx.getById('diskTreeTitle').getText();
     expect(title).toBe('Disk Tree - Visualize Disk Usage');
   }, 30000);
 
   test('should have control buttons', async () => {
     // Verify open folder button
-    const openBtn = await ctx.getByID('diskTreeOpenBtn').getText();
+    const openBtn = await ctx.getById('diskTreeOpenBtn').getText();
     expect(openBtn).toBe('Open Folder');
 
     // Verify sort button
-    const sortBtn = await ctx.getByID('diskTreeSortBtn').getText();
+    const sortBtn = await ctx.getById('diskTreeSortBtn').getText();
     expect(sortBtn).toMatch(/Sort by (Name|Size)/);
   }, 30000);
 
   test('should display status information', async () => {
     // Verify status label exists
-    const status = await ctx.getByID('diskTreeStatus').getText();
+    const status = await ctx.getById('diskTreeStatus').getText();
     expect(status).toBe('No folder selected');
 
     // Verify stats label exists
-    const stats = await ctx.getByID('diskTreeStats').getText();
+    const stats = await ctx.getById('diskTreeStats').getText();
     expect(stats).toMatch(/Files: 0 \| Dirs: 0 \| Total: 0 B/);
   }, 30000);
 
   test('should display placeholder when no folder selected', async () => {
     // Verify placeholder text
-    const placeholder = await ctx.getByID('diskTreePlaceholder').getText();
+    const placeholder = await ctx.getById('diskTreePlaceholder').getText();
     expect(placeholder).toBe('Select a folder to analyze disk usage');
   }, 30000);
 
   test('should have all required UI elements', async () => {
     // Check all elements exist
-    await ctx.getByID('diskTreeTitle').within(500).shouldExist();
-    await ctx.getByID('diskTreeOpenBtn').within(500).shouldExist();
-    await ctx.getByID('diskTreeSortBtn').within(500).shouldExist();
-    await ctx.getByID('diskTreeStatus').within(500).shouldExist();
-    await ctx.getByID('diskTreeStats').within(500).shouldExist();
-    await ctx.getByID('diskTreePlaceholder').within(500).shouldExist();
+    await ctx.getById('diskTreeTitle').within(500).shouldExist();
+    await ctx.getById('diskTreeOpenBtn').within(500).shouldExist();
+    await ctx.getById('diskTreeSortBtn').within(500).shouldExist();
+    await ctx.getById('diskTreeStatus').within(500).shouldExist();
+    await ctx.getById('diskTreeStats').within(500).shouldExist();
+    await ctx.getById('diskTreePlaceholder').within(500).shouldExist();
   }, 30000);
 });

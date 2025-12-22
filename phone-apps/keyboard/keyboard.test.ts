@@ -45,13 +45,13 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-o').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-o').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hello');
+      await ctx.getById('text-area').within(500).shouldBe('hello');
     });
 
     test('shift + h → "H", then "ello" → "Hello"', async () => {
@@ -64,14 +64,14 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-o').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-o').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('Hello');
+      await ctx.getById('text-area').within(500).shouldBe('Hello');
     });
 
     test('backspace removes last character', async () => {
@@ -84,12 +84,12 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-i').click();
-      await ctx.getByID('key-x').click();
-      await ctx.getByID('key-back').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-i').click();
+      await ctx.getById('key-x').click();
+      await ctx.getById('key-back').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hi');
+      await ctx.getById('text-area').within(500).shouldBe('hi');
     });
 
     test('space between words', async () => {
@@ -102,13 +102,13 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-i').click();
-      await ctx.getByID('key-space').click();
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-i').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-i').click();
+      await ctx.getById('key-space').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-i').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hi hi');
+      await ctx.getById('text-area').within(500).shouldBe('hi hi');
     });
 
     test('screenshot: Hello World.', async () => {
@@ -122,23 +122,23 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // Hello
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-space').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-space').click();
       // World
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-w').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-r').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-d').click();
-      await ctx.getByID('key-dot').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-w').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-r').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-d').click();
+      await ctx.getById('key-dot').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('Hello World.');
+      await ctx.getById('text-area').within(500).shouldBe('Hello World.');
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-en-us.png');
@@ -160,10 +160,10 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-i').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-i').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hi');
+      await ctx.getById('text-area').within(500).shouldBe('hi');
     });
 
     test('£ symbol (UK specific)', async () => {
@@ -176,11 +176,11 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-pound').click();
-      await ctx.getByID('key-pound').click();
-      await ctx.getByID('key-pound').click();
+      await ctx.getById('key-pound').click();
+      await ctx.getById('key-pound').click();
+      await ctx.getById('key-pound').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('£££');
+      await ctx.getById('text-area').within(500).shouldBe('£££');
     });
   });
 
@@ -198,14 +198,14 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-a').click();
-      await ctx.getByID('key-z').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-r').click();
-      await ctx.getByID('key-t').click();
-      await ctx.getByID('key-y').click();
+      await ctx.getById('key-a').click();
+      await ctx.getById('key-z').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-r').click();
+      await ctx.getById('key-t').click();
+      await ctx.getById('key-y').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('azerty');
+      await ctx.getById('text-area').within(500).shouldBe('azerty');
     });
 
     test('French accented é', async () => {
@@ -218,9 +218,9 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-e-acute').click();
+      await ctx.getById('key-e-acute').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('é');
+      await ctx.getById('text-area').within(500).shouldBe('é');
     });
 
     test('type "café" with accent', async () => {
@@ -233,12 +233,12 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-c').click();
-      await ctx.getByID('key-a').click();
-      await ctx.getByID('key-f').click();
-      await ctx.getByID('key-e-acute').click();
+      await ctx.getById('key-c').click();
+      await ctx.getById('key-a').click();
+      await ctx.getById('key-f').click();
+      await ctx.getById('key-e-acute').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('café');
+      await ctx.getById('text-area').within(500).shouldBe('café');
     });
 
     test('screenshot: Bonjour', async () => {
@@ -251,16 +251,16 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-b').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-n').click();
-      await ctx.getByID('key-j').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-u').click();
-      await ctx.getByID('key-r').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-b').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-n').click();
+      await ctx.getById('key-j').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-u').click();
+      await ctx.getById('key-r').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('Bonjour');
+      await ctx.getById('text-area').within(500).shouldBe('Bonjour');
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-fr-fr.png');
@@ -282,12 +282,12 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-a').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-a').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hola');
+      await ctx.getById('text-area').within(500).shouldBe('hola');
     });
 
     test('ñ character (Spanish specific)', async () => {
@@ -300,9 +300,9 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-ñ').click();
+      await ctx.getById('key-ñ').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('ñ');
+      await ctx.getById('text-area').within(500).shouldBe('ñ');
     });
 
     test('¿ and ¡ (Spanish punctuation)', async () => {
@@ -315,10 +315,10 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-quest-inv').click();
-      await ctx.getByID('key-excl-inv').click();
+      await ctx.getById('key-quest-inv').click();
+      await ctx.getById('key-excl-inv').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('¿¡');
+      await ctx.getById('text-area').within(500).shouldBe('¿¡');
     });
 
     test('screenshot: Hola España', async () => {
@@ -332,22 +332,22 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // Hola
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-a').click();
-      await ctx.getByID('key-space').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-a').click();
+      await ctx.getById('key-space').click();
       // España
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-s').click();
-      await ctx.getByID('key-p').click();
-      await ctx.getByID('key-a').click();
-      await ctx.getByID('key-ñ').click();
-      await ctx.getByID('key-a').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-s').click();
+      await ctx.getById('key-p').click();
+      await ctx.getById('key-a').click();
+      await ctx.getById('key-ñ').click();
+      await ctx.getById('key-a').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('Hola España');
+      await ctx.getById('text-area').within(500).shouldBe('Hola España');
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-es-es.png');
@@ -370,13 +370,13 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // In Dvorak: h=d row2, e=row2, l=row1, l=row1, o=row2
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-l').click();
-      await ctx.getByID('key-o').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-l').click();
+      await ctx.getById('key-o').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hello');
+      await ctx.getById('text-area').within(500).shouldBe('hello');
     });
 
     test('type "aoeui" (Dvorak home row vowels)', async () => {
@@ -389,13 +389,13 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-a').click();
-      await ctx.getByID('key-o').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-u').click();
-      await ctx.getByID('key-i').click();
+      await ctx.getById('key-a').click();
+      await ctx.getById('key-o').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-u').click();
+      await ctx.getById('key-i').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('aoeui');
+      await ctx.getById('text-area').within(500).shouldBe('aoeui');
     });
 
     test('screenshot: The quick', async () => {
@@ -409,19 +409,19 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // The
-      await ctx.getByID('key-shift').click();
-      await ctx.getByID('key-t').click();
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-e').click();
-      await ctx.getByID('key-space').click();
+      await ctx.getById('key-shift').click();
+      await ctx.getById('key-t').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-e').click();
+      await ctx.getById('key-space').click();
       // quick
-      await ctx.getByID('key-q').click();
-      await ctx.getByID('key-u').click();
-      await ctx.getByID('key-i').click();
-      await ctx.getByID('key-c').click();
-      await ctx.getByID('key-k').click();
+      await ctx.getById('key-q').click();
+      await ctx.getById('key-u').click();
+      await ctx.getById('key-i').click();
+      await ctx.getById('key-c').click();
+      await ctx.getById('key-k').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('The quick');
+      await ctx.getById('text-area').within(500).shouldBe('The quick');
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-en-dvorak.png');
@@ -443,9 +443,9 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-f1').click();
+      await ctx.getById('key-f1').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('[F1]');
+      await ctx.getById('text-area').within(500).shouldBe('[F1]');
     });
 
     test('F5 and F12 keys', async () => {
@@ -458,10 +458,10 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-f5').click();
-      await ctx.getByID('key-f12').click();
+      await ctx.getById('key-f5').click();
+      await ctx.getById('key-f12').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('[F5][F12]');
+      await ctx.getById('text-area').within(500).shouldBe('[F5][F12]');
     });
 
     test('cursor keys (inverted T)', async () => {
@@ -474,12 +474,12 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-up').click();
-      await ctx.getByID('key-left').click();
-      await ctx.getByID('key-down').click();
-      await ctx.getByID('key-right').click();
+      await ctx.getById('key-up').click();
+      await ctx.getById('key-left').click();
+      await ctx.getById('key-down').click();
+      await ctx.getById('key-right').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('[ArrowUp][ArrowLeft][ArrowDown][ArrowRight]');
+      await ctx.getById('text-area').within(500).shouldBe('[ArrowUp][ArrowLeft][ArrowDown][ArrowRight]');
     });
 
     test('Ctrl+C produces control character', async () => {
@@ -493,11 +493,11 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // Press Ctrl then C
-      await ctx.getByID('key-ctrl').click();
-      await ctx.getByID('key-c').click();
+      await ctx.getById('key-ctrl').click();
+      await ctx.getById('key-c').click();
 
       // Ctrl+C is ASCII 3 (ETX)
-      await ctx.getByID('text-area').within(500).shouldBe('\x03');
+      await ctx.getById('text-area').within(500).shouldBe('\x03');
     });
 
     test('navigation keys: Home, End', async () => {
@@ -510,10 +510,10 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-home').click();
-      await ctx.getByID('key-end').click();
+      await ctx.getById('key-home').click();
+      await ctx.getById('key-end').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('[Home][End]');
+      await ctx.getById('text-area').within(500).shouldBe('[Home][End]');
     });
 
     test('Escape and Tab', async () => {
@@ -526,11 +526,11 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-esc').click();
-      await ctx.getByID('key-tab').click();
+      await ctx.getById('key-esc').click();
+      await ctx.getById('key-tab').click();
 
       // Tab shows as → in test harness, Escape as [Escape]
-      await ctx.getByID('text-area').within(500).shouldBe('[Escape]→');
+      await ctx.getById('text-area').within(500).shouldBe('[Escape]→');
     });
 
     test('Ctrl+ArrowRight (word navigation)', async () => {
@@ -543,10 +543,10 @@ describe('Virtual Keyboard', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('key-ctrl').click();
-      await ctx.getByID('key-right').click();
+      await ctx.getById('key-ctrl').click();
+      await ctx.getById('key-right').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('[Ctrl+ArrowRight]');
+      await ctx.getById('text-area').within(500).shouldBe('[Ctrl+ArrowRight]');
     });
 
     test('screenshot: Fn layer with cursor keys', async () => {
@@ -560,13 +560,13 @@ describe('Virtual Keyboard', () => {
       await testApp.run();
 
       // Type some text, then navigate
-      await ctx.getByID('key-h').click();
-      await ctx.getByID('key-i').click();
-      await ctx.getByID('key-space').click();
-      await ctx.getByID('key-f1').click();
-      await ctx.getByID('key-up').click();
+      await ctx.getById('key-h').click();
+      await ctx.getById('key-i').click();
+      await ctx.getById('key-space').click();
+      await ctx.getById('key-f1').click();
+      await ctx.getById('key-up').click();
 
-      await ctx.getByID('text-area').within(500).shouldBe('hi [F1][ArrowUp]');
+      await ctx.getById('text-area').within(500).shouldBe('hi [F1][ArrowUp]');
 
       if (process.env.TAKE_SCREENSHOTS === '1') {
         await tsyneTest.screenshot('/home/user/tsyne/phone-apps/keyboard/screenshot-fn-layer.png');

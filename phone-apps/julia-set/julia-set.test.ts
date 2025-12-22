@@ -27,11 +27,11 @@ describe('Julia Set Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').shouldExist();
-    await ctx.getByID('zoom-out').shouldExist();
-    await ctx.getByID('reset').shouldExist();
-    await ctx.getByID('next-preset').shouldExist();
-    await ctx.getByID('next-palette').shouldExist();
+    await ctx.getById('zoom-in').shouldExist();
+    await ctx.getById('zoom-out').shouldExist();
+    await ctx.getById('reset').shouldExist();
+    await ctx.getById('next-preset').shouldExist();
+    await ctx.getById('next-palette').shouldExist();
   }, 30000);
 
   test('should cycle through presets', async () => {
@@ -41,15 +41,15 @@ describe('Julia Set Explorer', () => {
     await ctx.wait(1000);
 
     // Initial preset is Classic
-    let status = await ctx.getByID('status');
+    let status = await ctx.getById('status');
     let text = await status.getText();
     expect(text).toContain('Classic');
 
     // Click next preset
-    await ctx.getByID('next-preset').click();
+    await ctx.getById('next-preset').click();
     await ctx.wait(1000);
 
-    status = await ctx.getByID('status');
+    status = await ctx.getById('status');
     text = await status.getText();
     expect(text).toContain('Dendrite');
   }, 30000);
@@ -60,7 +60,7 @@ describe('Julia Set Explorer', () => {
     await testApp.run();
     await ctx.wait(1000);
 
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
 
     // Take screenshot for visual verification

@@ -73,9 +73,9 @@ describe('Toolbar Button Visibility Tests', () => {
 
     // Toolbar buttons are not "visible" in the traditional sense,
     // but they can be clicked by their custom ID.
-    await ctx.getByID('open-btn').click();
-    await ctx.getByID('save-btn').click();
-    await ctx.getByID('close-btn').click();
+    await ctx.getById('open-btn').click();
+    await ctx.getById('save-btn').click();
+    await ctx.getById('close-btn').click();
   });
 
   test('FIXED: Toolbar in border.top is now clickable by ID', async () => {
@@ -105,8 +105,8 @@ describe('Toolbar Button Visibility Tests', () => {
     await ctx.expect(ctx.getByText('Center content')).toBeVisible();
 
     // Toolbar buttons can be clicked by their custom ID.
-    await ctx.getByID('action1-btn').click();
-    await ctx.getByID('action2-btn').click();
+    await ctx.getById('action1-btn').click();
+    await ctx.getById('action2-btn').click();
   });
 
   test('CONTROL: Regular buttons in border.top ARE visible', async () => {
@@ -166,6 +166,6 @@ describe('Toolbar Button Visibility Tests', () => {
     await ctx.expect(ctx.getByText('Regular Button Below')).toBeVisible();
 
     // Toolbar button is clickable by ID
-    await ctx.getByID('mixed-toolbar-btn').click();
+    await ctx.getById('mixed-toolbar-btn').click();
   });
 });

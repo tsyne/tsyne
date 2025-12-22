@@ -55,7 +55,7 @@ describe('Calendar App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('calendar-title').within(500).shouldExist();
+    await ctx.getById('calendar-title').within(500).shouldExist();
   });
 
   test('should display current month', async () => {
@@ -67,7 +67,7 @@ describe('Calendar App', () => {
     await testApp.run();
 
     // Month display should show current month and year
-    await ctx.getByID('month-display').within(500).shouldExist();
+    await ctx.getById('month-display').within(500).shouldExist();
   });
 
   test('should have month navigation buttons', async () => {
@@ -78,8 +78,8 @@ describe('Calendar App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-prev-month').within(500).shouldExist();
-    await ctx.getByID('btn-next-month').within(500).shouldExist();
+    await ctx.getById('btn-prev-month').within(500).shouldExist();
+    await ctx.getById('btn-next-month').within(500).shouldExist();
   });
 
   test('should have today button', async () => {
@@ -90,7 +90,7 @@ describe('Calendar App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-today').within(500).shouldExist();
+    await ctx.getById('btn-today').within(500).shouldExist();
   });
 
   test('should have new event button', async () => {
@@ -101,7 +101,7 @@ describe('Calendar App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-new-event').within(500).shouldExist();
+    await ctx.getById('btn-new-event').within(500).shouldExist();
   });
 
   test('should display weekday headers', async () => {
@@ -113,7 +113,7 @@ describe('Calendar App', () => {
     await testApp.run();
 
     // At least some weekday headers should be visible
-    await ctx.getByID('weekday-Mon').within(500).shouldExist();
+    await ctx.getById('weekday-Mon').within(500).shouldExist();
   });
 
   test('should display events section', async () => {
@@ -124,7 +124,7 @@ describe('Calendar App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('label-events-section').within(500).shouldExist();
+    await ctx.getById('label-events-section').within(500).shouldExist();
   });
 
   test('should show today events when calendar loads', async () => {
@@ -151,7 +151,7 @@ describe('Calendar App', () => {
     const before = calendar.getTodayEvents().length;
 
     // Click new event button
-    await ctx.getByID('btn-new-event').click();
+    await ctx.getById('btn-new-event').click();
 
     const after = calendar.getTodayEvents().length;
     expect(after).toBeGreaterThan(before);
@@ -168,7 +168,7 @@ describe('Calendar App', () => {
     const initialMonth = calendar.getCurrentMonth();
 
     // Navigate to next month
-    await ctx.getByID('btn-next-month').click();
+    await ctx.getById('btn-next-month').click();
     const nextMonth = calendar.getCurrentMonth();
 
     expect(nextMonth.month).not.toBe(initialMonth.month);
@@ -183,13 +183,13 @@ describe('Calendar App', () => {
     await testApp.run();
 
     // Go to next month
-    await ctx.getByID('btn-next-month').click();
+    await ctx.getById('btn-next-month').click();
     let currentMonth = calendar.getCurrentMonth();
     const now = new Date();
 
     if (currentMonth.month !== now.getMonth() || currentMonth.year !== now.getFullYear()) {
       // Clicked today
-      await ctx.getByID('btn-today').click();
+      await ctx.getById('btn-today').click();
       currentMonth = calendar.getCurrentMonth();
 
       // Should be back to current month

@@ -45,11 +45,11 @@ describe('Hand Pile Click Tests', () => {
       await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
       // Click hand pile to draw cards
-      await ctx.getByID('hand-pile').click();
+      await ctx.getById('hand-pile').click();
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Verify status shows drew cards
-      await ctx.getByID('status-label').shouldContain('Drew cards');
+      await ctx.getById('status-label').shouldContain('Drew cards');
     } catch (error) {
       // Take screenshot on timeout/failure
       const screenshotPath = '/tmp/hand-click-timeout.png';
@@ -89,12 +89,12 @@ describe('Hand Pile Click Tests', () => {
     await ctx.expect(ctx.getByText('Tableau:')).toBeVisible();
 
     // Click draw3 to select
-    await ctx.getByID('draw3').click();
+    await ctx.getById('draw3').click();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Selected King of Spades from draw pile')).toBeVisible();
 
     // Click empty stack to place
-    await ctx.getByID('empty-stack-0').click();
+    await ctx.getById('empty-stack-0').click();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
   }, 10000);
@@ -127,11 +127,11 @@ describe('Hand Pile Click Tests', () => {
 
     // We can't actually test drag visually here, but we can verify the logic works
     // by checking that after clicking draw3 and then clicking stack-0, it moves
-    await ctx.getByID('draw3').click();
+    await ctx.getById('draw3').click();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Selected 6 of Hearts from draw pile')).toBeVisible();
 
-    await ctx.getByID('stack-0').click();
+    await ctx.getById('stack-0').click();
     await new Promise(resolve => setTimeout(resolve, 100));
     await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
   }, 10000);

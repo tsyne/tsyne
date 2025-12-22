@@ -38,13 +38,13 @@ describe('Falling Letters Integration Tests', () => {
     await ui!.initialize();
 
     // Verify control buttons
-    await ctx.getByID('newGameBtn').within(500).shouldExist();
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getById('newGameBtn').within(500).shouldExist();
+    await ctx.getById('pauseBtn').within(500).shouldExist();
 
     // Verify score and word labels
-    await ctx.getByID('scoreLabel').within(500).shouldExist();
-    await ctx.getByID('wordLabel').within(500).shouldExist();
-    await ctx.getByID('statusLabel').within(500).shouldExist();
+    await ctx.getById('scoreLabel').within(500).shouldExist();
+    await ctx.getById('wordLabel').within(500).shouldExist();
+    await ctx.getById('statusLabel').within(500).shouldExist();
   });
 
   test('should display word input controls', async () => {
@@ -58,8 +58,8 @@ describe('Falling Letters Integration Tests', () => {
     await ui!.initialize();
 
     // Check submit and clear buttons
-    await ctx.getByID('submitBtn').within(500).shouldExist();
-    await ctx.getByID('clearBtn').within(500).shouldExist();
+    await ctx.getById('submitBtn').within(500).shouldExist();
+    await ctx.getById('clearBtn').within(500).shouldExist();
   });
 
   test('should have working New Game button', async () => {
@@ -73,13 +73,13 @@ describe('Falling Letters Integration Tests', () => {
     await ui!.initialize();
 
     // Click New Game
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
 
     // Wait for game to start
     await ctx.wait(500);
 
     // Score should be 0
-    await ctx.getByID('scoreLabel').within(100).shouldBe('0');
+    await ctx.getById('scoreLabel').within(100).shouldBe('0');
   });
 
   test('should have working Pause button', async () => {
@@ -93,14 +93,14 @@ describe('Falling Letters Integration Tests', () => {
     await ui!.initialize();
 
     // Start game first
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
     await ctx.wait(200);
 
     // Click Pause - should not crash
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Status should show paused
-    const status = await ctx.getByID('statusLabel').getText();
+    const status = await ctx.getById('statusLabel').getText();
     expect(status).toContain('PAUSED');
   });
 
@@ -115,7 +115,7 @@ describe('Falling Letters Integration Tests', () => {
     await ui!.initialize();
 
     // Start game and wait for letters to fall
-    await ctx.getByID('newGameBtn').click();
+    await ctx.getById('newGameBtn').click();
     await ctx.wait(3000);
 
     // Capture screenshot if requested

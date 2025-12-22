@@ -46,7 +46,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('signal-title').within(500).shouldExist();
+      await ctx.getById('signal-title').within(500).shouldExist();
     });
 
     test('should display Signal subtitle', async () => {
@@ -57,7 +57,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('signal-subtitle').within(500).shouldExist();
+      await ctx.getById('signal-subtitle').within(500).shouldExist();
     });
 
     test('should display view label', async () => {
@@ -68,7 +68,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('signal-view-label').within(500).shouldExist();
+      await ctx.getById('signal-view-label').within(500).shouldExist();
     });
 
     test('should display refresh button', async () => {
@@ -79,7 +79,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-refresh').within(500).shouldExist();
+      await ctx.getById('btn-refresh').within(500).shouldExist();
     });
 
     test('should display status label', async () => {
@@ -90,7 +90,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('signal-status').within(500).shouldExist();
+      await ctx.getById('signal-status').within(500).shouldExist();
     });
 
     test('should display new conversation button', async () => {
@@ -101,7 +101,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('btn-new-conversation').within(500).shouldExist();
+      await ctx.getById('btn-new-conversation').within(500).shouldExist();
     });
   });
 
@@ -114,7 +114,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conversations-scroll').within(500).shouldExist();
+      await ctx.getById('conversations-scroll').within(500).shouldExist();
     });
 
     test('should display conversation items', async () => {
@@ -126,7 +126,7 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Should have at least one conversation visible
-      const result = await ctx.getByID('conv-conv1-name').within(500).shouldExist();
+      const result = await ctx.getById('conv-conv1-name').within(500).shouldExist();
       expect(result).toBeDefined();
     });
 
@@ -138,7 +138,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conv-conv1-preview').within(500).shouldExist();
+      await ctx.getById('conv-conv1-preview').within(500).shouldExist();
     });
 
     test('should display conversation timestamp', async () => {
@@ -149,7 +149,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conv-conv1-time').within(500).shouldExist();
+      await ctx.getById('conv-conv1-time').within(500).shouldExist();
     });
 
     test('should display encryption indicator', async () => {
@@ -160,7 +160,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conv-conv1-encrypted').within(500).shouldExist();
+      await ctx.getById('conv-conv1-encrypted').within(500).shouldExist();
     });
 
     test('should display unread badge for conversations with unread messages', async () => {
@@ -172,7 +172,7 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // conv1 has unread count of 2
-      const result = await ctx.getByID('conv-conv1-unread').within(500).shouldExist();
+      const result = await ctx.getById('conv-conv1-unread').within(500).shouldExist();
       expect(result).toBeDefined();
     });
 
@@ -184,7 +184,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conv-conv1-open').within(500).shouldExist();
+      await ctx.getById('conv-conv1-open').within(500).shouldExist();
     });
 
     test('should display delete button for each conversation', async () => {
@@ -195,7 +195,7 @@ describe('Signal App UI', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      await ctx.getByID('conv-conv1-delete').within(500).shouldExist();
+      await ctx.getById('conv-conv1-delete').within(500).shouldExist();
     });
   });
 
@@ -209,10 +209,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Click open button for first conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Should now display messages scroll area
-      await ctx.getByID('messages-scroll').within(500).shouldExist();
+      await ctx.getById('messages-scroll').within(500).shouldExist();
     });
 
     test('should display messages when conversation is opened', async () => {
@@ -224,10 +224,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open first conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Should have at least one message visible
-      const result = await ctx.getByID('msg-m1-content').within(500).shouldExist();
+      const result = await ctx.getById('msg-m1-content').within(500).shouldExist();
       expect(result).toBeDefined();
     });
 
@@ -240,10 +240,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open first conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Back button should be visible
-      await ctx.getByID('btn-back').within(500).shouldExist();
+      await ctx.getById('btn-back').within(500).shouldExist();
     });
 
     test('should return to conversation list when clicking back', async () => {
@@ -255,13 +255,13 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Click back
-      await ctx.getByID('btn-back').click();
+      await ctx.getById('btn-back').click();
 
       // Should see conversations list again
-      await ctx.getByID('conversations-scroll').within(500).shouldExist();
+      await ctx.getById('conversations-scroll').within(500).shouldExist();
     });
   });
 
@@ -275,10 +275,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Input area should be visible
-      await ctx.getByID('input-area').within(500).shouldExist();
+      await ctx.getById('input-area').within(500).shouldExist();
     });
 
     test('should display message input field', async () => {
@@ -290,10 +290,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Input field should be visible
-      await ctx.getByID('message-input').within(500).shouldExist();
+      await ctx.getById('message-input').within(500).shouldExist();
     });
 
     test('should display send button', async () => {
@@ -305,10 +305,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Send button should be visible
-      await ctx.getByID('btn-send-message').within(500).shouldExist();
+      await ctx.getById('btn-send-message').within(500).shouldExist();
     });
 
     test('should display message content', async () => {
@@ -320,10 +320,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // First message should be visible
-      await ctx.getByID('msg-m1-content').within(500).shouldExist();
+      await ctx.getById('msg-m1-content').within(500).shouldExist();
     });
 
     test('should display message metadata', async () => {
@@ -335,10 +335,10 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Message metadata should be visible
-      await ctx.getByID('msg-m1-meta').within(500).shouldExist();
+      await ctx.getById('msg-m1-meta').within(500).shouldExist();
     });
   });
 
@@ -352,13 +352,13 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Verify initial state has 3 conversations
-      await ctx.getByID('signal-status').getText().shouldBe('3 conversations');
+      await ctx.getById('signal-status').getText().shouldBe('3 conversations');
 
       // Delete first conversation
-      await ctx.getByID('conv-conv1-delete').click();
+      await ctx.getById('conv-conv1-delete').click();
 
       // Status should now show 2 conversations
-      await ctx.getByID('signal-status').getText().within(500).shouldBe('2 conversations');
+      await ctx.getById('signal-status').getText().within(500).shouldBe('2 conversations');
     });
   });
 
@@ -372,8 +372,8 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Verify the UI is fully rendered
-      await ctx.getByID('signal-title').within(500).shouldExist();
-      await ctx.getByID('conversations-scroll').within(500).shouldExist();
+      await ctx.getById('signal-title').within(500).shouldExist();
+      await ctx.getById('conversations-scroll').within(500).shouldExist();
     });
 
     test('should render message view successfully', async () => {
@@ -385,11 +385,11 @@ describe('Signal App UI', () => {
       await testApp.run();
 
       // Open a conversation
-      await ctx.getByID('conv-conv1-open').click();
+      await ctx.getById('conv-conv1-open').click();
 
       // Verify message view is rendered
-      await ctx.getByID('messages-scroll').within(500).shouldExist();
-      await ctx.getByID('input-area').within(500).shouldExist();
+      await ctx.getById('messages-scroll').within(500).shouldExist();
+      await ctx.getById('input-area').within(500).shouldExist();
     });
   });
 });

@@ -29,11 +29,11 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Check sidebar exists
-    const appTitle = await ctx.getByID('app-title').getText();
+    const appTitle = await ctx.getById('app-title').getText();
     expect(appTitle).toContain('Food Truck');
 
     // Check orders view buttons
-    const ordersBtn = await ctx.getByID('btn-orders');
+    const ordersBtn = await ctx.getById('btn-orders');
     expect(ordersBtn).toBeDefined();
   });
 
@@ -45,7 +45,7 @@ describe('Food Truck App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const status = await ctx.getByID('status-summary').getText();
+    const status = await ctx.getById('status-summary').getText();
     expect(status).toMatch(/Pending:|Ready:/);
   });
 
@@ -57,13 +57,13 @@ describe('Food Truck App UI Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    const initialStatus = await ctx.getByID('status-summary').getText();
+    const initialStatus = await ctx.getById('status-summary').getText();
 
     // Click add burger button
-    await ctx.getByID('add-burger').click();
+    await ctx.getById('add-burger').click();
 
     // Status should update
-    const updatedStatus = await ctx.getByID('status-summary').within(1000).getText();
+    const updatedStatus = await ctx.getById('status-summary').within(1000).getText();
     expect(updatedStatus).not.toBe(initialStatus);
   });
 
@@ -76,16 +76,16 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Add an order
-    await ctx.getByID('add-burger').click();
+    await ctx.getById('add-burger').click();
 
     // Wait for pending order to appear
     await ctx
-      .getByID('pending-section-title')
+      .getById('pending-section-title')
       .within(1000)
       .shouldExist();
 
     // Get the ready button for the new order
-    const pendingOrders = await ctx.getByID('pending-section-title').getText();
+    const pendingOrders = await ctx.getById('pending-section-title').getText();
     expect(pendingOrders).toBeDefined();
   });
 
@@ -98,11 +98,11 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Click sales button
-    await ctx.getByID('btn-sales').click();
+    await ctx.getById('btn-sales').click();
 
     // Sales title should be visible
     await ctx
-      .getByID('sales-title')
+      .getById('sales-title')
       .within(1000)
       .shouldExist();
   });
@@ -116,16 +116,16 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Go to sales view
-    await ctx.getByID('btn-sales').click();
+    await ctx.getById('btn-sales').click();
 
     // Check for total sales label
     await ctx
-      .getByID('total-sales')
+      .getById('total-sales')
       .within(1000)
       .shouldExist();
 
     // Check for top items label
-    const topItemsLabel = await ctx.getByID('top-items-label').getText();
+    const topItemsLabel = await ctx.getById('top-items-label').getText();
     expect(topItemsLabel).toBe('Top Menu Items:');
   });
 
@@ -138,11 +138,11 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Click weather button
-    await ctx.getByID('btn-weather').click();
+    await ctx.getById('btn-weather').click();
 
     // Weather title should be visible
     await ctx
-      .getByID('weather-title')
+      .getById('weather-title')
       .within(1000)
       .shouldExist();
   });
@@ -156,13 +156,13 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Go to weather view
-    await ctx.getByID('btn-weather').click();
+    await ctx.getById('btn-weather').click();
 
     // Check weather data is displayed
-    const location = await ctx.getByID('weather-location').within(1000).getText();
+    const location = await ctx.getById('weather-location').within(1000).getText();
     expect(location).toMatch(/📍/);
 
-    const temp = await ctx.getByID('weather-temperature').getText();
+    const temp = await ctx.getById('weather-temperature').getText();
     expect(temp).toMatch(/🌡️/);
   });
 
@@ -175,17 +175,17 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Go to weather view
-    await ctx.getByID('btn-weather').click();
+    await ctx.getById('btn-weather').click();
 
     // Get initial temperature
-    const initialTemp = await ctx.getByID('weather-temperature').getText();
+    const initialTemp = await ctx.getById('weather-temperature').getText();
 
     // Click update weather
-    await ctx.getByID('btn-update-weather').click();
+    await ctx.getById('btn-update-weather').click();
 
     // Temperature should change (might take a moment)
     const updatedTemp = await ctx
-      .getByID('weather-temperature')
+      .getById('weather-temperature')
       .within(1000)
       .getText();
 
@@ -202,17 +202,17 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Start in orders view
-    const ordersTitle = await ctx.getByID('orders-title').getText();
+    const ordersTitle = await ctx.getById('orders-title').getText();
     expect(ordersTitle).toBeDefined();
 
     // Switch to sales
-    await ctx.getByID('btn-sales').click();
-    await ctx.getByID('sales-title').within(1000).shouldExist();
+    await ctx.getById('btn-sales').click();
+    await ctx.getById('sales-title').within(1000).shouldExist();
 
     // Switch back to orders
-    await ctx.getByID('btn-orders').click();
+    await ctx.getById('btn-orders').click();
     await ctx
-      .getByID('orders-title')
+      .getById('orders-title')
       .within(1000)
       .shouldExist();
   });
@@ -226,14 +226,14 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Add multiple orders
-    await ctx.getByID('add-burger').click();
+    await ctx.getById('add-burger').click();
     await new Promise((r) => setTimeout(r, 100));
-    await ctx.getByID('add-tacos').click();
+    await ctx.getById('add-tacos').click();
     await new Promise((r) => setTimeout(r, 100));
-    await ctx.getByID('add-pizza').click();
+    await ctx.getById('add-pizza').click();
 
     // Status should reflect multiple pending orders
-    const status = await ctx.getByID('status-summary').within(1000).getText();
+    const status = await ctx.getById('status-summary').within(1000).getText();
     expect(status).toMatch(/Pending: [2-9]/);
   });
 
@@ -257,7 +257,7 @@ describe('Food Truck App UI Tests', () => {
     ];
 
     for (const btnId of buttons) {
-      const btn = await ctx.getByID(btnId);
+      const btn = await ctx.getById(btnId);
       expect(btn).toBeDefined();
     }
   });
@@ -271,7 +271,7 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Add an order for more interesting screenshot
-    await ctx.getByID('add-burger').click();
+    await ctx.getById('add-burger').click();
     await new Promise((r) => setTimeout(r, 200));
 
     // Take screenshot
@@ -290,8 +290,8 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Switch to sales view
-    await ctx.getByID('btn-sales').click();
-    await ctx.getByID('sales-title').within(1000).shouldExist();
+    await ctx.getById('btn-sales').click();
+    await ctx.getById('sales-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();
@@ -309,8 +309,8 @@ describe('Food Truck App UI Tests', () => {
     await testApp.run();
 
     // Switch to weather view
-    await ctx.getByID('btn-weather').click();
-    await ctx.getByID('weather-title').within(1000).shouldExist();
+    await ctx.getById('btn-weather').click();
+    await ctx.getById('weather-title').within(1000).shouldExist();
 
     // Take screenshot
     const win = testApp.getWindow();

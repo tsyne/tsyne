@@ -28,16 +28,16 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);
 
     // Control buttons should exist
-    await ctx.getByID('zoom-in').shouldExist();
-    await ctx.getByID('zoom-out').shouldExist();
-    await ctx.getByID('reset').shouldExist();
-    await ctx.getByID('next-palette').shouldExist();
+    await ctx.getById('zoom-in').shouldExist();
+    await ctx.getById('zoom-out').shouldExist();
+    await ctx.getById('reset').shouldExist();
+    await ctx.getById('next-palette').shouldExist();
 
     // Pan buttons should exist
-    await ctx.getByID('pan-left').shouldExist();
-    await ctx.getByID('pan-up').shouldExist();
-    await ctx.getByID('pan-down').shouldExist();
-    await ctx.getByID('pan-right').shouldExist();
+    await ctx.getById('pan-left').shouldExist();
+    await ctx.getById('pan-up').shouldExist();
+    await ctx.getById('pan-down').shouldExist();
+    await ctx.getById('pan-right').shouldExist();
   }, 30000);
 
   test('should zoom in when clicking Zoom In button', async () => {
@@ -50,11 +50,11 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);  // Wait for initial render
 
     // Click zoom in
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
 
     // Status should show zoom level 2x
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('Zoom: 2.0x');
   }, 30000);  // 30 second timeout
@@ -69,13 +69,13 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);
 
     // Zoom in first, then out
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
-    await ctx.getByID('zoom-out').click();
+    await ctx.getById('zoom-out').click();
     await ctx.wait(1000);
 
     // Should be back to 1x
-    const status = await ctx.getByID('status');
+    const status = await ctx.getById('status');
     const text = await status.getText();
     expect(text).toContain('Zoom: 1.0x');
   }, 30000);
@@ -90,16 +90,16 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);
 
     // Initial palette is 'classic'
-    let status = await ctx.getByID('status');
+    let status = await ctx.getById('status');
     let text = await status.getText();
     expect(text).toContain('Palette: classic');
 
     // Click next palette
-    await ctx.getByID('next-palette').click();
+    await ctx.getById('next-palette').click();
     await ctx.wait(1000);
 
     // Should now show 'fire'
-    status = await ctx.getByID('status');
+    status = await ctx.getById('status');
     text = await status.getText();
     expect(text).toContain('Palette: fire');
   }, 30000);
@@ -114,22 +114,22 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);
 
     // Zoom in a few times
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
-    await ctx.getByID('zoom-in').click();
+    await ctx.getById('zoom-in').click();
     await ctx.wait(1000);
 
     // Verify zoomed
-    let status = await ctx.getByID('status');
+    let status = await ctx.getById('status');
     let text = await status.getText();
     expect(text).toContain('Zoom: 4.0x');
 
     // Reset
-    await ctx.getByID('reset').click();
+    await ctx.getById('reset').click();
     await ctx.wait(1000);
 
     // Should be back to 1x
-    status = await ctx.getByID('status');
+    status = await ctx.getById('status');
     text = await status.getText();
     expect(text).toContain('Zoom: 1.0x');
   }, 60000);
@@ -144,17 +144,17 @@ describe('Mandelbrot Explorer', () => {
     await ctx.wait(1000);
 
     // Initial center is -0.5
-    let status = await ctx.getByID('status');
+    let status = await ctx.getById('status');
     let text = await status.getText();
     expect(text).toContain('Center: (-0.5000');
 
     // Pan left
-    await ctx.getByID('pan-left').click();
+    await ctx.getById('pan-left').click();
     await ctx.wait(1000);
 
     // Center X should decrease (more negative than -0.5)
     // The exact amount depends on canvas size (dynamic with window resize)
-    status = await ctx.getByID('status');
+    status = await ctx.getById('status');
     text = await status.getText();
     // Extract center X coordinate - should be more negative than -0.5
     const match = text.match(/Center: \(([-\d.]+),/);

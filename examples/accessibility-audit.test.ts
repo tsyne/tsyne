@@ -365,7 +365,7 @@ describe.skip('Accessibility Audit', () => {
     await testApp.run();
 
     // Find same element using different selectors
-    const byId = await ctx.getByID('register-btn').find();
+    const byId = await ctx.getById('register-btn').find();
     const byTestId = await ctx.getByTestId('register-button').find();
     const byRole = await ctx.getByRole('button').find();
     const byLabel = await ctx.getByLabel('Register Account').find();

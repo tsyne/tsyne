@@ -41,7 +41,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('btn-add').within(500).shouldExist();
+    await ctx.getById('btn-add').within(500).shouldExist();
   });
 
   test('should have search entry', async () => {
@@ -52,7 +52,7 @@ describe('Contacts App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('search-entry').within(500).shouldExist();
+    await ctx.getById('search-entry').within(500).shouldExist();
   });
 
   test('should show favorites section', async () => {
@@ -96,7 +96,7 @@ describe('Contacts App', () => {
     const first = allContacts[0];
 
     // Edit button should exist
-    await ctx.getByID(`contact-${first.id}-edit`).within(500).shouldExist();
+    await ctx.getById(`contact-${first.id}-edit`).within(500).shouldExist();
   });
 
   test('should have delete button for contacts', async () => {
@@ -112,6 +112,6 @@ describe('Contacts App', () => {
     const first = allContacts[0];
 
     // Delete button should exist
-    await ctx.getByID(`contact-${first.id}-delete`).within(500).shouldExist();
+    await ctx.getById(`contact-${first.id}-delete`).within(500).shouldExist();
   });
 });

@@ -105,10 +105,10 @@ describe('Web Features Browser Tests', () => {
         expect(imageWidgets.length).toBe(3);
 
         // Fluent assertions on first image widget (order doesn't matter)
-        await ctx.getByID(imageWidgets[0].id).shouldHaveType('image');
+        await ctx.getById(imageWidgets[0].id).shouldHaveType('image');
 
         // Verify first image has width and height properties
-        const firstImageInfo = await ctx.getByID(imageWidgets[0].id).getInfo();
+        const firstImageInfo = await ctx.getById(imageWidgets[0].id).getInfo();
         expect(typeof firstImageInfo.width).toBe('number');
         expect(firstImageInfo.width).toBeGreaterThan(0);
         expect(typeof firstImageInfo.height).toBe('number');
@@ -120,7 +120,7 @@ describe('Web Features Browser Tests', () => {
 
         for (let i = 0; i < imageWidgets.length; i++) {
           const img = imageWidgets[i];
-          const info = await ctx.getByID(img.id).getInfo();
+          const info = await ctx.getById(img.id).getInfo();
 
           expect(info.type).toBe('image');
           expect(typeof info.width).toBe('number');
@@ -319,16 +319,16 @@ describe('Web Features Browser Tests', () => {
 
         // Fill in name field (first form entry widget)
         const nameEntry = formEntryWidgets[0];
-        await ctx.getByID(nameEntry.id).type('John Doe');
+        await ctx.getById(nameEntry.id).type('John Doe');
 
         // Fill in email field (second form entry widget)
         const emailEntry = formEntryWidgets[1];
-        await ctx.getByID(emailEntry.id).type('john@example.com');
+        await ctx.getById(emailEntry.id).type('john@example.com');
 
         // Verify checkbox widget exists
         const checkboxWidgets = allWidgets.filter((w) => w.type === 'checkbox');
         expect(checkboxWidgets.length).toBe(1);
-        await ctx.getByID(checkboxWidgets[0].id).shouldHaveType('checkbox');
+        await ctx.getById(checkboxWidgets[0].id).shouldHaveType('checkbox');
 
         // Verify submit button exists
         await ctx.getByText('Submit Registration').shouldExist();

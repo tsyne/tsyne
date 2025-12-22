@@ -959,8 +959,8 @@ describe('Fluent Test API', () => {
 
     ctx = tsyneTest.getContext();
 
-    await ctx.getByID('greeting').shouldBe('Hello World');
-    await ctx.getByID('status').shouldContain('OK');
+    await ctx.getById('greeting').shouldBe('Hello World');
+    await ctx.getById('status').shouldContain('OK');
   });
 
   test('shouldBeVisible/shouldExist - visibility assertions', async () => {
@@ -1012,7 +1012,7 @@ describe('Fluent Test API', () => {
 
     // Wait for condition
     await ctx.waitForCondition(async () => {
-      const text = await ctx.getByID('counter').getText();
+      const text = await ctx.getById('counter').getText();
       return text === 'Count: 3';
     }, { timeout: 2000, description: 'counter to reach 3' });
   });
@@ -1043,8 +1043,8 @@ describe('Widget Methods', () => {
     ctx = tsyneTest.getContext();
 
     // Find by custom ID
-    await ctx.expect(ctx.getByID('submit-btn')).toBeVisible();
-    await ctx.expect(ctx.getByID('result-label')).toBeVisible();
+    await ctx.expect(ctx.getById('submit-btn')).toBeVisible();
+    await ctx.expect(ctx.getById('result-label')).toBeVisible();
   });
 
   test('hide()/show() - visibility control', async () => {
@@ -1065,7 +1065,7 @@ describe('Widget Methods', () => {
 
     ctx = tsyneTest.getContext();
 
-    await ctx.expect(ctx.getByID('toggle-label')).toBeVisible();
+    await ctx.expect(ctx.getById('toggle-label')).toBeVisible();
 
     // Hide the label
     await ctx.getByExactText('Hide').click();
@@ -1074,7 +1074,7 @@ describe('Widget Methods', () => {
     // Show the label
     await ctx.getByExactText('Show').click();
     await ctx.wait(100);
-    await ctx.expect(ctx.getByID('toggle-label')).toBeVisible();
+    await ctx.expect(ctx.getById('toggle-label')).toBeVisible();
   });
 
   test('setText()/getText() - label updates', async () => {
@@ -1093,10 +1093,10 @@ describe('Widget Methods', () => {
 
     ctx = tsyneTest.getContext();
 
-    await ctx.getByID('dynamic-label').shouldBe('Original');
+    await ctx.getById('dynamic-label').shouldBe('Original');
 
     await label.setText('Modified');
-    await ctx.getByID('dynamic-label').shouldBe('Modified');
+    await ctx.getById('dynamic-label').shouldBe('Modified');
   });
 
   test('disable()/enable() - widget state', async () => {
@@ -1117,16 +1117,16 @@ describe('Widget Methods', () => {
 
     ctx = tsyneTest.getContext();
 
-    await ctx.expect(ctx.getByID('input-field')).toBeVisible();
+    await ctx.expect(ctx.getById('input-field')).toBeVisible();
 
     // Disable and check
     await ctx.getByExactText('Disable').click();
     await ctx.wait(100);
-    await ctx.getByID('input-field').shouldBeDisabled();
+    await ctx.getById('input-field').shouldBeDisabled();
 
     // Enable and check
     await ctx.getByExactText('Enable').click();
     await ctx.wait(100);
-    await ctx.getByID('input-field').shouldBeEnabled();
+    await ctx.getById('input-field').shouldBeEnabled();
   });
 });

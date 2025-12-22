@@ -514,7 +514,7 @@ describe('Chess Resource Registration', () => {
     await testApp.run();
 
     // Verify image exists
-    await ctx.expect(ctx.getByID('test-img')).toBeVisible();
+    await ctx.expect(ctx.getById('test-img')).toBeVisible();
   });
 
   test('throws error for unregistered resource', async () => {

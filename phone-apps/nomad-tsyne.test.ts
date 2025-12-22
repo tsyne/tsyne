@@ -30,50 +30,50 @@ describe('Nomad Timezone Manager UI', () => {
 
   test('should render initial UI with title', async () => {
     // Verify title
-    const title = await ctx.getByID('nomadTitle').getText();
+    const title = await ctx.getById('nomadTitle').getText();
     expect(title).toBe('Nomad - Time Zone Manager');
   }, 30000);
 
   test('should display add location section', async () => {
     // Verify add location label
-    const addLabel = await ctx.getByID('nomadAddLabel').getText();
+    const addLabel = await ctx.getById('nomadAddLabel').getText();
     expect(addLabel).toBe('Add Location');
 
     // Verify common location buttons exist
-    await ctx.getByID('nomad-add-utc').within(500).shouldExist();
-    await ctx.getByID('nomad-add-london').within(500).shouldExist();
-    await ctx.getByID('nomad-add-tokyo').within(500).shouldExist();
+    await ctx.getById('nomad-add-utc').within(500).shouldExist();
+    await ctx.getById('nomad-add-london').within(500).shouldExist();
+    await ctx.getById('nomad-add-tokyo').within(500).shouldExist();
   }, 30000);
 
   test('should display sorting and format buttons', async () => {
     // Verify sort button
-    const sortBtn = await ctx.getByID('nomadSortBtn').getText();
+    const sortBtn = await ctx.getById('nomadSortBtn').getText();
     expect(sortBtn).toMatch(/Sort by/);
 
     // Verify format button
-    const formatBtn = await ctx.getByID('nomadFormatBtn').getText();
+    const formatBtn = await ctx.getById('nomadFormatBtn').getText();
     expect(formatBtn).toMatch(/Hour/);
   }, 30000);
 
   test('should display times section header', async () => {
     // Verify times label
-    const timesLabel = await ctx.getByID('nomadTimesLabel').getText();
+    const timesLabel = await ctx.getById('nomadTimesLabel').getText();
     expect(timesLabel).toBe('Current Times');
   }, 30000);
 
   test('should show placeholder when no locations added', async () => {
     // Verify placeholder text
-    const placeholder = await ctx.getByID('nomadPlaceholder').getText();
+    const placeholder = await ctx.getById('nomadPlaceholder').getText();
     expect(placeholder).toBe('Add a location to see times');
   }, 30000);
 
   test('should have all required UI elements', async () => {
     // Check all main UI elements exist
-    await ctx.getByID('nomadTitle').within(500).shouldExist();
-    await ctx.getByID('nomadAddLabel').within(500).shouldExist();
-    await ctx.getByID('nomadSortBtn').within(500).shouldExist();
-    await ctx.getByID('nomadFormatBtn').within(500).shouldExist();
-    await ctx.getByID('nomadTimesLabel').within(500).shouldExist();
-    await ctx.getByID('nomadPlaceholder').within(500).shouldExist();
+    await ctx.getById('nomadTitle').within(500).shouldExist();
+    await ctx.getById('nomadAddLabel').within(500).shouldExist();
+    await ctx.getById('nomadSortBtn').within(500).shouldExist();
+    await ctx.getById('nomadFormatBtn').within(500).shouldExist();
+    await ctx.getById('nomadTimesLabel').within(500).shouldExist();
+    await ctx.getById('nomadPlaceholder').within(500).shouldExist();
   }, 30000);
 });

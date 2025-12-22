@@ -36,16 +36,16 @@ describe('meSpeak TTS Integration', () => {
     await ctx.getByExactText('TTS: ON').within(500).shouldExist();
 
     // Make some moves - TTS should announce them
-    await ctx.getByID('cell0').click();  // X in top left
-    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
+    await ctx.getById('cell0').click();  // X in top left
+    await ctx.getById('status').within(500).shouldContain("Player O's turn");
 
-    await ctx.getByID('cell1').click();  // O in top center
-    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
+    await ctx.getById('cell1').click();  // O in top center
+    await ctx.getById('status').within(500).shouldContain("Player X's turn");
 
-    await ctx.getByID('cell3').click();  // X in middle left
+    await ctx.getById('cell3').click();  // X in middle left
     // If we got here without errors, meSpeak is working
     // The app is still running and responsive
-    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
+    await ctx.getById('status').within(500).shouldContain("Player O's turn");
   }, 30000);
 
   test('should announce multiple moves without errors', async () => {
@@ -64,17 +64,17 @@ describe('meSpeak TTS Integration', () => {
     await ctx.getByExactText('TTS: ON').within(500).shouldExist();
 
     // Make multiple moves - each should be announced
-    await ctx.getByID('cell4').click();  // X in center
-    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
+    await ctx.getById('cell4').click();  // X in center
+    await ctx.getById('status').within(500).shouldContain("Player O's turn");
 
-    await ctx.getByID('cell0').click();  // O in top left
-    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
+    await ctx.getById('cell0').click();  // O in top left
+    await ctx.getById('status').within(500).shouldContain("Player X's turn");
 
-    await ctx.getByID('cell8').click();  // X in bottom right
-    await ctx.getByID('status').within(500).shouldContain("Player O's turn");
+    await ctx.getById('cell8').click();  // X in bottom right
+    await ctx.getById('status').within(500).shouldContain("Player O's turn");
 
-    await ctx.getByID('cell2').click();  // O in top right
+    await ctx.getById('cell2').click();  // O in top right
     // Verify game is still working after multiple TTS announcements
-    await ctx.getByID('status').within(500).shouldContain("Player X's turn");
+    await ctx.getById('status').within(500).shouldContain("Player X's turn");
   }, 30000);
 });

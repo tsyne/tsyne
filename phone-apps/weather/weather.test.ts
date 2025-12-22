@@ -53,7 +53,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Title should be visible
-    await ctx.getByID('weather-title').within(500).shouldExist();
+    await ctx.getById('weather-title').within(500).shouldExist();
   });
 
   test('should display temperature', async () => {
@@ -65,7 +65,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Should load initial weather and display temperature
-    await ctx.getByID('temperature').within(2000).shouldBe('72°F');
+    await ctx.getById('temperature').within(2000).shouldBe('72°F');
   });
 
   test('should display weather condition', async () => {
@@ -77,7 +77,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Should display condition
-    await ctx.getByID('condition').within(2000).shouldExist();
+    await ctx.getById('condition').within(2000).shouldExist();
   });
 
   test('should display weather details', async () => {
@@ -89,8 +89,8 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Should display humidity and wind info
-    await ctx.getByID('details').within(2000).shouldExist();
-    const details = await ctx.getByID('details').getText();
+    await ctx.getById('details').within(2000).shouldExist();
+    const details = await ctx.getById('details').getText();
     expect(details).toContain('Humidity');
     expect(details).toContain('Wind');
   });
@@ -104,7 +104,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // City input should exist
-    await ctx.getByID('city-input').within(500).shouldExist();
+    await ctx.getById('city-input').within(500).shouldExist();
   });
 
   test('should have search button', async () => {
@@ -116,7 +116,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Search button should exist
-    await ctx.getByID('search-btn').within(500).shouldExist();
+    await ctx.getById('search-btn').within(500).shouldExist();
   });
 
   test('should have refresh button', async () => {
@@ -128,7 +128,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Refresh button should exist
-    await ctx.getByID('refresh-btn').within(500).shouldExist();
+    await ctx.getById('refresh-btn').within(500).shouldExist();
   });
 
   test('should show status updates', async () => {
@@ -140,7 +140,7 @@ describe('Weather App', () => {
     await testApp.run();
 
     // Status should be visible
-    await ctx.getByID('status').within(500).shouldExist();
+    await ctx.getById('status').within(500).shouldExist();
   });
 
   test('should take screenshot for documentation', async () => {

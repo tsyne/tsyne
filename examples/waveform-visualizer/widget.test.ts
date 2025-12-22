@@ -37,7 +37,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
 
     // Title should indicate widget mode
     await ctx
-      .getByID('titleLabel')
+      .getById('titleLabel')
       .within(1000)
       .shouldBe('Waveform Visualizer - Widget Mode');
   });
@@ -52,7 +52,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
 
     // Mode indicator should show declarative composition
     await ctx
-      .getByID('modeLabel')
+      .getById('modeLabel')
       .within(1000)
       .shouldBe('🎨 Declarative slice-based rendering');
   });
@@ -66,7 +66,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     await testApp.run();
 
     // Description should mention key patterns
-    const desc = await ctx.getByID('descLabel').getText();
+    const desc = await ctx.getById('descLabel').getText();
     expect(desc).toContain('pseudo-declarative');
     expect(desc).toContain('.when()');
     expect(desc).toContain('slices');
@@ -81,7 +81,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     await testApp.run();
 
     // Info label should explain widgets
-    const info = await ctx.getByID('infoLabel').getText();
+    const info = await ctx.getById('infoLabel').getText();
     expect(info).toContain('widget element');
   });
 
@@ -94,7 +94,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     await testApp.run();
 
     // Should show ready status after loading
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
   });
 
   test('should display 8-second duration', async () => {
@@ -105,10 +105,10 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Duration should be 8 seconds
-    const duration = await ctx.getByID('durationLabel').getText();
+    const duration = await ctx.getById('durationLabel').getText();
     expect(duration).toMatch(/8:00|0:08/);
   });
 
@@ -120,10 +120,10 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Initial position should be 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 });
 
@@ -148,11 +148,11 @@ describe('Widget Mode - Dynamic Slice Generation', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Widget mode should have created slice widgets
     // Slices are named slice-0, slice-1, etc.
-    const firstSlice = await ctx.getByID('slice-0').within(500).shouldExist();
+    const firstSlice = await ctx.getById('slice-0').within(500).shouldExist();
     expect(firstSlice).toBeTruthy();
   });
 
@@ -164,13 +164,13 @@ describe('Widget Mode - Dynamic Slice Generation', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Should have created multiple slices (48 for widget mode)
     // Check a few of them
-    await ctx.getByID('slice-0').within(500).shouldExist();
-    await ctx.getByID('slice-10').within(500).shouldExist();
-    await ctx.getByID('slice-20').within(500).shouldExist();
+    await ctx.getById('slice-0').within(500).shouldExist();
+    await ctx.getById('slice-10').within(500).shouldExist();
+    await ctx.getById('slice-20').within(500).shouldExist();
   });
 
   test('should have scrollable waveform container', async () => {
@@ -181,14 +181,14 @@ describe('Widget Mode - Dynamic Slice Generation', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Waveform slices should exist in the DOM
     // (They're in a scrollable container)
     const slices = [];
     for (let i = 0; i < 48; i++) {
       try {
-        await ctx.getByID(`slice-${i}`).within(100).shouldExist();
+        await ctx.getById(`slice-${i}`).within(100).shouldExist();
         slices.push(i);
       } catch {
         // Not all slices may be immediately queryable due to scrolling
@@ -221,21 +221,21 @@ describe('Widget Mode - Playback and State Tracking', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Playing...');
+    await ctx.getById('playBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Playing...');
 
     // Wait for position to advance
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Position should update
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     const [, seconds] = position.split(':');
     expect(parseInt(seconds, 10)).toBeGreaterThan(0);
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should pause and maintain playback position', async () => {
@@ -246,21 +246,21 @@ describe('Widget Mode - Playback and State Tracking', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play for 1 second
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Pause
-    await ctx.getByID('pauseBtn').click();
-    const pausedPosition = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    const pausedPosition = await ctx.getById('positionLabel').getText();
 
     // Wait without playing
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Position should not have changed
-    const stillPausedPosition = await ctx.getByID('positionLabel').getText();
+    const stillPausedPosition = await ctx.getById('positionLabel').getText();
     expect(stillPausedPosition).toBe(pausedPosition);
   });
 
@@ -272,14 +272,14 @@ describe('Widget Mode - Playback and State Tracking', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play and track position
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Get current position - should indicate which slice
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     const [, seconds] = position.split(':');
     const seconds_value = parseInt(seconds, 10);
 
@@ -287,7 +287,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     // After 1 second, should be around slice 6
     expect(seconds_value).toBeGreaterThan(0);
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should reset slice index on stop', async () => {
@@ -298,18 +298,18 @@ describe('Widget Mode - Playback and State Tracking', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play for a while
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Stop
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should reset to beginning
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
   });
 });
 
@@ -334,10 +334,10 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play button visible
-    await ctx.getByID('playBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').within(500).shouldExist();
   });
 
   test('should toggle to pause button when playing', async () => {
@@ -348,18 +348,18 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Click play
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for state
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Pause button visible
-    await ctx.getByID('pauseBtn').within(500).shouldExist();
+    await ctx.getById('pauseBtn').within(500).shouldExist();
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should always show stop button', async () => {
@@ -370,16 +370,16 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Stop button always visible
-    await ctx.getByID('stopBtn').within(500).shouldExist();
+    await ctx.getById('stopBtn').within(500).shouldExist();
 
     // Still visible after playing
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('stopBtn').within(500).shouldExist();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('stopBtn').within(500).shouldExist();
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should handle rapid play/pause clicks', async () => {
@@ -390,19 +390,19 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Rapid clicks
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Should be playing
-    await ctx.getByID('statusLabel').within(500).shouldBe('Playing...');
+    await ctx.getById('statusLabel').within(500).shouldBe('Playing...');
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should auto-finish at end of audio', async () => {
@@ -413,17 +413,17 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play 8-second audio
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
 
     // Wait for completion
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should show finished
-    await ctx.getByID('statusLabel').within(500).shouldBe('Finished');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(500).shouldBe('Finished');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 });
 
@@ -448,16 +448,16 @@ describe('Widget Mode - Time Display', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play and verify format
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const position = await ctx.getByID('positionLabel').getText();
+    const position = await ctx.getById('positionLabel').getText();
     expect(position).toMatch(/^\d+:\d{2}$/);
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should update position during playback', async () => {
@@ -468,25 +468,25 @@ describe('Widget Mode - Time Display', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play and get position
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    const pos1 = await ctx.getByID('positionLabel').getText();
+    const pos1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(pos1.split(':')[1], 10);
 
     // Wait and check again
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const pos2 = await ctx.getByID('positionLabel').getText();
+    const pos2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(pos2.split(':')[1], 10);
 
     // Should advance
     expect(time2).toBeGreaterThan(time1);
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should show duration label', async () => {
@@ -497,12 +497,12 @@ describe('Widget Mode - Time Display', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Duration should exist
-    await ctx.getByID('durationLabel').within(500).shouldExist();
+    await ctx.getById('durationLabel').within(500).shouldExist();
 
-    const duration = await ctx.getByID('durationLabel').getText();
+    const duration = await ctx.getById('durationLabel').getText();
     expect(duration).toBeTruthy();
   });
 });
@@ -529,42 +529,42 @@ describe('Widget Mode - Integration Tests', () => {
     await testApp.run();
 
     // Step 1: Initialize
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
 
     // Step 2: Play
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Playing...');
+    await ctx.getById('playBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Playing...');
 
     // Step 3: Play for 1 second
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const pos1 = await ctx.getByID('positionLabel').getText();
+    const pos1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(pos1.split(':')[1], 10);
     expect(time1).toBeGreaterThan(0);
 
     // Step 4: Pause
-    await ctx.getByID('pauseBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Paused');
-    const pausedTime = await ctx.getByID('positionLabel').getText();
+    await ctx.getById('pauseBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Paused');
+    const pausedTime = await ctx.getById('positionLabel').getText();
 
     // Step 5: Resume
-    await ctx.getByID('playBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Playing...');
+    await ctx.getById('playBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Playing...');
 
     // Step 6: Verify position same initially
-    const resumedTime = await ctx.getByID('positionLabel').getText();
+    const resumedTime = await ctx.getById('positionLabel').getText();
     expect(resumedTime).toBe(pausedTime);
 
     // Step 7: Play more
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const pos2 = await ctx.getByID('positionLabel').getText();
+    const pos2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(pos2.split(':')[1], 10);
     expect(time2).toBeGreaterThan(time1);
 
     // Step 8: Stop
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('statusLabel').within(500).shouldBe('Stopped');
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('multiple play/pause cycles', async () => {
@@ -575,28 +575,28 @@ describe('Widget Mode - Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Cycle 1
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Cycle 2
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Cycle 3
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('pauseBtn').click();
+    await ctx.getById('pauseBtn').click();
 
     // Verify position advanced
-    const finalPosition = await ctx.getByID('positionLabel').getText();
+    const finalPosition = await ctx.getById('positionLabel').getText();
     expect(finalPosition).not.toBe('0:00');
 
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
   });
 
   test('should capture screenshot if TAKE_SCREENSHOTS set', async () => {
@@ -607,7 +607,7 @@ describe('Widget Mode - Integration Tests', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     if (process.env.TAKE_SCREENSHOTS === '1') {
       const screenshotPath = path.join(
@@ -642,13 +642,13 @@ describe('Widget Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Stop without playing
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should stay at 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('should handle multiple stops', async () => {
@@ -659,17 +659,17 @@ describe('Widget Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // Play then multiple stops
-    await ctx.getByID('playBtn').click();
+    await ctx.getById('playBtn').click();
     await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('stopBtn').click();
-    await ctx.getByID('stopBtn').click();
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('stopBtn').click();
+    await ctx.getById('stopBtn').click();
 
     // Should be stable at 0:00
-    await ctx.getByID('positionLabel').within(500).shouldBe('0:00');
+    await ctx.getById('positionLabel').within(500).shouldBe('0:00');
   });
 
   test('slices should exist even in scrollable container', async () => {
@@ -680,10 +680,10 @@ describe('Widget Mode - Edge Cases', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    await ctx.getByID('statusLabel').within(2000).shouldBe('Ready to play');
+    await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
     // First and middle slices should be queryable
-    await ctx.getByID('slice-0').within(500).shouldExist();
-    await ctx.getByID('slice-24').within(500).shouldExist();
+    await ctx.getById('slice-0').within(500).shouldExist();
+    await ctx.getById('slice-24').within(500).shouldExist();
   });
 });
