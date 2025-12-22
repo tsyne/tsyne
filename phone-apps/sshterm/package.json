@@ -1,0 +1,17 @@
+{
+  "name": "tsyne-sshterm",
+  "version": "0.1.0",
+  "description": "SSH terminal for Tsyne",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.0.0"
+  }
+}

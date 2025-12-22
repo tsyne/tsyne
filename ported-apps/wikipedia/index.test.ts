@@ -210,7 +210,7 @@ describe('WikipediaStore', () => {
     });
 
     it('should get picture of the day', () => {
-      const potd = store.getFeaturedContentByType('picture-of-the-day');
+      const potd = store.getFeaturedContentByType('picture-of-day');
       expect(Array.isArray(potd)).toBe(true);
     });
 
@@ -248,9 +248,10 @@ describe('WikipediaStore', () => {
     });
 
     it('should handle invalid language change', () => {
+      const initialLang = store.getCurrentLanguage().code;
       const changed = store.setCurrentLanguage('xyz');
       expect(changed).toBe(false);
-      expect(store.getCurrentLanguage().code).toBe('es');
+      expect(store.getCurrentLanguage().code).toBe(initialLang);
     });
 
     it('should get article count for current language', () => {

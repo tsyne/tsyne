@@ -492,6 +492,7 @@ test_larger_app() {
 # Test each larger app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
 test_larger_app "literate-programming" || true
+test_larger_app "realtime-paris-density-simulation" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================

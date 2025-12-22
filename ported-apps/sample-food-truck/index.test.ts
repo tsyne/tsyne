@@ -73,7 +73,7 @@ describe('FoodTruckStore', () => {
 
       store.markOrderReady(orderId);
 
-      const updatedOrder = store.getOrders().find((o) => o.id === orderId);
+      const updatedOrder = store.getOrders().find((o: Order) => o.id === orderId);
       expect(updatedOrder?.status).toBe('ready');
     });
 
@@ -84,7 +84,7 @@ describe('FoodTruckStore', () => {
 
       store.markOrderCompleted(orderId);
 
-      const updatedOrder = store.getOrders().find((o) => o.id === orderId);
+      const updatedOrder = store.getOrders().find((o: Order) => o.id === orderId);
       expect(updatedOrder?.status).toBe('completed');
     });
   });

@@ -196,9 +196,9 @@ const patterns: PatternRule[] = [
         pattern: '* i am * sad *',
         responses: [
           'I am sorry to hear you are %1.',
-          'Do you think coming here will help you not to be %1?',
+          'I am sorry to hear that. Do you think coming here will help you not to be %1?',
           "I'm sure it's not pleasant to be %1.",
-          'Can you explain what made you %1?',
+          "I'm sorry. Can you explain what made you %1?",
         ],
       },
       {

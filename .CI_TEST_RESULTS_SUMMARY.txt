@@ -4,7 +4,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                535      535        0        0  31|31|0
+Core                                783      783        0        0  40|40|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
@@ -17,7 +17,7 @@ Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: mahjongg                     47       47        0        0    2|2|0
-Ported: pixeledit                    92       86        6        0    6|5|1
+Ported: pixeledit                   138      138        0        0    8|8|0
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   140      140        0        0    8|8|0
@@ -25,52 +25,55 @@ Ported: sudoku                       27       27        0        0    2|2|0
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
 Phone: clock                          4        4        0        0    1|1|0
+Phone: eliza                         15       14        1        0    1|0|1
 Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
 Phone: julia-set                      6        6        0        0    1|1|0
 Phone: mandelbrot                     9        9        0        0    1|1|0
 Phone: minefield                     22       22        0        0    1|1|0
 Phone: newton-fractal                 6        6        0        0    1|1|0
+Phone: signal                        63       63        0        0    2|2|0
 Phone: stopwatch                      6        6        0        0    1|1|0
+Phone: telegram                      32       32        0        0    1|1|0
 Phone: timer                          6        6        0        0    1|1|0
 Phone: tricorn                        6        6        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2325     2288        6       31      173
+TOTAL                              2729     2697        1       31      188
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 64680ms (64.68s)
-Total ctx.wait() calls: 297
+Total wait time: 99450ms (99.45s)
+Total ctx.wait() calls: 427
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
+  Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should draw vertical line from center downward
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill a circle with specified color
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill a rectangle with specified color
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill circle with light gray like clock face
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should render multiple overlapping canvas elements like clock
+    └─ 4500ms (9 calls)
   Mandelbrot Explorer should reset view when clicking Reset
     └─ 4000ms (4 calls)
   Burning Ship Explorer should reset view
     └─ 3000ms (4 calls)
   Mandelbrot Explorer should zoom out when clicking Zoom Out button
     └─ 3000ms (3 calls)
-  Burning Ship Explorer should zoom and take screenshot
-    └─ 2000ms (2 calls)
-  Julia Set Explorer should cycle through presets
-    └─ 2000ms (2 calls)
-  Julia Set Explorer should zoom in when clicking zoom button
-    └─ 2000ms (2 calls)
-  Mandelbrot Explorer should cycle palettes when clicking Next Palette
-    └─ 2000ms (2 calls)
-  Mandelbrot Explorer should pan left when clicking Left button
-    └─ 2000ms (2 calls)
-  Mandelbrot Explorer should zoom in when clicking Zoom In button
-    └─ 2000ms (2 calls)
-  Tricorn Explorer should cycle palettes
-    └─ 2000ms (2 calls)
+  Desktop Environment Tests should hide windows when Show Desktop is clicked
+    └─ 2700ms (18 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 6 tests failed
+❌ FAILED: 1 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt
