@@ -104,7 +104,7 @@ export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi';
 
 export interface AppOptions {
   title?: string;
-  /** Bridge communication mode: 'stdio' (default), 'grpc' (binary protocol), or 'msgpack-uds' (fastest) */
+  /** Bridge communication mode: 'msgpack-uds' (default, fastest), 'grpc' (binary protocol), or 'stdio' (legacy) */
   bridgeMode?: BridgeMode;
   /** Enable/disable the Ctrl+Shift+I inspector shortcut (default: true) */
   inspector?: boolean;
@@ -238,7 +238,7 @@ function getBridgeMode(options?: AppOptions): BridgeMode {
     return envMode;
   }
   // Fall back to options or default
-  return options?.bridgeMode || 'stdio';
+  return options?.bridgeMode || 'msgpack-uds';
 }
 
 /**

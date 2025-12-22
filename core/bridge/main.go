@@ -864,6 +864,6 @@ func main() {
 	case "msgpack-uds":
 		runMsgpackUdsMode(testMode)
 	default:
-		runStdioMode(testMode)
+		runMsgpackUdsMode(testMode)
 	}
 }
