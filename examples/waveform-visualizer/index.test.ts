@@ -10,9 +10,9 @@
  * - Complete playback workflows
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import * as path from 'path';
-import { buildWaveformVisualizer } from './waveform-visualizer';
+import { buildWaveformVisualizer } from './index';
 
 describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
   let tsyneTest: TsyneTest;
@@ -250,7 +250,7 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
 describe('AudioProcessor - Waveform Processing', () => {
   test('synthetic waveform generation with correct properties', async () => {
     // Dynamic import to test the audio processor
-    const waveformVisualizer = await import('./waveform-visualizer');
+    const waveformVisualizer = await import('./index');
 
     // Access via module if exported, or verify through the app behavior
     // For now, test through app initialization ensures audio processor works
@@ -259,7 +259,7 @@ describe('AudioProcessor - Waveform Processing', () => {
   test('waveform downsampling to multiple resolutions', async () => {
     // This is indirectly tested through app initialization
     // The app calls downsampleWaveform internally
-    const testApp = new (await import('../core/src/index-test')).TsyneTest({
+    const testApp = new (await import('../../core/src/index-test')).TsyneTest({
       headed: false,
     });
 

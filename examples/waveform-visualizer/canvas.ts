@@ -16,99 +16,17 @@
  * Click/tap anywhere on the waveform to jump to that position.
  */
 
-import { app, App, Window } from '../core/src';
-import * as fs from 'fs';
-import * as https from 'https';
-import * as path from 'path';
-
-interface WaveformData {
-  samples: Float32Array;
-  sampleRate: number;
-  duration: number;
-}
-
-interface WaveformSlice {
-  index: number;
-  peak: number;
-  rms: number;
-  position: number;
-}
-
-class AudioProcessor {
-  static async fetchAndDecodeAudio(url: string): Promise<WaveformData> {
-    const filename = path.join('/tmp', 'audio.mp3');
-    if (!fs.existsSync(filename)) {
-      await this.downloadFile(url, filename);
-    }
-    return this.createSyntheticWaveform();
-  }
-
-  private static downloadFile(url: string, destination: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const file = fs.createWriteStream(destination);
-      https.get(url, (response) => {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close();
-          resolve();
-        });
-      }).on('error', (err) => {
-        fs.unlink(destination, () => {});
-        reject(err);
-      });
-    });
-  }
-
-  static createSyntheticWaveform(): WaveformData {
-    const sampleRate = 44100;
-    const duration = 8;
-    const samples = new Float32Array(sampleRate * duration);
-
-    for (let i = 0; i < samples.length; i++) {
-      const t = i / sampleRate;
-      const kick = Math.sin(2 * Math.PI * 60 * t) * Math.exp(-t * 2);
-      const tom = Math.sin(2 * Math.PI * 150 * (t % 0.5)) * Math.exp(-t * 3);
-      const hihat = Math.sin(2 * Math.PI * 8000 * t) * Math.exp(-t * 8);
-      const beatPattern = Math.sin(2 * Math.PI * (t / 0.5));
-      const envelope = Math.max(0, Math.sin(beatPattern));
-
-      samples[i] = (kick * 0.5 + tom * 0.3 + hihat * 0.1 * envelope) * 0.5;
-    }
-
-    return { samples, sampleRate, duration };
-  }
-
-  static downsampleWaveform(
-    data: WaveformData,
-    targetWidth: number
-  ): WaveformSlice[] {
-    const samplesPerPixel = Math.ceil(data.samples.length / targetWidth);
-    const slices: WaveformSlice[] = [];
-
-    for (let pixelX = 0; pixelX < targetWidth; pixelX++) {
-      const start = pixelX * samplesPerPixel;
-      const end = Math.min(start + samplesPerPixel, data.samples.length);
-
-      let peak = 0;
-      let sum = 0;
-
-      for (let i = start; i < end; i++) {
-        const sample = Math.abs(data.samples[i]);
-        peak = Math.max(peak, sample);
-        sum += sample * sample;
-      }
-
-      slices.push({
-        index: pixelX,
-        peak,
-        rms: Math.sqrt(sum / (end - start)),
-        position: (start / data.samples.length) * data.duration,
-      });
-    }
-
-    return slices;
-  }
-}
+import { app, App, Window } from '../../core/src';
+import {
+  AudioProcessor,
+  WaveformData,
+  WaveformSlice,
+  startAudioPlayback,
+  stopAudioPlayback,
+  formatTime,
+  registerCleanupHandlers,
+  isTestEnvironment,
+} from './common';
 
 export function buildCanvasWaveformVisualizer(a: App) {
   a.window(
@@ -134,9 +52,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
       async function initializeWaveform() {
         try {
           statusLabel?.setText('Loading audio...');
-          waveformData = await AudioProcessor.fetchAndDecodeAudio(
-            'https://cdn.pixabay.com/download/audio/2023/01/18/audio_308174_ZHKcwOX.mp3'
-          );
+          waveformData = await AudioProcessor.loadWaveform();
 
           slices = AudioProcessor.downsampleWaveform(waveformData, canvasWidth);
           statusLabel?.setText('Ready - tap waveform to seek');
@@ -236,12 +152,6 @@ export function buildCanvasWaveformVisualizer(a: App) {
         );
       }
 
-      function formatTime(seconds: number): string {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${String(secs).padStart(2, '0')}`;
-      }
-
       async function handleCanvasTap(x: number) {
         if (!waveformData) return;
 
@@ -251,6 +161,8 @@ export function buildCanvasWaveformVisualizer(a: App) {
 
         if (isPlaying) {
           startTime = Date.now() - playbackPosition * 1000;
+          // Restart audio at new position
+          startAudioPlayback(playbackPosition);
         }
 
         updateTimeLabels();
@@ -265,11 +177,13 @@ export function buildCanvasWaveformVisualizer(a: App) {
         playBtn?.hide();
         pauseBtn?.show();
         statusLabel?.setText('Playing... (tap waveform to seek)');
+        startAudioPlayback(playbackPosition);
         animationLoop();
       }
 
       async function pause() {
         isPlaying = false;
+        stopAudioPlayback();
         if (animationFrameId) {
           clearTimeout(animationFrameId);
           animationFrameId = null;
@@ -283,6 +197,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
       async function stop() {
         isPlaying = false;
         playbackPosition = 0;
+        stopAudioPlayback();
         if (animationFrameId) {
           clearTimeout(animationFrameId);
           animationFrameId = null;
@@ -299,7 +214,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
         a.vbox(() => {
           // Title
           a.label('Waveform Visualizer - Canvas Mode').withId('titleLabel');
-          a.label('Pixabay: Upbeat Stomp Drums Opener').withId('sourceLabel');
+          a.label('Pixabay: Hopeless Drum and Bass').withId('sourceLabel');
           a.label('🎨 Canvas-based rendering (tap to seek)')
             .withId('modeLabel');
           a.label('Demonstrates: tappableCanvasRaster, setPixelBuffer, interactive seeking')
@@ -356,9 +271,8 @@ export function buildCanvasWaveformVisualizer(a: App) {
   );
 }
 
-// Skip auto-run when imported by test framework or desktop
-const isTestEnvironment =
-  typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+// Clean up audio on exit
+registerCleanupHandlers();
 
 if (!isTestEnvironment) {
   app({ title: 'Waveform Visualizer - Canvas Mode' }, buildCanvasWaveformVisualizer);

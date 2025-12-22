@@ -16,99 +16,17 @@
  * Each slice is a UI element that can be styled, animated, or interacted with.
  */
 
-import { app, App, Window } from '../core/src';
-import * as fs from 'fs';
-import * as https from 'https';
-import * as path from 'path';
-
-interface WaveformData {
-  samples: Float32Array;
-  sampleRate: number;
-  duration: number;
-}
-
-interface WaveformSlice {
-  index: number;
-  peak: number;
-  rms: number;
-  position: number;
-}
-
-class AudioProcessor {
-  static async fetchAndDecodeAudio(url: string): Promise<WaveformData> {
-    const filename = path.join('/tmp', 'audio.mp3');
-    if (!fs.existsSync(filename)) {
-      await this.downloadFile(url, filename);
-    }
-    return this.createSyntheticWaveform();
-  }
-
-  private static downloadFile(url: string, destination: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const file = fs.createWriteStream(destination);
-      https.get(url, (response) => {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close();
-          resolve();
-        });
-      }).on('error', (err) => {
-        fs.unlink(destination, () => {});
-        reject(err);
-      });
-    });
-  }
-
-  static createSyntheticWaveform(): WaveformData {
-    const sampleRate = 44100;
-    const duration = 8;
-    const samples = new Float32Array(sampleRate * duration);
-
-    for (let i = 0; i < samples.length; i++) {
-      const t = i / sampleRate;
-      const kick = Math.sin(2 * Math.PI * 60 * t) * Math.exp(-t * 2);
-      const tom = Math.sin(2 * Math.PI * 150 * (t % 0.5)) * Math.exp(-t * 3);
-      const hihat = Math.sin(2 * Math.PI * 8000 * t) * Math.exp(-t * 8);
-      const beatPattern = Math.sin(2 * Math.PI * (t / 0.5));
-      const envelope = Math.max(0, Math.sin(beatPattern));
-
-      samples[i] = (kick * 0.5 + tom * 0.3 + hihat * 0.1 * envelope) * 0.5;
-    }
-
-    return { samples, sampleRate, duration };
-  }
-
-  static downsampleWaveform(
-    data: WaveformData,
-    targetWidth: number
-  ): WaveformSlice[] {
-    const samplesPerPixel = Math.ceil(data.samples.length / targetWidth);
-    const slices: WaveformSlice[] = [];
-
-    for (let pixelX = 0; pixelX < targetWidth; pixelX++) {
-      const start = pixelX * samplesPerPixel;
-      const end = Math.min(start + samplesPerPixel, data.samples.length);
-
-      let peak = 0;
-      let sum = 0;
-
-      for (let i = start; i < end; i++) {
-        const sample = Math.abs(data.samples[i]);
-        peak = Math.max(peak, sample);
-        sum += sample * sample;
-      }
-
-      slices.push({
-        index: pixelX,
-        peak,
-        rms: Math.sqrt(sum / (end - start)),
-        position: (start / data.samples.length) * data.duration,
-      });
-    }
-
-    return slices;
-  }
-}
+import { app, App, Window } from '../../core/src';
+import {
+  AudioProcessor,
+  WaveformData,
+  WaveformSlice,
+  startAudioPlayback,
+  stopAudioPlayback,
+  formatTime,
+  registerCleanupHandlers,
+  isTestEnvironment,
+} from './common';
 
 export function buildWidgetWaveformVisualizer(a: App) {
   a.window(
@@ -133,12 +51,10 @@ export function buildWidgetWaveformVisualizer(a: App) {
       async function initializeWaveform() {
         try {
           statusLabel?.setText('Loading audio...');
-          waveformData = await AudioProcessor.fetchAndDecodeAudio(
-            'https://cdn.pixabay.com/download/audio/2023/01/18/audio_308174_ZHKcwOX.mp3'
-          );
+          waveformData = await AudioProcessor.loadWaveform();
 
-          // Fewer slices for widget mode (widget rendering is heavier)
-          slices = AudioProcessor.downsampleWaveform(waveformData, 48);
+          // Match canvas: ~960 slices to fill width with 2px bars
+          slices = AudioProcessor.downsampleWaveform(waveformData, 480);
           await renderWaveformSlices();
           statusLabel?.setText('Ready to play');
         } catch (error) {
@@ -149,29 +65,45 @@ export function buildWidgetWaveformVisualizer(a: App) {
       async function renderWaveformSlices() {
         if (!waveformContainer || slices.length === 0) return;
 
+        // Clear existing content
+        waveformContainer.removeAll();
         sliceElements.clear();
 
-        // Render slices as declarative widgets in an hbox
-        // Each slice is a vertical bar showing amplitude
-        a.hbox(() => {
+        // Find max peak for normalization
+        let maxPeak = 0;
+        for (const slice of slices) {
+          maxPeak = Math.max(maxPeak, slice.peak);
+        }
+        if (maxPeak === 0) maxPeak = 1;
+
+        // Mirrored waveform: bars extend both up and down from center
+        const barWidth = 2;  // Thin bars, no gaps
+        const maxHeight = 200;  // Total height of waveform area
+        const halfHeight = maxHeight / 2;  // Each side from center
+
+        waveformContainer.add(() => {
           for (const slice of slices) {
-            const heightPercent = Math.min(100, slice.peak * 300);
+            // Normalize: bar extends this much above AND below center
+            const normalizedPeak = slice.peak / maxPeak;
+            const barHalfHeight = Math.max(1, Math.floor(normalizedPeak * (halfHeight - 2)));
+            const totalBarHeight = barHalfHeight * 2;  // Mirrored height
+            const spacerHeight = (maxHeight - totalBarHeight) / 2;
             const id = `slice-${slice.index}`;
 
-            // Each slice: vbox with dynamic height
-            const sliceWidget = a
-              .vbox(() => {
-                // Top spacer to vertically center
-                if (heightPercent < 100) {
-                  a.spacer();
-                }
-
-                // The actual bar (empty label with background color effect)
-                a.label('');
-              })
-              .withId(id);
-
-            sliceElements.set(slice.index, sliceWidget);
+            // Each bar centered vertically (mirrored waveform style)
+            a.vbox(() => {
+              // Top spacer centers the bar
+              if (spacerHeight > 0) {
+                a.rectangle('#282828', barWidth, spacerHeight);  // Dark bg
+              }
+              // Green bar - centered, represents both up and down from center
+              const sliceWidget = a.rectangle('#00C864', barWidth, totalBarHeight).withId(id);
+              sliceElements.set(slice.index, sliceWidget);
+              // Bottom spacer
+              if (spacerHeight > 0) {
+                a.rectangle('#282828', barWidth, spacerHeight);  // Dark bg
+              }
+            }, { spacing: 0 });  // No gaps within each slice column
           }
         });
       }
@@ -196,37 +128,6 @@ export function buildWidgetWaveformVisualizer(a: App) {
         }
       }
 
-      async function updateSliceHighlights() {
-        if (!waveformData || slices.length === 0) return;
-
-        const newSliceIndex = Math.floor(
-          (playbackPosition / waveformData.duration) * slices.length
-        );
-
-        // Only update if slice changed
-        if (newSliceIndex !== currentSliceIndex) {
-          currentSliceIndex = newSliceIndex;
-
-          // In a real scenario, you could apply different styles/colors here
-          // For now, this demonstrates the pattern of tracking playback position
-          for (let i = 0; i < slices.length; i++) {
-            const element = sliceElements.get(i);
-            if (element) {
-              if (i < currentSliceIndex) {
-                // Already played
-                element.when(() => true);
-              } else if (i === currentSliceIndex) {
-                // Currently playing
-                element.when(() => true);
-              } else {
-                // Future
-                element.when(() => true);
-              }
-            }
-          }
-        }
-      }
-
       function updateTimeLabels() {
         const minutes = Math.floor(playbackPosition / 60);
         const seconds = Math.floor(playbackPosition % 60);
@@ -235,10 +136,30 @@ export function buildWidgetWaveformVisualizer(a: App) {
         );
       }
 
-      function formatTime(seconds: number): string {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${String(secs).padStart(2, '0')}`;
+      async function updateSliceHighlights() {
+        if (!waveformData || slices.length === 0) return;
+
+        const newSliceIndex = Math.floor(
+          (playbackPosition / waveformData.duration) * slices.length
+        );
+
+        // Update colors based on playback position
+        for (let i = 0; i < slices.length; i++) {
+          const element = sliceElements.get(i);
+          if (element) {
+            if (i < newSliceIndex) {
+              // Already played - dim gray
+              element.setFillColor('#606060');
+            } else if (i === newSliceIndex) {
+              // Currently playing - bright yellow
+              element.setFillColor('#FFFF00');
+            } else {
+              // Future - green
+              element.setFillColor('#00C864');
+            }
+          }
+        }
+        currentSliceIndex = newSliceIndex;
       }
 
       async function play() {
@@ -249,11 +170,13 @@ export function buildWidgetWaveformVisualizer(a: App) {
         playBtn?.hide();
         pauseBtn?.show();
         statusLabel?.setText('Playing...');
+        startAudioPlayback(playbackPosition);
         animationLoop();
       }
 
       async function pause() {
         isPlaying = false;
+        stopAudioPlayback();
         if (animationFrameId) {
           clearTimeout(animationFrameId);
           animationFrameId = null;
@@ -267,6 +190,7 @@ export function buildWidgetWaveformVisualizer(a: App) {
         isPlaying = false;
         playbackPosition = 0;
         currentSliceIndex = 0;
+        stopAudioPlayback();
         if (animationFrameId) {
           clearTimeout(animationFrameId);
           animationFrameId = null;
@@ -283,19 +207,19 @@ export function buildWidgetWaveformVisualizer(a: App) {
         a.vbox(() => {
           // Title
           a.label('Waveform Visualizer - Widget Mode').withId('titleLabel');
-          a.label('Pixabay: Upbeat Stomp Drums Opener').withId('sourceLabel');
+          a.label('Pixabay: Hopeless Drum and Bass').withId('sourceLabel');
           a.label('🎨 Declarative slice-based rendering')
             .withId('modeLabel');
           a.label('Demonstrates: pseudo-declarative composition, .when(), widget slices')
             .withId('descLabel');
           a.separator();
 
-          // Waveform container - scrollable
+          // Waveform container - dark background, no gaps, fixed height
           a.scroll(() => {
             waveformContainer = a.hbox(() => {
               a.label('Loading waveform slices...');
-            });
-          });
+            }, { spacing: 0 });  // No gaps between slices
+          }).withMinSize(960, 200);
 
           a.separator();
 
@@ -340,9 +264,8 @@ export function buildWidgetWaveformVisualizer(a: App) {
   );
 }
 
-// Skip auto-run when imported by test framework or desktop
-const isTestEnvironment =
-  typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+// Clean up audio on exit
+registerCleanupHandlers();
 
 if (!isTestEnvironment) {
   app({ title: 'Waveform Visualizer - Widget Mode' }, buildWidgetWaveformVisualizer);

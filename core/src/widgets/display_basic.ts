@@ -185,6 +185,7 @@ export class Separator {
 export class Spacer {
   private ctx: Context;
   public id: string;
+  private visibilityCondition?: () => Promise<void>;
 
   constructor(ctx: Context) {
     this.ctx = ctx;
@@ -192,6 +193,45 @@ export class Spacer {
 
     ctx.bridge.send('createSpacer', { id: this.id });
     ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Register a custom ID for this spacer (for test framework getByID)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
+
+  async hide(): Promise<void> {
+    await this.ctx.bridge.send('hideWidget', { widgetId: this.id });
+  }
+
+  async show(): Promise<void> {
+    await this.ctx.bridge.send('showWidget', { widgetId: this.id });
+  }
+
+  /**
+   * Declarative visibility control - show spacer when condition is true
+   */
+  when(conditionFn: () => boolean): this {
+    const updateVisibility = async () => {
+      const shouldShow = conditionFn();
+      if (shouldShow) {
+        await this.show();
+      } else {
+        await this.hide();
+      }
+    };
+    this.visibilityCondition = updateVisibility;
+    updateVisibility();
+    return this;
   }
 }
 

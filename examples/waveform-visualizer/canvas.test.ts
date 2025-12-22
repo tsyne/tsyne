@@ -11,9 +11,9 @@
  * - Canvas rendering efficiency
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import * as path from 'path';
-import { buildCanvasWaveformVisualizer } from './waveform-visualizer-canvas';
+import { buildCanvasWaveformVisualizer } from './canvas';
 
 describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
   let tsyneTest: TsyneTest;

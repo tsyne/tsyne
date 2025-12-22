@@ -454,6 +454,20 @@ export class CanvasRectangle {
       await binding();
     }
   }
+
+  /**
+   * Register a custom ID for this rectangle (for test framework getByID)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
 }
 
 /**
@@ -1114,6 +1128,20 @@ export class TappableCanvasRaster {
     await this.ctx.bridge.send('focusTappableCanvasRaster', {
       widgetId: this.id
     });
+  }
+
+  /**
+   * Register a custom ID for this canvas (for test framework getByID)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
   }
 }
 

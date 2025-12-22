@@ -10,9 +10,9 @@
  * - Widget-based state management
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import * as path from 'path';
-import { buildWidgetWaveformVisualizer } from './waveform-visualizer-widget';
+import { buildWidgetWaveformVisualizer } from './widget';
 
 describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
   let tsyneTest: TsyneTest;

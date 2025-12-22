@@ -8,17 +8,18 @@ A multi-mode audio waveform visualizer demonstrating two idiomatic Tsyne composi
 
 ```
 waveform-visualizer/
-├── README.md                    # This file
-├── index.ts                     # Dual-mode app (choose at export)
-├── index.test.ts                # Tests for dual-mode
-├── canvas.ts                    # Canvas mode demo (standalone)
-├── canvas.test.ts               # Canvas mode tests (35+ cases)
-├── widget.ts                    # Widget mode demo (standalone)
-├── widget.test.ts               # Widget mode tests (35+ cases)
-├── screenshots.test.ts          # Screenshot generation script
-└── screenshots/                 # Generated screenshots
-    ├── canvas-mode.png          # Canvas mode capture
-    └── widget-mode.png          # Widget mode capture
+├── README.md                                    # This file
+├── hopeless-drum-and-bass-full-369496.mp3       # Audio file (download from Pixabay)
+├── index.ts                                     # Dual-mode app (choose at export)
+├── index.test.ts                                # Tests for dual-mode
+├── canvas.ts                                    # Canvas mode demo (standalone)
+├── canvas.test.ts                               # Canvas mode tests (35+ cases)
+├── widget.ts                                    # Widget mode demo (standalone)
+├── widget.test.ts                               # Widget mode tests (35+ cases)
+├── screenshots.test.ts                          # Screenshot generation script
+└── screenshots/                                 # Generated screenshots
+    ├── canvas-mode.png                          # Canvas mode capture
+    └── widget-mode.png                          # Widget mode capture
 ```
 
 ## 🚀 Quick Start
@@ -110,6 +111,48 @@ Screenshots are saved to `examples/waveform-visualizer/screenshots/`
 
 ---
 
+## 📐 Code Structure Comparison
+
+Both `canvas.ts` and `widget.ts` follow a parallel structure for easy side-by-side comparison:
+
+| Line | canvas.ts | widget.ts | Purpose |
+|------|-----------|-----------|---------|
+| ~31 | `buildCanvasWaveformVisualizer` | `buildWidgetWaveformVisualizer` | Main builder function |
+| ~51-52 | `initializeWaveform` | `initializeWaveform` | Load audio data |
+| ~65 | `drawWaveform` | `renderWaveformSlices` | Render visualization |
+| ~111-127 | `animationLoop` | `animationLoop` | Playback animation |
+| ~131-147 | `updateTimeLabels` | `updateTimeLabels` | Update MM:SS display |
+| ~139-155 | `handleCanvasTap` | `updateSliceHighlights` | Mode-specific update |
+| ~165-172 | `play` | `play` | Start playback |
+| ~177-184 | `pause` | `pause` | Pause playback |
+| ~189-197 | `stop` | `stop` | Stop and reset |
+
+### Adherence to Pseudo-Declarative UI Composition
+
+Both modes demonstrate key patterns from [pseudo-declarative-ui-composition.md](../../docs/pseudo-declarative-ui-composition.md):
+
+**Canvas Mode** - Imperative rendering with declarative structure:
+- ✅ **Builder pattern**: UI layout defined in nested `a.vbox(() => { ... })` blocks
+- ✅ **Fluent chaining**: `.onClick()`, `.withId()`, `.when()` on widgets
+- ✅ **Self-contained state**: Local variables (`isPlaying`, `playbackPosition`) with direct updates
+- ⚠️ **Imperative rendering**: `drawWaveform()` directly manipulates pixel buffer - necessary for performance but less "Tsyne-like"
+
+**Widget Mode** - Pure pseudo-declarative composition:
+- ✅ **Builder pattern**: Entire waveform built with nested `a.vbox()`, `a.hbox()`, `a.rectangle()`
+- ✅ **Fluent chaining**: `.withId()`, `{ spacing: 0 }` options throughout
+- ✅ **Programmatic generation**: Waveform slices created in a loop (like keyboard example)
+- ✅ **Declarative updates**: `setFillColor()` on tracked widgets vs. full redraw
+- ✅ **Each slice is a widget**: True to the "Each vertical bar is a TypeScript widget element" philosophy
+
+**Shared Patterns:**
+- Both use **instance-local state** pattern (like `calculator.ts`)
+- Both use **imperative label updates** via `setText()` (like `05-live-clock.ts`)
+- Both share common utilities via `common.ts` (DRY principle)
+
+**Key Difference:** Canvas mode prioritizes performance (960 pixel columns, ~30 FPS redraw), while Widget mode prioritizes the idiomatic Tsyne approach (480 widget elements, color updates only).
+
+---
+
 ## 🎯 Key Code Patterns
 
 ### Canvas Mode: Interactive Tapping
@@ -135,24 +178,37 @@ async function handleCanvasTap(x: number) {
 
 ### Widget Mode: Declarative Slices
 ```typescript
-// Each slice is a TypeScript widget
-a.hbox(() => {
+// Each slice is a centered/mirrored bar using rectangles
+waveformContainer.add(() => {
   for (const slice of slices) {
-    const heightPercent = Math.min(100, slice.peak * 300);
+    const normalizedPeak = slice.peak / maxPeak;
+    const barHalfHeight = Math.max(1, Math.floor(normalizedPeak * (halfHeight - 2)));
+    const totalBarHeight = barHalfHeight * 2;  // Mirrored height
+    const spacerHeight = (maxHeight - totalBarHeight) / 2;
 
-    // Vbox grows/shrinks based on amplitude
-    const sliceWidget = a
-      .vbox(() => {
-        // Top spacer centers the bar
-        a.spacer().when(() => heightPercent < 100);
-        // The bar (empty label)
-        a.label('');
-      })
-      .withId(`slice-${slice.index}`);
-
-    sliceElements.set(slice.index, sliceWidget);
+    // Each bar centered vertically (mirrored waveform style)
+    a.vbox(() => {
+      if (spacerHeight > 0) {
+        a.rectangle('#282828', barWidth, spacerHeight);  // Dark bg spacer
+      }
+      const sliceWidget = a.rectangle('#00C864', barWidth, totalBarHeight).withId(id);
+      sliceElements.set(slice.index, sliceWidget);
+      if (spacerHeight > 0) {
+        a.rectangle('#282828', barWidth, spacerHeight);  // Dark bg spacer
+      }
+    }, { spacing: 0 });
   }
 });
+
+// Update colors during playback
+async function updateSliceHighlights() {
+  for (let i = 0; i < slices.length; i++) {
+    const element = sliceElements.get(i);
+    if (i < currentIndex) element.setFillColor('#606060');      // Played - gray
+    else if (i === currentIndex) element.setFillColor('#FFFF00'); // Current - yellow
+    else element.setFillColor('#00C864');                        // Future - green
+  }
+}
 ```
 
 ### Canvas Mode: Pixel Rendering
@@ -244,13 +300,25 @@ Both modes support:
 
 ## 🎵 Audio Source
 
-Both demos use **synthetic waveform** simulating:
-- **Kick drum** (60 Hz): Low-frequency bass punch
-- **Tom** (150 Hz): Mid-frequency percussion
-- **Hi-hat** (8000 Hz): High-frequency cymbals
-- **Envelope**: Beat-synced amplitude variation
+**Track:** "Hopeless Drum and Bass" from Pixabay (CC0)
+**Download:** https://pixabay.com/music/drum-n-bass-hopeless-drum-and-bass-full-369496/
 
-**Duration:** 8 seconds (suitable for testing)
+Place the downloaded file as `hopeless-drum-and-bass-full-369496.mp3` in this directory.
+
+### Requirements
+
+**ffmpeg** is required (for both waveform decoding and audio playback):
+```bash
+# Debian/Ubuntu
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+```
+
+The waveform is decoded directly from the MP3 file using ffmpeg, and audio playback uses ffplay (included with ffmpeg).
+
+**Duration:** ~200 seconds (3:20)
 
 ---
 
@@ -268,18 +336,6 @@ In both `canvas.ts` and `widget.ts`, line ~163-164:
 ```typescript
 slices = AudioProcessor.downsampleWaveform(waveformData, 64);  // 64 slices
 // Widget mode uses fewer (48) for performance
-```
-
-### Use Real Audio File
-Modify `AudioProcessor.fetchAndDecodeAudio()`:
-```typescript
-// Fetch from URL or local file
-const buffer = await decodeMP3(url);  // Your decoder
-return {
-  samples: new Float32Array(buffer),
-  sampleRate: 44100,
-  duration: calculateDuration(buffer)
-};
 ```
 
 ### Change Colors
@@ -319,9 +375,8 @@ interface WaveformSlice {
 ```
 
 ### AudioProcessor Class
-- `createSyntheticWaveform()` - Generate test audio
+- `loadWaveform()` - Decode MP3 to PCM samples using ffmpeg
 - `downsampleWaveform()` - Reduce samples for display
-- `fetchAndDecodeAudio()` - Load from URL (extensible)
 
 ### State Management
 - `playbackPosition` - Current time (seconds)
@@ -397,8 +452,8 @@ interface WaveformSlice {
 
 All code in this example is provided as-is for educational purposes.
 
-**Audio source:** Pixabay "Upbeat Stomp Drums Opener" (CC0)
-https://pixabay.com/music/upbeat-stomp-drums-opener-308174/
+**Audio source:** Pixabay "Hopeless Drum and Bass" (CC0)
+https://pixabay.com/music/drum-n-bass-hopeless-drum-and-bass-full-369496/
 
 ---
 

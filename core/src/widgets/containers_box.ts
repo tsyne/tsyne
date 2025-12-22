@@ -258,6 +258,20 @@ export class VBox {
   }
 
   /**
+   * Register a custom ID for this VBox (for test framework getByID)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
+
+  /**
    * Refresh the container - re-evaluates visibility conditions for self and all children
    */
   async refreshVisibility(): Promise<void> {
