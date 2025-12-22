@@ -25,23 +25,29 @@ Ported: sudoku                       27       27        0        0    2|2|0
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
 Phone: clock                          4        4        0        0    1|1|0
-Phone: eliza                         15       14        1        0    1|0|1
+Phone: eliza                         15       15        0        0    1|1|0
 Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
 Phone: julia-set                      6        6        0        0    1|1|0
 Phone: mandelbrot                     9        9        0        0    1|1|0
 Phone: minefield                     22       22        0        0    1|1|0
 Phone: newton-fractal                 6        6        0        0    1|1|0
+Phone: notes                         31       31        0        0    2|1|1
+Phone: pixyne                        30       30        0        0    2|2|0
 Phone: signal                        63       63        0        0    2|2|0
+Phone: snowflake                     12       12        0        0    2|2|0
+Phone: sonic3                         4        4        0        0    1|1|0
+Phone: sshterm                        5        5        0        0    1|1|0
 Phone: stopwatch                      6        6        0        0    1|1|0
 Phone: telegram                      32       32        0        0    1|1|0
 Phone: timer                          6        6        0        0    1|1|0
 Phone: tricorn                        6        6        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
+Larger: realtime-paris-density-simulation       12       10        2        0    2|1|1
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2729     2697        1       31      188
+TOTAL                              2823     2790        2       31      198
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
@@ -74,6 +80,6 @@ Top 10 tests by wait time:
   Desktop Environment Tests should hide windows when Show Desktop is clicked
     └─ 2700ms (18 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 1 tests failed
+❌ FAILED: 2 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

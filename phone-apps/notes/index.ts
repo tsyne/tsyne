@@ -211,13 +211,12 @@ class NotesUI {
       this.a.vbox(() => {
         if (selectedNote) {
           this.a.hbox(() => {
-            this.a
-              .entry('Title')
-              .setValue(selectedNote.title)
-              .onChange((value: string) => {
-                this.updateNoteTitle(selectedNote.id, value);
+            const titleEntry = this.a
+              .entry('Title', undefined, undefined, undefined, (text: string) => {
+                this.updateNoteTitle(selectedNote.id, text);
               })
               .withId(`notes-title-edit-${selectedNote.id}`);
+            titleEntry.setText(selectedNote.title);
 
             this.a.spacer();
 
@@ -229,13 +228,10 @@ class NotesUI {
 
           this.a.separator();
 
-          this.a
-            .richTextEntry('Content')
-            .setValue(selectedNote.content)
-            .onChange((value: string) => {
-              this.updateNoteContent(selectedNote.id, value);
-            })
+          const contentEntry = this.a
+            .multilineentry('Content')
             .withId(`notes-content-${selectedNote.id}`);
+          contentEntry.setText(selectedNote.content);
         } else {
           this.a.spacer();
           this.a.label('Select a note or create a new one').withId('notesEditorEmpty');
