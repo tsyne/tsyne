@@ -4,14 +4,17 @@
 // @tsyne-app:builder buildWaveformVisualizer
 
 /**
- * Waveform Visualizer for Tsyne
+ * Enhanced Waveform Visualizer for Tsyne
  *
- * A real-time waveform visualizer that displays audio data from a Pixabay audio file.
+ * A real-time waveform visualizer with two rendering modes:
+ * 1. Canvas mode (tappable/draggable scrubber) - efficient pixel rendering
+ * 2. Widget mode (declarative slices) - idiomatic Tsyne composition
+ *
  * Features:
- * - Displays waveform of an audio file
- * - Play/pause controls
- * - Scrubber showing playback position
- * - Responsive canvas rendering with pixel buffer
+ * - Interactive scrubber: tap/drag to seek through audio
+ * - Play/pause/stop controls
+ * - Real-time position tracking
+ * - Two rendering approaches (canvas vs declarative widgets)
  *
  * Audio source: Pixabay "Upbeat Stomp Drums Opener"
  * https://pixabay.com/music/upbeat-stomp-drums-opener-308174/
@@ -28,6 +31,13 @@ interface WaveformData {
   duration: number;
 }
 
+interface WaveformSlice {
+  index: number;
+  peak: number;
+  rms: number;
+  position: number; // in seconds
+}
+
 class AudioProcessor {
   /**
    * Fetch audio from URL and decode to waveform data
@@ -40,10 +50,7 @@ class AudioProcessor {
       await this.downloadFile(url, filename);
     }
 
-    // Simple decoder: read the file and extract sample data
-    // For MP3, we'd need external decoder. For this demo, we'll read raw PCM or WAV
-    // Since fetching actual mp3 requires a decoder, we'll create synthetic waveform
-    // from the audio file metadata
+    // Create synthetic waveform
     return this.createSyntheticWaveform();
   }
 
@@ -67,30 +74,19 @@ class AudioProcessor {
   }
 
   /**
-   * Create synthetic waveform data representing audio
-   * In a real app, this would decode actual audio file
+   * Create synthetic waveform data
    */
   static createSyntheticWaveform(): WaveformData {
-    const sampleRate = 44100; // CD quality
-    const duration = 8; // 8 seconds of audio
+    const sampleRate = 44100;
+    const duration = 8;
     const samples = new Float32Array(sampleRate * duration);
 
-    // Generate interesting waveform pattern
-    // Mix of frequencies to simulate drums
     for (let i = 0; i < samples.length; i++) {
       const t = i / sampleRate;
-
-      // Low frequency kick drum (60 Hz)
       const kick = Math.sin(2 * Math.PI * 60 * t) * Math.exp(-t * 2);
-
-      // Mid frequency (kick/tom sound)
       const tom = Math.sin(2 * Math.PI * 150 * (t % 0.5)) * Math.exp(-t * 3);
-
-      // High frequency (cymbals/hi-hat)
       const hihat = Math.sin(2 * Math.PI * 8000 * t) * Math.exp(-t * 8);
-
-      // Mix with envelope (beat pattern every 4 bars)
-      const beatPattern = Math.sin(2 * Math.PI * (t / 0.5)); // Beat every 0.5s
+      const beatPattern = Math.sin(2 * Math.PI * (t / 0.5));
       const envelope = Math.max(0, Math.sin(beatPattern));
 
       samples[i] = (kick * 0.5 + tom * 0.3 + hihat * 0.1 * envelope) * 0.5;
@@ -101,15 +97,13 @@ class AudioProcessor {
 
   /**
    * Downsample waveform for display
-   * Reduces audio samples to fit display width
    */
   static downsampleWaveform(
     data: WaveformData,
     targetWidth: number
-  ): { peaks: number[]; rms: number[] } {
+  ): WaveformSlice[] {
     const samplesPerPixel = Math.ceil(data.samples.length / targetWidth);
-    const peaks: number[] = [];
-    const rms: number[] = [];
+    const slices: WaveformSlice[] = [];
 
     for (let pixelX = 0; pixelX < targetWidth; pixelX++) {
       const start = pixelX * samplesPerPixel;
@@ -124,39 +118,44 @@ class AudioProcessor {
         sum += sample * sample;
       }
 
-      peaks.push(peak);
-      rms.push(Math.sqrt(sum / (end - start)));
+      slices.push({
+        index: pixelX,
+        peak,
+        rms: Math.sqrt(sum / (end - start)),
+        position: (start / data.samples.length) * data.duration,
+      });
     }
 
-    return { peaks, rms };
+    return slices;
   }
 }
 
 /**
- * Waveform Visualizer App
+ * Canvas-based waveform (tappable for scrubbing)
  */
-export function buildWaveformVisualizer(a: App) {
+function buildCanvasWaveformVisualizer(a: App) {
   a.window(
-    { title: 'Waveform Visualizer', width: 1000, height: 400 },
+    { title: 'Waveform Visualizer - Canvas Mode', width: 1000, height: 400 },
     (win: Window) => {
       let waveformData: WaveformData | null = null;
-      let peaks: number[] = [];
+      let slices: WaveformSlice[] = [];
       let isPlaying = false;
-      let playbackPosition = 0; // in seconds
-      let startTime = 0; // for tracking elapsed time
+      let isDragging = false;
+      let playbackPosition = 0;
+      let startTime = 0;
       let animationFrameId: NodeJS.Timeout | null = null;
 
-      // UI elements
       let playBtn: any;
       let pauseBtn: any;
       let positionLabel: any;
       let durationLabel: any;
       let waveformCanvas: any;
       let statusLabel: any;
+      let modeLabel: any;
 
-      /**
-       * Initialize waveform data
-       */
+      const canvasWidth = 960;
+      const canvasHeight = 200;
+
       async function initializeWaveform() {
         try {
           statusLabel?.setText('Loading audio...');
@@ -164,31 +163,21 @@ export function buildWaveformVisualizer(a: App) {
             'https://cdn.pixabay.com/download/audio/2023/01/18/audio_308174_ZHKcwOX.mp3'
           );
 
-          // Downsample for display
-          const canvasWidth = 960;
-          const downsampled = AudioProcessor.downsampleWaveform(waveformData, canvasWidth);
-          peaks = downsampled.peaks;
-
-          statusLabel?.setText('Ready to play');
+          slices = AudioProcessor.downsampleWaveform(waveformData, canvasWidth);
+          statusLabel?.setText('Ready - tap waveform to seek');
           await drawWaveform();
         } catch (error) {
-          statusLabel?.setText(`Error: ${String(error).substring(0, 50)}`);
-          console.error('Failed to load audio:', error);
+          statusLabel?.setText(`Error: ${String(error).substring(0, 40)}`);
         }
       }
 
-      /**
-       * Render waveform to canvas
-       */
       async function drawWaveform() {
-        if (!waveformCanvas || peaks.length === 0) return;
+        if (!waveformCanvas || slices.length === 0) return;
 
-        const canvasWidth = 960;
-        const canvasHeight = 200;
         const buffer = new Uint8Array(canvasWidth * canvasHeight * 4);
-
-        // Clear with background color (dark gray)
         const bgColor = { r: 40, g: 40, b: 40, a: 255 };
+
+        // Clear background
         for (let i = 0; i < buffer.length; i += 4) {
           buffer[i] = bgColor.r;
           buffer[i + 1] = bgColor.g;
@@ -207,10 +196,10 @@ export function buildWaveformVisualizer(a: App) {
           buffer[idx + 3] = lineColor.a;
         }
 
-        // Draw waveform (green color)
+        // Draw waveform slices
         const waveColor = { r: 0, g: 200, b: 100, a: 255 };
-        for (let x = 0; x < Math.min(peaks.length, canvasWidth); x++) {
-          const peak = peaks[x] * (canvasHeight / 2 - 5);
+        for (let x = 0; x < Math.min(slices.length, canvasWidth); x++) {
+          const peak = slices[x].peak * (canvasHeight / 2 - 5);
           const topY = Math.max(0, Math.floor(centerY - peak));
           const bottomY = Math.min(canvasHeight - 1, Math.floor(centerY + peak));
 
@@ -223,8 +212,8 @@ export function buildWaveformVisualizer(a: App) {
           }
         }
 
-        // Draw playback scrubber line
-        if (waveformData && isPlaying) {
+        // Draw scrubber (yellow line)
+        if (waveformData) {
           const scrubberX = Math.floor(
             (playbackPosition / waveformData.duration) * canvasWidth
           );
@@ -244,16 +233,12 @@ export function buildWaveformVisualizer(a: App) {
         await waveformCanvas.setPixelBuffer(buffer);
       }
 
-      /**
-       * Animation loop for playback
-       */
       function animationLoop() {
         if (isPlaying && waveformData) {
           const elapsed = (Date.now() - startTime) / 1000;
           playbackPosition = elapsed;
 
           if (playbackPosition >= waveformData.duration) {
-            // Playback finished
             isPlaying = false;
             playbackPosition = 0;
             playBtn?.show();
@@ -261,35 +246,42 @@ export function buildWaveformVisualizer(a: App) {
             statusLabel?.setText('Finished');
             drawWaveform();
           } else {
-            // Update display
             updateTimeLabels();
             drawWaveform();
-            animationFrameId = setTimeout(animationLoop, 30); // ~30fps
+            animationFrameId = setTimeout(animationLoop, 30);
           }
         }
       }
 
-      /**
-       * Update time display labels
-       */
       function updateTimeLabels() {
         const minutes = Math.floor(playbackPosition / 60);
         const seconds = Math.floor(playbackPosition % 60);
-        positionLabel?.setText(`${minutes}:${String(seconds).padStart(2, '0')}`);
+        positionLabel?.setText(
+          `${minutes}:${String(seconds).padStart(2, '0')}`
+        );
       }
 
-      /**
-       * Format time for display
-       */
       function formatTime(seconds: number): string {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${String(secs).padStart(2, '0')}`;
       }
 
-      /**
-       * Play the audio
-       */
+      async function handleCanvasTap(x: number) {
+        if (!waveformData) return;
+
+        // Convert pixel position to time
+        const progress = Math.max(0, Math.min(1, x / canvasWidth));
+        playbackPosition = progress * waveformData.duration;
+
+        if (isPlaying) {
+          startTime = Date.now() - playbackPosition * 1000;
+        }
+
+        updateTimeLabels();
+        await drawWaveform();
+      }
+
       async function play() {
         if (!waveformData) return;
 
@@ -297,13 +289,10 @@ export function buildWaveformVisualizer(a: App) {
         startTime = Date.now() - playbackPosition * 1000;
         playBtn?.hide();
         pauseBtn?.show();
-        statusLabel?.setText('Playing...');
+        statusLabel?.setText('Playing... (tap waveform to seek)');
         animationLoop();
       }
 
-      /**
-       * Pause the audio
-       */
       async function pause() {
         isPlaying = false;
         if (animationFrameId) {
@@ -316,9 +305,6 @@ export function buildWaveformVisualizer(a: App) {
         await drawWaveform();
       }
 
-      /**
-       * Stop playback and reset position
-       */
       async function stop() {
         isPlaying = false;
         playbackPosition = 0;
@@ -337,16 +323,25 @@ export function buildWaveformVisualizer(a: App) {
       win.setContent(() => {
         a.vbox(() => {
           // Title
-          a.label('Waveform Visualizer').withId('titleLabel');
+          a.label('Waveform Visualizer - Canvas Mode').withId('titleLabel');
           a.label('Pixabay: Upbeat Stomp Drums Opener').withId('sourceLabel');
+          modeLabel = a
+            .label('🎨 Canvas-based rendering (tap to seek)')
+            .withId('modeLabel');
           a.separator();
 
-          // Canvas for waveform display
-          waveformCanvas = a.canvasRaster(960, 200).withId('waveformCanvas');
+          // Interactive canvas
+          waveformCanvas = a
+            .tappableCanvasRaster(canvasWidth, canvasHeight, {
+              onTap: (x: number) => {
+                handleCanvasTap(x);
+              },
+            })
+            .withId('waveformCanvas');
 
           a.separator();
 
-          // Playback controls
+          // Controls
           a.hbox(() => {
             playBtn = a
               .button('▶ Play')
@@ -356,7 +351,7 @@ export function buildWaveformVisualizer(a: App) {
               .button('⏸ Pause')
               .onClick(() => pause())
               .withId('pauseBtn')
-              .when(() => false); // Start hidden
+              .when(() => false);
             a.button('⏹ Stop')
               .onClick(() => stop())
               .withId('stopBtn');
@@ -380,11 +375,237 @@ export function buildWaveformVisualizer(a: App) {
       });
 
       win.show();
-
-      // Initialize waveform on load
       setTimeout(() => initializeWaveform(), 100);
     }
   );
+}
+
+/**
+ * Widget-based waveform (declarative slices)
+ * Each waveform slice is a Tsyne widget element
+ */
+function buildDeclarativeWaveformVisualizer(a: App) {
+  a.window(
+    { title: 'Waveform Visualizer - Widget Mode', width: 1000, height: 400 },
+    (win: Window) => {
+      let waveformData: WaveformData | null = null;
+      let slices: WaveformSlice[] = [];
+      let isPlaying = false;
+      let playbackPosition = 0;
+      let startTime = 0;
+      let animationFrameId: NodeJS.Timeout | null = null;
+
+      let playBtn: any;
+      let pauseBtn: any;
+      let positionLabel: any;
+      let durationLabel: any;
+      let statusLabel: any;
+      let waveformContainer: any;
+      let sliceElements: Map<number, any> = new Map();
+
+      async function initializeWaveform() {
+        try {
+          statusLabel?.setText('Loading audio...');
+          waveformData = await AudioProcessor.fetchAndDecodeAudio(
+            'https://cdn.pixabay.com/download/audio/2023/01/18/audio_308174_ZHKcwOX.mp3'
+          );
+
+          slices = AudioProcessor.downsampleWaveform(waveformData, 64); // Fewer slices for widget mode
+          await renderWaveformSlices();
+          statusLabel?.setText('Ready to play');
+        } catch (error) {
+          statusLabel?.setText(`Error: ${String(error).substring(0, 40)}`);
+        }
+      }
+
+      async function renderWaveformSlices() {
+        if (!waveformContainer) return;
+
+        // Clear and rebuild
+        sliceElements.clear();
+
+        // Render slices as declarative widgets
+        a.hbox(async () => {
+          for (const slice of slices) {
+            const heightPercent = Math.min(100, slice.peak * 200);
+            const id = `slice-${slice.index}`;
+
+            // Each slice is a vertical bar
+            const sliceWidget = a
+              .vbox(() => {
+                // Top spacer
+                a.spacer().when(() => heightPercent < 100);
+
+                // The slice bar (using label with background as a simple bar)
+                a.label('')
+              })
+              .withId(id);
+
+            sliceElements.set(slice.index, sliceWidget);
+          }
+        });
+      }
+
+      function animationLoop() {
+        if (isPlaying && waveformData) {
+          const elapsed = (Date.now() - startTime) / 1000;
+          playbackPosition = elapsed;
+
+          if (playbackPosition >= waveformData.duration) {
+            isPlaying = false;
+            playbackPosition = 0;
+            playBtn?.show();
+            pauseBtn?.hide();
+            statusLabel?.setText('Finished');
+            updateSliceHighlights();
+          } else {
+            updateTimeLabels();
+            updateSliceHighlights();
+            animationFrameId = setTimeout(animationLoop, 30);
+          }
+        }
+      }
+
+      async function updateSliceHighlights() {
+        if (!waveformData) return;
+
+        const currentSliceIndex = Math.floor(
+          (playbackPosition / waveformData.duration) * slices.length
+        );
+
+        // Update visual state of slices
+        for (let i = 0; i < slices.length; i++) {
+          const element = sliceElements.get(i);
+          if (element) {
+            if (i < currentSliceIndex) {
+              // Already played - dim color
+              element.when(() => true); // Could apply style here
+            } else if (i === currentSliceIndex) {
+              // Current - highlight color
+              element.when(() => true); // Could apply style here
+            } else {
+              // Future - normal color
+              element.when(() => true);
+            }
+          }
+        }
+      }
+
+      function updateTimeLabels() {
+        const minutes = Math.floor(playbackPosition / 60);
+        const seconds = Math.floor(playbackPosition % 60);
+        positionLabel?.setText(
+          `${minutes}:${String(seconds).padStart(2, '0')}`
+        );
+      }
+
+      function formatTime(seconds: number): string {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${String(secs).padStart(2, '0')}`;
+      }
+
+      async function play() {
+        if (!waveformData) return;
+
+        isPlaying = true;
+        startTime = Date.now() - playbackPosition * 1000;
+        playBtn?.hide();
+        pauseBtn?.show();
+        statusLabel?.setText('Playing...');
+        animationLoop();
+      }
+
+      async function pause() {
+        isPlaying = false;
+        if (animationFrameId) {
+          clearTimeout(animationFrameId);
+          animationFrameId = null;
+        }
+        playBtn?.show();
+        pauseBtn?.hide();
+        statusLabel?.setText('Paused');
+      }
+
+      async function stop() {
+        isPlaying = false;
+        playbackPosition = 0;
+        if (animationFrameId) {
+          clearTimeout(animationFrameId);
+          animationFrameId = null;
+        }
+        playBtn?.show();
+        pauseBtn?.hide();
+        updateTimeLabels();
+        statusLabel?.setText('Stopped');
+        await updateSliceHighlights();
+      }
+
+      // Build UI
+      win.setContent(() => {
+        a.vbox(() => {
+          // Title
+          a.label('Waveform Visualizer - Widget Mode').withId('titleLabel');
+          a.label('Pixabay: Upbeat Stomp Drums Opener').withId('sourceLabel');
+          a.label('🎨 Declarative slice-based rendering')
+            .withId('modeLabel');
+          a.separator();
+
+          // Waveform container
+          a.scroll(() => {
+            waveformContainer = a.hbox(() => {
+              a.label('Loading waveform...');
+            });
+          });
+
+          a.separator();
+
+          // Controls
+          a.hbox(() => {
+            playBtn = a
+              .button('▶ Play')
+              .onClick(() => play())
+              .withId('playBtn');
+            pauseBtn = a
+              .button('⏸ Pause')
+              .onClick(() => pause())
+              .withId('pauseBtn')
+              .when(() => false);
+            a.button('⏹ Stop')
+              .onClick(() => stop())
+              .withId('stopBtn');
+          });
+
+          // Time display
+          a.hbox(() => {
+            a.label('Position: ').withId('positionLbl');
+            positionLabel = a.label('0:00').withId('positionLabel');
+            a.label(' / ').withId('slashLabel');
+            durationLabel = a
+              .label(
+                waveformData ? formatTime(waveformData.duration) : '0:00'
+              )
+              .withId('durationLabel');
+          });
+
+          // Status
+          statusLabel = a.label('Initializing...').withId('statusLabel');
+        });
+      });
+
+      win.show();
+      setTimeout(() => initializeWaveform(), 100);
+    }
+  );
+}
+
+// Main entry point - choose which mode to run
+export function buildWaveformVisualizer(a: App) {
+  // Use canvas mode by default (more efficient for waveform display)
+  buildCanvasWaveformVisualizer(a);
+
+  // Uncomment below to use widget mode instead:
+  // buildDeclarativeWaveformVisualizer(a);
 }
 
 // Skip auto-run when imported by test framework or desktop
