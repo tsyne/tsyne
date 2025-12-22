@@ -113,7 +113,7 @@ describe('Telegram App', () => {
     }
   });
 
-  test('should display message preview', async () => {
+  test('should display chat name', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createTelegramApp(app, telegram);
     });
@@ -123,11 +123,12 @@ describe('Telegram App', () => {
 
     const chats = telegram.getChats();
     if (chats.length > 0) {
-      await ctx.getByID(`chat-${chats[0].id}-message`).within(500).shouldExist();
+      // Chat name label shows name (and unread count if any)
+      await ctx.getByID(`chat-${chats[0].id}-name`).within(500).shouldExist();
     }
   });
 
-  test('should display unread count for chats with unread messages', async () => {
+  test('should display unread count in chat name for chats with unread messages', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createTelegramApp(app, telegram);
     });
@@ -138,7 +139,8 @@ describe('Telegram App', () => {
     const chats = telegram.getChats();
     const unreadChat = chats.find((c) => c.unreadCount > 0);
     if (unreadChat) {
-      await ctx.getByID(`chat-${unreadChat.id}-unread`).within(500).shouldExist();
+      // Unread count is shown in the name label text, e.g. "Alice (3)"
+      await ctx.getByID(`chat-${unreadChat.id}-name`).within(500).shouldExist();
     }
   });
 
