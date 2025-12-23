@@ -392,9 +392,7 @@ export function buildFullCalculator(a: App) {
   });
 }
 
-// Skip auto-run when imported by test framework
-const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
-
-if (!isTestEnvironment) {
+// Standalone execution
+if (require.main === module) {
   app(resolveTransport(), { title: 'Full Calculator' }, buildFullCalculator);
 }

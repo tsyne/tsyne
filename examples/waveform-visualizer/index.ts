@@ -28,7 +28,7 @@
 import { app, resolveTransport, App  } from '../../core/src';
 import { buildCanvasWaveformVisualizer } from './canvas';
 import { buildWidgetWaveformVisualizer } from './widget';
-import { registerCleanupHandlers, isTestEnvironment } from './common';
+import { registerCleanupHandlers } from './common';
 
 // Re-export the individual builders
 export { buildCanvasWaveformVisualizer } from './canvas';
@@ -49,6 +49,7 @@ export function buildWaveformVisualizer(a: App) {
 // Clean up audio on exit
 registerCleanupHandlers();
 
-if (!isTestEnvironment) {
+// Standalone execution
+if (require.main === module) {
   app(resolveTransport(), { title: 'Waveform Visualizer' }, buildWaveformVisualizer);
 }

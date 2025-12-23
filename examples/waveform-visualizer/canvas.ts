@@ -25,7 +25,6 @@ import {
   stopAudioPlayback,
   formatTime,
   registerCleanupHandlers,
-  isTestEnvironment,
 } from './common';
 
 export function buildCanvasWaveformVisualizer(a: App) {
@@ -285,6 +284,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
 // Clean up audio on exit
 registerCleanupHandlers();
 
-if (!isTestEnvironment) {
+// Standalone execution
+if (require.main === module) {
   app(resolveTransport(), { title: 'Waveform Visualizer - Canvas Mode' }, buildCanvasWaveformVisualizer);
 }

@@ -173,8 +173,3 @@ export function registerCleanupHandlers(): void {
   process.on('SIGTERM', () => { stopAudioPlayback(); process.exit(); });
 }
 
-/**
- * Check if running in test environment
- */
-export const isTestEnvironment =
-  typeof process !== 'undefined' && process.env.NODE_ENV === 'test';

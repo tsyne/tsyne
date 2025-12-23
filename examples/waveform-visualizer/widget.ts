@@ -25,7 +25,6 @@ import {
   stopAudioPlayback,
   formatTime,
   registerCleanupHandlers,
-  isTestEnvironment,
 } from './common';
 
 export function buildWidgetWaveformVisualizer(a: App) {
@@ -278,6 +277,7 @@ export function buildWidgetWaveformVisualizer(a: App) {
 // Clean up audio on exit
 registerCleanupHandlers();
 
-if (!isTestEnvironment) {
+// Standalone execution
+if (require.main === module) {
   app(resolveTransport(), { title: 'Waveform Visualizer - Widget Mode' }, buildWidgetWaveformVisualizer);
 }

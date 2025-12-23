@@ -391,17 +391,11 @@ export function createTodoApp(a: any, storePath?: string) {
 }
 
 // ============================================================================
-// Main Application Entry Point
+// Standalone Execution
 // ============================================================================
 
-// Skip auto-run when imported by test framework (Jest sets this)
-const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
-
-if (!isTestEnvironment) {
-  // Get file path from command line args (only when run directly)
-  const filePath = require.main === module ? process.argv.slice(2)[0] : undefined;
-
-  // Run the app - this executes when loaded by designer or run directly
+if (require.main === module) {
+  const filePath = process.argv.slice(2)[0];
   app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
     createTodoApp(a, filePath);
   });

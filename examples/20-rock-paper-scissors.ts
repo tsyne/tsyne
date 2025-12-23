@@ -126,9 +126,7 @@ export function buildRockPaperScissors(a: App) {
   });
 }
 
-// Skip auto-run when imported by test framework or desktop
-const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
-
-if (!isTestEnvironment) {
+// Standalone execution
+if (require.main === module) {
   app(resolveTransport(), { title: 'Rock Paper Scissors' }, buildRockPaperScissors);
 }

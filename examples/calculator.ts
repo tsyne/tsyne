@@ -101,10 +101,7 @@ export function buildCalculator(a: App) {
   });
 }
 
-// Skip auto-run when imported by test framework (Jest sets NODE_ENV=test)
-const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
-
-if (!isTestEnvironment) {
-  // Run the calculator - executes when loaded by designer or run directly
-  app(resolveTransport(), { title: "Tsyne Calculator" }, buildCalculator);
+// Standalone execution
+if (require.main === module) {
+  app(resolveTransport(), { title: 'Calculator' }, buildCalculator);
 }
