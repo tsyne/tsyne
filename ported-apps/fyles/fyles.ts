@@ -34,7 +34,7 @@
  * - Background image detection (.background.png/jpg/svg)
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import * as os from 'os';
@@ -704,7 +704,7 @@ export function createMultiPanelFylesApp(a: App, initialDirs: string[]): FylesMu
  *   fyles /path/one /path/two   - Opens two panels
  */
 if (require.main === module) {
-  app({ title: 'Fyles' }, (a) => {
+  app(resolveTransport(), { title: 'Fyles' }, (a) => {
     // Get initial directories from command line args
     const args = process.argv.slice(2);
 

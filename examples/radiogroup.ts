@@ -5,14 +5,14 @@
  * from a list of mutually exclusive choices.
  */
 
-import { app, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested  } from '../core/src';
 
 let themeRadio: any;
 let languageRadio: any;
 let sizeRadio: any;
 let statusLabel: any;
 
-app({ title: 'RadioGroup Demo' }, () => {
+app(resolveTransport(), { title: 'RadioGroup Demo' }, () => {
   window({ title: 'RadioGroup Example', width: 400, height: 450 }, (win) => {
     win.setContent(() => {
       vbox(() => {

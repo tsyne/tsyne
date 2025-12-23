@@ -39,7 +39,7 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
 import type { Label } from '../../core/src';
@@ -199,7 +199,7 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Phone' }, (a: App) => {
+  app(resolveTransport(), { title: 'Phone' }, (a: App) => {
     const modem = new MockModemManagerService();
     const contacts = new MockContactsService();
     createDialerApp(a, modem, contacts);

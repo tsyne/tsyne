@@ -1,4 +1,4 @@
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
 /**
  * Stack Container Demo
@@ -11,7 +11,7 @@ import { app } from '../core/src/index';
  * - Picture-in-picture displays
  */
 
-app({ title: 'Stack Container Demo' }, (a) => {
+app(resolveTransport(), { title: 'Stack Container Demo' }, (a) => {
   a.window({ title: 'Stack Demo', width: 600, height: 500 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

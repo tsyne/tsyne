@@ -4,11 +4,11 @@
  * Demonstrates Tree, RichText, Image, Border layout, and GridWrap layout.
  */
 
-import { app, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap  } from '../core/src';
 
 let statusLabel: any;
 
-app({ title: 'Specialized Widgets Demo' }, () => {
+app(resolveTransport(), { title: 'Specialized Widgets Demo' }, () => {
   window({ title: 'Specialized Widgets & Layouts', width: 800, height: 700 }, (win) => {
     win.setContent(() => {
       vbox(() => {

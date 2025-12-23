@@ -38,7 +38,7 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
 import type { Label } from '../../core/src';
@@ -257,7 +257,7 @@ export function createAudioRecorderApp(a: App, recording: IRecordingService): vo
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Audio Recorder' }, (a: App) => {
+  app(resolveTransport(), { title: 'Audio Recorder' }, (a: App) => {
     const recordingService = new MockRecordingService();
     createAudioRecorderApp(a, recordingService);
   });

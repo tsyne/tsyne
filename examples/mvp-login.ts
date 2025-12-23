@@ -10,7 +10,7 @@
  * All updates flow through the Presenter.
  */
 
-import { app, window, vbox, hbox, label, entry, button } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button  } from '../core/src';
 
 // ============================================================================
 // MODEL - Business logic and data
@@ -218,7 +218,7 @@ class LoginPresenter {
 // APPLICATION SETUP
 // ============================================================================
 
-app({ title: 'MVP Pattern Demo' }, () => {
+app(resolveTransport(), { title: 'MVP Pattern Demo' }, () => {
   window({ title: 'MVP Login', width: 400, height: 400 }, (win) => {
     // We'll create the MVP components in a closure to handle view updates
     let presenter: LoginPresenter;

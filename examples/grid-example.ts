@@ -1,4 +1,4 @@
-import { app, window, vbox, grid, button, label, styles } from '../core/src';
+import { app, resolveTransport, window, vbox, grid, button, label, styles  } from '../core/src';
 
 // CSS Classes for styling
 styles({
@@ -18,7 +18,7 @@ styles({
 });
 
 // Example demonstrating grid layout
-app({ title: "Grid Example" }, () => {
+app(resolveTransport(), { title: "Grid Example" }, () => {
   window({ title: "Grid Layout Demo", width: 600, height: 400 }, () => {
     vbox(() => {
       label("2-Column Grid", "header");

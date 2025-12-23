@@ -18,7 +18,7 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import {
@@ -152,7 +152,7 @@ export function createAlarmsApp(
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Alarms' }, (a: App) => {
+  app(resolveTransport(), { title: 'Alarms' }, (a: App) => {
     const clock = new MockClockService();
     const notifications = new MockNotificationService();
     const lifecycle = new StandaloneAppLifecycle(() => a.quit());

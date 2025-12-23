@@ -24,7 +24,7 @@
  * - Close intercept for running simulations
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import * as fs from 'fs';
@@ -1091,7 +1091,7 @@ export { Board, GameOfLife, GameOfLifeUI };
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Game of Life' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Game of Life' }, async (a: App) => {
     const ui = createGameOfLifeApp(a);
     await a.run();
     await ui.initialize();

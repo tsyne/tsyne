@@ -6,7 +6,7 @@
 // Quiz App - Interactive trivia quiz with scoring
 // Demonstrates complex state management, navigation, and conditional UI
 
-import { app, App, Window } from '../core/src';
+import { app, resolveTransport, App, Window  } from '../core/src';
 
 interface Question {
   question: string;
@@ -231,5 +231,5 @@ export function buildQuizApp(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Quiz App' }, buildQuizApp);
+  app(resolveTransport(), { title: 'Quiz App' }, buildQuizApp);
 }

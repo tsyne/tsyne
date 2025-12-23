@@ -1,5 +1,5 @@
-import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from '../core/src';
-// In production: import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from '../core/src';
+// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
  * Fully Accessible Calculator
@@ -417,7 +417,7 @@ function setupKeyboardShortcuts() {
 if (require.main === module) {
   applyStyles();
 
-  const myApp = app({ title: "Fully Accessible Calculator" }, buildFullyAccessibleCalculator);
+  const myApp = app(resolveTransport(), { title: "Fully Accessible Calculator" }, buildFullyAccessibleCalculator);
 
   // Get the accessibility manager
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);

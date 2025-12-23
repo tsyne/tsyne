@@ -273,8 +273,8 @@ export function buildNotesApp(a: App, win: Window): NotesUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Notes', width: 600, height: 800 }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Notes', width: 600, height: 800 }, (a: App) => {
     a.window({ title: 'Notes', width: 600, height: 800 }, (win: Window) => {
       buildNotesApp(a, win);
     });

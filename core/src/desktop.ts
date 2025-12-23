@@ -858,9 +858,9 @@ export { Desktop };
 // Check if this module is the main entry point
 if (require.main === module) {
   // Import the app function from index
-  const { app } = require('./index');
+  const { app, resolveTransport  } = require('./index');
 
-  app({ title: 'Tsyne Desktop' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Tsyne Desktop' }, async (a: App) => {
     await buildDesktop(a);
   });
 }

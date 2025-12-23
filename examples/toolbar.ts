@@ -5,13 +5,13 @@
  * actions, separators, and spacers.
  */
 
-import { app, window, vbox, label, entry, toolbar } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry, toolbar  } from '../core/src';
 
 let statusLabel: any;
 let textEntry: any;
 let history: string[] = [];
 
-app({ title: 'Toolbar Demo' }, () => {
+app(resolveTransport(), { title: 'Toolbar Demo' }, () => {
   window({ title: 'Toolbar Example', width: 600, height: 450 }, (win) => {
     win.setContent(() => {
       vbox(() => {

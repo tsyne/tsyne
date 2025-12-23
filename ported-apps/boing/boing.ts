@@ -26,7 +26,7 @@
  * have audio playback support.
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRaster } from '../../core/src/widgets/canvas';
@@ -392,8 +392,7 @@ export { BoingDemo, BallPhysics };
  * Main application entry point
  */
 if (require.main === module) {
-  // Use msgpack-uds for best performance (this app sends many pixels per frame)
-  app({ title: 'Boing Ball Demo', bridgeMode: 'msgpack-uds' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Boing Ball Demo' }, async (a: App) => {
     const demo = createBoingApp(a);
     await a.run();
     await demo.initialize();

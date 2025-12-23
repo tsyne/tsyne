@@ -29,7 +29,7 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
 import { ITelegramService, MockTelegramService, TelegramChat, QrLoginResult, RealTelegramService, loadCredentialsFromEnv } from './telegram-service';
@@ -533,7 +533,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Telegram' }, (a: App) => {
+  app(resolveTransport(), { title: 'Telegram' }, (a: App) => {
     // Let createTelegramApp auto-detect credentials from environment
     createTelegramApp(a);
   });

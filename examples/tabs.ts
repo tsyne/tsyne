@@ -5,11 +5,11 @@
  * into multiple switchable panels.
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, slider, tabs } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, tabs  } from '../core/src';
 
 let statusLabel: any;
 
-app({ title: 'Tabs Demo' }, () => {
+app(resolveTransport(), { title: 'Tabs Demo' }, () => {
   window({ title: 'Tabs Example', width: 500, height: 400 }, (win) => {
     win.setContent(() => {
       vbox(() => {

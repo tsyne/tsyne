@@ -21,7 +21,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -1584,7 +1584,7 @@ export { Side, SIDE_COLORS, CANVAS_SIZE, CUBE_SIZE };
 if (require.main === module) {
   const startTime = Date.now();
   console.log(`[STARTUP] beginning at ${(Date.now() / 1000).toFixed(3)}...`);
-  app({ title: '3D Cube' }, async (a: App) => {
+  app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
     console.log(`[STARTUP] app callback: ${Date.now() - startTime}ms`);
     const ui = create3DCubeApp(a);
     console.log(`[STARTUP] UI created: ${Date.now() - startTime}ms`);

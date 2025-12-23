@@ -12,7 +12,7 @@
  * @tsyne-app:count single
  */
 
-import { app } from '../../../../../../../core/src';
+import { app, resolveTransport  } from '../../../../../../../core/src';
 import type { App } from '../core/src/app';
 import type { Window } from '../core/src/window';
 import type { Label } from '../core/src/widgets/display';
@@ -231,7 +231,7 @@ export function createContactsApp(
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Contacts' }, (a: App) => {
+  app(resolveTransport(), { title: 'Contacts' }, (a: App) => {
     const contacts = new MockContactsService();
     const sms = new MockSMSService();
     createContactsApp(a, contacts, sms);

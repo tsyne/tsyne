@@ -8,9 +8,9 @@
  * - Quick paste from history
  */
 
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
-app({ title: 'Clipboard Manager' }, (a) => {
+app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
   const clipboardHistory: string[] = [];
   const maxHistory = 10;
   let historyListLabel: any;

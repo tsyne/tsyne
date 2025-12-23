@@ -18,7 +18,7 @@
  * @tsyne-app:count many
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { IResourceManager } from '../../core/src/resources';
@@ -936,7 +936,7 @@ export async function createChessApp(a: App, resources: IResourceManager, aiDela
  * Main application entry point - standalone execution
  */
 if (require.main === module) {
-  app({ title: 'Chess' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
     // Standalone: create a dedicated resource manager (IoC - don't use a.resources)
     const resources = a.createResourceManager();
     await createChessApp(a, resources);

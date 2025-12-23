@@ -457,7 +457,7 @@ func (s *grpcBridgeService) GetValue(ctx context.Context, req *pb.GetValueReques
 
 	value := 0.0
 	if resp.Result != nil {
-		if v, ok := resp.Result["value"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["value"]); ok {
 			value = v
 		}
 	}
@@ -587,13 +587,13 @@ func (s *grpcBridgeService) GetDate(ctx context.Context, req *pb.GetDateRequest)
 
 	year, month, day := int32(0), int32(0), int32(0)
 	if resp.Result != nil {
-		if v, ok := resp.Result["year"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["year"]); ok {
 			year = int32(v)
 		}
-		if v, ok := resp.Result["month"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["month"]); ok {
 			month = int32(v)
 		}
-		if v, ok := resp.Result["day"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["day"]); ok {
 			day = int32(v)
 		}
 	}

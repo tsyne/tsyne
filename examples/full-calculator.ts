@@ -19,8 +19,8 @@
  * @tsyne-app:count desktop-many
  */
 
-import { app, App, Window, Label, Button } from '../core/src';
-// In production: import { app, App, Window, Label, Button } from 'tsyne';
+import { app, resolveTransport, App, Window, Label, Button  } from '../core/src';
+// In production: import { app, resolveTransport, App, Window, Label, Button  } from 'tsyne';
 
 type Base = 'dec' | 'hex' | 'bin' | 'oct';
 
@@ -396,5 +396,5 @@ export function buildFullCalculator(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Full Calculator' }, buildFullCalculator);
+  app(resolveTransport(), { title: 'Full Calculator' }, buildFullCalculator);
 }

@@ -18,7 +18,7 @@ import { URL } from 'url';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { App } from './app';
+import { App, resolveTransport } from './app';
 import { Window } from './window';
 import { Entry, Label, Button } from './widgets';
 import { setBrowserGlobals, TsyneLocation, TsyneHistory } from './globals';
@@ -171,7 +171,7 @@ export class Browser {
 
     this.homeUrl = options?.homeUrl || '';
     this.baseTitle = options?.title || 'Tsyne Browser';
-    this.app = new App({ title: this.baseTitle }, this.testMode);
+    this.app = new App(resolveTransport(), { title: this.baseTitle }, this.testMode);
 
     // Register hyperlink navigation event handler
     const appBridge = this.app.getBridge();

@@ -1,5 +1,5 @@
-import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from '../core/src';
-// In production: import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from '../core/src';
+// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
  * Braille-Optimized Tic-Tac-Toe
@@ -366,7 +366,7 @@ export function buildBrailleTicTacToe(a: any) {
 
 // Run directly when executed as main script
 if (require.main === module) {
-  const myApp = app({ title: "Braille-Optimized Tic-Tac-Toe" }, buildBrailleTicTacToe);
+  const myApp = app(resolveTransport(), { title: "Braille-Optimized Tic-Tac-Toe" }, buildBrailleTicTacToe);
 
   // Get the accessibility manager
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);

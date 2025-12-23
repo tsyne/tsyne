@@ -23,7 +23,7 @@
  * core prime number calculation and visualization capabilities.
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRaster } from '../../core/src/widgets/canvas';
@@ -335,7 +335,7 @@ export async function createPrimeGridAppStandalone(a: App): Promise<void> {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Prime Grid Visualizer' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Prime Grid Visualizer' }, async (a: App) => {
     await createPrimeGridAppStandalone(a);
     await a.run();
   });

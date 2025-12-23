@@ -18,7 +18,7 @@
  * @tsyne-app:count many
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -553,7 +553,7 @@ export { MinefieldGame as Game };
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Minefield' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Minefield' }, async (a: App) => {
     createMinefieldApp(a);
     await a.run();
   });

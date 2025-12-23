@@ -438,8 +438,8 @@ func (b *Bridge) handleSetTextGridText(msg Message) Response {
 
 func (b *Bridge) handleSetTextGridCell(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	row := int(msg.Payload["row"].(float64))
-	col := int(msg.Payload["col"].(float64))
+	row := toInt(msg.Payload["row"])
+	col := toInt(msg.Payload["col"])
 	char, hasChar := msg.Payload["char"].(string)
 
 	b.mu.RLock()
@@ -486,7 +486,7 @@ func (b *Bridge) handleSetTextGridCell(msg Message) Response {
 
 func (b *Bridge) handleSetTextGridRow(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	row := int(msg.Payload["row"].(float64))
+	row := toInt(msg.Payload["row"])
 	text := msg.Payload["text"].(string)
 
 	b.mu.RLock()
@@ -537,8 +537,8 @@ func (b *Bridge) handleSetTextGridRow(msg Message) Response {
 
 func (b *Bridge) handleSetTextGridStyle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	row := int(msg.Payload["row"].(float64))
-	col := int(msg.Payload["col"].(float64))
+	row := toInt(msg.Payload["row"])
+	col := toInt(msg.Payload["col"])
 	styleData := msg.Payload["style"].(map[string]interface{})
 
 	b.mu.RLock()
@@ -576,10 +576,10 @@ func (b *Bridge) handleSetTextGridStyle(msg Message) Response {
 
 func (b *Bridge) handleSetTextGridStyleRange(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	startRow := int(msg.Payload["startRow"].(float64))
-	startCol := int(msg.Payload["startCol"].(float64))
-	endRow := int(msg.Payload["endRow"].(float64))
-	endCol := int(msg.Payload["endCol"].(float64))
+	startRow := toInt(msg.Payload["startRow"])
+	startCol := toInt(msg.Payload["startCol"])
+	endRow := toInt(msg.Payload["endRow"])
+	endCol := toInt(msg.Payload["endCol"])
 	styleData := msg.Payload["style"].(map[string]interface{})
 
 	b.mu.RLock()
@@ -823,8 +823,8 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 	iconID := msg.Payload["id"].(string)
 	desktopID := msg.Payload["desktopId"].(string)
 	label, _ := msg.Payload["label"].(string)
-	x, _ := msg.Payload["x"].(float64)
-	y, _ := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 	colorStr, _ := msg.Payload["color"].(string)
 	resourceName, _ := msg.Payload["resource"].(string)
 
@@ -899,8 +899,8 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 
 func (b *Bridge) handleMoveDesktopIcon(msg Message) Response {
 	iconID := msg.Payload["iconId"].(string)
-	x, _ := msg.Payload["x"].(float64)
-	y, _ := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 
 	b.mu.RLock()
 	iconWidget, exists := b.widgets[iconID]
@@ -1038,8 +1038,8 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 	iconID := msg.Payload["id"].(string)
 	desktopID := msg.Payload["desktopId"].(string)
 	label, _ := msg.Payload["label"].(string)
-	x, _ := msg.Payload["x"].(float64)
-	y, _ := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 	colorStr, _ := msg.Payload["color"].(string)
 	resourceName, _ := msg.Payload["resource"].(string)
 
@@ -1160,8 +1160,8 @@ func (b *Bridge) handleDesktopMDIAddWindow(msg Message) Response {
 		desktop.AddWindow(innerWin)
 
 		// Position the window if coordinates provided, otherwise center it
-		if x, ok := msg.Payload["x"].(float64); ok {
-			y, _ := msg.Payload["y"].(float64)
+		if x, ok := getFloat64(msg.Payload["x"]); ok {
+			y := toFloat64(msg.Payload["y"])
 			innerWin.Move(fyne.NewPos(float32(x), float32(y)))
 		} else {
 			// Center the window in the container

@@ -6,7 +6,7 @@
 // Rock Paper Scissors - Classic game with score tracking
 // Demonstrates game logic, state management, and visual feedback
 
-import { app, App, Window } from '../core/src';
+import { app, resolveTransport, App, Window  } from '../core/src';
 
 export function buildRockPaperScissors(a: App) {
   a.window({ title: 'Rock Paper Scissors', width: 400, height: 500 }, (win: Window) => {
@@ -130,5 +130,5 @@ export function buildRockPaperScissors(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Rock Paper Scissors' }, buildRockPaperScissors);
+  app(resolveTransport(), { title: 'Rock Paper Scissors' }, buildRockPaperScissors);
 }

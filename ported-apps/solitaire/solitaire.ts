@@ -16,7 +16,7 @@
  * declarative API and uses a simplified interaction model.
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import * as path from 'path';
@@ -1287,7 +1287,7 @@ export function createSolitaireApp(a: App, cardImageProvider?: CardImageProvider
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Solitaire' }, (a: App) => {
+  app(resolveTransport(), { title: 'Solitaire' }, (a: App) => {
     createSolitaireApp(a);
   });
 }

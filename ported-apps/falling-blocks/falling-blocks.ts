@@ -26,7 +26,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -751,7 +751,7 @@ export { SHAPES, SHAPE_COLORS, BOARD_WIDTH, BOARD_HEIGHT };
 
 // Standalone entry point
 if (require.main === module) {
-  app({ title: 'Falling Blocks' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Falling Blocks' }, async (a: App) => {
     const ui = createFallingBlocksApp(a);
     await a.run();
     await ui.initialize();

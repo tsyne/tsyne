@@ -5,7 +5,7 @@
  * Shows both determinate and infinite progress dialogs.
  */
 
-import { app, window, vbox, hbox, label, button, separator, ProgressDialog } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, separator, ProgressDialog  } from '../core/src';
 
 interface Download {
   name: string;
@@ -75,7 +75,7 @@ async function simulateDownload(
   onComplete();
 }
 
-app({ title: 'Download Manager' }, () => {
+app(resolveTransport(), { title: 'Download Manager' }, () => {
   window({ title: 'Download Manager', width: 500, height: 500 }, (win) => {
     win.setContent(() => {
       vbox(() => {

@@ -24,7 +24,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -858,7 +858,7 @@ export { LETTER_FREQUENCIES, LETTER_SCORES, WORD_LIST, NUM_COLUMNS, MAX_ROWS };
 
 // Standalone entry point
 if (require.main === module) {
-  app({ title: 'Falling Letters' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Falling Letters' }, async (a: App) => {
     const ui = createFallingLettersApp(a);
     await a.run();
     await ui.initialize();

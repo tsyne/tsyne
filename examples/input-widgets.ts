@@ -4,14 +4,14 @@
  * Demonstrates MultiLineEntry, PasswordEntry, Separator, and Hyperlink widgets.
  */
 
-import { app, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink  } from '../core/src';
 
 let statusLabel: any;
 let multilineEntry: any;
 let passwordField: any;
 let usernameField: any;
 
-app({ title: 'Input Widgets Demo' }, () => {
+app(resolveTransport(), { title: 'Input Widgets Demo' }, () => {
   window({ title: 'Input Widgets Example', width: 700, height: 650 }, (win) => {
     win.setContent(() => {
       vbox(() => {

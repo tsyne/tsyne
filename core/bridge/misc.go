@@ -280,7 +280,7 @@ func (b *Bridge) handleSetWidgetStyle(msg Message) Response {
 		// Apply font size if specified
 		// Note: Fyne doesn't support per-widget font sizes easily
 		// This is a workaround using MinSize which affects the widget size
-		if fontSize, ok := msg.Payload["fontSize"].(float64); ok {
+		if fontSize, ok := getFloat64(msg.Payload["fontSize"]); ok {
 			switch w := obj.(type) {
 			case *widget.Button:
 				// For buttons, we can adjust the minimum size as a proxy
@@ -521,7 +521,7 @@ func (b *Bridge) handleGetTheme(msg Message) Response {
 }
 
 func (b *Bridge) handleSetFontScale(msg Message) Response {
-	scale, ok := msg.Payload["scale"].(float64)
+	scale, ok := getFloat64(msg.Payload["scale"])
 	if !ok {
 		return Response{
 			ID:      msg.ID,

@@ -39,6 +39,139 @@ type Event struct {
 	Data     map[string]interface{} `json:"data,omitempty"`
 }
 
+// ============================================================================
+// Helper functions for type conversion (JSON uses float64, msgpack uses int8/16/32/64)
+// ============================================================================
+
+// toInt converts interface{} to int, handling both JSON (float64) and msgpack (various int types)
+func toInt(v interface{}) int {
+	switch val := v.(type) {
+	case float64:
+		return int(val)
+	case int:
+		return val
+	case int8:
+		return int(val)
+	case int16:
+		return int(val)
+	case int32:
+		return int(val)
+	case int64:
+		return int(val)
+	case uint:
+		return int(val)
+	case uint8:
+		return int(val)
+	case uint16:
+		return int(val)
+	case uint32:
+		return int(val)
+	case uint64:
+		return int(val)
+	default:
+		return 0
+	}
+}
+
+// toFloat32 converts interface{} to float32, handling both JSON (float64) and msgpack (various numeric types)
+func toFloat32(v interface{}) float32 {
+	switch val := v.(type) {
+	case float64:
+		return float32(val)
+	case float32:
+		return val
+	case int:
+		return float32(val)
+	case int8:
+		return float32(val)
+	case int16:
+		return float32(val)
+	case int32:
+		return float32(val)
+	case int64:
+		return float32(val)
+	case uint:
+		return float32(val)
+	case uint8:
+		return float32(val)
+	case uint16:
+		return float32(val)
+	case uint32:
+		return float32(val)
+	case uint64:
+		return float32(val)
+	default:
+		return 0
+	}
+}
+
+// toFloat64 converts interface{} to float64, handling both JSON (float64) and msgpack (various numeric types)
+func toFloat64(v interface{}) float64 {
+	switch val := v.(type) {
+	case float64:
+		return val
+	case float32:
+		return float64(val)
+	case int:
+		return float64(val)
+	case int8:
+		return float64(val)
+	case int16:
+		return float64(val)
+	case int32:
+		return float64(val)
+	case int64:
+		return float64(val)
+	case uint:
+		return float64(val)
+	case uint8:
+		return float64(val)
+	case uint16:
+		return float64(val)
+	case uint32:
+		return float64(val)
+	case uint64:
+		return float64(val)
+	default:
+		return 0
+	}
+}
+
+// getFloat64 returns (value, true) if v is a numeric type, (0, false) if nil or non-numeric
+func getFloat64(v interface{}) (float64, bool) {
+	if v == nil {
+		return 0, false
+	}
+	switch val := v.(type) {
+	case float64:
+		return val, true
+	case float32:
+		return float64(val), true
+	case int:
+		return float64(val), true
+	case int8:
+		return float64(val), true
+	case int16:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case uint:
+		return float64(val), true
+	case uint8:
+		return float64(val), true
+	case uint16:
+		return float64(val), true
+	case uint32:
+		return float64(val), true
+	case uint64:
+		return float64(val), true
+	default:
+		return 0, false
+	}
+}
+
 // Bridge manages the Fyne app and communication
 type Bridge struct {
 	app             fyne.App

@@ -270,7 +270,7 @@ func (b *Bridge) handleGetValue(msg Message) Response {
 
 func (b *Bridge) handleSetValue(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	value := msg.Payload["value"].(float64)
+	value := toFloat64(msg.Payload["value"])
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]
@@ -334,7 +334,7 @@ func (b *Bridge) handleGetProgress(msg Message) Response {
 
 func (b *Bridge) handleSetProgress(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	value := msg.Payload["value"].(float64)
+	value := toFloat64(msg.Payload["value"])
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]

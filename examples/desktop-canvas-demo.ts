@@ -10,7 +10,7 @@
  * @description Draggable icons demo
  */
 
-import { app, App } from '../core/src';
+import { app, resolveTransport, App  } from '../core/src';
 
 export async function build(a: App) {
   a.window({ title: 'Desktop Canvas Demo', width: 800, height: 600 }, (win) => {
@@ -52,5 +52,5 @@ export async function build(a: App) {
 
 // Run if executed directly
 if (require.main === module) {
-  app({ title: 'Desktop Canvas Demo' }, build);
+  app(resolveTransport(), { title: 'Desktop Canvas Demo' }, build);
 }

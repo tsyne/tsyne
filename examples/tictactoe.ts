@@ -1,5 +1,5 @@
-import { app, window, vbox, hbox, grid, button, label } from '../core/src';
-// In production: import { app, window, vbox, hbox, grid, button, label } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from '../core/src';
+// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
 
 /**
  * Basic Tic-Tac-Toe
@@ -143,5 +143,5 @@ export function buildTicTacToe(a: any) {
 
 // Run the app if this file is executed directly
 if (require.main === module) {
-  app({ title: 'Tic-Tac-Toe' }, buildTicTacToe);
+  app(resolveTransport(), { title: 'Tic-Tac-Toe' }, buildTicTacToe);
 }

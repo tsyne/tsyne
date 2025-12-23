@@ -313,8 +313,8 @@ export function buildDiskTreeApp(a: App, win: Window): DiskTreeUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Disk Tree', width: 800, height: 600 }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Disk Tree', width: 800, height: 600 }, (a: App) => {
     a.window({ title: 'Disk Tree', width: 800, height: 600 }, (win: Window) => {
       buildDiskTreeApp(a, win);
       win.show();

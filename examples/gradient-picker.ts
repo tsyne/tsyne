@@ -7,9 +7,9 @@
  * - Angle and color adjustments
  */
 
-import { app, CanvasLinearGradient } from '../core/src/index';
+import { app, resolveTransport, CanvasLinearGradient  } from '../core/src/index';
 
-app({ title: 'Gradient Picker' }, (a) => {
+app(resolveTransport(), { title: 'Gradient Picker' }, (a) => {
   let gradient: CanvasLinearGradient;
   let startColor = '#FF0000';
   let endColor = '#0000FF';

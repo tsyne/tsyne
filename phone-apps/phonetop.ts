@@ -1017,8 +1017,8 @@ export { PhoneTop };
 
 // Entry point
 if (require.main === module) {
-  const { app } = require('../core/src/index');
-  app({ title: 'App Launcher' }, async (a: App) => {
+  const { app, resolveTransport } = require('../core/src/index');
+  app(resolveTransport(), { title: 'App Launcher' }, async (a: App) => {
     await buildPhoneTop(a);
   });
 }

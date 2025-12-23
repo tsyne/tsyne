@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label, screenshotIfRequested } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, button, label, screenshotIfRequested  } from '../core/src';
 
 // Counter example demonstrating state management with Tsyne
 let countLabel: any;
@@ -10,7 +10,7 @@ function updateCounter() {
   }
 }
 
-app({ title: "Counter App" }, () => {
+app(resolveTransport(), { title: "Counter App" }, () => {
   window({ title: "Simple Counter" }, (win) => {
     vbox(() => {
       countLabel = label("Count: 0");

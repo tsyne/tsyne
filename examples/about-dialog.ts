@@ -1,13 +1,13 @@
 // About Dialog - Demonstrates custom dialogs with arbitrary content
 // This example shows how to use showCustom() and showCustomConfirm()
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 const APP_NAME = 'My Awesome App';
 const APP_VERSION = '1.0.0';
 const APP_DESCRIPTION = 'A demonstration of custom dialogs in Tsyne. Custom dialogs allow you to display arbitrary widget content in a modal dialog.';
 
-app({ title: 'About Dialog Demo' }, (a) => {
+app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
   a.window({ title: 'About Dialog Demo', width: 400, height: 300 }, (win) => {
     let statusLabel: any;
 

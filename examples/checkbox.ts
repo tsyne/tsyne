@@ -4,13 +4,13 @@
  * Demonstrates the checkbox widget with state tracking and interaction.
  */
 
-import { app, window, vbox, hbox, label, checkbox, button, screenshotIfRequested } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, checkbox, button, screenshotIfRequested  } from '../core/src';
 
 let termsCheckbox: any;
 let newsletterCheckbox: any;
 let statusLabel: any;
 
-app({ title: 'Checkbox Demo' }, () => {
+app(resolveTransport(), { title: 'Checkbox Demo' }, () => {
   window({ title: 'Checkbox Example', width: 400, height: 300 }, (win) => {
     win.setContent(() => {
       vbox(() => {

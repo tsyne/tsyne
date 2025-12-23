@@ -5,7 +5,7 @@
  * a text entry with a dropdown menu. Users can type to filter options or
  * select from the dropdown list.
  */
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 // Sample list of countries
 const countries = [
@@ -37,7 +37,7 @@ const countries = [
 let selectedCountry = '';
 let statusLabel: any;
 
-app({ title: 'Country Picker' }, (a) => {
+app(resolveTransport(), { title: 'Country Picker' }, (a) => {
   a.window({ title: 'Country Picker - SelectEntry Demo', width: 500, height: 400 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

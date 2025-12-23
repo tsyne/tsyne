@@ -1,4 +1,4 @@
-import { app, Label, List } from '../core/src/index';
+import { app, resolveTransport, Label, List  } from '../core/src/index';
 
 /**
  * List Features Demo
@@ -14,7 +14,7 @@ import { app, Label, List } from '../core/src/index';
  * - Form validation and state management
  */
 
-app({ title: 'List Features Demo' }, (a) => {
+app(resolveTransport(), { title: 'List Features Demo' }, (a) => {
   a.window({ title: 'List Features', width: 700, height: 600 }, (win) => {
     let selectedLabel: Label;
     let unselectedLabel: Label;

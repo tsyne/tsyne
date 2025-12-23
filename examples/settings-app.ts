@@ -8,9 +8,9 @@
  * - Settings categories with tabs
  */
 
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
-app({ title: 'Settings App' }, (a) => {
+app(resolveTransport(), { title: 'Settings App' }, (a) => {
   let statusLabel: any;
 
   // Setting widgets (we'll populate these after loading)

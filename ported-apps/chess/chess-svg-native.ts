@@ -9,7 +9,7 @@
  * Much simpler and faster than the original SVG→PNG conversion approach.
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import * as path from 'path';
@@ -458,7 +458,7 @@ export async function createChessApp(a: App): Promise<ChessUI> {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Chess' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
     await createChessApp(a);
   });
 }

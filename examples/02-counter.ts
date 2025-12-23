@@ -5,7 +5,7 @@
 
 // Simple counter example demonstrating state management
 
-import { app, App, Window } from '../core/src';
+import { app, resolveTransport, App, Window  } from '../core/src';
 
 export function buildCounter(a: App) {
   a.window({ title: 'Counter', width: 300, height: 150 }, (win: Window) => {
@@ -45,5 +45,5 @@ export function buildCounter(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Counter' }, buildCounter);
+  app(resolveTransport(), { title: 'Counter' }, buildCounter);
 }

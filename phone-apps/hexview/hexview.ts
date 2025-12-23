@@ -13,7 +13,7 @@
  * @tsyne-app:builder createHexViewApp
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -338,7 +338,7 @@ export function createHexViewApp(a: App): HexViewUI {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'HexView' }, async (a: App) => {
+  app(resolveTransport(), { title: 'HexView' }, async (a: App) => {
     const ui = createHexViewApp(a);
     await a.run();
 

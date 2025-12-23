@@ -835,8 +835,8 @@ export function buildParisDensity(a: App) {
 
 // Standalone execution for testing
 if (require.main === module) {
-  const { app } = require('../../core/src');
-  app({ title: 'Paris Density Simulation' }, (a: App) => {
+  const { app, resolveTransport  } = require('../../core/src');
+  app(resolveTransport(), { title: 'Paris Density Simulation' }, (a: App) => {
     buildParisDensity(a);
   });
 }

@@ -8,7 +8,7 @@
  * - Preview sample text with custom fonts
  */
 
-import { app, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry  } from '../core/src';
 
 let statusLabel: any;
 let fontPathEntry: any;
@@ -26,7 +26,7 @@ const sampleTexts = [
   'How vexingly quick daft zebras jump!',
 ];
 
-app({ title: 'Font Preview' }, () => {
+app(resolveTransport(), { title: 'Font Preview' }, () => {
   window({ title: 'Custom Font Preview', width: 800, height: 700 }, (win) => {
     win.setContent(() => {
       vbox(() => {

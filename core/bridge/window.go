@@ -381,8 +381,8 @@ func (b *Bridge) handleCenterWindow(msg Message) Response {
 
 func (b *Bridge) handleResizeWindow(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
-	width := msg.Payload["width"].(float64)
-	height := msg.Payload["height"].(float64)
+	width := toFloat64(msg.Payload["width"])
+	height := toFloat64(msg.Payload["height"])
 
 	b.mu.RLock()
 	win, exists := b.windows[windowID]

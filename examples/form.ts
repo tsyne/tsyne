@@ -1,11 +1,11 @@
-import { app, window, vbox, hbox, button, label, entry } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, button, label, entry  } from '../core/src';
 
 // Form example showing input handling
 let nameEntry: any;
 let emailEntry: any;
 let resultLabel: any;
 
-app({ title: "Form Example" }, () => {
+app(resolveTransport(), { title: "Form Example" }, () => {
   window({ title: "User Registration" }, () => {
     vbox(() => {
       label("Name:");

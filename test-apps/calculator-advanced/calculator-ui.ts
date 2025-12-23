@@ -1,4 +1,4 @@
-import { app, App } from '../../../../../../../../../../../../../../../../../../../../core/src';
+import { app, resolveTransport, App  } from '../../../../../../../../../../../../../../../../../../../../core/src';
 import { CalculatorLogic } from './calculator-logic';
 import { styles, FontStyle } from '../../src/styles';
 
@@ -131,7 +131,7 @@ export class CalculatorUI {
 
 // Main entry point for running the calculator
 if (require.main === module) {
-  app({ title: "Tsyne Calculator" }, (appInstance) => {
+  app(resolveTransport(), { title: "Tsyne Calculator" }, (appInstance) => {
     const calc = new CalculatorUI(appInstance);
     calc.build();
   });

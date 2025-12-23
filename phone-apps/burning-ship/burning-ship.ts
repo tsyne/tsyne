@@ -13,7 +13,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
@@ -259,5 +259,5 @@ export function createBurningShipApp(a: App): void {
 }
 
 if (require.main === module) {
-  app({ title: 'Burning Ship' }, createBurningShipApp);
+  app(resolveTransport(), { title: 'Burning Ship' }, createBurningShipApp);
 }

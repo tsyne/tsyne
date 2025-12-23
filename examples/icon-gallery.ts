@@ -6,7 +6,7 @@
  *
  * Run: npx tsx examples/icon-gallery.ts
  */
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 import { ThemeIconName } from '../core/src/app';
 
 // All available theme icon names organized by category
@@ -56,7 +56,7 @@ const iconCategories: { [category: string]: ThemeIconName[] } = {
   ]
 };
 
-app({ title: 'Tsyne Icon Gallery' }, (a) => {
+app(resolveTransport(), { title: 'Tsyne Icon Gallery' }, (a) => {
   a.window({ title: 'Theme Icon Gallery', width: 800, height: 600 }, (win) => {
     win.setContent(() => {
       a.scroll(() => {

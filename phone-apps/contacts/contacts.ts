@@ -38,7 +38,7 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
 import type { Label } from '../../core/src';
@@ -279,7 +279,7 @@ export function createContactsApp(a: App, contacts: IContactsService): void {
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Contacts' }, (a: App) => {
+  app(resolveTransport(), { title: 'Contacts' }, (a: App) => {
     const contactsService = new MockContactsService();
     createContactsApp(a, contactsService);
   });

@@ -26,7 +26,7 @@
  * @tsyne-app:args app
  */
 
-import {app} from '../../core/src';
+import { app, resolveTransport } from '../../core/src';
 import type {App} from '../../core/src/app';
 import type {Window} from '../../core/src/window';
 import type {Label, ColorCell} from '../../core/src/widgets/display';
@@ -842,7 +842,7 @@ export { DIFFICULTY_LEVELS, GRID_SIZE, BOX_SIZE };
 // ============================================================================
 
 if (require.main === module) {
-  app({ title: 'Sudoku' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Sudoku' }, async (a: App) => {
     const ui = createSudokuApp(a);
     await a.run();
     await ui.initialize();

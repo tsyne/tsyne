@@ -1,7 +1,7 @@
 // Entry dialog demo - demonstrates showEntryDialog for quick text input
 // This example shows a list of files that can be renamed using the entry dialog
 
-import { app, Label } from '../core/src';
+import { app, resolveTransport, Label  } from '../core/src';
 
 interface FileItem {
   id: number;
@@ -15,7 +15,7 @@ const files: FileItem[] = [
   { id: 3, name: 'notes.md' },
 ];
 
-app({ title: 'Rename Dialog Demo' }, (a) => {
+app(resolveTransport(), { title: 'Rename Dialog Demo' }, (a) => {
   a.window({ title: 'File Renamer', width: 400, height: 300 }, (win) => {
     // Track labels so we can update them
     const fileLabels: Map<number, Label> = new Map();

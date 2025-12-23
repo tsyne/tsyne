@@ -618,6 +618,151 @@ describe('Transport ABI Parity', () => {
 });
 
 // ============================================================================
+// Msgpack-UDS Transport Parity Tests
+// ============================================================================
+
+const msgpackBridgeTsPath = path.join(__dirname, '../msgpackbridge.ts');
+const fyneBridgeTsPath = path.join(__dirname, '../fynebridge.ts');
+const msgpackServerGoPath = path.join(bridgePath, 'msgpack_server.go');
+
+describe('Msgpack-UDS Transport Parity', () => {
+  test('msgpackbridge.ts implements same BridgeInterface methods as fynebridge.ts', () => {
+    const fyneBridgeContent = fs.readFileSync(fyneBridgeTsPath, 'utf-8');
+    const msgpackBridgeContent = fs.readFileSync(msgpackBridgeTsPath, 'utf-8');
+
+    // Extract BridgeInterface method signatures from fynebridge.ts
+    const interfaceMatch = fyneBridgeContent.match(/export interface BridgeInterface \{([^}]+)\}/);
+    expect(interfaceMatch).toBeTruthy();
+
+    const interfaceBody = interfaceMatch![1];
+    // Match method signatures: methodName(params): ReturnType
+    const methodRegex = /(\w+)\s*\([^)]*\)\s*:\s*[^;]+/g;
+    const requiredMethods: string[] = [];
+    let match;
+    while ((match = methodRegex.exec(interfaceBody)) !== null) {
+      requiredMethods.push(match[1]);
+    }
+
+    // Verify msgpackbridge.ts has all required methods
+    for (const method of requiredMethods) {
+      const methodPattern = new RegExp(`(async\\s+)?${method}\\s*\\(`);
+      expect(msgpackBridgeContent).toMatch(methodPattern);
+    }
+  });
+
+  test('msgpack Message struct matches stdio Message struct', () => {
+    const msgpackServerContent = fs.readFileSync(msgpackServerGoPath, 'utf-8');
+
+    // MsgpackMessage should have same fields as Message
+    // Check for required fields: ID, Type, Payload
+    expect(msgpackServerContent).toContain('ID      string');
+    expect(msgpackServerContent).toContain('Type    string');
+    expect(msgpackServerContent).toContain('Payload map[string]interface{}');
+
+    // Verify msgpack tags match JSON convention
+    expect(msgpackServerContent).toContain('msgpack:"id"');
+    expect(msgpackServerContent).toContain('msgpack:"type"');
+    expect(msgpackServerContent).toContain('msgpack:"payload"');
+  });
+
+  test('msgpack Response struct matches stdio Response struct', () => {
+    const msgpackServerContent = fs.readFileSync(msgpackServerGoPath, 'utf-8');
+
+    // MsgpackResponse should have same fields as Response
+    expect(msgpackServerContent).toContain('msgpack:"id"');
+    expect(msgpackServerContent).toContain('msgpack:"success"');
+    expect(msgpackServerContent).toContain('msgpack:"result,omitempty"');
+    expect(msgpackServerContent).toContain('msgpack:"error,omitempty"');
+  });
+
+  test('msgpack Event struct matches stdio Event struct', () => {
+    const msgpackServerContent = fs.readFileSync(msgpackServerGoPath, 'utf-8');
+
+    // MsgpackEvent should have same fields as Event
+    expect(msgpackServerContent).toContain('Type     string');
+    expect(msgpackServerContent).toContain('WidgetID string');
+    expect(msgpackServerContent).toContain('Data     map[string]interface{}');
+
+    // Verify msgpack tags
+    expect(msgpackServerContent).toContain('msgpack:"type"');
+    expect(msgpackServerContent).toContain('msgpack:"widgetId"');
+    expect(msgpackServerContent).toContain('msgpack:"data,omitempty"');
+  });
+
+  test('msgpack server routes to same handleMessage as stdio', () => {
+    const msgpackServerContent = fs.readFileSync(msgpackServerGoPath, 'utf-8');
+
+    // Verify msgpack server converts MsgpackMessage to Message and calls handleMessage
+    expect(msgpackServerContent).toContain('bridgeMsg := Message{');
+    expect(msgpackServerContent).toContain('ID:      msg.ID');
+    expect(msgpackServerContent).toContain('Type:    msg.Type');
+    expect(msgpackServerContent).toContain('Payload: msg.Payload');
+    expect(msgpackServerContent).toContain('s.bridge.handleMessage(bridgeMsg)');
+  });
+
+  test('TypeScript msgpack bridge uses same message structure as stdio bridge', () => {
+    const fyneBridgeContent = fs.readFileSync(fyneBridgeTsPath, 'utf-8');
+    const msgpackBridgeContent = fs.readFileSync(msgpackBridgeTsPath, 'utf-8');
+
+    // Both should define Message interface with same fields
+    // fynebridge.ts exports Message interface
+    expect(fyneBridgeContent).toMatch(/interface Message \{[\s\S]*?id:\s*string/);
+    expect(fyneBridgeContent).toMatch(/interface Message \{[\s\S]*?type:\s*string/);
+    expect(fyneBridgeContent).toMatch(/interface Message \{[\s\S]*?payload:\s*Record/);
+
+    // msgpackbridge.ts should use same structure (may be interface or type)
+    expect(msgpackBridgeContent).toMatch(/interface MsgpackMessage \{[\s\S]*?id:\s*string/);
+    expect(msgpackBridgeContent).toMatch(/interface MsgpackMessage \{[\s\S]*?type:\s*string/);
+    expect(msgpackBridgeContent).toMatch(/interface MsgpackMessage \{[\s\S]*?payload:\s*Record/);
+  });
+
+  test('TypeScript msgpack bridge uses same event structure as stdio bridge', () => {
+    const fyneBridgeContent = fs.readFileSync(fyneBridgeTsPath, 'utf-8');
+    const msgpackBridgeContent = fs.readFileSync(msgpackBridgeTsPath, 'utf-8');
+
+    // Both should define Event interface with same fields
+    expect(fyneBridgeContent).toMatch(/interface Event \{[\s\S]*?type:\s*string/);
+    expect(fyneBridgeContent).toMatch(/interface Event \{[\s\S]*?widgetId:\s*string/);
+
+    expect(msgpackBridgeContent).toMatch(/interface Event \{[\s\S]*?type:\s*string/);
+    expect(msgpackBridgeContent).toMatch(/interface Event \{[\s\S]*?widgetId:\s*string/);
+  });
+
+  test('both bridges handle bridgeExiting flag for graceful shutdown', () => {
+    const fyneBridgeContent = fs.readFileSync(fyneBridgeTsPath, 'utf-8');
+    const msgpackBridgeContent = fs.readFileSync(msgpackBridgeTsPath, 'utf-8');
+
+    // Both should have bridgeExiting flag
+    expect(fyneBridgeContent).toContain('bridgeExiting');
+    expect(msgpackBridgeContent).toContain('bridgeExiting');
+
+    // Both should set it in quit() and shutdown()
+    expect(fyneBridgeContent).toMatch(/quit\s*\([^)]*\)[^{]*\{[\s\S]*?bridgeExiting\s*=\s*true/);
+    expect(msgpackBridgeContent).toMatch(/quit\s*\([^)]*\)[^{]*\{[\s\S]*?bridgeExiting\s*=\s*true/);
+
+    expect(fyneBridgeContent).toMatch(/shutdown\s*\([^)]*\)[^{]*\{[\s\S]*?bridgeExiting\s*=\s*true/);
+    expect(msgpackBridgeContent).toMatch(/shutdown\s*\([^)]*\)[^{]*\{[\s\S]*?bridgeExiting\s*=\s*true/);
+  });
+
+  test('both bridges check bridgeExiting before sending', () => {
+    const fyneBridgeContent = fs.readFileSync(fyneBridgeTsPath, 'utf-8');
+    const msgpackBridgeContent = fs.readFileSync(msgpackBridgeTsPath, 'utf-8');
+
+    // Both send() methods should check bridgeExiting
+    // The check may be at different points in the method, but must exist
+    // fynebridge checks: if (this.bridgeExiting || this.stdinClosed || this.process.killed)
+    // msgpackbridge checks: if (this.bridgeExiting)
+    expect(fyneBridgeContent).toContain('this.bridgeExiting');
+    expect(msgpackBridgeContent).toContain('this.bridgeExiting');
+
+    // Both should return early/silently when exiting (return {} or Promise.resolve({}))
+    // Check that send method contains bridgeExiting check followed by empty return
+    expect(fyneBridgeContent).toMatch(/bridgeExiting[\s\S]*?return\s+(?:Promise\.resolve\(\{\}\)|\{\})/);
+    expect(msgpackBridgeContent).toMatch(/bridgeExiting[\s\S]*?return\s+(?:Promise\.resolve\(\{\}\)|\{\})/);
+  });
+});
+
+// ============================================================================
 // TODO Marker Detection Tests
 // ============================================================================
 

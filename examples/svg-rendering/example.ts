@@ -16,11 +16,11 @@
  * - Manipulate SVG content programmatically
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import { renderSVGToBase64, createCompositeSVG } from './svg-renderer';
 import * as path from 'path';
 
-app({ title: 'SVG Rendering Example' }, async (a) => {
+app(resolveTransport(), { title: 'SVG Rendering Example' }, async (a) => {
   a.window({ title: 'SVG Rendering', width: 600, height: 400 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

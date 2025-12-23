@@ -5,9 +5,9 @@
  * and user-driven file operations.
  */
 
-import { app, window, vbox, hbox, label, button, entry } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
 
-app({ title: 'File Dialogs Demo' }, () => {
+app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
   window({ title: 'File Open/Save Dialogs', width: 500, height: 400 }, (win) => {
     let statusLabel: any;
     let filePathLabel: any;

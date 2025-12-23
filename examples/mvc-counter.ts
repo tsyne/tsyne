@@ -7,7 +7,7 @@
  * - Controller: Handles user input and updates the model
  */
 
-import { app, window, vbox, label, button, hbox, Model } from '../core/src';
+import { app, resolveTransport, window, vbox, label, button, hbox, Model  } from '../core/src';
 
 // ============================================================================
 // MODEL - Holds data and business logic
@@ -161,7 +161,7 @@ class CounterController {
 // APPLICATION SETUP
 // ============================================================================
 
-app({ title: 'MVC Pattern Demo' }, () => {
+app(resolveTransport(), { title: 'MVC Pattern Demo' }, () => {
   window({ title: 'MVC Counter', width: 300, height: 250 }, (win) => {
     // Create MVC components
     const model = new CounterModel(0, 100);

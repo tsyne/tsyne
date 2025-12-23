@@ -1,4 +1,4 @@
-import { app, Label } from '../core/src/index';
+import { app, resolveTransport, Label  } from '../core/src/index';
 
 /**
  * Entry OnCursorChanged Demo
@@ -12,7 +12,7 @@ import { app, Label } from '../core/src/index';
  * - Navigation tracking in text editors
  */
 
-app({ title: 'Entry Cursor Demo' }, (a) => {
+app(resolveTransport(), { title: 'Entry Cursor Demo' }, (a) => {
   a.window({ title: 'Entry OnCursorChanged', width: 700, height: 550 }, (win) => {
     let cursorMoveCount = 0;
     let statusLabel: Label;

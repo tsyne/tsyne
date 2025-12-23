@@ -5,7 +5,7 @@
  * different value ranges and use cases.
  */
 
-import { app, window, vbox, hbox, label, slider, button, screenshotIfRequested } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, slider, button, screenshotIfRequested  } from '../core/src';
 
 let volumeSlider: any;
 let brightnessSlider: any;
@@ -14,7 +14,7 @@ let volumeLabel: any;
 let brightnessLabel: any;
 let temperatureLabel: any;
 
-app({ title: 'Slider Demo' }, () => {
+app(resolveTransport(), { title: 'Slider Demo' }, () => {
   window({ title: 'Slider Example', width: 450, height: 400 }, (win) => {
     win.setContent(() => {
       vbox(() => {

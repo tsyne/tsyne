@@ -92,6 +92,7 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   // Message queue to ensure sequential processing (preserves ordering)
   private messageQueue: Promise<unknown> = Promise.resolve();
   private onExitCallback?: () => void; // Callback when bridge process exits
+  public bridgeExiting = false; // Track when bridge is shutting down
 
   constructor(testMode: boolean = false) {
     // Detect if running from pkg
@@ -302,9 +303,18 @@ export class MsgpackBridgeConnection implements BridgeInterface {
    * Messages are queued and processed sequentially to preserve ordering
    */
   async send(type: string, payload: Record<string, unknown>): Promise<unknown> {
+    // During shutdown, silently return empty result to prevent errors
+    if (this.bridgeExiting) {
+      return {};
+    }
+
     await this.readyPromise;
 
     if (!this.socket) {
+      // If bridge is exiting (socket destroyed), silently return empty result
+      if (this.bridgeExiting) {
+        return {};
+      }
       throw new Error('Socket not connected');
     }
 
@@ -377,6 +387,9 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   quit(): void {
+    // Mark bridge as exiting to prevent new requests during quit
+    this.bridgeExiting = true;
+
     this.send('quit', {}).catch(() => {
       // Ignore errors during quit
     });
@@ -397,6 +410,9 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   shutdown(): void {
+    // Mark bridge as exiting to prevent new requests during shutdown
+    this.bridgeExiting = true;
+
     if (this.socket) {
       this.socket.destroy();
       this.socket = undefined;

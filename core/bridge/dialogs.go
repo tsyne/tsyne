@@ -512,7 +512,7 @@ func (b *Bridge) handleShowProgressDialog(msg Message) Response {
 
 func (b *Bridge) handleUpdateProgressDialog(msg Message) Response {
 	dialogID := msg.Payload["dialogId"].(string)
-	value, _ := msg.Payload["value"].(float64)
+	value := toFloat64(msg.Payload["value"])
 	newMessage, hasMessage := msg.Payload["message"].(string)
 
 	b.mu.RLock()

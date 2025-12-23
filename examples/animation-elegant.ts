@@ -13,7 +13,7 @@
  * Run with: TSYNE_HEADED=1 npx tsx examples/animation-elegant.ts
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 import { CanvasCircle, CanvasLine, CanvasRectangle, EasingType } from '../core/src/widgets/canvas';
 import { cubicBezier, bezier, EasingFunction, getPointOnBezier } from '../core/src/animation';
 
@@ -790,7 +790,7 @@ export function buildElegantDemo(a: any) {
 
 // Run standalone
 if (require.main === module) {
-  app({ title: 'Elegant Animations' }, async (a) => {
+  app(resolveTransport(), { title: 'Elegant Animations' }, async (a) => {
     buildElegantDemo(a);
   });
 }

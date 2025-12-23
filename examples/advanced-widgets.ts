@@ -4,14 +4,14 @@
  * Demonstrates Card, Accordion, Form, and Center layout widgets.
  */
 
-import { app, window, vbox, hbox, label, entry, button, card, accordion, form, center } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button, card, accordion, form, center  } from '../core/src';
 
 let nameField: any;
 let emailField: any;
 let ageField: any;
 let statusLabel: any;
 
-app({ title: 'Advanced Widgets Demo' }, () => {
+app(resolveTransport(), { title: 'Advanced Widgets Demo' }, () => {
   window({ title: 'Advanced Widgets Example', width: 700, height: 750 }, (win) => {
     win.setContent(() => {
       vbox(() => {

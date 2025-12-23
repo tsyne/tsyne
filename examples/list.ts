@@ -5,7 +5,7 @@
  * selection callbacks and dynamic items.
  */
 
-import { app, window, vbox, hbox, label, button, entry, list } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, list  } from '../core/src';
 
 let todoList: any;
 let statusLabel: any;
@@ -20,7 +20,7 @@ let todos = [
   'Fix bug in authentication'
 ];
 
-app({ title: 'List Demo' }, () => {
+app(resolveTransport(), { title: 'List Demo' }, () => {
   window({ title: 'List Example', width: 600, height: 500 }, (win) => {
     win.setContent(() => {
       vbox(() => {

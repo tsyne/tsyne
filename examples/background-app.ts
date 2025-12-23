@@ -10,9 +10,9 @@
  * to the system tray and continue running in the background.
  */
 
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
-app({ title: 'Background App' }, (a) => {
+app(resolveTransport(), { title: 'Background App' }, (a) => {
   let mainWindow: any;
   let isHidden = false;
 

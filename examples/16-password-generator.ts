@@ -6,7 +6,7 @@
 // Password Generator - Generate secure random passwords
 // Demonstrates checkboxes, sliders, and string manipulation
 
-import { app, App, Window } from '../core/src';
+import { app, resolveTransport, App, Window  } from '../core/src';
 
 export function buildPasswordGenerator(a: App) {
   a.window({ title: 'Password Generator', width: 450, height: 500 }, (win: Window) => {
@@ -107,5 +107,5 @@ export function buildPasswordGenerator(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Password Generator' }, buildPasswordGenerator);
+  app(resolveTransport(), { title: 'Password Generator' }, buildPasswordGenerator);
 }

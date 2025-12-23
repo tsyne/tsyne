@@ -23,7 +23,7 @@
  * We've replaced it with Jimp, a well-maintained pure JavaScript library.
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Image as ImageWidget, Slider } from '../../core/src/widgets';
@@ -637,7 +637,7 @@ export function createImageViewerApp(a: App): ImageViewer {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Image Viewer' }, (a: App) => {
+  app(resolveTransport(), { title: 'Image Viewer' }, (a: App) => {
     createImageViewerApp(a);
   });
 }

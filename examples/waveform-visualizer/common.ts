@@ -10,8 +10,8 @@
 import * as path from 'path';
 import { spawn, ChildProcess, execSync } from 'child_process';
 
-// Audio file path
-export const AUDIO_FILE = path.join(__dirname, 'hopeless-drum-and-bass-full-369496.mp3');
+// Audio file path - use short 5s clip for faster tests
+export const AUDIO_FILE = path.join(__dirname, 'test-clip-5s.mp3');
 
 // Audio player process (ffplay or mpv)
 let audioProcess: ChildProcess | null = null;
@@ -77,10 +77,19 @@ export interface WaveformSlice {
  * Audio processing utilities for waveform visualization
  */
 export class AudioProcessor {
+  // Cache waveform data to avoid re-decoding on each test run
+  private static cachedWaveform: WaveformData | null = null;
+
   /**
    * Load and decode the MP3 file to raw PCM samples using ffmpeg
+   * Results are cached to speed up subsequent calls (especially in tests)
    */
   static async loadWaveform(): Promise<WaveformData> {
+    // Return cached data if available
+    if (AudioProcessor.cachedWaveform) {
+      return AudioProcessor.cachedWaveform;
+    }
+
     const sampleRate = 44100;
 
     try {
@@ -94,11 +103,20 @@ export class AudioProcessor {
       const samples = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4);
       const duration = samples.length / sampleRate;
 
-      return { samples, sampleRate, duration };
+      const waveformData = { samples, sampleRate, duration };
+      AudioProcessor.cachedWaveform = waveformData;
+      return waveformData;
     } catch (error) {
       console.error('Failed to decode MP3 with ffmpeg:', error);
       throw new Error('ffmpeg required to decode MP3. Install with: sudo apt install ffmpeg');
     }
+  }
+
+  /**
+   * Clear the waveform cache (useful for testing with different audio)
+   */
+  static clearCache(): void {
+    AudioProcessor.cachedWaveform = null;
   }
 
   /**

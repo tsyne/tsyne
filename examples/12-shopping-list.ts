@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Interactive shopping list with add, check, and delete functionality
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 interface ShoppingItem {
   id: number;
@@ -9,7 +9,7 @@ interface ShoppingItem {
   checked: boolean;
 }
 
-app({ title: 'Shopping List' }, (a) => {
+app(resolveTransport(), { title: 'Shopping List' }, (a) => {
   a.window({ title: 'Shopping List', width: 300, height: 400 }, (win) => {
     let nextId = 1;
     const items: ShoppingItem[] = [

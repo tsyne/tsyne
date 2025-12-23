@@ -63,7 +63,7 @@
  * - GIF (load/save) - legacy format
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRectangle } from '../../core/src/widgets/canvas';
@@ -5057,7 +5057,7 @@ export type { Selection, ClipboardData, Layer, BlendMode, ImageFormat };
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Pixel Editor' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Pixel Editor' }, async (a: App) => {
     // Pre-load file or URL from command line if provided (before building UI)
     // This ensures the canvas is created with the correct dimensions
     let preloadArg: string | null = null;

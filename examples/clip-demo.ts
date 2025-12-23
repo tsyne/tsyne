@@ -10,9 +10,9 @@
  * - Right: Clipped content (text is cut off at boundaries)
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
-app({ title: 'Clip Demo' }, (a) => {
+app(resolveTransport(), { title: 'Clip Demo' }, (a) => {
   a.window({ title: 'Clip Container Example', width: 600, height: 400 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

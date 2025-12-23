@@ -69,104 +69,6 @@ func (s *RasterSpriteSystem) GetSortedSprites() []*RasterSprite {
 }
 
 // ============================================================================
-// Helper functions for type conversion
-// ============================================================================
-
-// toInt converts interface{} to int, handling both JSON (float64) and msgpack (various int types)
-func toInt(v interface{}) int {
-	switch val := v.(type) {
-	case float64:
-		return int(val)
-	case int:
-		return val
-	case int8:
-		return int(val)
-	case int16:
-		return int(val)
-	case int32:
-		return int(val)
-	case int64:
-		return int(val)
-	case uint:
-		return int(val)
-	case uint8:
-		return int(val)
-	case uint16:
-		return int(val)
-	case uint32:
-		return int(val)
-	case uint64:
-		return int(val)
-	default:
-		return 0
-	}
-}
-
-// toFloat32 converts interface{} to float32, handling both JSON (float64) and msgpack (various numeric types)
-func toFloat32(v interface{}) float32 {
-	switch val := v.(type) {
-	case float64:
-		return float32(val)
-	case float32:
-		return val
-	case int:
-		return float32(val)
-	case int8:
-		return float32(val)
-	case int16:
-		return float32(val)
-	case int32:
-		return float32(val)
-	case int64:
-		return float32(val)
-	case uint:
-		return float32(val)
-	case uint8:
-		return float32(val)
-	case uint16:
-		return float32(val)
-	case uint32:
-		return float32(val)
-	case uint64:
-		return float32(val)
-	default:
-		return 0
-	}
-}
-
-// toFloat64 converts interface{} to float64, handling both JSON (float64) and msgpack (various numeric types)
-func toFloat64(v interface{}) float64 {
-	switch val := v.(type) {
-	case float64:
-		return val
-	case float32:
-		return float64(val)
-	case int:
-		return float64(val)
-	case int8:
-		return float64(val)
-	case int16:
-		return float64(val)
-	case int32:
-		return float64(val)
-	case int64:
-		return float64(val)
-	case uint:
-		return float64(val)
-	case uint8:
-		return float64(val)
-	case uint16:
-		return float64(val)
-	case uint32:
-		return float64(val)
-	case uint64:
-		return float64(val)
-	default:
-		return 0
-	}
-}
-
-// ============================================================================
 // Canvas Primitives: Line, Circle, Rectangle, Text, Raster, LinearGradient
 // ============================================================================
 
@@ -264,18 +166,18 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 	}
 
 	// Set stroke width if provided
-	if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+	if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		rect.StrokeWidth = float32(strokeWidth)
 	}
 
 	// Set corner radius if provided
-	if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+	if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
 		rect.CornerRadius = float32(radius)
 	}
 
 	// Set minimum size if provided
-	if width, ok := msg.Payload["width"].(float64); ok {
-		if height, ok := msg.Payload["height"].(float64); ok {
+	if width, ok := getFloat64(msg.Payload["width"]); ok {
+		if height, ok := getFloat64(msg.Payload["height"]); ok {
 			rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 		}
 	}
@@ -360,7 +262,7 @@ func (b *Bridge) handleCreateCanvasText(msg Message) Response {
 	}
 
 	// Set text size if provided
-	if textSize, ok := msg.Payload["textSize"].(float64); ok {
+	if textSize, ok := getFloat64(msg.Payload["textSize"]); ok {
 		canvasText.TextSize = float32(textSize)
 	}
 
@@ -617,7 +519,7 @@ func (b *Bridge) handleBlitToCanvasRaster(msg Message) Response {
 	destX := toInt(msg.Payload["x"])
 	destY := toInt(msg.Payload["y"])
 	alpha := 255
-	if a, ok := msg.Payload["alpha"].(float64); ok {
+	if a, ok := getFloat64(msg.Payload["alpha"]); ok {
 		alpha = int(a)
 	}
 
@@ -759,13 +661,13 @@ func (b *Bridge) handleCreateCanvasLinearGradient(msg Message) Response {
 	gradient := canvas.NewLinearGradient(startColor, endColor, 0)
 
 	// Set angle if provided (in degrees)
-	if angle, ok := msg.Payload["angle"].(float64); ok {
+	if angle, ok := getFloat64(msg.Payload["angle"]); ok {
 		gradient.Angle = angle
 	}
 
 	// Set minimum size if provided
-	if width, ok := msg.Payload["width"].(float64); ok {
-		if height, ok := msg.Payload["height"].(float64); ok {
+	if width, ok := getFloat64(msg.Payload["width"]); ok {
+		if height, ok := getFloat64(msg.Payload["height"]); ok {
 			gradient.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 		}
 	}
@@ -808,13 +710,13 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 
 	fyne.DoAndWait(func() {
 		// Update position if provided
-		if x1, ok := msg.Payload["x1"].(float64); ok {
-			if y1, ok := msg.Payload["y1"].(float64); ok {
+		if x1, ok := getFloat64(msg.Payload["x1"]); ok {
+			if y1, ok := getFloat64(msg.Payload["y1"]); ok {
 				line.Position1 = fyne.NewPos(float32(x1), float32(y1))
 			}
 		}
-		if x2, ok := msg.Payload["x2"].(float64); ok {
-			if y2, ok := msg.Payload["y2"].(float64); ok {
+		if x2, ok := getFloat64(msg.Payload["x2"]); ok {
+			if y2, ok := getFloat64(msg.Payload["y2"]); ok {
 				line.Position2 = fyne.NewPos(float32(x2), float32(y2))
 			}
 		}
@@ -825,7 +727,7 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 		}
 
 		// Update stroke width if provided
-		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+		if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 			line.StrokeWidth = float32(strokeWidth)
 		}
 
@@ -874,18 +776,18 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) Response {
 		}
 
 		// Update stroke width if provided
-		if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+		if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 			circle.StrokeWidth = float32(strokeWidth)
 		}
 
 		// Update position if provided
-		if x, ok := msg.Payload["x"].(float64); ok {
-			if y, ok := msg.Payload["y"].(float64); ok {
+		if x, ok := getFloat64(msg.Payload["x"]); ok {
+			if y, ok := getFloat64(msg.Payload["y"]); ok {
 				circle.Position1 = fyne.NewPos(float32(x), float32(y))
 			}
 		}
-		if x2, ok := msg.Payload["x2"].(float64); ok {
-			if y2, ok := msg.Payload["y2"].(float64); ok {
+		if x2, ok := getFloat64(msg.Payload["x2"]); ok {
+			if y2, ok := getFloat64(msg.Payload["y2"]); ok {
 				circle.Position2 = fyne.NewPos(float32(x2), float32(y2))
 			}
 		}
@@ -923,14 +825,14 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 				rect.StrokeColor = parseHexColorSimple(strokeHex)
 			}
-			if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+			if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 				rect.StrokeWidth = float32(strokeWidth)
 			}
-			if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
 				rect.CornerRadius = float32(radius)
 			}
-			if width, ok := msg.Payload["width"].(float64); ok {
-				if height, ok := msg.Payload["height"].(float64); ok {
+			if width, ok := getFloat64(msg.Payload["width"]); ok {
+				if height, ok := getFloat64(msg.Payload["height"]); ok {
 					rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 				}
 			}
@@ -944,10 +846,10 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 				tappable.SetStrokeColor(parseHexColorSimple(strokeHex))
 			}
-			if strokeWidth, ok := msg.Payload["strokeWidth"].(float64); ok {
+			if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 				tappable.SetStrokeWidth(float32(strokeWidth))
 			}
-			if radius, ok := msg.Payload["cornerRadius"].(float64); ok {
+			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
 				tappable.SetCornerRadius(float32(radius))
 			}
 			tappable.Refresh()
@@ -1002,7 +904,7 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) Response {
 		}
 
 		// Update text size if provided
-		if textSize, ok := msg.Payload["textSize"].(float64); ok {
+		if textSize, ok := getFloat64(msg.Payload["textSize"]); ok {
 			canvasText.TextSize = float32(textSize)
 		}
 
@@ -1051,7 +953,7 @@ func (b *Bridge) handleUpdateCanvasLinearGradient(msg Message) Response {
 		}
 
 		// Update angle if provided
-		if angle, ok := msg.Payload["angle"].(float64); ok {
+		if angle, ok := getFloat64(msg.Payload["angle"]); ok {
 			gradient.Angle = angle
 		}
 
@@ -1069,10 +971,10 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 
 	// Parse start and end angles (in radians)
 	var startAngle, endAngle float64 = 0, 3.14159 // Default half circle
-	if sa, ok := msg.Payload["startAngle"].(float64); ok {
+	if sa, ok := getFloat64(msg.Payload["startAngle"]); ok {
 		startAngle = sa
 	}
-	if ea, ok := msg.Payload["endAngle"].(float64); ok {
+	if ea, ok := getFloat64(msg.Payload["endAngle"]); ok {
 		endAngle = ea
 	}
 
@@ -1090,22 +992,22 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 
 	// Set stroke width if provided
 	var strokeWidth float32 = 1
-	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+	if sw, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		strokeWidth = float32(sw)
 	}
 
 	// Set position and size
 	var x1, y1, x2, y2 float32 = 0, 0, 100, 100
-	if x, ok := msg.Payload["x"].(float64); ok {
+	if x, ok := getFloat64(msg.Payload["x"]); ok {
 		x1 = float32(x)
 	}
-	if y, ok := msg.Payload["y"].(float64); ok {
+	if y, ok := getFloat64(msg.Payload["y"]); ok {
 		y1 = float32(y)
 	}
-	if x, ok := msg.Payload["x2"].(float64); ok {
+	if x, ok := getFloat64(msg.Payload["x2"]); ok {
 		x2 = float32(x)
 	}
-	if y, ok := msg.Payload["y2"].(float64); ok {
+	if y, ok := getFloat64(msg.Payload["y2"]); ok {
 		y2 = float32(y)
 	}
 
@@ -1240,10 +1142,10 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) Response {
 
 	// Update arc data
 	b.mu.Lock()
-	if sa, ok := msg.Payload["startAngle"].(float64); ok {
+	if sa, ok := getFloat64(msg.Payload["startAngle"]); ok {
 		arcInfo.StartAngle = sa
 	}
-	if ea, ok := msg.Payload["endAngle"].(float64); ok {
+	if ea, ok := getFloat64(msg.Payload["endAngle"]); ok {
 		arcInfo.EndAngle = ea
 	}
 	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
@@ -1252,7 +1154,7 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) Response {
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		arcInfo.StrokeColor = parseHexColorSimple(strokeHex)
 	}
-	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+	if sw, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		arcInfo.StrokeWidth = float32(sw)
 	}
 	b.mu.Unlock()
@@ -1284,7 +1186,7 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 
 	// Parse stroke width
 	var strokeWidth float32 = 1
-	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+	if sw, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		strokeWidth = float32(sw)
 	}
 
@@ -1293,8 +1195,8 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 	if pts, ok := msg.Payload["points"].([]interface{}); ok {
 		for _, p := range pts {
 			if pt, ok := p.(map[string]interface{}); ok {
-				x := float32(pt["x"].(float64))
-				y := float32(pt["y"].(float64))
+				x := toFloat32(pt["x"])
+				y := toFloat32(pt["y"])
 				points = append(points, fyne.NewPos(x, y))
 			}
 		}
@@ -1423,8 +1325,8 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) Response {
 		var points []fyne.Position
 		for _, p := range pts {
 			if pt, ok := p.(map[string]interface{}); ok {
-				x := float32(pt["x"].(float64))
-				y := float32(pt["y"].(float64))
+				x := toFloat32(pt["x"])
+				y := toFloat32(pt["y"])
 				points = append(points, fyne.NewPos(x, y))
 			}
 		}
@@ -1436,7 +1338,7 @@ func (b *Bridge) handleUpdateCanvasPolygon(msg Message) Response {
 	if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
 		polyInfo.StrokeColor = parseHexColorSimple(strokeHex)
 	}
-	if sw, ok := msg.Payload["strokeWidth"].(float64); ok {
+	if sw, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		polyInfo.StrokeWidth = float32(sw)
 	}
 	b.mu.Unlock()
@@ -1468,16 +1370,16 @@ func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) Response {
 	gradient := canvas.NewRadialGradient(startColor, endColor)
 
 	// Set center offset if provided
-	if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
+	if offsetX, ok := getFloat64(msg.Payload["centerOffsetX"]); ok {
 		gradient.CenterOffsetX = offsetX
 	}
-	if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
+	if offsetY, ok := getFloat64(msg.Payload["centerOffsetY"]); ok {
 		gradient.CenterOffsetY = offsetY
 	}
 
 	// Set minimum size if provided
-	if width, ok := msg.Payload["width"].(float64); ok {
-		if height, ok := msg.Payload["height"].(float64); ok {
+	if width, ok := getFloat64(msg.Payload["width"]); ok {
+		if height, ok := getFloat64(msg.Payload["height"]); ok {
 			gradient.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 		}
 	}
@@ -1530,10 +1432,10 @@ func (b *Bridge) handleUpdateCanvasRadialGradient(msg Message) Response {
 		}
 
 		// Update center offset if provided
-		if offsetX, ok := msg.Payload["centerOffsetX"].(float64); ok {
+		if offsetX, ok := getFloat64(msg.Payload["centerOffsetX"]); ok {
 			gradient.CenterOffsetX = offsetX
 		}
-		if offsetY, ok := msg.Payload["centerOffsetY"].(float64); ok {
+		if offsetY, ok := getFloat64(msg.Payload["centerOffsetY"]); ok {
 			gradient.CenterOffsetY = offsetY
 		}
 

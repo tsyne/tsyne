@@ -15,7 +15,7 @@
  *   npx tsx examples/reactive-form.ts
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 import {
   StringBinding,
   BoolBinding,
@@ -218,7 +218,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
 
 // Only run if this is the main module
 if (require.main === module) {
-  app({ title: 'Reactive Form Demo' }, (a) => {
+  app(resolveTransport(), { title: 'Reactive Form Demo' }, (a) => {
     createReactiveFormApp(a);
   });
 }

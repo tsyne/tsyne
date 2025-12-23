@@ -1,4 +1,4 @@
-import { App } from './app';
+import { App, resolveTransport } from './app';
 import { TestContext } from './test';
 import { recordHeadlessScreenshot } from './headless-screenshot-tracker';
 
@@ -79,7 +79,7 @@ export class TsyneTest {
     }
 
     const testMode = !this.options.headed;
-    this.app = new App({ bridgeMode: this.options.bridgeMode }, testMode);
+    this.app = new App(this.options.bridgeMode || resolveTransport(), {}, testMode);
 
     // Wait for bridge to be ready before building
     await this.app.getBridge().waitUntilReady();

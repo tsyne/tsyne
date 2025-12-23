@@ -9,8 +9,7 @@
  * This pattern emphasizes data binding and separation of presentation logic.
  */
 
-import {
-  app,
+import { app, resolveTransport,
   window,
   vbox,
   hbox,
@@ -20,7 +19,7 @@ import {
   ObservableState,
   ComputedState,
   ViewModel
-} from '../core/src';
+ } from '../core/src';
 
 // ============================================================================
 // MODEL - Domain data
@@ -205,7 +204,7 @@ class TodoView {
 // APPLICATION SETUP
 // ============================================================================
 
-app({ title: 'MVVM Pattern Demo' }, () => {
+app(resolveTransport(), { title: 'MVVM Pattern Demo' }, () => {
   window({ title: 'MVVM Todo List', width: 500, height: 300 }, (win) => {
     // Create Model and ViewModel
     const model = new TodoModel();

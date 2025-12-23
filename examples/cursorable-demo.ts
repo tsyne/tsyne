@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Cursorable Demo - Demonstrates the desktop.Cursorable interface
@@ -7,7 +7,7 @@ import { app } from '../core/src';
  * Use case: UI hint system showing different cursor types for different actions
  */
 
-app({ title: "Cursorable Demo" }, (a) => {
+app(resolveTransport(), { title: "Cursorable Demo" }, (a) => {
   a.window({ title: "Cursorable Demo - Cursor Gallery", width: 500, height: 500 }, () => {
     let statusLabel: any;
 

@@ -25,7 +25,7 @@
  * - common.ts - Shared utilities
  */
 
-import { app, App } from '../../core/src';
+import { app, resolveTransport, App  } from '../../core/src';
 import { buildCanvasWaveformVisualizer } from './canvas';
 import { buildWidgetWaveformVisualizer } from './widget';
 import { registerCleanupHandlers, isTestEnvironment } from './common';
@@ -50,5 +50,5 @@ export function buildWaveformVisualizer(a: App) {
 registerCleanupHandlers();
 
 if (!isTestEnvironment) {
-  app({ title: 'Waveform Visualizer' }, buildWaveformVisualizer);
+  app(resolveTransport(), { title: 'Waveform Visualizer' }, buildWaveformVisualizer);
 }

@@ -1,9 +1,9 @@
 // Demo: MDI Workspace using MultipleWindows container
 // Shows how to create a desktop-like workspace with floating inner windows
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
-app({ title: 'MDI Workspace Demo' }, (a) => {
+app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
   a.window({ title: 'MDI Workspace', width: 800, height: 600 }, (win) => {
     let mdiContainer: ReturnType<typeof a.multipleWindows>;
     let windowCount = 0;

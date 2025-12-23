@@ -1,5 +1,5 @@
-import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from '../core/src';
-// In production: import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from '../core/src';
+// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
  * Accessible Tic-Tac-Toe
@@ -658,7 +658,7 @@ if (require.main === module) {
   // Create app and build the game UI
   // Note: buildTicTacToe creates its own isolated game context for each instance,
   // which prevents test isolation issues
-  const myApp = app({ title: "Accessible Tic-Tac-Toe" }, (a) => {
+  const myApp = app(resolveTransport(), { title: "Accessible Tic-Tac-Toe" }, (a) => {
     buildTicTacToe(a);
   });
 

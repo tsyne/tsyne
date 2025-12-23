@@ -153,7 +153,7 @@ func (b *Bridge) handleCreateProgressBar(msg Message) Response {
 	} else {
 		pb := widget.NewProgressBar()
 		// Set initial value if provided
-		if initialValue, ok := msg.Payload["value"].(float64); ok {
+		if initialValue, ok := getFloat64(msg.Payload["value"]); ok {
 			pb.Value = initialValue
 		}
 		progressBar = pb

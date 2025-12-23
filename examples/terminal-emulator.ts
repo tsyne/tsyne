@@ -9,7 +9,7 @@
  * - ANSI-style color support
  */
 
-import { App, TextGrid, TextGridStyle } from '../core/src/index';
+import { App, TextGrid, TextGridStyle, resolveTransport } from '../core/src/index';
 
 // Terminal state
 const COLS = 80;
@@ -35,7 +35,7 @@ const colors = {
 };
 
 // Create the application
-const app = new App({ title: 'Terminal Emulator' });
+const app = new App(resolveTransport(), { title: 'Terminal Emulator' });
 
 app.window({ title: 'Terminal Emulator', width: 900, height: 600 }, (win) => {
   let terminalGrid: TextGrid;

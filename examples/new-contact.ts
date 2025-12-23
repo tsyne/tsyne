@@ -5,7 +5,7 @@
  * Shows how to use entry, password, multiline, select, and check field types.
  */
 
-import { app, window, vbox, hbox, label, button, scroll, separator } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, scroll, separator  } from '../core/src';
 
 interface Contact {
   firstName: string;
@@ -17,7 +17,7 @@ interface Contact {
   favorite: boolean;
 }
 
-app({ title: 'Contact Manager' }, () => {
+app(resolveTransport(), { title: 'Contact Manager' }, () => {
   window({ title: 'Contact Manager', width: 600, height: 500 }, (win) => {
     const contacts: Contact[] = [];
     let contactListLabel: any;

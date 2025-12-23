@@ -21,7 +21,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 
 // Tsyne is automatically available when run via `tsyne` command (no @Grab needed)
-import { app, window, vbox, hbox, label, button, select, separator } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, label, button, select, separator  } from 'tsyne';
 
 // Weather API - Using Open-Meteo (free, no API key required)
 // https://open-meteo.com/en/docs
@@ -165,7 +165,7 @@ function onCityChange(cityName: string) {
 }
 
 // Build the Weather Viewer UI using current Tsyne API
-app({ title: 'Weather Viewer' }, () => {
+app(resolveTransport(), { title: 'Weather Viewer' }, () => {
   window({ title: 'Weather Viewer', width: 400, height: 350 }, () => {
     vbox(() => {
       // Header

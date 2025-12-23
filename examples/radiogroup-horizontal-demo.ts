@@ -1,4 +1,4 @@
-import { app, Label } from '../core/src/index';
+import { app, resolveTransport, Label  } from '../core/src/index';
 
 /**
  * RadioGroup Horizontal Layout Demo
@@ -12,7 +12,7 @@ import { app, Label } from '../core/src/index';
  * - View mode toggles (List/Grid)
  */
 
-app({ title: 'RadioGroup Horizontal Demo' }, (a) => {
+app(resolveTransport(), { title: 'RadioGroup Horizontal Demo' }, (a) => {
   a.window({ title: 'RadioGroup Horizontal', width: 700, height: 650 }, (win) => {
     let selectedSize: string = 'Medium';
     let selectedView: string = 'List';

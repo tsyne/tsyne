@@ -6,10 +6,10 @@
  *
  * Padded adds theme-aware padding around content.
  */
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 // Create a simple photo gallery with colored placeholder cards
-app({ title: 'Photo Gallery' }, (a) => {
+app(resolveTransport(), { title: 'Photo Gallery' }, (a) => {
   a.window({ title: 'Photo Gallery - AdaptiveGrid Demo', width: 800, height: 600 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

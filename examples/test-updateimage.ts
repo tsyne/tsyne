@@ -2,10 +2,10 @@
  * Test the new updateImage API with path and SVG
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 import * as path from 'path';
 
-app({ title: 'UpdateImage API Test' }, async (a) => {
+app(resolveTransport(), { title: 'UpdateImage API Test' }, async (a) => {
   a.window({ title: 'UpdateImage Test', width: 600, height: 400 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

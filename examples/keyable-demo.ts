@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Keyable Demo - Demonstrates the desktop.Keyable interface
@@ -7,7 +7,7 @@ import { app } from '../core/src';
  * Use case: Keyboard input tracker / mini typing game
  */
 
-app({ title: "Keyable Demo" }, (a) => {
+app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
   a.window({ title: "Keyable Demo - Keyboard Tracker", width: 550, height: 550 }, () => {
     // State tracking
     let keyHistory: string[] = [];

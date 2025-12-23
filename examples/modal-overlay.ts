@@ -1,9 +1,9 @@
 // Demo: Modal Overlay using showCustomWithoutButtons
 // Shows how to create a non-dismissable loading overlay
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
-app({ title: 'Modal Overlay Demo' }, (a) => {
+app(resolveTransport(), { title: 'Modal Overlay Demo' }, (a) => {
   a.window({ title: 'Modal Overlay', width: 500, height: 400 }, async (win) => {
     win.setContent(() => {
       a.vbox(() => {

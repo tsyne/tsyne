@@ -863,6 +863,8 @@ func main() {
 		runGrpcMode(testMode)
 	case "msgpack-uds":
 		runMsgpackUdsMode(testMode)
+	case "stdio":
+		runStdioMode(testMode)
 	default:
 		runMsgpackUdsMode(testMode)
 	}

@@ -5,14 +5,14 @@
  * and dynamic interaction.
  */
 
-import { app, window, vbox, hbox, label, select, button, screenshotIfRequested } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, select, button, screenshotIfRequested  } from '../core/src';
 
 let colorSelect: any;
 let sizeSelect: any;
 let countrySelect: any;
 let resultLabel: any;
 
-app({ title: 'Select Demo' }, () => {
+app(resolveTransport(), { title: 'Select Demo' }, () => {
   window({ title: 'Select (Dropdown) Example', width: 450, height: 350 }, (win) => {
     win.setContent(() => {
       vbox(() => {

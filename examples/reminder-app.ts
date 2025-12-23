@@ -7,7 +7,7 @@
  * - Integration with system notification center
  */
 
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
 interface Reminder {
   id: number;
@@ -16,7 +16,7 @@ interface Reminder {
   timeoutId?: NodeJS.Timeout;
 }
 
-app({ title: 'Reminder App' }, (a) => {
+app(resolveTransport(), { title: 'Reminder App' }, (a) => {
   const reminders: Reminder[] = [];
   let nextId = 1;
   let reminderListLabel: any;

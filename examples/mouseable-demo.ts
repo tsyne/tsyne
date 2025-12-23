@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Mouseable Demo - Demonstrates the desktop.Mouseable interface
@@ -7,7 +7,7 @@ import { app } from '../core/src';
  * Use case: Drawing pad / click timing game
  */
 
-app({ title: "Mouseable Demo" }, (a) => {
+app(resolveTransport(), { title: "Mouseable Demo" }, (a) => {
   a.window({ title: "Mouseable Demo - Click Timing", width: 550, height: 550 }, () => {
     // State tracking
     let clickStartTime: number | null = null;

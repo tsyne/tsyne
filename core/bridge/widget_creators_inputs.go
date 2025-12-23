@@ -125,7 +125,7 @@ func (b *Bridge) handleCreateEntry(msg Message) Response {
 	var widgetToStore fyne.CanvasObject = tsyneEntry
 	var needsEntryRef bool = false
 
-	if minWidth, ok := msg.Payload["minWidth"].(float64); ok && minWidth > 0 {
+	if minWidth, ok := getFloat64(msg.Payload["minWidth"]); ok && minWidth > 0 {
 		// Create a sized container with the entry
 		sizedEntry := canvas.NewRectangle(color.Transparent)
 		sizedEntry.SetMinSize(fyne.NewSize(float32(minWidth), entry.MinSize().Height))
@@ -381,14 +381,14 @@ func (b *Bridge) handleCreateSelectEntry(msg Message) Response {
 
 func (b *Bridge) handleCreateSlider(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
-	min := msg.Payload["min"].(float64)
-	max := msg.Payload["max"].(float64)
+	min := toFloat64(msg.Payload["min"])
+	max := toFloat64(msg.Payload["max"])
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
 	slider := widget.NewSlider(min, max)
 
 	// Set initial value if provided
-	if initialValue, ok := msg.Payload["value"].(float64); ok {
+	if initialValue, ok := getFloat64(msg.Payload["value"]); ok {
 		slider.Value = initialValue
 	}
 

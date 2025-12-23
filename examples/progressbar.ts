@@ -5,7 +5,7 @@
  * for showing progress and loading states.
  */
 
-import { app, window, vbox, hbox, label, button, progressbar } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, progressbar  } from '../core/src';
 
 let downloadProgress: any;
 let uploadProgress: any;
@@ -16,7 +16,7 @@ let statusLabel: any;
 let downloadValue = 0;
 let uploadValue = 0;
 
-app({ title: 'ProgressBar Demo' }, () => {
+app(resolveTransport(), { title: 'ProgressBar Demo' }, () => {
   window({ title: 'ProgressBar Example', width: 450, height: 400 }, (win) => {
     win.setContent(() => {
       vbox(() => {

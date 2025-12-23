@@ -5,7 +5,7 @@
  * applying preset color schemes, and using the theme editor.
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select  } from '../core/src';
 
 let statusLabel: any;
 let themeLabel: any;
@@ -171,7 +171,7 @@ const presetThemes: Record<string, { variant: string; colors: Record<string, str
   },
 };
 
-app({ title: 'Theme Demo' }, () => {
+app(resolveTransport(), { title: 'Theme Demo' }, () => {
   window({ title: 'Theme Example', width: 700, height: 650 }, (win) => {
     win.setContent(() => {
       vbox(() => {

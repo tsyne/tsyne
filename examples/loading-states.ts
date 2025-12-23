@@ -5,9 +5,9 @@
  * indeterminate progress during async operations.
  */
 
-import { app, Activity } from '../core/src';
+import { app, resolveTransport, Activity  } from '../core/src';
 
-app({ title: 'Loading States Demo' }, (a) => {
+app(resolveTransport(), { title: 'Loading States Demo' }, (a) => {
   a.window({ title: 'Loading States', width: 500, height: 550 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {

@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Hoverable Demo - Demonstrates the desktop.Hoverable interface
@@ -7,7 +7,7 @@ import { app } from '../core/src';
  * Use case: Interactive heat map / hover tracking visualization
  */
 
-app({ title: "Hoverable Demo" }, (a) => {
+app(resolveTransport(), { title: "Hoverable Demo" }, (a) => {
   a.window({ title: "Hoverable Demo - Heat Map", width: 600, height: 500 }, () => {
     // State tracking
     const hoverCounts: { [key: string]: number } = {};

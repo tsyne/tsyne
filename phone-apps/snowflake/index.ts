@@ -254,13 +254,18 @@ export function buildSnowflakeApp(a: App, win: Window): SnowflakeUI {
     ui.buildUI(win);
   });
 
+  // Register cleanup to stop animation interval when app shuts down
+  a.registerCleanup(() => {
+    ui.cleanup();
+  });
+
   return ui;
 }
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Snowflake', width: 600, height: 800 }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Snowflake', width: 600, height: 800 }, (a: App) => {
     a.window({ title: 'Snowflake - Festive Visualization', width: 600, height: 800 }, (win: Window) => {
       buildSnowflakeApp(a, win);
     });

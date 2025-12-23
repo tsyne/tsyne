@@ -38,7 +38,7 @@
  * @tsyne-app:count single
  */
 
-import { app, styles, FontStyle } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
 import type { App } from '../../core/src';
 import type { Window } from '../../core/src';
 import type { Label } from '../../core/src';
@@ -266,7 +266,7 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
 
 // Standalone execution
 if (require.main === module) {
-  app({ title: 'Music Player' }, (a: App) => {
+  app(resolveTransport(), { title: 'Music Player' }, (a: App) => {
     const music = new MockMusicService();
     createMusicPlayerApp(a, music);
   });

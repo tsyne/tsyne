@@ -100,7 +100,7 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
       .shouldBe('Ready - tap waveform to seek');
   });
 
-  test('should display 8-second duration', async () => {
+  test('should display audio duration', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildCanvasWaveformVisualizer(app);
     });
@@ -110,9 +110,9 @@ describe('Canvas Waveform Visualizer - tappableCanvasRaster', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Duration should be 8 seconds
+    // Duration should be 0:08 (8-second test clip)
     const duration = await ctx.getById('durationLabel').getText();
-    expect(duration).toMatch(/8:00|0:08/);
+    expect(duration).toMatch(/0:08/);
   });
 
   test('should start at position 0:00', async () => {
@@ -205,9 +205,9 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Play for 1 second
+    // Play for 1.5 seconds to ensure we're solidly past 1 second mark
     await ctx.getById('playBtn').click();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const firstTime = parseInt(
       (await ctx.getById('positionLabel').getText()).split(':')[1],
@@ -219,17 +219,17 @@ describe('Canvas Mode - Interactive Scrubbing (Tap to Seek)', () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     await ctx.getById('playBtn').click();
 
-    // Play for more time
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Play for 1.5 more seconds to ensure we advance another full second
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const secondTime = parseInt(
       (await ctx.getById('positionLabel').getText()).split(':')[1],
       10
     );
 
-    // Should have advanced further
+    // Should have advanced further (1.5s + 1.5s = 3s total, so secondTime >= 2)
     expect(secondTime).toBeGreaterThan(firstTime);
-  });
+  }, 10000);
 
   test('should stop and reset to 0:00', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -356,16 +356,16 @@ describe('Canvas Mode - Play/Pause/Stop Controls', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Play (8-second audio)
+    // Play 8-second audio clip
     await ctx.getById('playBtn').click();
 
-    // Wait for completion (plus buffer)
+    // Wait for completion (8s + buffer)
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should show finished
     await ctx.getById('statusLabel').within(500).shouldBe('Finished');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 15000);
 });
 
 describe('Canvas Mode - Time Display and Formatting', () => {
@@ -481,8 +481,8 @@ describe('Canvas Mode - Integration Tests', () => {
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
-    // Step 3: Let play for 1 second
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Step 3: Let play for 1.5s to ensure we cross second boundary
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     const position1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(position1.split(':')[1], 10);
     expect(time1).toBeGreaterThan(0);
@@ -503,8 +503,8 @@ describe('Canvas Mode - Integration Tests', () => {
     const resumedTime = await ctx.getById('positionLabel').getText();
     expect(resumedTime).toBe(pausedTime);
 
-    // Step 7: Play for more
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Step 7: Play for 1.5s more
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     const position2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(position2.split(':')[1], 10);
     expect(time2).toBeGreaterThan(time1);
@@ -513,7 +513,7 @@ describe('Canvas Mode - Integration Tests', () => {
     await ctx.getById('stopBtn').click();
     await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 10000);
 
   test('multiple play/pause cycles', async () => {
     const testApp = await tsyneTest.createApp((app) => {

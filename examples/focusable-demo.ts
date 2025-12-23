@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Focusable Demo - Demonstrates the fyne.Focusable interface (required for Keyable)
@@ -7,7 +7,7 @@ import { app } from '../core/src';
  * Use case: Focus tracking / form navigation indicator
  */
 
-app({ title: "Focusable Demo" }, (a) => {
+app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
   a.window({ title: "Focusable Demo - Focus Tracker", width: 550, height: 500 }, () => {
     // State tracking
     let currentFocus: string | null = null;

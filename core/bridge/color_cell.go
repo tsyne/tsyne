@@ -164,10 +164,10 @@ func (b *Bridge) handleCreateColorCell(msg Message) Response {
 	// Get dimensions with defaults
 	width := float32(40)
 	height := float32(40)
-	if w, ok := msg.Payload["width"].(float64); ok {
+	if w, ok := getFloat64(msg.Payload["width"]); ok {
 		width = float32(w)
 	}
-	if h, ok := msg.Payload["height"].(float64); ok {
+	if h, ok := getFloat64(msg.Payload["height"]); ok {
 		height = float32(h)
 	}
 
@@ -194,7 +194,7 @@ func (b *Bridge) handleCreateColorCell(msg Message) Response {
 	}
 
 	// Set border width
-	if borderWidth, ok := msg.Payload["borderWidth"].(float64); ok {
+	if borderWidth, ok := getFloat64(msg.Payload["borderWidth"]); ok {
 		cell.borderWidth = float32(borderWidth)
 	}
 
@@ -264,7 +264,7 @@ func (b *Bridge) handleUpdateColorCell(msg Message) Response {
 		if borderColor, ok := msg.Payload["borderColor"].(string); ok {
 			cell.SetBorderColor(parseHexColorSimple(borderColor))
 		}
-		if borderWidth, ok := msg.Payload["borderWidth"].(float64); ok {
+		if borderWidth, ok := getFloat64(msg.Payload["borderWidth"]); ok {
 			cell.SetBorderWidth(float32(borderWidth))
 		}
 	})

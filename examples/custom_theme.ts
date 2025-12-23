@@ -5,7 +5,7 @@
  * custom color theme to your Tsyne application.
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 import { CustomThemeColors } from '../core/src/app';
 
 // Define our custom "Solarized Dark" theme colors
@@ -20,7 +20,7 @@ const solarizedDark: CustomThemeColors = {
   shadow: '#000000',
 };
 
-app({ title: 'Custom Theme Demo' }, (a) => {
+app(resolveTransport(), { title: 'Custom Theme Demo' }, (a) => {
   a.window({ title: 'Custom Theme Example', width: 700, height: 600 }, (win) => {
     let themeLabel: any;
 

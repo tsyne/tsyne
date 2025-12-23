@@ -8,7 +8,7 @@
  * - Reset to default theme
  */
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select, separator, setCustomTheme, clearCustomTheme, setTheme, CustomThemeColors } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select, separator, setCustomTheme, clearCustomTheme, setTheme, CustomThemeColors  } from '../core/src';
 
 // Preset themes
 const presetThemes: Record<string, CustomThemeColors> = {
@@ -114,7 +114,7 @@ const presetThemes: Record<string, CustomThemeColors> = {
 let currentColors: CustomThemeColors = { ...presetThemes.ocean };
 let statusLabel: any;
 
-app({ title: 'Theme Creator' }, () => {
+app(resolveTransport(), { title: 'Theme Creator' }, () => {
   window({ title: 'Custom Theme Creator', width: 900, height: 700 }, (win) => {
     win.setContent(() => {
       vbox(() => {

@@ -5,9 +5,9 @@
  * for creating resizable panes in the UI.
  */
 
-import { app, window, vbox, hbox, label, button, entry, scroll, hsplit, vsplit } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, scroll, hsplit, vsplit  } from '../core/src';
 
-app({ title: 'Split Container Demo' }, () => {
+app(resolveTransport(), { title: 'Split Container Demo' }, () => {
   window({ title: 'Split Container Example', width: 600, height: 500 }, (win) => {
     win.setContent(() => {
       // Main vertical split: sidebar on left, content on right

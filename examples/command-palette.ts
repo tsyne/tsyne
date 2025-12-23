@@ -5,7 +5,7 @@
  * Users can filter commands by typing in the search box.
  */
 
-import { app, App, MenuItem } from '../core/src';
+import { app, resolveTransport, App, MenuItem  } from '../core/src';
 
 // All available commands
 const allCommands: Array<{ label: string; action: string; category: string }> = [
@@ -113,7 +113,7 @@ function rebuildMenu(query: string) {
   menuContainer.refresh();
 }
 
-app({ title: 'Command Palette' }, (a) => {
+app(resolveTransport(), { title: 'Command Palette' }, (a) => {
   currentApp = a;
 
   a.window({ title: 'Command Palette Demo', width: 500, height: 600 }, (win) => {

@@ -14,7 +14,7 @@
  * causing both memory leaks and visual rendering to show wrong content.
  */
 
-import { App } from '../app';
+import { App, resolveTransport } from '../app';
 import { Window } from '../window';
 
 describe('Window Content Replacement', () => {
@@ -23,7 +23,7 @@ describe('Window Content Replacement', () => {
 
   beforeEach(() => {
     // Create app in test mode
-    app = new App({ title: 'Content Replacement Test' }, true);
+    app = new App(resolveTransport(), { title: 'Content Replacement Test' }, true);
 
     // Set global context
     const { __setGlobalContext } = require('../index');

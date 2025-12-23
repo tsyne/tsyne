@@ -558,10 +558,10 @@ func (b *Bridge) handleSubmitEntry(msg Message) Response {
 
 func (b *Bridge) handleDragCanvas(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
-	fromX := msg.Payload["fromX"].(float64)
-	fromY := msg.Payload["fromY"].(float64)
-	deltaX := msg.Payload["deltaX"].(float64)
-	deltaY := msg.Payload["deltaY"].(float64)
+	fromX := toFloat64(msg.Payload["fromX"])
+	fromY := toFloat64(msg.Payload["fromY"])
+	deltaX := toFloat64(msg.Payload["deltaX"])
+	deltaY := toFloat64(msg.Payload["deltaY"])
 
 	b.mu.RLock()
 	win, exists := b.windows[windowID]
@@ -594,8 +594,8 @@ func (b *Bridge) handleDragCanvas(msg Message) Response {
 
 func (b *Bridge) handleScrollCanvas(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
-	deltaX := msg.Payload["deltaX"].(float64)
-	deltaY := msg.Payload["deltaY"].(float64)
+	deltaX := toFloat64(msg.Payload["deltaX"])
+	deltaY := toFloat64(msg.Payload["deltaY"])
 
 	b.mu.RLock()
 	win, exists := b.windows[windowID]
@@ -1151,8 +1151,8 @@ func (b *Bridge) handleRegisterTestId(msg Message) Response {
 
 func (b *Bridge) handleDragWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	x := msg.Payload["x"].(float64)
-	y := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 
 	b.mu.RLock()
 	obj, exists := b.widgets[widgetID]

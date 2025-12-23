@@ -16,7 +16,7 @@
  * Each slice is a UI element that can be styled, animated, or interacted with.
  */
 
-import { app, App, Window } from '../../core/src';
+import { app, resolveTransport, App, Window  } from '../../core/src';
 import {
   AudioProcessor,
   WaveformData,
@@ -55,6 +55,7 @@ export function buildWidgetWaveformVisualizer(a: App) {
 
           // Match canvas: ~960 slices to fill width with 2px bars
           slices = AudioProcessor.downsampleWaveform(waveformData, 480);
+          durationLabel?.setText(formatTime(waveformData.duration));
           await renderWaveformSlices();
           statusLabel?.setText('Ready to play');
         } catch (error) {
@@ -119,6 +120,7 @@ export function buildWidgetWaveformVisualizer(a: App) {
             playBtn?.show();
             pauseBtn?.hide();
             statusLabel?.setText('Finished');
+            updateTimeLabels();
             updateSliceHighlights();
           } else {
             updateTimeLabels();
@@ -260,6 +262,15 @@ export function buildWidgetWaveformVisualizer(a: App) {
 
       win.show();
       setTimeout(() => initializeWaveform(), 100);
+
+      // Register cleanup to stop animation timer when app shuts down
+      a.registerCleanup(() => {
+        if (animationFrameId) {
+          clearTimeout(animationFrameId);
+          animationFrameId = null;
+        }
+        stopAudioPlayback();
+      });
     }
   );
 }
@@ -268,5 +279,5 @@ export function buildWidgetWaveformVisualizer(a: App) {
 registerCleanupHandlers();
 
 if (!isTestEnvironment) {
-  app({ title: 'Waveform Visualizer - Widget Mode' }, buildWidgetWaveformVisualizer);
+  app(resolveTransport(), { title: 'Waveform Visualizer - Widget Mode' }, buildWidgetWaveformVisualizer);
 }

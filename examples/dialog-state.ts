@@ -10,7 +10,7 @@
  * 3. Using promises to handle async dialog results
  */
 
-import { app, window, vbox, hbox, label, entry, button, StateStore } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button, StateStore  } from '../core/src';
 
 // ============================================================================
 // Dialog State Management
@@ -177,7 +177,7 @@ interface AppState {
   lastUpdate: string;
 }
 
-app({ title: 'Dialog State Demo' }, () => {
+app(resolveTransport(), { title: 'Dialog State Demo' }, () => {
   // Create a state store for the application
   const store = new StateStore<AppState>({
     userProfile: {

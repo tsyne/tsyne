@@ -261,7 +261,7 @@ func (b *Bridge) handleScrollToTop(msg Message) Response {
 
 func (b *Bridge) handleCreateGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
-	columns := int(msg.Payload["columns"].(float64))
+	columns := toInt(msg.Payload["columns"])
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
 	var children []fyne.CanvasObject
@@ -767,8 +767,8 @@ func (b *Bridge) handleCreateBorder(msg Message) Response {
 
 func (b *Bridge) handleCreateGridWrap(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
-	itemWidth := float32(msg.Payload["itemWidth"].(float64))
-	itemHeight := float32(msg.Payload["itemHeight"].(float64))
+	itemWidth := toFloat32(msg.Payload["itemWidth"])
+	itemHeight := toFloat32(msg.Payload["itemHeight"])
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
 	var children []fyne.CanvasObject
@@ -802,7 +802,7 @@ func (b *Bridge) handleCreateGridWrap(msg Message) Response {
 
 func (b *Bridge) handleCreateAdaptiveGrid(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
-	rowcols := int(msg.Payload["rowcols"].(float64))
+	rowcols := toInt(msg.Payload["rowcols"])
 	childIDs, _ := msg.Payload["children"].([]interface{})
 
 	var children []fyne.CanvasObject
@@ -918,7 +918,7 @@ func (b *Bridge) handleCreateSplit(msg Message) Response {
 	// Check if this should be a fixed (non-draggable) split
 	fixed, _ := msg.Payload["fixed"].(bool)
 	offset := float64(0.5) // default to 50/50
-	if o, ok := msg.Payload["offset"].(float64); ok {
+	if o, ok := getFloat64(msg.Payload["offset"]); ok {
 		offset = o
 	}
 
@@ -1177,7 +1177,7 @@ func (b *Bridge) handleDocTabsAppend(msg Message) Response {
 
 func (b *Bridge) handleDocTabsRemove(msg Message) Response {
 	id := msg.Payload["id"].(string)
-	tabIndex := int(msg.Payload["tabIndex"].(float64))
+	tabIndex := toInt(msg.Payload["tabIndex"])
 
 	b.mu.RLock()
 	widgetObj, exists := b.widgets[id]
@@ -1219,7 +1219,7 @@ func (b *Bridge) handleDocTabsRemove(msg Message) Response {
 
 func (b *Bridge) handleDocTabsSelect(msg Message) Response {
 	id := msg.Payload["id"].(string)
-	tabIndex := int(msg.Payload["tabIndex"].(float64))
+	tabIndex := toInt(msg.Payload["tabIndex"])
 
 	b.mu.RLock()
 	widgetObj, exists := b.widgets[id]
@@ -1261,7 +1261,7 @@ func (b *Bridge) handleDocTabsSelect(msg Message) Response {
 
 func (b *Bridge) handleTabsSelect(msg Message) Response {
 	id := msg.Payload["id"].(string)
-	tabIndex := int(msg.Payload["tabIndex"].(float64))
+	tabIndex := toInt(msg.Payload["tabIndex"])
 
 	b.mu.RLock()
 	widgetObj, exists := b.widgets[id]
@@ -1754,8 +1754,8 @@ func (b *Bridge) handleShowPopup(msg Message) Response {
 	}
 
 	// Show at position if provided, otherwise show centered
-	if x, hasX := msg.Payload["x"].(float64); hasX {
-		if y, hasY := msg.Payload["y"].(float64); hasY {
+	if x, hasX := getFloat64(msg.Payload["x"]); hasX {
+		if y, hasY := getFloat64(msg.Payload["y"]); hasY {
 			popup.ShowAtPosition(fyne.NewPos(float32(x), float32(y)))
 		} else {
 			popup.Show()
@@ -1804,8 +1804,8 @@ func (b *Bridge) handleHidePopup(msg Message) Response {
 
 func (b *Bridge) handleMovePopup(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	x := msg.Payload["x"].(float64)
-	y := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
@@ -1927,8 +1927,8 @@ func (b *Bridge) handleMultipleWindowsAddWindow(msg Message) Response {
 		multiWin.Add(innerWin)
 
 		// Position the window if coordinates provided, otherwise center it
-		if x, ok := msg.Payload["x"].(float64); ok {
-			y, _ := msg.Payload["y"].(float64)
+		if x, ok := getFloat64(msg.Payload["x"]); ok {
+			y := toFloat64(msg.Payload["y"])
 			innerWin.Move(fyne.NewPos(float32(x), float32(y)))
 		} else {
 			// Center the window in the container
@@ -2060,12 +2060,12 @@ func (b *Bridge) handleCreateWithoutLayout(msg Message) Response {
 // This only works for widgets inside a WithoutLayout container.
 func (b *Bridge) handleMoveWidget(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
-	x := msg.Payload["x"].(float64)
-	y := msg.Payload["y"].(float64)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
 
 	// Optional width/height for resize
-	width, hasWidth := msg.Payload["width"].(float64)
-	height, hasHeight := msg.Payload["height"].(float64)
+	width, hasWidth := getFloat64(msg.Payload["width"])
+	height, hasHeight := getFloat64(msg.Payload["height"])
 
 	b.mu.RLock()
 	widget, exists := b.widgets[widgetID]

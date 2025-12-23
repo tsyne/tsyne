@@ -428,8 +428,8 @@ export { TabletTop };
 
 // Entry point
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Tsyne Tablet' }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Tsyne Tablet' }, (a: App) => {
     buildTabletTop(a);
   });
 }

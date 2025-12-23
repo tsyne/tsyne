@@ -5,7 +5,7 @@
  * multi-document text editor interface.
  */
 
-import { app, App, DocTabs } from '../core/src';
+import { app, resolveTransport, App, DocTabs  } from '../core/src';
 
 // Document state
 interface Document {
@@ -78,7 +78,7 @@ function updateStatus(message: string): void {
   }
 }
 
-app({ title: 'Text Editor' }, (a) => {
+app(resolveTransport(), { title: 'Text Editor' }, (a) => {
   // Store app reference for dynamic tab creation
   appRef = a;
 

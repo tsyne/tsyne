@@ -97,7 +97,7 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
   });
 
-  test('should display 8-second duration', async () => {
+  test('should display audio duration', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildWidgetWaveformVisualizer(app);
     });
@@ -107,9 +107,9 @@ describe('Widget Waveform Visualizer - Pseudo-Declarative Composition', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
-    // Duration should be 8 seconds
+    // Duration should be 0:08 (8-second test clip)
     const duration = await ctx.getById('durationLabel').getText();
-    expect(duration).toMatch(/8:00|0:08/);
+    expect(duration).toMatch(/0:08/);
   });
 
   test('should start at position 0:00', async () => {
@@ -236,7 +236,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     expect(parseInt(seconds, 10)).toBeGreaterThan(0);
 
     await ctx.getById('stopBtn').click();
-  });
+  }, 15000);
 
   test('should pause and maintain playback position', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -262,7 +262,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     // Position should not have changed
     const stillPausedPosition = await ctx.getById('positionLabel').getText();
     expect(stillPausedPosition).toBe(pausedPosition);
-  });
+  }, 10000);
 
   test('should track current slice during playback', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -288,7 +288,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     expect(seconds_value).toBeGreaterThan(0);
 
     await ctx.getById('stopBtn').click();
-  });
+  }, 10000);
 
   test('should reset slice index on stop', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -310,7 +310,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     // Should reset to beginning
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
     await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
-  });
+  }, 10000);
 });
 
 describe('Widget Mode - Play/Pause/Stop Controls', () => {
@@ -415,16 +415,16 @@ describe('Widget Mode - Play/Pause/Stop Controls', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
-    // Play 8-second audio
+    // Play 8-second audio clip
     await ctx.getById('playBtn').click();
 
-    // Wait for completion
+    // Wait for completion (8s + buffer)
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should show finished
     await ctx.getById('statusLabel').within(500).shouldBe('Finished');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 15000);
 });
 
 describe('Widget Mode - Time Display', () => {
@@ -458,7 +458,7 @@ describe('Widget Mode - Time Display', () => {
     expect(position).toMatch(/^\d+:\d{2}$/);
 
     await ctx.getById('stopBtn').click();
-  });
+  }, 10000);
 
   test('should update position during playback', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -487,7 +487,7 @@ describe('Widget Mode - Time Display', () => {
     expect(time2).toBeGreaterThan(time1);
 
     await ctx.getById('stopBtn').click();
-  });
+  }, 10000);
 
   test('should show duration label', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -565,7 +565,7 @@ describe('Widget Mode - Integration Tests', () => {
     await ctx.getById('stopBtn').click();
     await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 10000);
 
   test('multiple play/pause cycles', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -597,7 +597,7 @@ describe('Widget Mode - Integration Tests', () => {
     expect(finalPosition).not.toBe('0:00');
 
     await ctx.getById('stopBtn').click();
-  });
+  }, 10000);
 
   test('should capture screenshot if TAKE_SCREENSHOTS set', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -670,7 +670,7 @@ describe('Widget Mode - Edge Cases', () => {
 
     // Should be stable at 0:00
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 10000);
 
   test('slices should exist even in scrollable container', async () => {
     const testApp = await tsyneTest.createApp((app) => {

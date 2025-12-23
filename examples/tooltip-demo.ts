@@ -1,9 +1,9 @@
 // Tooltip and Popup Demo
 // Demonstrates the Popup widget for tooltips, popovers, and floating overlays
 
-import { app, Popup } from '../core/src';
+import { app, resolveTransport, Popup  } from '../core/src';
 
-app({ title: 'Popup Demo' }, (a) => {
+app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
   a.window({ title: 'Popup Demo', width: 600, height: 500 }, (win) => {
     // Create popups for different buttons (must be created after window context is set up)
     let tooltip1: Popup | null = null;

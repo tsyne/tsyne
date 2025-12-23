@@ -16,7 +16,7 @@
  * Click/tap anywhere on the waveform to jump to that position.
  */
 
-import { app, App, Window } from '../../core/src';
+import { app, resolveTransport, App, Window  } from '../../core/src';
 import {
   AudioProcessor,
   WaveformData,
@@ -55,6 +55,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
           waveformData = await AudioProcessor.loadWaveform();
 
           slices = AudioProcessor.downsampleWaveform(waveformData, canvasWidth);
+          durationLabel?.setText(formatTime(waveformData.duration));
           statusLabel?.setText('Ready - tap waveform to seek');
           await drawWaveform();
         } catch (error) {
@@ -135,6 +136,7 @@ export function buildCanvasWaveformVisualizer(a: App) {
             playBtn?.show();
             pauseBtn?.hide();
             statusLabel?.setText('Finished');
+            updateTimeLabels();
             drawWaveform();
           } else {
             updateTimeLabels();
@@ -267,6 +269,15 @@ export function buildCanvasWaveformVisualizer(a: App) {
 
       win.show();
       setTimeout(() => initializeWaveform(), 100);
+
+      // Register cleanup to stop animation timer when app shuts down
+      a.registerCleanup(() => {
+        if (animationFrameId) {
+          clearTimeout(animationFrameId);
+          animationFrameId = null;
+        }
+        stopAudioPlayback();
+      });
     }
   );
 }
@@ -275,5 +286,5 @@ export function buildCanvasWaveformVisualizer(a: App) {
 registerCleanupHandlers();
 
 if (!isTestEnvironment) {
-  app({ title: 'Waveform Visualizer - Canvas Mode' }, buildCanvasWaveformVisualizer);
+  app(resolveTransport(), { title: 'Waveform Visualizer - Canvas Mode' }, buildCanvasWaveformVisualizer);
 }

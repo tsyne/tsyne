@@ -1,7 +1,7 @@
-import { App } from '../core/src/app';
-import { TappableCanvasRaster } from '../core/src/widgets/canvas';
+import { App, resolveTransport } from '../src/app';
+import { TappableCanvasRaster } from '../src/widgets/canvas';
 
-const app = new App('Tappable Raster Test');
+const app = new App(resolveTransport(), { title: 'Tappable Raster Test' });
 const win = app.createWindow('Tappable Raster Test', 400, 400);
 
 win.setContent(async (ctx) => {

@@ -226,10 +226,10 @@ func (s *grpcBridgeService) GetTableData(ctx context.Context, req *pb.GetTableDa
 	var rows int32
 	var columns int32
 	if resp.Result != nil {
-		if v, ok := resp.Result["rows"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["rows"]); ok {
 			rows = int32(v)
 		}
-		if v, ok := resp.Result["columns"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["columns"]); ok {
 			columns = int32(v)
 		}
 	}
@@ -276,7 +276,7 @@ func (s *grpcBridgeService) GetListData(ctx context.Context, req *pb.GetListData
 
 	var length int32
 	if resp.Result != nil {
-		if v, ok := resp.Result["length"].(float64); ok {
+		if v, ok := getFloat64(resp.Result["length"]); ok {
 			length = int32(v)
 		}
 	}

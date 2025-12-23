@@ -15,7 +15,7 @@
  * Or headed: TSYNE_HEADED=1 npx tsx examples/animation-demo.ts
  */
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 import { CanvasCircle, CanvasLine, AnimateOptions } from '../core/src/widgets/canvas';
 
 // Main app
@@ -271,7 +271,7 @@ export function buildAnimationDemo(a: any) {
 
 // Run standalone
 if (require.main === module) {
-  app({ title: 'Animation Demo' }, async (a) => {
+  app(resolveTransport(), { title: 'Animation Demo' }, async (a) => {
     buildAnimationDemo(a);
   });
 }

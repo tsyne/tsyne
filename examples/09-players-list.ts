@@ -1,14 +1,14 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Players list demonstrating list widget with structured data
 
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 interface Player {
   name: string;
   score: number;
 }
 
-app({ title: 'Players List' }, (a) => {
+app(resolveTransport(), { title: 'Players List' }, (a) => {
   a.window({ title: 'Gastown bingo players', width: 220, height: 200 }, (win) => {
     const players: Player[] = [
       { name: 'WildJane', score: 5210 },

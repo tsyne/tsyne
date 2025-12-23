@@ -5,13 +5,13 @@
  * File, Edit, and Help menus.
  */
 
-import { app, window, vbox, label, entry } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry  } from '../core/src';
 
 let statusLabel: any;
 let textEntry: any;
 let savedText: string = '';
 
-app({ title: 'Menu Bar Demo' }, () => {
+app(resolveTransport(), { title: 'Menu Bar Demo' }, () => {
   window({ title: 'Menu Bar Example', width: 600, height: 400 }, (win) => {
     // Set up the main menu
     win.setMainMenu([

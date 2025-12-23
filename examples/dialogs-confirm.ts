@@ -5,7 +5,7 @@
  * (Yes/No) for critical actions requiring user consent.
  */
 
-import { app, window, vbox, hbox, label, button, entry } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
 
 let itemsToDelete: string[] = ['Document1.txt', 'Image.png', 'Video.mp4'];
 let statusLabel: any;
@@ -18,7 +18,7 @@ function updateItemList() {
   itemList.setText(listText);
 }
 
-app({ title: 'Confirm Dialogs Demo' }, () => {
+app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
   window({ title: 'Confirmation Dialogs', width: 450, height: 400 }, (win) => {
     win.setContent(() => {
       vbox(() => {

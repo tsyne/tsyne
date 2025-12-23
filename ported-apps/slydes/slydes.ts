@@ -18,7 +18,7 @@
  * - About dialog
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets';
@@ -621,7 +621,7 @@ export function createSlydesApp(a: App): SlydesUI {
 
 // Main entry point
 if (require.main === module) {
-  app({ title: 'Slydes' }, (a) => {
+  app(resolveTransport(), { title: 'Slydes' }, (a) => {
     createSlydesApp(a);
   });
 }

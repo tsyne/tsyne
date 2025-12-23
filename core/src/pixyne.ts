@@ -289,8 +289,8 @@ export function buildPixyneApp(a: App, win: Window): PixyneUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Pixyne', width: 900, height: 700 }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Pixyne', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Pixyne - Photo Manager', width: 900, height: 700 }, (win: Window) => {
       buildPixyneApp(a, win);
     });

@@ -16,7 +16,7 @@
  * @tsyne-app:count many
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -238,7 +238,7 @@ export function createElizaApp(a: App): ElizaUI {
 
 // Standalone entry point
 if (require.main === module) {
-  app({ title: 'ELIZA' }, (a) => {
+  app(resolveTransport(), { title: 'ELIZA' }, (a) => {
     createElizaApp(a);
   });
 }

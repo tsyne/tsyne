@@ -112,9 +112,9 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Play for 1 second
+    // Play for 1.5 seconds to get solidly into second 1
     await ctx.getById('playBtn').click();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Pause
     await ctx.getById('pauseBtn').click();
@@ -128,11 +128,11 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
     let resumedPosition = await ctx.getById('positionLabel').getText();
     expect(resumedPosition).toBe(pausedPosition);
 
-    // But advance after some playback
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // But advance after 1.5s more playback to ensure we cross to next second
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     resumedPosition = await ctx.getById('positionLabel').getText();
     expect(resumedPosition).not.toBe(pausedPosition);
-  });
+  }, 10000);
 
   test('should stop and reset to beginning', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -166,17 +166,16 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Play (8-second audio clip)
+    // Play 8-second audio clip
     await ctx.getById('playBtn').click();
 
-    // Wait for playback to complete
-    // (plus some buffer for timing variations)
+    // Wait for playback to complete (8s + buffer)
     await new Promise((resolve) => setTimeout(resolve, 9000));
 
     // Should auto-stop and show finished
     await ctx.getById('statusLabel').within(500).shouldBe('Finished');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 15000);
 
   test('should display duration correctly', async () => {
     const testApp = await tsyneTest.createApp((app) => {
@@ -188,9 +187,9 @@ describe('Waveform Visualizer - Canvas Mode (Tappable)', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready - tap waveform to seek');
 
-    // Duration should be 8 seconds (synthetic audio is 8 seconds)
+    // Duration should be 0:08 (8-second test clip)
     const duration = await ctx.getById('durationLabel').getText();
-    expect(duration).toMatch(/8:00|0:08/);
+    expect(duration).toMatch(/0:08/);
   });
 
   test('should toggle play/pause buttons visibility', async () => {
@@ -315,8 +314,8 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
 
-    // Step 3: Let it play for 1 second
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Step 3: Let it play for 1.5 seconds to get solidly past 1 second mark
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     let position = await ctx.getById('positionLabel').getText();
     const firstTime = parseInt(position.split(':')[1], 10);
     expect(firstTime).toBeGreaterThan(0);
@@ -335,8 +334,8 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
     position = await ctx.getById('positionLabel').getText();
     expect(position).toBe(pausedTime);
 
-    // Step 6: Let it play a bit more
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Step 6: Let it play 1.5s more to ensure we cross to next second
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     position = await ctx.getById('positionLabel').getText();
     const secondTime = parseInt(position.split(':')[1], 10);
     expect(secondTime).toBeGreaterThan(firstTime);
@@ -345,7 +344,7 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
     await ctx.getById('stopBtn').click();
     await ctx.getById('statusLabel').within(500).shouldBe('Stopped');
     await ctx.getById('positionLabel').within(500).shouldBe('0:00');
-  });
+  }, 10000);
 
   test('multiple play cycles', async () => {
     const testApp = await tsyneTest.createApp((app) => {

@@ -24,7 +24,7 @@
  * @tsyne-app:count one
  */
 
-import { app, App, Window, Label, MultiLineEntry, CanvasText } from '../core/src';
+import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  } from '../core/src';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -333,5 +333,5 @@ export function buildDailyChecklistMVC(a: App) {
 const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
 
 if (!isTestEnvironment) {
-  app({ title: 'Daily Checklist (MVC)' }, buildDailyChecklistMVC);
+  app(resolveTransport(), { title: 'Daily Checklist (MVC)' }, buildDailyChecklistMVC);
 }

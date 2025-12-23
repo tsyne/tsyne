@@ -1,9 +1,9 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Signup form with validation and conditional button enabling
 
-import { app, dialog } from '../core/src';
+import { app, resolveTransport, dialog  } from '../core/src';
 
-app({ title: 'Signup Form' }, (a) => {
+app(resolveTransport(), { title: 'Signup Form' }, (a) => {
   a.window({ title: 'Form', width: 400, height: 350 }, (win) => {
     let usernameEntry: any;
     let passwordEntry: any;

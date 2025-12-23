@@ -6,7 +6,7 @@
  *
  * Run: npx tsx examples/appointment-scheduler.ts
  */
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
 // Sample appointments
 interface Appointment {
@@ -22,7 +22,7 @@ const appointments: Appointment[] = [
   { date: '2025-11-28', time: '15:00', title: 'Training Session' },
 ];
 
-app({ title: 'Tsyne Appointment Scheduler' }, (a) => {
+app(resolveTransport(), { title: 'Tsyne Appointment Scheduler' }, (a) => {
   a.window({ title: 'Appointment Scheduler', width: 700, height: 500 }, (win) => {
     let selectedDate = new Date().toISOString().split('T')[0]; // Today's date
     let dateLabel: any;

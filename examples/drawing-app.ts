@@ -5,7 +5,7 @@
  * Users can pick colors using the native color picker and paint on a grid canvas.
  */
 
-import { app, window, vbox, hbox, label, button, separator } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, separator  } from '../core/src';
 
 // Grid size for the canvas
 const GRID_COLS = 16;
@@ -15,7 +15,7 @@ const GRID_ROWS = 12;
 const FILLED_BLOCK = '█';
 const EMPTY_BLOCK = '░';
 
-app({ title: 'Drawing App' }, () => {
+app(resolveTransport(), { title: 'Drawing App' }, () => {
   window({ title: 'Simple Paint - Color Picker Demo', width: 600, height: 500 }, (win) => {
     // Current drawing color
     let currentColor = '#000000';

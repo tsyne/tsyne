@@ -14,7 +14,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
@@ -260,5 +260,5 @@ export function createNewtonFractalApp(a: App): void {
 }
 
 if (require.main === module) {
-  app({ title: 'Newton Fractal' }, createNewtonFractalApp);
+  app(resolveTransport(), { title: 'Newton Fractal' }, createNewtonFractalApp);
 }

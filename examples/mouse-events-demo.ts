@@ -1,4 +1,4 @@
-import { app } from '../core/src';
+import { app, resolveTransport  } from '../core/src';
 
 /**
  * Demonstrates the four mouse event methods:
@@ -8,7 +8,7 @@ import { app } from '../core/src';
  * - .onMouse({...})
  */
 
-app({ title: "Mouse Events Demo" }, (a) => {
+app(resolveTransport(), { title: "Mouse Events Demo" }, (a) => {
   a.window({ title: "Mouse Events Demo", width: 500, height: 400 }, () => {
     a.vbox(() => {
       a.label("=== Mouse Events Demo ===");

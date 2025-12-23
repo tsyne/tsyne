@@ -6,9 +6,9 @@
  * work with project folders.
  */
 
-import { app, window, vbox, hbox, label, button } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button  } from '../core/src';
 
-app({ title: 'Project Opener' }, () => {
+app(resolveTransport(), { title: 'Project Opener' }, () => {
   window({ title: 'Project Opener', width: 500, height: 350 }, (win) => {
     let statusLabel: any;
     let projectPathLabel: any;

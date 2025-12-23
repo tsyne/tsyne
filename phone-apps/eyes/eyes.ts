@@ -13,7 +13,7 @@
  * @tsyne-app:builder createEyesApp
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
@@ -314,7 +314,7 @@ export function createEyesApp(a: App): EyesUI {
  * Main application entry point
  */
 if (require.main === module) {
-  app({ title: 'Eyes' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Eyes' }, async (a: App) => {
     createEyesApp(a);
     await a.run();
   });

@@ -4,7 +4,7 @@
  * Demonstrates window sizing, positioning, and fullscreen features.
  */
 
-import { app, window, vbox, hbox, label, button, entry } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
 
 let win1: any;
 let win2: any;
@@ -12,7 +12,7 @@ let statusLabel: any;
 let widthEntry: any;
 let heightEntry: any;
 
-app({ title: 'Window Sizing Demo' }, () => {
+app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
   // Main window with initial size
   win1 = window({ title: 'Window Controls', width: 500, height: 400 }, (win) => {
     win.setContent(() => {

@@ -23,7 +23,7 @@
  * @tsyne-app:args app
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets/display';
@@ -877,7 +877,7 @@ export { TILE_COLORS, TILE_LABELS, BOARD_CONFIG, TILE_WIDTH, TILE_HEIGHT };
 // ============================================================================
 
 if (require.main === module) {
-  app({ title: 'Mahjongg Solitaire' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Mahjongg Solitaire' }, async (a: App) => {
     const ui = createMahjonggApp(a);
     await a.run();
     await ui.initialize();

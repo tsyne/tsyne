@@ -328,8 +328,8 @@ export function createSignalApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('../../core/src');
-  app({ title: 'Signal' }, (a: any) => {
+  const { app, resolveTransport  } = require('../../core/src');
+  app(resolveTransport(), { title: 'Signal' }, (a: any) => {
     createSignalApp(a);
   });
 }

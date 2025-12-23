@@ -6,7 +6,7 @@
  *
  * Run: npx tsx examples/file-browser.ts
  */
-import { app } from '../core/src/index';
+import { app, resolveTransport  } from '../core/src/index';
 
 // Sample file entries with different types
 const sampleFiles = [
@@ -27,7 +27,7 @@ const sampleFiles = [
   { name: 'README.md', path: '/home/user/README.md', isFolder: false },
 ];
 
-app({ title: 'Tsyne File Browser' }, (a) => {
+app(resolveTransport(), { title: 'Tsyne File Browser' }, (a) => {
   a.window({ title: 'File Browser', width: 600, height: 500 }, (win) => {
     let selectedFile: string | null = null;
     let statusLabel: any;

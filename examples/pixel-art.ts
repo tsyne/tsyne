@@ -7,9 +7,9 @@
  * - Color palette selection
  */
 
-import { app, CanvasRaster } from '../core/src/index';
+import { app, resolveTransport, CanvasRaster  } from '../core/src/index';
 
-app({ title: 'Pixel Art Editor' }, (a) => {
+app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
   const CANVAS_WIDTH = 32;
   const CANVAS_HEIGHT = 32;
   const PIXEL_SIZE = 16;

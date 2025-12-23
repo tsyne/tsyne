@@ -1,5 +1,5 @@
-import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager } from '../core/src';
-// In production: import { app, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager  } from '../core/src';
+// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, enableAccessibility, disableAccessibility, getAccessibilityManager  } from 'tsyne';
 
 /**
  * Accessible Calculator Example
@@ -234,7 +234,7 @@ export function buildAccessibleCalculator(a: any) {
 
 // Run directly when executed as main script
 if (require.main === module) {
-  const myApp = app({ title: "Accessible Calculator" }, buildAccessibleCalculator);
+  const myApp = app(resolveTransport(), { title: "Accessible Calculator" }, buildAccessibleCalculator);
 
   // Get the accessibility manager and store it globally
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);

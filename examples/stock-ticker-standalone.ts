@@ -14,7 +14,7 @@ import yahooFinance from 'yahoo-finance2';
 import { formatDistanceToNow } from 'date-fns';
 
 // Tsyne is automatically available when run via `tsyne` command (no @Grab needed)
-import { app, window, vbox, hbox, label, button, select, separator } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, label, button, select, separator  } from 'tsyne';
 
 // Popular stock symbols
 const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD'];
@@ -130,7 +130,7 @@ function onSymbolChange(symbol: string) {
 }
 
 // Build the Stock Ticker UI using current Tsyne API
-app({ title: 'Stock Ticker' }, () => {
+app(resolveTransport(), { title: 'Stock Ticker' }, () => {
   window({ title: 'Stock Ticker', width: 450, height: 320 }, () => {
     vbox(() => {
       // Header

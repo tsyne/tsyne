@@ -55,8 +55,8 @@ export function buildSonic3App(a: App, win: Window): Sonic3UI {
 }
 
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Sonic3' }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Sonic3' }, (a: App) => {
     a.window({ title: 'Sonic3', width: 600, height: 800 }, (win: Window) => {
       buildSonic3App(a, win);
     });

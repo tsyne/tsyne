@@ -5,7 +5,7 @@
  * keeping them synchronized automatically.
  */
 
-import { app, window, vbox, label, entry, button, ObservableState, ComputedState } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry, button, ObservableState, ComputedState  } from '../core/src';
 
 // Create observable states
 const firstName = new ObservableState('John');
@@ -35,7 +35,7 @@ fullName.subscribe((newValue) => {
   fullNameDisplay?.setText(`Full Name: ${newValue}`);
 });
 
-app({ title: 'Data Binding Demo' }, () => {
+app(resolveTransport(), { title: 'Data Binding Demo' }, () => {
   window({ title: 'Data Binding Example', width: 400, height: 300 }, (win) => {
     win.setContent(() => {
       vbox(() => {

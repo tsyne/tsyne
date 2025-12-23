@@ -4,7 +4,7 @@
  * Locales: en-us, en-gb, en-dvorak, fr-fr, es-es
  */
 
-import { app } from '../../core/src/index';
+import { app, resolveTransport  } from '../../core/src/index';
 import { createTestHarness, resetTestHarnessState } from './controller';
 
 // Import all locale keyboards
@@ -34,7 +34,7 @@ if (!keyboard) {
 // Reset state for fresh start
 resetTestHarnessState();
 
-app({ title: `Keyboard: ${keyboard.name}` }, (a) => {
+app(resolveTransport(), { title: `Keyboard: ${keyboard.name}` }, (a) => {
   a.window({ title: `Keyboard: ${keyboard.name}`, width: 420, height: 550 }, (win) => {
     // Rebuild function for mode toggle
     const rebuild = () => {

@@ -16,7 +16,7 @@
  *   npx tsx examples/registration-form.ts
  */
 
-import { app, Entry, Label, Button, PasswordEntry, Window } from '../core/src';
+import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  } from '../core/src';
 import { validators, createFormValidator, FormValidator, ValidatedField } from '../core/src/validation';
 import { StringBinding } from '../core/src/binding';
 
@@ -277,7 +277,7 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
 
 // Only run if this is the main module
 if (require.main === module) {
-  app({ title: 'Registration Form' }, (a) => {
+  app(resolveTransport(), { title: 'Registration Form' }, (a) => {
     createRegistrationFormApp(a);
   });
 }

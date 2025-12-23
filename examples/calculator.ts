@@ -4,8 +4,8 @@
 // @tsyne-app:builder buildCalculator
 // @tsyne-app:count desktop-many
 
-import { app, styles, FontStyle, App, Window, Label } from '../core/src';
-// In production: import { app, styles, FontStyle, App, Window, Label } from 'tsyne';
+import { app, resolveTransport, styles, FontStyle, App, Window, Label  } from '../core/src';
+// In production: import { app, resolveTransport, styles, FontStyle, App, Window, Label  } from 'tsyne';
 
 // Calculator example demonstrating Tsyne's pseudo-declarative DSL
 // Pattern described at https://paulhammant.com/2024/02/14/that-ruby-and-groovy-language-feature/
@@ -106,5 +106,5 @@ const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV
 
 if (!isTestEnvironment) {
   // Run the calculator - executes when loaded by designer or run directly
-  app({ title: "Tsyne Calculator" }, buildCalculator);
+  app(resolveTransport(), { title: "Tsyne Calculator" }, buildCalculator);
 }

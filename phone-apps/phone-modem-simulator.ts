@@ -286,9 +286,9 @@ export { PhoneModemSimulator };
 
 // Entry point
 if (require.main === module) {
-  const { app } = require('./index');
+  const { app, resolveTransport  } = require('./index');
 
-  app({ title: 'Phone Simulator' }, async (a: App) => {
+  app(resolveTransport(), { title: 'Phone Simulator' }, async (a: App) => {
     await buildPhoneModemSimulator(a);
   });
 }

@@ -344,8 +344,8 @@ export function buildPomodoroApp(a: App): PomodoroUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'Pomodoro' }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'Pomodoro' }, (a: App) => {
     buildPomodoroApp(a);
   });
 }

@@ -1,4 +1,4 @@
-import { App, AppOptions } from './app';
+import { App, AppOptions, BridgeMode, resolveTransport } from './app';
 import { Context } from './context';
 import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from './tsyne-window';
 import {
@@ -87,15 +87,17 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
  * This is the main entry point for Tsyne applications. The builder function receives
  * the app instance, providing a scoped declarative API following IoC/DI principles.
  *
- * @param options - Application configuration options (title, bridge mode, etc.)
+ * @param bridgeMode - Transport mode for TypeScript <-> Go communication. Use resolveTransport()
+ *                     to get from TSYNE_BRIDGE_MODE env var or default to 'msgpack-uds'.
+ * @param options - Application configuration options (title, inspector, etc.)
  * @param builder - Builder function that receives the app instance and constructs the UI
  * @returns The created App instance
  *
  * @example
  * ```typescript
- * import { app } from 'tsyne';
+ * import { app, resolveTransport } from 'tsyne';
  *
- * app({ title: 'My App' }, (a) => {
+ * app(resolveTransport(), { title: 'My App' }, (a) => {
  *   a.window({ title: 'Hello', width: 400, height: 300 }, (win) => {
  *     win.setContent(() => {
  *       a.vbox(() => {
@@ -108,7 +110,11 @@ export function __setGlobalContext(app: App | null, context: Context | null): vo
  * });
  * ```
  */
-export function app(options: AppOptions, builder: (app: App) => void | Promise<void>): App {
+export function app(
+  bridgeMode: BridgeMode,
+  options: AppOptions,
+  builder: (app: App) => void | Promise<void>
+): App {
   // In desktop mode, app() is a no-op - the desktop will explicitly call
   // the exported builder function to create the app's UI as an InnerWindow
   if (isDesktopMode()) {
@@ -131,7 +137,7 @@ export function app(options: AppOptions, builder: (app: App) => void | Promise<v
     }
   }
 
-  const appInstance = new App(options);
+  const appInstance = new App(bridgeMode, options);
 
   // For backward compatibility, also set global context
   globalApp = appInstance;
@@ -791,6 +797,9 @@ export async function setFontScale(scale: number): Promise<void> {
   await globalApp.setFontScale(scale);
 }
 
+// Export bridge mode factory
+export { resolveTransport };
+
 // Export classes for advanced usage
 export {
   App,
@@ -850,7 +859,7 @@ export {
   TextGrid,
   Navigation,
 };
-export type { AppOptions, WindowOptions, MenuItem, NavigationOptions };
+export type { AppOptions, BridgeMode, WindowOptions, MenuItem, NavigationOptions };
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';

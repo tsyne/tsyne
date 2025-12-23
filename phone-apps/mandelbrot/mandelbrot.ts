@@ -15,7 +15,7 @@
  * @tsyne-app:count many
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
@@ -368,7 +368,7 @@ export function createMandelbrotApp(a: App): void {
 
 // Standalone entry point
 if (require.main === module) {
-  app({ title: 'Mandelbrot Explorer' }, (a) => {
+  app(resolveTransport(), { title: 'Mandelbrot Explorer' }, (a) => {
     createMandelbrotApp(a);
   });
 }

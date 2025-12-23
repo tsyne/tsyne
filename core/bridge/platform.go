@@ -168,13 +168,13 @@ func (b *Bridge) handlePreferencesGet(msg Message) Response {
 		value = prefs.StringWithFallback(key, defaultValue)
 	case "int":
 		defaultValue := 0
-		if dv, ok := msg.Payload["default"].(float64); ok {
+		if dv, ok := getFloat64(msg.Payload["default"]); ok {
 			defaultValue = int(dv)
 		}
 		value = prefs.IntWithFallback(key, defaultValue)
 	case "float":
 		defaultValue := 0.0
-		if dv, ok := msg.Payload["default"].(float64); ok {
+		if dv, ok := getFloat64(msg.Payload["default"]); ok {
 			defaultValue = dv
 		}
 		value = prefs.FloatWithFallback(key, defaultValue)

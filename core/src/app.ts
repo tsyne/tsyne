@@ -104,8 +104,6 @@ export type BridgeMode = 'stdio' | 'grpc' | 'msgpack-uds' | 'ffi';
 
 export interface AppOptions {
   title?: string;
-  /** Bridge communication mode: 'msgpack-uds' (default, fastest), 'grpc' (binary protocol), or 'stdio' (legacy) */
-  bridgeMode?: BridgeMode;
   /** Enable/disable the Ctrl+Shift+I inspector shortcut (default: true) */
   inspector?: boolean;
 }
@@ -229,16 +227,35 @@ export interface ThemeConfig {
 }
 
 /**
- * Get bridge mode from environment variable or options
+ * Resolve the transport mode for TypeScript <-> Go bridge communication.
+ *
+ * Checks the TSYNE_BRIDGE_MODE environment variable first. If not set or invalid,
+ * defaults to 'msgpack-uds' (MessagePack over Unix Domain Sockets), the fastest
+ * transport option.
+ *
+ * Available transports:
+ * - 'msgpack-uds': MessagePack over Unix Domain Sockets (~10x faster than stdio)
+ * - 'stdio': JSON over stdin/stdout (simple, debuggable)
+ * - 'grpc': gRPC/protobuf (structured, typed)
+ * - 'ffi': C-Go FFI (experimental, in-process)
+ *
+ * @example
+ * ```typescript
+ * // Explicit transport resolution in main()
+ * app(resolveTransport(), { title: 'My App' }, (a) => { ... });
+ *
+ * // Override via environment variable
+ * // TSYNE_BRIDGE_MODE=stdio npm run myapp
+ * ```
+ *
+ * @returns The resolved BridgeMode from env var, or 'msgpack-uds' as default
  */
-function getBridgeMode(options?: AppOptions): BridgeMode {
-  // Environment variable takes precedence
+export function resolveTransport(): BridgeMode {
   const envMode = process.env.TSYNE_BRIDGE_MODE;
   if (envMode === 'grpc' || envMode === 'stdio' || envMode === 'msgpack-uds' || envMode === 'ffi') {
     return envMode;
   }
-  // Fall back to options or default
-  return options?.bridgeMode || 'msgpack-uds';
+  return 'msgpack-uds';
 }
 
 /**
@@ -268,12 +285,12 @@ export class App {
   public resources: ResourceManager;
   private cleanupCallbacks: Array<() => void | Promise<void>> = [];
 
-  constructor(options?: AppOptions, testMode: boolean = false) {
+  constructor(bridgeMode: BridgeMode, options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
     initializeGlobals();
 
     // Create bridge using factory
-    this.bridge = createBridge(getBridgeMode(options), testMode);
+    this.bridge = createBridge(bridgeMode, testMode);
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);

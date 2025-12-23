@@ -1,4 +1,4 @@
-import { app, Label } from '../core/src/index';
+import { app, resolveTransport, Label  } from '../core/src/index';
 
 /**
  * Focus Events Demo
@@ -11,7 +11,7 @@ import { app, Label } from '../core/src/index';
  * - Tracking user navigation through UI
  */
 
-app({ title: 'Focus Events Demo' }, (a) => {
+app(resolveTransport(), { title: 'Focus Events Demo' }, (a) => {
   a.window({ title: 'Focus Events', width: 600, height: 600 }, (win) => {
     let focusLog: string[] = [];
     let statusLabel: Label;

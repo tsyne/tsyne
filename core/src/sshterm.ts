@@ -55,8 +55,8 @@ export function buildSSHTermApp(a: App, win: Window): SSHTermUI {
 }
 
 if (require.main === module) {
-  const { app } = require('./index');
-  app({ title: 'SSH Terminal' }, (a: App) => {
+  const { app, resolveTransport  } = require('./index');
+  app(resolveTransport(), { title: 'SSH Terminal' }, (a: App) => {
     a.window({ title: 'SSH Terminal', width: 800, height: 600 }, (win: Window) => {
       buildSSHTermApp(a, win);
     });

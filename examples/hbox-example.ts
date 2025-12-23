@@ -1,4 +1,4 @@
-import { app, window, vbox, hbox, button, label, styles } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, button, label, styles  } from '../core/src';
 
 // CSS Classes for styling
 styles({
@@ -13,7 +13,7 @@ styles({
 });
 
 // Example demonstrating horizontal layout with hbox
-app({ title: "HBox Example" }, () => {
+app(resolveTransport(), { title: "HBox Example" }, () => {
   window({ title: "Horizontal Layout Demo", width: 500, height: 300 }, () => {
     vbox(() => {
       label("Horizontal Button Group", "header");

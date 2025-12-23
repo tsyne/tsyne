@@ -25,7 +25,7 @@
 // @tsyne-app:builder createTodoApp
 // @tsyne-app:count one
 
-import { app, window, vbox, hbox, label, button, entry, checkbox, separator, Window } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } from '../core/src';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -402,7 +402,7 @@ if (!isTestEnvironment) {
   const filePath = require.main === module ? process.argv.slice(2)[0] : undefined;
 
   // Run the app - this executes when loaded by designer or run directly
-  app({ title: 'TodoMVC' }, (a) => {
+  app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
     createTodoApp(a, filePath);
   });
 }

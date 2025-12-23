@@ -19,7 +19,7 @@
  * Inspired by ChrysaLisp litprog.lisp (PR #301)
  */
 
-import { app } from '../../core/src';
+import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { Label } from '../../core/src/widgets';
@@ -593,7 +593,7 @@ export function createLitProgApp(a: App): LitProgUI {
 
 // Main entry point
 if (require.main === module) {
-  app({ title: 'LitProg' }, (a) => {
+  app(resolveTransport(), { title: 'LitProg' }, (a) => {
     createLitProgApp(a);
   });
 }

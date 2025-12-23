@@ -1,4 +1,4 @@
-import { app, window, vbox, button, label, styles } from '../core/src';
+import { app, resolveTransport, window, vbox, button, label, styles  } from '../core/src';
 
 // Define custom CSS classes for your shopping cart UI
 styles({
@@ -29,7 +29,7 @@ styles({
 });
 
 // Shopping cart example
-app({ title: "Shopping Demo" }, () => {
+app(resolveTransport(), { title: "Shopping Demo" }, () => {
   window({ title: "Shopping Cart" }, () => {
     vbox(() => {
       label("Your Shopping Cart", "product_name");

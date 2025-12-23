@@ -5,7 +5,7 @@
  * headers and data rows.
  */
 
-import { app, window, vbox, hbox, label, button, table } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, table  } from '../core/src';
 
 let employeeTable: any;
 let statusLabel: any;
@@ -19,7 +19,7 @@ let employees = [
   ['5', 'Charlie Brown', 'HR', '$55,000']
 ];
 
-app({ title: 'Table Demo' }, () => {
+app(resolveTransport(), { title: 'Table Demo' }, () => {
   window({ title: 'Table Example', width: 700, height: 500 }, (win) => {
     win.setContent(() => {
       vbox(() => {

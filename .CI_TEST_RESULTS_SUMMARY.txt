@@ -4,9 +4,9 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                783      783        0        0  40|40|0
-Designer: Unit                       88       88        0        0    8|8|0
-Designer: GUI                         7        7        0        0    1|1|0
+Core                                792      792        0        0  40|40|0
+Designer: Unit                       88       81        7        0    8|6|2
+Designer: GUI                         7        0        7        0    1|0|1
 Examples: Logic                      30       30        0        0    2|2|0
 Examples: GUI                       392      371        0       21  75|69|0
 Ported: 3d-cube                     392      392        0        0    3|3|0
@@ -30,9 +30,9 @@ Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
 Phone: julia-set                      6        6        0        0    1|1|0
 Phone: mandelbrot                     9        9        0        0    1|1|0
-Phone: minefield                     22       22        0        0    1|1|0
+Phone: minefield                      0        0        0        0    1|0|1
 Phone: newton-fractal                 6        6        0        0    1|1|0
-Phone: notes                         31       31        0        0    2|1|1
+Phone: notes                         36       36        0        0    2|2|0
 Phone: pixyne                        30       30        0        0    2|2|0
 Phone: signal                        63       63        0        0    2|2|0
 Phone: snowflake                     12       12        0        0    2|2|0
@@ -43,19 +43,19 @@ Phone: telegram                      32       32        0        0    1|1|0
 Phone: timer                          6        6        0        0    1|1|0
 Phone: tricorn                        6        6        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
-Larger: realtime-paris-density-simulation       12       10        2        0    2|1|1
+Larger: realtime-paris-density-simulation       12       12        0        0    2|2|0
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2823     2790        2       31      198
+TOTAL                              2815     2770       14       31      198
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 99450ms (99.45s)
-Total ctx.wait() calls: 427
+Total wait time: 86850ms (86.85s)
+Total ctx.wait() calls: 349
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -80,6 +80,6 @@ Top 10 tests by wait time:
   Desktop Environment Tests should hide windows when Show Desktop is clicked
     └─ 2700ms (18 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 2 tests failed
+❌ FAILED: 14 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

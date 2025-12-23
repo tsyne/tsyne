@@ -20,7 +20,6 @@ type MsgpackServer struct {
 	socketPath string
 	listener   net.Listener
 	clients    sync.Map // map of client connections
-	eventChan  chan Event
 	mu         sync.Mutex
 	bufferPool sync.Pool // Pool for frame buffers to reduce allocations
 }
@@ -55,7 +54,6 @@ func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
 	server := &MsgpackServer{
 		bridge:     bridge,
 		socketPath: socketPath,
-		eventChan:  make(chan Event, 256),
 	}
 
 	// Initialize buffer pool with factory function
@@ -81,9 +79,6 @@ func (s *MsgpackServer) Start() error {
 	// Start accepting connections in background
 	go s.acceptConnections()
 
-	// Start event broadcaster
-	go s.broadcastEvents()
-
 	return nil
 }
 
@@ -98,16 +93,39 @@ func (s *MsgpackServer) Close() {
 		s.listener.Close()
 	}
 	os.Remove(s.socketPath)
-	close(s.eventChan)
 }
 
-// SendEvent sends an event to all connected clients
+// SendEvent sends an event to all connected clients synchronously
+// This ensures events are delivered before the response that triggered them
 func (s *MsgpackServer) SendEvent(event Event) {
-	select {
-	case s.eventChan <- event:
-	default:
-		// Channel full, drop event (shouldn't happen with large buffer)
+	msgEvent := MsgpackEvent{
+		Type:     event.Type,
+		WidgetID: event.WidgetID,
+		Data:     event.Data,
 	}
+
+	eventBuf, err := msgpack.Marshal(msgEvent)
+	if err != nil {
+		return
+	}
+
+	// Acquire buffer from pool
+	frameBuf := s.getFrameBuffer(4 + len(eventBuf))
+	binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(eventBuf)))
+	copy(frameBuf[4:], eventBuf)
+
+	// Broadcast to all clients synchronously
+	frameSize := 4 + len(eventBuf)
+	s.clients.Range(func(key, value interface{}) bool {
+		conn := value.(net.Conn)
+		s.mu.Lock()
+		conn.Write(frameBuf[:frameSize])
+		s.mu.Unlock()
+		return true
+	})
+
+	// Return buffer to pool after broadcast
+	s.putFrameBuffer(frameBuf)
 }
 
 func (s *MsgpackServer) acceptConnections() {
@@ -206,39 +224,6 @@ func (s *MsgpackServer) handleMessage(msg MsgpackMessage) MsgpackResponse {
 		Success: resp.Success,
 		Result:  resp.Result,
 		Error:   resp.Error,
-	}
-}
-
-func (s *MsgpackServer) broadcastEvents() {
-	for event := range s.eventChan {
-		msgEvent := MsgpackEvent{
-			Type:     event.Type,
-			WidgetID: event.WidgetID,
-			Data:     event.Data,
-		}
-
-		eventBuf, err := msgpack.Marshal(msgEvent)
-		if err != nil {
-			continue
-		}
-
-		// Acquire buffer from pool
-		frameBuf := s.getFrameBuffer(4 + len(eventBuf))
-		binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(eventBuf)))
-		copy(frameBuf[4:], eventBuf)
-
-		// Broadcast to all clients
-		frameSize := 4 + len(eventBuf)
-		s.clients.Range(func(key, value interface{}) bool {
-			conn := value.(net.Conn)
-			s.mu.Lock()
-			conn.Write(frameBuf[:frameSize])
-			s.mu.Unlock()
-			return true
-		})
-
-		// Return buffer to pool after broadcast
-		s.putFrameBuffer(frameBuf)
 	}
 }
 
