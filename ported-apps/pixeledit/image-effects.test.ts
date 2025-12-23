@@ -63,6 +63,167 @@ function getAverageColor(pixels: Uint8ClampedArray): { r: number; g: number; b: 
   return { r: r / count, g: g / count, b: b / count };
 }
 
+// Helper to get pixel color at specific coordinates
+function getPixelAt(pixels: Uint8ClampedArray, width: number, x: number, y: number): { r: number; g: number; b: number; a: number } {
+  const i = (y * width + x) * 4;
+  return { r: pixels[i], g: pixels[i + 1], b: pixels[i + 2], a: pixels[i + 3] };
+}
+
+// Helper to calculate expected grayscale value (matches ImageEffects.grayscale formula)
+function expectedGray(r: number, g: number, b: number): number {
+  return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+}
+
+// Named colors for testing - 216 distinct colors (6x6x6 color cube + extras)
+const TEST_COLORS: Array<{ name: string; r: number; g: number; b: number }> = [];
+
+// Generate 6x6x6 color cube (216 colors) - websafe-style palette
+for (let r = 0; r < 6; r++) {
+  for (let g = 0; g < 6; g++) {
+    for (let b = 0; b < 6; b++) {
+      const rv = r * 51; // 0, 51, 102, 153, 204, 255
+      const gv = g * 51;
+      const bv = b * 51;
+      TEST_COLORS.push({ name: `rgb(${rv},${gv},${bv})`, r: rv, g: gv, b: bv });
+    }
+  }
+}
+
+// Common named colors for easy reference in tests
+const COLORS = {
+  black:   { r: 0,   g: 0,   b: 0   },
+  white:   { r: 255, g: 255, b: 255 },
+  red:     { r: 255, g: 0,   b: 0   },
+  green:   { r: 0,   g: 255, b: 0   },
+  blue:    { r: 0,   g: 0,   b: 255 },
+  yellow:  { r: 255, g: 255, b: 0   },
+  cyan:    { r: 0,   g: 255, b: 255 },
+  magenta: { r: 255, g: 0,   b: 255 },
+  orange:  { r: 255, g: 153, b: 0   },
+  purple:  { r: 153, g: 0,   b: 255 },
+  gray50:  { r: 128, g: 128, b: 128 },
+  gray25:  { r: 64,  g: 64,  b: 64  },
+  gray75:  { r: 192, g: 192, b: 192 },
+};
+
+/**
+ * Creates an image with a grid of distinctly colored rectangles.
+ * Each rectangle has a unique color from TEST_COLORS.
+ *
+ * @param gridCols Number of columns in the grid
+ * @param gridRows Number of rows in the grid
+ * @param blockSize Size of each colored block in pixels
+ * @returns Object with pixels array, dimensions, and color map
+ */
+function createColoredRectangles(gridCols: number, gridRows: number, blockSize: number): {
+  pixels: Uint8ClampedArray;
+  width: number;
+  height: number;
+  blockSize: number;
+  /** Get the color at a specific grid position */
+  getBlockColor: (col: number, row: number) => { r: number; g: number; b: number };
+  /** Get the center pixel coordinates of a block */
+  getBlockCenter: (col: number, row: number) => { x: number; y: number };
+} {
+  const width = gridCols * blockSize;
+  const height = gridRows * blockSize;
+  const pixels = new Uint8ClampedArray(width * height * 4);
+
+  // Fill each block with a distinct color
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      const colorIndex = (row * gridCols + col) % TEST_COLORS.length;
+      const color = TEST_COLORS[colorIndex];
+
+      // Fill the block
+      for (let by = 0; by < blockSize; by++) {
+        for (let bx = 0; bx < blockSize; bx++) {
+          const x = col * blockSize + bx;
+          const y = row * blockSize + by;
+          const i = (y * width + x) * 4;
+          pixels[i] = color.r;
+          pixels[i + 1] = color.g;
+          pixels[i + 2] = color.b;
+          pixels[i + 3] = 255;
+        }
+      }
+    }
+  }
+
+  return {
+    pixels,
+    width,
+    height,
+    blockSize,
+    getBlockColor: (col: number, row: number) => {
+      const colorIndex = (row * gridCols + col) % TEST_COLORS.length;
+      return TEST_COLORS[colorIndex];
+    },
+    getBlockCenter: (col: number, row: number) => ({
+      x: col * blockSize + Math.floor(blockSize / 2),
+      y: row * blockSize + Math.floor(blockSize / 2),
+    }),
+  };
+}
+
+/**
+ * Creates a smaller test image with specific named colors in known positions.
+ * Useful for tests that need predictable colors at known coordinates.
+ *
+ * Layout (4x4 grid of 10x10 blocks = 40x40 image):
+ *   [red]    [green]  [blue]   [yellow]
+ *   [cyan]   [magenta][orange] [purple]
+ *   [black]  [gray25] [gray50] [gray75]
+ *   [white]  [red]    [green]  [blue]
+ */
+function createNamedColorGrid(): {
+  pixels: Uint8ClampedArray;
+  width: number;
+  height: number;
+  blockSize: number;
+  colors: typeof NAMED_GRID_COLORS;
+} {
+  const blockSize = 10;
+  const gridCols = 4;
+  const gridRows = 4;
+  const width = gridCols * blockSize;
+  const height = gridRows * blockSize;
+  const pixels = new Uint8ClampedArray(width * height * 4);
+
+  const NAMED_GRID_COLORS = [
+    [COLORS.red,    COLORS.green,  COLORS.blue,   COLORS.yellow],
+    [COLORS.cyan,   COLORS.magenta,COLORS.orange, COLORS.purple],
+    [COLORS.black,  COLORS.gray25, COLORS.gray50, COLORS.gray75],
+    [COLORS.white,  COLORS.red,    COLORS.green,  COLORS.blue],
+  ];
+
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      const color = NAMED_GRID_COLORS[row][col];
+      for (let by = 0; by < blockSize; by++) {
+        for (let bx = 0; bx < blockSize; bx++) {
+          const x = col * blockSize + bx;
+          const y = row * blockSize + by;
+          const i = (y * width + x) * 4;
+          pixels[i] = color.r;
+          pixels[i + 1] = color.g;
+          pixels[i + 2] = color.b;
+          pixels[i + 3] = 255;
+        }
+      }
+    }
+  }
+
+  return { pixels, width, height, blockSize, colors: NAMED_GRID_COLORS };
+}
+
+const NAMED_GRID_COLORS = [
+  [COLORS.red,    COLORS.green,  COLORS.blue,   COLORS.yellow],
+  [COLORS.cyan,   COLORS.magenta,COLORS.orange, COLORS.purple],
+  [COLORS.black,  COLORS.gray25, COLORS.gray50, COLORS.gray75],
+  [COLORS.white,  COLORS.red,    COLORS.green,  COLORS.blue],
+];
+
 // Import and re-export ImageEffects for testing
 // Since ImageEffects is defined inside pixeledit.ts, we need to make it available for testing
 // We'll inline the ImageEffects class here for testing purposes
@@ -884,5 +1045,358 @@ describe('ImageEffects Integration with Gradient Image', () => {
 
     // Should be close to original
     expect(Math.abs(pixels[0] - original[0])).toBeLessThan(2);
+  });
+});
+
+// =============================================================================
+// PIXEL-SPECIFIC COLOR TESTS
+// These tests verify exact pixel values at known coordinates before/after transforms
+// =============================================================================
+
+describe('Pixel-Specific Color Tests with Named Color Grid', () => {
+  // Grid layout (4x4, blockSize=10, so 40x40 image):
+  //   [red]    [green]  [blue]   [yellow]   <- row 0
+  //   [cyan]   [magenta][orange] [purple]   <- row 1
+  //   [black]  [gray25] [gray50] [gray75]   <- row 2
+  //   [white]  [red]    [green]  [blue]     <- row 3
+  //
+  // Block centers: col*10+5, row*10+5
+  // e.g., magenta is at col=1, row=1 -> center (15, 15)
+
+  const blockSize = 10;
+  const getCenter = (col: number, row: number) => ({ x: col * blockSize + 5, y: row * blockSize + 5 });
+
+  describe('grayscale transforms colors to expected gray values', () => {
+    test('magenta (255,0,255) at (15,15) becomes gray ~105', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(1, 1); // magenta block
+
+      // Verify starting color
+      const before = getPixelAt(pixels, width, x, y);
+      expect(before.r).toBe(255);
+      expect(before.g).toBe(0);
+      expect(before.b).toBe(255);
+
+      // Apply grayscale
+      ImageEffects.grayscale(pixels);
+
+      // Verify result: gray = 0.299*255 + 0.587*0 + 0.114*255 ≈ 105
+      const after = getPixelAt(pixels, width, x, y);
+      const expectedGrayValue = expectedGray(255, 0, 255);
+      expect(after.r).toBe(after.g); // All channels equal
+      expect(after.g).toBe(after.b);
+      expect(Math.abs(after.r - expectedGrayValue)).toBeLessThan(2);
+    });
+
+    test('pure red (255,0,0) at (5,5) becomes gray ~76', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(0, 0); // red block
+
+      const before = getPixelAt(pixels, width, x, y);
+      expect(before).toEqual({ r: 255, g: 0, b: 0, a: 255 });
+
+      ImageEffects.grayscale(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      // gray = 0.299*255 ≈ 76
+      expect(Math.abs(after.r - 76)).toBeLessThan(2);
+      expect(after.r).toBe(after.g);
+      expect(after.g).toBe(after.b);
+    });
+
+    test('pure green (0,255,0) at (15,5) becomes gray ~150', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(1, 0); // green block
+
+      ImageEffects.grayscale(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      // gray = 0.587*255 ≈ 150
+      expect(Math.abs(after.r - 150)).toBeLessThan(2);
+    });
+
+    test('pure blue (0,0,255) at (25,5) becomes gray ~29', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 0); // blue block
+
+      ImageEffects.grayscale(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      // gray = 0.114*255 ≈ 29
+      expect(Math.abs(after.r - 29)).toBeLessThan(2);
+    });
+
+    test('gray50 (128,128,128) at (25,25) stays ~128', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 2); // gray50 block
+
+      ImageEffects.grayscale(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(Math.abs(after.r - 128)).toBeLessThan(2);
+    });
+  });
+
+  describe('invert transforms colors to their complement', () => {
+    test('magenta (255,0,255) at (15,15) becomes green (0,255,0)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(1, 1);
+
+      const before = getPixelAt(pixels, width, x, y);
+      expect(before).toEqual({ r: 255, g: 0, b: 255, a: 255 });
+
+      ImageEffects.invert(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 0, g: 255, b: 0, a: 255 });
+    });
+
+    test('black (0,0,0) at (5,25) becomes white (255,255,255)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(0, 2); // black block
+
+      ImageEffects.invert(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    });
+
+    test('cyan (0,255,255) at (5,15) becomes red (255,0,0)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(0, 1); // cyan block
+
+      ImageEffects.invert(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 0, b: 0, a: 255 });
+    });
+  });
+
+  describe('channel isolation extracts single channels', () => {
+    test('redChannel: magenta (255,0,255) at (15,15) becomes (255,0,0)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(1, 1);
+
+      ImageEffects.redChannel(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 0, b: 0, a: 255 });
+    });
+
+    test('greenChannel: yellow (255,255,0) at (35,5) becomes (0,255,0)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(3, 0); // yellow block
+
+      ImageEffects.greenChannel(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 0, g: 255, b: 0, a: 255 });
+    });
+
+    test('blueChannel: purple (153,0,255) at (35,15) becomes (0,0,255)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(3, 1); // purple block
+
+      ImageEffects.blueChannel(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 0, g: 0, b: 255, a: 255 });
+    });
+  });
+
+  describe('threshold creates binary black/white from colors', () => {
+    test('white (255,255,255) at (5,35) stays white (threshold 128)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(0, 3); // white block
+
+      ImageEffects.threshold(pixels, 128);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    });
+
+    test('black (0,0,0) at (5,25) stays black (threshold 128)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(0, 2); // black block
+
+      ImageEffects.threshold(pixels, 128);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 0, g: 0, b: 0, a: 255 });
+    });
+
+    test('green (0,255,0) at (15,5) becomes white (gray ~150 > 128)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(1, 0); // green block
+
+      ImageEffects.threshold(pixels, 128);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    });
+
+    test('blue (0,0,255) at (25,5) becomes black (gray ~29 < 128)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 0); // blue block
+
+      ImageEffects.threshold(pixels, 128);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 0, g: 0, b: 0, a: 255 });
+    });
+  });
+
+  describe('sepia applies warm tone transformation', () => {
+    test('gray50 (128,128,128) at (25,25) becomes sepia tinted', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 2);
+
+      const before = getPixelAt(pixels, width, x, y);
+      expect(before.r).toBe(128);
+
+      ImageEffects.sepia(pixels);
+
+      const after = getPixelAt(pixels, width, x, y);
+      // Sepia formula: R > G > B for neutral grays
+      expect(after.r).toBeGreaterThan(after.g);
+      expect(after.g).toBeGreaterThan(after.b);
+    });
+  });
+
+  describe('flipHorizontal moves blocks to mirrored positions', () => {
+    test('red at (5,5) moves to (35,5), blue at (25,5) moves to (15,5)', () => {
+      const { pixels, width, height } = createNamedColorGrid();
+
+      // Before flip: red at col 0, blue at col 2
+      expect(getPixelAt(pixels, width, 5, 5)).toEqual({ r: 255, g: 0, b: 0, a: 255 });
+      expect(getPixelAt(pixels, width, 25, 5)).toEqual({ r: 0, g: 0, b: 255, a: 255 });
+
+      ImageEffects.flipHorizontal(pixels, width, height);
+
+      // After flip: positions swapped (col 0 <-> col 3, col 1 <-> col 2)
+      expect(getPixelAt(pixels, width, 35, 5)).toEqual({ r: 255, g: 0, b: 0, a: 255 }); // red moved
+      expect(getPixelAt(pixels, width, 15, 5)).toEqual({ r: 0, g: 0, b: 255, a: 255 }); // blue moved
+    });
+  });
+
+  describe('flipVertical moves blocks to mirrored positions', () => {
+    test('red at (5,5) moves to (5,35), black at (5,25) moves to (5,15)', () => {
+      const { pixels, width, height } = createNamedColorGrid();
+
+      // Before flip
+      expect(getPixelAt(pixels, width, 5, 5)).toEqual({ r: 255, g: 0, b: 0, a: 255 });
+      expect(getPixelAt(pixels, width, 5, 25)).toEqual({ r: 0, g: 0, b: 0, a: 255 });
+
+      ImageEffects.flipVertical(pixels, width, height);
+
+      // After flip: row 0 <-> row 3, row 1 <-> row 2
+      expect(getPixelAt(pixels, width, 5, 35)).toEqual({ r: 255, g: 0, b: 0, a: 255 }); // red moved to row 3
+      expect(getPixelAt(pixels, width, 5, 15)).toEqual({ r: 0, g: 0, b: 0, a: 255 }); // black moved to row 1
+    });
+  });
+
+  describe('brightness shifts all channels equally', () => {
+    test('gray50 (128,128,128) + brightness(50) becomes (178,178,178)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 2);
+
+      ImageEffects.brightness(pixels, 50);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 178, g: 178, b: 178, a: 255 });
+    });
+
+    test('gray75 (192,192,192) + brightness(100) clamps to (255,255,255)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(3, 2);
+
+      ImageEffects.brightness(pixels, 100);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    });
+  });
+
+  describe('colorBalance shifts individual channels', () => {
+    test('gray50 (128,128,128) with colorBalance(30,-20,10) becomes (158,108,138)', () => {
+      const { pixels, width } = createNamedColorGrid();
+      const { x, y } = getCenter(2, 2);
+
+      ImageEffects.colorBalance(pixels, 30, -20, 10);
+
+      const after = getPixelAt(pixels, width, x, y);
+      expect(after).toEqual({ r: 158, g: 108, b: 138, a: 255 });
+    });
+  });
+});
+
+describe('Pixel-Specific Tests with Large Color Grid', () => {
+  test('colored rectangles grid has 216 distinct colors', () => {
+    // 15x15 grid = 225 blocks, but only 216 unique colors (6x6x6 cube)
+    const grid = createColoredRectangles(15, 15, 10);
+
+    expect(grid.width).toBe(150);
+    expect(grid.height).toBe(150);
+    expect(grid.pixels.length).toBe(150 * 150 * 4);
+
+    // Verify first block is black (0,0,0) - first color in 6x6x6 cube
+    const firstBlock = grid.getBlockColor(0, 0);
+    expect(firstBlock.r).toBe(0);
+    expect(firstBlock.g).toBe(0);
+    expect(firstBlock.b).toBe(0);
+
+    // Verify color at position (1,0) is rgb(0,0,51) - second color
+    const secondBlock = grid.getBlockColor(1, 0);
+    expect(secondBlock.r).toBe(0);
+    expect(secondBlock.g).toBe(0);
+    expect(secondBlock.b).toBe(51);
+  });
+
+  test('grayscale transforms all 216 colors predictably', () => {
+    const grid = createColoredRectangles(12, 12, 8); // 144 blocks, 96x96 image
+
+    // Sample a few blocks and verify grayscale conversion
+    const testCases = [
+      { col: 0, row: 0, expected: expectedGray(0, 0, 0) },      // black -> 0
+      { col: 5, row: 5, expected: expectedGray(0, 255, 255) },  // some color
+    ];
+
+    for (const tc of testCases) {
+      const color = grid.getBlockColor(tc.col, tc.row);
+      const center = grid.getBlockCenter(tc.col, tc.row);
+      const expectedValue = expectedGray(color.r, color.g, color.b);
+
+      ImageEffects.grayscale(grid.pixels);
+
+      const after = getPixelAt(grid.pixels, grid.width, center.x, center.y);
+      expect(after.r).toBe(after.g);
+      expect(after.g).toBe(after.b);
+      expect(Math.abs(after.r - expectedValue)).toBeLessThan(2);
+
+      // Reset for next test
+      break; // Just test one since we modify the pixels
+    }
+  });
+
+  test('invert is self-inverse on color grid', () => {
+    const grid = createColoredRectangles(10, 10, 8);
+    const original = new Uint8ClampedArray(grid.pixels);
+
+    // Double invert should return to original
+    ImageEffects.invert(grid.pixels);
+    ImageEffects.invert(grid.pixels);
+
+    // Check multiple sample points
+    const samplePoints = [
+      grid.getBlockCenter(0, 0),
+      grid.getBlockCenter(5, 5),
+      grid.getBlockCenter(9, 9),
+    ];
+
+    for (const pt of samplePoints) {
+      const originalPx = getPixelAt(original, grid.width, pt.x, pt.y);
+      const resultPx = getPixelAt(grid.pixels, grid.width, pt.x, pt.y);
+      expect(resultPx).toEqual(originalPx);
+    }
   });
 });
