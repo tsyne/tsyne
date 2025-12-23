@@ -526,8 +526,20 @@ function containerWidget(type: string, props: any, builder: () => void): any {
 
 // Designer API - Complete widget support (emulates Tsyne ABI)
 const designer = {
-  app(options: any, builder: (a: any) => void) {
+  // Support both old API: app(bridgeMode, options, builder) and new API: app(options, builder)
+  app(arg1: any, arg2: any, arg3?: (a: any) => void) {
     console.log('[Designer] Loading app...');
+    // Detect which API is being used
+    let builder: (a: any) => void;
+    if (typeof arg3 === 'function') {
+      // Old 3-arg API: app(bridgeMode, options, builder)
+      builder = arg3;
+    } else if (typeof arg2 === 'function') {
+      // New 2-arg API: app(options, builder)
+      builder = arg2;
+    } else {
+      throw new Error('Invalid app() call - builder function required');
+    }
     builder(designer);
   },
 
@@ -895,6 +907,11 @@ const designer = {
   // Screenshot helper - no-op in designer mode
   screenshotIfRequested(win: any, delay?: number) {
     // Designer doesn't take screenshots, this is a no-op
+  },
+
+  // resolveTransport - returns a dummy value in designer mode
+  resolveTransport() {
+    return 'designer-mode';
   }
 };
 
@@ -1076,6 +1093,9 @@ async function loadSourceInDesignerMode(sourceCode: string, virtualPath: string 
       }
     }
 
+    // Debug: log the transformed code
+    console.log('[Designer] Executable code preview (first 500 chars):', executableCode.substring(0, 500));
+
     fs.writeFileSync(tempPath, executableCode, 'utf8');
 
     // Clear module cache
@@ -1087,6 +1107,7 @@ async function loadSourceInDesignerMode(sourceCode: string, virtualPath: string 
       require(tempPath);
     } catch (error: any) {
       console.warn(`[Designer] Code execution error (metadata still captured): ${error.message}`);
+      console.warn('[Designer] Stack trace:', error.stack);
       // Continue to return metadata that was captured before the error
     }
 
