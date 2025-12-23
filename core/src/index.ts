@@ -951,6 +951,7 @@ export {
   setTranspileCacheEnabled,
   isTranspileCacheEnabled,
   getCacheStats,
+  getAppMetadata,
 } from './app-metadata';
 export type { AppMetadata } from './app-metadata';
 

@@ -842,6 +842,17 @@ export function buildCalculatorApp(a: App): void {
 - `@tsyne-app:category` - Category for grouping (Games, Utilities, etc.)
 - `@tsyne-app:args` - Builder function signature for dependency injection
 
+**Reading Metadata at Runtime:**
+```typescript
+import { getAppMetadata } from 'tsyne';
+
+// In standalone execution block, derive title from metadata
+if (require.main === module) {
+  const meta = getAppMetadata();
+  app(resolveTransport(), { title: meta?.name ?? 'App' }, buildMyApp);
+}
+```
+
 ### Dependency Injection Pattern
 
 Apps receive their dependencies through the builder function signature:

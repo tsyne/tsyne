@@ -233,6 +233,39 @@ export function parseAppMetadata(filePath: string): AppMetadata | null {
 }
 
 /**
+ * Get metadata for the currently executing app.
+ *
+ * Uses require.main.filename to determine which file is running,
+ * then parses @tsyne-app:* comments from that file.
+ *
+ * Usage in standalone block:
+ *   if (require.main === module) {
+ *     const meta = getAppMetadata();
+ *     app(resolveTransport(), { title: meta?.name ?? 'App' }, buildMyApp);
+ *   }
+ *
+ * @param filePath Optional explicit file path. If not provided, uses require.main.filename
+ * @returns The parsed AppMetadata, or null if no metadata found
+ */
+export function getAppMetadata(filePath?: string): AppMetadata | null {
+  const targetPath = filePath ?? require.main?.filename;
+  if (!targetPath) {
+    return null;
+  }
+
+  // Handle .js files by looking for corresponding .ts file
+  let sourcePath = targetPath;
+  if (targetPath.endsWith('.js')) {
+    const tsPath = targetPath.replace(/\.js$/, '.ts');
+    if (fs.existsSync(tsPath)) {
+      sourcePath = tsPath;
+    }
+  }
+
+  return parseAppMetadata(sourcePath);
+}
+
+/**
  * Scan a directory for TypeScript files with @tsyne-app metadata
  */
 export function scanForApps(directory: string): AppMetadata[] {
