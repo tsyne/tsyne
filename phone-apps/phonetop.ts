@@ -35,6 +35,8 @@ const PHONE_LAYOUT_SCALE_LANDSCAPE = 0.8;  // Larger scale in landscape to use s
 
 // Icon size for phone (slightly smaller than desktop's 80px)
 const ICON_SIZE = 64;
+// Icon size inside folders (2x larger)
+const FOLDER_ICON_SIZE = ICON_SIZE * 2;
 
 // Phone options
 export interface PhoneTopOptions {
@@ -66,6 +68,7 @@ interface GridIcon {
   metadata: AppMetadata;
   position: GridPosition;
   resourceName?: string;  // Registered icon resource name (for SVG icons)
+  largeResourceName?: string;  // Larger icon for folder view (2x size)
 }
 
 // Grid item can be either an app icon or a folder
@@ -281,28 +284,37 @@ class PhoneTop {
   }
 
   /**
-   * Convert an app's @tsyne-app:icon into a registered resource (if possible)
+   * Convert an app's @tsyne-app:icon into registered resources (normal and large sizes)
    */
-  private async prepareIconResource(metadata: AppMetadata): Promise<string | undefined> {
+  private async prepareIconResource(metadata: AppMetadata): Promise<{ resourceName?: string; largeResourceName?: string }> {
     const cacheKey = metadata.filePath;
     if (this.iconResourceCache.has(cacheKey)) {
-      return this.iconResourceCache.get(cacheKey);
+      const cached = this.iconResourceCache.get(cacheKey)!;
+      return { resourceName: cached, largeResourceName: cached + '-large' };
     }
 
     if (!metadata.iconIsSvg || !metadata.icon) {
-      return undefined;
+      return {};
     }
 
     try {
-      const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
       const baseName = path.basename(metadata.filePath, '.ts');
       const resourceName = `phone-icon-${this.getIconKey(`${metadata.name}-${baseName}`)}`;
+      const largeResourceName = resourceName + '-large';
+
+      // Register normal size icon
+      const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
       await this.a.resources.registerResource(resourceName, dataUri);
+
+      // Register large size icon (2x) for folder view
+      const largeDataUri = this.renderSvgIconToDataUri(metadata.icon, FOLDER_ICON_SIZE);
+      await this.a.resources.registerResource(largeResourceName, largeDataUri);
+
       this.iconResourceCache.set(cacheKey, resourceName);
-      return resourceName;
+      return { resourceName, largeResourceName };
     } catch (err) {
       console.error(`Failed to register phone icon for ${metadata.name}:`, err);
-      return undefined;
+      return {};
     }
   }
 
@@ -322,11 +334,12 @@ class PhoneTop {
 
     // Prepare all app icons
     for (const metadata of apps) {
-      const resourceName = await this.prepareIconResource(metadata);
+      const { resourceName, largeResourceName } = await this.prepareIconResource(metadata);
       this.icons.push({
         metadata,
         position: { page: 0, row: 0, col: 0 },  // Will be set later
-        resourceName
+        resourceName,
+        largeResourceName
       });
     }
 
@@ -556,7 +569,7 @@ class PhoneTop {
   }
 
   /**
-   * Create the folder contents view (grid of apps)
+   * Create the folder contents view (grid of apps with larger icons)
    */
   private createFolderView(folder: Folder) {
     // Wrap grid in scroll for proper sizing within border center
@@ -570,7 +583,8 @@ class PhoneTop {
           for (let col = 0; col < this.cols; col++) {
             const index = row * this.cols + col;
             if (index < totalApps) {
-              this.createAppIcon(folder.apps[index]);
+              // Use large icons (2x size) inside folders
+              this.createAppIcon(folder.apps[index], true);
             } else {
               // Empty cell to complete the row
               this.a.label('');
@@ -656,15 +670,20 @@ class PhoneTop {
 
   /**
    * Create an icon button for an app
+   * @param icon The grid icon to display
+   * @param useLargeIcon If true, use the 2x larger icon (for folder view)
    */
-  private createAppIcon(icon: GridIcon) {
+  private createAppIcon(icon: GridIcon, useLargeIcon: boolean = false) {
     // Center the icon content within its grid cell
     this.a.center(() => {
       this.a.vbox(() => {
-        if (icon.resourceName) {
+        // Choose resource based on size preference
+        const resourceToUse = useLargeIcon ? icon.largeResourceName : icon.resourceName;
+
+        if (resourceToUse) {
           // Use SVG icon rendered as image
           this.a.image({
-            resource: icon.resourceName,
+            resource: resourceToUse,
             fillMode: 'original',
             onClick: () => this.launchApp(icon.metadata)
           }).withId(`icon-${icon.metadata.name}`);
