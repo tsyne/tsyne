@@ -2,6 +2,27 @@
 set -e
 
 # ============================================================================
+# OS Detection
+# ============================================================================
+OS_TYPE="$(uname -s)"
+ARCH_TYPE="$(uname -m)"
+
+case "$OS_TYPE" in
+  Linux*)  OS="linux" ;;
+  Darwin*) OS="macos" ;;
+  *)       echo "Unsupported OS: $OS_TYPE"; exit 1 ;;
+esac
+
+case "$ARCH_TYPE" in
+  x86_64)  ARCH="amd64" ;;
+  arm64)   ARCH="arm64" ;;
+  aarch64) ARCH="arm64" ;;
+  *)       echo "Unsupported architecture: $ARCH_TYPE"; exit 1 ;;
+esac
+
+echo "Detected OS: $OS, Architecture: $ARCH"
+
+# ============================================================================
 # Test Results Aggregation
 # ============================================================================
 declare -a TEST_RESULTS=()
@@ -156,47 +177,93 @@ if [ -z "${BUILDKITE_BUILD_CHECKOUT_PATH}" ]; then
 fi
 
 echo "--- :package: Checking system dependencies"
-# Check if system dependencies are already installed (e.g., in Docker image)
-if ! dpkg -l | grep -q libgl1-mesa-dev; then
-  echo "System dependencies not found, installing..."
-  apt-get update -qq
-  apt-get install -y \
-    build-essential \
-    gcc \
-    pkg-config \
-    libgl1-mesa-dev \
-    xorg-dev \
-    libxrandr-dev \
-    libxcursor-dev \
-    libxinerama-dev \
-    libxi-dev \
-    libxxf86vm-dev \
-    libglfw3-dev \
-    xvfb \
-    wget \
-    curl \
-    gnupg \
-    jq
-else
-  echo "System dependencies already installed ✓"
-fi
+if [ "$OS" = "linux" ]; then
+  # Check if system dependencies are already installed (e.g., in Docker image)
+  if ! dpkg -l | grep -q libgl1-mesa-dev; then
+    echo "System dependencies not found, installing..."
+    apt-get update -qq
+    apt-get install -y \
+      build-essential \
+      gcc \
+      pkg-config \
+      libgl1-mesa-dev \
+      xorg-dev \
+      libxrandr-dev \
+      libxcursor-dev \
+      libxinerama-dev \
+      libxi-dev \
+      libxxf86vm-dev \
+      libglfw3-dev \
+      xvfb \
+      wget \
+      curl \
+      gnupg \
+      jq
+  else
+    echo "System dependencies already installed ✓"
+  fi
 
-# Ensure jq is installed for JSON parsing
-if ! command -v jq &> /dev/null; then
-  echo "Installing jq for test result aggregation..."
-  apt-get install -y jq
+  # Ensure jq is installed for JSON parsing
+  if ! command -v jq &> /dev/null; then
+    echo "Installing jq for test result aggregation..."
+    apt-get install -y jq
+  fi
+elif [ "$OS" = "macos" ]; then
+  # macOS: Check for Homebrew and install dependencies if needed
+  if ! command -v brew &> /dev/null; then
+    echo "Homebrew not found. Please install Homebrew first: https://brew.sh"
+    exit 1
+  fi
+
+  # Check for jq
+  if ! command -v jq &> /dev/null; then
+    echo "Installing jq for test result aggregation..."
+    brew install jq
+  fi
+
+  # Xcode command line tools provide most build dependencies
+  if ! xcode-select -p &> /dev/null; then
+    echo "Xcode Command Line Tools not found. Installing..."
+    xcode-select --install
+    echo "Please re-run this script after Xcode Command Line Tools installation completes."
+    exit 1
+  fi
+
+  echo "System dependencies available ✓"
 fi
 
 # Clear wait time tracking file from previous runs
 rm -f "$WAIT_TIME_FILE"
 
 # ============================================================================
+# Portable timeout command (macOS doesn't have GNU timeout by default)
+# ============================================================================
+if [ "$OS" = "macos" ]; then
+  if command -v gtimeout &> /dev/null; then
+    # Use GNU timeout from coreutils if available
+    timeout() { gtimeout "$@"; }
+  else
+    # Fallback: install coreutils or use perl-based timeout
+    if ! command -v gtimeout &> /dev/null; then
+      echo "Installing GNU coreutils for timeout command..."
+      brew install coreutils
+    fi
+    timeout() { gtimeout "$@"; }
+  fi
+fi
+
+# ============================================================================
 # Install Node.js 24.x if not already present
 # ============================================================================
 if ! command -v node &> /dev/null; then
   echo "--- :nodejs: Installing Node.js 24.x"
-  curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
-  apt-get install -y nodejs
+  if [ "$OS" = "linux" ]; then
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+    apt-get install -y nodejs
+  elif [ "$OS" = "macos" ]; then
+    brew install node@24 || brew install node
+    brew link --overwrite node@24 2>/dev/null || true
+  fi
 fi
 node --version
 npm --version
@@ -204,15 +271,33 @@ npm --version
 # ============================================================================
 # Install Go 1.24.x if not already present
 # ============================================================================
-if [ ! -d "/usr/local/go" ]; then
+if ! command -v go &> /dev/null && [ ! -d "/usr/local/go" ]; then
   echo "--- :golang: Installing Go 1.24.10"
   GO_VERSION=1.24.10
-  wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-  tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-  rm go${GO_VERSION}.linux-amd64.tar.gz
+  if [ "$OS" = "linux" ]; then
+    GO_ARCHIVE="go${GO_VERSION}.linux-${ARCH}.tar.gz"
+    wget -q "https://go.dev/dl/${GO_ARCHIVE}"
+    tar -C /usr/local -xzf "${GO_ARCHIVE}"
+    rm "${GO_ARCHIVE}"
+  elif [ "$OS" = "macos" ]; then
+    GO_ARCHIVE="go${GO_VERSION}.darwin-${ARCH}.tar.gz"
+    curl -fsSLO "https://go.dev/dl/${GO_ARCHIVE}"
+    sudo tar -C /usr/local -xzf "${GO_ARCHIVE}"
+    rm "${GO_ARCHIVE}"
+  fi
 fi
-export PATH=/usr/local/go/bin:$PATH
-/usr/local/go/bin/go version
+
+# Set up Go path - check both /usr/local/go and Homebrew locations
+if [ -d "/usr/local/go" ]; then
+  export PATH=/usr/local/go/bin:$PATH
+  GO_CMD=/usr/local/go/bin/go
+elif command -v go &> /dev/null; then
+  GO_CMD=go
+else
+  echo "Go not found. Please install Go 1.24+"
+  exit 1
+fi
+$GO_CMD version
 
 # ============================================================================
 # STEP 1: Go Bridge Build
@@ -223,10 +308,14 @@ echo "--- :golang: Building Go bridge"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
 # Reset go.mod to git-committed version first (clean up any stale replacements from failed builds)
 git checkout -- go.mod go.sum || true
-env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -o ../bin/tsyne-bridge .
+env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -o ../bin/tsyne-bridge .
 
 echo "Building Go shared library for FFI..."
-env CGO_ENABLED=1 GOPROXY=direct /usr/local/go/bin/go build -buildmode=c-shared -o ../bin/libtsyne.so .
+if [ "$OS" = "linux" ]; then
+  env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -buildmode=c-shared -o ../bin/libtsyne.so .
+elif [ "$OS" = "macos" ]; then
+  env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -buildmode=c-shared -o ../bin/libtsyne.dylib .
+fi
 
 # ============================================================================
 # STEP 2: Core (Tsyne Core Library)
@@ -241,20 +330,27 @@ echo "--- :test_tube: Core - Unit Tests"
 if [ "${TSYNE_HEADED}" = "1" ]; then
   echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
   export TSYNE_HEADED=1
-  # Use existing DISPLAY or default to :0
-  export DISPLAY=${DISPLAY:-:0}
+  # Use existing DISPLAY or default to :0 (Linux only)
+  if [ "$OS" = "linux" ]; then
+    export DISPLAY=${DISPLAY:-:0}
+  fi
 else
-  echo "Running in HEADLESS mode (using Xvfb)"
-  # Start Xvfb for headless GUI testing (if not already running)
-  if ! pgrep -x Xvfb > /dev/null; then
-    echo "Starting Xvfb..."
-    Xvfb :99 -screen 0 1024x768x24 &
-    XVFB_PID=$!
-    export DISPLAY=:99
-    sleep 2
-  else
-    echo "Xvfb already running ✓"
-    export DISPLAY=:99
+  echo "Running in HEADLESS mode"
+  if [ "$OS" = "linux" ]; then
+    # Start Xvfb for headless GUI testing (if not already running)
+    if ! pgrep -x Xvfb > /dev/null; then
+      echo "Starting Xvfb..."
+      Xvfb :99 -screen 0 1024x768x24 &
+      XVFB_PID=$!
+      export DISPLAY=:99
+      sleep 2
+    else
+      echo "Xvfb already running ✓"
+      export DISPLAY=:99
+    fi
+  elif [ "$OS" = "macos" ]; then
+    # macOS doesn't need Xvfb - Fyne can render headlessly
+    echo "macOS: No Xvfb needed ✓"
   fi
 fi
 
@@ -562,8 +658,8 @@ set -e  # Re-enable exit-on-error
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
-# Only kill Xvfb if we started it (headless mode)
-if [ -n "${XVFB_PID}" ]; then
+# Only kill Xvfb if we started it (Linux headless mode only)
+if [ "$OS" = "linux" ] && [ -n "${XVFB_PID}" ]; then
   kill $XVFB_PID 2>/dev/null || true
 fi
 
