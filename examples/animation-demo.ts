@@ -3,7 +3,7 @@
  *
  * @tsyne-app:name Animation Demo
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/><circle cx="5" cy="12" r="2" fill="currentColor"/></svg>
- * @tsyne-app:builder default
+ * @tsyne-app:builder buildAnimationDemo
  *
  * Shows various animation capabilities using the built-in .to() method:
  * - Position animations (x, y, x2, y2)

@@ -84,18 +84,48 @@ interface RunningApp {
   scopedResources: ScopedResourceManager;  // The scoped resource manager for this app
 }
 
-// Category display names and folder icons
+// Category display names and folder icons (SVG for consistent sizing)
 const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string }> = {
-  'utilities': { displayName: 'Utilities', icon: '🔧' },
-  'graphics': { displayName: 'Graphics', icon: '🎨' },
-  'games': { displayName: 'Games', icon: '🎮' },
-  'media': { displayName: 'Media', icon: '🎵' },
-  'phone': { displayName: 'Phone', icon: '📱' },
-  'system': { displayName: 'System', icon: '⚙️' },
-  'fun': { displayName: 'Fun', icon: '🎉' },
-  'productivity': { displayName: 'Productivity', icon: '📋' },
-  'creativity': { displayName: 'Creativity', icon: '✨' },
-  'development': { displayName: 'Development', icon: '💻' },
+  'utilities': {
+    displayName: 'Utilities',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 24M48 16L24 40L20 52L32 48L56 24C58 22 58 18 56 16L48 8C46 6 42 6 40 8L40 12Z"/><path d="M8 56L20 44"/><circle cx="14" cy="50" r="4" fill="#666"/></svg>`
+  },
+  'graphics': {
+    displayName: 'Graphics',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><circle cx="20" cy="44" r="12" fill="#E57373"/><circle cx="32" cy="24" r="12" fill="#81C784"/><circle cx="44" cy="44" r="12" fill="#64B5F6"/></svg>`
+  },
+  'games': {
+    displayName: 'Games',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="18" width="52" height="32" rx="8" fill="#444"/><circle cx="20" cy="34" r="6" fill="#666"/><path d="M20 28v12M14 34h12" stroke="#999" stroke-width="2"/><circle cx="44" cy="30" r="3" fill="#E57373"/><circle cx="50" cy="36" r="3" fill="#81C784"/><circle cx="44" cy="42" r="3" fill="#64B5F6"/><circle cx="38" cy="36" r="3" fill="#FFD54F"/></svg>`
+  },
+  'media': {
+    displayName: 'Media',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24" fill="#444"/><circle cx="32" cy="32" r="8" fill="#666"/><circle cx="32" cy="32" r="2" fill="#999"/><path d="M32 8v4M32 52v4M8 32h4M52 32h4"/></svg>`
+  },
+  'phone': {
+    displayName: 'Phone',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="4" width="32" height="56" rx="4" fill="#444"/><line x1="26" y1="10" x2="38" y2="10" stroke="#666"/><circle cx="32" cy="52" r="3" fill="#666"/></svg>`
+  },
+  'system': {
+    displayName: 'System',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3"><circle cx="32" cy="32" r="10"/><path d="M32 8v6M32 50v6M8 32h6M50 32h6M14 14l4 4M46 46l4 4M14 50l4-4M46 18l4-4"/></svg>`
+  },
+  'fun': {
+    displayName: 'Fun',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><circle cx="32" cy="36" r="22" fill="#FFD54F"/><circle cx="24" cy="32" r="3" fill="#444"/><circle cx="40" cy="32" r="3" fill="#444"/><path d="M22 44c4 6 16 6 20 0" stroke="#444" stroke-width="3"/></svg>`
+  },
+  'productivity': {
+    displayName: 'Productivity',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="4" fill="#444"/><path d="M16 20h32M16 32h24M16 44h28" stroke="#999"/><path d="M48 24l-8 8-4-4" stroke="#81C784" stroke-width="3"/></svg>`
+  },
+  'creativity': {
+    displayName: 'Creativity',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><path d="M32 8l6 18h18l-14 10 6 18-16-12-16 12 6-18-14-10h18z" fill="#FFD54F" stroke="#F9A825"/></svg>`
+  },
+  'development': {
+    displayName: 'Development',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20l-12 12 12 12M44 20l12 12-12 12M38 12l-12 40"/></svg>`
+  },
 };
 
 class PhoneTop {
@@ -117,6 +147,8 @@ class PhoneTop {
   private appInstanceCounter: Map<string, number> = new Map();
   /** Cache of registered icon resources keyed by source file */
   private iconResourceCache: Map<string, string> = new Map();
+  /** Cache of registered folder icon resources keyed by category */
+  private folderIconCache: Map<string, string> = new Map();
   /** Keyboard controller using bridge injection for cross-app typing */
   private keyboardController: BridgeKeyboardController | null = null;
   /** Whether the virtual keyboard is visible */
@@ -319,6 +351,26 @@ class PhoneTop {
   }
 
   /**
+   * Prepare folder icon resources (render SVG to image at ICON_SIZE)
+   */
+  private async prepareFolderIcons(): Promise<void> {
+    for (const [category, config] of Object.entries(CATEGORY_CONFIG)) {
+      if (this.folderIconCache.has(category)) {
+        continue;
+      }
+
+      try {
+        const resourceName = `phone-folder-${category}`;
+        const dataUri = this.renderSvgIconToDataUri(config.icon, ICON_SIZE);
+        await this.a.resources.registerResource(resourceName, dataUri);
+        this.folderIconCache.set(category, resourceName);
+      } catch (err) {
+        console.error(`Failed to register folder icon for ${category}:`, err);
+      }
+    }
+  }
+
+  /**
    * Initialize the phone by scanning for apps and grouping into folders
    */
   async init() {
@@ -370,6 +422,9 @@ class PhoneTop {
         position: { page: 0, row: 0, col: 0 }  // Will be set during layout
       });
     }
+
+    // Prepare folder icons (render SVG to images)
+    await this.prepareFolderIcons();
 
     // Build grid items: folders first (sorted by name), then uncategorized apps
     this.gridItems = [];
@@ -647,23 +702,29 @@ class PhoneTop {
   }
 
   /**
-   * Create a folder icon showing up to 4 mini app icons
+   * Create a folder icon showing an SVG-rendered image
    */
   private createFolderIcon(folder: Folder) {
-    const config = CATEGORY_CONFIG[folder.category];
+    const resourceName = this.folderIconCache.get(folder.category);
 
     this.a.center(() => {
       this.a.vbox(() => {
-        // Folder icon - show emoji or mini grid preview
-        this.a.button(config?.icon || '📁')
-          .withId(`folder-${folder.category}`)
-          .onClick(() => this.openFolderView(folder));
+        // Folder icon - render as image at ICON_SIZE for consistency with app icons
+        if (resourceName) {
+          this.a.image({
+            resource: resourceName,
+            fillMode: 'original',
+            onClick: () => this.openFolderView(folder)
+          }).withId(`folder-${folder.category}`);
+        } else {
+          // Fallback: button with folder emoji (shouldn't happen)
+          this.a.button('📁')
+            .withId(`folder-${folder.category}`)
+            .onClick(() => this.openFolderView(folder));
+        }
 
-        // Folder name
-        const shortName = folder.name.length > 10
-          ? folder.name.substring(0, 9) + '...'
-          : folder.name;
-        this.a.label(shortName);
+        // Folder name (centered, no word-wrap to avoid character breaks in narrow cells)
+        this.a.label(folder.name, undefined, 'center');
       });
     });
   }
@@ -695,11 +756,8 @@ class PhoneTop {
             .onClick(() => this.launchApp(icon.metadata));
         }
 
-        // App name (truncated if too long)
-        const shortName = icon.metadata.name.length > 10
-          ? icon.metadata.name.substring(0, 9) + '...'
-          : icon.metadata.name;
-        this.a.label(shortName);
+        // App name (centered, no word-wrap to avoid character breaks in narrow cells)
+        this.a.label(icon.metadata.name, undefined, 'center');
       });
     });
   }
@@ -949,15 +1007,34 @@ class PhoneTop {
       });
 
       // Build app content asynchronously, capturing created widgets
-      this.a.getContext().pushContainer();
-      await contentBuilder();
-      const appWidgetIds = this.a.getContext().popContainer();
+      // Wrap in try/catch so one app crashing doesn't take down the whole launcher
+      try {
+        this.a.getContext().pushContainer();
+        await contentBuilder();
+        const appWidgetIds = this.a.getContext().popContainer();
 
-      // Add app widgets to the outer vbox
-      for (const childId of appWidgetIds) {
-        this.a.getContext().bridge.send('containerAdd', {
-          containerId: outerVbox.id,
-          childId
+        // Add app widgets to the outer vbox
+        for (const childId of appWidgetIds) {
+          this.a.getContext().bridge.send('containerAdd', {
+            containerId: outerVbox.id,
+            childId
+          });
+        }
+      } catch (err) {
+        // Pop the container even on error to maintain context stack integrity
+        try { this.a.getContext().popContainer(); } catch { /* ignore */ }
+
+        // Show error message in the app area instead of crashing
+        console.error(`[phonetop] App "${runningApp.metadata.name}" crashed:`, err);
+        outerVbox.add(() => {
+          this.a.vbox(() => {
+            this.a.label(`App Error: ${runningApp.metadata.name}`);
+            this.a.label(err instanceof Error ? err.message : String(err));
+            this.a.spacer();
+            this.a.button('Close App').onClick(() => {
+              if (appId) this.quitApp(appId);
+            });
+          });
         });
       }
 

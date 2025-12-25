@@ -12,7 +12,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } from '../../../../../../../core/src';
+import { app, resolveTransport } from '../core/src';
 import type { App } from '../core/src/app';
 import type { Window } from '../core/src/window';
 import type { Label } from '../core/src/widgets/display';
@@ -209,15 +209,18 @@ class ContactsUI {
 /**
  * Create the contacts app
  * @param a - App instance
- * @param contacts - Contacts service
+ * @param contacts - Contacts service (defaults to MockContactsService if not provided)
  * @param sms - Optional SMS service for messaging from contacts
  */
 export function createContactsApp(
   a: App,
-  contacts: IContactsService,
+  contacts?: IContactsService,
   sms?: ISMSService
 ): ContactsUI {
-  const ui = new ContactsUI(a, contacts, sms);
+  // Create mock services if not provided (e.g., when launched from phonetop)
+  const contactsService = contacts ?? new MockContactsService();
+  const smsService = sms ?? new MockSMSService();
+  const ui = new ContactsUI(a, contactsService, smsService);
 
   a.window({ title: 'Contacts' }, (win: Window) => {
     win.setContent(() => {

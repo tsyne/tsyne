@@ -168,6 +168,7 @@ export function buildDailyChecklist(a: App) {
    * Update status label with progress
    */
   async function updateStatusLabel(): Promise<void> {
+    if (!statusLabel) return; // Guard for phone mode
     const total = store.getTotalCount();
     const done = store.getCheckedCount();
 
@@ -186,6 +187,7 @@ export function buildDailyChecklist(a: App) {
    * Update empty state visibility
    */
   async function updateEmptyState(): Promise<void> {
+    if (!emptyStateContainer) return; // Guard for phone mode
     const hasItems = store.getItems().length > 0;
     if (hasItems) {
       await emptyStateContainer.hide();
@@ -371,9 +373,11 @@ export function buildDailyChecklist(a: App) {
       await updateStatusLabel();
     });
 
-    // Initialize
+    // Initialize - guard for phone mode where content may not be built yet
     (async () => {
-      await editModeContainer.hide();
+      if (editModeContainer) {
+        await editModeContainer.hide();
+      }
       await updateEmptyState();
       await updateStatusLabel();
     })();

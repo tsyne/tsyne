@@ -188,7 +188,7 @@ export class KeyboardController {
   }
 
   /** Cycle through modes: abc → symbols → fn → abc */
-  cycleMode(): KeyboardMode {
+  cycleMode(): void {
     if (this._mode === 'abc') {
       this._mode = 'symbols';
     } else if (this._mode === 'symbols') {
@@ -200,7 +200,6 @@ export class KeyboardController {
     this._ctrl = false;
     this.modeChangeListeners.forEach(cb => cb(this._mode));
     refreshAllBindings();
-    return this._mode;
   }
 
   /** Register a mode change listener */
@@ -395,7 +394,7 @@ export class BridgeKeyboardController {
   }
 
   /** Cycle through modes: abc → symbols → fn → abc */
-  cycleMode(): KeyboardMode {
+  cycleMode(): void {
     if (this._mode === 'abc') {
       this._mode = 'symbols';
     } else if (this._mode === 'symbols') {
@@ -407,7 +406,6 @@ export class BridgeKeyboardController {
     this._ctrl = false;
     this.modeChangeListeners.forEach(cb => cb(this._mode));
     refreshAllBindings();
-    return this._mode;
   }
 
   /** Register a mode change listener */

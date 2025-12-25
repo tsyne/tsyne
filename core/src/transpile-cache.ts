@@ -198,24 +198,39 @@ export async function loadFileWithCache(
 /**
  * Execute cached/transpiled code and return exports
  * Creates a sandboxed module context for execution
+ *
+ * @param code - The transpiled JavaScript code to execute
+ * @param sourcePath - Path to the original source file (for __dirname resolution)
+ * @param contextOverrides - Additional context variables to inject
  */
 export function executeCompiledCode(
   code: string,
+  sourcePath: string = 'app.ts',
   contextOverrides: Record<string, any> = {}
 ): Record<string, any> {
   // Create module context
   const moduleExports: Record<string, any> = {};
   const moduleObj = { exports: moduleExports };
 
+  // Determine the app's directory from sourcePath for correct __dirname
+  const appDir = path.dirname(path.resolve(sourcePath));
+  const appFilename = path.resolve(sourcePath);
+
   // Build require function that delegates to Node's require
   // Apps can only require allowed modules
   const requireFn = (id: string): any => {
-    // Allow tsyne core imports
-    if (id.startsWith('../core/src') || id.startsWith('./') || id === 'tsyne') {
-      // Resolve relative to tsyne core
-      const resolved = id === 'tsyne'
-        ? path.resolve(__dirname, 'index')
-        : path.resolve(__dirname, '..', id.replace('../core/src', 'src'));
+    // Handle tsyne core imports
+    if (id === 'tsyne') {
+      return require(path.resolve(__dirname, 'index'));
+    }
+    if (id.startsWith('../core/src') || id.startsWith('../../core/src')) {
+      // Resolve relative to tsyne core (for apps in examples/ or ported-apps/*)
+      const resolved = path.resolve(__dirname, '..', id.replace(/\.\.\/core\/src/g, 'src').replace('../', ''));
+      return require(resolved);
+    }
+    // Handle relative imports - resolve relative to the app's directory
+    if (id.startsWith('./') || id.startsWith('../')) {
+      const resolved = path.resolve(appDir, id);
       return require(resolved);
     }
     // Allow node built-ins and installed packages
@@ -237,8 +252,8 @@ export function executeCompiledCode(
     moduleExports,
     requireFn,
     moduleObj,
-    'cached-app.js',
-    __dirname,
+    appFilename,
+    appDir,
     ...Object.values(contextOverrides)
   );
 
@@ -257,7 +272,7 @@ export async function loadAndExecuteApp(
   contextOverrides: Record<string, any> = {}
 ): Promise<{ exports: Record<string, any>; cached: boolean }> {
   const { code, cached } = await loadWithCache(source, sourcePath);
-  const exports = executeCompiledCode(code, contextOverrides);
+  const exports = executeCompiledCode(code, sourcePath, contextOverrides);
   return { exports, cached };
 }
 

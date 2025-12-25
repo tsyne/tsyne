@@ -1,7 +1,7 @@
 // @tsyne-app:name Prime Grid Visualizer
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="1"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="14" x2="22" y2="14"/><line x1="2" y1="18" x2="22" y2="18"/></svg>
 // @tsyne-app:category utilities
-// @tsyne-app:builder createPrimeGridApp
+// @tsyne-app:builder createPrimeGridAppStandalone
 
 /**
  * Prime Grid Visualizer for Tsyne
@@ -310,12 +310,21 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
   await win.show();
 
   // Set initial values for entry fields (entry() first param is placeholder, not initial value)
-  await maxNEntry.setText(state.n.toString());
-  await columnsEntry.setText(state.columns.toString());
-  await cellSizeEntry.setText(state.cellSize.toString());
+  // Guard for phone mode where setContent doesn't execute immediately
+  if (maxNEntry) {
+    await maxNEntry.setText(state.n.toString());
+  }
+  if (columnsEntry) {
+    await columnsEntry.setText(state.columns.toString());
+  }
+  if (cellSizeEntry) {
+    await cellSizeEntry.setText(state.cellSize.toString());
+  }
 
-  // Initialize with default grid
-  await generateGrid();
+  // Initialize with default grid (only if raster was created)
+  if (raster) {
+    await generateGrid();
+  }
 }
 
 /**

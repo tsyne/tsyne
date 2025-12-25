@@ -1,12 +1,23 @@
 #!/bin/bash
 # tsyne - TypeScript native GUI runner with embedded dependency support
 
-# Timing for performance debugging
-TSYNE_START_TIME=$(date +%s%3N)
-tsyne_elapsed() {
-    local now=$(date +%s%3N)
-    echo "$((now - TSYNE_START_TIME))ms"
-}
+# Timing for performance debugging (macOS compatible)
+# macOS date doesn't support %N, so test if the output is a valid number
+_test_date=$(date +%s%3N 2>/dev/null)
+if [[ "$_test_date" =~ ^[0-9]+$ ]]; then
+    TSYNE_START_TIME=$(date +%s%3N)
+    tsyne_elapsed() {
+        local now=$(date +%s%3N)
+        echo "$((now - TSYNE_START_TIME))ms"
+    }
+else
+    # macOS fallback - use seconds only
+    TSYNE_START_TIME=$(date +%s)
+    tsyne_elapsed() {
+        local now=$(date +%s)
+        echo "$((now - TSYNE_START_TIME))s"
+    }
+fi
 #
 # Usage: tsyne [options] <app.ts>
 #
@@ -22,7 +33,7 @@ set -e
 # Get tsyne version from package.json
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TSYNE_SOURCE="$(dirname "$SCRIPT_DIR")"  # Where tsyne source lives (dev only)
-TSYNE_VERSION=$(grep '"version"' "$TSYNE_SOURCE/package.json" | head -1 | grep -oP ':\s*"\K[^"]+')
+TSYNE_VERSION=$(grep '"version"' "$TSYNE_SOURCE/package.json" | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
 
 # Runtime directories - these are the production paths
 TSYNE_HOME="${TSYNE_HOME:-$HOME/.tsyne}"
@@ -130,7 +141,7 @@ if [ "$LIST_CACHE" = true ]; then
         log_info "Packages in cache ($TSYNE_CACHE):"
         ls -1 "$TSYNE_CACHE/node_modules" 2>/dev/null | grep -v "^\." | while read pkg; do
             if [ -f "$TSYNE_CACHE/node_modules/$pkg/package.json" ]; then
-                version=$(grep '"version"' "$TSYNE_CACHE/node_modules/$pkg/package.json" | head -1 | grep -oP ':\s*"\K[^"]+')
+                version=$(grep '"version"' "$TSYNE_CACHE/node_modules/$pkg/package.json" | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
                 echo "  - $pkg@$version"
             else
                 echo "  - $pkg"
@@ -165,7 +176,7 @@ fi
 
 # Extract package@version strings, then split them
 # Pattern matches: // @Grab('package@version')
-GRAB_SPECS=$(grep -oP "// @Grab\('\K[^']+(?='\))" "$SOURCE_FILE" 2>/dev/null || true)
+GRAB_SPECS=$(grep '// @Grab' "$SOURCE_FILE" 2>/dev/null | sed -E "s/.*@Grab\('([^']+)'\).*/\1/" || true)
 
 if [ -z "$GRAB_SPECS" ]; then
     if [ "$DRY_RUN" = true ]; then
@@ -235,25 +246,25 @@ else
     fi
 fi
 
-# Detect if running from a dev checkout (has src/ directory with TypeScript)
+# Detect if running from a dev checkout (has core/src/ directory with TypeScript)
 # In dev mode, use source directly; in production, use cached runtime
 IS_DEV_CHECKOUT=false
-if [ -d "$TSYNE_SOURCE/src" ] && [ -f "$TSYNE_SOURCE/src/index.ts" ]; then
+if [ -d "$TSYNE_SOURCE/core/src" ] && [ -f "$TSYNE_SOURCE/core/src/index.ts" ]; then
     IS_DEV_CHECKOUT=true
 fi
 
 if [ "$IS_DEV_CHECKOUT" = true ]; then
     # DEV MODE: Use source directly, no caching
     # This ensures changes are picked up immediately without manual cache clearing
-    [ "$VERBOSE" = true ] && log_info "Dev mode: using tsyne from $TSYNE_SOURCE"
+    [ "$VERBOSE" = true ] && log_info "Dev mode: using tsyne from $TSYNE_SOURCE/core"
 
     # For dev, we need a directory structure where 'tsyne' can be resolved
-    # Create a minimal .tsyne-dev/ with symlink to source
+    # Create a minimal .tsyne-dev/ with symlink to core/ (the actual tsyne package)
     TSYNE_DEV="$TSYNE_SOURCE/.tsyne-dev"
     mkdir -p "$TSYNE_DEV"
-    if [ ! -e "$TSYNE_DEV/tsyne" ]; then
-        ln -s "$TSYNE_SOURCE" "$TSYNE_DEV/tsyne"
-    fi
+    # Always recreate symlink to ensure it points to core/
+    rm -f "$TSYNE_DEV/tsyne"
+    ln -s "$TSYNE_SOURCE/core" "$TSYNE_DEV/tsyne"
 
     # Use source's core/bin/ for bridge
     BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
@@ -263,8 +274,8 @@ if [ "$IS_DEV_CHECKOUT" = true ]; then
         log_success "Bridge built"
     fi
 
-    # NODE_PATH for dev: symlink dir, source's node_modules, @Grab cache
-    EFFECTIVE_NODE_PATH="$TSYNE_DEV:$TSYNE_SOURCE/node_modules:$TSYNE_CACHE/node_modules"
+    # NODE_PATH for dev: symlink dir, core's node_modules, monorepo node_modules, @Grab cache
+    EFFECTIVE_NODE_PATH="$TSYNE_DEV:$TSYNE_SOURCE/core/node_modules:$TSYNE_SOURCE/node_modules:$TSYNE_CACHE/node_modules"
 else
     # PRODUCTION MODE: Install to ~/.tsyne/runtime/<version>/
     if [ ! -d "$TSYNE_RUNTIME/tsyne" ]; then
@@ -272,11 +283,13 @@ else
         mkdir -p "$TSYNE_RUNTIME/tsyne"
         mkdir -p "$TSYNE_RUNTIME/node_modules"
 
-        # Copy tsyne package (dist + package.json)
-        cp -r "$TSYNE_SOURCE/dist" "$TSYNE_RUNTIME/tsyne/"
-        cp "$TSYNE_SOURCE/package.json" "$TSYNE_RUNTIME/tsyne/"
+        # Copy tsyne package from core/ (dist + package.json)
+        cp -r "$TSYNE_SOURCE/core/dist" "$TSYNE_RUNTIME/tsyne/"
+        cp "$TSYNE_SOURCE/core/package.json" "$TSYNE_RUNTIME/tsyne/"
 
-        # Copy tsyne's own dependencies
+        # Copy tsyne's own dependencies (from core/node_modules)
+        cp -r "$TSYNE_SOURCE/core/node_modules"/* "$TSYNE_RUNTIME/node_modules/" 2>/dev/null || true
+        # Also copy monorepo-level dependencies
         cp -r "$TSYNE_SOURCE/node_modules"/* "$TSYNE_RUNTIME/node_modules/" 2>/dev/null || true
 
         log_success "Tsyne runtime installed"
@@ -311,7 +324,7 @@ export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 
 # Run with tsx (fast esbuild-based) - use local install to avoid npx overhead
 echo "[TSYNE] script setup done: $(tsyne_elapsed)"
-echo "[TSYNE] launching tsx at $(date +%s.%3N)..."
+echo "[TSYNE] launching tsx at $(date +%s)..."
 
 # Prefer locally installed tsx, fall back to npx
 if [ -x "$TSYNE_SOURCE/node_modules/.bin/tsx" ]; then

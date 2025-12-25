@@ -162,6 +162,7 @@ export function buildDailyChecklistMVC(a: App) {
    * Update status label with progress
    */
   async function updateStatusLabel(): Promise<void> {
+    if (!statusLabel) return; // Guard for phone mode
     const total = store.getTotalCount();
     const done = store.getCheckedCount();
 
@@ -321,9 +322,11 @@ export function buildDailyChecklistMVC(a: App) {
       await updateStatusLabel();
     });
 
-    // Initialize
+    // Initialize - guard for phone mode where content may not be built yet
     (async () => {
-      await editModeContainer.hide();
+      if (editModeContainer) {
+        await editModeContainer.hide();
+      }
       await updateStatusLabel();
     })();
   });

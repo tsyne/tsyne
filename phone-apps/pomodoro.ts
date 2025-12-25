@@ -136,7 +136,7 @@ class PomodoroUI {
 
   private updateDisplay(): void {
     if (this.displayLabel) {
-      this.displayLabel.setText(this.formatTime(this.state.timeRemaining)).withId('pomodoroDisplay');
+      this.displayLabel.setText(this.formatTime(this.state.timeRemaining));
     }
 
     if (this.sessionLabel) {
@@ -146,17 +146,17 @@ class PomodoroUI {
           : this.state.sessionType === 'break'
             ? 'Short Break'
             : 'Long Break';
-      this.sessionLabel.setText(sessionText).withId('pomodoroSession');
+      this.sessionLabel.setText(sessionText);
     }
 
     if (this.statusLabel) {
       const status = this.state.isRunning ? 'Running' : 'Paused';
-      this.statusLabel.setText(`${status} • ${this.state.sessionsCompleted} sessions`).withId('pomodoroStatus');
+      this.statusLabel.setText(`${status} • ${this.state.sessionsCompleted} sessions`);
     }
 
     if (this.startButton) {
       const btnText = this.state.isRunning ? 'Pause' : 'Start';
-      this.startButton.setText(btnText).withId('pomodoroStartBtn');
+      this.startButton.setText(btnText);
     }
   }
 

@@ -4,11 +4,11 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                792      792        0        0  40|40|0
-Designer: Unit                       88       81        7        0    8|6|2
-Designer: GUI                         7        0        7        0    1|0|1
-Examples: Logic                      30       30        0        0    2|2|0
-Examples: GUI                       392      371        0       21  75|69|0
+Core                                796      792        4        0  41|39|2
+Designer: Unit                       88       88        0        0    8|8|0
+Designer: GUI                         7        7        0        0    1|1|0
+Examples: Logic                       0        0        0        0    2|0|2
+Examples: GUI                         0        0        0        0  79|0|79
 Ported: 3d-cube                     392      392        0        0    3|3|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
@@ -17,7 +17,7 @@ Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: mahjongg                     47       47        0        0    2|2|0
-Ported: pixeledit                   138      138        0        0    8|8|0
+Ported: pixeledit                   429      429        0        0 115|115|0
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   140      140        0        0    8|8|0
@@ -30,7 +30,7 @@ Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
 Phone: julia-set                      6        6        0        0    1|1|0
 Phone: mandelbrot                     9        9        0        0    1|1|0
-Phone: minefield                      0        0        0        0    1|0|1
+Phone: minefield                     22       22        0        0    1|1|0
 Phone: newton-fractal                 6        6        0        0    1|1|0
 Phone: notes                         36       36        0        0    2|2|0
 Phone: pixyne                        30       30        0        0    2|2|0
@@ -47,15 +47,15 @@ Larger: realtime-paris-density-simulation       12       12        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2815     2770       14       31      198
+TOTAL                              2710     2696        4       10      310
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 31 tests are currently skipped
+⚠️  Warning: 10 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 86850ms (86.85s)
-Total ctx.wait() calls: 349
+Total wait time: 85950ms (85.95s)
+Total ctx.wait() calls: 300
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -80,6 +80,6 @@ Top 10 tests by wait time:
   Desktop Environment Tests should hide windows when Show Desktop is clicked
     └─ 2700ms (18 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 14 tests failed
+❌ FAILED: 4 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt
