@@ -475,18 +475,10 @@ func (b *Bridge) handleSetTheme(msg Message) Response {
 		}
 	}
 
-	// Refresh all windows to apply the theme change
-	b.mu.RLock()
-	windows := make([]fyne.Window, 0, len(b.windows))
-	for _, win := range b.windows {
-		windows = append(windows, win)
-	}
-	b.mu.RUnlock()
-
+	// Re-apply theme to trigger Fyne's theme change notification
+	// This properly invalidates cached colors across all canvases
 	fyne.DoAndWait(func() {
-		for _, win := range windows {
-			win.Canvas().Refresh(win.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -541,11 +533,9 @@ func (b *Bridge) handleSetFontScale(msg Message) Response {
 	// Update the theme's font scale
 	b.scalableTheme.SetFontScale(float32(scale))
 
-	// Refresh all windows to apply the new theme
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -632,11 +622,10 @@ func (b *Bridge) handleSetCustomTheme(msg Message) Response {
 	// Apply custom colors
 	b.scalableTheme.SetCustomColors(customColors)
 
-	// Refresh all windows to apply the new theme
+	// Re-apply theme to trigger Fyne's theme change notification
+	// This properly invalidates cached colors across all canvases
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -657,11 +646,9 @@ func (b *Bridge) handleClearCustomTheme(msg Message) Response {
 	// Clear custom colors
 	b.scalableTheme.ClearCustomColors()
 
-	// Refresh all windows
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -717,11 +704,9 @@ func (b *Bridge) handleSetCustomSizes(msg Message) Response {
 
 	b.scalableTheme.SetCustomSizes(customSizes)
 
-	// Refresh all windows
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -741,11 +726,9 @@ func (b *Bridge) handleClearCustomSizes(msg Message) Response {
 
 	b.scalableTheme.ClearCustomSizes()
 
-	// Refresh all windows
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -892,11 +875,9 @@ func (b *Bridge) handleSetCustomFont(msg Message) Response {
 		}
 	}
 
-	// Refresh all windows to apply the new font
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{
@@ -937,11 +918,9 @@ func (b *Bridge) handleClearCustomFont(msg Message) Response {
 		b.scalableTheme.ClearCustomFont(textStyle)
 	}
 
-	// Refresh all windows
+	// Re-apply theme to trigger Fyne's theme change notification
 	fyne.DoAndWait(func() {
-		for _, window := range b.windows {
-			window.Canvas().Refresh(window.Content())
-		}
+		b.app.Settings().SetTheme(b.scalableTheme)
 	})
 
 	return Response{

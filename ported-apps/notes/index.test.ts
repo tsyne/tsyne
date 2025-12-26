@@ -35,7 +35,7 @@ describe('NotesStore', () => {
 
     it('should have all initial notes with correct structure', () => {
       const notes = store.getNotes();
-      notes.forEach((note) => {
+      notes.forEach((note: Note) => {
         expect(note.id).toBeDefined();
         expect(note.title).toBeDefined();
         expect(note.content).toBeDefined();
@@ -315,13 +315,13 @@ describe('NotesStore', () => {
     it('should search notes by title', () => {
       const results = store.searchNotes('Welcome');
       expect(results.length).toBeGreaterThan(0);
-      expect(results.some((n) => n.title.includes('Welcome'))).toBe(true);
+      expect(results.some((n: Note) => n.title.includes('Welcome'))).toBe(true);
     });
 
     it('should search notes by content', () => {
       const results = store.searchNotes('Milk');
       expect(results.length).toBeGreaterThan(0);
-      expect(results.some((n) => n.content.includes('Milk'))).toBe(true);
+      expect(results.some((n: Note) => n.content.includes('Milk'))).toBe(true);
     });
 
     it('should be case insensitive', () => {
