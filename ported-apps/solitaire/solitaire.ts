@@ -796,8 +796,18 @@ class SolitaireUI {
   private draw2Image: any = null;
   private draw3Image: any = null;
 
+  // Card dimensions - responsive based on layout scale
+  private cardWidth: number = 120;
+  private cardHeight: number = 174;
+
   constructor(private a: App, cardImageProvider?: CardImageProvider) {
     this.game = new Game();
+
+    // Calculate responsive card size based on layout scale
+    // On mobile (scale 0.5): use smaller cards (80x116)
+    // On desktop (scale 1.0): use full cards (120x174)
+    const layoutScale = (this.a.getContext() as any).getLayoutScale?.() || 1.0;
+    const isMobile = layoutScale < 1.0;
 
     if (cardImageProvider) {
       // Use injected provider (e.g., StubCardImageProvider for tests)
@@ -811,7 +821,14 @@ class SolitaireUI {
         path.join(__dirname, 'faces')
       ];
       const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
-      this.cardImageProvider = new SvgCardImageProvider(facesDir, 120, 174);
+
+      // Use smaller cards on mobile (2/3 of desktop size: 80x116)
+      if (isMobile) {
+        this.cardWidth = 80;
+        this.cardHeight = 116;
+      }
+
+      this.cardImageProvider = new SvgCardImageProvider(facesDir, this.cardWidth, this.cardHeight);
     }
   }
 
@@ -1016,8 +1033,11 @@ class SolitaireUI {
     const from = this.draggedCard;
     this.draggedCard = null;
 
-    // Use the tested drop zone detection logic
-    const dropZone = detectDropZone(x, y, 1000, 700);
+    // Use the tested drop zone detection logic with responsive window dimensions
+    // Scale coordinates based on card size ratio
+    const scaledX = x * (120 / this.cardWidth);
+    const scaledY = y * (174 / this.cardHeight);
+    const dropZone = detectDropZone(scaledX, scaledY, 1000, 700);
 
     let moved = false;
     let message = '';
@@ -1155,9 +1175,10 @@ class SolitaireUI {
                   this.a.image(emptySlotImage, 'original', () => this.handleCardClick('stack', stackIndex)).withId(`empty-stack-${stackIndex}`);
                 } else {
                   // pseudo-declarative lines: pre-computed values before declarative use
-                  // Create overlapped composite image
+                  // Create overlapped composite image with responsive card dimensions
                   const cardImages = cards.map(card => this.getCardImage(card.imageFilename()));
-                  const compositeImage = this.cardImageProvider.getOverlappedCardsImage(cardImages, 120, 174, 87);
+                  const overlapOffset = this.cardHeight / 2; // Half the card height for overlap
+                  const compositeImage = this.cardImageProvider.getOverlappedCardsImage(cardImages, this.cardWidth, this.cardHeight, overlapOffset);
 
                   // Display composite image with click handler for top card
                   const topCard = cards[cards.length - 1];
@@ -1273,7 +1294,18 @@ class SolitaireUI {
 export function createSolitaireApp(a: App, cardImageProvider?: CardImageProvider): SolitaireUI {
   const ui = new SolitaireUI(a, cardImageProvider);
 
-  a.window({ title: 'Solitaire', width: 1000, height: 700 }, (win: Window) => {
+  // Determine window size - use phone-sized window when running on mobile
+  // Phone layout scale is set by phonetop (0.5 for portrait, 0.8 for landscape)
+  const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
+  const isMobile = layoutScale < 1.0;
+
+  // On mobile: use smaller dimensions that fit within phone screen
+  // Calculate based on 7 tableau columns + 4 foundation piles + draw area
+  // With 80px cards: 7*80 + 4*80 + 80 (draw) + padding ≈ 1040px (with scale 0.5 → ~520px)
+  const width = isMobile ? 1040 : 1000;
+  const height = isMobile ? 750 : 700;
+
+  a.window({ title: 'Solitaire', width, height }, (win: Window) => {
     win.setContent(() => {
       ui.buildUI(win);
     });
