@@ -49,6 +49,13 @@ export interface CameraSettings {
   flash: 'off' | 'on' | 'auto';
   timer: number; // 0=off, 3=3s, 5=5s, 10=10s
   gridLines: boolean;
+  zoom: number; // 1-5x
+  exposure: number; // -2 to +2
+  hdr: boolean;
+  whiteBalance: 'auto' | 'daylight' | 'cloudy' | 'tungsten' | 'fluorescent';
+  filter: 'none' | 'bw' | 'sepia' | 'cool' | 'warm';
+  nightMode: boolean;
+  burstMode: boolean;
 }
 
 export type CameraMode = 'photo' | 'video'; // Video is infrastructure only
@@ -98,6 +105,13 @@ export class MockCameraService implements ICameraService {
     flash: 'auto',
     timer: 0,
     gridLines: true,
+    zoom: 1,
+    exposure: 0,
+    hdr: false,
+    whiteBalance: 'auto',
+    filter: 'none',
+    nightMode: false,
+    burstMode: false,
   };
   private photos: Map<string, Photo> = new Map();
   private nextPhotoId = 1;

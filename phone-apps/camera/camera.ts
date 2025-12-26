@@ -106,8 +106,8 @@ export function createCameraApp(a: App, camera: ICameraService): void {
   function updatePhotoList() {
     if (!photoListContainer) return;
 
-    // Simplified: clear and rebuild
-    photoListContainer.destroyChildren?.();
+    // Clear and rebuild
+    photoListContainer.removeAll();
 
     const photos = camera.getPhotos();
 
@@ -226,6 +226,113 @@ export function createCameraApp(a: App, camera: ICameraService): void {
               flashBtn.setText(next.charAt(0).toUpperCase() + next.slice(1));
             })
             .withId('btn-flash');
+        });
+
+        // Zoom slider
+        a.hbox(() => {
+          a.label('Zoom: ').withId('label-zoom');
+          const zoomLabel = a.label('1x').withId('zoom-value');
+          const settings = camera.getSettings();
+          a.slider(1, 5, settings.zoom, (value) => {
+            camera.updateSettings({ zoom: value });
+            zoomLabel.setText(`${value.toFixed(1)}x`);
+          }).withId('slider-zoom');
+        });
+
+        // Exposure slider
+        a.hbox(() => {
+          a.label('Exposure: ').withId('label-exposure');
+          const expLabel = a.label('0').withId('exposure-value');
+          const settings = camera.getSettings();
+          a.slider(-2, 2, settings.exposure, (value) => {
+            camera.updateSettings({ exposure: value });
+            expLabel.setText(value > 0 ? `+${value.toFixed(1)}` : `${value.toFixed(1)}`);
+          }).withId('slider-exposure');
+        });
+
+        // White balance selector
+        a.hbox(() => {
+          a.label('White Balance: ').withId('label-white-balance');
+          const settings = camera.getSettings();
+          const wbBtn = a.button(settings.whiteBalance)
+            .onClick(() => {
+              const modes: Array<'auto' | 'daylight' | 'cloudy' | 'tungsten' | 'fluorescent'> = ['auto', 'daylight', 'cloudy', 'tungsten', 'fluorescent'];
+              const current = settings.whiteBalance;
+              const idx = modes.indexOf(current);
+              const next = modes[(idx + 1) % modes.length];
+              camera.updateSettings({ whiteBalance: next });
+              wbBtn.setText(next);
+            })
+            .withId('btn-white-balance');
+        });
+
+        // Filter selector
+        a.hbox(() => {
+          a.label('Filter: ').withId('label-filter');
+          const settings = camera.getSettings();
+          const filterBtn = a.button(settings.filter)
+            .onClick(() => {
+              const modes: Array<'none' | 'bw' | 'sepia' | 'cool' | 'warm'> = ['none', 'bw', 'sepia', 'cool', 'warm'];
+              const current = settings.filter;
+              const idx = modes.indexOf(current);
+              const next = modes[(idx + 1) % modes.length];
+              camera.updateSettings({ filter: next });
+              filterBtn.setText(next);
+            })
+            .withId('btn-filter');
+        });
+
+        // Timer selector
+        a.hbox(() => {
+          a.label('Timer: ').withId('label-timer');
+          const settings = camera.getSettings();
+          const timerBtn = a.button(settings.timer === 0 ? 'Off' : `${settings.timer}s`)
+            .onClick(() => {
+              const modes: number[] = [0, 3, 5, 10];
+              const current = settings.timer;
+              const idx = modes.indexOf(current);
+              const next = modes[(idx + 1) % modes.length];
+              camera.updateSettings({ timer: next });
+              timerBtn.setText(next === 0 ? 'Off' : `${next}s`);
+            })
+            .withId('btn-timer');
+        });
+
+        // Quick toggles row
+        a.hbox(() => {
+          const settings = camera.getSettings();
+
+          const hdrBtn = a.button(settings.hdr ? '📊 HDR' : '📊')
+            .onClick(() => {
+              const newVal = !camera.getSettings().hdr;
+              camera.updateSettings({ hdr: newVal });
+              hdrBtn.setText(newVal ? '📊 HDR' : '📊');
+            })
+            .withId('btn-hdr');
+
+          const nightBtn = a.button(settings.nightMode ? '🌙 Night' : '🌙')
+            .onClick(() => {
+              const newVal = !camera.getSettings().nightMode;
+              camera.updateSettings({ nightMode: newVal });
+              nightBtn.setText(newVal ? '🌙 Night' : '🌙');
+            })
+            .withId('btn-night');
+
+          const gridBtn = a.button(settings.gridLines ? '◻ Grid' : '◻')
+            .onClick(() => {
+              const newVal = !camera.getSettings().gridLines;
+              camera.updateSettings({ gridLines: newVal });
+              gridBtn.setText(newVal ? '◻ Grid' : '◻');
+            })
+            .withId('btn-grid');
+
+          const burstBtn = a.button(settings.burstMode ? '⚡ Burst' : '⚡')
+            .onClick(() => {
+              const newVal = !camera.getSettings().burstMode;
+              camera.updateSettings({ burstMode: newVal });
+              burstBtn.setText(newVal ? '⚡ Burst' : '⚡');
+            })
+            .withId('btn-burst');
         });
 
         a.separator();
