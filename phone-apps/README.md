@@ -2,6 +2,36 @@
 
 This directory contains phone-style applications built with Tsyne, demonstrating how to create mobile-like apps with dependency injection for services.
 
+## PhoneTop: The Tsyne Phone Launcher
+
+**PhoneTop** (`phonetop.ts`) is a **launcher** (phone shell), not an OS. It provides:
+- Grid-based home screen with app icons
+- Category folders (Games, Utilities, etc.)
+- Swipe navigation between pages
+- Virtual keyboard for text input
+- App launching with back/quit controls
+
+### Terminology
+
+| Term | Correct? | Why |
+|------|----------|-----|
+| "Tsyne PhoneTop" | Yes | Product name for the launcher |
+| "Phone Launcher" | Yes | Accurate category description |
+| "Phone Shell" | Yes | Technical term for primary UI layer |
+| "Tsyne PhoneTop OS" | **No** | It's not an OS - runs on top of Linux |
+
+### Stack Position
+
+```
+postmarketOS / Linux
+    Xorg / Wayland
+        Fyne (GUI toolkit)
+            PhoneTop (launcher)  <-- here
+                Tsyne Apps
+```
+
+PhoneTop sits at the same layer as Android's Pixel Launcher or iOS's SpringBoard - it's the home screen and app launcher, not the underlying system.
+
 ## Apps
 
 | App | Description | Services Used |

@@ -35,8 +35,6 @@ const PHONE_LAYOUT_SCALE_LANDSCAPE = 0.8;  // Larger scale in landscape to use s
 
 // Icon size for phone (slightly smaller than desktop's 80px)
 const ICON_SIZE = 64;
-// Icon size inside folders (2x larger)
-const FOLDER_ICON_SIZE = ICON_SIZE * 2;
 
 // Phone options
 export interface PhoneTopOptions {
@@ -68,7 +66,6 @@ interface GridIcon {
   metadata: AppMetadata;
   position: GridPosition;
   resourceName?: string;  // Registered icon resource name (for SVG icons)
-  largeResourceName?: string;  // Larger icon for folder view (2x size)
 }
 
 // Grid item can be either an app icon or a folder
@@ -144,6 +141,10 @@ class PhoneTop {
   private currentPage: number = 0;
   private totalPages: number = 1;
   private pageIndicatorLabels: Label[] = [];
+  /** Current page within an open folder */
+  private folderCurrentPage: number = 0;
+  /** Total pages in the currently open folder */
+  private folderTotalPages: number = 1;
   private options: PhoneTopOptions;
   private cols: number;
   private rows: number;
@@ -320,13 +321,12 @@ class PhoneTop {
   }
 
   /**
-   * Convert an app's @tsyne-app:icon into registered resources (normal and large sizes)
+   * Convert an app's @tsyne-app:icon into a registered resource
    */
-  private async prepareIconResource(metadata: AppMetadata): Promise<{ resourceName?: string; largeResourceName?: string }> {
+  private async prepareIconResource(metadata: AppMetadata): Promise<{ resourceName?: string }> {
     const cacheKey = metadata.filePath;
     if (this.iconResourceCache.has(cacheKey)) {
-      const cached = this.iconResourceCache.get(cacheKey)!;
-      return { resourceName: cached, largeResourceName: cached + '-large' };
+      return { resourceName: this.iconResourceCache.get(cacheKey)! };
     }
 
     if (!metadata.iconIsSvg || !metadata.icon) {
@@ -336,18 +336,13 @@ class PhoneTop {
     try {
       const baseName = path.basename(metadata.filePath, '.ts');
       const resourceName = `phone-icon-${this.getIconKey(`${metadata.name}-${baseName}`)}`;
-      const largeResourceName = resourceName + '-large';
 
-      // Register normal size icon
+      // Register icon at standard size
       const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
       await this.a.resources.registerResource(resourceName, dataUri);
 
-      // Register large size icon (2x) for folder view
-      const largeDataUri = this.renderSvgIconToDataUri(metadata.icon, FOLDER_ICON_SIZE);
-      await this.a.resources.registerResource(largeResourceName, largeDataUri);
-
       this.iconResourceCache.set(cacheKey, resourceName);
-      return { resourceName, largeResourceName };
+      return { resourceName };
     } catch (err) {
       console.error(`Failed to register phone icon for ${metadata.name}:`, err);
       return {};
@@ -392,12 +387,11 @@ class PhoneTop {
 
     // Prepare all app icons
     for (const metadata of apps) {
-      const { resourceName, largeResourceName } = await this.prepareIconResource(metadata);
+      const { resourceName } = await this.prepareIconResource(metadata);
       this.icons.push({
         metadata,
         position: { page: 0, row: 0, col: 0 },  // Will be set later
-        resourceName,
-        largeResourceName
+        resourceName
       });
     }
 
@@ -576,7 +570,7 @@ class PhoneTop {
             } : undefined,
             center: () => {
               if (this.openFolder) {
-                // Show folder contents (just the scrollable grid)
+                // Show folder contents (paginated grid, same as home)
                 this.createFolderView(this.openFolder);
               } else {
                 // App grid fills available space
@@ -585,9 +579,23 @@ class PhoneTop {
             },
             bottom: () => {
               if (this.openFolder) {
-                // Folder view: just a close button
-                this.a.center(() => {
-                  this.a.button('← Back to Home').onClick(() => this.closeFolder());
+                // Folder view: pagination controls (same style as home)
+                this.a.vbox(() => {
+                  // Page dots for folder (if multiple pages)
+                  if (this.folderTotalPages > 1) {
+                    this.createFolderPageIndicator();
+                  }
+
+                  // Navigation buttons
+                  this.a.hbox(() => {
+                    this.a.button('← Back').onClick(() => this.closeFolder());
+                    this.a.spacer();
+
+                    if (this.folderTotalPages > 1) {
+                      this.a.button('<').withId('folderPrev').onClick(() => this.previousFolderPage());
+                      this.a.button('>').withId('folderNext').onClick(() => this.nextFolderPage());
+                    }
+                  });
                 });
               } else {
                 this.a.vbox(() => {
@@ -624,6 +632,7 @@ class PhoneTop {
    */
   private openFolderView(folder: Folder) {
     this.openFolder = folder;
+    this.folderCurrentPage = 0;  // Reset to first page when opening
     this.rebuildContent();
   }
 
@@ -632,36 +641,40 @@ class PhoneTop {
    */
   private closeFolder() {
     this.openFolder = null;
+    this.folderCurrentPage = 0;  // Reset for next folder
     this.rebuildContent();
   }
 
   /**
-   * Create the folder contents view (grid of apps with larger icons)
+   * Create the folder contents view (paginated grid, same layout as home screen)
    */
   private createFolderView(folder: Folder) {
-    // max expands to fill available space, scroll inside takes that size
-    this.a.max(() => {
-      this.a.scroll(() => {
-        this.a.grid(this.cols, () => {
-        // Show all apps in folder, using multiple "pages" worth of rows if needed
-        const totalApps = folder.apps.length;
-        const rowsNeeded = Math.ceil(totalApps / this.cols);
+    // Calculate pages for this folder
+    const totalApps = folder.apps.length;
+    this.folderTotalPages = Math.ceil(totalApps / this.appsPerPage);
 
-        for (let row = 0; row < rowsNeeded; row++) {
-          for (let col = 0; col < this.cols; col++) {
-            const index = row * this.cols + col;
-            if (index < totalApps) {
-              // Use large icons (2x size) inside folders
-              this.createAppIcon(folder.apps[index], true);
-            } else {
-              // Empty cell to complete the row
-              this.a.label('');
-            }
+    // Ensure current folder page is valid
+    if (this.folderCurrentPage >= this.folderTotalPages) {
+      this.folderCurrentPage = Math.max(0, this.folderTotalPages - 1);
+    }
+
+    // Get apps for current folder page
+    const startIndex = this.folderCurrentPage * this.appsPerPage;
+    const pageApps = folder.apps.slice(startIndex, startIndex + this.appsPerPage);
+
+    // Direct grid - same layout as home screen
+    this.a.grid(this.cols, () => {
+      for (let row = 0; row < this.rows; row++) {
+        for (let col = 0; col < this.cols; col++) {
+          const index = row * this.cols + col;
+          if (index < pageApps.length) {
+            this.createAppIcon(pageApps[index]);
+          } else {
+            this.a.label('');  // Empty cell
           }
         }
-        });
-      }); // end scroll
-    }); // end max
+      }
+    });
   }
 
   /**
@@ -746,19 +759,15 @@ class PhoneTop {
   /**
    * Create an icon button for an app
    * @param icon The grid icon to display
-   * @param useLargeIcon If true, use the 2x larger icon (for folder view)
    */
-  private createAppIcon(icon: GridIcon, useLargeIcon: boolean = false) {
+  private createAppIcon(icon: GridIcon) {
     // Center the icon content within its grid cell
     this.a.center(() => {
       this.a.vbox(() => {
-        // Choose resource based on size preference
-        const resourceToUse = useLargeIcon ? icon.largeResourceName : icon.resourceName;
-
-        if (resourceToUse) {
+        if (icon.resourceName) {
           // Use SVG icon rendered as image
           this.a.image({
-            resource: resourceToUse,
+            resource: icon.resourceName,
             fillMode: 'original',
             onClick: () => this.launchApp(icon.metadata)
           }).withId(`icon-${icon.metadata.name}`);
@@ -792,6 +801,40 @@ class PhoneTop {
   private nextPage() {
     if (this.currentPage < this.totalPages - 1) {
       this.currentPage++;
+      this.rebuildContent();
+    }
+  }
+
+  /**
+   * Create page dots indicator for folder view
+   */
+  private createFolderPageIndicator() {
+    this.a.center(() => {
+      this.a.hbox(() => {
+        for (let i = 0; i < this.folderTotalPages; i++) {
+          const dot = i === this.folderCurrentPage ? '●' : '○';
+          this.a.label(dot).withId(`folder-page-dot-${i}`);
+        }
+      });
+    });
+  }
+
+  /**
+   * Navigate to previous folder page
+   */
+  private previousFolderPage() {
+    if (this.folderCurrentPage > 0) {
+      this.folderCurrentPage--;
+      this.rebuildContent();
+    }
+  }
+
+  /**
+   * Navigate to next folder page
+   */
+  private nextFolderPage() {
+    if (this.folderCurrentPage < this.folderTotalPages - 1) {
+      this.folderCurrentPage++;
       this.rebuildContent();
     }
   }

@@ -926,6 +926,10 @@ await ctx.getById('icon-calculator').click(); // Double-click to launch
 await ctx.getById('calc-display').shouldBe('0');
 ```
 
+## PhoneTop: Phone Launcher
+
+**PhoneTop** (`phone-apps/phonetop.ts`) is a phone-style **launcher** (not an OS) that runs Tsyne apps in a mobile UI. It provides a grid home screen, category folders, swipe navigation, and virtual keyboard. See **[phone-apps/README.md](phone-apps/README.md)** for terminology, stack position, and phone app development.
+
 ## References
 
 ### Documentation

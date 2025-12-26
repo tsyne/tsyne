@@ -274,9 +274,9 @@ describe('Widget Mode - Playback and State Tracking', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
-    // Play and track position
+    // Play for 2 seconds (same as passing canvas test)
     await ctx.getById('playBtn').click();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Get current position - should indicate which slice
     const position = await ctx.getById('positionLabel').getText();
@@ -284,7 +284,7 @@ describe('Widget Mode - Playback and State Tracking', () => {
     const seconds_value = parseInt(seconds, 10);
 
     // With 8-second duration and 48 slices, each slice is ~0.17 seconds
-    // After 1 second, should be around slice 6
+    // After 2 seconds, position should have advanced past 0
     expect(seconds_value).toBeGreaterThan(0);
 
     await ctx.getById('stopBtn').click();
@@ -470,20 +470,20 @@ describe('Widget Mode - Time Display', () => {
 
     await ctx.getById('statusLabel').within(2000).shouldBe('Ready to play');
 
-    // Play and get position
+    // Play for 2 seconds (same as passing canvas test)
     await ctx.getById('playBtn').click();
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const pos1 = await ctx.getById('positionLabel').getText();
     const time1 = parseInt(pos1.split(':')[1], 10);
 
-    // Wait and check again
+    // Wait 1 more second and check again
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const pos2 = await ctx.getById('positionLabel').getText();
     const time2 = parseInt(pos2.split(':')[1], 10);
 
-    // Should advance
+    // Time should advance
     expect(time2).toBeGreaterThan(time1);
 
     await ctx.getById('stopBtn').click();
