@@ -126,6 +126,10 @@ const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string }> = {
     displayName: 'Development',
     icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20l-12 12 12 12M44 20l12 12-12 12M38 12l-12 40"/></svg>`
   },
+  'native': {
+    displayName: 'Native',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="4" fill="#444"/><path d="M20 32h24M32 20v24" stroke="#999" stroke-width="2"/><circle cx="20" cy="20" r="3" fill="#81C784"/></svg>`
+  },
 };
 
 class PhoneTop {
@@ -377,12 +381,14 @@ class PhoneTop {
     const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
     const portedAppsDir = path.join(process.cwd(), 'ported-apps');
     const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
+    const nativeAppsDir = path.join(process.cwd(), 'native-apps');
 
     // Scan for apps
     const exampleApps = scanForApps(appDir);
     const portedApps = scanPortedApps(portedAppsDir);
     const phoneApps = scanForApps(phoneAppsDir);
-    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+    const nativeApps = scanForApps(nativeAppsDir);
+    const apps = [...exampleApps, ...portedApps, ...phoneApps, ...nativeApps].sort((a, b) => a.name.localeCompare(b.name));
 
     // Prepare all app icons
     for (const metadata of apps) {
