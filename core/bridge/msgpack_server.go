@@ -217,7 +217,9 @@ func (s *MsgpackServer) handleMessage(msg MsgpackMessage) MsgpackResponse {
 	}
 
 	// Dispatch to bridge handler chain - now returns Response directly
+	timer := StartOp(msg.Type, msg.ID)
 	resp := s.bridge.handleMessage(bridgeMsg)
+	timer.End()
 
 	return MsgpackResponse{
 		ID:      resp.ID,

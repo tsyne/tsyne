@@ -793,7 +793,9 @@ func runStdioMode(testMode bool) {
 			}
 
 			// Handle the message and send response
+			timer := StartOp(msg.Type, msg.ID)
 			resp := bridge.handleMessage(msg)
+			timer.End()
 			bridge.sendResponse(resp)
 		}
 
@@ -845,6 +847,10 @@ func main() {
 	log.SetOutput(os.Stderr)
 	log.SetPrefix("[tsyne-bridge] ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	// Initialize performance monitoring (env: TSYNE_PERF_SAMPLE=true)
+	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"
+	InitPerfMonitor(perfEnabled)
 
 	// Parse command-line flags
 	mode := flag.String("mode", "stdio", "Communication mode: stdio, grpc, or msgpack-uds")
