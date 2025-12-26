@@ -1427,6 +1427,50 @@ Tsyne's design draws from several influential frameworks and patterns:
 
 Special thanks to: Andrew Williams, colleagues and contributors - For Fyne UI toolkit and example applications
 
+## Tauri Mobile Packaging (Android/iOS)
+
+PhoneTop can be packaged as a Tauri mobile app using a web-renderer bridge mode.
+
+### Prerequisites
+
+```bash
+# Android SDK and NDK
+export ANDROID_HOME=~/Android/Sdk
+export NDK_HOME=~/Android/Sdk/ndk/26.1.10909125
+
+# Java 17 (Gradle requires JDK 17, not 25+)
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+# Rust Android targets
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+```
+
+### Building Android APK
+
+```bash
+cd tauri-phonetop
+
+# Build for all 4 Android architectures (aarch64, armv7, i686, x86_64)
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+ANDROID_HOME=~/Android/Sdk \
+NDK_HOME=~/Android/Sdk/ndk/26.1.10909125 \
+npx tauri android build
+```
+
+**Output:**
+- APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk`
+- AAB: `src-tauri/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab`
+
+### Architecture
+
+The Tauri mobile app uses a WebSocket-based renderer:
+
+```
+Tauri WebView ←→ WebSocket (ws://localhost:9876) ←→ Node.js + phonetop.ts
+```
+
+See `tauri-phonetop/README.md` for detailed architecture and running instructions.
+
 ## Documentation
 
 ### Getting Started

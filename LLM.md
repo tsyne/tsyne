@@ -1065,6 +1065,23 @@ await ctx.getById('calc-display').shouldBe('0');
 
 **PhoneTop** (`phone-apps/phonetop.ts`) is a phone-style **launcher** (not an OS) that runs Tsyne apps in a mobile UI. It provides a grid home screen, category folders, swipe navigation, and virtual keyboard. See **[phone-apps/README.md](phone-apps/README.md)** for terminology, stack position, and phone app development.
 
+## Tauri Mobile (Android APK)
+
+**Build Android APK for all 4 architectures:**
+```bash
+cd tauri-phonetop
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+ANDROID_HOME=~/Android/Sdk \
+NDK_HOME=~/Android/Sdk/ndk/26.1.10909125 \
+npx tauri android build
+```
+
+**Prerequisites:** Java 17, Android SDK, NDK 26.x, Rust Android targets (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`)
+
+**Output:** `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (27MB)
+
+**Architecture:** Tauri WebView ←→ WebSocket ←→ Node.js + phonetop.ts (via `TSYNE_BRIDGE_MODE=web-renderer`)
+
 ## References
 
 ### Documentation

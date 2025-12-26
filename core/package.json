@@ -80,6 +80,7 @@
     "@msgpack/msgpack": "^3.0.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/marked": "^5.0.2",
+    "@types/ws": "^8.18.1",
     "buffer-crc32": "^1.0.0",
     "chess.js": "^1.4.0",
     "esbuild": "^0.24.0",
@@ -90,7 +91,8 @@
     "marked": "^4.3.0",
     "mespeak": "^2.0.2",
     "speaker": "^0.5.5",
-    "toml": "^3.0.0"
+    "toml": "^3.0.0",
+    "ws": "^8.18.3"
   },
   "optionalDependencies": {
     "isolated-vm": "^5.0.1"
