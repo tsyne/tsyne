@@ -30,6 +30,7 @@ import { app, resolveTransport } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRaster } from '../../core/src/widgets/canvas';
+import type { Label } from '../../core/src/widgets/display';
 
 // Import sprite generation from sibling module
 // (The original ChrysaLisp app used proprietary .cpm image files;
@@ -67,6 +68,128 @@ const FPS = 30;              // Target frames per second
 // Colors (RGB values)
 const BLACK = { r: 0, g: 0, b: 0 };
 const GRID_COLOR = { r: 100, g: 100, b: 100 };
+
+/**
+ * Real-time performance monitoring
+ * Tracks frame rate, operation timings, and identifies bottlenecks
+ */
+class PerformanceMonitor {
+  private frameCount: number = 0;
+  private lastSecond: number = Date.now();
+  private currentFPS: number = 0;
+  private frameStartTime: number = 0;
+  private lastFrameTime: number = 0;
+
+  private operationTimings: Map<string, number[]> = new Map();
+  private currentOpStart: number = 0;
+  private currentOp: string = '';
+
+  // History for min/max/avg calculations
+  private frameTimeHistory: number[] = [];
+  private readonly HISTORY_SIZE = 120; // Keep last 4 seconds at 30 FPS
+
+  /**
+   * Called at the start of each animation frame
+   */
+  frameStart(): void {
+    this.frameStartTime = performance.now();
+  }
+
+  /**
+   * Mark the start of an operation (physics, moveSprite, etc.)
+   */
+  opStart(name: string): void {
+    this.currentOpStart = performance.now();
+    this.currentOp = name;
+  }
+
+  /**
+   * Mark the end of the current operation
+   */
+  opEnd(): void {
+    if (this.currentOp) {
+      const elapsed = performance.now() - this.currentOpStart;
+      if (!this.operationTimings.has(this.currentOp)) {
+        this.operationTimings.set(this.currentOp, []);
+      }
+      this.operationTimings.get(this.currentOp)!.push(elapsed);
+      // Keep only last 60 samples per operation
+      const times = this.operationTimings.get(this.currentOp)!;
+      if (times.length > 60) {
+        times.shift();
+      }
+    }
+    this.currentOp = '';
+  }
+
+  /**
+   * Called at the end of each animation frame
+   */
+  frameEnd(): void {
+    this.lastFrameTime = performance.now() - this.frameStartTime;
+    this.frameTimeHistory.push(this.lastFrameTime);
+    if (this.frameTimeHistory.length > this.HISTORY_SIZE) {
+      this.frameTimeHistory.shift();
+    }
+
+    this.frameCount++;
+    const now = Date.now();
+    if (now - this.lastSecond >= 1000) {
+      this.currentFPS = this.frameCount;
+      this.frameCount = 0;
+      this.lastSecond = now;
+    }
+  }
+
+  /**
+   * Get current statistics
+   */
+  getStats(): {
+    fps: number;
+    frameTime: number;
+    minFrameTime: number;
+    maxFrameTime: number;
+    avgFrameTime: number;
+    operationTimings: Record<string, { avg: number; max: number }>;
+    memory?: NodeJS.MemoryUsage;
+  } {
+    const operationTimings: Record<string, { avg: number; max: number }> = {};
+
+    for (const [name, times] of this.operationTimings.entries()) {
+      if (times.length > 0) {
+        const sum = times.reduce((a, b) => a + b, 0);
+        operationTimings[name] = {
+          avg: sum / times.length,
+          max: Math.max(...times),
+        };
+      }
+    }
+
+    const minFrameTime =
+      this.frameTimeHistory.length > 0
+        ? Math.min(...this.frameTimeHistory)
+        : 0;
+    const maxFrameTime =
+      this.frameTimeHistory.length > 0
+        ? Math.max(...this.frameTimeHistory)
+        : 0;
+    const avgFrameTime =
+      this.frameTimeHistory.length > 0
+        ? this.frameTimeHistory.reduce((a, b) => a + b, 0) /
+          this.frameTimeHistory.length
+        : 0;
+
+    return {
+      fps: this.currentFPS,
+      frameTime: this.lastFrameTime,
+      minFrameTime,
+      maxFrameTime,
+      avgFrameTime,
+      operationTimings,
+      memory: process.memoryUsage?.(),
+    };
+  }
+}
 
 /**
  * Ball physics simulation
@@ -156,6 +279,9 @@ class BoingDemo {
   private frameIndex: number = 0;
   private animationTimer: ReturnType<typeof setInterval> | null = null;
   private spritesCreated: boolean = false;
+  private perfMonitor: PerformanceMonitor;
+  private statsLabel: Label | null = null;
+  private statsUpdateCounter: number = 0;
 
   // Resource names for sprites
   private readonly SHADOW_RESOURCE = 'boing-shadow';
@@ -168,6 +294,7 @@ class BoingDemo {
     this.frames = generateAllFrames();
     // Start ball at top-left area
     this.physics = new BallPhysics(BALL_RADIUS + 50, BALL_RADIUS + 50);
+    this.perfMonitor = new PerformanceMonitor();
   }
 
   /**
@@ -210,12 +337,16 @@ class BoingDemo {
    * One animation frame
    */
   private async tick(): Promise<void> {
+    this.perfMonitor.frameStart();
+
     // Update physics
+    this.perfMonitor.opStart('physics');
     const bounced = this.physics.update(
       CANVAS_WIDTH,
       CANVAS_HEIGHT,
       BALL_RADIUS
     );
+    this.perfMonitor.opEnd();
 
     // TODO: Play boing sound when bounced is true
     // (Audio playback not currently supported in Tsyne)
@@ -228,6 +359,15 @@ class BoingDemo {
 
     // Render the scene
     await this.render();
+
+    // Update stats display every 10 frames
+    this.statsUpdateCounter++;
+    if (this.statsUpdateCounter >= 10 && this.statsLabel) {
+      this.statsUpdateCounter = 0;
+      this.updateStatsDisplay();
+    }
+
+    this.perfMonitor.frameEnd();
   }
 
   /**
@@ -249,15 +389,24 @@ class BoingDemo {
 
     try {
       // Move sprites to new positions (this marks dirty rectangles)
+      this.perfMonitor.opStart('moveSprite.shadow');
       await this.canvas.moveSprite(this.SHADOW_SPRITE, shadowSpriteX, shadowSpriteY);
+      this.perfMonitor.opEnd();
+
+      this.perfMonitor.opStart('moveSprite.ball');
       await this.canvas.moveSprite(this.BALL_SPRITE, ballSpriteX, ballSpriteY);
+      this.perfMonitor.opEnd();
 
       // Change ball frame (for rotation animation)
+      this.perfMonitor.opStart('setSpriteResource');
       const ballResource = `${this.BALL_RESOURCE_PREFIX}${this.frameIndex}`;
       await this.canvas.setSpriteResource(this.BALL_SPRITE, ballResource);
+      this.perfMonitor.opEnd();
 
       // Flush - this does the efficient dirty-rect redraw
+      this.perfMonitor.opStart('flush');
       await this.canvas.flush();
+      this.perfMonitor.opEnd();
     } catch (e) {
       // Ignore errors during shutdown
     }
@@ -301,7 +450,38 @@ class BoingDemo {
     this.a.vbox(() => {
       // Create the canvas for rendering
       this.canvas = this.a.canvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Stats display label
+      this.statsLabel = this.a.label('Stats: FPS 0 | Frame 0ms').withId('boingStats');
     });
+  }
+
+  /**
+   * Update the stats display with current performance data
+   */
+  private updateStatsDisplay(): void {
+    if (!this.statsLabel) return;
+
+    const stats = this.perfMonitor.getStats();
+    const mem = stats.memory;
+    const memStr = mem ? ` | Mem ${(mem.heapUsed / 1024 / 1024).toFixed(1)}MB` : '';
+
+    // Find the slowest operation
+    let slowestOp = '';
+    let slowestTime = 0;
+    for (const [name, timing] of Object.entries(stats.operationTimings)) {
+      if (timing.avg > slowestTime) {
+        slowestTime = timing.avg;
+        slowestOp = name;
+      }
+    }
+
+    const slowestStr = slowestOp
+      ? ` | Slow: ${slowestOp} ${slowestTime.toFixed(2)}ms`
+      : '';
+
+    const text = `FPS ${stats.fps} | Frame ${stats.frameTime.toFixed(1)}ms (avg ${stats.avgFrameTime.toFixed(1)}ms, max ${stats.maxFrameTime.toFixed(1)}ms)${slowestStr}${memStr}`;
+    this.statsLabel.setText(text);
   }
 
   /**
@@ -386,7 +566,7 @@ export function createBoingApp(a: App): BoingDemo {
 }
 
 // Export for testing (sprite functions are re-exported from ./sprites at top of file)
-export { BoingDemo, BallPhysics };
+export { BoingDemo, BallPhysics, PerformanceMonitor };
 
 /**
  * Main application entry point
