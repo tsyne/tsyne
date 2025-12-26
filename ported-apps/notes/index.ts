@@ -1,5 +1,5 @@
 /**
- * Notes App - Tsyne Port of FyneLabs Notes
+ * Notes App - Tsyne Port
  *
  * @tsyne-app:name Notes
  * @tsyne-app:icon document
@@ -12,7 +12,8 @@
  * - Hot-swappable themes (light, dark, custom)
  * - Dual-pane interface (notes list + editor)
  *
- * Ported from github.com/fynelabs/notes
+ * Ported from github.com/fynelabs/notes by Andy Williams
+ * Portions copyright Andy Williams 2020-2023, portions copyright Paul Hammant 2025
  */
 
 // ============================================================================

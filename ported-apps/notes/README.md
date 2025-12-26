@@ -1,6 +1,6 @@
-# Notes App - Tsyne Port of FyneLabs Notes
+# Notes App - Tsyne Port
 
-A simple but powerful notes application with persistent storage, live editing, and hot-swappable themes. This is a Tsyne port of the original FyneLabs Notes application written in Go+Fyne.
+A simple but powerful notes application with persistent storage, live editing, and hot-swappable themes. This is a Tsyne port of the [original Notes app](https://github.com/fynelabs/notes) by Andy Williams, written in Go+Fyne.
 
 ## Features
 
@@ -303,4 +303,4 @@ getPreferences(): NotesPreferences {
 ## License
 
 This port is distributed under the same license as the original Fyne Notes app.
-Portions copyright FyneLabs and portions copyright Paul Hammant 2025.
+Portions copyright Andy Williams 2020-2023 and portions copyright Paul Hammant 2025.
