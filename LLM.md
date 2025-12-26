@@ -488,24 +488,77 @@ await win.screenshot('/path/to/screenshot.png');  // Capture window to PNG
 
 ## App-Level Features
 
-**Theme Management:**
+**Theme Management (Hot-Swappable):**
 ```typescript
+// Built-in themes
 app.setTheme('dark');   // or 'light'
 const theme = app.getTheme();  // Returns current theme
+
+// Themes apply immediately - no reload needed
+// Perfect for user preferences in settings panels
+a.button('Dark Mode', async () => {
+  app.setTheme('dark');
+  // UI updates instantly with new theme
+});
 ```
 
-**Custom Theming:**
+**Custom Theming (Hot-Swappable):**
 ```typescript
-app.setCustomTheme({
+const customDarkTheme = {
   background: '#1a1a1a',
   foreground: '#ffffff',
   primary: '#0066cc',
   error: '#ff0000',
   success: '#00cc00',
   // 20+ color keys available
-});
-app.clearCustomTheme();  // Revert to default
+};
+
+// Apply custom theme instantly
+app.setCustomTheme(customDarkTheme);
+
+// Switch back to default theme
+app.clearCustomTheme();
+
+// Or return to built-in theme
+app.setTheme('light');
 ```
+
+**Pattern for Persistent Theme Preferences:**
+```typescript
+// Store theme choice in app preferences
+class Store {
+  getTheme(): 'light' | 'dark' {
+    return app.getPreference('theme', 'light');
+  }
+
+  setTheme(theme: 'light' | 'dark'): void {
+    app.setPreference('theme', theme);
+    app.setTheme(theme);  // Apply immediately
+    this.notifyChange();  // Trigger UI update
+  }
+}
+
+// On app startup, restore saved theme
+const savedTheme = store.getTheme();
+app.setTheme(savedTheme);
+
+// In settings panel
+a.button('Light', async () => {
+  store.setTheme('light');
+  // Theme applies instantly
+});
+a.button('Dark', async () => {
+  store.setTheme('dark');
+  // Theme applies instantly
+});
+```
+
+**Real-World Example (Notes App):**
+The Notes app demonstrates hot-swappable themes with:
+- Light, dark, and custom color palettes
+- Theme buttons that apply instantly
+- Observable store that persists theme preference
+- No page reload or restart needed
 
 **Custom Fonts:**
 ```typescript
@@ -798,10 +851,92 @@ See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
 
 ## Window Abstraction (ITsyneWindow)
 
-`ITsyneWindow` interface (`src/tsyne-window.ts`) unifies window APIs across contexts:
-- `Window` - real OS window (resizable)
-- `InnerWindowAdapter` - desktop MDI inner window (resizable)
-- `StackPaneAdapter` - phone stack pane (fixed size, `onResize` is no-op)
+### The Problem It Solves
+
+Apps need to work in **three different hosting contexts**:
+1. **Standalone mode** - Direct OS window (regular desktop app)
+2. **Desktop mode** - Inner window in MDI environment (multiple apps in one process)
+3. **Phone mode** - Stack pane for modal/fullscreen navigation (PhoneTop launcher)
+
+Without abstraction, apps would need different code for each context. Instead, Tsyne uses a unified `ITsyneWindow` interface that adapts automatically.
+
+### How It Works
+
+The `ITsyneWindow` interface (`src/tsyne-window.ts`) provides a common API:
+- `Window` - real OS window (resizable, movable, iconifiable)
+- `InnerWindowAdapter` - desktop MDI inner window (resizable, titlebar, close button)
+- `StackPaneAdapter` - phone stack pane (fixed size fullscreen layer, navigational back/close)
+
+**Critical insight:** Apps just call `a.window()` normally. The framework automatically creates the right window type based on the current mode:
+
+```typescript
+// App code (context-agnostic)
+export function buildNotesApp(a: App) {
+  return a.window({ title: 'Notes', width: 900, height: 600 }, (win) => {
+    // Same code works in all three contexts!
+  });
+}
+
+// Framework automatically chooses the implementation:
+// Standalone: a.window() → Window
+// Desktop:   a.window() → InnerWindowAdapter (enabled via enableDesktopMode())
+// Phone:     a.window() → StackPaneAdapter (enabled via enablePhoneMode())
+```
+
+### Window-Specific Methods (Graceful Degradation)
+
+Some window methods don't apply to all contexts - they're no-ops where not applicable:
+- `resize()` - Works in standalone/desktop, no-op in phone (fixed size)
+- `centerOnScreen()` - Works in standalone, no-op in desktop/phone (positioning managed by container)
+- `setFullScreen()` - Works in standalone, no-op in desktop/phone
+- `setIcon()` - Works in standalone, no-op in others
+- `onResize(callback)` - Works in standalone/desktop, no-op in phone (no resize events)
+
+All return promises/values gracefully, so apps don't need conditional logic.
+
+### Dialog System (Unified)
+
+Dialogs are also unified:
+- `showInfo()`, `showError()`, `showConfirm()` - Work the same in all modes
+- File dialogs, forms, color pickers - All delegate to parent window in inner/phone modes
+- No special handling needed in app code
+
+### Context Switching (Framework Level)
+
+The framework enables/disables modes via global context:
+
+```typescript
+// In desktop.ts when launching an app:
+enableDesktopMode({
+  desktopMDI: container,
+  parentWindow: desktopWindow,
+  desktopApp: appInstance
+});
+
+// Now ALL window() calls in that app create InnerWindowAdapters
+const appWindow = a.window(...);  // Creates InnerWindowAdapter
+
+// When app closes
+disableDesktopMode();  // Back to standalone mode
+```
+
+### Pattern for Apps That Work Everywhere
+
+Apps follow this pattern naturally:
+
+```typescript
+export function buildMyApp(a: App) {
+  // Just use a.window() - framework handles the rest
+  a.window({ title: 'My App', width: 800, height: 600 }, (win) => {
+    win.setContent(() => {
+      // Your normal UI code
+    });
+    win.show();
+  });
+}
+```
+
+No special content builders or checks needed. Apps discovered by `scanForApps()` work in all contexts automatically.
 
 ## Desktop Mode & App Sandboxing
 
