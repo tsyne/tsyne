@@ -1032,6 +1032,14 @@ func (b *Bridge) handleGetAllWidgets(msg Message) Response {
 				"text": wd.meta.Text,
 			}
 
+			// Add size and position info
+			size := wd.obj.Size()
+			pos := wd.obj.Position()
+			widgetInfo["width"] = size.Width
+			widgetInfo["height"] = size.Height
+			widgetInfo["x"] = pos.X
+			widgetInfo["y"] = pos.Y
+
 			// Add padding info if set
 			if wd.meta.PaddingTop != 0 || wd.meta.PaddingRight != 0 ||
 				wd.meta.PaddingBottom != 0 || wd.meta.PaddingLeft != 0 {

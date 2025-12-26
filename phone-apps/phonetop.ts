@@ -545,18 +545,23 @@ class PhoneTop {
     if (!this.win) return;
 
     this.win.setContent(() => {
-      // Main layout: app content fills space, keyboard at bottom (hidden by default)
-      this.a.vbox(() => {
-        // Use border layout: grid fills center, controls at bottom
-        this.a.max(() => {
+      // Main layout: app content fills center, keyboard at bottom (hidden by default)
+      this.a.border({
+        center: () => {
+          // Use border layout: grid fills center, controls at top/bottom
           this.a.border({
             top: this.openFolder ? () => {
               // Folder header when a folder is open
-              const config = CATEGORY_CONFIG[this.openFolder!.category];
+              const resourceName = this.folderIconCache.get(this.openFolder!.category);
               this.a.vbox(() => {
                 this.a.center(() => {
                   this.a.hbox(() => {
-                    this.a.label(`${config?.icon || '📁'} ${this.openFolder!.name}`);
+                    if (resourceName) {
+                      this.a.image({ resource: resourceName, fillMode: 'original' });
+                    } else {
+                      this.a.label('📁');
+                    }
+                    this.a.label(` ${this.openFolder!.name}`);
                     this.a.label(` (${this.openFolder!.apps.length} apps)`);
                   });
                 });
@@ -593,16 +598,17 @@ class PhoneTop {
               }
             }
           });
-        });
-
-        // Virtual keyboard (hidden by default, shown on Entry focus)
-        this.keyboardContainer = this.a.vbox(() => {
-          this.a.separator();
-          if (this.keyboardController) {
-            buildKeyboard(this.a, this.keyboardController as any);
-          }
-        });
-        this.keyboardContainer.hide();  // Start hidden
+        },
+        bottom: () => {
+          // Virtual keyboard (hidden by default, shown on Entry focus)
+          this.keyboardContainer = this.a.vbox(() => {
+            this.a.separator();
+            if (this.keyboardController) {
+              buildKeyboard(this.a, this.keyboardController as any);
+            }
+          });
+          this.keyboardContainer.hide();  // Start hidden
+        }
       });
     });
   }
@@ -627,9 +633,10 @@ class PhoneTop {
    * Create the folder contents view (grid of apps with larger icons)
    */
   private createFolderView(folder: Folder) {
-    // Wrap grid in scroll for proper sizing within border center
-    this.a.scroll(() => {
-      this.a.grid(this.cols, () => {
+    // max expands to fill available space, scroll inside takes that size
+    this.a.max(() => {
+      this.a.scroll(() => {
+        this.a.grid(this.cols, () => {
         // Show all apps in folder, using multiple "pages" worth of rows if needed
         const totalApps = folder.apps.length;
         const rowsNeeded = Math.ceil(totalApps / this.cols);
@@ -646,8 +653,9 @@ class PhoneTop {
             }
           }
         }
-      });
-    });
+        });
+      }); // end scroll
+    }); // end max
   }
 
   /**
