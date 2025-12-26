@@ -38,140 +38,61 @@ describe('Camera App', () => {
   let camera: MockCameraService;
 
   beforeEach(async () => {
-    const headed = process.env.TSYNE_HEADED === '1';
-    tsyneTest = new TsyneTest({ headed });
+    tsyneTest = new TsyneTest({ headed: process.env.TSYNE_HEADED === '1' });
     camera = new MockCameraService();
     await camera.initialize();
   });
 
-  afterEach(async () => {
-    await tsyneTest.cleanup();
+  afterEach(() => tsyneTest.cleanup());
+
+  const run = async () => {
+    const app = await tsyneTest.createApp((a) => createCameraApp(a, camera));
+    ctx = tsyneTest.getContext();
+    await app.run();
+  };
+
+  const elements = [
+    'camera-title',
+    'preview-placeholder',
+    'btn-capture',
+    'camera-status',
+    'btn-resolution',
+    'btn-flash',
+    'slider-zoom',
+    'slider-exposure',
+    'btn-white-balance',
+    'btn-filter',
+    'btn-timer',
+    'btn-hdr',
+    'btn-night',
+    'btn-grid',
+    'btn-burst',
+    'photo-count-display',
+    'btn-clear-all',
+    'btn-refresh',
+  ];
+
+  test.each(elements)('should display %s', async (id) => {
+    await run();
+    await ctx.getById(id).within(500).shouldExist();
   });
 
-  test('should display camera title', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('camera-title').within(500).shouldExist();
-  });
-
-  test('should display preview area', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('preview-placeholder').within(500).shouldExist();
-  });
-
-  test('should have capture button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('btn-capture').within(500).shouldExist();
-  });
-
-  test('should display camera status', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
+  test('should show Ready status on startup', async () => {
+    await run();
     await ctx.getById('camera-status').within(500).shouldBe('Ready');
   });
 
-  test('should have resolution selector', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('btn-resolution').within(500).shouldExist();
-  });
-
-  test('should have flash selector', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('btn-flash').within(500).shouldExist();
-  });
-
-  test('should display photo count', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Should show photo count
-    await ctx.getById('photo-count-display').within(500).shouldExist();
-  });
-
-  test('should have clear all button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('btn-clear-all').within(500).shouldExist();
-  });
-
-  test('should have refresh button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    await ctx.getById('btn-refresh').within(500).shouldExist();
-  });
-
-  test('should display sample photos', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Sample photos should be visible
+  test('should have initial photos loaded', async () => {
+    await run();
     expect(camera.getPhotoCount()).toBeGreaterThan(0);
   });
 
   test('should take screenshot for documentation', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      createCameraApp(app, camera);
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Take screenshot if requested
+    await run();
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshot = await ctx.screenshot();
-      console.log(`Camera screenshot saved: ${screenshot}`);
+      const screenshotPath = '/tmp/camera-screenshot.png';
+      await tsyneTest.screenshot(screenshotPath);
+      console.log(`Camera screenshot saved: ${screenshotPath}`);
     }
   });
 });
@@ -187,127 +108,102 @@ describe('MockCameraService', () => {
     await service.initialize();
   });
 
-  test('should initialize successfully', async () => {
-    const result = await service.initialize();
-    expect(result).toBe(true);
-  });
-
-  test('should be available after initialization', () => {
+  test('should initialize', async () => {
+    expect(await service.initialize()).toBe(true);
     expect(service.isAvailable()).toBe(true);
+    expect(service.getPhotoCount()).toBeGreaterThan(0);
   });
 
-  test('should have initial photos', () => {
-    const photos = service.getPhotos();
-    expect(photos.length).toBeGreaterThan(0);
-  });
-
-  test('should capture photo', async () => {
+  test('should capture photo and increment count', async () => {
     const before = service.getPhotoCount();
     const photo = await service.capture();
-
-    const after = service.getPhotoCount();
-    expect(after).toBe(before + 1);
-    expect(photo).toBeDefined();
+    expect(service.getPhotoCount()).toBe(before + 1);
     expect(photo?.id).toBeTruthy();
   });
 
-  test('should return captured photo with correct properties', async () => {
+  test('should capture with correct properties', async () => {
     const photo = await service.capture();
-
-    expect(photo?.filename).toBeTruthy();
-    expect(photo?.path).toBeTruthy();
-    expect(photo?.width).toBeGreaterThan(0);
-    expect(photo?.height).toBeGreaterThan(0);
-    expect(photo?.size).toBeGreaterThan(0);
-    expect(photo?.isFavorite).toBe(false);
+    expect(photo).toMatchObject({
+      filename: expect.any(String),
+      path: expect.any(String),
+      width: expect.any(Number),
+      height: expect.any(Number),
+      size: expect.any(Number),
+      isFavorite: false,
+    });
   });
 
-  test('should set camera mode', () => {
+  test('should manage camera mode', () => {
     service.setMode('photo');
     expect(service.getMode()).toBe('photo');
   });
 
-  test('should get and update settings', () => {
-    const original = service.getSettings();
-    service.updateSettings({ resolution: 'low' });
-    const updated = service.getSettings();
-
-    expect(updated.resolution).toBe('low');
-    expect(updated.quality).toBe(original.quality); // Other settings unchanged
+  test.each([
+    ['resolution', { resolution: 'low' as const }],
+    ['flash', { flash: 'on' as const }],
+    ['zoom', { zoom: 2 }],
+    ['exposure', { exposure: 1 }],
+    ['hdr', { hdr: true }],
+    ['whiteBalance', { whiteBalance: 'daylight' as const }],
+    ['filter', { filter: 'bw' as const }],
+    ['nightMode', { nightMode: true }],
+    ['burstMode', { burstMode: true }],
+  ])('should update %s setting', (name, update) => {
+    const before = service.getSettings();
+    service.updateSettings(update);
+    const after = service.getSettings();
+    expect(after).toMatchObject(update);
+    // Verify other settings unchanged
+    const otherKeys = Object.keys(before).filter(k => !Object.keys(update).includes(k));
+    otherKeys.forEach(key => {
+      expect(after[key as keyof typeof before]).toEqual(before[key as keyof typeof before]);
+    });
   });
 
-  test('should provide correct resolutions', () => {
-    const low = service.getResolution('low');
-    const medium = service.getResolution('medium');
-    const high = service.getResolution('high');
-
-    expect(low).toEqual([640, 480]);
-    expect(medium).toEqual([1280, 720]);
-    expect(high).toEqual([1920, 1080]);
+  test.each([
+    ['low', [640, 480]],
+    ['medium', [1280, 720]],
+    ['high', [1920, 1080]],
+  ])('resolution %s should return %p', (res, expected) => {
+    expect(service.getResolution(res as any)).toEqual(expected);
   });
 
-  test('should get photo by id', () => {
+  test('should manage photos', () => {
     const photos = service.getPhotos();
-    const photo = service.getPhoto(photos[0].id);
+    const id = photos[0].id;
+    expect(service.getPhoto(id)?.id).toBe(id);
 
-    expect(photo?.id).toBe(photos[0].id);
+    service.deletePhoto(id);
+    expect(service.getPhoto(id)).toBeNull();
+    expect(service.getPhotoCount()).toBe(photos.length - 1);
   });
 
-  test('should delete photo', () => {
-    const photos = service.getPhotos();
-    const before = service.getPhotoCount();
-
-    service.deletePhoto(photos[0].id);
-    const after = service.getPhotoCount();
-
-    expect(after).toBe(before - 1);
-  });
-
-  test('should toggle favorite', () => {
-    const photos = service.getPhotos();
-    const photo = photos[0];
-    const original = photo.isFavorite;
-
-    service.toggleFavorite(photo.id);
-    const updated = service.getPhoto(photo.id);
-
-    expect(updated?.isFavorite).toBe(!original);
-  });
-
-  test('should get favorites', () => {
-    const favorites = service.getFavorites();
-    expect(Array.isArray(favorites)).toBe(true);
-    expect(favorites.every(p => p.isFavorite)).toBe(true);
-  });
-
-  test('should share photo', async () => {
-    const photos = service.getPhotos();
-    const link = await service.sharePhoto(photos[0].id);
-
-    expect(link).toContain('file://');
-    expect(link).toContain(photos[0].path);
-  });
-
-  test('should return sorted photos by timestamp', () => {
+  test('should sort photos by timestamp (newest first)', () => {
     const photos = service.getPhotos();
     for (let i = 1; i < photos.length; i++) {
       expect(photos[i - 1].timestamp.getTime()).toBeGreaterThanOrEqual(photos[i].timestamp.getTime());
     }
   });
 
-  test('should get photo count', () => {
-    const count = service.getPhotoCount();
+  test('should toggle favorite', () => {
     const photos = service.getPhotos();
+    const id = photos[0].id;
+    const original = service.getPhoto(id)?.isFavorite;
 
-    expect(count).toBe(photos.length);
+    service.toggleFavorite(id);
+    expect(service.getPhoto(id)?.isFavorite).toBe(!original);
   });
 
-  test('should calculate total size', () => {
-    const total = service.getTotalSize();
-    const photos = service.getPhotos();
-    const calculated = photos.reduce((sum, p) => sum + p.size, 0);
+  test('should get favorites only', () => {
+    const favs = service.getFavorites();
+    expect(favs.every(p => p.isFavorite)).toBe(true);
+  });
 
-    expect(total).toBe(calculated);
+  test('should share photo with file:// URI', async () => {
+    const photos = service.getPhotos();
+    const link = await service.sharePhoto(photos[0].id);
+    expect(link).toContain('file://');
+    expect(link).toContain(photos[0].path);
   });
 
   test('should delete all photos', () => {
@@ -315,43 +211,40 @@ describe('MockCameraService', () => {
     expect(service.getPhotoCount()).toBe(0);
   });
 
-  test('should notify on photo captured', async () => {
+  test('should calculate total size correctly', () => {
+    const total = service.getTotalSize();
+    const calculated = service.getPhotos().reduce((sum, p) => sum + p.size, 0);
+    expect(total).toBe(calculated);
+  });
+
+  test('should notify on photo capture', async () => {
     const captured: string[] = [];
     service.onPhotoCaptured((photo) => captured.push(photo.id));
-
     await service.capture();
-
-    expect(captured.length).toBeGreaterThan(0);
+    expect(captured.length).toBe(1);
   });
 
-  test('should notify on photo deleted', () => {
+  test('should notify on photo delete', () => {
     const deleted: string[] = [];
-    service.onPhotoDeleted((photoId) => deleted.push(photoId));
-
-    const photos = service.getPhotos();
-    service.deletePhoto(photos[0].id);
-
-    expect(deleted).toContain(photos[0].id);
+    service.onPhotoDeleted((id) => deleted.push(id));
+    const photoId = service.getPhotos()[0].id;
+    service.deletePhoto(photoId);
+    expect(deleted).toContain(photoId);
   });
 
-  test('should respect quality settings', async () => {
+  test('quality affects file size', async () => {
     service.updateSettings({ quality: 50 });
-    const lowQuality = await service.capture();
-
+    const low = await service.capture();
     service.updateSettings({ quality: 100 });
-    const highQuality = await service.capture();
-
-    // High quality should result in larger file
-    expect(highQuality!.size).toBeGreaterThan(lowQuality!.size);
+    const high = await service.capture();
+    expect(high!.size).toBeGreaterThan(low!.size);
   });
 
-  test('should respect resolution settings', async () => {
+  test('resolution affects dimensions', async () => {
     service.updateSettings({ resolution: 'low' });
     const lowRes = await service.capture();
-
     service.updateSettings({ resolution: 'high' });
     const highRes = await service.capture();
-
     expect(highRes!.width).toBeGreaterThan(lowRes!.width);
     expect(highRes!.height).toBeGreaterThan(lowRes!.height);
   });
