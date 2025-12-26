@@ -4,11 +4,11 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                796      792        4        0  41|39|2
+Core                                796      796        0        0  41|41|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
-Examples: Logic                       0        0        0        0    2|0|2
-Examples: GUI                         0        0        0        0  79|0|79
+Examples: Logic                      30       30        0        0    2|2|0
+Examples: GUI                       392      371        0       21  75|69|0
 Ported: 3d-cube                     392      392        0        0    3|3|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
@@ -47,15 +47,15 @@ Larger: realtime-paris-density-simulation       12       12        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              2710     2696        4       10      310
+TOTAL                              3132     3101        0       31      306
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 10 tests are currently skipped
+⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 85950ms (85.95s)
-Total ctx.wait() calls: 300
+Total wait time: 92650ms (92.65s)
+Total ctx.wait() calls: 376
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -80,6 +80,6 @@ Top 10 tests by wait time:
   Desktop Environment Tests should hide windows when Show Desktop is clicked
     └─ 2700ms (18 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 4 tests failed
+✅ SUCCESS: All 3101 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt
