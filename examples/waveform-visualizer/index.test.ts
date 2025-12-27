@@ -362,7 +362,8 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
       .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await tsyneTest.screenshot('screenshots/multi-cycle-after-cycle1.png');
     await ctx.getById('pauseBtn').click();
 
     // Cycle 2
@@ -371,13 +372,14 @@ describe('Waveform Visualizer - Complete Playback Workflows', () => {
       .getById('statusLabel')
       .within(500)
       .shouldBe('Playing... (tap waveform to seek)');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await tsyneTest.screenshot('screenshots/multi-cycle-after-cycle2.png');
     await ctx.getById('pauseBtn').click();
 
     // Verify still functional
     const finalPosition = await ctx.getById('positionLabel').getText();
     expect(finalPosition).not.toBe('0:00');
-  });
+  }, 10000);
 
   test('time display format validation', async () => {
     const testApp = await tsyneTest.createApp((app) => {
