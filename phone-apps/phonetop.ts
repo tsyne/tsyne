@@ -16,7 +16,9 @@ import { Label, Button, VBox } from '../core/src/widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
+import { Inspector } from '../core/src/inspector';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import { BridgeKeyboardController } from './keyboard/controller';
@@ -81,6 +83,8 @@ export interface PhoneTopOptions {
   columns?: number;
   /** Number of rows in the grid */
   rows?: number;
+  /** Port for remote debug server (disabled if not set) */
+  debugPort?: number;
 }
 
 interface RunningApp {
@@ -127,6 +131,10 @@ class PhoneTop {
   private windowHeight: number = 960;
   /** Whether currently in landscape orientation */
   private isLandscape: boolean = false;
+  /** Inspector for widget tree queries */
+  private inspector: Inspector | null = null;
+  /** Debug HTTP server */
+  private debugServer: http.Server | null = null;
 
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
@@ -464,6 +472,288 @@ class PhoneTop {
     this.layoutGridItems();
 
     console.log(`Found ${apps.length} apps: ${this.folders.size} folders, ${uncategorizedApps.length} uncategorized`);
+
+    // Start debug server if port specified
+    if (this.options.debugPort) {
+      this.startDebugServer(this.options.debugPort);
+    }
+  }
+
+  /**
+   * Start the remote debug HTTP server
+   */
+  private startDebugServer(port: number): void {
+    this.inspector = new Inspector(this.a.getContext().bridge);
+
+    this.debugServer = http.createServer(async (req, res) => {
+      // CORS headers for cross-origin requests
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Content-Type', 'application/json');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(200);
+        res.end();
+        return;
+      }
+
+      const url = new URL(req.url || '/', `http://localhost:${port}`);
+
+      try {
+        if (url.pathname === '/') {
+          // Index - list available endpoints
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            endpoints: {
+              '/': 'This index',
+              '/windows': 'List all window IDs',
+              '/tree/:windowId': 'Get widget tree for a window',
+              '/tree': 'Get widget tree for main window',
+              '/widget/:id': 'Get single widget by ID (internal or custom)',
+              '/widget-at?x=N&y=N': 'Find widget at absolute coordinates',
+              '/click?x=N&y=N': 'Click widget at coordinates',
+              '/click?id=widgetId': 'Click widget by ID',
+              '/type?id=widgetId&text=hello': 'Type text into widget',
+              '/type?x=N&y=N&text=hello': 'Type text into widget at coordinates',
+              '/apps': 'List running apps',
+              '/state': 'Get phonetop state (current page, open folder, etc.)',
+            }
+          }, null, 2));
+
+        } else if (url.pathname === '/windows') {
+          const windows = await this.inspector!.listWindows();
+          res.writeHead(200);
+          res.end(JSON.stringify({ windows }, null, 2));
+
+        } else if (url.pathname === '/tree') {
+          // Get tree for main window
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          res.writeHead(200);
+          res.end(JSON.stringify({ tree }, null, 2));
+
+        } else if (url.pathname.startsWith('/tree/')) {
+          const windowId = url.pathname.slice(6);
+          const tree = await this.inspector!.getWindowTree(windowId);
+          res.writeHead(200);
+          res.end(JSON.stringify({ tree }, null, 2));
+
+        } else if (url.pathname.startsWith('/widget/')) {
+          const widgetId = decodeURIComponent(url.pathname.slice(8));
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          const widget = this.inspector!.findById(tree, widgetId)
+                      || this.inspector!.findByCustomId(tree, widgetId);
+          if (!widget) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Widget not found', id: widgetId }));
+            return;
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify({ widget }, null, 2));
+
+        } else if (url.pathname === '/apps') {
+          const apps: any[] = [];
+          for (const [id, app] of this.runningApps) {
+            apps.push({
+              id,
+              name: app.metadata.name,
+              isFront: id === this.frontAppId,
+              resourceScope: app.resourceScope,
+            });
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify({ apps, frontAppId: this.frontAppId }, null, 2));
+
+        } else if (url.pathname === '/state') {
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            currentPage: this.currentPage,
+            totalPages: this.totalPages,
+            openFolder: this.openFolder ? {
+              name: this.openFolder.name,
+              category: this.openFolder.category,
+              appCount: this.openFolder.apps.length,
+            } : null,
+            frontAppId: this.frontAppId,
+            runningAppCount: this.runningApps.size,
+            gridItemCount: this.gridItems.length,
+            folderCount: this.folders.size,
+            isLandscape: this.isLandscape,
+            windowSize: { width: this.windowWidth, height: this.windowHeight },
+          }, null, 2));
+
+        } else if (url.pathname === '/widget-at') {
+          // Find widget at absolute x,y coordinates
+          const x = parseFloat(url.searchParams.get('x') || '0');
+          const y = parseFloat(url.searchParams.get('y') || '0');
+
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          const widget = this.findWidgetAtPoint(tree, x, y);
+
+          if (widget) {
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              x, y,
+              widget: {
+                id: widget.id,
+                customId: widget.customId,
+                type: widget.type,
+                widgetType: widget.widgetType,
+                text: widget.text,
+                absX: widget.absX,
+                absY: widget.absY,
+                w: widget.w,
+                h: widget.h,
+                visible: widget.visible,
+              }
+            }, null, 2));
+          } else {
+            res.writeHead(200);
+            res.end(JSON.stringify({ x, y, widget: null, message: 'No widget at this point' }, null, 2));
+          }
+
+        } else if (url.pathname === '/click') {
+          // Click a widget by ID or coordinates
+          const id = url.searchParams.get('id');
+          const x = url.searchParams.get('x');
+          const y = url.searchParams.get('y');
+
+          let widgetId = id;
+          let clickedWidget: any = null;
+
+          // If coordinates provided, find widget at that point
+          if (!widgetId && x && y) {
+            if (!this.win) {
+              res.writeHead(404);
+              res.end(JSON.stringify({ error: 'No main window' }));
+              return;
+            }
+            const tree = await this.inspector!.getWindowTree(this.win.id);
+            clickedWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
+            if (clickedWidget) {
+              widgetId = clickedWidget.id;
+            }
+          }
+
+          if (!widgetId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No widget found. Provide id= or x=&y= params' }));
+            return;
+          }
+
+          await this.a.getContext().bridge.send('clickWidget', { widgetId });
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            clicked: widgetId,
+            widget: clickedWidget ? {
+              id: clickedWidget.id,
+              type: clickedWidget.type,
+              text: clickedWidget.text,
+            } : undefined
+          }, null, 2));
+
+        } else if (url.pathname === '/type') {
+          // Type text into a widget by ID or coordinates
+          const id = url.searchParams.get('id');
+          const x = url.searchParams.get('x');
+          const y = url.searchParams.get('y');
+          const text = url.searchParams.get('text') || '';
+
+          let widgetId = id;
+          let targetWidget: any = null;
+
+          // If coordinates provided, find widget at that point
+          if (!widgetId && x && y) {
+            if (!this.win) {
+              res.writeHead(404);
+              res.end(JSON.stringify({ error: 'No main window' }));
+              return;
+            }
+            const tree = await this.inspector!.getWindowTree(this.win.id);
+            targetWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
+            if (targetWidget) {
+              widgetId = targetWidget.id;
+            }
+          }
+
+          if (!widgetId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No widget found. Provide id= or x=&y= params' }));
+            return;
+          }
+
+          await this.a.getContext().bridge.send('typeText', { widgetId, text });
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            typed: text,
+            into: widgetId,
+            widget: targetWidget ? {
+              id: targetWidget.id,
+              type: targetWidget.type,
+            } : undefined
+          }, null, 2));
+
+        } else {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+        }
+      } catch (err) {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+    });
+
+    this.debugServer.listen(port, '0.0.0.0', () => {
+      console.log(`[phonetop] Debug server listening on http://0.0.0.0:${port}`);
+    });
+  }
+
+  /**
+   * Find the deepest widget containing the given absolute coordinates.
+   * Returns the most specific (deepest) visible widget at that point.
+   */
+  private findWidgetAtPoint(node: any, x: number, y: number): any | null {
+    // Check if point is within this widget's bounds
+    const inBounds = node.visible !== false &&
+      x >= node.absX &&
+      x < node.absX + node.w &&
+      y >= node.absY &&
+      y < node.absY + node.h;
+
+    if (!inBounds) {
+      return null;
+    }
+
+    // Check children (depth-first) - return deepest match
+    if (node.children && node.children.length > 0) {
+      // Search in reverse order (last child is often on top)
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        const childMatch = this.findWidgetAtPoint(node.children[i], x, y);
+        if (childMatch) {
+          return childMatch;
+        }
+      }
+    }
+
+    // No child contains the point, but this widget does
+    return node;
   }
 
   /**
@@ -1220,7 +1510,11 @@ export { app, resolveTransport } from '../core/src/index';
 // Entry point
 if (require.main === module) {
   const { app, resolveTransport } = require('../core/src/index');
+
+  // Check for debug port via environment variable
+  const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
+
   app(resolveTransport(), { title: 'App Launcher' }, async (a: App) => {
-    await buildPhoneTop(a);
+    await buildPhoneTop(a, { debugPort });
   });
 }

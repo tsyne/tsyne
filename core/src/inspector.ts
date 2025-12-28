@@ -25,6 +25,10 @@ export interface WidgetNode {
   x: number;
   /** Y position relative to parent */
   y: number;
+  /** Absolute X position from window origin */
+  absX: number;
+  /** Absolute Y position from window origin */
+  absY: number;
   /** Width */
   w: number;
   /** Height */
@@ -33,6 +37,8 @@ export interface WidgetNode {
   minW: number;
   /** Minimum height */
   minH: number;
+  /** Whether widget is currently visible */
+  visible: boolean;
   /** Padding if set */
   padding?: {
     top: number;
@@ -197,8 +203,10 @@ export class Inspector {
     const paddingStr = tree.padding
       ? ` p=${tree.padding.top},${tree.padding.right},${tree.padding.bottom},${tree.padding.left}`
       : '';
+    const visibleStr = tree.visible === false ? ' [hidden]' : '';
+    const absStr = ` abs=(${tree.absX},${tree.absY})`;
 
-    let result = `${spaces}${typeStr} id=${idStr}${textStr} (${tree.x},${tree.y} ${tree.w}x${tree.h})${paddingStr}\n`;
+    let result = `${spaces}${typeStr} id=${idStr}${textStr} (${tree.x},${tree.y} ${tree.w}x${tree.h})${absStr}${paddingStr}${visibleStr}\n`;
 
     if (tree.children) {
       for (const child of tree.children) {

@@ -22,7 +22,9 @@ import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import { SandboxedApp, IApp } from './sandboxed-app';
 import { Resvg, initResvg } from './resvg-loader';
+import { Inspector } from './inspector';
 import * as path from 'path';
+import * as http from 'http';
 
 // Phone-apps services (lazy-loaded to avoid circular dependencies)
 let phoneServices: any = null;
@@ -50,6 +52,8 @@ export interface DesktopOptions {
   appDirectory?: string;
   /** Pre-defined apps to use instead of scanning directories. For testing. */
   apps?: AppMetadata[];
+  /** Port for remote debug server (disabled if not set) */
+  debugPort?: number;
 }
 
 // Desktop state
@@ -85,6 +89,10 @@ class Desktop {
   private dockedApps: string[] = [];
   /** Cache of registered icon resources keyed by source file */
   private iconResourceCache: Map<string, string> = new Map();
+  /** Inspector for widget tree queries */
+  private inspector: Inspector | null = null;
+  /** Debug HTTP server */
+  private debugServer: http.Server | null = null;
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
@@ -345,6 +353,192 @@ class Desktop {
     }
 
     console.log(`Found ${apps.length} desktop apps`);
+
+    // Start debug server if port specified
+    if (this.options.debugPort) {
+      this.startDebugServer(this.options.debugPort);
+    }
+  }
+
+  /**
+   * Start the remote debug HTTP server
+   */
+  private startDebugServer(port: number): void {
+    this.inspector = new Inspector(this.a.getContext().bridge);
+
+    this.debugServer = http.createServer(async (req, res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Content-Type', 'application/json');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(200);
+        res.end();
+        return;
+      }
+
+      const url = new URL(req.url || '/', `http://localhost:${port}`);
+
+      try {
+        if (url.pathname === '/') {
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            endpoints: {
+              '/': 'This index',
+              '/windows': 'List all window IDs',
+              '/tree': 'Get widget tree for main window',
+              '/tree/:windowId': 'Get widget tree for a window',
+              '/widget/:id': 'Get single widget by ID (internal or custom)',
+              '/widget-at?x=N&y=N': 'Find widget at coordinates',
+              '/click?x=N&y=N': 'Click widget at coordinates',
+              '/click?id=widgetId': 'Click widget by ID',
+              '/type?id=widgetId&text=hello': 'Type text into widget',
+              '/apps': 'List open apps',
+              '/state': 'Get desktop state',
+            }
+          }, null, 2));
+
+        } else if (url.pathname === '/windows') {
+          const windows = await this.inspector!.listWindows();
+          res.writeHead(200);
+          res.end(JSON.stringify({ windows }, null, 2));
+
+        } else if (url.pathname === '/tree') {
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          res.writeHead(200);
+          res.end(JSON.stringify({ tree }, null, 2));
+
+        } else if (url.pathname.startsWith('/tree/')) {
+          const windowId = url.pathname.slice(6);
+          const tree = await this.inspector!.getWindowTree(windowId);
+          res.writeHead(200);
+          res.end(JSON.stringify({ tree }, null, 2));
+
+        } else if (url.pathname.startsWith('/widget/')) {
+          const widgetId = decodeURIComponent(url.pathname.slice(8));
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          const widget = this.inspector!.findById(tree, widgetId)
+                      || this.inspector!.findByCustomId(tree, widgetId);
+          if (!widget) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Widget not found', id: widgetId }));
+            return;
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify({ widget }, null, 2));
+
+        } else if (url.pathname === '/widget-at') {
+          const x = parseFloat(url.searchParams.get('x') || '0');
+          const y = parseFloat(url.searchParams.get('y') || '0');
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+          const tree = await this.inspector!.getWindowTree(this.win.id);
+          const widget = this.findWidgetAtPoint(tree, x, y);
+          res.writeHead(200);
+          res.end(JSON.stringify({ x, y, widget: widget || null }, null, 2));
+
+        } else if (url.pathname === '/click') {
+          const id = url.searchParams.get('id');
+          const x = url.searchParams.get('x');
+          const y = url.searchParams.get('y');
+          let widgetId = id;
+          let clickedWidget: any = null;
+
+          if (!widgetId && x && y && this.win) {
+            const tree = await this.inspector!.getWindowTree(this.win.id);
+            clickedWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
+            if (clickedWidget) widgetId = clickedWidget.id;
+          }
+          if (!widgetId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No widget found' }));
+            return;
+          }
+          await this.a.getContext().bridge.send('clickWidget', { widgetId });
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, clicked: widgetId }, null, 2));
+
+        } else if (url.pathname === '/type') {
+          const id = url.searchParams.get('id');
+          const x = url.searchParams.get('x');
+          const y = url.searchParams.get('y');
+          const text = url.searchParams.get('text') || '';
+          let widgetId = id;
+
+          if (!widgetId && x && y && this.win) {
+            const tree = await this.inspector!.getWindowTree(this.win.id);
+            const widget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
+            if (widget) widgetId = widget.id;
+          }
+          if (!widgetId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No widget found' }));
+            return;
+          }
+          await this.a.getContext().bridge.send('typeText', { widgetId, text });
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, typed: text, into: widgetId }, null, 2));
+
+        } else if (url.pathname === '/apps') {
+          const apps: any[] = [];
+          for (const [id, app] of this.openApps) {
+            apps.push({ id, name: app.metadata.name });
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify({ apps }, null, 2));
+
+        } else if (url.pathname === '/state') {
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            iconCount: this.icons.length,
+            openAppCount: this.openApps.size,
+            dockedApps: this.dockedApps,
+          }, null, 2));
+
+        } else {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+        }
+      } catch (err) {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: String(err) }));
+      }
+    });
+
+    this.debugServer.listen(port, '0.0.0.0', () => {
+      console.log(`[desktop] Debug server listening on http://0.0.0.0:${port}`);
+    });
+  }
+
+  /**
+   * Find the deepest widget containing the given absolute coordinates.
+   */
+  private findWidgetAtPoint(node: any, x: number, y: number): any | null {
+    const inBounds = node.visible !== false &&
+      x >= node.absX && x < node.absX + node.w &&
+      y >= node.absY && y < node.absY + node.h;
+    if (!inBounds) return null;
+
+    if (node.children && node.children.length > 0) {
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        const childMatch = this.findWidgetAtPoint(node.children[i], x, y);
+        if (childMatch) return childMatch;
+      }
+    }
+    return node;
   }
 
   /**
@@ -863,7 +1057,10 @@ if (require.main === module) {
   // Import the app function from index
   const { app, resolveTransport  } = require('./index');
 
+  // Check for debug port from environment
+  const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
+
   app(resolveTransport(), { title: 'Tsyne Desktop' }, async (a: App) => {
-    await buildDesktop(a);
+    await buildDesktop(a, { debugPort });
   });
 }

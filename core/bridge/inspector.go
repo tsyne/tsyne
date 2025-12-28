@@ -420,7 +420,12 @@ func (b *Bridge) handleGetInspectorTree(msg Message) Response {
 }
 
 // buildInspectorTree recursively builds a tree for the inspector
+// parentAbsX/Y track absolute position from window origin
 func (b *Bridge) buildInspectorTree(obj fyne.CanvasObject, pathPrefix string) map[string]interface{} {
+	return b.buildInspectorTreeWithAbsPos(obj, pathPrefix, 0, 0)
+}
+
+func (b *Bridge) buildInspectorTreeWithAbsPos(obj fyne.CanvasObject, pathPrefix string, parentAbsX, parentAbsY float32) map[string]interface{} {
 	// Get type name
 	typeName := fmt.Sprintf("%T", obj)
 	if idx := strings.LastIndex(typeName, "."); idx >= 0 {
@@ -467,15 +472,24 @@ func (b *Bridge) buildInspectorTree(obj fyne.CanvasObject, pathPrefix string) ma
 
 	pos := obj.Position()
 	size := obj.Size()
+	minSize := obj.MinSize()
+
+	// Calculate absolute position from window origin
+	absX := parentAbsX + pos.X
+	absY := parentAbsY + pos.Y
 
 	node := map[string]interface{}{
-		"id":       nodeID,
-		"type":     typeName,
-		"x":        pos.X,
-		"y":        pos.Y,
-		"w":        size.Width,
-		"h":        size.Height,
-		"visible":  obj.Visible(),
+		"id":      nodeID,
+		"type":    typeName,
+		"x":       pos.X,
+		"y":       pos.Y,
+		"absX":    absX,
+		"absY":    absY,
+		"w":       size.Width,
+		"h":       size.Height,
+		"minW":    minSize.Width,
+		"minH":    minSize.Height,
+		"visible": obj.Visible(),
 	}
 
 	if widgetType != "" {
@@ -493,7 +507,7 @@ func (b *Bridge) buildInspectorTree(obj fyne.CanvasObject, pathPrefix string) ma
 		children := make([]map[string]interface{}, 0, len(container.Objects))
 		for i, child := range container.Objects {
 			childPath := fmt.Sprintf("%s.%d", pathPrefix, i)
-			children = append(children, b.buildInspectorTree(child, childPath))
+			children = append(children, b.buildInspectorTreeWithAbsPos(child, childPath, absX, absY))
 		}
 		if len(children) > 0 {
 			node["children"] = children
