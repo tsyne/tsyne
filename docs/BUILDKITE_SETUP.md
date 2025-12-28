@@ -1,165 +1,166 @@
-# Buildkite CI Setup
+# Buildkite Agent Deployment
 
-## One-Time Container Setup
+This directory contains scripts and configuration for deploying a secure, pre-configured Buildkite agent container to `bazzite@bazzite`.
 
-After starting your Buildkite agent container:
+## Overview
 
-```bash
-# Use Ubuntu-based image (recommended for Fyne builds)
-podman run -d -t --name buildkite-agent buildkite/agent:3-ubuntu start --token "<your-agent-token>" --tags 'queue=default-queue'
-```
+The custom Buildkite agent image:
+- ✅ **Pre-installs** Node.js 24.x, Go 1.24.10, and all system dependencies
+- ✅ **No sudo** - all packages baked into image at build time
+- ✅ **Xvfb included** - starts automatically for headless GUI testing
+- ✅ **Systray workaround** - pre-downloaded for restricted network environments
+- ✅ **Security restrictions** - CPU/memory/process limits applied via podman runtime
+- ⚠️ Still runs as **root** inside container (but isolated with restrictions)
 
-Run these commands **once** to prepare the container:
+## Files
 
-### 1. Install Base Dependencies
+- `Dockerfile.buildkite-agent` - Custom Buildkite agent image definition
+- `deploy-buildkite-agent.sh` - Build and test the image on bazzite
+- `create-buildkite-systemd.sh` - Create systemd service with security restrictions
+- `ci.sh` - Updated to skip installation if packages already present
 
-**IMPORTANT**: Use the Ubuntu-based image (`buildkite/agent:3-ubuntu`) for better compatibility with Fyne/OpenGL.
+## Deployment Workflow
 
-```bash
-podman exec -it buildkite-agent bash
-```
-
-Inside the container:
-
-```bash
-# Update package lists
-apt-get update -qq
-
-# Install build essentials
-apt-get install -y \
-  build-essential \
-  git \
-  curl \
-  wget \
-  ca-certificates
-
-# Install Node.js 24 LTS (via NodeSource)
-curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
-apt-get install -y nodejs
-
-# Install Go
-cd /tmp
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
-export PATH=$PATH:/usr/local/go/bin
-
-# Verify installations
-node --version
-npm --version
-go version
-```
-
-### 2. Configure Git (if needed for your builds)
+### 1. Build and Test Image
 
 ```bash
-git config --global user.email "buildkite@example.com"
-git config --global user.name "Buildkite Agent"
+./deploy-buildkite-agent.sh
 ```
 
-### 3. Pre-download systray dependency (optional, speeds up builds)
+This will:
+1. Copy Dockerfile to `bazzite@bazzite`
+2. Build image as `localhost/buildkite-agent-tsyne`
+3. Stop existing container
+4. Test that Node.js, Go, and Xvfb work
+5. Show package count
+
+### 2. Create Systemd Service
 
 ```bash
-cd /tmp
-wget -q https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
-tar -xzf systray-master.tar.gz
+# Export your Buildkite token first
+export BUILDKITE_AGENT_TOKEN="bkct_xxxxx"
+
+./create-buildkite-systemd.sh
 ```
 
-This will be reused across builds. The `ci.sh` script will download it if missing.
+This will:
+1. Create `~/.config/systemd/user/buildkite-agent.service` on bazzite
+2. Configure security restrictions:
+   - CPU limit: 4 cores
+   - Memory limit: 8 GB
+   - Process limit: 200
+   - No new privileges
+3. Reload systemd
 
-### 4. Exit container
+### 3. Start the Agent
 
 ```bash
-exit
+ssh bazzite@bazzite 'systemctl --user start buildkite-agent'
+ssh bazzite@bazzite 'systemctl --user status buildkite-agent'
+ssh bazzite@bazzite 'systemctl --user enable buildkite-agent'  # Auto-start on boot
 ```
 
-## Pipeline Configuration
+### 4. Monitor Logs
 
-The CI pipeline is defined in `.buildkite/pipeline.yml`:
-
-```yaml
-steps:
-  - label: ":golang: :nodejs: Build and Test"
-    command: "./ci.sh"
-    agents:
-      queue: "default"
-    timeout_in_minutes: 10
-    artifact_paths:
-      - "bin/tsyne-bridge"
-      - "dist/**/*"
+```bash
+ssh bazzite@bazzite 'journalctl --user -u buildkite-agent -f'
 ```
 
-## CI Script (`ci.sh`)
+## Iterative Development
 
-The `ci.sh` script handles:
+To test changes:
 
-1. **System dependencies** - Installs X11, OpenGL, Xvfb for headless GUI testing
-2. **Go workarounds** - Downloads `fyne.io/systray` manually (bypasses Google proxy)
-3. **Bridge build** - Compiles Go bridge with `GOPROXY=direct`
-4. **npm install** - Installs Node dependencies
-5. **TypeScript build** - Compiles TypeScript to `dist/`
-6. **Tests** - Runs unit tests with Xvfb for headless GUI support
+1. Edit `Dockerfile.buildkite-agent` locally
+2. Run `./deploy-buildkite-agent.sh` to rebuild and test
+3. Repeat until satisfied
+4. Run `./create-buildkite-systemd.sh` to update systemd service
+5. Restart: `ssh bazzite@bazzite 'systemctl --user restart buildkite-agent'`
 
-## Environment Variables
+## Security Model
 
-The script uses:
-- `BUILDKITE_BUILD_CHECKOUT_PATH` - Automatically set by Buildkite
-- `DISPLAY=:99` - Virtual X display for headless testing
-- `GOPROXY=direct` - Bypasses Google's Go module proxy
+### Image Build Time (trusted)
+- Install all packages as root
+- No sudo binary included in final image
 
-## Expected Build Time
+### Container Runtime (restricted)
+- Runs as root (for Buildkite agent compatibility)
+- **But isolated with:**
+  - CPU limits (4 cores)
+  - Memory limits (8 GB)
+  - Process limits (200 max)
+  - No new privileges flag
+  - Container namespaces (network, PID, mount, UTS)
 
-- Fresh build: ~3-5 minutes
-- Cached dependencies: ~2-3 minutes
+### Risk Mitigation
+- ❌ **No runtime package installation** - supply chain attacks can't install backdoors
+- ❌ **No sudo** - can't escalate or modify system
+- ✅ **Resource limits** - can't DoS host
+- ✅ **Podman rootless** - container escape doesn't give host root
+- ⚠️ **Network access** - still needed for git/npm (could restrict further if needed)
 
-## Artifacts
+## What Changed from Current Setup
 
-After successful builds, these artifacts are uploaded:
-- `bin/tsyne-bridge` - Compiled Go bridge binary
-- `dist/**/*` - Compiled TypeScript distribution
+### Before (current on bazzite)
+- Base image: `buildkite/agent:3-ubuntu` (246 packages)
+- Runtime installation via ci.sh (adds 225 packages)
+- Running as root with no restrictions
+- Packages lost on reboot, reinstalled every time
+- ~2-3 minutes overhead per reboot
+
+### After (this deployment)
+- Custom image: `localhost/buildkite-agent-tsyne` (471 packages pre-installed)
+- No runtime installation (ci.sh skips if detected)
+- Running as root **with restrictions** (CPU/mem/process limits)
+- Packages persist across reboots
+- Fast startup, no installation overhead
+
+## Comparison with ci.sh
+
+The ci.sh script now has smart detection:
+- ✅ Checks if packages already installed
+- ✅ Skips apt-get if present
+- ✅ Skips Node.js/Go if present
+- ✅ Skips Xvfb if already running
+- ✅ Works in both custom image AND bare containers
+
+## Next Steps (Optional)
+
+1. **Tighter network isolation**: Add `--network=slirp4netns` if builds don't need direct network
+2. **Read-only root**: Add `--read-only --tmpfs /tmp` if builds work with it
+3. **Non-root user**: Investigate if buildkite-agent can run as non-root (would need permission changes)
+4. **Secrets management**: Move BUILDKITE_AGENT_TOKEN to podman secrets instead of environment variable
 
 ## Troubleshooting
 
-### Build fails with "cannot find package fyne.io/systray"
-
-The script downloads this manually. If it fails:
-
+### Image build fails
 ```bash
-docker exec -it buildkite-agent bash
+# Build manually on bazzite to see full output
+ssh bazzite@bazzite
 cd /tmp
-rm -rf systray-master*
-wget https://github.com/fyne-io/systray/archive/refs/heads/master.tar.gz -O systray-master.tar.gz
-tar -xzf systray-master.tar.gz
+podman build -t localhost/buildkite-agent-tsyne -f Dockerfile.buildkite-agent .
 ```
 
-### Tests timeout
+### Container won't start
+```bash
+# Check systemd logs
+ssh bazzite@bazzite 'journalctl --user -u buildkite-agent -n 50'
 
-Increase `timeout_in_minutes` in `.buildkite/pipeline.yml` if tests need more time.
+# Test manually
+ssh bazzite@bazzite 'podman run --rm localhost/buildkite-agent-tsyne bash -c "node --version && go version"'
+```
 
-### Xvfb fails to start
+### Builds fail in new container
+- Check if ci.sh detects packages correctly
+- Verify DISPLAY=:99 is set
+- Check Xvfb is running: `podman exec buildkite-agent pgrep Xvfb`
 
-Ensure the container has enough memory (at least 1GB recommended).
+## Cleanup Old Setup
 
-### Screenshots are blank
-
-This is expected in containerized environments - see `LLM.md` section on screenshots. Tests verify functionality; screenshots are supplementary.
-
-## Persistent Agent vs Ephemeral
-
-This setup assumes a **persistent agent** container. For ephemeral agents (Docker plugin), you'd need:
-
-1. A custom Dockerfile based on `buildkite/agent:3`
-2. Pre-installed dependencies in the image
-3. Different pipeline configuration
-
-Let me know if you need the ephemeral agent setup instead!
-
-## Testing Locally
-
-To test the CI script locally in the container:
+After verifying the new setup works:
 
 ```bash
-docker exec -it buildkite-agent bash
-cd /path/to/your/checkout
-./ci.sh
+# Remove old base image (saves 377 MB)
+ssh bazzite@bazzite 'podman rmi buildkite/agent:3-ubuntu'
+
+# Or keep it as backup until confident
 ```

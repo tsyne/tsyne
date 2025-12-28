@@ -232,6 +232,91 @@ setInterval(async () => {
 
 This approach is perfectly suitable for cases like the clock, where the change is isolated and simple.
 
+### Property Binding Methods
+
+Beyond `.bindTo()` for lists, Tsyne provides property-specific bindings:
+
+**`.bindText()` - Dynamic Text:**
+```typescript
+// Status display that auto-updates
+a.label('').bindText(() => `${store.getActiveCount()} items left`);
+
+// Computed values
+a.label('').bindText(() => {
+  const total = store.getTotal();
+  const done = store.getCompletedCount();
+  return `${done}/${total} complete (${Math.round(done/total*100)}%)`;
+});
+```
+
+**`.bindFillColor()` / `.bindColor()` - Visual State:**
+```typescript
+// Background color based on state
+a.rectangle('#DC143C').bindFillColor(() =>
+  store.isChecked(index) ? 'transparent' : '#DC143C'
+);
+
+// Text color based on state
+a.canvasText(item.text).bindColor(() =>
+  store.isChecked(index) ? '#888888' : '#000000'
+);
+```
+
+**`.bindVisible()` - Programmatic Visibility:**
+```typescript
+a.vbox(() => {
+  a.label('Loading...');
+  a.progressBar();
+}).bindVisible(() => store.isLoading());
+```
+
+**Chaining Multiple Bindings:**
+```typescript
+a.label('Error')
+  .bindText(() => store.getErrorMessage())
+  .when(() => store.hasError());
+```
+
+**Global Binding Refresh:**
+```typescript
+import { refreshAllBindings } from 'tsyne';
+
+// Re-evaluate all registered bindings across the app
+await refreshAllBindings();
+```
+
+### MVC vs MVVM in Render Functions
+
+When using `.bindTo()`, you can choose between two patterns:
+
+**MVVM Pattern (Widget References)** - render returns widget refs for manual updates:
+```typescript
+render: (item, index, existing) => {
+  if (existing) {
+    existing.bg.update({ fillColor: getColor(index) });
+    existing.text.update({ text: item.name });
+    return existing;
+  }
+  const bg = a.rectangle(getColor(index));
+  const text = a.canvasText(item.name);
+  return { bg, text };
+}
+```
+
+**MVC Pattern (Declarative Bindings)** - render returns void, uses property bindings:
+```typescript
+render: (item, index) => {
+  a.rectangle('transparent').bindFillColor(() => getColor(index));
+  a.canvasText(item.name).bindColor(() => getTextColor(index));
+}
+```
+
+**MVC is preferred** because:
+- Simpler render functions
+- No manual update logic
+- Framework handles widget lifecycle
+- Easier to reason about
+
 ## Lessons from Ported Apps (7 Complete Real-World Applications)
 
 Seven complete mobile/web applications have been successfully ported to Tsyne, demonstrating the effectiveness of the pseudo-declarative pattern at scale:
@@ -424,6 +509,23 @@ a.vbox(() => {})
     trackBy: (cat) => cat.id
   });
 ```
+
+## Best Practices
+
+### Do
+
+- Use `trackBy` for lists with stable IDs
+- Prefer `.bindText()` over `label.setText()` for reactive text
+- Use `.when()` for conditional visibility instead of manual show/hide
+- Keep render functions simple; move logic to store/model
+- Combine `.bindTo()` with property bindings for rich updates
+
+### Don't
+
+- Don't mix MVVM and MVC patterns in the same render function
+- Don't call async operations directly in binding functions
+- Don't forget `trackBy` for lists that change frequently
+- Don't use `.bindTo()` for static lists (use regular loops instead)
 
 ## Conclusion
 

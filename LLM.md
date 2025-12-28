@@ -31,6 +31,25 @@ Set via `TSYNE_BRIDGE_MODE` env var or `bridgeMode` option in `app()`
 - `bridge/widget_creators_*.go` - Widget creation handlers (canvas, complex, containers, display, inputs)
 - `bridge/dialogs.go` - Dialog handlers
 
+## @Grab: Inline npm Dependencies (Groovy-style)
+
+Single-file apps can declare npm dependencies inline—no `package.json` needed:
+
+```typescript
+#!/usr/bin/env tsyne
+
+// @Grab('axios@^1.6.0')
+// @Grab('date-fns@^3.0.0')
+
+import axios from 'axios';
+import { format } from 'date-fns';
+```
+
+**How it works:**
+- `tsyne myapp.ts` parses `@Grab` directives, installs to `~/.tsyne/packages/`, runs with `NODE_PATH`
+- Inspired by Groovy's Grape annotations
+- See `docs/INLINE_DEPENDENCY_DECLARATIONS.md` for details
+
 ## Intended End-User Code Style
 
 **Pseudo-declarative builder pattern:**
