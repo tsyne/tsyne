@@ -269,7 +269,7 @@ await ctx.getByText('Loaded').shouldExist();
 await ctx.getById('statusLabel').within(500).shouldBe('Loaded');
 ```
 
-**Remote Control:** PhoneTop can expose an HTTP debug server for remote testing via `curl`. See [docs/remote_control.md](docs/remote_control.md).
+**Remote Control:** Tsyne environments (PhoneTop, Desktop, TabletTop) can expose an HTTP debug server for remote testing via `curl`. See [docs/remote_control.md](docs/remote_control.md).
 
 ## MVC Pattern
 
@@ -1112,7 +1112,7 @@ npx tauri android build
 - `docs/ARCHITECTURE.md` - Deep dive into internal architecture
 - `docs/TESTING.md` - TsyneTest framework guide
 - `docs/BROWSER_TESTING.md` - Browser mode testing guide
-- `docs/remote_control.md` - HTTP API for remote inspection/control of PhoneTop
+- `docs/remote_control.md` - HTTP API for remote inspection/control of Tsyne environments
 - `docs/PATTERNS.md` - MVC, MVVM, MVP patterns
 - `docs/ACCESSIBILITY.md` - Accessibility features and guidelines
 - `docs/QUICKSTART.md` - Getting started guide
