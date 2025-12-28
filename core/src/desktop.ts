@@ -21,7 +21,7 @@ import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-win
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import { SandboxedApp, IApp } from './sandboxed-app';
-import { Resvg } from '@resvg/resvg-wasm';
+import { Resvg, initResvg } from './resvg-loader';
 import * as path from 'path';
 
 // Phone-apps services (lazy-loaded to avoid circular dependencies)
@@ -847,6 +847,9 @@ class Desktop {
  * @param options - Optional desktop configuration
  */
 export async function buildDesktop(a: App, options?: DesktopOptions) {
+  // Initialize wasm on aarch64 platforms (no-op on x64)
+  await initResvg();
+
   const desktop = new Desktop(a, options);
   await desktop.init();
   desktop.build();
