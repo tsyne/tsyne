@@ -34,3 +34,6 @@ bridge/bridge
 # iOS build artifacts
 forios/bundle/
 forios/ios-project/
+
+# Local fyne symlink (CI clones its own copy)
+fyne

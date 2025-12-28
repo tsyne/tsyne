@@ -66,5 +66,6 @@ require (
 // replace fyne.io/systray => /tmp/systray-master
 // replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
 
-// Use local Fyne with embedded driver support for Android (uncomment for local dev only)
-// replace fyne.io/fyne/v2 => /home/paul/scm/fyne
+// Use local Fyne with embedded driver support for Android
+// Relative path: fyne cloned inside tsyne repo (tsyne/fyne/)
+replace fyne.io/fyne/v2 => ../../fyne

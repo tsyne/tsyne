@@ -300,14 +300,42 @@ fi
 $GO_CMD version
 
 # ============================================================================
+# STEP 0: Clone/Update Fyne with embedded driver patch
+# ============================================================================
+echo "--- :package: Setting up patched Fyne"
+
+# Check if fyne symlink already exists (local dev setup)
+if [ -L "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne" ]; then
+  echo "Fyne symlink already exists, skipping setup (local dev mode)"
+else
+  # CI mode: use persistent fyne checkout (survives across builds, saves bandwidth)
+  FYNE_PERSISTENT="$HOME/fyne"
+  FYNE_PATCH="${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne_patch/app/app_embedded.go"
+
+  if [ ! -d "$FYNE_PERSISTENT" ]; then
+    echo "Cloning Fyne (first time only)..."
+    git clone --depth 1 https://github.com/fyne-io/fyne.git "$FYNE_PERSISTENT"
+  else
+    echo "Updating Fyne..."
+    cd "$FYNE_PERSISTENT" && git pull --ff-only
+  fi
+
+  # Symlink from checkout dir (go.mod uses relative path ../../fyne)
+  ln -sfn "$FYNE_PERSISTENT" "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne"
+
+  # Always copy the patch (in case it was updated)
+  echo "Applying embedded driver patch..."
+  cp "$FYNE_PATCH" "$FYNE_PERSISTENT/app/"
+  echo "Fyne patched ✓"
+fi
+
+# ============================================================================
 # STEP 1: Go Bridge Build
 # ============================================================================
 echo "--- :golang: Building Go bridge"
 
 # Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
-# Reset go.mod to git-committed version first (clean up any stale replacements from failed builds)
-git checkout -- go.mod go.sum || true
 env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -o ../bin/tsyne-bridge .
 
 echo "Building Go shared library for FFI..."
