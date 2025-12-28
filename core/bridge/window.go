@@ -519,3 +519,28 @@ func (b *Bridge) handleCloseWindow(msg Message) Response {
 		Success: true,
 	}
 }
+
+func (b *Bridge) handleRequestFocusWindow(msg Message) Response {
+	windowID := msg.Payload["windowId"].(string)
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		}
+	}
+
+	fyne.DoAndWait(func() {
+		win.RequestFocus()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}

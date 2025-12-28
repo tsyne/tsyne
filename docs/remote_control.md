@@ -149,8 +149,40 @@ curl "http://phone:9229/type?id=_entry_xyz&text=mypassword"
 }
 ```
 
+### `GET /screenshot`
+Capture window screenshot as base64-encoded PNG.
+```bash
+curl http://phone:9229/screenshot
+```
+```json
+{
+  "success": true,
+  "format": "png",
+  "encoding": "base64",
+  "width": 540,
+  "height": 960,
+  "data": "iVBORw0KGgoAAAANSUhEUgAA..."
+}
+```
+
+**Save to file:**
+```bash
+curl -s http://phone:9229/screenshot | jq -r '.data' | base64 -d > screenshot.png
+```
+
+**Use with capture-device-screenshots.sh:**
+```bash
+# Automatically uses /screenshot when debug server is running
+./capture-device-screenshots.sh pixel
+./capture-device-screenshots.sh android
+```
+
+## PhoneTop-Specific Endpoints
+
+These endpoints are only available in PhoneTop.
+
 ### `GET /apps`
-List running apps in PhoneTop.
+List running apps.
 ```bash
 curl http://phone:9229/apps
 ```
@@ -182,32 +214,69 @@ curl http://phone:9229/state
 }
 ```
 
-### `GET /screenshot`
-Capture window screenshot as base64-encoded PNG.
+### `GET /phonetop/home`
+Go to home screen (hide current app, show launcher).
 ```bash
-curl http://phone:9229/screenshot
+curl http://phone:9229/phonetop/home
 ```
 ```json
 {
   "success": true,
-  "format": "png",
-  "encoding": "base64",
-  "width": 540,
-  "height": 960,
-  "data": "iVBORw0KGgoAAAANSUhEUgAA..."
+  "action": "home",
+  "frontAppId": null
 }
 ```
 
-**Save to file:**
+### `GET /app/quit`
+Quit the front app (or a specific app by ID).
 ```bash
-curl -s http://phone:9229/screenshot | jq -r '.data' | base64 -d > screenshot.png
+# Quit front app
+curl http://phone:9229/app/quit
+
+# Quit specific app by ID
+curl "http://phone:9229/app/quit?id=clock_1"
+```
+```json
+{
+  "success": true,
+  "action": "quit",
+  "quitAppId": "clock_1",
+  "quitAppName": "Clock"
+}
 ```
 
-**Use with capture-device-screenshots.sh:**
+## Common App Endpoints (PhoneTop & Desktop)
+
+These endpoints work in both PhoneTop and Desktop environments.
+
+### `GET /app/switchTo?id=appId`
+Bring a running app to the front.
 ```bash
-# Automatically uses /screenshot when debug server is running
-./capture-device-screenshots.sh pixel
-./capture-device-screenshots.sh android
+curl "http://device:9229/app/switchTo?id=clock_1"
+```
+```json
+{
+  "success": true,
+  "action": "switchTo",
+  "appId": "clock_1",
+  "appName": "Clock"
+}
+```
+
+In PhoneTop, this switches the visible app. In Desktop, this raises the inner window to the front.
+
+### `GET /app/quit?id=appId`
+Quit a running app by ID.
+```bash
+curl "http://device:9229/app/quit?id=clock_1"
+```
+```json
+{
+  "success": true,
+  "action": "quit",
+  "quitAppId": "clock_1",
+  "quitAppName": "Clock"
+}
 ```
 
 ## Widget Tree Structure

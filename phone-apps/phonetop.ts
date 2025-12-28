@@ -537,6 +537,9 @@ class PhoneTop {
               '/apps': 'List running apps',
               '/state': 'Get phonetop state (current page, open folder, etc.)',
               '/screenshot': 'Capture window screenshot (returns base64 PNG)',
+              '/phonetop/home': 'Go to home screen',
+              '/app/quit': 'Quit front app (or /app/quit?id=appId for specific app)',
+              '/app/switchTo?id=appId': 'Bring app to front',
             }
           }, null, 2));
 
@@ -766,6 +769,68 @@ class PhoneTop {
             res.writeHead(500);
             res.end(JSON.stringify({ error: `Screenshot failed: ${screenshotErr}` }));
           }
+
+        } else if (url.pathname === '/phonetop/home') {
+          // Go to home screen
+          this.goHome();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            action: 'home',
+            frontAppId: this.frontAppId,
+          }, null, 2));
+
+        } else if (url.pathname === '/app/switchTo') {
+          // Bring an app to the front
+          const appId = url.searchParams.get('id');
+
+          if (!appId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing id= param' }));
+            return;
+          }
+
+          if (!this.runningApps.has(appId)) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'App not found', id: appId }));
+            return;
+          }
+
+          const appName = this.runningApps.get(appId)?.metadata.name;
+          this.switchToApp(appId);
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            action: 'switchTo',
+            appId,
+            appName,
+          }, null, 2));
+
+        } else if (url.pathname === '/app/quit') {
+          // Quit the front app or a specific app by ID
+          const appId = url.searchParams.get('id') || this.frontAppId;
+
+          if (!appId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No app to quit (no front app and no id= param)' }));
+            return;
+          }
+
+          if (!this.runningApps.has(appId)) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'App not found', id: appId }));
+            return;
+          }
+
+          const appName = this.runningApps.get(appId)?.metadata.name;
+          this.quitApp(appId);
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            action: 'quit',
+            quitAppId: appId,
+            quitAppName: appName,
+          }, null, 2));
 
         } else {
           res.writeHead(404);
@@ -1341,7 +1406,7 @@ class PhoneTop {
   /**
    * Switch to showing a specific app (or home if appId is null)
    */
-  private switchToApp(appId: string | null) {
+  switchToApp(appId: string | null) {
     if (!this.win) return;
 
     this.frontAppId = appId;
@@ -1494,7 +1559,7 @@ class PhoneTop {
   /**
    * Quit an app (remove from running apps)
    */
-  private quitApp(appId: string) {
+  quitApp(appId: string) {
     this.runningApps.delete(appId);
     this.goHome();
   }

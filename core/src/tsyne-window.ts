@@ -23,6 +23,7 @@ export interface ITsyneWindow {
   show(): Promise<void>;
   hide(): Promise<void>;
   close(): Promise<void>;
+  bringToFront(): Promise<void>;
 
   // Title
   setTitle(title: string): void;
@@ -160,6 +161,12 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   async close(): Promise<void> {
     await this.closeInnerWindow();
+  }
+
+  async bringToFront(): Promise<void> {
+    if (this.innerWindow) {
+      await this.innerWindow.bringToFront();
+    }
   }
 
   setTitle(title: string): void {
@@ -357,6 +364,13 @@ export class StackPaneAdapter implements ITsyneWindow {
     }
     if (this.onClose) {
       this.onClose(this);
+    }
+  }
+
+  async bringToFront(): Promise<void> {
+    // In phone mode, bringing to front means showing this app
+    if (this.onShow) {
+      this.onShow(this);
     }
   }
 

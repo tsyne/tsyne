@@ -157,6 +157,15 @@ export class InnerWindow {
   }
 
   /**
+   * Bring the inner window to the front (raise it above other inner windows)
+   */
+  async bringToFront(): Promise<void> {
+    await this.ctx.bridge.send('raiseInnerWindow', {
+      widgetId: this.id
+    });
+  }
+
+  /**
    * Register a custom ID for this inner window (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining

@@ -244,6 +244,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCloseInterceptResponse(msg)
 	case "closeWindow":
 		return b.handleCloseWindow(msg)
+	case "requestFocusWindow":
+		return b.handleRequestFocusWindow(msg)
 	case "setMainMenu":
 		return b.handleSetMainMenu(msg)
 	case "createToolbar":
@@ -524,6 +526,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateInnerWindow(msg)
 	case "innerWindowClose":
 		return b.handleInnerWindowClose(msg)
+	case "raiseInnerWindow":
+		return b.handleRaiseInnerWindow(msg)
 	case "setInnerWindowTitle":
 		return b.handleSetInnerWindowTitle(msg)
 	case "createMultipleWindows":

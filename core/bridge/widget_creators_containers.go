@@ -1441,6 +1441,45 @@ func (b *Bridge) handleInnerWindowClose(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleRaiseInnerWindow(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	innerWindow, ok := w.(*container.InnerWindow)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	// Find the DesktopMDI container that owns this inner window and raise it
+	b.mu.RLock()
+	for _, widget := range b.widgets {
+		if desktop, ok := widget.(*TsyneDesktopMDI); ok {
+			desktop.RaiseWindow(innerWindow)
+		}
+	}
+	b.mu.RUnlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleSetInnerWindowTitle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	title := msg.Payload["title"].(string)

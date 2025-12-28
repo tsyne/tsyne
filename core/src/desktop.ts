@@ -395,6 +395,8 @@ class Desktop {
               '/type?id=widgetId&text=hello': 'Type text into widget',
               '/apps': 'List open apps',
               '/state': 'Get desktop state',
+              '/app/switchTo?id=appId': 'Bring app to front',
+              '/app/quit?id=appId': 'Quit app (or front app if no id)',
             }
           }, null, 2));
 
@@ -506,6 +508,61 @@ class Desktop {
             iconCount: this.icons.length,
             openAppCount: this.openApps.size,
             dockedApps: this.dockedApps,
+          }, null, 2));
+
+        } else if (url.pathname === '/app/switchTo') {
+          // Bring an app to the front
+          const appId = url.searchParams.get('id');
+
+          if (!appId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing id= param' }));
+            return;
+          }
+
+          if (!this.openApps.has(appId)) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'App not found', id: appId }));
+            return;
+          }
+
+          const openApp = this.openApps.get(appId)!;
+          await openApp.tsyneWindow.bringToFront();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            action: 'switchTo',
+            appId,
+            appName: openApp.metadata.name,
+          }, null, 2));
+
+        } else if (url.pathname === '/app/quit') {
+          // Quit an app
+          const appId = url.searchParams.get('id');
+
+          if (!appId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing id= param' }));
+            return;
+          }
+
+          if (!this.openApps.has(appId)) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'App not found', id: appId }));
+            return;
+          }
+
+          const openApp = this.openApps.get(appId)!;
+          const appName = openApp.metadata.name;
+          await openApp.tsyneWindow.close();
+          this.openApps.delete(appId);
+          this.updateRunningApps();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            action: 'quit',
+            quitAppId: appId,
+            quitAppName: appName,
           }, null, 2));
 
         } else {

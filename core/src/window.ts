@@ -566,6 +566,15 @@ export class Window {
   }
 
   /**
+   * Bring the window to the front (request focus)
+   */
+  async bringToFront(): Promise<void> {
+    await this.ctx.bridge.send('requestFocusWindow', {
+      windowId: this.id
+    });
+  }
+
+  /**
    * Set the main menu for this window
    */
   async setMainMenu(menuDefinition: Array<{
