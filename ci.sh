@@ -685,6 +685,34 @@ test_test_app_gui "calculator-advanced" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
+# STEP 9: Android Native Build (optional - requires Android SDK)
+# ============================================================================
+echo "--- :android: Android Native - Build"
+
+# Check for Android SDK
+if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/android-native
+
+  # Create local.properties if it doesn't exist
+  if [ ! -f "local.properties" ]; then
+    echo "sdk.dir=$ANDROID_HOME" > local.properties
+    echo "ndk.dir=$ANDROID_HOME/ndk/26.1.10909125" >> local.properties
+  fi
+
+  echo "Building Android native app..."
+  ./gradlew assembleDebug --no-daemon 2>&1 || {
+    echo "⚠️  Android build failed (non-fatal)"
+  }
+
+  if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+    echo "✅ Android APK built successfully"
+    ls -la app/build/outputs/apk/debug/app-debug.apk
+  fi
+else
+  echo "⚠️  Android SDK not found (ANDROID_HOME not set) - skipping Android build"
+fi
+
+# ============================================================================
 # Cleanup (do this before summary so it always runs)
 # ============================================================================
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}

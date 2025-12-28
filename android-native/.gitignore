@@ -26,5 +26,4 @@ local.properties
 # Node modules in assets (install with npm)
 /app/src/main/assets/nodejs-project/node_modules/
 
-# Gradle wrapper JAR (can be regenerated)
-/gradle/wrapper/gradle-wrapper.jar
+# Note: gradle-wrapper.jar is committed (standard Android practice)
