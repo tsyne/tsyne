@@ -21,6 +21,8 @@ import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
+import * as os from 'os';
 import { BridgeKeyboardController } from './keyboard/controller';
 import { buildKeyboard } from './keyboard/en-gb/keyboard';
 import {
@@ -135,6 +137,8 @@ class PhoneTop {
   private inspector: Inspector | null = null;
   /** Debug HTTP server */
   private debugServer: http.Server | null = null;
+  /** Debug server authentication token */
+  private debugToken: string | null = null;
 
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
@@ -485,6 +489,10 @@ class PhoneTop {
   private startDebugServer(port: number): void {
     this.inspector = new Inspector(this.a.getContext().bridge);
 
+    // Use pre-configured token or generate a random one
+    this.debugToken = process.env.TSYNE_DEBUG_TOKEN || crypto.randomBytes(16).toString('hex');
+    console.log(`[phonetop] Debug token: ${this.debugToken}`);
+
     this.debugServer = http.createServer(async (req, res) => {
       // CORS headers for cross-origin requests
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -498,6 +506,17 @@ class PhoneTop {
       }
 
       const url = new URL(req.url || '/', `http://localhost:${port}`);
+
+      // Check authentication token (query param or header)
+      const tokenParam = url.searchParams.get('token');
+      const tokenHeader = req.headers['x-debug-token'] as string | undefined;
+      const providedToken = tokenParam || tokenHeader;
+
+      if (providedToken !== this.debugToken) {
+        res.writeHead(401);
+        res.end(JSON.stringify({ error: 'Unauthorized - invalid or missing token' }));
+        return;
+      }
 
       try {
         if (url.pathname === '/') {
@@ -517,6 +536,7 @@ class PhoneTop {
               '/type?x=N&y=N&text=hello': 'Type text into widget at coordinates',
               '/apps': 'List running apps',
               '/state': 'Get phonetop state (current page, open folder, etc.)',
+              '/screenshot': 'Capture window screenshot (returns base64 PNG)',
             }
           }, null, 2));
 
@@ -709,6 +729,43 @@ class PhoneTop {
               type: targetWidget.type,
             } : undefined
           }, null, 2));
+
+        } else if (url.pathname === '/screenshot') {
+          // Capture window screenshot and return as base64 PNG
+          if (!this.win) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'No main window' }));
+            return;
+          }
+
+          // Use a temp file for capture (os.tmpdir() works cross-platform)
+          const tempPath = path.join(os.tmpdir(), `tsyne-screenshot-${Date.now()}.png`);
+
+          try {
+            await this.win.screenshot(tempPath);
+
+            // Read file and encode as base64
+            const imageBuffer = fs.readFileSync(tempPath);
+            const base64 = imageBuffer.toString('base64');
+
+            // Clean up temp file
+            fs.unlinkSync(tempPath);
+
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              format: 'png',
+              encoding: 'base64',
+              width: this.windowWidth,
+              height: this.windowHeight,
+              data: base64,
+            }, null, 2));
+          } catch (screenshotErr) {
+            // Clean up on error
+            try { fs.unlinkSync(tempPath); } catch {}
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: `Screenshot failed: ${screenshotErr}` }));
+          }
 
         } else {
           res.writeHead(404);

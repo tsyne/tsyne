@@ -25,6 +25,9 @@ The server binds to `0.0.0.0` so it's accessible from other machines.
 ### `GET /`
 List all available endpoints.
 
+### `GET /screenshot`
+Capture window screenshot as base64 PNG.
+
 ### `GET /windows`
 List all window IDs.
 ```bash
@@ -179,6 +182,34 @@ curl http://phone:9229/state
 }
 ```
 
+### `GET /screenshot`
+Capture window screenshot as base64-encoded PNG.
+```bash
+curl http://phone:9229/screenshot
+```
+```json
+{
+  "success": true,
+  "format": "png",
+  "encoding": "base64",
+  "width": 540,
+  "height": 960,
+  "data": "iVBORw0KGgoAAAANSUhEUgAA..."
+}
+```
+
+**Save to file:**
+```bash
+curl -s http://phone:9229/screenshot | jq -r '.data' | base64 -d > screenshot.png
+```
+
+**Use with capture-device-screenshots.sh:**
+```bash
+# Automatically uses /screenshot when debug server is running
+./capture-device-screenshots.sh pixel
+./capture-device-screenshots.sh android
+```
+
 ## Widget Tree Structure
 
 Each node in the widget tree includes:
@@ -230,10 +261,22 @@ curl "$PHONE/type?x=270&y=100&text=wifi"
 
 ## Security Considerations
 
-The debug server has no authentication. Only enable it:
-- On trusted networks
-- During development/testing
-- With firewall rules limiting access
+The debug server requires token authentication. A random token is generated on startup unless `TSYNE_DEBUG_TOKEN` is set.
+
+**Authentication:**
+- Token is printed to console: `[phonetop] Debug token: abc123...`
+- Pass token via query param: `/screenshot?token=abc123...`
+- Or via header: `X-Debug-Token: abc123...`
+
+**Using a pre-shared token (for automation):**
+```bash
+# Set same token on device and client
+export TSYNE_DEBUG_TOKEN="my-dev-token"
+TSYNE_DEBUG_PORT=9229 ./scripts/tsyne phone-apps/phonetop.ts
+
+# Client can now use known token
+curl "http://phone:9229/screenshot?token=my-dev-token"
+```
 
 For production, do not set `TSYNE_DEBUG_PORT`.
 

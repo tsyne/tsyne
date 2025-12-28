@@ -30,6 +30,9 @@ console.log('[Node.js] __dirname:', __dirname);
 // Set environment for msgpack-uds transport
 process.env.TSYNE_BRIDGE_MODE = 'msgpack-uds';
 
+// Set debug token for remote control API (dev only - use random token in production)
+process.env.TSYNE_DEBUG_TOKEN = 'tsyne-dev-token-j5';
+
 // Read bridge config to get socket path
 const configPath = path.join(__dirname, 'bridge-config.json');
 console.log('[Node.js] Looking for config at:', configPath);
@@ -71,7 +74,8 @@ async function startPhoneTOp() {
                 console.log('[Node.js] App instance created, building UI with static apps...');
                 // Use buildPhoneTopAndroid which has all apps statically bundled
                 await phonetop.buildPhoneTopAndroid(a, {
-                    baseDirectory: __dirname
+                    baseDirectory: __dirname,
+                    debugPort: 9229
                 });
                 console.log('[Node.js] PhoneTop UI built with static apps!');
             });
@@ -79,7 +83,7 @@ async function startPhoneTOp() {
             // Fallback to dynamic scanning (won't find apps on Android)
             console.log('[Node.js] Fallback: Starting PhoneTop app with dynamic scanning...');
             phonetop.app('msgpack-uds', { title: 'PhoneTop' }, async (a) => {
-                await phonetop.buildPhoneTop(a, { baseDirectory: __dirname });
+                await phonetop.buildPhoneTop(a, { baseDirectory: __dirname, debugPort: 9229 });
             });
         } else {
             console.error('[Node.js] Bundle missing required exports');
