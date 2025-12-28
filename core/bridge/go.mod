@@ -65,3 +65,6 @@ require (
 // Commented out - /tmp directories don't persist in agentic environments
 // replace fyne.io/systray => /tmp/systray-master
 // replace fyne.io/fyne/v2 => /tmp/fyne-2.7.1
+
+// Use local Fyne with embedded driver support for Android
+replace fyne.io/fyne/v2 => /home/paul/scm/fyne

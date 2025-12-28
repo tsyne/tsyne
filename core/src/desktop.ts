@@ -21,7 +21,7 @@ import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-win
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import { SandboxedApp, IApp } from './sandboxed-app';
-import { Resvg } from '@resvg/resvg-js';
+import { Resvg } from '@resvg/resvg-wasm';
 import * as path from 'path';
 
 // Phone-apps services (lazy-loaded to avoid circular dependencies)

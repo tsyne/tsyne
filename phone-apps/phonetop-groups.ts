@@ -7,7 +7,7 @@
 
 import { App } from '../core/src/app';
 import { AppMetadata } from '../core/src/app-metadata';
-import { Resvg } from '@resvg/resvg-js';
+import { Resvg } from '@resvg/resvg-wasm';
 
 // Grid position in the launcher
 export interface GridPosition {
@@ -21,6 +21,8 @@ export interface GridIcon {
   metadata: AppMetadata;
   position: GridPosition;
   resourceName?: string;  // Registered icon resource name (for SVG icons)
+  /** Pre-loaded builder function for static apps (Android/iOS) */
+  staticBuilder?: (...args: any[]) => void | Promise<void>;
 }
 
 // Folder containing apps grouped by category

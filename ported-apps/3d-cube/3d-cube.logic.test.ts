@@ -2,7 +2,7 @@
  * 3D Cube (Rubik's Cube) Logic Unit Tests
  */
 
-import { RubiksCube, Side, SIDE_COLORS, CANVAS_SIZE, CUBE_SIZE } from './3d-cube';
+import { RubiksCube, Side, SIDE_COLORS, DEFAULT_CANVAS_SIZE, DEFAULT_CUBE_SIZE } from './3d-cube';
 
 describe('RubiksCube', () => {
   describe('initialization', () => {
@@ -251,11 +251,11 @@ describe('SIDE_COLORS', () => {
 });
 
 describe('Constants', () => {
-  test('CANVAS_SIZE should be 400', () => {
-    expect(CANVAS_SIZE).toBe(400);
+  test('DEFAULT_CANVAS_SIZE should be 280 (phone-friendly)', () => {
+    expect(DEFAULT_CANVAS_SIZE).toBe(280);
   });
 
-  test('CUBE_SIZE should be 200', () => {
-    expect(CUBE_SIZE).toBe(200);
+  test('DEFAULT_CUBE_SIZE should be 140 (half of canvas)', () => {
+    expect(DEFAULT_CUBE_SIZE).toBe(140);
   });
 });

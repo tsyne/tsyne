@@ -27,6 +27,10 @@ docs/api
 bridge/bridge
 bridge/bridge
 
+# Compiled shared libraries (build from source)
+*.so
+*.dylib
+
 # iOS build artifacts
 forios/bundle/
 forios/ios-project/

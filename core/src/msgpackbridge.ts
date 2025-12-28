@@ -75,7 +75,7 @@ interface MsgpackResponse {
  * 4. All subsequent communication via MessagePack over UDS
  */
 export class MsgpackBridgeConnection implements BridgeInterface {
-  private process: ChildProcess;
+  private process?: ChildProcess;
   private socket?: net.Socket;
   private eventHandlers = new Map<string, (data: Record<string, unknown>) => void>();
   private readyPromise: Promise<void>;
@@ -95,6 +95,20 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   public bridgeExiting = false; // Track when bridge is shutting down
 
   constructor(testMode: boolean = false) {
+    // Create promise that resolves when connected
+    this.readyPromise = new Promise((resolve) => {
+      this.readyResolve = resolve;
+    });
+
+    // Check if socket path is already provided (Android/embedded mode)
+    const existingSocketPath = process.env.TSYNE_SOCKET_PATH;
+    if (existingSocketPath) {
+      // Connect directly to existing socket (bridge already running in-process)
+      this.connectionInfo = { socketPath: existingSocketPath, protocol: 'msgpack-uds' };
+      this.connectToSocket(existingSocketPath);
+      return;
+    }
+
     // Detect if running from pkg
     const isPkg = typeof (process as unknown as { pkg?: unknown }).pkg !== 'undefined';
 
@@ -118,11 +132,6 @@ export class MsgpackBridgeConnection implements BridgeInterface {
 
     this.process = spawn(bridgePath, args, {
       stdio: ['pipe', 'pipe', 'inherit']
-    });
-
-    // Create promise that resolves when connected
-    this.readyPromise = new Promise((resolve) => {
-      this.readyResolve = resolve;
     });
 
     // Parse connection info from stdout

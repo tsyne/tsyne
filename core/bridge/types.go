@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/driver/embedded"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 )
@@ -1560,6 +1561,42 @@ func NewBridge(testMode bool) *Bridge {
 		callbacks:       make(map[string]string),
 		contextMenus:    make(map[string]*fyne.Menu),
 		testMode:        testMode,
+		writer:          json.NewEncoder(os.Stdout),
+		widgetMeta:      make(map[string]WidgetMetadata),
+		tableData:       make(map[string][][]string),
+		listData:        make(map[string][]string),
+		toolbarItems:    make(map[string]*ToolbarItemsMetadata),
+		toolbarActions:  make(map[string]*widget.ToolbarAction),
+		windowContent:   make(map[string]string),
+		customIds:       make(map[string]string),
+		childToParent:   make(map[string]string),
+		quitChan:        make(chan bool, 1),
+		resources:       make(map[string][]byte),
+		scalableTheme:   scalableTheme,
+		closeIntercepts: make(map[string]string),
+		closeResponses:  make(map[string]chan bool),
+		progressDialogs: make(map[string]*ProgressDialogInfo),
+	}
+}
+
+// NewBridgeWithEmbeddedDriver creates a Bridge using the embedded driver for custom rendering.
+// This is used on Android where Fyne renders to images that are displayed by the Android UI.
+func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
+	fyneApp := app.New()
+
+	// Set up the embedded driver
+	app.SetEmbeddedDriver(fyneApp, embeddedDriver)
+
+	// Create scalable theme with default font size
+	scalableTheme := NewScalableTheme(1.0)
+
+	return &Bridge{
+		app:             fyneApp,
+		windows:         make(map[string]fyne.Window),
+		widgets:         make(map[string]fyne.CanvasObject),
+		callbacks:       make(map[string]string),
+		contextMenus:    make(map[string]*fyne.Menu),
+		testMode:        false, // Embedded mode is not test mode
 		writer:          json.NewEncoder(os.Stdout),
 		widgetMeta:      make(map[string]WidgetMetadata),
 		tableData:       make(map[string][][]string),

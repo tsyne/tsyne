@@ -16,7 +16,8 @@ import { Label, Button, VBox } from '../core/src/widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
-import { Resvg } from '@resvg/resvg-js';
+import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import * as fs from 'fs';
 import * as path from 'path';
 import { BridgeKeyboardController } from './keyboard/controller';
 import { buildKeyboard } from './keyboard/en-gb/keyboard';
@@ -43,10 +44,39 @@ const PHONE_LAYOUT_SCALE_LANDSCAPE = 0.8;  // Larger scale in landscape to use s
 // Icon size for phone (slightly smaller than desktop's 80px)
 const ICON_SIZE = 64;
 
+// Default app icon (used when no icon is specified)
+const DEFAULT_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="6" r="1"/><circle cx="9" cy="6" r="1"/></svg>`;
+
+/** Static app definition for bundled apps (Android, iOS) */
+export interface StaticAppDefinition {
+  /** Display name for the app */
+  name: string;
+  /** The builder function (pre-imported) */
+  builder: (...args: any[]) => void | Promise<void>;
+  /** SVG icon content */
+  icon?: string;
+  /** App category for grouping */
+  category?: string;
+  /** Builder function arguments in order (default: ['app']) */
+  args?: string[];
+  /** Instance count: 'one' (default), 'many', or 'desktop-many' */
+  count?: 'one' | 'many' | 'desktop-many';
+}
+
 // Phone options
 export interface PhoneTopOptions {
-  /** Directory to scan for apps */
+  /** Directory to scan for apps (defaults to examples/) */
   appDirectory?: string;
+  /** Base directory for relative paths (defaults to process.cwd()) */
+  baseDirectory?: string;
+  /** Directory for phone apps (defaults to phone-apps/) */
+  phoneAppsDirectory?: string;
+  /** Directory for native apps (defaults to native-apps/) */
+  nativeAppsDirectory?: string;
+  /** Directory for ported apps (defaults to ported-apps/) */
+  portedAppsDirectory?: string;
+  /** Static apps to include (for Android/iOS where dynamic loading isn't available) */
+  staticApps?: StaticAppDefinition[];
   /** Number of columns in the grid */
   columns?: number;
   /** Number of rows in the grid */
@@ -116,6 +146,36 @@ class PhoneTop {
       const eventData = data as { focused: boolean };
       this.handleFocusChange(eventData.focused);
     });
+  }
+
+  /**
+   * Safely scan for apps, returning empty array if directory doesn't exist
+   */
+  private safeScanForApps(dir: string): AppMetadata[] {
+    try {
+      if (!fs.existsSync(dir)) {
+        return [];
+      }
+      return scanForApps(dir);
+    } catch (err) {
+      console.error(`Error scanning directory ${dir}:`, err);
+      return [];
+    }
+  }
+
+  /**
+   * Safely scan for ported apps, returning empty array if directory doesn't exist
+   */
+  private safeScanPortedApps(dir: string): AppMetadata[] {
+    try {
+      if (!fs.existsSync(dir)) {
+        return [];
+      }
+      return scanPortedApps(dir);
+    } catch (err) {
+      console.error(`Error scanning ported apps directory ${dir}:`, err);
+      return [];
+    }
   }
 
   /**
@@ -305,19 +365,20 @@ class PhoneTop {
    * Initialize the phone by scanning for apps and grouping into folders
    */
   async init() {
-    const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
-    const portedAppsDir = path.join(process.cwd(), 'ported-apps');
-    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
-    const nativeAppsDir = path.join(process.cwd(), 'native-apps');
+    const baseDir = this.options.baseDirectory || process.cwd();
+    const appDir = this.options.appDirectory || path.join(baseDir, 'examples');
+    const portedAppsDir = this.options.portedAppsDirectory || path.join(baseDir, 'ported-apps');
+    const phoneAppsDir = this.options.phoneAppsDirectory || path.join(baseDir, 'phone-apps');
+    const nativeAppsDir = this.options.nativeAppsDirectory || path.join(baseDir, 'native-apps');
 
-    // Scan for apps
-    const exampleApps = scanForApps(appDir);
-    const portedApps = scanPortedApps(portedAppsDir);
-    const phoneApps = scanForApps(phoneAppsDir);
-    const nativeApps = scanForApps(nativeAppsDir);
+    // Scan for apps (handle missing directories gracefully)
+    const exampleApps = this.safeScanForApps(appDir);
+    const portedApps = this.safeScanPortedApps(portedAppsDir);
+    const phoneApps = this.safeScanForApps(phoneAppsDir);
+    const nativeApps = this.safeScanForApps(nativeAppsDir);
     const apps = [...exampleApps, ...portedApps, ...phoneApps, ...nativeApps].sort((a, b) => a.name.localeCompare(b.name));
 
-    // Prepare all app icons
+    // Prepare all app icons from scanned apps
     for (const metadata of apps) {
       const { resourceName } = await this.prepareIconResource(metadata);
       this.icons.push({
@@ -325,6 +386,32 @@ class PhoneTop {
         position: { page: 0, row: 0, col: 0 },  // Will be set later
         resourceName
       });
+    }
+
+    // Process static apps (for Android/iOS where dynamic loading isn't available)
+    if (this.options.staticApps && this.options.staticApps.length > 0) {
+      console.log(`[phonetop] Processing ${this.options.staticApps.length} static apps`);
+      for (const staticApp of this.options.staticApps) {
+        // Create a synthetic AppMetadata for the static app
+        const metadata: AppMetadata = {
+          filePath: `static://${staticApp.name.toLowerCase().replace(/\s+/g, '-')}`,
+          name: staticApp.name,
+          icon: staticApp.icon || DEFAULT_ICON,
+          iconIsSvg: staticApp.icon ? staticApp.icon.trim().toLowerCase().startsWith('<svg') : true,
+          category: staticApp.category,
+          builder: 'staticBuilder',  // Not used - we have the function directly
+          count: staticApp.count || 'one',
+          args: staticApp.args || ['app']
+        };
+
+        const { resourceName } = await this.prepareIconResource(metadata);
+        this.icons.push({
+          metadata,
+          position: { page: 0, row: 0, col: 0 },  // Will be set later
+          resourceName,
+          staticBuilder: staticApp.builder
+        });
+      }
     }
 
     // Group apps by category
@@ -837,15 +924,27 @@ class PhoneTop {
     });
 
     try {
-      // Use cached loading for faster app startup
-      const { builder, cached } = await loadAppBuilderCached(metadata);
+      // Find the corresponding GridIcon to check for staticBuilder
+      const icon = this.icons.find(i => i.metadata.filePath === metadata.filePath);
+      let builder: ((...args: any[]) => void | Promise<void>) | null = null;
+
+      if (icon?.staticBuilder) {
+        // Use pre-loaded static builder (Android/iOS)
+        builder = icon.staticBuilder;
+        console.log(`[phonetop] Using static builder for: ${metadata.name}`);
+      } else {
+        // Use cached loading for faster app startup
+        const result = await loadAppBuilderCached(metadata);
+        builder = result.builder;
+        if (!result.cached) {
+          console.log(`[phonetop] Transpiled and cached: ${metadata.name}`);
+        }
+      }
+
       if (!builder) {
         console.error(`Could not load builder for ${metadata.name}`);
         disablePhoneMode();
         return;
-      }
-      if (!cached) {
-        console.log(`[phonetop] Transpiled and cached: ${metadata.name}`);
       }
 
       (this.a as any).resources = scopedResources;
@@ -1092,13 +1191,31 @@ class PhoneTop {
 /**
  * Build the phone environment
  */
+// Track if WASM is initialized
+let wasmInitialized = false;
+
 export async function buildPhoneTop(a: App, options?: PhoneTopOptions) {
+  // Initialize resvg WASM if not already done
+  if (!wasmInitialized) {
+    try {
+      const wasmPath = require.resolve('@resvg/resvg-wasm/index_bg.wasm');
+      const wasmBuffer = fs.readFileSync(wasmPath);
+      await initWasm(wasmBuffer);
+      wasmInitialized = true;
+    } catch (e) {
+      console.warn('[phonetop] WASM init failed, icons may not render:', e);
+    }
+  }
+
   const launcher = new PhoneTop(a, options);
   await launcher.init();
   launcher.build();
 }
 
 export { PhoneTop };
+
+// Re-export core app function for bundled usage
+export { app, resolveTransport } from '../core/src/index';
 
 // Entry point
 if (require.main === module) {

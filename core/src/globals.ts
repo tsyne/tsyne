@@ -9,10 +9,14 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Version imported from package.json
-// Use path resolution that works from both src/ (dev) and dist/src/ (built)
-const packageJsonPath = path.resolve(__dirname, '..', __dirname.includes('dist') ? '..' : '', 'package.json');
-const version = require(packageJsonPath).version;
+// Version imported from package.json (with fallback for bundled/Android)
+let version = '1.0.0';
+try {
+  const packageJsonPath = path.resolve(__dirname, '..', __dirname.includes('dist') ? '..' : '', 'package.json');
+  version = require(packageJsonPath).version;
+} catch {
+  // Use default version if package.json not found (bundled/Android)
+}
 
 /**
  * Storage interface (subset of browser Storage API)
@@ -38,8 +42,9 @@ class TsyneStorage implements Storage {
     this.persistent = persistent;
 
     if (persistent) {
-      // Store in ~/.tsyne directory
-      const tsyneDir = path.join(os.homedir(), '.tsyne');
+      // On Android, use FILESDIR; otherwise use ~/.tsyne
+      const baseDir = process.env.FILESDIR || os.homedir();
+      const tsyneDir = path.join(baseDir, '.tsyne');
       if (!fs.existsSync(tsyneDir)) {
         fs.mkdirSync(tsyneDir, { recursive: true });
       }

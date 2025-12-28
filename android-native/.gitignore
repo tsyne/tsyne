@@ -1,0 +1,30 @@
+# Build outputs
+/app/build/
+/build/
+/.gradle/
+
+# CMake build cache
+/app/.cxx/
+
+# IDE
+/.idea/
+*.iml
+
+# Local configuration (contains SDK paths)
+local.properties
+
+# Prebuilt native libraries (download separately or build from source)
+/app/libs/
+/app/src/main/jniLibs/
+
+# nodejs-mobile SDK (external dependency)
+/nodejs-mobile/
+
+# Generated bundle (rebuild with esbuild)
+/app/src/main/assets/nodejs-project/phonetop-bundle.js
+
+# Node modules in assets (install with npm)
+/app/src/main/assets/nodejs-project/node_modules/
+
+# Gradle wrapper JAR (can be regenerated)
+/gradle/wrapper/gradle-wrapper.jar

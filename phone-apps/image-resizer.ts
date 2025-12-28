@@ -359,7 +359,7 @@ export function buildImageResizerApp(a: App, win: Window): ImageResizerUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
+  const { app, resolveTransport  } = require('../core/src/index');
   app(resolveTransport(), { title: 'Image Resizer', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Image Resizer', width: 900, height: 700 }, (win: Window) => {
       buildImageResizerApp(a, win);

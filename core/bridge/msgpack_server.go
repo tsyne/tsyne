@@ -48,8 +48,18 @@ type MsgpackEvent struct {
 
 // NewMsgpackServer creates a new MessagePack UDS server
 func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
-	// Create socket in temp directory
-	socketPath := filepath.Join(os.TempDir(), fmt.Sprintf("tsyne-%d.sock", os.Getpid()))
+	// Create socket in temp directory, prioritizing:
+	// 1. socketDirOverride (set via StartBridgeMsgpackUDSWithDir for Android)
+	// 2. TSYNE_SOCKET_DIR env var
+	// 3. os.TempDir()
+	socketDir := socketDirOverride
+	if socketDir == "" {
+		socketDir = os.Getenv("TSYNE_SOCKET_DIR")
+	}
+	if socketDir == "" {
+		socketDir = os.TempDir()
+	}
+	socketPath := filepath.Join(socketDir, fmt.Sprintf("tsyne-%d.sock", os.Getpid()))
 
 	server := &MsgpackServer{
 		bridge:     bridge,

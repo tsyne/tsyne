@@ -1,5 +1,10 @@
 package main
 
+/*
+#include <stdlib.h>
+*/
+import "C"
+
 import (
 	"bufio"
 	"context"
@@ -824,6 +829,74 @@ func runStdioMode(testMode bool) {
 		// In test mode, just wait for quit signal
 		<-bridge.quitChan
 	}
+}
+
+// =============================================================================
+// Shared Library Entry Point (for Android JNI / embedded use)
+// =============================================================================
+// When built with -buildmode=c-shared, this function is exported and can be
+// called from JNI or other C code. The main() function is ignored in this mode.
+//
+// Usage from JNI:
+//   extern int StartBridgeMsgpackUDS(int testMode);
+//   StartBridgeMsgpackUDS(0);  // Normal mode
+//   StartBridgeMsgpackUDS(1);  // Test/headless mode
+
+// Socket directory override (set by StartBridgeMsgpackUDSWithDir for Android)
+var socketDirOverride string
+
+//export StartBridgeMsgpackUDS
+func StartBridgeMsgpackUDS(testMode C.int) C.int {
+	// Set up logging to stderr
+	log.SetOutput(os.Stderr)
+	log.SetPrefix("[tsyne-bridge] ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	// Initialize performance monitoring
+	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"
+	InitPerfMonitor(perfEnabled)
+
+	// Run in msgpack-uds mode (the default for IPC)
+	runMsgpackUdsMode(testMode != 0)
+
+	return 0
+}
+
+//export StartBridgeMsgpackUDSWithDir
+func StartBridgeMsgpackUDSWithDir(testMode C.int, socketDir *C.char) C.int {
+	// Store the socket directory override before starting
+	if socketDir != nil {
+		socketDirOverride = C.GoString(socketDir)
+		log.Printf("Socket directory set to: %s", socketDirOverride)
+	}
+
+	// Set up logging to stderr
+	log.SetOutput(os.Stderr)
+	log.SetPrefix("[tsyne-bridge] ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	// Initialize performance monitoring
+	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"
+	InitPerfMonitor(perfEnabled)
+
+	// Run in msgpack-uds mode (the default for IPC)
+	runMsgpackUdsMode(testMode != 0)
+
+	return 0
+}
+
+//export StartBridgeGrpc
+func StartBridgeGrpc(testMode C.int) C.int {
+	log.SetOutput(os.Stderr)
+	log.SetPrefix("[tsyne-bridge] ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	perfEnabled := os.Getenv("TSYNE_PERF_SAMPLE") == "true"
+	InitPerfMonitor(perfEnabled)
+
+	runGrpcMode(testMode != 0)
+
+	return 0
 }
 
 func main() {

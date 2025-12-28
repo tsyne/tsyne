@@ -31,9 +31,10 @@ import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 // Constants
 // ============================================================================
 
-const CANVAS_SIZE = 400;
-const CUBE_SIZE = 200;  // Size of entire cube
-const CELL_SIZE = CUBE_SIZE / 3;  // Size of each cell
+// Default canvas size - will be adjusted based on window size
+// Using 280 as default for phone-friendly sizing (fits 540px width with margins)
+const DEFAULT_CANVAS_SIZE = 280;
+const DEFAULT_CUBE_SIZE = 140;  // Size of entire cube (half of canvas)
 
 // Sides of the cube
 enum Side {
@@ -638,10 +639,37 @@ export class CubeUI {
   private renderPending: boolean = false;
   private showCellLabels: boolean = false;
 
+  // Dynamic sizing - calculated based on window dimensions
+  private canvasSize: number = DEFAULT_CANVAS_SIZE;
+  private cubeSize: number = DEFAULT_CUBE_SIZE;
+  private cellSize: number = DEFAULT_CUBE_SIZE / 3;
+
   constructor(a: App) {
     this.a = a;
     this.cube = new RubiksCube();
     this.cube.setOnUpdate(() => this.render());
+  }
+
+  /**
+   * Calculate optimal canvas size based on window dimensions
+   * Leaves room for buttons and status (approximately 180px overhead)
+   */
+  calculateCanvasSize(windowWidth: number, windowHeight: number): void {
+    const overhead = 180; // Space for buttons, status, margins
+    const availableHeight = windowHeight - overhead;
+    const availableWidth = windowWidth - 20; // Small margin
+
+    // Canvas should be square, fit in available space
+    const maxSize = Math.min(availableWidth, availableHeight);
+
+    // Clamp to reasonable range (minimum 200, maximum 500)
+    this.canvasSize = Math.max(200, Math.min(500, maxSize));
+
+    // Scale cube proportionally
+    this.cubeSize = this.canvasSize / 2;
+    this.cellSize = this.cubeSize / 3;
+
+    console.log(`[3DCube] Canvas size: ${this.canvasSize}, window: ${windowWidth}x${windowHeight}`);
   }
 
   setupWindow(win: Window): void {
@@ -723,7 +751,7 @@ export class CubeUI {
       // The max() fills available space, center() centers the square canvas within it
       this.a.max(() => {
         this.a.center(() => {
-          this.canvas = this.a.tappableCanvasRaster(CANVAS_SIZE, CANVAS_SIZE, {
+          this.canvas = this.a.tappableCanvasRaster(this.canvasSize, this.canvasSize, {
             onTap: (x, y) => this.handleTap(x, y),
           });
         });
@@ -735,21 +763,21 @@ export class CubeUI {
    * Detect which cell was tapped using hit testing
    */
   private detectTappedCell(x: number, y: number): TapSelection | null {
-    const HALF = CUBE_SIZE / 2;
+    const HALF = this.cubeSize / 2;
     const PAD = 20;  // Padding for more forgiving hit detection (in 3D space)
 
     // Check each face's cells (check in reverse draw order - front to back)
     // Right face first (drawn last, so on top)
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
-        const z0 = HALF - col * CELL_SIZE;
-        const y0 = HALF - row * CELL_SIZE;
+        const z0 = HALF - col * this.cellSize;
+        const y0 = HALF - row * this.cellSize;
 
         const points = [
           this.project({ x: HALF, y: y0 + PAD, z: z0 + PAD }),
-          this.project({ x: HALF, y: y0 + PAD, z: z0 - CELL_SIZE - PAD }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE - PAD, z: z0 - CELL_SIZE - PAD }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE - PAD, z: z0 + PAD }),
+          this.project({ x: HALF, y: y0 + PAD, z: z0 - this.cellSize - PAD }),
+          this.project({ x: HALF, y: y0 - this.cellSize - PAD, z: z0 - this.cellSize - PAD }),
+          this.project({ x: HALF, y: y0 - this.cellSize - PAD, z: z0 + PAD }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Right, row, col };
@@ -760,14 +788,14 @@ export class CubeUI {
     // Front face
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
-        const x0 = col * CELL_SIZE - HALF;
-        const y0 = HALF - row * CELL_SIZE;
+        const x0 = col * this.cellSize - HALF;
+        const y0 = HALF - row * this.cellSize;
 
         const points = [
           this.project({ x: x0 - PAD, y: y0 + PAD, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE + PAD, y: y0 + PAD, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE + PAD, y: y0 - CELL_SIZE - PAD, z: HALF }),
-          this.project({ x: x0 - PAD, y: y0 - CELL_SIZE - PAD, z: HALF }),
+          this.project({ x: x0 + this.cellSize + PAD, y: y0 + PAD, z: HALF }),
+          this.project({ x: x0 + this.cellSize + PAD, y: y0 - this.cellSize - PAD, z: HALF }),
+          this.project({ x: x0 - PAD, y: y0 - this.cellSize - PAD, z: HALF }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Front, row, col };
@@ -778,14 +806,14 @@ export class CubeUI {
     // Up face (top)
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
-        const x0 = col * CELL_SIZE - HALF;
-        const z0 = row * CELL_SIZE - HALF;
+        const x0 = col * this.cellSize - HALF;
+        const z0 = row * this.cellSize - HALF;
 
         const points = [
           this.project({ x: x0 - PAD, y: HALF, z: z0 - PAD }),
-          this.project({ x: x0 + CELL_SIZE + PAD, y: HALF, z: z0 - PAD }),
-          this.project({ x: x0 + CELL_SIZE + PAD, y: HALF, z: z0 + CELL_SIZE + PAD }),
-          this.project({ x: x0 - PAD, y: HALF, z: z0 + CELL_SIZE + PAD }),
+          this.project({ x: x0 + this.cellSize + PAD, y: HALF, z: z0 - PAD }),
+          this.project({ x: x0 + this.cellSize + PAD, y: HALF, z: z0 + this.cellSize + PAD }),
+          this.project({ x: x0 - PAD, y: HALF, z: z0 + this.cellSize + PAD }),
         ];
         if (this.pointInPolygon({ x, y }, points)) {
           return { face: Side.Up, row, col };
@@ -1119,8 +1147,8 @@ export class CubeUI {
 
     // Center on canvas
     return {
-      x: CANVAS_SIZE / 2 + x,
-      y: CANVAS_SIZE / 2 - y,
+      x: this.canvasSize / 2 + x,
+      y: this.canvasSize / 2 - y,
     };
   }
 
@@ -1128,8 +1156,8 @@ export class CubeUI {
    * Set a pixel in the buffer
    */
   private setPixel(buffer: Uint8Array, x: number, y: number, r: number, g: number, b: number): void {
-    if (x >= 0 && x < CANVAS_SIZE && y >= 0 && y < CANVAS_SIZE) {
-      const offset = (y * CANVAS_SIZE + x) * 4;
+    if (x >= 0 && x < this.canvasSize && y >= 0 && y < this.canvasSize) {
+      const offset = (y * this.canvasSize + x) * 4;
       buffer[offset] = r;
       buffer[offset + 1] = g;
       buffer[offset + 2] = b;
@@ -1152,9 +1180,9 @@ export class CubeUI {
     let maxY = Math.ceil(Math.max(...points.map(p => p.y)));
 
     minX = Math.max(0, minX);
-    maxX = Math.min(CANVAS_SIZE - 1, maxX);
+    maxX = Math.min(this.canvasSize - 1, maxX);
     minY = Math.max(0, minY);
-    maxY = Math.min(CANVAS_SIZE - 1, maxY);
+    maxY = Math.min(this.canvasSize - 1, maxY);
 
     // Scan line fill
     for (let y = minY; y <= maxY; y++) {
@@ -1291,10 +1319,10 @@ export class CubeUI {
     this.rendering = true;
 
     const t0 = Date.now();
-    const buffer = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE * 4);
+    const buffer = new Uint8Array(this.canvasSize * this.canvasSize * 4);
 
     // Background (dark gray)
-    for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
+    for (let i = 0; i < this.canvasSize * this.canvasSize; i++) {
       const offset = i * 4;
       buffer[offset] = 30;
       buffer[offset + 1] = 30;
@@ -1309,28 +1337,28 @@ export class CubeUI {
 
     // Small overlap to prevent gaps from floating-point precision issues
     const OVERLAP = 2;
-    const HALF = CUBE_SIZE / 2;
+    const HALF = this.cubeSize / 2;
 
     // Draw Up face (top) - at y = +HALF
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Up][row][col]];
         // Center the cells: col 0,1,2 -> x starts at -60, -20, +20
-        const x0 = col * CELL_SIZE - HALF;
-        const z0 = row * CELL_SIZE - HALF;
+        const x0 = col * this.cellSize - HALF;
+        const z0 = row * this.cellSize - HALF;
 
         const fillPoints = [
           this.project({ x: x0 - OVERLAP, y: HALF, z: z0 - OVERLAP }),
-          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: HALF, z: z0 - OVERLAP }),
-          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: HALF, z: z0 + CELL_SIZE + OVERLAP }),
-          this.project({ x: x0 - OVERLAP, y: HALF, z: z0 + CELL_SIZE + OVERLAP }),
+          this.project({ x: x0 + this.cellSize + OVERLAP, y: HALF, z: z0 - OVERLAP }),
+          this.project({ x: x0 + this.cellSize + OVERLAP, y: HALF, z: z0 + this.cellSize + OVERLAP }),
+          this.project({ x: x0 - OVERLAP, y: HALF, z: z0 + this.cellSize + OVERLAP }),
         ];
         this.fillQuad(buffer, fillPoints, color);
       }
     }
     // Draw grid lines on top face
     for (let i = 0; i <= 3; i++) {
-      const pos = i * CELL_SIZE - HALF;
+      const pos = i * this.cellSize - HALF;
       this.drawLine(buffer,
         this.project({ x: -HALF, y: HALF, z: pos }),
         this.project({ x: HALF, y: HALF, z: pos }),
@@ -1345,25 +1373,25 @@ export class CubeUI {
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Front][row][col]];
-        const x0 = col * CELL_SIZE - HALF;
+        const x0 = col * this.cellSize - HALF;
         // row 0 is top (y = +HALF), row 2 is bottom (y = -HALF)
-        const y0 = HALF - row * CELL_SIZE;
+        const y0 = HALF - row * this.cellSize;
 
         const fillPoints = [
           this.project({ x: x0 - OVERLAP, y: y0 + OVERLAP, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: y0 + OVERLAP, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE + OVERLAP, y: y0 - CELL_SIZE - OVERLAP, z: HALF }),
-          this.project({ x: x0 - OVERLAP, y: y0 - CELL_SIZE - OVERLAP, z: HALF }),
+          this.project({ x: x0 + this.cellSize + OVERLAP, y: y0 + OVERLAP, z: HALF }),
+          this.project({ x: x0 + this.cellSize + OVERLAP, y: y0 - this.cellSize - OVERLAP, z: HALF }),
+          this.project({ x: x0 - OVERLAP, y: y0 - this.cellSize - OVERLAP, z: HALF }),
         ];
         this.fillQuad(buffer, fillPoints, color);
       }
     }
     // Draw grid lines on front face
     for (let i = 0; i <= 3; i++) {
-      const pos = i * CELL_SIZE - HALF;
+      const pos = i * this.cellSize - HALF;
       this.drawLine(buffer,
-        this.project({ x: -HALF, y: HALF - i * CELL_SIZE, z: HALF }),
-        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: HALF }),
+        this.project({ x: -HALF, y: HALF - i * this.cellSize, z: HALF }),
+        this.project({ x: HALF, y: HALF - i * this.cellSize, z: HALF }),
         { r: 0, g: 0, b: 0 });
       this.drawLine(buffer,
         this.project({ x: pos, y: HALF, z: HALF }),
@@ -1376,14 +1404,14 @@ export class CubeUI {
       for (let col = 0; col < 3; col++) {
         const color = SIDE_COLORS[faces[Side.Right][row][col]];
         // col 0 is front (z = +HALF), col 2 is back (z = -HALF)
-        const z0 = HALF - col * CELL_SIZE;
-        const y0 = HALF - row * CELL_SIZE;
+        const z0 = HALF - col * this.cellSize;
+        const y0 = HALF - row * this.cellSize;
 
         const fillPoints = [
           this.project({ x: HALF, y: y0 + OVERLAP, z: z0 + OVERLAP }),
-          this.project({ x: HALF, y: y0 + OVERLAP, z: z0 - CELL_SIZE - OVERLAP }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE - OVERLAP, z: z0 - CELL_SIZE - OVERLAP }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE - OVERLAP, z: z0 + OVERLAP }),
+          this.project({ x: HALF, y: y0 + OVERLAP, z: z0 - this.cellSize - OVERLAP }),
+          this.project({ x: HALF, y: y0 - this.cellSize - OVERLAP, z: z0 - this.cellSize - OVERLAP }),
+          this.project({ x: HALF, y: y0 - this.cellSize - OVERLAP, z: z0 + OVERLAP }),
         ];
         this.fillQuad(buffer, fillPoints, color);
       }
@@ -1391,12 +1419,12 @@ export class CubeUI {
     // Draw grid lines on right face
     for (let i = 0; i <= 3; i++) {
       this.drawLine(buffer,
-        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: HALF }),
-        this.project({ x: HALF, y: HALF - i * CELL_SIZE, z: -HALF }),
+        this.project({ x: HALF, y: HALF - i * this.cellSize, z: HALF }),
+        this.project({ x: HALF, y: HALF - i * this.cellSize, z: -HALF }),
         { r: 0, g: 0, b: 0 });
       this.drawLine(buffer,
-        this.project({ x: HALF, y: HALF, z: HALF - i * CELL_SIZE }),
-        this.project({ x: HALF, y: -HALF, z: HALF - i * CELL_SIZE }),
+        this.project({ x: HALF, y: HALF, z: HALF - i * this.cellSize }),
+        this.project({ x: HALF, y: -HALF, z: HALF - i * this.cellSize }),
         { r: 0, g: 0, b: 0 });
     }
 
@@ -1407,12 +1435,12 @@ export class CubeUI {
       // Labels for Up (T) face
       for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 3; col++) {
-          const x0 = col * CELL_SIZE - HALF;
-          const z0 = row * CELL_SIZE - HALF;
+          const x0 = col * this.cellSize - HALF;
+          const z0 = row * this.cellSize - HALF;
           const center = this.project({
-            x: x0 + CELL_SIZE / 2,
+            x: x0 + this.cellSize / 2,
             y: HALF,
-            z: z0 + CELL_SIZE / 2,
+            z: z0 + this.cellSize / 2,
           });
           this.drawLabel(buffer, `T${row + 1}${col + 1}`, center.x, center.y, labelColor);
         }
@@ -1421,11 +1449,11 @@ export class CubeUI {
       // Labels for Front (L) face
       for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 3; col++) {
-          const x0 = col * CELL_SIZE - HALF;
-          const y0 = HALF - row * CELL_SIZE;
+          const x0 = col * this.cellSize - HALF;
+          const y0 = HALF - row * this.cellSize;
           const center = this.project({
-            x: x0 + CELL_SIZE / 2,
-            y: y0 - CELL_SIZE / 2,
+            x: x0 + this.cellSize / 2,
+            y: y0 - this.cellSize / 2,
             z: HALF,
           });
           this.drawLabel(buffer, `L${row + 1}${col + 1}`, center.x, center.y, labelColor);
@@ -1435,12 +1463,12 @@ export class CubeUI {
       // Labels for Right (R) face
       for (let row = 0; row < 3; row++) {
         for (let col = 0; col < 3; col++) {
-          const z0 = HALF - col * CELL_SIZE;
-          const y0 = HALF - row * CELL_SIZE;
+          const z0 = HALF - col * this.cellSize;
+          const y0 = HALF - row * this.cellSize;
           const center = this.project({
             x: HALF,
-            y: y0 - CELL_SIZE / 2,
-            z: z0 - CELL_SIZE / 2,
+            y: y0 - this.cellSize / 2,
+            z: z0 - this.cellSize / 2,
           });
           this.drawLabel(buffer, `R${row + 1}${col + 1}`, center.x, center.y, labelColor);
         }
@@ -1454,31 +1482,31 @@ export class CubeUI {
       let points: Point2D[] = [];
 
       if (sel.face === Side.Up) {
-        const x0 = sel.col * CELL_SIZE - HALF;
-        const z0 = sel.row * CELL_SIZE - HALF;
+        const x0 = sel.col * this.cellSize - HALF;
+        const z0 = sel.row * this.cellSize - HALF;
         points = [
           this.project({ x: x0, y: HALF, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 }),
-          this.project({ x: x0 + CELL_SIZE, y: HALF, z: z0 + CELL_SIZE }),
-          this.project({ x: x0, y: HALF, z: z0 + CELL_SIZE }),
+          this.project({ x: x0 + this.cellSize, y: HALF, z: z0 }),
+          this.project({ x: x0 + this.cellSize, y: HALF, z: z0 + this.cellSize }),
+          this.project({ x: x0, y: HALF, z: z0 + this.cellSize }),
         ];
       } else if (sel.face === Side.Front) {
-        const x0 = sel.col * CELL_SIZE - HALF;
-        const y0 = HALF - sel.row * CELL_SIZE;
+        const x0 = sel.col * this.cellSize - HALF;
+        const y0 = HALF - sel.row * this.cellSize;
         points = [
           this.project({ x: x0, y: y0, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE, y: y0, z: HALF }),
-          this.project({ x: x0 + CELL_SIZE, y: y0 - CELL_SIZE, z: HALF }),
-          this.project({ x: x0, y: y0 - CELL_SIZE, z: HALF }),
+          this.project({ x: x0 + this.cellSize, y: y0, z: HALF }),
+          this.project({ x: x0 + this.cellSize, y: y0 - this.cellSize, z: HALF }),
+          this.project({ x: x0, y: y0 - this.cellSize, z: HALF }),
         ];
       } else if (sel.face === Side.Right) {
-        const z0 = HALF - sel.col * CELL_SIZE;
-        const y0 = HALF - sel.row * CELL_SIZE;
+        const z0 = HALF - sel.col * this.cellSize;
+        const y0 = HALF - sel.row * this.cellSize;
         points = [
           this.project({ x: HALF, y: y0, z: z0 }),
-          this.project({ x: HALF, y: y0, z: z0 - CELL_SIZE }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 - CELL_SIZE }),
-          this.project({ x: HALF, y: y0 - CELL_SIZE, z: z0 }),
+          this.project({ x: HALF, y: y0, z: z0 - this.cellSize }),
+          this.project({ x: HALF, y: y0 - this.cellSize, z: z0 - this.cellSize }),
+          this.project({ x: HALF, y: y0 - this.cellSize, z: z0 }),
         ];
       }
 
@@ -1561,13 +1589,28 @@ export class CubeUI {
 // App Factory
 // ============================================================================
 
-export function create3DCubeApp(a: App): CubeUI {
+export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: number): CubeUI {
   const ui = new CubeUI(a);
+
+  // Use provided dimensions or phone-friendly defaults
+  const width = windowWidth ?? 350;
+  const height = windowHeight ?? 500;
+
+  // Calculate optimal canvas size for the window
+  ui.calculateCanvasSize(width, height);
 
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: '3D Cube', width: 450, height: 600 }, (win: Window) => {
+  a.window({ title: '3D Cube', width, height }, (win: Window) => {
     ui.setupWindow(win);
+
+    // Handle window resize to adjust canvas (if supported)
+    win.onResize((newWidth, newHeight) => {
+      console.log(`[3DCube] Window resized to ${newWidth}x${newHeight}`);
+      ui.calculateCanvasSize(newWidth, newHeight);
+      // Note: Would need to recreate canvas for new size, but this at least logs it
+    });
+
     win.setContent(() => ui.buildContent());
     win.show();
     // Trigger initial render after UI is set up (needed for phonetop)
@@ -1578,7 +1621,7 @@ export function create3DCubeApp(a: App): CubeUI {
 }
 
 // Export for testing
-export { Side, SIDE_COLORS, CANVAS_SIZE, CUBE_SIZE };
+export { Side, SIDE_COLORS, DEFAULT_CANVAS_SIZE, DEFAULT_CUBE_SIZE };
 
 // Standalone entry point
 if (require.main === module) {
