@@ -323,9 +323,11 @@ else
   # Symlink from checkout dir (go.mod uses relative path ../../fyne)
   ln -sfn "$FYNE_PERSISTENT" "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne"
 
-  # Always copy the patch (in case it was updated)
-  echo "Applying embedded driver patch..."
+  # Always copy the patches (in case they were updated)
+  echo "Applying embedded driver patches..."
   cp "$FYNE_PATCH" "$FYNE_PERSISTENT/app/"
+  mkdir -p "$FYNE_PERSISTENT/internal/driver/embedded"
+  cp "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne_patch/internal/driver/embedded/driver.go" "$FYNE_PERSISTENT/internal/driver/embedded/"
   echo "Fyne patched ✓"
 fi
 
