@@ -72,6 +72,8 @@ const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string }> = {
 };
 import * as path from 'path';
 import * as http from 'http';
+import * as os from 'os';
+import * as fs from 'fs';
 
 // Core services (general-purpose, available everywhere)
 import {
@@ -124,6 +126,16 @@ interface DesktopFolder {
   y: number;
 }
 
+/** File icon for files on ~/Desktop/ */
+interface FileIcon {
+  filePath: string;      // Full path to the file
+  fileName: string;      // Display name (basename)
+  resourceName?: string; // Icon resource (thumbnail or generic)
+  x: number;
+  y: number;
+  selected: boolean;
+}
+
 interface OpenApp {
   metadata: AppMetadata;
   tsyneWindow: ITsyneWindow;
@@ -141,6 +153,8 @@ class Desktop {
   private icons: DesktopIcon[] = [];
   /** Folders containing categorized apps */
   private folders: DesktopFolder[] = [];
+  /** File icons from ~/Desktop/ */
+  private fileIcons: FileIcon[] = [];
   /** Cache of folder icon resources by category */
   private folderIconCache: Map<string, string> = new Map();
   private openApps: Map<string, OpenApp> = new Map();
@@ -562,9 +576,104 @@ class Desktop {
     const folderApps = this.folders.reduce((sum, f) => sum + f.apps.length, 0);
     console.log(`Found ${totalApps} desktop apps: ${this.folders.length} folders (${folderApps} apps), ${this.icons.length} uncategorized`);
 
+    // Scan for files on ~/Desktop/
+    await this.scanDesktopFiles(col, row);
+
     // Start debug server if port specified
     if (this.options.debugPort) {
       this.startDebugServer(this.options.debugPort);
+    }
+  }
+
+  /**
+   * Scan ~/Desktop/ for PNG files and create file icons
+   */
+  private async scanDesktopFiles(startCol: number, startRow: number) {
+    const desktopDir = path.join(os.homedir(), 'Desktop');
+
+    // Check if directory exists
+    try {
+      await fs.promises.access(desktopDir, fs.constants.R_OK);
+    } catch {
+      console.log(`Desktop directory not found: ${desktopDir}`);
+      return;
+    }
+
+    // Read directory and filter for PNG files
+    try {
+      const entries = await fs.promises.readdir(desktopDir, { withFileTypes: true });
+      const pngFiles = entries
+        .filter(e => e.isFile() && e.name.toLowerCase().endsWith('.png'))
+        .map(e => e.name);
+
+      if (pngFiles.length === 0) {
+        console.log('No PNG files found in ~/Desktop/');
+        return;
+      }
+
+      console.log(`Found ${pngFiles.length} PNG files in ~/Desktop/`);
+
+      // Prepare the generic image icon resource
+      const imageIconResource = await this.prepareFileIconResource();
+
+      // Position file icons after folders and apps
+      const GRID_COLS = 8;
+      let col = startCol;
+      let row = startRow;
+
+      for (const fileName of pngFiles) {
+        const filePath = path.join(desktopDir, fileName);
+        const savedPos = await this.loadIconPosition(`file:${fileName}`);
+        const defaultX = col * ICON_SPACING + 20;
+        const defaultY = row * ICON_SPACING + 20;
+
+        this.fileIcons.push({
+          filePath,
+          fileName,
+          resourceName: imageIconResource,
+          x: savedPos?.x ?? defaultX,
+          y: savedPos?.y ?? defaultY,
+          selected: false
+        });
+
+        col++;
+        if (col >= GRID_COLS) {
+          col = 0;
+          row++;
+        }
+      }
+    } catch (err) {
+      console.error('Error scanning desktop files:', err);
+    }
+  }
+
+  /**
+   * Prepare a generic image icon resource for file icons
+   */
+  private async prepareFileIconResource(): Promise<string | undefined> {
+    // Generic image/photo icon SVG
+    const imageSvg = `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="48" height="48" rx="4" fill="#f0f0f0"/>
+      <circle cx="24" cy="24" r="6" fill="#FFD54F"/>
+      <path d="M8 44 L24 32 L36 44 L48 28 L56 40 L56 52 C56 54.2 54.2 56 52 56 L12 56 C9.8 56 8 54.2 8 52 Z" fill="#81C784"/>
+    </svg>`;
+
+    try {
+      const normalized = this.normalizeSvg(imageSvg, ICON_SIZE);
+      const renderer = new Resvg(normalized, {
+        fitTo: { mode: 'width', value: ICON_SIZE },
+        background: 'rgba(0,0,0,0)'
+      });
+      const png = renderer.render().asPng();
+      const buffer = Buffer.from(png);
+      const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
+
+      const resourceName = `file-icon-image`;
+      this.a.registerResource(resourceName, dataUri);
+      return resourceName;
+    } catch (err) {
+      console.error('Failed to prepare file icon resource:', err);
+      return undefined;
     }
   }
 
@@ -1215,6 +1324,93 @@ class Desktop {
         }
       });
     }
+
+    // Add file icons (PNG files from ~/Desktop/)
+    for (let i = 0; i < this.fileIcons.length; i++) {
+      const fileIcon = this.fileIcons[i];
+      const color = colors[(i + this.folders.length + this.icons.length) % colors.length];
+
+      console.log(`Adding file icon: ${fileIcon.fileName} at (${fileIcon.x}, ${fileIcon.y})`);
+      const iconId = `file-${fileIcon.fileName.toLowerCase().replace(/\s+/g, '-')}`;
+      this.desktopMDI.addIcon({
+        id: iconId,
+        label: fileIcon.fileName,
+        resource: fileIcon.resourceName,
+        x: fileIcon.x,
+        y: fileIcon.y,
+        color,
+        onClick: (_iconId, _x, _y) => {
+          this.selectFileIcon(fileIcon);
+        },
+        onDoubleClick: (_iconId, _x, _y) => {
+          this.launchFileWithApp(fileIcon);
+        },
+        onDragEnd: (_iconId, x, y) => {
+          fileIcon.x = x;
+          fileIcon.y = y;
+          this.saveIconPosition(`file:${fileIcon.fileName}`, x, y);
+        },
+        onRightClick: (_iconId, _x, _y) => {
+          this.showFileInfo(fileIcon);
+        }
+      });
+    }
+  }
+
+  /**
+   * Select a file icon (visual feedback)
+   */
+  private selectFileIcon(fileIcon: FileIcon) {
+    this.selectedIcon = null;
+    this.selectedFolder = null;
+    // Deselect all file icons
+    for (const f of this.fileIcons) {
+      f.selected = false;
+    }
+    fileIcon.selected = true;
+  }
+
+  /**
+   * Show file info dialog
+   */
+  private async showFileInfo(fileIcon: FileIcon) {
+    if (!this.win) return;
+
+    await this.win.showInfo(
+      `File: ${fileIcon.fileName}`,
+      `Path: ${fileIcon.filePath}\nType: PNG Image`
+    );
+  }
+
+  /**
+   * Launch a file with its associated app
+   */
+  private launchFileWithApp(fileIcon: FileIcon) {
+    // Find image-viewer app
+    const imageViewerApp = this.findAppByName('Image Viewer');
+    if (imageViewerApp) {
+      this.launchApp(imageViewerApp, fileIcon.filePath);
+    } else {
+      console.error('Image Viewer app not found');
+      this.win?.showInfo('Error', 'Image Viewer app not found');
+    }
+  }
+
+  /**
+   * Find an app by name (searches folders and uncategorized icons)
+   */
+  private findAppByName(name: string): AppMetadata | null {
+    // Check uncategorized icons
+    const icon = this.icons.find(i => i.metadata.name === name);
+    if (icon) return icon.metadata;
+
+    // Check folder apps
+    for (const folder of this.folders) {
+      const app = folder.apps.find(i => i.metadata.name === name);
+      if (app) return app.metadata;
+    }
+
+    return null;
   }
 
   /**
@@ -1367,8 +1563,10 @@ class Desktop {
    * Launch an app in an inner window using TsyneWindow abstraction.
    * The app's builder calls a.window() which automatically creates
    * an InnerWindow because we're in desktop mode.
+   * @param metadata App metadata
+   * @param filePath Optional file path to pass to the app (e.g., for opening files)
    */
-  async launchApp(metadata: AppMetadata) {
+  async launchApp(metadata: AppMetadata, filePath?: string) {
     // Check if already open - bring to front (unless count allows multiple instances)
     if (metadata.count !== 'many' && metadata.count !== 'desktop-many') {
       const existing = this.openApps.get(metadata.filePath);
@@ -1435,6 +1633,7 @@ class Desktop {
       const argMap: Record<string, any> = {
         'app': sandboxedApp,
         'resources': scopedResources,
+        'filePath': filePath,  // Optional file path for opening files
         // General services (available on all platforms)
         'clock': new MockClockService(),
         'notifications': new MockNotificationService(),
