@@ -485,6 +485,17 @@ export class Window {
   }
 
   /**
+   * Move the window to a specific position
+   */
+  async move(x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('moveWindow', {
+      windowId: this.id,
+      x,
+      y
+    });
+  }
+
+  /**
    * Set the window title
    */
   setTitle(title: string): void {
