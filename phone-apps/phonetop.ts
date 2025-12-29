@@ -1165,8 +1165,11 @@ class PhoneTop {
   private createFolderIcon(folder: Folder) {
     const resourceName = this.folderIconCache.get(folder.category);
 
-    this.a.center(() => {
-      this.a.vbox(() => {
+    // Use vbox with hbox+spacers for horizontal centering only
+    // (center() would also center vertically, causing y-separation between icon and label)
+    this.a.vbox(() => {
+      this.a.hbox(() => {
+        this.a.spacer();
         // Folder icon - render as image at ICON_SIZE for consistency with app icons
         if (resourceName) {
           this.a.image({
@@ -1180,10 +1183,12 @@ class PhoneTop {
             .withId(`folder-${folder.category}`)
             .onClick(() => this.openFolderView(folder));
         }
-
-        // Folder name (centered, no word-wrap to avoid character breaks in narrow cells)
-        this.a.label(folder.name, undefined, 'center');
+        this.a.spacer();
       });
+
+      // Folder name (centered, no word-wrap to avoid character breaks in narrow cells)
+      this.a.label(folder.name, undefined, 'center');
+      this.a.spacer();  // Push content to top of cell
     });
   }
 
@@ -1192,9 +1197,11 @@ class PhoneTop {
    * @param icon The grid icon to display
    */
   private createAppIcon(icon: GridIcon) {
-    // Center the icon content within its grid cell
-    this.a.center(() => {
-      this.a.vbox(() => {
+    // Use vbox with hbox+spacers for horizontal centering only
+    // (center() would also center vertically, causing y-separation between icon and label)
+    this.a.vbox(() => {
+      this.a.hbox(() => {
+        this.a.spacer();
         if (icon.resourceName) {
           // Use SVG icon rendered as image
           this.a.image({
@@ -1209,10 +1216,12 @@ class PhoneTop {
             .withId(`icon-${icon.metadata.name}`)
             .onClick(() => this.launchApp(icon.metadata));
         }
-
-        // App name (centered, no word-wrap to avoid character breaks in narrow cells)
-        this.a.label(icon.metadata.name, undefined, 'center');
+        this.a.spacer();
       });
+
+      // App name (centered, no word-wrap to avoid character breaks in narrow cells)
+      this.a.label(icon.metadata.name, undefined, 'center');
+      this.a.spacer();  // Push content to top of cell
     });
   }
 

@@ -16,13 +16,60 @@
 
 import { App } from './app';
 import { Window } from './window';
-import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI } from './widgets';
+import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from './widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from './app-metadata';
 import { ScopedResourceManager, ResourceManager, IResourceManager } from './resources';
 import { SandboxedApp, IApp } from './sandboxed-app';
 import { Resvg, initResvg } from './resvg-loader';
 import { Inspector } from './inspector';
+// Category configuration for app groups (same as phonetop-groups.ts)
+const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string }> = {
+  'utilities': {
+    displayName: 'Utilities',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12L52 24M48 16L24 40L20 52L32 48L56 24C58 22 58 18 56 16L48 8C46 6 42 6 40 8L40 12Z"/><path d="M8 56L20 44"/><circle cx="14" cy="50" r="4" fill="#666"/></svg>`
+  },
+  'graphics': {
+    displayName: 'Graphics',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><circle cx="20" cy="44" r="12" fill="#E57373"/><circle cx="32" cy="24" r="12" fill="#81C784"/><circle cx="44" cy="44" r="12" fill="#64B5F6"/></svg>`
+  },
+  'games': {
+    displayName: 'Games',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="18" width="52" height="32" rx="8" fill="#444"/><circle cx="20" cy="34" r="6" fill="#666"/><path d="M20 28v12M14 34h12" stroke="#999" stroke-width="2"/><circle cx="44" cy="30" r="3" fill="#E57373"/><circle cx="50" cy="36" r="3" fill="#81C784"/><circle cx="44" cy="42" r="3" fill="#64B5F6"/><circle cx="38" cy="36" r="3" fill="#FFD54F"/></svg>`
+  },
+  'media': {
+    displayName: 'Media',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24" fill="#444"/><circle cx="32" cy="32" r="8" fill="#666"/><circle cx="32" cy="32" r="2" fill="#999"/><path d="M32 8v4M32 52v4M8 32h4M52 32h4"/></svg>`
+  },
+  'phone': {
+    displayName: 'Phone',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="4" width="32" height="56" rx="4" fill="#444"/><line x1="26" y1="10" x2="38" y2="10" stroke="#666"/><circle cx="32" cy="52" r="3" fill="#666"/></svg>`
+  },
+  'system': {
+    displayName: 'System',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3"><circle cx="32" cy="32" r="10"/><path d="M32 8v6M32 50v6M8 32h6M50 32h6M14 14l4 4M46 46l4 4M14 50l4-4M46 18l4-4"/></svg>`
+  },
+  'fun': {
+    displayName: 'Fun',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><circle cx="32" cy="36" r="22" fill="#FFD54F"/><circle cx="24" cy="32" r="3" fill="#444"/><circle cx="40" cy="32" r="3" fill="#444"/><path d="M22 44c4 6 16 6 20 0" stroke="#444" stroke-width="3"/></svg>`
+  },
+  'productivity': {
+    displayName: 'Productivity',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="4" fill="#444"/><path d="M16 20h32M16 32h24M16 44h28" stroke="#999"/><path d="M48 24l-8 8-4-4" stroke="#81C784" stroke-width="3"/></svg>`
+  },
+  'creativity': {
+    displayName: 'Creativity',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"><path d="M32 8l6 18h18l-14 10 6 18-16-12-16 12 6-18-14-10h18z" fill="#FFD54F" stroke="#F9A825"/></svg>`
+  },
+  'development': {
+    displayName: 'Development',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20l-12 12 12 12M44 20l12 12-12 12M38 12l-12 40"/></svg>`
+  },
+  'native': {
+    displayName: 'Native',
+    icon: `<svg viewBox="0 0 64 64" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="48" rx="4" fill="#444"/><path d="M20 32h24M32 20v24" stroke="#999" stroke-width="2"/><circle cx="20" cy="20" r="3" fill="#81C784"/></svg>`
+  },
+};
 import * as path from 'path';
 import * as http from 'http';
 
@@ -64,6 +111,16 @@ interface DesktopIcon {
   selected: boolean;
 }
 
+/** Folder containing apps grouped by category */
+interface DesktopFolder {
+  name: string;
+  category: string;
+  apps: DesktopIcon[];
+  resourceName?: string;
+  x: number;
+  y: number;
+}
+
 interface OpenApp {
   metadata: AppMetadata;
   tsyneWindow: ITsyneWindow;
@@ -77,9 +134,15 @@ class Desktop {
   // Keep legacy references for compatibility (may be null)
   private mdiContainer: MultipleWindows | null = null;
   private desktopCanvas: DesktopCanvas | null = null;
+  /** Uncategorized app icons shown directly on desktop */
   private icons: DesktopIcon[] = [];
+  /** Folders containing categorized apps */
+  private folders: DesktopFolder[] = [];
+  /** Cache of folder icon resources by category */
+  private folderIconCache: Map<string, string> = new Map();
   private openApps: Map<string, OpenApp> = new Map();
   private selectedIcon: DesktopIcon | null = null;
+  private selectedFolder: DesktopFolder | null = null;
   private runningAppsLabel: Label | null = null;
   private options: DesktopOptions;
   /** Counter for generating unique app instance scopes */
@@ -326,25 +389,64 @@ class Desktop {
       apps = [...exampleApps, ...portedApps, ...phoneAppsFlat, ...phoneAppsNested].sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    // Position icons in a grid (8 columns), but use saved positions if available
+    // Group apps by category
+    const appsByCategory = new Map<string, DesktopIcon[]>();
+    const uncategorizedApps: DesktopIcon[] = [];
+
+    // First, create DesktopIcon objects for all apps
+    for (const metadata of apps) {
+      const resourceName = await this.prepareIconResource(metadata);
+      const icon: DesktopIcon = {
+        metadata,
+        resourceName,
+        x: 0,  // Will be set during layout
+        y: 0,
+        selected: false
+      };
+
+      const category = metadata.category;
+      if (category && CATEGORY_CONFIG[category]) {
+        if (!appsByCategory.has(category)) {
+          appsByCategory.set(category, []);
+        }
+        appsByCategory.get(category)!.push(icon);
+      } else {
+        uncategorizedApps.push(icon);
+      }
+    }
+
+    // Create folders for categories with apps
+    this.folders = [];
+    for (const [category, categoryApps] of appsByCategory) {
+      const config = CATEGORY_CONFIG[category];
+      const resourceName = await this.prepareFolderIconResource(category, config.icon);
+      this.folders.push({
+        name: config.displayName,
+        category,
+        apps: categoryApps,
+        resourceName,
+        x: 0,  // Will be set during layout
+        y: 0
+      });
+    }
+    // Sort folders by name
+    this.folders.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Set uncategorized apps as the main icons list
+    this.icons = uncategorizedApps;
+
+    // Position folders first, then uncategorized icons in a grid
     const GRID_COLS = 8;
     let col = 0;
     let row = 0;
 
-    for (const metadata of apps) {
-      // Try to load saved position, otherwise use default grid position
-      const savedPos = await this.loadIconPosition(metadata.name);
+    // Position folders
+    for (const folder of this.folders) {
+      const savedPos = await this.loadIconPosition(`folder:${folder.category}`);
       const defaultX = col * ICON_SPACING + 20;
       const defaultY = row * ICON_SPACING + 20;
-      const resourceName = await this.prepareIconResource(metadata);
-
-      this.icons.push({
-        metadata,
-        resourceName,
-        x: savedPos?.x ?? defaultX,
-        y: savedPos?.y ?? defaultY,
-        selected: false
-      });
+      folder.x = savedPos?.x ?? defaultX;
+      folder.y = savedPos?.y ?? defaultY;
 
       col++;
       if (col >= GRID_COLS) {
@@ -353,11 +455,56 @@ class Desktop {
       }
     }
 
-    console.log(`Found ${apps.length} desktop apps`);
+    // Position uncategorized icons
+    for (const icon of this.icons) {
+      const savedPos = await this.loadIconPosition(icon.metadata.name);
+      const defaultX = col * ICON_SPACING + 20;
+      const defaultY = row * ICON_SPACING + 20;
+      icon.x = savedPos?.x ?? defaultX;
+      icon.y = savedPos?.y ?? defaultY;
+
+      col++;
+      if (col >= GRID_COLS) {
+        col = 0;
+        row++;
+      }
+    }
+
+    const totalApps = apps.length;
+    const folderApps = this.folders.reduce((sum, f) => sum + f.apps.length, 0);
+    console.log(`Found ${totalApps} desktop apps: ${this.folders.length} folders (${folderApps} apps), ${this.icons.length} uncategorized`);
 
     // Start debug server if port specified
     if (this.options.debugPort) {
       this.startDebugServer(this.options.debugPort);
+    }
+  }
+
+  /**
+   * Prepare a folder icon resource (render SVG to PNG)
+   */
+  private async prepareFolderIconResource(category: string, svg: string): Promise<string | undefined> {
+    if (this.folderIconCache.has(category)) {
+      return this.folderIconCache.get(category);
+    }
+
+    try {
+      const normalized = this.normalizeSvg(svg, ICON_SIZE);
+      const renderer = new Resvg(normalized, {
+        fitTo: { mode: 'width', value: ICON_SIZE },
+        background: 'rgba(0,0,0,0)'
+      });
+      const png = renderer.render().asPng();
+      const buffer = Buffer.from(png);
+      const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
+
+      const resourceName = `desktop-folder-${category}`;
+      await this.a.resources.registerResource(resourceName, dataUri);
+      this.folderIconCache.set(category, resourceName);
+      return resourceName;
+    } catch (err) {
+      console.error(`Failed to register folder icon for ${category}:`, err);
+      return undefined;
     }
   }
 
@@ -942,7 +1089,7 @@ class Desktop {
       return;
     }
 
-    console.log(`Creating ${this.icons.length} desktop icons`);
+    console.log(`Creating ${this.folders.length} folder icons and ${this.icons.length} app icons`);
 
     // Color palette for icons
     const colors = [
@@ -950,9 +1097,41 @@ class Desktop {
       '#dc6432', '#6432dc', '#32dc64', '#dc3264', '#64dc32', '#3232dc'
     ];
 
+    // Add folder icons first
+    for (let i = 0; i < this.folders.length; i++) {
+      const folder = this.folders[i];
+      const color = colors[i % colors.length];
+
+      console.log(`Adding folder: ${folder.name} at (${folder.x}, ${folder.y}) with ${folder.apps.length} apps`);
+      const folderId = `folder-${folder.category}`;
+      this.desktopMDI.addIcon({
+        id: folderId,
+        label: `${folder.name} (${folder.apps.length})`,
+        resource: folder.resourceName,
+        x: folder.x,
+        y: folder.y,
+        color,
+        onClick: (_iconId, _x, _y) => {
+          this.selectFolder(folder);
+        },
+        onDoubleClick: (_iconId, _x, _y) => {
+          this.openFolderWindow(folder);
+        },
+        onDragEnd: (_iconId, x, y) => {
+          folder.x = x;
+          folder.y = y;
+          this.saveIconPosition(`folder:${folder.category}`, x, y);
+        },
+        onRightClick: (_iconId, _x, _y) => {
+          this.showFolderInfo(folder);
+        }
+      });
+    }
+
+    // Add app icons (uncategorized apps)
     for (let i = 0; i < this.icons.length; i++) {
       const icon = this.icons[i];
-      const color = colors[i % colors.length];
+      const color = colors[(i + this.folders.length) % colors.length];
 
       console.log(`Adding icon: ${icon.metadata.name} at (${icon.x}, ${icon.y})`);
       const iconId = `icon-${icon.metadata.name.toLowerCase().replace(/\s+/g, '-')}`;
@@ -980,6 +1159,92 @@ class Desktop {
         }
       });
     }
+  }
+
+  /**
+   * Select a folder (visual feedback)
+   */
+  private selectFolder(folder: DesktopFolder) {
+    this.selectedIcon = null;
+    this.selectedFolder = folder;
+  }
+
+  /**
+   * Show folder info dialog
+   */
+  private async showFolderInfo(folder: DesktopFolder) {
+    if (!this.win) return;
+
+    const appNames = folder.apps.map(icon => icon.metadata.name).join('\n  - ');
+    await this.win.showInfo(
+      `Folder: ${folder.name}`,
+      `Category: ${folder.category}\n` +
+      `Apps (${folder.apps.length}):\n  - ${appNames}`
+    );
+  }
+
+  /**
+   * Open a folder window showing all apps in the folder
+   */
+  private openFolderWindow(folder: DesktopFolder) {
+    if (!this.desktopMDI) return;
+
+    // Create an inner window for the folder contents
+    const windowTitle = `${folder.name} (${folder.apps.length} apps)`;
+
+    // Calculate grid dimensions based on number of apps
+    const cols = 4;
+    const rows = Math.ceil(folder.apps.length / cols);
+
+    this.desktopMDI.addWindowWithContent(windowTitle, () => {
+      // Simple scrollable content - no border layout to avoid stretching
+      const scroll = this.a.scroll(() => {
+        this.a.vbox(() => {
+          // Header
+          this.a.center(() => {
+            this.a.label(`${folder.name}`, undefined, 'center');
+          });
+          this.a.separator();
+
+          // App grid (4 columns) - fill all cells including empty ones
+          this.a.grid(cols, () => {
+            for (let row = 0; row < rows; row++) {
+              for (let col = 0; col < cols; col++) {
+                const index = row * cols + col;
+                if (index < folder.apps.length) {
+                  const icon = folder.apps[index];
+                  this.a.vbox(() => {
+                    // Use hbox with spacers for horizontal centering only
+                    // (center() would also center vertically, causing y-separation)
+                    this.a.hbox(() => {
+                      this.a.spacer();
+                      if (icon.resourceName) {
+                        this.a.image({
+                          resource: icon.resourceName,
+                          fillMode: 'original',
+                          onClick: () => this.launchApp(icon.metadata)
+                        });
+                      } else {
+                        this.a.button(this.getIconEmoji(icon.metadata.name))
+                          .onClick(() => this.launchApp(icon.metadata));
+                      }
+                      this.a.spacer();
+                    });
+                    this.a.label(icon.metadata.name, undefined, 'center');
+                    this.a.spacer();  // Push content to top of cell
+                  });
+                } else {
+                  // Empty cell - placeholder to keep grid consistent
+                  this.a.label('');
+                }
+              }
+            }
+          });
+        });
+      });
+      // Set minimum size so the window is reasonably sized
+      scroll.withMinSize(450, 300);
+    });
   }
 
   /**
