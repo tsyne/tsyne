@@ -20,6 +20,7 @@ import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow 
 import { ITsyneWindow } from './tsyne-window';
 import { scanForApps, scanPortedApps, AppMetadata } from './app-metadata';
 import { initResvg } from './resvg-loader';
+import { Inspector } from './inspector';
 import * as path from 'path';
 
 // Import types and configuration from desktop_types
@@ -32,6 +33,7 @@ import {
   DesktopFolder,
   OpenApp,
   CATEGORY_CONFIG,
+  FILE_DROP_APPS,
   ICON_EMOJI_MAP,
   DEFAULT_ICON_EMOJI,
 } from './desktop_types';
@@ -76,6 +78,8 @@ class Desktop implements IDesktopDebugHost {
   private options: DesktopOptions;
   /** Dock/launch bar manager */
   private dockManager: DockManager;
+  /** Inspector for widget hit testing */
+  private inspector: Inspector;
   /** Debug HTTP server */
   private debugServer: DesktopDebugServer | null = null;
   /** Window mode: 'inner' (MDI) or 'external' (separate OS windows) */
@@ -98,6 +102,7 @@ class Desktop implements IDesktopDebugHost {
     this.appLauncher = new AppLauncher();
     this.dockManager = new DockManager(app, () => this.rebuildLaunchBar());
     this.fileManager = new FileIconManager(this.iconManager);
+    this.inspector = new Inspector(app.getContext().bridge);
     this.dockManager.load();
     this.loadWindowMode();
   }
@@ -548,6 +553,9 @@ class Desktop implements IDesktopDebugHost {
         },
         onRightClick: (_iconId, _x, _y) => {
           this.showFolderInfo(folder);
+        },
+        onDropReceived: (droppedIconId) => {
+          this.handleFolderDrop(folder, droppedIconId);
         }
       });
     }
@@ -610,6 +618,10 @@ class Desktop implements IDesktopDebugHost {
         onDoubleClick: (_iconId, _x, _y) => {
           this.fileManager.launchWithApp(fileIcon, this.getFileIconCallbacks());
         },
+        onDrag: async (_iconId, x, y, _dx, _dy) => {
+          // Log what's under the pointer during drag
+          await this.logWidgetUnderPointer(x, y);
+        },
         onDragEnd: (_iconId, x, y) => {
           this.fileManager.savePosition(fileIcon, x, y);
         },
@@ -618,6 +630,43 @@ class Desktop implements IDesktopDebugHost {
         }
       });
     }
+  }
+
+  /**
+   * Log the widget under the given coordinates (for drag debugging)
+   */
+  private async logWidgetUnderPointer(x: number, y: number): Promise<void> {
+    if (!this._win) return;
+    try {
+      const tree = await this.inspector.getWindowTree(this._win.id);
+      const result = this.findWidgetAtPointWithPath(tree, x, y, []);
+      if (result) {
+        const { widget, path } = result;
+        // Look for folder-app: custom ID in the widget or its ancestors
+        const folderApp = this.findFolderAppInPath(path);
+        if (folderApp) {
+          console.log(`[drag] At (${x.toFixed(0)}, ${y.toFixed(0)}): ${folderApp}`);
+        } else if (widget?.customId) {
+          console.log(`[drag] At (${x.toFixed(0)}, ${y.toFixed(0)}): ${widget.customId}`);
+        } else if (widget?.type) {
+          console.log(`[drag] At (${x.toFixed(0)}, ${y.toFixed(0)}): ${widget.type} (${widget.id})`);
+        }
+      }
+    } catch (err) {
+      // Ignore errors during drag
+    }
+  }
+
+  /**
+   * Find folder-app: custom ID in the path from root to the hit widget
+   */
+  private findFolderAppInPath(path: any[]): string | null {
+    for (const node of path) {
+      if (node.customId?.startsWith('folder-app:')) {
+        return node.customId;
+      }
+    }
+    return null;
   }
 
   /**
@@ -664,6 +713,64 @@ class Desktop implements IDesktopDebugHost {
   }
 
   /**
+   * Handle a file being dropped on a folder icon
+   */
+  private async handleFolderDrop(folder: DesktopFolder, droppedIconId: string) {
+    const fileIcon = this.fileManager.findById(droppedIconId);
+    if (!fileIcon) {
+      console.log(`Non-file icon dropped on folder ${folder.name}: ${droppedIconId}`);
+      return;
+    }
+
+    // Find apps in this folder that support file drops
+    const fileDropApps = folder.apps.filter(icon => FILE_DROP_APPS.has(icon.metadata.name));
+
+    if (fileDropApps.length === 0) {
+      // No apps in this folder support file drops
+      this._win?.showInfo('No Compatible Apps',
+        `None of the apps in "${folder.name}" can open files.`);
+      return;
+    }
+
+    if (fileDropApps.length === 1) {
+      // Only one app - launch it directly
+      const app = fileDropApps[0].metadata;
+      console.log(`File dropped on folder ${folder.name}, opening with ${app.name}: ${fileIcon.filePath}`);
+      this.launchApp(app, fileIcon.filePath);
+      return;
+    }
+
+    // Multiple apps - show picker
+    const appOptions = fileDropApps.map(icon => ({
+      label: icon.metadata.name,
+      value: icon.metadata.name
+    }));
+
+    // Use form dialog with select field for app picker
+    if (!this._win) return;
+
+    const result = await this._win.showForm(
+      'Open With',
+      [{
+        name: 'app',
+        label: 'Choose app to open file:',
+        type: 'select',
+        options: appOptions.map(o => o.label)
+      }],
+      { confirmText: 'Open', dismissText: 'Cancel' }
+    );
+
+    if (result.submitted && result.values.app) {
+      const selectedAppName = result.values.app as string;
+      const selectedApp = fileDropApps.find(icon => icon.metadata.name === selectedAppName);
+      if (selectedApp) {
+        console.log(`File dropped on folder ${folder.name}, user chose ${selectedApp.metadata.name}: ${fileIcon.filePath}`);
+        this.launchApp(selectedApp.metadata, fileIcon.filePath);
+      }
+    }
+  }
+
+  /**
    * Open a folder window showing all apps in the folder
    */
   private openFolderWindow(folder: DesktopFolder) {
@@ -676,55 +783,129 @@ class Desktop implements IDesktopDebugHost {
     const cols = 4;
     const rows = Math.ceil(folder.apps.length / cols);
 
-    this.desktopMDI.addWindowWithContent(windowTitle, () => {
-      // Simple scrollable content - no border layout to avoid stretching
-      const scroll = this.a.scroll(() => {
-        this.a.vbox(() => {
-          // Header
-          this.a.center(() => {
-            this.a.label(`${folder.name}`, undefined, 'center');
-          });
-          this.a.separator();
+    // Custom ID prefix for folder app icons
+    const FOLDER_APP_PREFIX = 'folder-app:';
 
-          // App grid (4 columns) - fill all cells including empty ones
-          this.a.grid(cols, () => {
-            for (let row = 0; row < rows; row++) {
-              for (let col = 0; col < cols; col++) {
-                const index = row * cols + col;
-                if (index < folder.apps.length) {
-                  const icon = folder.apps[index];
-                  this.a.vbox(() => {
-                    // Use hbox with spacers for horizontal centering only
-                    // (center() would also center vertically, causing y-separation)
-                    this.a.hbox(() => {
-                      this.a.spacer();
-                      if (icon.resourceName) {
-                        this.a.image({
-                          resource: icon.resourceName,
-                          fillMode: 'original',
-                          onClick: () => this.launchApp(icon.metadata)
-                        });
-                      } else {
-                        this.a.button(this.getIconEmoji(icon.metadata.name))
-                          .onClick(() => this.launchApp(icon.metadata));
-                      }
-                      this.a.spacer();
-                    });
-                    this.a.label(icon.metadata.name, undefined, 'center');
-                    this.a.spacer();  // Push content to top of cell
-                  });
+    this.desktopMDI.addWindowWithContent(
+      windowTitle,
+      () => {
+        // Simple scrollable content - no border layout to avoid stretching
+        const scroll = this.a.scroll(() => {
+          this.a.vbox(() => {
+            // Header
+            this.a.center(() => {
+              this.a.label(`${folder.name}`, undefined, 'center');
+            });
+            this.a.separator();
+
+            // App grid (4 columns) - fill all cells including empty ones
+            this.a.grid(cols, () => {
+              for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                  const index = row * cols + col;
+                  if (index < folder.apps.length) {
+                    const icon = folder.apps[index];
+                    // Use custom ID for hit testing: folder-app:AppName
+                    // Put it on the entire cell so the whole area is droppable
+                    const customId = `${FOLDER_APP_PREFIX}${icon.metadata.name}`;
+                    this.a.vbox(() => {
+                      // Use hbox with spacers for horizontal centering only
+                      // (center() would also center vertically, causing y-separation)
+                      this.a.hbox(() => {
+                        this.a.spacer();
+                        if (icon.resourceName) {
+                          this.a.image({
+                            resource: icon.resourceName,
+                            fillMode: 'original',
+                            onClick: () => this.launchApp(icon.metadata)
+                          });
+                        } else {
+                          this.a.button(this.getIconEmoji(icon.metadata.name))
+                            .onClick(() => this.launchApp(icon.metadata));
+                        }
+                        this.a.spacer();
+                      });
+                      this.a.label(icon.metadata.name, undefined, 'center');
+                      this.a.spacer();  // Push content to top of cell
+                    }).withId(customId);
+                  } else {
+                    // Empty cell - placeholder to keep grid consistent
+                    this.a.label('');
+                  }
+                }
+              }
+            });
+          });
+        });
+        // Set minimum size so the window is reasonably sized
+        scroll.withMinSize(450, 300);
+      },
+      undefined, // onClose
+      async (droppedIconId, dropX, dropY) => {
+        // Handle file drops on this folder window
+        const fileIcon = this.fileManager.findById(droppedIconId);
+        if (!fileIcon || !this._win) {
+          return;
+        }
+
+        // Use inspector to find which widget is at the drop coordinates
+        try {
+          const tree = await this.inspector.getWindowTree(this._win.id);
+          const result = this.findWidgetAtPointWithPath(tree, dropX, dropY, []);
+
+          if (result) {
+            // Look for folder-app: custom ID in the path from root to the hit widget
+            const folderAppId = this.findFolderAppInPath(result.path);
+
+            if (folderAppId) {
+              // Extract app name from custom ID
+              const appName = folderAppId.slice(FOLDER_APP_PREFIX.length);
+              const targetApp = folder.apps.find(icon => icon.metadata.name === appName);
+
+              if (targetApp) {
+                if (FILE_DROP_APPS.has(targetApp.metadata.name)) {
+                  this.launchApp(targetApp.metadata, fileIcon.filePath);
                 } else {
-                  // Empty cell - placeholder to keep grid consistent
-                  this.a.label('');
+                  this._win?.showInfo('Cannot Open File',
+                    `${targetApp.metadata.name} cannot open files.`);
                 }
               }
             }
-          });
-        });
-      });
-      // Set minimum size so the window is reasonably sized
-      scroll.withMinSize(450, 300);
-    });
+          }
+          // If no app found at drop point, just do nothing (icon returns to original position)
+        } catch (err) {
+          console.error('Error finding widget at drop point:', err);
+        }
+      }
+    );
+  }
+
+  /**
+   * Find the deepest widget containing the given absolute coordinates.
+   */
+  private findWidgetAtPoint(node: any, x: number, y: number): any | null {
+    const result = this.findWidgetAtPointWithPath(node, x, y, []);
+    return result?.widget || null;
+  }
+
+  /**
+   * Find the deepest widget at coordinates, returning both the widget and the path from root.
+   */
+  private findWidgetAtPointWithPath(node: any, x: number, y: number, currentPath: any[]): { widget: any; path: any[] } | null {
+    const inBounds = node.visible !== false &&
+      x >= node.absX && x < node.absX + node.w &&
+      y >= node.absY && y < node.absY + node.h;
+    if (!inBounds) return null;
+
+    const newPath = [...currentPath, node];
+
+    if (node.children && node.children.length > 0) {
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        const childMatch = this.findWidgetAtPointWithPath(node.children[i], x, y, newPath);
+        if (childMatch) return childMatch;
+      }
+    }
+    return { widget: node, path: newPath };
   }
 
   /**

@@ -392,21 +392,58 @@ export class DesktopMDI extends Widget {
   }
 
   /**
-   * Create and add a new inner window to the desktop MDI
+   * Add an inner window with content (sync builder)
    * @param title - Window title
    * @param builder - Function to build window content
    * @param onClose - Optional callback when window is closed
+   * @param onDropReceived - Optional callback when a file icon is dropped on this window (includes drop coordinates relative to window)
    * @returns The created InnerWindow
    */
-  addWindowWithContent(title: string, builder: () => void, onClose?: () => void): InnerWindow {
-    const innerWin = new InnerWindow(this.ctx, title, builder, onClose);
+  addWindowWithContent(title: string, builder: () => void, onClose?: () => void, onDropReceived?: (droppedIconId: string, x: number, y: number) => void): InnerWindow {
+    const innerWin = InnerWindow.createSync(this.ctx, title, builder, onClose);
     this.windowIds.add(innerWin.id);
 
     // Add to the container
-    this.ctx.bridge.send('desktopMDIAddWindow', {
+    const payload: Record<string, unknown> = {
       containerId: this.id,
       windowId: innerWin.id
-    });
+    };
+
+    if (onDropReceived) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDropReceivedCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onDropReceived(data.droppedIconId, data.x, data.y);
+      });
+    }
+
+    this.ctx.bridge.send('desktopMDIAddWindow', payload);
+
+    return innerWin;
+  }
+
+  /**
+   * Add an inner window with async content builder
+   */
+  async addWindowWithContentAsync(title: string, builder: () => void | Promise<void>, onClose?: () => void, onDropReceived?: (droppedIconId: string, x: number, y: number) => void): Promise<InnerWindow> {
+    const innerWin = await InnerWindow.create(this.ctx, title, builder, onClose);
+    this.windowIds.add(innerWin.id);
+
+    // Add to the container
+    const payload: Record<string, unknown> = {
+      containerId: this.id,
+      windowId: innerWin.id
+    };
+
+    if (onDropReceived) {
+      const callbackId = this.ctx.generateId('callback');
+      payload.onDropReceivedCallbackId = callbackId;
+      this.ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        onDropReceived(data.droppedIconId, data.x, data.y);
+      });
+    }
+
+    this.ctx.bridge.send('desktopMDIAddWindow', payload);
 
     return innerWin;
   }

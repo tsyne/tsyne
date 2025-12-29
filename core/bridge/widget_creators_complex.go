@@ -1124,6 +1124,9 @@ func (b *Bridge) handleDesktopMDIAddWindow(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 	windowID := msg.Payload["windowId"].(string)
 
+	// Extract optional drop callback
+	onDropReceivedCallbackId, _ := msg.Payload["onDropReceivedCallbackId"].(string)
+
 	b.mu.RLock()
 	containerObj, containerExists := b.widgets[containerID]
 	windowObj, windowExists := b.widgets[windowID]
@@ -1166,6 +1169,11 @@ func (b *Bridge) handleDesktopMDIAddWindow(msg Message) Response {
 	// Add the window to the container
 	fyne.DoAndWait(func() {
 		desktop.AddWindow(innerWin)
+
+		// Register drop callback if provided
+		if onDropReceivedCallbackId != "" {
+			desktop.windowDropCallbacks[innerWin] = onDropReceivedCallbackId
+		}
 
 		// Position the window if coordinates provided, otherwise center it
 		if x, ok := getFloat64(msg.Payload["x"]); ok {

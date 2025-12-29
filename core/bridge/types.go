@@ -1173,6 +1173,10 @@ func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
 		d.dragging = true
 		d.dragStartX = d.PosX
 		d.dragStartY = d.PosY
+		// Refresh parent container so dragged icon renders on top
+		if d.desktopContainer != nil {
+			d.desktopContainer.Refresh()
+		}
 	}
 
 	// Calculate new position based on drag delta
@@ -1222,39 +1226,55 @@ func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
 func (d *TsyneDraggableIcon) DragEnd() {
 	if d.dragging {
 		// Check if we dropped on another icon (icon-on-icon drop)
-		d.checkDropOnIcon()
+		droppedOnIcon := d.checkDropOnIcon()
 
-		// Notify TypeScript of drag end
-		if d.onDragEndCallbackId != "" && d.bridge != nil {
-			d.bridge.sendEvent(Event{
-				Type: "callback",
-				Data: map[string]interface{}{
-					"callbackId": d.onDragEndCallbackId,
-					"iconId":     d.ID,
-					"x":          d.PosX,
-					"y":          d.PosY,
-				},
-			})
+		if droppedOnIcon {
+			// Return to original position - don't move the file icon permanently
+			d.PosX = d.dragStartX
+			d.PosY = d.dragStartY
+			d.Move(fyne.NewPos(d.PosX, d.PosY))
+			// Don't notify TypeScript of position change
+		} else {
+			// Notify TypeScript of drag end (normal move)
+			if d.onDragEndCallbackId != "" && d.bridge != nil {
+				d.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": d.onDragEndCallbackId,
+						"iconId":     d.ID,
+						"x":          d.PosX,
+						"y":          d.PosY,
+					},
+				})
+			}
 		}
 		d.dragging = false
+
+		// Refresh parent to restore normal z-order
+		if d.desktopContainer != nil {
+			d.desktopContainer.Refresh()
+		}
 	}
 }
 
-// checkDropOnIcon checks if this icon was dropped on another icon
-// and fires the target icon's onDropReceived callback if so
-func (d *TsyneDraggableIcon) checkDropOnIcon() {
-	// Get the list of icons from the container
+// checkDropOnIcon checks if this icon was dropped on another icon or window
+// and fires the target icon's onDropReceived callback if so.
+// Returns true if a drop was handled (icon should return to original position).
+func (d *TsyneDraggableIcon) checkDropOnIcon() bool {
+	// Get the list of icons and windows from the container
 	var icons []*TsyneDraggableIcon
+	var windows []*container.InnerWindow
 	if d.desktopContainer != nil {
 		if mdi, ok := d.desktopContainer.(*TsyneDesktopMDI); ok {
 			icons = mdi.icons
+			windows = mdi.windows
 		}
 	} else if d.desktop != nil {
 		icons = d.desktop.icons
 	}
 
 	if icons == nil {
-		return
+		return false
 	}
 
 	// Check each icon to see if we dropped on it
@@ -1282,10 +1302,41 @@ func (d *TsyneDraggableIcon) checkDropOnIcon() {
 						"targetIconId":  target.ID,
 					},
 				})
+				return true // Drop was handled
 			}
 			break // Only trigger on the first matching icon
 		}
 	}
+
+	// Also check if we dropped on any open windows
+	// If so, fire the window's drop callback (if registered) and return icon to original position
+	if d.desktopContainer != nil {
+		if mdi, ok := d.desktopContainer.(*TsyneDesktopMDI); ok {
+			for _, win := range windows {
+				winPos := win.Position()
+				winSize := win.Size()
+				if centerX >= winPos.X && centerX < winPos.X+winSize.Width &&
+					centerY >= winPos.Y && centerY < winPos.Y+winSize.Height {
+					// Dropped on an inner window - fire callback if registered
+					if callbackId, exists := mdi.windowDropCallbacks[win]; exists && callbackId != "" && mdi.bridge != nil {
+						// Pass absolute drop coordinates (for use with widget tree hit testing)
+						mdi.bridge.sendEvent(Event{
+							Type: "callback",
+							Data: map[string]interface{}{
+								"callbackId":    callbackId,
+								"droppedIconId": d.ID,
+								"x":             centerX,
+								"y":             centerY,
+							},
+						})
+					}
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // TsyneDesktopCanvas is a container that allows free positioning of icons
@@ -1405,21 +1456,23 @@ func (r *desktopCanvasRenderer) Destroy() {}
 type TsyneDesktopMDI struct {
 	widget.BaseWidget
 
-	icons   []*TsyneDraggableIcon
-	windows []*container.InnerWindow
-	bgColor color.Color
-	bridge  *Bridge
-	id      string
+	icons                []*TsyneDraggableIcon
+	windows              []*container.InnerWindow
+	windowDropCallbacks  map[*container.InnerWindow]string // Maps windows to drop callback IDs
+	bgColor              color.Color
+	bridge               *Bridge
+	id                   string
 }
 
 // NewTsyneDesktopMDI creates a new desktop MDI container
 func NewTsyneDesktopMDI(id string, bgColor color.Color, bridge *Bridge) *TsyneDesktopMDI {
 	dm := &TsyneDesktopMDI{
-		icons:   make([]*TsyneDraggableIcon, 0),
-		windows: make([]*container.InnerWindow, 0),
-		bgColor: bgColor,
-		bridge:  bridge,
-		id:      id,
+		icons:               make([]*TsyneDraggableIcon, 0),
+		windows:             make([]*container.InnerWindow, 0),
+		windowDropCallbacks: make(map[*container.InnerWindow]string),
+		bgColor:             bgColor,
+		bridge:              bridge,
+		id:                  id,
 	}
 	dm.ExtendBaseWidget(dm)
 	return dm
@@ -1582,13 +1635,26 @@ func (r *desktopMDIRenderer) Objects() []fyne.CanvasObject {
 	// Background first
 	objects = append(objects, r.bg)
 
-	// Icons render before windows so windows stay on top
+	// Find any icon being dragged - it needs to render on top
+	var draggingIcon *TsyneDraggableIcon
 	for _, icon := range r.desktop.icons {
-		objects = append(objects, icon)
+		if icon.dragging {
+			draggingIcon = icon
+		} else {
+			objects = append(objects, icon)
+		}
 	}
+
+	// Windows render after non-dragged icons
 	for _, win := range r.desktop.windows {
 		objects = append(objects, win)
 	}
+
+	// Dragged icon renders last (on top of everything)
+	if draggingIcon != nil {
+		objects = append(objects, draggingIcon)
+	}
+
 	return objects
 }
 

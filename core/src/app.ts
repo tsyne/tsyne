@@ -956,7 +956,7 @@ export class App {
   }
 
   innerWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow {
-    return new InnerWindow(this.ctx, title, builder, onClose);
+    return InnerWindow.createSync(this.ctx, title, builder, onClose);
   }
 
   /**

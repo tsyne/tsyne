@@ -86,9 +86,20 @@ export class InnerWindow {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, title: string, builder: () => void, onClose?: () => void) {
+  /**
+   * Private constructor - use InnerWindow.create() for async builder support
+   */
+  private constructor(ctx: Context, id: string) {
     this.ctx = ctx;
-    this.id = ctx.generateId('innerwindow');
+    this.id = id;
+  }
+
+  /**
+   * Create an InnerWindow with sync builder (legacy compatibility)
+   */
+  static createSync(ctx: Context, title: string, builder: () => void, onClose?: () => void): InnerWindow {
+    const id = ctx.generateId('innerwindow');
+    const win = new InnerWindow(ctx, id);
 
     // Build content
     ctx.pushContainer();
@@ -99,8 +110,34 @@ export class InnerWindow {
       throw new Error('InnerWindow must have exactly one child');
     }
 
-    const contentId = children[0];
+    win.finishCreation(ctx, title, children[0], onClose);
+    return win;
+  }
 
+  /**
+   * Create an InnerWindow with async builder support
+   */
+  static async create(ctx: Context, title: string, builder: () => void | Promise<void>, onClose?: () => void): Promise<InnerWindow> {
+    const id = ctx.generateId('innerwindow');
+    const win = new InnerWindow(ctx, id);
+
+    // Build content - await if builder is async
+    ctx.pushContainer();
+    await builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('InnerWindow must have exactly one child');
+    }
+
+    win.finishCreation(ctx, title, children[0], onClose);
+    return win;
+  }
+
+  /**
+   * Complete the InnerWindow creation after content is built
+   */
+  private finishCreation(ctx: Context, title: string, contentId: string, onClose?: () => void): void {
     const payload: any = {
       id: this.id,
       title,
@@ -577,7 +614,7 @@ export class MultipleWindows {
    * @returns The created InnerWindow
    */
   addWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow {
-    const innerWin = new InnerWindow(this.ctx, title, builder, onClose);
+    const innerWin = InnerWindow.createSync(this.ctx, title, builder, onClose);
     this.innerWindowIds.push(innerWin.id);
 
     // Add to the container

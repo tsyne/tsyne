@@ -138,14 +138,15 @@ export class InnerWindowAdapter implements ITsyneWindow {
     };
 
     // Create the InnerWindow now with the actual content
-    // Use whichever container type we have
+    // Use whichever container type we have - use async version to support async builders
     if (this.desktopMDI) {
-      this.innerWindow = this.desktopMDI.addWindowWithContent(
+      this.innerWindow = await this.desktopMDI.addWindowWithContentAsync(
         this._title,
-        () => { builder(); },
+        builder,
         closeHandler
       );
     } else if (this.mdiContainer) {
+      // MultipleWindows uses sync version - builder will be called synchronously
       this.innerWindow = this.mdiContainer.addWindow(
         this._title,
         () => { builder(); },

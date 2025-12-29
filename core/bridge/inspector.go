@@ -502,10 +502,32 @@ func (b *Bridge) buildInspectorTreeWithAbsPos(obj fyne.CanvasObject, pathPrefix 
 		node["text"] = text
 	}
 
-	// Add children
-	if container, ok := obj.(*fyne.Container); ok {
-		children := make([]map[string]interface{}, 0, len(container.Objects))
-		for i, child := range container.Objects {
+	// Add children - handle various container types
+	var childObjects []fyne.CanvasObject
+
+	switch c := obj.(type) {
+	case *fyne.Container:
+		childObjects = c.Objects
+	case *TsyneDesktopMDI:
+		// Include icons and inner windows
+		for _, icon := range c.icons {
+			childObjects = append(childObjects, icon)
+		}
+		for _, win := range c.windows {
+			childObjects = append(childObjects, win)
+		}
+	default:
+		// For widgets (Scroll, VBox, InnerWindow, etc.), get children from renderer
+		if w, ok := obj.(fyne.Widget); ok {
+			if renderer := w.CreateRenderer(); renderer != nil {
+				childObjects = renderer.Objects()
+			}
+		}
+	}
+
+	if len(childObjects) > 0 {
+		children := make([]map[string]interface{}, 0, len(childObjects))
+		for i, child := range childObjects {
 			childPath := fmt.Sprintf("%s.%d", pathPrefix, i)
 			children = append(children, b.buildInspectorTreeWithAbsPos(child, childPath, absX, absY))
 		}

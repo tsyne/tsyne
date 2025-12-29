@@ -419,7 +419,7 @@ export class SandboxedApp implements IApp {
   }
 
   innerWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow {
-    return new InnerWindow(this.ctx, title, builder, onClose);
+    return InnerWindow.createSync(this.ctx, title, builder, onClose);
   }
 
   multipleWindows(builder?: () => void): MultipleWindows {
@@ -607,8 +607,19 @@ export class SandboxedApp implements IApp {
   }
 
   // ============================================================================
+  // Context access - returns scoped context (maintains sandbox)
+  // ============================================================================
+
+  /**
+   * Get the scoped context for this sandbox.
+   * Returns the scoped context, not the real app's context, maintaining isolation.
+   */
+  getContext(): Context {
+    return this.ctx;
+  }
+
+  // ============================================================================
   // NOT EXPOSED - these would allow escaping the sandbox:
-  // - getContext()
   // - getBridge()
   // - getWindows()
   // - createResourceManager()

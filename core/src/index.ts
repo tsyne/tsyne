@@ -673,7 +673,7 @@ export function innerWindow(title: string, builder: () => void, onClose?: () => 
   if (!globalContext) {
     throw new Error('innerWindow() must be called within an app context');
   }
-  return new InnerWindow(globalContext, title, builder, onClose);
+  return InnerWindow.createSync(globalContext, title, builder, onClose);
 }
 
 /**
