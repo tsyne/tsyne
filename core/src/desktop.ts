@@ -393,11 +393,15 @@ class Desktop {
               '/widget-at?x=N&y=N': 'Find widget at coordinates',
               '/click?x=N&y=N': 'Click widget at coordinates',
               '/click?id=widgetId': 'Click widget by ID',
+              '/doubleClick?id=widgetId': 'Double-click widget by ID',
+              '/doubleClick?x=N&y=N': 'Double-click widget at coordinates',
               '/type?id=widgetId&text=hello': 'Type text into widget',
-              '/apps': 'List open apps',
+              '/icons': 'List all desktop icons (available apps)',
+              '/launch?name=appName': 'Launch app by name',
+              '/apps': 'List open/running apps',
               '/state': 'Get desktop state',
               '/app/switchTo?id=appId': 'Bring app to front',
-              '/app/quit?id=appId': 'Quit app (or front app if no id)',
+              '/app/quit?id=appId': 'Quit app by id',
             }
           }, null, 2));
 
@@ -474,6 +478,64 @@ class Desktop {
           res.writeHead(200);
           res.end(JSON.stringify({ success: true, clicked: widgetId }, null, 2));
 
+        } else if (url.pathname === '/doubleClick') {
+          const id = url.searchParams.get('id');
+          const x = url.searchParams.get('x');
+          const y = url.searchParams.get('y');
+          let widgetId = id;
+          let clickedWidget: any = null;
+
+          if (!widgetId && x && y && this.win) {
+            const tree = await this.inspector!.getWindowTree(this.win.id);
+            clickedWidget = this.findWidgetAtPoint(tree, parseFloat(x), parseFloat(y));
+            if (clickedWidget) widgetId = clickedWidget.id;
+          }
+          if (!widgetId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'No widget found' }));
+            return;
+          }
+          await this.a.getContext().bridge.send('doubleTapWidget', { widgetId });
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, doubleClicked: widgetId }, null, 2));
+
+        } else if (url.pathname === '/launch') {
+          // Launch app by name
+          const name = url.searchParams.get('name');
+          if (!name) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing name= param' }));
+            return;
+          }
+
+          const icon = this.icons.find(i =>
+            i.metadata.name.toLowerCase() === name.toLowerCase() ||
+            i.metadata.name.toLowerCase().includes(name.toLowerCase())
+          );
+
+          if (!icon) {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'App not found', name }));
+            return;
+          }
+
+          try {
+            await this.launchApp(icon.metadata);
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              launched: icon.metadata.name,
+              filePath: icon.metadata.filePath
+            }, null, 2));
+          } catch (err) {
+            res.writeHead(500);
+            res.end(JSON.stringify({
+              error: 'Launch failed',
+              name: icon.metadata.name,
+              details: String(err)
+            }));
+          }
+
         } else if (url.pathname === '/type') {
           const id = url.searchParams.get('id');
           const x = url.searchParams.get('x');
@@ -494,6 +556,18 @@ class Desktop {
           await this.a.getContext().bridge.send('typeText', { widgetId, text });
           res.writeHead(200);
           res.end(JSON.stringify({ success: true, typed: text, into: widgetId }, null, 2));
+
+        } else if (url.pathname === '/icons') {
+          // List all desktop icons (available apps)
+          const icons = this.icons.map(icon => ({
+            name: icon.metadata.name,
+            filePath: icon.metadata.filePath,
+            category: icon.metadata.category,
+            x: icon.x,
+            y: icon.y
+          }));
+          res.writeHead(200);
+          res.end(JSON.stringify({ icons, count: icons.length }, null, 2));
 
         } else if (url.pathname === '/apps') {
           const apps: any[] = [];
@@ -1052,6 +1126,41 @@ class Desktop {
           }
         }),
       };
+
+      // Lazily load additional services from phone-apps when needed
+      for (const argName of metadata.args) {
+        if (argMap[argName] === undefined) {
+          try {
+            if (argName === 'battery') {
+              const { MockBatteryService } = require('../../phone-apps/battery/battery-service');
+              argMap['battery'] = new MockBatteryService();
+            } else if (argName === 'recording') {
+              const { MockRecordingService } = require('../../phone-apps/audio-recorder/recording-service');
+              argMap['recording'] = new MockRecordingService();
+            } else if (argName === 'camera') {
+              const { MockCameraService } = require('../../phone-apps/camera/camera-service');
+              argMap['camera'] = new MockCameraService();
+            } else if (argName === 'music') {
+              const { MockMusicService } = require('../../phone-apps/music-player/music-service');
+              argMap['music'] = new MockMusicService();
+            } else if (argName === 'calendar') {
+              const { MockCalendarService } = require('../../phone-apps/calendar/calendar-service');
+              argMap['calendar'] = new MockCalendarService();
+            } else if (argName === 'modem') {
+              // Modem is phone-only, provide NotAvailable
+              argMap['modem'] = { isAvailable: () => false, getUnavailableReason: () => 'Modem is not available on desktop' };
+            } else if (argName === 'win') {
+              // Apps that require 'win' expect someone else to create the window
+              // This is not supported in desktop mode - they should use a.window() instead
+              console.warn(`App ${metadata.name} requires 'win' argument which is not available in desktop mode`);
+              argMap['win'] = null;
+            }
+          } catch (err) {
+            console.warn(`Could not load service '${argName}' for ${metadata.name}:`, err);
+          }
+        }
+      }
+
       const args = metadata.args.map(name => argMap[name]);
 
       // Call builder with the declared arguments
@@ -1195,6 +1304,13 @@ export { Desktop };
 if (require.main === module) {
   // Import the app function from index
   const { app, resolveTransport  } = require('./index');
+
+  // Prevent unhandled promise rejections from crashing the desktop
+  // This catches errors from apps that throw after their builder returns
+  process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    console.error('[desktop] Unhandled promise rejection (app may have crashed):', reason);
+    // Don't exit - keep the desktop running
+  });
 
   // Check for debug port from environment
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
