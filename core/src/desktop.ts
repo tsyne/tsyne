@@ -91,6 +91,9 @@ const ICON_SIZE = 80;
 const ICON_SPACING = 100;
 const ICON_POSITION_PREFIX = 'desktop.icon.';
 const DOCK_APPS_KEY = 'desktop.dock.apps';
+const WINDOW_MODE_KEY = 'desktop.windowMode';
+
+type WindowMode = 'inner' | 'external';
 
 // Desktop options
 export interface DesktopOptions {
@@ -155,11 +158,14 @@ class Desktop {
   private inspector: Inspector | null = null;
   /** Debug HTTP server */
   private debugServer: http.Server | null = null;
+  /** Window mode: 'inner' (MDI) or 'external' (separate OS windows) */
+  private windowMode: WindowMode = 'inner';
 
   constructor(app: App, options: DesktopOptions = {}) {
     this.a = app;
     this.options = options;
     this.loadDockedApps();
+    this.loadWindowMode();
   }
 
   /**
@@ -211,6 +217,88 @@ class Desktop {
    */
   isInDock(appName: string): boolean {
     return this.dockedApps.includes(appName);
+  }
+
+  /**
+   * Load window mode from preferences
+   */
+  private async loadWindowMode() {
+    const saved = await this.a.getPreference(WINDOW_MODE_KEY, 'inner');
+    if (saved === 'inner' || saved === 'external') {
+      this.windowMode = saved;
+    }
+  }
+
+  /**
+   * Save window mode to preferences
+   */
+  private saveWindowMode() {
+    this.a.setPreference(WINDOW_MODE_KEY, this.windowMode);
+  }
+
+  /**
+   * Set window mode and save preference
+   */
+  setWindowMode(mode: WindowMode) {
+    this.windowMode = mode;
+    this.saveWindowMode();
+    this.updateMainMenu();
+  }
+
+  /**
+   * Get current window mode
+   */
+  getWindowMode(): WindowMode {
+    return this.windowMode;
+  }
+
+  /**
+   * Update the main menu (e.g., after window mode changes)
+   */
+  private updateMainMenu() {
+    if (!this.win) return;
+
+    this.win.setMainMenu([
+      {
+        label: 'Desktop',
+        items: [
+          { label: 'Re-layout Icons', onSelected: () => this.relayoutAndRefresh() },
+          { label: '', isSeparator: true },
+          { label: 'Light Theme', onSelected: () => this.setTheme('light') },
+          { label: 'Dark Theme', onSelected: () => this.setTheme('dark') },
+          { label: '', isSeparator: true },
+          { label: 'About', onSelected: () => this.showAbout() }
+        ]
+      },
+      {
+        label: 'Windows',
+        items: [
+          { label: 'Inner Windows (MDI)', checked: this.windowMode === 'inner', onSelected: () => this.setWindowMode('inner') },
+          { label: 'External Windows (OS)', checked: this.windowMode === 'external', onSelected: () => this.setWindowMode('external') },
+        ]
+      },
+      {
+        label: 'Dock',
+        items: [
+          { label: 'Add Selected to Dock', onSelected: () => this.addSelectedToDock() },
+          { label: 'Remove Selected from Dock', onSelected: () => this.removeSelectedFromDock() },
+          { label: '', isSeparator: true },
+          { label: 'Move Selected Left in Dock', onSelected: () => this.moveDockItemLeft() },
+          { label: 'Move Selected Right in Dock', onSelected: () => this.moveDockItemRight() },
+          { label: '', isSeparator: true },
+          { label: 'Clear Dock', onSelected: () => this.clearDock() }
+        ]
+      },
+      {
+        label: 'View',
+        items: [
+          { label: 'Show All Windows', onSelected: () => this.showAllWindows() },
+          { label: 'Hide All Windows', onSelected: () => this.hideAllWindows() },
+          { label: '', isSeparator: true },
+          { label: 'Fullscreen', onSelected: () => this.win!.setFullScreen(true) }
+        ]
+      }
+    ]);
   }
 
   /**
@@ -827,41 +915,8 @@ class Desktop {
     this.a.window({ title: 'Tsyne Desktop', width: 1024, height: 768 }, (win) => {
       this.win = win as Window;
 
-      // Set up the main menu with hamburger-style options
-      win.setMainMenu([
-        {
-          label: 'Desktop',
-          items: [
-            { label: 'Re-layout Icons', onSelected: () => this.relayoutAndRefresh() },
-            { label: '', isSeparator: true },
-            { label: 'Light Theme', onSelected: () => this.setTheme('light') },
-            { label: 'Dark Theme', onSelected: () => this.setTheme('dark') },
-            { label: '', isSeparator: true },
-            { label: 'About', onSelected: () => this.showAbout() }
-          ]
-        },
-        {
-          label: 'Dock',
-          items: [
-            { label: 'Add Selected to Dock', onSelected: () => this.addSelectedToDock() },
-            { label: 'Remove Selected from Dock', onSelected: () => this.removeSelectedFromDock() },
-            { label: '', isSeparator: true },
-            { label: 'Move Selected Left in Dock', onSelected: () => this.moveDockItemLeft() },
-            { label: 'Move Selected Right in Dock', onSelected: () => this.moveDockItemRight() },
-            { label: '', isSeparator: true },
-            { label: 'Clear Dock', onSelected: () => this.clearDock() }
-          ]
-        },
-        {
-          label: 'View',
-          items: [
-            { label: 'Show All Windows', onSelected: () => this.showAllWindows() },
-            { label: 'Hide All Windows', onSelected: () => this.hideAllWindows() },
-            { label: '', isSeparator: true },
-            { label: 'Fullscreen', onSelected: () => win.setFullScreen(true) }
-          ]
-        }
-      ]);
+      // Set up the main menu
+      this.updateMainMenu();
 
       win.setContent(() => {
         // Use border layout: desktop in center, launch bar at bottom
@@ -901,6 +956,7 @@ class Desktop {
   private setTheme(theme: 'light' | 'dark') {
     this.a.setTheme(theme);
   }
+
 
   /**
    * Show an about dialog
@@ -1332,12 +1388,16 @@ class Desktop {
 
     // Enable desktop mode BEFORE loading the module so that any auto-run
     // app() calls in the module will use the desktop's App instead of creating new ones
-    enableDesktopMode({
-      desktopMDI: this.desktopMDI,
-      parentWindow: this.win,
-      desktopApp: this.a,
-      onWindowClosed: (closedWindow) => this.handleWindowClosed(closedWindow)
-    });
+    // Only enable if window mode is 'inner' (MDI); external windows don't need desktop mode
+    const useInnerWindows = this.windowMode === 'inner';
+    if (useInnerWindows) {
+      enableDesktopMode({
+        desktopMDI: this.desktopMDI,
+        parentWindow: this.win,
+        desktopApp: this.a,
+        onWindowClosed: (closedWindow) => this.handleWindowClosed(closedWindow)
+      });
+    }
 
     // Create scoped resource manager for this app instance (IoC)
     const scopedResources = new ScopedResourceManager(
@@ -1463,8 +1523,10 @@ class Desktop {
       // Show error dialog
       this.showAppErrorDialog(metadata.name, error);
     } finally {
-      // Always disable desktop mode when done
-      disableDesktopMode();
+      // Disable desktop mode if we enabled it
+      if (useInnerWindows) {
+        disableDesktopMode();
+      }
 
       // Restore window method if not already restored
       if (originalWindow) {
