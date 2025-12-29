@@ -9,6 +9,8 @@ export interface IResourceManager {
   isRegistered(name: string): boolean;
   getRegisteredResources(): string[];
   unregisterAll(): Promise<void>;
+  /** Get the actual name to use when referencing a resource (handles scoping) */
+  getScopedName(name: string): string;
 }
 
 /**
@@ -86,6 +88,14 @@ export class ResourceManager implements IResourceManager {
       await this.unregisterResource(name);
     }
   }
+
+  /**
+   * Get the actual name to use when referencing a resource
+   * For non-scoped manager, returns the name unchanged
+   */
+  getScopedName(name: string): string {
+    return name;
+  }
 }
 
 /**
@@ -111,6 +121,10 @@ export class NullResourceManager implements IResourceManager {
 
   async unregisterAll(): Promise<void> {
     // No-op
+  }
+
+  getScopedName(name: string): string {
+    return name;
   }
 }
 

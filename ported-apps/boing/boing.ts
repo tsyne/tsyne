@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" fill="#CC0000" stroke="#FFFFFF"/><path d="M7 7L17 17M7 17L17 7M12 2v20M2 12h20" stroke="#FFFFFF" stroke-width="1.5"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createBoingApp
+// @tsyne-app:args app,resources
 
 /**
  * Boing Ball Demo for Tsyne
@@ -31,6 +32,7 @@ import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { CanvasRaster } from '../../core/src/widgets/canvas';
 import type { Label } from '../../core/src/widgets/display';
+import type { IResourceManager } from '../../core/src/resources';
 
 // Import sprite generation from sibling module
 // (The original ChrysaLisp app used proprietary .cpm image files;
@@ -272,6 +274,7 @@ class BallPhysics {
  */
 class BoingDemo {
   private a: App;
+  private resources: IResourceManager;
   private win: Window | null = null;
   private canvas: CanvasRaster | null = null;
   private frames: BallFrame[];
@@ -289,8 +292,9 @@ class BoingDemo {
   private readonly SHADOW_SPRITE = 'shadow';
   private readonly BALL_SPRITE = 'ball';
 
-  constructor(a: App) {
+  constructor(a: App, resources: IResourceManager) {
     this.a = a;
+    this.resources = resources;
     this.frames = generateAllFrames();
     // Start ball at top-left area
     this.physics = new BallPhysics(BALL_RADIUS + 50, BALL_RADIUS + 50);
@@ -305,12 +309,12 @@ class BoingDemo {
     // Generate and register ball frame sprites
     const sprites = generateAllBallSprites(this.frames);
     for (let i = 0; i < sprites.length; i++) {
-      await this.a.resources.registerResource(`${this.BALL_RESOURCE_PREFIX}${i}`, sprites[i]);
+      await this.resources.registerResource(`${this.BALL_RESOURCE_PREFIX}${i}`, sprites[i]);
     }
 
     // Generate and register shadow sprite
     const shadowSprite = generateShadowSprite();
-    await this.a.resources.registerResource(this.SHADOW_RESOURCE, shadowSprite);
+    await this.resources.registerResource(this.SHADOW_RESOURCE, shadowSprite);
   }
 
   /**
@@ -399,7 +403,7 @@ class BoingDemo {
 
       // Change ball frame (for rotation animation)
       this.perfMonitor.opStart('setSpriteResource');
-      const ballResource = `${this.BALL_RESOURCE_PREFIX}${this.frameIndex}`;
+      const ballResource = this.resources.getScopedName(`${this.BALL_RESOURCE_PREFIX}${this.frameIndex}`);
       await this.canvas.setSpriteResource(this.BALL_SPRITE, ballResource);
       this.perfMonitor.opEnd();
 
@@ -510,16 +514,17 @@ class BoingDemo {
     const shadowSpriteY = shadowY - Math.floor(BALL_RADIUS / 2);
 
     // Create sprites (shadow behind ball, lower z-index)
+    // Use getScopedName to get the actual resource name (handles desktop scoping)
     await this.canvas.createSprite(
       this.SHADOW_SPRITE,
-      this.SHADOW_RESOURCE,
+      this.resources.getScopedName(this.SHADOW_RESOURCE),
       shadowSpriteX,
       shadowSpriteY,
       { zIndex: 0 }
     );
     await this.canvas.createSprite(
       this.BALL_SPRITE,
-      `${this.BALL_RESOURCE_PREFIX}0`,
+      this.resources.getScopedName(`${this.BALL_RESOURCE_PREFIX}0`),
       ballSpriteX,
       ballSpriteY,
       { zIndex: 1 }
@@ -544,8 +549,8 @@ class BoingDemo {
 /**
  * Create the Boing app
  */
-export function createBoingApp(a: App): BoingDemo {
-  const demo = new BoingDemo(a);
+export function createBoingApp(a: App, resources: IResourceManager): BoingDemo {
+  const demo = new BoingDemo(a, resources);
 
   // Register cleanup
   a.registerCleanup(() => demo.cleanup());
@@ -573,7 +578,7 @@ export { BoingDemo, BallPhysics, PerformanceMonitor };
  */
 if (require.main === module) {
   app(resolveTransport(), { title: 'Boing Ball Demo' }, async (a: App) => {
-    const demo = createBoingApp(a);
+    const demo = createBoingApp(a, a.resources);
     await a.run();
     await demo.initialize();
   });

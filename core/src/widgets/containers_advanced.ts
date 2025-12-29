@@ -177,6 +177,46 @@ export class InnerWindow {
     });
     return this;
   }
+
+  /**
+   * Update the content of the inner window
+   * @param builder Function that builds the new content (must produce exactly one child widget)
+   */
+  async setContent(builder: () => void): Promise<void> {
+    // Build new content
+    this.ctx.pushContainer();
+    builder();
+    const children = this.ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('InnerWindow setContent must produce exactly one child');
+    }
+
+    const contentId = children[0];
+
+    await this.ctx.bridge.send('setInnerWindowContent', {
+      widgetId: this.id,
+      contentId
+    });
+  }
+
+  /**
+   * Register a callback for when the inner window is resized
+   * @param callback Function to call with new width and height
+   * @returns this for method chaining
+   */
+  onResize(callback: (width: number, height: number) => void): this {
+    const resizeCallbackId = this.ctx.generateId('resize_callback');
+    this.ctx.bridge.registerEventHandler(resizeCallbackId, (data: unknown) => {
+      const resizeData = data as { width: number; height: number };
+      callback(resizeData.width, resizeData.height);
+    });
+    this.ctx.bridge.send('setInnerWindowResizeCallback', {
+      widgetId: this.id,
+      callbackId: resizeCallbackId
+    });
+    return this;
+  }
 }
 
 /**

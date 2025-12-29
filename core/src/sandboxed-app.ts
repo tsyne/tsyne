@@ -21,11 +21,12 @@ import {
   ProgressBar, ProgressBarInfinite, RichText, Separator, Spacer, TextGrid,
   List, Menu, MenuItem, Table, Toolbar, ToolbarAction, Tree,
   AdaptiveGrid, Border, Center, Clip, Grid, GridWrap, WithoutLayout,
-  HBox, Max, Padded, PaddedOptions, Scroll, Split, Stack, VBox,
+  HBox, Max, Padded, PaddedOptions, Scroll, Split, Stack, VBox, CanvasStack,
   Accordion, Card, DocTabs, Form, InnerWindow, MultipleWindows,
   Navigation, Popup, Tabs, ThemeOverride,
   CanvasArc, CanvasCircle, CanvasLine, CanvasLinearGradient,
   CanvasPolygon, CanvasRadialGradient, CanvasRaster, CanvasRectangle, CanvasText,
+  TappableCanvasRaster, TappableCanvasRasterOptions,
   DesktopCanvas, DesktopMDI,
   ThemeIconName, TextGridOptions, NavigationOptions,
   DesktopCanvasOptions, DesktopMDIOptions,
@@ -47,6 +48,7 @@ export interface IApp {
   vbox(builder: () => void): VBox;
   hbox(builder: () => void): HBox;
   stack(builder: () => void): Stack;
+  canvasStack(builder: () => void): CanvasStack;
   scroll(builder: () => void): Scroll;
   grid(columns: number, builder: () => void): Grid;
   center(builder: () => void): Center;
@@ -112,6 +114,7 @@ export interface IApp {
   canvasRectangle(options?: { width?: number; height?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number; cornerRadius?: number; onClick?: (x: number, y: number) => void }): CanvasRectangle;
   canvasText(text: string, options?: { color?: string; textSize?: number; bold?: boolean; italic?: boolean; monospace?: boolean; alignment?: 'leading' | 'center' | 'trailing' }): CanvasText;
   canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster;
+  tappableCanvasRaster(width: number, height: number, options?: TappableCanvasRasterOptions): TappableCanvasRaster;
   canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number }): CanvasLinearGradient;
   canvasArc(options?: { x?: number; y?: number; x2?: number; y2?: number; startAngle?: number; endAngle?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasArc;
   canvasPolygon(options?: { points?: Array<{ x: number; y: number }>; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasPolygon;
@@ -197,6 +200,10 @@ export class SandboxedApp implements IApp {
 
   stack(builder: () => void): Stack {
     return new Stack(this.ctx, builder);
+  }
+
+  canvasStack(builder: () => void): CanvasStack {
+    return new CanvasStack(this.ctx, builder);
   }
 
   scroll(builder: () => void): Scroll {
@@ -441,6 +448,10 @@ export class SandboxedApp implements IApp {
 
   canvasRaster(width: number, height: number, pixels?: Array<[number, number, number, number]>): CanvasRaster {
     return new CanvasRaster(this.ctx, width, height, pixels);
+  }
+
+  tappableCanvasRaster(width: number, height: number, options?: TappableCanvasRasterOptions): TappableCanvasRaster {
+    return new TappableCanvasRaster(this.ctx, width, height, options);
   }
 
   canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number }): CanvasLinearGradient {

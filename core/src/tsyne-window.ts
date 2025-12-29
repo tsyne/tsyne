@@ -79,6 +79,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
     label: string;
     items: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
   }>;
+  private resizeCallback?: (width: number, height: number) => void;
 
   constructor(
     ctx: Context,
@@ -114,9 +115,16 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   /**
    * Set the content of the inner window.
-   * This is when we actually create the InnerWindow.
+   * On first call, this creates the InnerWindow.
+   * On subsequent calls, this updates the content in-place without recreating the window.
    */
   async setContent(builder: () => void | Promise<void>): Promise<void> {
+    // If we already have an InnerWindow, just update its content in-place
+    if (this.innerWindow) {
+      await this.innerWindow.setContent(() => { builder(); });
+      return;
+    }
+
     const closeHandler = async () => {
       // On close callback - user clicked X button
       if (this.closeInterceptCallback) {
@@ -144,6 +152,11 @@ export class InnerWindowAdapter implements ITsyneWindow {
       );
     } else {
       throw new Error('No MDI container available');
+    }
+
+    // Wire up resize callback if one was registered before setContent was called
+    if (this.resizeCallback && this.innerWindow) {
+      this.innerWindow.onResize(this.resizeCallback);
     }
   }
 
@@ -199,9 +212,11 @@ export class InnerWindowAdapter implements ITsyneWindow {
   }
 
   onResize(callback: (width: number, height: number) => void): this {
-    // InnerWindow resize - delegate to the inner window's content container
-    // For now, this is a no-op since InnerWindow doesn't expose resize events
-    // TODO: Could be implemented by wrapping inner window content with ResizableLayout
+    this.resizeCallback = callback;
+    // If innerWindow already exists, wire up the callback now
+    if (this.innerWindow) {
+      this.innerWindow.onResize(callback);
+    }
     return this;
   }
 

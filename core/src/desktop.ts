@@ -26,19 +26,18 @@ import { Inspector } from './inspector';
 import * as path from 'path';
 import * as http from 'http';
 
-// Phone-apps services (lazy-loaded to avoid circular dependencies)
-let phoneServices: any = null;
-function getPhoneServices() {
-  if (!phoneServices) {
-    try {
-      // Path relative to core/src/ - goes up to repo root then into phone-apps
-      phoneServices = require('../../../phone-apps/services');
-    } catch {
-      phoneServices = {};
-    }
-  }
-  return phoneServices;
-}
+// Core services (general-purpose, available everywhere)
+import {
+  MockClockService,
+  MockNotificationService,
+  MockStorageService,
+  MockSettingsService,
+  DesktopAppLifecycle,
+  // NotAvailable implementations for phone-specific services
+  NotAvailableContactsService,
+  NotAvailableTelephonyService,
+  NotAvailableSMSService,
+} from './services';
 
 // Desktop configuration
 const ICON_SIZE = 80;
@@ -730,6 +729,26 @@ class Desktop {
   }
 
   /**
+   * Show error dialog when an app crashes during launch
+   */
+  private async showAppErrorDialog(appName: string, error: unknown) {
+    if (!this.win) return;
+
+    const errorMessage = error instanceof Error
+      ? `${error.name}: ${error.message}`
+      : String(error);
+
+    const stack = error instanceof Error && error.stack
+      ? `\n\nStack trace:\n${error.stack.split('\n').slice(0, 5).join('\n')}`
+      : '';
+
+    await this.win.showError(
+      `App Crashed: ${appName}`,
+      `The application "${appName}" failed to launch.\n\n${errorMessage}${stack}`
+    );
+  }
+
+  /**
    * Show all open windows
    */
   private showAllWindows() {
@@ -991,6 +1010,10 @@ class Desktop {
     // Apps receive IApp interface, not the real App - prevents cross-app interference
     const sandboxedApp = new SandboxedApp(this.a, appScope);
 
+    // Track the created window for cleanup on error
+    let createdWindow: ITsyneWindow | null = null;
+    let originalWindow: typeof this.a.window | null = null;
+
     try {
       // Load the app's builder function (module auto-run will use desktop mode)
       const builder = await loadAppBuilder(metadata);
@@ -998,39 +1021,36 @@ class Desktop {
         console.error(`Could not load builder for ${metadata.name}`);
         return;
       }
-      // Call the app's builder - it will call a.window() which creates an InnerWindow
-      // We need to capture the created window
-      let createdWindow: ITsyneWindow | null = null;
 
       // Temporarily monkey-patch the REAL app's window method to capture the window
       // The sandboxed app delegates to real app for window creation
-      const originalWindow = this.a.window.bind(this.a);
+      originalWindow = this.a.window.bind(this.a);
       (this.a as any).window = (options: any, builderFn: any) => {
-        const win = originalWindow(options, builderFn);
+        const win = originalWindow!(options, builderFn);
         createdWindow = win;
         return win;
       };
 
       // Build argument array based on @tsyne-app:args metadata (poor man's reflection)
       // 'app' now maps to sandboxedApp, not this.a
-      const services = getPhoneServices();
       const argMap: Record<string, any> = {
         'app': sandboxedApp,
         'resources': scopedResources,
-        // Phone-apps services (instantiated per app launch)
-        'telephony': services.MockTelephonyService ? new services.MockTelephonyService() : null,
-        'contacts': services.MockContactsService ? new services.MockContactsService() : null,
-        'clock': services.MockClockService ? new services.MockClockService() : null,
-        'notifications': services.MockNotificationService ? new services.MockNotificationService() : null,
-        'storage': services.MockStorageService ? new services.MockStorageService() : null,
-        'settings': services.MockSettingsService ? new services.MockSettingsService() : null,
-        'sms': services.MockSMSService ? new services.MockSMSService() : null,
+        // General services (available on all platforms)
+        'clock': new MockClockService(),
+        'notifications': new MockNotificationService(),
+        'storage': new MockStorageService(),
+        'settings': new MockSettingsService(),
+        // Phone-specific services (NotAvailable on desktop - returns "not a phone" errors)
+        'telephony': new NotAvailableTelephonyService(),
+        'contacts': new NotAvailableContactsService(),
+        'sms': new NotAvailableSMSService(),
         // Desktop lifecycle - closes the inner window (closure captures createdWindow)
-        'lifecycle': services.DesktopAppLifecycle ? new services.DesktopAppLifecycle(() => {
+        'lifecycle': new DesktopAppLifecycle(() => {
           if (createdWindow) {
             createdWindow.close();
           }
-        }) : null,
+        }),
       };
       const args = metadata.args.map(name => argMap[name]);
 
@@ -1039,6 +1059,7 @@ class Desktop {
 
       // Restore original window method
       (this.a as any).window = originalWindow;
+      originalWindow = null;
 
       if (createdWindow) {
         // Track the open app - use appScope as key for multi-instance apps
@@ -1049,9 +1070,32 @@ class Desktop {
         this.updateRunningApps();
         console.log(`Launched: ${metadata.name}`);
       }
+    } catch (error) {
+      // App crashed during launch - clean up and show error
+      console.error(`Error launching ${metadata.name}:`, error);
+
+      // Close any partially created window
+      // Note: createdWindow can be set inside the monkey-patched window method,
+      // so we need the type assertion here
+      const windowToClose = createdWindow as ITsyneWindow | null;
+      if (windowToClose) {
+        try {
+          await windowToClose.close();
+        } catch (closeError) {
+          // Ignore close errors
+        }
+      }
+
+      // Show error dialog
+      this.showAppErrorDialog(metadata.name, error);
     } finally {
       // Always disable desktop mode when done
       disableDesktopMode();
+
+      // Restore window method if not already restored
+      if (originalWindow) {
+        (this.a as any).window = originalWindow;
+      }
     }
   }
 

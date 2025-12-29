@@ -526,10 +526,14 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateInnerWindow(msg)
 	case "innerWindowClose":
 		return b.handleInnerWindowClose(msg)
+	case "setInnerWindowContent":
+		return b.handleSetInnerWindowContent(msg)
 	case "raiseInnerWindow":
 		return b.handleRaiseInnerWindow(msg)
 	case "setInnerWindowTitle":
 		return b.handleSetInnerWindowTitle(msg)
+	case "setInnerWindowResizeCallback":
+		return b.handleSetInnerWindowResizeCallback(msg)
 	case "createMultipleWindows":
 		return b.handleCreateMultipleWindows(msg)
 	case "multipleWindowsAddWindow":

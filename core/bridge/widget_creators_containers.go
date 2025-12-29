@@ -1441,6 +1441,54 @@ func (b *Bridge) handleInnerWindowClose(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleSetInnerWindowContent(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	contentID := msg.Payload["contentId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	content, contentExists := b.widgets[contentID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	if !contentExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Content widget not found",
+		}
+	}
+
+	innerWindow, ok := w.(*container.InnerWindow)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	// Wrap content in a stack with themed background to ensure it's not transparent
+	bgRect := canvas.NewRectangle(theme.BackgroundColor())
+	contentWithBg := container.NewStack(bgRect, content)
+
+	fyne.DoAndWait(func() {
+		innerWindow.SetContent(contentWithBg)
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleRaiseInnerWindow(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 

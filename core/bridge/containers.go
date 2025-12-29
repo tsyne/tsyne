@@ -349,3 +349,64 @@ func (b *Bridge) handleSetWindowOnResize(msg Message) Response {
 		Success: true,
 	}
 }
+
+// handleSetInnerWindowResizeCallback sets up a resize callback for an InnerWindow
+func (b *Bridge) handleSetInnerWindowResizeCallback(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	_, exists := b.widgets[widgetID]
+	meta, metaExists := b.widgetMeta[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	if !metaExists || meta.Type != "innerwindow" {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	// Find the content widget through childToParent mapping
+	// The content widget's parent is this inner window
+	b.mu.RLock()
+	var contentID string
+	for childID, parentID := range b.childToParent {
+		if parentID == widgetID {
+			contentID = childID
+			break
+		}
+	}
+	var contentWidget fyne.CanvasObject
+	if contentID != "" {
+		contentWidget = b.widgets[contentID]
+	}
+	b.mu.RUnlock()
+
+	if contentWidget == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow content not found",
+		}
+	}
+
+	// Wrap the content's layout if it's a container
+	if cont, ok := contentWidget.(*fyne.Container); ok && cont.Layout != nil {
+		cont.Layout = NewResizableLayout(cont.Layout, widgetID, callbackID, b)
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
