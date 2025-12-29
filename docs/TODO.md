@@ -8,7 +8,7 @@ This document tracks future improvements, technical debt, and feature requests f
 
 **Priority**: Medium
 **Status**: Not started
-**Related**: `bridge/main.go` - `customIds map[string]string`
+**Related**: `core/bridge/types.go` - `customIds map[string]string`
 
 The bridge maintains a `customIds` map for test framework widget ID lookups (`.withId()` API). This map could grow indefinitely as widgets are created and destroyed during tests, especially with window content replacements.
 
@@ -31,15 +31,6 @@ The bridge maintains a `customIds` map for test framework widget ID lookups (`.w
    - Con: Requires test framework integration
 
 **Recommendation**: Start with approach #1 (purge on destruction) as it's simplest and aligns with existing widget lifecycle management. Consider adding #4 as explicit cleanup API for test suites.
-
-### Migrate to Unix Domain Sockets
-
-**Priority**: Low (v0.2.0+)
-**Status**: Not started
-
-Migrate IPC from stdin/stdout to Unix Domain Sockets (Linux/macOS) with fallback to TCP localhost (Windows). This would allow unrestricted logging and debugging.
-
----
 
 ### Standalone tsyne Executable (tsyne.exe)
 
@@ -232,3 +223,9 @@ Use pooled encoder instances with buffer reuse.
 Add TODO items as needed for:
 - Widget Library Expansion
 - Documentation Updates
+
+
+# Prompts
+
+We need a clone of @core/src/widgets/desktop.ts that called @core/src/launchtop.ts which does the same but not with InnerWindow Fyne elements - it'll launch each app among the host
+  OS (Win, Mac, Lin)'s other windows. 
