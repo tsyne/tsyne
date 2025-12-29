@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -1306,7 +1307,7 @@ func (b *Bridge) handleTabsSelect(msg Message) Response {
 func (b *Bridge) handleCreateThemeOverride(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)
-	themeVariant := msg.Payload["variant"].(string) // "dark" or "light"
+	themeVariant, _ := msg.Payload["variant"].(string) // "dark", "light", or "custom"
 
 	b.mu.RLock()
 	child, exists := b.widgets[childID]
@@ -1322,7 +1323,55 @@ func (b *Bridge) handleCreateThemeOverride(msg Message) Response {
 
 	// Create the appropriate theme based on variant
 	var overrideTheme fyne.Theme
-	if themeVariant == "dark" {
+	if themeVariant == "custom" || themeVariant == "" {
+		// Custom theme with colors
+		colors, hasColors := msg.Payload["colors"].(map[string]interface{})
+		fontPath, _ := msg.Payload["fontPath"].(string)
+
+		if hasColors {
+			customColors := &CustomColors{}
+			// Parse colors similar to handleSetCustomTheme
+			colorMap := map[string]*color.Color{
+				"background":        (*color.Color)(&customColors.Background),
+				"foreground":        (*color.Color)(&customColors.Foreground),
+				"button":            (*color.Color)(&customColors.Button),
+				"disabledButton":    (*color.Color)(&customColors.DisabledButton),
+				"disabled":          (*color.Color)(&customColors.Disabled),
+				"hover":             (*color.Color)(&customColors.Hover),
+				"focus":             (*color.Color)(&customColors.Focus),
+				"placeholder":       (*color.Color)(&customColors.Placeholder),
+				"primary":           (*color.Color)(&customColors.Primary),
+				"pressed":           (*color.Color)(&customColors.Pressed),
+				"scrollBar":         (*color.Color)(&customColors.ScrollBar),
+				"selection":         (*color.Color)(&customColors.Selection),
+				"separator":         (*color.Color)(&customColors.Separator),
+				"shadow":            (*color.Color)(&customColors.Shadow),
+				"inputBackground":   (*color.Color)(&customColors.InputBackground),
+				"inputBorder":       (*color.Color)(&customColors.InputBorder),
+				"menuBackground":    (*color.Color)(&customColors.MenuBackground),
+				"overlayBackground": (*color.Color)(&customColors.OverlayBackground),
+				"error":             (*color.Color)(&customColors.Error),
+				"success":           (*color.Color)(&customColors.Success),
+				"warning":           (*color.Color)(&customColors.Warning),
+				"hyperlink":         (*color.Color)(&customColors.Hyperlink),
+				"headerBackground":  (*color.Color)(&customColors.HeaderBackground),
+			}
+			for name, ptr := range colorMap {
+				if colorStr, ok := colors[name].(string); ok {
+					if c, valid := parseHexColor(colorStr); valid {
+						*ptr = c
+					}
+				}
+			}
+			overrideTheme = NewCustomColorsTheme(customColors, fontPath)
+		} else if fontPath != "" {
+			// Just font, no colors
+			overrideTheme = NewCustomColorsTheme(nil, fontPath)
+		} else {
+			// No custom colors or font, default to light
+			overrideTheme = &lightTheme{}
+		}
+	} else if themeVariant == "dark" {
 		// Create a dark theme override
 		overrideTheme = &darkTheme{}
 	} else {

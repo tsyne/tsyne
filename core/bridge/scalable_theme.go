@@ -31,6 +31,139 @@ func (d *darkTheme) Size(name fyne.ThemeSizeName) float32 {
 // lightTheme is a theme that forces light variant
 type lightTheme struct{}
 
+// customColorsTheme is a theme that applies custom colors (for ThemeOverride)
+type customColorsTheme struct {
+	colors   *CustomColors
+	fontPath string
+	fontRes  fyne.Resource
+}
+
+// NewCustomColorsTheme creates a theme with custom colors for use in ThemeOverride
+func NewCustomColorsTheme(colors *CustomColors, fontPath string) *customColorsTheme {
+	t := &customColorsTheme{colors: colors, fontPath: fontPath}
+	if fontPath != "" {
+		if data, err := os.ReadFile(fontPath); err == nil {
+			t.fontRes = fyne.NewStaticResource(fontPath, data)
+		}
+	}
+	return t
+}
+
+func (c *customColorsTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	if c.colors != nil {
+		switch name {
+		case theme.ColorNameBackground:
+			if c.colors.Background != nil {
+				return c.colors.Background
+			}
+		case theme.ColorNameForeground:
+			if c.colors.Foreground != nil {
+				return c.colors.Foreground
+			}
+		case theme.ColorNameButton:
+			if c.colors.Button != nil {
+				return c.colors.Button
+			}
+		case theme.ColorNameDisabledButton:
+			if c.colors.DisabledButton != nil {
+				return c.colors.DisabledButton
+			}
+		case theme.ColorNameDisabled:
+			if c.colors.Disabled != nil {
+				return c.colors.Disabled
+			}
+		case theme.ColorNameHover:
+			if c.colors.Hover != nil {
+				return c.colors.Hover
+			}
+		case theme.ColorNameFocus:
+			if c.colors.Focus != nil {
+				return c.colors.Focus
+			}
+		case theme.ColorNamePlaceHolder:
+			if c.colors.Placeholder != nil {
+				return c.colors.Placeholder
+			}
+		case theme.ColorNamePrimary:
+			if c.colors.Primary != nil {
+				return c.colors.Primary
+			}
+		case theme.ColorNamePressed:
+			if c.colors.Pressed != nil {
+				return c.colors.Pressed
+			}
+		case theme.ColorNameScrollBar:
+			if c.colors.ScrollBar != nil {
+				return c.colors.ScrollBar
+			}
+		case theme.ColorNameSelection:
+			if c.colors.Selection != nil {
+				return c.colors.Selection
+			}
+		case theme.ColorNameSeparator:
+			if c.colors.Separator != nil {
+				return c.colors.Separator
+			}
+		case theme.ColorNameShadow:
+			if c.colors.Shadow != nil {
+				return c.colors.Shadow
+			}
+		case theme.ColorNameInputBackground:
+			if c.colors.InputBackground != nil {
+				return c.colors.InputBackground
+			}
+		case theme.ColorNameInputBorder:
+			if c.colors.InputBorder != nil {
+				return c.colors.InputBorder
+			}
+		case theme.ColorNameMenuBackground:
+			if c.colors.MenuBackground != nil {
+				return c.colors.MenuBackground
+			}
+		case theme.ColorNameOverlayBackground:
+			if c.colors.OverlayBackground != nil {
+				return c.colors.OverlayBackground
+			}
+		case theme.ColorNameError:
+			if c.colors.Error != nil {
+				return c.colors.Error
+			}
+		case theme.ColorNameSuccess:
+			if c.colors.Success != nil {
+				return c.colors.Success
+			}
+		case theme.ColorNameWarning:
+			if c.colors.Warning != nil {
+				return c.colors.Warning
+			}
+		case theme.ColorNameHyperlink:
+			if c.colors.Hyperlink != nil {
+				return c.colors.Hyperlink
+			}
+		case theme.ColorNameHeaderBackground:
+			if c.colors.HeaderBackground != nil {
+				return c.colors.HeaderBackground
+			}
+		}
+	}
+	return theme.DefaultTheme().Color(name, variant)
+}
+
+func (c *customColorsTheme) Font(style fyne.TextStyle) fyne.Resource {
+	if c.fontRes != nil {
+		return c.fontRes
+	}
+	return theme.DefaultTheme().Font(style)
+}
+
+func (c *customColorsTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
+	return theme.DefaultTheme().Icon(name)
+}
+
+func (c *customColorsTheme) Size(name fyne.ThemeSizeName) float32 {
+	return theme.DefaultTheme().Size(name)
+}
+
 func (l *lightTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	return theme.DefaultTheme().Color(name, theme.VariantLight)
 }

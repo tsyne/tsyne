@@ -2,9 +2,10 @@
  * Notes App - Tsyne Port
  *
  * @tsyne-app:name Notes
- * @tsyne-app:icon document
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
  * @tsyne-app:category utilities
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildNotesApp
+ * @tsyne-app:args app
  *
  * A simple notes application with:
  * - Note management (create, edit, delete)
@@ -197,44 +198,52 @@ export class NotesStore {
 
 export function buildNotesApp(a: any) {
   const store = new NotesStore();
+  const path = require('path');
+  const fontPath = path.join(__dirname, 'GochiHand.ttf');
 
-  // Theme definitions
-  const customLightTheme = {
-    background: '#f5f5f5',
-    foreground: '#333333',
-    primary: '#2196F3',
-    button: '#e8e8e8',
-    hover: '#d0d0d0',
-    focus: '#2196F3',
-    selection: '#bbdefb',
+  // Sticky note theme definitions (matching original Fyne Notes)
+  // All surfaces use the same yellow, buttons are semi-transparent white overlays
+  const stickyNoteLight = {
+    background: '#F0E99B',         // Yellow/tan sticky note
+    inputBackground: '#F0E99B',    // Same yellow for inputs
+    menuBackground: '#F0E99B',     // Same yellow for menus
+    overlayBackground: '#F0E99B',  // Same yellow for overlays
+    foreground: '#463A11',         // Brown text
+    primary: '#ffffffAA',          // Semi-transparent white accent
+    button: '#ffffffBB',           // More opaque white for button visibility
+    hover: '#ffffffDD',            // Lighter on hover (shine effect)
+    pressed: '#ffffff55',          // Darker when pressed (shadow effect)
+    focus: '#ffffff99',            // Focus ring
+    selection: '#ffffff66',        // Text selection
+    separator: '#463A1133',        // Subtle brown separator
   };
 
-  const customDarkTheme = {
-    background: '#1e1e1e',
-    foreground: '#e0e0e0',
-    primary: '#64B5F6',
-    button: '#333333',
-    hover: '#444444',
-    focus: '#64B5F6',
-    selection: '#1565c0',
+  const stickyNoteDark = {
+    background: '#372B09',         // Dark brown
+    inputBackground: '#372B09',    // Same dark brown for inputs
+    menuBackground: '#372B09',     // Same dark brown for menus
+    overlayBackground: '#372B09',  // Same dark brown for overlays
+    foreground: '#F0E99B',         // Yellow text
+    primary: '#ffffffAA',          // Semi-transparent white accent
+    button: '#ffffff44',           // More visible button on dark
+    hover: '#ffffff66',            // Lighter on hover
+    pressed: '#ffffff22',          // Darker when pressed
+    focus: '#ffffff55',            // Focus ring
+    selection: '#ffffff44',        // Text selection
+    separator: '#F0E99B33',        // Subtle yellow separator
   };
 
-  // Apply initial theme
-  const applyTheme = async () => {
+  // Get current theme colors based on preference
+  const getThemeColors = () => {
     const prefs = store.getPreferences();
-    if (prefs.customTheme) {
-      await a.setCustomTheme(prefs.customTheme);
-    } else {
-      await a.setTheme(prefs.theme);
-    }
+    return prefs.theme === 'dark' ? stickyNoteDark : stickyNoteLight;
   };
 
-  let currentNote: any = null;
   let notesList: any = null;
   let titleEntry: any = null;
   let contentEntry: any = null;
   let statusLabel: any = null;
-  let themeLabel: any = null;
+  let winRef: any = null;
 
   // Update UI based on selected note
   const updateUI = async () => {
@@ -248,11 +257,6 @@ export function buildNotesApp(a: any) {
       if (contentEntry) contentEntry.setText('');
     }
 
-    const prefs = store.getPreferences();
-    if (themeLabel) {
-      themeLabel.setText(`Theme: ${prefs.theme === 'dark' ? '🌙 Dark' : '☀️ Light'}`);
-    }
-
     // Update status
     if (statusLabel) {
       const noteCount = store.getNoteCount();
@@ -260,16 +264,30 @@ export function buildNotesApp(a: any) {
     }
 
     if (notesList) {
-      await notesList.refresh();
+      notesList.update();
     }
   };
 
-  return a.window({ title: 'Notes', width: 900, height: 600 }, (win: any) => {
-    win.setContent(() => {
-      a.hbox(() => {
+  // Build the themed content (called on initial load and theme change)
+  const buildContent = () => {
+    const themeColors = getThemeColors();
+
+    // Wrap entire content in themeoverride with scoped custom colors
+    a.themeoverride({
+      colors: themeColors,
+      fontPath: fontPath
+    }, () => {
+      // Max: expands children to fill available space
+      // Background rectangle + content layered on top
+      a.max(() => {
+        // Solid background in theme color (covers the grey window background)
+        a.rectangle(themeColors.background);
+
+        // Horizontal split: left sidebar | right editor (both resize with window)
+        a.hsplit(() => {
         // Left sidebar: notes list
         a.vbox(() => {
-          a.label('📝 Notes').withBold().withId('notes-title');
+          a.label('Notes', undefined, undefined, undefined, { bold: true }).withId('notes-title');
 
           a.hbox(() => {
             a.button('+').onClick(async () => {
@@ -286,116 +304,96 @@ export function buildNotesApp(a: any) {
             }).withId('delete-note-btn');
           });
 
-          // Notes list
-          notesList = a.vbox(() => {})
-            .withId('notes-list')
-            .bindTo({
-              items: () => store.getNotes(),
-              render: (note: Note) => {
-                const isSelected = store.getSelectedNoteId() === note.id;
-                return a.hbox(() => {
-                  a.button(
-                    () => note.title || '(untitled)',
-                    async () => {
-                      store.selectNote(note.id);
-                      await updateUI();
-                    }
-                  )
-                    .withId(`note-btn-${note.id}`)
-                    .when(() => !isSelected);
-
-                  a.label(
-                    () => `📌 ${note.title || '(untitled)'}`
-                  )
-                    .withBold()
-                    .withId(`note-label-${note.id}`)
-                    .when(() => isSelected);
-                });
-              },
-              trackBy: (note: Note) => note.id,
-            });
-        });
-
-        // Right panel: editor
-        a.vbox(() => {
-          a.label('Editor').withBold().withId('editor-title');
-
-          a.label('Title:').withId('title-label');
-          titleEntry = a.entry()
-            .withPlaceholder('Note title')
-            .onChange(async (text: string) => {
-              const selectedId = store.getSelectedNoteId();
-              if (selectedId) {
-                store.updateNoteTitle(selectedId, text);
-              }
-            })
-            .withId('title-entry');
-
-          a.label('Content:').withId('content-label');
-          contentEntry = a.multilineentry()
-            .withPlaceholder('Note content')
-            .onChange(async (text: string) => {
-              const selectedId = store.getSelectedNoteId();
-              if (selectedId) {
-                store.updateNoteContent(selectedId, text);
-              }
-            })
-            .withId('content-entry');
-
-          // Theme selector
-          a.label('🎨 Theme').withBold().withId('theme-selector-label');
-          themeLabel = a.label('Theme: ☀️ Light').withId('theme-label');
-
-          a.hbox(() => {
-            a.button(
-              () => '☀️ Light',
-              async () => {
-                store.setTheme('light');
-                await a.setTheme('light');
-                await updateUI();
-              }
-            ).withId('light-theme-btn');
-
-            a.button(
-              () => '🌙 Dark',
-              async () => {
-                store.setTheme('dark');
-                await a.setTheme('dark');
-                await updateUI();
-              }
-            ).withId('dark-theme-btn');
-
-            a.button(
-              () => '🎨 Custom Light',
-              async () => {
-                store.setCustomTheme(customLightTheme);
-                await a.setCustomTheme(customLightTheme);
-                await updateUI();
-              }
-            ).withId('custom-light-btn');
-
-            a.button(
-              () => '🎨 Custom Dark',
-              async () => {
-                store.setCustomTheme(customDarkTheme);
-                await a.setCustomTheme(customDarkTheme);
-                await updateUI();
-              }
-            ).withId('custom-dark-btn');
+          // Notes list with bindTo
+          notesList = a.vbox(() => {}).withId('notes-list').bindTo({
+            items: () => store.getNotes(),
+            render: (note: Note) => {
+              const isSelected = store.getSelectedNoteId() === note.id;
+              a.hbox(() => {
+                if (!isSelected) {
+                  a.button(note.title || '(untitled)').onClick(async () => {
+                    store.selectNote(note.id);
+                    await updateUI();
+                  }).withId(`note-btn-${note.id}`);
+                } else {
+                  a.label(`> ${note.title || '(untitled)'}`, undefined, undefined, undefined, { bold: true })
+                    .withId(`note-label-${note.id}`);
+                }
+              });
+            },
+            trackBy: (note: Note) => note.id,
           });
-
-          // Status
-          statusLabel = a.label('').withId('status-label');
         });
-      });
-    });
+      }, () => {
+        // Right panel: editor with border layout so content expands
+        a.border({
+          top: () => {
+            a.vbox(() => {
+              a.label('Title:').withId('title-label');
+              // Entry: placeholder, onSubmit, minWidth, onDoubleClick, onChange
+              titleEntry = a.entry('Note title', undefined, undefined, undefined, async (text: string) => {
+                const selectedId = store.getSelectedNoteId();
+                if (selectedId) {
+                  store.updateNoteTitle(selectedId, text);
+                }
+              }).withId('title-entry');
+            });
+          },
+          center: () => {
+            // Content entry expands to fill available space
+            contentEntry = a.multilineentry('Note content').withId('content-entry');
+          },
+          bottom: () => {
+            a.vbox(() => {
+              // Save button for content since multilineentry doesn't have onChange
+              a.button('Save Content').onClick(async () => {
+                const selectedId = store.getSelectedNoteId();
+                if (selectedId && contentEntry) {
+                  const text = await contentEntry.getText();
+                  store.updateNoteContent(selectedId, text);
+                }
+              }).withId('save-content-btn');
+
+              // Theme selector (sticky note light/dark) - rebuilds UI with new theme
+              a.hbox(() => {
+                a.button('Light').onClick(async () => {
+                  store.setTheme('light');
+                  // Rebuild content with new theme
+                  if (winRef) {
+                    winRef.setContent(buildContent);
+                    await updateUI();
+                  }
+                }).withId('light-theme-btn');
+
+                a.button('Dark').onClick(async () => {
+                  store.setTheme('dark');
+                  // Rebuild content with new theme
+                  if (winRef) {
+                    winRef.setContent(buildContent);
+                    await updateUI();
+                  }
+                }).withId('dark-theme-btn');
+              });
+
+              // Status
+              statusLabel = a.label('').withId('status-label');
+            });
+          }
+        });
+      }, 0.25);  // Split offset: sidebar takes ~25% width
+      }); // close max
+    }); // close themeoverride
+  };
+
+  return a.window({ title: 'Notes', width: 900, height: 600 }, (win: any) => {
+    winRef = win;
+    win.setContent(buildContent);
 
     win.show();
     win.centerOnScreen();
 
     // Initialize UI
     (async () => {
-      await applyTheme();
       await updateUI();
     })();
 
@@ -411,6 +409,6 @@ export function buildNotesApp(a: any) {
 // ============================================================================
 
 if (require.main === module) {
-  const { app, resolveTransport } = require('../core/src');
+  const { app, resolveTransport } = require('../../core/src');
   app(resolveTransport(), { title: 'Notes' }, buildNotesApp);
 }

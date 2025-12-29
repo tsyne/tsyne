@@ -34,6 +34,8 @@ export {
   Padded,
   PaddedOptions,
   ThemeOverride,
+  CustomThemeColors,
+  CustomThemeOptions,
   Navigation,
   NavigationOptions,
   Popup,

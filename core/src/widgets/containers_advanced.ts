@@ -220,14 +220,62 @@ export class InnerWindow {
 }
 
 /**
- * ThemeOverride container - applies a specific theme (dark/light) to its contents
+ * Custom theme colors for ThemeOverride
+ * All properties are optional - unspecified colors will use defaults
+ */
+export interface CustomThemeColors {
+  background?: string;
+  foreground?: string;
+  button?: string;
+  disabledButton?: string;
+  disabled?: string;
+  hover?: string;
+  focus?: string;
+  placeholder?: string;
+  primary?: string;
+  pressed?: string;
+  scrollBar?: string;
+  selection?: string;
+  separator?: string;
+  shadow?: string;
+  inputBackground?: string;
+  inputBorder?: string;
+  menuBackground?: string;
+  overlayBackground?: string;
+  error?: string;
+  success?: string;
+  warning?: string;
+  hyperlink?: string;
+  headerBackground?: string;
+}
+
+/**
+ * Options for ThemeOverride with custom colors
+ */
+export interface CustomThemeOptions {
+  colors?: CustomThemeColors;
+  fontPath?: string;
+}
+
+/**
+ * ThemeOverride container - applies a specific theme (dark/light/custom) to its contents
  * This allows different regions of the UI to have different themes
+ *
+ * Usage:
+ *   // Standard variant override
+ *   a.themeoverride('dark', () => { ... })
+ *
+ *   // Custom colors (scoped to this container)
+ *   a.themeoverride({
+ *     colors: { background: '#F0E99B', foreground: '#463A11' },
+ *     fontPath: '/path/to/font.ttf'
+ *   }, () => { ... })
  */
 export class ThemeOverride {
   private ctx: Context;
   public id: string;
 
-  constructor(ctx: Context, variant: 'dark' | 'light', builder: () => void) {
+  constructor(ctx: Context, variantOrOptions: 'dark' | 'light' | CustomThemeOptions, builder: () => void) {
     this.ctx = ctx;
     this.id = ctx.generateId('themeoverride');
 
@@ -240,12 +288,26 @@ export class ThemeOverride {
       throw new Error('ThemeOverride must have exactly one child');
     }
 
-    ctx.bridge.send('createThemeOverride', {
+    const payload: Record<string, unknown> = {
       id: this.id,
-      childId: children[0],
-      variant
-    });
+      childId: children[0]
+    };
 
+    if (typeof variantOrOptions === 'string') {
+      // Standard dark/light variant
+      payload.variant = variantOrOptions;
+    } else {
+      // Custom theme with colors and/or font
+      payload.variant = 'custom';
+      if (variantOrOptions.colors) {
+        payload.colors = variantOrOptions.colors;
+      }
+      if (variantOrOptions.fontPath) {
+        payload.fontPath = variantOrOptions.fontPath;
+      }
+    }
+
+    ctx.bridge.send('createThemeOverride', payload);
     ctx.addToCurrentContainer(this.id);
   }
 }

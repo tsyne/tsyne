@@ -31,7 +31,7 @@ import {
   ThemeIconName, TextGridOptions, NavigationOptions,
   DesktopCanvasOptions, DesktopMDIOptions,
 } from './widgets';
-import { App, CustomThemeColors, FontTextStyle, FontInfo } from './app';
+import { App, CustomThemeColors, CustomThemeOptions, FontTextStyle, FontInfo } from './app';
 import { IResourceManager } from './resources';
 
 /**
@@ -103,7 +103,7 @@ export interface IApp {
   form(items: Array<{ label: string; widget: any }>, onSubmit?: () => void, onCancel?: () => void): Form;
   menu(items: MenuItem[]): Menu;
   navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation;
-  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride;
+  themeoverride(variantOrOptions: 'dark' | 'light' | CustomThemeOptions, builder: () => void): ThemeOverride;
   popup(windowId: string, builder: () => void): Popup;
   innerWindow(title: string, builder: () => void, onClose?: () => void): InnerWindow;
   multipleWindows(builder?: () => void): MultipleWindows;
@@ -410,8 +410,8 @@ export class SandboxedApp implements IApp {
     return new Navigation(this.ctx, rootBuilder, options);
   }
 
-  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
-    return new ThemeOverride(this.ctx, variant, builder);
+  themeoverride(variantOrOptions: 'dark' | 'light' | CustomThemeOptions, builder: () => void): ThemeOverride {
+    return new ThemeOverride(this.ctx, variantOrOptions, builder);
   }
 
   popup(windowId: string, builder: () => void): Popup {

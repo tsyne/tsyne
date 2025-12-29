@@ -77,6 +77,7 @@ import {
   Popup,
   Tabs,
   ThemeOverride,
+  CustomThemeOptions,
   // Canvas
   CanvasArc,
   CanvasCircle,
@@ -97,7 +98,7 @@ import {
   // Types
   ThemeIconName,
 } from './widgets';
-export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions };
+export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions, CustomThemeOptions };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -974,8 +975,26 @@ export class App {
     return new Padded(this.ctx, builder, options);
   }
 
-  themeoverride(variant: 'dark' | 'light', builder: () => void): ThemeOverride {
-    return new ThemeOverride(this.ctx, variant, builder);
+  /**
+   * Create a themed container that applies a specific theme to its contents.
+   *
+   * @param variantOrOptions - Either 'dark'/'light' string, or an object with:
+   *   - colors: Custom color overrides (background, foreground, button, etc.)
+   *   - fontPath: Path to a custom font file
+   * @param builder - Function that builds the container content
+   *
+   * Examples:
+   *   // Standard variant override
+   *   a.themeoverride('dark', () => { ... })
+   *
+   *   // Custom colors (scoped to this container only)
+   *   a.themeoverride({
+   *     colors: { background: '#F0E99B', foreground: '#463A11' },
+   *     fontPath: '/path/to/font.ttf'
+   *   }, () => { ... })
+   */
+  themeoverride(variantOrOptions: 'dark' | 'light' | CustomThemeOptions, builder: () => void): ThemeOverride {
+    return new ThemeOverride(this.ctx, variantOrOptions, builder);
   }
 
   navigation(rootBuilder: () => void, options?: NavigationOptions): Navigation {
