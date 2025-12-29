@@ -1577,6 +1577,41 @@ func (b *Bridge) handleRaiseInnerWindow(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleMoveInnerWindow(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	x := toFloat64(msg.Payload["x"])
+	y := toFloat64(msg.Payload["y"])
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "InnerWindow not found",
+		}
+	}
+
+	innerWindow, ok := w.(*container.InnerWindow)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an InnerWindow",
+		}
+	}
+
+	innerWindow.Move(fyne.NewPos(float32(x), float32(y)))
+	innerWindow.Refresh()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleSetInnerWindowTitle(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 	title := msg.Payload["title"].(string)

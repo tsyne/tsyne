@@ -933,12 +933,13 @@ type TsyneDraggableIcon struct {
 	desktopContainer DesktopIconContainer
 
 	// Bridge for callbacks
-	bridge                 *Bridge
-	onDragCallbackId       string
-	onDragEndCallbackId    string
-	onClickCallbackId      string
-	onDblClickCallbackId   string
-	onRightClickCallbackId string
+	bridge                     *Bridge
+	onDragCallbackId           string
+	onDragEndCallbackId        string
+	onClickCallbackId          string
+	onDblClickCallbackId       string
+	onRightClickCallbackId     string
+	onDropReceivedCallbackId   string
 }
 
 // trimTransparentPadding crops transparent edges to reduce visual padding differences across icons
@@ -1069,12 +1070,13 @@ func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y f
 }
 
 // SetCallbackIds configures callback IDs for event dispatching
-func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick, rightClick string) {
+func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick, rightClick, dropReceived string) {
 	d.onDragCallbackId = drag
 	d.onDragEndCallbackId = dragEnd
 	d.onClickCallbackId = click
 	d.onDblClickCallbackId = dblClick
 	d.onRightClickCallbackId = rightClick
+	d.onDropReceivedCallbackId = dropReceived
 }
 
 // CreateRenderer returns the widget renderer
@@ -1219,6 +1221,9 @@ func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
 // DragEnd handles the end of a drag operation
 func (d *TsyneDraggableIcon) DragEnd() {
 	if d.dragging {
+		// Check if we dropped on another icon (icon-on-icon drop)
+		d.checkDropOnIcon()
+
 		// Notify TypeScript of drag end
 		if d.onDragEndCallbackId != "" && d.bridge != nil {
 			d.bridge.sendEvent(Event{
@@ -1232,6 +1237,54 @@ func (d *TsyneDraggableIcon) DragEnd() {
 			})
 		}
 		d.dragging = false
+	}
+}
+
+// checkDropOnIcon checks if this icon was dropped on another icon
+// and fires the target icon's onDropReceived callback if so
+func (d *TsyneDraggableIcon) checkDropOnIcon() {
+	// Get the list of icons from the container
+	var icons []*TsyneDraggableIcon
+	if d.desktopContainer != nil {
+		if mdi, ok := d.desktopContainer.(*TsyneDesktopMDI); ok {
+			icons = mdi.icons
+		}
+	} else if d.desktop != nil {
+		icons = d.desktop.icons
+	}
+
+	if icons == nil {
+		return
+	}
+
+	// Check each icon to see if we dropped on it
+	// Use the center of this icon for the hit test
+	mySize := d.MinSize()
+	centerX := d.PosX + mySize.Width/2
+	centerY := d.PosY + mySize.Height/2
+
+	for _, target := range icons {
+		if target == d {
+			continue // Skip self
+		}
+
+		// Check if our center is within the target icon's bounds
+		targetSize := target.MinSize()
+		if centerX >= target.PosX && centerX < target.PosX+targetSize.Width &&
+			centerY >= target.PosY && centerY < target.PosY+targetSize.Height {
+			// We dropped on this icon!
+			if target.onDropReceivedCallbackId != "" && target.bridge != nil {
+				target.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId":    target.onDropReceivedCallbackId,
+						"droppedIconId": d.ID,
+						"targetIconId":  target.ID,
+					},
+				})
+			}
+			break // Only trigger on the first matching icon
+		}
 	}
 }
 

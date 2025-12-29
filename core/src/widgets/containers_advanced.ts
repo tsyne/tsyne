@@ -157,6 +157,17 @@ export class InnerWindow {
   }
 
   /**
+   * Move the inner window to a specific position
+   */
+  async move(x: number, y: number): Promise<void> {
+    await this.ctx.bridge.send('moveInnerWindow', {
+      widgetId: this.id,
+      x,
+      y
+    });
+  }
+
+  /**
    * Bring the inner window to the front (raise it above other inner windows)
    */
   async bringToFront(): Promise<void> {

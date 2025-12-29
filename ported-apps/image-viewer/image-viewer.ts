@@ -168,11 +168,18 @@ export class ImageViewer {
 
       // Apply saturation adjustment
       if (this.editParams.saturation !== 0) {
-        // Jimp saturation modifier
-        processedImage.color([{
-          apply: 'saturate',
-          params: [this.editParams.saturation]
-        }]);
+        // Jimp requires separate saturate/desaturate for positive/negative values
+        if (this.editParams.saturation > 0) {
+          processedImage.color([{
+            apply: 'saturate',
+            params: [this.editParams.saturation]
+          }]);
+        } else {
+          processedImage.color([{
+            apply: 'desaturate',
+            params: [-this.editParams.saturation]
+          }]);
+        }
       }
 
       // Apply hue rotation
@@ -513,15 +520,22 @@ class ImageViewerUI {
    * Build image display area
    */
   private buildImageArea(): void {
-    this.a.vbox(() => {
-      // Image display - use contain mode to fit the available space
-      const sampleImagePath = path.join(__dirname, 'sample-image.png');
-      const imageWidget = this.a.image(sampleImagePath, 'contain');
-      this.viewer.registerImageDisplay(imageWidget);
-
-      // Label showing current image filename
-      const label = this.a.label('No image loaded');
-      this.viewer.registerImageAreaLabel(label);
+    // Use border layout so scroll gets all available space
+    this.a.border({
+      center: () => {
+        // Scrollable container for zoomed images
+        this.a.scroll(() => {
+          // Image display - use original mode so zoom actually changes visible size
+          const sampleImagePath = path.join(__dirname, 'sample-image.png');
+          const imageWidget = this.a.image(sampleImagePath, 'original');
+          this.viewer.registerImageDisplay(imageWidget);
+        });
+      },
+      bottom: () => {
+        // Label showing current image filename
+        const label = this.a.label('No image loaded');
+        this.viewer.registerImageAreaLabel(label);
+      }
     });
   }
 

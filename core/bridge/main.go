@@ -530,6 +530,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleSetInnerWindowContent(msg)
 	case "raiseInnerWindow":
 		return b.handleRaiseInnerWindow(msg)
+	case "moveInnerWindow":
+		return b.handleMoveInnerWindow(msg)
 	case "setInnerWindowTitle":
 		return b.handleSetInnerWindowTitle(msg)
 	case "setInnerWindowResizeCallback":

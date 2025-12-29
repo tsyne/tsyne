@@ -308,6 +308,7 @@ class Desktop {
         items: [
           { label: 'Show All Windows', onSelected: () => this.showAllWindows() },
           { label: 'Hide All Windows', onSelected: () => this.hideAllWindows() },
+          { label: 'Center All Windows', onSelected: () => this.centerAllWindows() },
           { label: '', isSeparator: true },
           { label: 'Fullscreen', onSelected: () => this.win!.setFullScreen(true) }
         ]
@@ -1153,6 +1154,32 @@ class Desktop {
   }
 
   /**
+   * Center all windows (useful for recovering off-screen windows)
+   * Includes both app windows and folder windows
+   */
+  private async centerAllWindows() {
+    if (!this.desktopMDI) return;
+
+    // Get all window IDs from the MDI container (includes folders and apps)
+    const windowIds = this.desktopMDI.getWindowIds();
+
+    // Center position - place windows at a reasonable starting position
+    const centerX = 100;
+    const centerY = 100;
+    let offset = 0;
+
+    for (const windowId of windowIds) {
+      // Send move command directly via bridge
+      await this.a.getContext().bridge.send('moveInnerWindow', {
+        widgetId: windowId,
+        x: centerX + offset,
+        y: centerY + offset
+      });
+      offset += 30;
+    }
+  }
+
+  /**
    * Add the currently selected icon to the dock
    */
   private async addSelectedToDock() {
@@ -1321,6 +1348,9 @@ class Desktop {
         },
         onRightClick: (iconId, x, y) => {
           this.showAppInfo(icon.metadata);
+        },
+        onDropReceived: (droppedIconId) => {
+          this.handleFileDrop(icon.metadata, droppedIconId);
         }
       });
     }
@@ -1411,6 +1441,47 @@ class Desktop {
     }
 
     return null;
+  }
+
+  /**
+   * Find a file icon by its desktop icon ID
+   */
+  private findFileIconById(iconId: string): FileIcon | null {
+    if (!iconId.startsWith('file-')) return null;
+
+    // Icon IDs are: file-${fileName.toLowerCase().replace(/\s+/g, '-')}
+    // So we need to match the generated ID pattern
+    for (const fileIcon of this.fileIcons) {
+      const expectedId = `file-${fileIcon.fileName.toLowerCase().replace(/\s+/g, '-')}`;
+      if (expectedId === iconId) {
+        return fileIcon;
+      }
+    }
+    return null;
+  }
+
+  /** Apps that support opening files via drag-and-drop */
+  private static readonly FILE_DROP_APPS = new Set([
+    'Image Viewer',
+    'Pixel Editor',
+  ]);
+
+  /**
+   * Handle a file being dropped on an app icon
+   */
+  private handleFileDrop(appMetadata: AppMetadata, droppedIconId: string) {
+    const fileIcon = this.findFileIconById(droppedIconId);
+    if (fileIcon) {
+      if (Desktop.FILE_DROP_APPS.has(appMetadata.name)) {
+        console.log(`File dropped on ${appMetadata.name}: ${fileIcon.filePath}`);
+        this.launchApp(appMetadata, fileIcon.filePath);
+      } else {
+        console.log(`${appMetadata.name} doesn't support file drops`);
+        this.win?.showInfo('Not Supported', `${appMetadata.name} doesn't support opening files.`);
+      }
+    } else {
+      console.log(`Non-file icon dropped on ${appMetadata.name}: ${droppedIconId}`);
+    }
   }
 
   /**

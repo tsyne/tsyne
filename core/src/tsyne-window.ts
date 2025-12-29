@@ -30,6 +30,7 @@ export interface ITsyneWindow {
 
   // Window-specific (no-op in InnerWindow/StackPane where not applicable)
   resize(width: number, height: number): Promise<void>;
+  move(x: number, y: number): Promise<void>;
   centerOnScreen(): Promise<void>;
   setFullScreen(fullscreen: boolean): Promise<void>;
   setIcon(resourceName: string): Promise<void>;
@@ -193,6 +194,12 @@ export class InnerWindowAdapter implements ITsyneWindow {
 
   async resize(_width: number, _height: number): Promise<void> {
     // No-op: InnerWindow sizing is managed by MDI container
+  }
+
+  async move(x: number, y: number): Promise<void> {
+    if (this.innerWindow) {
+      await this.innerWindow.move(x, y);
+    }
   }
 
   async centerOnScreen(): Promise<void> {
@@ -396,6 +403,7 @@ export class StackPaneAdapter implements ITsyneWindow {
   // === Window-specific methods (no-op in stack pane) ===
 
   async resize(_width: number, _height: number): Promise<void> {}
+  async move(_x: number, _y: number): Promise<void> {}
   async centerOnScreen(): Promise<void> {}
   async setFullScreen(_fullscreen: boolean): Promise<void> {}
   async setIcon(_resourceName: string): Promise<void> {}

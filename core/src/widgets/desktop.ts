@@ -40,6 +40,8 @@ export interface DesktopIconOptions {
   onDragEnd?: (iconId: string, x: number, y: number) => void;
   /** Called when icon is right-clicked (secondary tap) */
   onRightClick?: (iconId: string, x: number, y: number) => void;
+  /** Called when another icon is dropped on this icon */
+  onDropReceived?: (droppedIconId: string) => void;
 }
 
 /**
@@ -100,6 +102,14 @@ export class DesktopIcon {
       payload.onDragEndCallbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         options.onDragEnd!(data.iconId, data.x, data.y);
+      });
+    }
+
+    if (options.onDropReceived) {
+      const callbackId = ctx.generateId('callback');
+      payload.onDropReceivedCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        options.onDropReceived!(data.droppedIconId);
       });
     }
 
@@ -265,6 +275,14 @@ export class DesktopMDIIcon {
       payload.onRightClickCallbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         options.onRightClick!(data.iconId, data.x, data.y);
+      });
+    }
+
+    if (options.onDropReceived) {
+      const callbackId = ctx.generateId('callback');
+      payload.onDropReceivedCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        options.onDropReceived!(data.droppedIconId);
       });
     }
 
