@@ -122,7 +122,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
   async setContent(builder: () => void | Promise<void>): Promise<void> {
     // If we already have an InnerWindow, just update its content in-place
     if (this.innerWindow) {
-      await this.innerWindow.setContent(() => { builder(); });
+      await this.innerWindow.setContent(builder);
       return;
     }
 

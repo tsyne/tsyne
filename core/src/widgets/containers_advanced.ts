@@ -230,10 +230,10 @@ export class InnerWindow {
    * Update the content of the inner window
    * @param builder Function that builds the new content (must produce exactly one child widget)
    */
-  async setContent(builder: () => void): Promise<void> {
-    // Build new content
+  async setContent(builder: () => void | Promise<void>): Promise<void> {
+    // Build new content - await if builder is async
     this.ctx.pushContainer();
-    builder();
+    await builder();
     const children = this.ctx.popContainer();
 
     if (children.length !== 1) {

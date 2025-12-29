@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" fill="currentColor"/><rect x="8" y="8" width="4" height="4" fill="currentColor"/><rect x="12" y="12" width="4" height="4" fill="currentColor"/><rect x="16" y="4" width="4" height="4"/><rect x="4" y="16" width="4" height="4"/><path d="M2 2h20v20H2z"/></svg>
 // @tsyne-app:category graphics
 // @tsyne-app:builder createPixelEditorApp
+// @tsyne-app:args app, filePath
 
 /**
  * Pixel Editor for Tsyne
@@ -5036,12 +5037,20 @@ class PixelEditor {
  * Create the pixel editor app
  * Based on: main.go
  */
-export function createPixelEditorApp(a: App): PixelEditor {
+export function createPixelEditorApp(a: App, filePath?: string): PixelEditor {
   const editor = new PixelEditor(a);
 
   a.window({ title: 'Pixel Editor', width: 640, height: 480 }, (win: Window) => {
     win.setContent(async () => {
       await editor.buildUI(win);
+
+      // Auto-load if file path provided (e.g., from desktop file icon drop)
+      // Must be inside setContent to ensure UI is ready
+      if (filePath) {
+        editor.loadFile(filePath).catch(err => {
+          console.error('Failed to load image:', err);
+        });
+      }
     });
     win.show();
   });
