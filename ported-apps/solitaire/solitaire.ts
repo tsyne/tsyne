@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 6v4"/><path d="M10 8h4"/><path d="M12 14l-3 4h6l-3-4z"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createSolitaireApp
+// @tsyne-app:args app,windowWidth,windowHeight
 
 /**
  * Solitaire Card Game for Tsyne
@@ -1289,21 +1290,34 @@ class SolitaireUI {
  * Create the solitaire app
  * Based on: main.go
  * @param a The Tsyne App instance
+ * @param windowWidth - Optional window width from PhoneTop
+ * @param windowHeight - Optional window height from PhoneTop
  * @param cardImageProvider Optional card image provider (inject StubCardImageProvider for fast tests)
  */
-export function createSolitaireApp(a: App, cardImageProvider?: CardImageProvider): SolitaireUI {
+export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): SolitaireUI {
   const ui = new SolitaireUI(a, cardImageProvider);
 
-  // Determine window size - use phone-sized window when running on mobile
-  // Phone layout scale is set by phonetop (0.5 for portrait, 0.8 for landscape)
-  const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
-  const isMobile = layoutScale < 1.0;
+  // Use provided window dimensions or fall back to layout scale detection
+  let width: number;
+  let height: number;
 
-  // On mobile: use smaller dimensions that fit within phone screen
-  // Calculate based on 7 tableau columns + 4 foundation piles + draw area
-  // With 80px cards: 7*80 + 4*80 + 80 (draw) + padding ≈ 1040px (with scale 0.5 → ~520px)
-  const width = isMobile ? 1040 : 1000;
-  const height = isMobile ? 750 : 700;
+  if (windowWidth && windowHeight) {
+    // PhoneTop provided dimensions - use them directly
+    width = windowWidth;
+    height = windowHeight;
+    console.log(`[Solitaire] Window: ${windowWidth}x${windowHeight}`);
+  } else {
+    // Determine window size - use phone-sized window when running on mobile
+    // Phone layout scale is set by phonetop (0.5 for portrait, 0.8 for landscape)
+    const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
+    const isMobile = layoutScale < 1.0;
+
+    // On mobile: use smaller dimensions that fit within phone screen
+    // Calculate based on 7 tableau columns + 4 foundation piles + draw area
+    // With 80px cards: 7*80 + 4*80 + 80 (draw) + padding ≈ 1040px (with scale 0.5 → ~520px)
+    width = isMobile ? 1040 : 1000;
+    height = isMobile ? 750 : 700;
+  }
 
   a.window({ title: 'Solitaire', width, height }, (win: Window) => {
     win.setContent(() => {

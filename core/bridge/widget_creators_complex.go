@@ -833,6 +833,7 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 	onDragEndCallbackId, _ := msg.Payload["onDragEndCallbackId"].(string)
 	onClickCallbackId, _ := msg.Payload["onClickCallbackId"].(string)
 	onDblClickCallbackId, _ := msg.Payload["onDblClickCallbackId"].(string)
+	onRightClickCallbackId, _ := msg.Payload["onRightClickCallbackId"].(string)
 
 	// Get the desktop canvas
 	b.mu.RLock()
@@ -879,7 +880,7 @@ func (b *Bridge) handleCreateDesktopIcon(msg Message) Response {
 
 	// Create the icon
 	icon := NewTsyneDraggableIcon(iconID, label, iconColor, float32(x), float32(y), desktop, b, iconImage)
-	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
+	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId, onRightClickCallbackId)
 
 	// Add to desktop
 	desktop.AddIcon(icon)
@@ -1048,6 +1049,7 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 	onDragEndCallbackId, _ := msg.Payload["onDragEndCallbackId"].(string)
 	onClickCallbackId, _ := msg.Payload["onClickCallbackId"].(string)
 	onDblClickCallbackId, _ := msg.Payload["onDblClickCallbackId"].(string)
+	onRightClickCallbackId, _ := msg.Payload["onRightClickCallbackId"].(string)
 
 	// Get the desktop MDI
 	b.mu.RLock()
@@ -1094,7 +1096,7 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 
 	// Create the icon using the MDI constructor
 	icon := NewTsyneDraggableIconForMDI(iconID, label, iconColor, float32(x), float32(y), desktop, b, iconImage)
-	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId)
+	icon.SetCallbackIds(onDragCallbackId, onDragEndCallbackId, onClickCallbackId, onDblClickCallbackId, onRightClickCallbackId)
 
 	// Add to desktop MDI
 	desktop.AddIcon(icon)

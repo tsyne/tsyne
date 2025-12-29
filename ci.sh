@@ -302,33 +302,19 @@ $GO_CMD version
 # ============================================================================
 # STEP 0: Clone/Update Fyne with embedded driver patch
 # ============================================================================
-echo "--- :package: Setting up patched Fyne"
+echo "--- :package: Updating Fyne fork"
 
-# Check if fyne symlink already exists (local dev setup)
-if [ -L "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne" ]; then
-  echo "Fyne symlink already exists, skipping setup (local dev mode)"
+# Fyne fork is co-located at ../fyne (go.mod uses replace => ../../../fyne)
+FYNE_DIR="${BUILDKITE_BUILD_CHECKOUT_PATH}/../fyne"
+
+if [ -d "$FYNE_DIR" ]; then
+  echo "Pulling latest from Fyne fork..."
+  cd "$FYNE_DIR" && git pull --ff-only
+  echo "Fyne updated ✓"
 else
-  # CI mode: use persistent fyne checkout (survives across builds, saves bandwidth)
-  FYNE_PERSISTENT="$HOME/fyne"
-  FYNE_PATCH="${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne_patch/app/app_embedded.go"
-
-  if [ ! -d "$FYNE_PERSISTENT" ]; then
-    echo "Cloning Fyne (first time only)..."
-    git clone --depth 1 https://github.com/fyne-io/fyne.git "$FYNE_PERSISTENT"
-  else
-    echo "Updating Fyne..."
-    cd "$FYNE_PERSISTENT" && git pull --ff-only
-  fi
-
-  # Symlink from checkout dir (go.mod uses relative path ../../fyne)
-  ln -sfn "$FYNE_PERSISTENT" "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne"
-
-  # Always copy the patches (in case they were updated)
-  echo "Applying embedded driver patches..."
-  cp "$FYNE_PATCH" "$FYNE_PERSISTENT/app/"
-  mkdir -p "$FYNE_PERSISTENT/internal/driver/embedded"
-  cp "${BUILDKITE_BUILD_CHECKOUT_PATH}/fyne_patch/internal/driver/embedded/driver.go" "$FYNE_PERSISTENT/internal/driver/embedded/"
-  echo "Fyne patched ✓"
+  echo "ERROR: Fyne fork not found at $FYNE_DIR"
+  echo "Clone it with: git clone <your-fyne-fork> $FYNE_DIR"
+  exit 1
 fi
 
 # ============================================================================

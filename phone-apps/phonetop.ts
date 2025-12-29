@@ -1367,6 +1367,8 @@ class PhoneTop {
       const argMap: Record<string, any> = {
         'app': this.a,
         'resources': scopedResources,
+        'windowWidth': this.windowWidth,
+        'windowHeight': this.windowHeight,
       };
 
       // Map metadata.args to actual values (default is ['app'])

@@ -18,7 +18,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder create3DCubeApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from '../../core/src';
@@ -32,9 +32,9 @@ import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
 // ============================================================================
 
 // Default canvas size - will be adjusted based on window size
-// Using 280 as default for phone-friendly sizing (fits 540px width with margins)
-const DEFAULT_CANVAS_SIZE = 280;
-const DEFAULT_CUBE_SIZE = 140;  // Size of entire cube (half of canvas)
+// These are fallback values; actual size is calculated from window dimensions
+const DEFAULT_CANVAS_SIZE = 400;
+const DEFAULT_CUBE_SIZE = 200;  // Size of entire cube (half of canvas)
 
 // Sides of the cube
 enum Side {
@@ -652,20 +652,20 @@ export class CubeUI {
 
   /**
    * Calculate optimal canvas size based on window dimensions
-   * Leaves room for buttons and status (approximately 180px overhead)
+   * Leaves room for buttons and status (approximately 200px overhead)
    */
   calculateCanvasSize(windowWidth: number, windowHeight: number): void {
-    const overhead = 180; // Space for buttons, status, margins
+    const overhead = 200; // Space for buttons, status, rotation controls, margins
     const availableHeight = windowHeight - overhead;
     const availableWidth = windowWidth - 20; // Small margin
 
     // Canvas should be square, fit in available space
     const maxSize = Math.min(availableWidth, availableHeight);
 
-    // Clamp to reasonable range (minimum 200, maximum 500)
-    this.canvasSize = Math.max(200, Math.min(500, maxSize));
+    // Minimum 200px, no upper cap - let it fill available space
+    this.canvasSize = Math.max(200, maxSize);
 
-    // Scale cube proportionally
+    // Scale cube proportionally (cube fills ~half the canvas for visual clarity)
     this.cubeSize = this.canvasSize / 2;
     this.cellSize = this.cubeSize / 3;
 

@@ -14,7 +14,7 @@
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="#333333"><path d="M19 22H5v-2h14v2zm-3-4H8l-1-4 2-1v-2c0-1 1-3 2-4l-1-2 1-1 1 1c1-1 2-1 3 0l1-1 1 1-1 2c1 1 2 3 2 4v2l2 1-1 4z"/></svg>
  * @tsyne-app:category games
  * @tsyne-app:builder createChessApp
- * @tsyne-app:args app,resources
+ * @tsyne-app:args app,resources,windowWidth,windowHeight
  * @tsyne-app:count many
  */
 
@@ -913,10 +913,23 @@ class ChessUI {
  * Create the chess app
  * @param a - The App instance
  * @param resources - Resource manager for registering chess piece images (IoC)
+ * @param windowWidth - Optional window width from PhoneTop
+ * @param windowHeight - Optional window height from PhoneTop
  * @param aiDelayMs - AI response delay in ms (default 500, use lower for tests)
  */
-export async function createChessApp(a: App, resources: IResourceManager, aiDelayMs?: number): Promise<ChessUI> {
+export async function createChessApp(a: App, resources: IResourceManager, windowWidth?: number, windowHeight?: number, aiDelayMs?: number): Promise<ChessUI> {
   const ui = new ChessUI(a, resources, aiDelayMs);
+
+  // If window dimensions provided, calculate optimal scale factor
+  // Chess board is 8x8 squares, plus some padding for status/controls
+  if (windowWidth && windowHeight) {
+    const overhead = 100; // Space for status bar, controls
+    const availableSize = Math.min(windowWidth - 20, windowHeight - overhead);
+    const optimalSquareSize = Math.floor(availableSize / 8);
+    // Set scale factor based on optimal size vs BASE_SQUARE_SIZE (100)
+    ui['scaleFactor'] = optimalSquareSize / 100;
+    console.log(`[Chess] Window: ${windowWidth}x${windowHeight}, square size: ${optimalSquareSize}`);
+  }
 
   // Register chess resources before building UI
   await ui['registerChessResources']();

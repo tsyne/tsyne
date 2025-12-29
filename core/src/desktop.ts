@@ -209,6 +209,7 @@ class Desktop {
       return s;
     }
 
+    const originalTagLength = match[0].length;
     let tag = match[0];
     const ensureAttr = (attr: string, value: string) => {
       if (tag.toLowerCase().includes(`${attr.toLowerCase()}=`)) {
@@ -225,7 +226,7 @@ class Desktop {
     }
     ensureAttr('preserveAspectRatio', 'xMidYMid meet');
 
-    s = tag + s.slice(tag.length);
+    s = tag + s.slice(originalTagLength);
     return s;
   }
 
@@ -314,15 +315,16 @@ class Desktop {
       // Use pre-defined apps (for testing)
       apps = this.options.apps;
     } else {
-      // Scan directories for apps
-      const appDir = this.options.appDirectory || path.join(process.cwd(), '../examples');
-      const portedAppsDir = path.join(process.cwd(), '../ported-apps');
-      const phoneAppsDir = path.join(process.cwd(), '../phone-apps');
+      // Scan directories for apps (relative to cwd, which is repo root when run via ./scripts/tsyne)
+      const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
+      const portedAppsDir = path.join(process.cwd(), 'ported-apps');
+      const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
 
       const exampleApps = scanForApps(appDir);
       const portedApps = scanPortedApps(portedAppsDir);
-      const phoneApps = scanForApps(phoneAppsDir);
-      apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+      const phoneAppsFlat = scanForApps(phoneAppsDir);
+      const phoneAppsNested = scanPortedApps(phoneAppsDir);  // Also scan nested phone-apps like voice-assistant/
+      apps = [...exampleApps, ...portedApps, ...phoneAppsFlat, ...phoneAppsNested].sort((a, b) => a.name.localeCompare(b.name));
     }
 
     // Position icons in a grid (8 columns), but use saved positions if available
@@ -698,6 +700,36 @@ class Desktop {
   }
 
   /**
+   * Show app info dialog
+   */
+  private async showAppInfo(metadata: AppMetadata) {
+    if (!this.win) return;
+
+    const lines = [
+      `Name: ${metadata.name}`,
+      `File: ${metadata.filePath}`,
+      `Builder: ${metadata.builder}`,
+    ];
+
+    if (metadata.contentBuilder) {
+      lines.push(`Content Builder: ${metadata.contentBuilder}`);
+    }
+
+    if (metadata.category) {
+      lines.push(`Category: ${metadata.category}`);
+    }
+
+    lines.push(`Instance Count: ${metadata.count}`);
+    lines.push(`Args: ${metadata.args.join(', ')}`);
+
+    if (metadata.icon) {
+      lines.push(`Icon: ${metadata.iconIsSvg ? 'SVG' : metadata.icon}`);
+    }
+
+    await this.win.showInfo(`App Info: ${metadata.name}`, lines.join('\n'));
+  }
+
+  /**
    * Show all open windows
    */
   private showAllWindows() {
@@ -849,6 +881,9 @@ class Desktop {
           icon.x = x;
           icon.y = y;
           this.saveIconPosition(icon.metadata.name, x, y);
+        },
+        onRightClick: (iconId, x, y) => {
+          this.showAppInfo(icon.metadata);
         }
       });
     }
@@ -920,8 +955,8 @@ class Desktop {
    * an InnerWindow because we're in desktop mode.
    */
   async launchApp(metadata: AppMetadata) {
-    // Check if already open - bring to front (unless count is 'many')
-    if (metadata.count !== 'many') {
+    // Check if already open - bring to front (unless count allows multiple instances)
+    if (metadata.count !== 'many' && metadata.count !== 'desktop-many') {
       const existing = this.openApps.get(metadata.filePath);
       if (existing) {
         await existing.tsyneWindow.show();
@@ -1006,8 +1041,11 @@ class Desktop {
       (this.a as any).window = originalWindow;
 
       if (createdWindow) {
-        // Track the open app
-        this.openApps.set(metadata.filePath, { metadata, tsyneWindow: createdWindow });
+        // Track the open app - use appScope as key for multi-instance apps
+        const appKey = (metadata.count === 'many' || metadata.count === 'desktop-many')
+          ? appScope
+          : metadata.filePath;
+        this.openApps.set(appKey, { metadata, tsyneWindow: createdWindow });
         this.updateRunningApps();
         console.log(`Launched: ${metadata.name}`);
       }

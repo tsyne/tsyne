@@ -933,11 +933,12 @@ type TsyneDraggableIcon struct {
 	desktopContainer DesktopIconContainer
 
 	// Bridge for callbacks
-	bridge               *Bridge
-	onDragCallbackId     string
-	onDragEndCallbackId  string
-	onClickCallbackId    string
-	onDblClickCallbackId string
+	bridge                 *Bridge
+	onDragCallbackId       string
+	onDragEndCallbackId    string
+	onClickCallbackId      string
+	onDblClickCallbackId   string
+	onRightClickCallbackId string
 }
 
 // trimTransparentPadding crops transparent edges to reduce visual padding differences across icons
@@ -1068,11 +1069,12 @@ func NewTsyneDraggableIconForMDI(id, label string, iconColor color.Color, x, y f
 }
 
 // SetCallbackIds configures callback IDs for event dispatching
-func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick string) {
+func (d *TsyneDraggableIcon) SetCallbackIds(drag, dragEnd, click, dblClick, rightClick string) {
 	d.onDragCallbackId = drag
 	d.onDragEndCallbackId = dragEnd
 	d.onClickCallbackId = click
 	d.onDblClickCallbackId = dblClick
+	d.onRightClickCallbackId = rightClick
 }
 
 // CreateRenderer returns the widget renderer
@@ -1148,10 +1150,23 @@ func (d *TsyneDraggableIcon) DoubleTapped(e *fyne.PointEvent) {
 	}
 }
 
+// TappedSecondary handles right-click events
+func (d *TsyneDraggableIcon) TappedSecondary(e *fyne.PointEvent) {
+	if d.onRightClickCallbackId != "" && d.bridge != nil {
+		d.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": d.onRightClickCallbackId,
+				"iconId":     d.ID,
+				"x":          d.PosX,
+				"y":          d.PosY,
+			},
+		})
+	}
+}
+
 // Dragged handles drag events
 func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
-	log.Printf("[DRAG] Icon %s: Dragged() called with dx=%.2f, dy=%.2f", d.ID, e.Dragged.DX, e.Dragged.DY)
-
 	if !d.dragging {
 		d.dragging = true
 		d.dragStartX = d.PosX
@@ -1173,7 +1188,6 @@ func (d *TsyneDraggableIcon) Dragged(e *fyne.DragEvent) {
 		d.PosY = 0
 	}
 
-	log.Printf("[DRAG] Icon %s: Moving to (%.2f, %.2f)", d.ID, d.PosX, d.PosY)
 	// Directly move this widget to visually update position
 	// (Refresh alone doesn't trigger Layout)
 	d.Move(fyne.NewPos(d.PosX, d.PosY))
@@ -1361,14 +1375,18 @@ func NewTsyneDesktopMDI(id string, bgColor color.Color, bridge *Bridge) *TsyneDe
 // AddIcon adds an icon to the desktop at the specified position
 func (dm *TsyneDesktopMDI) AddIcon(icon *TsyneDraggableIcon) {
 	dm.icons = append(dm.icons, icon)
-	dm.Refresh()
+	fyne.Do(func() {
+		dm.Refresh()
+	})
 }
 
 // AddWindow adds an inner window to the MDI
 func (dm *TsyneDesktopMDI) AddWindow(win *container.InnerWindow) {
 	dm.setupWindowCallbacks(win)
 	dm.windows = append(dm.windows, win)
-	dm.Refresh()
+	fyne.Do(func() {
+		dm.Refresh()
+	})
 }
 
 // setupWindowCallbacks wires up drag/resize/raise handlers so InnerWindows behave like MultipleWindows
@@ -1402,7 +1420,9 @@ func (dm *TsyneDesktopMDI) RemoveWindow(win *container.InnerWindow) {
 			break
 		}
 	}
-	dm.Refresh()
+	fyne.Do(func() {
+		dm.Refresh()
+	})
 }
 
 // RaiseWindow brings a window to the front
@@ -1421,7 +1441,9 @@ func (dm *TsyneDesktopMDI) RaiseWindow(win *container.InnerWindow) {
 	// Move the window to the end of the slice so it renders last (top-most)
 	dm.windows = append(dm.windows[:index], dm.windows[index+1:]...)
 	dm.windows = append(dm.windows, win)
-	dm.Refresh()
+	fyne.Do(func() {
+		dm.Refresh()
+	})
 }
 
 // GetIcon returns an icon by ID

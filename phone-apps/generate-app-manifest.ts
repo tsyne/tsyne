@@ -13,13 +13,15 @@
  *   phone-apps/all-apps.generated.ts
  *
  * Supported metadata (in JSDoc or // comments):
- *   @tsyne-app:name        Display name
- *   @tsyne-app:icon        SVG string or theme icon name
- *   @tsyne-app:category    Category for grouping (phone, utilities, games, etc.)
- *   @tsyne-app:builder     Exported builder function name
- *   @tsyne-app:args        Comma-separated argument names (app, win, contacts, etc.)
- *   @tsyne-app:count       Instance count: one, many, desktop-many
- *   @tsyne-app:platforms   Comma-separated platforms: phone, tablet, desktop, all (default: all)
+ *   - name        Display name
+ *   - icon        SVG string or theme icon name
+ *   - category    Category for grouping (phone, utilities, games, etc.)
+ *   - builder     Exported builder function name
+ *   - args        Comma-separated argument names (app, win, contacts, etc.)
+ *   - count       Instance count: one, many, desktop-many
+ *   - platforms   Comma-separated platforms: phone, tablet, desktop, all (default: all)
+ *
+ * All metadata prefixed with @tsyne-app: (e.g., @tsyne-app:name MyApp)
  */
 
 import * as fs from 'fs';

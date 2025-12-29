@@ -38,6 +38,8 @@ export interface DesktopIconOptions {
   onDrag?: (iconId: string, x: number, y: number, dx: number, dy: number) => void;
   /** Called when drag ends */
   onDragEnd?: (iconId: string, x: number, y: number) => void;
+  /** Called when icon is right-clicked (secondary tap) */
+  onRightClick?: (iconId: string, x: number, y: number) => void;
 }
 
 /**
@@ -255,6 +257,14 @@ export class DesktopMDIIcon {
       payload.onDragEndCallbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, (data: any) => {
         options.onDragEnd!(data.iconId, data.x, data.y);
+      });
+    }
+
+    if (options.onRightClick) {
+      const callbackId = ctx.generateId('callback');
+      payload.onRightClickCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+        options.onRightClick!(data.iconId, data.x, data.y);
       });
     }
 

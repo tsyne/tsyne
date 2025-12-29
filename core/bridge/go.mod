@@ -68,4 +68,4 @@ require (
 
 // Use local Fyne with embedded driver support for Android
 // Relative path: fyne cloned inside tsyne repo (tsyne/fyne/)
-replace fyne.io/fyne/v2 => ../../fyne
+replace fyne.io/fyne/v2 => ../../../fyne
