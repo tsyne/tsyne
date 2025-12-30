@@ -195,3 +195,40 @@ export interface ISMSService extends IServiceAvailability {
   onMessageReceived(listener: MessageListener): () => void;
   setAutoReply(enabled: boolean): void;
 }
+
+// ============================================================================
+// Desktop Service - App launching from within apps (Desktop only)
+// ============================================================================
+
+/**
+ * App info for listing available apps
+ */
+export interface DesktopAppInfo {
+  name: string;
+  category?: string;
+  filePath: string;
+}
+
+/**
+ * Desktop service for launching apps from within other apps.
+ * Only available when running in desktop mode.
+ */
+export interface IDesktopService extends IServiceAvailability {
+  /**
+   * Launch an app by name (as found in @tsyne-app:name)
+   * @param appName The display name of the app
+   * @param filePath Optional file path to pass to the app
+   * @returns true if app was found and launched
+   */
+  launchApp(appName: string, filePath?: string): Promise<boolean>;
+
+  /**
+   * List all available apps
+   */
+  listApps(): DesktopAppInfo[];
+
+  /**
+   * Get app info by name
+   */
+  getApp(appName: string): DesktopAppInfo | null;
+}

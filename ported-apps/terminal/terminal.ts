@@ -31,11 +31,13 @@
 // @tsyne-app:category utilities
 // @tsyne-app:builder createTerminalApp
 // @tsyne-app:count many
+// @tsyne-app:args app, desktop
 
 import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import type { TextGrid, TextGridStyle } from '../../core/src/widgets';
+import type { IDesktopService } from '../../core/src/services';
 import * as pty from 'node-pty';
 import type { IPty } from 'node-pty';
 import * as os from 'os';
@@ -774,6 +776,9 @@ export class Terminal {
   // Debug mode - set to true to enable logging
   private debug: boolean = false;
 
+  // Desktop service for launching apps (injected)
+  private desktopService: IDesktopService | null = null;
+
   // Callbacks
   onUpdate: () => void = () => {};
   onTitleChange: (title: string) => void = () => {};
@@ -811,6 +816,14 @@ export class Terminal {
    */
   isDebugEnabled(): boolean {
     return this.debug;
+  }
+
+  /**
+   * Set the desktop service for launching apps
+   * Called when running in desktop mode
+   */
+  setDesktopService(service: IDesktopService): void {
+    this.desktopService = service;
   }
 
   /**
@@ -910,16 +923,22 @@ export class Terminal {
       console.log(`[Terminal:runLocalShell] TERM=xterm-256color, cols=${this.buffer.getCols()}, rows=${this.buffer.getRows()}`);
     }
 
+    // Set TSYNE_DESKTOP=1 if desktop service is available
+    const tsyneEnv: { [key: string]: string } = {
+      ...process.env as { [key: string]: string },
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+    };
+    if (this.desktopService?.isAvailable()) {
+      tsyneEnv.TSYNE_DESKTOP = '1';
+    }
+
     this.ptyProcess = pty.spawn(shell, [], {
       name: 'xterm-256color',
       cols: this.buffer.getCols(),
       rows: this.buffer.getRows(),
       cwd: this.cwd,
-      env: {
-        ...process.env,
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-      } as { [key: string]: string },
+      env: tsyneEnv,
     });
 
     if (this.debug) {
@@ -937,6 +956,25 @@ export class Terminal {
       this.ptyProcess = null;
       this.onExit(exitCode);
     });
+
+    // Inject tsyne helper function if desktop service is available
+    if (this.desktopService?.isAvailable()) {
+      // Wait for shell to initialize, then inject the function silently
+      setTimeout(() => {
+        if (this.ptyProcess) {
+          // Define tsyne function, then clear screen to hide the definition
+          const tsyneFunc = [
+            `tsyne() { case "$1" in`,
+            `open) printf '\\e]7777;open;%s;%s\\e\\\\' "$2" "$3" ;;`,
+            `list) printf '\\e]7777;list\\e\\\\' ;;`,
+            `*) echo "Usage: tsyne open <App> [file] | tsyne list" ;;`,
+            `esac; }`,
+          ].join(' ');
+          // Send function definition followed by clear to hide it
+          this.ptyProcess.write(`${tsyneFunc} && clear\n`);
+        }
+      }, 150);
+    }
   }
 
   /**
@@ -1796,6 +1834,51 @@ export class Terminal {
       case 7: // Set working directory
         if (params[1]) {
           this.cwd = params[1].replace('file://', '');
+        }
+        break;
+      case 7777: // Tsyne custom: launch app
+        // Format: OSC 7777 ; open ; AppName ; FilePath ST
+        // or: OSC 7777 ; open ; AppName ST
+        // or: OSC 7777 ; list ST
+        this.handleTsyneOSC(params.slice(1));
+        break;
+    }
+  }
+
+  /**
+   * Handle Tsyne-specific OSC sequences (OSC 7777)
+   * Commands:
+   *   open;AppName         - Launch app by name
+   *   open;AppName;path    - Launch app with file path
+   *   list                 - List available apps to stdout
+   */
+  private handleTsyneOSC(params: string[]): void {
+    if (params.length === 0) return;
+
+    const command = params[0];
+    switch (command) {
+      case 'open':
+        if (params.length >= 2 && this.desktopService?.isAvailable()) {
+          const appName = params[1];
+          const filePath = params[2]; // Optional
+          this.desktopService.launchApp(appName, filePath).then(success => {
+            if (!success) {
+              // Write error to terminal
+              this.write(`\r\n\x1b[31mtsyne: app not found: ${appName}\x1b[0m\r\n`);
+            }
+          });
+        } else if (!this.desktopService?.isAvailable()) {
+          this.write(`\r\n\x1b[31mtsyne: desktop service not available\x1b[0m\r\n`);
+        }
+        break;
+      case 'list':
+        if (this.desktopService?.isAvailable()) {
+          const apps = this.desktopService.listApps();
+          this.write('\r\n');
+          for (const app of apps) {
+            const category = app.category ? ` (${app.category})` : '';
+            this.write(`${app.name}${category}\r\n`);
+          }
         }
         break;
     }
@@ -3010,8 +3093,13 @@ export class TerminalUI {
  * Create the terminal app
  * Based on: cmd/fyneterm/main.go
  */
-export function createTerminalApp(a: App): TerminalUI {
+export function createTerminalApp(a: App, desktop?: IDesktopService): TerminalUI {
   const ui = new TerminalUI(a);
+
+  // Inject desktop service if available (for launching apps via OSC 7777)
+  if (desktop) {
+    ui.getTerminal().setDesktopService(desktop);
+  }
 
   a.window({ title: 'Tsyne Terminal', width: 900, height: 700 }, (win: Window) => {
     win.setContent(async () => {

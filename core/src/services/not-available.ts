@@ -10,12 +10,14 @@ import {
   IContactsService,
   ITelephonyService,
   ISMSService,
+  IDesktopService,
   Contact,
   CallLogEntry,
   Message,
   Thread,
   MessageListener,
   ServiceResult,
+  DesktopAppInfo,
 } from './interfaces';
 
 const NOT_A_PHONE = 'This service requires phone hardware and is not available on desktop';
@@ -155,5 +157,36 @@ export class NotAvailableSMSService implements ISMSService {
 
   setAutoReply(_enabled: boolean): void {
     console.warn('[SMSService] ' + NOT_A_PHONE);
+  }
+}
+
+// ============================================================================
+// NotAvailable Desktop Service (for standalone/phone mode)
+// ============================================================================
+
+const NOT_A_DESKTOP = 'Desktop service is only available when running in desktop mode';
+
+export class NotAvailableDesktopService implements IDesktopService {
+  isAvailable(): boolean {
+    return false;
+  }
+
+  getUnavailableReason(): string {
+    return NOT_A_DESKTOP;
+  }
+
+  async launchApp(_appName: string, _filePath?: string): Promise<boolean> {
+    console.warn('[DesktopService] ' + NOT_A_DESKTOP);
+    return false;
+  }
+
+  listApps(): DesktopAppInfo[] {
+    console.warn('[DesktopService] ' + NOT_A_DESKTOP);
+    return [];
+  }
+
+  getApp(_appName: string): DesktopAppInfo | null {
+    console.warn('[DesktopService] ' + NOT_A_DESKTOP);
+    return null;
   }
 }

@@ -23,6 +23,64 @@ import {
   NotAvailableTelephonyService,
   NotAvailableSMSService,
 } from './services';
+import { IDesktopService, DesktopAppInfo } from './services/interfaces';
+
+/**
+ * Desktop service implementation for launching apps from within other apps.
+ * Provides access to app metadata and launching capability.
+ */
+class DesktopService implements IDesktopService {
+  private appList: AppMetadata[];
+  private launcher: (metadata: AppMetadata, filePath?: string) => Promise<void>;
+
+  constructor(
+    appList: AppMetadata[],
+    launcher: (metadata: AppMetadata, filePath?: string) => Promise<void>
+  ) {
+    this.appList = appList;
+    this.launcher = launcher;
+  }
+
+  isAvailable(): boolean {
+    return true;
+  }
+
+  getUnavailableReason(): string {
+    return '';
+  }
+
+  async launchApp(appName: string, filePath?: string): Promise<boolean> {
+    const app = this.appList.find(
+      a => a.name.toLowerCase() === appName.toLowerCase()
+    );
+    if (!app) {
+      console.warn(`[DesktopService] App not found: ${appName}`);
+      return false;
+    }
+    await this.launcher(app, filePath);
+    return true;
+  }
+
+  listApps(): DesktopAppInfo[] {
+    return this.appList.map(a => ({
+      name: a.name,
+      category: a.category,
+      filePath: a.filePath,
+    }));
+  }
+
+  getApp(appName: string): DesktopAppInfo | null {
+    const app = this.appList.find(
+      a => a.name.toLowerCase() === appName.toLowerCase()
+    );
+    if (!app) return null;
+    return {
+      name: app.name,
+      category: app.category,
+      filePath: app.filePath,
+    };
+  }
+}
 
 /** Context required by the app launcher */
 export interface AppLauncherContext {
@@ -31,6 +89,7 @@ export interface AppLauncherContext {
   desktopMDI: DesktopMDI;
   windowMode: WindowMode;
   openApps: Map<string, OpenApp>;
+  appList: AppMetadata[];  // List of all available apps for DesktopService
   onAppLaunched: (appKey: string, openApp: OpenApp) => void;
   onAppClosed: (closedWindow: ITsyneWindow) => void;
   showErrorDialog: (appName: string, error: unknown) => void;
@@ -138,6 +197,8 @@ export class AppLauncher {
             createdWindow.close();
           }
         }),
+        // Desktop service - allows apps to launch other apps
+        'desktop': new DesktopService(ctx.appList, (meta, fp) => this.launchApp(ctx, meta, fp)),
       };
 
       // Lazily load additional services from phone-apps when needed

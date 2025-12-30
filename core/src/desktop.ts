@@ -88,6 +88,8 @@ class Desktop implements IDesktopDebugHost {
   private iconManager: DesktopIconManager;
   /** App launcher */
   private appLauncher: AppLauncher;
+  /** All available apps (for DesktopService) */
+  private _appList: AppMetadata[] = [];
 
   // IDesktopDebugHost implementation
   get win(): Window | null { return this._win; }
@@ -252,6 +254,9 @@ class Desktop implements IDesktopDebugHost {
       const phoneAppsNested = scanPortedApps(phoneAppsDir);  // Also scan nested phone-apps like voice-assistant/
       apps = [...exampleApps, ...portedApps, ...phoneAppsFlat, ...phoneAppsNested].sort((a, b) => a.name.localeCompare(b.name));
     }
+
+    // Store for DesktopService
+    this._appList = apps;
 
     // Group apps by category
     const appsByCategory = new Map<string, DesktopIcon[]>();
@@ -947,6 +952,7 @@ class Desktop implements IDesktopDebugHost {
       desktopMDI: this.desktopMDI,
       windowMode: this.windowMode,
       openApps: this._openApps,
+      appList: this._appList,
       onAppLaunched: (appKey, openApp) => {
         this._openApps.set(appKey, openApp);
         this.updateRunningApps();

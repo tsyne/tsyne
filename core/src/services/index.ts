@@ -28,6 +28,9 @@ export {
   Message,
   Thread,
   MessageListener,
+  // Desktop-specific services
+  IDesktopService,
+  DesktopAppInfo,
 } from './interfaces';
 
 // Mock implementations (general services)
@@ -40,9 +43,10 @@ export {
   DesktopAppLifecycle,
 } from './mocks';
 
-// NotAvailable implementations (phone services on desktop)
+// NotAvailable implementations (phone services on desktop, desktop on standalone)
 export {
   NotAvailableContactsService,
   NotAvailableTelephonyService,
   NotAvailableSMSService,
+  NotAvailableDesktopService,
 } from './not-available';
