@@ -2905,6 +2905,7 @@ export class TerminalUI {
         },
         // Mouse handling for text selection
         onMouseDown: (x: number, y: number, button: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          console.log(`[Terminal] MouseDown button=${button}`);
           // Only handle left button for selection
           if (button !== 1) return;
 
@@ -3125,6 +3126,8 @@ export class TerminalUI {
           console.error('[Terminal] Clipboard error:', err);
         }
       }
+      // Re-render to clear the selection highlight
+      await this.render();
     }
   }
 
