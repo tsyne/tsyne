@@ -56,6 +56,10 @@ export interface ITsyneWindow {
   showEntryDialog(title: string, message: string): Promise<string | null>;
   showColorPicker(title?: string, initialColor?: string): Promise<{ r: number; g: number; b: number; a: number } | null>;
   showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null>;
+
+  // Clipboard - access host OS clipboard
+  getClipboard(): Promise<string>;
+  setClipboard(content: string): Promise<void>;
 }
 
 /**
@@ -287,6 +291,14 @@ export class InnerWindowAdapter implements ITsyneWindow {
   async showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null> {
     return this.parentWindow.showForm(title, fields);
   }
+
+  async getClipboard(): Promise<string> {
+    return this.parentWindow.getClipboard();
+  }
+
+  async setClipboard(content: string): Promise<void> {
+    return this.parentWindow.setClipboard(content);
+  }
 }
 
 /**
@@ -462,6 +474,14 @@ export class StackPaneAdapter implements ITsyneWindow {
 
   async showForm(title: string, fields: Array<any>): Promise<{ submitted: boolean; values?: Record<string, any> } | null> {
     return this.parentWindow.showForm(title, fields);
+  }
+
+  async getClipboard(): Promise<string> {
+    return this.parentWindow.getClipboard();
+  }
+
+  async setClipboard(content: string): Promise<void> {
+    return this.parentWindow.setClipboard(content);
   }
 }
 

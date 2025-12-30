@@ -36,6 +36,7 @@
 import { app, resolveTransport  } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
+import type { ITsyneWindow } from '../../core/src/tsyne-window';
 import type { TextGrid, TextGridStyle } from '../../core/src/widgets';
 import type { IDesktopService } from '../../core/src/services';
 import * as pty from 'node-pty';
@@ -2824,7 +2825,7 @@ export class Terminal {
 export class TerminalUI {
   private terminal: Terminal;
   private textGrid: TextGrid | null = null;
-  private win: Window | null = null;
+  private win: Window | ITsyneWindow | null = null;
   private a: App;
   private cols: number = DEFAULT_COLS;
   private rows: number = DEFAULT_ROWS;
@@ -2854,7 +2855,7 @@ export class TerminalUI {
   /**
    * Build the terminal UI
    */
-  async buildUI(win: Window): Promise<void> {
+  async buildUI(win: Window | ITsyneWindow): Promise<void> {
     this.win = win;
     this.buildMainMenu(win);
 
@@ -2870,6 +2871,22 @@ export class TerminalUI {
         },
         // Handle special keys (arrows, enter, backspace, etc.)
         onKeyDown: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          // Debug
+          console.log(`[Terminal] onKeyDown: key="${key}" ctrl=${modifiers.ctrl} shift=${modifiers.shift}`);
+
+          // Intercept Ctrl+Shift+C for copy (Ctrl+C is SIGINT)
+          if (modifiers.ctrl && modifiers.shift && (key === 'C' || key === 'c')) {
+            console.log('[Terminal] Copy triggered');
+            this.copy();
+            return;
+          }
+          // Intercept Ctrl+Shift+V for paste
+          if (modifiers.ctrl && modifiers.shift && (key === 'V' || key === 'v')) {
+            console.log('[Terminal] Paste triggered');
+            this.paste();
+            return;
+          }
+
           // Map Fyne key names to terminal key names
           const keyMap: Record<string, string> = {
             'Return': 'Enter',
@@ -2885,6 +2902,44 @@ export class TerminalUI {
           if (mappedKey.length > 1 || modifiers.ctrl || modifiers.alt) {
             this.terminal.typeKey(mappedKey, modifiers);
           }
+        },
+        // Mouse handling for text selection
+        onMouseDown: (x: number, y: number, button: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          // Only handle left button for selection
+          if (button !== 1) return;
+
+          // Convert to touch event and delegate to terminal
+          this.terminal.handleTouchEvent({
+            type: TouchEventType.TouchDown,
+            id: 0,
+            x,
+            y,
+            timestamp: Date.now(),
+            modifiers,
+          });
+        },
+        onMouseMove: (x: number, y: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          // Delegate to terminal for selection drag
+          this.terminal.handleTouchEvent({
+            type: TouchEventType.TouchMove,
+            id: 0,
+            x,
+            y,
+            timestamp: Date.now(),
+            modifiers,
+          });
+        },
+        onMouseUp: (x: number, y: number, button: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          if (button !== 1) return;
+
+          this.terminal.handleTouchEvent({
+            type: TouchEventType.TouchUp,
+            id: 0,
+            x,
+            y,
+            timestamp: Date.now(),
+            modifiers,
+          });
         },
       });
     });
@@ -2951,6 +3006,9 @@ export class TerminalUI {
 
     await this.textGrid.setText(lines.join('\n'));
 
+    // Collect all style updates and send them in parallel
+    const styleUpdates: Promise<void>[] = [];
+
     // Apply styles row by row
     for (let row = 0; row < cells.length; row++) {
       const rowCells = cells[row];
@@ -2958,19 +3016,34 @@ export class TerminalUI {
       for (let col = 0; col < rowCells.length; col++) {
         const cell = rowCells[col];
         const style = this.cellAttrsToStyle(cell.attrs);
+        const isSelected = this.terminal.isCellSelected(row, col);
+        const isCursor = cursorVisible && row === cursorRow && col === cursorCol;
+
+        // Highlight selected cells (inverse colors)
+        if (isSelected) {
+          // Swap foreground and background for selection
+          const origFg = style.fgColor || '#ffffff';
+          const origBg = style.bgColor || '#000000';
+          style.fgColor = origBg;
+          style.bgColor = origFg;
+        }
 
         // Highlight cursor position
-        if (cursorVisible && row === cursorRow && col === cursorCol) {
+        if (isCursor) {
           style.bgColor = '#ffffff';
           style.fgColor = '#000000';
         }
 
-        // Apply style if non-default
-        if (style.fgColor || style.bgColor || style.bold || style.italic) {
-          await this.textGrid.setCell(row, col, undefined, style);
+        // Apply style if non-default OR if this cell is selected/cursor
+        if (style.fgColor || style.bgColor || style.bold || style.italic || isSelected || isCursor) {
+          // Don't await - collect the promise
+          styleUpdates.push(this.textGrid.setCell(row, col, undefined, style));
         }
       }
     }
+
+    // Wait for all style updates to complete
+    await Promise.all(styleUpdates);
   }
 
   /**
@@ -3040,10 +3113,17 @@ export class TerminalUI {
   }
 
   private async copy(): Promise<void> {
+    console.log('[Terminal] copy() called');
     if (this.win) {
       const text = this.terminal.endSelection();
+      console.log('[Terminal] Selected text:', text ? text.substring(0, 50) + '...' : '(empty)');
       if (text) {
-        await this.win.setClipboard(text);
+        try {
+          await this.win.setClipboard(text);
+          console.log('[Terminal] Clipboard set successfully');
+        } catch (err) {
+          console.error('[Terminal] Clipboard error:', err);
+        }
       }
     }
   }

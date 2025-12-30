@@ -205,6 +205,12 @@ export interface TextGridOptions {
   onKeyUp?: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
   /** Callback for focus change */
   onFocus?: (focused: boolean) => void;
+  /** Callback for mouse down (button press) */
+  onMouseDown?: (x: number, y: number, button: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
+  /** Callback for mouse move (drag) */
+  onMouseMove?: (x: number, y: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
+  /** Callback for mouse up (button release) */
+  onMouseUp?: (x: number, y: number, button: number, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => void;
 }
 
 /**
@@ -264,6 +270,42 @@ export class TextGrid extends Widget {
         payload.onFocusCallbackId = callbackId;
         ctx.bridge.registerEventHandler(callbackId, (data: any) => {
           options.onFocus!(data.focused);
+        });
+      }
+
+      if (options.onMouseDown) {
+        const callbackId = ctx.generateId('callback');
+        payload.onMouseDownCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onMouseDown!(data.x, data.y, data.button, {
+            shift: data.shift,
+            ctrl: data.ctrl,
+            alt: data.alt
+          });
+        });
+      }
+
+      if (options.onMouseMove) {
+        const callbackId = ctx.generateId('callback');
+        payload.onMouseMoveCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onMouseMove!(data.x, data.y, {
+            shift: data.shift,
+            ctrl: data.ctrl,
+            alt: data.alt
+          });
+        });
+      }
+
+      if (options.onMouseUp) {
+        const callbackId = ctx.generateId('callback');
+        payload.onMouseUpCallbackId = callbackId;
+        ctx.bridge.registerEventHandler(callbackId, (data: any) => {
+          options.onMouseUp!(data.x, data.y, data.button, {
+            shift: data.shift,
+            ctrl: data.ctrl,
+            alt: data.alt
+          });
         });
       }
     }

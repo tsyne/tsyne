@@ -699,22 +699,29 @@ func (e *TsyneEntry) FocusLost() {
 // Ensure TsyneEntry implements fyne.Focusable
 var _ fyne.Focusable = (*TsyneEntry)(nil)
 
-// TsyneTextGrid wraps widget.TextGrid and implements fyne.Focusable and desktop.Keyable
-// for keyboard input support (needed for terminal emulator)
+// TsyneTextGrid wraps widget.TextGrid and implements fyne.Focusable, desktop.Keyable,
+// and desktop.Mouseable for keyboard and mouse input support (needed for terminal emulator)
 type TsyneTextGrid struct {
 	widget.BaseWidget
-	TextGrid *widget.TextGrid
-	bridge   *Bridge
-	widgetID string
+	TextGrid        *widget.TextGrid
+	ShortcutHandler fyne.ShortcutHandler
+	bridge          *Bridge
+	widgetID        string
 
 	// Callback IDs for event dispatching to TypeScript
-	onKeyDownCallbackId string
-	onKeyUpCallbackId   string
-	onTypedCallbackId   string // For TypedRune - character input
-	onFocusCallbackId   string
+	onKeyDownCallbackId   string
+	onKeyUpCallbackId     string
+	onTypedCallbackId     string // For TypedRune - character input
+	onFocusCallbackId     string
+	onMouseDownCallbackId string
+	onMouseMoveCallbackId string
+	onMouseUpCallbackId   string
 
 	// Track focus state
 	focused bool
+
+	// Track mouse button state for drag detection
+	mouseButtonDown bool
 }
 
 // NewTsyneTextGrid creates a new focusable TextGrid wrapper
@@ -725,7 +732,37 @@ func NewTsyneTextGrid(textGrid *widget.TextGrid, bridge *Bridge, widgetID string
 		widgetID: widgetID,
 	}
 	tg.ExtendBaseWidget(tg)
+
+	// Register Ctrl+Shift+C for copy (since Ctrl+C is SIGINT in terminal)
+	copyShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyC, Modifier: fyne.KeyModifierShift | fyne.KeyModifierControl}
+	tg.ShortcutHandler.AddShortcut(copyShortcut, func(shortcut fyne.Shortcut) {
+		tg.sendShortcutEvent("C", true, true, false)
+	})
+
+	// Register Ctrl+Shift+V for paste
+	pasteShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyV, Modifier: fyne.KeyModifierShift | fyne.KeyModifierControl}
+	tg.ShortcutHandler.AddShortcut(pasteShortcut, func(shortcut fyne.Shortcut) {
+		tg.sendShortcutEvent("V", true, true, false)
+	})
+
 	return tg
+}
+
+// sendShortcutEvent sends a keyboard shortcut event to TypeScript
+func (t *TsyneTextGrid) sendShortcutEvent(key string, shift, ctrl, alt bool) {
+	if t.onKeyDownCallbackId == "" {
+		return
+	}
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onKeyDownCallbackId,
+			"key":        key,
+			"shift":      shift,
+			"ctrl":       ctrl,
+			"alt":        alt,
+		},
+	})
 }
 
 // CreateRenderer renders the embedded TextGrid
@@ -733,12 +770,19 @@ func (t *TsyneTextGrid) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.TextGrid)
 }
 
-// SetCallbackIds configures callback IDs for event dispatching
+// SetCallbackIds configures callback IDs for event dispatching (keyboard and focus)
 func (t *TsyneTextGrid) SetCallbackIds(keyDown, keyUp, typed, focus string) {
 	t.onKeyDownCallbackId = keyDown
 	t.onKeyUpCallbackId = keyUp
 	t.onTypedCallbackId = typed
 	t.onFocusCallbackId = focus
+}
+
+// SetMouseCallbackIds configures callback IDs for mouse event dispatching
+func (t *TsyneTextGrid) SetMouseCallbackIds(mouseDown, mouseMove, mouseUp string) {
+	t.onMouseDownCallbackId = mouseDown
+	t.onMouseMoveCallbackId = mouseMove
+	t.onMouseUpCallbackId = mouseUp
 }
 
 // --- fyne.Tappable interface (click to focus) ---
@@ -804,6 +848,7 @@ func (t *TsyneTextGrid) KeyDown(e *fyne.KeyEvent) {
 		return
 	}
 
+	// Note: modifiers are handled via TypedShortcut, not KeyDown
 	t.bridge.sendEvent(Event{
 		Type: "callback",
 		Data: map[string]interface{}{
@@ -825,6 +870,106 @@ func (t *TsyneTextGrid) KeyUp(e *fyne.KeyEvent) {
 		Data: map[string]interface{}{
 			"callbackId": t.onKeyUpCallbackId,
 			"key":        string(e.Name),
+		},
+	})
+}
+
+// TypedShortcut handles keyboard shortcuts with modifiers (Ctrl+C, Ctrl+Shift+C, etc.)
+func (t *TsyneTextGrid) TypedShortcut(shortcut fyne.Shortcut) {
+	// Delegate to our registered shortcuts (Ctrl+Shift+C, Ctrl+Shift+V)
+	t.ShortcutHandler.TypedShortcut(shortcut)
+}
+
+// --- desktop.Mouseable interface (for selection/drag) ---
+
+// MouseDown implements desktop.Mouseable for mouse button press
+func (t *TsyneTextGrid) MouseDown(e *desktop.MouseEvent) {
+	t.mouseButtonDown = true
+
+	// Request focus when clicked
+	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
+		c.Focus(t)
+	}
+
+	if t.onMouseDownCallbackId == "" {
+		return
+	}
+
+	// Convert button to int (1=left, 2=middle, 3=right)
+	button := 1
+	if e.Button == desktop.MouseButtonSecondary {
+		button = 3
+	} else if e.Button == desktop.MouseButtonTertiary {
+		button = 2
+	}
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseDownCallbackId,
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+			"button":     button,
+			"shift":      e.Modifier&fyne.KeyModifierShift != 0,
+			"ctrl":       e.Modifier&fyne.KeyModifierControl != 0,
+			"alt":        e.Modifier&fyne.KeyModifierAlt != 0,
+		},
+	})
+}
+
+// MouseUp implements desktop.Mouseable for mouse button release
+func (t *TsyneTextGrid) MouseUp(e *desktop.MouseEvent) {
+	t.mouseButtonDown = false
+
+	if t.onMouseUpCallbackId == "" {
+		return
+	}
+
+	button := 1
+	if e.Button == desktop.MouseButtonSecondary {
+		button = 3
+	} else if e.Button == desktop.MouseButtonTertiary {
+		button = 2
+	}
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseUpCallbackId,
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+			"button":     button,
+			"shift":      e.Modifier&fyne.KeyModifierShift != 0,
+			"ctrl":       e.Modifier&fyne.KeyModifierControl != 0,
+			"alt":        e.Modifier&fyne.KeyModifierAlt != 0,
+		},
+	})
+}
+
+// --- desktop.Hoverable interface (for mouse move during drag) ---
+
+// MouseIn implements desktop.Hoverable
+func (t *TsyneTextGrid) MouseIn(*desktop.MouseEvent) {}
+
+// MouseOut implements desktop.Hoverable
+func (t *TsyneTextGrid) MouseOut() {}
+
+// MouseMoved implements desktop.Hoverable for mouse movement (used during drag)
+func (t *TsyneTextGrid) MouseMoved(e *desktop.MouseEvent) {
+	// Only send move events if we have a callback and button is down (dragging)
+	if t.onMouseMoveCallbackId == "" || !t.mouseButtonDown {
+		return
+	}
+
+	t.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": t.onMouseMoveCallbackId,
+			"x":          float64(e.Position.X),
+			"y":          float64(e.Position.Y),
+			"shift":      e.Modifier&fyne.KeyModifierShift != 0,
+			"ctrl":       e.Modifier&fyne.KeyModifierControl != 0,
+			"alt":        e.Modifier&fyne.KeyModifierAlt != 0,
 		},
 	})
 }

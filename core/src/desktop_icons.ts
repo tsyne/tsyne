@@ -65,7 +65,10 @@ export class DesktopIconManager {
     const originalTagLength = match[0].length;
     let tag = match[0];
     const ensureAttr = (attr: string, value: string) => {
-      if (tag.toLowerCase().includes(`${attr.toLowerCase()}=`)) {
+      // Use regex to match attribute properly (with word boundary or space before)
+      // This avoids false positives like "stroke-width" matching "width"
+      const attrRegex = new RegExp(`(^|\\s)${attr}\\s*=`, 'i');
+      if (attrRegex.test(tag)) {
         return;
       }
       tag = tag.slice(0, -1) + ` ${attr}="${value}">`;

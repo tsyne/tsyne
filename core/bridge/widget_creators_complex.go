@@ -374,6 +374,11 @@ func (b *Bridge) handleCreateTextGrid(msg Message) Response {
 	onTypedCallbackId, _ := msg.Payload["onTypedCallbackId"].(string)
 	onFocusCallbackId, _ := msg.Payload["onFocusCallbackId"].(string)
 
+	// Extract optional mouse callback IDs
+	onMouseDownCallbackId, _ := msg.Payload["onMouseDownCallbackId"].(string)
+	onMouseMoveCallbackId, _ := msg.Payload["onMouseMoveCallbackId"].(string)
+	onMouseUpCallbackId, _ := msg.Payload["onMouseUpCallbackId"].(string)
+
 	var textGrid *widget.TextGrid
 	if text != "" {
 		textGrid = widget.NewTextGridFromString(text)
@@ -384,9 +389,10 @@ func (b *Bridge) handleCreateTextGrid(msg Message) Response {
 	textGrid.ShowLineNumbers = showLineNumbers
 	textGrid.ShowWhitespace = showWhitespace
 
-	// Create TsyneTextGrid wrapper for focusable/keyboard support
+	// Create TsyneTextGrid wrapper for focusable/keyboard/mouse support
 	tsyneTextGrid := NewTsyneTextGrid(textGrid, b, widgetID)
 	tsyneTextGrid.SetCallbackIds(onKeyDownCallbackId, onKeyUpCallbackId, onTypedCallbackId, onFocusCallbackId)
+	tsyneTextGrid.SetMouseCallbackIds(onMouseDownCallbackId, onMouseMoveCallbackId, onMouseUpCallbackId)
 
 	b.mu.Lock()
 	b.widgets[widgetID] = tsyneTextGrid
