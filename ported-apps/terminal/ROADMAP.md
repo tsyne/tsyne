@@ -94,10 +94,10 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Linear text selection
 - [x] Copy to clipboard
 - [x] Paste with bracketed paste mode
-- [ ] Block mode selection
-- [ ] Word boundary detection for double-click
+- [x] Block mode selection (Alt+drag)
+- [x] Word boundary detection for double-click
 - [ ] X11-style primary selection buffer
-- [ ] Selection highlighting with proper masking
+- [x] Selection highlighting with proper masking
 
 ---
 
@@ -109,7 +109,7 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Bold, italic, underline attributes
 - [x] Inverse video
 - [~] Dim attribute (parsed, not rendered)
-- [ ] Cursor blinking animation
+- [x] Cursor blinking animation
 - [ ] Strikethrough rendering
 - [ ] Double underline distinction
 

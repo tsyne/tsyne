@@ -2822,6 +2822,13 @@ export class Terminal {
  * Terminal UI built with Tsyne
  * Based on: cmd/fyneterm/main.go and render.go
  */
+// Cursor blink interval in ms (standard terminal blink rate)
+const CURSOR_BLINK_INTERVAL = 530;
+
+// Selection highlight color (blue tint for better visibility)
+const SELECTION_BG_COLOR = '#264f78';
+const SELECTION_FG_COLOR = '#ffffff';
+
 export class TerminalUI {
   private terminal: Terminal;
   private textGrid: TextGrid | null = null;
@@ -2831,6 +2838,14 @@ export class TerminalUI {
   private rows: number = DEFAULT_ROWS;
   // Track previous selection bounds to clear them when selection changes
   private prevSelectionBounds: { startRow: number; startCol: number; endRow: number; endCol: number } | null = null;
+
+  // Cursor blinking state
+  private cursorBlinkVisible: boolean = true;
+  private cursorBlinkTimer: ReturnType<typeof setInterval> | null = null;
+  private hasFocus: boolean = true;
+  // Track previous cursor position to clear it when it moves
+  private prevCursorRow: number = -1;
+  private prevCursorCol: number = -1;
 
   constructor(a: App, cols: number = DEFAULT_COLS, rows: number = DEFAULT_ROWS) {
     this.a = a;
@@ -2848,10 +2863,102 @@ export class TerminalUI {
       // Could play a sound or flash the window
     };
     this.terminal.onExit = () => {
+      this.stopCursorBlink();
       if (this.win) {
         process.exit(0);
       }
     };
+
+    // Start cursor blinking
+    this.startCursorBlink();
+  }
+
+  /**
+   * Start cursor blink timer
+   */
+  private startCursorBlink(): void {
+    if (this.cursorBlinkTimer) return;
+
+    this.cursorBlinkVisible = true;
+    this.cursorBlinkTimer = setInterval(() => {
+      if (this.hasFocus) {
+        this.cursorBlinkVisible = !this.cursorBlinkVisible;
+        this.renderCursor();
+      }
+    }, CURSOR_BLINK_INTERVAL);
+  }
+
+  /**
+   * Stop cursor blink timer
+   */
+  private stopCursorBlink(): void {
+    if (this.cursorBlinkTimer) {
+      clearInterval(this.cursorBlinkTimer);
+      this.cursorBlinkTimer = null;
+    }
+  }
+
+  /**
+   * Reset cursor blink (show cursor immediately, restart timer)
+   * Called when user types to keep cursor visible during input
+   */
+  private resetCursorBlink(): void {
+    this.cursorBlinkVisible = true;
+    if (this.cursorBlinkTimer) {
+      clearInterval(this.cursorBlinkTimer);
+    }
+    this.cursorBlinkTimer = setInterval(() => {
+      if (this.hasFocus) {
+        this.cursorBlinkVisible = !this.cursorBlinkVisible;
+        this.renderCursor();
+      }
+    }, CURSOR_BLINK_INTERVAL);
+  }
+
+  /**
+   * Render just the cursor (for blink updates without full re-render)
+   */
+  private async renderCursor(): Promise<void> {
+    if (!this.textGrid) return;
+
+    const buffer = this.terminal.getBuffer();
+    const cells = buffer.getBuffer();
+    const cursorRow = this.terminal.getCursorRow();
+    const cursorCol = this.terminal.getCursorCol();
+    const cursorVisible = this.terminal.isCursorVisible();
+
+    // Clear previous cursor position if it moved
+    if (this.prevCursorRow >= 0 && this.prevCursorCol >= 0 &&
+        (this.prevCursorRow !== cursorRow || this.prevCursorCol !== cursorCol)) {
+      if (this.prevCursorRow < cells.length && this.prevCursorCol < cells[this.prevCursorRow].length) {
+        const prevCell = cells[this.prevCursorRow][this.prevCursorCol];
+        const style = this.cellAttrsToStyle(prevCell.attrs);
+        if (!style.fgColor) style.fgColor = '#ffffff';
+        if (!style.bgColor) style.bgColor = '#000000';
+        await this.textGrid.setCell(this.prevCursorRow, this.prevCursorCol, undefined, style);
+      }
+    }
+
+    // Render current cursor position
+    if (cursorRow < cells.length && cursorCol < cells[cursorRow].length) {
+      const cell = cells[cursorRow][cursorCol];
+      const style = this.cellAttrsToStyle(cell.attrs);
+
+      if (cursorVisible && this.cursorBlinkVisible && this.hasFocus) {
+        // Cursor visible: white block
+        style.bgColor = '#ffffff';
+        style.fgColor = '#000000';
+      } else {
+        // Cursor hidden: restore original cell style
+        if (!style.fgColor) style.fgColor = '#ffffff';
+        if (!style.bgColor) style.bgColor = '#000000';
+      }
+
+      await this.textGrid.setCell(cursorRow, cursorCol, undefined, style);
+    }
+
+    this.prevCursorRow = cursorRow;
+    this.prevCursorCol = cursorCol;
   }
 
   /**
@@ -2869,10 +2976,26 @@ export class TerminalUI {
         showWhitespace: false,
         // Handle typed characters (regular text input)
         onTyped: (char: string) => {
+          this.resetCursorBlink();
           this.terminal.typeChar(char);
+        },
+        // Handle focus changes
+        onFocus: (focused: boolean) => {
+          this.hasFocus = focused;
+          if (focused) {
+            this.cursorBlinkVisible = true;
+            this.renderCursor();
+          } else {
+            // Show solid cursor when unfocused (no blink)
+            this.cursorBlinkVisible = true;
+            this.renderCursor();
+          }
         },
         // Handle special keys (arrows, enter, backspace, etc.)
         onKeyDown: (key: string, modifiers: { shift?: boolean; ctrl?: boolean; alt?: boolean }) => {
+          // Reset cursor blink to keep cursor visible while typing
+          this.resetCursorBlink();
+
           // Debug
           console.log(`[Terminal] onKeyDown: key="${key}" ctrl=${modifiers.ctrl} shift=${modifiers.shift}`);
 
@@ -3076,17 +3199,15 @@ export class TerminalUI {
         const isSelected = this.terminal.isCellSelected(row, col);
         const isCursor = cursorVisible && row === cursorRow && col === cursorCol;
 
-        // Highlight selected cells (inverse colors)
+        // Highlight selected cells with distinct selection color
         if (isSelected) {
-          // Swap foreground and background for selection
-          const origFg = style.fgColor || '#ffffff';
-          const origBg = style.bgColor || '#000000';
-          style.fgColor = origBg;
-          style.bgColor = origFg;
+          // Use a visible selection color (VS Code-style blue)
+          style.bgColor = SELECTION_BG_COLOR;
+          style.fgColor = SELECTION_FG_COLOR;
         }
 
-        // Highlight cursor position
-        if (isCursor) {
+        // Highlight cursor position (with blink support)
+        if (isCursor && this.cursorBlinkVisible && this.hasFocus) {
           style.bgColor = '#ffffff';
           style.fgColor = '#000000';
         }
@@ -3100,6 +3221,8 @@ export class TerminalUI {
 
     // Update tracking for next render
     this.prevSelectionBounds = currentBounds;
+    this.prevCursorRow = cursorRow;
+    this.prevCursorCol = cursorCol;
 
     // Wait for all style updates to complete
     await Promise.all(styleUpdates);
