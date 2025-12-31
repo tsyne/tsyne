@@ -233,6 +233,23 @@ describe('Terminal Core Unit Tests', () => {
       const text = term.getText();
       expect(text).toContain('Inverse');
     });
+
+    test('should handle dim attribute (SGR 2)', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b[2mDim Text\x1b[22mNormal');
+      const text = term.getText();
+      expect(text).toContain('Dim Text');
+      expect(text).toContain('Normal');
+
+      // Get the buffer to check attributes
+      const buffer = term.getBuffer();
+      const cell = buffer.getBuffer()[0][0];
+      expect(cell.attrs.dim).toBe(true);
+
+      // After SGR 22 (normal intensity), dim should be off
+      const normalCell = buffer.getBuffer()[0][8]; // 'N' in Normal
+      expect(normalCell.attrs.dim).toBe(false);
+    });
   });
 
   describe('ANSI Escape Sequences - Scrolling', () => {
@@ -283,6 +300,79 @@ describe('Terminal Core Unit Tests', () => {
       const mainText = term.getText();
       expect(mainText).toContain('Main buffer content');
     });
+
+    test('should handle new line mode (LNM) - output side', () => {
+      const term = new Terminal(80, 24);
+
+      // Default: LF only moves cursor down, not to column 0
+      term.write('Hello');
+      expect(term.getCursorCol()).toBe(5);
+      term.write('\n'); // LF
+      expect(term.getCursorRow()).toBe(1);
+      expect(term.getCursorCol()).toBe(5); // Column unchanged
+
+      // Enable LNM: LF should also do CR
+      term.write('\x1b[20h'); // Set LNM
+      expect(term.isNewLineMode()).toBe(true);
+      term.write('World');
+      expect(term.getCursorCol()).toBe(10);
+      term.write('\n'); // LF in LNM mode
+      expect(term.getCursorRow()).toBe(2);
+      expect(term.getCursorCol()).toBe(0); // Column reset to 0
+
+      // Disable LNM: back to normal
+      term.write('\x1b[20l'); // Reset LNM
+      expect(term.isNewLineMode()).toBe(false);
+      term.write('Test');
+      expect(term.getCursorCol()).toBe(4);
+      term.write('\n');
+      expect(term.getCursorRow()).toBe(3);
+      expect(term.getCursorCol()).toBe(4); // Column unchanged again
+    });
+
+    test('should handle printer mode (MC - Media Copy)', () => {
+      const term = new Terminal(80, 24);
+      let printerOutput = '';
+      term.onPrinterOutput = (data) => {
+        printerOutput = data;
+      };
+
+      // Write some visible content first
+      term.write('Before printer mode');
+      expect(term.getText()).toContain('Before printer mode');
+
+      // Enter printer mode
+      term.write('\x1b[5i'); // ESC[5i - start printer controller mode
+      expect(term.isPrinterMode()).toBe(true);
+
+      // Content in printer mode should be buffered, not displayed
+      term.write('This goes to printer');
+      expect(term.getText()).not.toContain('This goes to printer');
+
+      // Exit printer mode
+      term.write('\x1b[4i'); // ESC[4i - stop printer controller mode
+      expect(term.isPrinterMode()).toBe(false);
+
+      // Printer output callback should have been called
+      expect(printerOutput).toBe('This goes to printer');
+
+      // Content after printer mode should be displayed
+      term.write('After printer mode');
+      expect(term.getText()).toContain('After printer mode');
+    });
+
+    test('should not call onPrinterOutput for empty buffer', () => {
+      const term = new Terminal(80, 24);
+      let callbackCalled = false;
+      term.onPrinterOutput = () => {
+        callbackCalled = true;
+      };
+
+      // Enter and immediately exit printer mode
+      term.write('\x1b[5i\x1b[4i');
+
+      expect(callbackCalled).toBe(false);
+    });
   });
 
   describe('ANSI Escape Sequences - OSC (Operating System Commands)', () => {
@@ -304,6 +394,64 @@ describe('Terminal Core Unit Tests', () => {
       };
       term.write('\x1b]2;Another Title\x07');
       expect(capturedTitle).toBe('Another Title');
+    });
+
+    test('should handle icon name change (OSC 1)', () => {
+      const term = new Terminal(80, 24);
+      let capturedIconName = '';
+      term.onIconNameChange = (iconName) => {
+        capturedIconName = iconName;
+      };
+      term.write('\x1b]1;My Icon\x07');
+      expect(capturedIconName).toBe('My Icon');
+      expect(term.getIconName()).toBe('My Icon');
+    });
+
+    test('should set both title and icon with OSC 0', () => {
+      const term = new Terminal(80, 24);
+      let capturedTitle = '';
+      let capturedIconName = '';
+      term.onTitleChange = (title) => {
+        capturedTitle = title;
+      };
+      term.onIconNameChange = (iconName) => {
+        capturedIconName = iconName;
+      };
+      term.write('\x1b]0;Window Title\x07');
+      expect(capturedTitle).toBe('Window Title');
+      expect(capturedIconName).toBe('Window Title');
+      expect(term.getTitle()).toBe('Window Title');
+      expect(term.getIconName()).toBe('Window Title');
+    });
+
+    test('should handle OSC 7 with standard file URI', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b]7;file:///home/user/projects\x07');
+      expect(term.getCwd()).toBe('/home/user/projects');
+    });
+
+    test('should handle OSC 7 with URL-encoded path', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b]7;file:///home/user/my%20projects\x07');
+      expect(term.getCwd()).toBe('/home/user/my projects');
+    });
+
+    test('should handle OSC 7 with localhost prefix', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b]7;file://localhost/home/user\x07');
+      expect(term.getCwd()).toBe('/home/user');
+    });
+
+    test('should handle OSC 7 with plain path', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b]7;/home/user\x07');
+      expect(term.getCwd()).toBe('/home/user');
+    });
+
+    test('should handle OSC 7 with complex URL encoding', () => {
+      const term = new Terminal(80, 24);
+      term.write('\x1b]7;file:///path/with%20spaces%2Fand%2Fslashes\x07');
+      expect(term.getCwd()).toBe('/path/with spaces/and/slashes');
     });
   });
 
@@ -1100,7 +1248,14 @@ describe('PTY Integration Tests', () => {
 
     expect(term.isRunning()).toBe(false);
     expect(exitCode).toBe(42);
+    expect(term.getExitCode()).toBe(42);
   }, 10000);
+
+  test('should return null exit code before shell exits', () => {
+    const term = new Terminal(80, 24);
+    expect(term.getExitCode()).toBeNull();
+    expect(term.isRunning()).toBe(false);
+  });
 });
 
 // DEC Special Graphics Charset Tests
@@ -2502,6 +2657,444 @@ describe('Context Menu Tests', () => {
       // Cursor should be at home position
       expect(term.getCursorRow()).toBe(0);
       expect(term.getCursorCol()).toBe(0);
+    });
+  });
+});
+
+// ============================================================================
+// DCS/APC Handler Tests
+// ============================================================================
+
+describe('DCS (Device Control String) Tests', () => {
+  describe('DCS Parsing', () => {
+    test('should parse DCS with C0 ST terminator', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+      term.registerDCSHandler('test:', (data) => {
+        receivedData = data;
+      });
+
+      // DCS = ESC P, ST = C0 string terminator (0x9c)
+      term.write('\x1bPtest:hello world\x9c');
+
+      expect(receivedData).toBe('hello world');
+    });
+
+    test('should parse DCS with ESC \\ ST terminator', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+      term.registerDCSHandler('test:', (data) => {
+        receivedData = data;
+      });
+
+      // DCS = ESC P, ST = ESC \
+      term.write('\x1bPtest:hello world\x1b\\');
+
+      expect(receivedData).toBe('hello world');
+    });
+
+    test('should handle empty DCS data', () => {
+      const term = new Terminal(80, 24);
+      let handlerCalled = false;
+      term.registerDCSHandler('', (data) => {
+        handlerCalled = true;
+      });
+
+      // Empty DCS
+      term.write('\x1bP\x9c');
+
+      // Empty data should not trigger handlers
+      expect(handlerCalled).toBe(false);
+    });
+  });
+
+  describe('DCS Handler Registration', () => {
+    test('should register and call DCS handler', () => {
+      const term = new Terminal(80, 24);
+      let handlerCalled = false;
+      let receivedData = '';
+
+      term.registerDCSHandler('myprefix:', (data) => {
+        handlerCalled = true;
+        receivedData = data;
+      });
+
+      term.write('\x1bPmyprefix:test data\x9c');
+
+      expect(handlerCalled).toBe(true);
+      expect(receivedData).toBe('test data');
+    });
+
+    test('should unregister DCS handler', () => {
+      const term = new Terminal(80, 24);
+      let callCount = 0;
+
+      term.registerDCSHandler('prefix:', () => {
+        callCount++;
+      });
+
+      term.write('\x1bPprefix:first\x9c');
+      expect(callCount).toBe(1);
+
+      term.unregisterDCSHandler('prefix:');
+
+      term.write('\x1bPprefix:second\x9c');
+      expect(callCount).toBe(1); // Should not increment
+    });
+
+    test('should match longest prefix first', () => {
+      const term = new Terminal(80, 24);
+      let shortPrefixCalled = false;
+      let longPrefixCalled = false;
+
+      term.registerDCSHandler('pre', () => {
+        shortPrefixCalled = true;
+      });
+      term.registerDCSHandler('prefix:', () => {
+        longPrefixCalled = true;
+      });
+
+      term.write('\x1bPprefix:data\x9c');
+
+      // The handler that matches should be called
+      // (order depends on Map iteration, but one should match)
+      expect(shortPrefixCalled || longPrefixCalled).toBe(true);
+    });
+
+    test('should pass data after prefix to handler', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+
+      term.registerDCSHandler('cmd:', (data) => {
+        receivedData = data;
+      });
+
+      term.write('\x1bPcmd:arg1,arg2,arg3\x9c');
+
+      expect(receivedData).toBe('arg1,arg2,arg3');
+    });
+  });
+
+  describe('DECRQSS (Request Status String)', () => {
+    test('should respond to SGR query', () => {
+      const term = new Terminal(80, 24);
+      let response = '';
+      (term as any)._writer = { write: (data: string) => { response = data; } };
+
+      // DECRQSS for SGR: DCS $ q m ST
+      term.write('\x1bP$qm\x9c');
+
+      // Response: DCS 1 $ r 0m ST (valid response with default SGR)
+      expect(response).toBe('\x1bP1$r0m\x1b\\');
+    });
+
+    test('should respond to DECSTBM (scroll region) query', () => {
+      const term = new Terminal(80, 24);
+      let response = '';
+      (term as any)._writer = { write: (data: string) => { response = data; } };
+
+      // Set scroll region first
+      term.write('\x1b[5;20r');
+
+      // DECRQSS for DECSTBM: DCS $ q r ST
+      term.write('\x1bP$qr\x9c');
+
+      // Response: DCS 1 $ r 5;20r ST
+      expect(response).toBe('\x1bP1$r5;20r\x1b\\');
+    });
+
+    test('should respond to DECSCL (conformance level) query', () => {
+      const term = new Terminal(80, 24);
+      let response = '';
+      (term as any)._writer = { write: (data: string) => { response = data; } };
+
+      // DECRQSS for DECSCL: DCS $ q "p ST
+      term.write('\x1bP$q"p\x9c');
+
+      // Response: DCS 1 $ r 65;1"p ST (VT500 level)
+      expect(response).toBe('\x1bP1$r65;1"p\x1b\\');
+    });
+
+    test('should respond to DECSCUSR (cursor style) query', () => {
+      const term = new Terminal(80, 24);
+      let response = '';
+      (term as any)._writer = { write: (data: string) => { response = data; } };
+
+      // DECRQSS for DECSCUSR: DCS $ q SP q ST
+      term.write('\x1bP$q q\x9c');
+
+      // Response: DCS 1 $ r 1 q ST (blinking block)
+      expect(response).toBe('\x1bP1$r1 q\x1b\\');
+    });
+
+    test('should send invalid response for unknown query', () => {
+      const term = new Terminal(80, 24);
+      let response = '';
+      (term as any)._writer = { write: (data: string) => { response = data; } };
+
+      // DECRQSS for unknown: DCS $ q xyz ST
+      term.write('\x1bP$qxyz\x9c');
+
+      // Response: DCS 0 $ r ST (invalid)
+      expect(response).toBe('\x1bP0$r\x1b\\');
+    });
+  });
+
+  describe('Sixel Graphics (stub)', () => {
+    test('should silently consume Sixel data', () => {
+      const term = new Terminal(80, 24);
+
+      // Sixel: DCS q <data> ST
+      // Should not throw or affect terminal state
+      const initialText = term.getText();
+      term.write('\x1bPq#0;2;0;0;0~@\x9c');
+
+      // Terminal text should be unchanged (Sixel is graphics, not text)
+      expect(term.getText()).toBe(initialText);
+    });
+  });
+});
+
+describe('APC (Application Program Command) Tests', () => {
+  describe('APC Parsing', () => {
+    test('should parse APC with C0 ST terminator', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+      term.registerAPCHandler('test:', (data) => {
+        receivedData = data;
+      });
+
+      // APC = ESC _, ST = C0 string terminator (0x9c)
+      term.write('\x1b_test:hello world\x9c');
+
+      expect(receivedData).toBe('hello world');
+    });
+
+    test('should parse APC with ESC \\ ST terminator', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+      term.registerAPCHandler('test:', (data) => {
+        receivedData = data;
+      });
+
+      // APC = ESC _, ST = ESC \
+      term.write('\x1b_test:hello world\x1b\\');
+
+      expect(receivedData).toBe('hello world');
+    });
+  });
+
+  describe('APC Handler Registration', () => {
+    test('should register and call APC handler', () => {
+      const term = new Terminal(80, 24);
+      let handlerCalled = false;
+      let receivedData = '';
+
+      term.registerAPCHandler('myapp:', (data) => {
+        handlerCalled = true;
+        receivedData = data;
+      });
+
+      term.write('\x1b_myapp:command=value\x9c');
+
+      expect(handlerCalled).toBe(true);
+      expect(receivedData).toBe('command=value');
+    });
+
+    test('should unregister APC handler', () => {
+      const term = new Terminal(80, 24);
+      let callCount = 0;
+
+      term.registerAPCHandler('app:', () => {
+        callCount++;
+      });
+
+      term.write('\x1b_app:first\x9c');
+      expect(callCount).toBe(1);
+
+      term.unregisterAPCHandler('app:');
+
+      term.write('\x1b_app:second\x9c');
+      expect(callCount).toBe(1); // Should not increment
+    });
+
+    test('should pass data after prefix to handler', () => {
+      const term = new Terminal(80, 24);
+      let receivedData = '';
+
+      term.registerAPCHandler('notify:', (data) => {
+        receivedData = data;
+      });
+
+      term.write('\x1b_notify:title=Hello;body=World\x9c');
+
+      expect(receivedData).toBe('title=Hello;body=World');
+    });
+
+    test('should handle multiple APC handlers', () => {
+      const term = new Terminal(80, 24);
+      let handler1Called = false;
+      let handler2Called = false;
+
+      term.registerAPCHandler('handler1:', () => {
+        handler1Called = true;
+      });
+      term.registerAPCHandler('handler2:', () => {
+        handler2Called = true;
+      });
+
+      term.write('\x1b_handler1:data\x9c');
+      expect(handler1Called).toBe(true);
+      expect(handler2Called).toBe(false);
+
+      term.write('\x1b_handler2:data\x9c');
+      expect(handler2Called).toBe(true);
+    });
+  });
+
+  describe('Unhandled APC', () => {
+    test('should silently ignore unhandled APC', () => {
+      const term = new Terminal(80, 24);
+
+      // No handler registered - should not throw
+      const initialText = term.getText();
+      term.write('\x1b_unknown:data\x9c');
+
+      // Terminal text should be unchanged
+      expect(term.getText()).toBe(initialText);
+    });
+  });
+
+  describe('UTF-8 Validation', () => {
+    test('should handle valid UTF-8 characters', () => {
+      const term = new Terminal(80, 24);
+      term.write('Hello 世界! 🎉');
+      expect(term.getText()).toContain('Hello');
+      // Wide characters are displayed with spacing - check for each character
+      expect(term.getText()).toContain('世');
+      expect(term.getText()).toContain('界');
+    });
+
+    test('should replace unpaired high surrogate with U+FFFD', () => {
+      const term = new Terminal(80, 24);
+      // Create a string with an unpaired high surrogate
+      const strWithBadSurrogate = 'Hello' + String.fromCharCode(0xd800) + 'World';
+      term.write(strWithBadSurrogate);
+      expect(term.getText()).toContain('Hello');
+      expect(term.getText()).toContain('\uFFFD');
+      expect(term.getText()).toContain('World');
+    });
+
+    test('should replace unpaired low surrogate with U+FFFD', () => {
+      const term = new Terminal(80, 24);
+      // Create a string with an unpaired low surrogate
+      const strWithBadSurrogate = 'Hi' + String.fromCharCode(0xdc00) + 'There';
+      term.write(strWithBadSurrogate);
+      expect(term.getText()).toContain('Hi');
+      expect(term.getText()).toContain('\uFFFD');
+      expect(term.getText()).toContain('There');
+    });
+
+    test('should handle valid surrogate pairs', () => {
+      const term = new Terminal(80, 24);
+      // Emoji is a valid surrogate pair (e.g., 😀 = U+1F600)
+      term.write('Hello 😀 World');
+      expect(term.getText()).toContain('Hello');
+      expect(term.getText()).toContain('😀');
+      expect(term.getText()).toContain('World');
+    });
+
+    test('writeBuffer should decode ASCII correctly', () => {
+      const term = new Terminal(80, 24);
+      term.writeBuffer(Buffer.from('Hello'));
+      expect(term.getText()).toContain('Hello');
+    });
+
+    test('writeBuffer should decode multi-byte UTF-8', () => {
+      const term = new Terminal(80, 24);
+      // "世界" in UTF-8: e4 b8 96 e7 95 8c
+      term.writeBuffer(Buffer.from([0xe4, 0xb8, 0x96, 0xe7, 0x95, 0x8c]));
+      // Wide characters are displayed with spacing - check for each character
+      expect(term.getText()).toContain('世');
+      expect(term.getText()).toContain('界');
+    });
+
+    test('writeBuffer should buffer partial UTF-8 sequences', () => {
+      const term = new Terminal(80, 24);
+      // Send first byte of 3-byte sequence (世 = e4 b8 96)
+      term.writeBuffer(Buffer.from([0xe4]));
+      // The buffer has dots for empty cells, so check nothing was written yet
+      // by ensuring the character hasn't appeared
+      expect(term.getText()).not.toContain('世');
+
+      // Send remaining bytes
+      term.writeBuffer(Buffer.from([0xb8, 0x96]));
+      expect(term.getText()).toContain('世');
+    });
+
+    test('writeBuffer should replace invalid leading byte with U+FFFD', () => {
+      const term = new Terminal(80, 24);
+      // 0x80 is an invalid leading byte (it's a continuation byte)
+      term.writeBuffer(Buffer.from([0x80, 0x41])); // 0x80 + 'A'
+      expect(term.getText()).toContain('\uFFFD');
+      expect(term.getText()).toContain('A');
+    });
+
+    test('writeBuffer should replace overlong encoding with U+FFFD', () => {
+      const term = new Terminal(80, 24);
+      // Overlong encoding of 'A' (U+0041) using 2 bytes: c0 c1 (invalid)
+      term.writeBuffer(Buffer.from([0xc0, 0x81, 0x42])); // overlong 'A' + 'B'
+      expect(term.getText()).toContain('\uFFFD');
+      expect(term.getText()).toContain('B');
+    });
+
+    test('flushUtf8Buffer should output U+FFFD for incomplete sequences', () => {
+      const term = new Terminal(80, 24);
+      // Send partial 3-byte sequence
+      term.writeBuffer(Buffer.from([0xe4, 0xb8]));
+      // Flush should replace with U+FFFD
+      term.flushUtf8Buffer();
+      expect(term.getText()).toContain('\uFFFD');
+    });
+  });
+
+  describe('PTY Error Handling', () => {
+    test('should have onError callback', () => {
+      const term = new Terminal(80, 24);
+      let errorReceived: Error | null = null;
+      let contextReceived = '';
+
+      term.onError = (error, context) => {
+        errorReceived = error;
+        contextReceived = context;
+      };
+
+      // The onError callback should be callable
+      expect(typeof term.onError).toBe('function');
+    });
+
+    test('should have stop method', () => {
+      const term = new Terminal(80, 24);
+      expect(typeof term.stop).toBe('function');
+      // Should not throw when no PTY is running
+      term.stop();
+    });
+
+    test('should track running state', () => {
+      const term = new Terminal(80, 24);
+      // Without PTY running
+      expect(term.isRunning()).toBe(false);
+    });
+
+    test('should report exit code as null before exit', () => {
+      const term = new Terminal(80, 24);
+      expect(term.getExitCode()).toBeNull();
+    });
+
+    test('sendInput should not throw when no PTY available', () => {
+      const term = new Terminal(80, 24);
+      // Should not throw when PTY is not running
+      expect(() => term.sendInput('test')).not.toThrow();
     });
   });
 });

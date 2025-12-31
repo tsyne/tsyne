@@ -42,26 +42,29 @@ app.window({ title: 'Terminal Emulator', width: 900, height: 600 }, (win) => {
   let inputEntry: any;
 
   win.setContent(() => {
-    app.vbox(() => {
-      // Terminal output area
-      app.scroll(() => {
-        terminalGrid = app.textgrid({
-          text: '',
-          showLineNumbers: false,
-          showWhitespace: false,
+    // Use border layout: scroll area expands in center, input fixed at bottom
+    app.border({
+      center: () => {
+        app.scroll(() => {
+          terminalGrid = app.textgrid({
+            text: '',
+            showLineNumbers: false,
+            showWhitespace: false,
+          });
         });
-      });
-
-      app.separator();
-
-      // Command input area
-      app.hbox(() => {
-        app.label('$ ', undefined, undefined, undefined, { monospace: true, bold: true });
-        inputEntry = app.entry('Enter command...', async (text: string) => {
-          await processCommand(text);
-          await inputEntry.setText('');
-        }, 700);
-      });
+      },
+      bottom: () => {
+        app.vbox(() => {
+          app.separator();
+          app.hbox(() => {
+            app.label('$ ', undefined, undefined, undefined, { monospace: true, bold: true });
+            inputEntry = app.entry('Enter command...', async (text: string) => {
+              await processCommand(text);
+              await inputEntry.setText('');
+            }, 700);
+          });
+        });
+      },
     });
   });
 

@@ -351,6 +351,8 @@ class AnsiParser {
   private params: number[] = [];
   private currentParam: string = '';
   private oscString: string = '';
+  private dcsString: string = '';
+  private apcString: string = '';
   private privateMarker: string = '';
   private intermediates: string = '';
 
@@ -361,6 +363,8 @@ class AnsiParser {
   onOscDispatch: (params: string[]) => void = () => {};
   onEscDispatch: (intermediates: string, final: string) => void = () => {};
   onCharSetDispatch: (target: string, charset: string) => void = () => {};
+  onDcsDispatch: (data: string) => void = () => {};
+  onApcDispatch: (data: string) => void = () => {};
 
   /**
    * Parse input data
@@ -383,6 +387,12 @@ class AnsiParser {
           break;
         case ParserState.OSC:
           this.handleOSC(char, code);
+          break;
+        case ParserState.DCS:
+          this.handleDCS(char, code);
+          break;
+        case ParserState.APC:
+          this.handleAPC(char, code);
           break;
         case ParserState.CharSet:
           this.handleCharSet(char, code);
@@ -414,6 +424,14 @@ class AnsiParser {
     } else if (char === ']') {
       this.state = ParserState.OSC;
       this.oscString = '';
+    } else if (char === 'P') {
+      // DCS - Device Control String
+      this.state = ParserState.DCS;
+      this.dcsString = '';
+    } else if (char === '_') {
+      // APC - Application Program Command
+      this.state = ParserState.APC;
+      this.apcString = '';
     } else if (char === '(' || char === ')' || char === '*' || char === '+') {
       this.state = ParserState.CharSet;
       this.intermediates = char;
@@ -480,6 +498,55 @@ class AnsiParser {
     // char contains the charset designator ('0' for DEC Special Graphics, 'B' for ASCII, etc.)
     this.onCharSetDispatch(this.intermediates, char);
     this.state = ParserState.Normal;
+  }
+
+  /**
+   * Handle DCS (Device Control String) sequences
+   * Format: ESC P ... ST (where ST is ESC \)
+   * Used for: DECRQSS, Sixel graphics, ReGIS graphics, etc.
+   */
+  private handleDCS(char: string, code: number): void {
+    // Check for ST (String Terminator): ESC \ or 0x9C
+    if (code === 0x9c) {
+      // C1 ST
+      this.onDcsDispatch(this.dcsString);
+      this.state = ParserState.Normal;
+    } else if (code === 0x1b) {
+      // Possible start of ESC \ (ST)
+      // We need to check the next character, so append ESC and check in next iteration
+      this.dcsString += char;
+    } else if (this.dcsString.endsWith('\x1b') && char === '\\') {
+      // ESC \ (ST) - end of DCS
+      this.dcsString = this.dcsString.slice(0, -1); // Remove the ESC
+      this.onDcsDispatch(this.dcsString);
+      this.state = ParserState.Normal;
+    } else {
+      this.dcsString += char;
+    }
+  }
+
+  /**
+   * Handle APC (Application Program Command) sequences
+   * Format: ESC _ ... ST (where ST is ESC \)
+   * Used for: Custom application commands, tmux passthrough, etc.
+   */
+  private handleAPC(char: string, code: number): void {
+    // Check for ST (String Terminator): ESC \ or 0x9C
+    if (code === 0x9c) {
+      // C1 ST
+      this.onApcDispatch(this.apcString);
+      this.state = ParserState.Normal;
+    } else if (code === 0x1b) {
+      // Possible start of ESC \ (ST)
+      this.apcString += char;
+    } else if (this.apcString.endsWith('\x1b') && char === '\\') {
+      // ESC \ (ST) - end of APC
+      this.apcString = this.apcString.slice(0, -1); // Remove the ESC
+      this.onApcDispatch(this.apcString);
+      this.state = ParserState.Normal;
+    } else {
+      this.apcString += char;
+    }
   }
 }
 
@@ -720,6 +787,7 @@ export class Terminal {
   private scrollBottom: number;
   private currentAttrs: CellAttributes;
   private title: string = 'Terminal';
+  private iconName: string = 'Terminal';  // Icon name (often same as title, used by some window managers)
   private cwd: string = os.homedir();
   private ptyProcess: IPty | null = null;
   private selection: Selection = { active: false, startRow: 0, startCol: 0, endRow: 0, endCol: 0, mode: SelectionMode.Linear };
@@ -732,6 +800,9 @@ export class Terminal {
   private applicationKeypadMode: boolean = false;  // DECKPAM/DECKPNM
   private newLineMode: boolean = false;            // LNM - affects Enter key
   private bracketedPasteMode: boolean = false;
+  private printerMode: boolean = false;           // Media Copy mode (ESC[5i/ESC[4i)
+  private printerBuffer: string = '';             // Buffer for printer output
+  private lastExitCode: number | null = null;     // Last shell exit code (null if still running)
   private mouseTrackingMode: number = 0;
   private mouseEncodingFormat: MouseEncodingFormat = MouseEncodingFormat.X10;
   private mouseButtonState: MouseButton = MouseButton.Release;
@@ -774,6 +845,9 @@ export class Terminal {
   private cellWidth: number = 8;   // Default cell width in pixels
   private cellHeight: number = 16; // Default cell height in pixels
 
+  // UTF-8 partial sequence buffer for handling split multi-byte characters
+  private utf8PartialBuffer: number[] = [];
+
   // Debug mode - set to true to enable logging
   private debug: boolean = false;
 
@@ -783,11 +857,18 @@ export class Terminal {
   // Callbacks
   onUpdate: () => void = () => {};
   onTitleChange: (title: string) => void = () => {};
+  onIconNameChange: (iconName: string) => void = () => {};
   onBell: () => void = () => {};
   onExit: (code: number) => void = () => {};
+  onError: (error: Error, context: string) => void = () => {};  // Called on PTY/stream errors
   onLongPress: (row: number, col: number) => void = () => {};
   onTap: (row: number, col: number) => void = () => {};
   onContextMenu: (row: number, col: number, items: ContextMenuItem[]) => void = () => {};
+  onPrinterOutput: (data: string) => void = () => {};  // Called when printer mode ends with buffered data
+
+  // Extensible handler registration for DCS and APC sequences
+  private dcsHandlers: Map<string, (data: string) => void> = new Map();
+  private apcHandlers: Map<string, (data: string) => void> = new Map();
 
   constructor(cols: number = DEFAULT_COLS, rows: number = DEFAULT_ROWS) {
     this.buffer = new TerminalBuffer(cols, rows);
@@ -825,6 +906,59 @@ export class Terminal {
    */
   setDesktopService(service: IDesktopService): void {
     this.desktopService = service;
+  }
+
+  /**
+   * Register a handler for DCS (Device Control String) sequences
+   * The prefix is the initial part of the DCS data that identifies the handler
+   *
+   * @example
+   * // Handle Sixel graphics
+   * terminal.registerDCSHandler('q', (data) => {
+   *   console.log('Sixel data:', data);
+   * });
+   *
+   * // Handle DECRQSS queries
+   * terminal.registerDCSHandler('$q', (data) => {
+   *   console.log('DECRQSS query:', data);
+   * });
+   */
+  registerDCSHandler(prefix: string, handler: (data: string) => void): void {
+    this.dcsHandlers.set(prefix, handler);
+  }
+
+  /**
+   * Unregister a DCS handler
+   */
+  unregisterDCSHandler(prefix: string): void {
+    this.dcsHandlers.delete(prefix);
+  }
+
+  /**
+   * Register a handler for APC (Application Program Command) sequences
+   * The prefix is the initial part of the APC data that identifies the handler
+   *
+   * @example
+   * // Handle tmux passthrough
+   * terminal.registerAPCHandler('tmux;', (data) => {
+   *   console.log('tmux command:', data);
+   * });
+   *
+   * // Handle custom application commands
+   * terminal.registerAPCHandler('myapp:', (data) => {
+   *   const parts = data.split(':');
+   *   handleMyAppCommand(parts[1], parts.slice(2));
+   * });
+   */
+  registerAPCHandler(prefix: string, handler: (data: string) => void): void {
+    this.apcHandlers.set(prefix, handler);
+  }
+
+  /**
+   * Unregister an APC handler
+   */
+  unregisterAPCHandler(prefix: string): void {
+    this.apcHandlers.delete(prefix);
   }
 
   /**
@@ -886,6 +1020,8 @@ export class Terminal {
     this.parser.onOscDispatch = (params) => this.handleOSC(params);
     this.parser.onEscDispatch = (intermediates, final) => this.handleEsc(intermediates, final);
     this.parser.onCharSetDispatch = (target, charset) => this.handleCharSetDesignation(target, charset);
+    this.parser.onDcsDispatch = (data) => this.handleDCS(data);
+    this.parser.onApcDispatch = (data) => this.handleAPC(data);
   }
 
   /**
@@ -934,13 +1070,24 @@ export class Terminal {
       tsyneEnv.TSYNE_DESKTOP = '1';
     }
 
-    this.ptyProcess = pty.spawn(shell, [], {
-      name: 'xterm-256color',
-      cols: this.buffer.getCols(),
-      rows: this.buffer.getRows(),
-      cwd: this.cwd,
-      env: tsyneEnv,
-    });
+    try {
+      this.ptyProcess = pty.spawn(shell, [], {
+        name: 'xterm-256color',
+        cols: this.buffer.getCols(),
+        rows: this.buffer.getRows(),
+        cwd: this.cwd,
+        env: tsyneEnv,
+      });
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      if (this.debug) {
+        console.log(`[Terminal:runLocalShell] Failed to spawn PTY: ${error.message}`);
+      }
+      this.onError(error, 'pty_spawn');
+      // Write error message to terminal display
+      this.write(`\r\n\x1b[31mError: Failed to start shell: ${error.message}\x1b[0m\r\n`);
+      return;
+    }
 
     if (this.debug) {
       console.log(`[Terminal:runLocalShell] PTY spawned, pid=${this.ptyProcess.pid}`);
@@ -950,11 +1097,25 @@ export class Terminal {
       this.write(data);
     });
 
-    this.ptyProcess.onExit(({ exitCode }) => {
+    this.ptyProcess.onExit(({ exitCode, signal }) => {
       if (this.debug) {
-        console.log(`[Terminal:runLocalShell] PTY exited with code ${exitCode}`);
+        console.log(`[Terminal:runLocalShell] PTY exited with code ${exitCode}, signal ${signal}`);
       }
       this.ptyProcess = null;
+      this.lastExitCode = exitCode;
+
+      // Check for abnormal termination
+      if (signal !== undefined && signal !== 0) {
+        const signalNames: { [key: number]: string } = {
+          1: 'SIGHUP', 2: 'SIGINT', 3: 'SIGQUIT', 6: 'SIGABRT',
+          9: 'SIGKILL', 11: 'SIGSEGV', 13: 'SIGPIPE', 15: 'SIGTERM',
+        };
+        const signalName = signalNames[signal] || `signal ${signal}`;
+        if (this.debug) {
+          console.log(`[Terminal:runLocalShell] Shell killed by ${signalName}`);
+        }
+      }
+
       this.onExit(exitCode);
     });
 
@@ -972,10 +1133,67 @@ export class Terminal {
             `esac; }`,
           ].join(' ');
           // Send function definition followed by clear to hide it
-          this.ptyProcess.write(`${tsyneFunc} && clear\n`);
+          this.safePtyWrite(`${tsyneFunc} && clear\n`);
         }
       }, 150);
     }
+  }
+
+  /**
+   * Safely write to PTY with error handling for broken pipe
+   * @returns true if write succeeded, false if PTY is not available or write failed
+   */
+  private safePtyWrite(data: string): boolean {
+    if (!this.ptyProcess) {
+      if (this.debug) {
+        console.log('[Terminal:safePtyWrite] PTY not available');
+      }
+      return false;
+    }
+
+    try {
+      this.ptyProcess.write(data);
+      return true;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      if (this.debug) {
+        console.log(`[Terminal:safePtyWrite] Write failed: ${error.message}`);
+      }
+      // Check for broken pipe / EOF errors
+      if (error.message.includes('EPIPE') ||
+          error.message.includes('EOF') ||
+          error.message.includes('not open') ||
+          error.message.includes('closed')) {
+        // PTY has been closed - clean up
+        this.ptyProcess = null;
+        this.onError(error, 'pty_write_broken_pipe');
+      } else {
+        this.onError(error, 'pty_write');
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Stop the terminal and clean up resources
+   */
+  stop(): void {
+    if (this.ptyProcess) {
+      if (this.debug) {
+        console.log('[Terminal:stop] Killing PTY process');
+      }
+      try {
+        this.ptyProcess.kill();
+      } catch (err) {
+        // Ignore errors during cleanup
+        if (this.debug) {
+          console.log(`[Terminal:stop] Error killing PTY: ${err}`);
+        }
+      }
+      this.ptyProcess = null;
+    }
+    // Flush any remaining UTF-8 buffer
+    this.flushUtf8Buffer();
   }
 
   /**
@@ -984,7 +1202,21 @@ export class Terminal {
    */
   runWithConnection(reader: NodeJS.ReadableStream, writer: NodeJS.WritableStream): void {
     reader.on('data', (data: Buffer) => {
-      this.write(data.toString());
+      // Use writeBuffer for proper UTF-8 handling with partial sequence buffering
+      this.writeBuffer(data);
+    });
+
+    reader.on('end', () => {
+      // Flush any remaining partial UTF-8 sequence
+      this.flushUtf8Buffer();
+    });
+
+    reader.on('error', (err: Error) => {
+      if (this.debug) {
+        console.log('[Terminal:runWithConnection] Stream error:', err.message);
+      }
+      // Flush any remaining partial UTF-8 sequence
+      this.flushUtf8Buffer();
     });
 
     // Store writer for input
@@ -997,8 +1229,166 @@ export class Terminal {
    */
   write(data: string): void {
     this.debugLog('write (from shell)', data);
-    this.parser.parse(data);
+    // Validate and sanitize UTF-8, replacing invalid sequences with U+FFFD
+    const sanitized = this.sanitizeUtf8(data);
+    this.parser.parse(sanitized);
     this.onUpdate();
+  }
+
+  /**
+   * Write raw bytes to terminal, handling UTF-8 decoding with partial sequence buffering
+   * Use this when receiving raw Buffer data that may be split across chunks
+   */
+  writeBuffer(data: Buffer): void {
+    const decoded = this.decodeUtf8WithBuffering(data);
+    if (decoded.length > 0) {
+      this.write(decoded);
+    }
+  }
+
+  /**
+   * Decode UTF-8 bytes with buffering for partial multi-byte sequences
+   * Handles the case where a multi-byte character is split across data chunks
+   */
+  private decodeUtf8WithBuffering(data: Buffer): string {
+    // Combine any buffered bytes with new data
+    const bytes: number[] = [...this.utf8PartialBuffer];
+    for (let i = 0; i < data.length; i++) {
+      bytes.push(data[i]);
+    }
+    this.utf8PartialBuffer = [];
+
+    // Decode bytes to string, but check for trailing partial sequences
+    let result = '';
+    let i = 0;
+
+    while (i < bytes.length) {
+      const byte = bytes[i];
+
+      // Determine expected sequence length from first byte
+      let seqLen: number;
+      if ((byte & 0x80) === 0) {
+        seqLen = 1; // ASCII
+      } else if ((byte & 0xe0) === 0xc0) {
+        seqLen = 2; // 2-byte sequence
+      } else if ((byte & 0xf0) === 0xe0) {
+        seqLen = 3; // 3-byte sequence
+      } else if ((byte & 0xf8) === 0xf0) {
+        seqLen = 4; // 4-byte sequence
+      } else {
+        // Invalid leading byte - replace with U+FFFD
+        result += '\uFFFD';
+        i++;
+        continue;
+      }
+
+      // Check if we have enough bytes
+      if (i + seqLen > bytes.length) {
+        // Partial sequence at end - buffer it for next chunk
+        this.utf8PartialBuffer = bytes.slice(i);
+        break;
+      }
+
+      // Validate continuation bytes
+      let valid = true;
+      for (let j = 1; j < seqLen; j++) {
+        if ((bytes[i + j] & 0xc0) !== 0x80) {
+          valid = false;
+          break;
+        }
+      }
+
+      if (!valid) {
+        // Invalid sequence - replace with U+FFFD and advance one byte
+        result += '\uFFFD';
+        i++;
+        continue;
+      }
+
+      // Decode the valid sequence
+      let codePoint: number;
+      if (seqLen === 1) {
+        codePoint = byte;
+      } else if (seqLen === 2) {
+        codePoint = ((byte & 0x1f) << 6) | (bytes[i + 1] & 0x3f);
+        // Check for overlong encoding
+        if (codePoint < 0x80) {
+          result += '\uFFFD';
+          i += seqLen;
+          continue;
+        }
+      } else if (seqLen === 3) {
+        codePoint = ((byte & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f);
+        // Check for overlong encoding and surrogate range
+        if (codePoint < 0x800 || (codePoint >= 0xd800 && codePoint <= 0xdfff)) {
+          result += '\uFFFD';
+          i += seqLen;
+          continue;
+        }
+      } else {
+        codePoint = ((byte & 0x07) << 18) | ((bytes[i + 1] & 0x3f) << 12) |
+                    ((bytes[i + 2] & 0x3f) << 6) | (bytes[i + 3] & 0x3f);
+        // Check for overlong encoding and valid range
+        if (codePoint < 0x10000 || codePoint > 0x10ffff) {
+          result += '\uFFFD';
+          i += seqLen;
+          continue;
+        }
+      }
+
+      result += String.fromCodePoint(codePoint);
+      i += seqLen;
+    }
+
+    return result;
+  }
+
+  /**
+   * Sanitize a UTF-8 string by replacing invalid sequences with U+FFFD
+   * This handles cases where strings may contain unpaired surrogates or other issues
+   */
+  private sanitizeUtf8(str: string): string {
+    // JavaScript strings are UTF-16, but may contain unpaired surrogates
+    // Replace any unpaired surrogates with U+FFFD
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+
+      // Check for high surrogate
+      if (code >= 0xd800 && code <= 0xdbff) {
+        if (i + 1 < str.length) {
+          const next = str.charCodeAt(i + 1);
+          // Check for valid low surrogate
+          if (next >= 0xdc00 && next <= 0xdfff) {
+            result += str[i] + str[i + 1];
+            i++; // Skip the low surrogate
+            continue;
+          }
+        }
+        // Unpaired high surrogate - replace with U+FFFD
+        result += '\uFFFD';
+      } else if (code >= 0xdc00 && code <= 0xdfff) {
+        // Unpaired low surrogate - replace with U+FFFD
+        result += '\uFFFD';
+      } else {
+        result += str[i];
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Flush any buffered partial UTF-8 sequence (e.g., on stream close)
+   * Replaces incomplete sequences with U+FFFD
+   */
+  flushUtf8Buffer(): void {
+    if (this.utf8PartialBuffer.length > 0) {
+      // Replace incomplete sequence with replacement character(s)
+      const replacements = '\uFFFD'.repeat(this.utf8PartialBuffer.length);
+      this.utf8PartialBuffer = [];
+      this.parser.parse(replacements);
+      this.onUpdate();
+    }
   }
 
   /**
@@ -1008,9 +1398,18 @@ export class Terminal {
   sendInput(data: string): void {
     this.debugLog('sendInput', data);
     if (this.ptyProcess) {
-      this.ptyProcess.write(data);
+      // Use safePtyWrite for broken pipe handling
+      this.safePtyWrite(data);
     } else if ((this as any)._writer) {
-      (this as any)._writer.write(data);
+      try {
+        (this as any)._writer.write(data);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (this.debug) {
+          console.log(`[Terminal:sendInput] Writer error: ${error.message}`);
+        }
+        this.onError(error, 'writer_write');
+      }
     } else {
       if (this.debug) {
         console.log('[Terminal:sendInput] WARNING: No PTY or writer available!');
@@ -1267,6 +1666,13 @@ export class Terminal {
   }
 
   /**
+   * Get printer mode state (Media Copy)
+   */
+  isPrinterMode(): boolean {
+    return this.printerMode;
+  }
+
+  /**
    * Handle paste with bracketed paste mode
    */
   paste(text: string): void {
@@ -1317,6 +1723,12 @@ export class Terminal {
   // ============================================================================
 
   private handlePrint(char: string): void {
+    // In printer mode, buffer characters instead of displaying
+    if (this.printerMode) {
+      this.printerBuffer += char;
+      return;
+    }
+
     // Translate character based on active charset
     const translatedChar = this.translateCharset(char);
 
@@ -1401,6 +1813,10 @@ export class Terminal {
       case 0x0a: // LF (Line Feed)
       case 0x0b: // VT (Vertical Tab)
       case 0x0c: // FF (Form Feed)
+        // In new line mode (LNM), LF also does CR (moves to column 0)
+        if (this.newLineMode) {
+          this.cursorCol = 0;
+        }
         this.cursorRow++;
         if (this.cursorRow > this.scrollBottom) {
           this.cursorRow = this.scrollBottom;
@@ -1561,6 +1977,30 @@ export class Terminal {
 
       case 't': // Window manipulation
         // Ignore most window operations
+        break;
+
+      case 'i': // MC - Media Copy (Printer Mode)
+        if (p(0) === 5) {
+          // ESC[5i - Start printer controller mode
+          this.printerMode = true;
+          this.printerBuffer = '';
+          if (this.debug) {
+            console.log('[Terminal] Printer mode enabled');
+          }
+        } else if (p(0) === 4) {
+          // ESC[4i - Stop printer controller mode
+          if (this.printerMode) {
+            this.printerMode = false;
+            if (this.printerBuffer.length > 0) {
+              this.onPrinterOutput(this.printerBuffer);
+            }
+            this.printerBuffer = '';
+            if (this.debug) {
+              console.log('[Terminal] Printer mode disabled');
+            }
+          }
+        }
+        // Other printer modes (0, 10, 11) are not commonly used
         break;
     }
   }
@@ -1825,8 +2265,21 @@ export class Terminal {
 
     const cmd = parseInt(params[0], 10);
     switch (cmd) {
-      case 0: // Set window title and icon
-      case 2: // Set window title
+      case 0: // Set window title and icon name
+        if (params[1]) {
+          this.title = params[1];
+          this.iconName = params[1];
+          this.onTitleChange(this.title);
+          this.onIconNameChange(this.iconName);
+        }
+        break;
+      case 1: // Set icon name only
+        if (params[1]) {
+          this.iconName = params[1];
+          this.onIconNameChange(this.iconName);
+        }
+        break;
+      case 2: // Set window title only
         if (params[1]) {
           this.title = params[1];
           this.onTitleChange(this.title);
@@ -1834,7 +2287,7 @@ export class Terminal {
         break;
       case 7: // Set working directory
         if (params[1]) {
-          this.cwd = params[1].replace('file://', '');
+          this.cwd = this.parseFileUri(params[1]);
         }
         break;
       case 7777: // Tsyne custom: launch app
@@ -1843,6 +2296,67 @@ export class Terminal {
         // or: OSC 7777 ; list ST
         this.handleTsyneOSC(params.slice(1));
         break;
+    }
+  }
+
+  /**
+   * Parse a file:// URI and return the path
+   * Handles various formats:
+   *   file:///path/to/dir         - Standard absolute path
+   *   file://localhost/path       - Localhost prefix
+   *   file://hostname/path        - Network path (returns as-is on Unix, UNC on Windows)
+   *   file:///path%20with%20spaces - URL-encoded characters
+   *   /path/to/dir                - Plain path (returned as-is)
+   */
+  private parseFileUri(uri: string): string {
+    // If it's not a file:// URI, return as-is
+    if (!uri.startsWith('file://')) {
+      return uri;
+    }
+
+    // Remove file:// prefix
+    let path = uri.substring(7);
+
+    // Handle file:///path (standard format for local paths)
+    if (path.startsWith('/')) {
+      // Already an absolute path, decode and return
+      return this.decodeUriPath(path);
+    }
+
+    // Handle file://localhost/path
+    if (path.startsWith('localhost/')) {
+      path = path.substring(9); // Remove 'localhost'
+      return this.decodeUriPath(path);
+    }
+
+    // Handle file://hostname/path (network path)
+    const slashIndex = path.indexOf('/');
+    if (slashIndex > 0) {
+      const hostname = path.substring(0, slashIndex);
+      const pathPart = path.substring(slashIndex);
+
+      // On Windows, convert to UNC path: \\hostname\path
+      if (this.platform === 'windows') {
+        return `\\\\${hostname}${pathPart.replace(/\//g, '\\')}`;
+      }
+
+      // On Unix, just use the path part (network mounts aren't standard)
+      return this.decodeUriPath(pathPart);
+    }
+
+    // Fallback: just decode whatever we have
+    return this.decodeUriPath('/' + path);
+  }
+
+  /**
+   * Decode URL-encoded characters in a path
+   */
+  private decodeUriPath(path: string): string {
+    try {
+      return decodeURIComponent(path);
+    } catch {
+      // If decoding fails, return the original path
+      return path;
     }
   }
 
@@ -1882,6 +2396,145 @@ export class Terminal {
           }
         }
         break;
+    }
+  }
+
+  /**
+   * Handle DCS (Device Control String) sequences
+   * Based on: dcs.go
+   *
+   * Common DCS sequences:
+   * - DECRQSS ($q) - Request Status String (query terminal settings)
+   * - Sixel graphics (q...) - Sixel image data
+   * - ReGIS graphics (p...) - ReGIS vector graphics
+   * - DECUDK (!u) - User Defined Keys
+   *
+   * Format: DCS [params] [intermediates] final-byte data ST
+   */
+  private handleDCS(data: string): void {
+    if (this.debug) {
+      console.log(`[Terminal:handleDCS] data="${data.substring(0, 50)}${data.length > 50 ? '...' : ''}"`);
+    }
+
+    if (data.length === 0) return;
+
+    // Check registered handlers first (longest prefix match)
+    let handled = false;
+    this.dcsHandlers.forEach((handler, prefix) => {
+      if (!handled && data.startsWith(prefix)) {
+        handler(data.substring(prefix.length));
+        handled = true;
+      }
+    });
+    if (handled) return;
+
+    // Built-in handlers:
+    // $q... - DECRQSS (Request Status String)
+    // q...  - Sixel graphics
+    // p...  - ReGIS graphics
+
+    // Check for DECRQSS ($q)
+    if (data.startsWith('$q')) {
+      this.handleDECRQSS(data.substring(2));
+      return;
+    }
+
+    // Check for Sixel graphics (just 'q' followed by data)
+    if (data.startsWith('q')) {
+      // Sixel graphics - not implemented, just consume silently
+      if (this.debug) {
+        console.log('[Terminal:handleDCS] Sixel graphics received (not rendered)');
+      }
+      return;
+    }
+
+    // Unknown DCS - log if debugging
+    if (this.debug) {
+      console.log(`[Terminal:handleDCS] Unknown DCS sequence: ${data.substring(0, 20)}`);
+    }
+  }
+
+  /**
+   * Handle DECRQSS (Request Status String)
+   * Responds with current terminal settings
+   *
+   * Query format: DCS $ q Pt ST
+   * Response format: DCS Ps $ r Pt ST
+   * Where Ps is 1 for valid, 0 for invalid
+   */
+  private handleDECRQSS(query: string): void {
+    if (this.debug) {
+      console.log(`[Terminal:handleDECRQSS] query="${query}"`);
+    }
+
+    let response = '';
+
+    switch (query) {
+      case 'm': // SGR (Select Graphic Rendition)
+        // Report current text attributes
+        response = '0m'; // Default attributes
+        break;
+      case 'r': // DECSTBM (Scrolling Region)
+        response = `${this.scrollTop + 1};${this.scrollBottom + 1}r`;
+        break;
+      case 's': // DECSLRM (Left/Right Margins) - not implemented
+        response = '';
+        break;
+      case '"p': // DECSCL (Conformance Level)
+        response = '65;1"p'; // VT500 level
+        break;
+      case ' q': // DECSCUSR (Cursor Style)
+        response = '1 q'; // Blinking block
+        break;
+      default:
+        // Unknown query - send invalid response
+        if (this.debug) {
+          console.log(`[Terminal:handleDECRQSS] Unknown query: ${query}`);
+        }
+        this.sendInput('\x1bP0$r\x1b\\'); // Invalid response
+        return;
+    }
+
+    // Send valid response: DCS 1 $ r <response> ST
+    this.sendInput(`\x1bP1$r${response}\x1b\\`);
+  }
+
+  /**
+   * Handle APC (Application Program Command) sequences
+   * Based on: apc.go
+   *
+   * Used for custom application commands:
+   * - tmux passthrough
+   * - Terminal multiplexer communication
+   * - Custom extensions
+   *
+   * Format: APC data ST
+   */
+  private handleAPC(data: string): void {
+    if (this.debug) {
+      console.log(`[Terminal:handleAPC] data="${data.substring(0, 50)}${data.length > 50 ? '...' : ''}"`);
+    }
+
+    if (data.length === 0) return;
+
+    // Check registered handlers (longest prefix match)
+    let handled = false;
+    this.apcHandlers.forEach((handler, prefix) => {
+      if (!handled && data.startsWith(prefix)) {
+        handler(data.substring(prefix.length));
+        handled = true;
+      }
+    });
+    if (handled) return;
+
+    // No registered handler - common uses to potentially support:
+    // - tmux passthrough (\033Ptmux;...\033\\)
+    // - iTerm2 proprietary sequences
+    // - Custom application commands
+
+    // Log unhandled APC if debugging
+    if (this.debug) {
+      console.log(`[Terminal:handleAPC] Unhandled APC: ${data.substring(0, 20)}`);
     }
   }
 
@@ -2777,8 +3430,20 @@ export class Terminal {
     return this.title;
   }
 
+  getIconName(): string {
+    return this.iconName;
+  }
+
   getCwd(): string {
     return this.cwd;
+  }
+
+  /**
+   * Get the last shell exit code
+   * Returns null if shell is still running or hasn't been started
+   */
+  getExitCode(): number | null {
+    return this.lastExitCode;
   }
 
   getConfig(): TerminalConfig {
@@ -3083,7 +3748,7 @@ export class TerminalUI {
   /**
    * Build main menu
    */
-  private buildMainMenu(win: Window): void {
+  private buildMainMenu(win: Window | ITsyneWindow): void {
     win.setMainMenu([
       {
         label: 'File',
@@ -3263,12 +3928,34 @@ export class TerminalUI {
       style.italic = true;
     }
 
-    if (attrs.dim) {
-      // Dim is implemented by darkening the color slightly
-      // For simplicity, we just skip this for now
+    if (attrs.dim && style.fgColor) {
+      // Dim is implemented by reducing brightness to ~50%
+      style.fgColor = this.dimColor(style.fgColor);
     }
 
     return style;
+  }
+
+  /**
+   * Dim a hex color by reducing its brightness to ~50%
+   */
+  private dimColor(hexColor: string): string {
+    // Parse hex color
+    let hex = hexColor.replace('#', '');
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Reduce brightness by 50%
+    const dimR = Math.floor(r * 0.5);
+    const dimG = Math.floor(g * 0.5);
+    const dimB = Math.floor(b * 0.5);
+
+    return `#${dimR.toString(16).padStart(2, '0')}${dimG.toString(16).padStart(2, '0')}${dimB.toString(16).padStart(2, '0')}`;
   }
 
   /**

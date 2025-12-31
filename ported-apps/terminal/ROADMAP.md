@@ -28,12 +28,12 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 **Status:** ✅ Complete. DEC Special Graphics charset fully implemented with all box drawing, math symbols, and special characters. TUI apps now render borders correctly.
 
 ### Device Control Sequences
-- [ ] DCS (Device Control String) handler dispatch
-- [ ] DCS query/response mechanism
-- [ ] APC (Application Program Command) handler system
-- [ ] Extensible handler registration (`RegisterAPCHandler()`)
+- [x] DCS (Device Control String) handler dispatch
+- [x] DCS query/response mechanism
+- [x] APC (Application Program Command) handler system
+- [x] Extensible handler registration (`registerDCSHandler()`, `registerAPCHandler()`)
 
-**Current:** Parser states exist but handlers are placeholder. Apps sending DCS will hang.
+**Status:** ✅ Complete. Full DCS/APC parsing with DECRQSS support for terminal queries. Extensible handler registration for custom sequences.
 
 ### Mouse Protocol
 - [x] X10 mouse encoding (mode 1000)
@@ -87,8 +87,8 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Cursor visibility (DECTCEM)
 - [x] Alternate screen buffer (modes 47, 1047, 1049)
 - [x] Bracketed paste mode (2004)
-- [ ] New line mode vs line feed mode
-- [ ] Printer mode (ESC[5i / ESC[4i)
+- [x] New line mode vs line feed mode
+- [x] Printer mode (ESC[5i / ESC[4i)
 
 ### Selection & Clipboard
 - [x] Linear text selection
@@ -96,8 +96,10 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] Paste with bracketed paste mode
 - [x] Block mode selection (Alt+drag)
 - [x] Word boundary detection for double-click
-- [ ] X11-style primary selection buffer
+- [~] X11-style primary selection buffer (platform-specific, deferred)
 - [x] Selection highlighting with proper masking
+
+**Status:** ✅ Terminal modes complete. X11 primary selection deferred (platform-specific feature, requires X11-only clipboard API).
 
 ---
 
@@ -108,10 +110,10 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [x] True color (24-bit RGB)
 - [x] Bold, italic, underline attributes
 - [x] Inverse video
-- [~] Dim attribute (parsed, not rendered)
+- [x] Dim attribute (reduces brightness to 50%)
 - [x] Cursor blinking animation
-- [ ] Strikethrough rendering
-- [ ] Double underline distinction
+- [~] Strikethrough rendering (requires custom canvas - Fyne TextStyle limitation)
+- [~] Double underline distinction (requires custom canvas - Fyne TextStyle limitation)
 
 ### Configuration
 - [x] Basic terminal dimensions
@@ -122,19 +124,19 @@ This document tracks the gaps between the Tsyne terminal port and the original [
 - [ ] Theme integration
 
 ### OSC Sequences
-- [x] OSC 0 - Set window title
+- [x] OSC 0 - Set window title and icon name
+- [x] OSC 1 - Set icon name
 - [x] OSC 2 - Set window title
 - [x] OSC 7 - Set working directory (file:// URI)
-- [ ] OSC 1 - Set icon name
-- [ ] Robust file:// URI parsing
+- [x] Robust file:// URI parsing (URL decoding, localhost prefix)
 
 ### Error Handling
 - [x] Basic shell error handling
-- [ ] UTF-8 validation and error recovery
-- [ ] Partial UTF-8 sequence buffering
-- [ ] PTY EOF/broken pipe handling
+- [x] UTF-8 validation and error recovery (sanitizeUtf8, replacement with U+FFFD)
+- [x] Partial UTF-8 sequence buffering (writeBuffer, flushUtf8Buffer)
+- [x] PTY EOF/broken pipe handling (safePtyWrite, onError callback)
 - [ ] Resize race condition handling
-- [ ] Proper shell exit code tracking
+- [x] Proper shell exit code tracking (getExitCode(), isRunning())
 
 ---
 
@@ -151,14 +153,14 @@ Terminal (class)
 ### Planned Improvements
 - [ ] Event emitter pattern for state changes
 - [ ] Proper TypeScript interfaces for extensibility
-- [ ] Handler registration system for DCS/APC
+- [x] Handler registration system for DCS/APC (registerDCSHandler, registerAPCHandler)
 - [ ] Separation of concerns (parser vs terminal vs UI)
 
 ---
 
 ## Test Coverage
 
-### Current Tests (171 total)
+### Current Tests (218 total)
 - 56 pure Jest unit tests
 - 4 TsyneTest UI integration tests (require tsyne-bridge)
 - 5 Shell integration tests
@@ -168,6 +170,11 @@ Terminal (class)
 - 31 Mouse protocol tests
 - 16 Block selection tests
 - 31 Input handling, word selection, and context menu tests
+- 20 DCS/APC handler tests
+- 3 Terminal mode tests (LNM output side, printer mode)
+- 5 File URI parsing tests
+- 10 UTF-8 validation tests
+- 5 PTY error handling tests
 
 ### Needed Tests
 - [x] DEC Special Graphics rendering
@@ -176,7 +183,8 @@ Terminal (class)
 - [x] Complex key sequences with modifiers
 - [x] PTY integration tests
 - [x] Mobile/touch event tests
-- [ ] Error recovery tests
+- [x] DCS/APC handler tests
+- [x] Error recovery tests (UTF-8 validation, PTY errors)
 
 ---
 
