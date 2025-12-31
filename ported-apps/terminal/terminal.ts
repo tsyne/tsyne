@@ -2829,6 +2829,8 @@ export class TerminalUI {
   private a: App;
   private cols: number = DEFAULT_COLS;
   private rows: number = DEFAULT_ROWS;
+  // Track previous selection bounds to clear them when selection changes
+  private prevSelectionBounds: { startRow: number; startCol: number; endRow: number; endCol: number } | null = null;
 
   constructor(a: App, cols: number = DEFAULT_COLS, rows: number = DEFAULT_ROWS) {
     this.a = a;
@@ -2836,7 +2838,7 @@ export class TerminalUI {
     this.rows = rows;
     this.terminal = new Terminal(cols, rows);
 
-    this.terminal.onUpdate = () => this.render();
+    this.terminal.onUpdate = () => this.scheduleRender();
     this.terminal.onTitleChange = (title) => {
       if (this.win) {
         this.win.setTitle(title);
@@ -2946,10 +2948,13 @@ export class TerminalUI {
     });
 
     // Start the shell
+    console.log('[TerminalUI] About to start shell');
     this.terminal.runLocalShell();
+    console.log('[TerminalUI] Shell started');
 
     // Initial render
     await this.render();
+    console.log('[TerminalUI] Initial render complete');
   }
 
   /**
@@ -2983,6 +2988,22 @@ export class TerminalUI {
   }
 
   /**
+   * Schedule a render with simple throttling
+   */
+  private renderTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private scheduleRender(): void {
+    // If a render is already scheduled, don't schedule another
+    if (this.renderTimer) return;
+
+    // Schedule render on next tick (batches multiple updates)
+    this.renderTimer = setTimeout(() => {
+      this.renderTimer = null;
+      this.render();
+    }, 16); // ~60fps
+  }
+
+  /**
    * Render terminal content to TextGrid
    * Based on: render.go
    */
@@ -3009,6 +3030,41 @@ export class TerminalUI {
 
     // Collect all style updates and send them in parallel
     const styleUpdates: Promise<void>[] = [];
+
+    // Get current selection bounds
+    const currentBounds = this.terminal.getSelectionBounds();
+
+    // First, clear any cells from previous selection that are no longer selected
+    if (this.prevSelectionBounds) {
+      const prev = this.prevSelectionBounds;
+      for (let row = prev.startRow; row <= prev.endRow; row++) {
+        if (row < 0 || row >= cells.length) continue;
+        const rowCells = cells[row];
+        for (let col = 0; col < rowCells.length; col++) {
+          // Check if this cell was in prev selection
+          let wasInPrev = false;
+          if (row === prev.startRow && row === prev.endRow) {
+            wasInPrev = col >= prev.startCol && col <= prev.endCol;
+          } else if (row === prev.startRow) {
+            wasInPrev = col >= prev.startCol;
+          } else if (row === prev.endRow) {
+            wasInPrev = col <= prev.endCol;
+          } else {
+            wasInPrev = true;
+          }
+
+          // If was selected but no longer is, reset its style
+          if (wasInPrev && !this.terminal.isCellSelected(row, col)) {
+            const cell = rowCells[col];
+            const style = this.cellAttrsToStyle(cell.attrs);
+            // Ensure we set default colors if none
+            if (!style.fgColor) style.fgColor = '#ffffff';
+            if (!style.bgColor) style.bgColor = '#000000';
+            styleUpdates.push(this.textGrid.setCell(row, col, undefined, style));
+          }
+        }
+      }
+    }
 
     // Apply styles row by row
     for (let row = 0; row < cells.length; row++) {
@@ -3037,11 +3093,13 @@ export class TerminalUI {
 
         // Apply style if non-default OR if this cell is selected/cursor
         if (style.fgColor || style.bgColor || style.bold || style.italic || isSelected || isCursor) {
-          // Don't await - collect the promise
           styleUpdates.push(this.textGrid.setCell(row, col, undefined, style));
         }
       }
     }
+
+    // Update tracking for next render
+    this.prevSelectionBounds = currentBounds;
 
     // Wait for all style updates to complete
     await Promise.all(styleUpdates);
@@ -3132,10 +3190,17 @@ export class TerminalUI {
   }
 
   private async paste(): Promise<void> {
+    console.log('[Terminal] paste() called');
     if (this.win) {
-      const text = await this.win.getClipboard();
-      if (text) {
-        this.terminal.paste(text);
+      try {
+        const text = await this.win.getClipboard();
+        console.log('[Terminal] Clipboard content:', text ? text.substring(0, 50) + '...' : '(empty)');
+        if (text) {
+          this.terminal.paste(text);
+          console.log('[Terminal] Paste sent to terminal');
+        }
+      } catch (err) {
+        console.error('[Terminal] Paste error:', err);
       }
     }
   }

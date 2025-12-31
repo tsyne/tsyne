@@ -836,9 +836,10 @@ func (t *TsyneTextGrid) TypedRune(r rune) {
 }
 
 // TypedKey handles special key input (arrows, function keys, etc.)
+// Note: We implement desktop.Keyable which provides KeyDown/KeyUp with modifier support.
+// Fyne calls both TypedKey and KeyDown, so we handle events in KeyDown only to avoid duplicates.
 func (t *TsyneTextGrid) TypedKey(e *fyne.KeyEvent) {
-	// Forward to KeyDown for unified handling
-	t.KeyDown(e)
+	// No-op: KeyDown handles all key events with proper modifier support
 }
 
 // --- desktop.Keyable interface ---
@@ -848,15 +849,31 @@ func (t *TsyneTextGrid) KeyDown(e *fyne.KeyEvent) {
 		return
 	}
 
-	// Note: modifiers are handled via TypedShortcut, not KeyDown
+	// Get current modifiers from Fyne driver
+	shift := false
+	ctrl := false
+	alt := false
+	if d, ok := fyne.CurrentApp().Driver().(desktop.Driver); ok {
+		mods := d.CurrentKeyModifiers()
+		shift = mods&fyne.KeyModifierShift != 0
+		ctrl = mods&fyne.KeyModifierControl != 0
+		alt = mods&fyne.KeyModifierAlt != 0
+	}
+
+	// Skip if this is a registered shortcut (will be handled by TypedShortcut)
+	// Ctrl+Shift+C and Ctrl+Shift+V are registered shortcuts
+	if ctrl && shift && (e.Name == fyne.KeyC || e.Name == fyne.KeyV) {
+		return
+	}
+
 	t.bridge.sendEvent(Event{
 		Type: "callback",
 		Data: map[string]interface{}{
 			"callbackId": t.onKeyDownCallbackId,
 			"key":        string(e.Name),
-			"shift":      false,
-			"ctrl":       false,
-			"alt":        false,
+			"shift":      shift,
+			"ctrl":       ctrl,
+			"alt":        alt,
 		},
 	})
 }
