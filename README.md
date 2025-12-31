@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>A TypeScript wrapper for Go's excellent `Fyne` UI toolkit. Terse, elegant, interpreted, pseudo-declarative markup is made possible. Oh, and a Browser</strong>
+  <strong>An all-in-one markup and logic technology for Windows, Mac, and Linux (including Chromebook)</strong>
 </p>
 
 <p align="center">
@@ -20,7 +20,18 @@
 
 ---
 
-Tsyne brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/). There's a WYSIWYG designer tool too because I've been [thinking about that for nearly 30 years](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/) with a [Hackernews discussion](https://news.ycombinator.com/item?id=21828622).
+## What is Tsyne?
+
+**Primarily**, Tsyne is an all-in-one markup and logic technology for building desktop applications on **Windows, Mac, and Linux** (including Chromebook). It brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/).
+
+**Secondarily**, Tsyne comes bundled with:
+- **Selenium-alike testing technology** (TsyneTest) - A Playwright-inspired testing framework for headed/headless UI testing
+- **WYSIWYG designer** - A visual UI builder because I've been [thinking about that for nearly 30 years](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/) with a [Hackernews discussion](https://news.ycombinator.com/item?id=21828622)
+- **Tsyne Browser** - A dedicated browser for Tsyne pages, enabling server-driven desktop UIs
+
+**Thirdly**, there's future potential:
+- **Mobile platform possibility** - Tsyne could potentially become a third application-landscape platform alongside iOS and Android (noting that third platforms already exist: WebOS, KaiOS, HarmonyOS, etc.)
+- **iOS/Android deployment** - Tsyne apps may also be deployable to iOS and Android app stores (subject to their respective app store rules and review processes)
 
 ## Why Tsyne?
 
