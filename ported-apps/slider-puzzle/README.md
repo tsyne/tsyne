@@ -39,6 +39,8 @@ npx jest --forceExit
 ## Credits
 
 Ported from [ChrysaLisp](https://github.com/vygr/ChrysaLisp) slider app by **Chris Hinsley**.
+Portions copyright Chris Hinsley 2026
+Portions copyright Paul Hammant 2026
 
 Original source: https://github.com/vygr/ChrysaLisp/blob/master/apps/slider/app.lisp
 

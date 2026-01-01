@@ -81,6 +81,25 @@ describe('Slider Puzzle UI', () => {
     await ctx.getById('statusLabel').within(500).shouldBe(' ');
   }, 15000);
 
+  test('move and undo restores solved state', async () => {
+    const testApp = await tsyneTest.createApp((app) => {
+      createSliderPuzzleApp(app);
+    });
+    const ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Initially solved
+    await ctx.getById('statusLabel').within(500).shouldBe('SOLVED!');
+
+    // Move tile 23 (X) into blank at 24 - blank moves to 23
+    await ctx.getById('tile-23').click();
+    await ctx.getById('statusLabel').within(500).shouldBe(' ');
+
+    // Move tile at 24 (now X) back - blank returns to 24
+    await ctx.getById('tile-24').click();
+    await ctx.getById('statusLabel').within(500).shouldBe('SOLVED!');
+  }, 15000);
+
   test('status shows SOLVED! initially', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       createSliderPuzzleApp(app);
