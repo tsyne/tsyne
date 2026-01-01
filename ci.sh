@@ -501,6 +501,7 @@ test_ported_app "boing" || true
 test_ported_app "chess" || true
 test_ported_app "falling-blocks" || true
 test_ported_app "falling-letters" || true
+test_ported_app "find-pairs" || true
 test_ported_app "fyles" || true
 test_ported_app "game-of-life" "msgpack-uds" || true
 test_ported_app "image-viewer" || true
