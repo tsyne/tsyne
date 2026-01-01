@@ -506,6 +506,7 @@ test_ported_app "fyles" || true
 test_ported_app "game-of-life" "msgpack-uds" || true
 test_ported_app "image-viewer" || true
 test_ported_app "mahjongg" || true
+test_ported_app "peg-solitaire" || true
 test_ported_app "pixeledit" || true
 test_ported_app "prime-grid-visualizer" || true
 test_ported_app "slydes" || true
