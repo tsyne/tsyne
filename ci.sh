@@ -509,6 +509,7 @@ test_ported_app "pixeledit" || true
 test_ported_app "prime-grid-visualizer" || true
 test_ported_app "slydes" || true
 test_ported_app "solitaire" || true
+test_ported_app "slider-puzzle" || true
 test_ported_app "sudoku" || true
 test_ported_app "terminal" || true
 

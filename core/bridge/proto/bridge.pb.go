@@ -2763,6 +2763,8 @@ type CreateThemeOverrideRequest struct {
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
 	ChildId       string                 `protobuf:"bytes,2,opt,name=child_id,json=childId,proto3" json:"child_id,omitempty"`
 	Variant       ThemeVariant           `protobuf:"varint,3,opt,name=variant,proto3,enum=bridge.ThemeVariant" json:"variant,omitempty"`
+	Colors        map[string]string      `protobuf:"bytes,4,rep,name=colors,proto3" json:"colors,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	FontPath      string                 `protobuf:"bytes,5,opt,name=font_path,json=fontPath,proto3" json:"font_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2816,6 +2818,20 @@ func (x *CreateThemeOverrideRequest) GetVariant() ThemeVariant {
 		return x.Variant
 	}
 	return ThemeVariant_THEME_LIGHT
+}
+
+func (x *CreateThemeOverrideRequest) GetColors() map[string]string {
+	if x != nil {
+		return x.Colors
+	}
+	return nil
+}
+
+func (x *CreateThemeOverrideRequest) GetFontPath() string {
+	if x != nil {
+		return x.FontPath
+	}
+	return ""
 }
 
 type CreateInnerWindowRequest struct {
@@ -6324,17 +6340,20 @@ func (x *CreateToolbarRequest) GetItems() []*ToolbarItem {
 }
 
 type CreateTextGridRequest struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId            string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
-	Text                string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	ShowLineNumbers     bool                   `protobuf:"varint,3,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
-	ShowWhitespace      bool                   `protobuf:"varint,4,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
-	OnKeyDownCallbackId string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
-	OnKeyUpCallbackId   string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
-	OnTypedCallbackId   string                 `protobuf:"bytes,7,opt,name=on_typed_callback_id,json=onTypedCallbackId,proto3" json:"on_typed_callback_id,omitempty"`
-	OnFocusCallbackId   string                 `protobuf:"bytes,8,opt,name=on_focus_callback_id,json=onFocusCallbackId,proto3" json:"on_focus_callback_id,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId                 string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
+	Text                     string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	ShowLineNumbers          bool                   `protobuf:"varint,3,opt,name=show_line_numbers,json=showLineNumbers,proto3" json:"show_line_numbers,omitempty"`
+	ShowWhitespace           bool                   `protobuf:"varint,4,opt,name=show_whitespace,json=showWhitespace,proto3" json:"show_whitespace,omitempty"`
+	OnKeyDownCallbackId      string                 `protobuf:"bytes,5,opt,name=on_key_down_callback_id,json=onKeyDownCallbackId,proto3" json:"on_key_down_callback_id,omitempty"`
+	OnKeyUpCallbackId        string                 `protobuf:"bytes,6,opt,name=on_key_up_callback_id,json=onKeyUpCallbackId,proto3" json:"on_key_up_callback_id,omitempty"`
+	OnTypedCallbackId        string                 `protobuf:"bytes,7,opt,name=on_typed_callback_id,json=onTypedCallbackId,proto3" json:"on_typed_callback_id,omitempty"`
+	OnFocusCallbackId        string                 `protobuf:"bytes,8,opt,name=on_focus_callback_id,json=onFocusCallbackId,proto3" json:"on_focus_callback_id,omitempty"`
+	OnMouseDownCallbackId    string                 `protobuf:"bytes,9,opt,name=on_mouse_down_callback_id,json=onMouseDownCallbackId,proto3" json:"on_mouse_down_callback_id,omitempty"`
+	OnMouseMoveCallbackId    string                 `protobuf:"bytes,10,opt,name=on_mouse_move_callback_id,json=onMouseMoveCallbackId,proto3" json:"on_mouse_move_callback_id,omitempty"`
+	OnMouseUpCallbackId      string                 `protobuf:"bytes,11,opt,name=on_mouse_up_callback_id,json=onMouseUpCallbackId,proto3" json:"on_mouse_up_callback_id,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *CreateTextGridRequest) Reset() {
@@ -6423,6 +6442,27 @@ func (x *CreateTextGridRequest) GetOnFocusCallbackId() string {
 	return ""
 }
 
+func (x *CreateTextGridRequest) GetOnMouseDownCallbackId() string {
+	if x != nil {
+		return x.OnMouseDownCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTextGridRequest) GetOnMouseMoveCallbackId() string {
+	if x != nil {
+		return x.OnMouseMoveCallbackId
+	}
+	return ""
+}
+
+func (x *CreateTextGridRequest) GetOnMouseUpCallbackId() string {
+	if x != nil {
+		return x.OnMouseUpCallbackId
+	}
+	return ""
+}
+
 type CreateDesktopCanvasRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WidgetId      string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`
@@ -6476,20 +6516,22 @@ func (x *CreateDesktopCanvasRequest) GetBgColor() string {
 }
 
 type CreateDesktopIconRequest struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	WidgetId             string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`    // icon ID (Go: "id")
-	DesktopId            string                 `protobuf:"bytes,2,opt,name=desktop_id,json=desktopId,proto3" json:"desktop_id,omitempty"` // parent desktop canvas ID (Go: "desktopId")
-	Label                string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
-	X                    float32                `protobuf:"fixed32,4,opt,name=x,proto3" json:"x,omitempty"`
-	Y                    float32                `protobuf:"fixed32,5,opt,name=y,proto3" json:"y,omitempty"`
-	Color                string                 `protobuf:"bytes,6,opt,name=color,proto3" json:"color,omitempty"`                                                      // hex color for icon
-	OnClickCallbackId    string                 `protobuf:"bytes,7,opt,name=on_click_callback_id,json=onClickCallbackId,proto3" json:"on_click_callback_id,omitempty"` // "on_" prefix for click callbacks
-	OnDblClickCallbackId string                 `protobuf:"bytes,8,opt,name=on_dbl_click_callback_id,json=onDblClickCallbackId,proto3" json:"on_dbl_click_callback_id,omitempty"`
-	DragCallbackId       string                 `protobuf:"bytes,9,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"` // no "on_" prefix for drag callbacks (test convention)
-	DragEndCallbackId    string                 `protobuf:"bytes,10,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"`
-	ResourceName         string                 `protobuf:"bytes,11,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"` // Fyne theme resource name for icon (Go: "resource")
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"open.v1"`
+	WidgetId                   string                 `protobuf:"bytes,1,opt,name=widget_id,json=widgetId,proto3" json:"widget_id,omitempty"`    // icon ID (Go: "id")
+	DesktopId                  string                 `protobuf:"bytes,2,opt,name=desktop_id,json=desktopId,proto3" json:"desktop_id,omitempty"` // parent desktop canvas ID (Go: "desktopId")
+	Label                      string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
+	X                          float32                `protobuf:"fixed32,4,opt,name=x,proto3" json:"x,omitempty"`
+	Y                          float32                `protobuf:"fixed32,5,opt,name=y,proto3" json:"y,omitempty"`
+	Color                      string                 `protobuf:"bytes,6,opt,name=color,proto3" json:"color,omitempty"`                                                      // hex color for icon
+	OnClickCallbackId          string                 `protobuf:"bytes,7,opt,name=on_click_callback_id,json=onClickCallbackId,proto3" json:"on_click_callback_id,omitempty"` // "on_" prefix for click callbacks
+	OnDblClickCallbackId       string                 `protobuf:"bytes,8,opt,name=on_dbl_click_callback_id,json=onDblClickCallbackId,proto3" json:"on_dbl_click_callback_id,omitempty"`
+	DragCallbackId             string                 `protobuf:"bytes,9,opt,name=drag_callback_id,json=dragCallbackId,proto3" json:"drag_callback_id,omitempty"` // no "on_" prefix for drag callbacks (test convention)
+	DragEndCallbackId          string                 `protobuf:"bytes,10,opt,name=drag_end_callback_id,json=dragEndCallbackId,proto3" json:"drag_end_callback_id,omitempty"`
+	ResourceName               string                 `protobuf:"bytes,11,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"` // Fyne theme resource name for icon (Go: "resource")
+	OnRightClickCallbackId     string                 `protobuf:"bytes,12,opt,name=on_right_click_callback_id,json=onRightClickCallbackId,proto3" json:"on_right_click_callback_id,omitempty"`
+	OnDropReceivedCallbackId   string                 `protobuf:"bytes,13,opt,name=on_drop_received_callback_id,json=onDropReceivedCallbackId,proto3" json:"on_drop_received_callback_id,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *CreateDesktopIconRequest) Reset() {
@@ -6595,6 +6637,20 @@ func (x *CreateDesktopIconRequest) GetDragEndCallbackId() string {
 func (x *CreateDesktopIconRequest) GetResourceName() string {
 	if x != nil {
 		return x.ResourceName
+	}
+	return ""
+}
+
+func (x *CreateDesktopIconRequest) GetOnRightClickCallbackId() string {
+	if x != nil {
+		return x.OnRightClickCallbackId
+	}
+	return ""
+}
+
+func (x *CreateDesktopIconRequest) GetOnDropReceivedCallbackId() string {
+	if x != nil {
+		return x.OnDropReceivedCallbackId
 	}
 	return ""
 }

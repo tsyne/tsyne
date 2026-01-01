@@ -192,6 +192,17 @@ func (s *grpcBridgeService) CreateTextGrid(ctx context.Context, req *pb.CreateTe
 		payload["onFocusCallbackId"] = req.OnFocusCallbackId
 	}
 
+	// Map mouse callback IDs
+	if req.OnMouseDownCallbackId != "" {
+		payload["onMouseDownCallbackId"] = req.OnMouseDownCallbackId
+	}
+	if req.OnMouseMoveCallbackId != "" {
+		payload["onMouseMoveCallbackId"] = req.OnMouseMoveCallbackId
+	}
+	if req.OnMouseUpCallbackId != "" {
+		payload["onMouseUpCallbackId"] = req.OnMouseUpCallbackId
+	}
+
 	msg := Message{
 		ID:      req.WidgetId,
 		Type:    "createTextGrid",

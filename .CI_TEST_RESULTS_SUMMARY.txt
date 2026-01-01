@@ -4,12 +4,12 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                796      796        0        0  41|41|0
+Core                                806      789       17        0  42|39|3
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
 Examples: GUI                       392      371        0       21  75|69|0
-Ported: 3d-cube                     392      392        0        0    3|3|0
+Ported: 3d-cube                     392      390        2        0    3|2|1
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
 Ported: falling-letters              39       39        0        0    1|1|0
@@ -20,7 +20,7 @@ Ported: mahjongg                     47       47        0        0    2|2|0
 Ported: pixeledit                   429      429        0        0 115|115|0
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
-Ported: solitaire                   140      140        0        0    8|8|0
+Ported: solitaire                   130      130        0        0    8|7|1
 Ported: sudoku                       27       27        0        0    2|2|0
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
@@ -47,15 +47,15 @@ Larger: realtime-paris-density-simulation       12       12        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              3132     3101        0       31      306
+TOTAL                              3132     3082       19       31      307
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 92650ms (92.65s)
-Total ctx.wait() calls: 376
+Total wait time: 133650ms (133.65s)
+Total ctx.wait() calls: 447
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -71,15 +71,15 @@ Top 10 tests by wait time:
     └─ 4500ms (9 calls)
   Canvas Fill Color should render multiple overlapping canvas elements like clock
     └─ 4500ms (9 calls)
-  Mandelbrot Explorer should reset view when clicking Reset
-    └─ 4000ms (4 calls)
-  Burning Ship Explorer should reset view
-    └─ 3000ms (4 calls)
-  Mandelbrot Explorer should zoom out when clicking Zoom Out button
-    └─ 3000ms (3 calls)
-  Desktop Environment Tests should hide windows when Show Desktop is clicked
-    └─ 2700ms (18 calls)
+  Desktop Remote Control API Tests should click calculator button via /click endpoint using coordinates
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should click widget via /click endpoint
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should get desktop state via /state endpoint
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should interact with TodoMVC via remote control
+    └─ 4500ms (9 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 3101 tests passed
+❌ FAILED: 19 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

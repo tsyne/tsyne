@@ -32,7 +32,7 @@ describe('Solitaire Game Tests', () => {
 
     // Create app once for all tests
     const testApp = await tsyneTest.createApp((app) => {
-      createSolitaireApp(app, stubImageProvider);
+      createSolitaireApp(app, undefined, undefined, stubImageProvider);
     });
 
     ctx = tsyneTest.getContext();

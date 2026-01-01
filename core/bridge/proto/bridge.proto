@@ -634,6 +634,8 @@ message CreateThemeOverrideRequest {
   string widget_id = 1;
   string child_id = 2;
   ThemeVariant variant = 3;
+  map<string, string> colors = 4;  // Custom theme colors (e.g., "background": "#ffffff")
+  string font_path = 5;  // Optional custom font path
 }
 
 message CreateInnerWindowRequest {
@@ -1012,6 +1014,9 @@ message CreateTextGridRequest {
   string on_key_up_callback_id = 6;
   string on_typed_callback_id = 7;
   string on_focus_callback_id = 8;
+  string on_mouse_down_callback_id = 9;
+  string on_mouse_move_callback_id = 10;
+  string on_mouse_up_callback_id = 11;
 }
 
 // ============================================================================
@@ -1035,6 +1040,8 @@ message CreateDesktopIconRequest {
   string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (test convention)
   string drag_end_callback_id = 10;
   string resource_name = 11;  // Fyne theme resource name for icon (Go: "resource")
+  string on_right_click_callback_id = 12;
+  string on_drop_received_callback_id = 13;
 }
 
 message MoveDesktopIconRequest {

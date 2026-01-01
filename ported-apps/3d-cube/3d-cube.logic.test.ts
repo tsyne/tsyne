@@ -251,11 +251,11 @@ describe('SIDE_COLORS', () => {
 });
 
 describe('Constants', () => {
-  test('DEFAULT_CANVAS_SIZE should be 280 (phone-friendly)', () => {
-    expect(DEFAULT_CANVAS_SIZE).toBe(280);
+  test('DEFAULT_CANVAS_SIZE should be 400 (fallback value)', () => {
+    expect(DEFAULT_CANVAS_SIZE).toBe(400);
   });
 
-  test('DEFAULT_CUBE_SIZE should be 140 (half of canvas)', () => {
-    expect(DEFAULT_CUBE_SIZE).toBe(140);
+  test('DEFAULT_CUBE_SIZE should be 200 (half of canvas)', () => {
+    expect(DEFAULT_CUBE_SIZE).toBe(200);
   });
 });

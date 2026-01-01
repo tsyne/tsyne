@@ -521,14 +521,30 @@ func (s *grpcBridgeService) CreateThemeOverride(ctx context.Context, req *pb.Cre
 		variant = "dark"
 	}
 
+	payload := map[string]interface{}{
+		"id":      req.WidgetId,
+		"childId": req.ChildId,
+		"variant": variant,
+	}
+
+	// Pass colors if provided
+	if len(req.Colors) > 0 {
+		colors := make(map[string]interface{})
+		for k, v := range req.Colors {
+			colors[k] = v
+		}
+		payload["colors"] = colors
+	}
+
+	// Pass font path if provided
+	if req.FontPath != "" {
+		payload["fontPath"] = req.FontPath
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createThemeOverride",
-		Payload: map[string]interface{}{
-			"id":      req.WidgetId,
-			"childId": req.ChildId,
-			"variant": variant,
-		},
+		ID:      req.WidgetId,
+		Type:    "createThemeOverride",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateThemeOverride(msg)

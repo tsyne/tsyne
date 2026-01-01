@@ -19,12 +19,12 @@ import * as path from 'path';
 import * as http from 'http';
 
 // Mock apps for testing - using valid complete SVGs
+// Note: No category so they appear as standalone icons (not grouped in folders)
 const mockCalculatorApp: AppMetadata = {
   filePath: path.resolve(__dirname, '../../examples/calculator.ts'),
   name: 'Calculator',
   icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="7" x2="16" y2="7"></line></svg>',
   iconIsSvg: true,
-  category: 'utilities',
   builder: 'buildCalculator',
   count: 'desktop-many',
   args: ['app'],
@@ -35,7 +35,6 @@ const mockTodoMvcApp: AppMetadata = {
   name: 'TodoMVC',
   icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg>',
   iconIsSvg: true,
-  category: 'productivity',
   builder: 'createTodoApp',
   count: 'one',
   args: ['app'],

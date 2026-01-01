@@ -158,7 +158,8 @@ function parseProtoFile(protoPath: string): Map<string, ProtoMessage> {
 
     const fields: ProtoField[] = [];
     // Match field definitions: type name = number;
-    const fieldRegex = /^\s*(?:repeated\s+)?(\w+)\s+(\w+)\s*=\s*(\d+)/gm;
+    // Also handles map<K,V> types and repeated fields
+    const fieldRegex = /^\s*(?:repeated\s+)?((?:map<[^>]+>|\w+))\s+(\w+)\s*=\s*(\d+)/gm;
     let fieldMatch;
 
     while ((fieldMatch = fieldRegex.exec(body)) !== null) {

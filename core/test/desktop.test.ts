@@ -17,12 +17,12 @@ import { AppMetadata } from '../src/app-metadata';
 import * as path from 'path';
 
 // Mock calculator app for fast testing (avoids scanning directories)
+// Note: No category so it appears as a standalone icon (not grouped in a folder)
 const mockCalculatorApp: AppMetadata = {
   filePath: path.resolve(__dirname, '../../examples/calculator.ts'),
   name: 'Calculator',
   icon: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
   iconIsSvg: true,
-  category: 'utilities',
   builder: 'buildCalculator',
   count: 'desktop-many',
   args: ['app'],
