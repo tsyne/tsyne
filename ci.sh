@@ -513,7 +513,9 @@ test_ported_app "slydes" || true
 test_ported_app "solitaire" || true
 test_ported_app "slider-puzzle" || true
 test_ported_app "sudoku" || true
+test_ported_app "tango-puzzle" || true
 test_ported_app "terminal" || true
+test_ported_app "zip-puzzle" || true
 
 set -e  # Re-enable exit-on-error
 
