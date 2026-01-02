@@ -498,6 +498,7 @@ test_ported_app "ebooks" || true
 # Game/Utility Ports
 test_ported_app "3d-cube" || true
 test_ported_app "boing" || true
+test_ported_app "calcudoku" || true
 test_ported_app "chess" || true
 test_ported_app "falling-blocks" || true
 test_ported_app "falling-letters" || true
