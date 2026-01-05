@@ -8,7 +8,7 @@
     "watch": "tsc --watch",
     "start": "node dist/server.js",
     "dev": "tsc && node dist/server.js",
-    "test": "npm run test:unit && npm run test:gui",
+    "test": "pnpm run test:unit && pnpm run test:gui",
     "test:unit": "jest --testMatch='**/__tests__/unit/**/*.test.ts'",
     "test:roundtrip": "jest --runInBand --testMatch='**/__tests__/roundtrip/**/*.test.ts'",
     "test:gui": "jest --testMatch='**/__tests__/gui/**/*.test.ts'",
