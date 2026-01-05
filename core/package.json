@@ -5,9 +5,9 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "tsc && make -C bridge build",
+    "build": "tsc && pnpm -C bridge run build",
     "build:ts": "tsc",
-    "build:bridge": "make -C bridge build",
+    "build:bridge": "pnpm -C bridge run build",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",

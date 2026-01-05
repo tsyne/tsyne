@@ -4,8 +4,8 @@
   "description": "Phone-style apps for Tsyne",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "pnpm -r test --filter=!phone-apps",
+    "test:watch": "pnpm -r test:watch --filter=!phone-apps"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

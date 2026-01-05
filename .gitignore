@@ -2,6 +2,7 @@
 node_modules/
 dist/
 bin/
+package-lock.json
 *.log
 *.log.tmp.*
 .DS_Store
