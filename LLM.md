@@ -106,7 +106,7 @@ class Store {
 **Test Template:**
 - Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5)
 - Copy test to `core/src/__tests__/ported-apps/[app]/index.test.ts` with updated import path
-- Run: `npm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
+- Run: `pnpm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
 
 **Files to Create:**
 1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
@@ -192,7 +192,7 @@ const test = new TsyneBrowserTest({ headed: false });
 // test.page methods like Playwright
 ```
 
-**Run:** `npm test` or `TSYNE_HEADED=1 npm test examples/todomvc.test.ts`
+**Run:** `pnpm test` or `TSYNE_HEADED=1 pnpm test examples/todomvc.test.ts`
 
 ### TsyneTest Do's and Don'ts
 
@@ -784,13 +784,15 @@ apt-get install -y libgl1-mesa-dev xorg-dev libxrandr-dev
 cd /home/user/tsyne/core/bridge
 env CGO_ENABLED=1 GOPROXY=direct go build -o ../bin/tsyne-bridge .
 
-# Step 3: Install npm dependencies
+# Step 3: Enable pnpm and install dependencies
+corepack enable
+corepack prepare pnpm@latest --activate
 cd /home/user/tsyne
-npm install --ignore-scripts
+pnpm install --ignore-scripts
 
 # Step 4: Build and test
-npm run build
-npm test
+pnpm run build
+pnpm test
 ```
 
 ### Standard Environments (Full Network Access)
@@ -798,11 +800,11 @@ npm test
 If you have unrestricted network access:
 
 ```bash
-npm install
+pnpm install
 cd bridge && go build -o ../bin/tsyne-bridge && cd ..
-npm run build
+pnpm run build
 node examples/hello.js
-npm test
+pnpm test
 ```
 
 **IMPORTANT:** DO NOT BUILD `tsyne-bridge` anywhere else - it goes into `bin/` only.
@@ -812,7 +814,7 @@ npm test
 **CRITICAL: No compiled JavaScript in src/ directory**
 
 - TypeScript source files live in `src/` (`.ts` files only)
-- Compiled output goes to `dist/` directory only (via `npm run build`)
+- Compiled output goes to `dist/` directory only (via `pnpm run build`)
 - **NEVER** have `.js` or `.d.ts` files in the `src/` tree
 - Use `npx tsx` for running applications (compiles on-the-fly with esbuild)
 - This applies to both development AND production - tsx is used everywhere
@@ -822,7 +824,7 @@ npm test
 - When `.js` files exist in `src/`, Node.js/tsx loads them instead of compiling `.ts` files
 - This causes stale code issues where your TypeScript changes don't take effect
 - The project depends on tsx on-the-fly compilation, not pre-compiled artifacts
-- `npm run build` creates `dist/` for distribution, but runtime uses tsx
+- `pnpm run build` creates `dist/` for distribution, but runtime uses tsx
 
 **If you find `.js` files in src/:**
 ```bash

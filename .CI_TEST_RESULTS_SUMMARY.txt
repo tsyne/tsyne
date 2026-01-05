@@ -22,6 +22,7 @@ Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   130      130        0        0    8|7|1
 Ported: sudoku                       27       27        0        0    2|2|0
+Ported: terminal                      0        0        0        0    1|0|1
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
 Phone: clock                          4        4        0        0    1|1|0
@@ -47,38 +48,38 @@ Larger: realtime-paris-density-simulation       12       12        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              3132     3082       19       31      307
+TOTAL                              3132     3082       19       31      308
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 31 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 133650ms (133.65s)
-Total ctx.wait() calls: 447
+Total wait time: 1900ms (1.90s)
+Total ctx.wait() calls: 38
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
-  Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
-    └─ 4500ms (9 calls)
-  Canvas Fill Color should draw vertical line from center downward
-    └─ 4500ms (9 calls)
-  Canvas Fill Color should fill a circle with specified color
-    └─ 4500ms (9 calls)
-  Canvas Fill Color should fill a rectangle with specified color
-    └─ 4500ms (9 calls)
-  Canvas Fill Color should fill circle with light gray like clock face
-    └─ 4500ms (9 calls)
-  Canvas Fill Color should render multiple overlapping canvas elements like clock
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should click calculator button via /click endpoint using coordinates
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should click widget via /click endpoint
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should get desktop state via /state endpoint
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should interact with TodoMVC via remote control
-    └─ 4500ms (9 calls)
+  Calculator Tests should handle chain operations
+    └─ 300ms (6 calls)
+  Calculator Tests should clear display
+    └─ 200ms (4 calls)
+  Calculator Tests should handle decimal numbers
+    └─ 200ms (4 calls)
+  Calculator Tests should handle division by zero
+    └─ 200ms (4 calls)
+  Calculator Tests should perform addition
+    └─ 200ms (4 calls)
+  Calculator Tests should perform division
+    └─ 200ms (4 calls)
+  Calculator Tests should perform multiplication
+    └─ 200ms (4 calls)
+  Calculator Tests should perform subtraction
+    └─ 200ms (4 calls)
+  Calculator Tests should handle multiple digit input
+    └─ 150ms (3 calls)
+  Calculator Tests should handle single digit input
+    └─ 50ms (1 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ FAILED: 19 tests failed
 

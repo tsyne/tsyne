@@ -8,7 +8,7 @@ Read LLM.md for info about the project/repo
 
 Always use:
 ```bash
-npm run build:bridge
+pnpm run build:bridge
 ```
 
 This builds to `bin/tsyne-bridge` which is where `./scripts/tsyne` looks for it.

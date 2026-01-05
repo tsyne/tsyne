@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm run build:bridge && pnpm run build:core",
-    "build:bridge": "pnpm -C core/bridge run build",
+    "build:bridge": "cd core/bridge && go build -o ../bin/tsyne-bridge .",
     "build:core": "pnpm -C core run build",
     "build:designer": "pnpm -C designer run build",
     "build:all": "pnpm run build && pnpm run build:designer",

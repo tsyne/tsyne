@@ -383,9 +383,9 @@ class TsyneWindow {
     File = (globalThis as unknown as Record<string, unknown>).File ?? class {};
     FileReader = (globalThis as unknown as Record<string, unknown>).FileReader ?? class {};
     FormData = (globalThis as unknown as Record<string, unknown>).FormData ?? class {};
-    Headers = globalThis.Headers;
-    Request = globalThis.Request;
-    Response = globalThis.Response;
+    Headers: typeof globalThis.Headers = globalThis.Headers;
+    Request: typeof globalThis.Request = globalThis.Request;
+    Response: typeof globalThis.Response = globalThis.Response;
     fetch = globalThis.fetch;
     AbortController = globalThis.AbortController;
 }

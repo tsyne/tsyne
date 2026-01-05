@@ -266,7 +266,26 @@ if ! command -v node &> /dev/null; then
   fi
 fi
 node --version
-npm --version
+
+# ============================================================================
+# Install pnpm (check if available, otherwise use npx wrapper)
+# ============================================================================
+echo "--- :package: Setting up pnpm"
+if command -v pnpm &> /dev/null; then
+  echo "pnpm already available ✓"
+  PNPM="pnpm"
+elif [ "$(id -u)" -eq 0 ]; then
+  # Running as root (CI environment) - use corepack
+  echo "Enabling pnpm via corepack..."
+  corepack enable
+  corepack prepare pnpm@latest --activate
+  PNPM="pnpm"
+else
+  # Running as non-root (local) - use npx wrapper
+  echo "Using npx pnpm (no global install needed)..."
+  PNPM="npx pnpm"
+fi
+$PNPM --version
 
 # ============================================================================
 # Install Go 1.24.x if not already present
@@ -338,8 +357,8 @@ fi
 # ============================================================================
 echo "--- :nodejs: Core - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
-npm install --ignore-scripts
-npm run build
+$PNPM install --ignore-scripts
+$PNPM run build
 
 echo "--- :test_tube: Core - Unit Tests"
 # Check if headed mode is requested
@@ -370,7 +389,7 @@ else
   fi
 fi
 
-timeout 600 npm run test:unit -- --json --outputFile=/tmp/core-test-results.json || {
+timeout 600 $PNPM run test:unit --json --outputFile=/tmp/core-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Core unit tests timed out after 600 seconds"
@@ -386,14 +405,14 @@ capture_test_results "Core" "/tmp/core-test-results.json" || true
 echo "--- :art: Designer - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
-  npm install --ignore-scripts
-  npm run build || {
+  $PNPM install --ignore-scripts
+  $PNPM run build || {
     echo "❌ Designer build failed"
     exit 1
   }
 
   echo "--- :test_tube: Designer - Unit Tests"
-  timeout 90 npm run test:unit -- --json --outputFile=/tmp/designer-unit-test-results.json || {
+  timeout 90 $PNPM run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Designer unit tests timed out after 90 seconds"
@@ -404,7 +423,7 @@ if [ -f "package.json" ]; then
   capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
 
   echo "--- :test_tube: Designer - GUI Tests"
-  timeout 90 npm run test:gui -- --json --outputFile=/tmp/designer-gui-test-results.json || {
+  timeout 90 $PNPM run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Designer GUI tests timed out after 90 seconds"
@@ -422,10 +441,10 @@ fi
 # ============================================================================
 echo "--- :bulb: Examples - Install & Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
-npm install --ignore-scripts
+$PNPM install --ignore-scripts
 
 echo "--- :test_tube: Examples - Logic Tests"
-timeout 150 npm run test:logic -- --json --outputFile=/tmp/examples-logic-test-results.json || {
+timeout 150 $PNPM run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Examples logic tests timed out after 150 seconds"
@@ -436,7 +455,7 @@ timeout 150 npm run test:logic -- --json --outputFile=/tmp/examples-logic-test-r
 capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
 echo "--- :test_tube: Examples - GUI Tests"
-timeout 150 npm run test:gui -- --json --outputFile=/tmp/examples-gui-test-results.json || {
+timeout 150 $PNPM run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Examples GUI tests timed out after 150 seconds"
@@ -455,7 +474,7 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 # Install root ported-apps dependencies (shared by all apps)
 if [ -f "package.json" ]; then
   echo "Installing ported-apps shared dependencies..."
-  npm install --ignore-scripts
+  $PNPM install --ignore-scripts
 fi
 
 # Helper function to build and test a ported app
@@ -467,15 +486,15 @@ test_ported_app() {
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
   # Clean corrupted node_modules to avoid tar extraction errors
   rm -rf node_modules
-  npm install --ignore-scripts
+  $PNPM install --ignore-scripts
   if [ -n "$bridge_mode" ]; then
     echo "Using bridge mode: $bridge_mode"
-    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 npm test -- --json --outputFile="$json_file" || {
+    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 $PNPM test --json --outputFile="$json_file" || {
       capture_test_results "Ported: ${app_name}" "$json_file"
       return 1
     }
   else
-    timeout 300 npm test -- --json --outputFile="$json_file" || {
+    timeout 300 $PNPM test --json --outputFile="$json_file" || {
       capture_test_results "Ported: ${app_name}" "$json_file"
       return 1
     }
@@ -540,8 +559,8 @@ test_phone_app() {
   cd "${app_dir}"
   # Clean corrupted node_modules to avoid tar extraction errors
   rm -rf node_modules
-  npm install --ignore-scripts
-  timeout 300 npm test -- --json --outputFile="$json_file" || {
+  $PNPM install --ignore-scripts
+  timeout 300 $PNPM test --json --outputFile="$json_file" || {
     capture_test_results "Phone: ${app_name}" "$json_file"
     return 1
   }
@@ -599,8 +618,8 @@ test_larger_app() {
   cd "${app_dir}"
   # Clean corrupted node_modules to avoid tar extraction errors
   rm -rf node_modules
-  npm install --ignore-scripts
-  timeout 300 npm test -- --json --outputFile="$json_file" || {
+  $PNPM install --ignore-scripts
+  timeout 300 $PNPM test --json --outputFile="$json_file" || {
     capture_test_results "Larger: ${app_name}" "$json_file"
     return 1
   }
