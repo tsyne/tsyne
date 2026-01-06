@@ -14,6 +14,10 @@
  * Portions Copyright Paul Hammant 2026
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
 // ============================================================================
 // DATA MODELS & TYPES
 // ============================================================================
@@ -78,6 +82,17 @@ export class AranetStore {
   private autoRefreshTimer: NodeJS.Timeout | null = null;
   private availableDevices: Aranet4Device[] = [];
   private selectedDeviceId: string | null = null;
+  private stateFilePath: string;
+  private persistenceEnabled: boolean;
+
+  constructor(stateFilePath?: string) {
+    // Default state file location: ~/.tsyne/aranet-devices.json
+    this.stateFilePath = stateFilePath || path.join(os.homedir(), '.tsyne', 'aranet-devices.json');
+    this.persistenceEnabled = stateFilePath !== null; // Allow disabling persistence if explicitly null
+
+    // Load persisted state
+    this.loadState();
+  }
 
   // Subscribe to store changes
   subscribe(listener: ChangeListener): () => void {
@@ -95,6 +110,13 @@ export class AranetStore {
 
   // ========== Device Discovery ==========
   async discoverDevices(): Promise<void> {
+    // Use persisted devices if available, otherwise discover new ones
+    if (this.availableDevices.length > 0) {
+      // Already have devices loaded from state
+      this.notifyChange();
+      return;
+    }
+
     // Simulate device discovery
     const devices: Aranet4Device[] = [
       { id: 'aranet-001', name: 'Living Room', location: 'Living Room', discovered: new Date() },
@@ -106,6 +128,7 @@ export class AranetStore {
     if (!this.selectedDeviceId && devices.length > 0) {
       this.selectedDeviceId = devices[0].id;
     }
+    this.saveState();
     this.notifyChange();
   }
 
@@ -131,7 +154,59 @@ export class AranetStore {
       if (this.connectionStatus !== ConnectionStatus.Disconnected) {
         this.disconnect();
       }
+      this.saveState();
       this.notifyChange();
+    }
+  }
+
+  // ========== State Persistence ==========
+  private saveState(): void {
+    if (!this.persistenceEnabled) return;
+
+    try {
+      const dir = path.dirname(this.stateFilePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const state = {
+        devices: this.availableDevices,
+        selectedDeviceId: this.selectedDeviceId,
+        version: 1,
+      };
+
+      fs.writeFileSync(this.stateFilePath, JSON.stringify(state, null, 2), 'utf8');
+    } catch (error) {
+      // Non-critical - silently ignore persistence failures
+      console.error('Failed to save Aranet state:', error);
+    }
+  }
+
+  private loadState(): void {
+    if (!this.persistenceEnabled) return;
+
+    try {
+      if (fs.existsSync(this.stateFilePath)) {
+        const data = fs.readFileSync(this.stateFilePath, 'utf8');
+        const state: any = JSON.parse(data);
+
+        if (state.version === 1) {
+          // Restore devices with proper dates
+          if (state.devices && Array.isArray(state.devices)) {
+            this.availableDevices = state.devices.map((d: any) => ({
+              ...d,
+              discovered: new Date(d.discovered),
+            }));
+          }
+          // Restore selected device
+          if (state.selectedDeviceId) {
+            this.selectedDeviceId = state.selectedDeviceId;
+          }
+        }
+      }
+    } catch (error) {
+      // Non-critical - continue with defaults on load failure
+      console.error('Failed to load Aranet state:', error);
     }
   }
 

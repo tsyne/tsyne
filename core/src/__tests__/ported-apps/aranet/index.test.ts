@@ -18,7 +18,8 @@ describe('Aranet4Store (Core Build)', () => {
   let store: AranetStore;
 
   beforeEach(() => {
-    store = new AranetStore();
+    // Disable persistence for tests by passing null (prevents loading ~/.tsyne/aranet-devices.json)
+    store = new AranetStore(null as any);
   });
 
   afterEach(() => {

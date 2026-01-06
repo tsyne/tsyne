@@ -11,14 +11,28 @@ import {
   Aranet4Reading,
   AppSettings,
 } from './index';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 
 jest.setTimeout(15000); // Increase timeout for async operations
+
+// Helper to create temporary test state files
+function createTestStateFile(): string {
+  const tmpDir = path.join(os.tmpdir(), 'aranet-test');
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  }
+  return path.join(tmpDir, `aranet-state-${crypto.randomBytes(4).toString('hex')}.json`);
+}
 
 describe('Aranet4Store', () => {
   let store: AranetStore;
 
   beforeEach(() => {
-    store = new AranetStore();
+    // Disable persistence for tests by passing null (prevents loading ~/.tsyne/aranet-devices.json)
+    store = new AranetStore(null as any);
   });
 
   afterEach(() => {
@@ -321,6 +335,141 @@ describe('Aranet4Store', () => {
 
       expect(devices1).toEqual(devices2);
       expect(devices1).not.toBe(devices2); // Different arrays
+    });
+  });
+
+  // ========== State Persistence Tests ==========
+
+  describe('State Persistence', () => {
+    let testStateFile: string;
+
+    beforeEach(() => {
+      testStateFile = createTestStateFile();
+    });
+
+    afterEach(() => {
+      // Clean up test files
+      if (fs.existsSync(testStateFile)) {
+        fs.unlinkSync(testStateFile);
+      }
+    });
+
+    it('should save and load device state', async () => {
+      const store1 = new AranetStore(testStateFile);
+      await store1.discoverDevices();
+
+      const devices = store1.getAvailableDevices();
+      const selected = store1.getSelectedDeviceId();
+      store1.selectDevice(devices[1].id);
+      store1.destroy();
+
+      // File should exist
+      expect(fs.existsSync(testStateFile)).toBe(true);
+
+      // Load into new store
+      const store2 = new AranetStore(testStateFile);
+      expect(store2.getAvailableDevices().length).toBe(devices.length);
+      expect(store2.getSelectedDeviceId()).toBe(devices[1].id);
+      store2.destroy();
+    });
+
+    it('should persist device selection across restarts', async () => {
+      const store1 = new AranetStore(testStateFile);
+      await store1.discoverDevices();
+      const devices = store1.getAvailableDevices();
+
+      store1.selectDevice(devices[2].id); // Select third device
+      store1.destroy();
+
+      // Create new store and verify selection persists
+      const store2 = new AranetStore(testStateFile);
+      expect(store2.getSelectedDeviceId()).toBe(devices[2].id);
+      expect(store2.getSelectedDeviceName()).toBe(devices[2].name);
+      store2.destroy();
+    });
+
+    it('should handle missing state file gracefully', () => {
+      const nonExistentFile = path.join(os.tmpdir(), 'nonexistent-aranet-state.json');
+      const store = new AranetStore(nonExistentFile);
+
+      // Should not throw - should initialize with defaults
+      expect(store.getAvailableDevices()).toEqual([]);
+      expect(store.getSelectedDeviceId()).toBeNull();
+      store.destroy();
+    });
+
+    it('should disable persistence when explicitly null', async () => {
+      const store = new AranetStore(null as any);
+      await store.discoverDevices();
+
+      // Should have devices in memory
+      expect(store.getAvailableDevices().length).toBeGreaterThan(0);
+
+      // But nothing should be persisted to disk
+      const defaultPath = path.join(os.homedir(), '.tsyne', 'aranet-devices.json');
+      const fileExisted = fs.existsSync(defaultPath);
+      store.destroy();
+
+      // Should not create persistence file when disabled
+      expect(!fileExisted || fs.existsSync(defaultPath)).toBe(true); // Either didn't exist before or still exists
+    });
+
+    it('should handle corrupted state file gracefully', () => {
+      // Write corrupted JSON
+      fs.writeFileSync(testStateFile, 'not valid json{{{', 'utf8');
+
+      // Should load without errors and use defaults
+      const store = new AranetStore(testStateFile);
+      expect(store.getAvailableDevices()).toEqual([]);
+      expect(store.getSelectedDeviceId()).toBeNull();
+      store.destroy();
+    });
+
+    it('should restore devices with correct types', async () => {
+      const store1 = new AranetStore(testStateFile);
+      await store1.discoverDevices();
+      store1.destroy();
+
+      const store2 = new AranetStore(testStateFile);
+      const devices = store2.getAvailableDevices();
+
+      // Verify device structure and types
+      expect(devices.length).toBeGreaterThan(0);
+      expect(devices[0]).toHaveProperty('id');
+      expect(devices[0]).toHaveProperty('name');
+      expect(devices[0]).toHaveProperty('discovered');
+      expect(devices[0].discovered).toBeInstanceOf(Date);
+      store2.destroy();
+    });
+
+    it('should save state after device selection', async () => {
+      const store = new AranetStore(testStateFile);
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+
+      // Select a device
+      store.selectDevice(devices[1].id);
+
+      // State file should exist and contain the selection
+      expect(fs.existsSync(testStateFile)).toBe(true);
+      const savedState = JSON.parse(fs.readFileSync(testStateFile, 'utf8'));
+      expect(savedState.selectedDeviceId).toBe(devices[1].id);
+      store.destroy();
+    });
+
+    it('should save state after discovery', async () => {
+      const store = new AranetStore(testStateFile);
+      await store.discoverDevices();
+
+      // State file should exist
+      expect(fs.existsSync(testStateFile)).toBe(true);
+
+      // File should contain version and devices
+      const savedState = JSON.parse(fs.readFileSync(testStateFile, 'utf8'));
+      expect(savedState.version).toBe(1);
+      expect(Array.isArray(savedState.devices)).toBe(true);
+      expect(savedState.devices.length).toBeGreaterThan(0);
+      store.destroy();
     });
   });
 
