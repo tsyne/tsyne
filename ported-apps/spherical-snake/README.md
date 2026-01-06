@@ -289,6 +289,203 @@ Potential improvements to the port:
 | Type Safety | None | Full TypeScript |
 | Cross-Platform | Web only | Desktop (Windows/Mac/Linux) |
 
+## Proposed Tsyne Enhancements
+
+While this game doesn't require any framework changes, the Tsyne team might consider these optional enhancements for future ported applications. Each addresses specific use cases where performance or developer experience could be improved.
+
+### 1. Canvas Transform API
+
+**Proposal:** Add built-in rotation, skew, and scale transformations to CanvasRaster
+
+```typescript
+interface CanvasTransform {
+  rotateZ?: number;        // degrees or radians
+  scaleX?: number;
+  scaleY?: number;
+  skewX?: number;
+  skewY?: number;
+  translateX?: number;
+  translateY?: number;
+}
+
+await canvas.setTransform(transform);
+```
+
+**Why Optional:** SphericalSnake uses software 3D projection which is simpler and more flexible.
+
+**Priority:** Low - Software transforms are sufficient for most games
+
+**Showcase Applications:**
+- **Isometric RPG (top-down tactical)** - Rotate and scale map tiles for isometric view
+  - Example: `setTransform({ skewX: 30, scaleY: 0.5 })` for isometric grid
+  - Benefits: Simpler code than manual projection
+  - Trade-off: Less control over non-affine transforms
+
+- **Sprite Rotation Game** - Rotate individual entities without pixel-level manipulation
+  - Example: Fighter game with rotating player character
+  - Benefits: Hardware-accelerated if available, simpler than matrix math
+  - Trade-off: Limited to affine transforms
+
+- **Turntable UI Widget** - Rotating menu or image carousel
+  - Example: Album cover selector or 360° product viewer
+  - Benefits: Smoother animations, consistent frame rate
+  - Trade-off: API complexity
+
+### 2. Dirty Rectangle Optimization
+
+**Proposal:** Add partial buffer update support for large canvases
+
+```typescript
+// Update only a specific region (dirty rectangle)
+await canvas.setPixelBuffer(buffer, {
+  x: 100,
+  y: 100,
+  width: 200,
+  height: 150
+});
+```
+
+**Why Optional:** SphericalSnake's 400×300 canvas fits entire buffer in budget (3-4ms). Only needed for very large displays.
+
+**Priority:** Low - Full buffer updates are fast enough for typical canvas sizes
+
+**Showcase Applications:**
+- **Large Paint Application** (4K monitor, 3840×2160)
+  - Current approach: 33MB buffer per frame
+  - With dirty rects: ~5-10MB for typical brush stroke
+  - Benefit: 3-5x faster updates for sparse painting
+  - Cost: Buffer management complexity
+
+- **Scientific Visualization** - Animated particle systems on huge grids
+  - Example: Climate simulation rendering 2000×2000 particle field
+  - Benefit: Skip unchanged regions (sky, static background)
+  - Cost: Tracking which regions changed
+
+- **CAD/Architecture App** - Pan and zoom with incremental updates
+  - Example: Building floor plan editor
+  - Benefit: Update only viewport after pan/zoom
+  - Cost: Viewport clipping logic
+
+- **Real-time Video Playback** (non-standard, but possible)
+  - Example: Terminal recording playback in Tsyne
+  - Benefit: Only update changed lines of text
+  - Cost: Line tracking complexity
+
+### 3. Shared Memory Buffers
+
+**Proposal:** Allow direct shared memory or memory-mapped file access for large buffers
+
+```typescript
+// Option A: Direct Uint8Array access (potential race conditions)
+const buffer = await canvas.getSharedBuffer(width, height);
+buffer.set(pixelData);  // Direct access, no IPC
+await canvas.refresh();
+
+// Option B: Safer streaming API
+const stream = canvas.getPixelStream(1024);  // Chunks of 1KB
+for (const chunk of pixelData) {
+  stream.write(chunk);
+}
+await stream.close();
+```
+
+**Why Optional:** JSON encoding is already fast; savings are marginal (1-2ms) and risk is high.
+
+**Priority:** Very Low - JSON encoding overhead acceptable, adds platform-specific complexity
+
+**Risk Assessment:** Race conditions, platform inconsistency (Windows/Mac/Linux mmap differences)
+
+**Showcase Applications:**
+- **Video Editing Application** - 1080p (1920×1080 × 4 bytes) = 8.3MB per frame
+  - Current: Base64 encoding adds 33% = 11MB over IPC
+  - With shared memory: Direct access, no encoding
+  - Benefit: Save 1-2ms on transport
+  - Risk: Must synchronize edits carefully, race conditions possible
+  - Verdict: Probably not worth the risk for 1-2ms savings
+
+- **3D Modeling/Rendering** - Progressive ray-traced rendering
+  - Example: Blender-like 3D viewer
+  - Scenario: Render in chunks (top to bottom)
+  - Benefit: Stream results as available, don't wait for full render
+  - Risk: Synchronization complexity
+
+- **Scientific Simulation** - Monte Carlo particle renderer
+  - Example: Physics simulation visualization
+  - Scenario: Render takes 100ms, want partial updates at 20ms intervals
+  - Benefit: Stream intermediate results
+  - Risk: If simulation and rendering race, image corruption
+
+- **Real-time Neural Network Visualization** - Live activation maps
+  - Example: TensorFlow model inspector
+  - Scenario: 8K feature map visualization (multiple channels)
+  - Benefit: Stream layer activations as computed
+  - Risk: Timing synchronization hard to get right
+
+### 4. Z-Buffer / Depth Sorting API
+
+**Proposal:** Built-in depth buffering and automatic Z-order handling
+
+```typescript
+// Option A: Automatic z-ordering with explicit depth
+canvas.setZOrder('auto');  // Enable z-buffering
+canvas.drawCircle(x, y, r, color, z);  // z parameter
+
+// Option B: Layer-based API
+const layer1 = canvas.createLayer('background');
+const layer2 = canvas.createLayer('units');
+const layer3 = canvas.createLayer('ui');
+
+await layer1.drawImage(background);
+await layer2.drawCircles(units);  // Auto z-sorted
+await layer3.drawText(stats);
+```
+
+**Why Optional:** Painter's algorithm (sort by depth, draw back-to-front) is simple and works well for 2D.
+
+**Priority:** Very Low - Only needed for complex 3D rendering or many overlapping elements
+
+**Showcase Applications:**
+- **Strategy Game** - Isometric units with proper occlusion
+  - Example: Total War or Civilization-style 4X game
+  - Scenario: 100+ units on isometric grid, some behind terrain
+  - Current approach: Manual depth sorting by Y-coordinate
+  - With Z-buffer: Automatic depth ordering
+  - Benefit: More intuitive, fewer z-fighting artifacts
+  - Cost: Additional memory (z-buffer), complexity
+
+- **Layered UI System** - Complex overlapping panels
+  - Example: Multi-window desktop simulator
+  - Scenario: Windows, tooltips, menus overlapping
+  - Benefit: Automatic layering without manual depth tracking
+  - Cost: Z-fighting edge cases (same depth, different drawing order)
+
+- **Particle Effect Compositor** - Fire, smoke, sparks overlays
+  - Example: Game engine particle system
+  - Scenario: 1000+ particles at various depths
+  - Current: Draw in order (back to front)
+  - With Z-buffer: Out-of-order drawing, automatic sorting
+  - Benefit: More natural effect ordering
+  - Cost: Memory overhead, minor GPU cost
+
+- **3D Graph Visualization** - Node-link diagrams with 3D layout
+  - Example: Network topology viewer
+  - Scenario: Nodes at different Z depths, interconnected
+  - Benefit: Automatic occlusion handling
+  - Cost: Complexity of 3D depth calculation
+
+---
+
+## Summary: When to Use Each Enhancement
+
+| Enhancement | SphericalSnake | Use It If | Skip If |
+|-------------|-----------------|-----------|---------|
+| **Transform API** | ❌ Not needed | Need rotation/skew, < 10 transforms/frame | Using software 3D, performance critical |
+| **Dirty Rects** | ❌ Not needed | Canvas > 1920×1080, sparse updates | < 500×500 canvas, full re-render each frame |
+| **Shared Memory** | ❌ Not needed | Buffer > 20MB, 100+ FPS critical, low-level access OK | JSON encoding acceptable, < 10MB buffers |
+| **Z-Buffer** | ❌ Not needed | Complex occlusion, 100+ overlapping objects | Painter's algorithm works, < 50 depth layers |
+
+**Recommendation for Tsyne:** Keep current minimal design. None of these enhancements are needed for typical applications. Add them only if a critical use case demands them and the benefit outweighs the added complexity.
+
 ## License
 
 This port is licensed under the **MIT License**.
