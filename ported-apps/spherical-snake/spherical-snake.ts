@@ -10,10 +10,7 @@
  * @tsyne-app:args (a: App) => void
  */
 
-import { App } from '../../src/app';
-import { Window } from '../../src/window';
-import { TappableCanvasRaster } from '../../src/widgets/canvas';
-import { Label } from '../../src/widgets/display';
+import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';
 
 // ============================================================================
 // 3D Math Types & Utilities
@@ -186,8 +183,8 @@ export class SphericalSnake {
   private changeListeners: ChangeListener[] = [];
 
   private focalLength = 200;
-  private canvasWidth = 400;
-  private canvasHeight = 300;
+  private canvasWidth = 450;
+  private canvasHeight = 450;
 
   constructor() {
     this.init();
@@ -196,9 +193,22 @@ export class SphericalSnake {
   private init(): void {
     this.sphereGrid = generateSphereGrid(GRID_POINT_COUNT);
     this.snake = [];
+
+    // Initialize snake nodes spread apart along a great circle
     for (let i = 0; i < 8; i++) {
-      this.addSnakeNode();
+      const angle = i * NODE_ANGLE * 2; // Spread nodes apart
+      const snakeNode: SnakeNode = {
+        x: Math.sin(angle),
+        y: 0,
+        z: -Math.cos(angle),
+        posQueue: []
+      };
+      for (let j = 0; j < NODE_QUEUE_SIZE; j++) {
+        snakeNode.posQueue.push(null);
+      }
+      this.snake.push(snakeNode);
     }
+
     this.regeneratePellet();
   }
 
@@ -426,7 +436,7 @@ export function buildSphericalSnakeApp(a: App): void {
   let statusLabel: Label;
   let gameLoop: NodeJS.Timeout | null = null;
 
-  a.window({ title: 'Spherical Snake', width: 650, height: 500 }, (win) => {
+  a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Spherical Snake').withId('title');
@@ -483,25 +493,27 @@ export function buildSphericalSnakeApp(a: App): void {
         canvasSize.width * canvasSize.height * 4
       );
 
-      // Fill background (black)
+      // Fill background (light gray like original)
       for (let i = 0; i < buffer.length; i += 4) {
-        buffer[i] = 0; // R
-        buffer[i + 1] = 0; // G
-        buffer[i + 2] = 0; // B
+        buffer[i] = 232; // R (#E8)
+        buffer[i + 1] = 232; // G (#E8)
+        buffer[i + 2] = 232; // B (#E8)
         buffer[i + 3] = 255; // A
       }
 
-      // Draw sphere grid (light gray, faint)
+      // Draw sphere grid (black dots)
       const gridPoints = game.getProjectedGridPoints();
       for (const point of gridPoints) {
-        drawPixel(buffer, point.x, point.y, canvasSize.width, 50, 50, 50, 100);
+        const depthAlpha = Math.floor(point.alpha * 255);
+        drawPixel(buffer, point.x, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
       }
 
-      // Draw snake (white with fade)
+      // Draw snake (reddish-purple with depth-based coloring)
       const snakeNodes = game.getProjectedSnakeNodes();
       for (let i = 0; i < snakeNodes.length; i++) {
         const point = snakeNodes[i];
-        const alpha = Math.floor(200 - (i / snakeNodes.length) * 100);
+        const depthColor = Math.floor(point.alpha * 255);
+        const fadeAlpha = Math.floor((1 - i / snakeNodes.length) * point.alpha * 255);
         drawCircle(
           buffer,
           point.x,
@@ -509,15 +521,16 @@ export function buildSphericalSnakeApp(a: App): void {
           Math.max(3, Math.round(point.radius || 5)),
           canvasSize.width,
           canvasSize.height,
-          255,
-          255,
-          255,
-          alpha
+          120,          // Red component (reddish)
+          0,            // Green
+          depthColor,   // Blue varies with depth (purple tint)
+          fadeAlpha
         );
       }
 
-      // Draw pellet (red)
+      // Draw pellet (blue-purple with depth)
       const pellet = game.getProjectedPellet();
+      const pelletDepthColor = Math.floor(pellet.alpha * 255);
       drawCircle(
         buffer,
         pellet.x,
@@ -525,9 +538,9 @@ export function buildSphericalSnakeApp(a: App): void {
         Math.max(3, Math.round(pellet.radius || 5)),
         canvasSize.width,
         canvasSize.height,
-        255,
-        0,
-        0,
+        0,                // Red
+        0,                // Green
+        pelletDepthColor, // Blue varies with depth
         255
       );
 
@@ -619,6 +632,5 @@ function drawCircle(
 
 // Entry point
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../src/index');
   app(resolveTransport(), { title: 'Spherical Snake' }, buildSphericalSnakeApp);
 }
