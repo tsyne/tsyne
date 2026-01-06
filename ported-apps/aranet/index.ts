@@ -119,9 +119,9 @@ export class AranetStore {
 
     // Simulate device discovery
     const devices: Aranet4Device[] = [
-      { id: 'aranet-001', name: 'Living Room', location: 'Living Room', discovered: new Date() },
-      { id: 'aranet-002', name: 'Bedroom', location: 'Bedroom', discovered: new Date() },
-      { id: 'aranet-003', name: 'Office', location: 'Office', discovered: new Date() },
+      { id: 'aranet-001', name: 'Mock Living Room', location: 'Living Room', discovered: new Date() },
+      { id: 'aranet-002', name: 'Mock Bedroom', location: 'Bedroom', discovered: new Date() },
+      { id: 'aranet-003', name: 'Mock Office', location: 'Office', discovered: new Date() },
     ];
     this.availableDevices = devices;
     // Auto-select first device if none selected
@@ -575,12 +575,9 @@ export function buildAranetApp(a: any): void {
 
           // Auto-Connect Setting
           a.label('Auto-Connect:').withId('autoConnectLabel');
-          a.checkbox('Enable auto-connect')
-            .onChange((checked: boolean) => {
-              store.updateAutoConnect(checked);
-            })
-            .when(() => true)
-            .withId('autoConnectCheckbox');
+          a.checkbox('Enable auto-connect', (checked: boolean) => {
+            store.updateAutoConnect(checked);
+          }).withId('autoConnectCheckbox');
 
           a.separator();
 
@@ -623,3 +620,15 @@ export function buildAranetApp(a: any): void {
 }
 
 export default buildAranetApp;
+
+// ============================================================================
+// STANDALONE EXECUTION
+// ============================================================================
+
+import { app, resolveTransport } from 'tsyne';
+
+if (require.main === module) {
+  app(resolveTransport(), { title: 'Aranet4 Monitor' }, (a) => {
+    buildAranetApp(a);
+  });
+}

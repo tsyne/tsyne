@@ -248,6 +248,8 @@ This port adapts the functionality to the Tsyne cross-platform framework:
 ### Future Enhancements
 
 - [ ] Real Bluetooth connectivity via platform-specific bridges
+  - [@abandonware/noble](https://github.com/noble/noble) - Node.js BLE library (used by homebridge-aranet4)
+  - [Aranet4-Python](https://github.com/Anrijs/Aranet4-Python) - Python client with protocol details in source code
 - [ ] Menu bar integration (when Tsyne adds menu bar support)
 - [ ] Historical data graphs (24-hour/7-day trends)
 - [ ] Multiple device support
