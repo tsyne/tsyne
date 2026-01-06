@@ -234,6 +234,96 @@ describe('Aranet4Store (Core Build)', () => {
     });
   });
 
+  // ========== Device Management Tests ==========
+
+  describe('Device Management', () => {
+    it('should initialize with no devices', () => {
+      expect(store.getAvailableDevices()).toEqual([]);
+      expect(store.getSelectedDeviceId()).toBeNull();
+    });
+
+    it('should discover available devices', async () => {
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+      expect(devices.length).toBeGreaterThan(0);
+      expect(devices[0]).toHaveProperty('id');
+      expect(devices[0]).toHaveProperty('name');
+      expect(devices[0]).toHaveProperty('discovered');
+    });
+
+    it('should auto-select first device after discovery', async () => {
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+      expect(store.getSelectedDeviceId()).toBe(devices[0].id);
+    });
+
+    it('should return correct device name', async () => {
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+      expect(store.getSelectedDeviceName()).toBe(devices[0].name);
+    });
+
+    it('should allow device selection', async () => {
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+      const secondDevice = devices[1];
+
+      store.selectDevice(secondDevice.id);
+      expect(store.getSelectedDeviceId()).toBe(secondDevice.id);
+      expect(store.getSelectedDeviceName()).toBe(secondDevice.name);
+    });
+
+    it('should disconnect when switching devices', async () => {
+      await store.discoverDevices();
+      const devices = store.getAvailableDevices();
+
+      // Connect to first device
+      await store.connect();
+      expect(store.getConnectionStatus()).toBe(ConnectionStatus.Connected);
+
+      // Switch to second device
+      store.selectDevice(devices[1].id);
+      expect(store.getConnectionStatus()).toBe(ConnectionStatus.Disconnected);
+    });
+
+    it('should handle invalid device selection', async () => {
+      await store.discoverDevices();
+      const originalDevice = store.getSelectedDeviceId();
+
+      store.selectDevice('invalid-device-id');
+      expect(store.getSelectedDeviceId()).toBe(originalDevice); // Should not change
+    });
+
+    it('should notify listeners when devices are discovered', async () => {
+      const listener = jest.fn();
+      store.subscribe(listener);
+      listener.mockClear();
+
+      await store.discoverDevices();
+      expect(listener).toHaveBeenCalled();
+    });
+
+    it('should notify listeners when device is selected', async () => {
+      await store.discoverDevices();
+      const listener = jest.fn();
+      store.subscribe(listener);
+      listener.mockClear();
+
+      const devices = store.getAvailableDevices();
+      store.selectDevice(devices[1].id);
+      expect(listener).toHaveBeenCalled();
+    });
+
+    it('should return defensive copy of devices', async () => {
+      await store.discoverDevices();
+      const devices1 = store.getAvailableDevices();
+      const devices2 = store.getAvailableDevices();
+
+      expect(devices1).toEqual(devices2);
+      expect(devices1).not.toBe(devices2); // Different arrays
+    });
+  });
+
   // ========== Observable Pattern Tests ==========
 
   describe('Observable Pattern', () => {

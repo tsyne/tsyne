@@ -52,6 +52,13 @@ export interface AppSettings {
   refreshInterval: number; // minutes
 }
 
+export interface Aranet4Device {
+  id: string;
+  name: string;
+  location?: string;
+  discovered: Date;
+}
+
 // ============================================================================
 // ARANET STORE (Observable Pattern)
 // ============================================================================
@@ -69,6 +76,8 @@ export class AranetStore {
   private changeListeners: ChangeListener[] = [];
   private nextReadingId = 0;
   private autoRefreshTimer: NodeJS.Timeout | null = null;
+  private availableDevices: Aranet4Device[] = [];
+  private selectedDeviceId: string | null = null;
 
   // Subscribe to store changes
   subscribe(listener: ChangeListener): () => void {
@@ -82,6 +91,48 @@ export class AranetStore {
 
   private notifyChange() {
     this.changeListeners.forEach((listener) => listener());
+  }
+
+  // ========== Device Discovery ==========
+  async discoverDevices(): Promise<void> {
+    // Simulate device discovery
+    const devices: Aranet4Device[] = [
+      { id: 'aranet-001', name: 'Living Room', location: 'Living Room', discovered: new Date() },
+      { id: 'aranet-002', name: 'Bedroom', location: 'Bedroom', discovered: new Date() },
+      { id: 'aranet-003', name: 'Office', location: 'Office', discovered: new Date() },
+    ];
+    this.availableDevices = devices;
+    // Auto-select first device if none selected
+    if (!this.selectedDeviceId && devices.length > 0) {
+      this.selectedDeviceId = devices[0].id;
+    }
+    this.notifyChange();
+  }
+
+  getAvailableDevices(): Aranet4Device[] {
+    return [...this.availableDevices];
+  }
+
+  getSelectedDeviceId(): string | null {
+    return this.selectedDeviceId;
+  }
+
+  getSelectedDeviceName(): string {
+    if (!this.selectedDeviceId) return 'No Device Selected';
+    const device = this.availableDevices.find(d => d.id === this.selectedDeviceId);
+    return device ? device.name : 'Unknown Device';
+  }
+
+  selectDevice(deviceId: string): void {
+    const device = this.availableDevices.find(d => d.id === deviceId);
+    if (device) {
+      this.selectedDeviceId = deviceId;
+      // Disconnect from current device if connected
+      if (this.connectionStatus !== ConnectionStatus.Disconnected) {
+        this.disconnect();
+      }
+      this.notifyChange();
+    }
   }
 
   // ========== Connection Status ==========
@@ -321,6 +372,30 @@ export function buildAranetApp(a: any): void {
 
     win.setContent(() => {
       a.vbox(() => {
+        // Device selector
+        a.hbox(() => {
+          a.label('Device:').withId('deviceLabel');
+          a.vbox(() => {
+            // Device dropdown - create buttons for each available device
+            a.hbox(() => {
+              store.getAvailableDevices().forEach((device) => {
+                a.button(device.name)
+                  .onClick(() => {
+                    store.selectDevice(device.id);
+                  })
+                  .when(() => store.getSelectedDeviceId() !== device.id)
+                  .withId(`device-btn-${device.id}`);
+
+                a.label('✓')
+                  .withId(`device-selected-${device.id}`)
+                  .when(() => store.getSelectedDeviceId() === device.id);
+              });
+            });
+          });
+        });
+
+        a.separator();
+
         // Header with status icon and connection info
         a.hbox(() => {
           a.label(store.getCO2LevelIcon()).withId('statusIcon');
@@ -372,6 +447,11 @@ export function buildAranetApp(a: any): void {
         });
       });
     });
+
+    // Discover available devices on startup
+    (async () => {
+      await store.discoverDevices();
+    })();
 
     win.show();
   });
