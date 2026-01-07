@@ -3,7 +3,7 @@
  * Tests for UI interactions, state changes, and visual updates
  */
 
-import { TsyneTest, TestContext } from '../../src/index-test';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import { buildAranetApp } from './index';
 
 describe('Aranet4 UI Tests', () => {

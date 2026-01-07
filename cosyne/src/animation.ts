@@ -243,9 +243,19 @@ export class Animation<T = number> implements AnimationControl {
  * Keyframe animation for multiple property changes
  */
 export interface Keyframe {
-  time: number; // Offset [0, 1]
-  values: Record<string, number | string>;
+  time: number; // Time in milliseconds
+  value: number | string | Record<string, number | string>;
   easing?: EasingFunction;
+}
+
+/**
+ * Keyframe animation options
+ */
+export interface KeyframeAnimationOptions {
+  keyframes: Keyframe[];
+  duration: number;
+  onFrame?: (values: Record<string, number | string>) => void;
+  onComplete?: () => void;
 }
 
 /**
@@ -259,18 +269,11 @@ export class KeyframeAnimation implements AnimationControl {
   private onFrame?: (values: Record<string, number | string>) => void;
   private onComplete?: () => void;
 
-  constructor(
-    keyframes: Keyframe[],
-    duration: number,
-    callbacks?: {
-      onFrame?: (values: Record<string, number | string>) => void;
-      onComplete?: () => void;
-    }
-  ) {
-    this.keyframes = keyframes.sort((a, b) => a.time - b.time);
-    this.duration = duration;
-    this.onFrame = callbacks?.onFrame;
-    this.onComplete = callbacks?.onComplete;
+  constructor(options: KeyframeAnimationOptions) {
+    this.keyframes = options.keyframes.sort((a, b) => a.time - b.time);
+    this.duration = options.duration;
+    this.onFrame = options.onFrame;
+    this.onComplete = options.onComplete;
   }
 
   /**
@@ -293,48 +296,80 @@ export class KeyframeAnimation implements AnimationControl {
       this.currentTime = this.duration;
     }
 
-    const progress = this.currentTime / this.duration;
-    const values = this.interpolateKeyframes(progress);
+    const values = this.interpolateKeyframes(this.currentTime);
     this.onFrame?.(values);
 
     return values;
   }
 
   /**
-   * Interpolate between keyframes at given progress
+   * Current interpolated value
    */
-  private interpolateKeyframes(progress: number): Record<string, number | string> {
-    const result: Record<string, number | string> = {};
+  private currentValue: number | string | Record<string, number | string> = 0;
+
+  /**
+   * Get current interpolated value
+   */
+  getCurrentValue(): number | string | Record<string, number | string> {
+    return this.currentValue;
+  }
+
+  /**
+   * Interpolate between keyframes at given time
+   */
+  private interpolateKeyframes(timeMs: number): Record<string, number | string> {
+    // Find the keyframes to interpolate between
+    let prevKeyframe = this.keyframes[0];
+    let nextKeyframe = this.keyframes[this.keyframes.length - 1];
 
     for (let i = 0; i < this.keyframes.length - 1; i++) {
-      const currentKeyframe = this.keyframes[i];
-      const nextKeyframe = this.keyframes[i + 1];
-
-      if (progress >= currentKeyframe.time && progress <= nextKeyframe.time) {
-        const localProgress =
-          (progress - currentKeyframe.time) /
-          (nextKeyframe.time - currentKeyframe.time);
-        const easing = currentKeyframe.easing || linear;
-        const easedProgress = easing(localProgress);
-
-        // Interpolate all properties
-        for (const [key, value] of Object.entries(currentKeyframe.values)) {
-          const nextValue = nextKeyframe.values[key];
-          if (nextValue !== undefined) {
-            if (typeof value === 'number' && typeof nextValue === 'number') {
-              result[key] = interpolate(value, nextValue, easedProgress);
-            } else if (typeof value === 'string' && typeof nextValue === 'string') {
-              result[key] = interpolateColor(value, nextValue, easedProgress);
-            } else {
-              result[key] = value;
-            }
-          }
-        }
+      if (timeMs >= this.keyframes[i].time && timeMs <= this.keyframes[i + 1].time) {
+        prevKeyframe = this.keyframes[i];
+        nextKeyframe = this.keyframes[i + 1];
         break;
       }
     }
 
-    return result;
+    const timeRange = nextKeyframe.time - prevKeyframe.time;
+    const localProgress = timeRange > 0 ? (timeMs - prevKeyframe.time) / timeRange : 0;
+    const easing = prevKeyframe.easing || linear;
+    const easedProgress = easing(localProgress);
+
+    const prevValue = prevKeyframe.value;
+    const nextValue = nextKeyframe.value;
+
+    // Handle simple numeric values
+    if (typeof prevValue === 'number' && typeof nextValue === 'number') {
+      this.currentValue = interpolate(prevValue, nextValue, easedProgress);
+      return { value: this.currentValue };
+    }
+
+    // Handle color string values
+    if (typeof prevValue === 'string' && typeof nextValue === 'string') {
+      this.currentValue = interpolateColor(prevValue, nextValue, easedProgress);
+      return { value: this.currentValue };
+    }
+
+    // Handle object values (multiple properties)
+    if (typeof prevValue === 'object' && typeof nextValue === 'object') {
+      const result: Record<string, number | string> = {};
+      for (const [key, value] of Object.entries(prevValue)) {
+        const nextVal = (nextValue as Record<string, number | string>)[key];
+        if (nextVal !== undefined) {
+          if (typeof value === 'number' && typeof nextVal === 'number') {
+            result[key] = interpolate(value, nextVal, easedProgress);
+          } else if (typeof value === 'string' && typeof nextVal === 'string') {
+            result[key] = interpolateColor(value, nextVal, easedProgress);
+          } else {
+            result[key] = value;
+          }
+        }
+      }
+      this.currentValue = result;
+      return result;
+    }
+
+    return {};
   }
 
   pause(): void {

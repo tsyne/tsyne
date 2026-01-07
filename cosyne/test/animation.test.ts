@@ -851,9 +851,12 @@ describe('Primitive Animation Integration', () => {
     resetAnimationManager();
   });
 
+  // Mock widget for testing
+  const mockWidget = { update: () => {} };
+
   // TC-ANIM-061: Primitive animate method
   it('TC-ANIM-061: Primitive.animate() should create animation', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -866,7 +869,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-062: Primitive animateFluent method
   it('TC-ANIM-062: Primitive.animateFluent() should provide fluent API', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -879,7 +882,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-063: Primitive fluent API chaining
   it('TC-ANIM-063: Primitive fluent API should chain correctly', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -894,7 +897,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-064: Primitive clearAnimations
   it('TC-ANIM-064: Primitive.clearAnimations() should stop all animations', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -909,7 +912,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-065: Primitive multiple animations
   it('TC-ANIM-065: Primitive should support multiple simultaneous animations', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
 
     const c1 = circle.animate('alpha', {
       from: 0,
@@ -928,7 +931,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-066: Primitive fluent easing string
   it('TC-ANIM-066: Primitive fluent API should accept easing name', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -940,7 +943,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-067: Primitive fluent default duration
   it('TC-ANIM-067: Primitive fluent API should use default duration if not set', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle
       .animateFluent('alpha', 0, 1)
       .start();
@@ -951,7 +954,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-068: Primitive animation control
   it('TC-ANIM-068: Primitive animation control should support pause/resume', () => {
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -968,7 +971,7 @@ describe('Primitive Animation Integration', () => {
   // TC-ANIM-069: Primitive animation with callbacks
   it('TC-ANIM-069: Primitive animation should support callbacks', (done) => {
     const callback = jest.fn();
-    const circle = new CosyneCircle(100, 100, 50);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget);
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -985,7 +988,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-070: Primitive animation color interpolation
   it('TC-ANIM-070: Primitive should animate color properties', () => {
-    const circle = new CosyneCircle(100, 100, 50).fill('#FF0000');
+    const circle = new CosyneCircle(100, 100, 50, mockWidget).fill('#FF0000');
     const control = circle.animate('fillColor', {
       from: '#FF0000',
       to: '#0000FF',

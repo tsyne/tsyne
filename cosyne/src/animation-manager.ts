@@ -6,11 +6,15 @@
 
 import { Animation, AnimationControl } from './animation';
 
+// Browser globals (not available in Node.js)
+declare const requestAnimationFrame: ((callback: () => void) => number) | undefined;
+declare const cancelAnimationFrame: ((id: number) => void) | undefined;
+
 /**
  * Tracks an animation with its target object and property
  */
 interface AnimationTracker {
-  animation: Animation;
+  animation: Animation<any>;
   target: Record<string, any>;
   property: string;
   control: AnimationControl;
@@ -89,7 +93,12 @@ class AnimationManagerImpl {
    */
   private stop(): void {
     if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
+      // Use cancelAnimationFrame if available (browser), clearTimeout otherwise (Node.js)
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        cancelAnimationFrame(this.rafId);
+      } else {
+        clearTimeout(this.rafId);
+      }
       this.rafId = null;
     }
     this.isRunning = false;
@@ -99,7 +108,17 @@ class AnimationManagerImpl {
    * Schedule next animation frame
    */
   private scheduleFrame(): void {
-    this.rafId = requestAnimationFrame(() => {
+    // Use requestAnimationFrame if available (browser), setTimeout otherwise (Node.js)
+    const scheduleCallback = (callback: () => void): number => {
+      if (typeof requestAnimationFrame !== 'undefined') {
+        return requestAnimationFrame(callback);
+      } else {
+        // ~60fps fallback for Node.js
+        return setTimeout(callback, 16) as unknown as number;
+      }
+    };
+
+    this.rafId = scheduleCallback(() => {
       const now = Date.now();
       const deltaMs = now - this.lastFrameTime;
       this.lastFrameTime = now;

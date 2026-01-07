@@ -30,6 +30,18 @@ export interface PrimitiveEventHandlers {
 }
 
 /**
+ * Fluent animation builder interface
+ */
+export interface FluentAnimationBuilder {
+  duration(ms: number): FluentAnimationBuilder;
+  easing(fn: EasingFunction | string): FluentAnimationBuilder;
+  delay(ms: number): FluentAnimationBuilder;
+  loop(enabled: boolean): FluentAnimationBuilder;
+  yoyo(enabled: boolean): FluentAnimationBuilder;
+  start(): AnimationControl;
+}
+
+/**
  * Base primitive that wraps a Tsyne canvas primitive
  */
 export abstract class Primitive<TUnderlyingWidget> {
@@ -342,8 +354,15 @@ export abstract class Primitive<TUnderlyingWidget> {
     property: string,
     options: Omit<AnimationOptions<T>, 'from' | 'to'> & { from: T; to: T }
   ): AnimationControl {
-    // Create animation
-    const animation = new Animation<T>(options);
+    // Create animation with completion tracking
+    const originalOnComplete = options.onComplete;
+    const animation = new Animation<T>({
+      ...options,
+      onComplete: () => {
+        originalOnComplete?.();
+        this.activeAnimations.delete(control);
+      },
+    });
 
     // Register with global animation manager (will trigger refresh on update)
     const manager = getAnimationManager();
@@ -352,23 +371,7 @@ export abstract class Primitive<TUnderlyingWidget> {
     // Track animation for cleanup
     this.activeAnimations.add(control);
 
-    // Remove from tracking when complete
-    const originalOnComplete = options.onComplete;
-    animation = new Animation<T>({
-      ...options,
-      onComplete: () => {
-        originalOnComplete?.();
-        this.activeAnimations.delete(control);
-      },
-    });
-
-    // Re-register the updated animation
-    manager.remove(control);
-    const newControl = manager.add(animation, this as any, property);
-    this.activeAnimations.delete(control);
-    this.activeAnimations.add(newControl);
-
-    return newControl;
+    return control;
   }
 
   /**
@@ -388,14 +391,7 @@ export abstract class Primitive<TUnderlyingWidget> {
     property: string,
     from: T,
     to: T
-  ): {
-    duration(ms: number): this;
-    easing(fn: EasingFunction | string): this;
-    delay(ms: number): this;
-    loop(enabled: boolean): this;
-    yoyo(enabled: boolean): this;
-    start(): AnimationControl;
-  } {
+  ): FluentAnimationBuilder {
     const config: Partial<AnimationOptions<T>> = { from, to };
 
     const fluent = {
