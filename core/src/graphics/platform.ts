@@ -69,9 +69,13 @@ export function requestAnimationFrame(callback: (timestamp: number) => void): nu
 
     if (!animationRunning) {
         animationRunning = true;
-        setImmediate(() => {
+        const immediate = setImmediate(() => {
             runAnimationFrame();
         });
+        // Don't keep process alive for animation frames
+        if (typeof immediate === 'object' && immediate !== null && 'unref' in immediate) {
+            (immediate as NodeJS.Immediate).unref();
+        }
     }
 
     return id;
@@ -99,7 +103,11 @@ function runAnimationFrame(): void {
     }
 
     if (animationFrameCallbacks.size > 0) {
-        setImmediate(() => runAnimationFrame());
+        const immediate = setImmediate(() => runAnimationFrame());
+        // Don't keep process alive for animation frames
+        if (typeof immediate === 'object' && immediate !== null && 'unref' in immediate) {
+            (immediate as NodeJS.Immediate).unref();
+        }
     } else {
         animationRunning = false;
     }

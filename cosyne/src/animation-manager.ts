@@ -119,7 +119,12 @@ export class AnimationManager {
         return requestAnimationFrame(callback);
       } else {
         // ~60fps fallback for Node.js
-        return setTimeout(callback, 16) as unknown as number;
+        const timer = setTimeout(callback, 16);
+        // Don't keep process alive for animation timers
+        if (typeof timer === 'object' && timer !== null && 'unref' in timer) {
+          (timer as NodeJS.Timeout).unref();
+        }
+        return timer as unknown as number;
       }
     };
 
