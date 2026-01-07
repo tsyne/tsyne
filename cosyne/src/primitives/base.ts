@@ -6,7 +6,7 @@ import { Binding, BindingFunction, PositionBinding } from '../binding';
 import { RotationAngles } from '../projections';
 import { HitTester } from '../events';
 import { Animation, AnimationOptions, AnimationControl } from '../animation';
-import { getAnimationManager } from '../animation-manager';
+import { AnimationManager } from '../animation-manager';
 import { EasingFunction } from '../easing';
 
 export interface PrimitiveOptions {
@@ -14,6 +14,7 @@ export interface PrimitiveOptions {
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
+  animationManager?: AnimationManager;
 }
 
 /**
@@ -69,6 +70,9 @@ export abstract class Primitive<TUnderlyingWidget> {
   // Animation tracking (for cleanup)
   protected activeAnimations: Set<AnimationControl> = new Set();
 
+  // Animation manager (injected via IoC)
+  protected animationManager?: AnimationManager;
+
   constructor(
     protected underlying: TUnderlyingWidget,
     options?: PrimitiveOptions
@@ -84,6 +88,9 @@ export abstract class Primitive<TUnderlyingWidget> {
     }
     if (options?.strokeWidth) {
       this.strokeWidth = options.strokeWidth;
+    }
+    if (options?.animationManager) {
+      this.animationManager = options.animationManager;
     }
   }
 
@@ -354,6 +361,10 @@ export abstract class Primitive<TUnderlyingWidget> {
     property: string,
     options: Omit<AnimationOptions<T>, 'from' | 'to'> & { from: T; to: T }
   ): AnimationControl {
+    if (!this.animationManager) {
+      throw new Error('AnimationManager not available. Ensure primitive was created with an animationManager option.');
+    }
+
     // Create animation with completion tracking
     const originalOnComplete = options.onComplete;
     const animation = new Animation<T>({
@@ -364,9 +375,8 @@ export abstract class Primitive<TUnderlyingWidget> {
       },
     });
 
-    // Register with global animation manager (will trigger refresh on update)
-    const manager = getAnimationManager();
-    const control = manager.add(animation, this as any, property);
+    // Register with injected animation manager
+    const control = this.animationManager.add(animation, this as any, property);
 
     // Track animation for cleanup
     this.activeAnimations.add(control);
@@ -435,9 +445,10 @@ export abstract class Primitive<TUnderlyingWidget> {
    * Clear all active animations on this primitive
    */
   clearAnimations(): void {
-    const manager = getAnimationManager();
     for (const control of this.activeAnimations) {
-      manager.remove(control);
+      if (this.animationManager) {
+        this.animationManager.remove(control);
+      }
       control.stop();
     }
     this.activeAnimations.clear();

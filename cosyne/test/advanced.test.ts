@@ -82,7 +82,8 @@ describe('CosyneGrid (Phase 7)', () => {
 describe('CosyneHeatmap (Phase 7)', () => {
   it('TC-ADV-004: Heatmap maps values to colors', () => {
     const widget = new MockWidget();
-    const heatmap = new CosyneHeatmap(0, 0, widget, { colorScheme: 'hot' });
+    // Set minValue=0, maxValue=100 so getNormalizedValue(50) returns 0.5
+    const heatmap = new CosyneHeatmap(0, 0, widget, { colorScheme: 'hot', minValue: 0, maxValue: 100 });
 
     expect(heatmap.getNormalizedValue(50)).toEqual(0.5);
     expect(heatmap.getColor(0)).toMatch(/rgb/);

@@ -22,6 +22,14 @@ import { Primitive } from './primitives/base';
 import { CirclesCollection, RectsCollection, LinesCollection } from './collections';
 import { TransformStack, TransformOptions } from './transforms';
 import { ForeignObject, ForeignObjectCollection } from './foreign';
+import { AnimationManager } from './animation-manager';
+
+/**
+ * Options for creating a CosyneContext
+ */
+export interface CosyneContextOptions {
+  animationManager?: AnimationManager;
+}
 
 /**
  * Main Cosyne builder context
@@ -32,9 +40,18 @@ export class CosyneContext {
   private allPrimitives: Primitive<any>[] = [];
   private transformStack: TransformStack = new TransformStack();
   private foreignObjects: ForeignObjectCollection = new ForeignObjectCollection();
+  private animationManager: AnimationManager;
 
-  constructor(private app: any) {
+  constructor(private app: any, options?: CosyneContextOptions) {
     this.bindingRegistry = new BindingRegistry();
+    this.animationManager = options?.animationManager ?? new AnimationManager();
+  }
+
+  /**
+   * Get the animation manager for this context
+   */
+  getAnimationManager(): AnimationManager {
+    return this.animationManager;
   }
 
   /**
@@ -52,7 +69,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneCircle(x, y, radius, underlying, options);
+    const primitive = new CosyneCircle(x, y, radius, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -72,7 +92,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneRect(x, y, width, height, underlying, options);
+    const primitive = new CosyneRect(x, y, width, height, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -87,7 +110,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneLine(x1, y1, x2, y2, underlying, options);
+    const primitive = new CosyneLine(x1, y1, x2, y2, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -188,7 +214,10 @@ export class CosyneContext {
       fillColor: options?.fillColor || 'black',
     });
 
-    const primitive = new CosyneText(x, y, text, underlying, options);
+    const primitive = new CosyneText(x, y, text, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -207,7 +236,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosynePath(pathString, underlying, options);
+    const primitive = new CosynePath(pathString, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -228,7 +260,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneArc(x, y, radius, underlying, options);
+    const primitive = new CosyneArc(x, y, radius, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -249,7 +284,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneWedge(x, y, radius, underlying, options);
+    const primitive = new CosyneWedge(x, y, radius, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -269,7 +307,10 @@ export class CosyneContext {
       gridWidth: options?.gridWidth || 1,
     });
 
-    const primitive = new CosyneGrid(x, y, underlying, options);
+    const primitive = new CosyneGrid(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -288,7 +329,10 @@ export class CosyneContext {
       maxValue: options?.maxValue || 1,
     });
 
-    const primitive = new CosyneHeatmap(x, y, underlying, options);
+    const primitive = new CosyneHeatmap(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -306,7 +350,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosynePolygon(x, y, vertices, underlying, options);
+    const primitive = new CosynePolygon(x, y, vertices, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -326,7 +373,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneStar(x, y, underlying, options);
+    const primitive = new CosyneStar(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }
@@ -347,7 +397,10 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 2,
     });
 
-    const primitive = new CosyneGauge(x, y, underlying, options);
+    const primitive = new CosyneGauge(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
     this.trackPrimitive(primitive);
     return primitive;
   }

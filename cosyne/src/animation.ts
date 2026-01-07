@@ -100,11 +100,16 @@ export class Animation<T = number> implements AnimationControl {
     // Handle delay
     if (this.elapsedDelay < this.delay) {
       this.elapsedDelay += deltaMs;
-      return {
-        value: this.from,
-        progress: 0,
-        complete: false,
-      };
+      if (this.elapsedDelay < this.delay) {
+        // Still in delay period
+        return {
+          value: this.from,
+          progress: 0,
+          complete: false,
+        };
+      }
+      // Delay just ended - carry over remaining time to animation
+      deltaMs = this.elapsedDelay - this.delay;
     }
 
     // Update animation time
@@ -125,6 +130,7 @@ export class Animation<T = number> implements AnimationControl {
             this.isReversed = !this.isReversed;
           }
           animationTime = animationTime % this.duration;
+          this.currentTime = animationTime; // Keep currentTime in sync for getProgress()
         }
       } else {
         complete = true;
@@ -133,7 +139,8 @@ export class Animation<T = number> implements AnimationControl {
     }
 
     // Calculate normalized time [0, 1]
-    const normalizedTime = animationTime / this.duration;
+    // Handle zero duration as instant completion
+    const normalizedTime = this.duration > 0 ? animationTime / this.duration : 1;
     const progress = this.isReversed ? 1 - normalizedTime : normalizedTime;
 
     const value = this.interpolate(progress);

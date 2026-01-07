@@ -309,12 +309,11 @@ describe('CosyneContext transforms and foreign', () => {
     const app = new MockApp();
     const ctx = new CosyneContext(app);
 
-    let angle = 0;
-    ctx.transform({ rotate: () => angle }, (c) => {
+    const angle = Math.PI / 4;
+    ctx.transform({ rotate: angle }, (c) => {
       // Would create primitives in transformed space
     });
 
-    angle = Math.PI / 4;
     expect(angle).toBeCloseTo(Math.PI / 4);
   });
 

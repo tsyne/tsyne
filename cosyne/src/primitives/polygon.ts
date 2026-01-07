@@ -36,6 +36,16 @@ export class CosynePolygon extends Primitive<any> {
   }
 
   /**
+   * Set position
+   */
+  setPosition(x: number, y: number): this {
+    this.x = x;
+    this.y = y;
+    this.updateUnderlying();
+    return this;
+  }
+
+  /**
    * Get vertices
    */
   getVertices(): Point[] {

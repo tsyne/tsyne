@@ -45,10 +45,7 @@ import {
   type Keyframe,
 } from '../src/animation';
 
-import {
-  getAnimationManager,
-  resetAnimationManager,
-} from '../src/animation-manager';
+import { AnimationManager } from '../src/animation-manager';
 
 import { CosyneCircle } from '../src/primitives/circle';
 
@@ -154,7 +151,7 @@ describe('Easing Functions', () => {
   it('TC-ANIM-013: easeInBack() should undershoot at start', () => {
     expect(easeInBack(0)).toBe(0);
     expect(easeInBack(0.2)).toBeLessThan(0);
-    expect(easeInBack(1)).toBe(1);
+    expect(easeInBack(1)).toBeCloseTo(1, 10); // Floating point precision
   });
 
   // TC-ANIM-014: Bounce easing
@@ -319,9 +316,11 @@ describe('Animation<T> Class', () => {
     expect(result.progress).toBe(0);
     expect(result.value).toBe(0);
 
-    result = anim.update(25);
-    // Delay over, animation starts
+    result = anim.update(50);
+    // Delay over (25 + 50 = 75ms > 50ms delay), animation starts
+    // Extra 25ms goes into animation: progress = 25/100 = 0.25
     expect(result.progress).toBeGreaterThan(0);
+    expect(result.value).toBeCloseTo(25, 0);
   });
 
   // TC-ANIM-030: Animation pause/resume
@@ -429,18 +428,24 @@ describe('Animation<T> Class', () => {
       yoyo: true,
     });
 
-    // Forward
-    anim.update(50);
-    const forwardValue = anim.getCurrentValue();
-    expect(forwardValue).toBeCloseTo(50, 1);
+    // Forward cycle: 0 -> 100
+    anim.update(100);
+    // After completing forward, yoyo kicks in: isReversed=true, currentTime=0
+    // At reversed normalizedTime=0, progress = 1-0 = 1, so value = 100
+    const reverseStartValue = anim.getCurrentValue();
+    expect(reverseStartValue).toBeCloseTo(100, 1);
 
-    // Complete forward
+    // Backward cycle: progress goes 1 -> 0 (value 100 -> 0)
+    // At 50% into the reverse cycle
     anim.update(50);
+    const midBackwardValue = anim.getCurrentValue();
+    expect(midBackwardValue).toBeCloseTo(50, 1);
 
-    // Should now go backward
-    anim.update(25);
-    const backwardValue = anim.getCurrentValue();
-    expect(backwardValue).toBeLessThan(forwardValue);
+    // At 100% into reverse cycle, triggers another yoyo (back to forward)
+    anim.update(50);
+    // isReversed becomes false again, currentTime=0, value=0
+    const backToForwardValue = anim.getCurrentValue();
+    expect(backToForwardValue).toBeCloseTo(0, 1);
   });
 
   // TC-ANIM-036: Animation callbacks - onComplete
@@ -458,19 +463,20 @@ describe('Animation<T> Class', () => {
     done();
   });
 
-  // TC-ANIM-037: Animation callbacks - onUpdate
-  it('TC-ANIM-037: Animation should call onUpdate callback on each frame', () => {
+  // TC-ANIM-037: Animation callbacks - onFrame
+  it('TC-ANIM-037: Animation should call onFrame callback on each frame', () => {
     const callback = jest.fn();
     const anim = new Animation({
       from: 0,
       to: 100,
       duration: 1000,
-      onUpdate: callback,
+      onFrame: callback,
     });
 
     anim.update(250);
     expect(callback).toHaveBeenCalled();
-    expect(callback).toHaveBeenCalledWith(25);
+    // onFrame receives (value, progress) - at 250ms of 1000ms = 25% progress, value = 25
+    expect(callback).toHaveBeenCalledWith(25, 0.25);
 
     anim.update(250);
     expect(callback).toHaveBeenCalledTimes(2);
@@ -670,33 +676,39 @@ describe('KeyframeAnimation', () => {
 // ============================================================================
 
 describe('AnimationManager', () => {
+  let manager: AnimationManager;
+
   beforeEach(() => {
-    resetAnimationManager();
+    manager = new AnimationManager();
   });
 
-  // TC-ANIM-051: AnimationManager singleton
-  it('TC-ANIM-051: getAnimationManager() should return singleton', () => {
-    const manager1 = getAnimationManager();
-    const manager2 = getAnimationManager();
-    expect(manager1).toBe(manager2);
+  afterEach(() => {
+    manager.clear();
   });
 
-  // TC-ANIM-052: AnimationManager reset
-  it('TC-ANIM-052: resetAnimationManager() should clear all animations', () => {
-    const manager = getAnimationManager();
+  // TC-ANIM-051: AnimationManager instantiation
+  it('TC-ANIM-051: AnimationManager instances should be independent', () => {
+    const manager1 = new AnimationManager();
+    const manager2 = new AnimationManager();
+    expect(manager1).not.toBe(manager2);
+    manager1.clear();
+    manager2.clear();
+  });
+
+  // TC-ANIM-052: AnimationManager clear
+  it('TC-ANIM-052: clear() should remove all animations', () => {
     const anim = new Animation({ from: 0, to: 100, duration: 1000 });
     const target = {};
-    const control = manager.add(anim, target, 'value');
+    manager.add(anim, target, 'value');
 
     expect(manager.getActiveCount()).toBeGreaterThan(0);
 
-    resetAnimationManager();
+    manager.clear();
     expect(manager.getActiveCount()).toBe(0);
   });
 
   // TC-ANIM-053: AnimationManager add/remove
   it('TC-ANIM-053: AnimationManager should add and remove animations', () => {
-    const manager = getAnimationManager();
     const anim = new Animation({ from: 0, to: 100, duration: 1000 });
     const target = {};
 
@@ -709,7 +721,6 @@ describe('AnimationManager', () => {
 
   // TC-ANIM-054: AnimationManager multiple animations
   it('TC-ANIM-054: AnimationManager should handle multiple animations', () => {
-    const manager = getAnimationManager();
     const target1 = { value: 0 };
     const target2 = { value: 0 };
 
@@ -732,7 +743,6 @@ describe('AnimationManager', () => {
 
   // TC-ANIM-055: AnimationManager refresh callback
   it('TC-ANIM-055: AnimationManager should trigger refresh callback', (done) => {
-    const manager = getAnimationManager();
     const callback = jest.fn();
     manager.setRefreshCallback(callback);
 
@@ -740,16 +750,15 @@ describe('AnimationManager', () => {
     const target = {};
     manager.add(anim, target, 'value');
 
-    // Manually trigger frame update
-    (manager as any).updateFrame();
-
-    expect(callback).toHaveBeenCalled();
-    done();
+    // Wait for the scheduled frame to fire (~16ms in Node.js)
+    setTimeout(() => {
+      expect(callback).toHaveBeenCalled();
+      done();
+    }, 50);
   });
 
   // TC-ANIM-056: AnimationManager pauseAll/resumeAll
   it('TC-ANIM-056: AnimationManager should pause and resume all animations', () => {
-    const manager = getAnimationManager();
     const anim1 = new Animation({ from: 0, to: 100, duration: 1000 });
     const anim2 = new Animation({ from: 0, to: 100, duration: 1000 });
     const target1 = {};
@@ -769,7 +778,6 @@ describe('AnimationManager', () => {
 
   // TC-ANIM-057: AnimationManager clear
   it('TC-ANIM-057: AnimationManager clear should remove all animations', () => {
-    const manager = getAnimationManager();
     manager.add(new Animation({ from: 0, to: 100, duration: 1000 }), {}, 'value');
     manager.add(new Animation({ from: 0, to: 100, duration: 1000 }), {}, 'value');
     manager.add(new Animation({ from: 0, to: 100, duration: 1000 }), {}, 'value');
@@ -781,24 +789,22 @@ describe('AnimationManager', () => {
   });
 
   // TC-ANIM-058: AnimationManager automatic cleanup
-  it('TC-ANIM-058: AnimationManager should auto-remove completed animations', () => {
-    const manager = getAnimationManager();
-    const anim = new Animation({ from: 0, to: 100, duration: 100 });
+  it('TC-ANIM-058: AnimationManager should auto-remove completed animations', (done) => {
+    const anim = new Animation({ from: 0, to: 100, duration: 50 });
     const target = {};
     manager.add(anim, target, 'value');
 
     expect(manager.getActiveCount()).toBe(1);
 
-    // Complete the animation
-    (manager as any).updateFrame();
-    anim.update(100);
-
-    expect(manager.getActiveCount()).toBe(0);
+    // Wait for the animation to complete and be auto-removed
+    setTimeout(() => {
+      expect(manager.getActiveCount()).toBe(0);
+      done();
+    }, 100);
   });
 
   // TC-ANIM-059: AnimationManager with same target multiple properties
   it('TC-ANIM-059: AnimationManager should animate multiple properties on same target', () => {
-    const manager = getAnimationManager();
     const target = { x: 0, y: 0 };
 
     const c1 = manager.add(
@@ -814,16 +820,13 @@ describe('AnimationManager', () => {
 
     expect(manager.getActiveCount()).toBe(2);
 
-    (manager as any).updateFrame();
-    // Both animations should be running
+    // Both animations should be running immediately after add()
     expect(c1.getState()).toBe('running');
     expect(c2.getState()).toBe('running');
   });
 
   // TC-ANIM-060: AnimationManager getActiveCount
   it('TC-ANIM-060: AnimationManager getActiveCount should be accurate', () => {
-    const manager = getAnimationManager();
-
     expect(manager.getActiveCount()).toBe(0);
 
     const controls = [
@@ -847,16 +850,22 @@ describe('AnimationManager', () => {
 // ============================================================================
 
 describe('Primitive Animation Integration', () => {
-  beforeEach(() => {
-    resetAnimationManager();
-  });
+  let manager: AnimationManager;
 
   // Mock widget for testing
   const mockWidget = { update: () => {} };
 
+  beforeEach(() => {
+    manager = new AnimationManager();
+  });
+
+  afterEach(() => {
+    manager.clear();
+  });
+
   // TC-ANIM-061: Primitive animate method
   it('TC-ANIM-061: Primitive.animate() should create animation', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -869,7 +878,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-062: Primitive animateFluent method
   it('TC-ANIM-062: Primitive.animateFluent() should provide fluent API', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -882,7 +891,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-063: Primitive fluent API chaining
   it('TC-ANIM-063: Primitive fluent API should chain correctly', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -897,7 +906,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-064: Primitive clearAnimations
   it('TC-ANIM-064: Primitive.clearAnimations() should stop all animations', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -912,7 +921,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-065: Primitive multiple animations
   it('TC-ANIM-065: Primitive should support multiple simultaneous animations', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
 
     const c1 = circle.animate('alpha', {
       from: 0,
@@ -931,7 +940,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-066: Primitive fluent easing string
   it('TC-ANIM-066: Primitive fluent API should accept easing name', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle
       .animateFluent('alpha', 0, 1)
       .duration(1000)
@@ -943,7 +952,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-067: Primitive fluent default duration
   it('TC-ANIM-067: Primitive fluent API should use default duration if not set', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle
       .animateFluent('alpha', 0, 1)
       .start();
@@ -954,7 +963,7 @@ describe('Primitive Animation Integration', () => {
 
   // TC-ANIM-068: Primitive animation control
   it('TC-ANIM-068: Primitive animation control should support pause/resume', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
@@ -971,24 +980,24 @@ describe('Primitive Animation Integration', () => {
   // TC-ANIM-069: Primitive animation with callbacks
   it('TC-ANIM-069: Primitive animation should support callbacks', (done) => {
     const callback = jest.fn();
-    const circle = new CosyneCircle(100, 100, 50, mockWidget);
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager });
     const control = circle.animate('alpha', {
       from: 0,
       to: 1,
-      duration: 100,
+      duration: 50,
       onComplete: callback,
     });
 
-    // Simulate animation completion
-    (control as any).animation.update(100);
-
-    expect(callback).toHaveBeenCalled();
-    done();
+    // Wait for animation to complete
+    setTimeout(() => {
+      expect(callback).toHaveBeenCalled();
+      done();
+    }, 100);
   });
 
   // TC-ANIM-070: Primitive animation color interpolation
   it('TC-ANIM-070: Primitive should animate color properties', () => {
-    const circle = new CosyneCircle(100, 100, 50, mockWidget).fill('#FF0000');
+    const circle = new CosyneCircle(100, 100, 50, mockWidget, { animationManager: manager }).fill('#FF0000');
     const control = circle.animate('fillColor', {
       from: '#FF0000',
       to: '#0000FF',

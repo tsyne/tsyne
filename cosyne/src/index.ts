@@ -57,4 +57,4 @@ export {
   type AnimationOptions,
   type Keyframe,
 } from './animation';
-export { getAnimationManager, resetAnimationManager } from './animation-manager';
+export { AnimationManager } from './animation-manager';

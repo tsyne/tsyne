@@ -1,7 +1,8 @@
 /**
- * Global animation manager using requestAnimationFrame
+ * Animation manager using requestAnimationFrame
  *
- * Coordinates all active animations and triggers refresh on each frame
+ * Coordinates all active animations and triggers refresh on each frame.
+ * Instantiate per-context rather than using as a singleton.
  */
 
 import { Animation, AnimationControl } from './animation';
@@ -21,9 +22,9 @@ interface AnimationTracker {
 }
 
 /**
- * Global animation manager singleton
+ * Animation manager - coordinates animations for a context
  */
-class AnimationManagerImpl {
+export class AnimationManager {
   private animations: Set<AnimationTracker> = new Set();
   private rafId: number | null = null;
   private lastFrameTime: number = 0;
@@ -53,6 +54,10 @@ class AnimationManagerImpl {
     };
 
     this.animations.add(tracker);
+
+    // Immediately trigger first update to transition animation to 'running' state
+    const { value } = animation.update(0);
+    target[property] = value;
 
     if (!this.isRunning) {
       this.start();
@@ -162,7 +167,7 @@ class AnimationManagerImpl {
   }
 
   /**
-   * Clear all animations
+   * Clear all animations and stop the loop
    */
   clear(): void {
     this.animations.clear();
@@ -186,27 +191,4 @@ class AnimationManagerImpl {
       control.resume();
     }
   }
-}
-
-// Global singleton instance
-let instance: AnimationManagerImpl | null = null;
-
-/**
- * Get the global animation manager instance
- */
-export function getAnimationManager(): AnimationManagerImpl {
-  if (!instance) {
-    instance = new AnimationManagerImpl();
-  }
-  return instance;
-}
-
-/**
- * Reset animation manager (for testing)
- */
-export function resetAnimationManager(): void {
-  if (instance) {
-    instance.clear();
-  }
-  instance = null;
 }

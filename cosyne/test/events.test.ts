@@ -197,7 +197,7 @@ describe('Hit Testing - Polygon (TC-HIT-010 through TC-HIT-012)', () => {
       { x: 0, y: 0 },
       { x: 100, y: 0 },
       { x: 50, y: 100 },
-    ]);
+    ], mockUnderlying);
   });
 
   it('TC-HIT-010: Polygon hit test - point inside', () => {
@@ -238,12 +238,14 @@ describe('Event Routing (TC-ROUTE-001 through TC-ROUTE-008)', () => {
   });
 
   it('TC-ROUTE-001: Hit test - find top primitive', () => {
-    const hit = router.hitTestTop([circle, rect], 100, 100);
-    expect(hit).toBe(circle); // Circle is added last, so it's on top
+    // Circle is last in array, so it's topmost
+    const hit = router.hitTestTop([rect, circle], 100, 100);
+    expect(hit).toBe(circle); // Circle is last in array, so it's on top
   });
 
   it('TC-ROUTE-002: Hit test - multiple hits returns topmost', () => {
-    const hits = router.hitTestAll([circle, rect], 100, 100);
+    // Circle is last in array, so it's topmost
+    const hits = router.hitTestAll([rect, circle], 100, 100);
     expect(hits.length).toBe(2); // Both shapes contain (100, 100)
     expect(hits[0]).toBe(circle); // Topmost first
   });
@@ -257,7 +259,8 @@ describe('Event Routing (TC-ROUTE-001 through TC-ROUTE-008)', () => {
     const clickHandler = jest.fn();
     circle.onClick(clickHandler);
 
-    await router.handleClick([circle, rect], 100, 100);
+    // Circle must be last (topmost) to receive the click
+    await router.handleClick([rect, circle], 100, 100);
     expect(clickHandler).toHaveBeenCalledWith({ x: 100, y: 100 });
   });
 
@@ -274,13 +277,13 @@ describe('Event Routing (TC-ROUTE-001 through TC-ROUTE-008)', () => {
     const leaveHandler = jest.fn();
     circle.onMouseEnter(enterHandler).onMouseLeave(leaveHandler);
 
-    // Move to circle
-    await router.handleMouseMove([circle, rect], 100, 100);
+    // Move to circle (circle must be last/topmost)
+    await router.handleMouseMove([rect, circle], 100, 100);
     expect(enterHandler).toHaveBeenCalledWith({ x: 100, y: 100 });
     expect(leaveHandler).not.toHaveBeenCalled();
 
     // Move away
-    await router.handleMouseMove([circle, rect], 200, 200);
+    await router.handleMouseMove([rect, circle], 200, 200);
     expect(leaveHandler).toHaveBeenCalled();
   });
 
@@ -288,11 +291,12 @@ describe('Event Routing (TC-ROUTE-001 through TC-ROUTE-008)', () => {
     const moveHandler = jest.fn();
     circle.onMouseMove(moveHandler);
 
-    await router.handleMouseMove([circle, rect], 100, 100);
+    // Circle must be last/topmost to receive mouse move
+    await router.handleMouseMove([rect, circle], 100, 100);
     expect(moveHandler).toHaveBeenCalledWith({ x: 100, y: 100 });
 
     moveHandler.mockClear();
-    await router.handleMouseMove([circle, rect], 200, 200);
+    await router.handleMouseMove([rect, circle], 200, 200);
     expect(moveHandler).not.toHaveBeenCalled();
   });
 
@@ -306,12 +310,12 @@ describe('Event Routing (TC-ROUTE-001 through TC-ROUTE-008)', () => {
       .onDrag(dragHandler)
       .onDragEnd(dragEndHandler);
 
-    // Start drag
-    router.handleDragStart([circle, rect], 100, 100);
+    // Start drag (circle must be last/topmost)
+    router.handleDragStart([rect, circle], 100, 100);
     expect(dragStartHandler).toHaveBeenCalledWith({ x: 100, y: 100 });
 
     // Move during drag
-    await router.handleMouseMove([circle, rect], 120, 110);
+    await router.handleMouseMove([rect, circle], 120, 110);
     expect(dragHandler).toHaveBeenCalledWith({
       x: 120,
       y: 110,
@@ -388,7 +392,7 @@ describe('Hit Testing - Arc/Wedge (TC-HIT-WEDGE-001 through TC-HIT-WEDGE-003)', 
   });
 
   it('TC-HIT-WEDGE-001: Arc hit test - point in wedge', () => {
-    const arc = new CosyneArc(100, 100, 50, 0, Math.PI / 2, mockUnderlying);
+    const arc = new CosyneArc(100, 100, 50, mockUnderlying, { startAngle: 0, endAngle: Math.PI / 2 });
     const tester = arc.getHitTester();
 
     // Point at 45 degrees, distance 35 (within radius 50)
@@ -398,7 +402,7 @@ describe('Hit Testing - Arc/Wedge (TC-HIT-WEDGE-001 through TC-HIT-WEDGE-003)', 
   });
 
   it('TC-HIT-WEDGE-002: Wedge hit test - full sector', () => {
-    const wedge = new CosyneStar(100, 100, 5, 20, 40, mockUnderlying);
+    const wedge = new CosyneStar(100, 100, mockUnderlying, { points: 5, innerRadius: 20, outerRadius: 40 });
     const tester = wedge.getHitTester();
 
     // Star contains multiple points - test center region
@@ -407,7 +411,7 @@ describe('Hit Testing - Arc/Wedge (TC-HIT-WEDGE-001 through TC-HIT-WEDGE-003)', 
   });
 
   it('TC-HIT-WEDGE-003: Arc outside radius range', () => {
-    const arc = new CosyneArc(100, 100, 50, 0, Math.PI / 2, mockUnderlying);
+    const arc = new CosyneArc(100, 100, 50, mockUnderlying, { startAngle: 0, endAngle: Math.PI / 2 });
     const tester = arc.getHitTester();
 
     expect(tester(100, 0)).toBe(false); // Above, distance 100 > radius 50
