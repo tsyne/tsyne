@@ -524,35 +524,79 @@ export function buildSphericalSnakeApp(a: App): void {
                 .withId('gameCanvas');
             });
 
-            // Layer 2: Direction buttons at bottom corners
+            // Layer 2: Direction buttons at bottom corners using TappableCanvasRaster
+            const arrowSize = 80;
+            const insetPercent = 0.10; // 10% inset from edges
             a.border({
               bottom: () => {
                 a.hbox(() => {
-                  // Left button (SW corner)
-                  a.button('◀')
-                    .onMouseDown((_event) => {
-                      leftDown = true;
-                      game.setInputs(leftDown, rightDown);
-                    })
-                    .onMouseUp((_event) => {
-                      leftDown = false;
-                      game.setInputs(leftDown, rightDown);
+                  // Left spacer (10% inset)
+                  a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
+
+                  // Left arrow button (SW corner)
+                  let leftArrowCanvas: TappableCanvasRaster;
+                  leftArrowCanvas = a
+                    .tappableCanvasRaster(arrowSize, arrowSize, {
+                      onTap: () => {
+                        leftDown = true;
+                        game.setInputs(leftDown, rightDown);
+                        setTimeout(() => {
+                          leftDown = false;
+                          game.setInputs(leftDown, rightDown);
+                        }, 100);
+                      },
+                      onDrag: () => {
+                        leftDown = true;
+                        game.setInputs(leftDown, rightDown);
+                      },
+                      onDragEnd: () => {
+                        leftDown = false;
+                        game.setInputs(leftDown, rightDown);
+                      }
                     })
                     .withId('leftBtn');
 
+                  // Draw the left arrow after canvas is ready
+                  setTimeout(async () => {
+                    const buffer = new Uint8Array(arrowSize * arrowSize * 4);
+                    drawArrow(buffer, arrowSize, 'left');
+                    await leftArrowCanvas.setPixelBuffer(buffer);
+                  }, 200);
+
                   a.spacer();
 
-                  // Right button (SE corner)
-                  a.button('▶')
-                    .onMouseDown((_event) => {
-                      rightDown = true;
-                      game.setInputs(leftDown, rightDown);
-                    })
-                    .onMouseUp((_event) => {
-                      rightDown = false;
-                      game.setInputs(leftDown, rightDown);
+                  // Right arrow button (SE corner)
+                  let rightArrowCanvas: TappableCanvasRaster;
+                  rightArrowCanvas = a
+                    .tappableCanvasRaster(arrowSize, arrowSize, {
+                      onTap: () => {
+                        rightDown = true;
+                        game.setInputs(leftDown, rightDown);
+                        setTimeout(() => {
+                          rightDown = false;
+                          game.setInputs(leftDown, rightDown);
+                        }, 100);
+                      },
+                      onDrag: () => {
+                        rightDown = true;
+                        game.setInputs(leftDown, rightDown);
+                      },
+                      onDragEnd: () => {
+                        rightDown = false;
+                        game.setInputs(leftDown, rightDown);
+                      }
                     })
                     .withId('rightBtn');
+
+                  // Draw the right arrow after canvas is ready
+                  setTimeout(async () => {
+                    const buffer = new Uint8Array(arrowSize * arrowSize * 4);
+                    drawArrow(buffer, arrowSize, 'right');
+                    await rightArrowCanvas.setPixelBuffer(buffer);
+                  }, 200);
+
+                  // Right spacer (10% inset)
+                  a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
                 });
               }
             });
@@ -622,11 +666,15 @@ export function buildSphericalSnakeApp(a: App): void {
         buffer[i + 3] = 255; // A
       }
 
-      // Draw sphere grid (black dots)
+      // Draw sphere grid (graticule - slightly larger dots)
       const gridPoints = game.getProjectedGridPoints();
       for (const point of gridPoints) {
         const depthAlpha = Math.floor(point.alpha * 255);
+        // Draw 2x2 dot for visibility
         drawPixel(buffer, point.x, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
+        drawPixel(buffer, point.x + 1, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
+        drawPixel(buffer, point.x, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
+        drawPixel(buffer, point.x + 1, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
       }
 
       // Draw snake (reddish-purple with depth-based coloring)
@@ -663,6 +711,17 @@ export function buildSphericalSnakeApp(a: App): void {
         0,                // Green
         pelletDepthColor, // Blue varies with depth
         255
+      );
+
+      // Draw horizon circle (thin black outline at edge of sphere)
+      const horizonRadius = Math.round(canvasSize.width * 0.41); // ~0.58 * 0.71 scale factor
+      drawCircleOutline(
+        buffer,
+        Math.round(canvasSize.width / 2),
+        Math.round(canvasSize.height / 2),
+        horizonRadius,
+        canvasSize.width,
+        0, 0, 0 // Black
       );
 
       await canvas.setPixelBuffer(buffer);
@@ -750,6 +809,90 @@ function drawCircle(
     for (let x = -radius; x <= radius; x++) {
       if (x * x + y * y <= radius * radius) {
         drawPixel(buffer, cx + x, cy + y, width, r, g, b, a);
+      }
+    }
+  }
+}
+
+function drawCircleOutline(
+  buffer: Uint8Array,
+  cx: number,
+  cy: number,
+  radius: number,
+  width: number,
+  r: number,
+  g: number,
+  b: number
+): void {
+  cx = Math.round(cx);
+  cy = Math.round(cy);
+  radius = Math.round(radius);
+
+  // Bresenham's circle algorithm for thin 1px line
+  let x = radius;
+  let y = 0;
+  let err = 0;
+
+  while (x >= y) {
+    drawPixel(buffer, cx + x, cy + y, width, r, g, b, 255);
+    drawPixel(buffer, cx + y, cy + x, width, r, g, b, 255);
+    drawPixel(buffer, cx - y, cy + x, width, r, g, b, 255);
+    drawPixel(buffer, cx - x, cy + y, width, r, g, b, 255);
+    drawPixel(buffer, cx - x, cy - y, width, r, g, b, 255);
+    drawPixel(buffer, cx - y, cy - x, width, r, g, b, 255);
+    drawPixel(buffer, cx + y, cy - x, width, r, g, b, 255);
+    drawPixel(buffer, cx + x, cy - y, width, r, g, b, 255);
+
+    y += 1;
+    err += 1 + 2 * y;
+    if (2 * (err - x) + 1 > 0) {
+      x -= 1;
+      err += 1 - 2 * x;
+    }
+  }
+}
+
+/**
+ * Draw an arrow on a canvas buffer
+ * @param buffer - Pixel buffer (RGBA)
+ * @param size - Width/height of the square canvas
+ * @param direction - 'left' or 'right'
+ */
+function drawArrow(buffer: Uint8Array, size: number, direction: 'left' | 'right'): void {
+  // Fill with background matching sphere (#E8E8E8 = 232, 232, 232)
+  for (let i = 0; i < buffer.length; i += 4) {
+    buffer[i] = 232;     // R
+    buffer[i + 1] = 232; // G
+    buffer[i + 2] = 232; // B
+    buffer[i + 3] = 255; // A
+  }
+
+  const margin = Math.floor(size * 0.15);
+  const cy = Math.floor(size / 2);
+  const halfHeight = Math.floor((size - margin * 2) / 2);
+
+  if (direction === 'left') {
+    // Left arrow: tip on left, base on right
+    const tipX = margin;
+    const baseX = size - margin;
+    for (let row = -halfHeight; row <= halfHeight; row++) {
+      const y = cy + row;
+      const t = Math.abs(row) / halfHeight;
+      const leftX = Math.floor(tipX + (baseX - tipX) * t);
+      for (let x = leftX; x <= baseX; x++) {
+        drawPixel(buffer, x, y, size, 80, 80, 80, 255);
+      }
+    }
+  } else {
+    // Right arrow: tip on right, base on left
+    const tipX = size - margin;
+    const baseX = margin;
+    for (let row = -halfHeight; row <= halfHeight; row++) {
+      const y = cy + row;
+      const t = Math.abs(row) / halfHeight;
+      const rightX = Math.floor(tipX - (tipX - baseX) * t);
+      for (let x = baseX; x <= rightX; x++) {
+        drawPixel(buffer, x, y, size, 80, 80, 80, 255);
       }
     }
   }

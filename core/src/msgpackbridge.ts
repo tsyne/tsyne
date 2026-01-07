@@ -290,9 +290,12 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   private handleEvent(event: Event): void {
-    // Try to find handler by callback ID or event type
+    // Try to find handler by callback ID, widget ID, type, or composite type:widgetId key
     const handlerKey = event.data?.callbackId as string || event.widgetId;
-    const handler = this.eventHandlers.get(handlerKey) || this.eventHandlers.get(event.type);
+    const compositeKey = event.widgetId ? `${event.type}:${event.widgetId}` : null;
+    const handler = this.eventHandlers.get(handlerKey)
+      || this.eventHandlers.get(event.type)
+      || (compositeKey && this.eventHandlers.get(compositeKey));
 
     if (handler) {
       const eventData = { ...event.data };
