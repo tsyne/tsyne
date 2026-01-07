@@ -232,6 +232,10 @@ setInterval(async () => {
 
 This approach is perfectly suitable for cases like the clock, where the change is isolated and simple.
 
+### More Sophisticated Imperative Updates with Custom Bindings
+
+For animating canvas primitives, see `phone-apps/clock/clock.ts:98-114` which creates a custom `bindLine()` method. This combines declarative binding setup (specifying a rotation function) with imperative updates (calling `line.update()` in a timer loop). Useful when canvas primitives need computed transforms.
+
 ### Property Binding Methods
 
 Beyond `.bindTo()` for lists, Tsyne provides property-specific bindings:
