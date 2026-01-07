@@ -400,6 +400,28 @@ timeout 600 $PNPM run test:unit --json --outputFile=/tmp/core-test-results.json 
 capture_test_results "Core" "/tmp/core-test-results.json" || true
 
 # ============================================================================
+# STEP 2.5: Cosyne - Declarative Canvas Library
+# ============================================================================
+echo "--- :art: Cosyne - Install & Build"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/cosyne
+$PNPM install --ignore-scripts
+$PNPM run build || {
+  echo "❌ Cosyne build failed"
+  exit 1
+}
+
+echo "--- :test_tube: Cosyne - Unit Tests"
+timeout 120 $PNPM run test --json --outputFile=/tmp/cosyne-test-results.json || {
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -eq 124 ]; then
+    echo "❌ Cosyne tests timed out after 120 seconds"
+  else
+    echo "❌ Cosyne tests failed (exit code: $EXIT_CODE)"
+  fi
+}
+capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
+
+# ============================================================================
 # STEP 3: Designer Sub-Project
 # ============================================================================
 echo "--- :art: Designer - Install & Build"

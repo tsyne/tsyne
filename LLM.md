@@ -50,6 +50,89 @@ import { format } from 'date-fns';
 - Inspired by Groovy's Grape annotations
 - See `docs/INLINE_DEPENDENCY_DECLARATIONS.md` for details
 
+## Cosyne: Declarative Canvas Library (200+ Tests, ~6000 Lines)
+
+**Pseudo-declarative canvas grammar** with data binding, reactive updates, and interactive events. Use within `a.canvasStack()`.
+
+**Quick API:**
+```typescript
+cosyne(a, (c) => {
+  // Primitives: circle, rect, line, text, path, arc, wedge, polygon, star, grid, heatmap, gauge
+  c.circle(100, 100, 20).fill('#ff0000').withId('c1')
+    .onClick((e) => {...})
+    .onDrag((e) => {...});
+
+  // Collections: circles(), rects(), lines()
+  c.circles().bindTo(items, { trackBy: (item) => item.id });
+
+  // Bindings: position, fill, stroke, alpha, visible, rotation, value
+  c.rect(x, y, w, h).bindPosition(() => ({ x: state.x, y: state.y }));
+
+  // Transforms: nested coordinate systems
+  c.transform({ translate: [50, 50] }, (inner) => {
+    inner.circle(0, 0, 10);
+  });
+
+  // Projections: 3D → 2D (spherical, isometric)
+  const proj = new SphericalProjection();
+
+  // Foreign objects: embed Tsyne widgets
+  c.foreign(100, 100, (app) => app.label('Text'));
+});
+
+// After state changes, refresh bindings
+refreshAllCosyneContexts();
+
+// Enable interactive events
+enableEventHandling(cosyneCtx, a, { width: 500, height: 500 });
+```
+
+**Event handlers** (fluent, all return `this`):
+- `.onClick(e => {...})` - Click/tap with `{x, y}`
+- `.onMouseMove(e => {...})` - Continuous tracking
+- `.onMouseEnter(e => {...})` / `.onMouseLeave(() => {...})` - Hover tracking
+- `.onDragStart(e => {...})` / `.onDrag(e => {...})` / `.onDragEnd(() => {...})`
+
+**Hit testing** (automatic):
+- All primitives implement `getHitTester()`
+- Shapes: circle (distance), rect (bbox), line (distance-to-segment), polygon (ray casting), arc/wedge (radial+angle)
+- Router: `EventRouter` class routes canvas events to primitives via hit detection
+
+**Animations** (Phase 9):
+- `.animate('property', { from, to, duration, easing, loop, yoyo })` - Direct animation with control
+- `.animateFluent('property', from, to).duration(ms).easing(fn).loop(true).start()` - Fluent builder API
+- 30+ easing functions: `linear`, `easeIn/Out/InOutQuad`, `easeInOutCubic`, `easeInOutSine`, `easeInOutExpo`, `easeInOutCirc`, `easeInElastic`, `easeInBack`, `easeOutBounce`, etc.
+- Color interpolation: `interpolateColor('#FF0000', '#0000FF', 0.5, easing)`
+- AnimationManager: Global singleton for coordinating animations via `requestAnimationFrame`
+- Fluent animation example:
+  ```typescript
+  c.circle(100, 100, 20)
+    .animateFluent('alpha', 0, 1)
+    .duration(1000)
+    .easing('easeInOutCubic')
+    .loop(true)
+    .yoyo(true)
+    .start();
+  ```
+
+**Architecture:**
+- `cosyne/src/primitives/` - 12 shape types, all extend `Primitive<T>`
+- `cosyne/src/binding.ts` - Lazy-evaluated binding system with diffing
+- `cosyne/src/events.ts` - Hit testers & event routing
+- `cosyne/src/easing.ts` - 30+ parameterized easing functions, interpolation helpers
+- `cosyne/src/animation.ts` - Generic `Animation<T>` class with keyframe support
+- `cosyne/src/animation-manager.ts` - Global animation coordinator with requestAnimationFrame
+- `cosyne/src/context.ts` - Builder context, global registry
+- `cosyne/test/` - 200+ Jest tests covering all features (phase 9: 75+ animation tests)
+
+**Key design:**
+- ✅ Fluent API (all methods return `this`)
+- ✅ Lazy bindings (evaluated on-demand via `refreshBindings()`)
+- ✅ Efficient collections (O(n) diffing via trackBy)
+- ✅ Z-order aware event routing
+- ✅ Mockable hit testers (inject custom logic for tests)
+- ✅ No backward compatibility concerns (free to refactor)
+
 ## Intended End-User Code Style
 
 **Pseudo-declarative builder pattern:**
