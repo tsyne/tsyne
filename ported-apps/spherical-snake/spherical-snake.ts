@@ -124,23 +124,25 @@ function distanceSquared(a: Point3D, b: Point3D): number {
 }
 
 // ============================================================================
-// Sphere Grid Generation (Fibonacci Sphere)
+// Sphere Grid Generation (Latitude/Longitude - like original)
 // ============================================================================
 
-function generateSphereGrid(pointCount: number): Point3D[] {
+function generateSphereGrid(gridSize: number): Point3D[] {
   const points: Point3D[] = [];
-  const goldenRatio = (1 + Math.sqrt(5)) / 2;
+  const n = gridSize; // Number of lines in each direction
 
-  for (let i = 0; i < pointCount; i++) {
-    const theta = Math.acos(1 - (2 * i) / pointCount);
-    const phi = (2 * Math.PI * i) / goldenRatio;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const theta = (i / n) * Math.PI * 2; // Longitude: 0 to 2π
+      const phi = (j / n) * Math.PI;       // Latitude: 0 to π
 
-    const sinTheta = Math.sin(theta);
-    points.push({
-      x: Math.cos(phi) * sinTheta,
-      y: Math.sin(phi) * sinTheta,
-      z: Math.cos(theta)
-    });
+      const sinPhi = Math.sin(phi);
+      points.push({
+        x: Math.cos(theta) * sinPhi,
+        y: Math.sin(theta) * sinPhi,
+        z: Math.cos(phi)
+      });
+    }
   }
 
   return points;
@@ -155,7 +157,7 @@ const NODE_QUEUE_SIZE = 9;
 const STARTING_DIRECTION = Math.PI / 4;
 const COLLISION_DISTANCE = 2 * Math.sin(NODE_ANGLE);
 const SNAKE_VELOCITY = (NODE_ANGLE * 2) / (NODE_QUEUE_SIZE + 1);
-const GRID_POINT_COUNT = 1600;
+const GRID_SIZE = 40; // Number of latitude/longitude lines (40x40 = 1600 points)
 
 interface SnakeNode {
   x: number;
@@ -182,16 +184,17 @@ export class SphericalSnake {
   private rotationMatrix = RotationMatrix.identity();
   private changeListeners: ChangeListener[] = [];
 
-  private focalLength = 200;
+  private focalLength = 320;
   private canvasWidth = 450;
   private canvasHeight = 450;
+  private sphereSize = 450; // Size used for projection (keeps sphere circular)
 
   constructor() {
     this.init();
   }
 
   private init(): void {
-    this.sphereGrid = generateSphereGrid(GRID_POINT_COUNT);
+    this.sphereGrid = generateSphereGrid(GRID_SIZE);
     this.snake = [];
 
     // Initialize snake nodes spread apart along a great circle
@@ -255,30 +258,42 @@ export class SphericalSnake {
   }
 
   private applySnakeRotation(): void {
+    let nextPosition: Point3D | null = null;
+
     for (let i = 0; i < this.snake.length; i++) {
       const node = this.snake[i];
       const oldPosition = copyPoint(node);
 
-      // Update position from rotated state
-      const rotated = this.rotationMatrix.multiplyPoint(node);
-      node.x = rotated.x;
-      node.y = rotated.y;
-      node.z = rotated.z;
-
-      // Push to queue
-      node.posQueue.unshift(oldPosition);
-      node.posQueue.pop();
-    }
-
-    // Normalize to unit sphere
-    for (let i = 0; i < this.snake.length; i++) {
-      const node = this.snake[i];
-      const len = Math.sqrt(node.x * node.x + node.y * node.y + node.z * node.z);
-      if (len > 0) {
-        node.x /= len;
-        node.y /= len;
-        node.z /= len;
+      if (i === 0) {
+        // Head moves FORWARD (opposite to global rotation, so it stays anchored)
+        const headRotZ1 = RotationMatrix.rotateZ(-this.direction);
+        const headRotY = RotationMatrix.rotateY(SNAKE_VELOCITY); // Positive = forward
+        const headRotZ2 = RotationMatrix.rotateZ(this.direction);
+        const headMatrix = headRotZ1.multiply(headRotY).multiply(headRotZ2);
+        const rotated = headMatrix.multiplyPoint(node);
+        node.x = rotated.x;
+        node.y = rotated.y;
+        node.z = rotated.z;
+      } else if (nextPosition === null) {
+        // History isn't available yet - use starting direction
+        const bodyRotZ1 = RotationMatrix.rotateZ(-STARTING_DIRECTION);
+        const bodyRotY = RotationMatrix.rotateY(SNAKE_VELOCITY);
+        const bodyRotZ2 = RotationMatrix.rotateZ(STARTING_DIRECTION);
+        const bodyMatrix = bodyRotZ1.multiply(bodyRotY).multiply(bodyRotZ2);
+        const rotated = bodyMatrix.multiplyPoint(node);
+        node.x = rotated.x;
+        node.y = rotated.y;
+        node.z = rotated.z;
+      } else {
+        // Follow the previous node's historical position
+        node.x = nextPosition.x;
+        node.y = nextPosition.y;
+        node.z = nextPosition.z;
       }
+
+      // Push old position to queue, get next position for following segment
+      node.posQueue.unshift(oldPosition);
+      nextPosition = node.posQueue.pop() || null;
     }
   }
 
@@ -316,18 +331,57 @@ export class SphericalSnake {
   tick(): void {
     if (this.gameState !== 'playing') return;
 
-    // Update direction
+    // Update direction based on input
     if (this.leftDown) this.direction -= 0.08;
     if (this.rightDown) this.direction += 0.08;
 
-    // Apply rotation
+    // First, apply snake-specific rotation (head moves forward, body follows)
+    this.applySnakeRotation();
+
+    // Then apply global rotation to EVERYTHING (grid, pellet, AND snake)
+    // This makes the sphere appear to rotate under the snake
+    // The snake head moved forward by +SNAKE_VELOCITY, now everything moves back by -SNAKE_VELOCITY
+    // Net effect: head stays anchored, sphere rotates
     const rotZ1 = RotationMatrix.rotateZ(-this.direction);
     const rotY = RotationMatrix.rotateY(-SNAKE_VELOCITY);
     const rotZ2 = RotationMatrix.rotateZ(this.direction);
+    const globalMatrix = rotZ1.multiply(rotY).multiply(rotZ2);
 
-    this.rotationMatrix = rotZ1.multiply(rotY).multiply(rotZ2);
+    // Rotate grid points
+    for (let i = 0; i < this.sphereGrid.length; i++) {
+      const p = this.sphereGrid[i];
+      const rotated = globalMatrix.multiplyPoint(p);
+      p.x = rotated.x;
+      p.y = rotated.y;
+      p.z = rotated.z;
+    }
 
-    this.applySnakeRotation();
+    // Rotate pellet
+    const rotatedPellet = globalMatrix.multiplyPoint(this.pellet);
+    this.pellet.x = rotatedPellet.x;
+    this.pellet.y = rotatedPellet.y;
+    this.pellet.z = rotatedPellet.z;
+
+    // Rotate snake (and its position queues)
+    for (let i = 0; i < this.snake.length; i++) {
+      const node = this.snake[i];
+      const rotated = globalMatrix.multiplyPoint(node);
+      node.x = rotated.x;
+      node.y = rotated.y;
+      node.z = rotated.z;
+
+      // Also rotate the position queue entries
+      for (let j = 0; j < node.posQueue.length; j++) {
+        const qp = node.posQueue[j];
+        if (qp) {
+          const rotatedQ = globalMatrix.multiplyPoint(qp);
+          qp.x = rotatedQ.x;
+          qp.y = rotatedQ.y;
+          qp.z = rotatedQ.z;
+        }
+      }
+    }
+
     this.checkCollisions();
   }
 
@@ -341,9 +395,10 @@ export class SphericalSnake {
     // Translate sphere origin
     p.z += 2;
 
-    // Project to 2D
+    // Project to 2D - scale focalLength based on sphereSize to maintain aspect ratio
     let radius = NODE_ANGLE;
-    const scale = this.focalLength / p.z;
+    const scaledFocalLength = this.focalLength * (this.sphereSize / 450);
+    const scale = scaledFocalLength / p.z;
 
     const x = -p.x * scale + this.canvasWidth / 2;
     const y = -p.y * scale + this.canvasHeight / 2;
@@ -395,6 +450,12 @@ export class SphericalSnake {
     return { width: this.canvasWidth, height: this.canvasHeight };
   }
 
+  setCanvasSize(width: number, height: number, sphereSize?: number): void {
+    this.canvasWidth = width;
+    this.canvasHeight = height;
+    this.sphereSize = sphereSize ?? Math.min(width, height);
+  }
+
   // ========================================================================
   // Observable Pattern
   // ========================================================================
@@ -429,62 +490,122 @@ export class SphericalSnake {
 
 export function buildSphericalSnakeApp(a: App): void {
   const game = new SphericalSnake();
-  const canvasSize = game.canvasSize();
+  let canvasSize = { width: 450, height: 450 };
 
   let canvas: TappableCanvasRaster;
   let scoreLabel: Label;
   let statusLabel: Label;
   let gameLoop: NodeJS.Timeout | null = null;
+  let leftDown = false;
+  let rightDown = false;
 
   a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
     win.setContent(() => {
-      a.vbox(() => {
-        a.label('Spherical Snake').withId('title');
-        a.hbox(() => {
-          scoreLabel = a.label('Score: 0').withId('scoreLabel');
-          statusLabel = a.label('Playing').withId('statusLabel');
-        });
-
-        canvas = a
-          .tappableCanvasRaster(canvasSize.width, canvasSize.height, {
-            onKeyDown: (key: string) => handleKeyDown(key),
-            onKeyUp: (key: string) => handleKeyUp(key)
-          })
-          .withId('gameCanvas');
-
-        a.hbox(() => {
-          a.button('New Game').onClick(() => {
-            game.reset();
-            updateUI();
+      a.border({
+        top: () => {
+          a.vbox(() => {
+            a.label('Spherical Snake').withId('title');
+            a.hbox(() => {
+              scoreLabel = a.label('Score: 0').withId('scoreLabel');
+              statusLabel = a.label('Playing').withId('statusLabel');
+            });
           });
-          a.button('Pause').onClick(() => {
-            if (gameLoop) {
-              clearInterval(gameLoop);
-              gameLoop = null;
-              statusLabel.setText('Paused');
-            } else {
+        },
+        center: () => {
+          // Stack: game canvas with direction buttons overlaid at bottom corners
+          a.stack(() => {
+            // Layer 1: Game canvas with aspect ratio
+            a.aspectRatio(1.0, () => {
+              canvas = a
+                .tappableCanvasRaster(canvasSize.width, canvasSize.height, {
+                  onKeyDown: (key: string) => handleKeyDown(key),
+                  onKeyUp: (key: string) => handleKeyUp(key)
+                })
+                .withId('gameCanvas');
+            });
+
+            // Layer 2: Direction buttons at bottom corners
+            a.border({
+              bottom: () => {
+                a.hbox(() => {
+                  // Left button (SW corner)
+                  a.button('◀')
+                    .onMouseDown((_event) => {
+                      leftDown = true;
+                      game.setInputs(leftDown, rightDown);
+                    })
+                    .onMouseUp((_event) => {
+                      leftDown = false;
+                      game.setInputs(leftDown, rightDown);
+                    })
+                    .withId('leftBtn');
+
+                  a.spacer();
+
+                  // Right button (SE corner)
+                  a.button('▶')
+                    .onMouseDown((_event) => {
+                      rightDown = true;
+                      game.setInputs(leftDown, rightDown);
+                    })
+                    .onMouseUp((_event) => {
+                      rightDown = false;
+                      game.setInputs(leftDown, rightDown);
+                    })
+                    .withId('rightBtn');
+                });
+              }
+            });
+          });
+        },
+        bottom: () => {
+          a.hbox(() => {
+            a.button('New Game').onClick(async () => {
+              game.reset();
               startGameLoop();
-              statusLabel.setText('Playing');
-            }
+              updateUI();
+              await canvas.requestFocus();
+            });
+            a.button('Pause').onClick(async () => {
+              if (gameLoop) {
+                clearInterval(gameLoop);
+                gameLoop = null;
+                statusLabel.setText('Paused');
+              } else {
+                startGameLoop();
+                statusLabel.setText('Playing');
+              }
+              await canvas.requestFocus();
+            });
           });
-        });
+        }
       });
     });
 
     win.show();
 
-    let leftDown = false;
-    let rightDown = false;
+    // Handle window resize - resize canvas buffer to match new size
+    const UI_HEIGHT = 130; // Approximate height of labels + buttons
+    win.onResize(async (newWidth: number, newHeight: number) => {
+      const availW = Math.max(100, newWidth - 20);
+      const availH = Math.max(100, newHeight - UI_HEIGHT);
+      // Use smaller dimension to keep canvas square
+      const size = Math.min(availW, availH);
+      canvasSize = { width: size, height: size };
+      game.setCanvasSize(size, size, size);
+      await canvas.resize(size, size);
+      await renderFrame();
+    });
 
     function handleKeyDown(key: string): void {
-      if (key === 'ArrowLeft') leftDown = true;
-      if (key === 'ArrowRight') rightDown = true;
+      if (key === 'Left' || key === 'ArrowLeft') leftDown = true;
+      if (key === 'Right' || key === 'ArrowRight') rightDown = true;
       game.setInputs(leftDown, rightDown);
     }
 
     function handleKeyUp(key: string): void {
-      if (key === 'ArrowLeft') leftDown = false;
-      if (key === 'ArrowRight') rightDown = false;
+      if (key === 'Left' || key === 'ArrowLeft') leftDown = false;
+      if (key === 'Right' || key === 'ArrowRight') rightDown = false;
       game.setInputs(leftDown, rightDown);
     }
 
@@ -551,9 +672,13 @@ export function buildSphericalSnakeApp(a: App): void {
       if (gameLoop) clearInterval(gameLoop);
 
       gameLoop = setInterval(async () => {
-        game.tick();
-        await renderFrame();
-        updateUI();
+        try {
+          game.tick();
+          await renderFrame();
+          updateUI();
+        } catch (err) {
+          console.error('[GAME] Error in game loop:', err);
+        }
       }, 15); // 15ms ~ 67 FPS
     }
 
@@ -561,7 +686,7 @@ export function buildSphericalSnakeApp(a: App): void {
       scoreLabel.setText(`Score: ${game.getScore()}`);
       const state = game.getGameState();
       if (state === 'gameover') {
-        statusLabel.setText('GAME OVER');
+        statusLabel.setText('Good game! Click New Game to play again');
         if (gameLoop) {
           clearInterval(gameLoop);
           gameLoop = null;
@@ -571,12 +696,12 @@ export function buildSphericalSnakeApp(a: App): void {
       }
     }
 
-    // Request canvas focus and start game
-    (async () => {
+    // Request canvas focus and start game (deferred to let setContent complete)
+    setTimeout(async () => {
       await canvas.requestFocus();
       startGameLoop();
       await renderFrame();
-    })();
+    }, 100);
   });
 }
 

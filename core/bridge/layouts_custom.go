@@ -396,3 +396,52 @@ func (l *CustomPaddedLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 	return fyne.NewSize(minWidth, minHeight)
 }
+
+// ============================================================================
+// Aspect Ratio Layout - Maintains content at fixed aspect ratio, centered
+// ============================================================================
+
+// AspectRatioLayout keeps content at a fixed aspect ratio (width/height), centered
+// within the available space. Useful for maintaining square canvases, video players, etc.
+type AspectRatioLayout struct {
+	Ratio float32 // width / height (1.0 for square, 16.0/9.0 for widescreen)
+}
+
+// NewAspectRatioLayout creates a layout that maintains the given aspect ratio
+func NewAspectRatioLayout(ratio float32) *AspectRatioLayout {
+	return &AspectRatioLayout{Ratio: ratio}
+}
+
+func (l *AspectRatioLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+	if len(objects) == 0 {
+		return
+	}
+	if containerSize.Width == 0 || containerSize.Height == 0 {
+		return
+	}
+
+	// Calculate largest size that fits while maintaining aspect ratio
+	var contentW, contentH float32
+	if containerSize.Width/containerSize.Height > l.Ratio {
+		// Container is wider than ratio - height is limiting
+		contentH = containerSize.Height
+		contentW = contentH * l.Ratio
+	} else {
+		// Container is taller than ratio - width is limiting
+		contentW = containerSize.Width
+		contentH = contentW / l.Ratio
+	}
+
+	// Center the content
+	x := (containerSize.Width - contentW) / 2
+	y := (containerSize.Height - contentH) / 2
+
+	for _, obj := range objects {
+		obj.Resize(fyne.NewSize(contentW, contentH))
+		obj.Move(fyne.NewPos(x, y))
+	}
+}
+
+func (l *AspectRatioLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(100, 100/l.Ratio)
+}

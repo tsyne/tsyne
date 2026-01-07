@@ -20,7 +20,7 @@ import {
   Activity, Calendar, FileIcon, Hyperlink, Icon, Image, Label,
   ProgressBar, ProgressBarInfinite, RichText, Separator, Spacer, TextGrid,
   List, Menu, MenuItem, Table, Toolbar, ToolbarAction, Tree,
-  AdaptiveGrid, Border, Center, Clip, Grid, GridWrap, WithoutLayout,
+  AdaptiveGrid, AspectRatio, Border, Center, Clip, Grid, GridWrap, WithoutLayout,
   HBox, Max, Padded, PaddedOptions, Scroll, Split, Stack, VBox, CanvasStack,
   Accordion, Card, DocTabs, Form, InnerWindow, MultipleWindows,
   Navigation, Popup, Tabs, ThemeOverride,
@@ -52,6 +52,7 @@ export interface IApp {
   scroll(builder: () => void): Scroll;
   grid(columns: number, builder: () => void): Grid;
   center(builder: () => void): Center;
+  aspectRatio(ratio: number, builder: () => void): AspectRatio;
   max(builder: () => void): Max;
   border(config: { top?: () => void; bottom?: () => void; left?: () => void; right?: () => void; center?: () => void }): Border;
   gridwrap(itemWidth: number, itemHeight: number, builder: () => void): GridWrap;
@@ -216,6 +217,10 @@ export class SandboxedApp implements IApp {
 
   center(builder: () => void): Center {
     return new Center(this.ctx, builder);
+  }
+
+  aspectRatio(ratio: number, builder: () => void): AspectRatio {
+    return new AspectRatio(this.ctx, ratio, builder);
   }
 
   max(builder: () => void): Max {

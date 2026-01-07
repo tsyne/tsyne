@@ -31,6 +31,7 @@ export {
   Clip,
   InnerWindow,
   AdaptiveGrid,
+  AspectRatio,
   Padded,
   PaddedOptions,
   ThemeOverride,

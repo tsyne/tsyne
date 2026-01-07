@@ -60,6 +60,7 @@ service BridgeService {
   rpc SetScrollMinSize(SetScrollMinSizeRequest) returns (Response);
   rpc CreateGrid(CreateGridRequest) returns (Response);
   rpc CreateCenter(CreateCenterRequest) returns (Response);
+  rpc CreateAspectRatio(CreateAspectRatioRequest) returns (Response);
   rpc CreateClip(CreateClipRequest) returns (Response);
   rpc CreateMax(CreateMaxRequest) returns (Response);
   rpc CreateStack(CreateStackRequest) returns (Response);
@@ -507,6 +508,12 @@ message CreateGridRequest {
 message CreateCenterRequest {
   string widget_id = 1;
   string child_id = 2;
+}
+
+message CreateAspectRatioRequest {
+  string widget_id = 1;
+  string child_id = 2;
+  float ratio = 3;  // width / height (1.0 for square)
 }
 
 message CreateClipRequest {

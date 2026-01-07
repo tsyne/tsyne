@@ -348,6 +348,43 @@ export class Center {
 }
 
 /**
+ * AspectRatio layout - maintains content at a fixed aspect ratio, centered
+ * Useful for maintaining square canvases, video players, etc.
+ */
+export class AspectRatio {
+  private ctx: Context;
+  public id: string;
+
+  /**
+   * Create an aspect ratio container
+   * @param ctx The context
+   * @param ratio The aspect ratio (width/height). 1.0 for square, 16/9 for widescreen
+   * @param builder Builder function for the child widget
+   */
+  constructor(ctx: Context, ratio: number, builder: () => void) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('aspectratio');
+
+    // Build child content
+    ctx.pushContainer();
+    builder();
+    const children = ctx.popContainer();
+
+    if (children.length !== 1) {
+      throw new Error('AspectRatio must have exactly one child');
+    }
+
+    ctx.bridge.send('createAspectRatio', {
+      id: this.id,
+      childId: children[0],
+      ratio: ratio
+    });
+
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
  * Max layout - stacks widgets on top of each other (Z-layering)
  * All widgets expand to fill the container (like CSS position: absolute with 100% width/height)
  * Useful for layering backgrounds and foregrounds, like a chess square + piece

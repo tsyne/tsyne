@@ -47,6 +47,7 @@ class NullForm extends NullWidget {}
 class NullTree extends NullWidget {}
 class NullRichText extends NullWidget {}
 class NullCenter extends NullWidget {}
+class NullAspectRatio extends NullWidget {}
 class NullImage extends NullWidget {}
 class NullBorder extends NullWidget {}
 class NullGridWrap extends NullWidget {}
@@ -181,6 +182,14 @@ export class ResourceDiscoveryContext {
 
   center(builder: () => void): NullCenter {
     const container = new NullCenter();
+    this.containerStack.push(container);
+    builder();
+    this.containerStack.pop();
+    return container;
+  }
+
+  aspectRatio(ratio: number, builder: () => void): NullAspectRatio {
+    const container = new NullAspectRatio();
     this.containerStack.push(container);
     builder();
     this.containerStack.pop();
@@ -337,6 +346,7 @@ export function createDiscoveryAPI(context: ResourceDiscoveryContext) {
     hbox: (builder: () => void) => context.hbox(builder),
     scroll: (builder: () => void) => context.scroll(builder),
     center: (builder: () => void) => context.center(builder),
+    aspectRatio: (ratio: number, builder: () => void) => context.aspectRatio(ratio, builder),
     card: (title: string, subtitle: string, builder: () => void) =>
       context.card(title, subtitle, builder),
     accordion: (items: Array<{title: string, builder: () => void}>) =>

@@ -340,6 +340,39 @@ func (b *Bridge) handleCreateCenter(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleCreateAspectRatio(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	childID := msg.Payload["childId"].(string)
+	ratio := toFloat32(msg.Payload["ratio"])
+
+	b.mu.RLock()
+	child, exists := b.widgets[childID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Child widget not found",
+		}
+	}
+
+	// Create container with AspectRatioLayout
+	aspectRatioContainer := container.New(NewAspectRatioLayout(ratio), child)
+
+	b.mu.Lock()
+	b.widgets[widgetID] = aspectRatioContainer
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "aspectratio", Text: ""}
+	b.childToParent[childID] = widgetID
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
 func (b *Bridge) handleCreateClip(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	childID := msg.Payload["childId"].(string)

@@ -47,6 +47,7 @@ import {
   Tree,
   // Containers - Layout
   AdaptiveGrid,
+  AspectRatio,
   Border,
   Center,
   Clip,
@@ -698,6 +699,10 @@ export class App {
 
   center(builder: () => void): Center {
     return new Center(this.ctx, builder);
+  }
+
+  aspectRatio(ratio: number, builder: () => void): AspectRatio {
+    return new AspectRatio(this.ctx, ratio, builder);
   }
 
   max(builder: () => void): Max {

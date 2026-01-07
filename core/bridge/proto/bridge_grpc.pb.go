@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: proto/bridge.proto
+// source: bridge.proto
 
 package proto
 
@@ -58,6 +58,7 @@ const (
 	BridgeService_SetScrollMinSize_FullMethodName            = "/bridge.BridgeService/SetScrollMinSize"
 	BridgeService_CreateGrid_FullMethodName                  = "/bridge.BridgeService/CreateGrid"
 	BridgeService_CreateCenter_FullMethodName                = "/bridge.BridgeService/CreateCenter"
+	BridgeService_CreateAspectRatio_FullMethodName           = "/bridge.BridgeService/CreateAspectRatio"
 	BridgeService_CreateClip_FullMethodName                  = "/bridge.BridgeService/CreateClip"
 	BridgeService_CreateMax_FullMethodName                   = "/bridge.BridgeService/CreateMax"
 	BridgeService_CreateStack_FullMethodName                 = "/bridge.BridgeService/CreateStack"
@@ -310,6 +311,7 @@ type BridgeServiceClient interface {
 	SetScrollMinSize(ctx context.Context, in *SetScrollMinSizeRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateGrid(ctx context.Context, in *CreateGridRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateCenter(ctx context.Context, in *CreateCenterRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateAspectRatio(ctx context.Context, in *CreateAspectRatioRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateClip(ctx context.Context, in *CreateClipRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateMax(ctx context.Context, in *CreateMaxRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateStack(ctx context.Context, in *CreateStackRequest, opts ...grpc.CallOption) (*Response, error)
@@ -953,6 +955,16 @@ func (c *bridgeServiceClient) CreateCenter(ctx context.Context, in *CreateCenter
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateCenter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateAspectRatio(ctx context.Context, in *CreateAspectRatioRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateAspectRatio_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2955,6 +2967,7 @@ type BridgeServiceServer interface {
 	SetScrollMinSize(context.Context, *SetScrollMinSizeRequest) (*Response, error)
 	CreateGrid(context.Context, *CreateGridRequest) (*Response, error)
 	CreateCenter(context.Context, *CreateCenterRequest) (*Response, error)
+	CreateAspectRatio(context.Context, *CreateAspectRatioRequest) (*Response, error)
 	CreateClip(context.Context, *CreateClipRequest) (*Response, error)
 	CreateMax(context.Context, *CreateMaxRequest) (*Response, error)
 	CreateStack(context.Context, *CreateStackRequest) (*Response, error)
@@ -3330,6 +3343,9 @@ func (UnimplementedBridgeServiceServer) CreateGrid(context.Context, *CreateGridR
 }
 func (UnimplementedBridgeServiceServer) CreateCenter(context.Context, *CreateCenterRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateCenter not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateAspectRatio(context.Context, *CreateAspectRatioRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAspectRatio not implemented")
 }
 func (UnimplementedBridgeServiceServer) CreateClip(context.Context, *CreateClipRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateClip not implemented")
@@ -4629,6 +4645,24 @@ func _BridgeService_CreateCenter_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateCenter(ctx, req.(*CreateCenterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateAspectRatio_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAspectRatioRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateAspectRatio(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateAspectRatio_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateAspectRatio(ctx, req.(*CreateAspectRatioRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8264,6 +8298,10 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BridgeService_CreateCenter_Handler,
 		},
 		{
+			MethodName: "CreateAspectRatio",
+			Handler:    _BridgeService_CreateAspectRatio_Handler,
+		},
+		{
 			MethodName: "CreateClip",
 			Handler:    _BridgeService_CreateClip_Handler,
 		},
@@ -9039,5 +9077,5 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "proto/bridge.proto",
+	Metadata: "bridge.proto",
 }

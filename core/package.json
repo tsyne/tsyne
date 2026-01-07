@@ -2,8 +2,8 @@
   "name": "tsyne",
   "version": "0.1.0",
   "description": "Elegant TypeScript wrapper for Fyne - Build beautiful cross-platform desktop UIs with Node.js",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
     "build": "tsc",
     "build:ts": "tsc",

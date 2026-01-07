@@ -35,6 +35,7 @@ import {
   Tree,
   // Containers - Layout
   AdaptiveGrid,
+  AspectRatio,
   Border,
   Center,
   Clip,
@@ -549,6 +550,18 @@ export function center(builder: () => void): Center {
 }
 
 /**
+ * Create an aspect ratio layout (maintains content at fixed aspect ratio, centered)
+ * @param ratio The aspect ratio (width/height). 1.0 for square, 16/9 for widescreen
+ * @param builder Builder function for the child widget
+ */
+export function aspectRatio(ratio: number, builder: () => void): AspectRatio {
+  if (!globalContext) {
+    throw new Error('aspectRatio() must be called within an app context');
+  }
+  return new AspectRatio(globalContext, ratio, builder);
+}
+
+/**
  * Create a card container with title, subtitle, and content
  */
 export function card(title: string, subtitle: string, builder: () => void): Card {
@@ -832,6 +845,7 @@ export {
   Table,
   List,
   Center,
+  AspectRatio,
   Card,
   Accordion,
   Form,

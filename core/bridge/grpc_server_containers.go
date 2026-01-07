@@ -116,6 +116,26 @@ func (s *grpcBridgeService) CreateCenter(ctx context.Context, req *pb.CreateCent
 	}, nil
 }
 
+// CreateAspectRatio creates a container that maintains aspect ratio
+func (s *grpcBridgeService) CreateAspectRatio(ctx context.Context, req *pb.CreateAspectRatioRequest) (*pb.Response, error) {
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "createAspectRatio",
+		Payload: map[string]interface{}{
+			"id":      req.WidgetId,
+			"childId": req.ChildId,
+			"ratio":   float64(req.Ratio),
+		},
+	}
+
+	resp := s.bridge.handleCreateAspectRatio(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // CreateClip creates a clip container
 func (s *grpcBridgeService) CreateClip(ctx context.Context, req *pb.CreateClipRequest) (*pb.Response, error) {
 	msg := Message{
