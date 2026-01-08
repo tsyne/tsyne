@@ -9,7 +9,6 @@ Cosyne                              274      274        0        0    7|7|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
-Examples: GUI                       392      371        0       21  75|69|0
 Ported: sample-food-truck           806      806        0        0  42|42|0
 Ported: expense-tracker             806      806        0        0  42|42|0
 Ported: nextcloud                   806      806        0        0  42|42|0
@@ -29,14 +28,13 @@ Ported: game-of-life                 11       11        0        0    3|3|0
 Ported: image-viewer                  0        0        0        0    1|0|1
 Ported: mahjongg                     47       47        0        0    2|2|0
 Ported: peg-solitaire                44       44        0        0    2|2|0
-Ported: pixeledit                   427      427        0        0 115|114|1
+Ported: pixeledit                   429      429        0        0 115|115|0
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
 Ported: solitaire                   140      140        0        0    8|8|0
 Ported: slider-puzzle                37       37        0        0    2|2|0
 Ported: sudoku                       27       27        0        0    2|2|0
 Ported: tango-puzzle                 35       35        0        0    2|2|0
-Ported: terminal                      0        0        0        0    1|0|1
 Ported: zip-puzzle                   35       35        0        0    2|2|0
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
@@ -63,15 +61,15 @@ Larger: realtime-paris-density-simulation        0        0        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                             10005     9981        0       24      663
+TOTAL                              9615     9612        0        3      587
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 24 tests are currently skipped
+⚠️  Warning: 3 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 141250ms (141.25s)
-Total ctx.wait() calls: 481
+Total wait time: 138350ms (138.35s)
+Total ctx.wait() calls: 455
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -96,6 +94,6 @@ Top 10 tests by wait time:
   Desktop Remote Control API Tests should get desktop state via /state endpoint
     └─ 4500ms (9 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 9981 tests passed
+✅ SUCCESS: All 9612 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt
