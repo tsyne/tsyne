@@ -140,16 +140,17 @@ export class CosyneArc extends Primitive<any> {
   }
 
   /**
-   * Get hit tester for this arc (radial annulus with angle)
+   * Get hit tester for this arc (filled wedge for easier interaction)
    */
   getHitTester(): HitTester {
     return (x: number, y: number): boolean => {
-      const strokeW = this.strokeWidth || 1;
+      // For hit testing, treat arc as a filled wedge (from center to radius)
+      // This makes interactive arcs/pie-slices easier to click
       return DefaultHitTesters.arc(
         x, y,
         this.x, this.y,
-        Math.max(0, this.radius - strokeW / 2),
-        this.radius + strokeW / 2,
+        0,  // innerRadius = 0 for filled wedge behavior
+        this.radius,
         this.startAngle, this.endAngle
       );
     };

@@ -32,11 +32,12 @@ describe('SphericalProjection', () => {
     const screen1 = proj1.project(point);
     const screen2 = proj2.project(point);
 
-    // Larger focal length should result in smaller scaling
+    // Larger focal length gives larger scale factor (scale = focalLength / (focalLength + z))
+    // So points appear farther from center (like a telephoto lens magnifying the image)
     const dist1 = Math.hypot(screen1.x - 400, screen1.y - 300);
     const dist2 = Math.hypot(screen2.x - 400, screen2.y - 300);
 
-    expect(dist2).toBeLessThan(dist1);
+    expect(dist2).toBeGreaterThan(dist1);
   });
 
   it('TC-PROJ-003: Points behind sphere have low/zero alpha', () => {

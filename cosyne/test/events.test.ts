@@ -151,8 +151,9 @@ describe('Hit Testing - Rectangle (TC-HIT-004 through TC-HIT-006)', () => {
     const rect2 = new CosyneRect(50, 50, 100, 80, mockUnderlying);
     rect2.stroke('black', 5);
     const tester = rect2.getHitTester();
-    // Point slightly outside should be inside due to stroke padding
-    expect(tester(47, 90)).toBe(true); // Just outside left, but within stroke
+    // Point slightly outside rect edge should be inside due to stroke padding (5/2 = 2.5px)
+    // Left edge at x=50, stroke extends to x=47.5, so x=48 is within stroke
+    expect(tester(48, 90)).toBe(true); // Within stroke padding (48 > 47.5)
   });
 });
 
@@ -357,7 +358,7 @@ describe('Hit Testers - Mockability (TC-MOCK-001 through TC-MOCK-004)', () => {
   it('TC-MOCK-003: Hit tester returns predictable results', () => {
     const hitTester = DefaultHitTesters.circle;
     expect(hitTester(100, 100, 100, 100, 20)).toBe(true); // Center
-    expect(hitTester(100, 120, 100, 100, 20)).toBe(false); // Outside
+    expect(hitTester(100, 121, 100, 100, 20)).toBe(false); // Outside (distance 21 > radius 20)
   });
 
   it('TC-MOCK-004: Multiple handlers can be tested independently', () => {
@@ -405,8 +406,8 @@ describe('Hit Testing - Arc/Wedge (TC-HIT-WEDGE-001 through TC-HIT-WEDGE-003)', 
     const wedge = new CosyneStar(100, 100, mockUnderlying, { points: 5, innerRadius: 20, outerRadius: 40 });
     const tester = wedge.getHitTester();
 
-    // Star contains multiple points - test center region
-    expect(tester(100, 100)).toBe(false); // Center might be outside depending on geometry
+    // For a 5-point star polygon, the center is inside (enclosed by inner vertices)
+    expect(tester(100, 100)).toBe(true); // Center is inside the star polygon
     expect(tester(100, 70)).toBe(true); // Tip area
   });
 

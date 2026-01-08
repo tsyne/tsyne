@@ -4,25 +4,40 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                806      789       17        0  42|39|3
+Core                                806      806        0        0  42|42|0
+Cosyne                              274      274        0        0    7|7|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
 Examples: GUI                       392      371        0       21  75|69|0
-Ported: 3d-cube                     392      390        2        0    3|2|1
-Ported: chess                        60       57        0        3    3|3|0
+Ported: sample-food-truck           806      806        0        0  42|42|0
+Ported: expense-tracker             806      806        0        0  42|42|0
+Ported: nextcloud                   806      806        0        0  42|42|0
+Ported: duckduckgo                  806      806        0        0  42|42|0
+Ported: wikipedia                   806      806        0        0  42|42|0
+Ported: element                     806      806        0        0  42|42|0
+Ported: ebooks                      806      806        0        0  42|42|0
+Ported: 3d-cube                     392      392        0        0    3|3|0
+Ported: boing                       806      806        0        0  42|42|0
+Ported: calcudoku                    46       46        0        0    2|2|0
+Ported: chess                         0        0        0        0    3|0|3
 Ported: falling-blocks               36       36        0        0    1|1|0
 Ported: falling-letters              39       39        0        0    1|1|0
+Ported: find-pairs                   35       35        0        0    2|2|0
 Ported: fyles                        89       86        0        3    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
-Ported: image-viewer                 17       13        0        4    1|1|0
+Ported: image-viewer                  0        0        0        0    1|0|1
 Ported: mahjongg                     47       47        0        0    2|2|0
-Ported: pixeledit                   429      429        0        0 115|115|0
+Ported: peg-solitaire                44       44        0        0    2|2|0
+Ported: pixeledit                   427      427        0        0 115|114|1
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
-Ported: solitaire                   130      130        0        0    8|7|1
+Ported: solitaire                   140      140        0        0    8|8|0
+Ported: slider-puzzle                37       37        0        0    2|2|0
 Ported: sudoku                       27       27        0        0    2|2|0
+Ported: tango-puzzle                 35       35        0        0    2|2|0
 Ported: terminal                      0        0        0        0    1|0|1
+Ported: zip-puzzle                   35       35        0        0    2|2|0
 Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
 Phone: clock                          4        4        0        0    1|1|0
@@ -44,43 +59,43 @@ Phone: telegram                      32       32        0        0    1|1|0
 Phone: timer                          6        6        0        0    1|1|0
 Phone: tricorn                        6        6        0        0    1|1|0
 Larger: literate-programming        102      102        0        0    3|3|0
-Larger: realtime-paris-density-simulation       12       12        0        0    2|2|0
+Larger: realtime-paris-density-simulation        0        0        0        0    2|0|2
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              3132     3082       19       31      308
+TOTAL                             10005     9981        0       24      663
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 31 tests are currently skipped
+⚠️  Warning: 24 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 1900ms (1.90s)
-Total ctx.wait() calls: 38
+Total wait time: 141250ms (141.25s)
+Total ctx.wait() calls: 481
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
-  Calculator Tests should handle chain operations
-    └─ 300ms (6 calls)
-  Calculator Tests should clear display
-    └─ 200ms (4 calls)
-  Calculator Tests should handle decimal numbers
-    └─ 200ms (4 calls)
-  Calculator Tests should handle division by zero
-    └─ 200ms (4 calls)
-  Calculator Tests should perform addition
-    └─ 200ms (4 calls)
-  Calculator Tests should perform division
-    └─ 200ms (4 calls)
-  Calculator Tests should perform multiplication
-    └─ 200ms (4 calls)
-  Calculator Tests should perform subtraction
-    └─ 200ms (4 calls)
-  Calculator Tests should handle multiple digit input
-    └─ 150ms (3 calls)
-  Calculator Tests should handle single digit input
-    └─ 50ms (1 calls)
+  Desktop Remote Control API Tests should switch between apps via /app/switchTo endpoint
+    └─ 7200ms (18 calls)
+  Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should draw vertical line from center downward
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill a circle with specified color
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill a rectangle with specified color
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should fill circle with light gray like clock face
+    └─ 4500ms (9 calls)
+  Canvas Fill Color should render multiple overlapping canvas elements like clock
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should click calculator button via /click endpoint using coordinates
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should click widget via /click endpoint
+    └─ 4500ms (9 calls)
+  Desktop Remote Control API Tests should get desktop state via /state endpoint
+    └─ 4500ms (9 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ FAILED: 19 tests failed
+✅ SUCCESS: All 9981 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

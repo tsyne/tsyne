@@ -41,8 +41,9 @@ const mockTodoMvcApp: AppMetadata = {
 };
 
 // Generate unique port per test run to avoid conflicts
+// Using wide range (30000-59999) to minimize collision probability in CI
 function getUniquePort(): number {
-  return 19000 + Math.floor(Math.random() * 1000);
+  return 30000 + Math.floor(Math.random() * 30000);
 }
 
 // Helper to make HTTP requests to the debug server

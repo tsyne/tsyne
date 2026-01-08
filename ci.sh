@@ -268,24 +268,22 @@ fi
 node --version
 
 # ============================================================================
-# Install pnpm (check if available, otherwise use npx wrapper)
+# Require pnpm
 # ============================================================================
 echo "--- :package: Setting up pnpm"
 if command -v pnpm &> /dev/null; then
   echo "pnpm already available ✓"
-  PNPM="pnpm"
 elif [ "$(id -u)" -eq 0 ]; then
   # Running as root (CI environment) - use corepack
   echo "Enabling pnpm via corepack..."
   corepack enable
   corepack prepare pnpm@latest --activate
-  PNPM="pnpm"
 else
-  # Running as non-root (local) - use npx wrapper
-  echo "Using npx pnpm (no global install needed)..."
-  PNPM="npx pnpm"
+  echo "ERROR: pnpm is required but not installed."
+  echo "Install with: npm install -g pnpm"
+  exit 1
 fi
-$PNPM --version
+pnpm --version
 
 # ============================================================================
 # Install Go 1.24.x if not already present
@@ -357,8 +355,8 @@ fi
 # ============================================================================
 echo "--- :nodejs: Core - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
-$PNPM install --ignore-scripts
-$PNPM run build
+pnpm install --ignore-scripts
+pnpm run build
 
 echo "--- :test_tube: Core - Unit Tests"
 # Check if headed mode is requested
@@ -389,7 +387,7 @@ else
   fi
 fi
 
-timeout 600 $PNPM run test:unit --json --outputFile=/tmp/core-test-results.json || {
+timeout 600 pnpm run test:unit --json --outputFile=/tmp/core-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Core unit tests timed out after 600 seconds"
@@ -404,14 +402,14 @@ capture_test_results "Core" "/tmp/core-test-results.json" || true
 # ============================================================================
 echo "--- :art: Cosyne - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/cosyne
-$PNPM install --ignore-scripts
-$PNPM run build || {
+pnpm install --ignore-scripts
+pnpm run build || {
   echo "❌ Cosyne build failed"
   exit 1
 }
 
 echo "--- :test_tube: Cosyne - Unit Tests"
-timeout 120 $PNPM run test --json --outputFile=/tmp/cosyne-test-results.json || {
+timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Cosyne tests timed out after 120 seconds"
@@ -427,14 +425,14 @@ capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
 echo "--- :art: Designer - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
-  $PNPM install --ignore-scripts
-  $PNPM run build || {
+  pnpm install --ignore-scripts
+  pnpm run build || {
     echo "❌ Designer build failed"
     exit 1
   }
 
   echo "--- :test_tube: Designer - Unit Tests"
-  timeout 90 $PNPM run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
+  timeout 90 pnpm run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Designer unit tests timed out after 90 seconds"
@@ -445,7 +443,7 @@ if [ -f "package.json" ]; then
   capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
 
   echo "--- :test_tube: Designer - GUI Tests"
-  timeout 90 $PNPM run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
+  timeout 90 pnpm run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
       echo "❌ Designer GUI tests timed out after 90 seconds"
@@ -463,10 +461,10 @@ fi
 # ============================================================================
 echo "--- :bulb: Examples - Install & Tests"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
-$PNPM install --ignore-scripts
+pnpm install --ignore-scripts
 
 echo "--- :test_tube: Examples - Logic Tests"
-timeout 150 $PNPM run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
+timeout 150 pnpm run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Examples logic tests timed out after 150 seconds"
@@ -477,7 +475,7 @@ timeout 150 $PNPM run test:logic --json --outputFile=/tmp/examples-logic-test-re
 capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
 echo "--- :test_tube: Examples - GUI Tests"
-timeout 150 $PNPM run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
+timeout 150 pnpm run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ Examples GUI tests timed out after 150 seconds"
@@ -496,7 +494,7 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 # Install root ported-apps dependencies (shared by all apps)
 if [ -f "package.json" ]; then
   echo "Installing ported-apps shared dependencies..."
-  $PNPM install --ignore-scripts
+  pnpm install --ignore-scripts
 fi
 
 # Helper function to build and test a ported app
@@ -506,17 +504,15 @@ test_ported_app() {
   local json_file="/tmp/ported-${app_name}-test-results.json"
   echo "--- :package: Ported App: ${app_name}"
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
-  # Clean corrupted node_modules to avoid tar extraction errors
-  rm -rf node_modules
-  $PNPM install --ignore-scripts
+  pnpm install --ignore-scripts
   if [ -n "$bridge_mode" ]; then
     echo "Using bridge mode: $bridge_mode"
-    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 $PNPM test --json --outputFile="$json_file" || {
+    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || {
       capture_test_results "Ported: ${app_name}" "$json_file"
       return 1
     }
   else
-    timeout 300 $PNPM test --json --outputFile="$json_file" || {
+    timeout 300 pnpm test --json --outputFile="$json_file" || {
       capture_test_results "Ported: ${app_name}" "$json_file"
       return 1
     }
@@ -579,10 +575,8 @@ test_phone_app() {
 
   echo "--- :iphone: Phone App: ${app_name}"
   cd "${app_dir}"
-  # Clean corrupted node_modules to avoid tar extraction errors
-  rm -rf node_modules
-  $PNPM install --ignore-scripts
-  timeout 300 $PNPM test --json --outputFile="$json_file" || {
+  pnpm install --ignore-scripts
+  timeout 300 pnpm test --json --outputFile="$json_file" || {
     capture_test_results "Phone: ${app_name}" "$json_file"
     return 1
   }
@@ -638,10 +632,8 @@ test_larger_app() {
 
   echo "--- :rocket: Larger App: ${app_name}"
   cd "${app_dir}"
-  # Clean corrupted node_modules to avoid tar extraction errors
-  rm -rf node_modules
-  $PNPM install --ignore-scripts
-  timeout 300 $PNPM test --json --outputFile="$json_file" || {
+  pnpm install --ignore-scripts
+  timeout 300 pnpm test --json --outputFile="$json_file" || {
     capture_test_results "Larger: ${app_name}" "$json_file"
     return 1
   }

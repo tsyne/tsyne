@@ -46,7 +46,7 @@ interface DragState {
  */
 export const DefaultHitTesters = {
   /**
-   * Circle hit test: distance from center <= radius
+   * Circle hit test: distance from center <= radius (boundary is inside)
    */
   circle: (x: number, y: number, cx: number, cy: number, radius: number): boolean => {
     const dx = x - cx;

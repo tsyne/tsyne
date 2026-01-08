@@ -27,6 +27,7 @@ export interface IDesktopDebugHost {
  */
 export class DesktopDebugServer {
   private server: http.Server | null = null;
+  private sockets: Set<import('net').Socket> = new Set();
   private inspector: Inspector;
   private host: IDesktopDebugHost;
   private app: App;
@@ -62,6 +63,12 @@ export class DesktopDebugServer {
       }
     });
 
+    // Track connections so we can close them on stop
+    this.server.on('connection', (socket) => {
+      this.sockets.add(socket);
+      socket.on('close', () => this.sockets.delete(socket));
+    });
+
     this.server.listen(port, '0.0.0.0', () => {
       console.log(`[desktop] Debug server listening on http://0.0.0.0:${port}`);
     });
@@ -71,6 +78,12 @@ export class DesktopDebugServer {
    * Stop the debug server
    */
   stop(): void {
+    // Destroy all open connections
+    for (const socket of this.sockets) {
+      socket.destroy();
+    }
+    this.sockets.clear();
+
     if (this.server) {
       this.server.close();
       this.server = null;

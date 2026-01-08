@@ -147,9 +147,10 @@ export class ForeignObjectCollection {
 
   /**
    * Get foreign object by ID
+   * Note: Searches through all objects since ID may be set after add() via withId()
    */
   getById(id: string): ForeignObject | undefined {
-    return this.objectMap.get(id);
+    return this.objects.find(obj => obj.getId() === id);
   }
 
   /**
