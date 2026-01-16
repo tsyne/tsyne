@@ -226,15 +226,13 @@ export class CosyneContext {
   }
 
   /**
-   * Create a text primitive
-   * Note: Tsyne CanvasText doesn't support x,y positioning directly -
-   * text is positioned by the canvas stack layout. The x,y here are stored
-   * for Cosyne's coordinate system but not passed to the underlying widget.
+   * Create a text primitive at specified canvas coordinates
    */
   text(x: number, y: number, text: string, options?: any): CosyneText {
-    // Create the underlying Tsyne canvas text
-    // Note: canvasText(text, options) - text is first arg, not in options
+    // Create the underlying Tsyne canvas text with x,y positioning
     const underlying = this.app.canvasText(text, {
+      x,
+      y,
       color: options?.fillColor || 'black',
       textSize: options?.fontSize || 12,
     });

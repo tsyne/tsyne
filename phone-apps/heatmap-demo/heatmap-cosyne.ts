@@ -74,68 +74,65 @@ export function createHeatmapApp(a: App, win: Window) {
       a.label('Temperature/value distribution over time').withId('subtitle');
 
       // Heatmap canvas
-      a.center(() => {
-        a.canvasStack(() => {
+      a.canvasStack(() => {
           cosyne(a, (c) => {
-            // Background
-            c.rect(0, 0, 350, 350)
+            // Background (350 wide, 360 tall to fit legend below grid)
+            c.rect(0, 0, 350, 360)
               .fill('#ffffff')
               .stroke('#cccccc', 1)
               .withId('background');
 
-            // Heatmap with dynamically updated data
+            // Generate heatmap data
             const data = state.generateData();
             const range = state.getValueRange();
 
-            c.heatmap(10, 10, { colorScheme: 'viridis' })
-              .fill('transparent')
-              .withId('main-heatmap');
-
-            // Draw individual cells as colored rectangles (manual rendering for demo)
+            // Draw heatmap cells with bound fill colors for animation
             const cellSize = 40;
             for (let row = 0; row < data.rows; row++) {
               for (let col = 0; col < data.cols; col++) {
-                const idx = row * data.cols + col;
-                const value = data.data[idx];
-                const normalized = (value - range.min) / (range.max - range.min);
+                // Capture row/col for the closure
+                const r = row;
+                const cl = col;
 
-                // Color mapping: viridis
-                let color: string;
-                if (normalized < 0.33) {
-                  const t = normalized / 0.33;
-                  const r = Math.floor(68 + 31 * t);
-                  const g = Math.floor(1 + 110 * t);
-                  const b = Math.floor(84 - 84 * t);
-                  color = `rgb(${r}, ${g}, ${b})`;
-                } else if (normalized < 0.67) {
-                  const t = (normalized - 0.33) / 0.34;
-                  const r = Math.floor(99 + 87 * t);
-                  const g = Math.floor(111 + 105 * t);
-                  const b = 0;
-                  color = `rgb(${r}, ${g}, ${b})`;
-                } else {
-                  const t = (normalized - 0.67) / 0.33;
-                  const r = Math.floor(186 + 69 * t);
-                  const g = Math.floor(216 - 94 * t);
-                  const b = Math.floor(46 * t);
-                  color = `rgb(${r}, ${g}, ${b})`;
-                }
+                c.rect(10 + cl * cellSize, 10 + r * cellSize, cellSize - 1, cellSize - 1)
+                  .bindFill(() => {
+                    // Re-generate data each time binding is evaluated
+                    const currentData = state.generateData();
+                    const idx = r * currentData.cols + cl;
+                    const value = currentData.data[idx];
+                    const normalized = (value - range.min) / (range.max - range.min);
 
-                c.rect(10 + col * cellSize, 10 + row * cellSize, cellSize - 1, cellSize - 1)
-                  .fill(color)
+                    // Color mapping: viridis
+                    if (normalized < 0.33) {
+                      const t = normalized / 0.33;
+                      const red = Math.floor(68 + 31 * t);
+                      const green = Math.floor(1 + 110 * t);
+                      const blue = Math.floor(84 - 84 * t);
+                      return `rgb(${red}, ${green}, ${blue})`;
+                    } else if (normalized < 0.67) {
+                      const t = (normalized - 0.33) / 0.34;
+                      const red = Math.floor(99 + 87 * t);
+                      const green = Math.floor(111 + 105 * t);
+                      return `rgb(${red}, ${green}, 0)`;
+                    } else {
+                      const t = (normalized - 0.67) / 0.33;
+                      const red = Math.floor(186 + 69 * t);
+                      const green = Math.floor(216 - 94 * t);
+                      const blue = Math.floor(46 * t);
+                      return `rgb(${red}, ${green}, ${blue})`;
+                    }
+                  })
                   .stroke('#ffffff', 0.5)
-                  .withId(`cell-${row}-${col}`);
+                  .withId(`cell-${r}-${cl}`);
               }
             }
 
-            // Color scale legend
-            c.text(10, 330, '0').fill('#666666').withId('min-label');
-            c.text(310, 330, '100').fill('#666666').withId('max-label');
+            // Color scale legend (below the heatmap grid)
+            // Grid is 8 cols * 40px = 320px wide, starting at x=10
+            c.text(10, 338, '0 (low)').fill('#666666').withId('min-label');
+            c.text(220, 338, '100 (high)').fill('#666666').withId('max-label');
           });
         });
-      });
-
-      a.label('Updates every 50ms with sine wave oscillations').withId('info');
     });
   });
 
@@ -147,13 +144,11 @@ export function createHeatmapApp(a: App, win: Window) {
   return () => clearInterval(updateInterval);
 }
 
-export async function createHeatmapAppWithTransport() {
-  const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Heatmap Demo' });
-  createHeatmapApp(a, win);
-}
-
 if (require.main === module) {
-  createHeatmapAppWithTransport().catch(console.error);
+  app(resolveTransport(), { title: 'Heatmap Demo' }, (a) => {
+    a.window({ title: 'Heatmap Demo', width: 400, height: 450 }, (win) => {
+      createHeatmapApp(a, win);
+      win.show();
+    });
+  });
 }

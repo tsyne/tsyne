@@ -2409,6 +2409,29 @@ func asin(x float64) float64 {
 // parseHexColorSimple parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color
 // This is a simpler version that returns a default color on error, used by canvas primitives
 func parseHexColorSimple(hexStr string) color.Color {
+	// Handle CSS rgb() and rgba() format
+	if strings.HasPrefix(hexStr, "rgb(") && strings.HasSuffix(hexStr, ")") {
+		inner := hexStr[4 : len(hexStr)-1]
+		parts := strings.Split(inner, ",")
+		if len(parts) == 3 {
+			r := parseColorComponent(strings.TrimSpace(parts[0]))
+			g := parseColorComponent(strings.TrimSpace(parts[1]))
+			b := parseColorComponent(strings.TrimSpace(parts[2]))
+			return color.RGBA{R: r, G: g, B: b, A: 255}
+		}
+	}
+	if strings.HasPrefix(hexStr, "rgba(") && strings.HasSuffix(hexStr, ")") {
+		inner := hexStr[5 : len(hexStr)-1]
+		parts := strings.Split(inner, ",")
+		if len(parts) == 4 {
+			r := parseColorComponent(strings.TrimSpace(parts[0]))
+			g := parseColorComponent(strings.TrimSpace(parts[1]))
+			b := parseColorComponent(strings.TrimSpace(parts[2]))
+			a := parseAlphaComponent(strings.TrimSpace(parts[3]))
+			return color.RGBA{R: r, G: g, B: b, A: a}
+		}
+	}
+
 	// Remove leading # if present
 	if len(hexStr) > 0 && hexStr[0] == '#' {
 		hexStr = hexStr[1:]
@@ -2458,6 +2481,36 @@ func parseHexColorSimple(hexStr string) color.Color {
 	}
 
 	return color.RGBA{R: r, G: g, B: b, A: a}
+}
+
+// parseColorComponent parses an RGB component (0-255)
+func parseColorComponent(s string) uint8 {
+	var val int
+	fmt.Sscanf(s, "%d", &val)
+	if val < 0 {
+		val = 0
+	}
+	if val > 255 {
+		val = 255
+	}
+	return uint8(val)
+}
+
+// parseAlphaComponent parses an alpha component (0-1 float or 0-255 int)
+func parseAlphaComponent(s string) uint8 {
+	// Try float first (CSS standard: 0-1)
+	var f float64
+	if _, err := fmt.Sscanf(s, "%f", &f); err == nil {
+		if f <= 1.0 {
+			return uint8(f * 255)
+		}
+		// Treat as 0-255 value
+		if f > 255 {
+			f = 255
+		}
+		return uint8(f)
+	}
+	return 255
 }
 
 // handleCreateTappableCanvasRaster creates a tappable canvas raster widget that responds to tap events
