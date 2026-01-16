@@ -1029,14 +1029,24 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 	}
 	b.mu.Unlock()
 
-	// Capture fill color and angle values for closure
-	cR := int(fillColor.R)
-	cG := int(fillColor.G)
-	cB := int(fillColor.B)
-	arcStart := startAngle
-	arcEnd := endAngle
+	// Capture widgetID for closure to read dynamic arc data
+	arcWidgetID := widgetID
 
 	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		// Read current arc data (allows dynamic updates)
+		b.mu.RLock()
+		arcInfo := b.arcData[arcWidgetID]
+		if arcInfo == nil {
+			b.mu.RUnlock()
+			return color.RGBA{A: 1}
+		}
+		arcStart := arcInfo.StartAngle
+		arcEnd := arcInfo.EndAngle
+		cR := int(arcInfo.FillColor.R)
+		cG := int(arcInfo.FillColor.G)
+		cB := int(arcInfo.FillColor.B)
+		b.mu.RUnlock()
+
 		// Calculate center and radius
 		cx := float64(w) / 2
 		cy := float64(h) / 2

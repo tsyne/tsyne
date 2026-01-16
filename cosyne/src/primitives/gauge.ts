@@ -12,6 +12,8 @@ export interface GaugeOptions extends PrimitiveOptions {
   maxValue?: number;
   value?: number;
   radius?: number;
+  startAngle?: number;  // In degrees, default 225 (bottom-left)
+  endAngle?: number;    // In degrees, default 315 (bottom-right)
 }
 
 /**
@@ -24,6 +26,8 @@ export class CosyneGauge extends Primitive<any> {
   private maxValue: number;
   private value: number;
   private radius: number;
+  private startAngle: number;  // In radians
+  private endAngle: number;    // In radians
   private valueBinding: Binding<number> | undefined;
 
   constructor(x: number, y: number, underlying: any, options?: GaugeOptions) {
@@ -34,6 +38,9 @@ export class CosyneGauge extends Primitive<any> {
     this.maxValue = options?.maxValue || 100;
     this.value = options?.value || 50;
     this.radius = options?.radius || 50;
+    // Convert degrees to radians, default to bottom-facing arc (225° to 315°)
+    this.startAngle = ((options?.startAngle ?? 225) * Math.PI) / 180;
+    this.endAngle = ((options?.endAngle ?? 315) * Math.PI) / 180;
   }
 
   getPosition(): { x: number; y: number } {
@@ -80,14 +87,17 @@ export class CosyneGauge extends Primitive<any> {
   }
 
   /**
-   * Get angle for gauge needle (0-270 degrees, starting at 225 degrees for full range)
+   * Get angle for gauge needle based on configured start/end angles
+   * Handles wrap-around for arcs where endAngle < startAngle (e.g., 3/4 circle)
    */
   getNeedleAngle(): number {
     const normalized = this.getNormalizedValue();
-    const startAngle = (225 * Math.PI) / 180; // Bottom-left
-    const endAngle = (315 * Math.PI) / 180; // Bottom-right
-    const range = endAngle - startAngle;
-    return startAngle + range * normalized;
+    let range = this.endAngle - this.startAngle;
+    // If end < start, we're going the "long way around" - add 2π to get positive range
+    if (range < 0) {
+      range += 2 * Math.PI;
+    }
+    return this.startAngle + range * normalized;
   }
 
   /**

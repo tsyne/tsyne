@@ -1475,10 +1475,15 @@ export class CanvasGauge {
 
   /**
    * Get angle for current value
+   * Handles wrap-around for arcs where endAngle < startAngle (e.g., 3/4 circle)
    */
   private getValueAngle(): number {
     const normalized = this.getNormalizedValue();
-    const range = this._endAngle - this._startAngle;
+    let range = this._endAngle - this._startAngle;
+    // If end < start, we're going the "long way around" - add 2π to get positive range
+    if (range < 0) {
+      range += 2 * Math.PI;
+    }
     return this._startAngle + range * normalized;
   }
 

@@ -412,6 +412,9 @@ export class CosyneContext {
       valueColor: (options as any)?.valueColor,  // Pass through custom color
       needleColor: options?.strokeColor || '#333333',
       showValue: (options as any)?.showValue,  // Pass through showValue option
+      // Convert degrees to radians for CanvasGauge
+      startAngle: ((options?.startAngle ?? 225) * Math.PI) / 180,
+      endAngle: ((options?.endAngle ?? 315) * Math.PI) / 180,
     });
 
     const primitive = new CosyneGauge(x, y, underlying, {
