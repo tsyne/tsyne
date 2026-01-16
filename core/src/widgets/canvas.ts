@@ -357,6 +357,10 @@ export class CanvasRectangle {
   private onClickCallback?: (x: number, y: number) => void;
 
   constructor(ctx: Context, options?: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
     width?: number;
     height?: number;
     fillColor?: string;
@@ -372,6 +376,10 @@ export class CanvasRectangle {
     const payload: any = { id: this.id };
 
     if (options) {
+      if (options.x !== undefined) payload.x = options.x;
+      if (options.y !== undefined) payload.y = options.y;
+      if (options.x2 !== undefined) payload.x2 = options.x2;
+      if (options.y2 !== undefined) payload.y2 = options.y2;
       if (options.width !== undefined) payload.width = options.width;
       if (options.height !== undefined) payload.height = options.height;
       if (options.fillColor) payload.fillColor = options.fillColor;

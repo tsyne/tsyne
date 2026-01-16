@@ -1516,3 +1516,43 @@ func (b *Bridge) buildWidgetTree(obj fyne.CanvasObject, widgetID string) map[str
 
 	return node
 }
+
+// handleTapAt simulates a tap at specific coordinates on a window's canvas.
+// This goes through Fyne's full event dispatch system.
+func (b *Bridge) handleTapAt(msg Message) Response {
+	windowID := msg.Payload["windowId"].(string)
+	x := float32(toFloat64(msg.Payload["x"]))
+	y := float32(toFloat64(msg.Payload["y"]))
+
+	b.mu.RLock()
+	win, exists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("Window not found: %s", windowID),
+		}
+	}
+
+	// Get the canvas from the window
+	canvas := win.Canvas()
+	if canvas == nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window has no canvas",
+		}
+	}
+
+	// Use Fyne's test package to simulate a tap at the position
+	// This goes through the full event dispatch system
+	pos := fyne.NewPos(x, y)
+	test.TapCanvas(canvas, pos)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}

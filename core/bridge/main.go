@@ -369,6 +369,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleDragWidget(msg)
 	case "hoverWidget":
 		return b.handleHoverWidget(msg)
+	case "tapAt":
+		return b.handleTapAt(msg)
 	case "scrollCanvas":
 		return b.handleScrollCanvas(msg)
 	case "dragCanvas":

@@ -50,9 +50,13 @@ export function enableEventHandling(
     }
   };
 
+  // Track drag state - Fyne calls Dragged() during drag, not Tapped()
+  let dragStarted = false;
+
   // Create TappableCanvasRaster for event capture
   const eventCanvas = app.tappableCanvasRaster(options.width, options.height, {
     onTap: async (x: number, y: number) => {
+      // Tapped() is only called for quick tap (not drag)
       registerHitTesters();
       await router.handleClick(getAllPrimitives(), x, y);
     },
@@ -61,42 +65,27 @@ export function enableEventHandling(
       await router.handleMouseMove(getAllPrimitives(), x, y);
     },
     onDrag: (x: number, y: number, deltaX: number, deltaY: number) => {
-      // onDrag is called while dragging
-      // We handle the drag continuation in handleMouseMove instead
+      // onDrag is called while dragging (Fyne's Dragged event)
       registerHitTesters();
-      router.handleMouseMove(getAllPrimitives(), x, y).catch(() => {});
-    },
-  });
-
-  // Handle drag start and end through mouse events
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-
-  // Override tap to detect drag start
-  const originalOnTap = eventCanvas.onTapCallback;
-  if (eventCanvas) {
-    (eventCanvas as any).onTapCallback = async (x: number, y: number) => {
-      registerHitTesters();
-      dragStartX = x;
-      dragStartY = y;
-      isDragging = true;
-
       const primitives = getAllPrimitives();
-      const topHit = router.hitTestTop(primitives, x, y);
 
-      if (topHit?.getDragStartHandler() || topHit?.getDragHandler()) {
+      // Detect drag start on first drag event
+      if (!dragStarted) {
+        dragStarted = true;
         router.handleDragStart(primitives, x, y);
       }
 
-      // Then handle the click
-      await router.handleClick(primitives, x, y);
-    };
-  }
-
-  // Detect drag end by checking if dragging and then stopping
-  // This is handled implicitly - when drag handlers aren't present, it won't drag
-  // For explicit drag end, we'd need to hook into the underlying canvas pointer events
+      // Continue drag - handleMouseMove processes drag movement
+      router.handleMouseMove(primitives, x, y).catch(() => {});
+    },
+    onDragEnd: () => {
+      // Called when the user releases after dragging (Fyne's DragEnd event)
+      if (dragStarted) {
+        router.handleDragEnd();
+        dragStarted = false;
+      }
+    },
+  });
 
   // Store router and event canvas on context for later access
   (ctx as any)._eventRouter = router;

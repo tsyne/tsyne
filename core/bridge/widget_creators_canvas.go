@@ -175,7 +175,33 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 		rect.CornerRadius = float32(radius)
 	}
 
-	// Set minimum size if provided
+	// Set position and size from x, y, x2, y2 coordinates
+	// Rectangle uses Move/Resize unlike Circle which has Position1/Position2
+	var posX, posY, x2Val, y2Val float32
+	hasPos := false
+	hasSize := false
+	if x, ok := msg.Payload["x"]; ok {
+		posX = toFloat32(x)
+		hasPos = true
+	}
+	if y, ok := msg.Payload["y"]; ok {
+		posY = toFloat32(y)
+	}
+	if x2, ok := msg.Payload["x2"]; ok {
+		x2Val = toFloat32(x2)
+		hasSize = true
+	}
+	if y2, ok := msg.Payload["y2"]; ok {
+		y2Val = toFloat32(y2)
+	}
+	if hasPos {
+		rect.Move(fyne.NewPos(posX, posY))
+	}
+	if hasSize {
+		rect.Resize(fyne.NewSize(x2Val-posX, y2Val-posY))
+	}
+
+	// Set minimum size if provided (alternative to x2, y2)
 	if width, ok := getFloat64(msg.Payload["width"]); ok {
 		if height, ok := getFloat64(msg.Payload["height"]); ok {
 			rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
@@ -830,6 +856,30 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 			}
 			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
 				rect.CornerRadius = float32(radius)
+			}
+			// Update position if provided
+			var posX, posY, x2Val, y2Val float32
+			hasPos := false
+			hasSize := false
+			if x, ok := msg.Payload["x"]; ok {
+				posX = toFloat32(x)
+				hasPos = true
+			}
+			if y, ok := msg.Payload["y"]; ok {
+				posY = toFloat32(y)
+			}
+			if x2, ok := msg.Payload["x2"]; ok {
+				x2Val = toFloat32(x2)
+				hasSize = true
+			}
+			if y2, ok := msg.Payload["y2"]; ok {
+				y2Val = toFloat32(y2)
+			}
+			if hasPos {
+				rect.Move(fyne.NewPos(posX, posY))
+			}
+			if hasSize {
+				rect.Resize(fyne.NewSize(x2Val-posX, y2Val-posY))
 			}
 			if width, ok := getFloat64(msg.Payload["width"]); ok {
 				if height, ok := getFloat64(msg.Payload["height"]); ok {
@@ -1605,6 +1655,11 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 	if onDragCallbackId != "" || onDragEndCallbackId != "" {
 		tappable.SetOnDragCallback(b, onDragCallbackId, onDragEndCallbackId)
 	}
+
+	// Position the widget at (0,0) and resize to fill canvas area
+	// This is required for NewWithoutLayout containers to receive tap events
+	tappable.Move(fyne.NewPos(0, 0))
+	tappable.Resize(fyne.NewSize(float32(width), float32(height)))
 
 	// Get the initial pixel data if provided (format: [[r,g,b,a], ...])
 	if pixels, ok := msg.Payload["pixels"].([]interface{}); ok {

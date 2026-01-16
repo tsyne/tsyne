@@ -186,6 +186,7 @@ export class EventRouter {
 
   /**
    * Find all primitives that contain the point (in reverse order for proper z-ordering)
+   * Skips passthrough primitives (they don't participate in hit testing)
    */
   hitTestAll(primitives: Primitive<any>[], x: number, y: number): Primitive<any>[] {
     const results: Primitive<any>[] = [];
@@ -193,6 +194,10 @@ export class EventRouter {
     // Test in reverse order (last added = topmost)
     for (let i = primitives.length - 1; i >= 0; i--) {
       const primitive = primitives[i];
+      // Skip passthrough primitives - they don't intercept events
+      if (primitive.isPassthroughEnabled()) {
+        continue;
+      }
       if (this.testHit(primitive, x, y)) {
         results.push(primitive);
       }

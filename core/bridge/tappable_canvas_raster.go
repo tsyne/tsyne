@@ -38,6 +38,9 @@ type TappableCanvasRaster struct {
 	bridge *Bridge
 }
 
+// Compile-time interface verification
+var _ fyne.Tappable = (*TappableCanvasRaster)(nil)
+
 // NewTappableCanvasRaster creates a new tappable raster canvas.
 func NewTappableCanvasRaster(width, height int, onTapped func(x, y int)) *TappableCanvasRaster {
 	t := &TappableCanvasRaster{
@@ -47,12 +50,13 @@ func NewTappableCanvasRaster(width, height int, onTapped func(x, y int)) *Tappab
 		pixelBuffer: make([]byte, width*height*4),
 	}
 
-	// Initialize with white pixels
+	// Initialize with transparent pixels so shapes underneath are visible
+	// (alpha = 0 means fully transparent)
 	for i := 0; i < len(t.pixelBuffer); i += 4 {
-		t.pixelBuffer[i] = 255   // R
-		t.pixelBuffer[i+1] = 255 // G
-		t.pixelBuffer[i+2] = 255 // B
-		t.pixelBuffer[i+3] = 255 // A
+		t.pixelBuffer[i] = 0   // R
+		t.pixelBuffer[i+1] = 0 // G
+		t.pixelBuffer[i+2] = 0 // B
+		t.pixelBuffer[i+3] = 0 // A (transparent)
 	}
 
 	t.raster = canvas.NewRaster(t.generateImage)
@@ -173,12 +177,13 @@ func (t *TappableCanvasRaster) ResizeBuffer(width, height int) {
 	t.height = height
 	t.pixelBuffer = make([]byte, width*height*4)
 
-	// Initialize with white pixels
+	// Initialize with transparent pixels so shapes underneath are visible
+	// (alpha = 0 means fully transparent)
 	for i := 0; i < len(t.pixelBuffer); i += 4 {
-		t.pixelBuffer[i] = 255   // R
-		t.pixelBuffer[i+1] = 255 // G
-		t.pixelBuffer[i+2] = 255 // B
-		t.pixelBuffer[i+3] = 255 // A
+		t.pixelBuffer[i] = 0   // R
+		t.pixelBuffer[i+1] = 0 // G
+		t.pixelBuffer[i+2] = 0 // B
+		t.pixelBuffer[i+3] = 0 // A (transparent)
 	}
 
 	fyne.Do(func() {
@@ -211,7 +216,6 @@ func (t *TappableCanvasRaster) Tapped(ev *fyne.PointEvent) {
 
 	if t.onTapped != nil {
 		// Convert the position to pixel coordinates
-		// For now, we'll use direct position - zooming will be handled in the app layer
 		x := int(ev.Position.X)
 		y := int(ev.Position.Y)
 		t.onTapped(x, y)

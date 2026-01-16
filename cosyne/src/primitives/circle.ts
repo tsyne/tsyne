@@ -59,22 +59,18 @@ export class CosyneCircle extends Primitive<any> {
   }
 
   protected applyFill(): void {
-    if (this.underlying && this.fillColor) {
-      // Update fill color on underlying widget
-      if (this.underlying.updateFillColor) {
-        this.underlying.updateFillColor(this.fillColor);
-      }
+    if (this.underlying && this.underlying.update && this.fillColor) {
+      this.underlying.update({ fillColor: this.fillColor });
     }
   }
 
   protected applyStroke(): void {
-    if (this.underlying && this.strokeColor !== undefined) {
-      // Update stroke on underlying widget
-      if (this.underlying.updateStrokeColor) {
-        this.underlying.updateStrokeColor(this.strokeColor);
-      }
-      if (this.underlying.updateStrokeWidth && this.strokeWidth !== undefined) {
-        this.underlying.updateStrokeWidth(this.strokeWidth);
+    if (this.underlying && this.underlying.update) {
+      const updates: any = {};
+      if (this.strokeColor !== undefined) updates.strokeColor = this.strokeColor;
+      if (this.strokeWidth !== undefined) updates.strokeWidth = this.strokeWidth;
+      if (Object.keys(updates).length > 0) {
+        this.underlying.update(updates);
       }
     }
   }

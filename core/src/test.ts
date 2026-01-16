@@ -1824,6 +1824,21 @@ export class TestContext {
   }
 
   /**
+   * Simulate a tap at specific coordinates on the window's canvas.
+   * This goes through Fyne's full event dispatch system.
+   * Useful for testing canvas/raster interactions.
+   * @param x - X coordinate in the window
+   * @param y - Y coordinate in the window
+   */
+  async tapAt(x: number, y: number): Promise<void> {
+    const windowId = this.app?.getFirstWindowId?.();
+    if (!windowId) {
+      throwCallerError('No window created. Call app.window() before tapping.', this.tapAt);
+    }
+    await this.bridge.send('tapAt', { windowId, x, y }, this.tapAt);
+  }
+
+  /**
    * Get a fluent locator for dialogs
    * Supports within() polling and chainable assertions
    * @example

@@ -51,6 +51,7 @@ export abstract class Primitive<TUnderlyingWidget> {
   protected strokeColor: string | undefined;
   protected strokeWidth: number | undefined;
   protected alpha: number = 1.0;
+  protected isPassthrough: boolean = false;
   protected positionBinding: Binding<PositionBinding> | undefined;
   protected fillBinding: Binding<string> | undefined;
   protected strokeBinding: Binding<string> | undefined;
@@ -107,6 +108,24 @@ export abstract class Primitive<TUnderlyingWidget> {
   withId(id: string): this {
     this.customId = id;
     return this;
+  }
+
+  /**
+   * Mark this primitive as passthrough for hit testing.
+   * Passthrough primitives don't receive click/hover/drag events,
+   * allowing events to reach primitives underneath them.
+   * Useful for decorative/highlight shapes that shouldn't intercept events.
+   */
+  passthrough(enabled: boolean = true): this {
+    this.isPassthrough = enabled;
+    return this;
+  }
+
+  /**
+   * Check if this primitive is passthrough
+   */
+  isPassthroughEnabled(): boolean {
+    return this.isPassthrough;
   }
 
   /**
