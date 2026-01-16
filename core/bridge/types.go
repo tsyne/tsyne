@@ -200,8 +200,10 @@ type Bridge struct {
 	closeIntercepts map[string]string                // window ID -> callback ID for close intercept
 	closeResponses  map[string]chan bool             // window ID -> channel for close intercept response
 	progressDialogs map[string]*ProgressDialogInfo   // dialog ID -> progress dialog info
-	arcData         map[string]*ArcData              // arc widget ID -> arc data
-	polygonData     map[string]*PolygonData          // polygon widget ID -> polygon data
+	arcData              map[string]*ArcData              // arc widget ID -> arc data
+	polygonData          map[string]*PolygonData          // polygon widget ID -> polygon data
+	sphericalPatchData   map[string]*SphericalPatchData   // spherical patch ID -> patch data
+	checkeredSphereData  map[string]*CheckeredSphereData  // checkered sphere ID -> sphere data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
 	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)
@@ -237,6 +239,33 @@ type PolygonData struct {
 	FillColor   color.RGBA
 	StrokeColor color.Color
 	StrokeWidth float32
+}
+
+// SphericalPatchData stores data for spherical patch primitives (for Amiga Boing ball)
+// A spherical patch is a curved quadrilateral on a sphere bounded by lat/lon lines
+type SphericalPatchData struct {
+	CenterX   float32     // Center X of the sphere in canvas coordinates
+	CenterY   float32     // Center Y of the sphere in canvas coordinates
+	Radius    float32     // Radius of the sphere
+	LatStart  float64     // Starting latitude in radians (-π/2 to π/2)
+	LatEnd    float64     // Ending latitude in radians
+	LonStart  float64     // Starting longitude in radians (0 to 2π)
+	LonEnd    float64     // Ending longitude in radians
+	Rotation  float64     // Y-axis rotation in radians (for spinning)
+	FillColor color.RGBA  // Fill color for the patch
+}
+
+// CheckeredSphereData stores data for a checkered sphere (Amiga Boing ball)
+// Renders ALL patches in a single raster to avoid z-order compositing issues
+type CheckeredSphereData struct {
+	CenterX     float32    // Center X of the sphere in canvas coordinates
+	CenterY     float32    // Center Y of the sphere in canvas coordinates
+	Radius      float32    // Radius of the sphere
+	LatBands    int        // Number of latitude bands
+	LonSegments int        // Number of longitude segments (front hemisphere only)
+	Rotation    float64    // Y-axis rotation in radians (for spinning)
+	Color1      color.RGBA // First checkerboard color (e.g., red)
+	Color2      color.RGBA // Second checkerboard color (e.g., white)
 }
 
 // WidgetMetadata stores metadata about widgets for testing

@@ -88,6 +88,10 @@ import {
   CanvasLinearGradient,
   CanvasPolygon,
   CanvasRadialGradient,
+  CanvasSphericalPatch,
+  CanvasSphericalPatchOptions,
+  CanvasCheckeredSphere,
+  CanvasCheckeredSphereOptions,
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
@@ -885,6 +889,22 @@ export class App {
     strokeWidth?: number;
   }): CanvasPolygon {
     return new CanvasPolygon(this.ctx, options);
+  }
+
+  /**
+   * Create a spherical patch primitive - a curved quadrilateral on a sphere surface
+   * Used for rendering checkered spheres like the Amiga Boing Ball
+   */
+  canvasSphericalPatch(options: CanvasSphericalPatchOptions): CanvasSphericalPatch {
+    return new CanvasSphericalPatch(this.ctx, options);
+  }
+
+  /**
+   * Create a checkered sphere (Amiga Boing Ball style) - all patches in a single raster
+   * More efficient and avoids z-order compositing issues
+   */
+  canvasCheckeredSphere(options: CanvasCheckeredSphereOptions): CanvasCheckeredSphere {
+    return new CanvasCheckeredSphere(this.ctx, options);
   }
 
   canvasRadialGradient(options?: {
