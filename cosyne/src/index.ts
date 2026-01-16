@@ -58,3 +58,39 @@ export {
   type Keyframe,
 } from './animation';
 export { AnimationManager } from './animation-manager';
+export {
+  LinearScale,
+  LogScale,
+  SqrtScale,
+  PowerScale,
+  OrdinalScale,
+  scale,
+  type ScaleType,
+  type ScaleDomain,
+  type LinearScaleOptions,
+  type OrdinalScaleOptions,
+} from './scales';
+export { Axis, GridLines, type AxisOptions, type AxisOrientation, type AnyScale } from './axes';
+export {
+  LineChart,
+  MultiLineChart,
+  type InterpolationType,
+  type LineChartPoint,
+  type LineChartOptions,
+} from './line-chart';
+export {
+  ZoomPan,
+  Brush,
+  type ZoomPanState,
+  type ZoomPanOptions,
+  type BrushExtent,
+  type BrushOptions,
+} from './zoom-pan';
+export {
+  Particle,
+  Emitter,
+  ParticleSystem,
+  type Vector2D,
+  type ParticleOptions,
+  type EmitterOptions,
+} from './particle-system';
