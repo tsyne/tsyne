@@ -204,6 +204,7 @@ type Bridge struct {
 	polygonData          map[string]*PolygonData          // polygon widget ID -> polygon data
 	sphericalPatchData   map[string]*SphericalPatchData   // spherical patch ID -> patch data
 	checkeredSphereData  map[string]*CheckeredSphereData  // checkered sphere ID -> sphere data
+	ellipseData          map[string]*EllipseData          // ellipse ID -> ellipse data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
 	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)

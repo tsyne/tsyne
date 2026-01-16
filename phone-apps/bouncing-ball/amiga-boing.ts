@@ -1,8 +1,8 @@
 /**
- * Amiga Boing Ball - Uses checkered sphere primitive
+ * Amiga Boing Ball - Tribute to the classic 1984 Amiga demo
  *
- * The checkered sphere is app-specific, not a general cosyne primitive.
- * Background/grid use cosyne, ball uses core canvas widget directly.
+ * Background/grid use cosyne, ball uses core's canvasCheckeredSphere widget.
+ * Rainbow "T" uses dynamic gradient text rendered with freetype.
  */
 
 import { App } from '../../core/src';
@@ -18,7 +18,7 @@ const LON_SEGMENTS = 8;
 export function buildAmigaBoingApp(a: App): void {
   a.canvasStack(() => {
     let cleanup: (() => void) | undefined;
-    let x = W / 2, y = R + 80, vx = 4, vy = 0;
+    let x = W / 2, y = R, vx = 4, vy = 0;  // Start near top of window
     let rotation = 0;  // Y-axis rotation for spin
     const gravity = 0.5, bounce = 0.9;
     const rotationSpeed = 0.08;  // How fast the ball spins
@@ -28,10 +28,18 @@ export function buildAmigaBoingApp(a: App): void {
       c.rect(0, 0, W, H).fill('#5c4a72');
       for (let i = 50; i < W; i += 50) c.line(i, 0, i, H).stroke('#4a3a5a', 2);
       for (let i = 50; i < H; i += 50) c.line(0, i, W, i).stroke('#4a3a5a', 2);
+    });
 
-      // Shadow (uses cosyne bindings)
-      c.circle(x, H - 15, R * 0.6).fill('rgba(0,0,0,0.3)')
-        .bindPosition(() => ({ x, y: H - 15 }));
+    // Shadow - oval shape, darker purple (not black)
+    const shadowW = R * 2.2;  // wide
+    const shadowH = R * 0.5;  // flat
+    const shadowY = H - 30;
+    const shadow = a.canvasEllipse({
+      x: x - shadowW / 2,
+      y: shadowY - shadowH / 2,
+      width: shadowW,
+      height: shadowH,
+      fillColor: '#4a3a5a',  // darker purple (same as grid lines)
     });
 
     // Create the checkered ball using core widget directly (app-specific)
@@ -45,6 +53,12 @@ export function buildAmigaBoingApp(a: App): void {
       color1: '#cc0000',  // Red
       color2: '#ffffff',  // White
     });
+
+    // Rainbow "T" using dynamic gradient text
+    a.canvasGradientText('T', { x: 57, y: 246, fontSize: 168, bold: true });
+
+    // "syne" text (positioned after the T)
+    a.canvasText('syne', { color: '#3d2d52', textSize: 168, x: 162, y: 236 });
 
     // Physics + rotation animation
     const tick = setInterval(() => {
@@ -63,7 +77,10 @@ export function buildAmigaBoingApp(a: App): void {
       // Update ball position and rotation directly
       ball.update({ cx: x, cy: y, rotation });
 
-      // Refresh cosyne bindings (for shadow)
+      // Update shadow position
+      shadow.update({ x: x - shadowW / 2 });
+
+      // Refresh cosyne bindings (for background)
       refreshAllCosyneContexts();
     }, 25);
 

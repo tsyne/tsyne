@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	_ "image/png" // Register PNG decoder for blitImage
 	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/theme"
+	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font"
 )
 
 // ============================================================================
@@ -147,6 +152,392 @@ func (b *Bridge) handleCreateCanvasCircle(msg Message) Response {
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+// EllipseData stores ellipse parameters for updates
+type EllipseData struct {
+	X, Y, Width, Height float32
+	FillColor           color.RGBA
+}
+
+// handleCreateCanvasEllipse creates an ellipse using a raster
+func (b *Bridge) handleCreateCanvasEllipse(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+
+	x := toFloat32(msg.Payload["x"])
+	y := toFloat32(msg.Payload["y"])
+	width := toFloat32(msg.Payload["width"])
+	height := toFloat32(msg.Payload["height"])
+
+	var fillColor color.RGBA = color.RGBA{R: 128, G: 128, B: 128, A: 255}
+	if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+		if parsed, ok := parseHexColorSimple(fillHex).(color.RGBA); ok {
+			fillColor = parsed
+		}
+	}
+
+	// Store ellipse data for updates
+	b.mu.Lock()
+	if b.ellipseData == nil {
+		b.ellipseData = make(map[string]*EllipseData)
+	}
+	b.ellipseData[widgetID] = &EllipseData{x, y, width, height, fillColor}
+	b.mu.Unlock()
+
+	ellipseID := widgetID
+
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		b.mu.RLock()
+		data := b.ellipseData[ellipseID]
+		if data == nil {
+			b.mu.RUnlock()
+			return color.RGBA{A: 0}
+		}
+		fill := data.FillColor
+		b.mu.RUnlock()
+
+		// Ellipse equation: (x/a)^2 + (y/b)^2 <= 1
+		cx := float64(w) / 2
+		cy := float64(h) / 2
+		a := float64(w) / 2
+		b := float64(h) / 2
+
+		dx := float64(px) - cx
+		dy := float64(py) - cy
+
+		if (dx*dx)/(a*a)+(dy*dy)/(b*b) <= 1.0 {
+			return fill
+		}
+		return color.RGBA{A: 0}
+	})
+
+	raster.Move(fyne.NewPos(x, y))
+	raster.Resize(fyne.NewSize(width, height))
+	raster.SetMinSize(fyne.NewSize(width, height))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasellipse", Text: ""}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+func (b *Bridge) handleUpdateCanvasEllipse(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	data, dataExists := b.ellipseData[widgetID]
+	b.mu.RUnlock()
+
+	if !exists || !dataExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Ellipse widget not found",
+		}
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an ellipse raster",
+		}
+	}
+
+	b.mu.Lock()
+	if x, ok := getFloat64(msg.Payload["x"]); ok {
+		data.X = float32(x)
+	}
+	if y, ok := getFloat64(msg.Payload["y"]); ok {
+		data.Y = float32(y)
+	}
+	newX := data.X
+	newY := data.Y
+	b.mu.Unlock()
+
+	fyne.DoAndWait(func() {
+		raster.Move(fyne.NewPos(newX, newY))
+		raster.Refresh()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleCreateCanvasRainbowT creates a "T" letter with rainbow gradient (legacy)
+func (b *Bridge) handleCreateCanvasRainbowT(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+
+	x := toFloat32(msg.Payload["x"])
+	y := toFloat32(msg.Payload["y"])
+	width := toFloat32(msg.Payload["width"])
+	height := toFloat32(msg.Payload["height"])
+
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		// T shape: top bar and vertical stem
+		fx := float64(px) / float64(w)
+		fy := float64(py) / float64(h)
+
+		inT := false
+		if fy < 0.28 {
+			inT = true
+		}
+		if fy >= 0.28 && fx >= 0.32 && fx <= 0.68 {
+			inT = true
+		}
+
+		if !inT {
+			return color.RGBA{A: 0}
+		}
+
+		return rainbowColor(fy)
+	})
+
+	raster.Move(fyne.NewPos(x, y))
+	raster.Resize(fyne.NewSize(width, height))
+	raster.SetMinSize(fyne.NewSize(width, height))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasrainbowt", Text: ""}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+// rainbowColor returns a rainbow color based on t (0 to 1, top to bottom)
+func rainbowColor(t float64) color.RGBA {
+	// ROYGBIV rainbow: Red -> Orange -> Yellow -> Green -> Blue -> Indigo -> Violet
+	// Map t (0-1) to hue, with red at top (t=0) and violet at bottom (t=1)
+	var r, g, b uint8
+
+	if t < 0.143 {
+		// Red (pure red)
+		r = 255
+		g = uint8(165 * (t / 0.143)) // fade toward orange
+		b = 0
+	} else if t < 0.286 {
+		// Orange -> Yellow
+		r = 255
+		g = uint8(165 + 90*((t-0.143)/0.143)) // 165 -> 255
+		b = 0
+	} else if t < 0.429 {
+		// Yellow -> Green
+		r = uint8(255 * (1 - (t-0.286)/0.143))
+		g = 255
+		b = 0
+	} else if t < 0.571 {
+		// Green -> Blue
+		r = 0
+		g = uint8(255 * (1 - (t-0.429)/0.142))
+		b = uint8(255 * ((t - 0.429) / 0.142))
+	} else if t < 0.714 {
+		// Blue (pure blue)
+		r = 0
+		g = 0
+		b = 255
+	} else if t < 0.857 {
+		// Blue -> Indigo
+		r = uint8(75 * ((t - 0.714) / 0.143))
+		g = 0
+		b = uint8(255 - 55*((t-0.714)/0.143)) // 255 -> 200
+	} else {
+		// Indigo -> Violet
+		r = uint8(75 + 73*((t-0.857)/0.143)) // 75 -> 148
+		g = 0
+		b = uint8(200 + 11*((t-0.857)/0.143)) // 200 -> 211
+	}
+
+	return color.RGBA{R: r, G: g, B: b, A: 255}
+}
+
+// handleCreateCanvasGradientText creates text with a vertical gradient fill
+// Uses Fyne's theme font with freetype for rendering
+func (b *Bridge) handleCreateCanvasGradientText(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	text := msg.Payload["text"].(string)
+
+	x := toFloat32(msg.Payload["x"])
+	y := toFloat32(msg.Payload["y"])
+	fontSize := float64(48)
+	if fs, ok := getFloat64(msg.Payload["fontSize"]); ok {
+		fontSize = fs
+	}
+
+	gradientType := "rainbow"
+	if gt, ok := msg.Payload["gradient"].(string); ok {
+		gradientType = gt
+	}
+
+	bold := false
+	if b, ok := msg.Payload["bold"].(bool); ok {
+		bold = b
+	}
+
+	direction := "down" // default: ROYGBIV top to bottom
+	if d, ok := msg.Payload["direction"].(string); ok {
+		direction = d
+	}
+
+	// Load Fyne's font (bold or regular)
+	var fontResource fyne.Resource
+	if bold {
+		fontResource = theme.DefaultTextBoldFont()
+	} else {
+		fontResource = theme.DefaultTextFont()
+	}
+	ttFont, err := truetype.Parse(fontResource.Content())
+	if err != nil {
+		return Response{ID: msg.ID, Success: false, Error: "failed to parse font: " + err.Error()}
+	}
+
+	// Create freetype context to measure and render text
+	ctx := freetype.NewContext()
+	ctx.SetDPI(72)
+	ctx.SetFont(ttFont)
+	ctx.SetFontSize(fontSize)
+
+	// Measure text bounds
+	opts := truetype.Options{Size: fontSize, DPI: 72}
+	face := truetype.NewFace(ttFont, &opts)
+	textWidth := font.MeasureString(face, text).Ceil()
+	metrics := face.Metrics()
+	ascent := metrics.Ascent.Ceil()
+	descent := metrics.Descent.Ceil()
+	textHeight := ascent + descent
+
+	// Minimal padding
+	padX := 2
+	padY := 2
+	width := textWidth + padX*2
+	height := textHeight + padY*2
+
+	// Text top and bottom within the image (for gradient mapping)
+	textTop := padY
+	textBottom := padY + textHeight
+
+	// Create mask image (white text on transparent background)
+	maskImg := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.Draw(maskImg, maskImg.Bounds(), image.Transparent, image.Point{}, draw.Src)
+
+	// Render text to mask
+	ctx.SetClip(maskImg.Bounds())
+	ctx.SetDst(maskImg)
+	ctx.SetSrc(image.White)
+
+	// Position text (baseline is at ascent from top + padding)
+	pt := freetype.Pt(padX, padY+ascent)
+	ctx.DrawString(text, pt)
+
+	// Scan the mask to find actual text bounds (where pixels exist)
+	actualTop := height
+	actualBottom := 0
+	actualLeft := width
+	actualRight := 0
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			_, _, _, a := maskImg.At(x, y).RGBA()
+			if a > 0x8000 {
+				if y < actualTop {
+					actualTop = y
+				}
+				if y > actualBottom {
+					actualBottom = y
+				}
+				if x < actualLeft {
+					actualLeft = x
+				}
+				if x > actualRight {
+					actualRight = x
+				}
+			}
+		}
+	}
+	// Ensure we have valid bounds
+	if actualTop >= actualBottom {
+		actualTop = textTop
+		actualBottom = textBottom
+	}
+	if actualLeft >= actualRight {
+		actualLeft = 0
+		actualRight = width
+	}
+
+	// Create raster that applies gradient to mask
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		// Scale coordinates if raster size differs from mask size
+		mx := px * width / w
+		my := py * height / h
+
+		if mx >= width || my >= height {
+			return color.RGBA{A: 0}
+		}
+
+		// Sample the mask
+		c := maskImg.At(mx, my)
+		_, _, _, a := c.RGBA()
+
+		// If pixel has content (check alpha)
+		if a > 0x8000 {
+			// Calculate gradient position based on direction
+			var t float64
+			switch direction {
+			case "up":
+				// ROYGBIV bottom to top (reverse of down)
+				t = 1.0 - float64(my-actualTop)/float64(actualBottom-actualTop)
+			case "left":
+				// ROYGBIV right to left
+				t = 1.0 - float64(mx-actualLeft)/float64(actualRight-actualLeft)
+			case "right":
+				// ROYGBIV left to right
+				t = float64(mx-actualLeft) / float64(actualRight-actualLeft)
+			default: // "down"
+				// ROYGBIV top to bottom
+				t = float64(my-actualTop) / float64(actualBottom-actualTop)
+			}
+			if t < 0 {
+				t = 0
+			}
+			if t > 1 {
+				t = 1
+			}
+			if gradientType == "rainbow" {
+				return rainbowColor(t)
+			}
+			return rainbowColor(t)
+		}
+
+		return color.RGBA{A: 0}
+	})
+
+	raster.Move(fyne.NewPos(x, y))
+	raster.Resize(fyne.NewSize(float32(width), float32(height)))
+	raster.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasgradienttext", Text: text}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID, "width": width, "height": height},
 	}
 }
 
@@ -312,6 +703,13 @@ func (b *Bridge) handleCreateCanvasText(msg Message) Response {
 			canvasText.Alignment = fyne.TextAlignCenter
 		case "trailing":
 			canvasText.Alignment = fyne.TextAlignTrailing
+		}
+	}
+
+	// Set position if provided
+	if x, ok := getFloat64(msg.Payload["x"]); ok {
+		if y, ok := getFloat64(msg.Payload["y"]); ok {
+			canvasText.Move(fyne.NewPos(float32(x), float32(y)))
 		}
 	}
 

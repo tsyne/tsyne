@@ -6,7 +6,9 @@ toolchain go1.24.7
 
 require (
 	fyne.io/fyne/v2 v2.7.0
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	golang.org/x/image v0.24.0
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.6
 )
@@ -40,7 +42,6 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
-	golang.org/x/image v0.24.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.27.0 // indirect

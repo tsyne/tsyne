@@ -493,6 +493,8 @@ export class CanvasText {
     italic?: boolean;
     monospace?: boolean;
     alignment?: 'leading' | 'center' | 'trailing';
+    x?: number;
+    y?: number;
   }) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvastext');
@@ -506,6 +508,8 @@ export class CanvasText {
       if (options.italic !== undefined) payload.italic = options.italic;
       if (options.monospace !== undefined) payload.monospace = options.monospace;
       if (options.alignment) payload.alignment = options.alignment;
+      if (options.x !== undefined) payload.x = options.x;
+      if (options.y !== undefined) payload.y = options.y;
     }
 
     ctx.bridge.send('createCanvasText', payload);
@@ -1452,6 +1456,97 @@ export class CanvasCheckeredSphere {
       ...options
     });
   }
+}
+
+/**
+ * Canvas Gradient Text - renders text with a vertical gradient fill
+ * Uses Fyne's theme font dynamically - supports any text string
+ */
+export interface CanvasGradientTextOptions {
+  x?: number;          // X position
+  y?: number;          // Y position
+  fontSize?: number;   // Font size (default: 48)
+  gradient?: 'rainbow'; // Gradient type (currently only rainbow supported)
+  bold?: boolean;      // Use bold font
+  direction?: 'down' | 'up' | 'left' | 'right'; // Gradient direction (default: down)
+}
+
+export class CanvasGradientText {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, text: string, options?: CanvasGradientTextOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasgradienttext');
+
+    const payload: any = {
+      id: this.id,
+      text,
+    };
+
+    if (options) {
+      if (options.x !== undefined) payload.x = options.x;
+      if (options.y !== undefined) payload.y = options.y;
+      if (options.fontSize !== undefined) payload.fontSize = options.fontSize;
+      if (options.gradient) payload.gradient = options.gradient;
+      if (options.bold !== undefined) payload.bold = options.bold;
+      if (options.direction) payload.direction = options.direction;
+    }
+
+    ctx.bridge.send('createCanvasGradientText', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+}
+
+/**
+ * Canvas Ellipse - draws an ellipse/oval shape
+ */
+export interface CanvasEllipseOptions {
+  x: number;           // Top-left X position
+  y: number;           // Top-left Y position
+  width: number;       // Width of ellipse
+  height: number;      // Height of ellipse
+  fillColor?: string;  // Fill color
+}
+
+export class CanvasEllipse {
+  private ctx: Context;
+  public id: string;
+  private _x: number;
+  private _y: number;
+
+  constructor(ctx: Context, options: CanvasEllipseOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasellipse');
+    this._x = options.x;
+    this._y = options.y;
+
+    const payload: any = {
+      id: this.id,
+      x: options.x,
+      y: options.y,
+      width: options.width,
+      height: options.height,
+    };
+
+    if (options.fillColor) payload.fillColor = options.fillColor;
+
+    ctx.bridge.send('createCanvasEllipse', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: { x?: number; y?: number }): Promise<void> {
+    if (options.x !== undefined) this._x = options.x;
+    if (options.y !== undefined) this._y = options.y;
+
+    await this.ctx.bridge.send('updateCanvasEllipse', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+
+  get x(): number { return this._x; }
+  get y(): number { return this._y; }
 }
 
 /**

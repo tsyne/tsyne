@@ -438,6 +438,14 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasLine(msg)
 	case "createCanvasCircle":
 		return b.handleCreateCanvasCircle(msg)
+	case "createCanvasEllipse":
+		return b.handleCreateCanvasEllipse(msg)
+	case "updateCanvasEllipse":
+		return b.handleUpdateCanvasEllipse(msg)
+	case "createCanvasRainbowT":
+		return b.handleCreateCanvasRainbowT(msg)
+	case "createCanvasGradientText":
+		return b.handleCreateCanvasGradientText(msg)
 	case "createCanvasRectangle":
 		return b.handleCreateCanvasRectangle(msg)
 	case "createTappableCanvasRectangle":

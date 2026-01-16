@@ -92,6 +92,10 @@ import {
   CanvasSphericalPatchOptions,
   CanvasCheckeredSphere,
   CanvasCheckeredSphereOptions,
+  CanvasGradientText,
+  CanvasGradientTextOptions,
+  CanvasEllipse,
+  CanvasEllipseOptions,
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
@@ -905,6 +909,21 @@ export class App {
    */
   canvasCheckeredSphere(options: CanvasCheckeredSphereOptions): CanvasCheckeredSphere {
     return new CanvasCheckeredSphere(this.ctx, options);
+  }
+
+  /**
+   * Create text with a vertical gradient fill (e.g., rainbow)
+   * Uses Fyne's theme font dynamically - supports any text string
+   */
+  canvasGradientText(text: string, options?: CanvasGradientTextOptions): CanvasGradientText {
+    return new CanvasGradientText(this.ctx, text, options);
+  }
+
+  /**
+   * Create an ellipse/oval shape
+   */
+  canvasEllipse(options: CanvasEllipseOptions): CanvasEllipse {
+    return new CanvasEllipse(this.ctx, options);
   }
 
   canvasRadialGradient(options?: {
