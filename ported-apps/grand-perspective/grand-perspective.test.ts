@@ -1,3 +1,12 @@
+/**
+ * Jest Unit Tests for GrandPerspective
+ *
+ * Portions copyright © Erwin Bonsma (GrandPerspective original)
+ * Portions copyright © Paul Hammant 2026 (Tsyne port)
+ *
+ * Licensed under MIT License
+ */
+
 import {
   FileEntry,
   TreemapRect,

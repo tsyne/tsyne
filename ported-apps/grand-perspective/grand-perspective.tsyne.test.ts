@@ -1,6 +1,11 @@
 /**
  * TsyneTest UI Tests for GrandPerspective
  * Tests the actual rendered UI, interactions, and visual behavior
+ *
+ * Portions copyright © Erwin Bonsma (GrandPerspective original)
+ * Portions copyright © Paul Hammant 2026 (Tsyne port)
+ *
+ * Licensed under MIT License
  */
 
 import { TsyneTest } from '../../src/index-test';

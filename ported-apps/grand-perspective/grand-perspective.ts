@@ -1,6 +1,13 @@
 /**
  * GrandPerspective for Tsyne - Disk Usage Visualization
  *
+ * Portions copyright © Erwin Bonsma (GrandPerspective original)
+ * Portions copyright © Paul Hammant 2026 (Tsyne port)
+ *
+ * Licensed under MIT License
+ * Based on GrandPerspective by Erwin Bonsma (GPL-2.0)
+ * https://grandperspectiv.sourceforge.net/
+ *
  * @tsyne-app:name GrandPerspective
  * @tsyne-app:icon storage
  * @tsyne-app:category Utilities

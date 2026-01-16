@@ -402,14 +402,17 @@ class GrandPerspectiveStore {
 
 ## Original Project Attribution
 
-This port is derived from [GrandPerspective](https://grandperspectiv.sourceforge.net/) by Erwin Bonsma, licensed under the GNU General Public License (GPL-2.0).
+**Portions copyright © Erwin Bonsma (GrandPerspective original)**
+**Portions copyright © Paul Hammant 2026 (Tsyne port)**
+
+This Tsyne port is derived from [GrandPerspective](https://grandperspectiv.sourceforge.net/) by Erwin Bonsma, licensed under the GNU General Public License (GPL-2.0).
 
 The original application and its source code are available on SourceForge:
 https://sourceforge.net/projects/grandperspectiv/
 
 ## License
 
-This Tsyne port is released under the **MIT License** to match Tsyne's licensing model.
+This Tsyne port is released under the **MIT License** to match Tsyne's licensing model, with credit to the original GPL-2.0 licensed work.
 
 ```
 MIT License

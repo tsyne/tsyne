@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2024 Tsyne Contributors
+Portions copyright © Erwin Bonsma (GrandPerspective original)
+Portions copyright © Paul Hammant 2026 (Tsyne port)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +23,18 @@ SOFTWARE.
 
 ---
 
-This port is derived from GrandPerspective (https://grandperspectiv.sourceforge.net/)
-which is licensed under the GNU General Public License (GPL-2.0).
+## Original Work
 
-Original GrandPerspective Copyright © Erwin Bonsma
+This Tsyne port is derived from **GrandPerspective** by Erwin Bonsma:
+- https://grandperspectiv.sourceforge.net/
+- https://sourceforge.net/projects/grandperspectiv/
+- Licensed under GNU General Public License (GPL-2.0)
+
+## Port
+
+The Tsyne port adapts the core treemap visualization and interaction model
+to work with TypeScript and the Fyne GUI toolkit via Tsyne's bridge.
+
+Core algorithms (squarified treemap layout) and UI paradigms (disk usage
+visualization, drill-down navigation, color schemes) are derived from
+the original macOS application.
