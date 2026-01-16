@@ -1,8 +1,8 @@
-// Test for heatmap cosyne demo - captures screenshots for visual verification
-import { TsyneTest, TestContext } from '../core/src/index-test';
+// Test for gauge dashboard cosyne demo
+import { TsyneTest, TestContext } from '../../core/src/index-test';
 import * as path from 'path';
 
-describe('Heatmap Cosyne Demo', () => {
+describe('Gauge Dashboard Cosyne Demo', () => {
   let tsyneTest: TsyneTest;
   let ctx: TestContext;
   let cleanup: (() => void) | undefined;
@@ -13,18 +13,16 @@ describe('Heatmap Cosyne Demo', () => {
   });
 
   afterEach(async () => {
-    // Clear interval before cleanup
     if (cleanup) cleanup();
     await tsyneTest.cleanup();
   });
 
-  test('should render heatmap with viridis color scheme', async () => {
-    // Import the createHeatmapApp function
-    const { createHeatmapApp } = await import('../phone-apps/heatmap-demo/heatmap-cosyne');
+  test('should render gauge dashboard with multiple sections', async () => {
+    const { createGaugeDashboardApp } = await import('./gauge-cosyne');
 
     const testApp = await tsyneTest.createApp((app) => {
-      app.window({ title: 'Heatmap Demo', width: 400, height: 450 }, (win) => {
-        cleanup = createHeatmapApp(app, win);
+      app.window({ title: 'Gauge Dashboard', width: 500, height: 520 }, (win) => {
+        cleanup = createGaugeDashboardApp(app, win);
         win.show();
       });
     });
@@ -36,7 +34,7 @@ describe('Heatmap Cosyne Demo', () => {
     await ctx.wait(200);
 
     // Capture initial screenshot
-    const screenshotPath = path.join(__dirname, 'screenshots', 'heatmap-initial.png');
+    const screenshotPath = path.join(__dirname, 'screenshots', 'gauge-dashboard-initial.png');
     await tsyneTest.screenshot(screenshotPath);
     console.log(`Screenshot saved: ${screenshotPath}`);
 
@@ -45,12 +43,12 @@ describe('Heatmap Cosyne Demo', () => {
     expect(widgetInfo.length).toBeGreaterThan(0);
   }, 15000);
 
-  test('should animate heatmap over time', async () => {
-    const { createHeatmapApp } = await import('../phone-apps/heatmap-demo/heatmap-cosyne');
+  test('should animate gauge values over time', async () => {
+    const { createGaugeDashboardApp } = await import('./gauge-cosyne');
 
     const testApp = await tsyneTest.createApp((app) => {
-      app.window({ title: 'Heatmap Demo', width: 400, height: 450 }, (win) => {
-        cleanup = createHeatmapApp(app, win);
+      app.window({ title: 'Gauge Dashboard', width: 500, height: 520 }, (win) => {
+        cleanup = createGaugeDashboardApp(app, win);
         win.show();
       });
     });
@@ -60,18 +58,17 @@ describe('Heatmap Cosyne Demo', () => {
 
     // Capture at different time points to show animation
     await ctx.wait(200);
-    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'heatmap-t0.png'));
+    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'gauge-dashboard-t0.png'));
     console.log('Screenshot t0 saved');
 
     await ctx.wait(500);
-    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'heatmap-t500.png'));
+    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'gauge-dashboard-t500.png'));
     console.log('Screenshot t500 saved');
 
     await ctx.wait(500);
-    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'heatmap-t1000.png'));
+    await tsyneTest.screenshot(path.join(__dirname, 'screenshots', 'gauge-dashboard-t1000.png'));
     console.log('Screenshot t1000 saved');
 
-    // Test passes if we got this far without errors
     expect(true).toBe(true);
   }, 15000);
 });

@@ -14,6 +14,8 @@ export interface GaugeOptions extends PrimitiveOptions {
   radius?: number;
   startAngle?: number;  // In degrees, default 225 (bottom-left)
   endAngle?: number;    // In degrees, default 315 (bottom-right)
+  valueColor?: string;  // Custom color for value arc (overrides auto-color)
+  showValue?: boolean;  // Whether to show value text in center
 }
 
 /**
@@ -29,6 +31,8 @@ export class CosyneGauge extends Primitive<any> {
   private startAngle: number;  // In radians
   private endAngle: number;    // In radians
   private valueBinding: Binding<number> | undefined;
+  private customValueColor: string | undefined;
+  private showValue: boolean;
 
   constructor(x: number, y: number, underlying: any, options?: GaugeOptions) {
     super(underlying, options);
@@ -41,6 +45,8 @@ export class CosyneGauge extends Primitive<any> {
     // Convert degrees to radians, default to bottom-facing arc (225° to 315°)
     this.startAngle = ((options?.startAngle ?? 225) * Math.PI) / 180;
     this.endAngle = ((options?.endAngle ?? 315) * Math.PI) / 180;
+    this.customValueColor = options?.valueColor;
+    this.showValue = options?.showValue ?? true;
   }
 
   getPosition(): { x: number; y: number } {
@@ -101,9 +107,15 @@ export class CosyneGauge extends Primitive<any> {
   }
 
   /**
-   * Get color based on value (green -> yellow -> red)
+   * Get color based on value (custom color or green -> yellow -> red gradient)
    */
   getValueColor(): string {
+    // Use custom color if provided
+    if (this.customValueColor) {
+      return this.customValueColor;
+    }
+
+    // Default: gradient from green to yellow to red
     const normalized = this.getNormalizedValue();
 
     if (normalized < 0.5) {
@@ -113,6 +125,13 @@ export class CosyneGauge extends Primitive<any> {
       const t = (normalized - 0.5) * 2; // 0 to 1
       return `rgb(${Math.floor(255 * t)}, ${Math.floor(255 * (1 - t))}, 0)`; // Yellow to red
     }
+  }
+
+  /**
+   * Get whether to show value text
+   */
+  getShowValue(): boolean {
+    return this.showValue;
   }
 
   updatePosition(pos: PositionBinding): void {
