@@ -83,7 +83,7 @@ func (b *Bridge) dumpCanvasObjectTree(obj fyne.CanvasObject, depth int) {
 }
 
 func (b *Bridge) handleCreateWindow(msg Message) Response {
-	title := msg.Payload["title"].(string)
+	title, _ := msg.Payload["title"].(string) // Default to empty string if not provided
 	windowID := msg.Payload["id"].(string)
 
 	var win fyne.Window
