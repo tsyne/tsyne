@@ -35,6 +35,15 @@ export function screenshotIfRequested(win: any, delay: number = 500): void {
     } catch (err) {
       console.error(`Failed to save screenshot: ${err}`);
     }
-    process.exit(0);
+
+    // Close the window properly before exiting
+    try {
+      await win.close();
+    } catch (err) {
+      // Ignore close errors
+    }
+
+    // Give the bridge time to process the close
+    setTimeout(() => process.exit(0), 100);
   }, delay);
 }

@@ -155,13 +155,11 @@ export function createFractalTreeApp(a: App, win: Window) {
   return () => clearInterval(updateInterval);
 }
 
-export async function createFractalTreeAppWithTransport() {
-  const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Fractal Tree' });
-  createFractalTreeApp(a, win);
-}
-
 if (require.main === module) {
-  createFractalTreeAppWithTransport().catch(console.error);
+  app(resolveTransport(), { title: 'Fractal Tree' }, (a) => {
+    a.window({ title: 'Fractal Tree', width: 450, height: 600 }, (win) => {
+      createFractalTreeApp(a, win);
+      win.show();
+    });
+  });
 }

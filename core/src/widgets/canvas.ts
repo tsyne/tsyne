@@ -1334,3 +1334,231 @@ export class CanvasRadialGradient {
     });
   }
 }
+
+/**
+ * Canvas Gauge - composite widget for dashboard gauges/meters
+ * Composes: background arc, value arc, needle line, center circle, value text
+ */
+export interface CanvasGaugeOptions {
+  x?: number;
+  y?: number;
+  radius?: number;
+  minValue?: number;
+  maxValue?: number;
+  value?: number;
+  startAngle?: number;  // radians, default 225° (bottom-left)
+  endAngle?: number;    // radians, default 315° (bottom-right)
+  trackColor?: string;
+  valueColor?: string;  // Color for value indicator (auto if not set)
+  needleColor?: string;
+  textColor?: string;
+  showValue?: boolean;
+}
+
+export class CanvasGauge {
+  private ctx: Context;
+  public id: string;
+
+  private _x: number;
+  private _y: number;
+  private _radius: number;
+  private _minValue: number;
+  private _maxValue: number;
+  private _value: number;
+  private _startAngle: number;
+  private _endAngle: number;
+  private _trackColor: string;
+  private _valueColor: string | undefined;  // Custom color, or auto-calculate
+  private _needleColor: string;
+  private _textColor: string;
+  private _showValue: boolean;
+
+  // Composed primitives
+  private sizeRect: CanvasRectangle;
+  private trackArc: CanvasArc;
+  private valueArc: CanvasArc;
+  private needle: CanvasLine;
+  private centerDot: CanvasCircle;
+  private valueText: CanvasText;
+
+  constructor(ctx: Context, options?: CanvasGaugeOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasgauge');
+
+    // Store options with defaults
+    // Gauge is always centered in its canvas based on radius
+    this._radius = options?.radius ?? 50;
+    const center = this._radius + 10;  // padding
+    this._x = options?.x ?? center;
+    this._y = options?.y ?? center;
+    this._minValue = options?.minValue ?? 0;
+    this._maxValue = options?.maxValue ?? 100;
+    this._value = options?.value ?? 0;
+    // Default: 270° sweep from bottom-left to bottom-right (in radians, 0-2π range)
+    this._startAngle = options?.startAngle ?? (225 * Math.PI / 180);  // 225° = 3.93 rad
+    this._endAngle = options?.endAngle ?? (315 * Math.PI / 180);      // 315° = 5.50 rad
+    this._trackColor = options?.trackColor ?? '#e0e0e0';
+    this._valueColor = options?.valueColor;  // Store custom color
+    this._needleColor = options?.needleColor ?? '#333333';
+    this._textColor = options?.textColor ?? '#333333';
+    this._showValue = options?.showValue ?? true;
+
+    // Use custom valueColor if provided, otherwise auto-calculate
+    const valueColor = this._valueColor ?? this.getValueColor();
+
+    // Create sizing rectangle to define canvas bounds (transparent)
+    const canvasSize = (this._radius + 10) * 2;
+    this.sizeRect = new CanvasRectangle(ctx, {
+      width: canvasSize,
+      height: canvasSize,
+      fillColor: 'transparent',
+    });
+
+    // Create background track arc (filled wedge)
+    this.trackArc = new CanvasArc(ctx, {
+      x: this._x - this._radius,
+      y: this._y - this._radius,
+      x2: this._x + this._radius,
+      y2: this._y + this._radius,
+      startAngle: this._startAngle,
+      endAngle: this._endAngle,
+      fillColor: this._trackColor,
+    });
+
+    // Create value arc (shows current value as filled wedge)
+    const valueAngle = this.getValueAngle();
+    this.valueArc = new CanvasArc(ctx, {
+      x: this._x - this._radius + 8,
+      y: this._y - this._radius + 8,
+      x2: this._x + this._radius - 8,
+      y2: this._y + this._radius - 8,
+      startAngle: this._startAngle,
+      endAngle: valueAngle,
+      fillColor: valueColor,
+    });
+
+    // Create needle
+    const needleEnd = this.getNeedleEndpoint();
+    this.needle = new CanvasLine(ctx, this._x, this._y, needleEnd.x, needleEnd.y, {
+      strokeColor: this._needleColor,
+      strokeWidth: 2,
+    });
+
+    // Create center dot
+    const dotRadius = 4;
+    this.centerDot = new CanvasCircle(ctx, {
+      x: this._x - dotRadius,
+      y: this._y - dotRadius,
+      x2: this._x + dotRadius,
+      y2: this._y + dotRadius,
+      fillColor: this._needleColor,
+    });
+
+    // Create value text
+    const displayValue = Math.round(this._value);
+    this.valueText = new CanvasText(ctx, this._showValue ? `${displayValue}` : '', {
+      color: this._textColor,
+      textSize: 12,
+      alignment: 'center',
+    });
+  }
+
+  /**
+   * Get normalized value (0-1)
+   */
+  private getNormalizedValue(): number {
+    if (this._maxValue === this._minValue) return 0;
+    return Math.max(0, Math.min(1,
+      (this._value - this._minValue) / (this._maxValue - this._minValue)
+    ));
+  }
+
+  /**
+   * Get angle for current value
+   */
+  private getValueAngle(): number {
+    const normalized = this.getNormalizedValue();
+    const range = this._endAngle - this._startAngle;
+    return this._startAngle + range * normalized;
+  }
+
+  /**
+   * Get needle endpoint coordinates
+   */
+  private getNeedleEndpoint(): { x: number; y: number } {
+    const angle = this.getValueAngle();
+    const needleLength = this._radius * 0.8;
+    return {
+      x: this._x + Math.cos(angle) * needleLength,
+      y: this._y - Math.sin(angle) * needleLength,  // Y inverted for screen coords
+    };
+  }
+
+  /**
+   * Get color based on value (green -> yellow -> red)
+   */
+  private getValueColor(): string {
+    const normalized = this.getNormalizedValue();
+    if (normalized < 0.5) {
+      // Green to yellow
+      const g = 200;
+      const r = Math.floor(255 * normalized * 2);
+      return `rgb(${r}, ${g}, 0)`;
+    } else {
+      // Yellow to red
+      const r = 255;
+      const g = Math.floor(200 * (1 - (normalized - 0.5) * 2));
+      return `rgb(${r}, ${g}, 0)`;
+    }
+  }
+
+  /**
+   * Update gauge value and refresh display
+   */
+  async update(options: {
+    value?: number;
+    minValue?: number;
+    maxValue?: number;
+  }): Promise<void> {
+    if (options.value !== undefined) this._value = options.value;
+    if (options.minValue !== undefined) this._minValue = options.minValue;
+    if (options.maxValue !== undefined) this._maxValue = options.maxValue;
+
+    const valueAngle = this.getValueAngle();
+    const needleEnd = this.getNeedleEndpoint();
+    const valueColor = this._valueColor ?? this.getValueColor();
+
+    // Update value arc
+    await this.valueArc.update({
+      endAngle: valueAngle,
+      fillColor: valueColor,
+    });
+
+    // Update needle
+    await this.needle.update({
+      x2: needleEnd.x,
+      y2: needleEnd.y,
+    });
+
+    // Update text
+    if (this._showValue) {
+      await this.valueText.update({
+        text: `${Math.round(this._value)}`,
+      });
+    }
+  }
+
+  /**
+   * Set the gauge value
+   */
+  async setValue(value: number): Promise<void> {
+    await this.update({ value });
+  }
+
+  /**
+   * Get current value
+   */
+  getValue(): number {
+    return this._value;
+  }
+}

@@ -59,11 +59,12 @@ export class CosyneContext {
    */
   circle(x: number, y: number, radius: number, options?: CircleOptions): CosyneCircle {
     // Create the underlying Tsyne canvas circle
+    // x, y is the CENTER of the circle, convert to bounding box for Fyne
     const underlying = this.app.canvasCircle({
-      x,
-      y,
-      x2: x + radius * 2,
-      y2: y + radius * 2,
+      x: x - radius,
+      y: y - radius,
+      x2: x + radius,
+      y2: y + radius,
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
@@ -166,6 +167,19 @@ export class CosyneContext {
         const visible = visBinding.evaluate();
         primitive.updateVisibility(visible);
       }
+
+      // Handle gauge value bindings specifically
+      if (primitive instanceof CosyneGauge) {
+        const valueBinding = primitive.getValueBinding();
+        if (valueBinding) {
+          const value = valueBinding.evaluate();
+          primitive.setValue(value);
+          // Also update the underlying canvas gauge
+          if (primitive.getUnderlying()?.update) {
+            primitive.getUnderlying().update({ value });
+          }
+        }
+      }
     }
   }
 
@@ -203,15 +217,16 @@ export class CosyneContext {
 
   /**
    * Create a text primitive
+   * Note: Tsyne CanvasText doesn't support x,y positioning directly -
+   * text is positioned by the canvas stack layout. The x,y here are stored
+   * for Cosyne's coordinate system but not passed to the underlying widget.
    */
   text(x: number, y: number, text: string, options?: any): CosyneText {
     // Create the underlying Tsyne canvas text
-    const underlying = this.app.canvasText({
-      x,
-      y,
-      text,
-      fontSize: options?.fontSize || 12,
-      fillColor: options?.fillColor || 'black',
+    // Note: canvasText(text, options) - text is first arg, not in options
+    const underlying = this.app.canvasText(text, {
+      color: options?.fillColor || 'black',
+      textSize: options?.fontSize || 12,
     });
 
     const primitive = new CosyneText(x, y, text, underlying, {
@@ -383,18 +398,20 @@ export class CosyneContext {
 
   /**
    * Create a gauge primitive (Phase 7)
+   * Note: x, y are stored for Cosyne but CanvasGauge auto-centers based on radius
    */
   gauge(x: number, y: number, options?: GaugeOptions): CosyneGauge {
+    const radius = options?.radius || 50;
     const underlying = this.app.canvasGauge({
-      x,
-      y,
+      // Let CanvasGauge auto-center based on radius
       minValue: options?.minValue || 0,
       maxValue: options?.maxValue || 100,
       value: options?.value || 50,
-      radius: options?.radius || 50,
-      fillColor: options?.fillColor || '#f0f0f0',
-      strokeColor: options?.strokeColor || '#333333',
-      strokeWidth: options?.strokeWidth || 2,
+      radius,
+      trackColor: options?.fillColor || '#e0e0e0',
+      valueColor: (options as any)?.valueColor,  // Pass through custom color
+      needleColor: options?.strokeColor || '#333333',
+      showValue: (options as any)?.showValue,  // Pass through showValue option
     });
 
     const primitive = new CosyneGauge(x, y, underlying, {

@@ -208,16 +208,13 @@ export function buildBouncingBallApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('../../core/src');
+  const { app, resolveTransport } = require('../../core/src');
   app(
-    {
-      title: 'Bouncing Ball - Cosyne Phase 9',
-      width: 600,
-      height: 550,
-    },
+    resolveTransport(),
+    { title: 'Bouncing Ball - Cosyne Phase 9' },
     (a: any) => {
       a.window(
-        { title: 'Bouncing Ball Demo', width: 500, height: 450 },
+        { title: 'Bouncing Ball Demo', width: 550, height: 500 },
         (win: any) => {
           win.setContent(() => {
             buildBouncingBallApp(a);

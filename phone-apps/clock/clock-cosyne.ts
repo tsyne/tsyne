@@ -125,14 +125,12 @@ export function createClockApp(a: App, win: Window) {
   return () => clearInterval(updateInterval);
 }
 
-export async function createClockAppWithTransport() {
-  const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Clock' });
-  createClockApp(a, win);
-}
-
 // Auto-run if this is the main module
 if (require.main === module) {
-  createClockAppWithTransport().catch(console.error);
+  app(resolveTransport(), { title: 'Clock' }, (a) => {
+    a.window({ title: 'Clock', width: 300, height: 350 }, (win) => {
+      createClockApp(a, win);
+      win.show();
+    });
+  });
 }

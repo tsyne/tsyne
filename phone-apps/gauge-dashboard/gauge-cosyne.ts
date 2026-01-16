@@ -11,7 +11,7 @@
  * - Real-time updates at 30fps
  */
 
-import { app, resolveTransport } from '../../core/src';
+import { app, resolveTransport, screenshotIfRequested } from '../../core/src';
 import type { App } from '../../core/src/app';
 import type { Window } from '../../core/src/window';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src';
@@ -78,102 +78,98 @@ class GaugeDashboardState {
 export function createGaugeDashboardApp(a: App, win: Window) {
   const state = new GaugeDashboardState();
 
+  // Store label refs for updating
+  let cpuValueLabel: any;
+  let memValueLabel: any;
+  let diskValueLabel: any;
+  let netValueLabel: any;
+
   win.setContent(() => {
-    a.vbox(() => {
-      a.label('System Dashboard').withId('title');
+    a.padded(() => {
+      a.vbox(() => {
+        a.label('System Dashboard').withId('title');
 
-      // 2x2 gauge grid
-      a.hbox(() => {
-        // Left column
+        // 2x2 gauge grid using Tsyne labels + Cosyne gauges
+        a.hbox(() => {
+        // CPU gauge - blue
         a.vbox(() => {
-          a.center(() => {
-            a.canvasStack(() => {
-              cosyne(a, (c) => {
-                c.text(100, 10, 'CPU').fill('#333333').withId('cpu-label');
-
-                c.gauge(100, 60, { maxValue: 100, radius: 40 })
-                  .bindValue(() => state.getCpuUsage())
-                  .withId('cpu-gauge');
-
-                c.text(100, 130, `${state.getCpuUsage().toFixed(0)}%`)
-                  .fill('#333333')
-                  .withId('cpu-value');
-              });
+          a.label('CPU').withId('cpu-label');
+          a.canvasStack(() => {
+            cosyne(a, (c) => {
+              c.gauge(50, 50, { maxValue: 100, radius: 40, valueColor: '#3498db', showValue: false })
+                .bindValue(() => state.getCpuUsage())
+                .withId('cpu-gauge');
             });
           });
-
-          a.center(() => {
-            a.canvasStack(() => {
-              cosyne(a, (c) => {
-                c.text(100, 10, 'Memory').fill('#333333').withId('memory-label');
-
-                c.gauge(100, 60, { maxValue: 100, radius: 40 })
-                  .bindValue(() => state.getMemoryUsage())
-                  .withId('memory-gauge');
-
-                c.text(100, 130, `${state.getMemoryUsage().toFixed(0)}%`)
-                  .fill('#333333')
-                  .withId('memory-value');
-              });
-            });
-          });
+          cpuValueLabel = a.label('0%').withId('cpu-value');
         });
 
-        // Right column
+        // Memory gauge - green
         a.vbox(() => {
-          a.center(() => {
-            a.canvasStack(() => {
-              cosyne(a, (c) => {
-                c.text(100, 10, 'Disk').fill('#333333').withId('disk-label');
-
-                c.gauge(100, 60, { maxValue: 100, radius: 40 })
-                  .bindValue(() => state.getDiskUsage())
-                  .withId('disk-gauge');
-
-                c.text(100, 130, `${state.getDiskUsage().toFixed(0)}%`)
-                  .fill('#333333')
-                  .withId('disk-value');
-              });
+          a.label('Memory').withId('memory-label');
+          a.canvasStack(() => {
+            cosyne(a, (c) => {
+              c.gauge(50, 50, { maxValue: 100, radius: 40, valueColor: '#2ecc71', showValue: false })
+                .bindValue(() => state.getMemoryUsage())
+                .withId('memory-gauge');
             });
           });
-
-          a.center(() => {
-            a.canvasStack(() => {
-              cosyne(a, (c) => {
-                c.text(100, 10, 'Network').fill('#333333').withId('network-label');
-
-                c.gauge(100, 60, { maxValue: 100, radius: 40 })
-                  .bindValue(() => state.getNetworkUsage())
-                  .withId('network-gauge');
-
-                c.text(100, 130, `${state.getNetworkUsage().toFixed(0)}%`)
-                  .fill('#333333')
-                  .withId('network-value');
-              });
-            });
-          });
+          memValueLabel = a.label('0%').withId('memory-value');
         });
       });
 
-      a.label('Real-time system metrics with gauge visualization').withId('subtitle');
+      a.hbox(() => {
+        // Disk gauge - orange
+        a.vbox(() => {
+          a.label('Disk').withId('disk-label');
+          a.canvasStack(() => {
+            cosyne(a, (c) => {
+              c.gauge(50, 50, { maxValue: 100, radius: 40, valueColor: '#e67e22', showValue: false })
+                .bindValue(() => state.getDiskUsage())
+                .withId('disk-gauge');
+            });
+          });
+          diskValueLabel = a.label('0%').withId('disk-value');
+        });
+
+        // Network gauge - purple
+        a.vbox(() => {
+          a.label('Network').withId('network-label');
+          a.canvasStack(() => {
+            cosyne(a, (c) => {
+              c.gauge(50, 50, { maxValue: 100, radius: 40, valueColor: '#9b59b6', showValue: false })
+                .bindValue(() => state.getNetworkUsage())
+                .withId('network-gauge');
+            });
+          });
+          netValueLabel = a.label('0%').withId('network-value');
+        });
+      });
+
+        a.label('Real-time system metrics').withId('subtitle');
+      });
     });
   });
 
   // Update loop - 30fps updates
   const updateInterval = setInterval(() => {
     refreshAllCosyneContexts();
+    // Update value labels
+    cpuValueLabel?.setText(`${state.getCpuUsage().toFixed(0)}%`);
+    memValueLabel?.setText(`${state.getMemoryUsage().toFixed(0)}%`);
+    diskValueLabel?.setText(`${state.getDiskUsage().toFixed(0)}%`);
+    netValueLabel?.setText(`${state.getNetworkUsage().toFixed(0)}%`);
   }, 33);
 
   return () => clearInterval(updateInterval);
 }
 
-export async function createGaugeDashboardAppWithTransport() {
-  const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Gauge Dashboard' });
-  createGaugeDashboardApp(a, win);
-}
-
 if (require.main === module) {
-  createGaugeDashboardAppWithTransport().catch(console.error);
+  app(resolveTransport(), { title: 'Gauge Dashboard' }, (a) => {
+    a.window({ title: 'Gauge Dashboard', width: 350, height: 400 }, (win) => {
+      createGaugeDashboardApp(a, win);
+      win.show();
+      screenshotIfRequested(win, 1000);
+    });
+  });
 }

@@ -85,9 +85,14 @@ export class CosyneCircle extends Primitive<any> {
     this.updateUnderlying();
   }
 
-  updateVisibility(visible: boolean): void {
-    // Visibility updates would be handled by the canvas stack
-    // For now, this is a no-op but the infrastructure is in place
+  async updateVisibility(visible: boolean): Promise<void> {
+    if (this.underlying) {
+      if (visible) {
+        await this.underlying.show?.();
+      } else {
+        await this.underlying.hide?.();
+      }
+    }
   }
 
   updateFill(color: string): void {
@@ -112,14 +117,15 @@ export class CosyneCircle extends Primitive<any> {
 
   /**
    * Update the underlying Tsyne widget with current properties
+   * x, y is the CENTER of the circle, convert to bounding box for Fyne
    */
   private updateUnderlying(): void {
     if (this.underlying && this.underlying.update) {
       this.underlying.update({
-        x: this.x,
-        y: this.y,
-        x2: this.x + this.radius * 2,
-        y2: this.y + this.radius * 2,
+        x: this.x - this.radius,
+        y: this.y - this.radius,
+        x2: this.x + this.radius,
+        y2: this.y + this.radius,
       });
     }
   }

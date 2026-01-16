@@ -82,6 +82,8 @@ import {
   // Canvas
   CanvasArc,
   CanvasCircle,
+  CanvasGauge,
+  CanvasGaugeOptions,
   CanvasLine,
   CanvasLinearGradient,
   CanvasPolygon,
@@ -894,6 +896,14 @@ export class App {
     height?: number;
   }): CanvasRadialGradient {
     return new CanvasRadialGradient(this.ctx, options);
+  }
+
+  /**
+   * Create a gauge/meter widget - composite of arc, line, circle, and text
+   * Useful for dashboards showing CPU, memory, progress, etc.
+   */
+  canvasGauge(options?: CanvasGaugeOptions): CanvasGauge {
+    return new CanvasGauge(this.ctx, options);
   }
 
   // Simple canvas primitive aliases for common use cases

@@ -98,6 +98,8 @@ export {
   CanvasArc,
   CanvasPolygon,
   CanvasRadialGradient,
+  CanvasGauge,
+  CanvasGaugeOptions,
   TappableCanvasRaster,
   TappableCanvasRasterOptions
 } from './canvas';

@@ -507,12 +507,11 @@ func (b *Bridge) handleCloseWindow(msg Message) Response {
 
 	fyne.DoAndWait(func() {
 		win.Close()
+		// If no more windows, quit the application
+		if windowCount == 0 {
+			b.app.Quit()
+		}
 	})
-
-	// If no more windows, quit the application
-	if windowCount == 0 {
-		b.app.Quit()
-	}
 
 	return Response{
 		ID:      msg.ID,

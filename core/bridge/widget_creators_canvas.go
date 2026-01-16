@@ -1029,47 +1029,43 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 	}
 	b.mu.Unlock()
 
-	// Create a raster that draws the arc
+	// Capture fill color and angle values for closure
+	cR := int(fillColor.R)
+	cG := int(fillColor.G)
+	cB := int(fillColor.B)
+	arcStart := startAngle
+	arcEnd := endAngle
+
 	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
-		b.mu.RLock()
-		arcInfo, exists := b.arcData[widgetID]
-		b.mu.RUnlock()
-
-		if !exists {
-			return color.Transparent
-		}
-
 		// Calculate center and radius
-		centerX := float64(w) / 2
-		centerY := float64(h) / 2
-		radiusX := float64(w) / 2
-		radiusY := float64(h) / 2
+		cx := float64(w) / 2
+		cy := float64(h) / 2
+		rx := float64(w) / 2
+		ry := float64(h) / 2
 
-		// Calculate angle for current pixel
-		dx := float64(px) - centerX
-		dy := float64(py) - centerY
-
-		// Normalize to unit circle
-		nx := dx / radiusX
-		ny := dy / radiusY
-		dist := nx*nx + ny*ny
-
-		// Check if within the ellipse
-		if dist > 1.0 {
-			return color.Transparent
+		if rx < 1 || ry < 1 {
+			return color.RGBA{A: 1} // Nearly transparent (A=0 causes render skip)
 		}
 
-		// Calculate angle (atan2 returns -pi to pi)
-		angle := atan2(ny, nx)
+		// Normalized distance from center
+		dx := (float64(px) - cx) / rx
+		dy := (float64(py) - cy) / ry
+		dist := dx*dx + dy*dy
+
+		// Outside ellipse
+		if dist > 1.0 {
+			return color.RGBA{R: 255, G: 255, B: 255, A: 1} // Nearly transparent white
+		}
+
+		// Calculate angle (flip Y for math coords)
+		angle := atan2(-dy, dx)
 		if angle < 0 {
 			angle += 2 * 3.14159265358979
 		}
 
-		// Check if angle is within arc range
-		start := arcInfo.StartAngle
-		end := arcInfo.EndAngle
-
-		// Normalize angles to 0-2pi range
+		// Normalize arc angles to 0-2pi
+		start := arcStart
+		end := arcEnd
 		for start < 0 {
 			start += 2 * 3.14159265358979
 		}
@@ -1079,7 +1075,7 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 		start = float64Mod(start, 2*3.14159265358979)
 		end = float64Mod(end, 2*3.14159265358979)
 
-		// Check if angle falls within the arc
+		// Check if angle is within arc range
 		inArc := false
 		if start <= end {
 			inArc = angle >= start && angle <= end
@@ -1088,9 +1084,9 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 		}
 
 		if inArc {
-			return arcInfo.FillColor
+			return color.RGBA{R: uint8(cR), G: uint8(cG), B: uint8(cB), A: 255}
 		}
-		return color.Transparent
+		return color.RGBA{A: 1} // Nearly transparent (A=0 causes render skip)
 	})
 
 	width := x2 - x1
@@ -1101,6 +1097,10 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 	if height < 10 {
 		height = 100
 	}
+
+	// For NewWithoutLayout containers, we need explicit position and size
+	raster.Move(fyne.NewPos(x1, y1))
+	raster.Resize(fyne.NewSize(width, height))
 	raster.SetMinSize(fyne.NewSize(width, height))
 
 	b.mu.Lock()
