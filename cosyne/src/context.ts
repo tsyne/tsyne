@@ -18,6 +18,7 @@ import { CosyneHeatmap, HeatmapOptions, HeatmapData } from './primitives/heatmap
 import { CosynePolygon, PolygonOptions, Point } from './primitives/polygon';
 import { CosyneStar, StarOptions } from './primitives/star';
 import { CosyneGauge, GaugeOptions } from './primitives/gauge';
+import { CosyneSphericalPatch, SphericalPatchOptions } from './primitives/spherical-patch';
 import { Primitive } from './primitives/base';
 import { CirclesCollection, RectsCollection, LinesCollection } from './collections';
 import { TransformStack, TransformOptions } from './transforms';
@@ -178,6 +179,15 @@ export class CosyneContext {
           if (primitive.getUnderlying()?.update) {
             primitive.getUnderlying().update({ value });
           }
+        }
+      }
+
+      // Handle spherical patch Y-axis rotation bindings
+      if (primitive instanceof CosyneSphericalPatch) {
+        const rotBinding = primitive.getYAxisRotationBinding();
+        if (rotBinding) {
+          const rotation = rotBinding.evaluate();
+          primitive.updateRotationValue(rotation);
         }
       }
     }
@@ -356,10 +366,10 @@ export class CosyneContext {
    * Create a polygon primitive (Phase 7)
    */
   polygon(x: number, y: number, vertices: Point[], options?: PolygonOptions): CosynePolygon {
+    // Transform relative vertices to absolute points
+    const points = vertices.map(v => ({ x: x + v.x, y: y + v.y }));
     const underlying = this.app.canvasPolygon({
-      x,
-      y,
-      vertices,
+      points,
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
@@ -418,6 +428,31 @@ export class CosyneContext {
     });
 
     const primitive = new CosyneGauge(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
+    this.trackPrimitive(primitive);
+    return primitive;
+  }
+
+  /**
+   * Create a spherical patch primitive (for Amiga Boing Ball style spheres)
+   * A spherical patch is a curved quadrilateral on a sphere surface bounded by lat/lon lines
+   */
+  sphericalPatch(cx: number, cy: number, radius: number, options: SphericalPatchOptions): CosyneSphericalPatch {
+    const underlying = this.app.canvasSphericalPatch({
+      cx,
+      cy,
+      radius,
+      latStart: options.latStart,
+      latEnd: options.latEnd,
+      lonStart: options.lonStart,
+      lonEnd: options.lonEnd,
+      rotation: options.rotation ?? 0,
+      fillColor: options.fillColor || 'red',
+    });
+
+    const primitive = new CosyneSphericalPatch(cx, cy, radius, underlying, {
       ...options,
       animationManager: this.animationManager,
     });

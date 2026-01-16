@@ -1344,6 +1344,117 @@ export class CanvasRadialGradient {
 }
 
 /**
+ * Canvas Spherical Patch - renders a curved quadrilateral on a sphere surface
+ * Used for Amiga Boing Ball style checkered spheres.
+ * Each patch is bounded by latitude/longitude lines on the sphere.
+ */
+export interface CanvasSphericalPatchOptions {
+  cx: number;           // Center X of the sphere
+  cy: number;           // Center Y of the sphere
+  radius: number;       // Radius of the sphere
+  latStart: number;     // Starting latitude in radians (-π/2 to π/2)
+  latEnd: number;       // Ending latitude in radians
+  lonStart: number;     // Starting longitude in radians (0 to 2π)
+  lonEnd: number;       // Ending longitude in radians
+  rotation?: number;    // Y-axis rotation in radians (for spinning)
+  fillColor?: string;   // Fill color
+}
+
+export class CanvasSphericalPatch {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options: CanvasSphericalPatchOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvassphericalpatch');
+
+    const payload: any = {
+      id: this.id,
+      cx: options.cx,
+      cy: options.cy,
+      radius: options.radius,
+      latStart: options.latStart,
+      latEnd: options.latEnd,
+      lonStart: options.lonStart,
+      lonEnd: options.lonEnd,
+    };
+
+    if (options.rotation !== undefined) payload.rotation = options.rotation;
+    if (options.fillColor) payload.fillColor = options.fillColor;
+
+    ctx.bridge.send('createCanvasSphericalPatch', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    cx?: number;
+    cy?: number;
+    radius?: number;
+    rotation?: number;
+    fillColor?: string;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasSphericalPatch', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}
+
+/**
+ * Checkered Sphere (Amiga Boing Ball style)
+ * Renders a sphere with alternating colored patches in a single raster
+ * to avoid z-order compositing issues with multiple overlapping patches
+ */
+export interface CanvasCheckeredSphereOptions {
+  cx: number;           // Center X of the sphere
+  cy: number;           // Center Y of the sphere
+  radius: number;       // Radius of the sphere
+  latBands: number;     // Number of latitude bands
+  lonSegments: number;  // Number of longitude segments (front hemisphere)
+  rotation?: number;    // Y-axis rotation in radians (for spinning)
+  color1?: string;      // First checkerboard color (default: #cc0000 red)
+  color2?: string;      // Second checkerboard color (default: white)
+}
+
+export class CanvasCheckeredSphere {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options: CanvasCheckeredSphereOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvascheckeredsphere');
+
+    const payload: any = {
+      id: this.id,
+      cx: options.cx,
+      cy: options.cy,
+      radius: options.radius,
+      latBands: options.latBands,
+      lonSegments: options.lonSegments,
+    };
+
+    if (options.rotation !== undefined) payload.rotation = options.rotation;
+    if (options.color1) payload.color1 = options.color1;
+    if (options.color2) payload.color2 = options.color2;
+
+    ctx.bridge.send('createCanvasCheckeredSphere', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    cx?: number;
+    cy?: number;
+    radius?: number;
+    rotation?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasCheckeredSphere', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}
+
+/**
  * Canvas Gauge - composite widget for dashboard gauges/meters
  * Composes: background arc, value arc, needle line, center circle, value text
  */

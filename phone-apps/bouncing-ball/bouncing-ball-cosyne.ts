@@ -23,6 +23,8 @@ interface BallState {
 
 export function buildBouncingBallApp(a: App): void {
   a.canvasStack(() => {
+    let physicsCleanup: (() => void) | undefined;
+
     const cosyneCtx = cosyne(a, (c: CosyneContext) => {
       const canvasWidth = 500;
       const canvasHeight = 450;
@@ -189,14 +191,14 @@ export function buildBouncingBallApp(a: App): void {
         .text(20, canvasHeight - 35, 'Drag balls around • Release to bounce • Gravity enabled')
         .fill('#2C3E50');
 
-      // Cleanup on window close
-      const cleanup = () => {
-        clearInterval(physicsInterval);
-      };
-
-      // Store cleanup for later
-      (cosyneCtx as any)._cleanup = cleanup;
+      // Store cleanup function for later
+      physicsCleanup = () => clearInterval(physicsInterval);
     });
+
+    // Attach cleanup to context (now that cosyneCtx exists)
+    if (physicsCleanup) {
+      (cosyneCtx as any)._cleanup = physicsCleanup;
+    }
 
     // Enable event handling
     enableEventHandling(cosyneCtx, a, {

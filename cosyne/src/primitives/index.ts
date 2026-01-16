@@ -11,3 +11,4 @@ export { CosyneHeatmap, HeatmapOptions, HeatmapData } from './heatmap';
 export { CosynePolygon, PolygonOptions, Point } from './polygon';
 export { CosyneStar, StarOptions } from './star';
 export { CosyneGauge, GaugeOptions } from './gauge';
+export { CosyneSphericalPatch, SphericalPatchOptions } from './spherical-patch';

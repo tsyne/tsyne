@@ -486,6 +486,14 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasPolygon(msg)
 	case "updateCanvasPolygon":
 		return b.handleUpdateCanvasPolygon(msg)
+	case "createCanvasSphericalPatch":
+		return b.handleCreateCanvasSphericalPatch(msg)
+	case "updateCanvasSphericalPatch":
+		return b.handleUpdateCanvasSphericalPatch(msg)
+	case "createCanvasCheckeredSphere":
+		return b.handleCreateCanvasCheckeredSphere(msg)
+	case "updateCanvasCheckeredSphere":
+		return b.handleUpdateCanvasCheckeredSphere(msg)
 	case "createCanvasRadialGradient":
 		return b.handleCreateCanvasRadialGradient(msg)
 	case "updateCanvasRadialGradient":
