@@ -2213,6 +2213,292 @@ func (b *Bridge) handleUpdateCanvasCheckeredSphere(msg Message) Response {
 	}
 }
 
+// handleCreateCanvasSphere creates a generalized sphere with pattern support (Phase 1)
+// Supports: solid, checkered, stripes, gradient patterns
+// Renders ALL patches in a single raster to avoid z-order compositing issues
+func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+
+	// Parse parameters
+	cx := toFloat32(msg.Payload["cx"])
+	cy := toFloat32(msg.Payload["cy"])
+	radius := toFloat32(msg.Payload["radius"])
+	latBands := toInt(msg.Payload["latBands"])
+	lonSegments := toInt(msg.Payload["lonSegments"])
+	pattern := "checkered"
+	if p, ok := msg.Payload["pattern"].(string); ok {
+		pattern = p
+	}
+	rotation := 0.0
+	if rot, ok := msg.Payload["rotation"]; ok {
+		rotation = toFloat64(rot)
+	}
+
+	// Parse colors based on pattern type
+	sphereData := &SphereData{
+		CenterX:     cx,
+		CenterY:     cy,
+		Radius:      radius,
+		LatBands:    latBands,
+		LonSegments: lonSegments,
+		Rotation:    rotation,
+		Pattern:     pattern,
+	}
+
+	switch pattern {
+	case "solid":
+		sphereData.SolidColor = color.RGBA{R: 204, G: 0, B: 0, A: 255} // default red
+		if solidHex, ok := msg.Payload["solidColor"].(string); ok {
+			sphereData.SolidColor = parseHexColorSimple(solidHex).(color.RGBA)
+		}
+
+	case "stripes":
+		sphereData.StripeDir = "horizontal"
+		if dir, ok := msg.Payload["stripeDirection"].(string); ok {
+			sphereData.StripeDir = dir
+		}
+		// Parse stripe colors array
+		sphereData.StripeColors = []color.RGBA{
+			{R: 204, G: 0, B: 0, A: 255},   // default red
+			{R: 255, G: 255, B: 255, A: 255}, // default white
+		}
+		if colorsInterface, ok := msg.Payload["stripeColors"].([]interface{}); ok {
+			sphereData.StripeColors = []color.RGBA{}
+			for _, c := range colorsInterface {
+				if hexStr, ok := c.(string); ok {
+					sphereData.StripeColors = append(sphereData.StripeColors, parseHexColorSimple(hexStr).(color.RGBA))
+				}
+			}
+		}
+
+	case "gradient":
+		sphereData.GradientStart = color.RGBA{R: 255, G: 0, B: 0, A: 255} // default red
+		sphereData.GradientEnd = color.RGBA{R: 0, G: 0, B: 255, A: 255}   // default blue
+		if startHex, ok := msg.Payload["gradientStart"].(string); ok {
+			sphereData.GradientStart = parseHexColorSimple(startHex).(color.RGBA)
+		}
+		if endHex, ok := msg.Payload["gradientEnd"].(string); ok {
+			sphereData.GradientEnd = parseHexColorSimple(endHex).(color.RGBA)
+		}
+
+	case "checkered":
+	default:
+		sphereData.CheckeredCol1 = color.RGBA{R: 204, G: 0, B: 0, A: 255}   // default red
+		sphereData.CheckeredCol2 = color.RGBA{R: 255, G: 255, B: 255, A: 255} // default white
+		if c1Hex, ok := msg.Payload["checkeredColor1"].(string); ok {
+			sphereData.CheckeredCol1 = parseHexColorSimple(c1Hex).(color.RGBA)
+		}
+		if c2Hex, ok := msg.Payload["checkeredColor2"].(string); ok {
+			sphereData.CheckeredCol2 = parseHexColorSimple(c2Hex).(color.RGBA)
+		}
+	}
+
+	// Store sphere data for dynamic updates
+	b.mu.Lock()
+	if b.sphereData == nil {
+		b.sphereData = make(map[string]*SphereData)
+	}
+	b.sphereData[widgetID] = sphereData
+	b.mu.Unlock()
+
+	sphereWidgetID := widgetID
+
+	// Create raster that renders all patches in one pass
+	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
+		b.mu.RLock()
+		sphere := b.sphereData[sphereWidgetID]
+		if sphere == nil {
+			b.mu.RUnlock()
+			return color.RGBA{A: 0}
+		}
+		// Copy values to avoid holding lock during math
+		sR := float64(sphere.Radius)
+		sLatBands := sphere.LatBands
+		sLonSegs := sphere.LonSegments
+		sRot := sphere.Rotation
+		pattern := sphere.Pattern
+		solidColor := sphere.SolidColor
+		col1 := sphere.CheckeredCol1
+		col2 := sphere.CheckeredCol2
+		stripeColors := sphere.StripeColors
+		stripeDir := sphere.StripeDir
+		gradStart := sphere.GradientStart
+		gradEnd := sphere.GradientEnd
+		b.mu.RUnlock()
+
+		// Convert pixel to coordinates relative to sphere center
+		centerX := float64(w) / 2
+		centerY := float64(h) / 2
+		scale := float64(w) / (2 * sR)
+		x := (float64(px) - centerX) / scale
+		y := (float64(py) - centerY) / scale
+
+		// Check if within sphere circle
+		distSq := x*x + y*y
+		if distSq > sR*sR {
+			return color.RGBA{A: 0}
+		}
+
+		// Calculate z for front face of sphere
+		z := sqrt(sR*sR - distSq)
+
+		// Apply inverse Y-axis rotation to find original (unrotated) position
+		cosR := cos(sRot)
+		sinR := sin(sRot)
+		xOrig := x*cosR + z*sinR
+		zOrig := -x*sinR + z*cosR
+
+		// Calculate latitude: angle from equator, -π/2 (south) to π/2 (north)
+		lat := asin(-y / sR)
+
+		// Calculate longitude: angle around Y axis, 0 to 2π (full sphere)
+		lon := atan2(zOrig, xOrig)
+		if lon < 0 {
+			lon += 2 * pi
+		}
+
+		// Apply pattern
+		switch pattern {
+		case "solid":
+			return solidColor
+
+		case "stripes":
+			if stripeDir == "vertical" {
+				// Vertical stripes based on longitude
+				stripeIdx := int(lon / (2 * pi / float64(len(stripeColors))))
+				if stripeIdx >= len(stripeColors) {
+					stripeIdx = len(stripeColors) - 1
+				}
+				return stripeColors[stripeIdx]
+			} else {
+				// Horizontal stripes based on latitude
+				latIdx := int((lat + pi/2) / (pi / float64(len(stripeColors))))
+				if latIdx >= len(stripeColors) {
+					latIdx = len(stripeColors) - 1
+				}
+				return stripeColors[latIdx]
+			}
+
+		case "gradient":
+			// Gradient from pole to pole (based on latitude)
+			// lat: -π/2 (south) to π/2 (north) -> normalize to 0-1
+			t := (lat + pi/2) / pi
+			if t < 0 {
+				t = 0
+			}
+			if t > 1 {
+				t = 1
+			}
+			// Interpolate between start and end colors
+			r := uint8(float64(gradStart.R)*(1-t) + float64(gradEnd.R)*t)
+			g := uint8(float64(gradStart.G)*(1-t) + float64(gradEnd.G)*t)
+			b := uint8(float64(gradStart.B)*(1-t) + float64(gradEnd.B)*t)
+			a := uint8(float64(gradStart.A)*(1-t) + float64(gradEnd.A)*t)
+			return color.RGBA{R: r, G: g, B: b, A: a}
+
+		case "checkered":
+		default:
+			// Determine which lat/lon band this pixel falls in
+			latIdx := int((lat + pi/2) / (pi / float64(sLatBands)))
+			if latIdx >= sLatBands {
+				latIdx = sLatBands - 1
+			}
+			if latIdx < 0 {
+				latIdx = 0
+			}
+
+			lonIdx := int(lon / (2 * pi / float64(sLonSegs)))
+			if lonIdx >= sLonSegs {
+				lonIdx = sLonSegs - 1
+			}
+			if lonIdx < 0 {
+				lonIdx = 0
+			}
+
+			// Checkerboard pattern
+			if (latIdx+lonIdx)%2 == 0 {
+				return col1
+			}
+			return col2
+		}
+	})
+
+	// Size the raster to contain the sphere
+	size := radius * 2
+	raster.Move(fyne.NewPos(cx-radius, cy-radius))
+	raster.Resize(fyne.NewSize(size, size))
+	raster.SetMinSize(fyne.NewSize(size, size))
+
+	b.mu.Lock()
+	b.widgets[widgetID] = raster
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvassphere", Text: ""}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	sphere, sphereExists := b.sphereData[widgetID]
+	b.mu.RUnlock()
+
+	if !exists || !sphereExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Sphere widget not found",
+		}
+	}
+
+	raster, ok := w.(*canvas.Raster)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a sphere raster",
+		}
+	}
+
+	// Update sphere data
+	b.mu.Lock()
+	if cx, ok := getFloat64(msg.Payload["cx"]); ok {
+		sphere.CenterX = float32(cx)
+	}
+	if cy, ok := getFloat64(msg.Payload["cy"]); ok {
+		sphere.CenterY = float32(cy)
+	}
+	if r, ok := getFloat64(msg.Payload["radius"]); ok {
+		sphere.Radius = float32(r)
+	}
+	if rot, ok := getFloat64(msg.Payload["rotation"]); ok {
+		sphere.Rotation = rot
+	}
+
+	// Update position
+	newCx := sphere.CenterX
+	newCy := sphere.CenterY
+	newRadius := sphere.Radius
+	b.mu.Unlock()
+
+	// Update raster position/size
+	fyne.DoAndWait(func() {
+		raster.Move(fyne.NewPos(newCx-newRadius, newCy-newRadius))
+		raster.Refresh()
+	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleCreateCanvasRadialGradient(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 
