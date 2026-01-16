@@ -443,7 +443,7 @@ function renderShadedRect(c: any, rect: TreemapRect, baseColor: string, isSelect
 // Main App
 // ============================================================================
 
-export function buildGrandPerspectiveApp(a: any): void {
+export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
   const store = new GrandPerspectiveStore();
   let cosyneCtx: any = null;
   let eventRouter: EventRouter | null = null;
@@ -453,8 +453,53 @@ export function buildGrandPerspectiveApp(a: any): void {
     refreshAllCosyneContexts();
   };
 
-  // Initialize with a small directory
-  store.scanDirectory('/home/user/tsyne/ported-apps').catch(() => {
+  // Determine starting directory with priority:
+  // 1. Parameter passed to function (for programmatic use)
+  // 2. Command-line argument (process.argv[2])
+  // 3. Default fallback directories
+  const getStartingDirectory = (): string => {
+    if (initialPath) {
+      try {
+        fs.statSync(initialPath);
+        return initialPath;
+      } catch (e) {
+        // Fall through to next option
+      }
+    }
+
+    if (typeof process !== 'undefined' && process.argv && process.argv[2]) {
+      const cliPath = process.argv[2];
+      try {
+        fs.statSync(cliPath);
+        return cliPath;
+      } catch (e) {
+        console.warn(`Directory not found or inaccessible: ${cliPath}`);
+      }
+    }
+
+    // Fallback chain
+    const fallbacks = [
+      '/home/user/tsyne/ported-apps',
+      '/home/user/tsyne',
+      process.env.HOME || '/home',
+      '/tmp',
+    ];
+
+    for (const path of fallbacks) {
+      try {
+        fs.statSync(path);
+        return path;
+      } catch (e) {
+        // Continue to next fallback
+      }
+    }
+
+    return '/tmp';
+  };
+
+  // Initialize with determined directory
+  const startingDir = getStartingDirectory();
+  store.scanDirectory(startingDir).catch(() => {
     store.scanDirectory('/tmp').catch(() => {});
   });
 
@@ -585,5 +630,12 @@ export function buildGrandPerspectiveApp(a: any): void {
 if (require.main === module) {
   // @Grab required if using external deps
   const { app } = require('../../src/index');
-  app({ title: 'GrandPerspective' }, buildGrandPerspectiveApp);
+
+  // Extract starting directory from command-line argument (argv[2])
+  // Usage: npx tsx grand-perspective.ts /path/to/directory
+  const startDir = process.argv[2] || undefined;
+
+  app({ title: 'GrandPerspective' }, (a: any) => {
+    buildGrandPerspectiveApp(a, startDir);
+  });
 }
