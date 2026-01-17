@@ -94,3 +94,13 @@ export {
   type ParticleOptions,
   type EmitterOptions,
 } from './particle-system';
+export {
+  MarkerRenderer,
+  MarkerAnchor,
+  CUSTOM_MARKERS,
+  isCustomMarker,
+  type BuiltInMarkerType,
+  type CustomMarker,
+  type MarkerType,
+  type MarkerConfig,
+} from './markers';
