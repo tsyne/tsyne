@@ -1475,7 +1475,10 @@ export interface CanvasSphereOptions {
   colors?: string[];             // Color array for pattern
   latBands?: number;             // Number of latitude bands (default: 8)
   lonSegments?: number;          // Number of longitude segments (default: 8)
-  rotation?: number;             // Y-axis rotation in radians (for spinning)
+  rotationX?: number;            // X-axis rotation in radians (tilt forward/back)
+  rotationY?: number;            // Y-axis rotation in radians (spin left/right)
+  rotationZ?: number;            // Z-axis rotation in radians (roll)
+  rotation?: number;             // DEPRECATED: Use rotationY instead. Y-axis rotation in radians (for spinning)
   // Pattern-specific options
   checkeredColor1?: string;      // First checkerboard color (used if pattern='checkered')
   checkeredColor2?: string;      // Second checkerboard color (used if pattern='checkered')
@@ -1504,7 +1507,17 @@ export class CanvasSphere {
       pattern: options.pattern ?? 'checkered',
     };
 
-    if (options.rotation !== undefined) payload.rotation = options.rotation;
+    // Handle rotations - support both old 'rotation' (deprecated) and new 'rotationX/Y/Z'
+    // For backward compatibility: 'rotation' maps to 'rotationY'
+    const rotX = options.rotationX ?? 0;
+    const rotY = options.rotationY ?? options.rotation ?? 0;
+    const rotZ = options.rotationZ ?? 0;
+
+    if (rotX !== 0 || rotY !== 0 || rotZ !== 0) {
+      payload.rotationX = rotX;
+      payload.rotationY = rotY;
+      payload.rotationZ = rotZ;
+    }
 
     // Handle pattern-specific colors
     switch (options.pattern ?? 'checkered') {
@@ -1534,12 +1547,29 @@ export class CanvasSphere {
     cx?: number;
     cy?: number;
     radius?: number;
-    rotation?: number;
+    rotationX?: number;
+    rotationY?: number;
+    rotationZ?: number;
+    rotation?: number;  // DEPRECATED: Use rotationY instead
   }): Promise<void> {
-    await this.ctx.bridge.send('updateCanvasSphere', {
+    const updatePayload: any = {
       widgetId: this.id,
-      ...options
-    });
+    };
+
+    if (options.cx !== undefined) updatePayload.cx = options.cx;
+    if (options.cy !== undefined) updatePayload.cy = options.cy;
+    if (options.radius !== undefined) updatePayload.radius = options.radius;
+
+    // Handle rotations - support both old 'rotation' and new 'rotationX/Y/Z'
+    if (options.rotationX !== undefined) updatePayload.rotationX = options.rotationX;
+    if (options.rotationY !== undefined) updatePayload.rotationY = options.rotationY;
+    if (options.rotationZ !== undefined) updatePayload.rotationZ = options.rotationZ;
+    if (options.rotation !== undefined && options.rotationY === undefined) {
+      // Backward compatibility: map 'rotation' to 'rotationY' if rotationY not explicitly set
+      updatePayload.rotationY = options.rotation;
+    }
+
+    await this.ctx.bridge.send('updateCanvasSphere', updatePayload);
   }
 }
 

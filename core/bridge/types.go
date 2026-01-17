@@ -279,7 +279,9 @@ type SphereData struct {
 	Radius         float32     // Radius of the sphere
 	LatBands       int         // Number of latitude bands
 	LonSegments    int         // Number of longitude segments (full sphere)
-	Rotation       float64     // Y-axis rotation in radians (for spinning)
+	RotationX      float64     // X-axis rotation in radians (tilt forward/back)
+	RotationY      float64     // Y-axis rotation in radians (spin left/right)
+	RotationZ      float64     // Z-axis rotation in radians (roll)
 	Pattern        string      // Pattern type: solid, checkered, stripes, gradient
 	SolidColor     color.RGBA  // For solid pattern
 	CheckeredCol1  color.RGBA  // For checkered pattern
