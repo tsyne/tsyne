@@ -2964,16 +2964,11 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 			}
 		}
 	}
-
-	// Update position
-	newCx := sphere.CenterX
-	newCy := sphere.CenterY
-	newRadius := sphere.Radius
 	b.mu.Unlock()
 
-	// Update raster position/size
+	// Refresh the raster to re-render with updated rotation/texture/lighting
+	// Note: Don't call Move() here as it conflicts with Fyne layout containers
 	fyne.DoAndWait(func() {
-		raster.Move(fyne.NewPos(newCx-newRadius, newCy-newRadius))
 		raster.Refresh()
 	})
 
