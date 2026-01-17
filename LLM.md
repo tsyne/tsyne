@@ -890,6 +890,7 @@ func (b *Bridge) handleCreateMyWidget(msg Message) {
 - **Type-safe**: Full TypeScript types
 - **Test-driven**: Include Jest tests for new features (npx jest to execute)
 - **AI-friendly**: AI assistance encouraged for tests, code
+- **No backward compatibility burden**: We are the only users of this codebase. Feel free to refactor, rename, or restructure anything as long as you consider the whole repo and update all affected code, tests, and documentation together.
 
 ## Quick Start
 

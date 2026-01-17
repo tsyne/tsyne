@@ -231,6 +231,9 @@ export class BridgeConnection implements BridgeInterface {
   }
 
   private handleEvent(event: Event): void {
+    if (event.type === 'sphereTapped') {
+      console.log(`[TS-DEBUG] handleEvent received sphereTapped: ${JSON.stringify(event)}`);
+    }
     if (event.type === 'callback' && event.data?.callbackId && typeof event.data.callbackId === 'string') {
       const handler = this.eventHandlers.get(event.data.callbackId);
       if (handler) {
@@ -242,6 +245,10 @@ export class BridgeConnection implements BridgeInterface {
       // Second try: just eventType (e.g., "mouseIn" for global handlers)
       const handlerKey = event.widgetId ? `${event.type}:${event.widgetId}` : event.type;
       const handler = this.eventHandlers.get(handlerKey) || this.eventHandlers.get(event.type);
+
+      if (event.type === 'sphereTapped') {
+        console.log(`[TS-DEBUG] sphereTapped event: handlerKey=${handlerKey}, hasHandler=${!!handler}, registeredKeys=${Array.from(this.eventHandlers.keys()).filter(k => k.startsWith('sphereTapped')).join(', ')}`);
+      }
 
       if (handler) {
         // Pass both data and widgetId for events like pointerEnter

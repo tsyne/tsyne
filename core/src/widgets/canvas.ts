@@ -1569,7 +1569,9 @@ export class CanvasSphere {
       ctx.bridge.on(`sphereTapped:${this.id}`, (event: any) => {
         if (this.onTapCallback) {
           // event contains: { lat, lon, screenX, screenY }
-          this.onTapCallback(event.lat, event.lon, event.screenX, event.screenY);
+          // Handle async callbacks properly - catch and log any errors
+          Promise.resolve(this.onTapCallback(event.lat, event.lon, event.screenX, event.screenY))
+            .catch((err) => console.error('Error in onTap callback:', err));
         }
       });
     }

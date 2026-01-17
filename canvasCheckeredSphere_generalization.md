@@ -64,6 +64,12 @@ In Go, `case X:` followed immediately by `default:` does NOT fall through - the 
 - Always set default colors BEFORE the switch on pattern type
 - If colors come through as `{0,0,0,0}` (transparent black), check that the parsing code is actually being reached
 
+**TappableCanvasObject positioning pitfalls:**
+- When wrapped in TappableCanvasObject, the raster must be at position (0,0) relative to the wrapper
+- The wrapper handles layout positioning; the wrapped object stays at origin
+- Resize() must keep wrapped object at MinSize to prevent coordinate system mismatch
+- Implementing `fyne.Draggable` interface prevents scroll containers from intercepting taps (Fyne issue #3906)
+
 **Key Files:**
 - `core/bridge/widget_creators_canvas.go` - Go renderer with SphereData struct and pixel function
 - `core/src/widgets/canvas.ts` - TypeScript CanvasSphere class
@@ -378,12 +384,11 @@ onTap?: (lat: number, lon: number, screenX: number, screenY: number) => void
 - Longitude: -π (west) to π (east)
 - Returns: Geographic coordinates for tapped point on sphere
 
-**Note for Go Bridge Implementation:**
-- When `hasTapHandler: true` is in payload, sphere must emit tap events
-- Reverse-project screen coords to sphere surface (collision detection)
-- Apply inverse rotation matrix to get geographic coordinates
-- Send event: `{ lat: number, lon: number, screenX: number, screenY: number }`
-- Key format: `sphereTapped:${widgetId}`
+**Go Bridge Implementation (COMPLETE):**
+- `core/bridge/types.go`: Added `HasTapHandler` and `WidgetID` to `SphereData`
+- `core/bridge/tappable_canvas_object.go`: Generic tappable wrapper (NEW)
+- `core/bridge/widget_creators_canvas.go`: Full tap handling with reverse projection
+- Event format: `Event{Type: "sphereTapped:{id}", Data: {lat, lon, screenX, screenY}}`
 
 ---
 

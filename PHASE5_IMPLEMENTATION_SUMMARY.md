@@ -91,83 +91,48 @@ Six interactive examples:
 - screenY: Pixel Y on canvas (0 to canvas height)
 - Useful for debugging and UI feedback
 
-## Go Bridge Implementation Notes
+## Go Bridge Implementation (COMPLETE)
 
-The TypeScript side is complete, but the Go bridge needs to:
+The Go bridge implementation is now complete:
 
-### 1. Handle `hasTapHandler` Flag
-When `hasTapHandler: true` in the sphere creation payload, enable tap event generation for that sphere.
+### Files Modified
 
-### 2. Collision Detection
-When user clicks on the canvas, determine if click is within the sphere:
-```go
-// Pseudocode
-hitTest(screenX, screenY, sphere.cx, sphere.cy, sphere.radius) bool {
-  dx := float64(screenX - sphere.cx)
-  dy := float64(screenY - sphere.cy)
-  distance := math.Sqrt(dx*dx + dy*dy)
-  return distance <= float64(sphere.radius)
-}
-```
+1. **core/bridge/types.go**
+   - Added `HasTapHandler bool` and `WidgetID string` to `SphereData` struct
 
-### 3. Reverse Projection (Screen → Sphere Surface)
-Convert 2D screen coordinates to 3D point on sphere surface:
-```go
-// Pseudocode
-screenToSphere(screenX, screenY, cx, cy, radius) (x, y, z float64) {
-  // Normalize to sphere local coordinates
-  localX := float64(screenX - cx) / float64(radius)
-  localY := float64(screenY - cy) / float64(radius)
+2. **core/bridge/tappable_canvas_object.go** (NEW)
+   - Generic wrapper to make any `fyne.CanvasObject` tappable
+   - Used to wrap the sphere raster for tap detection
 
-  // Project onto sphere (only if within radius)
-  r2 := localX*localX + localY*localY
-  if r2 > 1.0 {
-    return // outside sphere
-  }
+3. **core/bridge/widget_creators_canvas.go**
+   - Parse `hasTapHandler` flag from payload
+   - Wrap sphere raster in `TappableCanvasObject` when tap handling enabled
+   - Implement reverse projection: screen coords → sphere surface → geographic coords
+   - Apply inverse rotation matrix (Y, X, Z in reverse order)
+   - Send `sphereTapped:{widgetId}` event with lat/lon coordinates
 
-  // Compute z on sphere surface
-  z := math.Sqrt(1.0 - r2)
+### Implementation Details
 
-  return localX, localY, z
-}
-```
+The tap handler performs these steps:
+1. **Collision Detection**: Check if tap position is within sphere radius
+2. **Reverse Projection**: Convert screen (x, y) to sphere surface (x, y, z)
+3. **Inverse Rotation**: Apply inverse Y, X, Z rotations to get unrotated coordinates
+4. **Spherical Conversion**: Convert Cartesian (x, y, z) to spherical (lat, lon)
+5. **Event Dispatch**: Send `Event{Type: "sphereTapped:{id}", Data: {lat, lon, screenX, screenY}}`
 
-### 4. Convert Cartesian to Spherical Coordinates
-Convert 3D point to lat/lon:
-```go
-// Pseudocode
-cartesianToSpherical(x, y, z float64) (lat, lon float64) {
-  // lat = asin(y)
-  lat := math.Asin(y)
+### Critical Implementation Details
 
-  // lon = atan2(z, x)
-  lon := math.Atan2(z, x)
+**TappableCanvasObject must implement fyne.Draggable:**
+- Without this, scroll containers intercept drag gestures and prevent taps
+- The Dragged() and DragEnd() methods can be no-ops, but must exist
+- This works around Fyne issue #3906
 
-  return lat, lon
-}
-```
-
-### 5. Apply Inverse Rotation Matrix
-Apply inverse of sphere's rotation to get geographic coordinates:
-```go
-// Pseudocode
-applyInverseRotation(x, y, z, rotX, rotY, rotZ float64) (x', y', z' float64) {
-  // Create inverse rotation matrix
-  // Apply Z^-1, X^-1, Y^-1 in reverse order
-  // Return rotated coordinates
-}
-```
-
-### 6. Send Tap Event
-```go
-// Pseudocode
-bridge.sendEvent(fmt.Sprintf("sphereTapped:%s", sphereID), map[string]interface{}{
-  "lat": lat,
-  "lon": lon,
-  "screenX": screenX,
-  "screenY": screenY,
-})
-```
+**Coordinate system alignment:**
+- Wrapped raster position: (0,0) relative to TappableCanvasObject
+- Use raster.Size() (actual size) not MinSize() for tap coordinate calculations
+- Layout may stretch widget; coordinates must use actual dimensions
+- TappableCanvasObject.Resize() keeps wrapped object at MinSize to prevent mismatch
+- TappableCanvasObject.Move() keeps wrapped object at (0,0) relative to wrapper
 
 ## Backward Compatibility
 

@@ -28,7 +28,6 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
           a.label('Click anywhere on the sphere to see coordinates');
 
           let tapCount1 = 0;
-          let lastTap1 = { lat: 0, lon: 0 };
           const statusLabel1 = a.label('Click on sphere: Awaiting tap...').withId('status1');
 
           a.canvasSphere({
@@ -37,15 +36,14 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             radius: 80,
             pattern: 'solid',
             solidColor: '#ff6347',
-            onTap: (lat: number, lon: number, screenX: number, screenY: number) => {
+            onTap: async (lat: number, lon: number, screenX: number, screenY: number) => {
               tapCount1++;
-              lastTap1 = { lat, lon };
               const latDeg = (lat * 180 / Math.PI).toFixed(1);
               const lonDeg = (lon * 180 / Math.PI).toFixed(1);
               await statusLabel1.setText(`Tap #${tapCount1}: Lat ${latDeg}°, Lon ${lonDeg}° (Screen: ${screenX}, ${screenY})`);
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Example 2: Checkered sphere with region highlighting
           a.label('Example 2: Checkered Sphere with Hemisphere Detection');
@@ -63,7 +61,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             lonSegments: 8,
             checkeredColor1: '#cc0000',
             checkeredColor2: '#ffffff',
-            onTap: (lat: number, lon: number) => {
+            onTap: async (lat: number, lon: number) => {
               if (lat > 0) {
                 hemisphere = `Northern Hemisphere (lat=${lat.toFixed(2)})`;
               } else if (lat < 0) {
@@ -74,7 +72,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
               await hemisphereLabel.setText(`Hemisphere: ${hemisphere}`);
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Example 3: Striped sphere with prime meridian detection
           a.label('Example 3: Striped Sphere with Prime Meridian Detection');
@@ -90,7 +88,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             pattern: 'stripes',
             stripeColors: ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff'],
             stripeDirection: 'vertical',
-            onTap: (lat: number, lon: number) => {
+            onTap: async (lat: number, lon: number) => {
               if (lon > 0) {
                 meridian = `Eastern Hemisphere (lon=${lon.toFixed(2)})`;
               } else if (lon < 0) {
@@ -101,7 +99,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
               await meridianLabel.setText(`Meridian: ${meridian}`);
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Example 4: Gradient sphere with distance calculator
           a.label('Example 4: Gradient Sphere with Coordinate History');
@@ -119,7 +117,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             pattern: 'gradient',
             gradientStart: '#0000ff',
             gradientEnd: '#ff0000',
-            onTap: (lat: number, lon: number) => {
+            onTap: async (lat: number, lon: number) => {
               const latDeg = (lat * 180 / Math.PI).toFixed(1);
               const lonDeg = (lon * 180 / Math.PI).toFixed(1);
               taps.unshift({ lat: latDeg, lon: lonDeg, index: taps.length });
@@ -130,7 +128,7 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
               await tap3.setText(taps[2] ? `Tap 3: Lat ${taps[2].lat}°, Lon ${taps[2].lon}°` : 'Tap 3: -');
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Example 5: Rotated sphere with dynamic rotation
           a.label('Example 5: Rotated Sphere - Shows Rotation Compensation');
@@ -147,13 +145,13 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             stripeColors: ['#ff00ff', '#00ffff'],
             stripeDirection: 'horizontal',
             rotationY: Math.PI / 4,  // 45 degrees
-            onTap: (lat: number, lon: number) => {
+            onTap: async (lat: number, lon: number) => {
               rotatedTaps++;
               const lonDeg = (lon * 180 / Math.PI).toFixed(1);
               await rotatedStatus.setText(`Taps on rotated sphere: ${rotatedTaps} (Last lon=${lonDeg}° - accounts for rotation)`);
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Example 6: Multiple axes rotation with interactive logging
           a.label('Example 6: Multi-Axis Rotation (X + Y + Z)');
@@ -172,14 +170,14 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) =>
             rotationX: Math.PI / 12,   // 15 degrees
             rotationY: Math.PI / 6,    // 30 degrees
             rotationZ: Math.PI / 8,    // 22.5 degrees
-            onTap: (lat: number, lon: number, screenX: number, screenY: number) => {
+            onTap: async (lat: number, lon: number, screenX: number, screenY: number) => {
               multiRotTaps++;
               const latDeg = (lat * 180 / Math.PI).toFixed(1);
               const lonDeg = (lon * 180 / Math.PI).toFixed(1);
               await multiRotStatus.setText(`Total taps: ${multiRotTaps} (Last: Lat ${latDeg}°, Lon ${lonDeg}°)`);
             },
           });
-          a.spacer(100);
+          a.spacer();
 
           // Summary
           a.separator();

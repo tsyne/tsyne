@@ -1,14 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
 	"log"
 	"os"
 	"sync"
@@ -297,6 +293,9 @@ type SphereData struct {
 	// Phase 4: Texture mapping
 	TextureResourceName string   // Name of registered texture resource
 	TextureMapping      string   // Mapping type: equirectangular or cubemap
+	// Phase 5: Interactivity
+	HasTapHandler bool   // Whether tap events should be sent
+	WidgetID      string // Widget ID for event routing
 }
 
 // WidgetMetadata stores metadata about widgets for testing

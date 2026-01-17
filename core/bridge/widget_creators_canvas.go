@@ -7,7 +7,9 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/png" // Register PNG decoder for blitImage
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"sort"
 	"strings"
 
@@ -2334,6 +2336,12 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		}
 	}
 
+	// Phase 5: Parse tap handler flag
+	if hasTap, ok := msg.Payload["hasTapHandler"].(bool); ok && hasTap {
+		sphereData.HasTapHandler = true
+		sphereData.WidgetID = widgetID
+	}
+
 	// Store sphere data for dynamic updates
 	b.mu.Lock()
 	if b.sphereData == nil {
@@ -2566,12 +2574,115 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 
 	// Size the raster to contain the sphere
 	size := radius * 2
-	raster.Move(fyne.NewPos(cx-radius, cy-radius))
 	raster.Resize(fyne.NewSize(size, size))
 	raster.SetMinSize(fyne.NewSize(size, size))
 
+	// Phase 5: Wrap in tappable if tap handler is registered
+	var finalWidget fyne.CanvasObject = raster
+	if sphereData.HasTapHandler {
+		// When wrapped in tappable, raster position is (0,0) relative to wrapper
+		// The wrapper's position is managed by the layout
+		raster.Move(fyne.NewPos(0, 0))
+		tappable := NewTappableCanvasObject(raster, func(pos fyne.Position) {
+			// Get current sphere data for rotation values
+			b.mu.RLock()
+			sphere := b.sphereData[sphereWidgetID]
+			if sphere == nil {
+				b.mu.RUnlock()
+				return
+			}
+			sR := float64(sphere.Radius)
+			rotX := sphere.RotationX
+			rotY := sphere.RotationY
+			rotZ := sphere.RotationZ
+			wID := sphere.WidgetID
+			b.mu.RUnlock()
+
+			// Get actual size for coordinate calculations
+			rasterSize := raster.Size()
+			actualW := float64(rasterSize.Width)
+			actualH := float64(rasterSize.Height)
+
+			// The sphere is rendered centered in the ACTUAL size, not min size
+			// because the raster pixel function receives actual dimensions
+			centerX := actualW / 2
+			centerY := actualH / 2
+
+			// Scale is based on min dimension to prevent clipping
+			minDim := actualW
+			if actualH < minDim {
+				minDim = actualH
+			}
+			scale := minDim / (2 * sR)
+
+			x := (float64(pos.X) - centerX) / scale
+			y := (float64(pos.Y) - centerY) / scale
+
+			// Check if tap is within sphere
+			distSq := x*x + y*y
+			if distSq > sR*sR {
+				return // Outside sphere, ignore
+			}
+
+			// Calculate z on sphere surface
+			z := sqrt(sR*sR - distSq)
+
+			// Apply inverse rotations to get geographic coordinates (same as rendering)
+			// Inverse Y-axis rotation
+			cosRY := cos(-rotY)
+			sinRY := sin(-rotY)
+			x1 := x*cosRY + z*sinRY
+			z1 := -x*sinRY + z*cosRY
+			y1 := y
+
+			// Inverse X-axis rotation
+			cosRX := cos(-rotX)
+			sinRX := sin(-rotX)
+			y2 := y1*cosRX - z1*sinRX
+			z2 := y1*sinRX + z1*cosRX
+			x2 := x1
+
+			// Inverse Z-axis rotation
+			cosRZ := cos(-rotZ)
+			sinRZ := sin(-rotZ)
+			x3 := x2*cosRZ - y2*sinRZ
+			y3 := x2*sinRZ + y2*cosRZ
+			z3 := z2
+
+			// Convert to spherical coordinates (lat/lon)
+			// Normalize to unit sphere
+			r := sqrt(x3*x3 + y3*y3 + z3*z3)
+			if r == 0 {
+				return
+			}
+			nx := x3 / r
+			ny := y3 / r
+			nz := z3 / r
+
+			// lat = asin(y), lon = atan2(z, x)
+			lat := asin(ny)
+			lon := atan2(nz, nx)
+
+			// Send tap event
+			b.sendEvent(Event{
+				Type:     "sphereTapped",
+				WidgetID: wID,
+				Data: map[string]interface{}{
+					"lat":     lat,
+					"lon":     lon,
+					"screenX": int(pos.X),
+					"screenY": int(pos.Y),
+				},
+			})
+		})
+		finalWidget = tappable
+	} else {
+		// Non-tappable sphere: use cx/cy for absolute positioning (e.g., on a canvas)
+		raster.Move(fyne.NewPos(cx-radius, cy-radius))
+	}
+
 	b.mu.Lock()
-	b.widgets[widgetID] = raster
+	b.widgets[widgetID] = finalWidget
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvassphere", Text: ""}
 	b.mu.Unlock()
 
