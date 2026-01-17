@@ -58,3 +58,75 @@ export {
   type Keyframe,
 } from './animation';
 export { AnimationManager } from './animation-manager';
+export {
+  LinearScale,
+  LogScale,
+  SqrtScale,
+  PowerScale,
+  OrdinalScale,
+  scale,
+  type ScaleType,
+  type ScaleDomain,
+  type LinearScaleOptions,
+  type OrdinalScaleOptions,
+} from './scales';
+export { Axis, GridLines, type AxisOptions, type AxisOrientation, type AnyScale } from './axes';
+export {
+  LineChart,
+  MultiLineChart,
+  type InterpolationType,
+  type LineChartPoint,
+  type LineChartOptions,
+} from './line-chart';
+export {
+  ZoomPan,
+  Brush,
+  type ZoomPanState,
+  type ZoomPanOptions,
+  type BrushExtent,
+  type BrushOptions,
+} from './zoom-pan';
+export {
+  Particle,
+  Emitter,
+  ParticleSystem,
+  type Vector2D,
+  type ParticleOptions,
+  type EmitterOptions,
+} from './particle-system';
+export {
+  MarkerRenderer,
+  MarkerAnchor,
+  CUSTOM_MARKERS,
+  isCustomMarker,
+  type BuiltInMarkerType,
+  type CustomMarker,
+  type MarkerType,
+  type MarkerConfig,
+} from './markers';
+export {
+  EffectRenderer,
+  EffectsAnchor,
+  type DropShadowOptions,
+  type GlowOptions,
+  type TextShadowOptions,
+  type TextStrokeOptions,
+  type TextGlowOptions,
+} from './effects';
+export {
+  LinearGradient,
+  RadialGradient,
+  PRESET_GRADIENTS,
+  createGradient,
+  type ColorStop,
+} from './gradients';
+export {
+  ClippingRegion,
+  ClippingUtils,
+  type ClippingShape,
+  type CircleClip,
+  type RectClip,
+  type PolygonClip,
+  type PathClip,
+  type ClipPath,
+} from './clipping';

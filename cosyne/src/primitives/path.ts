@@ -3,8 +3,9 @@
  */
 
 import { Primitive, PrimitiveOptions } from './base';
-import { PositionBinding } from '../binding';
+import { PositionBinding, BindingFunction, Binding } from '../binding';
 import { HitTester, DefaultHitTesters } from '../events';
+import { MarkerAnchor, MarkerType, MarkerConfig } from '../markers';
 
 export interface PathOptions extends PrimitiveOptions {}
 
@@ -15,6 +16,9 @@ export class CosynePath extends Primitive<any> {
   private pathString: string;
   private x: number = 0;
   private y: number = 0;
+  private markers: MarkerAnchor = new MarkerAnchor();
+  private startMarkerBinding: Binding<MarkerConfig | null> | undefined;
+  private endMarkerBinding: Binding<MarkerConfig | null> | undefined;
 
   constructor(pathString: string, underlying: any, options?: PathOptions) {
     super(underlying, options);
@@ -35,6 +39,59 @@ export class CosynePath extends Primitive<any> {
     this.pathString = pathString;
     this.updateUnderlying();
     return this;
+  }
+
+  /**
+   * Set start marker (at path start point)
+   */
+  startMarker(type: MarkerType, size: number = 10, color?: string, alpha?: number): this {
+    this.markers.setStartMarker(type, size, color ?? this.strokeColor ?? '#000000', alpha ?? 1);
+    return this;
+  }
+
+  /**
+   * Set end marker (at path end point)
+   */
+  endMarker(type: MarkerType, size: number = 10, color?: string, alpha?: number): this {
+    this.markers.setEndMarker(type, size, color ?? this.strokeColor ?? '#000000', alpha ?? 1);
+    return this;
+  }
+
+  /**
+   * Bind start marker to a function
+   */
+  bindStartMarker(fn: BindingFunction<MarkerConfig | null>): this {
+    this.startMarkerBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
+   * Bind end marker to a function
+   */
+  bindEndMarker(fn: BindingFunction<MarkerConfig | null>): this {
+    this.endMarkerBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
+   * Get marker anchor
+   */
+  getMarkers(): MarkerAnchor {
+    return this.markers;
+  }
+
+  /**
+   * Get start marker binding if set
+   */
+  getStartMarkerBinding(): Binding<MarkerConfig | null> | undefined {
+    return this.startMarkerBinding;
+  }
+
+  /**
+   * Get end marker binding if set
+   */
+  getEndMarkerBinding(): Binding<MarkerConfig | null> | undefined {
+    return this.endMarkerBinding;
   }
 
   /**
