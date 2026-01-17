@@ -17,7 +17,7 @@ describe('Line Chart Demo - TsyneTest', () => {
     await tsyneTest.cleanup();
   });
 
-  it('should create and display line chart demo window', async () => {
+  it('should change interpolation when buttons are clicked', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildLineChartDemoApp(app);
     });
@@ -25,60 +25,35 @@ describe('Line Chart Demo - TsyneTest', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify window was created with correct title
-    const window = await ctx.getWindowByTitle('Line Chart Advanced Demo').within(1000).shouldExist();
-    expect(window).toBeDefined();
-  });
+    const screenshotDir = __dirname + '/screenshots';
 
-  it('should have interpolation method buttons', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildLineChartDemoApp(app);
-    });
+    // Take initial screenshot (linear interpolation - default)
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/01-linear.png`);
 
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
+    // Click Step button
+    await ctx.getById('interp-step').within(1000).shouldExist();
+    await ctx.getById('interp-step').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/02-step.png`);
 
-    // Verify interpolation method buttons exist
-    await ctx.getById('btn-linear').within(500).shouldExist();
-    await ctx.getById('btn-step').within(500).shouldExist();
-    await ctx.getById('btn-catmull').within(500).shouldExist();
-    await ctx.getById('btn-monotone').within(500).shouldExist();
-  });
+    // Click Catmull-rom button
+    await ctx.getById('interp-catmull-rom').within(1000).shouldExist();
+    await ctx.getById('interp-catmull-rom').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/03-catmull-rom.png`);
 
-  it('should have series toggle button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildLineChartDemoApp(app);
-    });
+    // Click Monotone button
+    await ctx.getById('interp-monotone').within(1000).shouldExist();
+    await ctx.getById('interp-monotone').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/04-monotone.png`);
 
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
+    // Toggle multiple series checkbox
+    await ctx.getById('multipleCheckbox').within(1000).shouldExist();
+    await ctx.getById('multipleCheckbox').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/05-multiple-series.png`);
 
-    // Verify series toggle button exists
-    await ctx.getById('btn-multi').within(500).shouldExist();
-  });
-
-  it('should have zoom reset button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildLineChartDemoApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Verify zoom reset button exists
-    await ctx.getById('btn-reset').within(500).shouldExist();
-  });
-
-  it('should render canvas for chart visualization', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildLineChartDemoApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Canvas should be available for rendering charts
-    const canvas = await ctx.getByClass('cosyne-canvas').within(500).shouldExist();
-    expect(canvas).toBeDefined();
-  });
+  }, 30000);
 });

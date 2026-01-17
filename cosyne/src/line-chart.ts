@@ -196,16 +196,14 @@ export class LineChart {
 
     if (scaledPoints.length === 0) return;
 
-    // Draw line segments connecting points
-    // Note: Uses simple line segments. SVG path rendering (for curved interpolation)
-    // requires canvasPath which is not yet implemented in the Fyne bridge.
-    for (let i = 0; i < scaledPoints.length - 1; i++) {
-      const p1 = scaledPoints[i];
-      const p2 = scaledPoints[i + 1];
-      ctx.line(x + p1.x, y + p1.y, x + p2.x, y + p2.y)
+    // Generate interpolated line segments based on interpolation type
+    const lineSegments = this.getLineSegments(scaledPoints);
+
+    lineSegments.forEach((seg, i) => {
+      ctx.line(x + seg.x1, y + seg.y1, x + seg.x2, y + seg.y2)
         .stroke(this.strokeColor, this.strokeWidth)
         .withId(`line-chart-segment-${i}`);
-    }
+    });
 
     // Draw points if radius > 0
     if (this.pointRadius > 0) {
@@ -215,6 +213,166 @@ export class LineChart {
           .withId(`line-point-${i}`);
       });
     }
+  }
+
+  private getLineSegments(points: Array<{ x: number; y: number }>): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+    if (points.length < 2) return [];
+
+    switch (this.interpolation) {
+      case 'step':
+        return this.stepSegments(points);
+      case 'catmull-rom':
+        return this.catmullRomSegments(points);
+      case 'monotone':
+        return this.monotoneSegments(points);
+      case 'linear':
+      default:
+        return this.linearSegments(points);
+    }
+  }
+
+  private linearSegments(points: Array<{ x: number; y: number }>): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+    const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      segments.push({
+        x1: points[i].x,
+        y1: points[i].y,
+        x2: points[i + 1].x,
+        y2: points[i + 1].y,
+      });
+    }
+    return segments;
+  }
+
+  private stepSegments(points: Array<{ x: number; y: number }>): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+    const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const prev = points[i];
+      const curr = points[i + 1];
+      // Horizontal segment first, then vertical
+      segments.push({ x1: prev.x, y1: prev.y, x2: curr.x, y2: prev.y });
+      segments.push({ x1: curr.x, y1: prev.y, x2: curr.x, y2: curr.y });
+    }
+    return segments;
+  }
+
+  private catmullRomSegments(points: Array<{ x: number; y: number }>): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+    const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const resolution = 10; // Number of segments per curve section
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(i - 1, 0)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(i + 2, points.length - 1)];
+
+      for (let t = 0; t < resolution; t++) {
+        const t1 = t / resolution;
+        const t2 = (t + 1) / resolution;
+
+        const pt1 = this.catmullRomPoint(p0, p1, p2, p3, t1);
+        const pt2 = this.catmullRomPoint(p0, p1, p2, p3, t2);
+
+        segments.push({ x1: pt1.x, y1: pt1.y, x2: pt2.x, y2: pt2.y });
+      }
+    }
+    return segments;
+  }
+
+  private catmullRomPoint(
+    p0: { x: number; y: number },
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    p3: { x: number; y: number },
+    t: number
+  ): { x: number; y: number } {
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    const x = 0.5 * (
+      (2 * p1.x) +
+      (-p0.x + p2.x) * t +
+      (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+      (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+    );
+
+    const y = 0.5 * (
+      (2 * p1.y) +
+      (-p0.y + p2.y) * t +
+      (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+      (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+    );
+
+    return { x, y };
+  }
+
+  private monotoneSegments(points: Array<{ x: number; y: number }>): Array<{ x1: number; y1: number; x2: number; y2: number }> {
+    if (points.length < 2) return [];
+
+    const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const resolution = 10;
+
+    // Calculate slopes
+    const slopes: number[] = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const dx = points[i + 1].x - points[i].x;
+      const slope = dx === 0 ? 0 : (points[i + 1].y - points[i].y) / dx;
+      slopes.push(slope);
+    }
+
+    // Adjust slopes for monotonicity
+    const tangents: number[] = [slopes[0]];
+    for (let i = 1; i < slopes.length; i++) {
+      if (slopes[i - 1] * slopes[i] <= 0) {
+        tangents.push(0);
+      } else {
+        tangents.push((slopes[i - 1] + slopes[i]) / 2);
+      }
+    }
+    tangents.push(slopes[slopes.length - 1]);
+
+    // Generate cubic bezier segments
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const dx = p2.x - p1.x;
+
+      const cp1x = p1.x + dx / 3;
+      const cp1y = p1.y + tangents[i] * (dx / 3);
+      const cp2x = p2.x - dx / 3;
+      const cp2y = p2.y - tangents[i + 1] * (dx / 3);
+
+      for (let t = 0; t < resolution; t++) {
+        const t1 = t / resolution;
+        const t2 = (t + 1) / resolution;
+
+        const pt1 = this.cubicBezierPoint(p1, { x: cp1x, y: cp1y }, { x: cp2x, y: cp2y }, p2, t1);
+        const pt2 = this.cubicBezierPoint(p1, { x: cp1x, y: cp1y }, { x: cp2x, y: cp2y }, p2, t2);
+
+        segments.push({ x1: pt1.x, y1: pt1.y, x2: pt2.x, y2: pt2.y });
+      }
+    }
+
+    return segments;
+  }
+
+  private cubicBezierPoint(
+    p0: { x: number; y: number },
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    p3: { x: number; y: number },
+    t: number
+  ): { x: number; y: number } {
+    const mt = 1 - t;
+    const mt2 = mt * mt;
+    const mt3 = mt2 * mt;
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    return {
+      x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+      y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y,
+    };
   }
 }
 
