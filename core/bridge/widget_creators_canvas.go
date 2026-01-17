@@ -2333,6 +2333,29 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 			} else {
 				sphereData.TextureMapping = "equirectangular"
 			}
+			// Phase 8: Parse cubemap texture options
+			if cubemapInterface, ok := textureMap["cubemap"]; ok {
+				if cubemap, ok := cubemapInterface.(map[string]interface{}); ok {
+					if pX, ok := cubemap["positiveX"].(string); ok {
+						sphereData.CubemapPosX = pX
+					}
+					if nX, ok := cubemap["negativeX"].(string); ok {
+						sphereData.CubemapNegX = nX
+					}
+					if pY, ok := cubemap["positiveY"].(string); ok {
+						sphereData.CubemapPosY = pY
+					}
+					if nY, ok := cubemap["negativeY"].(string); ok {
+						sphereData.CubemapNegY = nY
+					}
+					if pZ, ok := cubemap["positiveZ"].(string); ok {
+						sphereData.CubemapPosZ = pZ
+					}
+					if nZ, ok := cubemap["negativeZ"].(string); ok {
+						sphereData.CubemapNegZ = nZ
+					}
+				}
+			}
 		}
 	}
 
@@ -2340,6 +2363,46 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 	if hasTap, ok := msg.Payload["hasTapHandler"].(bool); ok && hasTap {
 		sphereData.HasTapHandler = true
 		sphereData.WidgetID = widgetID
+	}
+
+	// Phase 7: Parse lighting options with defaults
+	sphereData.LightingEnabled = true // Default enabled
+	sphereData.LightDirX = 0.5
+	sphereData.LightDirY = -0.3
+	sphereData.LightDirZ = 0.8
+	sphereData.Ambient = 0.3
+	sphereData.Diffuse = 0.7
+
+	if lightingInterface, ok := msg.Payload["lighting"]; ok {
+		if lightingMap, ok := lightingInterface.(map[string]interface{}); ok {
+			if enabled, ok := lightingMap["enabled"].(bool); ok {
+				sphereData.LightingEnabled = enabled
+			}
+			if dirInterface, ok := lightingMap["direction"]; ok {
+				if dir, ok := dirInterface.(map[string]interface{}); ok {
+					if x, ok := dir["x"].(float64); ok {
+						sphereData.LightDirX = x
+					}
+					if y, ok := dir["y"].(float64); ok {
+						sphereData.LightDirY = y
+					}
+					if z, ok := dir["z"].(float64); ok {
+						sphereData.LightDirZ = z
+					}
+				}
+			}
+			if ambient, ok := lightingMap["ambient"].(float64); ok {
+				sphereData.Ambient = ambient
+			}
+			if diffuse, ok := lightingMap["diffuse"].(float64); ok {
+				sphereData.Diffuse = diffuse
+			}
+		}
+	}
+
+	// Phase 9: Parse custom pattern flag
+	if hasCustom, ok := msg.Payload["hasCustomPattern"].(bool); ok && hasCustom {
+		sphereData.HasCustomPattern = true
 	}
 
 	// Store sphere data for dynamic updates
@@ -2386,6 +2449,23 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		gradStart := sphere.GradientStart
 		gradEnd := sphere.GradientEnd
 		textureResourceName := sphere.TextureResourceName
+		textureMapping := sphere.TextureMapping
+		// Phase 8: Cubemap face resource names
+		cubemapPosX := sphere.CubemapPosX
+		cubemapNegX := sphere.CubemapNegX
+		cubemapPosY := sphere.CubemapPosY
+		cubemapNegY := sphere.CubemapNegY
+		cubemapPosZ := sphere.CubemapPosZ
+		cubemapNegZ := sphere.CubemapNegZ
+		// Phase 7: Configurable lighting
+		lightingEnabled := sphere.LightingEnabled
+		sphereLightDirX := sphere.LightDirX
+		sphereLightDirY := sphere.LightDirY
+		sphereLightDirZ := sphere.LightDirZ
+		sphereAmbient := sphere.Ambient
+		sphereDiffuse := sphere.Diffuse
+		// Phase 9: Custom pattern buffer
+		customBuffer := b.sphereCustomBuffers[sphereWidgetID]
 		b.mu.RUnlock()
 
 		// Convert pixel to coordinates relative to sphere center
@@ -2442,28 +2522,31 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 			lon += 2 * pi
 		}
 
-		// Calculate lighting factor - simple diffuse lighting from front-right
-		// z/sR gives 1.0 at front center, 0.0 at edges
-		// Normalize x and y as well for directional lighting
-		lightDirX := 0.5  // light from right
-		lightDirY := -0.3 // light from above
-		lightDirZ := 0.8  // light from front
-		// Normalize light direction
-		lightLen := sqrt(lightDirX*lightDirX + lightDirY*lightDirY + lightDirZ*lightDirZ)
-		lightDirX /= lightLen
-		lightDirY /= lightLen
-		lightDirZ /= lightLen
-		// Surface normal (normalized) is just the point on the sphere
-		normalX := x / sR
-		normalY := y / sR
-		normalZ := z / sR
-		// Dot product gives lighting intensity
-		lightFactor := normalX*lightDirX + normalY*lightDirY + normalZ*lightDirZ
-		if lightFactor < 0 {
-			lightFactor = 0
+		// Phase 7: Calculate lighting factor using configurable parameters
+		var shade float64 = 1.0 // Default to full brightness
+		if lightingEnabled {
+			lightDirX := sphereLightDirX
+			lightDirY := sphereLightDirY
+			lightDirZ := sphereLightDirZ
+			// Normalize light direction
+			lightLen := sqrt(lightDirX*lightDirX + lightDirY*lightDirY + lightDirZ*lightDirZ)
+			if lightLen > 0 {
+				lightDirX /= lightLen
+				lightDirY /= lightLen
+				lightDirZ /= lightLen
+			}
+			// Surface normal (normalized) is just the point on the sphere
+			normalX := x / sR
+			normalY := y / sR
+			normalZ := z / sR
+			// Dot product gives lighting intensity
+			lightFactor := normalX*lightDirX + normalY*lightDirY + normalZ*lightDirZ
+			if lightFactor < 0 {
+				lightFactor = 0
+			}
+			// Ambient + diffuse using configurable values
+			shade = sphereAmbient + sphereDiffuse*lightFactor
 		}
-		// Ambient + diffuse: 0.3 ambient + 0.7 diffuse
-		shade := 0.3 + 0.7*lightFactor
 
 		// Helper to apply shading to a color
 		applyShade := func(c color.RGBA) color.RGBA {
@@ -2475,8 +2558,68 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 			}
 		}
 
-		// Phase 4: Check if texture should be used (takes precedence over pattern)
-		if textureImage != nil && textureResourceName != "" {
+		// Phase 4/8: Check if texture should be used (takes precedence over pattern)
+		if textureMapping == "cubemap" && cubemapPosX != "" {
+			// Phase 8: Cubemap texture sampling
+			// The normal (nx, ny, nz) determines which face to sample
+			// Use the original (unrotated) normal for face selection
+			nx := xOrig / sR
+			ny := yOrig / sR
+			nz := zOrig / sR
+
+			absNX := absf(nx)
+			absNY := absf(ny)
+			absNZ := absf(nz)
+
+			var faceResourceName string
+			var u, v float64
+
+			if absNX >= absNY && absNX >= absNZ {
+				// X is dominant - sample +X or -X face
+				if nx > 0 {
+					faceResourceName = cubemapPosX
+					u = (-nz/absNX + 1) / 2
+					v = (-ny/absNX + 1) / 2
+				} else {
+					faceResourceName = cubemapNegX
+					u = (nz/absNX + 1) / 2
+					v = (-ny/absNX + 1) / 2
+				}
+			} else if absNY >= absNX && absNY >= absNZ {
+				// Y is dominant - sample +Y or -Y face
+				if ny > 0 {
+					faceResourceName = cubemapPosY
+					u = (nx/absNY + 1) / 2
+					v = (nz/absNY + 1) / 2
+				} else {
+					faceResourceName = cubemapNegY
+					u = (nx/absNY + 1) / 2
+					v = (-nz/absNY + 1) / 2
+				}
+			} else {
+				// Z is dominant - sample +Z or -Z face
+				if nz > 0 {
+					faceResourceName = cubemapPosZ
+					u = (nx/absNZ + 1) / 2
+					v = (-ny/absNZ + 1) / 2
+				} else {
+					faceResourceName = cubemapNegZ
+					u = (-nx/absNZ + 1) / 2
+					v = (-ny/absNZ + 1) / 2
+				}
+			}
+
+			// Load and sample the face texture
+			if faceResourceName != "" {
+				if imgData, exists := b.getResource(faceResourceName); exists {
+					if faceImg, err := decodeImage(imgData); err == nil {
+						texColor := sampleTexture(faceImg, u, v)
+						return applyShade(texColor)
+					}
+				}
+			}
+		} else if textureImage != nil && textureResourceName != "" {
+			// Equirectangular texture mapping
 			// Calculate equirectangular (u, v) coordinates from lat/lon
 			// u: longitude mapped to [0, 1] -> (lon + π) / (2π)
 			// v: latitude mapped to [0, 1] -> (lat + π/2) / π
@@ -2563,6 +2706,22 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 				return applyShade(col1)
 			}
 			return applyShade(col2)
+
+		case "custom":
+			// Phase 9: Custom pattern - sample from pre-rendered buffer
+			if customBuffer == nil {
+				return color.RGBA{A: 0} // No buffer yet
+			}
+			bounds := customBuffer.Bounds()
+			bufW := bounds.Dx()
+			bufH := bounds.Dy()
+			// Map pixel coordinates to buffer coordinates
+			bufX := px
+			bufY := py
+			if bufX >= 0 && bufX < bufW && bufY >= 0 && bufY < bufH {
+				return customBuffer.RGBAAt(bufX, bufY)
+			}
+			return color.RGBA{A: 0}
 
 		default:
 			// Unknown pattern - return transparent
@@ -2756,6 +2915,57 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 			} else {
 				sphere.TextureMapping = "equirectangular"
 			}
+			// Phase 8: Handle cubemap texture updates
+			if cubemapInterface, ok := textureMap["cubemap"]; ok {
+				if cubemap, ok := cubemapInterface.(map[string]interface{}); ok {
+					if pX, ok := cubemap["positiveX"].(string); ok {
+						sphere.CubemapPosX = pX
+					}
+					if nX, ok := cubemap["negativeX"].(string); ok {
+						sphere.CubemapNegX = nX
+					}
+					if pY, ok := cubemap["positiveY"].(string); ok {
+						sphere.CubemapPosY = pY
+					}
+					if nY, ok := cubemap["negativeY"].(string); ok {
+						sphere.CubemapNegY = nY
+					}
+					if pZ, ok := cubemap["positiveZ"].(string); ok {
+						sphere.CubemapPosZ = pZ
+					}
+					if nZ, ok := cubemap["negativeZ"].(string); ok {
+						sphere.CubemapNegZ = nZ
+					}
+				}
+			}
+		}
+	}
+
+	// Phase 7: Handle lighting updates
+	if lightingInterface, ok := msg.Payload["lighting"]; ok {
+		if lightingMap, ok := lightingInterface.(map[string]interface{}); ok {
+			if enabled, ok := lightingMap["enabled"].(bool); ok {
+				sphere.LightingEnabled = enabled
+			}
+			if dirInterface, ok := lightingMap["direction"]; ok {
+				if dir, ok := dirInterface.(map[string]interface{}); ok {
+					if x, ok := dir["x"].(float64); ok {
+						sphere.LightDirX = x
+					}
+					if y, ok := dir["y"].(float64); ok {
+						sphere.LightDirY = y
+					}
+					if z, ok := dir["z"].(float64); ok {
+						sphere.LightDirZ = z
+					}
+				}
+			}
+			if ambient, ok := lightingMap["ambient"].(float64); ok {
+				sphere.Ambient = ambient
+			}
+			if diffuse, ok := lightingMap["diffuse"].(float64); ok {
+				sphere.Diffuse = diffuse
+			}
 		}
 	}
 
@@ -2770,6 +2980,83 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 		raster.Move(fyne.NewPos(newCx-newRadius, newCy-newRadius))
 		raster.Refresh()
 	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// ============================================================================
+// Phase 9: Custom Pattern Buffer Handler
+// ============================================================================
+
+// handleUpdateCanvasSphereBuffer receives a pre-rendered pixel buffer for custom patterns
+func (b *Bridge) handleUpdateCanvasSphereBuffer(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	bufferBase64, ok := msg.Payload["buffer"].(string)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Missing buffer data",
+		}
+	}
+
+	width, _ := getFloat64(msg.Payload["width"])
+	height, _ := getFloat64(msg.Payload["height"])
+	if width <= 0 || height <= 0 {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Invalid buffer dimensions",
+		}
+	}
+
+	// Decode base64 buffer
+	bufferData, err := base64.StdEncoding.DecodeString(bufferBase64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode buffer: " + err.Error(),
+		}
+	}
+
+	// Check buffer size matches expected dimensions (width * height * 4 for RGBA)
+	expectedSize := int(width) * int(height) * 4
+	if len(bufferData) != expectedSize {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Buffer size mismatch",
+		}
+	}
+
+	// Convert buffer to an image
+	img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+	copy(img.Pix, bufferData)
+
+	b.mu.Lock()
+	// Store the custom pattern image for the sphere
+	if b.sphereCustomBuffers == nil {
+		b.sphereCustomBuffers = make(map[string]*image.RGBA)
+	}
+	b.sphereCustomBuffers[widgetID] = img
+	b.mu.Unlock()
+
+	// Refresh the widget
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if exists {
+		if raster, ok := w.(*canvas.Raster); ok {
+			fyne.DoAndWait(func() {
+				raster.Refresh()
+			})
+		}
+	}
 
 	return Response{
 		ID:      msg.ID,
@@ -3050,6 +3337,14 @@ func asin(x float64) float64 {
 	}
 	// Use atan2 for better accuracy: asin(x) = atan2(x, sqrt(1-x²))
 	return atan2(x, sqrt(1-x*x))
+}
+
+// Phase 8: Absolute value function for cubemap face selection
+func absf(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // parseHexColorSimple parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color

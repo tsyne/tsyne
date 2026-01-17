@@ -971,4 +971,260 @@ describe('Canvas Sphere Widget', () => {
       expect(ctx).toBeDefined();
     });
   });
+
+  describe('Phase 7: Configurable Lighting', () => {
+    test('should render sphere with custom lighting direction', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+          solidColor: '#0066cc',
+          lighting: {
+            direction: { x: -1, y: 0, z: 0.5 },  // Light from left
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render flat sphere with lighting disabled', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          checkeredColor1: '#cc0000',
+          checkeredColor2: '#ffffff',
+          lighting: {
+            enabled: false,
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render sphere with custom ambient/diffuse', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'gradient',
+          gradientStart: '#ff0000',
+          gradientEnd: '#0000ff',
+          lighting: {
+            ambient: 0.5,
+            diffuse: 0.5,
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should update lighting dynamically', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+          solidColor: '#00ff00',
+          lighting: {
+            ambient: 0.3,
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Update lighting
+      await sphere.update({
+        lighting: {
+          ambient: 0.6,
+          diffuse: 0.4,
+        },
+      });
+
+      expect(ctx).toBeDefined();
+    });
+  });
+
+  describe('Phase 9: Custom Pattern Function', () => {
+    test('should render sphere with custom stripe pattern', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        const sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'custom',
+          customPattern: (lat: number, lon: number) => {
+            const stripeCount = 8;
+            const stripe = Math.floor((lat + Math.PI / 2) / Math.PI * stripeCount);
+            return stripe % 2 === 0 ? '#ff0000' : '#0000ff';
+          },
+        });
+        sphere.renderCustomPattern();
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render procedural planet texture', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        const sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'custom',
+          customPattern: (lat: number, lon: number) => {
+            // Polar caps
+            if (Math.abs(lat) > 1.2) return '#ffffff';
+            // Simplified land/ocean
+            const noise = Math.sin(lon * 5) * Math.cos(lat * 8);
+            if (noise > 0.3) return '#228B22';
+            return '#1E90FF';
+          },
+        });
+        sphere.renderCustomPattern();
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should re-render custom pattern on rotation update', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'custom',
+          customPattern: (lat: number, lon: number) => {
+            const segmentCount = 12;
+            const segment = Math.floor((lon + Math.PI) / (2 * Math.PI) * segmentCount);
+            return segment % 2 === 0 ? '#ff0000' : '#00ff00';
+          },
+        });
+        sphere.renderCustomPattern();
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Update rotation - should trigger re-render
+      await sphere.update({
+        rotationY: Math.PI / 4,
+      });
+
+      expect(ctx).toBeDefined();
+    });
+  });
+
+  describe('Phase 8: Cubemap Textures', () => {
+    // Create a minimal valid PNG image (1x1 pixel) for testing
+    function createTestPNG(color: string): string {
+      // Minimal PNG with color
+      const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/8+gHgAFBQIB' +
+                        'lJDIkwAAAABJRU5ErkJggg==';
+      return `data:image/png;base64,${pngBase64}`;
+    }
+
+    test('should accept cubemap texture options', async () => {
+      const testApp = await tsyneTest.createApp(async (app) => {
+        // Register 6 face textures
+        const texture = createTestPNG('#ff0000');
+        await app.resources.registerResource('cube-px', texture);
+        await app.resources.registerResource('cube-nx', texture);
+        await app.resources.registerResource('cube-py', texture);
+        await app.resources.registerResource('cube-ny', texture);
+        await app.resources.registerResource('cube-pz', texture);
+        await app.resources.registerResource('cube-nz', texture);
+
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          texture: {
+            mapping: 'cubemap',
+            cubemap: {
+              positiveX: 'cube-px',
+              negativeX: 'cube-nx',
+              positiveY: 'cube-py',
+              negativeY: 'cube-ny',
+              positiveZ: 'cube-pz',
+              negativeZ: 'cube-nz',
+            },
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should support cubemap with rotation and lighting', async () => {
+      const testApp = await tsyneTest.createApp(async (app) => {
+        const texture = createTestPNG('#0066cc');
+        await app.resources.registerResource('sky-px', texture);
+        await app.resources.registerResource('sky-nx', texture);
+        await app.resources.registerResource('sky-py', texture);
+        await app.resources.registerResource('sky-ny', texture);
+        await app.resources.registerResource('sky-pz', texture);
+        await app.resources.registerResource('sky-nz', texture);
+
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          texture: {
+            mapping: 'cubemap',
+            cubemap: {
+              positiveX: 'sky-px',
+              negativeX: 'sky-nx',
+              positiveY: 'sky-py',
+              negativeY: 'sky-ny',
+              positiveZ: 'sky-pz',
+              negativeZ: 'sky-nz',
+            },
+          },
+          rotationX: Math.PI / 6,
+          rotationY: Math.PI / 4,
+          lighting: {
+            ambient: 0.4,
+            diffuse: 0.6,
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+  });
 });

@@ -205,6 +205,7 @@ type Bridge struct {
 	sphericalPatchData   map[string]*SphericalPatchData   // spherical patch ID -> patch data
 	checkeredSphereData  map[string]*CheckeredSphereData  // checkered sphere ID -> sphere data
 	sphereData           map[string]*SphereData           // sphere ID -> sphere data (generalized)
+	sphereCustomBuffers  map[string]*image.RGBA           // sphere ID -> custom pattern buffer (Phase 9)
 	ellipseData          map[string]*EllipseData          // ellipse ID -> ellipse data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
@@ -282,7 +283,7 @@ type SphereData struct {
 	RotationX      float64     // X-axis rotation in radians (tilt forward/back)
 	RotationY      float64     // Y-axis rotation in radians (spin left/right)
 	RotationZ      float64     // Z-axis rotation in radians (roll)
-	Pattern        string      // Pattern type: solid, checkered, stripes, gradient
+	Pattern        string      // Pattern type: solid, checkered, stripes, gradient, custom
 	SolidColor     color.RGBA  // For solid pattern
 	CheckeredCol1  color.RGBA  // For checkered pattern
 	CheckeredCol2  color.RGBA  // For checkered pattern
@@ -296,6 +297,22 @@ type SphereData struct {
 	// Phase 5: Interactivity
 	HasTapHandler bool   // Whether tap events should be sent
 	WidgetID      string // Widget ID for event routing
+	// Phase 7: Configurable lighting
+	LightingEnabled bool    // Whether lighting is enabled (default: true)
+	LightDirX       float64 // Light direction X component
+	LightDirY       float64 // Light direction Y component
+	LightDirZ       float64 // Light direction Z component
+	Ambient         float64 // Ambient light intensity (0-1)
+	Diffuse         float64 // Diffuse light intensity (0-1)
+	// Phase 8: Cubemap textures
+	CubemapPosX string // Resource name for +X face
+	CubemapNegX string // Resource name for -X face
+	CubemapPosY string // Resource name for +Y face
+	CubemapNegY string // Resource name for -Y face
+	CubemapPosZ string // Resource name for +Z face
+	CubemapNegZ string // Resource name for -Z face
+	// Phase 9: Custom pattern
+	HasCustomPattern bool   // Whether using custom pattern (rendered via buffer)
 }
 
 // WidgetMetadata stores metadata about widgets for testing

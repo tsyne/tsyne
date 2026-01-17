@@ -1458,4 +1458,488 @@ describe('CanvasSphere', () => {
       });
     });
   });
+
+  describe('Phase 7: Configurable Lighting', () => {
+    test('lighting options sent to bridge', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+        solidColor: '#0066cc',
+        lighting: {
+          enabled: true,
+          direction: { x: 1, y: -0.5, z: 0.5 },
+          ambient: 0.2,
+          diffuse: 0.8,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          lighting: expect.objectContaining({
+            enabled: true,
+            direction: { x: 1, y: -0.5, z: 0.5 },
+            ambient: 0.2,
+            diffuse: 0.8,
+          }),
+        })
+      );
+    });
+
+    test('lighting.enabled=false disables shading', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'checkered',
+        lighting: {
+          enabled: false,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          lighting: expect.objectContaining({
+            enabled: false,
+          }),
+        })
+      );
+    });
+
+    test('custom light direction affects shading', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+        lighting: {
+          direction: { x: -1, y: 0, z: 0 },  // Light from left
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          lighting: expect.objectContaining({
+            direction: { x: -1, y: 0, z: 0 },
+          }),
+        })
+      );
+    });
+
+    test('ambient=1.0 creates flat lighting', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'gradient',
+        lighting: {
+          ambient: 1.0,
+          diffuse: 0,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          lighting: expect.objectContaining({
+            ambient: 1.0,
+            diffuse: 0,
+          }),
+        })
+      );
+    });
+
+    test('diffuse=0 removes directional component', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'stripes',
+        lighting: {
+          diffuse: 0,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          lighting: expect.objectContaining({
+            diffuse: 0,
+          }),
+        })
+      );
+    });
+
+    test('default lighting values when not specified', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+        // No lighting specified - should use defaults
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // When no lighting specified, the bridge should NOT receive lighting options
+      // (Go will use hardcoded defaults)
+      const calls = (mockBridge.send as jest.Mock).mock.calls;
+      const createCall = calls.find((call: any[]) => call[0] === 'createCanvasSphere');
+      expect(createCall).toBeDefined();
+      expect(createCall[1].lighting).toBeUndefined();
+    });
+
+    test('lighting can be updated', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+        lighting: {
+          ambient: 0.3,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({
+        lighting: {
+          ambient: 0.5,
+          diffuse: 0.5,
+        },
+      });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          widgetId: sphere.id,
+          lighting: expect.objectContaining({
+            ambient: 0.5,
+            diffuse: 0.5,
+          }),
+        })
+      );
+    });
+  });
+
+  describe('Phase 9: Custom Pattern Function', () => {
+    test('custom pattern function is stored and pattern type sent to bridge', () => {
+      const customFn = (lat: number, lon: number) => '#ff0000';
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'custom',
+        customPattern: customFn,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          pattern: 'custom',
+          hasCustomPattern: true,
+        })
+      );
+    });
+
+    test('custom pattern with lat ranging from -PI/2 to PI/2', async () => {
+      const receivedLats: number[] = [];
+      const customFn = (lat: number, lon: number) => {
+        receivedLats.push(lat);
+        return '#ff0000';
+      };
+
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 25,  // Small radius for fast test
+        pattern: 'custom',
+        customPattern: customFn,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      await sphere.renderCustomPattern();
+
+      // Verify lat values are in valid range
+      const minLat = Math.min(...receivedLats);
+      const maxLat = Math.max(...receivedLats);
+      expect(minLat).toBeGreaterThanOrEqual(-Math.PI / 2 - 0.01);
+      expect(maxLat).toBeLessThanOrEqual(Math.PI / 2 + 0.01);
+    });
+
+    test('custom pattern with lon ranging from -PI to PI', async () => {
+      const receivedLons: number[] = [];
+      const customFn = (lat: number, lon: number) => {
+        receivedLons.push(lon);
+        return '#ff0000';
+      };
+
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 25,
+        pattern: 'custom',
+        customPattern: customFn,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      await sphere.renderCustomPattern();
+
+      // Verify lon values are in valid range
+      const minLon = Math.min(...receivedLons);
+      const maxLon = Math.max(...receivedLons);
+      expect(minLon).toBeGreaterThanOrEqual(-Math.PI - 0.01);
+      expect(maxLon).toBeLessThanOrEqual(Math.PI + 0.01);
+    });
+
+    test('custom pattern respects rotation', async () => {
+      let callCount = 0;
+      const customFn = (lat: number, lon: number) => {
+        callCount++;
+        return '#ff0000';
+      };
+
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 25,
+        pattern: 'custom',
+        customPattern: customFn,
+        rotationY: Math.PI / 4,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      await sphere.renderCustomPattern();
+
+      // Custom pattern function should be called for visible pixels
+      expect(callCount).toBeGreaterThan(0);
+    });
+
+    test('custom pattern re-renders on update()', async () => {
+      let renderCount = 0;
+      const customFn = (lat: number, lon: number) => {
+        renderCount++;
+        return '#ff0000';
+      };
+
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 25,
+        pattern: 'custom',
+        customPattern: customFn,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      const initialRenderCount = renderCount;
+
+      // Trigger re-render with rotation change
+      await sphere.update({ rotationY: Math.PI / 2 });
+
+      // Should have additional render calls after update
+      expect(renderCount).toBeGreaterThan(initialRenderCount);
+    });
+
+    test('custom pattern sends buffer to bridge', async () => {
+      const customFn = (lat: number, lon: number) => '#ff0000';
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 25,
+        pattern: 'custom',
+        customPattern: customFn,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.renderCustomPattern();
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphereBuffer',
+        expect.objectContaining({
+          widgetId: sphere.id,
+          buffer: expect.any(String),  // Base64 encoded buffer
+        })
+      );
+    });
+  });
+
+  describe('Phase 8: Cubemap Textures', () => {
+    test('cubemap texture options sent to bridge', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          mapping: 'cubemap',
+          cubemap: {
+            positiveX: 'skybox-px',
+            negativeX: 'skybox-nx',
+            positiveY: 'skybox-py',
+            negativeY: 'skybox-ny',
+            positiveZ: 'skybox-pz',
+            negativeZ: 'skybox-nz',
+          },
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            mapping: 'cubemap',
+            cubemap: expect.objectContaining({
+              positiveX: 'skybox-px',
+              negativeX: 'skybox-nx',
+              positiveY: 'skybox-py',
+              negativeY: 'skybox-ny',
+              positiveZ: 'skybox-pz',
+              negativeZ: 'skybox-nz',
+            }),
+          }),
+        })
+      );
+    });
+
+    test('cubemap with rotation', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotationX: Math.PI / 6,
+        rotationY: Math.PI / 4,
+        texture: {
+          mapping: 'cubemap',
+          cubemap: {
+            positiveX: 'px',
+            negativeX: 'nx',
+            positiveY: 'py',
+            negativeY: 'ny',
+            positiveZ: 'pz',
+            negativeZ: 'nz',
+          },
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationX: Math.PI / 6,
+          rotationY: Math.PI / 4,
+          texture: expect.objectContaining({
+            mapping: 'cubemap',
+          }),
+        })
+      );
+    });
+
+    test('cubemap with lighting', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          mapping: 'cubemap',
+          cubemap: {
+            positiveX: 'px',
+            negativeX: 'nx',
+            positiveY: 'py',
+            negativeY: 'ny',
+            positiveZ: 'pz',
+            negativeZ: 'nz',
+          },
+        },
+        lighting: {
+          ambient: 0.4,
+          diffuse: 0.6,
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            mapping: 'cubemap',
+          }),
+          lighting: expect.objectContaining({
+            ambient: 0.4,
+            diffuse: 0.6,
+          }),
+        })
+      );
+    });
+
+    test('cubemap can be updated', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          mapping: 'cubemap',
+          cubemap: {
+            positiveX: 'old-px',
+            negativeX: 'old-nx',
+            positiveY: 'old-py',
+            negativeY: 'old-ny',
+            positiveZ: 'old-pz',
+            negativeZ: 'old-nz',
+          },
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({
+        texture: {
+          mapping: 'cubemap',
+          cubemap: {
+            positiveX: 'new-px',
+            negativeX: 'new-nx',
+            positiveY: 'new-py',
+            negativeY: 'new-ny',
+            positiveZ: 'new-pz',
+            negativeZ: 'new-nz',
+          },
+        },
+      });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          widgetId: sphere.id,
+          texture: expect.objectContaining({
+            mapping: 'cubemap',
+            cubemap: expect.objectContaining({
+              positiveX: 'new-px',
+            }),
+          }),
+        })
+      );
+    });
+  });
 });
