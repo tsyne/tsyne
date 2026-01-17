@@ -1,14 +1,15 @@
 #!/usr/bin/env npx tsx
 /**
- * Canvas Sphere Demo - Phase 1
- * Showcases all pattern types: solid, checkered, stripes, gradient
+ * Canvas Sphere Demo - Phase 1 & Phase 2
+ * Phase 1: Pattern types (solid, checkered, stripes, gradient)
+ * Phase 2: Multi-axis rotation (X, Y, Z)
  */
 
 import { app } from '../core/src/index';
 import { resolveTransport } from '../core/src/index';
 
-app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
-  a.window({ title: 'Canvas Sphere Demo', width: 900, height: 800 }, (win) => {
+app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
+  a.window({ title: 'Canvas Sphere Demo - Phase 1 & 2', width: 900, height: 1200 }, (win) => {
     win.setContent(() => {
       a.scroll(() => {
         a.vbox(() => {
@@ -17,12 +18,9 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.separator();
 
           // Intro
-          a.label(
-            'This demo showcases the generalized canvasSphere widget with multiple pattern types'
-          );
-          a.label(
-            'Phase 1 supports: solid, checkered, stripes, and gradient patterns'
-          );
+          a.label('Canvas Sphere Widget - Generalized 3D Sphere Primitive');
+          a.label('Phase 1: Patterns (solid, checkered, stripes, gradient)');
+          a.label('Phase 2: Multi-axis rotation (X=tilt, Y=spin, Z=roll)');
           a.separator();
 
           // Pattern 1: Solid
@@ -141,40 +139,158 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           });
           a.spacer(100);
 
-          // Rotation example
-          a.label('Pattern 9: Rotated Checkered Sphere');
-          a.label('Same checkered pattern but rotated 45 degrees');
+          // ==================== PHASE 2: MULTI-AXIS ROTATION ====================
+          a.separator();
+          a.label('Phase 2: Multi-Axis Rotation');
+          a.label('X-axis (tilt), Y-axis (spin), Z-axis (roll)');
+          a.separator();
+
+          // Rotation 1: Y-axis (spin)
+          a.label('Rotation 1: Y-Axis Rotation');
+          a.label('Rotated 45 degrees around vertical axis');
+          a.hbox(() => {
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              latBands: 8,
+              lonSegments: 8,
+              rotationY: Math.PI / 4,
+            });
+            a.spacer(30);
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'stripes',
+              stripeColors: ['#ff0000', '#ffff00', '#00ff00'],
+              rotationY: -Math.PI / 6,
+            });
+          });
+          a.spacer(100);
+
+          // Rotation 2: X-axis (tilt)
+          a.label('Rotation 2: X-Axis Rotation');
+          a.label('Tilted forward 30 degrees (left) and backward 45 degrees (right)');
+          a.hbox(() => {
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'gradient',
+              gradientStart: '#0000ff',
+              gradientEnd: '#ff0000',
+              rotationX: Math.PI / 6,
+            });
+            a.spacer(30);
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'solid',
+              solidColor: '#00ff00',
+              rotationX: -Math.PI / 4,
+            });
+          });
+          a.spacer(100);
+
+          // Rotation 3: Z-axis (roll)
+          a.label('Rotation 3: Z-Axis Rotation');
+          a.label('Rolled 60 degrees clockwise (left) and 30 degrees counter-clockwise (right)');
+          a.hbox(() => {
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'stripes',
+              stripeColors: ['#ff00ff', '#00ffff'],
+              stripeDirection: 'vertical',
+              rotationZ: Math.PI / 3,
+            });
+            a.spacer(30);
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              latBands: 8,
+              lonSegments: 8,
+              checkeredColor1: '#ffaa00',
+              checkeredColor2: '#0066ff',
+              rotationZ: -Math.PI / 6,
+            });
+          });
+          a.spacer(100);
+
+          // Rotation 4: Combined 3D rotation (tumbling)
+          a.label('Rotation 4: Combined 3D Rotation');
+          a.label('All three axes rotated - arbitrary 3D orientation');
+          a.hbox(() => {
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              latBands: 8,
+              lonSegments: 8,
+              checkeredColor1: '#cc0000',
+              checkeredColor2: '#ffffff',
+              rotationX: Math.PI / 8,
+              rotationY: Math.PI / 4,
+              rotationZ: Math.PI / 6,
+            });
+            a.spacer(30);
+            a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'gradient',
+              gradientStart: '#ff0000',
+              gradientEnd: '#0000ff',
+              rotationX: -Math.PI / 12,
+              rotationY: Math.PI / 3,
+              rotationZ: -Math.PI / 8,
+            });
+          });
+          a.spacer(100);
+
+          // Earth-like example with axial tilt
+          a.label('Real-World Example: Earth with Axial Tilt');
+          a.label('-23.5 degree tilt (rotationX) + 30 degree spin (rotationY) = realistic Earth orientation');
           a.canvasSphere({
             cx: 200,
-            cy: 200,
+            cy: 150,
             radius: 80,
-            pattern: 'checkered',
-            latBands: 8,
-            lonSegments: 8,
-            checkeredColor1: '#0066cc',
-            checkeredColor2: '#ffff99',
-            rotation: Math.PI / 4, // 45 degrees
+            pattern: 'stripes',
+            stripeColors: ['#0033ff', '#00ff00', '#ff8800'],
+            stripeDirection: 'horizontal',
+            rotationX: -23.5 * Math.PI / 180,  // Earth's axial tilt
+            rotationY: Math.PI / 6,             // Some additional spin
           });
           a.spacer(100);
 
           // Summary
           a.separator();
-          a.label('Phase 1 Complete Features:');
-          a.label('✓ Solid pattern');
-          a.label('✓ Checkered pattern with customizable bands');
-          a.label('✓ Horizontal and vertical stripes');
-          a.label('✓ Gradient patterns (north-south interpolation)');
-          a.label('✓ Y-axis rotation');
-          a.label('✓ Custom colors for all patterns');
-          a.label('✓ Backward compatible with canvasCheckeredSphere');
-          a.spacer(50);
+          a.label('Complete Features:');
+          a.label('Phase 1 (Complete):');
+          a.label('  - Solid, checkered, stripes, gradient patterns');
+          a.label('  - Custom colors and band counts');
+          a.label('  - Y-axis rotation (backward compatible)');
+          a.spacer(20);
+          a.label('Phase 2 (Complete):');
+          a.label('  - X-axis rotation (tilt/pitch)');
+          a.label('  - Y-axis rotation (spin/yaw)');
+          a.label('  - Z-axis rotation (roll)');
+          a.label('  - Combined 3D rotations');
+          a.label('  - Backward compatible with Phase 1');
+          a.spacer(20);
 
-          a.label('Future Phases:');
-          a.label('Phase 2: Multi-axis rotation (X, Y, Z)');
-          a.label('Phase 3: Lighting and shading');
-          a.label('Phase 4: Texture mapping');
-          a.label('Phase 5: Interactivity (tap events)');
-          a.label('Phase 6: Animation presets');
+          a.label('Upcoming Phases:');
+          a.label('Phase 3: Lighting and shading (Lambertian model)');
+          a.label('Phase 4: Texture mapping (equirectangular/cubemap)');
+          a.label('Phase 5: Interactivity (tap events with lat/lon)');
+          a.label('Phase 6: Animation presets (spin, wobble, bounce, pulse)');
         });
       });
     });

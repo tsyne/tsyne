@@ -99,8 +99,11 @@ interface CanvasSphereOptions {
   latBands?: number;             // Latitude bands (default: 8)
   lonSegments?: number;          // Longitude segments (default: 8)
 
-  // Rotation
-  rotation?: number;             // Y-axis rotation in radians
+  // Rotation (Phase 2)
+  rotationX?: number;            // X-axis rotation in radians (tilt forward/back)
+  rotationY?: number;            // Y-axis rotation in radians (spin left/right)
+  rotationZ?: number;            // Z-axis rotation in radians (roll)
+  rotation?: number;             // DEPRECATED: Use rotationY instead
 
   // Pattern-specific colors
   solidColor?: string;           // Hex color for solid
@@ -162,7 +165,14 @@ await sphere.update({
   cx: 200,           // Move right
   cy: 150,           // Move down
   radius: 75,        // Grow
-  rotation: Math.PI / 4  // Rotate
+  rotationX: Math.PI / 8,   // Tilt forward/back
+  rotationY: Math.PI / 4,   // Spin left/right
+  rotationZ: Math.PI / 6    // Roll
+});
+
+// Backward compatibility: old 'rotation' parameter still works
+await sphere.update({
+  rotation: Math.PI / 4  // Maps to rotationY
 });
 ```
 
@@ -395,17 +405,89 @@ All rendering happens in a single Fyne Raster:
 - O(1) per-pixel calculation
 - ~2-4ms render time for 200×200 sphere on modern hardware
 
-## Roadmap
+## Phase 2: Multi-Axis Rotation (✅ Complete)
 
-### Phase 2: Multi-Axis Rotation
+**Status**: Fully implemented in Go and TypeScript
+
+Phase 2 extends rotation from single Y-axis (spin) to full 3D multi-axis rotation:
+
+### Rotation Axes
+
+1. **rotationX (Pitch/Tilt)**: Tilts sphere forward (positive) or backward (negative)
+   - Range: -π to π radians
+   - 0 = no tilt (axis points right)
+   - π/4 ≈ 45° tilt forward
+
+2. **rotationY (Yaw/Spin)**: Spins sphere left/right
+   - Range: -π to π radians
+   - 0 = front pole faces viewer
+   - π/4 ≈ 45° spin right
+
+3. **rotationZ (Roll)**: Rolls sphere along viewing axis
+   - Range: -π to π radians
+   - 0 = no roll
+   - π/4 ≈ 45° clockwise roll
+
+### Rotation Order
+Rotations are applied in order: **Z (roll), then X (pitch), then Y (yaw)** - this matches common 3D graphics conventions.
+
+### Examples
 
 ```typescript
+// Earth with axial tilt and spin
 a.canvasSphere({
-  rotationX: -23.5 * Math.PI / 180,  // Tilt (Earth's axial tilt)
-  rotationY: Math.PI / 4,             // Spin
-  rotationZ: 0                        // Roll
+  cx: 200, cy: 200, radius: 150,
+  pattern: 'gradient',
+  rotationX: -23.5 * Math.PI / 180,  // Earth's axial tilt
+  rotationY: Math.PI / 6              // 30° spin
 });
+
+// Tumbling sphere (all axes rotating)
+const sphere = a.canvasSphere({
+  cx: 100, cy: 100, radius: 50,
+  pattern: 'checkered',
+  rotationX: Math.PI / 8,
+  rotationY: Math.PI / 4,
+  rotationZ: Math.PI / 6
+});
+
+// Animated rotation
+let rx = 0, ry = 0, rz = 0;
+const animate = setInterval(() => {
+  rx += 0.01;
+  ry += 0.015;
+  rz += 0.005;
+  sphere.update({ rotationX: rx, rotationY: ry, rotationZ: rz });
+}, 30);
 ```
+
+### Backward Compatibility
+The old `rotation` parameter is **deprecated but still supported**:
+```typescript
+// Old API - still works, maps to rotationY
+sphere.update({ rotation: Math.PI / 4 });
+
+// New API - preferred
+sphere.update({ rotationY: Math.PI / 4 });
+```
+
+### Implementation Details
+
+**Go Bridge** (`core/bridge/widget_creators_canvas.go`):
+- Stores `RotationX`, `RotationY`, `RotationZ` in `SphereData` struct
+- Applies inverse 3D rotation matrix in pixel function (lines ~2360-2390)
+- Rotation order: inverse of forward (Y, X, Z with negative angles)
+
+**TypeScript** (`core/src/widgets/canvas.ts`):
+- Accepts `rotationX`, `rotationY`, `rotationZ` in `CanvasSphereOptions`
+- Backward compatible: `rotation` parameter maps to `rotationY`
+- Both `create` and `update` methods support all three axes
+
+---
+
+## Roadmap
+
+### Phase 3: Lighting & Shading
 
 ### Phase 3: Lighting & Shading
 

@@ -416,4 +416,161 @@ describe('Canvas Sphere Widget', () => {
       expect(ctx).toBeDefined();
     });
   });
+
+  describe('Phase 2: Multi-axis rotation', () => {
+    test('should render sphere with Y-axis rotation (spin)', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          rotationY: Math.PI / 4,  // 45 degrees spin
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render sphere with X-axis rotation (tilt)', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'stripes',
+          rotationX: Math.PI / 6,  // 30 degrees tilt
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render sphere with Z-axis rotation (roll)', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'gradient',
+          rotationZ: Math.PI / 3,  // 60 degrees roll
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should animate sphere with combined rotations', async () => {
+      let rotX = 0, rotY = 0, rotZ = 0;
+      let sphere: any;
+
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 200,
+          cy: 200,
+          radius: 80,
+          pattern: 'checkered',
+          rotationX: rotX,
+          rotationY: rotY,
+          rotationZ: rotZ,
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Simulate animation with combined rotations
+      const increment = Math.PI / 180;  // 1 degree per frame
+      for (let i = 0; i < 10; i++) {
+        rotX += increment;
+        rotY += increment * 1.5;
+        rotZ += increment * 0.5;
+
+        await sphere.update({
+          rotationX: rotX,
+          rotationY: rotY,
+          rotationZ: rotZ,
+        });
+      }
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should support backward compatibility with rotation parameter', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        // Using old API 'rotation' (should map to rotationY)
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          rotation: Math.PI / 4,
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should render demo with multiple rotations', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        app.label('Canvas Sphere - Phase 2 Rotations');
+
+        // Y-axis only (spin)
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          rotationY: Math.PI / 6,
+        });
+
+        // X-axis only (tilt)
+        app.canvasSphere({
+          cx: 250,
+          cy: 100,
+          radius: 50,
+          pattern: 'stripes',
+          rotationX: Math.PI / 8,
+        });
+
+        // Z-axis only (roll)
+        app.canvasSphere({
+          cx: 100,
+          cy: 250,
+          radius: 50,
+          pattern: 'gradient',
+          rotationZ: Math.PI / 5,
+        });
+
+        // Combined rotations (tumbling effect)
+        app.canvasSphere({
+          cx: 250,
+          cy: 250,
+          radius: 50,
+          pattern: 'solid',
+          solidColor: '#00ff00',
+          rotationX: Math.PI / 12,
+          rotationY: Math.PI / 4,
+          rotationZ: Math.PI / 8,
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+  });
 });

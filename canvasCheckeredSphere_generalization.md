@@ -11,9 +11,9 @@ Transform the current `canvasCheckeredSphere` widget into a general-purpose `can
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 1. Patterns | ✅ COMPLETE | All patterns working: solid, checkered, stripes, gradient |
-| 2. Multi-Axis Rotation | 🔲 TODO | Next up - currently only Y-axis rotation supported |
+| 2. Multi-Axis Rotation | ✅ COMPLETE | rotationX, rotationY, rotationZ all working |
 | 3. Lighting | ✅ COMPLETE | Implemented as part of Phase 1 bug fixes |
-| 4. Textures | 🔲 TODO | |
+| 4. Textures | 🔲 TODO | Next up |
 | 5. Interactivity | 🔲 TODO | |
 | 6. Animation Presets | 🔲 TODO | |
 
@@ -71,12 +71,28 @@ In Go, `case X:` followed immediately by `default:` does NOT fall through - the 
 - `examples/canvas-sphere.test.ts` - Integration tests
 - `phone-apps/bouncing-ball/amiga-boing.ts` - Uses checkered pattern
 
-**For Phase 2 (Multi-Axis Rotation):**
-- Current rotation is Y-axis only, stored in `sphere.Rotation`
-- Rotation applied at line ~2357: `xOrig := x*cosR + z*sinR; zOrig := -x*sinR + z*cosR`
-- Need to add `RotationX`, `RotationZ` to SphereData struct in `types.go`
-- Apply full 3D rotation matrix before lat/lon calculation
-- TypeScript interface needs `rotationX?`, `rotationZ?` options
+**Phase 2 (Multi-Axis Rotation) - COMPLETE:**
+- Added `RotationX`, `RotationY`, `RotationZ` to SphereData struct in `types.go`
+- Full 3D rotation matrix applied in pixel function
+- TypeScript interface has `rotationX?`, `rotationY?`, `rotationZ?` options
+- Demo at `examples/canvas-sphere-demo.ts` shows all rotation combinations
+- Note: These are STATIC rotations (orientation), not animations. For spinning spheres, use a timer to update rotation values (see `phone-apps/bouncing-ball/amiga-boing.ts`)
+
+**For Phase 4 (Textures):**
+- Need to implement equirectangular texture mapping
+- Add `texture?: { resourceName: string; mapping?: 'equirectangular' | 'cubemap' }` to options
+- Sample texture based on lat/lon: `u = (lon + PI) / (2*PI)`, `v = (lat + PI/2) / PI`
+- Consider how to load/register texture resources in Go bridge
+
+**For Phase 5 (Interactivity):**
+- Add `onTap?: (lat: number, lon: number, x: number, y: number) => void` callback
+- Reverse-project screen coordinates to lat/lon using inverse rotation matrix
+- Register tap handler on the raster widget
+
+**For Phase 6 (Animation Presets):**
+- Consider adding `animation?: { type: 'spin' | 'wobble' | 'bounce' | 'pulse'; speed?: number; axis?: 'x' | 'y' | 'z' }`
+- Would need internal timer management in Go or TypeScript side
+- Alternatively, provide helper functions that return animation loop code
 
 **For Phase 3 (if extending lighting to be configurable):**
 - Currently hardcoded in the pixel function

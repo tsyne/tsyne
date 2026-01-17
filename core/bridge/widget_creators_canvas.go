@@ -2229,9 +2229,22 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 	if p, ok := msg.Payload["pattern"].(string); ok {
 		pattern = p
 	}
-	rotation := 0.0
-	if rot, ok := msg.Payload["rotation"]; ok {
-		rotation = toFloat64(rot)
+
+	// Parse rotations (Phase 2: multi-axis rotation support)
+	rotX := 0.0
+	if rot, ok := msg.Payload["rotationX"]; ok {
+		rotX = toFloat64(rot)
+	}
+	rotY := 0.0
+	if rot, ok := msg.Payload["rotationY"]; ok {
+		rotY = toFloat64(rot)
+	} else if rot, ok := msg.Payload["rotation"]; ok {
+		// Backward compatibility: 'rotation' parameter maps to rotationY
+		rotY = toFloat64(rot)
+	}
+	rotZ := 0.0
+	if rot, ok := msg.Payload["rotationZ"]; ok {
+		rotZ = toFloat64(rot)
 	}
 
 	// Parse colors based on pattern type
@@ -2241,7 +2254,9 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		Radius:      radius,
 		LatBands:    latBands,
 		LonSegments: lonSegments,
-		Rotation:    rotation,
+		RotationX:   rotX,
+		RotationY:   rotY,
+		RotationZ:   rotZ,
 		Pattern:     pattern,
 	}
 
@@ -2319,7 +2334,9 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		sR := float64(sphere.Radius)
 		sLatBands := sphere.LatBands
 		sLonSegs := sphere.LonSegments
-		sRot := sphere.Rotation
+		rotX := sphere.RotationX
+		rotY := sphere.RotationY
+		rotZ := sphere.RotationZ
 		pattern := sphere.Pattern
 		solidColor := sphere.SolidColor
 		col1 := sphere.CheckeredCol1
@@ -2351,14 +2368,32 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		// Calculate z for front face of sphere
 		z := sqrt(sR*sR - distSq)
 
-		// Apply inverse Y-axis rotation to find original (unrotated) position
-		cosR := cos(sRot)
-		sinR := sin(sRot)
-		xOrig := x*cosR + z*sinR
-		zOrig := -x*sinR + z*cosR
+		// Phase 2: Apply inverse 3D rotation matrix to find original (unrotated) position
+		// Rotations are applied in forward order Z, X, Y, so we apply inverses in reverse: -Y, -X, -Z
+
+		// Apply inverse Y-axis rotation (yaw/spin)
+		cosRY := cos(-rotY)
+		sinRY := sin(-rotY)
+		x1 := x*cosRY + z*sinRY
+		z1 := -x*sinRY + z*cosRY
+		y1 := y
+
+		// Apply inverse X-axis rotation (pitch/tilt)
+		cosRX := cos(-rotX)
+		sinRX := sin(-rotX)
+		x2 := x1
+		y2 := y1*cosRX - z1*sinRX
+		z2 := y1*sinRX + z1*cosRX
+
+		// Apply inverse Z-axis rotation (roll)
+		cosRZ := cos(-rotZ)
+		sinRZ := sin(-rotZ)
+		xOrig := x2*cosRZ - y2*sinRZ
+		yOrig := x2*sinRZ + y2*cosRZ
+		zOrig := z2
 
 		// Calculate latitude: angle from equator, -π/2 (south) to π/2 (north)
-		lat := asin(-y / sR)
+		lat := asin(-yOrig / sR)
 
 		// Calculate longitude: angle around Y axis, 0 to 2π (full sphere)
 		lon := atan2(zOrig, xOrig)
@@ -2537,8 +2572,20 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 	if r, ok := getFloat64(msg.Payload["radius"]); ok {
 		sphere.Radius = float32(r)
 	}
-	if rot, ok := getFloat64(msg.Payload["rotation"]); ok {
-		sphere.Rotation = rot
+
+	// Phase 2: Support new rotation parameters (rotationX, rotationY, rotationZ)
+	// Maintain backward compatibility with old "rotation" parameter -> maps to rotationY
+	if rotX, ok := getFloat64(msg.Payload["rotationX"]); ok {
+		sphere.RotationX = rotX
+	}
+	if rotY, ok := getFloat64(msg.Payload["rotationY"]); ok {
+		sphere.RotationY = rotY
+	} else if rot, ok := getFloat64(msg.Payload["rotation"]); ok {
+		// Backward compatibility: old "rotation" parameter maps to rotationY
+		sphere.RotationY = rot
+	}
+	if rotZ, ok := getFloat64(msg.Payload["rotationZ"]); ok {
+		sphere.RotationZ = rotZ
 	}
 
 	// Update position

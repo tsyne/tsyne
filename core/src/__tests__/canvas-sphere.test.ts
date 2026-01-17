@@ -244,7 +244,7 @@ describe('CanvasSphere', () => {
           radius: 75,
           latBands: 16,
           lonSegments: 12,
-          rotation: Math.PI / 4,
+          rotationY: Math.PI / 4,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
@@ -273,7 +273,7 @@ describe('CanvasSphere', () => {
           cx: 150,
           cy: 200,
           radius: 75,
-          rotation: Math.PI / 2,
+          rotationY: Math.PI / 2,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
@@ -294,7 +294,7 @@ describe('CanvasSphere', () => {
         'updateCanvasSphere',
         expect.objectContaining({
           widgetId: sphere.id,
-          rotation: Math.PI / 4,
+          rotationY: Math.PI / 4,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
@@ -391,6 +391,191 @@ describe('CanvasSphere', () => {
         'createCanvasSphere',
         expect.objectContaining({
           stripeColors: colors,
+        })
+      );
+    });
+  });
+
+  describe('Phase 2: Multi-axis rotation', () => {
+    test('rotationY spins sphere left/right', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotationY: Math.PI / 4,  // 45 degrees
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationY: Math.PI / 4,
+        })
+      );
+    });
+
+    test('rotationX tilts sphere forward/back', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotationX: Math.PI / 6,  // 30 degrees
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationX: Math.PI / 6,
+        })
+      );
+    });
+
+    test('rotationZ rolls sphere', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotationZ: Math.PI / 3,  // 60 degrees
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationZ: Math.PI / 3,
+        })
+      );
+    });
+
+    test('combined rotations apply correctly', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotationX: Math.PI / 8,
+        rotationY: Math.PI / 4,
+        rotationZ: Math.PI / 6,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationX: Math.PI / 8,
+          rotationY: Math.PI / 4,
+          rotationZ: Math.PI / 6,
+        })
+      );
+    });
+
+    test('backward compatibility: rotation parameter maps to rotationY', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotation: Math.PI / 2,  // Old API
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // Should map to rotationY
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationY: Math.PI / 2,
+        })
+      );
+    });
+
+    test('rotationY takes precedence over rotation parameter', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        rotation: Math.PI / 2,  // Old API
+        rotationY: Math.PI / 4,  // New API
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // Should use rotationY, not rotation
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          rotationY: Math.PI / 4,
+        })
+      );
+    });
+  });
+
+  describe('update with rotation', () => {
+    test('update can change rotationY', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({ rotationY: Math.PI / 3 });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          rotationY: Math.PI / 3,
+        })
+      );
+    });
+
+    test('update can change all rotation axes simultaneously', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({
+        rotationX: Math.PI / 8,
+        rotationY: Math.PI / 4,
+        rotationZ: Math.PI / 6,
+      });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          rotationX: Math.PI / 8,
+          rotationY: Math.PI / 4,
+          rotationZ: Math.PI / 6,
+        })
+      );
+    });
+
+    test('update with rotation parameter (backward compat) maps to rotationY', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({ rotation: Math.PI / 2 });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          rotationY: Math.PI / 2,
         })
       );
     });

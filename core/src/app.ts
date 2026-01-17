@@ -843,6 +843,8 @@ export class App {
       italic?: boolean;
       monospace?: boolean;
       alignment?: 'leading' | 'center' | 'trailing';
+      x?: number;
+      y?: number;
     }
   ): CanvasText {
     return new CanvasText(this.ctx, text, options);
