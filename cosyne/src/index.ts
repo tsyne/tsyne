@@ -104,3 +104,29 @@ export {
   type MarkerType,
   type MarkerConfig,
 } from './markers';
+export {
+  EffectRenderer,
+  EffectsAnchor,
+  type DropShadowOptions,
+  type GlowOptions,
+  type TextShadowOptions,
+  type TextStrokeOptions,
+  type TextGlowOptions,
+} from './effects';
+export {
+  LinearGradient,
+  RadialGradient,
+  PRESET_GRADIENTS,
+  createGradient,
+  type ColorStop,
+} from './gradients';
+export {
+  ClippingRegion,
+  ClippingUtils,
+  type ClippingShape,
+  type CircleClip,
+  type RectClip,
+  type PolygonClip,
+  type PathClip,
+  type ClipPath,
+} from './clipping';
