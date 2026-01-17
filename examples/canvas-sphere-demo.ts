@@ -321,10 +321,123 @@ app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
           a.label('  - Texture wrapping around sphere');
           a.label('  - Support for PNG, JPEG, GIF formats');
           a.spacer(20);
+          a.label('Phase 5 (Complete):');
+          a.label('  - onTap callback with lat/lon coordinates');
+          a.label('  - Screen-to-sphere coordinate mapping');
+          a.label('  - Works with all patterns and textures');
+          a.spacer(20);
+          a.label('Phase 6 (Complete):');
+          a.label('  - Animation presets: spin, wobble, bounce, pulse');
+          a.label('  - Controllable via animate(), stopAnimation()');
+          a.label('  - Pause/resume, onComplete callback');
+          a.label('  - Configurable speed, axis, amplitude');
+          a.spacer(20);
 
-          a.label('Upcoming Phases:');
-          a.label('Phase 5: Interactivity (tap events with lat/lon)');
-          a.label('Phase 6: Animation presets (spin, wobble, bounce, pulse)');
+          // ==================== PHASE 6: ANIMATION PRESETS ====================
+          a.separator();
+          a.label('Phase 6: Animation Presets Demo');
+          a.label('Four animation types: spin, wobble, bounce, pulse');
+          a.separator();
+
+          // Animation 1: Spin
+          a.label('Animation 1: Spin');
+          a.label('Continuous rotation around an axis');
+          const spinSphere = a.canvasSphere({
+            cx: 200,
+            cy: 200,
+            radius: 80,
+            pattern: 'checkered',
+            latBands: 8,
+            lonSegments: 8,
+            checkeredColor1: '#cc0000',
+            checkeredColor2: '#ffffff',
+          });
+          spinSphere.animate({ type: 'spin', speed: 1.0, axis: 'y' });
+          a.spacer(100);
+
+          // Animation 2: Wobble
+          a.label('Animation 2: Wobble');
+          a.label('Oscillating rotation back and forth');
+          const wobbleSphere = a.canvasSphere({
+            cx: 200,
+            cy: 200,
+            radius: 80,
+            pattern: 'stripes',
+            stripeColors: ['#00ff00', '#0000ff', '#ff00ff'],
+            stripeDirection: 'horizontal',
+          });
+          wobbleSphere.animate({ type: 'wobble', speed: 2.0, axis: 'x', amplitude: Math.PI / 6 });
+          a.spacer(100);
+
+          // Animation 3: Bounce
+          a.label('Animation 3: Bounce');
+          a.label('Size oscillation (elastic bounce feel)');
+          const bounceSphere = a.canvasSphere({
+            cx: 200,
+            cy: 200,
+            radius: 80,
+            pattern: 'gradient',
+            gradientStart: '#ff6600',
+            gradientEnd: '#ffff00',
+          });
+          bounceSphere.animate({ type: 'bounce', speed: 2.0, amplitude: 0.15 });
+          a.spacer(100);
+
+          // Animation 4: Pulse
+          a.label('Animation 4: Pulse');
+          a.label('Smooth size oscillation (breathing effect)');
+          const pulseSphere = a.canvasSphere({
+            cx: 200,
+            cy: 200,
+            radius: 80,
+            pattern: 'solid',
+            solidColor: '#ff00ff',
+          });
+          pulseSphere.animate({ type: 'pulse', speed: 0.5, amplitude: 0.1 });
+          a.spacer(100);
+
+          // Multi-axis spin demo
+          a.label('Multi-Axis Spin Demo');
+          a.label('Three spheres spinning on X, Y, and Z axes');
+          a.hbox(() => {
+            const spinX = a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              checkeredColor1: '#ff0000',
+              checkeredColor2: '#ffffff',
+            });
+            spinX.animate({ type: 'spin', speed: 1.5, axis: 'x' });
+            a.spacer(30);
+
+            const spinY = a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              checkeredColor1: '#00ff00',
+              checkeredColor2: '#ffffff',
+            });
+            spinY.animate({ type: 'spin', speed: 1.5, axis: 'y' });
+            a.spacer(30);
+
+            const spinZ = a.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 60,
+              pattern: 'checkered',
+              checkeredColor1: '#0000ff',
+              checkeredColor2: '#ffffff',
+            });
+            spinZ.animate({ type: 'spin', speed: 1.5, axis: 'z' });
+          });
+          a.spacer(100);
+
+          // Summary
+          a.separator();
+          a.label('All 6 phases complete!');
+          a.label('See examples/canvas-sphere-animations.ts for interactive animation controls.');
         });
       });
     });
