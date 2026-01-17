@@ -90,6 +90,8 @@ import {
   CanvasRadialGradient,
   CanvasSphericalPatch,
   CanvasSphericalPatchOptions,
+  CanvasSphere,
+  CanvasSphereOptions,
   CanvasCheckeredSphere,
   CanvasCheckeredSphereOptions,
   CanvasGradientText,
@@ -904,10 +906,20 @@ export class App {
   }
 
   /**
+   * Create a generalized sphere with support for multiple patterns (solid, checkered, stripes, gradient)
+   * All patches in a single raster for efficiency
+   */
+  canvasSphere(options: CanvasSphereOptions): CanvasSphere {
+    return new CanvasSphere(this.ctx, options);
+  }
+
+  /**
    * Create a checkered sphere (Amiga Boing Ball style) - all patches in a single raster
    * More efficient and avoids z-order compositing issues
+   * @deprecated Use canvasSphere() with pattern='checkered' instead
    */
   canvasCheckeredSphere(options: CanvasCheckeredSphereOptions): CanvasCheckeredSphere {
+    console.warn('canvasCheckeredSphere is deprecated, use canvasSphere with pattern="checkered" instead');
     return new CanvasCheckeredSphere(this.ctx, options);
   }
 

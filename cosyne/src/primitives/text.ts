@@ -3,7 +3,7 @@
  */
 
 import { Primitive, PrimitiveOptions } from './base';
-import { PositionBinding } from '../binding';
+import { PositionBinding, Binding, BindingFunction } from '../binding';
 import { HitTester, DefaultHitTesters } from '../events';
 
 export interface TextOptions extends PrimitiveOptions {
@@ -22,6 +22,7 @@ export class CosyneText extends Primitive<any> {
   private fontSize: number = 12;
   private fontFamily: string = 'sans-serif';
   private fontWeight: string = 'normal';
+  private textBinding: Binding<string> | undefined;
 
   constructor(x: number, y: number, text: string, underlying: any, options?: TextOptions) {
     super(underlying, options);
@@ -60,6 +61,29 @@ export class CosyneText extends Primitive<any> {
     this.text = text;
     this.updateUnderlying();
     return this;
+  }
+
+  /**
+   * Bind text content to a function
+   */
+  bindText(fn: BindingFunction<string>): this {
+    this.textBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
+   * Get text binding if set
+   */
+  getTextBinding(): Binding<string> | undefined {
+    return this.textBinding;
+  }
+
+  /**
+   * Update text from binding
+   */
+  updateText(text: string): void {
+    this.text = text;
+    this.updateUnderlying();
   }
 
   protected applyFill(): void {

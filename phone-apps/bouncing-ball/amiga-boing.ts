@@ -1,8 +1,9 @@
 /**
  * Amiga Boing Ball - Tribute to the classic 1984 Amiga demo
  *
- * Background/grid use cosyne, ball uses core's canvasCheckeredSphere widget.
+ * Background/grid use cosyne, ball uses core's canvasSphere widget with checkered pattern.
  * Rainbow "T" uses dynamic gradient text rendered with freetype.
+ * Uses Phase 1 generalized sphere with pattern='checkered' for backward-compatible animation.
  */
 
 import { App } from '../../core/src';
@@ -42,16 +43,17 @@ export function buildAmigaBoingApp(a: App): void {
       fillColor: '#4a3a5a',  // darker purple (same as grid lines)
     });
 
-    // Create the checkered ball using core widget directly (app-specific)
-    const ball = a.canvasCheckeredSphere({
+    // Create the checkered ball using generalized canvasSphere with checkered pattern
+    const ball = a.canvasSphere({
       cx: x,
       cy: y,
       radius: R,
+      pattern: 'checkered',
       latBands: LAT_BANDS,
       lonSegments: LON_SEGMENTS,
       rotation: 0,
-      color1: '#cc0000',  // Red
-      color2: '#ffffff',  // White
+      checkeredColor1: '#cc0000',  // Red
+      checkeredColor2: '#ffffff',  // White
     });
 
     // Rainbow "T" using dynamic gradient text

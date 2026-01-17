@@ -4,6 +4,87 @@
 
 Transform the current `canvasCheckeredSphere` widget into a general-purpose `canvasSphere` that supports multiple patterns, textures, lighting, and interactivity. The Amiga Boing Ball becomes one configuration of this more flexible primitive.
 
+---
+
+## Implementation Status
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1. Patterns | ✅ COMPLETE | All patterns working: solid, checkered, stripes, gradient |
+| 2. Multi-Axis Rotation | 🔲 TODO | Next up - currently only Y-axis rotation supported |
+| 3. Lighting | ✅ COMPLETE | Implemented as part of Phase 1 bug fixes |
+| 4. Textures | 🔲 TODO | |
+| 5. Interactivity | 🔲 TODO | |
+| 6. Animation Presets | 🔲 TODO | |
+
+### Notes for Next Developer
+
+**Phase 1 & 3 Implementation Details:**
+- Go code is in `core/bridge/widget_creators_canvas.go` in `handleCreateCanvasSphere()` (~line 2200)
+- Lighting uses simple Lambertian shading with hardcoded light direction (front-right-top)
+- Light params: `lightDirX=0.5, lightDirY=-0.3, lightDirZ=0.8`, ambient=0.3, diffuse=0.7
+- All patterns (solid, stripes, gradient, checkered) apply shading via `applyShade()` helper
+- Clipping fix: uses `min(w, h)` for scale to handle non-square rasters (vbox layouts)
+
+**Bugs Fixed During Phase 1:**
+1. Go switch fallthrough bug: `case "checkered":` followed by `default:` meant checkered case was empty
+2. Sphere clipping in layouts: raster stretched but sphere coordinates used only width
+
+### ⚠️ PITFALLS TO AVOID
+
+**Go switch statement gotcha:**
+```go
+// WRONG - "checkered" case is EMPTY, code runs only for unknown patterns
+case "checkered":
+default:
+    // this code does NOT run for "checkered"!
+    col1 = parseColor(...)
+```
+```go
+// CORRECT - code is inside the case
+case "checkered":
+    col1 = parseColor(...)
+default:
+    // fallback for unknown patterns
+```
+In Go, `case X:` followed immediately by `default:` does NOT fall through - the case is empty and does nothing.
+
+**Debugging Go bridge:**
+- Go's stdout is NOT captured by the test harness
+- Use `fmt.Fprintf(os.Stderr, ...)` for debug output, not `fmt.Println`
+- Remember to remove debug prints before committing
+
+**Raster coordinate systems:**
+- Fyne rasters can be stretched to non-square dimensions by layout
+- The pixel function receives `(px, py, w, h)` where w and h are the ACTUAL raster size
+- Always use `min(w, h)` when calculating scale to prevent clipping
+- Sphere center should be `(w/2, h/2)`, not based on the requested radius
+
+**Color defaults:**
+- Always set default colors BEFORE the switch on pattern type
+- If colors come through as `{0,0,0,0}` (transparent black), check that the parsing code is actually being reached
+
+**Key Files:**
+- `core/bridge/widget_creators_canvas.go` - Go renderer with SphereData struct and pixel function
+- `core/src/widgets/canvas.ts` - TypeScript CanvasSphere class
+- `examples/canvas-sphere-demo.ts` - Visual demo of all patterns
+- `examples/canvas-sphere.test.ts` - Integration tests
+- `phone-apps/bouncing-ball/amiga-boing.ts` - Uses checkered pattern
+
+**For Phase 2 (Multi-Axis Rotation):**
+- Current rotation is Y-axis only, stored in `sphere.Rotation`
+- Rotation applied at line ~2357: `xOrig := x*cosR + z*sinR; zOrig := -x*sinR + z*cosR`
+- Need to add `RotationX`, `RotationZ` to SphereData struct in `types.go`
+- Apply full 3D rotation matrix before lat/lon calculation
+- TypeScript interface needs `rotationX?`, `rotationZ?` options
+
+**For Phase 3 (if extending lighting to be configurable):**
+- Currently hardcoded in the pixel function
+- To make configurable, add `LightDir`, `Ambient`, `Diffuse` to SphereData struct
+- Parse from message payload similar to other options
+
+---
+
 ## Phase 1: Rename and Refactor Foundation
 
 ### 1.1 Rename to `canvasSphere`

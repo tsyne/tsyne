@@ -190,6 +190,15 @@ export class CosyneContext {
           primitive.updateRotationValue(rotation);
         }
       }
+
+      // Handle text content bindings
+      if (primitive instanceof CosyneText) {
+        const textBinding = primitive.getTextBinding();
+        if (textBinding) {
+          const text = textBinding.evaluate();
+          primitive.updateText(text);
+        }
+      }
     }
   }
 

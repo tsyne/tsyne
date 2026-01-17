@@ -100,6 +100,8 @@ export {
   CanvasRadialGradient,
   CanvasSphericalPatch,
   CanvasSphericalPatchOptions,
+  CanvasSphere,
+  CanvasSphereOptions,
   CanvasCheckeredSphere,
   CanvasCheckeredSphereOptions,
   CanvasGradientText,

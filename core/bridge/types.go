@@ -204,6 +204,7 @@ type Bridge struct {
 	polygonData          map[string]*PolygonData          // polygon widget ID -> polygon data
 	sphericalPatchData   map[string]*SphericalPatchData   // spherical patch ID -> patch data
 	checkeredSphereData  map[string]*CheckeredSphereData  // checkered sphere ID -> sphere data
+	sphereData           map[string]*SphereData           // sphere ID -> sphere data (generalized)
 	ellipseData          map[string]*EllipseData          // ellipse ID -> ellipse data
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
@@ -267,6 +268,26 @@ type CheckeredSphereData struct {
 	Rotation    float64    // Y-axis rotation in radians (for spinning)
 	Color1      color.RGBA // First checkerboard color (e.g., red)
 	Color2      color.RGBA // Second checkerboard color (e.g., white)
+}
+
+// SphereData stores data for a generalized sphere (Phase 1: patterns)
+// Supports checkered, solid, stripes, and gradient patterns
+// Renders ALL patches in a single raster to avoid z-order compositing issues
+type SphereData struct {
+	CenterX        float32     // Center X of the sphere in canvas coordinates
+	CenterY        float32     // Center Y of the sphere in canvas coordinates
+	Radius         float32     // Radius of the sphere
+	LatBands       int         // Number of latitude bands
+	LonSegments    int         // Number of longitude segments (full sphere)
+	Rotation       float64     // Y-axis rotation in radians (for spinning)
+	Pattern        string      // Pattern type: solid, checkered, stripes, gradient
+	SolidColor     color.RGBA  // For solid pattern
+	CheckeredCol1  color.RGBA  // For checkered pattern
+	CheckeredCol2  color.RGBA  // For checkered pattern
+	StripeColors   []color.RGBA // For stripes pattern
+	StripeDir      string      // horizontal or vertical
+	GradientStart  color.RGBA  // For gradient pattern
+	GradientEnd    color.RGBA  // For gradient pattern
 }
 
 // WidgetMetadata stores metadata about widgets for testing
