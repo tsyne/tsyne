@@ -768,4 +768,213 @@ describe('CanvasSphere', () => {
       );
     });
   });
+
+  describe('Phase 5: Interactivity (tap events with lat/lon)', () => {
+    test('onTap callback registers with bridge event listener', () => {
+      const onBridge = jest.fn();
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        // Capture the event key for verification
+      });
+
+      const tapCallback = jest.fn((lat: number, lon: number) => {});
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+        solidColor: '#cc0000',
+        onTap: tapCallback,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // Verify hasTapHandler flag is set
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          hasTapHandler: true,
+        })
+      );
+
+      // Verify event listener is registered
+      expect(mockBridge.on).toHaveBeenCalled();
+      const calls = (mockBridge.on as jest.Mock).mock.calls;
+      expect(calls.length > 0).toBe(true);
+      expect(calls[0][0]).toMatch(new RegExp(`sphereTapped:${sphere.id}`));
+    });
+
+    test('onTap callback fires when tap event is received', () => {
+      let tapHandler: any = null;
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        if (eventKey.startsWith('sphereTapped:')) {
+          tapHandler = handler;
+        }
+      });
+
+      const tapCallback = jest.fn();
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'checkered',
+        onTap: tapCallback,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // Simulate tap event from bridge with lat/lon coordinates
+      tapHandler({
+        lat: 0,
+        lon: 0,
+        screenX: 100,
+        screenY: 100,
+      });
+
+      expect(tapCallback).toHaveBeenCalledWith(0, 0, 100, 100);
+    });
+
+    test('onTap callback receives equator coordinates', () => {
+      let tapHandler: any = null;
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        if (eventKey.startsWith('sphereTapped:')) {
+          tapHandler = handler;
+        }
+      });
+
+      const tapCallback = jest.fn();
+      const options: CanvasSphereOptions = {
+        cx: 200,
+        cy: 200,
+        radius: 80,
+        pattern: 'solid',
+        solidColor: '#0000ff',
+        onTap: tapCallback,
+      };
+
+      new CanvasSphere(ctx, options);
+
+      // Simulate tap at equator, prime meridian
+      tapHandler({
+        lat: 0,
+        lon: 0,
+        screenX: 200,
+        screenY: 200,
+      });
+
+      expect(tapCallback).toHaveBeenCalledWith(0, 0, 200, 200);
+    });
+
+    test('onTap callback receives north pole coordinates', () => {
+      let tapHandler: any = null;
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        if (eventKey.startsWith('sphereTapped:')) {
+          tapHandler = handler;
+        }
+      });
+
+      const tapCallback = jest.fn();
+      const options: CanvasSphereOptions = {
+        cx: 200,
+        cy: 200,
+        radius: 80,
+        pattern: 'gradient',
+        gradientStart: '#0000ff',
+        gradientEnd: '#ff0000',
+        onTap: tapCallback,
+      };
+
+      new CanvasSphere(ctx, options);
+
+      // Simulate tap at north pole
+      const PI_2 = Math.PI / 2;
+      tapHandler({
+        lat: PI_2,
+        lon: 0,
+        screenX: 200,
+        screenY: 120,  // Top of sphere
+      });
+
+      expect(tapCallback).toHaveBeenCalledWith(PI_2, 0, 200, 120);
+    });
+
+    test('onTap works with rotation', () => {
+      let tapHandler: any = null;
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        if (eventKey.startsWith('sphereTapped:')) {
+          tapHandler = handler;
+        }
+      });
+
+      const tapCallback = jest.fn();
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'checkered',
+        rotationY: Math.PI / 4,  // 45 degree rotation
+        onTap: tapCallback,
+      };
+
+      new CanvasSphere(ctx, options);
+
+      // Tap event should account for rotation
+      tapHandler({
+        lat: 0,
+        lon: Math.PI / 8,  // Offset due to rotation
+        screenX: 125,
+        screenY: 100,
+      });
+
+      expect(tapCallback).toHaveBeenCalledWith(0, Math.PI / 8, 125, 100);
+    });
+
+    test('onTap does not register listener when callback not provided', () => {
+      mockBridge.on = jest.fn();
+
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'solid',
+      };
+
+      new CanvasSphere(ctx, options);
+
+      // Verify bridge.on was never called since no onTap was provided
+      expect(mockBridge.on).not.toHaveBeenCalled();
+    });
+
+    test('onTap with textured sphere', () => {
+      let tapHandler: any = null;
+      mockBridge.on = jest.fn((eventKey: string, handler: any) => {
+        if (eventKey.startsWith('sphereTapped:')) {
+          tapHandler = handler;
+        }
+      });
+
+      const tapCallback = jest.fn();
+      const options: CanvasSphereOptions = {
+        cx: 150,
+        cy: 150,
+        radius: 60,
+        texture: {
+          resourceName: 'earth-texture',
+          mapping: 'equirectangular',
+        },
+        onTap: tapCallback,
+      };
+
+      new CanvasSphere(ctx, options);
+
+      // Tap on textured sphere
+      tapHandler({
+        lat: 0.5,
+        lon: -0.5,
+        screenX: 150,
+        screenY: 175,
+      });
+
+      expect(tapCallback).toHaveBeenCalledWith(0.5, -0.5, 150, 175);
+    });
+  });
 });
