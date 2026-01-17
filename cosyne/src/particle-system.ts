@@ -256,7 +256,7 @@ export class ParticleSystem {
       for (const particle of emitter.particles) {
         ctx.circle(particle.position.x, particle.position.y, particle.radius)
           .fill(particle.color)
-          .alpha(particle.getAlpha())
+          .setAlpha(particle.getAlpha())
           .withId(`particle-${Math.random()}`);
       }
     }

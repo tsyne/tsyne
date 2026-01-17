@@ -317,7 +317,7 @@ export class EffectsAnchor {
 
     // Apply blend mode
     if (this.blendMode) {
-      ctx.globalCompositeOperation = this.blendMode;
+      ctx.globalCompositeOperation = this.blendMode as GlobalCompositeOperation;
     }
 
     // Apply stroke dash

@@ -161,6 +161,14 @@ export abstract class Primitive<TUnderlyingWidget> {
   }
 
   /**
+   * Set alpha (opacity) - 0.0 to 1.0
+   */
+  setAlpha(value: number): this {
+    this.alpha = Math.max(0, Math.min(1, value));
+    return this;
+  }
+
+  /**
    * Bind position to a function that returns x, y coordinates
    */
   bindPosition(fn: BindingFunction<PositionBinding>): this {
