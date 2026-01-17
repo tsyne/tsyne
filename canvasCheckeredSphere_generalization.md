@@ -1,8 +1,10 @@
-# Plan: Generalize canvasCheckeredSphere to canvasSphere
+# Plan: CanvasSphere Advanced Features
 
 ## Overview
 
-Transform the current `canvasCheckeredSphere` widget into a general-purpose `canvasSphere` that supports multiple patterns, textures, lighting, and interactivity. The Amiga Boing Ball becomes one configuration of this more flexible primitive.
+Extend the now-complete canvasSphere widget with advanced features: configurable lighting, cubemap textures, and custom pattern functions.
+
+**Prerequisites:** Phases 1-6 are complete (patterns, rotation, lighting, textures, interactivity, animations).
 
 ---
 
@@ -10,517 +12,440 @@ Transform the current `canvasCheckeredSphere` widget into a general-purpose `can
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 1. Patterns | ✅ COMPLETE | All patterns working: solid, checkered, stripes, gradient |
-| 2. Multi-Axis Rotation | ✅ COMPLETE | rotationX, rotationY, rotationZ all working |
-| 3. Lighting | ✅ COMPLETE | Implemented as part of Phase 1 bug fixes |
-| 4. Textures | ✅ COMPLETE | Equirectangular texture mapping working |
-| 5. Interactivity | ✅ COMPLETE | Tap events with lat/lon coordinates |
-| 6. Animation Presets | ✅ COMPLETE | spin, wobble, bounce, pulse with controls |
-
-### Notes for Next Developer
-
-**Phase 1 & 3 Implementation Details:**
-- Go code is in `core/bridge/widget_creators_canvas.go` in `handleCreateCanvasSphere()` (~line 2200)
-- Lighting uses simple Lambertian shading with hardcoded light direction (front-right-top)
-- Light params: `lightDirX=0.5, lightDirY=-0.3, lightDirZ=0.8`, ambient=0.3, diffuse=0.7
-- All patterns (solid, stripes, gradient, checkered) apply shading via `applyShade()` helper
-- Clipping fix: uses `min(w, h)` for scale to handle non-square rasters (vbox layouts)
-
-**Bugs Fixed During Phase 1:**
-1. Go switch fallthrough bug: `case "checkered":` followed by `default:` meant checkered case was empty
-2. Sphere clipping in layouts: raster stretched but sphere coordinates used only width
-
-### ⚠️ PITFALLS TO AVOID
-
-**Go switch statement gotcha:**
-```go
-// WRONG - "checkered" case is EMPTY, code runs only for unknown patterns
-case "checkered":
-default:
-    // this code does NOT run for "checkered"!
-    col1 = parseColor(...)
-```
-```go
-// CORRECT - code is inside the case
-case "checkered":
-    col1 = parseColor(...)
-default:
-    // fallback for unknown patterns
-```
-In Go, `case X:` followed immediately by `default:` does NOT fall through - the case is empty and does nothing.
-
-**Debugging Go bridge:**
-- Go's stdout is NOT captured by the test harness
-- Use `fmt.Fprintf(os.Stderr, ...)` for debug output, not `fmt.Println`
-- Remember to remove debug prints before committing
-
-**Raster coordinate systems:**
-- Fyne rasters can be stretched to non-square dimensions by layout
-- The pixel function receives `(px, py, w, h)` where w and h are the ACTUAL raster size
-- Always use `min(w, h)` when calculating scale to prevent clipping
-- Sphere center should be `(w/2, h/2)`, not based on the requested radius
-
-**Color defaults:**
-- Always set default colors BEFORE the switch on pattern type
-- If colors come through as `{0,0,0,0}` (transparent black), check that the parsing code is actually being reached
-
-**TappableCanvasObject positioning pitfalls:**
-- When wrapped in TappableCanvasObject, the raster must be at position (0,0) relative to the wrapper
-- The wrapper handles layout positioning; the wrapped object stays at origin
-- Resize() must keep wrapped object at MinSize to prevent coordinate system mismatch
-- Implementing `fyne.Draggable` interface prevents scroll containers from intercepting taps (Fyne issue #3906)
-
-**Key Files:**
-- `core/bridge/widget_creators_canvas.go` - Go renderer with SphereData struct and pixel function
-- `core/src/widgets/canvas.ts` - TypeScript CanvasSphere class
-- `examples/canvas-sphere-demo.ts` - Visual demo of all patterns
-- `examples/canvas-sphere.test.ts` - Integration tests
-- `phone-apps/bouncing-ball/amiga-boing.ts` - Uses checkered pattern
-
-**Phase 2 (Multi-Axis Rotation) - COMPLETE:**
-- Added `RotationX`, `RotationY`, `RotationZ` to SphereData struct in `types.go`
-- Full 3D rotation matrix applied in pixel function
-- TypeScript interface has `rotationX?`, `rotationY?`, `rotationZ?` options
-- Demo at `examples/canvas-sphere-demo.ts` shows all rotation combinations
-- Note: These are STATIC rotations (orientation), not animations. For spinning spheres, use a timer to update rotation values (see `phone-apps/bouncing-ball/amiga-boing.ts`)
-
-**For Phase 4 (Textures):**
-- Need to implement equirectangular texture mapping
-- Add `texture?: { resourceName: string; mapping?: 'equirectangular' | 'cubemap' }` to options
-- Sample texture based on lat/lon: `u = (lon + PI) / (2*PI)`, `v = (lat + PI/2) / PI`
-- Consider how to load/register texture resources in Go bridge
-
-**For Phase 5 (Interactivity):**
-- Add `onTap?: (lat: number, lon: number, x: number, y: number) => void` callback
-- Reverse-project screen coordinates to lat/lon using inverse rotation matrix
-- Register tap handler on the raster widget
-
-**Phase 6 (Animation Presets) - COMPLETE:**
-- Implemented `sphere.animate({ type, speed?, axis?, amplitude?, loop?, onComplete? })`
-- Returns `SphereAnimationHandle` with `stop()`, `pause()`, `resume()`, `isRunning()`, `isPaused()`
-- Four animation types: `spin`, `wobble`, `bounce`, `pulse`
-- Timer-based animation runs on TypeScript side (~60fps)
-- Each animation type has sensible defaults for speed and amplitude
-- Animation demo: `examples/canvas-sphere-animations.ts` with interactive controls
-- 25+ Jest tests covering all animation features
-- 7 TsyneTest integration tests
-
-**For Phase 3 (if extending lighting to be configurable):**
-- Currently hardcoded in the pixel function
-- To make configurable, add `LightDir`, `Ambient`, `Diffuse` to SphereData struct
-- Parse from message payload similar to other options
+| 7. Configurable Lighting | 🔲 TODO | Expose light direction, ambient, diffuse as options |
+| 8. Cubemap Textures | 🔲 TODO | Six-face texture mapping for skyboxes |
+| 9. Custom Pattern Function | 🔲 TODO | User-provided (lat, lon) => color callback |
 
 ---
 
-## Phase 1: Rename and Refactor Foundation
+## Phase 7: Configurable Lighting
 
-### 1.1 Rename to `canvasSphere`
+### 7.1 Current State
 
-- Rename `CanvasCheckeredSphere` → `CanvasSphere` in TypeScript
-- Rename `handleCreateCanvasCheckeredSphere` → `handleCreateCanvasSphere` in Go
-- Update bridge message types
-- Keep `checkered` as default pattern for backward compatibility
-- Deprecate old names with console warning
+Lighting is hardcoded in `widget_creators_canvas.go`:
+```go
+lightDirX := 0.5
+lightDirY := -0.3
+lightDirZ := 0.8
+ambient := 0.3
+diffuse := 0.7
+```
 
-### 1.2 Add Pattern System
+### 7.2 Target API
 
 ```typescript
-interface CanvasSphereOptions {
-  cx: number;
-  cy: number;
-  radius: number;
-  pattern: 'checkered' | 'solid' | 'stripes' | 'gradient' | 'custom';
-  colors: string[];  // [color1, color2, ...]
-  latBands?: number;
-  lonSegments?: number;
-  rotation?: number;  // Y-axis (current)
+a.canvasSphere({
+  cx: 200, cy: 200, radius: 100,
+  pattern: 'solid',
+  solidColor: '#0066cc',
+  lighting: {
+    enabled: true,  // default: true
+    direction: { x: 1, y: -0.5, z: 0.5 },  // Light source direction (normalized)
+    ambient: 0.2,   // 0-1, base illumination
+    diffuse: 0.8,   // 0-1, directional light strength
+  }
+});
+
+// Disable lighting entirely (flat shading)
+a.canvasSphere({
+  ...options,
+  lighting: { enabled: false }
+});
+```
+
+### 7.3 TypeScript Changes (`core/src/widgets/canvas.ts`)
+
+```typescript
+interface LightingOptions {
+  enabled?: boolean;  // default: true
+  direction?: { x: number; y: number; z: number };  // default: { x: 0.5, y: -0.3, z: 0.8 }
+  ambient?: number;   // default: 0.3
+  diffuse?: number;   // default: 0.7
 }
-```
 
-**Patterns:**
-- `solid` - Single color sphere
-- `checkered` - Alternating colors (current Boing Ball)
-- `stripes` - Horizontal or vertical bands
-- `gradient` - Color gradient pole-to-pole or around equator
-- `custom` - User-provided color function (lat, lon) => color
-
-### 1.3 Tests for Phase 1
-
-**Jest unit tests (`core/src/__tests__/canvas-sphere.test.ts`):**
-```typescript
-describe('CanvasSphere', () => {
-  describe('patterns', () => {
-    test('solid pattern uses single color');
-    test('checkered pattern alternates colors');
-    test('stripes pattern creates horizontal bands');
-    test('gradient pattern interpolates colors');
-  });
-
-  describe('backward compatibility', () => {
-    test('canvasCheckeredSphere still works with deprecation warning');
-    test('default pattern is checkered');
-  });
-});
-```
-
-**TsyneTest integration tests (`examples/canvas-sphere.test.ts`):**
-```typescript
-describe('Canvas Sphere Widget', () => {
-  test('should create solid sphere', async () => {
-    // Verify widget type 'canvassphere' created
-  });
-
-  test('should create checkered sphere (Boing Ball style)', async () => {
-    // Verify 8x8 checkered pattern
-  });
-
-  test('should create striped sphere', async () => {
-    // Visual verification with screenshot
-  });
-
-  test('should render all patterns together', async () => {
-    // Screenshot comparison test
-  });
-});
-```
-
----
-
-## Phase 2: Multi-Axis Rotation
-
-### 2.1 Add X, Y, Z Rotation
-
-```typescript
 interface CanvasSphereOptions {
   // ... existing options ...
-  rotationX?: number;  // Tilt forward/back
-  rotationY?: number;  // Spin left/right (current 'rotation')
-  rotationZ?: number;  // Roll
+  lighting?: LightingOptions;
 }
 ```
 
-### 2.2 Go Implementation
+### 7.4 Go Changes (`core/bridge/widget_creators_canvas.go`)
 
-Update the raster pixel function to apply rotation matrix:
+1. Add to `SphereData` struct in `types.go`:
 ```go
-// Apply rotations in order: Z, X, Y
-x, y, z := applyRotationMatrix(px, py, pz, rotX, rotY, rotZ)
+type SphereData struct {
+    // ... existing fields ...
+    LightingEnabled bool
+    LightDirX       float64
+    LightDirY       float64
+    LightDirZ       float64
+    Ambient         float64
+    Diffuse         float64
+}
 ```
 
-### 2.3 Tests for Phase 2
+2. Parse lighting options in `handleCreateCanvasSphere()`:
+```go
+if lighting, ok := payload["lighting"].(map[string]interface{}); ok {
+    if enabled, ok := lighting["enabled"].(bool); ok {
+        sphereData.LightingEnabled = enabled
+    }
+    if dir, ok := lighting["direction"].(map[string]interface{}); ok {
+        sphereData.LightDirX = dir["x"].(float64)
+        sphereData.LightDirY = dir["y"].(float64)
+        sphereData.LightDirZ = dir["z"].(float64)
+    }
+    if ambient, ok := lighting["ambient"].(float64); ok {
+        sphereData.Ambient = ambient
+    }
+    if diffuse, ok := lighting["diffuse"].(float64); ok {
+        sphereData.Diffuse = diffuse
+    }
+}
+```
+
+3. Use in pixel function instead of hardcoded values.
+
+### 7.5 Tests for Phase 7
 
 **Jest tests:**
 ```typescript
-describe('rotation', () => {
-  test('rotationY spins sphere left/right');
-  test('rotationX tilts sphere forward/back');
-  test('rotationZ rolls sphere');
-  test('combined rotations apply correctly');
+describe('Phase 7: Configurable Lighting', () => {
+  test('lighting options sent to bridge');
+  test('lighting.enabled=false disables shading');
+  test('custom light direction affects shading');
+  test('ambient=1.0 creates flat lighting');
+  test('diffuse=0 removes directional component');
+  test('default lighting values when not specified');
 });
 ```
 
 **TsyneTest:**
 ```typescript
-test('should animate sphere tumbling on all axes', async () => {
-  // Create sphere, apply combined rotation, screenshot
+test('should render sphere with custom lighting direction', async () => {
+  // Create sphere with light from left
+  // Screenshot comparison
+});
+
+test('should render flat sphere with lighting disabled', async () => {
+  // No 3D shading effect
 });
 ```
 
 ---
 
-## Phase 3: Lighting and Shading
+## Phase 8: Cubemap Textures
 
-### 3.1 Add Lighting Options
+### 8.1 Overview
 
-```typescript
-interface CanvasSphereOptions {
-  // ... existing options ...
-  lighting?: {
-    enabled: boolean;
-    direction?: { x: number; y: number; z: number };  // Light source direction
-    ambient?: number;   // 0-1, base illumination
-    diffuse?: number;   // 0-1, directional light strength
-  };
-}
-```
+Cubemap textures use 6 images (one per face of a cube) for environment mapping. Useful for:
+- Skyboxes
+- Reflective surfaces
+- Environment maps
 
-### 3.2 Go Implementation
-
-Calculate surface normal for each pixel, dot product with light direction:
-```go
-// Simple Lambertian shading
-normal := getSurfaceNormal(lat, lon)
-intensity := ambient + diffuse * max(0, dot(normal, lightDir))
-finalColor := applyIntensity(baseColor, intensity)
-```
-
-### 3.3 Tests for Phase 3
-
-**Jest tests:**
-```typescript
-describe('lighting', () => {
-  test('ambient only creates flat shading');
-  test('diffuse creates highlight toward light source');
-  test('light direction affects shading position');
-});
-```
-
-**TsyneTest:**
-```typescript
-test('should render sphere with 3D shading effect', async () => {
-  // Screenshot comparison: flat vs lit sphere
-});
-```
-
----
-
-## Phase 4: Texture Mapping
-
-### 4.1 Add Texture Support
+### 8.2 Target API
 
 ```typescript
-interface CanvasSphereOptions {
-  // ... existing options ...
-  texture?: {
-    resourceName: string;  // Registered image resource
-    mapping?: 'equirectangular' | 'cubemap';
-  };
-}
-```
+// Register cubemap faces as resources first
+app.resources.register('skybox-px', positiveXBuffer);  // +X (right)
+app.resources.register('skybox-nx', negativeXBuffer);  // -X (left)
+app.resources.register('skybox-py', positiveYBuffer);  // +Y (top)
+app.resources.register('skybox-ny', negativeYBuffer);  // -Y (bottom)
+app.resources.register('skybox-pz', positiveZBuffer);  // +Z (front)
+app.resources.register('skybox-nz', negativeZBuffer);  // -Z (back)
 
-### 4.2 Go Implementation
-
-Sample texture based on lat/lon:
-```go
-// Equirectangular mapping
-u := (lon + PI) / (2 * PI)  // 0-1
-v := (lat + PI/2) / PI       // 0-1
-color := sampleTexture(textureImg, u, v)
-```
-
-### 4.3 Tests for Phase 4
-
-**Jest tests:**
-```typescript
-describe('texture mapping', () => {
-  test('equirectangular mapping samples texture correctly');
-  test('texture wraps around sphere');
-  test('texture respects rotation');
-});
-```
-
-**TsyneTest:**
-```typescript
-test('should render Earth globe from texture', async () => {
-  // Load earth texture, render sphere, screenshot
-});
-
-test('should render basketball texture', async () => {
-  // Sports ball pattern
-});
-```
-
----
-
-## Phase 5: Interactivity
-
-### 5.1 Add Click/Tap Handler
-
-```typescript
-interface CanvasSphereOptions {
-  // ... existing options ...
-  onTap?: (lat: number, lon: number, x: number, y: number) => void;
-}
-```
-
-### 5.2 Go Implementation
-
-On tap event, reverse-project screen coordinates to lat/lon:
-```go
-func (s *Sphere) handleTap(screenX, screenY int) {
-  lat, lon := screenToLatLon(screenX, screenY, s.cx, s.cy, s.radius, s.rotation)
-  // Emit event with lat, lon, screenX, screenY
-}
-```
-
-### 5.3 Tests for Phase 5
-
-**Jest tests:**
-```typescript
-describe('interactivity', () => {
-  test('tap converts screen coords to lat/lon');
-  test('tap respects current rotation');
-  test('tap outside sphere radius is ignored');
-});
-```
-
-**TsyneTest:**
-```typescript
-test('should fire onTap with lat/lon coordinates', async () => {
-  let tappedCoords: { lat: number; lon: number } | null = null;
-
-  // Create sphere with onTap handler
-  // Simulate tap at center
-  // Verify lat=0, lon=0 (equator, prime meridian)
-});
-
-test('should handle tap on rotated sphere', async () => {
-  // Rotate sphere 90 degrees
-  // Tap center
-  // Verify lon is offset by rotation
-});
-```
-
-**Phase 5 Implementation Complete:**
-- ✅ TypeScript: `CanvasSphereOptions.onTap` callback added
-- ✅ Event routing: `ctx.bridge.on('sphereTapped:${id}', ...)` pattern
-- ✅ Jest tests: 7 tests covering tap events, coordinates, rotation interaction
-- ✅ Demo: `examples/canvas-sphere-interactive.ts` showcasing all tap scenarios
-- ✅ Backward compatibility: No breaking changes
-- ✅ Works with: All patterns, textures, rotations (X/Y/Z), all sphere configurations
-
-**Callback Signature:**
-```typescript
-onTap?: (lat: number, lon: number, screenX: number, screenY: number) => void
-```
-
-**Coordinate System:**
-- Latitude: -π/2 (south pole) to π/2 (north pole)
-- Longitude: -π (west) to π (east)
-- Returns: Geographic coordinates for tapped point on sphere
-
-**Go Bridge Implementation (COMPLETE):**
-- `core/bridge/types.go`: Added `HasTapHandler` and `WidgetID` to `SphereData`
-- `core/bridge/tappable_canvas_object.go`: Generic tappable wrapper (NEW)
-- `core/bridge/widget_creators_canvas.go`: Full tap handling with reverse projection
-- Event format: `Event{Type: "sphereTapped:{id}", Data: {lat, lon, screenX, screenY}}`
-
----
-
-## Phase 6: Animation Presets
-
-### 6.1 Built-in Animations
-
-```typescript
-interface CanvasSphereOptions {
-  // ... existing options ...
-  animation?: {
-    type: 'spin' | 'wobble' | 'bounce' | 'pulse';
-    speed?: number;
-    axis?: 'x' | 'y' | 'z';
-  };
-}
-
-// Or fluent API:
-sphere.animate({ type: 'spin', speed: 0.05 });
-sphere.stopAnimation();
-```
-
-### 6.2 Tests for Phase 6
-
-**TsyneTest:**
-```typescript
-test('should spin continuously with animation preset', async () => {
-  // Create sphere with spin animation
-  // Wait 500ms
-  // Verify rotation changed
-});
-
-test('should stop animation when requested', async () => {
-  // Start animation, stop it, verify rotation stable
-});
-```
-
-**Phase 6 Implementation Complete:**
-- ✅ TypeScript: `SphereAnimationOptions` and `SphereAnimationHandle` interfaces
-- ✅ Fluent API: `sphere.animate()` / `sphere.stopAnimation()` / `sphere.isAnimating()`
-- ✅ Animation handle: `stop()`, `pause()`, `resume()`, `isRunning()`, `isPaused()`
-- ✅ Jest tests: 25+ tests covering all animation types and control methods
-- ✅ TsyneTest: 7 integration tests with real sphere widgets
-- ✅ Demo: `examples/canvas-sphere-demo.ts` updated with auto-starting animations
-- ✅ Interactive demo: `examples/canvas-sphere-animations.ts` with UI controls
-- ✅ All animations work with all patterns, textures, and rotations
-
-**Animation Types:**
-| Type | Description | Default Amplitude | Default Speed |
-|------|-------------|-------------------|---------------|
-| `spin` | Continuous rotation around axis | N/A | 1.0 rad/s |
-| `wobble` | Oscillating rotation back/forth | π/6 (30°) | 1.0 |
-| `bounce` | Size oscillation (elastic) | 0.15 (15%) | 1.0 |
-| `pulse` | Smooth size oscillation (breathing) | 0.08 (8%) | 1.0 |
-
-**API Summary:**
-```typescript
-// Start animation
-const handle = sphere.animate({
-  type: 'spin' | 'wobble' | 'bounce' | 'pulse',
-  speed?: number,      // Speed multiplier (default: 1.0)
-  axis?: 'x' | 'y' | 'z',  // For spin/wobble (default: 'y')
-  amplitude?: number,  // For wobble/bounce/pulse
-  loop?: boolean,      // Default: true
-  onComplete?: () => void,  // Called when non-looping animation ends
-});
-
-// Control animation
-handle.stop();     // Stop animation
-handle.pause();    // Pause (preserves state)
-handle.resume();   // Resume paused animation
-handle.isRunning();  // Check if running
-handle.isPaused();   // Check if paused
-
-// Sphere methods
-sphere.isAnimating();        // Check if any animation is running
-sphere.getCurrentAnimation(); // Get current animation options
-sphere.stopAnimation();       // Stop any running animation
-```
-
----
-
-## Use Case Examples
-
-### Earth Globe
-```typescript
 a.canvasSphere({
   cx: 200, cy: 200, radius: 150,
-  texture: { resourceName: 'earth-equirectangular' },
-  lighting: { enabled: true, direction: { x: 1, y: 0.5, z: 0.5 } },
-  rotationX: -23.5 * Math.PI / 180,  // Earth's axial tilt
-  onTap: (lat, lon) => showCountryInfo(lat, lon)
+  texture: {
+    mapping: 'cubemap',
+    cubemap: {
+      positiveX: 'skybox-px',
+      negativeX: 'skybox-nx',
+      positiveY: 'skybox-py',
+      negativeY: 'skybox-ny',
+      positiveZ: 'skybox-pz',
+      negativeZ: 'skybox-nz',
+    }
+  }
 });
 ```
 
-### Basketball
+### 8.3 TypeScript Changes
+
+```typescript
+interface CubemapTexture {
+  positiveX: string;  // Resource name for +X face
+  negativeX: string;  // Resource name for -X face
+  positiveY: string;  // Resource name for +Y face
+  negativeY: string;  // Resource name for -Y face
+  positiveZ: string;  // Resource name for +Z face
+  negativeZ: string;  // Resource name for -Z face
+}
+
+interface TextureOptions {
+  resourceName?: string;  // For equirectangular
+  mapping?: 'equirectangular' | 'cubemap';
+  cubemap?: CubemapTexture;  // Required when mapping='cubemap'
+}
+
+interface CanvasSphereOptions {
+  // ... existing options ...
+  texture?: TextureOptions;
+}
+```
+
+### 8.4 Go Changes
+
+1. Add cubemap fields to `SphereData`:
+```go
+type SphereData struct {
+    // ... existing fields ...
+    TextureMapping   string  // "equirectangular" or "cubemap"
+    CubemapPosX      string  // Resource names
+    CubemapNegX      string
+    CubemapPosY      string
+    CubemapNegY      string
+    CubemapPosZ      string
+    CubemapNegZ      string
+}
+```
+
+2. Cubemap sampling in pixel function:
+```go
+// Determine which face based on largest absolute component
+absX, absY, absZ := math.Abs(nx), math.Abs(ny), math.Abs(nz)
+var faceImg image.Image
+var u, v float64
+
+if absX >= absY && absX >= absZ {
+    // +X or -X face
+    if nx > 0 {
+        faceImg = cubemapPosX
+        u = (-nz/absX + 1) / 2
+        v = (-ny/absX + 1) / 2
+    } else {
+        faceImg = cubemapNegX
+        u = (nz/absX + 1) / 2
+        v = (-ny/absX + 1) / 2
+    }
+} else if absY >= absX && absY >= absZ {
+    // +Y or -Y face
+    // ... similar logic
+} else {
+    // +Z or -Z face
+    // ... similar logic
+}
+
+color := sampleTexture(faceImg, u, v)
+```
+
+### 8.5 Tests for Phase 8
+
+**Jest tests:**
+```typescript
+describe('Phase 8: Cubemap Textures', () => {
+  test('cubemap texture options sent to bridge');
+  test('all six faces required for cubemap');
+  test('cubemap with rotation');
+  test('cubemap with lighting');
+});
+```
+
+**TsyneTest:**
+```typescript
+test('should render sphere with cubemap texture', async () => {
+  // Register 6 test textures
+  // Create sphere with cubemap
+  // Screenshot
+});
+```
+
+---
+
+## Phase 9: Custom Pattern Function
+
+### 9.1 Overview
+
+Allow users to provide a custom function that computes color for any point on the sphere surface. This enables procedural textures, mathematical patterns, and data visualization.
+
+### 9.2 Target API
+
 ```typescript
 a.canvasSphere({
-  cx: 100, cy: 100, radius: 80,
+  cx: 200, cy: 200, radius: 100,
   pattern: 'custom',
-  customPattern: (lat, lon) => basketballPattern(lat, lon),
-  lighting: { enabled: true, ambient: 0.3, diffuse: 0.7 }
+  customPattern: (lat: number, lon: number) => {
+    // lat: -PI/2 to PI/2 (south to north pole)
+    // lon: -PI to PI (west to east)
+
+    // Example: Procedural stripes based on latitude
+    const stripeCount = 10;
+    const stripe = Math.floor((lat + Math.PI/2) / Math.PI * stripeCount);
+    return stripe % 2 === 0 ? '#ff0000' : '#0000ff';
+  }
+});
+
+// Example: Data visualization on globe
+a.canvasSphere({
+  cx: 200, cy: 200, radius: 150,
+  pattern: 'custom',
+  customPattern: (lat, lon) => {
+    const value = getDataAtCoordinate(lat, lon);
+    return heatmapColor(value);  // Returns color based on data
+  }
+});
+
+// Example: Procedural planet texture
+a.canvasSphere({
+  cx: 200, cy: 200, radius: 100,
+  pattern: 'custom',
+  customPattern: (lat, lon) => {
+    const noise = perlinNoise(lat * 5, lon * 5);
+    if (noise > 0.3) return '#228B22';  // Land (green)
+    return '#1E90FF';  // Ocean (blue)
+  }
 });
 ```
 
-### Amiga Boing Ball (current)
+### 9.3 Architecture Decision: Where to Execute
+
+**Option A: TypeScript-side (Recommended)**
+- Custom function runs in TypeScript
+- TypeScript generates full pixel buffer
+- Send buffer to Go via `setPixelBuffer()` pattern (like tappableCanvasRaster)
+
+**Pros:**
+- Full JavaScript/TypeScript flexibility
+- Access to npm libraries (noise functions, color interpolation)
+- No serialization of function to Go
+
+**Cons:**
+- More data transfer (full pixel buffer)
+- Recompute entire buffer on rotation change
+
+**Option B: Go-side with expression language**
+- Define limited expression syntax
+- Parse and evaluate in Go
+
+**Pros:**
+- Efficient updates on rotation
+- No large buffer transfer
+
+**Cons:**
+- Limited expressiveness
+- Complex to implement
+
+**Recommendation:** Option A (TypeScript-side) because:
+1. Aligns with existing `tappableCanvasRaster.setPixelBuffer()` pattern
+2. Full JavaScript power for complex patterns
+3. Simpler implementation
+4. Users can use any npm package for procedural generation
+
+### 9.4 TypeScript Implementation
+
 ```typescript
-a.canvasSphere({
-  cx: x, cy: y, radius: 96,
-  pattern: 'checkered',
-  colors: ['#cc0000', '#ffffff'],
-  latBands: 8,
-  lonSegments: 8,
-  rotationY: rotation
+interface CanvasSphereOptions {
+  // ... existing options ...
+  pattern: 'checkered' | 'solid' | 'stripes' | 'gradient' | 'custom';
+  customPattern?: (lat: number, lon: number) => string;  // Returns hex color
+}
+
+class CanvasSphere {
+  private async renderCustomPattern(): Promise<void> {
+    if (this.options.pattern !== 'custom' || !this.options.customPattern) return;
+
+    const width = this.options.radius * 2;
+    const height = this.options.radius * 2;
+    const buffer = new Uint8Array(width * height * 4);
+
+    for (let py = 0; py < height; py++) {
+      for (let px = 0; px < width; px++) {
+        const { lat, lon, onSphere } = this.screenToLatLon(px, py);
+
+        if (!onSphere) {
+          // Transparent pixel outside sphere
+          const offset = (py * width + px) * 4;
+          buffer[offset + 3] = 0;  // Alpha = 0
+          continue;
+        }
+
+        const color = this.options.customPattern(lat, lon);
+        const { r, g, b } = parseHexColor(color);
+
+        // Apply lighting if enabled
+        const intensity = this.calculateLighting(lat, lon);
+
+        const offset = (py * width + px) * 4;
+        buffer[offset] = Math.round(r * intensity);
+        buffer[offset + 1] = Math.round(g * intensity);
+        buffer[offset + 2] = Math.round(b * intensity);
+        buffer[offset + 3] = 255;
+      }
+    }
+
+    await this.setPixelBuffer(buffer);
+  }
+}
+```
+
+### 9.5 Go Changes
+
+For custom pattern, the Go side receives a pre-rendered pixel buffer rather than pattern parameters. This uses the existing `setPixelBuffer` infrastructure.
+
+Add message handler:
+```go
+case "updateCanvasSphereBuffer":
+    widgetId := payload["widgetId"].(string)
+    buffer := payload["buffer"].([]byte)  // RGBA pixel data
+    // Update raster with new buffer
+```
+
+### 9.6 Tests for Phase 9
+
+**Jest tests:**
+```typescript
+describe('Phase 9: Custom Pattern Function', () => {
+  test('custom pattern function called for each pixel');
+  test('lat ranges from -PI/2 to PI/2');
+  test('lon ranges from -PI to PI');
+  test('custom pattern with lighting applied');
+  test('custom pattern respects rotation');
+  test('custom pattern re-renders on update()');
 });
 ```
 
-### Pool Ball
+**TsyneTest:**
 ```typescript
-a.canvasSphere({
-  cx: 50, cy: 50, radius: 40,
-  pattern: 'solid',
-  colors: ['#FFD700'],  // Yellow (1 ball)
-  lighting: { enabled: true },
-  // Add number decal via texture overlay
+test('should render sphere with custom stripe pattern', async () => {
+  // Custom function that creates stripes
+  // Verify rendering
+});
+
+test('should render procedural planet texture', async () => {
+  // Noise-based land/ocean pattern
+  // Screenshot
 });
 ```
+
+---
+
+## Key Files
+
+**Go (core/bridge/):**
+- `widget_creators_canvas.go` - Sphere renderer
+- `types.go` - SphereData struct
+
+**TypeScript (core/src/):**
+- `widgets/canvas.ts` - CanvasSphere class
+
+**Tests:**
+- `core/src/__tests__/canvas-sphere.test.ts` - Jest unit tests
+- `examples/canvas-sphere.test.ts` - TsyneTest integration tests
+
+**Demos:**
+- `examples/canvas-sphere-lighting.ts` - Configurable lighting demo
+- `examples/canvas-sphere-cubemap.ts` - Cubemap texture demo
+- `examples/canvas-sphere-custom.ts` - Custom pattern demo
 
 ---
 
@@ -528,45 +453,36 @@ a.canvasSphere({
 
 | Phase | Jest Unit Tests | TsyneTest Integration |
 |-------|-----------------|----------------------|
-| 1. Patterns | 12 tests | 10 tests |
-| 2. Rotation | 10 tests | 6 tests |
-| 3. Lighting | (built-in) | (built-in) |
-| 4. Textures | 8 tests | 5 tests |
-| 5. Interactivity | 7 tests | 0 tests |
-| 6. Animation | 24 tests | 7 tests |
-| **Total** | **61 tests** | **28+ tests** |
+| 7. Configurable Lighting | ~6 tests | ~2 tests |
+| 8. Cubemap Textures | ~4 tests | ~2 tests |
+| 9. Custom Pattern | ~6 tests | ~2 tests |
+| **Total** | **~16 tests** | **~6 tests** |
 
 ---
 
-## Migration Path
+## Pitfalls to Avoid
 
-1. **Phase 1 release**: Rename with backward compat, add basic patterns
-2. **Phase 2 release**: Multi-axis rotation
-3. **Phase 3 release**: Lighting (major visual upgrade)
-4. **Phase 4 release**: Textures (enables globes, realistic balls)
-5. **Phase 5 release**: Interactivity (enables globe apps)
-6. **Phase 6 release**: Animation presets (convenience)
+**From previous phases (still relevant):**
 
-Each phase is independently useful and testable. The Amiga Boing demo continues working throughout.
+- Go switch statement gotcha: `case X:` followed by `default:` means empty case
+- Use `fmt.Fprintf(os.Stderr, ...)` for debug output, not `fmt.Println`
+- Raster coordinate systems: use `min(w, h)` for scale to prevent clipping
+- TappableCanvasObject: wrapped object at (0,0), implement `fyne.Draggable`
+
+**New for these phases:**
+
+- **Light direction normalization**: Normalize the direction vector in Go before using
+- **Cubemap seams**: Watch for UV coordinate edge cases at face boundaries
+- **Custom pattern performance**: Large spheres = many customPattern() calls, consider caching
+- **Buffer size**: Custom pattern buffer is `radius*2 * radius*2 * 4` bytes
 
 ---
 
-## Files to Modify
+## Dependencies
 
-**Go (core/bridge/):**
-- `widget_creators_canvas.go` - Main renderer, add all new features
-- `types.go` - SphereData struct expansion
-- `main.go` - Handler registration
+These phases can be implemented independently:
+- Phase 7 (Lighting) - No dependencies
+- Phase 8 (Cubemap) - No dependencies
+- Phase 9 (Custom Pattern) - No dependencies
 
-**TypeScript (core/src/):**
-- `widgets/canvas.ts` - CanvasSphere class, options interface
-- `widgets/index.ts` - Exports
-- `app.ts` - App.canvasSphere() method
-
-**Tests:**
-- `core/src/__tests__/canvas-sphere.test.ts` - Jest unit tests
-- `examples/canvas-sphere.test.ts` - TsyneTest integration tests
-- `examples/canvas-sphere-demo.ts` - Visual demo app
-
-**Docs:**
-- Update `docs/pseudo-declarative-ui-composition.md` with sphere examples
+Recommended order: 7 → 9 → 8 (lighting is simplest, cubemap is most complex)
