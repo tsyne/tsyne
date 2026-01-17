@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"log"
 	"os"
 	"sync"
@@ -290,6 +294,9 @@ type SphereData struct {
 	StripeDir      string      // horizontal or vertical
 	GradientStart  color.RGBA  // For gradient pattern
 	GradientEnd    color.RGBA  // For gradient pattern
+	// Phase 4: Texture mapping
+	TextureResourceName string   // Name of registered texture resource
+	TextureMapping      string   // Mapping type: equirectangular or cubemap
 }
 
 // WidgetMetadata stores metadata about widgets for testing

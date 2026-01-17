@@ -1487,6 +1487,11 @@ export interface CanvasSphereOptions {
   gradientStart?: string;        // Gradient start color (used if pattern='gradient')
   gradientEnd?: string;          // Gradient end color (used if pattern='gradient')
   stripeDirection?: 'horizontal' | 'vertical';  // Stripe orientation (default: horizontal)
+  // Phase 4: Texture mapping support
+  texture?: {
+    resourceName: string;            // Registered image resource name
+    mapping?: 'equirectangular' | 'cubemap';  // Texture mapping type (default: equirectangular)
+  };
 }
 
 export class CanvasSphere {
@@ -1539,6 +1544,14 @@ export class CanvasSphere {
         break;
     }
 
+    // Handle texture mapping (Phase 4)
+    if (options.texture) {
+      payload.texture = {
+        resourceName: options.texture.resourceName,
+        mapping: options.texture.mapping ?? 'equirectangular',
+      };
+    }
+
     ctx.bridge.send('createCanvasSphere', payload);
     ctx.addToCurrentContainer(this.id);
   }
@@ -1551,6 +1564,10 @@ export class CanvasSphere {
     rotationY?: number;
     rotationZ?: number;
     rotation?: number;  // DEPRECATED: Use rotationY instead
+    texture?: {
+      resourceName: string;
+      mapping?: 'equirectangular' | 'cubemap';
+    };
   }): Promise<void> {
     const updatePayload: any = {
       widgetId: this.id,
@@ -1567,6 +1584,14 @@ export class CanvasSphere {
     if (options.rotation !== undefined && options.rotationY === undefined) {
       // Backward compatibility: map 'rotation' to 'rotationY' if rotationY not explicitly set
       updatePayload.rotationY = options.rotation;
+    }
+
+    // Handle texture updates (Phase 4)
+    if (options.texture !== undefined) {
+      updatePayload.texture = {
+        resourceName: options.texture.resourceName,
+        mapping: options.texture.mapping ?? 'equirectangular',
+      };
     }
 
     await this.ctx.bridge.send('updateCanvasSphere', updatePayload);
