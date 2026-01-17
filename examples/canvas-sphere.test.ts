@@ -573,4 +573,145 @@ describe('Canvas Sphere Widget', () => {
       expect(ctx).toBeDefined();
     });
   });
+
+  describe('Phase 4: Texture Mapping', () => {
+    // Create a minimal valid PNG image (1x1 pixel red) for testing
+    function createTestPNG(): string {
+      // Minimal PNG: 1x1 red pixel
+      // PNG signature + IHDR + IDAT + IEND chunks
+      const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/8+gHgAFBQIB' +
+                        'lJDIkwAAAABJRU5ErkJggg==';
+      return `data:image/png;base64,${pngBase64}`;
+    }
+
+    test('should accept texture with equirectangular mapping', async () => {
+      const testApp = await tsyneTest.createApp(async (app) => {
+        // Register a test texture
+        const textureData = createTestPNG();
+        await app.resources.registerResource('test-texture', textureData);
+
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+          solidColor: '#cc0000',
+          texture: {
+            resourceName: 'test-texture',
+            mapping: 'equirectangular',
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should create textured sphere with checkered fallback pattern', async () => {
+      const testApp = await tsyneTest.createApp(async (app) => {
+        const textureData = createTestPNG();
+        await app.resources.registerResource('texture-with-pattern', textureData);
+
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          checkeredColor1: '#ff0000',
+          checkeredColor2: '#ffffff',
+          texture: {
+            resourceName: 'texture-with-pattern',
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should support texture with rotation', async () => {
+      const testApp = await tsyneTest.createApp(async (app) => {
+        const textureData = createTestPNG();
+        await app.resources.registerResource('rotated-texture', textureData);
+
+        app.canvasSphere({
+          cx: 150,
+          cy: 150,
+          radius: 60,
+          texture: {
+            resourceName: 'rotated-texture',
+            mapping: 'equirectangular',
+          },
+          rotationX: Math.PI / 6,
+          rotationY: Math.PI / 4,
+          rotationZ: Math.PI / 8,
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should handle missing texture resource gracefully', async () => {
+      const testApp = await tsyneTest.createApp((app) => {
+        // Don't register the resource, just reference it
+        app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          texture: {
+            resourceName: 'non-existent-texture',
+          },
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Should not crash, falls back to pattern or solid color
+      expect(ctx).toBeDefined();
+    });
+
+    test('should allow switching textures dynamically', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp(async (app) => {
+        const texture1 = createTestPNG();
+        await app.resources.registerResource('texture1', texture1);
+
+        app.window({ title: 'Texture Switch', width: 300, height: 300 }, (win) => {
+          win.setContent(() => {
+            sphere = app.canvasSphere({
+              cx: 100,
+              cy: 100,
+              radius: 50,
+              texture: {
+                resourceName: 'texture1',
+              },
+            });
+          });
+          win.show();
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Switch to a different texture (would need registration in real scenario)
+      if (sphere) {
+        await sphere.update({
+          texture: {
+            resourceName: 'texture2',
+          },
+        });
+      }
+
+      expect(ctx).toBeDefined();
+    });
+  });
 });

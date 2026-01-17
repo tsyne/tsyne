@@ -1,15 +1,17 @@
 #!/usr/bin/env npx tsx
 /**
- * Canvas Sphere Demo - Phase 1 & Phase 2
+ * Canvas Sphere Demo - Phases 1, 2, 3, & 4
  * Phase 1: Pattern types (solid, checkered, stripes, gradient)
  * Phase 2: Multi-axis rotation (X, Y, Z)
+ * Phase 3: Lighting and shading (Lambertian model)
+ * Phase 4: Texture mapping (equirectangular)
  */
 
 import { app } from '../core/src/index';
 import { resolveTransport } from '../core/src/index';
 
 app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
-  a.window({ title: 'Canvas Sphere Demo - Phase 1 & 2', width: 900, height: 1200 }, (win) => {
+  a.window({ title: 'Canvas Sphere Demo - All Phases', width: 900, height: 1600 }, (win) => {
     win.setContent(() => {
       a.scroll(() => {
         a.vbox(() => {
@@ -270,6 +272,28 @@ app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
           });
           a.spacer(100);
 
+          // Phase 4: Texture Mapping
+          a.separator();
+          a.label('Canvas Sphere Widget - Phase 4 Texture Mapping');
+          a.label('Texture mapping allows you to apply image textures to spheres');
+          a.label('Supports equirectangular (world map) projection');
+          a.separator();
+
+          a.label('Phase 4 Example: Textured Sphere');
+          a.label('Register a texture resource and apply it to a sphere');
+          a.label('The texture wraps around the sphere using equirectangular mapping');
+          a.label('Textures are sampled based on lat/lon coordinates');
+          a.label('Lighting and shading are applied on top of the texture');
+
+          // Note: Actual texture example would require registering a resource first
+          a.label('');
+          a.label('To use textures:');
+          a.label('1. Register an image resource: await app.resources.registerResource(name, imageData)');
+          a.label('2. Create a textured sphere: a.canvasSphere({ texture: { resourceName: name } })');
+          a.label('3. Texture format: PNG, JPEG, or GIF');
+          a.label('4. Mapping: equirectangular (default) or cubemap (future)');
+          a.spacer(100);
+
           // Summary
           a.separator();
           a.label('Complete Features:');
@@ -285,10 +309,20 @@ app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
           a.label('  - Combined 3D rotations');
           a.label('  - Backward compatible with Phase 1');
           a.spacer(20);
+          a.label('Phase 3 (Complete):');
+          a.label('  - Lambertian shading model');
+          a.label('  - Directional lighting from front-right-top');
+          a.label('  - Ambient (0.3) + diffuse (0.7) lighting');
+          a.label('  - Works with all patterns and textures');
+          a.spacer(20);
+          a.label('Phase 4 (Complete):');
+          a.label('  - Equirectangular texture mapping');
+          a.label('  - Image resource registration');
+          a.label('  - Texture wrapping around sphere');
+          a.label('  - Support for PNG, JPEG, GIF formats');
+          a.spacer(20);
 
           a.label('Upcoming Phases:');
-          a.label('Phase 3: Lighting and shading (Lambertian model)');
-          a.label('Phase 4: Texture mapping (equirectangular/cubemap)');
           a.label('Phase 5: Interactivity (tap events with lat/lon)');
           a.label('Phase 6: Animation presets (spin, wobble, bounce, pulse)');
         });

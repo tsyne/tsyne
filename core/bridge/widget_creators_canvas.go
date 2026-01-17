@@ -2312,6 +2312,20 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		sphereData.CheckeredCol2 = color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	}
 
+	// Phase 4: Parse texture options
+	if textureInterface, ok := msg.Payload["texture"]; ok {
+		if textureMap, ok := textureInterface.(map[string]interface{}); ok {
+			if resourceName, ok := textureMap["resourceName"].(string); ok {
+				sphereData.TextureResourceName = resourceName
+			}
+			if mapping, ok := textureMap["mapping"].(string); ok {
+				sphereData.TextureMapping = mapping
+			} else {
+				sphereData.TextureMapping = "equirectangular"
+			}
+		}
+	}
+
 	// Store sphere data for dynamic updates
 	b.mu.Lock()
 	if b.sphereData == nil {
@@ -2321,6 +2335,16 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 	b.mu.Unlock()
 
 	sphereWidgetID := widgetID
+
+	// Phase 4: Decode texture once if specified (cache for performance)
+	var textureImage image.Image
+	if sphereData.TextureResourceName != "" {
+		if imgData, exists := b.getResource(sphereData.TextureResourceName); exists {
+			if decoded, err := decodeImage(imgData); err == nil {
+				textureImage = decoded
+			}
+		}
+	}
 
 	// Create raster that renders all patches in one pass
 	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
@@ -2345,6 +2369,7 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		stripeDir := sphere.StripeDir
 		gradStart := sphere.GradientStart
 		gradEnd := sphere.GradientEnd
+		textureResourceName := sphere.TextureResourceName
 		b.mu.RUnlock()
 
 		// Convert pixel to coordinates relative to sphere center
@@ -2432,6 +2457,19 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 				B: uint8(float64(c.B) * shade),
 				A: c.A,
 			}
+		}
+
+		// Phase 4: Check if texture should be used (takes precedence over pattern)
+		if textureImage != nil && textureResourceName != "" {
+			// Calculate equirectangular (u, v) coordinates from lat/lon
+			// u: longitude mapped to [0, 1] -> (lon + π) / (2π)
+			// v: latitude mapped to [0, 1] -> (lat + π/2) / π
+			u := (lon + pi) / (2 * pi)
+			v := (lat + pi/2) / pi
+
+			// Sample texture
+			texColor := sampleTexture(textureImage, u, v)
+			return applyShade(texColor)
 		}
 
 		// Apply pattern
@@ -2588,6 +2626,20 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 		sphere.RotationZ = rotZ
 	}
 
+	// Phase 4: Handle texture updates
+	if textureInterface, ok := msg.Payload["texture"]; ok {
+		if textureMap, ok := textureInterface.(map[string]interface{}); ok {
+			if resourceName, ok := textureMap["resourceName"].(string); ok {
+				sphere.TextureResourceName = resourceName
+			}
+			if mapping, ok := textureMap["mapping"].(string); ok {
+				sphere.TextureMapping = mapping
+			} else {
+				sphere.TextureMapping = "equirectangular"
+			}
+		}
+	}
+
 	// Update position
 	newCx := sphere.CenterX
 	newCy := sphere.CenterY
@@ -2603,6 +2655,88 @@ func (b *Bridge) handleUpdateCanvasSphere(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+// ============================================================================
+// Phase 4: Texture Mapping Helper Functions
+// ============================================================================
+
+// decodeImage decodes an image from raw bytes, supporting PNG, JPEG, and GIF formats
+func decodeImage(data []byte) (image.Image, error) {
+	reader := bytes.NewReader(data)
+
+	// Try PNG first (most common for textures)
+	reader.Seek(0, 0)
+	if img, err := png.Decode(reader); err == nil {
+		return img, nil
+	}
+
+	// Try JPEG
+	reader.Seek(0, 0)
+	if img, err := jpeg.Decode(reader); err == nil {
+		return img, nil
+	}
+
+	// Try GIF
+	reader.Seek(0, 0)
+	if img, err := gif.Decode(reader); err == nil {
+		return img, nil
+	}
+
+	// Try generic image.Decode as fallback
+	reader.Seek(0, 0)
+	img, _, err := image.Decode(reader)
+	return img, err
+}
+
+// sampleTexture samples a color from an image using equirectangular (u, v) coordinates
+// u, v should be in range [0, 1]
+func sampleTexture(img image.Image, u, v float64) color.RGBA {
+	if img == nil {
+		return color.RGBA{R: 255, G: 0, B: 0, A: 255} // Magenta for missing texture
+	}
+
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Clamp u,v to [0,1] range
+	if u < 0 {
+		u = 0
+	} else if u > 1 {
+		u = 1
+	}
+	if v < 0 {
+		v = 0
+	} else if v > 1 {
+		v = 1
+	}
+
+	// Map u,v to pixel coordinates
+	// u maps to x (0 = left, 1 = right)
+	// v maps to y (0 = top, 1 = bottom)
+	x := bounds.Min.X + int(u*float64(width-1))
+	y := bounds.Min.Y + int(v*float64(height-1))
+
+	// Ensure within bounds
+	if x >= bounds.Max.X {
+		x = bounds.Max.X - 1
+	}
+	if y >= bounds.Max.Y {
+		y = bounds.Max.Y - 1
+	}
+
+	// Sample the pixel
+	pixelColor := img.At(x, y)
+	r, g, b, a := pixelColor.RGBA()
+
+	// Convert from 16-bit to 8-bit
+	return color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(a >> 8),
 	}
 }
 

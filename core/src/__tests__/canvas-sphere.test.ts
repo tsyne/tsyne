@@ -580,4 +580,192 @@ describe('CanvasSphere', () => {
       );
     });
   });
+
+  describe('Phase 4: Texture Mapping', () => {
+    test('texture option includes resourceName', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          resourceName: 'earth-equirectangular',
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            resourceName: 'earth-equirectangular',
+          }),
+        })
+      );
+    });
+
+    test('texture defaults to equirectangular mapping', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          resourceName: 'my-texture',
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            mapping: 'equirectangular',
+          }),
+        })
+      );
+    });
+
+    test('texture supports cubemap mapping', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          resourceName: 'cube-texture',
+          mapping: 'cubemap',
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            resourceName: 'cube-texture',
+            mapping: 'cubemap',
+          }),
+        })
+      );
+    });
+
+    test('texture can be updated', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({
+        texture: {
+          resourceName: 'new-texture',
+          mapping: 'equirectangular',
+        },
+      });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          widgetId: sphere.id,
+          texture: expect.objectContaining({
+            resourceName: 'new-texture',
+            mapping: 'equirectangular',
+          }),
+        })
+      );
+    });
+
+    test('texture can be changed from one to another', async () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          resourceName: 'earth',
+          mapping: 'equirectangular',
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+      (mockBridge.send as jest.Mock).mockClear();
+
+      await sphere.update({
+        texture: {
+          resourceName: 'mars',
+          mapping: 'equirectangular',
+        },
+      });
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'updateCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            resourceName: 'mars',
+          }),
+        })
+      );
+    });
+
+    test('texture and rotation can be used together', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        texture: {
+          resourceName: 'earth-equirectangular',
+          mapping: 'equirectangular',
+        },
+        rotationX: Math.PI / 6,
+        rotationY: Math.PI / 4,
+        rotationZ: Math.PI / 8,
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          texture: expect.objectContaining({
+            resourceName: 'earth-equirectangular',
+            mapping: 'equirectangular',
+          }),
+          rotationX: Math.PI / 6,
+          rotationY: Math.PI / 4,
+          rotationZ: Math.PI / 8,
+        })
+      );
+    });
+
+    test('texture takes precedence over pattern when both specified', () => {
+      const options: CanvasSphereOptions = {
+        cx: 100,
+        cy: 100,
+        radius: 50,
+        pattern: 'checkered',
+        checkeredColor1: '#ff0000',
+        checkeredColor2: '#ffffff',
+        texture: {
+          resourceName: 'override-texture',
+          mapping: 'equirectangular',
+        },
+      };
+
+      const sphere = new CanvasSphere(ctx, options);
+
+      // Both should be sent, but bridge/Go should use texture
+      expect(mockBridge.send).toHaveBeenCalledWith(
+        'createCanvasSphere',
+        expect.objectContaining({
+          pattern: 'checkered',
+          texture: expect.objectContaining({
+            resourceName: 'override-texture',
+          }),
+        })
+      );
+    });
+  });
 });
