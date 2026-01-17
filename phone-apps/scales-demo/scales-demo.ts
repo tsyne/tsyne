@@ -9,7 +9,7 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../src/index';
+import { app } from '../../core/src/index';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import {
   LinearScale,
@@ -94,7 +94,7 @@ export function buildScalesDemoApp(a: any) {
     win.setContent(() => {
       a.vbox(() => {
         // Title
-        a.label('D3-Style Scales Visualization').withBold();
+        a.label('D3-Style Scales Visualization', undefined, undefined, undefined, { bold: true });
 
         // Controls
         a.hbox(() => {
@@ -212,5 +212,6 @@ export function buildScalesDemoApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  app({ title: 'Scales Demo' }, buildScalesDemoApp);
+  const { resolveTransport } = require('../../core/src');
+  app(resolveTransport(), { title: 'Scales Demo' }, buildScalesDemoApp);
 }

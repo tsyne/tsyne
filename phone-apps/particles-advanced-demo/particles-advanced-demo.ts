@@ -9,7 +9,7 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../src/index';
+import { app } from '../../core/src/index';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src/index';
 import { ParticleSystem, Emitter } from '../../cosyne/src/particle-system';
 
@@ -133,7 +133,7 @@ export function buildParticlesAdvancedApp(a: any) {
     win.setContent(() => {
       a.vbox(() => {
         // Title and info
-        a.label('Interactive Particle System').withBold();
+        a.label('Interactive Particle System', undefined, undefined, undefined, { bold: true });
 
         // Controls
         a.hbox(() => {
@@ -259,5 +259,6 @@ export function buildParticlesAdvancedApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  app({ title: 'Particles Advanced Demo' }, buildParticlesAdvancedApp);
+  const { resolveTransport } = require('../../core/src');
+  app(resolveTransport(), { title: 'Particles Advanced Demo' }, buildParticlesAdvancedApp);
 }

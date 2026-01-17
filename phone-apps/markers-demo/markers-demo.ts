@@ -9,7 +9,7 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../src/index';
+import { app } from '../../core/src/index';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import { CUSTOM_MARKERS } from '../../cosyne/src/markers';
 
@@ -52,7 +52,7 @@ export function buildMarkersDemoApp(a: any) {
     win.setContent(() => {
       a.vbox(() => {
         // Title
-        a.label('Line Markers: Directed Graphs & Diagrams').withBold();
+        a.label('Line Markers: Directed Graphs & Diagrams', undefined, undefined, undefined, { bold: true });
 
         // Controls
         a.hbox(() => {
@@ -512,5 +512,6 @@ function renderCustomMarkers(c: any, showLabels: boolean) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  app({ title: 'Markers Demo' }, buildMarkersDemoApp);
+  const { resolveTransport } = require('../../core/src');
+  app(resolveTransport(), { title: 'Markers Demo' }, buildMarkersDemoApp);
 }

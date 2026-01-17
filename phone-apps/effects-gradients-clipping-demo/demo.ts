@@ -9,7 +9,7 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../src/index';
+import { app } from '../../core/src/index';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import {
   LinearGradient,
@@ -66,7 +66,7 @@ export function buildSVGDemoApp(a: any) {
   a.window({ title: 'SVG Graphics Demo: Effects, Gradients, Clipping', width: 1000, height: 800 }, (win: any) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.label('SVG Graphics: Effects, Gradients & Clipping').withBold();
+        a.label('SVG Graphics: Effects, Gradients & Clipping', undefined, undefined, undefined, { bold: true });
 
         // Tab controls
         a.hbox(() => {
@@ -495,5 +495,6 @@ function renderClipping(c: any, store: SVGDemoStore, width: number, height: numb
 
 // Auto-run when executed directly
 if (require.main === module) {
-  app({ title: 'SVG Graphics Demo' }, buildSVGDemoApp);
+  const { resolveTransport } = require('../../core/src');
+  app(resolveTransport(), { title: 'SVG Graphics Demo' }, buildSVGDemoApp);
 }

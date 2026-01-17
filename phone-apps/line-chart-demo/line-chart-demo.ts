@@ -9,7 +9,7 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../src/index';
+import { app } from '../../core/src/index';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src/index';
 import { LinearScale } from '../../cosyne/src/scales';
 import { Axis, GridLines } from '../../cosyne/src/axes';
@@ -81,7 +81,7 @@ export function buildLineChartDemoApp(a: any) {
     win.setContent(() => {
       a.vbox(() => {
         // Title
-        a.label('Interactive Line Charts with Zoom/Pan').withBold();
+        a.label('Interactive Line Charts with Zoom/Pan', undefined, undefined, undefined, { bold: true });
 
         // Controls
         a.hbox(() => {
@@ -190,5 +190,6 @@ export function buildLineChartDemoApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  app({ title: 'Line Chart Demo' }, buildLineChartDemoApp);
+  const { resolveTransport } = require('../../core/src');
+  app(resolveTransport(), { title: 'Line Chart Demo' }, buildLineChartDemoApp);
 }

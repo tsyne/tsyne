@@ -8,6 +8,9 @@ import { HitTester } from '../events';
 import { Animation, AnimationOptions, AnimationControl } from '../animation';
 import { AnimationManager } from '../animation-manager';
 import { EasingFunction } from '../easing';
+import { EffectsAnchor, DropShadowOptions, GlowOptions } from '../effects';
+import { LinearGradient, RadialGradient } from '../gradients';
+import { ClippingRegion } from '../clipping';
 
 export interface PrimitiveOptions {
   id?: string;
@@ -73,6 +76,16 @@ export abstract class Primitive<TUnderlyingWidget> {
 
   // Animation manager (injected via IoC)
   protected animationManager?: AnimationManager;
+
+  // Effects support
+  protected effects: EffectsAnchor = new EffectsAnchor();
+
+  // Gradient support
+  protected _fillGradient: LinearGradient | RadialGradient | null = null;
+  protected _strokeGradient: LinearGradient | RadialGradient | null = null;
+
+  // Clipping support
+  protected clipping: ClippingRegion = new ClippingRegion();
 
   constructor(
     protected underlying: TUnderlyingWidget,
@@ -363,6 +376,156 @@ export abstract class Primitive<TUnderlyingWidget> {
       this.onDragEndHandler
     );
   }
+
+  // ==================== Effects API ====================
+
+  /**
+   * Apply drop shadow effect
+   */
+  dropShadow(options: DropShadowOptions): this {
+    this.effects.setDropShadow(options);
+    return this;
+  }
+
+  /**
+   * Clear drop shadow effect
+   */
+  clearDropShadow(): this {
+    this.effects.clearDropShadow();
+    return this;
+  }
+
+  /**
+   * Apply glow effect
+   */
+  glow(options: GlowOptions): this {
+    this.effects.setGlow(options);
+    return this;
+  }
+
+  /**
+   * Clear glow effect
+   */
+  clearGlow(): this {
+    this.effects.clearGlow();
+    return this;
+  }
+
+  /**
+   * Set blend mode (e.g., 'multiply', 'screen', 'overlay')
+   */
+  blendMode(mode: string): this {
+    this.effects.setBlendMode(mode);
+    return this;
+  }
+
+  /**
+   * Set stroke dash pattern
+   * @param pattern Array of dash lengths [dashLength, gapLength, ...]
+   * @param offset Optional offset for animation
+   */
+  strokeDash(pattern: number[], offset: number = 0): this {
+    this.effects.setStrokeDash(pattern, offset);
+    return this;
+  }
+
+  /**
+   * Get the effects anchor for this primitive
+   */
+  getEffects(): EffectsAnchor {
+    return this.effects;
+  }
+
+  // ==================== Gradient API ====================
+
+  /**
+   * Set fill to a linear gradient
+   */
+  linearGradient(gradient: LinearGradient): this {
+    this._fillGradient = gradient;
+    return this;
+  }
+
+  /**
+   * Set fill to a radial gradient
+   */
+  radialGradient(gradient: RadialGradient): this {
+    this._fillGradient = gradient;
+    return this;
+  }
+
+  /**
+   * Set stroke to a gradient
+   */
+  strokeGradient(gradient: LinearGradient | RadialGradient): this {
+    this._strokeGradient = gradient;
+    return this;
+  }
+
+  /**
+   * Get fill gradient if set
+   */
+  getFillGradient(): LinearGradient | RadialGradient | null {
+    return this._fillGradient;
+  }
+
+  /**
+   * Get stroke gradient if set
+   */
+  getStrokeGradient(): LinearGradient | RadialGradient | null {
+    return this._strokeGradient;
+  }
+
+  // ==================== Clipping API ====================
+
+  /**
+   * Set circular clipping region
+   */
+  clipCircle(cx: number, cy: number, r: number): this {
+    this.clipping.setCircleClip(cx, cy, r);
+    return this;
+  }
+
+  /**
+   * Set rectangular clipping region
+   */
+  clipRect(x: number, y: number, width: number, height: number, radius?: number): this {
+    this.clipping.setRectClip(x, y, width, height, radius);
+    return this;
+  }
+
+  /**
+   * Set polygonal clipping region
+   */
+  clipPolygon(points: Array<{ x: number; y: number }>): this {
+    this.clipping.setPolygonClip(points);
+    return this;
+  }
+
+  /**
+   * Set path-based clipping region
+   */
+  clipPath(pathString: string): this {
+    this.clipping.setPathClip(pathString);
+    return this;
+  }
+
+  /**
+   * Clear clipping
+   */
+  clearClip(): this {
+    this.clipping.clearClip();
+    return this;
+  }
+
+  /**
+   * Get the clipping region for this primitive
+   */
+  getClipping(): ClippingRegion {
+    return this.clipping;
+  }
+
+  // ==================== Animation API ====================
 
   /**
    * Animate a numeric property (e.g., alpha, rotation, position, radius)
