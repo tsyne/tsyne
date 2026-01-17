@@ -1463,6 +1463,87 @@ export class CanvasCheckeredSphere {
 }
 
 /**
+ * Generalized Sphere - supports multiple patterns, textures, lighting, and interactivity
+ * Phase 1: Pattern system (checkered, solid, stripes, gradient)
+ * Default pattern is 'checkered' for backward compatibility
+ */
+export interface CanvasSphereOptions {
+  cx: number;                    // Center X of the sphere
+  cy: number;                    // Center Y of the sphere
+  radius: number;                // Radius of the sphere
+  pattern?: 'solid' | 'checkered' | 'stripes' | 'gradient';  // Pattern type (default: checkered)
+  colors?: string[];             // Color array for pattern
+  latBands?: number;             // Number of latitude bands (default: 8)
+  lonSegments?: number;          // Number of longitude segments (default: 8)
+  rotation?: number;             // Y-axis rotation in radians (for spinning)
+  // Pattern-specific options
+  checkeredColor1?: string;      // First checkerboard color (used if pattern='checkered')
+  checkeredColor2?: string;      // Second checkerboard color (used if pattern='checkered')
+  solidColor?: string;           // Solid color (used if pattern='solid')
+  stripeColors?: string[];       // Alternating stripe colors (used if pattern='stripes')
+  gradientStart?: string;        // Gradient start color (used if pattern='gradient')
+  gradientEnd?: string;          // Gradient end color (used if pattern='gradient')
+  stripeDirection?: 'horizontal' | 'vertical';  // Stripe orientation (default: horizontal)
+}
+
+export class CanvasSphere {
+  private ctx: Context;
+  public id: string;
+
+  constructor(ctx: Context, options: CanvasSphereOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvassphere');
+
+    const payload: any = {
+      id: this.id,
+      cx: options.cx,
+      cy: options.cy,
+      radius: options.radius,
+      latBands: options.latBands ?? 8,
+      lonSegments: options.lonSegments ?? 8,
+      pattern: options.pattern ?? 'checkered',
+    };
+
+    if (options.rotation !== undefined) payload.rotation = options.rotation;
+
+    // Handle pattern-specific colors
+    switch (options.pattern ?? 'checkered') {
+      case 'solid':
+        payload.solidColor = options.solidColor ?? '#cc0000';
+        break;
+      case 'stripes':
+        payload.stripeColors = options.stripeColors ?? ['#cc0000', '#ffffff'];
+        payload.stripeDirection = options.stripeDirection ?? 'horizontal';
+        break;
+      case 'gradient':
+        payload.gradientStart = options.gradientStart ?? '#ff0000';
+        payload.gradientEnd = options.gradientEnd ?? '#0000ff';
+        break;
+      case 'checkered':
+      default:
+        payload.checkeredColor1 = options.checkeredColor1 ?? '#cc0000';
+        payload.checkeredColor2 = options.checkeredColor2 ?? '#ffffff';
+        break;
+    }
+
+    ctx.bridge.send('createCanvasSphere', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  async update(options: {
+    cx?: number;
+    cy?: number;
+    radius?: number;
+    rotation?: number;
+  }): Promise<void> {
+    await this.ctx.bridge.send('updateCanvasSphere', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+}
+
+/**
  * Canvas Gradient Text - renders text with a vertical gradient fill
  * Uses Fyne's theme font dynamically - supports any text string
  */
