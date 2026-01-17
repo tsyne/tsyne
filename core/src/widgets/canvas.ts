@@ -407,6 +407,10 @@ export class CanvasRectangle {
   }
 
   async update(options: {
+    x?: number;
+    y?: number;
+    x2?: number;
+    y2?: number;
     width?: number;
     height?: number;
     fillColor?: string;

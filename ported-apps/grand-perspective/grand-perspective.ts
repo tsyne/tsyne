@@ -18,6 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import { EventRouter } from '../../cosyne/src/events';
+import { enableEventHandling } from '../../cosyne/src/event-router-integration';
 
 // ============================================================================
 // Data Types
@@ -349,6 +350,17 @@ function layoutRow(
 }
 
 // ============================================================================
+// Display Utilities
+// ============================================================================
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+// ============================================================================
 // Color Utilities
 // ============================================================================
 
@@ -377,14 +389,21 @@ function getColor(rect: TreemapRect, state: AppState, hovered: boolean): string 
     h = typeMap[ext] ?? 300;
   }
 
-  return `hsl(${Math.round(h)},${Math.round(s)}%,${Math.round(l)}%)`;
+  // Convert to RGB since Go bridge doesn't parse HSL
+  const { r, g, b } = hslToRgb(h, s, l);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
-function getTextColor(bgHsl: string): string {
-  // Simple heuristic: if lightness > 60, use dark text
-  const match = bgHsl.match(/hsl\([^,]+,[^,]+,(\d+)/);
-  const lightness = match ? parseInt(match[1]) : 50;
-  return lightness > 60 ? '#000000' : '#ffffff';
+function getTextColor(bgColor: string): string {
+  // Parse RGB and calculate perceived brightness
+  const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match) return '#ffffff';
+  const r = parseInt(match[1]);
+  const g = parseInt(match[2]);
+  const b = parseInt(match[3]);
+  // Use perceived brightness formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? '#000000' : '#ffffff';
 }
 
 function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
@@ -400,22 +419,50 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
   };
 }
 
-function lightenColor(hsl: string, amount: number): string {
-  const match = hsl.match(/hsl\(([^,]+),([^,]+),([^)]+)\)/);
-  if (!match) return hsl;
-  const h = parseFloat(match[1]);
-  const s = parseFloat(match[2]);
-  const l = parseFloat(match[3]);
-  return `hsl(${h},${s}%,${Math.min(100, l + amount)}%)`;
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-function darkenColor(hsl: string, amount: number): string {
-  const match = hsl.match(/hsl\(([^,]+),([^,]+),([^)]+)\)/);
-  if (!match) return hsl;
-  const h = parseFloat(match[1]);
-  const s = parseFloat(match[2]);
-  const l = parseFloat(match[3]);
-  return `hsl(${h},${s}%,${Math.max(0, l - amount)}%)`;
+function parseRgb(rgb: string): { r: number; g: number; b: number } | null {
+  const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!match) return null;
+  return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+}
+
+function lightenColor(color: string, amount: number): string {
+  const rgb = parseRgb(color);
+  if (!rgb) return color;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const newL = Math.min(100, hsl.l + amount);
+  const { r, g, b } = hslToRgb(hsl.h, hsl.s, newL);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function darkenColor(color: string, amount: number): string {
+  const rgb = parseRgb(color);
+  if (!rgb) return color;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const newL = Math.max(0, hsl.l - amount);
+  const { r, g, b } = hslToRgb(hsl.h, hsl.s, newL);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 function renderShadedRect(c: any, rect: TreemapRect, baseColor: string, isSelected: boolean, bevelSize: number = 3): void {
@@ -454,10 +501,31 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
   const store = new GrandPerspectiveStore();
   let cosyneCtx: any = null;
   let eventRouter: EventRouter | null = null;
+  let infoLabel: any = null;
 
   const updateUI = async () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     refreshAllCosyneContexts();
+  };
+
+  const updateHoverInfo = () => {
+    if (!infoLabel) return;
+
+    const state = store.getState();
+    if (!state.hoveredId) {
+      infoLabel.setText('Hover over an item for details');
+      return;
+    }
+
+    const hoveredRect = state.allRects.find(r => r.id === state.hoveredId);
+    if (!hoveredRect) {
+      infoLabel.setText('Hover over an item for details');
+      return;
+    }
+
+    const type = hoveredRect.entry.isDirectory ? 'Folder' : 'File';
+    const size = formatSize(hoveredRect.size);
+    infoLabel.setText(`${type}: ${hoveredRect.entry.name}  |  Size: ${size}`);
   };
 
   // Determine starting directory with priority:
@@ -540,7 +608,7 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
         });
 
         // Info panel
-        a.label('').withId('info-label');
+        infoLabel = a.label('Hover over an item for details').withId('info-label');
 
         // Canvas
         a.canvasStack(() => {
@@ -553,9 +621,8 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
               .stroke('#cccccc', 1);
 
             if (!state.allRects || state.allRects.length === 0) {
-              c.text(400, 300, 'Select a directory')
-                .fill('#999999')
-                .fontSize(16);
+              c.text(400, 300, 'Select a directory', { fontSize: 16 })
+                .fill('#999999');
               return;
             }
 
@@ -583,10 +650,10 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
                 c.text(
                   rect.x + 5,
                   rect.y + 15,
-                  fileName
+                  fileName,
+                  { fontSize: 10 }
                 )
                   .fill(textColor)
-                  .fontSize(10)
                   .withId(`text-${rect.id}`);
               }
 
@@ -600,20 +667,22 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
 
               rectObj.onMouseEnter(() => {
                 store.setHovered(rect.id);
-                updateUI();
+                updateHoverInfo();
               });
 
               rectObj.onMouseLeave(() => {
                 store.setHovered(null);
-                updateUI();
+                updateHoverInfo();
               });
             });
+
+            // Render tooltip for hovered item (rendered last to be on top)
           });
 
           if (cosyneCtx && eventRouter === null) {
-            eventRouter = new EventRouter(cosyneCtx.primitives, cosyneCtx.root);
+            eventRouter = enableEventHandling(cosyneCtx, a, { width: 800, height: 600 });
           }
-        }).withId('canvas-container');
+        });
       });
     });
 
@@ -635,14 +704,13 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
 
 // Standalone execution
 if (require.main === module) {
-  // @Grab required if using external deps
-  const { app } = require('../../src/index');
+  const { app, resolveTransport } = require('../../core/src');
 
   // Extract starting directory from command-line argument (argv[2])
   // Usage: npx tsx grand-perspective.ts /path/to/directory
   const startDir = process.argv[2] || undefined;
 
-  app({ title: 'GrandPerspective' }, (a: any) => {
+  app(resolveTransport(), { title: 'GrandPerspective' }, (a: any) => {
     buildGrandPerspectiveApp(a, startDir);
   });
 }
