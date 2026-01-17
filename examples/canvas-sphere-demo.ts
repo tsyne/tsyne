@@ -13,21 +13,21 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
       a.scroll(() => {
         a.vbox(() => {
           // Title
-          a.label('Canvas Sphere Widget - Phase 1 Patterns').fontSize(18);
+          a.label('Canvas Sphere Widget - Phase 1 Patterns');
           a.separator();
 
           // Intro
           a.label(
             'This demo showcases the generalized canvasSphere widget with multiple pattern types'
-          ).fontSize(12);
+          );
           a.label(
             'Phase 1 supports: solid, checkered, stripes, and gradient patterns'
-          ).fontSize(12);
+          );
           a.separator();
 
           // Pattern 1: Solid
-          a.label('Pattern 1: Solid Color').fontSize(14);
-          a.label('A single uniform color sphere').fontSize(11);
+          a.label('Pattern 1: Solid Color');
+          a.label('A single uniform color sphere');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -38,8 +38,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 2: Checkered (Boing Ball)
-          a.label('Pattern 2: Checkered (Amiga Boing Ball)').fontSize(14);
-          a.label('Classic alternating pattern - 8x8 grid').fontSize(11);
+          a.label('Pattern 2: Checkered (Amiga Boing Ball)');
+          a.label('Classic alternating pattern - 8x8 grid');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -53,8 +53,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 3: Horizontal Stripes
-          a.label('Pattern 3: Horizontal Stripes').fontSize(14);
-          a.label('Color bands parallel to the equator').fontSize(11);
+          a.label('Pattern 3: Horizontal Stripes');
+          a.label('Color bands parallel to the equator');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -66,8 +66,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 4: Vertical Stripes
-          a.label('Pattern 4: Vertical Stripes').fontSize(14);
-          a.label('Color bands parallel to the poles (longitude)').fontSize(11);
+          a.label('Pattern 4: Vertical Stripes');
+          a.label('Color bands parallel to the poles (longitude)');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -79,10 +79,10 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 5: Gradient
-          a.label('Pattern 5: Gradient (Pole-to-Pole)').fontSize(14);
+          a.label('Pattern 5: Gradient (Pole-to-Pole)');
           a.label(
             'Smooth color interpolation from south pole to north pole'
-          ).fontSize(11);
+          );
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -94,10 +94,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 6: Temperature Gradient
-          a.label('Pattern 6: Gradient Variant (Temperature Scale)').fontSize(
-            14
-          );
-          a.label('Cold blue to hot red gradient').fontSize(11);
+          a.label('Pattern 6: Gradient Variant (Temperature Scale)');
+          a.label('Cold blue to hot red gradient');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -109,8 +107,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 7: Fine-grain Checkered
-          a.label('Pattern 7: Fine-Grain Checkered').fontSize(14);
-          a.label('More bands for smaller pattern - 16x16 grid').fontSize(11);
+          a.label('Pattern 7: Fine-Grain Checkered');
+          a.label('More bands for smaller pattern - 16x16 grid');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -124,8 +122,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Pattern 8: Multi-Color Stripes
-          a.label('Pattern 8: Rainbow Horizontal Stripes').fontSize(14);
-          a.label('6-color horizontal stripe pattern').fontSize(11);
+          a.label('Pattern 8: Rainbow Horizontal Stripes');
+          a.label('6-color horizontal stripe pattern');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -144,8 +142,8 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
           a.spacer(100);
 
           // Rotation example
-          a.label('Pattern 9: Rotated Checkered Sphere').fontSize(14);
-          a.label('Same checkered pattern but rotated 45 degrees').fontSize(11);
+          a.label('Pattern 9: Rotated Checkered Sphere');
+          a.label('Same checkered pattern but rotated 45 degrees');
           a.canvasSphere({
             cx: 200,
             cy: 200,
@@ -161,24 +159,22 @@ app(resolveTransport(), { title: 'Canvas Sphere - Phase 1 Patterns' }, (a) => {
 
           // Summary
           a.separator();
-          a.label('Phase 1 Complete Features:').fontSize(14);
-          a.label('✓ Solid pattern').fontSize(11);
-          a.label('✓ Checkered pattern with customizable bands').fontSize(11);
-          a.label('✓ Horizontal and vertical stripes').fontSize(11);
-          a.label('✓ Gradient patterns (north-south interpolation)').fontSize(11);
-          a.label('✓ Y-axis rotation').fontSize(11);
-          a.label('✓ Custom colors for all patterns').fontSize(11);
-          a.label('✓ Backward compatible with canvasCheckeredSphere').fontSize(
-            11
-          );
+          a.label('Phase 1 Complete Features:');
+          a.label('✓ Solid pattern');
+          a.label('✓ Checkered pattern with customizable bands');
+          a.label('✓ Horizontal and vertical stripes');
+          a.label('✓ Gradient patterns (north-south interpolation)');
+          a.label('✓ Y-axis rotation');
+          a.label('✓ Custom colors for all patterns');
+          a.label('✓ Backward compatible with canvasCheckeredSphere');
           a.spacer(50);
 
-          a.label('Future Phases:').fontSize(14);
-          a.label('Phase 2: Multi-axis rotation (X, Y, Z)').fontSize(11);
-          a.label('Phase 3: Lighting and shading').fontSize(11);
-          a.label('Phase 4: Texture mapping').fontSize(11);
-          a.label('Phase 5: Interactivity (tap events)').fontSize(11);
-          a.label('Phase 6: Animation presets').fontSize(11);
+          a.label('Future Phases:');
+          a.label('Phase 2: Multi-axis rotation (X, Y, Z)');
+          a.label('Phase 3: Lighting and shading');
+          a.label('Phase 4: Texture mapping');
+          a.label('Phase 5: Interactivity (tap events)');
+          a.label('Phase 6: Animation presets');
         });
       });
     });

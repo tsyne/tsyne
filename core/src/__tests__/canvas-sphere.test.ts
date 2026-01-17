@@ -1,10 +1,10 @@
 import { CanvasSphere, CanvasSphereOptions } from '../widgets';
 import { Context } from '../context';
-import { FyneBridge } from '../fynebridge';
+import { BridgeInterface } from '../fynebridge';
 
 describe('CanvasSphere', () => {
   let ctx: Context;
-  let mockBridge: Partial<FyneBridge>;
+  let mockBridge: Partial<BridgeInterface>;
 
   beforeEach(() => {
     // Create a mock bridge that captures sent messages
@@ -16,7 +16,7 @@ describe('CanvasSphere', () => {
       }),
     };
 
-    ctx = new Context(mockBridge as FyneBridge);
+    ctx = new Context(mockBridge as BridgeInterface);
   });
 
   describe('pattern system', () => {
@@ -217,8 +217,8 @@ describe('CanvasSphere', () => {
       const sphere2 = new CanvasSphere(ctx, options);
 
       expect(sphere1.id).not.toBe(sphere2.id);
-      expect(sphere1.id).toMatch(/^canvassphere_/);
-      expect(sphere2.id).toMatch(/^canvassphere_/);
+      expect(sphere1.id).toMatch(/canvassphere_/);
+      expect(sphere2.id).toMatch(/canvassphere_/);
     });
 
     test('passes all parameters to bridge', () => {

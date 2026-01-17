@@ -2282,7 +2282,6 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		}
 
 	case "checkered":
-	default:
 		sphereData.CheckeredCol1 = color.RGBA{R: 204, G: 0, B: 0, A: 255}   // default red
 		sphereData.CheckeredCol2 = color.RGBA{R: 255, G: 255, B: 255, A: 255} // default white
 		if c1Hex, ok := msg.Payload["checkeredColor1"].(string); ok {
@@ -2291,6 +2290,11 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		if c2Hex, ok := msg.Payload["checkeredColor2"].(string); ok {
 			sphereData.CheckeredCol2 = parseHexColorSimple(c2Hex).(color.RGBA)
 		}
+	default:
+		// Unknown pattern - default to checkered
+		sphereData.Pattern = "checkered"
+		sphereData.CheckeredCol1 = color.RGBA{R: 204, G: 0, B: 0, A: 255}
+		sphereData.CheckeredCol2 = color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	}
 
 	// Store sphere data for dynamic updates
@@ -2329,7 +2333,12 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 		// Convert pixel to coordinates relative to sphere center
 		centerX := float64(w) / 2
 		centerY := float64(h) / 2
-		scale := float64(w) / (2 * sR)
+		// Use min dimension to ensure sphere fits without clipping
+		minDim := float64(w)
+		if float64(h) < minDim {
+			minDim = float64(h)
+		}
+		scale := minDim / (2 * sR)
 		x := (float64(px) - centerX) / scale
 		y := (float64(py) - centerY) / scale
 
@@ -2357,27 +2366,71 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 			lon += 2 * pi
 		}
 
+		// Calculate lighting factor - simple diffuse lighting from front-right
+		// z/sR gives 1.0 at front center, 0.0 at edges
+		// Normalize x and y as well for directional lighting
+		lightDirX := 0.5  // light from right
+		lightDirY := -0.3 // light from above
+		lightDirZ := 0.8  // light from front
+		// Normalize light direction
+		lightLen := sqrt(lightDirX*lightDirX + lightDirY*lightDirY + lightDirZ*lightDirZ)
+		lightDirX /= lightLen
+		lightDirY /= lightLen
+		lightDirZ /= lightLen
+		// Surface normal (normalized) is just the point on the sphere
+		normalX := x / sR
+		normalY := y / sR
+		normalZ := z / sR
+		// Dot product gives lighting intensity
+		lightFactor := normalX*lightDirX + normalY*lightDirY + normalZ*lightDirZ
+		if lightFactor < 0 {
+			lightFactor = 0
+		}
+		// Ambient + diffuse: 0.3 ambient + 0.7 diffuse
+		shade := 0.3 + 0.7*lightFactor
+
+		// Helper to apply shading to a color
+		applyShade := func(c color.RGBA) color.RGBA {
+			return color.RGBA{
+				R: uint8(float64(c.R) * shade),
+				G: uint8(float64(c.G) * shade),
+				B: uint8(float64(c.B) * shade),
+				A: c.A,
+			}
+		}
+
 		// Apply pattern
 		switch pattern {
 		case "solid":
-			return solidColor
+			return applyShade(solidColor)
 
 		case "stripes":
+			if len(stripeColors) == 0 {
+				return color.RGBA{R: 255, G: 0, B: 0, A: 255} // fallback red
+			}
+			var baseColor color.RGBA
 			if stripeDir == "vertical" {
 				// Vertical stripes based on longitude
 				stripeIdx := int(lon / (2 * pi / float64(len(stripeColors))))
 				if stripeIdx >= len(stripeColors) {
 					stripeIdx = len(stripeColors) - 1
 				}
-				return stripeColors[stripeIdx]
+				if stripeIdx < 0 {
+					stripeIdx = 0
+				}
+				baseColor = stripeColors[stripeIdx]
 			} else {
 				// Horizontal stripes based on latitude
 				latIdx := int((lat + pi/2) / (pi / float64(len(stripeColors))))
 				if latIdx >= len(stripeColors) {
 					latIdx = len(stripeColors) - 1
 				}
-				return stripeColors[latIdx]
+				if latIdx < 0 {
+					latIdx = 0
+				}
+				baseColor = stripeColors[latIdx]
 			}
+			return applyShade(baseColor)
 
 		case "gradient":
 			// Gradient from pole to pole (based on latitude)
@@ -2390,14 +2443,15 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 				t = 1
 			}
 			// Interpolate between start and end colors
-			r := uint8(float64(gradStart.R)*(1-t) + float64(gradEnd.R)*t)
-			g := uint8(float64(gradStart.G)*(1-t) + float64(gradEnd.G)*t)
-			b := uint8(float64(gradStart.B)*(1-t) + float64(gradEnd.B)*t)
-			a := uint8(float64(gradStart.A)*(1-t) + float64(gradEnd.A)*t)
-			return color.RGBA{R: r, G: g, B: b, A: a}
+			baseColor := color.RGBA{
+				R: uint8(float64(gradStart.R)*(1-t) + float64(gradEnd.R)*t),
+				G: uint8(float64(gradStart.G)*(1-t) + float64(gradEnd.G)*t),
+				B: uint8(float64(gradStart.B)*(1-t) + float64(gradEnd.B)*t),
+				A: uint8(float64(gradStart.A)*(1-t) + float64(gradEnd.A)*t),
+			}
+			return applyShade(baseColor)
 
 		case "checkered":
-		default:
 			// Determine which lat/lon band this pixel falls in
 			latIdx := int((lat + pi/2) / (pi / float64(sLatBands)))
 			if latIdx >= sLatBands {
@@ -2417,10 +2471,16 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 
 			// Checkerboard pattern
 			if (latIdx+lonIdx)%2 == 0 {
-				return col1
+				return applyShade(col1)
 			}
-			return col2
+			return applyShade(col2)
+
+		default:
+			// Unknown pattern - return transparent
+			return color.RGBA{A: 0}
 		}
+		// Unreachable, but Go requires it
+		return color.RGBA{A: 0}
 	})
 
 	// Size the raster to contain the sphere
