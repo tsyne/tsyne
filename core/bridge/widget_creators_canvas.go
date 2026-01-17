@@ -2380,22 +2380,17 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 			}
 			if dirInterface, ok := lightingMap["direction"]; ok {
 				if dir, ok := dirInterface.(map[string]interface{}); ok {
-					if x, ok := dir["x"].(float64); ok {
-						sphereData.LightDirX = x
-					}
-					if y, ok := dir["y"].(float64); ok {
-						sphereData.LightDirY = y
-					}
-					if z, ok := dir["z"].(float64); ok {
-						sphereData.LightDirZ = z
-					}
+					// Handle various numeric types (msgpack can send int8, int64, float64, etc.)
+					sphereData.LightDirX = toFloat64(dir["x"])
+					sphereData.LightDirY = toFloat64(dir["y"])
+					sphereData.LightDirZ = toFloat64(dir["z"])
 				}
 			}
-			if ambient, ok := lightingMap["ambient"].(float64); ok {
-				sphereData.Ambient = ambient
+			if ambientVal, ok := lightingMap["ambient"]; ok {
+				sphereData.Ambient = toFloat64(ambientVal)
 			}
-			if diffuse, ok := lightingMap["diffuse"].(float64); ok {
-				sphereData.Diffuse = diffuse
+			if diffuseVal, ok := lightingMap["diffuse"]; ok {
+				sphereData.Diffuse = toFloat64(diffuseVal)
 			}
 		}
 	}
@@ -2536,6 +2531,7 @@ func (b *Bridge) handleCreateCanvasSphere(msg Message) Response {
 				lightDirZ /= lightLen
 			}
 			// Surface normal (normalized) is just the point on the sphere
+			// Use screen-space coordinates (x, y, z) for view-relative lighting
 			normalX := x / sR
 			normalY := y / sR
 			normalZ := z / sR
