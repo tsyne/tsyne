@@ -1492,15 +1492,19 @@ export interface CanvasSphereOptions {
     resourceName: string;            // Registered image resource name
     mapping?: 'equirectangular' | 'cubemap';  // Texture mapping type (default: equirectangular)
   };
+  // Phase 5: Interactivity - tap handler with lat/lon coordinates
+  onTap?: (lat: number, lon: number, screenX: number, screenY: number) => void;
 }
 
 export class CanvasSphere {
   private ctx: Context;
   public id: string;
+  private onTapCallback?: (lat: number, lon: number, screenX: number, screenY: number) => void;
 
   constructor(ctx: Context, options: CanvasSphereOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvassphere');
+    this.onTapCallback = options.onTap;
 
     const payload: any = {
       id: this.id,
@@ -1552,8 +1556,23 @@ export class CanvasSphere {
       };
     }
 
+    // Handle interactivity (Phase 5)
+    if (options.onTap) {
+      payload.hasTapHandler = true;
+    }
+
     ctx.bridge.send('createCanvasSphere', payload);
     ctx.addToCurrentContainer(this.id);
+
+    // Register event listener for tap events (Phase 5)
+    if (options.onTap) {
+      ctx.bridge.on(`sphereTapped:${this.id}`, (event: any) => {
+        if (this.onTapCallback) {
+          // event contains: { lat, lon, screenX, screenY }
+          this.onTapCallback(event.lat, event.lon, event.screenX, event.screenY);
+        }
+      });
+    }
   }
 
   async update(options: {

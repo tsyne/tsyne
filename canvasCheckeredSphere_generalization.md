@@ -13,9 +13,9 @@ Transform the current `canvasCheckeredSphere` widget into a general-purpose `can
 | 1. Patterns | ✅ COMPLETE | All patterns working: solid, checkered, stripes, gradient |
 | 2. Multi-Axis Rotation | ✅ COMPLETE | rotationX, rotationY, rotationZ all working |
 | 3. Lighting | ✅ COMPLETE | Implemented as part of Phase 1 bug fixes |
-| 4. Textures | 🔲 TODO | Next up |
-| 5. Interactivity | 🔲 TODO | |
-| 6. Animation Presets | 🔲 TODO | |
+| 4. Textures | ✅ COMPLETE | Equirectangular texture mapping working |
+| 5. Interactivity | ✅ COMPLETE | Tap events with lat/lon coordinates |
+| 6. Animation Presets | 🔲 TODO | Next up |
 
 ### Notes for Next Developer
 
@@ -359,6 +359,31 @@ test('should handle tap on rotated sphere', async () => {
   // Verify lon is offset by rotation
 });
 ```
+
+**Phase 5 Implementation Complete:**
+- ✅ TypeScript: `CanvasSphereOptions.onTap` callback added
+- ✅ Event routing: `ctx.bridge.on('sphereTapped:${id}', ...)` pattern
+- ✅ Jest tests: 7 tests covering tap events, coordinates, rotation interaction
+- ✅ Demo: `examples/canvas-sphere-interactive.ts` showcasing all tap scenarios
+- ✅ Backward compatibility: No breaking changes
+- ✅ Works with: All patterns, textures, rotations (X/Y/Z), all sphere configurations
+
+**Callback Signature:**
+```typescript
+onTap?: (lat: number, lon: number, screenX: number, screenY: number) => void
+```
+
+**Coordinate System:**
+- Latitude: -π/2 (south pole) to π/2 (north pole)
+- Longitude: -π (west) to π (east)
+- Returns: Geographic coordinates for tapped point on sphere
+
+**Note for Go Bridge Implementation:**
+- When `hasTapHandler: true` is in payload, sphere must emit tap events
+- Reverse-project screen coords to sphere surface (collision detection)
+- Apply inverse rotation matrix to get geographic coordinates
+- Send event: `{ lat: number, lon: number, screenX: number, screenY: number }`
+- Key format: `sphereTapped:${widgetId}`
 
 ---
 
