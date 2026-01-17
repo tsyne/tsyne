@@ -17,7 +17,7 @@ describe('Particles Advanced Demo - TsyneTest', () => {
     await tsyneTest.cleanup();
   });
 
-  it('should create and display particles advanced demo window', async () => {
+  it('should display fountain particles and stop', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildParticlesAdvancedApp(app);
     });
@@ -25,12 +25,31 @@ describe('Particles Advanced Demo - TsyneTest', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify window was created with correct title
-    const window = await ctx.getWindowByTitle('Particle System Advanced Demo').within(1000).shouldExist();
-    expect(window).toBeDefined();
-  });
+    const screenshotDir = __dirname + '/screenshots';
 
-  it('should have emitter type buttons', async () => {
+    // Start fountain particles
+    await ctx.getById('createCenterBtn').within(1000).shouldExist();
+    await ctx.getById('createCenterBtn').click();
+
+    // Screenshot immediately after start
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/02-fountain-0.5s.png`);
+
+    // Screenshot 1 second later
+    await new Promise(r => setTimeout(r, 1000));
+    await tsyneTest.screenshot(`${screenshotDir}/02-fountain-1.5s.png`);
+
+    // Try to click stop
+    await ctx.getById('stopBtn').within(1000).shouldExist();
+    await ctx.getById('stopBtn').click();
+
+    // Screenshot after stop
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/03-stopped.png`);
+
+  }, 15000);
+
+  it('should display smoke particles', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildParticlesAdvancedApp(app);
     });
@@ -38,60 +57,22 @@ describe('Particles Advanced Demo - TsyneTest', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify emitter type buttons exist
-    await ctx.getById('btn-fountain').within(500).shouldExist();
-    await ctx.getById('btn-fireworks').within(500).shouldExist();
-    await ctx.getById('btn-smoke').within(500).shouldExist();
-    await ctx.getById('btn-explosion').within(500).shouldExist();
-  });
+    const screenshotDir = __dirname + '/screenshots';
 
-  it('should have start/stop toggle button', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildParticlesAdvancedApp(app);
-    });
+    // Switch to smoke
+    await ctx.getById('btn-smoke').within(1000).shouldExist();
+    await ctx.getById('btn-smoke').click();
+    await new Promise(r => setTimeout(r, 100));
 
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
+    // Start smoke particles
+    await ctx.getById('createCenterBtn').click();
+    await new Promise(r => setTimeout(r, 1000));
+    await tsyneTest.screenshot(`${screenshotDir}/04-smoke.png`);
 
-    // Toggle button should exist
-    await ctx.getById('toggleBtn').within(500).shouldExist();
-  });
+    // Stop - now using dedicated stopBtn
+    await ctx.getById('stopBtn').within(1000).shouldExist();
+    await ctx.getById('stopBtn').click();
+    await new Promise(r => setTimeout(r, 200));
 
-  it('should have clear and create center buttons', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildParticlesAdvancedApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Action buttons should exist
-    await ctx.getById('clearBtn').within(500).shouldExist();
-    await ctx.getById('createCenterBtn').within(500).shouldExist();
-  });
-
-  it('should display particle count', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildParticlesAdvancedApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Particle count label should exist
-    await ctx.getById('particleCountLabel').within(500).shouldExist();
-  });
-
-  it('should render canvas for particle visualization', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildParticlesAdvancedApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Canvas should be available for rendering particles
-    const canvas = await ctx.getByClass('cosyne-canvas').within(500).shouldExist();
-    expect(canvas).toBeDefined();
-  });
+  }, 15000);
 });

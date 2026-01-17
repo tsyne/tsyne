@@ -9,69 +9,32 @@
  * @tsyne-app:args (a: any) => void
  */
 
-import { app } from '../../core/src/index';
-import { cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src/index';
+import { app, refreshAllBindings } from '../../core/src/index';
+import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
 import { ParticleSystem, Emitter } from '../../cosyne/src/particle-system';
 
 type EmitterType = 'fountain' | 'fireworks' | 'smoke' | 'explosion';
 
-class ParticlesAdvancedStore {
-  private changeListeners: Array<() => void> = [];
-  public emitterType: EmitterType = 'fountain';
-  public isRunning: boolean = false;
-  public particleCount: number = 0;
-  public mouseX: number = 250;
-  public mouseY: number = 250;
-
-  subscribe(listener: () => void): () => void {
-    this.changeListeners.push(listener);
-    return () => {
-      this.changeListeners = this.changeListeners.filter((l) => l !== listener);
-    };
-  }
-
-  private notifyChange() {
-    this.changeListeners.forEach((l) => l());
-  }
-
-  setEmitterType(type: EmitterType) {
-    this.emitterType = type;
-    this.notifyChange();
-  }
-
-  setRunning(running: boolean) {
-    this.isRunning = running;
-    this.notifyChange();
-  }
-
-  setParticleCount(count: number) {
-    this.particleCount = count;
-    this.notifyChange();
-  }
-
-  setMousePosition(x: number, y: number) {
-    this.mouseX = x;
-    this.mouseY = y;
-  }
-}
-
 export function buildParticlesAdvancedApp(a: any) {
-  const store = new ParticlesAdvancedStore();
   const ps = new ParticleSystem();
-  let currentEmitter: Emitter | null = null;
+  ps.setTargetFps(30); // Physics updates at 30fps
 
-  let particleCountLabel: any;
-  let emitterTypeLabel: any;
+  let emitterType: EmitterType = 'fountain';
+  let isRunning = false;
+  let currentEmitter: Emitter | null = null;
+  let win: any = null;
+  let renderTimer: ReturnType<typeof setInterval> | null = null;
+
 
   const createEmitter = (x: number, y: number): Emitter => {
     let emitter: Emitter;
 
-    switch (store.emitterType) {
+    switch (emitterType) {
       case 'fountain':
         emitter = new Emitter(x, y, {
           rate: 50,
           life: 2000,
-          radius: 3,
+          radius: 4,
           color: '#4ECDC4',
           velocity: { x: 0, y: -100 },
           acceleration: { x: 0, y: 200 },
@@ -85,7 +48,7 @@ export function buildParticlesAdvancedApp(a: any) {
         emitter = new Emitter(x, y, {
           rate: 200,
           life: 1500,
-          radius: 2,
+          radius: 3,
           color: '#FF6B6B',
           velocity: { x: 0, y: 0 },
           acceleration: { x: 0, y: 100 },
@@ -99,22 +62,22 @@ export function buildParticlesAdvancedApp(a: any) {
         emitter = new Emitter(x, y, {
           rate: 30,
           life: 3000,
-          radius: 5,
-          color: '#999999',
+          radius: 6,
+          color: '#666666',
           velocity: { x: 0, y: -50 },
           acceleration: { x: 0, y: 0 },
           friction: 0.99,
           spreadAngle: 60,
           speedVariation: 0.2,
         });
-        emitter.particleAlpha = 0.5;
+        emitter.particleAlpha = 0.6;
         break;
 
       case 'explosion':
         emitter = new Emitter(x, y, {
           rate: 300,
           life: 1000,
-          radius: 4,
+          radius: 5,
           color: '#FFA500',
           velocity: { x: 0, y: 0 },
           acceleration: { x: 0, y: 50 },
@@ -128,137 +91,159 @@ export function buildParticlesAdvancedApp(a: any) {
     return emitter;
   };
 
-  a.window({ title: 'Particle System Advanced Demo', width: 900, height: 750 }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
-        // Title and info
-        a.label('Interactive Particle System', undefined, undefined, undefined, { bold: true });
+  // Full UI rebuild - buttons stay stable due to .when() pattern
+  const rebuildUI = () => {
+    if (!win) return;
+    clearAllCosyneContexts();
+    win.setContent(buildContent);
+  };
 
-        // Controls
-        a.hbox(() => {
-          a.button('Fountain')
-            .onClick(async () => store.setEmitterType('fountain'))
-            .withId('btn-fountain')
-            .when(() => store.emitterType !== 'fountain');
-          a.button('Fireworks')
-            .onClick(async () => store.setEmitterType('fireworks'))
-            .withId('btn-fireworks')
-            .when(() => store.emitterType !== 'fireworks');
-          a.button('Smoke')
-            .onClick(async () => store.setEmitterType('smoke'))
-            .withId('btn-smoke')
-            .when(() => store.emitterType !== 'smoke');
-          a.button('Explosion')
-            .onClick(async () => store.setEmitterType('explosion'))
-            .withId('btn-explosion')
-            .when(() => store.emitterType !== 'explosion');
+  const setEmitterType = (type: EmitterType) => {
+    emitterType = type;
 
-          emitterTypeLabel = a.label(`Type: ${store.emitterType}`).withId('emitterTypeLabel');
+    // If running, update the emitter
+    if (currentEmitter && isRunning) {
+      ps.removeEmitter(currentEmitter);
+      currentEmitter = createEmitter(250, 250);
+      ps.addEmitter(currentEmitter);
+    }
+    rebuildUI();
+  };
+
+  const startRenderLoop = () => {
+    if (renderTimer) return;
+    // Rebuild UI at 2fps (500ms) to show particle animation
+    renderTimer = setInterval(() => {
+      if (isRunning) {
+        rebuildUI();
+      }
+    }, 500);
+  };
+
+  const stopRenderLoop = () => {
+    if (renderTimer) {
+      clearInterval(renderTimer);
+      renderTimer = null;
+    }
+  };
+
+  const doStart = async () => {
+    if (isRunning) return;
+
+    if (!currentEmitter) {
+      currentEmitter = createEmitter(250, 250);
+      ps.addEmitter(currentEmitter);
+    }
+    ps.start();
+    isRunning = true;
+    startRenderLoop();
+    // Rebuild UI to update button visibility
+    rebuildUI();
+    // Rebuild again after particles have spawned
+    setTimeout(() => {
+      if (isRunning) rebuildUI();
+    }, 200);
+  };
+
+  const doStop = async () => {
+    if (!isRunning) return;
+
+    ps.stop();
+    isRunning = false;
+    stopRenderLoop();
+    // Rebuild UI to update button visibility
+    rebuildUI();
+  };
+
+  const buildContent = () => {
+    const count = ps.getTotalParticleCount();
+
+    a.vbox(() => {
+      a.label('Interactive Particle System', undefined, undefined, undefined, { bold: true });
+
+      // Emitter type controls
+      a.hbox(() => {
+        a.button('Fountain')
+          .onClick(async () => setEmitterType('fountain'))
+          .withId('btn-fountain')
+          .when(() => emitterType !== 'fountain');
+        a.button('Fireworks')
+          .onClick(async () => setEmitterType('fireworks'))
+          .withId('btn-fireworks')
+          .when(() => emitterType !== 'fireworks');
+        a.button('Smoke')
+          .onClick(async () => setEmitterType('smoke'))
+          .withId('btn-smoke')
+          .when(() => emitterType !== 'smoke');
+        a.button('Explosion')
+          .onClick(async () => setEmitterType('explosion'))
+          .withId('btn-explosion')
+          .when(() => emitterType !== 'explosion');
+
+        a.label(`Type: ${emitterType}`).withId('emitterTypeLabel');
+      });
+
+      // Status row - pad count to prevent wobble
+      a.hbox(() => {
+        a.label(`Particles: ${String(count).padStart(4, ' ')}`).withId('particleCountLabel');
+        // Two separate buttons with .when() for declarative visibility
+        a.button('Start')
+          .onClick(async () => doStart())
+          .withId('startBtn')
+          .when(() => !isRunning);
+        a.button('Stop')
+          .onClick(async () => doStop())
+          .withId('stopBtn')
+          .when(() => isRunning);
+      });
+
+      // Canvas
+      a.canvasStack(() => {
+        cosyne(a, (c) => {
+          c.rect(0, 0, 500, 500)
+            .fill('#1a1a2e')
+            .withId('background');
+          ps.render(c);
         });
+      });
 
-        // Status
-        a.hbox(() => {
-          particleCountLabel = a.label(`Particles: 0`).withId('particleCountLabel');
-          a.button(store.isRunning ? 'Stop' : 'Start')
-            .onClick(async () => {
-              if (store.isRunning) {
-                ps.stop();
-                store.setRunning(false);
-              } else {
-                ps.start();
-                store.setRunning(true);
-              }
-            })
-            .withId('toggleBtn');
-        });
+      a.label('Click "Create at Center" to spawn particles');
 
-        // Canvas
-        a.canvasStack(() => {
-          const ctx = cosyne(a, (c) => {
-            // Draw background
-            c.rect(0, 0, 500, 500)
-              .fill('#f5f5f5')
-              .withId('background');
+      // Action buttons
+      a.hbox(() => {
+        a.button('Clear')
+          .onClick(async () => {
+            ps.clear();
+            currentEmitter = null;
+            doStop();
+            rebuildUI();
+          })
+          .withId('clearBtn');
 
-            // Draw particle system
-            ps.render(c);
-
-            // Instructions
-            c.text(10, 520, 'Click to create particles')
-              .fill('#666666')
-              .withId('instructions');
-          });
-
-          // Enable event handling for mouse clicks
-          enableEventHandling(ctx, a, { width: 500, height: 550 });
-
-          // Get the event router to add custom handler
-          const handleCanvasClick = (x: number, y: number) => {
-            if (!store.isRunning) {
-              ps.start();
-              store.setRunning(true);
-            }
-
-            // Remove old emitter if any
+        a.button('Create at Center')
+          .onClick(async () => {
             if (currentEmitter) {
               ps.removeEmitter(currentEmitter);
             }
-
-            // Create new emitter at click location
-            currentEmitter = createEmitter(x, y);
+            currentEmitter = createEmitter(250, 250);
             ps.addEmitter(currentEmitter);
-
-            store.setMousePosition(x, y);
-          };
-
-          // Simple click handler - would be better with proper event binding
-          // For now, we'll trigger from a button
-        });
-
-        // Action buttons
-        a.hbox(() => {
-          a.button('Clear')
-            .onClick(async () => {
-              ps.clear();
-              currentEmitter = null;
-              store.setRunning(false);
-              store.setParticleCount(0);
-              await refreshAllCosyneContexts();
-            })
-            .withId('clearBtn');
-
-          a.button('Create at Center')
-            .onClick(async () => {
-              if (!store.isRunning) {
-                ps.start();
-                store.setRunning(true);
-              }
-              if (currentEmitter) {
-                ps.removeEmitter(currentEmitter);
-              }
-              currentEmitter = createEmitter(250, 250);
-              ps.addEmitter(currentEmitter);
-              await refreshAllCosyneContexts();
-            })
-            .withId('createCenterBtn');
-        });
+            if (!isRunning) {
+              doStart();
+            }
+          })
+          .withId('createCenterBtn');
       });
     });
+  };
+
+  a.window({ title: 'Particle System Advanced Demo', width: 900, height: 750 }, (w: any) => {
+    win = w;
+    win.setContent(buildContent);
     win.show();
   });
 
-  // Update on particle system changes
-  ps.subscribe(async () => {
-    const count = ps.getTotalParticleCount();
-    store.setParticleCount(count);
-    particleCountLabel?.setText?.(`Particles: ${count}`);
-    await refreshAllCosyneContexts();
-  });
-
-  // Subscribe to store changes
-  store.subscribe(async () => {
-    emitterTypeLabel?.setText?.(`Type: ${store.emitterType}`);
-  });
+  // Don't use ps.subscribe for rendering - use our own timer instead
+  // This decouples physics updates from render updates
 }
 
 // Auto-run when executed directly

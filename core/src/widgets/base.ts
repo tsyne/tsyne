@@ -247,6 +247,10 @@ export abstract class Widget {
 
     // Store for reactive re-evaluation
     this.visibilityCondition = updateVisibility;
+
+    // Register as global binding for MVC-style auto-refresh
+    registerGlobalBinding(updateVisibility);
+
     updateVisibility(); // Initial evaluation
 
     return this;

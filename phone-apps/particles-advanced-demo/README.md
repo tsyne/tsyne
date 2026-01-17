@@ -1,5 +1,7 @@
 # Particle System Advanced Demo
 
+> **Status: Needs significant bug fixing.** The current implementation has fundamental issues with UI rebuilds during animation causing button click events to be lost. The 500ms render interval is a workaround that makes animation choppy. A proper fix requires architectural changes to support incremental canvas updates without destroying widget event handlers.
+
 **Interactive P5.js-style particle physics simulation**
 
 Demonstrates the particle system with multiple emitter types (fountain, fireworks, smoke, explosion) and real-time physics.

@@ -7,19 +7,7 @@
 export { CosyneContext, cosyne, registerCosyneContext, refreshAllCosyneContexts, rebuildAllCosyneContexts, clearAllCosyneContexts } from './context';
 export { Binding, BindingRegistry, PositionBinding, BindingFunction, CollectionBinding, CollectionBindingOptions } from './binding';
 export * from './primitives';
-export { SphericalProjection, IsometricProjection, TorusProjection, Graticule, type Projection, type Point3D, type Point2D, type RotationAngles } from './projections';
-export {
-  generateTorusMesh,
-  generateTorusWireframe,
-  calculateLambertianShade,
-  getDefaultLightDirection,
-  colorizeShade,
-  chromostereopsisColor,
-  type TorusGeometry,
-  type TorusVertex,
-  type TorusQuad,
-  type TorusEdge,
-} from './torus';
+export { SphericalProjection, IsometricProjection, Graticule, type Projection, type Point3D, type Point2D, type RotationAngles } from './projections';
 export { TransformMatrix, TransformStack, type TransformOptions } from './transforms';
 export { ForeignObject, ForeignObjectCollection, type ForeignOptions } from './foreign';
 export { EventRouter, DefaultHitTesters, type HitTester, type HitTestResult } from './events';

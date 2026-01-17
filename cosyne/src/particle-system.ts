@@ -139,12 +139,22 @@ export class Emitter {
   }
 
   private emit(): void {
-    // Calculate velocity direction
-    const angle = this.getRandomAngle();
-    const speed = Math.sqrt(
+    // Calculate velocity direction based on base velocity + spread
+    const baseSpeed = Math.sqrt(
       this.particleVelocity.x ** 2 + this.particleVelocity.y ** 2
     );
-    const variatedSpeed = speed * (1 + (Math.random() - 0.5) * this.speedVariation);
+
+    // Get base angle from velocity (default to up if zero velocity)
+    let baseAngle = Math.atan2(this.particleVelocity.y, this.particleVelocity.x);
+    if (baseSpeed === 0) {
+      baseAngle = -Math.PI / 2; // Default to pointing up
+    }
+
+    // Add random spread
+    const spreadRad = (this.spreadAngle * Math.PI) / 180;
+    const angle = baseAngle + (Math.random() - 0.5) * spreadRad;
+
+    const variatedSpeed = baseSpeed * (1 + (Math.random() - 0.5) * this.speedVariation);
 
     const velocity = {
       x: Math.cos(angle) * variatedSpeed,
@@ -192,9 +202,11 @@ export class Emitter {
 export class ParticleSystem {
   private emitters: Emitter[] = [];
   private gravity: Vector2D = { x: 0, y: 0 };
-  private animationId: number | null = null;
+  private timerId: ReturnType<typeof setTimeout> | null = null;
   private lastFrameTime: number = 0;
   private listeners: Array<() => void> = [];
+  private targetFps: number = 60;
+  private running: boolean = false;
 
   addEmitter(emitter: Emitter): this {
     this.emitters.push(emitter);
@@ -212,19 +224,36 @@ export class ParticleSystem {
   }
 
   start(): void {
-    if (this.animationId !== null) return;
+    if (this.running) return;
+    this.running = true;
     this.lastFrameTime = Date.now();
     this.step();
   }
 
   stop(): void {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    this.running = false;
+    if (this.timerId !== null) {
+      clearTimeout(this.timerId);
+      this.timerId = null;
     }
   }
 
+  isRunning(): boolean {
+    return this.running;
+  }
+
+  setTargetFps(fps: number): this {
+    this.targetFps = fps;
+    return this;
+  }
+
   private step = (): void => {
+    // Check if we should still be running
+    if (!this.running) {
+      this.timerId = null;
+      return;
+    }
+
     const now = Date.now();
     const deltaTime = Math.max(1, now - this.lastFrameTime);
     this.lastFrameTime = now;
@@ -241,7 +270,12 @@ export class ParticleSystem {
     }
 
     this.listeners.forEach((l) => l());
-    this.animationId = requestAnimationFrame(this.step);
+
+    // Schedule next frame using setTimeout (works in Node.js unlike requestAnimationFrame)
+    if (this.running) {
+      const frameInterval = 1000 / this.targetFps;
+      this.timerId = setTimeout(this.step, frameInterval);
+    }
   };
 
   subscribe(listener: () => void): () => void {
