@@ -1463,8 +1463,49 @@ export class CanvasCheckeredSphere {
 }
 
 /**
+ * Animation preset types for CanvasSphere
+ * Phase 6: Built-in animation presets
+ */
+export type SphereAnimationType = 'spin' | 'wobble' | 'bounce' | 'pulse';
+
+/**
+ * Animation options for CanvasSphere.animate()
+ */
+export interface SphereAnimationOptions {
+  /** Animation type: spin, wobble, bounce, or pulse */
+  type: SphereAnimationType;
+  /** Animation speed multiplier (default: 1.0, higher = faster) */
+  speed?: number;
+  /** Rotation axis for spin/wobble (default: 'y') */
+  axis?: 'x' | 'y' | 'z';
+  /** Animation amplitude for wobble/bounce/pulse (radians for wobble, scale factor for bounce/pulse) */
+  amplitude?: number;
+  /** Loop animation (default: true) */
+  loop?: boolean;
+  /** Callback when animation completes (only called if loop=false) */
+  onComplete?: () => void;
+}
+
+/**
+ * Animation handle returned by animate() for controlling animations
+ */
+export interface SphereAnimationHandle {
+  /** Stop the animation */
+  stop: () => void;
+  /** Pause the animation (preserves state) */
+  pause: () => void;
+  /** Resume a paused animation */
+  resume: () => void;
+  /** Check if animation is running */
+  isRunning: () => boolean;
+  /** Check if animation is paused */
+  isPaused: () => boolean;
+}
+
+/**
  * Generalized Sphere - supports multiple patterns, textures, lighting, and interactivity
  * Phase 1: Pattern system (checkered, solid, stripes, gradient)
+ * Phase 6: Animation presets (spin, wobble, bounce, pulse)
  * Default pattern is 'checkered' for backward compatibility
  */
 export interface CanvasSphereOptions {
@@ -1501,6 +1542,17 @@ export class CanvasSphere {
   public id: string;
   private onTapCallback?: (lat: number, lon: number, screenX: number, screenY: number) => void;
 
+  // Phase 6: Animation state
+  private _animationTimer?: ReturnType<typeof setInterval>;
+  private _animationPaused = false;
+  private _animationStartTime = 0;
+  private _animationPausedTime = 0;
+  private _rotationX = 0;
+  private _rotationY = 0;
+  private _rotationZ = 0;
+  private _baseRadius = 0;  // Original radius for bounce/pulse animations
+  private _currentOptions?: SphereAnimationOptions;
+
   constructor(ctx: Context, options: CanvasSphereOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvassphere');
@@ -1521,6 +1573,12 @@ export class CanvasSphere {
     const rotX = options.rotationX ?? 0;
     const rotY = options.rotationY ?? options.rotation ?? 0;
     const rotZ = options.rotationZ ?? 0;
+
+    // Store initial rotation values for animation (Phase 6)
+    this._rotationX = rotX;
+    this._rotationY = rotY;
+    this._rotationZ = rotZ;
+    this._baseRadius = options.radius;
 
     if (rotX !== 0 || rotY !== 0 || rotZ !== 0) {
       payload.rotationX = rotX;
@@ -1616,6 +1674,231 @@ export class CanvasSphere {
     }
 
     await this.ctx.bridge.send('updateCanvasSphere', updatePayload);
+  }
+
+  // ==========================================================================
+  // Phase 6: Animation Presets
+  // ==========================================================================
+
+  /**
+   * Start an animation preset on this sphere
+   *
+   * @param options Animation options specifying type, speed, axis, etc.
+   * @returns Animation handle with stop(), pause(), resume() methods
+   *
+   * @example
+   * // Spin animation (default axis: Y)
+   * const handle = sphere.animate({ type: 'spin', speed: 1.0 });
+   *
+   * // Wobble animation on X axis
+   * sphere.animate({ type: 'wobble', axis: 'x', amplitude: Math.PI / 8 });
+   *
+   * // Bounce animation (size oscillation)
+   * sphere.animate({ type: 'bounce', speed: 0.5, amplitude: 0.2 });
+   *
+   * // Pulse animation (subtle size pulse)
+   * sphere.animate({ type: 'pulse', speed: 2.0 });
+   *
+   * // Stop animation
+   * handle.stop();
+   */
+  animate(options: SphereAnimationOptions): SphereAnimationHandle {
+    // Stop any existing animation
+    this.stopAnimation();
+
+    const speed = options.speed ?? 1.0;
+    const axis = options.axis ?? 'y';
+    const loop = options.loop ?? true;
+    const onComplete = options.onComplete;
+
+    // Default amplitudes by type
+    let amplitude = options.amplitude;
+    if (amplitude === undefined) {
+      switch (options.type) {
+        case 'spin':
+          amplitude = Math.PI * 2;  // Full rotation (not used directly, speed controls rate)
+          break;
+        case 'wobble':
+          amplitude = Math.PI / 6;  // 30 degrees wobble
+          break;
+        case 'bounce':
+          amplitude = 0.15;  // 15% size change
+          break;
+        case 'pulse':
+          amplitude = 0.08;  // 8% size change
+          break;
+      }
+    }
+
+    this._currentOptions = { ...options, speed, axis, amplitude, loop };
+    this._animationStartTime = Date.now();
+    this._animationPaused = false;
+    this._animationPausedTime = 0;
+
+    // Animation frame interval (roughly 60 fps)
+    const frameInterval = 16;
+
+    this._animationTimer = setInterval(() => {
+      if (this._animationPaused) return;
+
+      const elapsed = Date.now() - this._animationStartTime - this._animationPausedTime;
+      const t = elapsed / 1000;  // Time in seconds
+
+      switch (options.type) {
+        case 'spin':
+          this._animateSpin(t, speed, axis);
+          break;
+        case 'wobble':
+          this._animateWobble(t, speed, axis, amplitude!);
+          break;
+        case 'bounce':
+          this._animateBounce(t, speed, amplitude!);
+          break;
+        case 'pulse':
+          this._animatePulse(t, speed, amplitude!);
+          break;
+      }
+
+      // Handle non-looping animations
+      if (!loop) {
+        // For non-looping, complete after one cycle
+        const cycleTime = (2 * Math.PI) / speed;
+        if (t >= cycleTime) {
+          this.stopAnimation();
+          if (onComplete) {
+            onComplete();
+          }
+        }
+      }
+    }, frameInterval);
+
+    // Return animation handle
+    const handle: SphereAnimationHandle = {
+      stop: () => this.stopAnimation(),
+      pause: () => this._pauseAnimation(),
+      resume: () => this._resumeAnimation(),
+      isRunning: () => this._animationTimer !== undefined && !this._animationPaused,
+      isPaused: () => this._animationPaused,
+    };
+
+    return handle;
+  }
+
+  /**
+   * Stop any running animation and reset to initial state
+   */
+  stopAnimation(): void {
+    if (this._animationTimer) {
+      clearInterval(this._animationTimer);
+      this._animationTimer = undefined;
+    }
+    this._animationPaused = false;
+    this._animationPausedTime = 0;
+    this._currentOptions = undefined;
+  }
+
+  /**
+   * Pause the current animation (preserves state)
+   */
+  private _pauseAnimation(): void {
+    if (this._animationTimer && !this._animationPaused) {
+      this._animationPaused = true;
+      this._animationPausedTime = Date.now() - this._animationStartTime;
+    }
+  }
+
+  /**
+   * Resume a paused animation
+   */
+  private _resumeAnimation(): void {
+    if (this._animationTimer && this._animationPaused) {
+      this._animationStartTime = Date.now() - this._animationPausedTime;
+      this._animationPaused = false;
+    }
+  }
+
+  /**
+   * Spin animation - continuous rotation around specified axis
+   */
+  private _animateSpin(t: number, speed: number, axis: 'x' | 'y' | 'z'): void {
+    const angle = t * speed;
+
+    const updateData: any = {};
+    switch (axis) {
+      case 'x':
+        this._rotationX = angle;
+        updateData.rotationX = angle;
+        break;
+      case 'y':
+        this._rotationY = angle;
+        updateData.rotationY = angle;
+        break;
+      case 'z':
+        this._rotationZ = angle;
+        updateData.rotationZ = angle;
+        break;
+    }
+
+    this.update(updateData);
+  }
+
+  /**
+   * Wobble animation - oscillating rotation back and forth
+   */
+  private _animateWobble(t: number, speed: number, axis: 'x' | 'y' | 'z', amplitude: number): void {
+    const angle = Math.sin(t * speed * 2) * amplitude;
+
+    const updateData: any = {};
+    switch (axis) {
+      case 'x':
+        updateData.rotationX = angle;
+        break;
+      case 'y':
+        updateData.rotationY = angle;
+        break;
+      case 'z':
+        updateData.rotationZ = angle;
+        break;
+    }
+
+    this.update(updateData);
+  }
+
+  /**
+   * Bounce animation - oscillating size (elastic bounce feel)
+   */
+  private _animateBounce(t: number, speed: number, amplitude: number): void {
+    // Use a bouncy sine wave that starts at 1, goes to 1+amplitude, back through 1 to 1-amplitude
+    const scale = 1 + Math.sin(t * speed * 2) * amplitude;
+    const radius = this._baseRadius * scale;
+
+    this.update({ radius });
+  }
+
+  /**
+   * Pulse animation - smooth size oscillation (breathing effect)
+   */
+  private _animatePulse(t: number, speed: number, amplitude: number): void {
+    // Smoother sine wave that oscillates between 1-amplitude and 1+amplitude
+    // Using (sin + 1) / 2 to keep it always positive and centered
+    const scale = 1 + Math.sin(t * speed) * amplitude;
+    const radius = this._baseRadius * scale;
+
+    this.update({ radius });
+  }
+
+  /**
+   * Check if an animation is currently running
+   */
+  isAnimating(): boolean {
+    return this._animationTimer !== undefined;
+  }
+
+  /**
+   * Get the current animation options (if any)
+   */
+  getCurrentAnimation(): SphereAnimationOptions | undefined {
+    return this._currentOptions;
   }
 }
 

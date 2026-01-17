@@ -977,4 +977,485 @@ describe('CanvasSphere', () => {
       expect(tapCallback).toHaveBeenCalledWith(0.5, -0.5, 150, 175);
     });
   });
+
+  describe('Phase 6: Animation Presets', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    describe('animate() method', () => {
+      test('spin animation starts and updates rotation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({ type: 'spin', speed: 1.0 });
+
+        expect(handle.isRunning()).toBe(true);
+        expect(handle.isPaused()).toBe(false);
+        expect(sphere.isAnimating()).toBe(true);
+
+        // Advance timer to trigger animation frame
+        jest.advanceTimersByTime(100);
+
+        // Should have called update with rotation
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            widgetId: sphere.id,
+            rotationY: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+
+      test('spin animation on X axis', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({ type: 'spin', speed: 1.0, axis: 'x' });
+
+        jest.advanceTimersByTime(100);
+
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            rotationX: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+
+      test('spin animation on Z axis', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'gradient',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({ type: 'spin', speed: 2.0, axis: 'z' });
+
+        jest.advanceTimersByTime(100);
+
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            rotationZ: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+
+      test('wobble animation oscillates rotation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({
+          type: 'wobble',
+          speed: 1.0,
+          axis: 'x',
+          amplitude: Math.PI / 8,
+        });
+
+        jest.advanceTimersByTime(100);
+
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            rotationX: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+
+      test('bounce animation changes radius', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({
+          type: 'bounce',
+          speed: 1.0,
+          amplitude: 0.2,
+        });
+
+        jest.advanceTimersByTime(100);
+
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            radius: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+
+      test('pulse animation smoothly varies radius', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 60,
+          pattern: 'stripes',
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({
+          type: 'pulse',
+          speed: 0.5,
+        });
+
+        jest.advanceTimersByTime(100);
+
+        expect(mockBridge.send).toHaveBeenCalledWith(
+          'updateCanvasSphere',
+          expect.objectContaining({
+            radius: expect.any(Number),
+          })
+        );
+
+        handle.stop();
+      });
+    });
+
+    describe('stopAnimation() method', () => {
+      test('stops running animation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        const handle = sphere.animate({ type: 'spin' });
+
+        expect(sphere.isAnimating()).toBe(true);
+
+        sphere.stopAnimation();
+
+        expect(sphere.isAnimating()).toBe(false);
+        expect(handle.isRunning()).toBe(false);
+      });
+
+      test('handle.stop() also stops animation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        const handle = sphere.animate({ type: 'wobble' });
+
+        expect(sphere.isAnimating()).toBe(true);
+
+        handle.stop();
+
+        expect(sphere.isAnimating()).toBe(false);
+      });
+    });
+
+    describe('pause and resume', () => {
+      test('pause() pauses animation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        const handle = sphere.animate({ type: 'spin' });
+
+        expect(handle.isRunning()).toBe(true);
+        expect(handle.isPaused()).toBe(false);
+
+        handle.pause();
+
+        expect(handle.isRunning()).toBe(false);
+        expect(handle.isPaused()).toBe(true);
+        expect(sphere.isAnimating()).toBe(true);  // Timer still exists
+      });
+
+      test('resume() resumes paused animation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        const handle = sphere.animate({ type: 'pulse' });
+
+        handle.pause();
+        expect(handle.isPaused()).toBe(true);
+
+        handle.resume();
+        expect(handle.isPaused()).toBe(false);
+        expect(handle.isRunning()).toBe(true);
+
+        handle.stop();
+      });
+
+      test('paused animation does not update sphere', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        (mockBridge.send as jest.Mock).mockClear();
+
+        const handle = sphere.animate({ type: 'spin' });
+
+        // Let some frames run
+        jest.advanceTimersByTime(50);
+        const callCount1 = (mockBridge.send as jest.Mock).mock.calls.length;
+
+        // Pause animation
+        handle.pause();
+        (mockBridge.send as jest.Mock).mockClear();
+
+        // Advance time while paused
+        jest.advanceTimersByTime(200);
+
+        // No new calls should have been made while paused
+        expect(mockBridge.send).not.toHaveBeenCalled();
+
+        handle.stop();
+      });
+    });
+
+    describe('non-looping animations', () => {
+      test('non-looping animation calls onComplete when done', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const onComplete = jest.fn();
+        const sphere = new CanvasSphere(ctx, options);
+        const handle = sphere.animate({
+          type: 'spin',
+          speed: 10.0,  // Fast speed for quick completion
+          loop: false,
+          onComplete,
+        });
+
+        expect(sphere.isAnimating()).toBe(true);
+
+        // Advance time past one cycle
+        jest.advanceTimersByTime(1000);
+
+        // Should have completed
+        expect(onComplete).toHaveBeenCalled();
+        expect(sphere.isAnimating()).toBe(false);
+      });
+    });
+
+    describe('getCurrentAnimation()', () => {
+      test('returns current animation options', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({
+          type: 'wobble',
+          speed: 2.0,
+          axis: 'x',
+          amplitude: Math.PI / 4,
+        });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current).toBeDefined();
+        expect(current?.type).toBe('wobble');
+        expect(current?.speed).toBe(2.0);
+        expect(current?.axis).toBe('x');
+        expect(current?.amplitude).toBe(Math.PI / 4);
+
+        sphere.stopAnimation();
+      });
+
+      test('returns undefined when no animation', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        expect(sphere.getCurrentAnimation()).toBeUndefined();
+      });
+    });
+
+    describe('starting new animation replaces existing', () => {
+      test('animate() stops previous animation and starts new one', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+
+        sphere.animate({ type: 'spin' });
+        expect(sphere.getCurrentAnimation()?.type).toBe('spin');
+        expect(sphere.isAnimating()).toBe(true);
+
+        sphere.animate({ type: 'wobble' });
+        expect(sphere.getCurrentAnimation()?.type).toBe('wobble');
+        expect(sphere.isAnimating()).toBe(true);
+
+        // Only one animation should be running (the new one)
+        const handle = sphere.animate({ type: 'bounce' });
+        expect(sphere.getCurrentAnimation()?.type).toBe('bounce');
+        expect(handle.isRunning()).toBe(true);
+
+        handle.stop();
+        expect(sphere.isAnimating()).toBe(false);
+      });
+    });
+
+    describe('default values', () => {
+      test('spin uses default speed of 1.0', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'spin' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.speed).toBe(1.0);
+
+        sphere.stopAnimation();
+      });
+
+      test('wobble uses default amplitude of PI/6', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'wobble' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.amplitude).toBeCloseTo(Math.PI / 6, 5);
+
+        sphere.stopAnimation();
+      });
+
+      test('bounce uses default amplitude of 0.15', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'bounce' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.amplitude).toBe(0.15);
+
+        sphere.stopAnimation();
+      });
+
+      test('pulse uses default amplitude of 0.08', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'pulse' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.amplitude).toBe(0.08);
+
+        sphere.stopAnimation();
+      });
+
+      test('default axis is Y', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'spin' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.axis).toBe('y');
+
+        sphere.stopAnimation();
+      });
+
+      test('default loop is true', () => {
+        const options: CanvasSphereOptions = {
+          cx: 100,
+          cy: 100,
+          radius: 50,
+        };
+
+        const sphere = new CanvasSphere(ctx, options);
+        sphere.animate({ type: 'spin' });
+
+        const current = sphere.getCurrentAnimation();
+        expect(current?.loop).toBe(true);
+
+        sphere.stopAnimation();
+      });
+    });
+  });
 });

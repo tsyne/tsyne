@@ -714,4 +714,261 @@ describe('Canvas Sphere Widget', () => {
       expect(ctx).toBeDefined();
     });
   });
+
+  describe('Phase 6: Animation Presets', () => {
+    test('should start spin animation on sphere', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          latBands: 8,
+          lonSegments: 8,
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start spin animation
+      const handle = sphere.animate({ type: 'spin', speed: 1.0 });
+      expect(handle.isRunning()).toBe(true);
+
+      // Let it run for a bit
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Stop animation
+      handle.stop();
+      expect(sphere.isAnimating()).toBe(false);
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should start wobble animation on sphere', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'stripes',
+          stripeColors: ['#ff0000', '#00ff00'],
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start wobble animation on X axis
+      const handle = sphere.animate({ type: 'wobble', axis: 'x', speed: 2.0 });
+      expect(sphere.isAnimating()).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      handle.stop();
+      expect(ctx).toBeDefined();
+    });
+
+    test('should start bounce animation on sphere', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 60,
+          pattern: 'solid',
+          solidColor: '#ff6600',
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start bounce animation
+      const handle = sphere.animate({ type: 'bounce', speed: 1.0, amplitude: 0.2 });
+      expect(sphere.isAnimating()).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      handle.stop();
+      expect(ctx).toBeDefined();
+    });
+
+    test('should start pulse animation on sphere', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'gradient',
+          gradientStart: '#0000ff',
+          gradientEnd: '#ff0000',
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start pulse animation
+      const handle = sphere.animate({ type: 'pulse', speed: 0.5 });
+      expect(sphere.isAnimating()).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      handle.stop();
+      expect(ctx).toBeDefined();
+    });
+
+    test('should pause and resume animation', async () => {
+      let sphere: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        sphere = app.canvasSphere({
+          cx: 100,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start spin animation
+      const handle = sphere.animate({ type: 'spin', speed: 1.0 });
+      expect(handle.isRunning()).toBe(true);
+
+      // Pause animation
+      handle.pause();
+      expect(handle.isPaused()).toBe(true);
+      expect(handle.isRunning()).toBe(false);
+
+      // Resume animation
+      handle.resume();
+      expect(handle.isPaused()).toBe(false);
+      expect(handle.isRunning()).toBe(true);
+
+      handle.stop();
+      expect(ctx).toBeDefined();
+    });
+
+    test('should handle animation with different axes', async () => {
+      let sphereX: any, sphereY: any, sphereZ: any;
+      const testApp = await tsyneTest.createApp((app) => {
+        // Sphere spinning on X axis
+        sphereX = app.canvasSphere({
+          cx: 80,
+          cy: 100,
+          radius: 40,
+          pattern: 'stripes',
+        });
+
+        // Sphere spinning on Y axis (default)
+        sphereY = app.canvasSphere({
+          cx: 200,
+          cy: 100,
+          radius: 40,
+          pattern: 'checkered',
+        });
+
+        // Sphere spinning on Z axis
+        sphereZ = app.canvasSphere({
+          cx: 320,
+          cy: 100,
+          radius: 40,
+          pattern: 'gradient',
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start animations on different axes
+      const handleX = sphereX.animate({ type: 'spin', axis: 'x' });
+      const handleY = sphereY.animate({ type: 'spin', axis: 'y' });
+      const handleZ = sphereZ.animate({ type: 'spin', axis: 'z' });
+
+      expect(handleX.isRunning()).toBe(true);
+      expect(handleY.isRunning()).toBe(true);
+      expect(handleZ.isRunning()).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      handleX.stop();
+      handleY.stop();
+      handleZ.stop();
+
+      expect(ctx).toBeDefined();
+    });
+
+    test('should create animated sphere showcase', async () => {
+      let spinSphere: any, wobbleSphere: any, bounceSphere: any, pulseSphere: any;
+
+      const testApp = await tsyneTest.createApp((app) => {
+        app.label('Canvas Sphere - Phase 6 Animation Presets');
+
+        // Row of animated spheres
+        spinSphere = app.canvasSphere({
+          cx: 80,
+          cy: 100,
+          radius: 50,
+          pattern: 'checkered',
+          checkeredColor1: '#cc0000',
+          checkeredColor2: '#ffffff',
+        });
+
+        wobbleSphere = app.canvasSphere({
+          cx: 200,
+          cy: 100,
+          radius: 50,
+          pattern: 'stripes',
+          stripeColors: ['#00ff00', '#0000ff'],
+        });
+
+        bounceSphere = app.canvasSphere({
+          cx: 320,
+          cy: 100,
+          radius: 50,
+          pattern: 'gradient',
+          gradientStart: '#ff6600',
+          gradientEnd: '#ffff00',
+        });
+
+        pulseSphere = app.canvasSphere({
+          cx: 440,
+          cy: 100,
+          radius: 50,
+          pattern: 'solid',
+          solidColor: '#ff00ff',
+        });
+      });
+
+      const ctx = tsyneTest.getContext();
+      await testApp.run();
+
+      // Start different animations on each sphere
+      const spinHandle = spinSphere.animate({ type: 'spin', speed: 1.5 });
+      const wobbleHandle = wobbleSphere.animate({ type: 'wobble', axis: 'x', amplitude: Math.PI / 6 });
+      const bounceHandle = bounceSphere.animate({ type: 'bounce', speed: 2.0, amplitude: 0.15 });
+      const pulseHandle = pulseSphere.animate({ type: 'pulse', speed: 0.5, amplitude: 0.1 });
+
+      expect(spinSphere.isAnimating()).toBe(true);
+      expect(wobbleSphere.isAnimating()).toBe(true);
+      expect(bounceSphere.isAnimating()).toBe(true);
+      expect(pulseSphere.isAnimating()).toBe(true);
+
+      // Let animations run
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Stop all animations
+      spinHandle.stop();
+      wobbleHandle.stop();
+      bounceHandle.stop();
+      pulseHandle.stop();
+
+      expect(ctx).toBeDefined();
+    });
+  });
 });

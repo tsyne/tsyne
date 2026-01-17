@@ -15,7 +15,7 @@ Transform the current `canvasCheckeredSphere` widget into a general-purpose `can
 | 3. Lighting | ✅ COMPLETE | Implemented as part of Phase 1 bug fixes |
 | 4. Textures | ✅ COMPLETE | Equirectangular texture mapping working |
 | 5. Interactivity | ✅ COMPLETE | Tap events with lat/lon coordinates |
-| 6. Animation Presets | 🔲 TODO | Next up |
+| 6. Animation Presets | ✅ COMPLETE | spin, wobble, bounce, pulse with controls |
 
 ### Notes for Next Developer
 
@@ -95,10 +95,15 @@ In Go, `case X:` followed immediately by `default:` does NOT fall through - the 
 - Reverse-project screen coordinates to lat/lon using inverse rotation matrix
 - Register tap handler on the raster widget
 
-**For Phase 6 (Animation Presets):**
-- Consider adding `animation?: { type: 'spin' | 'wobble' | 'bounce' | 'pulse'; speed?: number; axis?: 'x' | 'y' | 'z' }`
-- Would need internal timer management in Go or TypeScript side
-- Alternatively, provide helper functions that return animation loop code
+**Phase 6 (Animation Presets) - COMPLETE:**
+- Implemented `sphere.animate({ type, speed?, axis?, amplitude?, loop?, onComplete? })`
+- Returns `SphereAnimationHandle` with `stop()`, `pause()`, `resume()`, `isRunning()`, `isPaused()`
+- Four animation types: `spin`, `wobble`, `bounce`, `pulse`
+- Timer-based animation runs on TypeScript side (~60fps)
+- Each animation type has sensible defaults for speed and amplitude
+- Animation demo: `examples/canvas-sphere-animations.ts` with interactive controls
+- 25+ Jest tests covering all animation features
+- 7 TsyneTest integration tests
 
 **For Phase 3 (if extending lighting to be configurable):**
 - Currently hardcoded in the pixel function
@@ -426,6 +431,49 @@ test('should stop animation when requested', async () => {
 });
 ```
 
+**Phase 6 Implementation Complete:**
+- ✅ TypeScript: `SphereAnimationOptions` and `SphereAnimationHandle` interfaces
+- ✅ Fluent API: `sphere.animate()` / `sphere.stopAnimation()` / `sphere.isAnimating()`
+- ✅ Animation handle: `stop()`, `pause()`, `resume()`, `isRunning()`, `isPaused()`
+- ✅ Jest tests: 25+ tests covering all animation types and control methods
+- ✅ TsyneTest: 7 integration tests with real sphere widgets
+- ✅ Demo: `examples/canvas-sphere-demo.ts` updated with auto-starting animations
+- ✅ Interactive demo: `examples/canvas-sphere-animations.ts` with UI controls
+- ✅ All animations work with all patterns, textures, and rotations
+
+**Animation Types:**
+| Type | Description | Default Amplitude | Default Speed |
+|------|-------------|-------------------|---------------|
+| `spin` | Continuous rotation around axis | N/A | 1.0 rad/s |
+| `wobble` | Oscillating rotation back/forth | π/6 (30°) | 1.0 |
+| `bounce` | Size oscillation (elastic) | 0.15 (15%) | 1.0 |
+| `pulse` | Smooth size oscillation (breathing) | 0.08 (8%) | 1.0 |
+
+**API Summary:**
+```typescript
+// Start animation
+const handle = sphere.animate({
+  type: 'spin' | 'wobble' | 'bounce' | 'pulse',
+  speed?: number,      // Speed multiplier (default: 1.0)
+  axis?: 'x' | 'y' | 'z',  // For spin/wobble (default: 'y')
+  amplitude?: number,  // For wobble/bounce/pulse
+  loop?: boolean,      // Default: true
+  onComplete?: () => void,  // Called when non-looping animation ends
+});
+
+// Control animation
+handle.stop();     // Stop animation
+handle.pause();    // Pause (preserves state)
+handle.resume();   // Resume paused animation
+handle.isRunning();  // Check if running
+handle.isPaused();   // Check if paused
+
+// Sphere methods
+sphere.isAnimating();        // Check if any animation is running
+sphere.getCurrentAnimation(); // Get current animation options
+sphere.stopAnimation();       // Stop any running animation
+```
+
 ---
 
 ## Use Case Examples
@@ -480,13 +528,13 @@ a.canvasSphere({
 
 | Phase | Jest Unit Tests | TsyneTest Integration |
 |-------|-----------------|----------------------|
-| 1. Patterns | 6 tests | 4 tests |
-| 2. Rotation | 4 tests | 2 tests |
-| 3. Lighting | 3 tests | 2 tests |
-| 4. Textures | 3 tests | 3 tests |
-| 5. Interactivity | 3 tests | 3 tests |
-| 6. Animation | 2 tests | 3 tests |
-| **Total** | **21 tests** | **17 tests** |
+| 1. Patterns | 12 tests | 10 tests |
+| 2. Rotation | 10 tests | 6 tests |
+| 3. Lighting | (built-in) | (built-in) |
+| 4. Textures | 8 tests | 5 tests |
+| 5. Interactivity | 7 tests | 0 tests |
+| 6. Animation | 24 tests | 7 tests |
+| **Total** | **61 tests** | **28+ tests** |
 
 ---
 
