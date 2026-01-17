@@ -277,6 +277,45 @@ const test = new TsyneBrowserTest({ headed: false });
 
 **Run:** `pnpm test` or `TSYNE_HEADED=1 pnpm test examples/todomvc.test.ts`
 
+### Adding Tests to New Demo Apps (phone-apps/)
+
+Each demo app with tests needs its own `package.json` and `jest.config.js` so that `pnpm -r test` discovers them. CI runs `pnpm test:phone-apps` which recursively runs tests in all phone-apps workspaces.
+
+**Required files for a new testable demo:**
+
+1. `phone-apps/my-demo/package.json`:
+```json
+{
+  "name": "tsyne-my-demo",
+  "version": "0.1.0",
+  "description": "My demo description",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+2. `phone-apps/my-demo/jest.config.js`:
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testMatch: ['**/*.test.ts'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  testTimeout: 30000,
+};
+```
+
+3. `phone-apps/my-demo/my-demo.test.ts` - Your actual test file
+
 ### TsyneTest Do's and Don'ts
 
 **✅ DO:**
@@ -894,11 +933,12 @@ pnpm test
 
 ## Development Workflow
 
-**CRITICAL: No compiled JavaScript in src/ directory**
+**CRITICAL: No compiled JavaScript in source directories**
 
-- TypeScript source files live in `src/` (`.ts` files only)
+- TypeScript source files live in `src/`, `cosyne/src/`, `core/src/` (`.ts` files only)
 - Compiled output goes to `dist/` directory only (via `pnpm run build`)
-- **NEVER** have `.js` or `.d.ts` files in the `src/` tree
+- **NEVER** have `.js`, `.d.ts`, or `.js.map` files in source trees
+- **NEVER** run `tsc` or `npx tsc` directly - it compiles into src/ and breaks everything
 - Use `npx tsx` for running applications (compiles on-the-fly with esbuild)
 - This applies to both development AND production - tsx is used everywhere
 - Tests use tsx automatically - no pre-compilation needed
@@ -909,10 +949,12 @@ pnpm test
 - The project depends on tsx on-the-fly compilation, not pre-compiled artifacts
 - `pnpm run build` creates `dist/` for distribution, but runtime uses tsx
 
-**If you find `.js` files in src/:**
+**If you find `.js` files in source directories:**
 ```bash
-# Clean up stale compiled files
-rm src/*.js src/*.d.ts src/**/*.js src/**/*.d.ts
+# Clean up stale compiled files from ALL source directories
+rm -f src/*.js src/*.d.ts src/*.js.map src/**/*.js src/**/*.d.ts src/**/*.js.map
+rm -f cosyne/src/*.js cosyne/src/*.d.ts cosyne/src/*.js.map cosyne/src/**/*.js cosyne/src/**/*.d.ts cosyne/src/**/*.js.map
+rm -f core/src/*.js core/src/*.d.ts core/src/*.js.map core/src/**/*.js core/src/**/*.d.ts core/src/**/*.js.map
 ```
 
 **Running applications (development and production):**

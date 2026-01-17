@@ -60,7 +60,6 @@ export function buildParticlesAdvancedApp(a: any) {
   const ps = new ParticleSystem();
   let currentEmitter: Emitter | null = null;
 
-  let canvasStack: any;
   let particleCountLabel: any;
   let emitterTypeLabel: any;
 
@@ -137,16 +136,20 @@ export function buildParticlesAdvancedApp(a: any) {
 
         // Controls
         a.hbox(() => {
-          a.button('Fountain', async () => store.setEmitterType('fountain'))
+          a.button('Fountain')
+            .onClick(async () => store.setEmitterType('fountain'))
             .withId('btn-fountain')
             .when(() => store.emitterType !== 'fountain');
-          a.button('Fireworks', async () => store.setEmitterType('fireworks'))
+          a.button('Fireworks')
+            .onClick(async () => store.setEmitterType('fireworks'))
             .withId('btn-fireworks')
             .when(() => store.emitterType !== 'fireworks');
-          a.button('Smoke', async () => store.setEmitterType('smoke'))
+          a.button('Smoke')
+            .onClick(async () => store.setEmitterType('smoke'))
             .withId('btn-smoke')
             .when(() => store.emitterType !== 'smoke');
-          a.button('Explosion', async () => store.setEmitterType('explosion'))
+          a.button('Explosion')
+            .onClick(async () => store.setEmitterType('explosion'))
             .withId('btn-explosion')
             .when(() => store.emitterType !== 'explosion');
 
@@ -156,22 +159,21 @@ export function buildParticlesAdvancedApp(a: any) {
         // Status
         a.hbox(() => {
           particleCountLabel = a.label(`Particles: 0`).withId('particleCountLabel');
-          a.button(store.isRunning ? 'Stop' : 'Start', async () => {
-            if (store.isRunning) {
-              ps.stop();
-              store.setRunning(false);
-            } else {
-              ps.start();
-              store.setRunning(true);
-            }
-          })
+          a.button(store.isRunning ? 'Stop' : 'Start')
+            .onClick(async () => {
+              if (store.isRunning) {
+                ps.stop();
+                store.setRunning(false);
+              } else {
+                ps.start();
+                store.setRunning(true);
+              }
+            })
             .withId('toggleBtn');
         });
 
         // Canvas
         a.canvasStack(() => {
-          canvasStack = a.canvasStack();
-
           const ctx = cosyne(a, (c) => {
             // Draw background
             c.rect(0, 0, 500, 500)
@@ -179,7 +181,7 @@ export function buildParticlesAdvancedApp(a: any) {
               .withId('background');
 
             // Draw particle system
-            ps.render(ctx);
+            ps.render(c);
 
             // Instructions
             c.text(10, 520, 'Click to create particles')
@@ -215,27 +217,29 @@ export function buildParticlesAdvancedApp(a: any) {
 
         // Action buttons
         a.hbox(() => {
-          a.button('Clear', async () => {
-            ps.clear();
-            currentEmitter = null;
-            store.setRunning(false);
-            store.setParticleCount(0);
-            await refreshAllCosyneContexts();
-          })
+          a.button('Clear')
+            .onClick(async () => {
+              ps.clear();
+              currentEmitter = null;
+              store.setRunning(false);
+              store.setParticleCount(0);
+              await refreshAllCosyneContexts();
+            })
             .withId('clearBtn');
 
-          a.button('Create at Center', async () => {
-            if (!store.isRunning) {
-              ps.start();
-              store.setRunning(true);
-            }
-            if (currentEmitter) {
-              ps.removeEmitter(currentEmitter);
-            }
-            currentEmitter = createEmitter(250, 250);
-            ps.addEmitter(currentEmitter);
-            await refreshAllCosyneContexts();
-          })
+          a.button('Create at Center')
+            .onClick(async () => {
+              if (!store.isRunning) {
+                ps.start();
+                store.setRunning(true);
+              }
+              if (currentEmitter) {
+                ps.removeEmitter(currentEmitter);
+              }
+              currentEmitter = createEmitter(250, 250);
+              ps.addEmitter(currentEmitter);
+              await refreshAllCosyneContexts();
+            })
             .withId('createCenterBtn');
         });
       });

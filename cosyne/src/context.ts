@@ -24,6 +24,7 @@ import { CirclesCollection, RectsCollection, LinesCollection } from './collectio
 import { TransformStack, TransformOptions } from './transforms';
 import { ForeignObject, ForeignObjectCollection } from './foreign';
 import { AnimationManager } from './animation-manager';
+import { MarkerConfig, isCustomMarker, BuiltInMarkerType, CustomMarker } from './markers';
 
 /**
  * Options for creating a CosyneContext
@@ -42,10 +43,45 @@ export class CosyneContext {
   private transformStack: TransformStack = new TransformStack();
   private foreignObjects: ForeignObjectCollection = new ForeignObjectCollection();
   private animationManager: AnimationManager;
+  private builder?: (context: CosyneContext) => void;
+  private containerId?: string;
 
   constructor(private app: any, options?: CosyneContextOptions) {
     this.bindingRegistry = new BindingRegistry();
     this.animationManager = options?.animationManager ?? new AnimationManager();
+  }
+
+  /**
+   * Set the builder function for this context (used for rebuild)
+   */
+  setBuilder(builder: (context: CosyneContext) => void): void {
+    this.builder = builder;
+  }
+
+  /**
+   * Set the container ID this context renders into (for clearing on rebuild)
+   */
+  setContainerId(containerId: string): void {
+    this.containerId = containerId;
+  }
+
+  /**
+   * Clear all primitives and rebuild the context from scratch
+   * Use this when state changes require creating different primitives
+   *
+   * NOTE: This method has limitations - it clears our tracking but doesn't
+   * remove the Fyne widgets from the container. For full rebuild, use
+   * win.setContent() to re-render the entire window content.
+   */
+  rebuild(): void {
+    if (!this.builder) return;
+
+    // Clear existing primitives from our tracking
+    this.primitives.clear();
+    this.allPrimitives = [];
+
+    // Re-run the builder to create new primitives
+    this.builder(this);
   }
 
   /**
@@ -118,6 +154,374 @@ export class CosyneContext {
     });
     this.trackPrimitive(primitive);
     return primitive;
+  }
+
+  /**
+   * Shape descriptor for connector endpoints
+   */
+  /**
+   * Create a connector line between two shapes that stops at their edges.
+   * Useful for diagrams, flowcharts, and network graphs where lines should
+   * connect to shape perimeters rather than centers.
+   *
+   * @param from - Start shape: { x, y, radius } for circles, { x, y, width, height } for rects
+   * @param to - End shape: same format as 'from'
+   * @param options - Line styling options
+   * @returns CosyneLine with endpoints adjusted to touch shape edges
+   *
+   * @example
+   * // Connect two circular nodes
+   * c.connector(
+   *   { x: 100, y: 100, radius: 20 },
+   *   { x: 200, y: 150, radius: 20 },
+   *   { strokeColor: '#333', strokeWidth: 2 }
+   * ).endMarker('arrow', 10, '#333');
+   *
+   * @example
+   * // Connect rectangular nodes
+   * c.connector(
+   *   { x: 50, y: 50, width: 80, height: 40 },
+   *   { x: 200, y: 100, width: 80, height: 40 }
+   * );
+   */
+  connector(
+    from: { x: number; y: number; radius?: number; width?: number; height?: number },
+    to: { x: number; y: number; radius?: number; width?: number; height?: number },
+    options?: LineOptions
+  ): CosyneLine {
+    // Calculate direction vector
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    if (len === 0) {
+      // Degenerate case: same point
+      return this.line(from.x, from.y, to.x, to.y, options);
+    }
+
+    // Unit vector from 'from' to 'to'
+    const ux = dx / len;
+    const uy = dy / len;
+
+    // Calculate edge offset for 'from' shape
+    let fromOffset = 0;
+    if (from.radius !== undefined) {
+      // Circle: offset by radius
+      fromOffset = from.radius;
+    } else if (from.width !== undefined && from.height !== undefined) {
+      // Rectangle: find intersection with edge
+      fromOffset = this.rectEdgeOffset(from.width, from.height, ux, uy);
+    }
+
+    // Calculate edge offset for 'to' shape
+    let toOffset = 0;
+    if (to.radius !== undefined) {
+      // Circle: offset by radius
+      toOffset = to.radius;
+    } else if (to.width !== undefined && to.height !== undefined) {
+      // Rectangle: find intersection with edge (reverse direction)
+      toOffset = this.rectEdgeOffset(to.width, to.height, -ux, -uy);
+    }
+
+    // Calculate adjusted endpoints
+    const x1 = from.x + ux * fromOffset;
+    const y1 = from.y + uy * fromOffset;
+    const x2 = to.x - ux * toOffset;
+    const y2 = to.y - uy * toOffset;
+
+    return this.line(x1, y1, x2, y2, options);
+  }
+
+  /**
+   * Calculate the distance from rectangle center to edge in a given direction
+   */
+  private rectEdgeOffset(width: number, height: number, ux: number, uy: number): number {
+    // For a rectangle centered at origin with given width/height,
+    // find where a ray in direction (ux, uy) intersects the edge
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    if (Math.abs(ux) < 0.0001) {
+      // Vertical line
+      return halfH;
+    }
+    if (Math.abs(uy) < 0.0001) {
+      // Horizontal line
+      return halfW;
+    }
+
+    // Time to hit vertical edges (x = ±halfW)
+    const tx = halfW / Math.abs(ux);
+    // Time to hit horizontal edges (y = ±halfH)
+    const ty = halfH / Math.abs(uy);
+
+    // Take the smaller time (first intersection)
+    const t = Math.min(tx, ty);
+
+    // Distance is t (since direction is unit vector)
+    return t;
+  }
+
+  /**
+   * Render markers for all lines that have them configured
+   * Called after the builder completes to ensure all fluent API calls have been processed
+   */
+  renderLineMarkers(): void {
+    for (const primitive of this.allPrimitives) {
+      if (primitive instanceof CosyneLine) {
+        const markers = primitive.getMarkers();
+        const endpoints = primitive.getEndpoints();
+
+        // Calculate line angle
+        const dx = endpoints.x2 - endpoints.x1;
+        const dy = endpoints.y2 - endpoints.y1;
+        const angle = Math.atan2(dy, dx);
+
+        // Render start marker
+        const startMarker = markers.getStartMarker();
+        if (startMarker) {
+          this.renderMarker(endpoints.x1, endpoints.y1, angle + Math.PI, startMarker);
+        }
+
+        // Render end marker
+        const endMarker = markers.getEndMarker();
+        if (endMarker) {
+          this.renderMarker(endpoints.x2, endpoints.y2, angle, endMarker);
+        }
+      }
+    }
+  }
+
+  /**
+   * Render a single marker at the given position and angle
+   */
+  /**
+   * Parse a simple SVG path string into polygon points
+   * Supports: M (moveto), L (lineto), Z (closepath)
+   * Ignores curves (Q, A) - approximates them with straight lines
+   */
+  private parseSvgPathToPoints(path: string, scale: number, refX: number, refY: number, width: number, height: number): Point[][] {
+    const polygons: Point[][] = [];
+    let currentPolygon: Point[] = [];
+    let currentX = 0;
+    let currentY = 0;
+
+    // Simple tokenizer - split by commands
+    const commands = path.match(/[MLQAHVCSTZ][^MLQAHVCSTZ]*/gi) || [];
+
+    // Find bounding box of path to map refX/refY correctly
+    let minX = Infinity, minY = Infinity;
+
+    // First pass: find min coordinates
+    for (const cmd of commands) {
+      const type = cmd[0].toUpperCase();
+      const args = cmd.slice(1).trim().split(/[\s,]+/).filter(s => s).map(parseFloat);
+
+      if (type === 'M' || type === 'L') {
+        if (args[0] < minX) minX = args[0];
+        if (args[1] < minY) minY = args[1];
+      } else if (type === 'Q' && args.length >= 4) {
+        if (args[2] < minX) minX = args[2];
+        if (args[3] < minY) minY = args[3];
+      }
+    }
+
+    // Calculate anchor point: refX/refY are in viewBox coordinates (0 to width/height)
+    // Map to path coordinates
+    const anchorX = minX + (refX / width) * width;
+    const anchorY = minY + (refY / height) * height;
+
+    for (const cmd of commands) {
+      const type = cmd[0].toUpperCase();
+      const args = cmd.slice(1).trim().split(/[\s,]+/).filter(s => s).map(parseFloat);
+
+      switch (type) {
+        case 'M': // Move to
+          if (currentPolygon.length > 0) {
+            polygons.push(currentPolygon);
+            currentPolygon = [];
+          }
+          // Translate so anchor point is at origin, then scale
+          currentX = (args[0] - anchorX) * scale;
+          currentY = (args[1] - anchorY) * scale;
+          currentPolygon.push({ x: currentX, y: currentY });
+          break;
+
+        case 'L': // Line to
+          currentX = (args[0] - anchorX) * scale;
+          currentY = (args[1] - anchorY) * scale;
+          currentPolygon.push({ x: currentX, y: currentY });
+          break;
+
+        case 'H': // Horizontal line
+          currentX = (args[0] - anchorX) * scale;
+          currentPolygon.push({ x: currentX, y: currentY });
+          break;
+
+        case 'V': // Vertical line
+          currentY = (args[0] - anchorY) * scale;
+          currentPolygon.push({ x: currentX, y: currentY });
+          break;
+
+        case 'Q': // Quadratic curve - approximate with endpoint
+          if (args.length >= 4) {
+            currentX = (args[2] - anchorX) * scale;
+            currentY = (args[3] - anchorY) * scale;
+            currentPolygon.push({ x: currentX, y: currentY });
+          }
+          break;
+
+        case 'A': // Arc - approximate with endpoint
+          if (args.length >= 7) {
+            currentX = (args[5] - anchorX) * scale;
+            currentY = (args[6] - anchorY) * scale;
+            currentPolygon.push({ x: currentX, y: currentY });
+          }
+          break;
+
+        case 'Z': // Close path
+          if (currentPolygon.length > 0) {
+            polygons.push(currentPolygon);
+            currentPolygon = [];
+          }
+          break;
+      }
+    }
+
+    // Add any remaining polygon
+    if (currentPolygon.length > 0) {
+      polygons.push(currentPolygon);
+    }
+
+    return polygons;
+  }
+
+  private renderMarker(x: number, y: number, angle: number, config: MarkerConfig): void {
+    const size = config.size ?? 10;
+    const color = config.color ?? '#000000';
+
+    // Calculate rotated points for the marker (relative to origin)
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    // Returns relative coordinates (polygon will add x,y)
+    const rotatePoint = (px: number, py: number): Point => ({
+      x: px * cos - py * sin,
+      y: px * sin + py * cos,
+    });
+
+    if (isCustomMarker(config.type)) {
+      // Render custom marker using SVG path
+      const customMarker = config.type as CustomMarker;
+      const scale = size / Math.max(customMarker.width, customMarker.height);
+
+      // Parse SVG path to polygons
+      const polygons = this.parseSvgPathToPoints(
+        customMarker.path,
+        scale,
+        customMarker.refX,
+        customMarker.refY,
+        customMarker.width,
+        customMarker.height
+      );
+
+      // Render each polygon (rotated) using lines since polygon fill has issues
+      for (const polygon of polygons) {
+        if (polygon.length >= 2) {
+          const rotatedPoints = polygon.map(p => rotatePoint(p.x, p.y));
+          const strokeWidth = Math.max(2, size / 4);
+
+          // Draw lines connecting all points
+          for (let i = 0; i < rotatedPoints.length; i++) {
+            const p1 = rotatedPoints[i];
+            const p2 = rotatedPoints[(i + 1) % rotatedPoints.length];
+            this.line(x + p1.x, y + p1.y, x + p2.x, y + p2.y, { strokeColor: color, strokeWidth })
+              .withId(`marker-line-${Date.now()}-${Math.random()}`);
+          }
+        }
+      }
+      return;
+    }
+
+    const markerType = config.type as BuiltInMarkerType;
+
+    switch (markerType) {
+      case 'arrow': {
+        // Solid triangle arrow pointing in direction of angle
+        // Use lines to draw filled arrow (polygons have rendering issues)
+        const tip = rotatePoint(0, 0);
+        const backLeft = rotatePoint(-size, -size / 2);
+        const backRight = rotatePoint(-size, size / 2);
+        // Draw as three lines forming triangle, with thick stroke
+        const strokeWidth = Math.max(2, size / 3);
+        this.line(x + tip.x, y + tip.y, x + backLeft.x, y + backLeft.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + backLeft.x, y + backLeft.y, x + backRight.x, y + backRight.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + backRight.x, y + backRight.y, x + tip.x, y + tip.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+      case 'circle': {
+        // Position circle so its edge touches the line endpoint
+        const cx = x - cos * size / 2;
+        const cy = y - sin * size / 2;
+        this.circle(cx, cy, size / 2, { fillColor: color }).withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+      case 'square': {
+        const halfSize = size / 2;
+        const points = [
+          rotatePoint(-size, -halfSize),
+          rotatePoint(0, -halfSize),
+          rotatePoint(0, halfSize),
+          rotatePoint(-size, halfSize),
+        ];
+        this.polygon(x, y, points, { fillColor: color }).withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+      case 'triangle': {
+        // Use lines to draw filled triangle (polygons have rendering issues)
+        const p1 = rotatePoint(0, 0);
+        const p2 = rotatePoint(-size, size / 2);
+        const p3 = rotatePoint(-size / 2, -size / 2);
+        const strokeWidth = Math.max(2, size / 3);
+        this.line(x + p1.x, y + p1.y, x + p2.x, y + p2.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + p2.x, y + p2.y, x + p3.x, y + p3.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + p3.x, y + p3.y, x + p1.x, y + p1.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+      case 'diamond': {
+        // Use lines to draw diamond (polygons have rendering issues with non-axis-aligned shapes)
+        const p1 = rotatePoint(0, 0);
+        const p2 = rotatePoint(-size / 2, size / 2);
+        const p3 = rotatePoint(-size, 0);
+        const p4 = rotatePoint(-size / 2, -size / 2);
+        const strokeWidth = Math.max(2, size / 3);
+        this.line(x + p1.x, y + p1.y, x + p2.x, y + p2.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + p2.x, y + p2.y, x + p3.x, y + p3.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + p3.x, y + p3.y, x + p4.x, y + p4.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        this.line(x + p4.x, y + p4.y, x + p1.x, y + p1.y, { strokeColor: color, strokeWidth })
+          .withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+      case 'bar': {
+        const points = [
+          rotatePoint(-size / 4, -size / 2),
+          rotatePoint(size / 4, -size / 2),
+          rotatePoint(size / 4, size / 2),
+          rotatePoint(-size / 4, size / 2),
+        ];
+        this.polygon(x, y, points, { fillColor: color }).withId(`marker-${Date.now()}-${Math.random()}`);
+        break;
+      }
+    }
   }
 
   /**
@@ -559,8 +963,11 @@ let contextRegistry: CosyneContext[] = [];
 
 export function cosyne(app: any, builder: (context: CosyneContext) => void): CosyneContext {
   const context = new CosyneContext(app);
+  context.setBuilder(builder);
   registerCosyneContext(context);
   builder(context);
+  // Render markers for all lines after builder completes
+  context.renderLineMarkers();
   return context;
 }
 
@@ -575,10 +982,23 @@ export function registerCosyneContext(context: CosyneContext): void {
 /**
  * Refresh all registered Cosyne contexts
  * Call this after updating state to propagate changes through bindings
+ * Note: This only updates existing primitives. Use rebuildAllCosyneContexts()
+ * if you need to create different primitives based on new state.
  */
 export function refreshAllCosyneContexts(): void {
   for (const context of contextRegistry) {
     context.refreshBindings();
+  }
+}
+
+/**
+ * Rebuild all registered Cosyne contexts from scratch
+ * Call this when state changes require creating different primitives
+ * (e.g., switching between different visualization modes)
+ */
+export function rebuildAllCosyneContexts(): void {
+  for (const context of contextRegistry) {
+    context.rebuild();
   }
 }
 

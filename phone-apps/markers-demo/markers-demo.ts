@@ -10,7 +10,7 @@
  */
 
 import { app } from '../../core/src/index';
-import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
+import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
 import { CUSTOM_MARKERS } from '../../cosyne/src/markers';
 
 type DiagramType = 'flowchart' | 'graph' | 'state-machine' | 'network' | 'custom';
@@ -45,94 +45,88 @@ class MarkersDemoStore {
 export function buildMarkersDemoApp(a: any) {
   const store = new MarkersDemoStore();
 
-  let diagramLabel: any;
-  let labelsCheckbox: any;
+  const buildContent = () => {
+    a.vbox(() => {
+      // Title
+      a.label('Line Markers: Directed Graphs & Diagrams', undefined, undefined, undefined, { bold: true });
 
-  a.window({ title: 'Line Markers Demo', width: 1000, height: 800 }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
-        // Title
-        a.label('Line Markers: Directed Graphs & Diagrams', undefined, undefined, undefined, { bold: true });
-
-        // Controls
-        a.hbox(() => {
-          a.label('Select Diagram:');
-          (['flowchart', 'graph', 'state-machine', 'network', 'custom'] as DiagramType[]).forEach((diagram) => {
-            a.button(
-              diagram
-                .split('-')
-                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(' '),
-              async () => store.selectDiagram(diagram)
-            )
-              .withId(`diagram-${diagram}`)
-              .when(() => store.selectedDiagram !== diagram);
-          });
-
-          diagramLabel = a.label(`(${store.selectedDiagram})`).withId('diagramLabel');
+      // Controls
+      a.hbox(() => {
+        a.label('Select Diagram:');
+        (['flowchart', 'graph', 'state-machine', 'network', 'custom'] as DiagramType[]).forEach((diagram) => {
+          a.button(
+            diagram
+              .split('-')
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ')
+          )
+            .onClick(async () => store.selectDiagram(diagram))
+            .withId(`diagram-${diagram}`)
+            .when(() => store.selectedDiagram !== diagram);
         });
 
-        // Checkbox for labels
-        a.hbox(() => {
-          labelsCheckbox = a.checkbox('Show labels', async (checked) => {
-            store.toggleLabels(checked);
-            await refreshAllCosyneContexts();
-          }).withId('cbx-labels');
-          if (store.showLabels) labelsCheckbox.setChecked(true);
-        });
+        a.label(`(${store.selectedDiagram})`).withId('diagramLabel');
+      });
 
-        // Canvas
-        a.canvasStack(() => {
-          const ctx = cosyne(a, (c) => {
-            const width = 900;
-            const height = 550;
+      // Checkbox for labels
+      a.hbox(() => {
+        const labelsCheckbox = a.checkbox('Show labels', (checked: boolean) => {
+          store.toggleLabels(checked);
+        }).withId('cbx-labels');
+        if (store.showLabels) labelsCheckbox.setChecked(true);
+      });
 
-            // Background
-            c.rect(0, 0, width, height)
-              .fill('#f8f8f8')
-              .withId('background');
+      // Canvas
+      a.canvasStack(() => {
+        cosyne(a, (c) => {
+          const width = 900;
+          const height = 550;
 
-            switch (store.selectedDiagram) {
-              case 'flowchart':
-                renderFlowchart(c, store.showLabels);
-                break;
-              case 'graph':
-                renderDirectedGraph(c, store.showLabels);
-                break;
-              case 'state-machine':
-                renderStateMachine(c, store.showLabels);
-                break;
-              case 'network':
-                renderNetworkTopology(c, store.showLabels);
-                break;
-              case 'custom':
-                renderCustomMarkers(c, store.showLabels);
-                break;
-            }
-          });
-        });
+          // Background
+          c.rect(0, 0, width, height)
+            .fill('#f8f8f8')
+            .withId('background');
 
-        // Legend
-        a.hbox(() => {
-          a.label('Marker Types:');
-          a.label('→ arrow')
-            .withId('legend-arrow');
-          a.label('⚬ circle')
-            .withId('legend-circle');
-          a.label('◼ square')
-            .withId('legend-square');
-          a.label('⬥ diamond')
-            .withId('legend-diamond');
+          switch (store.selectedDiagram) {
+            case 'flowchart':
+              renderFlowchart(c, store.showLabels);
+              break;
+            case 'graph':
+              renderDirectedGraph(c, store.showLabels);
+              break;
+            case 'state-machine':
+              renderStateMachine(c, store.showLabels);
+              break;
+            case 'network':
+              renderNetworkTopology(c, store.showLabels);
+              break;
+            case 'custom':
+              renderCustomMarkers(c, store.showLabels);
+              break;
+          }
         });
       });
-    });
-    win.show();
-  });
 
-  // Subscribe to store changes
-  store.subscribe(async () => {
-    diagramLabel?.setText?.(`(${store.selectedDiagram})`);
-    await refreshAllCosyneContexts();
+      // Legend
+      a.hbox(() => {
+        a.label('Marker Types:');
+        a.label('→ arrow').withId('legend-arrow');
+        a.label('⚬ circle').withId('legend-circle');
+        a.label('◼ square').withId('legend-square');
+        a.label('⬥ diamond').withId('legend-diamond');
+      });
+    });
+  };
+
+  a.window({ title: 'Line Markers Demo', width: 1000, height: 800 }, (win: any) => {
+    win.setContent(buildContent);
+    win.show();
+
+    // Subscribe to store changes - rebuild the entire window content
+    store.subscribe(() => {
+      clearAllCosyneContexts();
+      win.setContent(buildContent);
+    });
   });
 }
 
@@ -258,13 +252,14 @@ function renderFlowchart(c: any, showLabels: boolean) {
 }
 
 function renderDirectedGraph(c: any, showLabels: boolean) {
-  // Nodes
+  // Nodes with radius for connector calculations
+  const nodeRadius = 25;
   const nodes = [
-    { x: 100, y: 80, id: 'A', color: '#FF6B6B' },
-    { x: 300, y: 80, id: 'B', color: '#4ECDC4' },
-    { x: 500, y: 80, id: 'C', color: '#45B7D1' },
-    { x: 200, y: 250, id: 'D', color: '#95E1D3' },
-    { x: 400, y: 250, id: 'E', color: '#FFD93D' },
+    { x: 100, y: 80, id: 'A', color: '#FF6B6B', radius: nodeRadius },
+    { x: 300, y: 80, id: 'B', color: '#4ECDC4', radius: nodeRadius },
+    { x: 500, y: 80, id: 'C', color: '#45B7D1', radius: nodeRadius },
+    { x: 200, y: 250, id: 'D', color: '#95E1D3', radius: nodeRadius },
+    { x: 400, y: 250, id: 'E', color: '#FFD93D', radius: nodeRadius },
   ];
 
   // Edges with arrows
@@ -278,18 +273,22 @@ function renderDirectedGraph(c: any, showLabels: boolean) {
   ];
 
   // Draw edges first (so they're behind nodes)
+  // Use connector() to stop lines at node edges instead of centers
   edges.forEach(({ from, to }, idx) => {
     const n1 = nodes[from];
     const n2 = nodes[to];
-    c.line(n1.x, n1.y, n2.x, n2.y)
-      .stroke('#999999', 1)
+    c.connector(
+      { x: n1.x, y: n1.y, radius: n1.radius },
+      { x: n2.x, y: n2.y, radius: n2.radius },
+      { strokeColor: '#999999', strokeWidth: 1 }
+    )
       .endMarker('arrow', 8, '#666666')
       .withId(`edge-${idx}`);
   });
 
   // Draw nodes
   nodes.forEach((node) => {
-    c.circle(node.x, node.y, 25)
+    c.circle(node.x, node.y, node.radius)
       .fill(node.color)
       .stroke('#333333', 2)
       .withId(`node-${node.id}`);
@@ -389,7 +388,6 @@ function renderStateMachine(c: any, showLabels: boolean) {
     if (showLabels) {
       c.text(state.x, state.y, state.id)
         .fill('#333333')
-        .fontSize(10)
         .withId(`label-${state.id}`);
     }
   });
@@ -449,7 +447,6 @@ function renderNetworkTopology(c: any, showLabels: boolean) {
     if (showLabels) {
       c.text(client.x, client.y, client.id.split(' ')[1])
         .fill('#FFFFFF')
-        .fontSize(8)
         .withId(`label-${client.id}`);
     }
   });
@@ -479,7 +476,6 @@ function renderCustomMarkers(c: any, showLabels: boolean) {
       if (showLabels) {
         c.text(marker.x, marker.y + 30, marker.name)
           .fill('#333333')
-          .fontSize(9)
           .withId(`label-${marker.name}`);
       }
     }
@@ -504,7 +500,6 @@ function renderCustomMarkers(c: any, showLabels: boolean) {
     if (showLabels) {
       c.text(marker.x, marker.y + 30, marker.name)
         .fill('#333333')
-        .fontSize(9)
         .withId(`label-builtin-${marker.name}`);
     }
   });

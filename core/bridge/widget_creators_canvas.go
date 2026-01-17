@@ -1696,12 +1696,17 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 
 	width := maxX - minX
 	height := maxY - minY
-	if width < 10 {
-		width = 100
+	// Ensure minimum size for proper rendering
+	if width < 2 {
+		width = 2
 	}
-	if height < 10 {
-		height = 100
+	if height < 2 {
+		height = 2
 	}
+
+	// Store offset for the raster coordinate transformation
+	offsetX := minX
+	offsetY := minY
 
 	// Create a raster that draws the polygon using point-in-polygon algorithm
 	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
@@ -1714,8 +1719,9 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 		}
 
 		// Point in polygon test using ray casting
-		x := float32(px)
-		y := float32(py)
+		// Convert raster pixel coords to polygon coordinate space
+		x := float32(px) + offsetX
+		y := float32(py) + offsetY
 		inside := false
 		n := len(polyInfo.Points)
 		j := n - 1
@@ -1739,6 +1745,8 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 	})
 
 	raster.SetMinSize(fyne.NewSize(width, height))
+	raster.Resize(fyne.NewSize(width, height))
+	raster.Move(fyne.NewPos(minX, minY))
 
 	b.mu.Lock()
 	b.widgets[widgetID] = raster

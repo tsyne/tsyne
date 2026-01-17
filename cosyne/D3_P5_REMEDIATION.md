@@ -47,39 +47,42 @@ The D3/P5 expansion work created APIs and demos that partially work. This docume
 
 **Recommendation**: Option 3 for now - mark as future work, keep the APIs for when rendering improves.
 
-### 2. Markers Demo Crashes
+### 2. Markers Demo Checkbox (Fixed by Cloud Sibling)
 
 **Problem**: Bridge panic on checkbox creation - `interface conversion: interface {} is bool, not string`
 
-**Location**: `core/bridge/widget_creators_inputs.go:236`
+**Status**: Fixed in commit `fa18c56` by cloud sibling.
 
-**Root Cause**: The demo passes a boolean where the bridge expects a string, or vice versa.
+### 3. TypeScript Errors in Cosyne Modules (Fixed by Cloud Sibling)
 
-**Remediation**: Debug the checkbox payload in markers-demo.ts and fix type mismatch.
+**Problem**: Missing DOM types (CanvasRenderingContext2D, Path2D, requestAnimationFrame, etc.)
 
-### 3. TypeScript Errors in Cosyne Modules
+**Status**: Fixed in commit `09196f7` by cloud sibling - added `"DOM"` to tsconfig lib.
 
-Running `npx tsc --noEmit` in cosyne shows errors:
+**Note**: The DOM lib provides only TYPE DEFINITIONS, not actual implementations. Code using these types will compile but won't work at runtime since Fyne doesn't provide a DOM or Canvas2D context. The effects/gradients/clipping APIs now throw descriptive errors explaining this limitation.
 
-```
-src/effects.ts - Missing CanvasRenderingContext2D type
-src/gradients.ts - Missing CanvasRenderingContext2D, CanvasGradient types
-src/clipping.ts - Missing CanvasRenderingContext2D, Path2D types
-src/markers.ts - Missing CanvasRenderingContext2D, Path2D types
-src/particle-system.ts - Missing requestAnimationFrame, cancelAnimationFrame
-src/axes.ts - Type mismatch string|number vs number
-src/line-chart.ts - Wrong number of arguments, protected property access
-```
+### 4. LineChart Uses Line Segments Instead of Paths
 
-**Remediation**:
-- Add `/// <reference lib="dom" />` or install `@types/node` with DOM lib
-- Fix actual type errors in axes.ts, line-chart.ts, particle-system.ts
+**Problem**: `LineChart.render()` originally used `ctx.path()` for SVG-style path rendering, but `canvasPath` is not implemented in the Fyne bridge.
 
-### 4. Scales/Line-Chart/Particles Demos Untested
+**Workaround**: Changed `LineChart` to use simple line segments connecting points instead of SVG paths.
 
-These may work but weren't fully tested due to time constraints.
+**Impact**: Curved interpolation modes (`catmull-rom`, `monotone`) don't render as smooth curves - they fall back to straight line segments between points.
 
-**Remediation**: Test each demo, fix any runtime errors.
+**Future Fix**: Implement `canvasPath` in the core:
+1. Create `CanvasPath` class in `core/src/widgets/canvas.ts`
+2. Add `canvasPath()` method to `App`
+3. Implement Go bridge handler for path rendering (SVG path parsing)
+4. Restore original `LineChart.render()` using `ctx.path()`
+
+### 5. Demos Fixed and Working
+
+All D3/P5 demos now launch without crashing:
+- `scales-demo` - Fixed nested canvasStack, render context parameter
+- `markers-demo` - Removed invented `.fontSize()` API calls
+- `particles-advanced-demo` - Fixed nested canvasStack, render context parameter
+- `line-chart-demo` - Fixed render context parameter, uses line segments workaround
+- `effects-gradients-clipping-demo` - Runs but effects don't render (see issue #1)
 
 ## Files Modified in This Fix
 

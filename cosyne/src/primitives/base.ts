@@ -385,56 +385,73 @@ export abstract class Primitive<TUnderlyingWidget> {
     );
   }
 
-  // ==================== Effects API ====================
+  // ==================== Effects API (NOT YET IMPLEMENTED) ====================
+  // These APIs are designed for a future Canvas2D-compatible renderer.
+  // Tsyne currently renders via Fyne native widgets which don't support these effects.
+  // The APIs exist so that when a software canvas renderer is added, existing code
+  // will work without changes. For now, calling these methods throws an error.
+
+  private static readonly EFFECTS_NOT_IMPLEMENTED_MSG =
+    'Effects (dropShadow, glow, blendMode, strokeDash) require a Canvas2D-compatible renderer. ' +
+    'Tsyne currently uses Fyne native widgets which do not support these effects. ' +
+    'This API exists for future compatibility when a software canvas renderer is added.';
+
+  private static readonly GRADIENTS_NOT_IMPLEMENTED_MSG =
+    'Gradients (linearGradient, radialGradient) require a Canvas2D-compatible renderer. ' +
+    'Tsyne currently uses Fyne native widgets which have limited gradient support. ' +
+    'This API exists for future compatibility when a software canvas renderer is added.';
+
+  private static readonly CLIPPING_NOT_IMPLEMENTED_MSG =
+    'Clipping (clipCircle, clipRect, clipPolygon, clipPath) requires a Canvas2D-compatible renderer. ' +
+    'Tsyne currently uses Fyne native widgets which do not support arbitrary clip paths. ' +
+    'This API exists for future compatibility when a software canvas renderer is added.';
 
   /**
    * Apply drop shadow effect
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  dropShadow(options: DropShadowOptions): this {
-    this.effects.setDropShadow(options);
-    return this;
+  dropShadow(_options: DropShadowOptions): this {
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Clear drop shadow effect
+   * @throws Error - Not yet implemented for Fyne renderer
    */
   clearDropShadow(): this {
-    this.effects.clearDropShadow();
-    return this;
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Apply glow effect
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  glow(options: GlowOptions): this {
-    this.effects.setGlow(options);
-    return this;
+  glow(_options: GlowOptions): this {
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Clear glow effect
+   * @throws Error - Not yet implemented for Fyne renderer
    */
   clearGlow(): this {
-    this.effects.clearGlow();
-    return this;
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set blend mode (e.g., 'multiply', 'screen', 'overlay')
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  blendMode(mode: string): this {
-    this.effects.setBlendMode(mode);
-    return this;
+  blendMode(_mode: string): this {
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set stroke dash pattern
-   * @param pattern Array of dash lengths [dashLength, gapLength, ...]
-   * @param offset Optional offset for animation
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  strokeDash(pattern: number[], offset: number = 0): this {
-    this.effects.setStrokeDash(pattern, offset);
-    return this;
+  strokeDash(_pattern: number[], _offset: number = 0): this {
+    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
@@ -444,30 +461,30 @@ export abstract class Primitive<TUnderlyingWidget> {
     return this.effects;
   }
 
-  // ==================== Gradient API ====================
+  // ==================== Gradient API (NOT YET IMPLEMENTED) ====================
 
   /**
    * Set fill to a linear gradient
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  linearGradient(gradient: LinearGradient): this {
-    this._fillGradient = gradient;
-    return this;
+  linearGradient(_gradient: LinearGradient): this {
+    throw new Error(Primitive.GRADIENTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set fill to a radial gradient
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  radialGradient(gradient: RadialGradient): this {
-    this._fillGradient = gradient;
-    return this;
+  radialGradient(_gradient: RadialGradient): this {
+    throw new Error(Primitive.GRADIENTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set stroke to a gradient
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  strokeGradient(gradient: LinearGradient | RadialGradient): this {
-    this._strokeGradient = gradient;
-    return this;
+  strokeGradient(_gradient: LinearGradient | RadialGradient): this {
+    throw new Error(Primitive.GRADIENTS_NOT_IMPLEMENTED_MSG);
   }
 
   /**
@@ -484,46 +501,46 @@ export abstract class Primitive<TUnderlyingWidget> {
     return this._strokeGradient;
   }
 
-  // ==================== Clipping API ====================
+  // ==================== Clipping API (NOT YET IMPLEMENTED) ====================
 
   /**
    * Set circular clipping region
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  clipCircle(cx: number, cy: number, r: number): this {
-    this.clipping.setCircleClip(cx, cy, r);
-    return this;
+  clipCircle(_cx: number, _cy: number, _r: number): this {
+    throw new Error(Primitive.CLIPPING_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set rectangular clipping region
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  clipRect(x: number, y: number, width: number, height: number, radius?: number): this {
-    this.clipping.setRectClip(x, y, width, height, radius);
-    return this;
+  clipRect(_x: number, _y: number, _width: number, _height: number, _radius?: number): this {
+    throw new Error(Primitive.CLIPPING_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set polygonal clipping region
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  clipPolygon(points: Array<{ x: number; y: number }>): this {
-    this.clipping.setPolygonClip(points);
-    return this;
+  clipPolygon(_points: Array<{ x: number; y: number }>): this {
+    throw new Error(Primitive.CLIPPING_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Set path-based clipping region
+   * @throws Error - Not yet implemented for Fyne renderer
    */
-  clipPath(pathString: string): this {
-    this.clipping.setPathClip(pathString);
-    return this;
+  clipPath(_pathString: string): this {
+    throw new Error(Primitive.CLIPPING_NOT_IMPLEMENTED_MSG);
   }
 
   /**
    * Clear clipping
+   * @throws Error - Not yet implemented for Fyne renderer
    */
   clearClip(): this {
-    this.clipping.clearClip();
-    return this;
+    throw new Error(Primitive.CLIPPING_NOT_IMPLEMENTED_MSG);
   }
 
   /**

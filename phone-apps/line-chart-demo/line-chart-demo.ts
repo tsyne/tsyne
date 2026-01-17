@@ -105,10 +105,11 @@ export function buildLineChartDemoApp(a: any) {
             .withId('multipleCheckbox');
           if (store.showMultiple) multipleCheckbox.setChecked(true);
 
-          a.button('Reset Zoom', async () => {
-            store.resetZoom();
-            await refreshAllCosyneContexts();
-          })
+          a.button('Reset Zoom')
+            .onClick(async () => {
+              store.resetZoom();
+              await refreshAllCosyneContexts();
+            })
             .withId('resetZoomBtn');
         });
 
@@ -126,14 +127,14 @@ export function buildLineChartDemoApp(a: any) {
             // Draw grid
             const gridH = new GridLines(xScale, { x: padding, y: padding }, height);
             gridH.setOrientation('horizontal').setStrokeColor('#f0f0f0');
-            gridH.render(ctx);
+            gridH.render(c);
 
             // Draw axes
             const xAxis = new Axis(xScale, { x: padding, y: padding + height }, width);
-            xAxis.setOrientation('bottom').render(ctx);
+            xAxis.setOrientation('bottom').render(c);
 
             const yAxis = new Axis(yScale, { x: padding, y: padding }, height);
-            yAxis.setOrientation('left').render(ctx);
+            yAxis.setOrientation('left').render(c);
 
             // Draw line charts
             if (store.showMultiple) {
@@ -145,7 +146,7 @@ export function buildLineChartDemoApp(a: any) {
               multiChart.addSeries('Series 2', data2, '#4ECDC4');
               multiChart.addSeries('Series 3', data3, '#45B7D1');
 
-              multiChart.render(ctx, padding, padding);
+              multiChart.render(c, padding, padding);
             } else {
               const chart = new LineChart(xScale, yScale)
                 .setPoints(data1)
@@ -155,7 +156,7 @@ export function buildLineChartDemoApp(a: any) {
                 .setPointColor('#FF6B6B')
                 .setInterpolation(store.interpolation);
 
-              chart.render(ctx, padding, padding);
+              chart.render(c, padding, padding);
             }
 
             // Title

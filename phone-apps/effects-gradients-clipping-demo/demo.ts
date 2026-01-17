@@ -70,13 +70,16 @@ export function buildSVGDemoApp(a: any) {
 
         // Tab controls
         a.hbox(() => {
-          a.button('Effects', async () => store.selectTab('effects'))
+          a.button('Effects')
+            .onClick(async () => store.selectTab('effects'))
             .withId('tab-effects')
             .when(() => store.selectedTab !== 'effects');
-          a.button('Gradients', async () => store.selectTab('gradients'))
+          a.button('Gradients')
+            .onClick(async () => store.selectTab('gradients'))
             .withId('tab-gradients')
             .when(() => store.selectedTab !== 'gradients');
-          a.button('Clipping', async () => store.selectTab('clipping'))
+          a.button('Clipping')
+            .onClick(async () => store.selectTab('clipping'))
             .withId('tab-clipping')
             .when(() => store.selectedTab !== 'clipping');
           tabLabel = a.label(`(${store.selectedTab})`).withId('tabLabel');
@@ -112,7 +115,8 @@ export function buildSVGDemoApp(a: any) {
           a.hbox(() => {
             a.label('Effect:');
             (['shadow', 'glow', 'blend', 'dash'] as const).forEach((effect) => {
-              a.button(effect, async () => store.selectEffect(effect))
+              a.button(effect)
+                .onClick(async () => store.selectEffect(effect))
                 .withId(`effect-${effect}`)
                 .when(() => store.effectType !== effect);
             });
@@ -120,10 +124,12 @@ export function buildSVGDemoApp(a: any) {
         } else if (store.selectedTab === 'gradients') {
           a.hbox(() => {
             a.label('Gradient:');
-            a.button('Linear', async () => store.selectGradient('linear'))
+            a.button('Linear')
+              .onClick(async () => store.selectGradient('linear'))
               .withId('grad-linear')
               .when(() => store.gradientType !== 'linear');
-            a.button('Radial', async () => store.selectGradient('radial'))
+            a.button('Radial')
+              .onClick(async () => store.selectGradient('radial'))
               .withId('grad-radial')
               .when(() => store.gradientType !== 'radial');
           });
@@ -131,7 +137,8 @@ export function buildSVGDemoApp(a: any) {
           a.hbox(() => {
             a.label('Clip Shape:');
             (['circle', 'rect', 'polygon'] as const).forEach((clip) => {
-              a.button(clip, async () => store.selectClip(clip))
+              a.button(clip)
+                .onClick(async () => store.selectClip(clip))
                 .withId(`clip-${clip}`)
                 .when(() => store.clipType !== clip);
             });

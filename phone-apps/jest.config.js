@@ -1,14 +1,20 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: '../jest-environment-tsyne.js',
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  globals: {
-    'ts-jest': {
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
       tsconfig: {
+        target: 'ES2020',
+        module: 'commonjs',
+        lib: ['ES2020', 'DOM'],
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
+        skipLibCheck: true,
+        strict: false,
       },
-    },
+      isolatedModules: true,
+    }],
   },
 };

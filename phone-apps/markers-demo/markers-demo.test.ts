@@ -17,7 +17,7 @@ describe('Markers Demo - TsyneTest', () => {
     await tsyneTest.cleanup();
   });
 
-  it('should create and display markers demo window', async () => {
+  it('should display markers on custom tab', async () => {
     const testApp = await tsyneTest.createApp((app) => {
       buildMarkersDemoApp(app);
     });
@@ -25,49 +25,23 @@ describe('Markers Demo - TsyneTest', () => {
     const ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify window was created with correct title
-    const window = await ctx.getWindowByTitle('Markers Demo').within(1000).shouldExist();
-    expect(window).toBeDefined();
-  });
+    const screenshotDir = __dirname + '/screenshots';
 
-  it('should have diagram type buttons', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildMarkersDemoApp(app);
-    });
+    // Take initial screenshot (flowchart - default)
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/01-flowchart.png`);
 
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
+    // Click Graph button to see connector() in action
+    await ctx.getById('diagram-graph').within(1000).shouldExist();
+    await ctx.getById('diagram-graph').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/02-graph.png`);
 
-    // Verify diagram type buttons exist
-    await ctx.getById('tab-flowchart').within(500).shouldExist();
-    await ctx.getById('tab-graph').within(500).shouldExist();
-    await ctx.getById('tab-state').within(500).shouldExist();
-    await ctx.getById('tab-network').within(500).shouldExist();
-    await ctx.getById('tab-custom').within(500).shouldExist();
-  });
+    // Click Custom button to see all marker types
+    await ctx.getById('diagram-custom').within(1000).shouldExist();
+    await ctx.getById('diagram-custom').click();
+    await new Promise(r => setTimeout(r, 500));
+    await tsyneTest.screenshot(`${screenshotDir}/03-custom-markers.png`);
 
-  it('should have label toggle checkbox', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildMarkersDemoApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Label toggle should exist
-    await ctx.getById('cbx-labels').within(500).shouldExist();
-  });
-
-  it('should render canvas for diagram visualization', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
-      buildMarkersDemoApp(app);
-    });
-
-    const ctx = tsyneTest.getContext();
-    await testApp.run();
-
-    // Canvas should be available for rendering diagrams
-    const canvas = await ctx.getByClass('cosyne-canvas').within(500).shouldExist();
-    expect(canvas).toBeDefined();
-  });
+  }, 30000);
 });

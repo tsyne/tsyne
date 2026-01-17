@@ -58,7 +58,17 @@ module.exports = {
     }
   },
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        target: 'ES2020',
+        module: 'commonjs',
+        lib: ['ES2020', 'DOM'],
+        esModuleInterop: true,
+        skipLibCheck: true,
+        strict: false,
+      },
+      isolatedModules: true,
+    }],
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   verbose: true

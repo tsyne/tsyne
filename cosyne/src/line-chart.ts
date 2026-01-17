@@ -196,26 +196,16 @@ export class LineChart {
 
     if (scaledPoints.length === 0) return;
 
-    const pathString = this.generatePath(scaledPoints);
-
-    // Draw filled area if enabled
-    if (this.fill && scaledPoints.length > 1) {
-      // Create closed path for fill
-      let closedPath = pathString;
-      const lastPoint = scaledPoints[scaledPoints.length - 1];
-      const firstPoint = scaledPoints[0];
-      closedPath += ` L ${lastPoint.x} ${y + 500} L ${firstPoint.x} ${y + 500} Z`;
-
-      ctx.path(closedPath, { x, y })
-        .fill(this.fillColor)
-        .setAlpha(this.fillAlpha)
-        .withId('line-chart-fill');
+    // Draw line segments connecting points
+    // Note: Uses simple line segments. SVG path rendering (for curved interpolation)
+    // requires canvasPath which is not yet implemented in the Fyne bridge.
+    for (let i = 0; i < scaledPoints.length - 1; i++) {
+      const p1 = scaledPoints[i];
+      const p2 = scaledPoints[i + 1];
+      ctx.line(x + p1.x, y + p1.y, x + p2.x, y + p2.y)
+        .stroke(this.strokeColor, this.strokeWidth)
+        .withId(`line-chart-segment-${i}`);
     }
-
-    // Draw line
-    ctx.path(pathString, { x, y })
-      .stroke(this.strokeColor, this.strokeWidth)
-      .withId('line-chart-path');
 
     // Draw points if radius > 0
     if (this.pointRadius > 0) {
