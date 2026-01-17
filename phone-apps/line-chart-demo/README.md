@@ -4,6 +4,8 @@
 
 Demonstrates D3-style line charts with various interpolation curves, zoom, and pan interactions.
 
+![Line Chart Demo](screenshots/line-chart-demo.png)
+
 ## Features
 
 - 4 interpolation types (linear, step, Catmull-Rom, monotone)
@@ -145,9 +147,25 @@ zoomPan.handleMouseDown(x, y);
 
 ## Test
 
+Run TsyneTest integration tests:
+
 ```bash
-TAKE_SCREENSHOTS=1 pnpm test -- phone-apps/line-chart-demo/__tests__/index.test.ts
+pnpm test -- line-chart-demo/line-chart-demo.test.ts
 ```
+
+## Screenshots
+
+To generate screenshots for the README:
+
+```bash
+# Run in headed mode to see the UI
+TSYNE_HEADED=1 pnpm test -- line-chart-demo/line-chart-demo.test.ts
+
+# Screenshot should be saved to:
+# phone-apps/line-chart-demo/screenshots/line-chart-demo.png
+```
+
+> **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
 ## Performance Notes
 

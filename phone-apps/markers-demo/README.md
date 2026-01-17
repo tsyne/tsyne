@@ -4,6 +4,8 @@
 
 Demonstrates D3/SVG-style markers on line and path endpoints for creating directed graphs, flowcharts, state machines, and network topology diagrams.
 
+![Markers Demo](screenshots/markers-demo.png)
+
 ## Features
 
 - **5 diagram types**: Flowchart, directed graph, state machine, network topology, marker showcase
@@ -343,9 +345,25 @@ Without markers, directed graphs become ambiguous.
 
 ## Test
 
+Run TsyneTest integration tests:
+
 ```bash
-TAKE_SCREENSHOTS=1 pnpm test -- phone-apps/markers-demo/__tests__/index.test.ts
+pnpm test -- markers-demo/markers-demo.test.ts
 ```
+
+## Screenshots
+
+To generate screenshots for the README:
+
+```bash
+# Run in headed mode to see the UI
+TSYNE_HEADED=1 pnpm test -- markers-demo/markers-demo.test.ts
+
+# Screenshot should be saved to:
+# phone-apps/markers-demo/screenshots/markers-demo.png
+```
+
+> **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
 ## See Also
 

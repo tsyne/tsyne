@@ -4,6 +4,8 @@
 
 Demonstrates the particle system with multiple emitter types (fountain, fireworks, smoke, explosion) and real-time physics.
 
+![Particles Advanced Demo](screenshots/particles-advanced-demo.png)
+
 ## Features
 
 - 4 emitter presets with different physics
@@ -215,9 +217,25 @@ new Emitter(250, 250, {
 
 ## Test
 
+Run TsyneTest integration tests:
+
 ```bash
-TAKE_SCREENSHOTS=1 pnpm test -- phone-apps/particles-advanced-demo/__tests__/index.test.ts
+pnpm test -- particles-advanced-demo/particles-advanced-demo.test.ts
 ```
+
+## Screenshots
+
+To generate screenshots for the README:
+
+```bash
+# Run in headed mode to see the UI
+TSYNE_HEADED=1 pnpm test -- particles-advanced-demo/particles-advanced-demo.test.ts
+
+# Screenshot should be saved to:
+# phone-apps/particles-advanced-demo/screenshots/particles-advanced-demo.png
+```
+
+> **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
 ## Physics Notes
 

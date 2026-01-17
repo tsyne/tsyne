@@ -4,6 +4,8 @@
 
 Three advanced SVG-inspired graphics features in one unified demo.
 
+![Effects, Gradients & Clipping Demo](screenshots/effects-gradients-clipping-demo.png)
+
 ## Features
 
 ### Effects
@@ -282,6 +284,28 @@ All features integrate with:
 - ✅ Collections (apply effects to collections)
 - ✅ Transforms (effects respect transforms)
 - ✅ Events (effects on hover, click, etc.)
+
+## Test
+
+Run TsyneTest integration tests:
+
+```bash
+pnpm test -- effects-gradients-clipping-demo/demo.test.ts
+```
+
+## Screenshots
+
+To generate screenshots for the README:
+
+```bash
+# Run in headed mode to see the UI
+TSYNE_HEADED=1 pnpm test -- effects-gradients-clipping-demo/demo.test.ts
+
+# Screenshot should be saved to:
+# phone-apps/effects-gradients-clipping-demo/screenshots/effects-gradients-clipping-demo.png
+```
+
+> **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
 ## See Also
 

@@ -4,6 +4,8 @@
 
 Demonstrates different scale types (linear, logarithmic, square root, power, ordinal) for data transformation and visualization.
 
+![Scales Demo](screenshots/scales-demo.png)
+
 ## Features
 
 - 5 scale types with live switching
@@ -115,9 +117,25 @@ const axis = new Axis(scale, {x: 50, y: 450}, 500)
 
 ## Test
 
+Run TsyneTest integration tests:
+
 ```bash
-TAKE_SCREENSHOTS=1 pnpm test -- phone-apps/scales-demo/__tests__/index.test.ts
+pnpm test -- scales-demo/scales-demo.test.ts
 ```
+
+## Screenshots
+
+To generate screenshots for the README:
+
+```bash
+# Run in headed mode to see the UI
+TSYNE_HEADED=1 pnpm test -- scales-demo/scales-demo.test.ts
+
+# Screenshot should be saved to:
+# phone-apps/scales-demo/screenshots/scales-demo.png
+```
+
+> **Note**: Screenshot generation requires the Tsyne GUI to be available. This works in environments with a display (desktop) or through screenshots captured during headed test runs.
 
 ## See Also
 
