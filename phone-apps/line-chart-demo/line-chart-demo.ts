@@ -99,11 +99,11 @@ export function buildLineChartDemoApp(a: any) {
 
         // Series toggle
         a.hbox(() => {
-          a.checkbox(store.showMultiple, async (checked) => {
+          const multipleCheckbox = a.checkbox('Show multiple series', async (checked) => {
             store.setShowMultiple(checked);
           })
             .withId('multipleCheckbox');
-          a.label('Show multiple series').withId('multipleLabel');
+          if (store.showMultiple) multipleCheckbox.setChecked(true);
 
           a.button('Reset Zoom', async () => {
             store.resetZoom();

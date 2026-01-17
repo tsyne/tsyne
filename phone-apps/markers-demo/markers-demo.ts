@@ -74,11 +74,11 @@ export function buildMarkersDemoApp(a: any) {
 
         // Checkbox for labels
         a.hbox(() => {
-          labelsCheckbox = a.checkbox(store.showLabels, async (checked) => {
+          labelsCheckbox = a.checkbox('Show labels', async (checked) => {
             store.toggleLabels(checked);
             await refreshAllCosyneContexts();
-          });
-          a.label('Show labels').withId('labelsLabel');
+          }).withId('cbx-labels');
+          if (store.showLabels) labelsCheckbox.setChecked(true);
         });
 
         // Canvas
