@@ -506,6 +506,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasSphere(msg)
 	case "updateCanvasSphere":
 		return b.handleUpdateCanvasSphere(msg)
+	case "updateCanvasSphereBuffer":
+		return b.handleUpdateCanvasSphereBuffer(msg)
 	case "createCanvasRadialGradient":
 		return b.handleCreateCanvasRadialGradient(msg)
 	case "updateCanvasRadialGradient":

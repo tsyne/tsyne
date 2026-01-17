@@ -12,9 +12,9 @@ Extend the now-complete canvasSphere widget with advanced features: configurable
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 7. Configurable Lighting | 🔲 TODO | Expose light direction, ambient, diffuse as options |
-| 8. Cubemap Textures | 🔲 TODO | Six-face texture mapping for skyboxes |
-| 9. Custom Pattern Function | 🔲 TODO | User-provided (lat, lon) => color callback |
+| 7. Configurable Lighting | ✅ COMPLETE | Expose light direction, ambient, diffuse as options |
+| 8. Cubemap Textures | ✅ COMPLETE | Six-face texture mapping for skyboxes |
+| 9. Custom Pattern Function | ✅ COMPLETE | User-provided (lat, lon) => color callback |
 
 ---
 

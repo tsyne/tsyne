@@ -1503,16 +1503,50 @@ export interface SphereAnimationHandle {
 }
 
 /**
+ * Phase 7: Configurable lighting options for CanvasSphere
+ */
+export interface LightingOptions {
+  enabled?: boolean;  // default: true
+  direction?: { x: number; y: number; z: number };  // Light source direction (normalized)
+  ambient?: number;   // 0-1, base illumination (default: 0.3)
+  diffuse?: number;   // 0-1, directional light strength (default: 0.7)
+}
+
+/**
+ * Phase 8: Cubemap texture for six-face environment mapping
+ */
+export interface CubemapTexture {
+  positiveX: string;  // Resource name for +X face (right)
+  negativeX: string;  // Resource name for -X face (left)
+  positiveY: string;  // Resource name for +Y face (top)
+  negativeY: string;  // Resource name for -Y face (bottom)
+  positiveZ: string;  // Resource name for +Z face (front)
+  negativeZ: string;  // Resource name for -Z face (back)
+}
+
+/**
+ * Extended texture options including cubemap support
+ */
+export interface SphereTextureOptions {
+  resourceName?: string;               // For equirectangular
+  mapping?: 'equirectangular' | 'cubemap';
+  cubemap?: CubemapTexture;            // Required when mapping='cubemap'
+}
+
+/**
  * Generalized Sphere - supports multiple patterns, textures, lighting, and interactivity
  * Phase 1: Pattern system (checkered, solid, stripes, gradient)
  * Phase 6: Animation presets (spin, wobble, bounce, pulse)
+ * Phase 7: Configurable lighting
+ * Phase 8: Cubemap textures
+ * Phase 9: Custom pattern function
  * Default pattern is 'checkered' for backward compatibility
  */
 export interface CanvasSphereOptions {
   cx: number;                    // Center X of the sphere
   cy: number;                    // Center Y of the sphere
   radius: number;                // Radius of the sphere
-  pattern?: 'solid' | 'checkered' | 'stripes' | 'gradient';  // Pattern type (default: checkered)
+  pattern?: 'solid' | 'checkered' | 'stripes' | 'gradient' | 'custom';  // Pattern type (default: checkered)
   colors?: string[];             // Color array for pattern
   latBands?: number;             // Number of latitude bands (default: 8)
   lonSegments?: number;          // Number of longitude segments (default: 8)
@@ -1528,13 +1562,14 @@ export interface CanvasSphereOptions {
   gradientStart?: string;        // Gradient start color (used if pattern='gradient')
   gradientEnd?: string;          // Gradient end color (used if pattern='gradient')
   stripeDirection?: 'horizontal' | 'vertical';  // Stripe orientation (default: horizontal)
-  // Phase 4: Texture mapping support
-  texture?: {
-    resourceName: string;            // Registered image resource name
-    mapping?: 'equirectangular' | 'cubemap';  // Texture mapping type (default: equirectangular)
-  };
+  // Phase 4/8: Texture mapping support (with cubemap extension)
+  texture?: SphereTextureOptions;
   // Phase 5: Interactivity - tap handler with lat/lon coordinates
   onTap?: (lat: number, lon: number, screenX: number, screenY: number) => void;
+  // Phase 7: Configurable lighting
+  lighting?: LightingOptions;
+  // Phase 9: Custom pattern function
+  customPattern?: (lat: number, lon: number) => string;  // Returns hex color
 }
 
 export class CanvasSphere {
@@ -1553,10 +1588,24 @@ export class CanvasSphere {
   private _baseRadius = 0;  // Original radius for bounce/pulse animations
   private _currentOptions?: SphereAnimationOptions;
 
+  // Phase 7: Lighting state
+  private _lighting?: LightingOptions;
+
+  // Phase 9: Custom pattern state
+  private _customPattern?: (lat: number, lon: number) => string;
+  private _cx: number;
+  private _cy: number;
+  private _radius: number;
+
   constructor(ctx: Context, options: CanvasSphereOptions) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvassphere');
     this.onTapCallback = options.onTap;
+    this._customPattern = options.customPattern;
+    this._lighting = options.lighting;
+    this._cx = options.cx;
+    this._cy = options.cy;
+    this._radius = options.radius;
 
     const payload: any = {
       id: this.id,
@@ -1599,6 +1648,10 @@ export class CanvasSphere {
         payload.gradientStart = options.gradientStart ?? '#ff0000';
         payload.gradientEnd = options.gradientEnd ?? '#0000ff';
         break;
+      case 'custom':
+        // Custom pattern will be rendered client-side via renderCustomPattern()
+        payload.hasCustomPattern = true;
+        break;
       case 'checkered':
       default:
         payload.checkeredColor1 = options.checkeredColor1 ?? '#cc0000';
@@ -1606,17 +1659,26 @@ export class CanvasSphere {
         break;
     }
 
-    // Handle texture mapping (Phase 4)
+    // Handle texture mapping (Phase 4/8: with cubemap extension)
     if (options.texture) {
       payload.texture = {
         resourceName: options.texture.resourceName,
         mapping: options.texture.mapping ?? 'equirectangular',
       };
+      // Phase 8: Include cubemap if specified
+      if (options.texture.cubemap) {
+        payload.texture.cubemap = options.texture.cubemap;
+      }
     }
 
     // Handle interactivity (Phase 5)
     if (options.onTap) {
       payload.hasTapHandler = true;
+    }
+
+    // Handle lighting (Phase 7)
+    if (options.lighting) {
+      payload.lighting = options.lighting;
     }
 
     ctx.bridge.send('createCanvasSphere', payload);
@@ -1643,37 +1705,216 @@ export class CanvasSphere {
     rotationY?: number;
     rotationZ?: number;
     rotation?: number;  // DEPRECATED: Use rotationY instead
-    texture?: {
-      resourceName: string;
-      mapping?: 'equirectangular' | 'cubemap';
-    };
+    texture?: SphereTextureOptions;
+    lighting?: LightingOptions;
   }): Promise<void> {
     const updatePayload: any = {
       widgetId: this.id,
     };
 
-    if (options.cx !== undefined) updatePayload.cx = options.cx;
-    if (options.cy !== undefined) updatePayload.cy = options.cy;
-    if (options.radius !== undefined) updatePayload.radius = options.radius;
+    if (options.cx !== undefined) {
+      updatePayload.cx = options.cx;
+      this._cx = options.cx;
+    }
+    if (options.cy !== undefined) {
+      updatePayload.cy = options.cy;
+      this._cy = options.cy;
+    }
+    if (options.radius !== undefined) {
+      updatePayload.radius = options.radius;
+      this._radius = options.radius;
+    }
 
     // Handle rotations - support both old 'rotation' and new 'rotationX/Y/Z'
-    if (options.rotationX !== undefined) updatePayload.rotationX = options.rotationX;
-    if (options.rotationY !== undefined) updatePayload.rotationY = options.rotationY;
-    if (options.rotationZ !== undefined) updatePayload.rotationZ = options.rotationZ;
+    if (options.rotationX !== undefined) {
+      updatePayload.rotationX = options.rotationX;
+      this._rotationX = options.rotationX;
+    }
+    if (options.rotationY !== undefined) {
+      updatePayload.rotationY = options.rotationY;
+      this._rotationY = options.rotationY;
+    }
+    if (options.rotationZ !== undefined) {
+      updatePayload.rotationZ = options.rotationZ;
+      this._rotationZ = options.rotationZ;
+    }
     if (options.rotation !== undefined && options.rotationY === undefined) {
       // Backward compatibility: map 'rotation' to 'rotationY' if rotationY not explicitly set
       updatePayload.rotationY = options.rotation;
+      this._rotationY = options.rotation;
     }
 
-    // Handle texture updates (Phase 4)
+    // Handle texture updates (Phase 4/8: with cubemap extension)
     if (options.texture !== undefined) {
       updatePayload.texture = {
         resourceName: options.texture.resourceName,
         mapping: options.texture.mapping ?? 'equirectangular',
       };
+      // Phase 8: Include cubemap if specified
+      if (options.texture.cubemap) {
+        updatePayload.texture.cubemap = options.texture.cubemap;
+      }
+    }
+
+    // Handle lighting updates (Phase 7)
+    if (options.lighting !== undefined) {
+      updatePayload.lighting = options.lighting;
+      this._lighting = options.lighting;
     }
 
     await this.ctx.bridge.send('updateCanvasSphere', updatePayload);
+
+    // Re-render custom pattern if rotation changed (Phase 9)
+    if (this._customPattern && (
+      options.rotationX !== undefined ||
+      options.rotationY !== undefined ||
+      options.rotationZ !== undefined ||
+      options.rotation !== undefined
+    )) {
+      await this.renderCustomPattern();
+    }
+  }
+
+  // ==========================================================================
+  // Phase 9: Custom Pattern Rendering
+  // ==========================================================================
+
+  /**
+   * Render custom pattern to pixel buffer and send to bridge
+   * This is called automatically when using pattern='custom' and on rotation updates.
+   * Can also be called manually to force re-render.
+   */
+  async renderCustomPattern(): Promise<void> {
+    if (!this._customPattern) return;
+
+    const width = Math.round(this._radius * 2);
+    const height = Math.round(this._radius * 2);
+    const buffer = new Uint8Array(width * height * 4);
+    const radius = this._radius;
+
+    // Apply inverse rotations to find original (unrotated) positions
+    const cosRX = Math.cos(-this._rotationX);
+    const sinRX = Math.sin(-this._rotationX);
+    const cosRY = Math.cos(-this._rotationY);
+    const sinRY = Math.sin(-this._rotationY);
+    const cosRZ = Math.cos(-this._rotationZ);
+    const sinRZ = Math.sin(-this._rotationZ);
+
+    // Lighting calculation helpers
+    const lighting = this._lighting ?? { enabled: true };
+    const lightEnabled = lighting.enabled !== false;
+    const lightDir = lighting.direction ?? { x: 0.5, y: -0.3, z: 0.8 };
+    const ambient = lighting.ambient ?? 0.3;
+    const diffuse = lighting.diffuse ?? 0.7;
+
+    // Normalize light direction
+    const lightLen = Math.sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y + lightDir.z * lightDir.z);
+    const lx = lightDir.x / lightLen;
+    const ly = lightDir.y / lightLen;
+    const lz = lightDir.z / lightLen;
+
+    for (let py = 0; py < height; py++) {
+      for (let px = 0; px < width; px++) {
+        const offset = (py * width + px) * 4;
+
+        // Convert pixel to coordinates relative to sphere center
+        const x = px - width / 2;
+        const y = py - height / 2;
+
+        // Check if within sphere circle
+        const distSq = x * x + y * y;
+        if (distSq > radius * radius) {
+          // Transparent pixel outside sphere
+          buffer[offset] = 0;
+          buffer[offset + 1] = 0;
+          buffer[offset + 2] = 0;
+          buffer[offset + 3] = 0;
+          continue;
+        }
+
+        // Calculate z for front face of sphere
+        const z = Math.sqrt(radius * radius - distSq);
+
+        // Apply inverse Y-axis rotation (yaw/spin)
+        const x1 = x * cosRY + z * sinRY;
+        const z1 = -x * sinRY + z * cosRY;
+        const y1 = y;
+
+        // Apply inverse X-axis rotation (pitch/tilt)
+        const x2 = x1;
+        const y2 = y1 * cosRX - z1 * sinRX;
+        const z2 = y1 * sinRX + z1 * cosRX;
+
+        // Apply inverse Z-axis rotation (roll)
+        const xOrig = x2 * cosRZ - y2 * sinRZ;
+        const yOrig = x2 * sinRZ + y2 * cosRZ;
+        const zOrig = z2;
+
+        // Calculate latitude: angle from equator, -π/2 (south) to π/2 (north)
+        const lat = Math.asin(-yOrig / radius);
+
+        // Calculate longitude: angle around Y axis, -π to π
+        let lon = Math.atan2(zOrig, xOrig);
+
+        // Call user's custom pattern function
+        const colorHex = this._customPattern(lat, lon);
+
+        // Parse hex color
+        const { r, g, b } = this.parseHexColor(colorHex);
+
+        // Apply lighting if enabled
+        let finalR = r, finalG = g, finalB = b;
+        if (lightEnabled) {
+          // Surface normal (normalized) is just the point on the sphere
+          const nx = x / radius;
+          const ny = y / radius;
+          const nz = z / radius;
+          // Dot product gives lighting intensity
+          let lightFactor = nx * lx + ny * ly + nz * lz;
+          if (lightFactor < 0) lightFactor = 0;
+          const shade = ambient + diffuse * lightFactor;
+          finalR = Math.round(r * shade);
+          finalG = Math.round(g * shade);
+          finalB = Math.round(b * shade);
+        }
+
+        buffer[offset] = Math.min(255, Math.max(0, finalR));
+        buffer[offset + 1] = Math.min(255, Math.max(0, finalG));
+        buffer[offset + 2] = Math.min(255, Math.max(0, finalB));
+        buffer[offset + 3] = 255;
+      }
+    }
+
+    // Send buffer to Go bridge
+    const base64 = Buffer.from(buffer).toString('base64');
+    await this.ctx.bridge.send('updateCanvasSphereBuffer', {
+      widgetId: this.id,
+      buffer: base64,
+      width,
+      height,
+    });
+  }
+
+  /**
+   * Parse hex color string to RGB components
+   */
+  private parseHexColor(hex: string): { r: number; g: number; b: number } {
+    // Remove # if present
+    const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+
+    // Handle 3-digit hex (#rgb)
+    if (cleanHex.length === 3) {
+      const r = parseInt(cleanHex[0] + cleanHex[0], 16);
+      const g = parseInt(cleanHex[1] + cleanHex[1], 16);
+      const b = parseInt(cleanHex[2] + cleanHex[2], 16);
+      return { r, g, b };
+    }
+
+    // Handle 6-digit hex (#rrggbb)
+    const r = parseInt(cleanHex.slice(0, 2), 16);
+    const g = parseInt(cleanHex.slice(2, 4), 16);
+    const b = parseInt(cleanHex.slice(4, 6), 16);
+    return { r, g, b };
   }
 
   // ==========================================================================
