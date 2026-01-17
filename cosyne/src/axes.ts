@@ -92,7 +92,7 @@ export class Axis {
 
     if (this.scale instanceof OrdinalScale) {
       const ordinalTicks = this.scale.ticks();
-      ticks = ordinalTicks.map((t, i) => this.scale.scale(t));
+      ticks = ordinalTicks.map((t) => (this.scale as OrdinalScale).scale(t));
       tickLabels = ordinalTicks.map((t) => this.labelFormat(t));
     } else {
       const numericScale = this.scale as LinearScale | LogScale | SqrtScale | PowerScale;
@@ -207,7 +207,7 @@ export class GridLines {
 
     if (this.scale instanceof OrdinalScale) {
       const ordinalTicks = this.scale.ticks();
-      ticks = ordinalTicks.map((t) => this.scale.scale(t));
+      ticks = ordinalTicks.map((t) => (this.scale as OrdinalScale).scale(t));
     } else {
       const numericScale = this.scale as LinearScale | LogScale | SqrtScale | PowerScale;
       const tickValues = numericScale.ticks(5);

@@ -206,14 +206,14 @@ export class LineChart {
       const firstPoint = scaledPoints[0];
       closedPath += ` L ${lastPoint.x} ${y + 500} L ${firstPoint.x} ${y + 500} Z`;
 
-      ctx.path(x, y, closedPath)
+      ctx.path(closedPath, { x, y })
         .fill(this.fillColor)
-        .alpha(this.fillAlpha)
+        .setAlpha(this.fillAlpha)
         .withId('line-chart-fill');
     }
 
     // Draw line
-    ctx.path(x, y, pathString)
+    ctx.path(pathString, { x, y })
       .stroke(this.strokeColor, this.strokeWidth)
       .withId('line-chart-path');
 
