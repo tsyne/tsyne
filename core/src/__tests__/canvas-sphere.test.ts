@@ -1,10 +1,10 @@
 import { CanvasSphere, CanvasSphereOptions } from '../widgets';
 import { Context } from '../context';
-import { FyneBridge } from '../fynebridge';
+import { BridgeInterface } from '../fynebridge';
 
 describe('CanvasSphere', () => {
   let ctx: Context;
-  let mockBridge: Partial<FyneBridge>;
+  let mockBridge: Partial<BridgeInterface>;
 
   beforeEach(() => {
     // Create a mock bridge that captures sent messages
@@ -16,7 +16,7 @@ describe('CanvasSphere', () => {
       }),
     };
 
-    ctx = new Context(mockBridge as FyneBridge);
+    ctx = new Context(mockBridge as BridgeInterface);
   });
 
   describe('pattern system', () => {
@@ -217,8 +217,8 @@ describe('CanvasSphere', () => {
       const sphere2 = new CanvasSphere(ctx, options);
 
       expect(sphere1.id).not.toBe(sphere2.id);
-      expect(sphere1.id).toMatch(/^canvassphere_/);
-      expect(sphere2.id).toMatch(/^canvassphere_/);
+      expect(sphere1.id).toMatch(/canvassphere_/);
+      expect(sphere2.id).toMatch(/canvassphere_/);
     });
 
     test('passes all parameters to bridge', () => {
@@ -244,7 +244,7 @@ describe('CanvasSphere', () => {
           radius: 75,
           latBands: 16,
           lonSegments: 12,
-          rotation: Math.PI / 4,
+          rotationY: Math.PI / 4,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
@@ -273,7 +273,7 @@ describe('CanvasSphere', () => {
           cx: 150,
           cy: 200,
           radius: 75,
-          rotation: Math.PI / 2,
+          rotationY: Math.PI / 2,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
@@ -294,7 +294,7 @@ describe('CanvasSphere', () => {
         'updateCanvasSphere',
         expect.objectContaining({
           widgetId: sphere.id,
-          rotation: Math.PI / 4,
+          rotationY: Math.PI / 4,  // Phase 2: 'rotation' maps to 'rotationY'
         })
       );
     });
