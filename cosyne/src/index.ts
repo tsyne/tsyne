@@ -130,3 +130,6 @@ export {
   type PathClip,
   type ClipPath,
 } from './clipping';
+
+// Cosyne 3D exports
+export * from './index3d';
