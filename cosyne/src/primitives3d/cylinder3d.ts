@@ -222,8 +222,9 @@ export class Cylinder3D extends Primitive3D {
       }
     }
 
-    // Top cap intersection
-    if (!this._openEnded && this._radiusTop > 0) {
+    // Top cap intersection (guard against division by zero when ray is parallel to cap)
+    const EPSILON = 1e-10;
+    if (!this._openEnded && this._radiusTop > 0 && Math.abs(localRay.direction.y) > EPSILON) {
       const t = (halfH - localRay.origin.y) / localRay.direction.y;
       if (t > 0 && t < closestT) {
         const hitPoint = localRay.at(t);
@@ -236,8 +237,8 @@ export class Cylinder3D extends Primitive3D {
       }
     }
 
-    // Bottom cap intersection
-    if (!this._openEnded && this._radiusBottom > 0) {
+    // Bottom cap intersection (guard against division by zero when ray is parallel to cap)
+    if (!this._openEnded && this._radiusBottom > 0 && Math.abs(localRay.direction.y) > EPSILON) {
       const t = (-halfH - localRay.origin.y) / localRay.direction.y;
       if (t > 0 && t < closestT) {
         const hitPoint = localRay.at(t);

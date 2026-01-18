@@ -999,52 +999,57 @@ export class Ray {
 
   /**
    * Intersect with axis-aligned box
+   * Handles division by zero for orthogonal rays
    */
   intersectBox(min: Vector3, max: Vector3): number | null {
-    let tmin = (min.x - this.origin.x) / this.direction.x;
-    let tmax = (max.x - this.origin.x) / this.direction.x;
+    const EPSILON = 1e-10;
+    const dirX = this.direction.x;
+    const dirY = this.direction.y;
+    const dirZ = this.direction.z;
 
-    if (tmin > tmax) {
-      [tmin, tmax] = [tmax, tmin];
+    // X slab
+    let tmin: number, tmax: number;
+    if (Math.abs(dirX) < EPSILON) {
+      if (this.origin.x < min.x || this.origin.x > max.x) return null;
+      tmin = -Infinity;
+      tmax = Infinity;
+    } else {
+      tmin = (min.x - this.origin.x) / dirX;
+      tmax = (max.x - this.origin.x) / dirX;
+      if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
     }
 
-    let tymin = (min.y - this.origin.y) / this.direction.y;
-    let tymax = (max.y - this.origin.y) / this.direction.y;
-
-    if (tymin > tymax) {
-      [tymin, tymax] = [tymax, tymin];
+    // Y slab
+    let tymin: number, tymax: number;
+    if (Math.abs(dirY) < EPSILON) {
+      if (this.origin.y < min.y || this.origin.y > max.y) return null;
+      tymin = -Infinity;
+      tymax = Infinity;
+    } else {
+      tymin = (min.y - this.origin.y) / dirY;
+      tymax = (max.y - this.origin.y) / dirY;
+      if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
     }
 
-    if (tmin > tymax || tymin > tmax) {
-      return null;
+    if (tmin > tymax || tymin > tmax) return null;
+    if (tymin > tmin) tmin = tymin;
+    if (tymax < tmax) tmax = tymax;
+
+    // Z slab
+    let tzmin: number, tzmax: number;
+    if (Math.abs(dirZ) < EPSILON) {
+      if (this.origin.z < min.z || this.origin.z > max.z) return null;
+      tzmin = -Infinity;
+      tzmax = Infinity;
+    } else {
+      tzmin = (min.z - this.origin.z) / dirZ;
+      tzmax = (max.z - this.origin.z) / dirZ;
+      if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
     }
 
-    if (tymin > tmin) {
-      tmin = tymin;
-    }
-
-    if (tymax < tmax) {
-      tmax = tymax;
-    }
-
-    let tzmin = (min.z - this.origin.z) / this.direction.z;
-    let tzmax = (max.z - this.origin.z) / this.direction.z;
-
-    if (tzmin > tzmax) {
-      [tzmin, tzmax] = [tzmax, tzmin];
-    }
-
-    if (tmin > tzmax || tzmin > tmax) {
-      return null;
-    }
-
-    if (tzmin > tmin) {
-      tmin = tzmin;
-    }
-
-    if (tmin < 0) {
-      return null;
-    }
+    if (tmin > tzmax || tzmin > tmax) return null;
+    if (tzmin > tmin) tmin = tzmin;
+    if (tmin < 0) return null;
 
     return tmin;
   }

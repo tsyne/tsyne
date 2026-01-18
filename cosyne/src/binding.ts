@@ -5,6 +5,49 @@
  * This allows primitives to be animated or controlled by reactive state.
  */
 
+/**
+ * Deep equality check for objects - more efficient than JSON.stringify
+ * Handles primitives, arrays, plain objects, Date, and null/undefined
+ */
+function deepEqual(a: unknown, b: unknown): boolean {
+  // Strict equality (handles primitives, null, undefined, same reference)
+  if (a === b) return true;
+
+  // If either is null/undefined (and they're not equal), they differ
+  if (a == null || b == null) return false;
+
+  // Different types
+  if (typeof a !== typeof b) return false;
+
+  // Handle Date objects
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime();
+  }
+
+  // Handle arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  // Handle objects
+  if (typeof a === 'object' && typeof b === 'object') {
+    const keysA = Object.keys(a as object);
+    const keysB = Object.keys(b as object);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
 export type BindingFunction<T> = () => T;
 
 export interface PositionBinding {
@@ -89,9 +132,9 @@ export class CollectionBinding<T, R> {
         result = this.options.render(newItems[i], i);
         added.push(result);
       } else if (oldKeys.has(key)) {
-        // Check if item changed
+        // Check if item changed (index moved or content changed)
         const oldIndex = oldKeys.get(key)!.index;
-        if (i !== oldIndex || JSON.stringify(newItems[i]) !== JSON.stringify(this.lastItems[oldIndex])) {
+        if (i !== oldIndex || !deepEqual(newItems[i], this.lastItems[oldIndex])) {
           updated.push(result);
         }
       }

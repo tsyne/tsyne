@@ -21,7 +21,7 @@ import {
 } from './primitives3d';
 import { Camera, CameraOptions } from './camera';
 import { Light, LightOptions, createLight, LightManager } from './light';
-import { Vector3, Ray } from './math3d';
+import { Vector3, Ray, Quaternion } from './math3d';
 import { MaterialProperties } from './material';
 
 /**
@@ -299,20 +299,35 @@ export class Cosyne3dContext {
     let scale = primitive.scale;
 
     for (const transform of this.transformStack) {
+      // Apply rotation to position offset (rotate the primitive's position around parent origin)
+      if (transform.rotate) {
+        const parentRotation = Quaternion.fromEuler(
+          transform.rotate[0],
+          transform.rotate[1],
+          transform.rotate[2]
+        );
+        // Rotate the position vector by parent rotation
+        position = position.applyQuaternion(parentRotation);
+        // Compose rotations: parent rotation * child rotation
+        rotation = parentRotation.multiply(rotation);
+      }
+
       if (transform.translate) {
         position = position.add(Vector3.fromArray(transform.translate));
       }
+
       if (transform.scale) {
         const s = typeof transform.scale === 'number'
           ? new Vector3(transform.scale, transform.scale, transform.scale)
           : Vector3.fromArray(transform.scale);
+        // Scale affects position offset as well
+        position = position.multiply(s);
         scale = scale.multiply(s);
       }
-      // Note: Rotation composition is simplified here
-      // For proper rotation composition, use quaternions
     }
 
     primitive.position = position;
+    primitive.setRotationFromQuaternion(rotation);
     primitive.scale = scale;
   }
 

@@ -68,6 +68,7 @@ export class Camera {
   private _projectionMatrix: Matrix4 | null = null;
   private _viewMatrix: Matrix4 | null = null;
   private _viewProjectionMatrix: Matrix4 | null = null;
+  private _inverseViewMatrix: Matrix4 | null = null;
 
   // Bindings
   private _positionBinding: Binding<Vector3 | [number, number, number]> | null = null;
@@ -361,9 +362,13 @@ export class Camera {
 
   /**
    * Get the inverse view matrix (for transforming to world space)
+   * Cached for performance - called frequently during raycasting
    */
   getInverseViewMatrix(): Matrix4 {
-    return this.getViewMatrix().invert();
+    if (!this._inverseViewMatrix) {
+      this._inverseViewMatrix = this.getViewMatrix().invert();
+    }
+    return this._inverseViewMatrix;
   }
 
   // ==================== Derived Properties ====================
@@ -547,6 +552,7 @@ export class Camera {
   private invalidateView(): void {
     this._viewMatrix = null;
     this._viewProjectionMatrix = null;
+    this._inverseViewMatrix = null;
   }
 
   // ==================== Clone ====================

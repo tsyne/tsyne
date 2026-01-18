@@ -90,14 +90,25 @@ export class Sphere3D extends Primitive3D {
     // Transform ray to local space
     const worldMatrix = this.getWorldMatrix();
     const inverseWorld = worldMatrix.invert();
-    const localRay = ray.applyMatrix4(inverseWorld);
 
-    // Scale radius by average scale
-    const scale = this._scale;
-    const avgScale = (Math.abs(scale.x) + Math.abs(scale.y) + Math.abs(scale.z)) / 3;
-    const scaledRadius = this._radius * avgScale;
+    // Transform origin by full inverse matrix
+    const localOrigin = ray.origin.applyMatrix4(inverseWorld);
 
-    // Ray-sphere intersection in local space (at origin)
+    // Transform direction correctly: apply scale+rotation (not translation)
+    // We need to include scale in direction transform for proper ellipsoid intersection
+    const e = inverseWorld.elements;
+    const dx = ray.direction.x;
+    const dy = ray.direction.y;
+    const dz = ray.direction.z;
+    // Transform direction by upper-left 3x3 (excludes translation column)
+    const localDirX = e[0] * dx + e[4] * dy + e[8] * dz;
+    const localDirY = e[1] * dx + e[5] * dy + e[9] * dz;
+    const localDirZ = e[2] * dx + e[6] * dy + e[10] * dz;
+    const localDirection = new Vector3(localDirX, localDirY, localDirZ).normalize();
+
+    const localRay = new Ray(localOrigin, localDirection);
+
+    // Ray-sphere intersection in local space (at origin) with unscaled radius
     const oc = localRay.origin;
     const a = localRay.direction.dot(localRay.direction);
     const b = 2.0 * oc.dot(localRay.direction);

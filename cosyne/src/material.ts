@@ -42,9 +42,59 @@ export interface ColorRGBA {
 }
 
 /**
- * Parse hex color string to RGBA components
+ * Parse color string to RGBA components
+ * Supports: hex (#rgb, #rrggbb, #rrggbbaa), named colors, rgb(), rgba(), hsl(), hsla()
  */
 export function parseColor(color: string): ColorRGBA {
+  const trimmed = color.trim().toLowerCase();
+
+  // Handle rgb()/rgba() notation
+  const rgbMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/);
+  if (rgbMatch) {
+    return {
+      r: Math.max(0, Math.min(255, parseInt(rgbMatch[1], 10))),
+      g: Math.max(0, Math.min(255, parseInt(rgbMatch[2], 10))),
+      b: Math.max(0, Math.min(255, parseInt(rgbMatch[3], 10))),
+      a: rgbMatch[4] !== undefined ? Math.round(parseFloat(rgbMatch[4]) * 255) : 255,
+    };
+  }
+
+  // Handle hsl()/hsla() notation
+  const hslMatch = trimmed.match(/^hsla?\(\s*(\d+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+))?\s*\)$/);
+  if (hslMatch) {
+    const h = parseInt(hslMatch[1], 10) / 360;
+    const s = parseFloat(hslMatch[2]) / 100;
+    const l = parseFloat(hslMatch[3]) / 100;
+    const a = hslMatch[4] !== undefined ? parseFloat(hslMatch[4]) : 1;
+
+    // HSL to RGB conversion
+    let r: number, g: number, b: number;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return {
+      r: Math.round(r * 255),
+      g: Math.round(g * 255),
+      b: Math.round(b * 255),
+      a: Math.round(a * 255),
+    };
+  }
+
   // Handle named colors
   const namedColors: Record<string, string> = {
     red: '#ff0000',
@@ -71,7 +121,7 @@ export function parseColor(color: string): ColorRGBA {
     aqua: '#00ffff',
   };
 
-  let hex = namedColors[color.toLowerCase()] || color;
+  let hex = namedColors[trimmed] || color;
 
   // Remove # if present
   if (hex.startsWith('#')) {
@@ -177,16 +227,17 @@ export class Material {
 
   constructor(props?: MaterialProperties) {
     if (props) {
-      if (props.color !== undefined) this._color = props.color;
-      if (props.shininess !== undefined) this._shininess = props.shininess;
-      if (props.opacity !== undefined) this._opacity = props.opacity;
-      if (props.transparent !== undefined) this._transparent = props.transparent;
-      if (props.emissive !== undefined) this._emissive = props.emissive;
-      if (props.emissiveIntensity !== undefined) this._emissiveIntensity = props.emissiveIntensity;
-      if (props.unlit !== undefined) this._unlit = props.unlit;
-      if (props.wireframe !== undefined) this._wireframe = props.wireframe;
-      if (props.doubleSided !== undefined) this._doubleSided = props.doubleSided;
-      if (props.flatShading !== undefined) this._flatShading = props.flatShading;
+      // Use setters for proper validation of range-constrained properties
+      if (props.color !== undefined) this.color = props.color;
+      if (props.shininess !== undefined) this.shininess = props.shininess;
+      if (props.opacity !== undefined) this.opacity = props.opacity;
+      if (props.transparent !== undefined) this.transparent = props.transparent;
+      if (props.emissive !== undefined) this.emissive = props.emissive;
+      if (props.emissiveIntensity !== undefined) this.emissiveIntensity = props.emissiveIntensity;
+      if (props.unlit !== undefined) this.unlit = props.unlit;
+      if (props.wireframe !== undefined) this.wireframe = props.wireframe;
+      if (props.doubleSided !== undefined) this.doubleSided = props.doubleSided;
+      if (props.flatShading !== undefined) this.flatShading = props.flatShading;
     }
   }
 

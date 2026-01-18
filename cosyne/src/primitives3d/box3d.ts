@@ -116,25 +116,61 @@ export class Box3D extends Primitive3D {
     const max = new Vector3(halfW, halfH, halfD);
 
     // Ray-AABB intersection using slab method
-    let tmin = (min.x - localRay.origin.x) / localRay.direction.x;
-    let tmax = (max.x - localRay.origin.x) / localRay.direction.x;
+    // Guard against division by zero for orthogonal rays
+    const dirX = localRay.direction.x;
+    const dirY = localRay.direction.y;
+    const dirZ = localRay.direction.z;
+    const EPSILON = 1e-10;
 
-    if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+    // X slab
+    let tmin: number, tmax: number;
+    if (Math.abs(dirX) < EPSILON) {
+      // Ray is parallel to X slab - check if origin is inside
+      if (localRay.origin.x < min.x || localRay.origin.x > max.x) {
+        return null;
+      }
+      tmin = -Infinity;
+      tmax = Infinity;
+    } else {
+      tmin = (min.x - localRay.origin.x) / dirX;
+      tmax = (max.x - localRay.origin.x) / dirX;
+      if (tmin > tmax) [tmin, tmax] = [tmax, tmin];
+    }
 
-    let tymin = (min.y - localRay.origin.y) / localRay.direction.y;
-    let tymax = (max.y - localRay.origin.y) / localRay.direction.y;
-
-    if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+    // Y slab
+    let tymin: number, tymax: number;
+    if (Math.abs(dirY) < EPSILON) {
+      // Ray is parallel to Y slab - check if origin is inside
+      if (localRay.origin.y < min.y || localRay.origin.y > max.y) {
+        return null;
+      }
+      tymin = -Infinity;
+      tymax = Infinity;
+    } else {
+      tymin = (min.y - localRay.origin.y) / dirY;
+      tymax = (max.y - localRay.origin.y) / dirY;
+      if (tymin > tymax) [tymin, tymax] = [tymax, tymin];
+    }
 
     if (tmin > tymax || tymin > tmax) return null;
 
     if (tymin > tmin) tmin = tymin;
     if (tymax < tmax) tmax = tymax;
 
-    let tzmin = (min.z - localRay.origin.z) / localRay.direction.z;
-    let tzmax = (max.z - localRay.origin.z) / localRay.direction.z;
-
-    if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+    // Z slab
+    let tzmin: number, tzmax: number;
+    if (Math.abs(dirZ) < EPSILON) {
+      // Ray is parallel to Z slab - check if origin is inside
+      if (localRay.origin.z < min.z || localRay.origin.z > max.z) {
+        return null;
+      }
+      tzmin = -Infinity;
+      tzmax = Infinity;
+    } else {
+      tzmin = (min.z - localRay.origin.z) / dirZ;
+      tzmax = (max.z - localRay.origin.z) / dirZ;
+      if (tzmin > tzmax) [tzmin, tzmax] = [tzmax, tzmin];
+    }
 
     if (tmin > tzmax || tzmin > tmax) return null;
 
