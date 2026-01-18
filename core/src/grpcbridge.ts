@@ -234,7 +234,12 @@ export class GrpcBridgeConnection implements BridgeInterface {
     });
 
     stream.on('end', () => {
-      // Stream ended
+      // Stream ended - bridge closed
+      this.emit('disconnected');
+      // Call exit callback if registered (allows app to cleanup and exit)
+      if (this.onExitCallback) {
+        this.onExitCallback();
+      }
     });
   }
 

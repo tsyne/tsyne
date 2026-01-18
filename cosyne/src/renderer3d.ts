@@ -51,12 +51,12 @@ export class Renderer3D {
     // Collect all render items with depth
     const renderItems: RenderItem[] = [];
 
-    // Background
+    // Background - use x2/y2 instead of width/height for NewWithoutLayout containers
     const bgColor = ctx.getBackgroundColor();
     renderItems.push({
       depth: Infinity, // Draw first (furthest)
       render: (a) => {
-        a.canvasRect({ x: 0, y: 0, width, height, color: bgColor });
+        a.canvasRectangle({ x: 0, y: 0, x2: width, y2: height, fillColor: bgColor });
       },
     });
 
@@ -272,10 +272,9 @@ export class Renderer3D {
           latBands: 16,
           lonSegments: 16,
           lighting: {
-            direction: lightDir,
+            direction: { x: lightDir[0], y: lightDir[1], z: lightDir[2] },
             ambient: ambientIntensity,
             diffuse: material.unlit ? 0 : 0.8,
-            specular: material.shininess * 0.5,
           },
         });
       },

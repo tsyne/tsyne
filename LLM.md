@@ -133,6 +133,71 @@ enableEventHandling(cosyneCtx, a, { width: 500, height: 500 });
 - ✅ Mockable hit testers (inject custom logic for tests)
 - ✅ No backward compatibility concerns (free to refactor)
 
+## Cosyne 3D: Declarative Scene Graphs (~300 Tests, ~4000 Lines)
+
+**3D extension** of Cosyne with the same fluent API patterns. Includes primitives, materials, lighting, camera, ray casting, and reactive bindings.
+
+**Quick API:**
+```typescript
+import { cosyne3d, refreshAllCosyne3dContexts } from '../cosyne/src/index3d';
+
+cosyne3d(a, (ctx) => {
+  // Camera
+  ctx.setCamera({ fov: 60, position: [0, 5, 10], lookAt: [0, 0, 0] });
+
+  // Lighting
+  ctx.light({ type: 'ambient', intensity: 0.3 });
+  ctx.light({ type: 'directional', direction: [0, -1, -1] });
+
+  // Primitives: sphere, box, plane, cylinder
+  ctx.sphere({ radius: 1, position: [0, 1, 0] })
+    .setMaterial({ color: '#ff0000', shininess: 50 })
+    .onClick((hit) => console.log('Clicked', hit.point));
+
+  ctx.box({ size: 2 }).setMaterial(Materials.gold());
+
+  // Bindings (same pattern as 2D Cosyne)
+  ctx.sphere({ id: 'orbiter' })
+    .bindPosition(() => [Math.cos(angle) * 5, 0, Math.sin(angle) * 5]);
+
+  // Collections
+  ctx.spheres<Planet>().bindTo({
+    items: () => planets,
+    render: (p) => ({ radius: p.radius, position: [p.distance, 0, 0] }),
+    trackBy: (p) => p.name,
+  });
+
+  // Transforms (nested coordinate systems)
+  ctx.transform({ translate: [10, 0, 0], rotate: [0, Math.PI/4, 0] }, (c) => {
+    c.sphere({ position: [0, 0, 0] });  // Inherits parent transform
+  });
+});
+
+// Animation loop
+setInterval(() => { angle += 0.01; refreshAllCosyne3dContexts(); }, 16);
+```
+
+**Architecture:**
+- `cosyne/src/context3d.ts` - Builder context, primitive registry, ray casting
+- `cosyne/src/primitives3d/` - Sphere3D, Box3D, Plane3D, Cylinder3D (all extend Primitive3D)
+- `cosyne/src/math3d.ts` - Vector3, Matrix4, Quaternion, Ray, Box3
+- `cosyne/src/camera.ts` - Perspective/orthographic cameras with view/projection matrices
+- `cosyne/src/light.ts` - Ambient, directional, point, spot lights with LightManager
+- `cosyne/src/material.ts` - Material properties + preset factory (gold, silver, glass, etc.)
+- `cosyne/src/binding.ts` - Shared binding system (same as 2D Cosyne)
+- `cosyne/test/cosyne3d/` - 300+ tests for math, primitives, camera, materials, lights
+
+**Key features:**
+- ✅ Ray casting for hit detection (onClick, onHover)
+- ✅ Material presets: `Materials.gold()`, `Materials.silver()`, `Materials.glass()`
+- ✅ Quaternion-based rotation composition in nested transforms
+- ✅ Efficient inverse matrix caching for camera ray casting
+- ✅ Same fluent API as 2D Cosyne (bindPosition, bindMaterial, bindScale, etc.)
+
+**Current limitation:** Scene graph only - no renderer yet. Demos need a software renderer using Tsyne's canvas primitives (`canvasSphere`, `canvasLine`, `canvasRect`) to actually display 3D scenes.
+
+**See:** `cosyne/README-3D.md` and `docs/COSYNE_3D.md` for full API reference.
+
 ## Intended End-User Code Style
 
 **Pseudo-declarative builder pattern:**
@@ -159,6 +224,74 @@ app({ title: 'My App' }, (a) => {
 - Builders use arrow functions: `() => { ... }`
 - Context tracks parent container automatically
 - Async operations return promises
+
+## Builder Lifecycle: Reentrant & Idempotent
+
+**Critical:** Tsyne operates under an OS-wide **Inversion of Control (IoC)** environment. The framework controls lifecycle, not the app. Builders must follow these rules:
+
+### Builders Must Be Reentrant
+Builders can be called **multiple times** during the app's lifetime:
+- Content rebuilds (`win.setContent()` called again)
+- Visibility updates (`widget.refresh()`)
+- Tab switches, navigation changes, responsive layout updates
+
+```typescript
+// ❌ WRONG - Accumulates side effects on each rebuild
+let animationId: NodeJS.Timeout;
+win.setContent(() => {
+  // This runs on EVERY rebuild - animations pile up!
+  animationId = setInterval(() => updateAnimation(), 16);
+  a.label('Animated');
+});
+
+// ✅ CORRECT - Clean up previous state, idempotent
+let animationId: NodeJS.Timeout | undefined;
+win.setContent(() => {
+  // Clear any existing animation first
+  if (animationId) clearInterval(animationId);
+  animationId = setInterval(() => updateAnimation(), 16);
+  a.label('Animated');
+});
+```
+
+### Builders Must Be Idempotent
+Calling a builder N times should produce the **same result** as calling it once (modulo current state):
+- No accumulated side effects
+- No duplicate event listeners
+- No leaked resources (timers, subscriptions, file handles)
+
+```typescript
+// ❌ WRONG - Accumulates listeners
+store.subscribe(() => rebuildUI());  // Called inside builder = duplicates!
+
+// ✅ CORRECT - Subscribe once outside builder, or track subscription
+const unsubscribe = store.subscribe(() => rebuildUI());
+app.onCleanup(() => unsubscribe());  // Clean up on app exit
+```
+
+### Common Mistakes (Especially from LLM-Generated Code)
+
+1. **Animation loops inside builders** - `setInterval`/`setTimeout` that persist across rebuilds
+2. **Event subscriptions inside builders** - Store subscriptions that duplicate on rebuild
+3. **Resource allocation inside builders** - Opening files, connections, or creating expensive objects repeatedly
+4. **Assuming single execution** - Treating builders like `main()` that runs once
+
+### Framework Lifecycle Events
+
+The framework manages process lifecycle:
+- **Desktop mode**: Multiple apps in one process; app window close ≠ process exit
+- **Phone mode (PhoneTop)**: Apps run as stack panes; close goes back to home
+- **Standalone mode**: `app()` registers exit handler; window close → process exit
+
+Apps should **never** call `process.exit()` directly except in standalone `main()`. The framework handles shutdown through the IoC pattern.
+
+```typescript
+// In index.ts, app() registers the exit handler:
+appInstance.getBridge().setOnExit(async () => {
+  await appInstance.runCleanupCallbacks();
+  process.exit(0);  // Only the framework calls this
+});
+```
 
 ## Ported Apps Patterns (7 Complete Apps: 314 Tests, 3,963 Lines)
 

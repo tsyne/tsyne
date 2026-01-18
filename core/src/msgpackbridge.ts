@@ -215,6 +215,10 @@ export class MsgpackBridgeConnection implements BridgeInterface {
       this.socket!.on('data', (chunk: Buffer) => this.handleData(chunk));
       this.socket!.on('close', () => {
         if (debug) console.error('[msgpack-uds] Socket closed');
+        // Call exit callback if registered (allows app to cleanup and exit)
+        if (this.onExitCallback) {
+          this.onExitCallback();
+        }
       });
     });
   }

@@ -84,19 +84,35 @@ app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
       backgroundColor: '#000011',
     });
 
-    win.setContent(() => {
+    // Refresh bindings before first render to set initial planet positions
+    refreshAllCosyne3dContexts();
+
+    const renderContent = () => {
       a.canvasStack(() => {
-        // Render the 3D scene using the software renderer
         scene.render(a);
       });
-    });
+    };
 
-    // Animation loop
-    const animate = () => {
+    win.setContent(renderContent);
+    win.show();
+
+    // Animation loop - rebuild content each frame
+    let running = true;
+    const animate = async () => {
+      if (!running) return;
       time += 1;
       refreshAllCosyne3dContexts();
-      setTimeout(animate, 16); // ~60fps
+      try {
+        await win.setContent(renderContent);
+      } catch (err) {
+        // Window closed, stop animation
+        running = false;
+        return;
+      }
+      setTimeout(animate, 32); // ~30fps to reduce bridge load
     };
-    animate();
+
+    // Start animation after a short delay to ensure window is ready
+    setTimeout(animate, 100);
   });
 });
