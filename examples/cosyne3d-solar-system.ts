@@ -85,17 +85,9 @@ app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
     });
 
     win.setContent(() => {
-      a.canvas(800, 600, () => {
-        // The scene would render here via the Go bridge
-        // For now, just show a placeholder
-        a.canvasRect({ x: 0, y: 0, width: 800, height: 600, color: '#000011' });
-        a.canvasText({
-          x: 400,
-          y: 300,
-          text: 'Solar System Demo (3D rendering requires Go bridge)',
-          color: '#ffffff',
-          align: 'center',
-        });
+      a.canvasStack(() => {
+        // Render the 3D scene using the software renderer
+        scene.render(a);
       });
     });
 

@@ -113,25 +113,48 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
       backgroundColor: '#1a1a2e',
     });
 
+    // Status label reference for updates
+    let statusLabel: any = null;
+
+    // Create interactive canvas with mouse handling
+    const canvasWidth = 800;
+    const canvasHeight = 500;
+
     win.setContent(() => {
       a.vbox(() => {
-        a.canvas(800, 500, () => {
-          // Placeholder for 3D rendering
-          a.canvasRect({ x: 0, y: 0, width: 800, height: 500, color: '#1a1a2e' });
-          a.canvasText({
-            x: 400,
-            y: 250,
-            text: 'Interactive Cubes Demo (3D rendering requires Go bridge)',
-            color: '#ffffff',
-            align: 'center',
+        // Use max() to contain the canvas stack and tappable raster overlay
+        a.max(() => {
+          // Background and 3D scene rendering
+          a.canvasStack(() => {
+            scene.render(a);
           });
+
+          // Transparent overlay for capturing mouse events
+          const tappable = a.tappableCanvasRaster(canvasWidth, canvasHeight, {
+            onTap: async (x, y) => {
+              // Use the scene's click handler
+              await scene.handleClick(x, y);
+              if (statusLabel) {
+                statusLabel.setText(selectedCube
+                  ? `Selected: ${selectedCube.id} (${selectedCube.color})`
+                  : 'Click a cube to select it');
+              }
+            },
+            onMouseMove: (x, y) => {
+              // Use the scene's hover handler
+              scene.handleMouseMove(x, y);
+            },
+          });
+
+          // Make the overlay fully transparent so the scene shows through
+          tappable.setPixelBuffer(new Uint8Array(canvasWidth * canvasHeight * 4));
         });
 
         a.separator();
 
         // Status bar
         a.hbox(() => {
-          a.label(selectedCube
+          statusLabel = a.label(selectedCube
             ? `Selected: ${selectedCube.id} (${selectedCube.color})`
             : 'Click a cube to select it');
           a.spacer();
@@ -142,6 +165,9 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
             }
             selectedCube = null;
             refreshAllCosyne3dContexts();
+            if (statusLabel) {
+              statusLabel.setText('Click a cube to select it');
+            }
           });
         });
       });

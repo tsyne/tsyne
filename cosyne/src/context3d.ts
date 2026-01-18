@@ -23,6 +23,7 @@ import { Camera, CameraOptions } from './camera';
 import { Light, LightOptions, createLight, LightManager } from './light';
 import { Vector3, Ray, Quaternion } from './math3d';
 import { MaterialProperties } from './material';
+import { renderer3d, Renderer3D } from './renderer3d';
 
 /**
  * Options for creating a Cosyne3dContext
@@ -541,6 +542,30 @@ export class Cosyne3dContext {
 
     // Update hover state
     this.hoveredPrimitive = topPrimitive;
+  }
+
+  // ==================== Rendering ====================
+
+  /**
+   * Render the 3D scene to the app using canvas primitives.
+   * Call this inside a canvasStack builder function.
+   *
+   * @example
+   * ```typescript
+   * a.canvasStack(() => {
+   *   scene.render(a);
+   * });
+   * ```
+   */
+  render(app: any): void {
+    renderer3d.render(this, app);
+  }
+
+  /**
+   * Get the renderer instance (for advanced usage)
+   */
+  getRenderer(): Renderer3D {
+    return renderer3d;
   }
 
   // ==================== Cleanup ====================

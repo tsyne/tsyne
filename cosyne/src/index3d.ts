@@ -156,3 +156,9 @@ export {
   clamp,
   lerp,
 } from './math3d';
+
+// Renderer
+export {
+  Renderer3D,
+  renderer3d,
+} from './renderer3d';
