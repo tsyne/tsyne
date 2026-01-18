@@ -169,11 +169,12 @@ export class Renderer3D {
     ambient: number
   ): string {
     const parsed = parseColor(baseColor);
-    const intensity = Math.min(1.5, ambient + diffuse);
+    // Clamp intensity to reasonable range - ambient provides base, diffuse adds on top
+    const intensity = Math.min(1.0, Math.max(0.2, ambient + diffuse * 0.6));
     const lit: ColorRGBA = {
-      r: Math.min(255, parsed.r * intensity),
-      g: Math.min(255, parsed.g * intensity),
-      b: Math.min(255, parsed.b * intensity),
+      r: Math.min(255, Math.round(parsed.r * intensity)),
+      g: Math.min(255, Math.round(parsed.g * intensity)),
+      b: Math.min(255, Math.round(parsed.b * intensity)),
       a: parsed.a,
     };
     return colorToHex(lit);
@@ -340,13 +341,17 @@ export class Renderer3D {
       // Depth from face center
       const depth = camera.position.distanceTo(faceCenter);
 
+      // Capture values for closure
+      const finalColor = litColor;
+      const finalPoints = screenPoints.map(p => ({ x: p.x, y: p.y }));
+
       items.push({
         depth,
         render: (a) => {
           a.canvasPolygon({
-            points: screenPoints.map(p => ({ x: p.x, y: p.y })),
-            fillColor: litColor,
-            strokeColor: litColor, // No outline for smooth look
+            points: finalPoints,
+            fillColor: finalColor,
+            strokeColor: finalColor,
             strokeWidth: 0,
           });
         },

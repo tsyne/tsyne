@@ -1711,44 +1711,51 @@ func (b *Bridge) handleCreateCanvasPolygon(msg Message) Response {
 	offsetY := minY
 
 	// Create a raster that draws the polygon using point-in-polygon algorithm
-	raster := canvas.NewRasterWithPixels(func(px, py, w, h int) color.Color {
-		b.mu.RLock()
-		polyInfo, exists := b.polygonData[widgetID]
-		b.mu.RUnlock()
+	// Use NewRaster with a generator function that creates an RGBA image
+	capturedFillColor := fillColor
+	capturedPoints := points
+	capturedOffsetX := offsetX
+	capturedOffsetY := offsetY
 
-		if !exists || len(polyInfo.Points) < 3 {
-			return color.Transparent
-		}
+	raster := canvas.NewRaster(func(w, h int) image.Image {
+		img := image.NewRGBA(image.Rect(0, 0, w, h))
+		// Fill with transparent
+		draw.Draw(img, img.Bounds(), image.Transparent, image.Point{}, draw.Src)
 
-		// Point in polygon test using ray casting
-		// Convert raster pixel coords to polygon coordinate space
-		x := float32(px) + offsetX
-		y := float32(py) + offsetY
-		inside := false
-		n := len(polyInfo.Points)
-		j := n - 1
+		// Draw polygon using point-in-polygon test
+		for py := 0; py < h; py++ {
+			for px := 0; px < w; px++ {
+				x := float32(px) + capturedOffsetX
+				y := float32(py) + capturedOffsetY
+				inside := false
+				n := len(capturedPoints)
+				j := n - 1
 
-		for i := 0; i < n; i++ {
-			xi := polyInfo.Points[i].X
-			yi := polyInfo.Points[i].Y
-			xj := polyInfo.Points[j].X
-			yj := polyInfo.Points[j].Y
+				for i := 0; i < n; i++ {
+					xi := capturedPoints[i].X
+					yi := capturedPoints[i].Y
+					xj := capturedPoints[j].X
+					yj := capturedPoints[j].Y
 
-			if ((yi > y) != (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi) {
-				inside = !inside
+					if ((yi > y) != (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi) {
+						inside = !inside
+					}
+					j = i
+				}
+
+				if inside {
+					img.Set(px, py, capturedFillColor)
+				}
 			}
-			j = i
 		}
-
-		if inside {
-			return polyInfo.FillColor
-		}
-		return color.Transparent
+		return img
 	})
 
 	raster.SetMinSize(fyne.NewSize(width, height))
 	raster.Resize(fyne.NewSize(width, height))
 	raster.Move(fyne.NewPos(minX, minY))
+	// Force refresh to ensure the raster is rendered
+	raster.Refresh()
 
 	b.mu.Lock()
 	b.widgets[widgetID] = raster
