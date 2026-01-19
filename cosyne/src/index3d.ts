@@ -162,3 +162,10 @@ export {
   Renderer3D,
   renderer3d,
 } from './renderer3d';
+
+// Re-export RenderTarget for buffer rendering
+export {
+  RenderTarget,
+  createRenderTarget,
+  clearRenderTarget,
+} from '../../core/src/graphics/platform';

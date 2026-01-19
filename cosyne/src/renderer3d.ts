@@ -16,12 +16,34 @@ import { Vector3 } from './math3d';
 import { LightManager, Light, DirectionalLight, PointLight, AmbientLight } from './light';
 import { colorToHex, parseColor, ColorRGBA, applyLighting } from './material';
 
+// Import software rasterizer
+import {
+  RenderTarget,
+  createRenderTarget,
+  clearRenderTarget,
+} from '../../core/src/graphics/platform';
+import {
+  drawCircle as rasterDrawCircle,
+  fillPolygon as rasterFillPolygon,
+  fillRect as rasterFillRect,
+  parseColor as rasterParseColor,
+  Color as RasterColor,
+} from '../../core/src/graphics/rasterizer';
+
 /**
  * A renderable item with depth information
  */
 interface RenderItem {
   depth: number;
   render: (app: any) => void;
+}
+
+/**
+ * A renderable item for buffer rendering
+ */
+interface BufferRenderItem {
+  depth: number;
+  renderToBuffer: (target: RenderTarget) => void;
 }
 
 /**
@@ -73,6 +95,357 @@ export class Renderer3D {
     for (const item of renderItems) {
       item.render(app);
     }
+  }
+
+  /**
+   * Render a Cosyne3D context to a pixel buffer (software rendering)
+   * Use this for high-frequency animation to avoid widget creation overhead.
+   *
+   * @param ctx - The Cosyne3D context to render
+   * @param target - Optional existing RenderTarget to reuse (for performance)
+   * @returns The pixel buffer as a Uint8Array (RGBA format)
+   */
+  renderToBuffer(ctx: Cosyne3dContext, target?: RenderTarget): Uint8Array {
+    const camera = ctx.getCamera();
+    const width = ctx.getWidth();
+    const height = ctx.getHeight();
+    const lightManager = ctx.getLightManager();
+    const primitives = ctx.getVisiblePrimitives();
+
+    // Create or reuse render target
+    const renderTarget = target || createRenderTarget(width, height);
+
+    // Clear to background color
+    const bgColor = rasterParseColor(ctx.getBackgroundColor());
+    clearRenderTarget(renderTarget, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+
+    // Collect all render items with depth
+    const bufferItems: BufferRenderItem[] = [];
+
+    // Process each primitive
+    for (const primitive of primitives) {
+      const items = this.processPrimitiveToBuffer(primitive, camera, width, height, lightManager);
+      bufferItems.push(...items);
+    }
+
+    // Sort by depth (back to front - painter's algorithm)
+    bufferItems.sort((a, b) => b.depth - a.depth);
+
+    // Render all items to buffer
+    for (const item of bufferItems) {
+      item.renderToBuffer(renderTarget);
+    }
+
+    return renderTarget.pixels;
+  }
+
+  /**
+   * Process a primitive for buffer rendering
+   */
+  private processPrimitiveToBuffer(
+    primitive: Primitive3D,
+    camera: Camera,
+    width: number,
+    height: number,
+    lightManager: LightManager
+  ): BufferRenderItem[] {
+    if (primitive instanceof Sphere3D) {
+      return this.renderSphereToBuffer(primitive, camera, width, height, lightManager);
+    } else if (primitive instanceof Box3D) {
+      return this.renderBoxToBuffer(primitive, camera, width, height, lightManager);
+    } else if (primitive instanceof Plane3D) {
+      return this.renderPlaneToBuffer(primitive, camera, width, height, lightManager);
+    } else if (primitive instanceof Cylinder3D) {
+      return this.renderCylinderToBuffer(primitive, camera, width, height, lightManager);
+    }
+    return [];
+  }
+
+  /**
+   * Render a sphere to buffer
+   */
+  private renderSphereToBuffer(
+    sphere: Sphere3D,
+    camera: Camera,
+    width: number,
+    height: number,
+    lightManager: LightManager
+  ): BufferRenderItem[] {
+    const worldPos = sphere.getWorldPosition();
+    const screenPos = this.projectToScreen(worldPos, camera, width, height);
+
+    if (!screenPos.visible) {
+      return [];
+    }
+
+    const scale = sphere.scale;
+    const avgScale = (scale.x + scale.y + scale.z) / 3;
+    const worldRadius = sphere.radius * avgScale;
+    const screenRadius = this.calculateScreenRadius(worldPos, worldRadius, camera, width, height);
+
+    if (screenRadius < 1) {
+      return [];
+    }
+
+    const material = sphere.material;
+    const baseColor = rasterParseColor(material.color);
+    const depth = camera.position.distanceTo(worldPos);
+
+    // Calculate simple lighting
+    const normal = camera.position.sub(worldPos).normalize();
+    const lighting = this.calculateLighting(worldPos, normal, camera, lightManager);
+    const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+
+    return [{
+      depth,
+      renderToBuffer: (target: RenderTarget) => {
+        rasterDrawCircle(target, screenPos.x, screenPos.y, screenRadius, litColor, true);
+      },
+    }];
+  }
+
+  /**
+   * Render a box to buffer
+   */
+  private renderBoxToBuffer(
+    box: Box3D,
+    camera: Camera,
+    width: number,
+    height: number,
+    lightManager: LightManager
+  ): BufferRenderItem[] {
+    const items: BufferRenderItem[] = [];
+    const faces: Array<'front' | 'back' | 'left' | 'right' | 'top' | 'bottom'> = [
+      'front', 'back', 'left', 'right', 'top', 'bottom',
+    ];
+
+    const material = box.material;
+    const baseColor = rasterParseColor(material.color);
+
+    const faceNormals: Record<string, Vector3> = {
+      front: new Vector3(0, 0, 1),
+      back: new Vector3(0, 0, -1),
+      left: new Vector3(-1, 0, 0),
+      right: new Vector3(1, 0, 0),
+      top: new Vector3(0, 1, 0),
+      bottom: new Vector3(0, -1, 0),
+    };
+
+    for (const face of faces) {
+      const vertices = box.getFaceVertices(face);
+      const faceCenter = box.getFaceCenter(face);
+
+      const localNormal = faceNormals[face];
+      const worldNormal = localNormal.applyMatrix4(box.getWorldMatrix().extractRotation()).normalize();
+
+      const toCamera = camera.position.sub(faceCenter).normalize();
+      if (worldNormal.dot(toCamera) < 0) {
+        continue;
+      }
+
+      const screenPoints: ScreenPoint[] = vertices.map(v =>
+        this.projectToScreen(v, camera, width, height)
+      );
+
+      if (screenPoints.some(p => !p.visible)) {
+        continue;
+      }
+
+      const lighting = this.calculateLighting(faceCenter, worldNormal, camera, lightManager);
+      const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+      const depth = camera.position.distanceTo(faceCenter);
+      const finalPoints = screenPoints.map(p => ({ x: p.x, y: p.y }));
+
+      items.push({
+        depth,
+        renderToBuffer: (target: RenderTarget) => {
+          rasterFillPolygon(target, finalPoints, litColor);
+        },
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Render a plane to buffer
+   */
+  private renderPlaneToBuffer(
+    plane: Plane3D,
+    camera: Camera,
+    width: number,
+    height: number,
+    lightManager: LightManager
+  ): BufferRenderItem[] {
+    const corners = plane.getCorners();
+    const worldNormal = plane.getWorldNormal();
+    const worldPos = plane.getWorldPosition();
+
+    const toCamera = camera.position.sub(worldPos).normalize();
+    const facingCamera = worldNormal.dot(toCamera);
+    const effectiveNormal = facingCamera >= 0 ? worldNormal : worldNormal.negate();
+
+    const screenPoints: ScreenPoint[] = corners.map(v =>
+      this.projectToScreen(v, camera, width, height)
+    );
+
+    if (screenPoints.every(p => !p.visible)) {
+      return [];
+    }
+
+    const material = plane.material;
+    const baseColor = rasterParseColor(material.color);
+    const lighting = this.calculateLighting(worldPos, effectiveNormal, camera, lightManager);
+    const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+    const depth = camera.position.distanceTo(worldPos);
+
+    return [{
+      depth,
+      renderToBuffer: (target: RenderTarget) => {
+        rasterFillPolygon(target, screenPoints.map(p => ({ x: p.x, y: p.y })), litColor);
+      },
+    }];
+  }
+
+  /**
+   * Render a cylinder to buffer
+   */
+  private renderCylinderToBuffer(
+    cylinder: Cylinder3D,
+    camera: Camera,
+    width: number,
+    height: number,
+    lightManager: LightManager
+  ): BufferRenderItem[] {
+    const items: BufferRenderItem[] = [];
+    const worldMatrix = cylinder.getWorldMatrix();
+    const material = cylinder.material;
+    const baseColor = rasterParseColor(material.color);
+
+    const halfHeight = cylinder.height / 2;
+    const radiusTop = cylinder.radiusTop;
+    const radiusBottom = cylinder.radiusBottom;
+    const segments = Math.max(16, cylinder.radialSegments);
+
+    const generateCapVertices = (y: number, radius: number): Vector3[] => {
+      const vertices: Vector3[] = [];
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const localPoint = new Vector3(x, y, z);
+        vertices.push(localPoint.applyMatrix4(worldMatrix));
+      }
+      return vertices;
+    };
+
+    // Top cap
+    if (!cylinder.openEnded && radiusTop > 0) {
+      const topVertices = generateCapVertices(halfHeight, radiusTop);
+      const topCenter = new Vector3(0, halfHeight, 0).applyMatrix4(worldMatrix);
+      const localNormal = new Vector3(0, 1, 0);
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
+      const toCamera = camera.position.sub(topCenter).normalize();
+
+      if (worldNormal.dot(toCamera) >= 0) {
+        const screenPoints = topVertices.map(v => this.projectToScreen(v, camera, width, height));
+        if (screenPoints.some(p => p.visible)) {
+          const lighting = this.calculateLighting(topCenter, worldNormal, camera, lightManager);
+          const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+          const depth = camera.position.distanceTo(topCenter);
+          const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+          items.push({
+            depth,
+            renderToBuffer: (target: RenderTarget) => {
+              rasterFillPolygon(target, points, litColor);
+            },
+          });
+        }
+      }
+    }
+
+    // Bottom cap
+    if (!cylinder.openEnded && radiusBottom > 0) {
+      const bottomVertices = generateCapVertices(-halfHeight, radiusBottom);
+      const bottomCenter = new Vector3(0, -halfHeight, 0).applyMatrix4(worldMatrix);
+      const localNormal = new Vector3(0, -1, 0);
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
+      const toCamera = camera.position.sub(bottomCenter).normalize();
+
+      if (worldNormal.dot(toCamera) >= 0) {
+        const screenPoints = bottomVertices.map(v => this.projectToScreen(v, camera, width, height)).reverse();
+        if (screenPoints.some(p => p.visible)) {
+          const lighting = this.calculateLighting(bottomCenter, worldNormal, camera, lightManager);
+          const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+          const depth = camera.position.distanceTo(bottomCenter);
+          const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+          items.push({
+            depth,
+            renderToBuffer: (target: RenderTarget) => {
+              rasterFillPolygon(target, points, litColor);
+            },
+          });
+        }
+      }
+    }
+
+    // Curved surface quads
+    const topVertices = generateCapVertices(halfHeight, radiusTop);
+    const bottomVertices = generateCapVertices(-halfHeight, radiusBottom);
+
+    for (let i = 0; i < segments; i++) {
+      const nextI = (i + 1) % segments;
+      const quadVertices = [
+        topVertices[i], topVertices[nextI],
+        bottomVertices[nextI], bottomVertices[i],
+      ];
+
+      const faceCenter = quadVertices.reduce((acc, v) => acc.add(v), new Vector3(0, 0, 0)).multiplyScalar(0.25);
+      const midAngle = ((i + 0.5) / segments) * Math.PI * 2;
+      const localNormal = new Vector3(Math.cos(midAngle), 0, Math.sin(midAngle));
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
+
+      const toCamera = camera.position.sub(faceCenter).normalize();
+      if (worldNormal.dot(toCamera) < 0) {
+        continue;
+      }
+
+      const screenPoints = quadVertices.map(v => this.projectToScreen(v, camera, width, height));
+      if (screenPoints.every(p => !p.visible)) {
+        continue;
+      }
+
+      const lighting = this.calculateLighting(faceCenter, worldNormal, camera, lightManager);
+      const litColor = this.applyLightingToRasterColor(baseColor, lighting.diffuse, lighting.ambient);
+      const depth = camera.position.distanceTo(faceCenter);
+      const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+
+      items.push({
+        depth,
+        renderToBuffer: (target: RenderTarget) => {
+          rasterFillPolygon(target, points, litColor);
+        },
+      });
+    }
+
+    return items;
+  }
+
+  /**
+   * Apply lighting to a RasterColor
+   */
+  private applyLightingToRasterColor(
+    baseColor: RasterColor,
+    diffuse: number,
+    ambient: number
+  ): RasterColor {
+    const intensity = Math.min(1.0, Math.max(0.2, ambient + diffuse * 0.6));
+    return {
+      r: Math.min(255, Math.round(baseColor.r * intensity)),
+      g: Math.min(255, Math.round(baseColor.g * intensity)),
+      b: Math.min(255, Math.round(baseColor.b * intensity)),
+      a: baseColor.a,
+    };
   }
 
   /**

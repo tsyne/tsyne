@@ -6,10 +6,11 @@
  * - Continuous animation loops
  * - Time-based rotation bindings
  * - Hierarchy and camera controls
+ * - High-performance buffer rendering
  */
 
 import { app, resolveTransport } from '../../core/src/index';
-import { cosyne3d, refreshAllCosyne3dContexts } from '../../cosyne/src/index3d';
+import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
 
 // Observable Time Store
 const timeState = {
@@ -26,6 +27,14 @@ const cameraState = {
 
 export function buildClockApp(a: any) {
   a.window({ title: '3D Clock', width: 600, height: 600 }, (win: any) => {
+    const WIDTH = 600;
+    const HEIGHT = 600;
+
+    // Create reusable render target for performance
+    const renderTarget: RenderTarget = createRenderTarget(WIDTH, HEIGHT);
+
+    // Canvas reference for animation updates
+    let canvas: any = null;
 
     const scene = cosyne3d(a, (ctx) => {
       // Bind camera position
@@ -70,13 +79,13 @@ export function buildClockApp(a: any) {
          const angle = (i / 12) * Math.PI * 2;
          // 12 o'clock is at Y+, so we use standard sin/cos but swapped/negated?
          // angle 0 = 12 o'clock.
-         // x = sin(angle), y = cos(angle). 
+         // x = sin(angle), y = cos(angle).
          const x = Math.sin(angle) * 4.5;
          const y = Math.cos(angle) * 4.5;
-         
+
          // Markers at z=0.2 (slightly above face)
-         ctx.box({ 
-             size: [0.2, 0.5, 0.1], 
+         ctx.box({
+             size: [0.2, 0.5, 0.1],
              position: [x, y, 0.2]
          })
          .setRotation([0, 0, -angle])
@@ -84,9 +93,9 @@ export function buildClockApp(a: any) {
       }
 
       // Center Pin
-      ctx.cylinder({ 
-          radius: 0.2, 
-          height: 0.6, 
+      ctx.cylinder({
+          radius: 0.2,
+          height: 0.6,
           position: [0, 0, 0.3], // Center, sticking out in Z
           rotation: [Math.PI/2, 0, 0]
       }).setMaterial({ color: '#333333' });
@@ -142,25 +151,31 @@ export function buildClockApp(a: any) {
       });
 
     }, {
-      width: 600,
-      height: 600,
+      width: WIDTH,
+      height: HEIGHT,
       backgroundColor: '#b8d4e8',  // Pastel blue
     });
 
-    // Refresh bindings and re-render
-    const refreshAndRender = () => {
-      refreshAllCosyne3dContexts();
-      win.setContent(renderContent);
+    // Render frame to buffer and update canvas (no widget rebuild!)
+    const renderFrame = async () => {
+      if (!canvas) return;
+
+      // Update bindings (directly on this scene for reliability)
+      scene.refreshBindings();
+
+      // Render to pixel buffer (reusing render target)
+      const pixels = renderer3d.renderToBuffer(scene, renderTarget);
+
+      // Update existing canvas (no new widgets created)
+      await canvas.setPixelBuffer(pixels);
     };
 
-    // Content builder
-    const renderContent = () => {
+    // Build content ONCE (not on every frame)
+    win.setContent(() => {
       a.max(() => {
-        a.canvasStack(() => scene.render(a));
-
-        // Transparent overlay for mouse events
-        a.tappableCanvasRaster(600, 600, {
-            onDrag: (x: any, y: any, deltaX: any, deltaY: any) => {
+        // Single TappableCanvasRaster - reused for all frames
+        canvas = a.tappableCanvasRaster(WIDTH, HEIGHT, {
+            onDrag: async (x: any, y: any, deltaX: any, deltaY: any) => {
               const sensitivity = 0.01;
               cameraState.theta -= deltaX * sensitivity;
               cameraState.phi -= deltaY * sensitivity;
@@ -168,29 +183,30 @@ export function buildClockApp(a: any) {
               const epsilon = 0.1;
               cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
 
-              refreshAndRender();
+              await renderFrame();
             },
-            onScroll: (dx: any, dy: any) => {
+            onScroll: async (dx: any, dy: any) => {
               const zoomSpeed = 0.05;
               const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
               cameraState.radius *= factor;
               cameraState.radius = Math.max(2, Math.min(100, cameraState.radius));
 
-              refreshAndRender();
+              await renderFrame();
             }
-        }).setPixelBuffer(new Uint8Array(600 * 600 * 4));
+        });
       });
-    };
+    });
 
-    // Initial render
-    win.setContent(renderContent);
     win.show();
 
-    // Animation loop (smooth second hand)
+    // Initial render after content is set
+    setTimeout(() => renderFrame(), 100);
+
+    // Animation loop (smooth second hand) - only updates buffer, no widget rebuild
     let animationInterval: ReturnType<typeof setInterval> | undefined;
     animationInterval = setInterval(() => {
       timeState.now = new Date();
-      refreshAndRender();
+      renderFrame();
     }, 50); // ~20 FPS is enough for smooth second hand
 
     // Clean up interval when window closes
