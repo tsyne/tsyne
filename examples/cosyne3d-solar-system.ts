@@ -33,16 +33,32 @@ const planets: Planet[] = [
 // Animation state
 let time = 0;
 
+// Camera state
+const cameraState = {
+  radius: 36.05, // sqrt(20^2 + 30^2)
+  theta: Math.PI / 2,
+  phi: Math.acos(20 / 36.05),
+  lookAt: [0, 0, 0] as [number, number, number],
+};
+
 app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
   a.window({ title: 'Solar System', width: 800, height: 600 }, (win) => {
-    // Create the 3D context
-    const scene = cosyne3d(a, (ctx) => {
-      // Configure camera
+    // Helper to update camera position based on spherical coordinates
+    const updateCamera = (ctx: any) => {
+      const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
+      const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
+      const y = cameraState.radius * Math.cos(cameraState.phi);
+      
       ctx.setCamera({
         fov: 60,
-        position: [0, 20, 30],
-        lookAt: [0, 0, 0],
+        position: [x, y, z],
+        lookAt: cameraState.lookAt,
       });
+    };
+
+    // Create the 3D context
+    const scene = cosyne3d(a, (ctx) => {
+      updateCamera(ctx);
 
       // Add lights
       ctx.light({ type: 'ambient', intensity: 0.3 });
@@ -74,9 +90,6 @@ app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
               Math.sin(angle) * planet.orbitRadius,
             ] as [number, number, number];
           });
-
-        // Add orbit ring (using a plane rotated 90 degrees would be ideal,
-        // but for simplicity we'll skip this in the demo)
       }
     }, {
       width: 800,
@@ -88,8 +101,30 @@ app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
     refreshAllCosyne3dContexts();
 
     const renderContent = () => {
-      a.canvasStack(() => {
-        scene.render(a);
+      a.max(() => {
+        a.canvasStack(() => {
+          // Update camera before rendering
+          updateCamera(scene);
+          scene.render(a);
+        });
+
+        // Transparent overlay for camera controls
+        a.tappableCanvasRaster(800, 600, {
+          onDrag: (x, y, deltaX, deltaY) => {
+            const sensitivity = 0.01;
+            cameraState.theta -= deltaX * sensitivity;
+            cameraState.phi -= deltaY * sensitivity;
+            const epsilon = 0.1;
+            cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
+            // No need to call refreshAndRender because the animation loop handles it
+          },
+          onScroll: (dx, dy) => {
+            const zoomSpeed = 0.05;
+            const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
+            cameraState.radius *= factor;
+            cameraState.radius = Math.max(2, Math.min(100, cameraState.radius));
+          }
+        }).setPixelBuffer(new Uint8Array(800 * 600 * 4));
       });
     };
 
