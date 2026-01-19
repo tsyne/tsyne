@@ -52,24 +52,19 @@ const cameraState = {
   lookAt: [0, 0, 0] as [number, number, number],
 };
 
-app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
-  a.window({ title: 'Interactive Cubes', width: 800, height: 600 }, (win) => {
-    // Helper to update camera position based on spherical coordinates
-    const updateCamera = (ctx: any) => {
-      const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
-      const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
-      const y = cameraState.radius * Math.cos(cameraState.phi);
-      
-      ctx.setCamera({
-        fov: 60,
-        position: [x, y, z],
-        lookAt: cameraState.lookAt,
-      });
-    };
-
+export function buildInteractiveCubesApp(a: any) {
+  a.window({ title: 'Interactive Cubes', width: 800, height: 600 }, (win: any) => {
     // Create the 3D scene
     const scene = cosyne3d(a, (ctx) => {
-      updateCamera(ctx);
+      ctx.setCamera({
+        fov: 60,
+        lookAt: cameraState.lookAt,
+      }).bindPosition(() => {
+        const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
+        const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
+        const y = cameraState.radius * Math.cos(cameraState.phi);
+        return [x, y, z];
+      });
 
       ctx.light({ type: 'ambient', intensity: 0.5 });
       ctx.light({ type: 'directional', direction: [-0.5, -1, -0.5], intensity: 0.6 });
@@ -115,7 +110,7 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
             }
             refreshAndRender();
           })
-          .onHover((hit) => {
+          .onHover((hit: any) => {
             const wasHovered = cube.hovered;
             cube.hovered = hit !== null;
             if (wasHovered !== cube.hovered) {
@@ -155,8 +150,6 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
             cameraState.phi = Math.acos(6 / 14.14);
             statusText = 'Click a cube to select it';
             
-            // Update camera in the existing context
-            updateCamera(scene);
             refreshAndRender();
           });
         });
@@ -165,20 +158,18 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
 
         a.max(() => {
           a.canvasStack(() => {
-            // Update camera before rendering
-            updateCamera(scene);
             scene.render(a);
           });
 
           // Transparent overlay for mouse events
           a.tappableCanvasRaster(800, 500, {
-            onTap: async (x, y) => {
+            onTap: async (x: any, y: any) => {
               await scene.handleClick(x, y);
             },
-            onMouseMove: (x, y) => {
+            onMouseMove: (x: any, y: any) => {
               scene.handleMouseMove(x, y);
             },
-            onDrag: (x, y, deltaX, deltaY) => {
+            onDrag: (x: any, y: any, deltaX: any, deltaY: any) => {
               // Orbit controls
               const sensitivity = 0.01;
               cameraState.theta -= deltaX * sensitivity;
@@ -190,7 +181,7 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
 
               refreshAndRender();
             },
-            onScroll: (dx, dy) => {
+            onScroll: (dx: any, dy: any) => {
               // Zoom controls - use multiplicative zoom for smoother feel
               // dy > 0 is scroll down (zoom out), dy < 0 is scroll up (zoom in)
               const zoomSpeed = 0.05;
@@ -209,8 +200,11 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
     };
 
     // Initial render
-    refreshAllCosyne3dContexts();
-    win.setContent(renderContent);
+    refreshAndRender();
     win.show();
   });
-});
+}
+
+if (require.main === module) {
+  app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, buildInteractiveCubesApp);
+}

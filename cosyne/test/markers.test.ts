@@ -7,6 +7,13 @@ import {
   type CustomMarker,
 } from '../src/markers';
 
+// Mock Path2D for Node environment if missing
+if (typeof Path2D === 'undefined') {
+  (global as any).Path2D = class {
+    constructor(path?: string) {}
+  };
+}
+
 describe('Markers', () => {
   describe('isCustomMarker', () => {
     it('should identify custom markers', () => {

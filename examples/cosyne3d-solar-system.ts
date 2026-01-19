@@ -43,22 +43,18 @@ const cameraState = {
 
 app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
   a.window({ title: 'Solar System', width: 800, height: 600 }, (win) => {
-    // Helper to update camera position based on spherical coordinates
-    const updateCamera = (ctx: any) => {
-      const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
-      const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
-      const y = cameraState.radius * Math.cos(cameraState.phi);
-      
-      ctx.setCamera({
-        fov: 60,
-        position: [x, y, z],
-        lookAt: cameraState.lookAt,
-      });
-    };
-
     // Create the 3D context
     const scene = cosyne3d(a, (ctx) => {
-      updateCamera(ctx);
+      // Configure camera
+      ctx.setCamera({
+        fov: 60,
+        lookAt: cameraState.lookAt,
+      }).bindPosition(() => {
+        const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
+        const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
+        const y = cameraState.radius * Math.cos(cameraState.phi);
+        return [x, y, z];
+      });
 
       // Add lights
       ctx.light({ type: 'ambient', intensity: 0.3 });
@@ -103,8 +99,6 @@ app(resolveTransport(), { title: 'Cosyne 3D - Solar System' }, (a) => {
     const renderContent = () => {
       a.max(() => {
         a.canvasStack(() => {
-          // Update camera before rendering
-          updateCamera(scene);
           scene.render(a);
         });
 

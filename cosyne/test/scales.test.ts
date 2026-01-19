@@ -52,7 +52,7 @@ describe('Scales', () => {
       expect(s.scale(1)).toBe(0);
       expect(s.scale(100)).toBe(500);
       const midpoint = s.scale(10);
-      expect(midpoint).toBeLessThan(250);
+      expect(midpoint).toBeCloseTo(250, 1);
       expect(midpoint).toBeGreaterThan(0);
     });
 
@@ -92,7 +92,7 @@ describe('Scales', () => {
       expect(s.scale(100)).toBe(500);
       const quarter = s.scale(25);
       expect(quarter).toBeGreaterThan(0);
-      expect(quarter).toBeLessThan(250);
+      expect(quarter).toBe(250);
     });
 
     it('should invert square root values', () => {

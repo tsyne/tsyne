@@ -104,7 +104,7 @@ describe('Emitter', () => {
   });
 
   it('should respect rate', () => {
-    const e = new Emitter(0, 0, { rate: 10 });
+    const e = new Emitter(0, 0, { rate: 10, life: 2000 });
     e.update(1000);  // Should emit ~10 particles
     const count = e.particles.length;
     expect(count).toBeGreaterThan(5);
@@ -115,6 +115,7 @@ describe('Emitter', () => {
     const e = new Emitter(100, 100, {
       rate: 10,
       velocity: { x: 50, y: 0 },
+      spreadAngle: 0,
     });
     e.update(100);
     for (const p of e.particles) {

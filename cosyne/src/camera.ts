@@ -73,6 +73,8 @@ export class Camera {
   // Bindings
   private _positionBinding: Binding<Vector3 | [number, number, number]> | null = null;
   private _lookAtBinding: Binding<Vector3 | [number, number, number]> | null = null;
+  private _upBinding: Binding<Vector3 | [number, number, number]> | null = null;
+  private _fovBinding: Binding<number> | null = null;
 
   constructor(options?: CameraOptions) {
     if (options) {
@@ -283,12 +285,30 @@ export class Camera {
     return this;
   }
 
+  bindUp(fn: BindingFunction<Vector3 | [number, number, number]>): this {
+    this._upBinding = new Binding(fn);
+    return this;
+  }
+
+  bindFov(fn: BindingFunction<number>): this {
+    this._fovBinding = new Binding(fn);
+    return this;
+  }
+
   getPositionBinding(): Binding<Vector3 | [number, number, number]> | null {
     return this._positionBinding;
   }
 
   getLookAtBinding(): Binding<Vector3 | [number, number, number]> | null {
     return this._lookAtBinding;
+  }
+
+  getUpBinding(): Binding<Vector3 | [number, number, number]> | null {
+    return this._upBinding;
+  }
+
+  getFovBinding(): Binding<number> | null {
+    return this._fovBinding;
   }
 
   /**
@@ -313,6 +333,21 @@ export class Camera {
         this._target = target;
       }
       this.invalidateView();
+    }
+
+    if (this._upBinding) {
+      const up = this._upBinding.evaluate();
+      if (Array.isArray(up)) {
+        this._up = Vector3.fromArray(up).normalize();
+      } else {
+        this._up = up.normalize();
+      }
+      this.invalidateView();
+    }
+
+    if (this._fovBinding) {
+      this.fov = this._fovBinding.evaluate();
+      // fov setter invalidates projection
     }
   }
 
