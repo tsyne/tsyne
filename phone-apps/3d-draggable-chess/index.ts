@@ -16,9 +16,9 @@
  * @tsyne-app:args (a: App) => void
  */
 
-import { app, resolveTransport } from '../core/src/index';
-import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext } from '../cosyne/src/index3d';
-import { Vector3, Ray } from '../cosyne/src/math3d';
+import { app, resolveTransport } from '../../core/src/index';
+import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext } from '../../cosyne/src/index3d';
+import { Vector3 } from '../../cosyne/src/math3d';
 
 // ==================== Types ====================
 
