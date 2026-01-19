@@ -8,6 +8,7 @@
  * - Dynamic light animation (orbiting point light)
  * - Material switching (gold, plastic, matte)
  * - Interactive camera controls
+ * - High-performance buffer rendering
  *
  * @tsyne-app:name Lighting Lab
  * @tsyne-app:icon color
@@ -15,13 +16,13 @@
  * @tsyne-app:args (a: App) => void
  */
 
-import { app, resolveTransport } from '../core/src/index';
-import { cosyne3d, refreshAllCosyne3dContexts } from '../cosyne/src/index3d';
-import { Materials } from '../cosyne/src/material';
-import { PointLight } from '../cosyne/src/light';
+import { app, resolveTransport } from '../../core/src/index';
+import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
+import { Materials } from '../../cosyne/src/material';
+import { PointLight } from '../../cosyne/src/light';
 
 // Lab state
-const labState = {
+export const labState = {
   material: 'gold' as 'gold' | 'plastic' | 'matte',
   lightColor: '#ffffff',
   lightOrbitSpeed: 0.02,
@@ -31,7 +32,7 @@ const labState = {
 };
 
 // Camera state
-const cameraState = {
+export const cameraState = {
   radius: 20,
   theta: Math.PI / 4, // Azimuth
   phi: Math.PI / 3, // Elevation (angle from Y axis)
@@ -39,7 +40,7 @@ const cameraState = {
 };
 
 // Helper to get light position
-function getLightPosition(): [number, number, number] {
+export function getLightPosition(): [number, number, number] {
   return [
     Math.sin(labState.lightAngle) * labState.lightOrbitRadius,
     labState.lightHeight,
@@ -48,7 +49,7 @@ function getLightPosition(): [number, number, number] {
 }
 
 // Helper to get material based on state
-function getMaterialProperties() {
+export function getMaterialProperties() {
   switch (labState.material) {
     case 'gold':
       return Materials.gold().toProperties();
@@ -61,10 +62,34 @@ function getMaterialProperties() {
   }
 }
 
+// Reset state to defaults (useful for testing)
+export function resetLabState() {
+  labState.material = 'gold';
+  labState.lightColor = '#ffffff';
+  labState.lightOrbitSpeed = 0.02;
+  labState.lightAngle = 0;
+  labState.lightHeight = 5;
+  labState.lightOrbitRadius = 8;
+
+  cameraState.radius = 20;
+  cameraState.theta = Math.PI / 4;
+  cameraState.phi = Math.PI / 3;
+  cameraState.lookAt = [0, 0, 0];
+}
+
 export function buildLightingLabApp(a: any) {
   a.window({ title: 'Lighting Lab', width: 900, height: 650 }, (win: any) => {
+    const WIDTH = 650;
+    const HEIGHT = 550;
+
+    // Create reusable render target for performance
+    const renderTarget: RenderTarget = createRenderTarget(WIDTH, HEIGHT);
+
     // Keep reference to the point light for updating
     let pointLight: PointLight | null = null;
+
+    // Canvas reference for animation updates
+    let canvas: any = null;
 
     // Create the 3D scene
     const scene = cosyne3d(a, (ctx) => {
@@ -141,35 +166,40 @@ export function buildLightingLabApp(a: any) {
       }).withId('sphere-matte');
 
     }, {
-      width: 650,
-      height: 550,
+      width: WIDTH,
+      height: HEIGHT,
       backgroundColor: '#0a0a12',
     });
 
-    // Refresh and render function
-    const refreshAndRender = () => {
+    // Render frame to buffer and update canvas (no widget rebuild!)
+    const renderFrame = async () => {
+      if (!canvas) return;
+
       // Update point light position and color
       if (pointLight) {
         const pos = getLightPosition();
         pointLight.setPosition(pos[0], pos[1], pos[2]);
         pointLight.color = labState.lightColor;
       }
-      refreshAllCosyne3dContexts();
-      win.setContent(renderContent);
+
+      // Update bindings
+      scene.refreshBindings();
+
+      // Render to pixel buffer (reusing render target)
+      const pixels = renderer3d.renderToBuffer(scene, renderTarget);
+
+      // Update existing canvas (no new widgets created)
+      await canvas.setPixelBuffer(pixels);
     };
 
-    // Content builder
-    const renderContent = () => {
+    // Build content ONCE (not on every frame)
+    win.setContent(() => {
       a.hbox(() => {
         // Main 3D view
         a.max(() => {
-          a.canvasStack(() => {
-            scene.render(a);
-          });
-
-          // Transparent overlay for mouse events
-          a.tappableCanvasRaster(650, 550, {
-            onDrag: (x: any, y: any, deltaX: any, deltaY: any) => {
+          // Single TappableCanvasRaster - reused for all frames
+          canvas = a.tappableCanvasRaster(WIDTH, HEIGHT, {
+            onDrag: async (x: any, y: any, deltaX: any, deltaY: any) => {
               // Orbit controls
               const sensitivity = 0.01;
               cameraState.theta -= deltaX * sensitivity;
@@ -179,9 +209,9 @@ export function buildLightingLabApp(a: any) {
               const epsilon = 0.1;
               cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
 
-              refreshAndRender();
+              await renderFrame();
             },
-            onScroll: (dx: any, dy: any) => {
+            onScroll: async (dx: any, dy: any) => {
               // Zoom controls
               const zoomSpeed = 0.05;
               const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
@@ -189,9 +219,9 @@ export function buildLightingLabApp(a: any) {
               cameraState.radius *= factor;
               cameraState.radius = Math.max(5, Math.min(50, cameraState.radius));
 
-              refreshAndRender();
+              await renderFrame();
             }
-          }).setPixelBuffer(new Uint8Array(650 * 550 * 4));
+          });
         });
 
         // Control sidebar
@@ -201,46 +231,46 @@ export function buildLightingLabApp(a: any) {
 
           // Material selection
           a.label('Material:');
-          a.button('Gold').onClick(() => {
+          a.button('Gold').onClick(async () => {
             labState.material = 'gold';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-gold');
-          a.button('Plastic').onClick(() => {
+          a.button('Plastic').onClick(async () => {
             labState.material = 'plastic';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-plastic');
-          a.button('Matte').onClick(() => {
+          a.button('Matte').onClick(async () => {
             labState.material = 'matte';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-matte');
 
           a.separator();
 
           // Light color selection
           a.label('Light Color:');
-          a.button('White').onClick(() => {
+          a.button('White').onClick(async () => {
             labState.lightColor = '#ffffff';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-white');
-          a.button('Warm').onClick(() => {
+          a.button('Warm').onClick(async () => {
             labState.lightColor = '#ffcc77';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-warm');
-          a.button('Cool').onClick(() => {
+          a.button('Cool').onClick(async () => {
             labState.lightColor = '#77aaff';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-cool');
-          a.button('Red').onClick(() => {
+          a.button('Red').onClick(async () => {
             labState.lightColor = '#ff4444';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-red');
-          a.button('Green').onClick(() => {
+          a.button('Green').onClick(async () => {
             labState.lightColor = '#44ff44';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-green');
-          a.button('Blue').onClick(() => {
+          a.button('Blue').onClick(async () => {
             labState.lightColor = '#4444ff';
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-blue');
 
           a.separator();
@@ -264,28 +294,28 @@ export function buildLightingLabApp(a: any) {
           // Light height control
           a.label('Light Height:');
           a.hbox(() => {
-            a.button('Low').onClick(() => {
+            a.button('Low').onClick(async () => {
               labState.lightHeight = 3;
-              refreshAndRender();
+              await renderFrame();
             }).withId('btn-low');
-            a.button('Mid').onClick(() => {
+            a.button('Mid').onClick(async () => {
               labState.lightHeight = 5;
-              refreshAndRender();
+              await renderFrame();
             }).withId('btn-mid');
-            a.button('High').onClick(() => {
+            a.button('High').onClick(async () => {
               labState.lightHeight = 8;
-              refreshAndRender();
+              await renderFrame();
             }).withId('btn-high');
           });
 
           a.separator();
 
           // Reset button
-          a.button('Reset Camera').onClick(() => {
+          a.button('Reset Camera').onClick(async () => {
             cameraState.radius = 20;
             cameraState.theta = Math.PI / 4;
             cameraState.phi = Math.PI / 3;
-            refreshAndRender();
+            await renderFrame();
           }).withId('btn-reset');
 
           a.spacer();
@@ -294,41 +324,29 @@ export function buildLightingLabApp(a: any) {
           a.label('Scroll: Zoom');
         });
       });
-    };
+    });
 
-    // Initial render
-    refreshAndRender();
     win.show();
 
-    // Animation loop for orbiting light
-    let running = true;
-    const animate = async () => {
-      if (!running) return;
+    // Initial render after content is set
+    setTimeout(() => renderFrame(), 100);
 
+    // Animation loop for orbiting light - only updates buffer, no widget rebuild
+    let animationInterval: ReturnType<typeof setInterval> | undefined;
+    animationInterval = setInterval(() => {
       // Update light angle
       labState.lightAngle += labState.lightOrbitSpeed;
+      renderFrame();
+    }, 32); // ~30fps
 
-      // Update light position
-      if (pointLight) {
-        const pos = getLightPosition();
-        pointLight.setPosition(pos[0], pos[1], pos[2]);
+    // Clean up interval when window closes
+    win.setCloseIntercept(async () => {
+      if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = undefined;
       }
-
-      // Refresh and render
-      refreshAllCosyne3dContexts();
-      try {
-        await win.setContent(renderContent);
-      } catch (err) {
-        // Window closed, stop animation
-        running = false;
-        return;
-      }
-
-      setTimeout(animate, 32); // ~30fps
-    };
-
-    // Start animation after a short delay
-    setTimeout(animate, 100);
+      return true; // Allow close
+    });
   });
 }
 
