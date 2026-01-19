@@ -455,6 +455,16 @@ export const Materials = {
   silver: () => new Material({ color: '#c0c0c0', shininess: 0.95 }),
   /** Matte gray */
   gray: () => new Material({ color: '#808080', shininess: 0.2 }),
+  /** Shiny red plastic */
+  redPlastic: () => new Material({ color: '#cc2222', shininess: 0.8 }),
+  /** Shiny blue plastic */
+  bluePlastic: () => new Material({ color: '#2244cc', shininess: 0.8 }),
+  /** Shiny green plastic */
+  greenPlastic: () => new Material({ color: '#22aa44', shininess: 0.8 }),
+  /** Generic shiny plastic (customizable color) */
+  plastic: (color: string = '#cc4444') => new Material({ color, shininess: 0.8 }),
+  /** Matte surface (low reflection, customizable color) */
+  matte: (color: string = '#888888') => new Material({ color, shininess: 0.1 }),
   /** Glass-like transparent */
   glass: () => new Material({ color: '#aaddff', shininess: 1.0, opacity: 0.3, transparent: true }),
   /** Glowing material */
