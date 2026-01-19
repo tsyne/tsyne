@@ -155,10 +155,9 @@ func TestFramedMessageRoundtrip(t *testing.T) {
 
 // TestMsgpackServerSocketPath tests socket path generation
 func TestMsgpackServerSocketPath(t *testing.T) {
-	// Create a mock bridge (nil is ok for this test)
+	// Create a mock server (nil bridge is ok for this test)
 	server := &MsgpackServer{
 		socketPath: filepath.Join(os.TempDir(), "tsyne-test-12345.sock"),
-		eventChan:  make(chan Event, 10),
 	}
 
 	path := server.GetSocketPath()
