@@ -12,6 +12,15 @@ import {
   radToDeg,
   clamp,
   lerp,
+  rayLineIntersect2D,
+  urandom,
+  urandomVector,
+  randomUnitVector,
+  angleBetween,
+  angleBetween2D,
+  normalizeAngle,
+  angleDiff,
+  lerpAngle,
 } from '../../src/math3d';
 
 describe('Cosyne 3D Math', () => {
@@ -475,6 +484,193 @@ describe('Cosyne 3D Math', () => {
       expect(lerp(0, 10, 0)).toBe(0);
       expect(lerp(0, 10, 1)).toBe(10);
       expect(lerp(0, 10, 0.5)).toBe(5);
+    });
+  });
+
+  describe('rayLineIntersect2D', () => {
+    test('detects intersection with horizontal line', () => {
+      // Ray from origin pointing upward (+Y)
+      const result = rayLineIntersect2D(0, 0, 0, 1, -10, 5, 10, 5);
+      expect(result).not.toBeNull();
+      expect(result!.t).toBeCloseTo(5, 5);
+      expect(result!.u).toBeCloseTo(0.5, 5); // Hits middle of line
+    });
+
+    test('detects intersection with vertical line', () => {
+      // Ray from origin pointing right (+X)
+      const result = rayLineIntersect2D(0, 0, 1, 0, 5, -10, 5, 10);
+      expect(result).not.toBeNull();
+      expect(result!.t).toBeCloseTo(5, 5);
+      expect(result!.u).toBeCloseTo(0.5, 5);
+    });
+
+    test('returns null when ray misses line', () => {
+      // Ray pointing away from line
+      const result = rayLineIntersect2D(0, 0, -1, 0, 5, -10, 5, 10);
+      expect(result).toBeNull();
+    });
+
+    test('returns null when parallel to line', () => {
+      // Ray parallel to horizontal line
+      const result = rayLineIntersect2D(0, 0, 1, 0, -10, 5, 10, 5);
+      expect(result).toBeNull();
+    });
+
+    test('returns null when intersection is outside line segment', () => {
+      // Ray pointing at extended line, but not at segment
+      const result = rayLineIntersect2D(0, 0, 0, 1, 5, 10, 10, 10);
+      expect(result).toBeNull();
+    });
+
+    test('calculates u correctly along line', () => {
+      // Ray from origin pointing upward
+      const result1 = rayLineIntersect2D(0, 0, 0, 1, -10, 5, 10, 5);
+      expect(result1!.u).toBeCloseTo(0.5, 5); // Center
+
+      const result2 = rayLineIntersect2D(-10, 0, 0, 1, -10, 5, 10, 5);
+      expect(result2!.u).toBeCloseTo(0, 5); // Start
+
+      const result3 = rayLineIntersect2D(10, 0, 0, 1, -10, 5, 10, 5);
+      expect(result3!.u).toBeCloseTo(1, 5); // End
+    });
+  });
+
+  describe('urandom', () => {
+    test('returns values in [-1, 1] range', () => {
+      for (let i = 0; i < 100; i++) {
+        const v = urandom();
+        expect(v).toBeGreaterThanOrEqual(-1);
+        expect(v).toBeLessThanOrEqual(1);
+      }
+    });
+
+    test('produces varied results', () => {
+      const values = new Set<number>();
+      for (let i = 0; i < 100; i++) {
+        values.add(Math.round(urandom() * 100) / 100);
+      }
+      // Should have multiple distinct values
+      expect(values.size).toBeGreaterThan(10);
+    });
+  });
+
+  describe('urandomVector', () => {
+    test('returns Vector3 with components in [-1, 1]', () => {
+      for (let i = 0; i < 50; i++) {
+        const v = urandomVector();
+        expect(v.x).toBeGreaterThanOrEqual(-1);
+        expect(v.x).toBeLessThanOrEqual(1);
+        expect(v.y).toBeGreaterThanOrEqual(-1);
+        expect(v.y).toBeLessThanOrEqual(1);
+        expect(v.z).toBeGreaterThanOrEqual(-1);
+        expect(v.z).toBeLessThanOrEqual(1);
+      }
+    });
+  });
+
+  describe('randomUnitVector', () => {
+    test('returns normalized vectors', () => {
+      for (let i = 0; i < 50; i++) {
+        const v = randomUnitVector();
+        expect(v.length()).toBeCloseTo(1, 5);
+      }
+    });
+  });
+
+  describe('angleBetween', () => {
+    test('returns 0 for point along +X', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(10, 0, 0);
+      expect(angleBetween(a, b)).toBeCloseTo(0, 5);
+    });
+
+    test('returns PI/2 for point along +Y', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(0, 10, 0);
+      expect(angleBetween(a, b)).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    test('returns PI for point along -X', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(-10, 0, 0);
+      expect(Math.abs(angleBetween(a, b))).toBeCloseTo(Math.PI, 5);
+    });
+
+    test('returns -PI/2 for point along -Y', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(0, -10, 0);
+      expect(angleBetween(a, b)).toBeCloseTo(-Math.PI / 2, 5);
+    });
+
+    test('works with non-origin points', () => {
+      const a = new Vector3(5, 5, 0);
+      const b = new Vector3(10, 5, 0); // +X direction from a
+      expect(angleBetween(a, b)).toBeCloseTo(0, 5);
+    });
+  });
+
+  describe('angleBetween2D', () => {
+    test('works with raw coordinates', () => {
+      expect(angleBetween2D(0, 0, 10, 0)).toBeCloseTo(0, 5);
+      expect(angleBetween2D(0, 0, 0, 10)).toBeCloseTo(Math.PI / 2, 5);
+      expect(angleBetween2D(5, 5, 10, 10)).toBeCloseTo(Math.PI / 4, 5);
+    });
+  });
+
+  describe('normalizeAngle', () => {
+    test('keeps angles in [-PI, PI] range', () => {
+      expect(normalizeAngle(0)).toBeCloseTo(0, 5);
+      expect(normalizeAngle(Math.PI)).toBeCloseTo(Math.PI, 5);
+      expect(normalizeAngle(-Math.PI)).toBeCloseTo(-Math.PI, 5);
+    });
+
+    test('wraps large positive angles', () => {
+      expect(normalizeAngle(Math.PI * 2)).toBeCloseTo(0, 5);
+      expect(normalizeAngle(Math.PI * 3)).toBeCloseTo(Math.PI, 5);
+      expect(normalizeAngle(Math.PI * 4)).toBeCloseTo(0, 5);
+    });
+
+    test('wraps large negative angles', () => {
+      expect(normalizeAngle(-Math.PI * 2)).toBeCloseTo(0, 5);
+      expect(normalizeAngle(-Math.PI * 3)).toBeCloseTo(-Math.PI, 5);
+    });
+  });
+
+  describe('angleDiff', () => {
+    test('returns 0 for same angle', () => {
+      expect(angleDiff(0, 0)).toBeCloseTo(0, 5);
+      expect(angleDiff(Math.PI, Math.PI)).toBeCloseTo(0, 5);
+    });
+
+    test('returns positive for counter-clockwise rotation', () => {
+      expect(angleDiff(0, Math.PI / 2)).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    test('returns negative for clockwise rotation', () => {
+      expect(angleDiff(0, -Math.PI / 2)).toBeCloseTo(-Math.PI / 2, 5);
+    });
+
+    test('takes shortest path across PI boundary', () => {
+      // From just before PI to just after -PI should be small negative
+      const result = angleDiff(Math.PI - 0.1, -Math.PI + 0.1);
+      expect(Math.abs(result)).toBeLessThan(0.5);
+    });
+  });
+
+  describe('lerpAngle', () => {
+    test('interpolates simple angles', () => {
+      expect(lerpAngle(0, Math.PI / 2, 0)).toBeCloseTo(0, 5);
+      expect(lerpAngle(0, Math.PI / 2, 1)).toBeCloseTo(Math.PI / 2, 5);
+      expect(lerpAngle(0, Math.PI / 2, 0.5)).toBeCloseTo(Math.PI / 4, 5);
+    });
+
+    test('takes shortest path around circle', () => {
+      // From 170deg to -170deg should interpolate through 180deg
+      const from = degToRad(170);
+      const to = degToRad(-170);
+      const mid = lerpAngle(from, to, 0.5);
+      // Should be close to +/- 180 degrees
+      expect(Math.abs(mid)).toBeCloseTo(Math.PI, 1);
     });
   });
 });
