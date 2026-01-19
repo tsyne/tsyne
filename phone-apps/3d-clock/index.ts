@@ -18,7 +18,7 @@ const timeState = {
 
 // Camera State for Orbiting
 const cameraState = {
-  radius: 15,
+  radius: 25,  // Increased for better initial view
   theta: 0,
   phi: Math.PI / 2, // Looking straight on (equator)
   lookAt: [0, 0, 0] as [number, number, number],
@@ -26,17 +26,6 @@ const cameraState = {
 
 export function buildClockApp(a: any) {
   a.window({ title: '3D Clock', width: 600, height: 600 }, (win: any) => {
-    
-    // Animation loop (60 FPS for smooth sweep)
-    const intervalId = setInterval(() => {
-      timeState.now = new Date();
-      refreshAllCosyne3dContexts();
-    }, 16);
-
-    // Clean up on close (note: win.onClose isn't standard Tsyne API, usually handled by app lifecycle or bridge)
-    // But we can hook into window close event if exposed, or just rely on process exit for this demo.
-    // Tsyne windows don't have a direct .onClose() event listener method in the builder API usually.
-    // We'll leave the interval running until process exit for this simple demo.
 
     const scene = cosyne3d(a, (ctx) => {
       // Bind camera position
@@ -86,27 +75,29 @@ export function buildClockApp(a: any) {
           rotation: [Math.PI/2, 0, 0]
       }).setMaterial({ color: '#333333' });
 
-      // Hand helper
+      // Hand helper - creates a box that rotates around origin
       const createHand = (width: number, length: number, z: number, color: string, getAngle: () => number) => {
-          // Pivot correction: Hands rotate around one end.
-          // We use a transform container to handle the rotation at the origin (0,0)
-          // and offset the visual box so its base is at the origin.
-          
-          ctx.transform({ translate: [0, 0, z] }, (handRoot) => {
-              handRoot.bindRotation(() => {
-                  const angle = getAngle();
-                  // angle is radians from 12 o'clock clockwise
-                  // Z-rotation: positive is counter-clockwise.
-                  // So we use negative angle.
-                  return [0, 0, -angle];
-              });
-
-              // The visual hand part, offset so bottom is at origin (0,0)
-              // Length L. Center at Y = L/2.
-              handRoot.box({ 
-                  size: [width, length, 0.1], 
-                  position: [0, length/2, 0]
-              }).setMaterial({ color });
+          // The hand pivots at origin. We position the box center at (0, length/2, z)
+          // so its base is at the origin, and bind its rotation.
+          ctx.box({
+              size: [width, length, 0.1]
+          })
+          .setMaterial({ color })
+          // Bind position: hand center is at (0, length/2, z) but rotated around Z
+          .bindPosition(() => {
+              const angle = getAngle();
+              // Hand center offset from origin (before rotation)
+              const cx = 0;
+              const cy = length / 2;
+              // Rotate around Z axis (negative because clockwise)
+              const rotatedX = cx * Math.cos(-angle) - cy * Math.sin(-angle);
+              const rotatedY = cx * Math.sin(-angle) + cy * Math.cos(-angle);
+              return [rotatedX, rotatedY, z];
+          })
+          // Bind rotation around Z axis
+          .bindRotation(() => {
+              const angle = getAngle();
+              return [0, 0, -angle];
           });
       };
 
@@ -134,34 +125,56 @@ export function buildClockApp(a: any) {
           return ((secs + ms/1000) / 60) * Math.PI * 2;
       });
 
+    }, {
+      width: 600,
+      height: 600,
+      backgroundColor: '#1a1a2e',
     });
 
-    // Interaction Layer
-    a.max(() => {
+    // Refresh bindings and re-render
+    const refreshAndRender = () => {
+      refreshAllCosyne3dContexts();
+      win.setContent(renderContent);
+    };
+
+    // Content builder
+    const renderContent = () => {
+      a.max(() => {
         a.canvasStack(() => scene.render(a));
-        
+
         // Transparent overlay for mouse events
         a.tappableCanvasRaster(600, 600, {
             onDrag: (x: any, y: any, deltaX: any, deltaY: any) => {
               const sensitivity = 0.01;
               cameraState.theta -= deltaX * sensitivity;
               cameraState.phi -= deltaY * sensitivity;
-              
+
               const epsilon = 0.1;
               cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
-              
-              // No manual refresh needed, animation loop handles it
+
+              refreshAndRender();
             },
             onScroll: (dx: any, dy: any) => {
               const zoomSpeed = 0.05;
               const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
               cameraState.radius *= factor;
               cameraState.radius = Math.max(2, Math.min(100, cameraState.radius));
+
+              refreshAndRender();
             }
         }).setPixelBuffer(new Uint8Array(600 * 600 * 4));
-    });
-    
+      });
+    };
+
+    // Initial render
+    win.setContent(renderContent);
     win.show();
+
+    // Animation loop (smooth second hand)
+    setInterval(() => {
+      timeState.now = new Date();
+      refreshAndRender();
+    }, 50); // ~20 FPS is enough for smooth second hand
   });
 }
 
