@@ -6,6 +6,7 @@
  * - Box primitives with click handlers
  * - Hover effects
  * - Dynamic material changes via bindings
+ * - Interactive camera controls (orbit and zoom)
  */
 
 import { app, resolveTransport } from '../core/src/index';
@@ -41,17 +42,34 @@ for (let x = -4; x <= 4; x += 4) {
 }
 
 let selectedCube: CubeState | null = null;
-let statusText = 'Click a cube to select it';
+let statusText = 'Click a cube to select it. Drag to rotate. Scroll to zoom.';
+
+// Camera state
+const cameraState = {
+  radius: 14.14, // sqrt(8^2 + 6^2 + 10^2) approx
+  theta: Math.atan2(10, 8), // Azimuth
+  phi: Math.acos(6 / 14.14), // Elevation (angle from Y axis)
+  lookAt: [0, 0, 0] as [number, number, number],
+};
 
 app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
   a.window({ title: 'Interactive Cubes', width: 800, height: 600 }, (win) => {
-    // Create the 3D scene
-    const scene = cosyne3d(a, (ctx) => {
+    // Helper to update camera position based on spherical coordinates
+    const updateCamera = (ctx: any) => {
+      const x = cameraState.radius * Math.sin(cameraState.phi) * Math.cos(cameraState.theta);
+      const z = cameraState.radius * Math.sin(cameraState.phi) * Math.sin(cameraState.theta);
+      const y = cameraState.radius * Math.cos(cameraState.phi);
+      
       ctx.setCamera({
         fov: 60,
-        position: [8, 6, 10],
-        lookAt: [0, 0, 0],
+        position: [x, y, z],
+        lookAt: cameraState.lookAt,
       });
+    };
+
+    // Create the 3D scene
+    const scene = cosyne3d(a, (ctx) => {
+      updateCamera(ctx);
 
       ctx.light({ type: 'ambient', intensity: 0.5 });
       ctx.light({ type: 'directional', direction: [-0.5, -1, -0.5], intensity: 0.6 });
@@ -131,7 +149,14 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
               cube.hovered = false;
             }
             selectedCube = null;
+            // Reset camera
+            cameraState.radius = 14.14;
+            cameraState.theta = Math.atan2(10, 8);
+            cameraState.phi = Math.acos(6 / 14.14);
             statusText = 'Click a cube to select it';
+            
+            // Update camera in the existing context
+            updateCamera(scene);
             refreshAndRender();
           });
         });
@@ -140,6 +165,8 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
 
         a.max(() => {
           a.canvasStack(() => {
+            // Update camera before rendering
+            updateCamera(scene);
             scene.render(a);
           });
 
@@ -151,6 +178,31 @@ app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, (a) => {
             onMouseMove: (x, y) => {
               scene.handleMouseMove(x, y);
             },
+            onDrag: (x, y, deltaX, deltaY) => {
+              // Orbit controls
+              const sensitivity = 0.01;
+              cameraState.theta -= deltaX * sensitivity;
+              cameraState.phi -= deltaY * sensitivity;
+
+              // Clamp phi to avoid flipping (0.1 to PI-0.1)
+              const epsilon = 0.1;
+              cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
+
+              refreshAndRender();
+            },
+            onScroll: (dx, dy) => {
+              // Zoom controls - use multiplicative zoom for smoother feel
+              // dy > 0 is scroll down (zoom out), dy < 0 is scroll up (zoom in)
+              const zoomSpeed = 0.05;
+              const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
+              
+              cameraState.radius *= factor;
+              
+              // Clamp radius
+              cameraState.radius = Math.max(2, Math.min(50, cameraState.radius));
+              
+              refreshAndRender();
+            }
           }).setPixelBuffer(new Uint8Array(800 * 500 * 4));
         });
       });
