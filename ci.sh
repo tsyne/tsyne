@@ -586,6 +586,7 @@ test_phone_app() {
 # Test each phone app (continue even if some fail to collect all results)
 set +e  # Temporarily disable exit-on-error to collect all test results
 test_phone_app "3d-clock" || true
+test_phone_app "3d-draggable-chess" || true
 test_phone_app "animated-spinner" || true
 test_phone_app "gauge-dashboard" || true
 test_phone_app "heatmap-demo" || true
