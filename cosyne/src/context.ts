@@ -888,7 +888,79 @@ export class CosyneContext {
       animationManager: this.animationManager,
     });
     this.trackPrimitive(primitive);
+
+    // Render the dial using canvas primitives
+    this.renderDial(primitive);
+
     return primitive;
+  }
+
+  /**
+   * Render a dial primitive using canvas primitives with bindings for interactivity
+   */
+  private renderDial(dial: CosyneDial): void {
+    const initialData = dial.getRenderData();
+    const { x, y, radius, knobRadius, trackWidth, startAngle, endAngle } = initialData;
+    const trackRadius = radius - trackWidth / 2;
+    const segments = 32;
+    const angleRange = endAngle - startAngle;
+
+    // Draw arc segments with color bindings that switch between track and accent color
+    for (let i = 0; i < segments; i++) {
+      const segmentStartAngle = startAngle + (i / segments) * angleRange;
+      const segmentEndAngle = startAngle + ((i + 1) / segments) * angleRange;
+      const segmentMidAngle = (segmentStartAngle + segmentEndAngle) / 2;
+
+      const x1 = x + Math.cos(segmentStartAngle) * trackRadius;
+      const y1 = y + Math.sin(segmentStartAngle) * trackRadius;
+      const x2 = x + Math.cos(segmentEndAngle) * trackRadius;
+      const y2 = y + Math.sin(segmentEndAngle) * trackRadius;
+
+      // Create line with stroke binding that checks if this segment is in the value range
+      this.line(x1, y1, x2, y2, { strokeWidth: trackWidth })
+        .bindStroke(() => {
+          const data = dial.getRenderData();
+          // Segment is "filled" if its midpoint is before the value angle
+          return segmentMidAngle <= data.valueAngle ? data.accentColor : data.trackColor;
+        });
+    }
+
+    // Draw tick marks (static - they don't change)
+    if (initialData.showTicks) {
+      for (const tick of initialData.ticks) {
+        this.line(tick.x1, tick.y1, tick.x2, tick.y2, {
+          strokeColor: initialData.tickColor,
+          strokeWidth: tick.isMajor ? 2 : 1,
+        });
+      }
+    }
+
+    // Draw center knob (static)
+    this.circle(x, y, knobRadius).fill(initialData.knobColor).stroke(initialData.trackColor, 1);
+
+    // Draw indicator line with endpoint binding for dynamic position
+    const indicatorStartRadius = knobRadius * 0.5;
+    const indicatorEndRadius = radius - trackWidth - 4;
+    this.line(x, y, x, y, { strokeColor: initialData.indicatorColor, strokeWidth: 3 })
+      .bindEndpoint(() => {
+        const data = dial.getRenderData();
+        const angle = data.valueAngle;
+        return {
+          x1: x + Math.cos(angle) * indicatorStartRadius,
+          y1: y + Math.sin(angle) * indicatorStartRadius,
+          x2: x + Math.cos(angle) * indicatorEndRadius,
+          y2: y + Math.sin(angle) * indicatorEndRadius,
+        };
+      });
+
+    // Draw value text with binding for dynamic value display
+    if (initialData.showValue) {
+      this.text(x, y + radius + 15, initialData.formattedValue, {
+        alignment: 'center',
+        size: 11,
+        color: initialData.textColor,
+      }).bindText(() => dial.getRenderData().formattedValue);
+    }
   }
 
   /**

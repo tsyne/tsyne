@@ -1789,7 +1789,10 @@ export class TestContext {
    * await ctx.drag(100, 100, 50, 0); // Drag right from (100,100) by 50px
    */
   async drag(fromX: number, fromY: number, deltaX: number, deltaY: number): Promise<void> {
-    const windowId = 'window_1'; // TODO: Make this dynamic
+    const windowId = this.app?.getFirstWindowId?.();
+    if (!windowId) {
+      throwCallerError('No window created. Call app.window() before dragging.', this.drag);
+    }
     await this.bridge.send('dragCanvas', { windowId, fromX, fromY, deltaX, deltaY }, this.drag);
   }
 

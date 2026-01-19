@@ -4,4 +4,9 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   testTimeout: 30000,
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
 };

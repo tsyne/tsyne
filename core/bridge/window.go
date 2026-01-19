@@ -200,7 +200,9 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 						})
 
 						if windowCount == 0 {
-							b.app.Quit()
+							fyne.Do(func() {
+								b.app.Quit()
+							})
 						}
 					}
 				}()
@@ -216,7 +218,9 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 
 				// If no more windows, quit the application
 				if windowCount == 0 {
-					b.app.Quit()
+					fyne.Do(func() {
+						b.app.Quit()
+					})
 				}
 			}
 		})

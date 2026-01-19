@@ -16,8 +16,7 @@
  * @tsyne-app:args (a: App) => void
  */
 
-import { cosyne, CosyneContext, refreshAllCosyneContexts } from '../../cosyne/src';
-import { enableEventHandling } from '../../cosyne/src/events';
+import { cosyne, CosyneContext, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
 
 // ============================================================================
 // Types
@@ -55,18 +54,19 @@ export function createDialDashboardApp(app: any, win: any): () => void {
       app.separator();
 
       // Main canvas area
-      app.canvasStack({ width: 480, height: 400 }, () => {
+      app.canvasStack(() => {
         cosyne(app, (c) => {
           cosyneCtx = c;
 
           // Background
-          c.rect(0, 0, 480, 400).fill('#f5f5f5');
+          c.rect(0, 0, 520, 480).fill('#f5f5f5');
 
           // ========== Row 1: Different Styles ==========
+          // Spacing: 4 dials across 520px width, centers at 70, 180, 300, 420
 
           // Classic Style Volume Knob
-          c.text(60, 15, 'Volume', { alignment: 'center', size: 12, color: '#333' });
-          const volumeDial = c.dial(60, 80, {
+          c.text(70, 15, 'Volume', { alignment: 'center', size: 12, color: '#333' });
+          const volumeDial = c.dial(70, 85, {
             minValue: 0,
             maxValue: 100,
             value: state.volume,
@@ -77,12 +77,13 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             tickCount: 11,
             onValueChange: (v) => {
               state.volume = v;
+              refreshAllCosyneContexts();
             },
           }).withId('volume-dial');
 
           // Minimal Style
-          c.text(170, 15, 'Brightness', { alignment: 'center', size: 12, color: '#333' });
-          c.dial(170, 80, {
+          c.text(180, 15, 'Brightness', { alignment: 'center', size: 12, color: '#333' });
+          c.dial(180, 85, {
             minValue: 0,
             maxValue: 100,
             value: 65,
@@ -94,8 +95,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('brightness-dial');
 
           // Vintage Style Temperature
-          c.text(280, 15, 'Temp', { alignment: 'center', size: 12, color: '#5c4033' });
-          const tempDial = c.dial(280, 80, {
+          c.text(300, 15, 'Temp', { alignment: 'center', size: 12, color: '#5c4033' });
+          const tempDial = c.dial(300, 85, {
             minValue: 15,
             maxValue: 30,
             value: state.temperature,
@@ -109,13 +110,14 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             majorTickInterval: 5,
             onValueChange: (v) => {
               state.temperature = v;
+              refreshAllCosyneContexts();
             },
           }).withId('temp-dial');
 
           // Modern Style Speed
-          c.text(390, 15, 'Speed', { alignment: 'center', size: 12, color: '#ffffff' });
-          c.rect(340, 30, 100, 100).fill('#1a1a1a');
-          c.dial(390, 80, {
+          c.text(420, 15, 'Speed', { alignment: 'center', size: 12, color: '#ffffff' });
+          c.rect(365, 30, 110, 110).fill('#1a1a1a');
+          c.dial(420, 85, {
             minValue: 0,
             maxValue: 100,
             value: state.speed,
@@ -126,14 +128,15 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             tickCount: 11,
             onValueChange: (v) => {
               state.speed = v;
+              refreshAllCosyneContexts();
             },
           }).withId('speed-dial');
 
           // ========== Row 2: Custom Configurations ==========
 
           // Full 360° dial (color wheel style)
-          c.text(60, 170, 'Hue (360°)', { alignment: 'center', size: 12, color: '#333' });
-          c.dial(60, 235, {
+          c.text(70, 180, 'Hue (360°)', { alignment: 'center', size: 12, color: '#333' });
+          c.dial(70, 250, {
             minValue: 0,
             maxValue: 360,
             value: 180,
@@ -150,8 +153,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('hue-dial');
 
           // Half circle dial (0-180)
-          c.text(170, 170, 'Angle (180°)', { alignment: 'center', size: 12, color: '#333' });
-          c.dial(170, 235, {
+          c.text(180, 180, 'Angle (180°)', { alignment: 'center', size: 12, color: '#333' });
+          c.dial(180, 250, {
             minValue: 0,
             maxValue: 180,
             value: 90,
@@ -166,8 +169,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('angle-dial');
 
           // Pan control (-100 to +100, centered)
-          c.text(280, 170, 'Pan (L/R)', { alignment: 'center', size: 12, color: '#333' });
-          const panDial = c.dial(280, 235, {
+          c.text(300, 180, 'Pan (L/R)', { alignment: 'center', size: 12, color: '#333' });
+          const panDial = c.dial(300, 250, {
             minValue: -100,
             maxValue: 100,
             value: state.pan,
@@ -181,12 +184,13 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             majorTickInterval: 5,
             onValueChange: (v) => {
               state.pan = v;
+              refreshAllCosyneContexts();
             },
           }).withId('pan-dial');
 
           // Custom colors (no ticks)
-          c.text(390, 170, 'Gain', { alignment: 'center', size: 12, color: '#333' });
-          c.dial(390, 235, {
+          c.text(420, 180, 'Gain', { alignment: 'center', size: 12, color: '#333' });
+          c.dial(420, 250, {
             minValue: 0,
             maxValue: 10,
             value: 5,
@@ -203,8 +207,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           // ========== Row 3: Size Variations ==========
 
           // Small dial
-          c.text(50, 310, 'Small', { alignment: 'center', size: 10, color: '#666' });
-          c.dial(50, 355, {
+          c.text(70, 350, 'Small', { alignment: 'center', size: 10, color: '#666' });
+          c.dial(70, 400, {
             minValue: 0,
             maxValue: 100,
             value: 30,
@@ -215,8 +219,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('small-dial');
 
           // Medium dial
-          c.text(130, 310, 'Medium', { alignment: 'center', size: 10, color: '#666' });
-          c.dial(130, 355, {
+          c.text(180, 350, 'Medium', { alignment: 'center', size: 10, color: '#666' });
+          c.dial(180, 400, {
             minValue: 0,
             maxValue: 100,
             value: 60,
@@ -227,8 +231,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('medium-dial');
 
           // Large dial
-          c.text(230, 310, 'Large', { alignment: 'center', size: 10, color: '#666' });
-          c.dial(230, 355, {
+          c.text(300, 350, 'Large', { alignment: 'center', size: 10, color: '#666' });
+          c.dial(300, 400, {
             minValue: 0,
             maxValue: 100,
             value: 80,
@@ -239,8 +243,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           }).withId('large-dial');
 
           // Value binding demo
-          c.text(360, 310, 'Bound', { alignment: 'center', size: 10, color: '#666' });
-          const boundDial = c.dial(360, 355, {
+          c.text(420, 350, 'Bound', { alignment: 'center', size: 10, color: '#666' });
+          const boundDial = c.dial(420, 400, {
             minValue: 0,
             maxValue: 100,
             value: 0,
@@ -251,6 +255,9 @@ export function createDialDashboardApp(app: any, win: any): () => void {
           })
             .bindValue(() => Math.sin(Date.now() / 1000) * 50 + 50)
             .withId('bound-dial');
+
+          // Enable event handling at the end so it overlays all primitives
+          enableEventHandling(c, app, { width: 520, height: 480 });
         });
       });
 
@@ -267,11 +274,6 @@ export function createDialDashboardApp(app: any, win: any): () => void {
       });
     });
   });
-
-  // Set up event handling for interactivity
-  if (cosyneCtx) {
-    enableEventHandling(cosyneCtx, app, { width: 480, height: 400 });
-  }
 
   // Animation loop for bound dial
   updateInterval = setInterval(() => {
@@ -293,13 +295,12 @@ export function createDialDashboardApp(app: any, win: any): () => void {
 
 if (require.main === module) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { app } = require('../../core/src/index');
-  const { resolveTransport } = require('../../core/src/transport-resolver');
+  const { app, resolveTransport } = require('../../core/src/index');
 
   app(resolveTransport(), { title: 'Dial Dashboard' }, (a: any) => {
     let cleanup: (() => void) | undefined;
 
-    a.window({ title: 'Dial Dashboard', width: 500, height: 520 }, (win: any) => {
+    a.window({ title: 'Dial Dashboard', width: 540, height: 600 }, (win: any) => {
       cleanup = createDialDashboardApp(a, win);
       win.show();
 
