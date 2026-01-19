@@ -57,7 +57,7 @@ import { format } from 'date-fns';
 **Quick API:**
 ```typescript
 cosyne(a, (c) => {
-  // Primitives: circle, rect, line, text, path, arc, wedge, polygon, star, grid, heatmap, gauge
+  // Primitives: circle, rect, line, text, path, arc, wedge, polygon, star, grid, heatmap, gauge, dial
   c.circle(100, 100, 20).fill('#ff0000').withId('c1')
     .onClick((e) => {...})
     .onDrag((e) => {...});

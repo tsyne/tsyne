@@ -18,6 +18,7 @@ import { CosyneHeatmap, HeatmapOptions, HeatmapData } from './primitives/heatmap
 import { CosynePolygon, PolygonOptions, Point } from './primitives/polygon';
 import { CosyneStar, StarOptions } from './primitives/star';
 import { CosyneGauge, GaugeOptions } from './primitives/gauge';
+import { CosyneDial, DialOptions } from './primitives/dial';
 import { CosyneSphericalPatch, SphericalPatchOptions } from './primitives/spherical-patch';
 import { Primitive } from './primitives/base';
 import { CirclesCollection, RectsCollection, LinesCollection } from './collections';
@@ -586,6 +587,15 @@ export class CosyneContext {
         }
       }
 
+      // Handle dial value bindings
+      if (primitive instanceof CosyneDial) {
+        const valueBinding = primitive.getValueBinding();
+        if (valueBinding) {
+          const value = valueBinding.evaluate();
+          primitive.setValue(value);
+        }
+      }
+
       // Handle spherical patch Y-axis rotation bindings
       if (primitive instanceof CosyneSphericalPatch) {
         const rotBinding = primitive.getYAxisRotationBinding();
@@ -839,6 +849,41 @@ export class CosyneContext {
     });
 
     const primitive = new CosyneGauge(x, y, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
+    this.trackPrimitive(primitive);
+    return primitive;
+  }
+
+  /**
+   * Create a dial primitive - interactive rotary knob control
+   * Supports multiple styles, tick marks, value binding, and drag interaction
+   *
+   * @example
+   * ```typescript
+   * c.dial(100, 100, {
+   *   minValue: 0,
+   *   maxValue: 100,
+   *   value: 50,
+   *   style: 'vintage',
+   *   showTicks: true,
+   *   onValueChange: (v) => console.log('Value:', v),
+   * }).withId('volume-dial');
+   * ```
+   */
+  dial(x: number, y: number, options?: DialOptions): CosyneDial {
+    const radius = options?.radius ?? 40;
+
+    // Create a mock underlying widget for Cosyne-only rendering
+    // Dial is rendered via Cosyne canvas primitives, not a native widget
+    const underlying = {
+      update: (_data: any) => {
+        // Dial updates are handled by Cosyne refresh cycle
+      },
+    };
+
+    const primitive = new CosyneDial(x, y, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
