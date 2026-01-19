@@ -18,9 +18,9 @@ const timeState = {
 
 // Camera State for Orbiting
 const cameraState = {
-  radius: 25,  // Increased for better initial view
-  theta: 0,
-  phi: Math.PI / 2, // Looking straight on (equator)
+  radius: 20,  // Distance from clock
+  theta: Math.PI / 2,  // Looking from +Z direction
+  phi: Math.PI / 2,    // At equator level
   lookAt: [0, 0, 0] as [number, number, number],
 };
 
@@ -41,13 +41,29 @@ export function buildClockApp(a: any) {
       ctx.light({ type: 'ambient', intensity: 0.4 });
       ctx.light({ type: 'directional', direction: [-0.5, -0.5, -1], intensity: 0.8 });
 
-      // Clock Face (Flat disk on XY plane)
-      // Cylinder defaults to Y-axis. Rotate 90 deg on X to lay it flat in XY plane (facing Z)
-      ctx.cylinder({ 
-          radius: 5, 
-          height: 0.2, 
-          rotation: [Math.PI/2, 0, 0] 
-      }).setMaterial({ color: '#eeeeee' });
+      // Clock Face - wireframe circle (edge only)
+      // Draw a ring using thin boxes as line segments
+      const clockRadius = 5;
+      const ringSegments = 64;
+      const lineThickness = 0.05;
+      for (let i = 0; i < ringSegments; i++) {
+        const angle1 = (i / ringSegments) * Math.PI * 2;
+        const angle2 = ((i + 1) / ringSegments) * Math.PI * 2;
+        const midAngle = (angle1 + angle2) / 2;
+
+        // Midpoint of segment
+        const mx = Math.sin(midAngle) * clockRadius;
+        const my = Math.cos(midAngle) * clockRadius;
+
+        // Length of segment (arc approximation)
+        const segmentLength = 2 * clockRadius * Math.sin(Math.PI / ringSegments);
+
+        ctx.box({
+          size: [lineThickness, segmentLength, lineThickness],
+          position: [mx, my, 0.1],
+          rotation: [0, 0, -midAngle],  // Rotate to align tangent to circle
+        }).setMaterial({ color: '#444444' });
+      }
 
       // Hour Markers (12 boxes)
       for (let i = 0; i < 12; i++) {
@@ -128,7 +144,7 @@ export function buildClockApp(a: any) {
     }, {
       width: 600,
       height: 600,
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#b8d4e8',  // Pastel blue
     });
 
     // Refresh bindings and re-render
@@ -171,10 +187,20 @@ export function buildClockApp(a: any) {
     win.show();
 
     // Animation loop (smooth second hand)
-    setInterval(() => {
+    let animationInterval: ReturnType<typeof setInterval> | undefined;
+    animationInterval = setInterval(() => {
       timeState.now = new Date();
       refreshAndRender();
     }, 50); // ~20 FPS is enough for smooth second hand
+
+    // Clean up interval when window closes
+    win.setCloseIntercept(async () => {
+      if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = undefined;
+      }
+      return true; // Allow close
+    });
   });
 }
 

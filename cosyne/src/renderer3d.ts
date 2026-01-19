@@ -413,7 +413,9 @@ export class Renderer3D {
   }
 
   /**
-   * Render a cylinder primitive (approximated as a series of rectangles)
+   * Render a cylinder primitive using proper world-space transformation
+   * Renders top and bottom caps as filled polygons, and the curved surface
+   * as a series of quads.
    */
   private renderCylinder(
     cylinder: Cylinder3D,
@@ -422,60 +424,161 @@ export class Renderer3D {
     height: number,
     lightManager: LightManager
   ): RenderItem[] {
-    // Approximate cylinder with line segments forming its outline
     const items: RenderItem[] = [];
+    const worldMatrix = cylinder.getWorldMatrix();
     const worldPos = cylinder.getWorldPosition();
-    const screenPos = this.projectToScreen(worldPos, camera, width, height);
-
-    if (!screenPos.visible) {
-      return [];
-    }
 
     const material = cylinder.material;
     const baseColor = material.color;
 
-    // Simple approximation: render as a vertical rectangle from the side
-    // For a more complete implementation, we'd render the curved surface
-    // with multiple quads
+    const halfHeight = cylinder.height / 2;
+    const radiusTop = cylinder.radiusTop;
+    const radiusBottom = cylinder.radiusBottom;
+    const segments = Math.max(16, cylinder.radialSegments);
 
-    const scale = cylinder.scale;
-    const worldRadius = cylinder.radiusTop * Math.max(scale.x, scale.z);
-    const worldHeight = cylinder.height * scale.y;
+    // Generate cap vertices in local space, then transform to world space
+    const generateCapVertices = (y: number, radius: number): Vector3[] => {
+      const vertices: Vector3[] = [];
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        // Transform local point to world space
+        const localPoint = new Vector3(x, y, z);
+        vertices.push(localPoint.applyMatrix4(worldMatrix));
+      }
+      return vertices;
+    };
 
-    // Calculate screen dimensions
-    const screenRadius = this.calculateScreenRadius(worldPos, worldRadius, camera, width, height);
-    const topPoint = worldPos.add(new Vector3(0, worldHeight / 2, 0));
-    const bottomPoint = worldPos.add(new Vector3(0, -worldHeight / 2, 0));
-    const topScreen = this.projectToScreen(topPoint, camera, width, height);
-    const bottomScreen = this.projectToScreen(bottomPoint, camera, width, height);
-    const screenHeight = Math.abs(bottomScreen.y - topScreen.y);
+    // Top cap (if not open-ended and radius > 0)
+    if (!cylinder.openEnded && radiusTop > 0) {
+      const topVertices = generateCapVertices(halfHeight, radiusTop);
+      const topCenter = new Vector3(0, halfHeight, 0).applyMatrix4(worldMatrix);
 
-    // Calculate lighting
-    const normal = camera.position.sub(worldPos).normalize();
-    const lighting = this.calculateLighting(worldPos, normal, camera, lightManager);
-    const litColor = this.applyLightingToColor(baseColor, lighting.diffuse, lighting.ambient);
+      // Calculate normal for top cap (local Y+ transformed to world)
+      const localNormal = new Vector3(0, 1, 0);
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
 
-    const depth = camera.position.distanceTo(worldPos);
+      // Back-face culling
+      const toCamera = camera.position.sub(topCenter).normalize();
+      if (worldNormal.dot(toCamera) >= 0) {
+        // Project all vertices
+        const screenPoints = topVertices.map(v => this.projectToScreen(v, camera, width, height));
 
-    // Render as an ellipse (2D representation of cylinder cross-section)
-    items.push({
-      depth,
-      render: (a) => {
-        // Draw the main body as a rectangle with rounded ends
-        const points = [
-          { x: screenPos.x - screenRadius, y: topScreen.y },
-          { x: screenPos.x + screenRadius, y: topScreen.y },
-          { x: screenPos.x + screenRadius, y: bottomScreen.y },
-          { x: screenPos.x - screenRadius, y: bottomScreen.y },
-        ];
-        a.canvasPolygon({
-          points,
-          fillColor: litColor,
-          strokeColor: litColor,
-          strokeWidth: 0,
-        });
-      },
-    });
+        // Check if visible
+        if (screenPoints.some(p => p.visible)) {
+          const lighting = this.calculateLighting(topCenter, worldNormal, camera, lightManager);
+          const litColor = this.applyLightingToColor(baseColor, lighting.diffuse, lighting.ambient);
+          const depth = camera.position.distanceTo(topCenter);
+
+          const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+          items.push({
+            depth,
+            render: (a) => {
+              a.canvasPolygon({
+                points,
+                fillColor: litColor,
+                strokeColor: litColor,
+                strokeWidth: 0,
+              });
+            },
+          });
+        }
+      }
+    }
+
+    // Bottom cap (if not open-ended and radius > 0)
+    if (!cylinder.openEnded && radiusBottom > 0) {
+      const bottomVertices = generateCapVertices(-halfHeight, radiusBottom);
+      const bottomCenter = new Vector3(0, -halfHeight, 0).applyMatrix4(worldMatrix);
+
+      // Calculate normal for bottom cap (local Y- transformed to world)
+      const localNormal = new Vector3(0, -1, 0);
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
+
+      // Back-face culling
+      const toCamera = camera.position.sub(bottomCenter).normalize();
+      if (worldNormal.dot(toCamera) >= 0) {
+        // Project all vertices - reverse order for correct winding
+        const screenPoints = bottomVertices.map(v => this.projectToScreen(v, camera, width, height)).reverse();
+
+        // Check if visible
+        if (screenPoints.some(p => p.visible)) {
+          const lighting = this.calculateLighting(bottomCenter, worldNormal, camera, lightManager);
+          const litColor = this.applyLightingToColor(baseColor, lighting.diffuse, lighting.ambient);
+          const depth = camera.position.distanceTo(bottomCenter);
+
+          const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+          items.push({
+            depth,
+            render: (a) => {
+              a.canvasPolygon({
+                points,
+                fillColor: litColor,
+                strokeColor: litColor,
+                strokeWidth: 0,
+              });
+            },
+          });
+        }
+      }
+    }
+
+    // Curved surface - render as quads between top and bottom rings
+    const topVertices = generateCapVertices(halfHeight, radiusTop);
+    const bottomVertices = generateCapVertices(-halfHeight, radiusBottom);
+
+    for (let i = 0; i < segments; i++) {
+      const nextI = (i + 1) % segments;
+
+      // Quad vertices: top[i], top[next], bottom[next], bottom[i]
+      const quadVertices = [
+        topVertices[i],
+        topVertices[nextI],
+        bottomVertices[nextI],
+        bottomVertices[i],
+      ];
+
+      // Calculate face center and normal
+      const faceCenter = quadVertices.reduce((acc, v) => acc.add(v), new Vector3(0, 0, 0)).multiplyScalar(0.25);
+
+      // Normal is perpendicular to cylinder axis, pointing outward
+      // Use the midpoint of the quad's horizontal position
+      const midAngle = ((i + 0.5) / segments) * Math.PI * 2;
+      const localNormal = new Vector3(Math.cos(midAngle), 0, Math.sin(midAngle));
+      const worldNormal = localNormal.applyMatrix4(worldMatrix.extractRotation()).normalize();
+
+      // Back-face culling
+      const toCamera = camera.position.sub(faceCenter).normalize();
+      if (worldNormal.dot(toCamera) < 0) {
+        continue;
+      }
+
+      // Project vertices
+      const screenPoints = quadVertices.map(v => this.projectToScreen(v, camera, width, height));
+
+      // Skip if all behind camera
+      if (screenPoints.every(p => !p.visible)) {
+        continue;
+      }
+
+      const lighting = this.calculateLighting(faceCenter, worldNormal, camera, lightManager);
+      const litColor = this.applyLightingToColor(baseColor, lighting.diffuse, lighting.ambient);
+      const depth = camera.position.distanceTo(faceCenter);
+
+      const points = screenPoints.map(p => ({ x: p.x, y: p.y }));
+      items.push({
+        depth,
+        render: (a) => {
+          a.canvasPolygon({
+            points,
+            fillColor: litColor,
+            strokeColor: litColor,
+            strokeWidth: 0,
+          });
+        },
+      });
+    }
 
     return items;
   }

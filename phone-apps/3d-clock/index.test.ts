@@ -1,5 +1,6 @@
 import { TsyneTest, TestContext } from '../../core/src/index-test';
 import * as path from 'path';
+import * as fs from 'fs';
 import { buildClockApp } from './index';
 
 describe('3D Clock App', () => {
@@ -20,19 +21,47 @@ describe('3D Clock App', () => {
     ctx = tsyneTest.getContext();
     await testApp.run();
 
-    // Verify app title or some element
-    // The app creates a window with title "3D Clock"
-    // TsyneTest doesn't easily check window titles directly unless exposed via bridge, 
-    // but we can check if it runs and renders.
-    
-    // Wait for a bit to let the animation loop run
+    // Wait for initial render
     await ctx.wait(500);
 
     // Take screenshot if enabled
     if (process.env.TAKE_SCREENSHOTS === '1') {
-      const screenshotPath = path.join(__dirname, 'screenshots', '3d-clock.png');
+      const screenshotDir = path.join(__dirname, 'screenshots');
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+      const screenshotPath = path.join(screenshotDir, '3d-clock.png');
       await tsyneTest.screenshot(screenshotPath);
       console.log(`📸 Screenshot saved: ${screenshotPath}`);
     }
   });
+
+  test('second hand moves 90 degrees in 15 seconds', async () => {
+    const testApp = await tsyneTest.createApp(buildClockApp);
+    ctx = tsyneTest.getContext();
+    await testApp.run();
+
+    // Wait for initial render
+    await ctx.wait(500);
+
+    const screenshotDir = path.join(__dirname, 'screenshots');
+    if (!fs.existsSync(screenshotDir)) {
+      fs.mkdirSync(screenshotDir, { recursive: true });
+    }
+
+    // Take first screenshot
+    const screenshot1 = path.join(screenshotDir, '3d-clock-t0.png');
+    await tsyneTest.screenshot(screenshot1);
+    console.log(`📸 Screenshot 1 saved: ${screenshot1}`);
+
+    // Wait 15 seconds
+    console.log('⏳ Waiting 15 seconds for second hand to move 90 degrees...');
+    await ctx.wait(15000);
+
+    // Take second screenshot
+    const screenshot2 = path.join(screenshotDir, '3d-clock-t15.png');
+    await tsyneTest.screenshot(screenshot2);
+    console.log(`📸 Screenshot 2 saved: ${screenshot2}`);
+    console.log('✅ Compare the two screenshots - second hand should have moved 90 degrees');
+  }, 30000); // 30 second timeout
 });
