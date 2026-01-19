@@ -326,7 +326,7 @@ export function buildRobotArmApp(a: any) {
         // 3D Scene Canvas
         a.max(() => {
           canvas = a.tappableCanvasRaster(WIDTH, HEIGHT, {
-            onDrag: async (x: any, y: any, deltaX: any, deltaY: any) => {
+            onDrag: (x: any, y: any, deltaX: any, deltaY: any) => {
               const sensitivity = 0.01;
               cameraState.theta -= deltaX * sensitivity;
               cameraState.phi -= deltaY * sensitivity;
@@ -334,15 +334,15 @@ export function buildRobotArmApp(a: any) {
               const epsilon = 0.1;
               cameraState.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, cameraState.phi));
 
-              await renderFrame();
+              renderFrame();
             },
-            onScroll: async (dx: any, dy: any) => {
+            onScroll: (dx: any, dy: any) => {
               const zoomSpeed = 0.05;
               const factor = 1 + (dy > 0 ? 1 : -1) * zoomSpeed;
               cameraState.radius *= factor;
               cameraState.radius = Math.max(10, Math.min(100, cameraState.radius));
 
-              await renderFrame();
+              renderFrame();
             }
           });
         });
@@ -354,9 +354,9 @@ export function buildRobotArmApp(a: any) {
           // Base Rotation
           a.vbox(() => {
             a.label('Base Rotation');
-            a.slider(0, Math.PI * 2, async (val: number) => {
+            a.slider(0, Math.PI * 2, robotState.baseRotation, (val: number) => {
               robotState.baseRotation = val;
-              await renderFrame();
+              renderFrame();
             }).withId('sliderBase');
           });
 
@@ -365,9 +365,9 @@ export function buildRobotArmApp(a: any) {
           // Shoulder Angle
           a.vbox(() => {
             a.label('Shoulder');
-            a.slider(-Math.PI / 2, Math.PI / 2, async (val: number) => {
+            a.slider(-Math.PI / 2, Math.PI / 2, robotState.shoulderAngle, (val: number) => {
               robotState.shoulderAngle = val;
-              await renderFrame();
+              renderFrame();
             }).withId('sliderShoulder');
           });
 
@@ -376,9 +376,9 @@ export function buildRobotArmApp(a: any) {
           // Elbow Angle
           a.vbox(() => {
             a.label('Elbow');
-            a.slider(-Math.PI / 2, Math.PI / 2, async (val: number) => {
+            a.slider(-Math.PI / 2, Math.PI / 2, robotState.elbowAngle, (val: number) => {
               robotState.elbowAngle = val;
-              await renderFrame();
+              renderFrame();
             }).withId('sliderElbow');
           });
 
@@ -387,16 +387,16 @@ export function buildRobotArmApp(a: any) {
           // Claw Open/Close
           a.vbox(() => {
             a.label('Gripper');
-            a.slider(0, 1, async (val: number) => {
+            a.slider(0, 1, robotState.clawOpen, (val: number) => {
               robotState.clawOpen = val;
-              await renderFrame();
+              renderFrame();
             }).withId('sliderClaw');
           });
 
           a.spacer();
 
           // Reset Button
-          a.button('Reset').onClick(async () => {
+          a.button('Reset').onClick(() => {
             robotState.baseRotation = 0;
             robotState.shoulderAngle = -0.3;
             robotState.elbowAngle = 0.6;
@@ -404,7 +404,7 @@ export function buildRobotArmApp(a: any) {
             cameraState.radius = 30;
             cameraState.theta = Math.PI / 4;
             cameraState.phi = Math.PI / 3;
-            await renderFrame();
+            renderFrame();
           }).withId('resetBtn');
         });
       });
