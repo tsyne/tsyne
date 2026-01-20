@@ -194,6 +194,9 @@ export class DoomGame {
     // Handle player input
     this.handleInput(dt);
 
+    // Update camera bob (smooth start/stop transitions)
+    this.player.updateBob(dt, this.playerMoving);
+
     // Update chaingun (bob, recoil, spin)
     this.chaingun.update(dt, this.playerMoving, false);
 

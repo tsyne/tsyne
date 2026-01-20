@@ -236,9 +236,27 @@ export class RaycastRenderer {
     // Clear depth buffer
     this.depthBuffer.fill(Infinity);
 
-    // Fill ceiling (solid color)
-    for (let y = 0; y < this.height / 2; y++) {
-      for (let x = 0; x < this.width; x++) {
+    // Get camera bob values
+    const verticalBob = player.getVerticalBob();
+    const cameraRoll = player.getCameraRoll();
+
+    // Apply vertical bob to effective eye height
+    const eyeZ = player.position.z + verticalBob;
+
+    // Calculate horizon offset from roll (center of screen shifts per-column)
+    // Roll tilts the view: left side goes up, right side goes down (or vice versa)
+    const rollOffsets: number[] = new Array(this.width);
+    for (let x = 0; x < this.width; x++) {
+      // Distance from center of screen
+      const xFromCenter = x - this.width / 2;
+      // Roll offset: positive roll tilts right side down
+      rollOffsets[x] = xFromCenter * Math.sin(cameraRoll);
+    }
+
+    // Fill ceiling (solid color) - adjusted for roll
+    for (let x = 0; x < this.width; x++) {
+      const horizonY = this.height / 2 + rollOffsets[x];
+      for (let y = 0; y < Math.min(this.height, Math.floor(horizonY)); y++) {
         const idx = (y * this.width + x) * 4;
         buffer[idx] = this.ceilingColor[0];
         buffer[idx + 1] = this.ceilingColor[1];
@@ -251,33 +269,33 @@ export class RaycastRenderer {
     const halfFov = this.fov / 2;
     const halfHeight = this.height / 2;
     const floorZ = 0;  // Floor is at Z=0
-    const eyeZ = player.position.z;  // Player eye height
 
-    for (let y = Math.floor(halfHeight); y < this.height; y++) {
-      // Calculate the distance to this floor row
-      // Using similar triangles: rowDistance = (eyeZ - floorZ) * scale / (y - halfHeight)
-      const rowDistance = ((eyeZ - floorZ) * this.height * 1.5) / (y - halfHeight + 0.001);
+    // Floor casting - iterate per column to account for roll
+    for (let x = 0; x < this.width; x++) {
+      const rayAngle = player.theta + halfFov - (x / this.width) * this.fov;
+      const rayDirX = Math.cos(rayAngle);
+      const rayDirY = Math.sin(rayAngle);
 
-      // Skip very distant floor (beyond render distance)
-      if (rowDistance > this.maxRenderDistance * 2) {
-        for (let x = 0; x < this.width; x++) {
+      // Adjusted horizon for this column (roll effect)
+      const columnHorizon = halfHeight + rollOffsets[x];
+
+      for (let y = Math.floor(columnHorizon); y < this.height; y++) {
+        // Calculate the distance to this floor row, accounting for roll
+        const effectiveY = y - rollOffsets[x];
+        const rowDistance = ((eyeZ - floorZ) * this.height * 1.5) / (effectiveY - halfHeight + 0.001);
+
+        // Skip very distant floor (beyond render distance)
+        if (rowDistance > this.maxRenderDistance * 2 || rowDistance < 0) {
           const idx = (y * this.width + x) * 4;
           buffer[idx] = this.floorColor[0];
           buffer[idx + 1] = this.floorColor[1];
           buffer[idx + 2] = this.floorColor[2];
           buffer[idx + 3] = 255;
+          continue;
         }
-        continue;
-      }
 
-      // Calculate shading based on distance
-      const shade = Math.max(0.2, 1 - rowDistance / (this.maxRenderDistance * 1.5));
-
-      for (let x = 0; x < this.width; x++) {
-        // Calculate ray direction for this pixel
-        const rayAngle = player.theta + halfFov - (x / this.width) * this.fov;
-        const rayDirX = Math.cos(rayAngle);
-        const rayDirY = Math.sin(rayAngle);
+        // Calculate shading based on distance
+        const shade = Math.max(0.2, 1 - rowDistance / (this.maxRenderDistance * 1.5));
 
         // Calculate world position of this floor pixel
         const floorX = player.position.x + rayDirX * rowDistance;
@@ -302,6 +320,9 @@ export class RaycastRenderer {
     }
 
     // Cast rays for each column (halfFov already defined above)
+    // eyeZ already includes vertical bob from above
+    const scale = this.height * 1.5;  // Perspective scale factor
+
     for (let x = 0; x < this.width; x++) {
       // Calculate ray angle
       const rayAngle =
@@ -313,19 +334,18 @@ export class RaycastRenderer {
       const perpDist = hit.distance * Math.cos(rayAngle - player.theta);
       this.depthBuffer[x] = perpDist;
 
-      if (perpDist < this.maxRenderDistance && hit.wall) {
-        // Get player's eye height in world coordinates
-        // position.z is already set to floorHeight + height (eye level)
-        const eyeZ = player.position.z;
+      // Get roll offset for this column
+      const rollOffset = rollOffsets[x];
 
+      if (perpDist < this.maxRenderDistance && hit.wall) {
         // Wall bottom and top in world Z coordinates
         const wallBottom = hit.wall.floorZ;
         const wallTop = hit.wall.floorZ + hit.wall.height;
 
         // Calculate screen Y for a given world Z coordinate
         // screenY = centerY - (worldZ - eyeZ) * scale / distance
-        const centerY = this.height / 2;
-        const scale = this.height * 1.5;  // Perspective scale factor
+        // Apply roll offset to shift walls with the tilted horizon
+        const centerY = this.height / 2 + rollOffset;
 
         // Calculate screen Y positions for wall bottom and top
         const screenWallTop = centerY - ((wallTop - eyeZ) * scale) / perpDist;
