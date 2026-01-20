@@ -180,7 +180,7 @@ export function runTurtle(commands: number[]): MapPolygon[] {
 
 export class GameMap {
   regions: MapPolygon[] = [];
-  walls: Wall[] = [];
+  walls: WallSegment[] = [];
 
   constructor() {
     this.loadLevel(0);
@@ -190,50 +190,60 @@ export class GameMap {
     const levelData = LEVEL_DATA[levelIndex] || LEVEL_DATA[0];
     this.regions = runTurtle(uncompress(levelData));
 
-    // Build walls from regions
+    // Build walls directly from region line segments
+    // Each line segment becomes a wall - simpler and more correct
     this.walls = [];
-    const potentialWalls = new Map<string, number[][]>();
+
+    // Track which edges are shared between regions (portals - no wall needed for same heights)
+    const edgeCounts = new Map<string, { count: number; heights: number[][] }>();
 
     for (const region of this.regions) {
       for (const [p1, p2] of region.lines) {
-        const key = [p1.x, p1.y, p2.x, p2.y].sort((a, b) => a - b).join(',');
-        const heights = potentialWalls.get(key) || [];
-        heights.push([region.floorHeight, region.ceilHeight]);
-        potentialWalls.set(key, heights);
+        // Create canonical key
+        const pt1 = p1.x < p2.x || (p1.x === p2.x && p1.y < p2.y) ? p1 : p2;
+        const pt2 = p1.x < p2.x || (p1.x === p2.x && p1.y < p2.y) ? p2 : p1;
+        const key = `${pt1.x},${pt1.y},${pt2.x},${pt2.y}`;
+
+        const existing = edgeCounts.get(key) || { count: 0, heights: [] };
+        existing.count++;
+        existing.heights.push([region.floorHeight, region.ceilHeight]);
+        edgeCounts.set(key, existing);
       }
     }
 
-    // Create walls where heights differ
-    for (const [key, heights] of potentialWalls) {
-      const [a, b, c, d] = key.split(',').map(Number);
-      const p1 = new Vector3(a, b, 0);
-      const p2 = new Vector3(c, d, 0);
-      const mid = p1.lerp(p2, 0.5);
-      const angle = -angleBetween(p1, mid);
-      const halfWidth = p1.distanceTo(mid);
+    // Create walls
+    for (const [key, data] of edgeCounts) {
+      const [x1, y1, x2, y2] = key.split(',').map(Number);
+      const p1 = new Vector3(x1, y1, 0);
+      const p2 = new Vector3(x2, y2, 0);
 
-      // Transpose heights to get floor/ceiling pairs
-      if (heights.length === 1) {
-        // Single-sided wall
-        const h = heights[0];
-        this.walls.push(new Wall(mid, angle, halfWidth, h[1] - h[0]));
-      } else if (heights.length === 2) {
-        // Two-sided - create walls for floor/ceiling differences
-        const floors = heights.map((h) => h[0]).sort((a, b) => a - b);
-        const ceils = heights.map((h) => h[1]).sort((a, b) => a - b);
+      // For single-sided edges, create a full wall
+      // For double-sided edges, only create wall if heights differ
+      if (data.count === 1) {
+        // Boundary wall - always create
+        const h = data.heights[0];
+        this.walls.push(new WallSegment(p1, p2, h[0], h[1] - h[0]));
+      } else if (data.count === 2) {
+        // Portal - only wall if floor/ceiling heights differ
+        const h1 = data.heights[0];
+        const h2 = data.heights[1];
 
-        if (floors[0] !== floors[1]) {
-          const wallHeight = floors[1] - floors[0];
-          const wallMid = mid.add(new Vector3(0, 0, floors[0]));
-          this.walls.push(new Wall(wallMid, angle, halfWidth, wallHeight));
+        // Lower wall (step up)
+        if (h1[0] !== h2[0]) {
+          const lowerFloor = Math.min(h1[0], h2[0]);
+          const upperFloor = Math.max(h1[0], h2[0]);
+          this.walls.push(new WallSegment(p1, p2, lowerFloor, upperFloor - lowerFloor));
         }
-        if (ceils[0] !== ceils[1]) {
-          const wallHeight = ceils[1] - ceils[0];
-          const wallMid = mid.add(new Vector3(0, 0, ceils[0]));
-          this.walls.push(new Wall(wallMid, angle, halfWidth, wallHeight));
+
+        // Upper wall (ceiling difference)
+        if (h1[1] !== h2[1]) {
+          const lowerCeil = Math.min(h1[1], h2[1]);
+          const upperCeil = Math.max(h1[1], h2[1]);
+          this.walls.push(new WallSegment(p1, p2, lowerCeil, upperCeil - lowerCeil));
         }
       }
     }
+
   }
 
   getFloorHeight(position: Vector3): number {
@@ -262,32 +272,29 @@ export class GameMap {
 }
 
 // ============================================================================
-// Wall Class
+// Wall Classes
 // ============================================================================
 
-export class Wall {
-  position: Vector3;
-  theta: number;
-  width: number;
-  height: number;
-  solid: boolean = true;
-  parallelDir: Vector3;
+/**
+ * WallSegment - a wall defined by two endpoints
+ * Simpler representation for raycasting
+ */
+export class WallSegment {
+  p1: Vector3;  // First endpoint
+  p2: Vector3;  // Second endpoint
+  floorZ: number;  // Z position of wall bottom
+  height: number;  // Wall height
 
-  constructor(position: Vector3, theta: number, width: number, height: number) {
-    this.position = position;
-    this.theta = theta;
-    this.width = width;
+  constructor(p1: Vector3, p2: Vector3, floorZ: number, height: number) {
+    this.p1 = p1;
+    this.p2 = p2;
+    this.floorZ = floorZ;
     this.height = Math.abs(height);
-    if (height < 0) {
-      this.position = this.position.add(new Vector3(0, 0, height));
-    }
-    this.parallelDir = new Vector3(
-      -Math.sin(this.theta) * this.width,
-      Math.cos(this.theta) * this.width,
-      0
-    );
   }
 }
+
+// Alias for compatibility
+export type Wall = WallSegment;
 
 // ============================================================================
 // Player Class
@@ -297,7 +304,7 @@ export class Player {
   position: Vector3;
   theta: number = 0;
   theta2: number = 0;  // Vertical look angle
-  health: number = 5;
+  health: number = 100;
   velocity: Vector3 = ZERO.clone();
   height: number = 5;
 
@@ -306,11 +313,14 @@ export class Player {
   }
 
   getForwardVector(): Vector3 {
-    return rotateXY(Y_DIR, this.theta);
+    // Forward direction based on theta angle
+    // Uses cos/sin convention: theta=0 points along +X, theta=PI/2 points along +Y
+    return new Vector3(Math.cos(this.theta), Math.sin(this.theta), 0);
   }
 
   getRightVector(): Vector3 {
-    return rotateXY(X_DIR, this.theta);
+    // Right is perpendicular to forward (90 degrees clockwise)
+    return new Vector3(Math.cos(this.theta - Math.PI / 2), Math.sin(this.theta - Math.PI / 2), 0);
   }
 
   getEyePosition(): Vector3 {
@@ -396,8 +406,8 @@ export class Enemy {
 
 export interface RaycastHit {
   distance: number;
-  wallX: number;  // Where on the wall texture
-  wall: Wall | null;
+  wallX: number;  // Where on the wall texture (0-1)
+  wall: WallSegment | null;
   side: number;   // 0 = NS, 1 = EW
   color: [number, number, number];
 }
@@ -447,21 +457,19 @@ export class RaycastRenderer {
 
     // Check intersection with all walls
     for (const wall of map.walls) {
-      const p1 = wall.position.add(wall.parallelDir);
-      const p2 = wall.position.sub(wall.parallelDir);
-
-      const hit = rayLineIntersect(pos, rayDir, p1, p2);
-      if (hit && hit[0] < closestHit.distance) {
-        // Check height intersection
-        const hitPos = pos.add(rayDir.multiplyScalar(hit[0]));
-        const floorAtHit = map.getFloorHeight(hitPos);
+      const hit = rayLineIntersect(pos, rayDir, wall.p1, wall.p2);
+      if (hit && hit[0] < closestHit.distance && hit[0] > 0.1) {
+        // Determine wall orientation for shading
+        const dx = wall.p2.x - wall.p1.x;
+        const dy = wall.p2.y - wall.p1.y;
+        const isNS = Math.abs(dx) > Math.abs(dy);
 
         closestHit = {
           distance: hit[0],
           wallX: hit[1],
           wall: wall,
-          side: Math.abs(Math.cos(wall.theta)) > 0.5 ? 0 : 1,
-          color: Math.abs(Math.cos(wall.theta)) > 0.5 ? this.wallColorNS : this.wallColorEW,
+          side: isNS ? 0 : 1,
+          color: isNS ? this.wallColorNS : this.wallColorEW,
         };
       }
     }
@@ -511,16 +519,25 @@ export class RaycastRenderer {
       this.depthBuffer[x] = perpDist;
 
       if (perpDist < this.maxRenderDistance && hit.wall) {
-        // Calculate wall height on screen
-        const wallHeight = Math.min(
-          this.height * 2,
-          (this.height * 20) / perpDist
-        );
-        const drawStart = Math.max(0, Math.floor((this.height - wallHeight) / 2));
-        const drawEnd = Math.min(
-          this.height - 1,
-          Math.floor((this.height + wallHeight) / 2)
-        );
+        // Get player's eye height in world coordinates
+        // position.z is already set to floorHeight + height (eye level)
+        const eyeZ = player.position.z;
+
+        // Wall bottom and top in world Z coordinates
+        const wallBottom = hit.wall.floorZ;
+        const wallTop = hit.wall.floorZ + hit.wall.height;
+
+        // Calculate screen Y for a given world Z coordinate
+        // screenY = centerY - (worldZ - eyeZ) * scale / distance
+        const centerY = this.height / 2;
+        const scale = this.height * 1.5;  // Perspective scale factor
+
+        // Calculate screen Y positions for wall bottom and top
+        const screenWallTop = centerY - ((wallTop - eyeZ) * scale) / perpDist;
+        const screenWallBottom = centerY - ((wallBottom - eyeZ) * scale) / perpDist;
+
+        const drawStart = Math.max(0, Math.floor(screenWallTop));
+        const drawEnd = Math.min(this.height - 1, Math.floor(screenWallBottom));
 
         // Apply distance-based shading
         const shade = Math.max(0.2, 1 - perpDist / this.maxRenderDistance);
@@ -646,7 +663,7 @@ export class RaycastRenderer {
     const barHeight = 10;
     const barX = 10;
     const barY = this.height - barHeight - 10;
-    const healthPercent = player.health / 9;
+    const healthPercent = player.health / 100;
 
     for (let y = barY; y < barY + barHeight; y++) {
       for (let x = barX; x < barX + barWidth; x++) {
@@ -683,7 +700,8 @@ export class DoomGame {
 
   constructor(width: number, height: number) {
     this.map = new GameMap();
-    this.player = new Player(new Vector3(0, 0, 10));
+    // Start player inside region 0, away from walls
+    this.player = new Player(new Vector3(20, -15, 10));
     this.renderer = new RaycastRenderer(width, height);
 
     // Spawn some enemies
@@ -691,13 +709,13 @@ export class DoomGame {
   }
 
   private spawnEnemies(): void {
-    // Spawn enemies in various positions
+    // Spawn enemies far from player start (20, -15)
     const spawnPoints = [
-      new Vector3(50, 50, 10),
-      new Vector3(-50, 30, 10),
-      new Vector3(80, -40, 10),
-      new Vector3(-30, -60, 10),
-      new Vector3(100, 20, 10),
+      new Vector3(120, 80, 10),
+      new Vector3(-80, 60, 10),
+      new Vector3(150, -80, 10),
+      new Vector3(-60, -100, 10),
+      new Vector3(180, 40, 10),
     ];
 
     for (const pos of spawnPoints) {
@@ -754,11 +772,11 @@ export class DoomGame {
     const moveSpeed = dt / 10;
     const turnSpeed = dt / 300;
 
-    // Rotation
-    if (this.keysHeld.has('ArrowLeft') || this.keysHeld.has('Left')) {
+    // Rotation - Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
+    if (this.keysHeld.has('Left')) {
       this.player.theta += turnSpeed;
     }
-    if (this.keysHeld.has('ArrowRight') || this.keysHeld.has('Right')) {
+    if (this.keysHeld.has('Right')) {
       this.player.theta -= turnSpeed;
     }
 
@@ -767,10 +785,11 @@ export class DoomGame {
     const right = this.player.getRightVector();
     let moveDir = ZERO.clone();
 
-    if (this.keysHeld.has('ArrowUp') || this.keysHeld.has('Up') || this.keysHeld.has('w')) {
+    // Fyne sends "Up"/"Down" for arrow keys, "w"/"s" for WASD (lowercase from our normalizer)
+    if (this.keysHeld.has('Up') || this.keysHeld.has('w')) {
       moveDir = moveDir.add(forward);
     }
-    if (this.keysHeld.has('ArrowDown') || this.keysHeld.has('Down') || this.keysHeld.has('s')) {
+    if (this.keysHeld.has('Down') || this.keysHeld.has('s')) {
       moveDir = moveDir.sub(forward);
     }
     if (this.keysHeld.has('a')) {
@@ -792,7 +811,8 @@ export class DoomGame {
       }
     }
 
-    // Shooting
+    // Shooting - space key sends "Space", but TypedRune sends ' '
+    // Our normalizer doesn't lowercase "Space" (multi-char), but ' ' stays as ' '
     if (this.keysHeld.has(' ') || this.keysHeld.has('Space')) {
       this.shoot();
       this.keysHeld.delete(' ');
@@ -835,7 +855,7 @@ export class DoomGame {
   }
 
   reset(): void {
-    this.player = new Player(new Vector3(0, 0, 10));
+    this.player = new Player(new Vector3(20, -15, 10));
     this.enemies = [];
     this.spawnEnemies();
     this.gameState = 'playing';
@@ -905,9 +925,11 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
             canvas = a
               .tappableCanvasRaster(canvasWidth, canvasHeight, {
                 onKeyDown: (key: string) => {
+                  console.log('[DOOM] KeyDown:', key);
                   game.setKey(key, true);
                 },
                 onKeyUp: (key: string) => {
+                  console.log('[DOOM] KeyUp:', key);
                   game.setKey(key, false);
                 },
               })

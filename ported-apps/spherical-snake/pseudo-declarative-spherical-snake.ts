@@ -687,22 +687,24 @@ export function buildPseudoDeclarativeSphericalSnakeApp(a: App): void {
               gridCanvas = a.tappableCanvasRaster(canvasSize.width, canvasSize.height, {
                 onKeyDown: (key: string) => {
                   console.log('[GAME] KeyDown:', key);
-                  if (key === 'Left' || key === 'ArrowLeft') {
+                  // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
+                  if (key === 'Left') {
                     leftDown = true;
                     game.setInputs(leftDown, rightDown);
                   }
-                  if (key === 'Right' || key === 'ArrowRight') {
+                  if (key === 'Right') {
                     rightDown = true;
                     game.setInputs(leftDown, rightDown);
                   }
                 },
                 onKeyUp: (key: string) => {
                   console.log('[GAME] KeyUp:', key);
-                  if (key === 'Left' || key === 'ArrowLeft') {
+                  // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
+                  if (key === 'Left') {
                     leftDown = false;
                     game.setInputs(leftDown, rightDown);
                   }
-                  if (key === 'Right' || key === 'ArrowRight') {
+                  if (key === 'Right') {
                     rightDown = false;
                     game.setInputs(leftDown, rightDown);
                   }

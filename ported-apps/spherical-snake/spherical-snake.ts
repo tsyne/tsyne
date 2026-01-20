@@ -642,14 +642,16 @@ export function buildSphericalSnakeApp(a: App): void {
     });
 
     function handleKeyDown(key: string): void {
-      if (key === 'Left' || key === 'ArrowLeft') leftDown = true;
-      if (key === 'Right' || key === 'ArrowRight') rightDown = true;
+      // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
+      if (key === 'Left') leftDown = true;
+      if (key === 'Right') rightDown = true;
       game.setInputs(leftDown, rightDown);
     }
 
     function handleKeyUp(key: string): void {
-      if (key === 'Left' || key === 'ArrowLeft') leftDown = false;
-      if (key === 'Right' || key === 'ArrowRight') rightDown = false;
+      // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
+      if (key === 'Left') leftDown = false;
+      if (key === 'Right') rightDown = false;
       game.setInputs(leftDown, rightDown);
     }
 

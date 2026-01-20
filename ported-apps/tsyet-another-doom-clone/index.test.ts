@@ -24,7 +24,7 @@ import {
   rotateXZ,
   rotateYZ,
   rayLineIntersect,
-  Wall,
+  WallSegment,
   Player,
   Enemy,
   GameMap,
@@ -295,29 +295,35 @@ describe('Utility Functions', () => {
 // Wall Tests
 // ============================================================================
 
-describe('Wall', () => {
+describe('WallSegment', () => {
   it('should create a wall with correct properties', () => {
-    const pos = new Vector3(10, 10, 0);
-    const wall = new Wall(pos, 0, 5, 10);
+    const p1 = new Vector3(10, 10, 0);
+    const p2 = new Vector3(20, 10, 0);
+    const wall = new WallSegment(p1, p2, 0, 10);
 
-    expect(wall.position.x).toBe(10);
-    expect(wall.position.y).toBe(10);
-    expect(wall.width).toBe(5);
+    expect(wall.p1.x).toBe(10);
+    expect(wall.p1.y).toBe(10);
+    expect(wall.p2.x).toBe(20);
+    expect(wall.p2.y).toBe(10);
+    expect(wall.floorZ).toBe(0);
     expect(wall.height).toBe(10);
-    expect(wall.solid).toBe(true);
   });
 
-  it('should handle negative height', () => {
-    const pos = new Vector3(10, 10, 10);
-    const wall = new Wall(pos, 0, 5, -10);
+  it('should handle negative height by taking absolute value', () => {
+    const p1 = new Vector3(10, 10, 0);
+    const p2 = new Vector3(20, 10, 0);
+    const wall = new WallSegment(p1, p2, 5, -10);
 
     expect(wall.height).toBe(10);
-    expect(wall.position.z).toBe(0);
+    expect(wall.floorZ).toBe(5);
   });
 
-  it('should compute parallel direction', () => {
-    const wall = new Wall(new Vector3(0, 0, 0), 0, 10, 5);
-    expect(wall.parallelDir.length()).toBeCloseTo(10);
+  it('should compute wall length from endpoints', () => {
+    const p1 = new Vector3(0, 0, 0);
+    const p2 = new Vector3(10, 0, 0);
+    const wall = new WallSegment(p1, p2, 0, 5);
+    const length = wall.p2.sub(wall.p1).length();
+    expect(length).toBeCloseTo(10);
   });
 });
 
@@ -514,11 +520,12 @@ describe('DoomGame', () => {
   });
 
   it('should handle key input', () => {
-    game.setKey('ArrowLeft', true);
-    expect(game.keysHeld.has('ArrowLeft')).toBe(true);
+    // Use Fyne key names (not browser-style ArrowLeft)
+    game.setKey('Left', true);
+    expect(game.keysHeld.has('Left')).toBe(true);
 
-    game.setKey('ArrowLeft', false);
-    expect(game.keysHeld.has('ArrowLeft')).toBe(false);
+    game.setKey('Left', false);
+    expect(game.keysHeld.has('Left')).toBe(false);
   });
 
   it('should resize renderer', () => {
@@ -609,24 +616,26 @@ describe('Integration', () => {
     const game = new DoomGame(100, 80);
     const initialPos = game.player.position.clone();
 
-    game.setKey('ArrowUp', true);
+    // Use Fyne key names (not browser-style ArrowUp)
+    game.setKey('Up', true);
     game.tick(Date.now());
     game.tick(Date.now() + 100);
 
     // Player should have moved (or at least attempted)
     // Note: Movement might be blocked by walls
-    game.setKey('ArrowUp', false);
+    game.setKey('Up', false);
   });
 
   it('should handle player rotation', () => {
     const game = new DoomGame(100, 80);
     const initialTheta = game.player.theta;
 
-    game.setKey('ArrowLeft', true);
+    // Use Fyne key names (not browser-style ArrowLeft)
+    game.setKey('Left', true);
     game.tick(Date.now());
     game.tick(Date.now() + 100);
 
     expect(game.player.theta).not.toBe(initialTheta);
-    game.setKey('ArrowLeft', false);
+    game.setKey('Left', false);
   });
 });

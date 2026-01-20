@@ -72,8 +72,8 @@ describe('SphericalSnake UI Integration Tests', () => {
     await canvas.focus();
 
     // Simulate arrow key press
-    await canvas.sendKeyDown('ArrowLeft');
-    await canvas.sendKeyUp('ArrowLeft');
+    await canvas.sendKeyDown('Left');
+    await canvas.sendKeyUp('Left');
 
     // Game should still be responsive
     const statusLabel = await ctx.getById('statusLabel');
@@ -161,9 +161,9 @@ describe('SphericalSnake UI Integration Tests', () => {
     // Simulate gameplay
     const canvas = await ctx.getById('gameCanvas');
     for (let i = 0; i < 10; i++) {
-      await canvas.sendKeyDown('ArrowLeft');
+      await canvas.sendKeyDown('Left');
       await new Promise(r => setTimeout(r, 10));
-      await canvas.sendKeyUp('ArrowLeft');
+      await canvas.sendKeyUp('Left');
       await new Promise(r => setTimeout(r, 10));
     }
 

@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,6 +26,10 @@ type TappableCanvasRaster struct {
 	// Keyboard callback IDs
 	onKeyDownCallbackId string
 	onKeyUpCallbackId   string
+
+	// Key state tracking - prevents duplicate events and handles rune releases
+	// Maps key name (string) to pressed state (bool)
+	keysPressed map[string]bool
 
 	// Scroll callback ID
 	onScrollCallbackId string
@@ -49,6 +54,7 @@ func NewTappableCanvasRaster(width, height int, onTapped func(x, y int)) *Tappab
 		height:      height,
 		onTapped:    onTapped,
 		pixelBuffer: make([]byte, width*height*4),
+		keysPressed: make(map[string]bool),
 	}
 
 	// Initialize with transparent pixels so shapes underneath are visible
@@ -245,37 +251,82 @@ func (t *TappableCanvasRaster) FocusGained() {
 }
 
 // FocusLost is called when this widget loses keyboard focus
+// Releases all held keys to prevent stuck keys when focus is lost
 func (t *TappableCanvasRaster) FocusLost() {
 	t.focused = false
+
+	// Release all held keys
+	if t.onKeyUpCallbackId != "" && t.bridge != nil {
+		for key, pressed := range t.keysPressed {
+			if pressed {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onKeyUpCallbackId,
+						"key":        key,
+					},
+				})
+			}
+		}
+	}
+	// Clear key state
+	t.keysPressed = make(map[string]bool)
 }
 
-// TypedRune is called when a printable character is typed while focused
+// normalizeKey converts single-character keys to lowercase for consistent matching
+// between TypedRune (which gets lowercase) and KeyUp (which may get uppercase KeyName).
+// Special keys like "Up", "Down", "Space" are left unchanged.
+func normalizeKey(key string) string {
+	if len(key) == 1 {
+		return strings.ToLower(key)
+	}
+	return key
+}
+
+// TypedRune is called when a printable character is typed while focused.
+// Note: TypedRune can fire repeatedly when a key is held, similar to TypedKey.
+// We track state to only send key-down on first press.
 func (t *TappableCanvasRaster) TypedRune(r rune) {
-	// Forward as key event
-	if t.onKeyDownCallbackId != "" && t.bridge != nil {
+	if t.onKeyDownCallbackId == "" || t.bridge == nil {
+		return
+	}
+
+	key := normalizeKey(string(r))
+
+	// Only send key-down if not already pressed (prevents duplicates from key repeat)
+	if !t.keysPressed[key] {
+		t.keysPressed[key] = true
 		t.bridge.sendEvent(Event{
 			Type: "callback",
 			Data: map[string]interface{}{
 				"callbackId": t.onKeyDownCallbackId,
-				"key":        string(r),
+				"key":        key,
 			},
 		})
 	}
 }
 
 // TypedKey handles special key input (arrows, function keys, etc.)
-// This is called repeatedly when a key is held down, so we use it for key-down events.
+// This is called repeatedly when a key is held down.
+// We track state to only send key-down on first press (prevents flood of events).
 func (t *TappableCanvasRaster) TypedKey(e *fyne.KeyEvent) {
 	if t.onKeyDownCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
-		Data: map[string]interface{}{
-			"callbackId": t.onKeyDownCallbackId,
-			"key":        string(e.Name),
-		},
-	})
+
+	key := normalizeKey(string(e.Name))
+
+	// Only send key-down if not already pressed (prevents duplicates from key repeat)
+	if !t.keysPressed[key] {
+		t.keysPressed[key] = true
+		t.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": t.onKeyDownCallbackId,
+				"key":        key,
+			},
+		})
+	}
 }
 
 // --- desktop.Keyable interface ---
@@ -288,6 +339,11 @@ func (t *TappableCanvasRaster) KeyDown(e *fyne.KeyEvent) {
 
 // KeyUp is called when a key is released while focused
 func (t *TappableCanvasRaster) KeyUp(e *fyne.KeyEvent) {
+	key := normalizeKey(string(e.Name))
+
+	// Clear tracked state
+	delete(t.keysPressed, key)
+
 	if t.onKeyUpCallbackId == "" || t.bridge == nil {
 		return
 	}
@@ -295,7 +351,7 @@ func (t *TappableCanvasRaster) KeyUp(e *fyne.KeyEvent) {
 		Type: "callback",
 		Data: map[string]interface{}{
 			"callbackId": t.onKeyUpCallbackId,
-			"key":        string(e.Name),
+			"key":        key,
 		},
 	})
 }
