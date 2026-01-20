@@ -186,12 +186,12 @@ export class CanvasLine {
     ctx.addToCurrentContainer(this.id);
   }
 
-  async update(options: {
+  update(options: {
     x1?: number; y1?: number;
     x2?: number; y2?: number;
     strokeColor?: string;
     strokeWidth?: number;
-  }): Promise<void> {
+  }): void {
     // Track current values for animation
     if (options.x1 !== undefined) this._x1 = options.x1;
     if (options.y1 !== undefined) this._y1 = options.y1;
@@ -199,7 +199,8 @@ export class CanvasLine {
     if (options.y2 !== undefined) this._y2 = options.y2;
     if (options.strokeWidth !== undefined) this._strokeWidth = options.strokeWidth;
 
-    await this.ctx.bridge.send('updateCanvasLine', {
+    // Send update without awaiting response
+    this.ctx.bridge.send('updateCanvasLine', {
       widgetId: this.id,
       ...options
     });

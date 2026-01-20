@@ -20,6 +20,13 @@ TypeScript (src/) ←→ IPC Protocol ←→ Go Bridge (bridge/) ←→ Fyne wid
 
 Set via `TSYNE_BRIDGE_MODE` env var or `bridgeMode` option in `app()`
 
+**Bridge Performance Features:**
+- `ping` message type: Minimal round-trip for latency benchmarking (~0.5-1ms)
+- `sendFireAndForget()`: Non-blocking send for high-frequency updates (3-30x faster than `send()`)
+  - Used for canvas updates during drag operations where response isn't needed
+  - Bypasses message queue, doesn't wait for response
+  - Available on all bridge implementations
+
 **Key files:**
 - `src/app.ts` - App class, factory methods for all widgets
 - `src/widgets/` - Widget classes organized by category (base, containers, inputs, display, canvas)
@@ -78,6 +85,15 @@ cosyne(a, (c) => {
 
   // Foreign objects: embed Tsyne widgets
   c.foreign(100, 100, (app) => app.label('Text'));
+
+  // Interactive dial/knob control
+  c.dial(100, 200, {
+    minValue: 0, maxValue: 100, value: 50,
+    style: 'classic',  // 'classic' | 'minimal' | 'vintage' | 'modern'
+    radius: 40,
+    valueSuffix: '%',
+    onValueChange: (v) => console.log('Value:', v),
+  }).withId('volume-dial');
 });
 
 // After state changes, refresh bindings
@@ -92,6 +108,12 @@ enableEventHandling(cosyneCtx, a, { width: 500, height: 500 });
 - `.onMouseMove(e => {...})` - Continuous tracking
 - `.onMouseEnter(e => {...})` / `.onMouseLeave(() => {...})` - Hover tracking
 - `.onDragStart(e => {...})` / `.onDrag(e => {...})` / `.onDragEnd(() => {...})`
+- `.passthrough()` - Mark primitive as passthrough for hit testing (events pass to primitives below)
+
+**Performance optimizations:**
+- Distance-based drag throttling: Only processes drag events when mouse moves ≥4 pixels
+- Change detection in `refreshBindings()`: Only updates primitives when values actually change
+- `hasAnyBinding()` check: Skips primitives without bindings during refresh cycle
 
 **Hit testing** (automatic):
 - All primitives implement `getHitTester()`

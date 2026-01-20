@@ -224,6 +224,20 @@ export abstract class Primitive<TUnderlyingWidget> {
   }
 
   /**
+   * Check if this primitive has any bindings (for fast refresh filtering)
+   */
+  hasAnyBinding(): boolean {
+    return !!(
+      this.positionBinding ||
+      this.fillBinding ||
+      this.strokeBinding ||
+      this.alphaBinding ||
+      this.visibleBinding ||
+      this.rotationBinding
+    );
+  }
+
+  /**
    * Get position binding if set
    */
   getPositionBinding(): Binding<PositionBinding> | undefined {
@@ -249,6 +263,20 @@ export abstract class Primitive<TUnderlyingWidget> {
    */
   getStrokeBinding(): Binding<string> | undefined {
     return this.strokeBinding;
+  }
+
+  /**
+   * Get current stroke color
+   */
+  getStrokeColor(): string | undefined {
+    return this.strokeColor;
+  }
+
+  /**
+   * Get current fill color
+   */
+  getFillColor(): string | undefined {
+    return this.fillColor;
   }
 
   /**

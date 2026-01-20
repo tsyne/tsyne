@@ -342,6 +342,41 @@ export class MsgpackBridgeConnection implements BridgeInterface {
   }
 
   /**
+   * Send a message without queuing or waiting for response (fire and forget)
+   * Used for high-frequency updates like canvas line updates during drag
+   * CAUTION: Does not preserve ordering with other messages
+   */
+  sendFireAndForget(type: string, payload: Record<string, unknown>): void {
+    // During shutdown, silently return
+    if (this.bridgeExiting || !this.socket) {
+      return;
+    }
+
+    // Send directly without waiting for readyPromise (assume ready if socket exists)
+    const id = `ff_${this.messageId++}`;
+    const message: MsgpackMessage = { id, type, payload };
+
+    // Encode to MessagePack
+    const msgBuf = Buffer.from(encode(message));
+
+    // Acquire buffer from pool (reduces allocations)
+    const frameSize = 4 + msgBuf.length;
+    const frame = this.bufferPool.acquire(frameSize);
+
+    // Write length prefix and message
+    frame.writeUInt32BE(msgBuf.length, 0);
+    msgBuf.copy(frame, 4);
+
+    // Write only the used portion of the buffer
+    this.socket.write(frame.slice(0, frameSize), () => {
+      // Return buffer to pool after write completes
+      this.bufferPool.release(frame);
+    });
+
+    // Don't wait for response - just discard it when it arrives
+  }
+
+  /**
    * Internal method to send the actual MessagePack message
    */
   private sendMsgpackMessage(type: string, payload: Record<string, unknown>): Promise<unknown> {

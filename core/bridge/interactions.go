@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -578,7 +579,9 @@ func (b *Bridge) handleDragCanvas(msg Message) Response {
 	if b.testMode {
 		canvas := win.Canvas()
 		pos := fyne.NewPos(float32(fromX), float32(fromY))
+		log.Printf("[handleDragCanvas] Calling test.Drag at pos=(%.1f, %.1f), delta=(%.1f, %.1f)", fromX, fromY, deltaX, deltaY)
 		test.Drag(canvas, pos, float32(deltaX), float32(deltaY))
+		log.Printf("[handleDragCanvas] test.Drag completed")
 		return Response{
 			ID:      msg.ID,
 			Success: true,
@@ -1549,7 +1552,9 @@ func (b *Bridge) handleTapAt(msg Message) Response {
 	// Use Fyne's test package to simulate a tap at the position
 	// This goes through the full event dispatch system
 	pos := fyne.NewPos(x, y)
+	log.Printf("[handleTapAt] Calling test.TapCanvas at pos=(%.1f, %.1f)", x, y)
 	test.TapCanvas(canvas, pos)
+	log.Printf("[handleTapAt] test.TapCanvas completed")
 
 	return Response{
 		ID:      msg.ID,

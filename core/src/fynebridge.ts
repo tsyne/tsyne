@@ -27,6 +27,8 @@ export interface Event {
 export interface BridgeInterface {
   waitUntilReady(): Promise<void>;
   send(type: string, payload: Record<string, unknown>, callerFn?: Function): Promise<unknown>;
+  /** Send without waiting for response - for high-frequency updates */
+  sendFireAndForget(type: string, payload: Record<string, unknown>): void;
   registerEventHandler(callbackId: string, handler: (data: unknown) => void): void;
   on(eventType: string, handler: (data: unknown) => void): void;
   off(eventType: string, handler?: (data: unknown) => void): void;
@@ -312,6 +314,14 @@ export class BridgeConnection implements BridgeInterface {
 
       this.process.stdin!.write(frame);
     });
+  }
+
+  /**
+   * Send a message without queuing or waiting for response (fire and forget)
+   * For stdio bridge, this just calls send() and ignores the result
+   */
+  sendFireAndForget(type: string, payload: Record<string, unknown>): void {
+    this.send(type, payload).catch(() => {});
   }
 
   registerEventHandler(callbackId: string, handler: (data: unknown) => void): void {

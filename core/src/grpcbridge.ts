@@ -286,6 +286,20 @@ export class GrpcBridgeConnection implements BridgeInterface {
   }
 
   /**
+   * Send a message without queuing or waiting (fire and forget)
+   * Used for high-frequency updates like canvas line stroke color changes
+   * CAUTION: Does not preserve ordering with other messages
+   */
+  sendFireAndForget(type: string, payload: Record<string, unknown>): void {
+    // Skip the queue - send directly without waiting
+    this.readyPromise.then(() => {
+      if (this.client && this.cachedMetadata) {
+        this.sendGrpcCall(type, payload).catch(() => {});
+      }
+    });
+  }
+
+  /**
    * Internal method to make the actual gRPC call
    */
   private sendGrpcCall(type: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {

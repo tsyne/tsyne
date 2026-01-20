@@ -142,6 +142,13 @@ export class WebRendererBridge implements BridgeInterface {
     });
   }
 
+  /**
+   * Send a message without waiting for response (fire and forget)
+   */
+  sendFireAndForget(type: string, payload: Record<string, unknown>): void {
+    this.send(type, payload).catch(() => {});
+  }
+
   registerEventHandler(callbackId: string, handler: (data: unknown) => void): void {
     this.eventHandlers.set(callbackId, handler);
   }

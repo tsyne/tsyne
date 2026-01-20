@@ -26,6 +26,8 @@ import (
 
 func (b *Bridge) handleMessage(msg Message) Response {
 	switch msg.Type {
+	case "ping":
+		return Response{Success: true, Result: map[string]interface{}{"pong": true}}
 	case "createWindow":
 		return b.handleCreateWindow(msg)
 	case "setContent":

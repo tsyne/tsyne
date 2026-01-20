@@ -527,9 +527,12 @@ export class CosyneContext {
 
   /**
    * Refresh all bindings - re-evaluates binding functions and updates primitives
+   * Only iterates primitives that actually have bindings
    */
   refreshBindings(): void {
     for (const primitive of this.allPrimitives) {
+      // Skip primitives with no bindings (fast check)
+      if (!primitive.hasAnyBinding()) continue;
       // Refresh position bindings
       const posBinding = primitive.getPositionBinding();
       if (posBinding) {
@@ -537,12 +540,16 @@ export class CosyneContext {
         primitive.updatePosition(pos);
       }
 
-      // Handle line endpoint bindings specifically
+      // Handle line endpoint bindings specifically (with change detection)
       if (primitive instanceof CosyneLine) {
         const endBinding = primitive.getEndpointBinding();
         if (endBinding) {
           const endpoints = endBinding.evaluate();
-          primitive.updateEndpoints(endpoints);
+          const current = primitive.getEndpoints();
+          if (endpoints.x1 !== current.x1 || endpoints.y1 !== current.y1 ||
+              endpoints.x2 !== current.x2 || endpoints.y2 !== current.y2) {
+            primitive.updateEndpoints(endpoints);
+          }
         }
       }
 
@@ -553,11 +560,14 @@ export class CosyneContext {
         primitive.updateFill(color);
       }
 
-      // Refresh stroke color bindings
+      // Refresh stroke color bindings (with change detection)
       const strokeBinding = primitive.getStrokeBinding();
       if (strokeBinding) {
         const color = strokeBinding.evaluate();
-        primitive.updateStroke(color);
+        const currentStroke = primitive.getStrokeColor();
+        if (color !== currentStroke) {
+          primitive.updateStroke(color);
+        }
       }
 
       // Refresh alpha bindings
@@ -906,6 +916,7 @@ export class CosyneContext {
     const angleRange = endAngle - startAngle;
 
     // Draw arc segments with color bindings that switch between track and accent color
+    // All visual components are passthrough so the dial itself handles hit testing
     for (let i = 0; i < segments; i++) {
       const segmentStartAngle = startAngle + (i / segments) * angleRange;
       const segmentEndAngle = startAngle + ((i + 1) / segments) * angleRange;
@@ -918,6 +929,7 @@ export class CosyneContext {
 
       // Create line with stroke binding that checks if this segment is in the value range
       this.line(x1, y1, x2, y2, { strokeWidth: trackWidth })
+        .passthrough()
         .bindStroke(() => {
           const data = dial.getRenderData();
           // Segment is "filled" if its midpoint is before the value angle
@@ -931,17 +943,18 @@ export class CosyneContext {
         this.line(tick.x1, tick.y1, tick.x2, tick.y2, {
           strokeColor: initialData.tickColor,
           strokeWidth: tick.isMajor ? 2 : 1,
-        });
+        }).passthrough();
       }
     }
 
-    // Draw center knob (static)
-    this.circle(x, y, knobRadius).fill(initialData.knobColor).stroke(initialData.trackColor, 1);
+    // Draw center knob (static) - passthrough for events
+    this.circle(x, y, knobRadius).fill(initialData.knobColor).stroke(initialData.trackColor, 1).passthrough();
 
     // Draw indicator line with endpoint binding for dynamic position
     const indicatorStartRadius = knobRadius * 0.5;
     const indicatorEndRadius = radius - trackWidth - 4;
     this.line(x, y, x, y, { strokeColor: initialData.indicatorColor, strokeWidth: 3 })
+      .passthrough()
       .bindEndpoint(() => {
         const data = dial.getRenderData();
         const angle = data.valueAngle;
@@ -959,7 +972,7 @@ export class CosyneContext {
         alignment: 'center',
         size: 11,
         color: initialData.textColor,
-      }).bindText(() => dial.getRenderData().formattedValue);
+      }).passthrough().bindText(() => dial.getRenderData().formattedValue);
     }
   }
 
@@ -1059,6 +1072,7 @@ export class CosyneContext {
       this.primitives.set(id, primitive);
     }
   }
+
 }
 
 /**
@@ -1102,10 +1116,31 @@ export function registerCosyneContext(context: CosyneContext): void {
  * Note: This only updates existing primitives. Use rebuildAllCosyneContexts()
  * if you need to create different primitives based on new state.
  */
+let refreshPending = false;
+let lastRefreshTime = 0;
+
 export function refreshAllCosyneContexts(): void {
-  for (const context of contextRegistry) {
-    context.refreshBindings();
+  // Throttle: skip if refresh is pending or was done very recently
+  const now = performance.now();
+  if (refreshPending || (now - lastRefreshTime) < 16) { // ~60fps max
+    return;
   }
+
+  refreshPending = true;
+  lastRefreshTime = now;
+
+  // Use requestAnimationFrame-style scheduling via setImmediate/setTimeout
+  setTimeout(() => {
+    const start = performance.now();
+    for (const context of contextRegistry) {
+      context.refreshBindings();
+    }
+    const elapsed = performance.now() - start;
+    if (elapsed > 10) {
+      console.log(`[refreshAllCosyneContexts] took ${elapsed.toFixed(1)}ms`);
+    }
+    refreshPending = false;
+  }, 0);
 }
 
 /**

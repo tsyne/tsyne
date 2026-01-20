@@ -165,4 +165,11 @@ export class CosyneText extends Primitive<any> {
       );
     };
   }
+
+  /**
+   * Override to include text binding
+   */
+  hasAnyBinding(): boolean {
+    return super.hasAnyBinding() || !!this.textBinding;
+  }
 }

@@ -50,13 +50,17 @@ export function enableEventHandling(
     }
   };
 
-  // Track drag state - Fyne calls Dragged() during drag, not Tapped()
-  let dragStarted = false;
+  // Track last processed drag position for distance-based throttling
+  let lastDragX = 0;
+  let lastDragY = 0;
+  const DRAG_THRESHOLD = 4; // Minimum pixels moved before processing drag event
 
   // Create TappableCanvasRaster for event capture
+  console.log(`[enableEventHandling] Creating TappableCanvasRaster ${options.width}x${options.height}`);
   const eventCanvas = app.tappableCanvasRaster(options.width, options.height, {
     onTap: async (x: number, y: number) => {
       // Tapped() is only called for quick tap (not drag)
+      console.log(`[EventRouter] onTap received at (${x}, ${y})`);
       registerHitTesters();
       await router.handleClick(getAllPrimitives(), x, y);
     },
@@ -66,24 +70,42 @@ export function enableEventHandling(
     },
     onDrag: (x: number, y: number, deltaX: number, deltaY: number) => {
       // onDrag is called while dragging (Fyne's Dragged event)
+      // x, y is the CURRENT position during drag, deltaX/deltaY is the cumulative delta
       registerHitTesters();
       const primitives = getAllPrimitives();
 
-      // Detect drag start on first drag event
-      if (!dragStarted) {
-        dragStarted = true;
+      // Calculate actual position
+      const newX = x + deltaX;
+      const newY = y + deltaY;
+
+      // Detect drag start on first drag event (use router's state as source of truth)
+      if (!router.isDragging()) {
+        // Start drag at the CURRENT position (where we are now)
+        // The dial will calculate angle from this position
+        console.log(`[EventRouter] Drag starting at (${x}, ${y})`);
         router.handleDragStart(primitives, x, y);
+        lastDragX = newX;
+        lastDragY = newY;
+        return;
       }
 
-      // Continue drag - handleMouseMove processes drag movement
-      router.handleMouseMove(primitives, x, y).catch(() => {});
+      // Distance-based throttling: only process if moved at least DRAG_THRESHOLD pixels
+      const dx = newX - lastDragX;
+      const dy = newY - lastDragY;
+      const distSq = dx * dx + dy * dy;
+      if (distSq < DRAG_THRESHOLD * DRAG_THRESHOLD) {
+        return; // Skip this event - not enough movement
+      }
+
+      // Update last position and process
+      lastDragX = newX;
+      lastDragY = newY;
+      router.handleMouseMove(primitives, newX, newY).catch(() => {});
     },
     onDragEnd: () => {
       // Called when the user releases after dragging (Fyne's DragEnd event)
-      if (dragStarted) {
-        router.handleDragEnd();
-        dragStarted = false;
-      }
+      console.log(`[EventRouter] onDragEnd received`);
+      router.handleDragEnd();
     },
   });
 

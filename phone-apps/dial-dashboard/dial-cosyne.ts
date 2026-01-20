@@ -46,6 +46,20 @@ export function createDialDashboardApp(app: any, win: any): () => void {
   let updateInterval: ReturnType<typeof setInterval> | undefined;
   let cosyneCtx: CosyneContext | undefined;
 
+  // Label references for dynamic updates
+  let volLabel: any;
+  let tempLabel: any;
+  let panLabel: any;
+  let speedLabel: any;
+
+  // Helper to update footer labels
+  const updateLabels = () => {
+    if (volLabel) volLabel.setText(`Vol: ${state.volume}%`);
+    if (tempLabel) tempLabel.setText(`Temp: ${state.temperature.toFixed(1)}°`);
+    if (panLabel) panLabel.setText(`Pan: ${state.pan}`);
+    if (speedLabel) speedLabel.setText(`Speed: ${state.speed}`);
+  };
+
   // Create window content
   win.setContent(() => {
     app.vbox(() => {
@@ -77,7 +91,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             tickCount: 11,
             onValueChange: (v) => {
               state.volume = v;
-              refreshAllCosyneContexts();
+              updateLabels();
+              // refreshAllCosyneContexts(); // Handled by 50ms interval
             },
           }).withId('volume-dial');
 
@@ -110,7 +125,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             majorTickInterval: 5,
             onValueChange: (v) => {
               state.temperature = v;
-              refreshAllCosyneContexts();
+              updateLabels();
+              // refreshAllCosyneContexts(); // Handled by 50ms interval
             },
           }).withId('temp-dial');
 
@@ -128,7 +144,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             tickCount: 11,
             onValueChange: (v) => {
               state.speed = v;
-              refreshAllCosyneContexts();
+              updateLabels();
+              // refreshAllCosyneContexts(); // Handled by 50ms interval
             },
           }).withId('speed-dial');
 
@@ -184,7 +201,8 @@ export function createDialDashboardApp(app: any, win: any): () => void {
             majorTickInterval: 5,
             onValueChange: (v) => {
               state.pan = v;
-              refreshAllCosyneContexts();
+              updateLabels();
+              // refreshAllCosyneContexts(); // Handled by 50ms interval
             },
           }).withId('pan-dial');
 
@@ -264,18 +282,18 @@ export function createDialDashboardApp(app: any, win: any): () => void {
       // Footer with current values
       app.separator();
       app.hbox(() => {
-        app.label(`Vol: ${state.volume}%`).withId('vol-label');
+        volLabel = app.label(`Vol: ${state.volume}%`).withId('vol-label');
         app.spacer();
-        app.label(`Temp: ${state.temperature.toFixed(1)}°`).withId('temp-label');
+        tempLabel = app.label(`Temp: ${state.temperature.toFixed(1)}°`).withId('temp-label');
         app.spacer();
-        app.label(`Pan: ${state.pan}`).withId('pan-label');
+        panLabel = app.label(`Pan: ${state.pan}`).withId('pan-label');
         app.spacer();
-        app.label(`Speed: ${state.speed}`).withId('speed-label');
+        speedLabel = app.label(`Speed: ${state.speed}`).withId('speed-label');
       });
     });
   });
 
-  // Animation loop for bound dial
+  // Animation loop for bound dial and dial updates
   updateInterval = setInterval(() => {
     refreshAllCosyneContexts();
   }, 50);

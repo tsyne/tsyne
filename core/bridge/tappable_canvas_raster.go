@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -209,6 +210,8 @@ func (t *TappableCanvasRaster) CreateRenderer() fyne.WidgetRenderer {
 
 // Tapped is called when the raster is tapped/clicked.
 func (t *TappableCanvasRaster) Tapped(ev *fyne.PointEvent) {
+	log.Printf("[TappableCanvasRaster] Tapped at (%.1f, %.1f), size=(%d, %d)", ev.Position.X, ev.Position.Y, t.width, t.height)
+
 	// Request focus so we receive keyboard events
 	if c := fyne.CurrentApp().Driver().CanvasForObject(t); c != nil {
 		c.Focus(t)
@@ -359,6 +362,9 @@ func (t *TappableCanvasRaster) SetOnMouseMoveCallback(bridge *Bridge, callbackId
 
 // Dragged is called when the user drags on the canvas
 func (t *TappableCanvasRaster) Dragged(e *fyne.DragEvent) {
+	log.Printf("[TappableCanvasRaster] Dragged at (%.1f, %.1f), delta=(%.1f, %.1f), hasCallback=%v",
+		e.Position.X, e.Position.Y, e.Dragged.DX, e.Dragged.DY, t.onDragCallbackId != "")
+
 	if t.onDragCallbackId == "" || t.bridge == nil {
 		return
 	}

@@ -192,4 +192,11 @@ export class CosyneLine extends Primitive<any> {
       );
     };
   }
+
+  /**
+   * Override to include endpoint binding
+   */
+  hasAnyBinding(): boolean {
+    return super.hasAnyBinding() || !!this.endpointBinding;
+  }
 }

@@ -550,4 +550,11 @@ export class CosyneDial extends Primitive<any> {
       return distSq <= this.radius * this.radius;
     };
   }
+
+  /**
+   * Override to include value binding
+   */
+  hasAnyBinding(): boolean {
+    return super.hasAnyBinding() || !!this.valueBinding;
+  }
 }
