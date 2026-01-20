@@ -173,6 +173,9 @@ export {
   rotateXY,
   rotateXZ,
   rotateYZ,
+  isInRegion,
+  isInPolygon2D,
+  MapPolygon,
 } from './math3d';
 
 // Renderer

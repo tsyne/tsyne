@@ -1418,3 +1418,88 @@ export function angleBetweenYForward(a: Vector3, b: Vector3): number {
 export function angleBetweenYForward2D(ax: number, ay: number, bx: number, by: number): number {
   return Math.atan2(bx - ax, by - ay);
 }
+
+// ============================================================================
+// Map/Region Utilities
+// ============================================================================
+
+/**
+ * A polygon defined by an array of Vector3 vertices.
+ * For 2D map regions, only x and y components are used.
+ */
+export type MapPolygon = Vector3[];
+
+/**
+ * Check if a position is inside a polygon region using ray casting algorithm.
+ * Uses x,y components only (2D point-in-polygon test).
+ *
+ * The algorithm casts a ray from the test point to infinity (in +X direction)
+ * and counts how many polygon edges it crosses. An odd count means inside.
+ *
+ * @param region - Array of Vector3 vertices defining the polygon (must have at least 3 vertices)
+ * @param position - The point to test
+ * @returns true if position is inside the polygon region
+ */
+export function isInRegion(region: MapPolygon, position: Vector3): boolean {
+  const n = region.length;
+  if (n < 3) return false;
+
+  const x = position.x;
+  const y = position.y;
+
+  let inside = false;
+
+  // Ray casting algorithm - count edge crossings
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = region[i].x;
+    const yi = region[i].y;
+    const xj = region[j].x;
+    const yj = region[j].y;
+
+    // Check if edge crosses the horizontal ray from (x, y) to (+infinity, y)
+    const intersects = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+/**
+ * Check if a point (x, y) is inside a polygon using raw coordinates.
+ * 2D version of isInRegion.
+ *
+ * @param vertices - Array of {x, y} points defining the polygon
+ * @param x - X coordinate of point to test
+ * @param y - Y coordinate of point to test
+ * @returns true if point is inside the polygon
+ */
+export function isInPolygon2D(
+  vertices: Array<{ x: number; y: number }>,
+  x: number,
+  y: number
+): boolean {
+  const n = vertices.length;
+  if (n < 3) return false;
+
+  let inside = false;
+
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = vertices[i].x;
+    const yi = vertices[i].y;
+    const xj = vertices[j].x;
+    const yj = vertices[j].y;
+
+    const intersects = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}

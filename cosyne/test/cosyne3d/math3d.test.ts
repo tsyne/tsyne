@@ -30,6 +30,9 @@ import {
   rotateYZ,
   angleBetweenYForward,
   angleBetweenYForward2D,
+  isInRegion,
+  isInPolygon2D,
+  MapPolygon,
 } from '../../src/math3d';
 
 describe('Cosyne 3D Math', () => {
@@ -946,6 +949,170 @@ describe('Cosyne 3D Math', () => {
       // Actually they're the same for diagonals, but differ for cardinals
       expect(mathAngle).toBeCloseTo(Math.PI / 4, 5);
       expect(gameAngle).toBeCloseTo(Math.PI / 4, 5);
+    });
+  });
+
+  // ============================================================================
+  // Map/Region Utilities
+  // ============================================================================
+
+  describe('isInRegion', () => {
+    // Simple square room: (0,0) to (10,10)
+    const squareRoom: MapPolygon = [
+      new Vector3(0, 0, 0),
+      new Vector3(10, 0, 0),
+      new Vector3(10, 10, 0),
+      new Vector3(0, 10, 0),
+    ];
+
+    test('point inside square returns true', () => {
+      expect(isInRegion(squareRoom, new Vector3(5, 5, 0))).toBe(true);
+      expect(isInRegion(squareRoom, new Vector3(1, 1, 0))).toBe(true);
+      expect(isInRegion(squareRoom, new Vector3(9, 9, 0))).toBe(true);
+    });
+
+    test('point outside square returns false', () => {
+      expect(isInRegion(squareRoom, new Vector3(-1, 5, 0))).toBe(false);
+      expect(isInRegion(squareRoom, new Vector3(11, 5, 0))).toBe(false);
+      expect(isInRegion(squareRoom, new Vector3(5, -1, 0))).toBe(false);
+      expect(isInRegion(squareRoom, new Vector3(5, 11, 0))).toBe(false);
+    });
+
+    test('point on edge is handled consistently', () => {
+      // Edge cases - behavior depends on exact algorithm, just verify no crash
+      const onEdge = isInRegion(squareRoom, new Vector3(0, 5, 0));
+      expect(typeof onEdge).toBe('boolean');
+    });
+
+    test('point at corner is handled consistently', () => {
+      const atCorner = isInRegion(squareRoom, new Vector3(0, 0, 0));
+      expect(typeof atCorner).toBe('boolean');
+    });
+
+    test('z coordinate is ignored (2D test)', () => {
+      // Same x,y but different z should give same result
+      expect(isInRegion(squareRoom, new Vector3(5, 5, 0))).toBe(true);
+      expect(isInRegion(squareRoom, new Vector3(5, 5, 100))).toBe(true);
+      expect(isInRegion(squareRoom, new Vector3(5, 5, -50))).toBe(true);
+    });
+
+    // L-shaped room
+    const lShapedRoom: MapPolygon = [
+      new Vector3(0, 0, 0),
+      new Vector3(10, 0, 0),
+      new Vector3(10, 5, 0),
+      new Vector3(5, 5, 0),
+      new Vector3(5, 10, 0),
+      new Vector3(0, 10, 0),
+    ];
+
+    test('L-shaped room: point in main area', () => {
+      expect(isInRegion(lShapedRoom, new Vector3(2, 2, 0))).toBe(true);
+    });
+
+    test('L-shaped room: point in extension', () => {
+      expect(isInRegion(lShapedRoom, new Vector3(2, 7, 0))).toBe(true);
+    });
+
+    test('L-shaped room: point in cutout area returns false', () => {
+      expect(isInRegion(lShapedRoom, new Vector3(7, 7, 0))).toBe(false);
+    });
+
+    // Triangle
+    const triangle: MapPolygon = [
+      new Vector3(0, 0, 0),
+      new Vector3(10, 0, 0),
+      new Vector3(5, 10, 0),
+    ];
+
+    test('triangle: point inside', () => {
+      expect(isInRegion(triangle, new Vector3(5, 3, 0))).toBe(true);
+    });
+
+    test('triangle: point outside', () => {
+      expect(isInRegion(triangle, new Vector3(0, 10, 0))).toBe(false);
+      expect(isInRegion(triangle, new Vector3(10, 10, 0))).toBe(false);
+    });
+
+    // Edge cases
+    test('empty polygon returns false', () => {
+      expect(isInRegion([], new Vector3(5, 5, 0))).toBe(false);
+    });
+
+    test('single point polygon returns false', () => {
+      expect(isInRegion([new Vector3(5, 5, 0)], new Vector3(5, 5, 0))).toBe(false);
+    });
+
+    test('two point polygon returns false', () => {
+      const line: MapPolygon = [new Vector3(0, 0, 0), new Vector3(10, 10, 0)];
+      expect(isInRegion(line, new Vector3(5, 5, 0))).toBe(false);
+    });
+
+    // Concave polygon (star-like shape)
+    const concaveShape: MapPolygon = [
+      new Vector3(5, 0, 0),   // bottom point
+      new Vector3(6, 4, 0),   // inner right
+      new Vector3(10, 5, 0),  // right point
+      new Vector3(6, 6, 0),   // inner right top
+      new Vector3(5, 10, 0),  // top point
+      new Vector3(4, 6, 0),   // inner left top
+      new Vector3(0, 5, 0),   // left point
+      new Vector3(4, 4, 0),   // inner left
+    ];
+
+    test('concave shape: point in center', () => {
+      expect(isInRegion(concaveShape, new Vector3(5, 5, 0))).toBe(true);
+    });
+
+    test('concave shape: point in concave indent returns false', () => {
+      // Point between center and right point, in the "bay"
+      expect(isInRegion(concaveShape, new Vector3(8, 4, 0))).toBe(false);
+    });
+  });
+
+  describe('isInPolygon2D', () => {
+    const square = [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 },
+    ];
+
+    test('point inside returns true', () => {
+      expect(isInPolygon2D(square, 5, 5)).toBe(true);
+    });
+
+    test('point outside returns false', () => {
+      expect(isInPolygon2D(square, -1, 5)).toBe(false);
+      expect(isInPolygon2D(square, 15, 5)).toBe(false);
+    });
+
+    test('matches isInRegion results', () => {
+      const region: MapPolygon = [
+        new Vector3(0, 0, 0),
+        new Vector3(10, 0, 0),
+        new Vector3(10, 10, 0),
+        new Vector3(0, 10, 0),
+      ];
+
+      // Test several points
+      const testPoints = [
+        { x: 5, y: 5 },
+        { x: 0, y: 0 },
+        { x: -5, y: 5 },
+        { x: 15, y: 15 },
+        { x: 3, y: 7 },
+      ];
+
+      for (const p of testPoints) {
+        const regionResult = isInRegion(region, new Vector3(p.x, p.y, 0));
+        const polygonResult = isInPolygon2D(square, p.x, p.y);
+        expect(polygonResult).toBe(regionResult);
+      }
+    });
+
+    test('empty polygon returns false', () => {
+      expect(isInPolygon2D([], 5, 5)).toBe(false);
     });
   });
 });
