@@ -11,6 +11,7 @@ import { Enemy } from './enemy';
 import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
 import { BodyPart } from './body-part';
+import { Chaingun, CHAINGUN_GEOMETRY } from './chaingun';
 
 /** Project vector to XY plane (set z to 0) */
 function noz(v: Vector3): Vector3 {
@@ -226,7 +227,8 @@ export class RaycastRenderer {
     player: Player,
     map: GameMap,
     enemies: Enemy[],
-    bodyParts: BodyPart[] = []
+    bodyParts: BodyPart[] = [],
+    chaingun?: Chaingun
   ): void {
     // Clear depth buffer
     this.depthBuffer.fill(Infinity);
@@ -366,6 +368,11 @@ export class RaycastRenderer {
 
     // Render body parts (death particles)
     this.renderBodyParts(buffer, player, bodyParts);
+
+    // Render chaingun (weapon model)
+    if (chaingun) {
+      this.renderChaingun(buffer, chaingun);
+    }
 
     // Render HUD elements
     this.renderHUD(buffer, player);
@@ -667,6 +674,267 @@ export class RaycastRenderer {
         shade,
         distance
       );
+    }
+  }
+
+  /**
+   * Render the chaingun (3D weapon model) at the bottom of screen
+   * Viewed from 3/4 angle - looking down the barrels toward the muzzle
+   * Made of cylinders: body tube + 8 spinning barrels with visible muzzle holes
+   */
+  renderChaingun(buffer: Uint8Array, chaingun: Chaingun): void {
+    const centerX = this.width / 2;
+    const baseY = this.height * 0.92;  // Gun positioned near bottom
+
+    // Get gun offset (bobbing + recoil)
+    const [bobX, bobY, bobZ] = chaingun.getOffset();
+
+    // Scale factors for gun rendering
+    const gunScale = this.width * 0.25;  // Larger gun
+
+    // Apply bob and recoil to position
+    const gunX = centerX + bobX * this.width * 0.5;
+    const gunY = baseY + bobY * this.height * 0.5 - bobZ * this.height * 0.3;
+
+    // Get barrel rotation
+    const rotation = chaingun.barrelRotation;
+
+    // 3/4 view parameters - we're looking at the gun from slightly above
+    const tiltAngle = 0.3;  // How much the front face is tilted toward us
+    const perspectiveSquash = 0.4;  // Vertical compression for perspective
+
+    // Gun body dimensions
+    const bodyRadius = gunScale * 0.35;
+    const bodyLength = gunScale * 0.8;
+    const barrelRadius = gunScale * 0.08;
+    const barrelCircleRadius = gunScale * 0.22;  // How far barrels are from center
+
+    // Draw gun body (cylinder extending down-back from muzzle)
+    // Back end first (darker, partially hidden)
+    this.drawEllipse(
+      buffer,
+      gunX,
+      gunY + bodyLength * perspectiveSquash,
+      bodyRadius,
+      bodyRadius * perspectiveSquash,
+      [60, 60, 70],  // Dark back
+      [80, 80, 90]
+    );
+
+    // Draw the body tube sides (connecting front and back ellipses)
+    this.drawGunBody(
+      buffer,
+      gunX,
+      gunY,
+      bodyRadius,
+      bodyLength * perspectiveSquash,
+      perspectiveSquash,
+      chaingun.bodyColor
+    );
+
+    // Draw barrels - sort by depth (back ones first)
+    const barrelPositions: Array<{angle: number; x: number; y: number; depth: number}> = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI / 4) + rotation;
+      const bx = Math.cos(angle) * barrelCircleRadius;
+      const by = Math.sin(angle) * barrelCircleRadius * perspectiveSquash;
+      // Depth based on y position (sin of angle) - positive sin = back
+      barrelPositions.push({ angle, x: bx, y: by, depth: Math.sin(angle) });
+    }
+    // Sort back to front
+    barrelPositions.sort((a, b) => b.depth - a.depth);
+
+    // Draw barrel tubes (the length of each barrel)
+    for (const bp of barrelPositions) {
+      const barrelLength = gunScale * 0.5;
+
+      // Shade based on depth
+      const shade = 0.5 + 0.5 * (1 - bp.depth) / 2;
+      const tubeColor: [number, number, number] = [
+        Math.floor(chaingun.barrelColor[0] * shade),
+        Math.floor(chaingun.barrelColor[1] * shade),
+        Math.floor(chaingun.barrelColor[2] * shade),
+      ];
+
+      // Draw barrel tube extending from body toward camera
+      // Tube goes from (gunX + bp.x, gunY + bp.y) upward
+      this.drawBarrelTube(
+        buffer,
+        gunX + bp.x,
+        gunY + bp.y,
+        barrelRadius,
+        barrelLength,
+        tubeColor,
+        bp.depth
+      );
+    }
+
+    // Draw front face (muzzle plate) - large ellipse
+    this.drawEllipse(
+      buffer,
+      gunX,
+      gunY,
+      bodyRadius * 0.9,
+      bodyRadius * perspectiveSquash * 0.9,
+      chaingun.bodyColor,
+      chaingun.highlightColor
+    );
+
+    // Draw barrel holes on front face (muzzle openings)
+    for (const bp of barrelPositions) {
+      // Only draw muzzle holes for barrels in front half (visible on face)
+      const holeColor: [number, number, number] = [20, 20, 25];  // Dark hole
+      const highlightColor: [number, number, number] = [50, 50, 60];
+
+      this.drawEllipse(
+        buffer,
+        gunX + bp.x,
+        gunY + bp.y,
+        barrelRadius * 0.9,
+        barrelRadius * perspectiveSquash * 0.9,
+        holeColor,
+        highlightColor
+      );
+    }
+
+    // Draw center spindle
+    this.drawEllipse(
+      buffer,
+      gunX,
+      gunY,
+      barrelRadius * 1.2,
+      barrelRadius * perspectiveSquash * 1.2,
+      [90, 90, 100],
+      chaingun.highlightColor
+    );
+  }
+
+  /**
+   * Draw the cylindrical gun body (sides connecting front and back ellipses)
+   */
+  drawGunBody(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    radius: number,
+    length: number,
+    squash: number,
+    color: [number, number, number]
+  ): void {
+    const startX = Math.floor(cx - radius);
+    const endX = Math.ceil(cx + radius);
+    const startY = Math.floor(cy);
+    const endY = Math.ceil(cy + length);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      const dx = x - cx;
+      // Check if x is within the ellipse width
+      if (Math.abs(dx) > radius) continue;
+
+      // Calculate the edge position for this x (ellipse equation)
+      const edgeFactor = Math.abs(dx) / radius;
+
+      // Shading based on x position (left side darker, right side lighter)
+      const shade = 0.6 + 0.4 * (1 - edgeFactor) * (0.5 + 0.5 * (dx / radius + 1) / 2);
+
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        // Gradient from front to back (front lighter)
+        const lengthFactor = (y - cy) / length;
+        const finalShade = shade * (1 - lengthFactor * 0.3);
+
+        const idx = (y * this.width + x) * 4;
+        buffer[idx] = Math.floor(color[0] * finalShade);
+        buffer[idx + 1] = Math.floor(color[1] * finalShade);
+        buffer[idx + 2] = Math.floor(color[2] * finalShade);
+        buffer[idx + 3] = 255;
+      }
+    }
+  }
+
+  /**
+   * Draw a barrel tube extending toward the camera
+   */
+  drawBarrelTube(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    radius: number,
+    length: number,
+    color: [number, number, number],
+    depth: number
+  ): void {
+    // Barrel extends upward (toward camera) from cy
+    const startY = Math.floor(cy - length);
+    const endY = Math.floor(cy);
+
+    const halfWidth = radius;
+    const startX = Math.floor(cx - halfWidth);
+    const endX = Math.ceil(cx + halfWidth);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      const dx = (x - cx) / halfWidth;
+      // Cylindrical shading
+      const cylShade = Math.sqrt(1 - dx * dx);
+
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        // Perspective: narrower toward the back (top of screen)
+        const yFactor = (y - startY) / length;
+        const perspWidth = halfWidth * (0.7 + 0.3 * yFactor);
+
+        if (Math.abs(x - cx) > perspWidth) continue;
+
+        const shade = cylShade * (0.7 + 0.3 * yFactor);
+
+        const idx = (y * this.width + x) * 4;
+        buffer[idx] = Math.floor(color[0] * shade);
+        buffer[idx + 1] = Math.floor(color[1] * shade);
+        buffer[idx + 2] = Math.floor(color[2] * shade);
+        buffer[idx + 3] = 255;
+      }
+    }
+  }
+
+  /**
+   * Draw an ellipse with shading (for gun faces)
+   */
+  drawEllipse(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    radiusX: number,
+    radiusY: number,
+    baseColor: [number, number, number],
+    highlightColor: [number, number, number]
+  ): void {
+    const startX = Math.floor(cx - radiusX);
+    const endX = Math.ceil(cx + radiusX);
+    const startY = Math.floor(cy - radiusY);
+    const endY = Math.ceil(cy + radiusY);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        const dx = (x - cx) / radiusX;
+        const dy = (y - cy) / radiusY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= 1) {
+          // Shading: lighter on top-right, darker on bottom-left (3D effect)
+          const shade = 0.6 + 0.4 * (1 - dist) + 0.2 * (-dy);
+          // Edge highlight
+          const edgeFactor = dist;
+          const highlight = edgeFactor > 0.7 ? (edgeFactor - 0.7) / 0.3 * 0.3 : 0;
+
+          const r = Math.floor(baseColor[0] * shade + (highlightColor[0] - baseColor[0]) * highlight);
+          const g = Math.floor(baseColor[1] * shade + (highlightColor[1] - baseColor[1]) * highlight);
+          const b = Math.floor(baseColor[2] * shade + (highlightColor[2] - baseColor[2]) * highlight);
+
+          const idx = (y * this.width + x) * 4;
+          buffer[idx] = Math.min(255, Math.max(0, r));
+          buffer[idx + 1] = Math.min(255, Math.max(0, g));
+          buffer[idx + 2] = Math.min(255, Math.max(0, b));
+          buffer[idx + 3] = 255;
+        }
+      }
     }
   }
 

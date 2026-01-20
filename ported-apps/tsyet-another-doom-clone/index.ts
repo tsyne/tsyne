@@ -52,6 +52,7 @@ export { Enemy, EnemyState, EnemyType, IGameMap } from './enemy';
 export { WalkingEnemy } from './walking-enemy';
 export { FlyingEnemy } from './flying-enemy';
 export { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
+export { Chaingun, ChaingunGeometry, CHAINGUN_GEOMETRY } from './chaingun';
 
 // Import for local use
 import { Player } from './player';
@@ -61,6 +62,7 @@ import { Enemy } from './enemy';
 import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
 import { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
+import { Chaingun } from './chaingun';
 
 // ============================================================================
 // Constants
@@ -115,6 +117,7 @@ export class DoomGame {
   player: Player;
   enemies: Enemy[] = [];
   bodyParts: BodyPart[] = [];  // Death explosion particles
+  chaingun: Chaingun;          // 3D gun model
   renderer: RaycastRenderer;
 
   gameState: GameState = 'playing';
@@ -123,6 +126,7 @@ export class DoomGame {
 
   // Visual feedback
   shootFlashFrames: number = 0;  // Frames remaining for muzzle flash effect
+  playerMoving: boolean = false; // Track if player is moving (for gun bob)
 
   private changeListeners: ChangeListener[] = [];
   private lastTime: number = 0;
@@ -131,6 +135,7 @@ export class DoomGame {
     this.map = new GameMap();
     // Start player inside region 0, away from walls
     this.player = new Player(new Vector3(20, -15, 10));
+    this.chaingun = new Chaingun();
     this.renderer = new RaycastRenderer(width, height);
 
     // Spawn some enemies
@@ -184,6 +189,9 @@ export class DoomGame {
 
     // Handle player input
     this.handleInput(dt);
+
+    // Update chaingun (bob, recoil, spin)
+    this.chaingun.update(dt, this.playerMoving, false);
 
     // Update enemies
     for (const enemy of this.enemies) {
@@ -247,6 +255,7 @@ export class DoomGame {
     }
 
     if (moveDir.lengthSquared() > 0) {
+      this.playerMoving = true;
       moveDir = moveDir.normalize().multiplyScalar(moveSpeed);
       const nextPos = this.player.position.add(moveDir);
 
@@ -256,6 +265,8 @@ export class DoomGame {
         this.player.position = nextPos;
         this.player.position.z = floorHeight + this.player.height;
       }
+    } else {
+      this.playerMoving = false;
     }
 
     // Shooting - space key sends "Space", but TypedRune sends ' '
@@ -270,6 +281,9 @@ export class DoomGame {
   private shoot(): void {
     // Trigger muzzle flash visual feedback
     this.shootFlashFrames = 3;
+
+    // Trigger chaingun recoil and spin
+    this.chaingun.update(0, this.playerMoving, true);
 
     // Simple hitscan - find enemy in crosshair
     const forward = this.player.getForwardVector();
@@ -323,7 +337,7 @@ export class DoomGame {
   }
 
   render(buffer: Uint8Array): void {
-    this.renderer.render(buffer, this.player, this.map, this.enemies, this.bodyParts);
+    this.renderer.render(buffer, this.player, this.map, this.enemies, this.bodyParts, this.chaingun);
 
     // Apply muzzle flash effect (yellow tint on screen edges)
     if (this.shootFlashFrames > 0) {
@@ -372,10 +386,12 @@ export class DoomGame {
     this.player = new Player(new Vector3(20, -15, 10));
     this.enemies = [];
     this.bodyParts = [];  // Clear death particles
+    this.chaingun = new Chaingun();  // Reset gun state
     this.spawnEnemies();
     this.gameState = 'playing';
     this.score = 0;
     this.keysHeld.clear();
+    this.playerMoving = false;
     this.notifyChange();
   }
 

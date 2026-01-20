@@ -10,7 +10,7 @@ function noz(v: Vector3): Vector3 {
 }
 
 /** Interface for map - avoids circular dependency with index.ts */
-export interface IIGameMap {
+export interface IGameMap {
   getFloorHeight(pos: Vector3): number;
 }
 
