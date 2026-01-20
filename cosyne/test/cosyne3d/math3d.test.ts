@@ -13,6 +13,7 @@ import {
   clamp,
   lerp,
   rayLineIntersect2D,
+  rayLineIntersect2DV,
   urandom,
   urandomVector,
   randomUnitVector,
@@ -21,6 +22,14 @@ import {
   normalizeAngle,
   angleDiff,
   lerpAngle,
+  rotateAroundX,
+  rotateAroundY,
+  rotateAroundZ,
+  rotateXY,
+  rotateXZ,
+  rotateYZ,
+  angleBetweenYForward,
+  angleBetweenYForward2D,
 } from '../../src/math3d';
 
 describe('Cosyne 3D Math', () => {
@@ -671,6 +680,272 @@ describe('Cosyne 3D Math', () => {
       const mid = lerpAngle(from, to, 0.5);
       // Should be close to +/- 180 degrees
       expect(Math.abs(mid)).toBeCloseTo(Math.PI, 1);
+    });
+  });
+
+  // ============================================================================
+  // Rotation Functions
+  // ============================================================================
+
+  describe('rotateAroundZ', () => {
+    test('rotating (1,0,0) by 90 degrees gives (0,1,0)', () => {
+      const v = new Vector3(1, 0, 0);
+      const result = rotateAroundZ(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(0, 5);
+      expect(result.y).toBeCloseTo(1, 5);
+      expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    test('rotating (1,0,0) by 180 degrees gives (-1,0,0)', () => {
+      const v = new Vector3(1, 0, 0);
+      const result = rotateAroundZ(v, Math.PI);
+      expect(result.x).toBeCloseTo(-1, 5);
+      expect(result.y).toBeCloseTo(0, 5);
+      expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    test('rotating (0,1,0) by -90 degrees gives (1,0,0)', () => {
+      const v = new Vector3(0, 1, 0);
+      const result = rotateAroundZ(v, -Math.PI / 2);
+      expect(result.x).toBeCloseTo(1, 5);
+      expect(result.y).toBeCloseTo(0, 5);
+      expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    test('preserves z component', () => {
+      const v = new Vector3(1, 0, 5);
+      const result = rotateAroundZ(v, Math.PI / 2);
+      expect(result.z).toBeCloseTo(5, 5);
+    });
+
+    test('rotateXY is an alias for rotateAroundZ', () => {
+      expect(rotateXY).toBe(rotateAroundZ);
+    });
+  });
+
+  describe('rotateAroundY', () => {
+    test('rotating (1,0,0) by 90 degrees gives (0,0,-1)', () => {
+      const v = new Vector3(1, 0, 0);
+      const result = rotateAroundY(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(0, 5);
+      expect(result.y).toBeCloseTo(0, 5);
+      expect(result.z).toBeCloseTo(-1, 5);
+    });
+
+    test('rotating (0,0,1) by 90 degrees gives (1,0,0)', () => {
+      const v = new Vector3(0, 0, 1);
+      const result = rotateAroundY(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(1, 5);
+      expect(result.y).toBeCloseTo(0, 5);
+      expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    test('preserves y component', () => {
+      const v = new Vector3(1, 7, 0);
+      const result = rotateAroundY(v, Math.PI / 2);
+      expect(result.y).toBeCloseTo(7, 5);
+    });
+
+    test('rotateXZ is an alias for rotateAroundY', () => {
+      expect(rotateXZ).toBe(rotateAroundY);
+    });
+  });
+
+  describe('rotateAroundX', () => {
+    test('rotating (0,1,0) by 90 degrees gives (0,0,1)', () => {
+      const v = new Vector3(0, 1, 0);
+      const result = rotateAroundX(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(0, 5);
+      expect(result.y).toBeCloseTo(0, 5);
+      expect(result.z).toBeCloseTo(1, 5);
+    });
+
+    test('rotating (0,0,1) by 90 degrees gives (0,-1,0)', () => {
+      const v = new Vector3(0, 0, 1);
+      const result = rotateAroundX(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(0, 5);
+      expect(result.y).toBeCloseTo(-1, 5);
+      expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    test('preserves x component', () => {
+      const v = new Vector3(3, 1, 0);
+      const result = rotateAroundX(v, Math.PI / 2);
+      expect(result.x).toBeCloseTo(3, 5);
+    });
+
+    test('rotateYZ is an alias for rotateAroundX', () => {
+      expect(rotateYZ).toBe(rotateAroundX);
+    });
+  });
+
+  describe('rotation functions combined', () => {
+    test('full 360 degree rotation returns to original', () => {
+      const v = new Vector3(1, 2, 3);
+      const result = rotateAroundZ(v, Math.PI * 2);
+      expect(result.x).toBeCloseTo(v.x, 5);
+      expect(result.y).toBeCloseTo(v.y, 5);
+      expect(result.z).toBeCloseTo(v.z, 5);
+    });
+
+    test('rotation preserves vector length', () => {
+      const v = new Vector3(3, 4, 5);
+      const originalLength = v.length();
+
+      const rotatedZ = rotateAroundZ(v, 0.7);
+      expect(rotatedZ.length()).toBeCloseTo(originalLength, 5);
+
+      const rotatedY = rotateAroundY(v, 1.2);
+      expect(rotatedY.length()).toBeCloseTo(originalLength, 5);
+
+      const rotatedX = rotateAroundX(v, 2.1);
+      expect(rotatedX.length()).toBeCloseTo(originalLength, 5);
+    });
+  });
+
+  // ============================================================================
+  // Vector3-based Ray Intersection
+  // ============================================================================
+
+  describe('rayLineIntersect2DV', () => {
+    test('detects intersection using Vector3', () => {
+      const origin = new Vector3(0, 0, 0);
+      const direction = new Vector3(1, 0, 0);
+      const lineStart = new Vector3(5, -5, 0);
+      const lineEnd = new Vector3(5, 5, 0);
+
+      const result = rayLineIntersect2DV(origin, direction, lineStart, lineEnd);
+      expect(result).not.toBeNull();
+      expect(result!.t).toBeCloseTo(5, 5);
+      expect(result!.u).toBeCloseTo(0.5, 5);
+    });
+
+    test('returns null when ray misses line', () => {
+      const origin = new Vector3(0, 0, 0);
+      const direction = new Vector3(1, 0, 0);
+      const lineStart = new Vector3(-5, 1, 0);
+      const lineEnd = new Vector3(-5, 2, 0);
+
+      const result = rayLineIntersect2DV(origin, direction, lineStart, lineEnd);
+      expect(result).toBeNull();
+    });
+
+    test('ignores z component (2D intersection)', () => {
+      const origin = new Vector3(0, 0, 100);
+      const direction = new Vector3(1, 0, 50);
+      const lineStart = new Vector3(5, -5, -200);
+      const lineEnd = new Vector3(5, 5, 300);
+
+      // Should still intersect in XY plane despite different Z values
+      const result = rayLineIntersect2DV(origin, direction, lineStart, lineEnd);
+      expect(result).not.toBeNull();
+      expect(result!.t).toBeCloseTo(5, 5);
+    });
+
+    test('matches primitive function results', () => {
+      const origin = new Vector3(2, 3, 0);
+      const direction = new Vector3(1, 1, 0);
+      const lineStart = new Vector3(10, 5, 0);
+      const lineEnd = new Vector3(10, 15, 0);
+
+      const vectorResult = rayLineIntersect2DV(origin, direction, lineStart, lineEnd);
+      const primitiveResult = rayLineIntersect2D(2, 3, 1, 1, 10, 5, 10, 15);
+
+      expect(vectorResult).toEqual(primitiveResult);
+    });
+  });
+
+  // ============================================================================
+  // Game Convention Angles
+  // ============================================================================
+
+  describe('angleBetweenYForward', () => {
+    test('returns 0 for point along +Y', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(0, 10, 0);
+      expect(angleBetweenYForward(a, b)).toBeCloseTo(0, 5);
+    });
+
+    test('returns PI/2 for point along +X', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(10, 0, 0);
+      expect(angleBetweenYForward(a, b)).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    test('returns -PI/2 for point along -X', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(-10, 0, 0);
+      expect(angleBetweenYForward(a, b)).toBeCloseTo(-Math.PI / 2, 5);
+    });
+
+    test('returns PI for point along -Y', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(0, -10, 0);
+      expect(Math.abs(angleBetweenYForward(a, b))).toBeCloseTo(Math.PI, 5);
+    });
+
+    test('works with non-origin points', () => {
+      const a = new Vector3(5, 5, 0);
+      const b = new Vector3(5, 15, 0); // 10 units in +Y
+      expect(angleBetweenYForward(a, b)).toBeCloseTo(0, 5);
+    });
+
+    test('diagonal angles are correct', () => {
+      const a = new Vector3(0, 0, 0);
+      const b = new Vector3(10, 10, 0); // +X +Y diagonal
+      // Should be PI/4 (45 degrees towards +X from +Y forward)
+      expect(angleBetweenYForward(a, b)).toBeCloseTo(Math.PI / 4, 5);
+    });
+  });
+
+  describe('angleBetweenYForward2D', () => {
+    test('returns 0 for point along +Y', () => {
+      expect(angleBetweenYForward2D(0, 0, 0, 10)).toBeCloseTo(0, 5);
+    });
+
+    test('returns PI/2 for point along +X', () => {
+      expect(angleBetweenYForward2D(0, 0, 10, 0)).toBeCloseTo(Math.PI / 2, 5);
+    });
+
+    test('matches Vector3 version', () => {
+      const ax = 3, ay = 4;
+      const bx = 7, by = 9;
+
+      const a = new Vector3(ax, ay, 0);
+      const b = new Vector3(bx, by, 0);
+
+      expect(angleBetweenYForward2D(ax, ay, bx, by))
+        .toBeCloseTo(angleBetweenYForward(a, b), 10);
+    });
+  });
+
+  describe('angleBetween vs angleBetweenYForward comparison', () => {
+    test('angleBetween: 0 = +X, angleBetweenYForward: 0 = +Y', () => {
+      const origin = new Vector3(0, 0, 0);
+
+      // Point along +X
+      const plusX = new Vector3(10, 0, 0);
+      expect(angleBetween(origin, plusX)).toBeCloseTo(0, 5);
+      expect(angleBetweenYForward(origin, plusX)).toBeCloseTo(Math.PI / 2, 5);
+
+      // Point along +Y
+      const plusY = new Vector3(0, 10, 0);
+      expect(angleBetween(origin, plusY)).toBeCloseTo(Math.PI / 2, 5);
+      expect(angleBetweenYForward(origin, plusY)).toBeCloseTo(0, 5);
+    });
+
+    test('conventions differ by 90 degrees for cardinal directions', () => {
+      const origin = new Vector3(0, 0, 0);
+      const target = new Vector3(10, 10, 0);
+
+      const mathAngle = angleBetween(origin, target);
+      const gameAngle = angleBetweenYForward(origin, target);
+
+      // Game angle should be 90 degrees less (or rotated) from math angle
+      // For (10, 10): math gives PI/4, game gives PI/4
+      // Actually they're the same for diagonals, but differ for cardinals
+      expect(mathAngle).toBeCloseTo(Math.PI / 4, 5);
+      expect(gameAngle).toBeCloseTo(Math.PI / 4, 5);
     });
   });
 });

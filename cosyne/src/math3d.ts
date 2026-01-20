@@ -1309,3 +1309,112 @@ export function lerpAngle(from: number, to: number, t: number): number {
   const diff = angleDiff(from, to);
   return normalizeAngle(from + diff * t);
 }
+
+// ============================================================================
+// Rotation Functions
+// ============================================================================
+
+/**
+ * Rotate vector around Z axis (in XY plane)
+ * @param v - Vector to rotate
+ * @param angle - Rotation angle in radians (counter-clockwise when looking down Z)
+ */
+export function rotateAroundZ(v: Vector3, angle: number): Vector3 {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return new Vector3(
+    v.x * cos - v.y * sin,
+    v.x * sin + v.y * cos,
+    v.z
+  );
+}
+
+/**
+ * Rotate vector around Y axis (in XZ plane)
+ * @param v - Vector to rotate
+ * @param angle - Rotation angle in radians (counter-clockwise when looking down Y)
+ */
+export function rotateAroundY(v: Vector3, angle: number): Vector3 {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return new Vector3(
+    v.x * cos + v.z * sin,
+    v.y,
+    -v.x * sin + v.z * cos
+  );
+}
+
+/**
+ * Rotate vector around X axis (in YZ plane)
+ * @param v - Vector to rotate
+ * @param angle - Rotation angle in radians (counter-clockwise when looking down X)
+ */
+export function rotateAroundX(v: Vector3, angle: number): Vector3 {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return new Vector3(
+    v.x,
+    v.y * cos - v.z * sin,
+    v.y * sin + v.z * cos
+  );
+}
+
+// Aliases for plane-based naming convention
+export const rotateXY = rotateAroundZ;
+export const rotateXZ = rotateAroundY;
+export const rotateYZ = rotateAroundX;
+
+// ============================================================================
+// Vector3-based Ray Intersection
+// ============================================================================
+
+/**
+ * Ray-line intersection using Vector3 parameters
+ * Wrapper around rayLineIntersect2D for convenience with Vector3 types.
+ * Uses x,y components only (2D intersection in XY plane).
+ *
+ * @param origin - Ray origin point
+ * @param direction - Ray direction vector (does not need to be normalized)
+ * @param lineStart - Start point of line segment
+ * @param lineEnd - End point of line segment
+ * @returns { t, u } where t is distance along ray and u is position along line [0,1], or null if no intersection
+ */
+export function rayLineIntersect2DV(
+  origin: Vector3,
+  direction: Vector3,
+  lineStart: Vector3,
+  lineEnd: Vector3
+): { t: number; u: number } | null {
+  return rayLineIntersect2D(
+    origin.x, origin.y,
+    direction.x, direction.y,
+    lineStart.x, lineStart.y,
+    lineEnd.x, lineEnd.y
+  );
+}
+
+// ============================================================================
+// Game Convention Angles
+// ============================================================================
+
+/**
+ * Angle from point a to point b using game/compass convention
+ * Returns angle in [-PI, PI] range where:
+ * - 0 points along +Y (forward/north)
+ * - PI/2 points along +X (right/east)
+ * - PI or -PI points along -Y (backward/south)
+ * - -PI/2 points along -X (left/west)
+ *
+ * This convention is common in top-down games where +Y is "forward".
+ * Contrast with angleBetween() which uses standard math convention (0 = +X).
+ */
+export function angleBetweenYForward(a: Vector3, b: Vector3): number {
+  return Math.atan2(b.x - a.x, b.y - a.y);
+}
+
+/**
+ * 2D version of angleBetweenYForward using raw coordinates
+ */
+export function angleBetweenYForward2D(ax: number, ay: number, bx: number, by: number): number {
+  return Math.atan2(bx - ax, by - ay);
+}

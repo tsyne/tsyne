@@ -156,14 +156,23 @@ export {
   clamp,
   lerp,
   rayLineIntersect2D,
+  rayLineIntersect2DV,
   urandom,
   urandomVector,
   randomUnitVector,
   angleBetween,
   angleBetween2D,
+  angleBetweenYForward,
+  angleBetweenYForward2D,
   normalizeAngle,
   angleDiff,
   lerpAngle,
+  rotateAroundX,
+  rotateAroundY,
+  rotateAroundZ,
+  rotateXY,
+  rotateXZ,
+  rotateYZ,
 } from './math3d';
 
 // Renderer
