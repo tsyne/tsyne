@@ -412,6 +412,125 @@ export interface RaycastHit {
   color: [number, number, number];
 }
 
+// Brick texture size
+const BRICK_TEX_SIZE = 64;
+
+/**
+ * Generate a procedural brick texture similar to the original
+ * Returns a 2D array of grayscale values (0-1)
+ */
+function generateBrickTexture(): number[][] {
+  const tex: number[][] = [];
+
+  // Simple Perlin-like noise using sin waves
+  const noise = (x: number, y: number): number => {
+    return (
+      Math.sin(x * 0.1) * 0.3 +
+      Math.sin(y * 0.15) * 0.3 +
+      Math.sin((x + y) * 0.08) * 0.2 +
+      Math.sin((x - y) * 0.12) * 0.2
+    ) * 0.5 + 0.5;
+  };
+
+  for (let y = 0; y < BRICK_TEX_SIZE; y++) {
+    tex[y] = [];
+    for (let x = 0; x < BRICK_TEX_SIZE; x++) {
+      // Brick pattern: horizontal lines every 16 pixels, vertical offset every other row
+      const brickHeight = 16;
+      const brickWidth = 32;
+      const mortarWidth = 2;
+
+      const row = Math.floor(y / brickHeight);
+      const yInBrick = y % brickHeight;
+      const xOffset = (row % 2) * (brickWidth / 2);
+      const xInBrick = (x + xOffset) % brickWidth;
+
+      // Check if we're in mortar (gaps between bricks)
+      const inHorizontalMortar = yInBrick < mortarWidth;
+      const inVerticalMortar = xInBrick < mortarWidth;
+
+      if (inHorizontalMortar || inVerticalMortar) {
+        // Mortar is dark gray
+        tex[y][x] = 0.2 + noise(x, y) * 0.1;
+      } else {
+        // Brick surface with noise variation
+        tex[y][x] = 0.6 + noise(x * 2, y * 2) * 0.3;
+      }
+    }
+  }
+
+  return tex;
+}
+
+// Pre-generate brick texture
+const brickTexture = generateBrickTexture();
+
+// Tile texture size
+const TILE_TEX_SIZE = 64;
+
+/**
+ * Generate a procedural tile/floor texture with hexagonal lattice pattern
+ * Similar to the original doom clone's floor
+ * Returns a 2D array of grayscale values (0-1)
+ */
+function generateTileTexture(): number[][] {
+  const tex: number[][] = [];
+
+  // Hexagonal lattice parameters
+  const scale = 12;  // Size of hex cells
+  const sqrt3 = Math.sqrt(3);
+
+  // Simple noise for variation
+  const noise = (x: number, y: number): number => {
+    return (
+      Math.sin(x * 0.2 + 1.3) * 0.2 +
+      Math.sin(y * 0.25 + 2.1) * 0.2 +
+      Math.sin((x + y) * 0.15) * 0.15 +
+      Math.sin((x - y) * 0.18 + 0.7) * 0.15
+    ) * 0.5 + 0.5;
+  };
+
+  for (let y = 0; y < TILE_TEX_SIZE; y++) {
+    tex[y] = [];
+    for (let x = 0; x < TILE_TEX_SIZE; x++) {
+      // Convert to hexagonal lattice coordinates
+      // Hex lattice has points at (n*scale, m*scale*sqrt(3)) and ((n+0.5)*scale, (m+0.5)*scale*sqrt(3))
+      const fx = x / scale;
+      const fy = y / (scale * sqrt3);
+
+      // Find closest lattice point (two offset grids)
+      const grid1x = Math.round(fx);
+      const grid1y = Math.round(fy);
+      const dist1 = Math.hypot(fx - grid1x, fy - grid1y);
+
+      const grid2x = Math.round(fx - 0.5) + 0.5;
+      const grid2y = Math.round(fy - 0.5) + 0.5;
+      const dist2 = Math.hypot(fx - grid2x, fy - grid2y);
+
+      // Minimum distance to nearest lattice point
+      const minDist = Math.min(dist1, dist2);
+
+      // Create tile pattern: dark lines where close to lattice points (tile edges)
+      // Values closer to 0 = darker (grout lines), closer to 1 = lighter (tile surface)
+      const lineThreshold = 0.15;  // How close to lattice point for grout line
+
+      if (minDist < lineThreshold) {
+        // Grout/edge - dark with some variation
+        tex[y][x] = 0.25 + noise(x, y) * 0.1;
+      } else {
+        // Tile surface with noise variation
+        const surfaceValue = 0.5 + (minDist - lineThreshold) * 0.8;
+        tex[y][x] = Math.min(0.85, surfaceValue) + noise(x * 2, y * 2) * 0.15;
+      }
+    }
+  }
+
+  return tex;
+}
+
+// Pre-generate tile texture
+const tileTexture = generateTileTexture();
+
 export class RaycastRenderer {
   width: number;
   height: number;
@@ -421,9 +540,9 @@ export class RaycastRenderer {
   // Depth buffer for sprite sorting
   depthBuffer: number[];
 
-  // Wall colors
-  wallColorNS: [number, number, number] = [100, 100, 120];
-  wallColorEW: [number, number, number] = [80, 80, 100];
+  // Base wall colors (will be modulated by brick texture)
+  wallColorNS: [number, number, number] = [140, 100, 80];   // Reddish brick
+  wallColorEW: [number, number, number] = [120, 85, 70];    // Slightly darker
   floorColor: [number, number, number] = [50, 50, 60];
   ceilingColor: [number, number, number] = [30, 30, 40];
 
@@ -486,27 +605,72 @@ export class RaycastRenderer {
     // Clear depth buffer
     this.depthBuffer.fill(Infinity);
 
-    // Fill background (ceiling and floor)
-    for (let y = 0; y < this.height; y++) {
+    // Fill ceiling (solid color)
+    for (let y = 0; y < this.height / 2; y++) {
       for (let x = 0; x < this.width; x++) {
         const idx = (y * this.width + x) * 4;
-        if (y < this.height / 2) {
-          // Ceiling
-          buffer[idx] = this.ceilingColor[0];
-          buffer[idx + 1] = this.ceilingColor[1];
-          buffer[idx + 2] = this.ceilingColor[2];
-        } else {
-          // Floor
-          buffer[idx] = this.floorColor[0];
-          buffer[idx + 1] = this.floorColor[1];
-          buffer[idx + 2] = this.floorColor[2];
-        }
+        buffer[idx] = this.ceilingColor[0];
+        buffer[idx + 1] = this.ceilingColor[1];
+        buffer[idx + 2] = this.ceilingColor[2];
         buffer[idx + 3] = 255;
       }
     }
 
-    // Cast rays for each column
+    // Floor casting with texture
     const halfFov = this.fov / 2;
+    const halfHeight = this.height / 2;
+    const floorZ = 0;  // Floor is at Z=0
+    const eyeZ = player.position.z;  // Player eye height
+
+    for (let y = Math.floor(halfHeight); y < this.height; y++) {
+      // Calculate the distance to this floor row
+      // Using similar triangles: rowDistance = (eyeZ - floorZ) * scale / (y - halfHeight)
+      const rowDistance = ((eyeZ - floorZ) * this.height * 1.5) / (y - halfHeight + 0.001);
+
+      // Skip very distant floor (beyond render distance)
+      if (rowDistance > this.maxRenderDistance * 2) {
+        for (let x = 0; x < this.width; x++) {
+          const idx = (y * this.width + x) * 4;
+          buffer[idx] = this.floorColor[0];
+          buffer[idx + 1] = this.floorColor[1];
+          buffer[idx + 2] = this.floorColor[2];
+          buffer[idx + 3] = 255;
+        }
+        continue;
+      }
+
+      // Calculate shading based on distance
+      const shade = Math.max(0.2, 1 - rowDistance / (this.maxRenderDistance * 1.5));
+
+      for (let x = 0; x < this.width; x++) {
+        // Calculate ray direction for this pixel
+        const rayAngle = player.theta + halfFov - (x / this.width) * this.fov;
+        const rayDirX = Math.cos(rayAngle);
+        const rayDirY = Math.sin(rayAngle);
+
+        // Calculate world position of this floor pixel
+        const floorX = player.position.x + rayDirX * rowDistance;
+        const floorY = player.position.y + rayDirY * rowDistance;
+
+        // Sample tile texture (with tiling)
+        const texX = Math.floor(Math.abs(floorX * 4)) % TILE_TEX_SIZE;
+        const texY = Math.floor(Math.abs(floorY * 4)) % TILE_TEX_SIZE;
+        const texValue = tileTexture[texY]?.[texX] ?? 0.5;
+
+        // Apply texture to floor color with distance shading
+        const r = Math.floor(this.floorColor[0] * shade * texValue * 1.5);
+        const g = Math.floor(this.floorColor[1] * shade * texValue * 1.5);
+        const b = Math.floor(this.floorColor[2] * shade * texValue * 1.5);
+
+        const idx = (y * this.width + x) * 4;
+        buffer[idx] = Math.min(255, r);
+        buffer[idx + 1] = Math.min(255, g);
+        buffer[idx + 2] = Math.min(255, b);
+        buffer[idx + 3] = 255;
+      }
+    }
+
+    // Cast rays for each column (halfFov already defined above)
     for (let x = 0; x < this.width; x++) {
       // Calculate ray angle
       const rayAngle =
@@ -541,12 +705,27 @@ export class RaycastRenderer {
 
         // Apply distance-based shading
         const shade = Math.max(0.2, 1 - perpDist / this.maxRenderDistance);
-        const r = Math.floor(hit.color[0] * shade);
-        const g = Math.floor(hit.color[1] * shade);
-        const b = Math.floor(hit.color[2] * shade);
 
-        // Draw vertical line
+        // Calculate texture X coordinate from wallX (0-1 along wall segment)
+        // Scale by wall length for proper tiling
+        const wallLength = hit.wall.p1.distanceTo(hit.wall.p2);
+        const texX = Math.floor((hit.wallX * wallLength * 2) % BRICK_TEX_SIZE);
+
+        // Draw vertical line with brick texture
+        const wallScreenHeight = screenWallBottom - screenWallTop;
         for (let y = drawStart; y <= drawEnd; y++) {
+          // Calculate texture Y coordinate based on position in wall
+          const wallY = (y - screenWallTop) / wallScreenHeight;
+          const texY = Math.floor((wallY * hit.wall.height * 2) % BRICK_TEX_SIZE);
+
+          // Sample brick texture
+          const texValue = brickTexture[texY]?.[texX] ?? 0.5;
+
+          // Apply texture to base color with shading
+          const r = Math.floor(hit.color[0] * shade * texValue);
+          const g = Math.floor(hit.color[1] * shade * texValue);
+          const b = Math.floor(hit.color[2] * shade * texValue);
+
           const idx = (y * this.width + x) * 4;
           buffer[idx] = r;
           buffer[idx + 1] = g;
@@ -695,6 +874,9 @@ export class DoomGame {
   score: number = 0;
   keysHeld: Set<string> = new Set();
 
+  // Visual feedback
+  shootFlashFrames: number = 0;  // Frames remaining for muzzle flash effect
+
   private changeListeners: ChangeListener[] = [];
   private lastTime: number = 0;
 
@@ -821,6 +1003,9 @@ export class DoomGame {
   }
 
   private shoot(): void {
+    // Trigger muzzle flash visual feedback
+    this.shootFlashFrames = 3;
+
     // Simple hitscan - find enemy in crosshair
     const forward = this.player.getForwardVector();
     const pos = this.player.position;
@@ -852,6 +1037,48 @@ export class DoomGame {
 
   render(buffer: Uint8Array): void {
     this.renderer.render(buffer, this.player, this.map, this.enemies);
+
+    // Apply muzzle flash effect (yellow tint on screen edges)
+    if (this.shootFlashFrames > 0) {
+      this.shootFlashFrames--;
+      const w = this.renderer.width;
+      const h = this.renderer.height;
+
+      // Draw yellow flash bars on left and right edges
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < 20; x++) {
+          // Left edge
+          const idxL = (y * w + x) * 4;
+          buffer[idxL] = Math.min(255, buffer[idxL] + 100);     // R
+          buffer[idxL + 1] = Math.min(255, buffer[idxL + 1] + 80); // G
+
+          // Right edge
+          const idxR = (y * w + (w - 1 - x)) * 4;
+          buffer[idxR] = Math.min(255, buffer[idxR] + 100);     // R
+          buffer[idxR + 1] = Math.min(255, buffer[idxR + 1] + 80); // G
+        }
+      }
+
+      // Draw flash at bottom center (gun position)
+      const gunX = Math.floor(w / 2);
+      const gunY = h - 30;
+      for (let dy = -15; dy < 15; dy++) {
+        for (let dx = -10; dx < 10; dx++) {
+          const px = gunX + dx;
+          const py = gunY + dy;
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 12) {
+              const idx = (py * w + px) * 4;
+              const intensity = (12 - dist) / 12;
+              buffer[idx] = Math.min(255, buffer[idx] + Math.floor(200 * intensity));     // R
+              buffer[idx + 1] = Math.min(255, buffer[idx + 1] + Math.floor(150 * intensity)); // G
+              buffer[idx + 2] = Math.min(255, buffer[idx + 2] + Math.floor(50 * intensity));  // B
+            }
+          }
+        }
+      }
+    }
   }
 
   reset(): void {
@@ -925,11 +1152,9 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
             canvas = a
               .tappableCanvasRaster(canvasWidth, canvasHeight, {
                 onKeyDown: (key: string) => {
-                  console.log('[DOOM] KeyDown:', key);
                   game.setKey(key, true);
                 },
                 onKeyUp: (key: string) => {
-                  console.log('[DOOM] KeyUp:', key);
                   game.setKey(key, false);
                 },
               })
