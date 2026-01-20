@@ -329,76 +329,17 @@ export class Player {
 }
 
 // ============================================================================
-// Enemy Classes
+// Enemy Classes (imported from separate files)
 // ============================================================================
 
-export type EnemyState = 'patrol' | 'attack' | 'dead';
+export { Enemy, EnemyState, EnemyType, IGameMap } from './enemy';
+export { WalkingEnemy } from './walking-enemy';
+export { FlyingEnemy } from './flying-enemy';
 
-export class Enemy {
-  position: Vector3;
-  theta: number;
-  health: number = 10;
-  state: EnemyState = 'patrol';
-  height: number = 5;
-  size: number = 6;
-  dead: boolean = false;
-  attacking: boolean = false;
-  color: [number, number, number] = [180, 50, 50];  // Reddish
-
-  constructor(position: Vector3, theta: number = 0) {
-    this.position = position.clone();
-    this.theta = theta;
-  }
-
-  update(dt: number, playerPos: Vector3, map: GameMap): void {
-    if (this.dead) return;
-
-    // Simple AI: face player and move toward them if attacking
-    const toPlayer = noz(playerPos).sub(noz(this.position));
-    const distToPlayer = toPlayer.length();
-
-    // Detect player if close enough
-    if (distToPlayer < 100 && !this.attacking) {
-      this.attacking = true;
-      this.state = 'attack';
-    }
-
-    if (this.attacking && distToPlayer > 10) {
-      // Move toward player
-      const goalAngle = Math.atan2(toPlayer.y, toPlayer.x);
-
-      // Gradually turn toward player
-      let angleDiff = goalAngle - this.theta;
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-      this.theta += angleDiff * 0.1;
-
-      // Move forward
-      const speed = dt / 50;
-      const moveDir = new Vector3(Math.cos(this.theta), Math.sin(this.theta), 0);
-      const nextPos = this.position.add(moveDir.multiplyScalar(speed));
-
-      // Update floor height
-      const floorHeight = map.getFloorHeight(nextPos);
-      if (Math.abs(floorHeight - this.position.z + this.height) < 10) {
-        this.position = nextPos;
-        this.position.z = floorHeight + this.height;
-      }
-    }
-  }
-
-  takeDamage(amount: number): void {
-    this.health -= amount;
-    if (this.health <= 0) {
-      this.dead = true;
-      this.state = 'dead';
-    }
-  }
-
-  distanceTo(player: Player): number {
-    return this.position.distanceTo(player.position);
-  }
-}
+// Import for local use
+import { Enemy } from './enemy';
+import { WalkingEnemy } from './walking-enemy';
+import { FlyingEnemy } from './flying-enemy';
 
 // ============================================================================
 // Raycasting Renderer
@@ -776,38 +717,201 @@ export class RaycastRenderer {
         (0.5 - angleDiff / this.fov) * this.width
       );
 
-      // Calculate sprite size
-      const spriteHeight = Math.min(
-        this.height,
-        (this.height * 15) / distance
-      );
-      const spriteWidth = spriteHeight * 0.8;
-
-      const drawStartX = Math.floor(screenX - spriteWidth / 2);
-      const drawEndX = Math.floor(screenX + spriteWidth / 2);
-      const drawStartY = Math.floor((this.height - spriteHeight) / 2);
-      const drawEndY = Math.floor((this.height + spriteHeight) / 2);
+      // Calculate sprite size based on distance
+      const scale = (this.height * 15) / distance;
 
       // Apply distance shading
       const shade = Math.max(0.3, 1 - distance / this.maxRenderDistance);
 
-      // Draw sprite (simple rectangle for now)
-      for (let x = Math.max(0, drawStartX); x < Math.min(this.width, drawEndX); x++) {
-        // Check depth buffer
-        if (distance < this.depthBuffer[x]) {
-          for (let y = Math.max(0, drawStartY); y < Math.min(this.height, drawEndY); y++) {
-            // Simple sprite shape (diamond/oval)
-            const xRel = (x - screenX) / (spriteWidth / 2);
-            const yRel = (y - (this.height / 2)) / (spriteHeight / 2);
-            if (xRel * xRel + yRel * yRel < 1) {
-              const idx = (y * this.width + x) * 4;
-              buffer[idx] = Math.floor(enemy.color[0] * shade);
-              buffer[idx + 1] = Math.floor(enemy.color[1] * shade);
-              buffer[idx + 2] = Math.floor(enemy.color[2] * shade);
-              buffer[idx + 3] = 255;
-            }
-          }
-        }
+      // Render based on enemy type
+      if (enemy.type === 'walking') {
+        this.renderWalkingEnemy(buffer, enemy as WalkingEnemy, screenX, scale, shade, distance);
+      } else {
+        this.renderFlyingEnemy(buffer, enemy as FlyingEnemy, screenX, scale, shade, distance);
+      }
+    }
+  }
+
+  /**
+   * Render a walking enemy as a blocky humanoid
+   * Made of boxes: body, head, 2 legs, 2 arms
+   */
+  renderWalkingEnemy(
+    buffer: Uint8Array,
+    enemy: WalkingEnemy,
+    screenX: number,
+    scale: number,
+    shade: number,
+    distance: number
+  ): void {
+    const centerY = this.height / 2;
+
+    // Walking animation - legs and arms swing based on time
+    const armSwing = Math.sin(enemy.time) * 0.3;
+    const legSwing = Math.sin(enemy.time) * 0.25;
+
+    // Vertical bob when walking (subtle)
+    const verticalBob = Math.abs(Math.sin(enemy.time * 2)) * scale * 0.05;
+
+    // Body dimensions (relative to scale)
+    const bodyWidth = scale * 0.4;
+    const bodyHeight = scale * 0.35;
+    const headSize = scale * 0.25;
+    const limbWidth = scale * 0.12;
+    const limbHeight = scale * 0.3;
+
+    // Draw body (center torso)
+    this.drawBox(buffer, screenX, centerY - verticalBob, bodyWidth, bodyHeight,
+      enemy.bodyColor, shade, distance);
+
+    // Draw head (above body)
+    this.drawBox(buffer, screenX, centerY - bodyHeight * 0.6 - headSize * 0.4 - verticalBob,
+      headSize, headSize, enemy.headColor, shade, distance);
+
+    // Draw eyes on head (two small red dots)
+    const eyeSize = scale * 0.06;
+    const eyeY = centerY - bodyHeight * 0.6 - headSize * 0.4 - verticalBob;
+    this.drawBox(buffer, screenX - headSize * 0.25, eyeY, eyeSize, eyeSize,
+      enemy.eyeColor, shade, distance);
+    this.drawBox(buffer, screenX + headSize * 0.25, eyeY, eyeSize, eyeSize,
+      enemy.eyeColor, shade, distance);
+
+    // Draw legs (below body, animated)
+    const legY = centerY + bodyHeight * 0.4 - verticalBob;
+    // Left leg swings forward/back
+    this.drawBox(buffer, screenX - bodyWidth * 0.25 + legSwing * scale * 0.2, legY + limbHeight * 0.5,
+      limbWidth, limbHeight, enemy.bodyColor, shade * 0.9, distance);
+    // Right leg opposite phase
+    this.drawBox(buffer, screenX + bodyWidth * 0.25 - legSwing * scale * 0.2, legY + limbHeight * 0.5,
+      limbWidth, limbHeight, enemy.bodyColor, shade * 0.9, distance);
+
+    // Draw arms (sides of body, animated)
+    const armY = centerY - bodyHeight * 0.1 - verticalBob;
+    // Left arm
+    this.drawBox(buffer, screenX - bodyWidth * 0.5 - limbWidth * 0.3 - armSwing * scale * 0.15, armY,
+      limbWidth * 0.8, limbHeight * 0.8, enemy.bodyColor, shade * 0.85, distance);
+    // Right arm opposite phase
+    this.drawBox(buffer, screenX + bodyWidth * 0.5 + limbWidth * 0.3 + armSwing * scale * 0.15, armY,
+      limbWidth * 0.8, limbHeight * 0.8, enemy.bodyColor, shade * 0.85, distance);
+  }
+
+  /**
+   * Render a flying enemy with flapping wings
+   */
+  renderFlyingEnemy(
+    buffer: Uint8Array,
+    enemy: FlyingEnemy,
+    screenX: number,
+    scale: number,
+    shade: number,
+    distance: number
+  ): void {
+    const centerY = this.height / 2;
+
+    // Wing flap animation
+    const wingAngle = Math.sin(enemy.time * 8) * 0.5;  // Fast flapping
+    const verticalBob = Math.sin(enemy.time * 2) * scale * 0.1;
+
+    // Body dimensions (smaller than walking enemy)
+    const bodyWidth = scale * 0.2;
+    const bodyHeight = scale * 0.15;
+    const wingSpan = scale * 0.5;
+    const wingHeight = scale * 0.08;
+
+    // Draw central body (elongated rectangle)
+    this.drawBox(buffer, screenX, centerY - verticalBob, bodyWidth, bodyHeight,
+      enemy.bodyColor, shade, distance);
+
+    // Draw wings (trapezoid-ish, angle based on flap)
+    // Left wing
+    const leftWingX = screenX - bodyWidth * 0.5 - wingSpan * 0.4;
+    const leftWingY = centerY - verticalBob + wingAngle * scale * 0.2;
+    this.drawWing(buffer, leftWingX, leftWingY, wingSpan * 0.6, wingHeight,
+      enemy.wingColor, shade, distance, -wingAngle, true);
+
+    // Right wing
+    const rightWingX = screenX + bodyWidth * 0.5 + wingSpan * 0.4;
+    const rightWingY = centerY - verticalBob + wingAngle * scale * 0.2;
+    this.drawWing(buffer, rightWingX, rightWingY, wingSpan * 0.6, wingHeight,
+      enemy.wingColor, shade, distance, wingAngle, false);
+
+    // Draw glowing red eye stripe
+    const eyeWidth = bodyWidth * 1.2;
+    const eyeHeight = scale * 0.04;
+    this.drawBox(buffer, screenX, centerY - bodyHeight * 0.2 - verticalBob,
+      eyeWidth, eyeHeight, enemy.eyeColor, shade, distance);
+  }
+
+  /**
+   * Draw a simple rectangular box
+   */
+  drawBox(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+    color: [number, number, number],
+    shade: number,
+    distance: number
+  ): void {
+    const startX = Math.floor(cx - width / 2);
+    const endX = Math.floor(cx + width / 2);
+    const startY = Math.floor(cy - height / 2);
+    const endY = Math.floor(cy + height / 2);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      if (distance >= this.depthBuffer[x]) continue;
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        const idx = (y * this.width + x) * 4;
+        buffer[idx] = Math.floor(color[0] * shade);
+        buffer[idx + 1] = Math.floor(color[1] * shade);
+        buffer[idx + 2] = Math.floor(color[2] * shade);
+        buffer[idx + 3] = 255;
+      }
+    }
+  }
+
+  /**
+   * Draw a wing shape (tapers toward tip)
+   */
+  drawWing(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+    color: [number, number, number],
+    shade: number,
+    distance: number,
+    angle: number,
+    isLeft: boolean
+  ): void {
+    const startX = Math.floor(cx - width / 2);
+    const endX = Math.floor(cx + width / 2);
+    const startY = Math.floor(cy - height / 2);
+    const endY = Math.floor(cy + height / 2);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      if (distance >= this.depthBuffer[x]) continue;
+
+      // Wing tapers - calculate taper factor based on x position
+      const xRel = (x - cx) / (width / 2);
+      const taperFactor = isLeft ? (1 - xRel) * 0.5 + 0.5 : (1 + xRel) * 0.5 + 0.5;
+      const localHeight = height * taperFactor;
+
+      // Apply angle offset
+      const yOffset = (x - cx) * Math.sin(angle) * 0.3;
+
+      const localStartY = Math.floor(cy - localHeight / 2 + yOffset);
+      const localEndY = Math.floor(cy + localHeight / 2 + yOffset);
+
+      for (let y = Math.max(0, localStartY); y < Math.min(this.height, localEndY); y++) {
+        const idx = (y * this.width + x) * 4;
+        buffer[idx] = Math.floor(color[0] * shade);
+        buffer[idx + 1] = Math.floor(color[1] * shade);
+        buffer[idx + 2] = Math.floor(color[2] * shade);
+        buffer[idx + 3] = 255;
       }
     }
   }
@@ -891,17 +995,28 @@ export class DoomGame {
   }
 
   private spawnEnemies(): void {
-    // Spawn enemies far from player start (20, -15)
-    const spawnPoints = [
+    // Spawn walking enemies far from player start (20, -15)
+    const walkingSpawnPoints = [
       new Vector3(120, 80, 10),
       new Vector3(-80, 60, 10),
       new Vector3(150, -80, 10),
-      new Vector3(-60, -100, 10),
-      new Vector3(180, 40, 10),
     ];
 
-    for (const pos of spawnPoints) {
-      const enemy = new Enemy(pos, Math.random() * Math.PI * 2);
+    for (const pos of walkingSpawnPoints) {
+      const enemy = new WalkingEnemy(pos, Math.random() * Math.PI * 2);
+      this.enemies.push(enemy);
+    }
+
+    // Spawn flying enemies (higher up, different locations)
+    const flyingSpawnPoints = [
+      new Vector3(-60, -100, 25),
+      new Vector3(180, 40, 30),
+      new Vector3(100, -50, 20),
+      new Vector3(-40, 80, 25),
+    ];
+
+    for (const pos of flyingSpawnPoints) {
+      const enemy = new FlyingEnemy(pos, Math.random() * Math.PI * 2);
       this.enemies.push(enemy);
     }
   }
