@@ -10,6 +10,7 @@ import { GameMap, WallSegment } from './game-map';
 import { Enemy } from './enemy';
 import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
+import { BodyPart } from './body-part';
 
 /** Project vector to XY plane (set z to 0) */
 function noz(v: Vector3): Vector3 {
@@ -224,7 +225,8 @@ export class RaycastRenderer {
     buffer: Uint8Array,
     player: Player,
     map: GameMap,
-    enemies: Enemy[]
+    enemies: Enemy[],
+    bodyParts: BodyPart[] = []
   ): void {
     // Clear depth buffer
     this.depthBuffer.fill(Infinity);
@@ -361,6 +363,9 @@ export class RaycastRenderer {
 
     // Render enemies as sprites
     this.renderEnemies(buffer, player, enemies);
+
+    // Render body parts (death particles)
+    this.renderBodyParts(buffer, player, bodyParts);
 
     // Render HUD elements
     this.renderHUD(buffer, player);
@@ -594,6 +599,74 @@ export class RaycastRenderer {
         buffer[idx + 2] = Math.floor(color[2] * shade);
         buffer[idx + 3] = 255;
       }
+    }
+  }
+
+  /**
+   * Render body parts (death particles) as spinning cubes
+   */
+  renderBodyParts(
+    buffer: Uint8Array,
+    player: Player,
+    bodyParts: BodyPart[]
+  ): void {
+    if (bodyParts.length === 0) return;
+
+    // Sort by distance (far to near)
+    const sortedParts = bodyParts
+      .filter((p) => !p.dead)
+      .map((p) => ({
+        part: p,
+        distance: noz(p.position).distanceTo(noz(player.position)),
+      }))
+      .sort((a, b) => b.distance - a.distance);
+
+    for (const { part, distance } of sortedParts) {
+      if (distance < 2 || distance > this.maxRenderDistance) continue;
+
+      // Calculate sprite screen position
+      const spriteDir = part.position.sub(player.position);
+      const spriteAngle = Math.atan2(spriteDir.y, spriteDir.x);
+      let angleDiff = spriteAngle - player.theta;
+
+      // Normalize angle
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      // Check if in view
+      if (Math.abs(angleDiff) > this.fov / 2 + 0.3) continue;
+
+      // Calculate screen X position
+      const screenX = Math.floor((0.5 - angleDiff / this.fov) * this.width);
+
+      // Calculate screen Y based on height difference
+      const eyeZ = player.position.z;
+      const heightDiff = part.position.z - eyeZ;
+      const centerY = this.height / 2;
+      const scale = this.height * 1.5;
+      const screenY = centerY - (heightDiff * scale) / distance;
+
+      // Calculate sprite size based on distance
+      const partScale = (this.height * part.size * 2) / distance;
+
+      // Apply distance shading
+      const shade = Math.max(0.3, 1 - distance / this.maxRenderDistance);
+
+      // Draw spinning cube effect
+      // Apply rotation to create illusion of spinning
+      const rotPhase = part.rotationX + part.rotationY;
+      const wobble = Math.sin(rotPhase) * partScale * 0.2;
+
+      this.drawBox(
+        buffer,
+        screenX + wobble,
+        screenY,
+        partScale,
+        partScale,
+        part.color,
+        shade,
+        distance
+      );
     }
   }
 

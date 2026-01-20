@@ -51,6 +51,7 @@ export { RaycastRenderer, RaycastHit } from './renderer';
 export { Enemy, EnemyState, EnemyType, IGameMap } from './enemy';
 export { WalkingEnemy } from './walking-enemy';
 export { FlyingEnemy } from './flying-enemy';
+export { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
 
 // Import for local use
 import { Player } from './player';
@@ -59,6 +60,7 @@ import { RaycastRenderer } from './renderer';
 import { Enemy } from './enemy';
 import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
+import { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
 
 // ============================================================================
 // Constants
@@ -112,6 +114,7 @@ export class DoomGame {
   map: GameMap;
   player: Player;
   enemies: Enemy[] = [];
+  bodyParts: BodyPart[] = [];  // Death explosion particles
   renderer: RaycastRenderer;
 
   gameState: GameState = 'playing';
@@ -186,6 +189,13 @@ export class DoomGame {
     for (const enemy of this.enemies) {
       enemy.update(dt, this.player.position, this.map);
     }
+
+    // Update body parts (death particles)
+    for (const part of this.bodyParts) {
+      part.update(dt, this.map);
+    }
+    // Remove dead body parts
+    this.bodyParts = this.bodyParts.filter((p) => !p.dead);
 
     // Check player-enemy collision (damage)
     for (const enemy of this.enemies) {
@@ -284,14 +294,36 @@ export class DoomGame {
     }
 
     if (closestEnemy) {
+      const wasDead = closestEnemy.dead;
       closestEnemy.takeDamage(3);
       this.score += closestEnemy.dead ? 100 : 10;
+
+      // Spawn death explosion when enemy dies
+      if (closestEnemy.dead && !wasDead) {
+        this.spawnDeathExplosion(closestEnemy);
+      }
+
       this.notifyChange();
     }
   }
 
+  private spawnDeathExplosion(enemy: Enemy): void {
+    // Calculate explosion direction (away from player)
+    const toEnemy = enemy.position.sub(this.player.position).normalize();
+
+    // Spawn body parts based on enemy type
+    let parts: BodyPart[];
+    if (enemy.type === 'walking') {
+      parts = createWalkingEnemyBodyParts(enemy.position, toEnemy);
+    } else {
+      parts = createFlyingEnemyBodyParts(enemy.position, toEnemy);
+    }
+
+    this.bodyParts.push(...parts);
+  }
+
   render(buffer: Uint8Array): void {
-    this.renderer.render(buffer, this.player, this.map, this.enemies);
+    this.renderer.render(buffer, this.player, this.map, this.enemies, this.bodyParts);
 
     // Apply muzzle flash effect (yellow tint on screen edges)
     if (this.shootFlashFrames > 0) {
@@ -339,6 +371,7 @@ export class DoomGame {
   reset(): void {
     this.player = new Player(new Vector3(20, -15, 10));
     this.enemies = [];
+    this.bodyParts = [];  // Clear death particles
     this.spawnEnemies();
     this.gameState = 'playing';
     this.score = 0;
