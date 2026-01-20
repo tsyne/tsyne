@@ -155,6 +155,15 @@ export {
   radToDeg,
   clamp,
   lerp,
+  rayLineIntersect2D,
+  urandom,
+  urandomVector,
+  randomUnitVector,
+  angleBetween,
+  angleBetween2D,
+  normalizeAngle,
+  angleDiff,
+  lerpAngle,
 } from './math3d';
 
 // Renderer
@@ -169,3 +178,18 @@ export {
   createRenderTarget,
   clearRenderTarget,
 } from '../../core/src/graphics/platform';
+
+// Raycaster - 2.5D Software Rendering Engine
+export {
+  Raycaster,
+  RaycasterConfig,
+  RaycasterWall,
+  RaycasterSprite,
+  RaycasterCamera,
+  RaycastHit,
+  MoveResult,
+  DEFAULT_RAYCASTER_CONFIG,
+  createRoom,
+  createWall,
+  createSprite,
+} from './raycaster';

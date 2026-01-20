@@ -1193,3 +1193,119 @@ export function clamp(value: number, min: number, max: number): number {
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
+
+/**
+ * Ray-line segment intersection in 2D
+ * Crucial for 2.5D raycasting (DOOM/Wolfenstein style)
+ *
+ * @param rayX - Ray origin X
+ * @param rayY - Ray origin Y
+ * @param rayDirX - Ray direction X (normalized or not)
+ * @param rayDirY - Ray direction Y (normalized or not)
+ * @param lineX1 - Line segment start X
+ * @param lineY1 - Line segment start Y
+ * @param lineX2 - Line segment end X
+ * @param lineY2 - Line segment end Y
+ * @returns { t: distance along ray, u: position along line segment [0,1] } or null if no intersection
+ */
+export function rayLineIntersect2D(
+  rayX: number, rayY: number,
+  rayDirX: number, rayDirY: number,
+  lineX1: number, lineY1: number,
+  lineX2: number, lineY2: number
+): { t: number; u: number } | null {
+  const dx = lineX2 - lineX1;
+  const dy = lineY2 - lineY1;
+
+  const denom = rayDirX * dy - rayDirY * dx;
+
+  // Ray is parallel to line
+  if (Math.abs(denom) < 0.0001) return null;
+
+  const t = ((lineX1 - rayX) * dy - (lineY1 - rayY) * dx) / denom;
+  const u = ((lineX1 - rayX) * rayDirY - (lineY1 - rayY) * rayDirX) / denom;
+
+  // Intersection is behind ray origin or outside line segment
+  if (t < 0 || u < 0 || u > 1) return null;
+
+  return { t, u };
+}
+
+/**
+ * Random number in [-1, 1] range
+ * Common for jittering, noise effects
+ */
+export function urandom(): number {
+  return Math.random() * 2 - 1;
+}
+
+/**
+ * Random Vector3 with components in [-1, 1]
+ * Useful for particle systems, AI variation, etc.
+ */
+export function urandomVector(): Vector3 {
+  return new Vector3(urandom(), urandom(), urandom());
+}
+
+/**
+ * Random unit vector (normalized, on unit sphere)
+ * Uses rejection sampling for uniform distribution
+ */
+export function randomUnitVector(): Vector3 {
+  let v: Vector3;
+  let lenSq: number;
+
+  // Rejection sampling to get uniform distribution
+  do {
+    v = urandomVector();
+    lenSq = v.lengthSquared();
+  } while (lenSq > 1 || lenSq < 0.0001);
+
+  return v.normalize();
+}
+
+/**
+ * Angle from point a to point b (in radians)
+ * Returns angle in [-PI, PI] range where:
+ * - 0 points along +X
+ * - PI/2 points along +Y
+ * - PI points along -X
+ * - -PI/2 points along -Y
+ *
+ * Useful for AI facing, projectile direction, etc.
+ */
+export function angleBetween(a: Vector3, b: Vector3): number {
+  return Math.atan2(b.y - a.y, b.x - a.x);
+}
+
+/**
+ * Angle from point a to point b (2D version using x,y coordinates)
+ */
+export function angleBetween2D(ax: number, ay: number, bx: number, by: number): number {
+  return Math.atan2(by - ay, bx - ax);
+}
+
+/**
+ * Normalize an angle to [-PI, PI] range
+ */
+export function normalizeAngle(angle: number): number {
+  while (angle > Math.PI) angle -= Math.PI * 2;
+  while (angle < -Math.PI) angle += Math.PI * 2;
+  return angle;
+}
+
+/**
+ * Shortest angular difference between two angles
+ * Returns value in [-PI, PI]
+ */
+export function angleDiff(from: number, to: number): number {
+  return normalizeAngle(to - from);
+}
+
+/**
+ * Linear interpolation for angles (handles wrapping)
+ */
+export function lerpAngle(from: number, to: number, t: number): number {
+  const diff = angleDiff(from, to);
+  return normalizeAngle(from + diff * t);
+}
