@@ -34,13 +34,433 @@ function createMapPolygon(
 }
 
 // ============================================================================
-// Game Map - Turtle Graphics Decompression
+// Game Map - Turtle Graphics Language
 // ============================================================================
 
-const LEVEL_DATA = [
-  // Level 1 - Simplified for demo
-  'rgt413aHp9UFRwdXm2S6cGajdGc0csIDhMeKwQUngnOne8qtCa19bVwnkHBQZ2LYdcSzFERiVTdZmLd7N3NWfFtGTMrYttSyYil4xasKMDBwscKcTWx9vGJ5cMQDUslqsQiEm3iHe2d4RwnLt8RGZ3YXeGfCjgNz13uQB3OHdqd+RnbPkq0DeDd2ZZ10246xA7d7Nw==',
-];
+/**
+ * Turtle Graphics Language Specification:
+ *
+ * The turtle graphics system compresses complex maze layouts into compact strings.
+ * Each command is encoded in a single byte:
+ *
+ * Byte format: [high 3 bits: opcode] [low 5 bits: argument]
+ *
+ * Opcodes:
+ *   0 (000): CREATE_POLYGON - Create polygon with 'arg' vertices, followed by coordinate bytes
+ *   1 (001): GOTO - Move turtle without creating polygon (used for starting new areas)
+ *   2 (010): SPAWN_POINT - Mark spawn point for enemies/items (arg = type)
+ *   3 (011): OBJECT - Place object (arg = object type), followed by 2 bytes for position offset
+ *   4 (100): SET_FLOOR - Adjust floor height: floor += 2 * (arg - 15)
+ *   5 (101): SET_CEILING - Adjust ceiling height: ceiling += 4 * (arg - 15)
+ *   6 (110): BACKTRACK - Pop 'arg' positions from turtle stack
+ *   7 (111): RESERVED
+ *
+ * Coordinate bytes (following CREATE_POLYGON/GOTO):
+ *   High 4 bits: X delta = (value - 7) * 8
+ *   Low 4 bits: Y delta = (value - 7) * 8
+ *
+ * This allows positions ranging from -56 to +64 units in each axis per step.
+ */
+
+// Level data encoded in turtle graphics format
+const LEVEL_DATA: string[] = [];
+
+// ============================================================================
+// Turtle Graphics Primitives for Level Building
+// ============================================================================
+
+/**
+ * TurtleBuilder - Programmatic level construction using turtle graphics
+ * This allows building complex maze levels with varying heights
+ */
+export class TurtleBuilder {
+  private commands: number[] = [];
+  private floor: number = 4;
+  private ceiling: number = 40;
+
+  /**
+   * Encode a coordinate delta into a single byte
+   * IMPORTANT: Valid range is -56 to +56 units only!
+   * Values outside this range will overflow and decode incorrectly.
+   * (Each axis uses 4 bits: 0-14 map to -56 to +56 via (n-7)*8)
+   */
+  private encodeCoord(dx: number, dy: number): number {
+    const nx = Math.round(dx / 8) + 7;
+    const ny = Math.round(dy / 8) + 7;
+    return ((nx & 0xF) << 4) | (ny & 0xF);
+  }
+
+  /**
+   * Create a polygon from relative coordinate offsets
+   * @param offsets Array of [dx, dy] pairs relative to previous point
+   */
+  polygon(offsets: [number, number][]): this {
+    // Opcode 0 (CREATE_POLYGON) with vertex count
+    this.commands.push((0 << 5) | (offsets.length & 31));
+    for (const [dx, dy] of offsets) {
+      this.commands.push(this.encodeCoord(dx, dy));
+    }
+    return this;
+  }
+
+  /**
+   * Move turtle without creating polygon
+   */
+  goto(offsets: [number, number][]): this {
+    this.commands.push((1 << 5) | (offsets.length & 31));
+    for (const [dx, dy] of offsets) {
+      this.commands.push(this.encodeCoord(dx, dy));
+    }
+    return this;
+  }
+
+  /**
+   * Set floor height (absolute)
+   */
+  setFloor(height: number): this {
+    const delta = Math.round((height - this.floor) / 2);
+    const arg = Math.max(0, Math.min(30, delta + 15));
+    this.floor = this.floor + 2 * (arg - 15);
+    this.commands.push((4 << 5) | arg);
+    return this;
+  }
+
+  /**
+   * Set ceiling height (absolute)
+   */
+  setCeiling(height: number): this {
+    const delta = Math.round((height - this.ceiling) / 4);
+    const arg = Math.max(0, Math.min(30, delta + 15));
+    this.ceiling = this.ceiling + 4 * (arg - 15);
+    this.commands.push((5 << 5) | arg);
+    return this;
+  }
+
+  /**
+   * Backtrack turtle position
+   */
+  backtrack(count: number = 1): this {
+    this.commands.push((6 << 5) | (count & 31));
+    return this;
+  }
+
+  /**
+   * Build and return the command buffer
+   */
+  build(): number[] {
+    return [...this.commands];
+  }
+
+  /**
+   * Encode to base64 string (for compact storage)
+   */
+  encode(): string {
+    return btoa(String.fromCharCode(...this.commands));
+  }
+}
+
+// ============================================================================
+// Predefined Levels
+// ============================================================================
+
+/**
+ * Level 1: Training Ground
+ * Simple cross-shaped layout with interconnected rooms
+ *
+ * Regions must share EXACT edges at connection points for wall generation to detect portals.
+ * Each rectangle is [x1, y1, x2, y2, floor, ceil].
+ */
+function buildLevel1Regions(): MapPolygon[] {
+  // Define rooms as [x1, y1, x2, y2, floorHeight, ceilHeight]
+  // Connections are made by sharing exact edge coordinates
+  const rooms: [number, number, number, number, number, number][] = [
+    // Central room - hub with 4 doorways
+    [0, 0, 80, 80, 0, 50],
+
+    // North corridor - connects at y=80, x=24 to x=56
+    [24, 80, 56, 120, 0, 40],
+    // North room
+    [8, 120, 72, 180, 8, 48],
+
+    // East corridor - connects at x=80, y=24 to y=56
+    [80, 24, 120, 56, 0, 40],
+    // East room (sunken)
+    [120, 8, 180, 72, -8, 35],
+
+    // West corridor - connects at x=0, y=24 to y=56
+    [-40, 24, 0, 56, 0, 45],
+    // West room (tall)
+    [-100, 8, -40, 72, 0, 56],
+
+    // South corridor - connects at y=0, x=24 to x=56
+    [24, -40, 56, 0, 0, 40],
+    // South room
+    [8, -100, 72, -40, 4, 44],
+  ];
+
+  return rooms.map(([x1, y1, x2, y2, floor, ceil]) => {
+    const vertices = [
+      new Vector3(x1, y1, 0),
+      new Vector3(x2, y1, 0),
+      new Vector3(x2, y2, 0),
+      new Vector3(x1, y2, 0),
+      new Vector3(x1, y1, 0),  // Close the polygon
+    ];
+    return createMapPolygon(vertices, floor, ceil);
+  });
+}
+
+// Wrapper to match expected interface (returns empty turtle commands)
+function buildLevel1(): number[] {
+  return [];  // Level uses buildLevel1Regions() directly
+}
+
+/**
+ * Level 2: The Maze
+ * Complex interconnected corridors with varying heights
+ * Note: Coordinate deltas must be in range [-56, +56] due to encoding limits
+ */
+function buildLevel2(): number[] {
+  const t = new TurtleBuilder();
+
+  // Entry hall
+  t.setFloor(0).setCeiling(35);
+  t.polygon([[40, 0], [0, 56], [-40, 0], [0, -56]]);
+
+  // Split into two paths
+  // Path A (left) - descending
+  t.backtrack(2);
+  t.setFloor(-4).setCeiling(30);
+  t.polygon([[-48, 0], [0, 30], [48, 0], [0, -30]]);
+
+  t.backtrack(2);
+  t.setFloor(-8).setCeiling(28);
+  t.polygon([[-40, 0], [0, 40], [40, 0], [0, -40]]);
+
+  // Lower corridor
+  t.backtrack(2);
+  t.setFloor(-12).setCeiling(24);
+  t.polygon([[-56, 0], [0, 24], [56, 0], [0, -24]]);
+
+  // Underground chamber
+  t.backtrack(2);
+  t.setFloor(-16).setCeiling(30);
+  t.polygon([[-48, 0], [0, 48], [48, 0], [0, -48]]);
+
+  // Return to entry, go right
+  t.backtrack(10);
+  t.goto([[40, 0]]);
+
+  // Path B (right) - ascending
+  t.setFloor(4).setCeiling(38);
+  t.polygon([[48, 0], [0, 30], [-48, 0], [0, -30]]);
+
+  t.backtrack(2);
+  t.setFloor(8).setCeiling(42);
+  t.polygon([[40, 0], [0, 40], [-40, 0], [0, -40]]);
+
+  // Upper corridor
+  t.backtrack(2);
+  t.setFloor(12).setCeiling(46);
+  t.polygon([[56, 0], [0, 24], [-56, 0], [0, -24]]);
+
+  // High chamber
+  t.backtrack(2);
+  t.setFloor(16).setCeiling(55);
+  t.polygon([[48, 0], [0, 48], [-48, 0], [0, -48]]);
+
+  // Connect high and low chambers with a long corridor
+  t.backtrack(2);
+  t.setFloor(8).setCeiling(40);
+  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
+
+  t.backtrack(2);
+  t.setFloor(0).setCeiling(35);
+  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
+
+  t.backtrack(2);
+  t.setFloor(-8).setCeiling(30);
+  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
+
+  return t.build();
+}
+
+/**
+ * Level 3: The Fortress
+ * Large arena with multiple height tiers and defensive positions
+ * Note: Coordinate deltas must be in range [-56, +56] due to encoding limits
+ */
+function buildLevel3(): number[] {
+  const t = new TurtleBuilder();
+
+  // Central arena (ground level) - use max size 56
+  t.setFloor(0).setCeiling(56);
+  t.polygon([[56, 0], [0, 56], [-56, 0], [0, -56]]);
+
+  // North raised platform
+  t.backtrack(2);
+  t.setFloor(12).setCeiling(55);
+  t.polygon([[56, 0], [0, 40], [-56, 0], [0, -40]]);
+
+  // Sniper tower (very high)
+  t.backtrack(2);
+  t.setFloor(24).setCeiling(56);
+  t.polygon([[24, 0], [0, 24], [-24, 0], [0, -24]]);
+
+  // Return to arena, go East
+  t.backtrack(6);
+  t.goto([[56, 0]]);
+
+  // East corridor
+  t.setFloor(0).setCeiling(40);
+  t.polygon([[30, 0], [0, 56], [-30, 0], [0, -56]]);
+
+  // East bunker (sunken)
+  t.backtrack(2);
+  t.setFloor(-8).setCeiling(30);
+  t.polygon([[48, 0], [0, 48], [-48, 0], [0, -48]]);
+
+  // Return to arena, go South
+  t.backtrack(6);
+  t.goto([[0, -56]]);
+
+  // South entrance hall
+  t.setFloor(0).setCeiling(45);
+  t.polygon([[48, 0], [0, -48], [-48, 0], [0, 48]]);
+
+  // South guard rooms (flanking)
+  t.backtrack(2);
+  t.setFloor(4).setCeiling(35);
+  t.polygon([[30, 0], [0, -30], [-30, 0], [0, 30]]);
+
+  t.backtrack(4);
+  t.goto([[-48, 0]]);
+  t.setFloor(4).setCeiling(35);
+  t.polygon([[-30, 0], [0, -30], [30, 0], [0, 30]]);
+
+  // Return to arena, go West
+  t.backtrack(6);
+  t.goto([[-56, 0]]);
+
+  // West wing
+  t.setFloor(0).setCeiling(50);
+  t.polygon([[-40, 0], [0, 56], [40, 0], [0, -56]]);
+
+  // West storage (low ceiling)
+  t.backtrack(2);
+  t.setFloor(0).setCeiling(25);
+  t.polygon([[-48, 0], [0, 40], [48, 0], [0, -40]]);
+
+  return t.build();
+}
+
+/**
+ * Level 4: The Labyrinth
+ * Tight winding corridors with many turns
+ */
+function buildLevel4(): number[] {
+  const t = new TurtleBuilder();
+
+  // Start room
+  t.setFloor(0).setCeiling(35);
+  t.polygon([[35, 0], [0, 35], [-35, 0], [0, -35]]);
+
+  // Winding corridor 1
+  t.backtrack(2);
+  t.polygon([[20, 0], [0, 50], [-20, 0], [0, -50]]);
+  t.backtrack(2);
+  t.polygon([[50, 0], [0, 20], [-50, 0], [0, -20]]);
+  t.backtrack(2);
+  t.polygon([[20, 0], [0, 50], [-20, 0], [0, -50]]);
+
+  // Junction room
+  t.backtrack(2);
+  t.setFloor(4).setCeiling(40);
+  t.polygon([[40, 0], [0, 40], [-40, 0], [0, -40]]);
+
+  // Branch East
+  t.backtrack(2);
+  t.setFloor(4).setCeiling(32);
+  t.polygon([[50, 0], [0, 20], [-50, 0], [0, -20]]);
+  t.backtrack(2);
+  t.polygon([[20, 0], [0, -40], [-20, 0], [0, 40]]);
+  t.backtrack(2);
+  t.setFloor(0).setCeiling(30);
+  t.polygon([[40, 0], [0, 40], [-40, 0], [0, -40]]);
+
+  // Return to junction, go West
+  t.backtrack(8);
+  t.goto([[-40, 0]]);
+  t.setFloor(4).setCeiling(32);
+  t.polygon([[-50, 0], [0, 20], [50, 0], [0, -20]]);
+  t.backtrack(2);
+  t.polygon([[-20, 0], [0, 40], [20, 0], [0, -40]]);
+  t.backtrack(2);
+  t.setFloor(8).setCeiling(38);
+  t.polygon([[-40, 0], [0, 40], [40, 0], [0, -40]]);
+
+  // Secret chamber (very low ceiling)
+  t.backtrack(2);
+  t.setFloor(8).setCeiling(22);
+  t.polygon([[-30, 0], [0, -30], [30, 0], [0, 30]]);
+
+  return t.build();
+}
+
+/**
+ * Level 5: The Pit
+ * Vertical level with many height changes
+ * Note: Coordinate deltas must be in range [-56, +56] due to encoding limits
+ */
+function buildLevel5(): number[] {
+  const t = new TurtleBuilder();
+
+  // Top platform (starting point)
+  t.setFloor(30).setCeiling(56);
+  t.polygon([[48, 0], [0, 48], [-48, 0], [0, -48]]);
+
+  // Stairs down - step 1
+  t.backtrack(2);
+  t.setFloor(24).setCeiling(56);
+  t.polygon([[30, 0], [0, 30], [-30, 0], [0, -30]]);
+
+  // Step 2
+  t.backtrack(2);
+  t.setFloor(18).setCeiling(55);
+  t.polygon([[30, 0], [0, 30], [-30, 0], [0, -30]]);
+
+  // Step 3
+  t.backtrack(2);
+  t.setFloor(12).setCeiling(50);
+  t.polygon([[30, 0], [0, 30], [-30, 0], [0, -30]]);
+
+  // Step 4
+  t.backtrack(2);
+  t.setFloor(6).setCeiling(45);
+  t.polygon([[30, 0], [0, 30], [-30, 0], [0, -30]]);
+
+  // Bottom of the pit
+  t.backtrack(2);
+  t.setFloor(-10).setCeiling(56);
+  t.polygon([[56, 0], [0, 56], [-56, 0], [0, -56]]);
+
+  // Alcoves around the pit
+  t.backtrack(2);
+  t.setFloor(-10).setCeiling(30);
+  t.polygon([[40, 0], [0, 20], [-40, 0], [0, -20]]);
+
+  t.backtrack(4);
+  t.goto([[0, 56]]);
+  t.setFloor(-10).setCeiling(30);
+  t.polygon([[20, 0], [0, 40], [-20, 0], [0, -40]]);
+
+  t.backtrack(4);
+  t.goto([[-56, 0]]);
+  t.setFloor(-10).setCeiling(30);
+  t.polygon([[-40, 0], [0, 20], [40, 0], [0, -20]]);
+
+  return t.build();
+}
 
 function uncompress(b64: string): number[] {
   const binary = atob(b64);
@@ -121,71 +541,284 @@ export class WallSegment {
 export type Wall = WallSegment;
 
 // ============================================================================
+// Level Metadata
+// ============================================================================
+
+export interface LevelInfo {
+  name: string;
+  description: string;
+  startPosition: Vector3;
+  enemySpawnPoints: { walking: Vector3[]; flying: Vector3[] };
+}
+
+/**
+ * Level registry with metadata and builder functions
+ */
+const LEVEL_BUILDERS: Array<{
+  info: LevelInfo;
+  build: () => number[];
+}> = [
+  {
+    info: {
+      name: 'Training Ground',
+      description: 'A simple arena to learn the controls',
+      startPosition: new Vector3(40, 40, 10),
+      enemySpawnPoints: {
+        walking: [
+          new Vector3(40, 150, 16),  // North room (floor=8)
+          new Vector3(150, 40, 0),   // East room (floor=-8)
+          new Vector3(-70, 40, 8),   // West room (floor=0)
+        ],
+        flying: [
+          new Vector3(40, -70, 25),  // South room (floor=4)
+          new Vector3(60, 60, 20),   // Central room
+        ],
+      },
+    },
+    build: buildLevel1,
+  },
+  {
+    info: {
+      name: 'The Maze',
+      description: 'Winding corridors with height variation',
+      startPosition: new Vector3(20, 20, 10),
+      enemySpawnPoints: {
+        walking: [
+          new Vector3(-80, 50, -6),
+          new Vector3(80, 60, 24),
+          new Vector3(0, -80, -6),
+        ],
+        flying: [
+          new Vector3(-60, 80, 15),
+          new Vector3(80, 40, 30),
+          new Vector3(0, -60, 20),
+        ],
+      },
+    },
+    build: buildLevel2,
+  },
+  {
+    info: {
+      name: 'The Fortress',
+      description: 'A large arena with defensive positions',
+      startPosition: new Vector3(20, -50, 10),
+      enemySpawnPoints: {
+        walking: [
+          new Vector3(20, 20, 8),
+          new Vector3(80, 20, 0),
+          new Vector3(-80, 20, 8),
+          new Vector3(20, 60, 20),
+        ],
+        flying: [
+          new Vector3(20, 40, 35),
+          new Vector3(-60, 20, 30),
+          new Vector3(60, -40, 25),
+        ],
+      },
+    },
+    build: buildLevel3,
+  },
+  {
+    info: {
+      name: 'The Labyrinth',
+      description: 'Tight corridors and hidden chambers',
+      startPosition: new Vector3(15, 15, 10),
+      enemySpawnPoints: {
+        walking: [
+          new Vector3(20, 100, 12),
+          new Vector3(100, 100, 8),
+          new Vector3(-100, 100, 16),
+        ],
+        flying: [
+          new Vector3(70, 70, 20),
+          new Vector3(-70, 60, 25),
+        ],
+      },
+    },
+    build: buildLevel4,
+  },
+  {
+    info: {
+      name: 'The Pit',
+      description: 'Descend into the depths',
+      startPosition: new Vector3(20, 20, 40),
+      enemySpawnPoints: {
+        walking: [
+          new Vector3(20, 60, -2),
+          new Vector3(50, 20, -2),
+          new Vector3(-50, 20, -2),
+        ],
+        flying: [
+          new Vector3(20, 20, 40),
+          new Vector3(40, 40, 25),
+          new Vector3(-30, -30, 30),
+        ],
+      },
+    },
+    build: buildLevel5,
+  },
+];
+
+/**
+ * Get total number of available levels
+ */
+export function getLevelCount(): number {
+  return LEVEL_BUILDERS.length;
+}
+
+/**
+ * Get level info by index
+ */
+export function getLevelInfo(levelIndex: number): LevelInfo | null {
+  const level = LEVEL_BUILDERS[levelIndex];
+  return level ? level.info : null;
+}
+
+/**
+ * Get all level infos
+ */
+export function getAllLevelInfos(): LevelInfo[] {
+  return LEVEL_BUILDERS.map((l) => l.info);
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Subtract a range from a list of ranges.
+ * E.g., [[0, 100]] - [20, 40] = [[0, 20], [40, 100]]
+ */
+function subtractRange(segments: [number, number][], removeStart: number, removeEnd: number): [number, number][] {
+  const result: [number, number][] = [];
+  for (const [start, end] of segments) {
+    if (removeEnd <= start || removeStart >= end) {
+      // No overlap, keep segment as-is
+      result.push([start, end]);
+    } else {
+      // Overlap - split into up to two segments
+      if (start < removeStart) {
+        result.push([start, removeStart]);
+      }
+      if (removeEnd < end) {
+        result.push([removeEnd, end]);
+      }
+    }
+  }
+  return result;
+}
+
+// ============================================================================
 // Game Map Class
 // ============================================================================
 
 export class GameMap implements IGameMap {
   regions: MapPolygon[] = [];
   walls: WallSegment[] = [];
+  currentLevel: number = 0;
+  levelInfo: LevelInfo | null = null;
 
-  constructor() {
-    this.loadLevel(0);
+  constructor(levelIndex: number = 0) {
+    this.loadLevel(levelIndex);
   }
 
   loadLevel(levelIndex: number): void {
-    const levelData = LEVEL_DATA[levelIndex] || LEVEL_DATA[0];
-    this.regions = runTurtle(uncompress(levelData));
+    const levelBuilder = LEVEL_BUILDERS[levelIndex % LEVEL_BUILDERS.length];
+    this.currentLevel = levelIndex % LEVEL_BUILDERS.length;
+    this.levelInfo = levelBuilder.info;
 
-    // Build walls directly from region line segments
-    // Each line segment becomes a wall - simpler and more correct
+    // Build level - level 1 uses direct region definition, others use turtle commands
+    if (this.currentLevel === 0) {
+      this.regions = buildLevel1Regions();
+    } else {
+      this.regions = runTurtle(levelBuilder.build());
+    }
+
+    // Build walls from region edges, detecting portals (shared/overlapping edges)
     this.walls = [];
 
-    // Track which edges are shared between regions (portals - no wall needed for same heights)
-    const edgeCounts = new Map<string, { count: number; heights: number[][] }>();
+    // Collect all edges with their heights
+    interface Edge {
+      p1: Vector3;
+      p2: Vector3;
+      floor: number;
+      ceil: number;
+      isHorizontal: boolean;
+      isVertical: boolean;
+    }
+    const edges: Edge[] = [];
 
     for (const region of this.regions) {
       for (const [p1, p2] of region.lines) {
-        // Create canonical key
+        // Normalize edge direction (smaller coord first)
         const pt1 = p1.x < p2.x || (p1.x === p2.x && p1.y < p2.y) ? p1 : p2;
         const pt2 = p1.x < p2.x || (p1.x === p2.x && p1.y < p2.y) ? p2 : p1;
-        const key = `${pt1.x},${pt1.y},${pt2.x},${pt2.y}`;
-
-        const existing = edgeCounts.get(key) || { count: 0, heights: [] };
-        existing.count++;
-        existing.heights.push([region.floorHeight, region.ceilHeight]);
-        edgeCounts.set(key, existing);
+        edges.push({
+          p1: pt1,
+          p2: pt2,
+          floor: region.floorHeight,
+          ceil: region.ceilHeight,
+          isHorizontal: pt1.y === pt2.y,
+          isVertical: pt1.x === pt2.x,
+        });
       }
     }
 
-    // Create walls
-    for (const [key, data] of edgeCounts) {
-      const [x1, y1, x2, y2] = key.split(',').map(Number);
-      const p1 = new Vector3(x1, y1, 0);
-      const p2 = new Vector3(x2, y2, 0);
+    // For each edge, find overlapping edges and create walls only for non-overlapping portions
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      let segments: [number, number][] = [];  // Ranges along the edge that need walls
 
-      // For single-sided edges, create a full wall
-      // For double-sided edges, only create wall if heights differ
-      if (data.count === 1) {
-        // Boundary wall - always create
-        const h = data.heights[0];
-        this.walls.push(new WallSegment(p1, p2, h[0], h[1] - h[0]));
-      } else if (data.count === 2) {
-        // Portal - only wall if floor/ceiling heights differ
-        const h1 = data.heights[0];
-        const h2 = data.heights[1];
-
-        // Lower wall (step up)
-        if (h1[0] !== h2[0]) {
-          const lowerFloor = Math.min(h1[0], h2[0]);
-          const upperFloor = Math.max(h1[0], h2[0]);
-          this.walls.push(new WallSegment(p1, p2, lowerFloor, upperFloor - lowerFloor));
+      if (edge.isHorizontal) {
+        segments = [[edge.p1.x, edge.p2.x]];
+        // Find overlapping horizontal edges at same Y
+        for (let j = 0; j < edges.length; j++) {
+          if (i === j) continue;
+          const other = edges[j];
+          if (!other.isHorizontal || other.p1.y !== edge.p1.y) continue;
+          // Check for overlap
+          const overlapStart = Math.max(edge.p1.x, other.p1.x);
+          const overlapEnd = Math.min(edge.p2.x, other.p2.x);
+          if (overlapStart < overlapEnd) {
+            // Remove overlapping portion from segments
+            segments = subtractRange(segments, overlapStart, overlapEnd);
+          }
         }
-
-        // Upper wall (ceiling difference)
-        if (h1[1] !== h2[1]) {
-          const lowerCeil = Math.min(h1[1], h2[1]);
-          const upperCeil = Math.max(h1[1], h2[1]);
-          this.walls.push(new WallSegment(p1, p2, lowerCeil, upperCeil - lowerCeil));
+        // Create walls for remaining segments
+        for (const [start, end] of segments) {
+          if (end > start) {
+            this.walls.push(new WallSegment(
+              new Vector3(start, edge.p1.y, 0),
+              new Vector3(end, edge.p1.y, 0),
+              edge.floor,
+              edge.ceil - edge.floor
+            ));
+          }
+        }
+      } else if (edge.isVertical) {
+        segments = [[edge.p1.y, edge.p2.y]];
+        // Find overlapping vertical edges at same X
+        for (let j = 0; j < edges.length; j++) {
+          if (i === j) continue;
+          const other = edges[j];
+          if (!other.isVertical || other.p1.x !== edge.p1.x) continue;
+          // Check for overlap
+          const overlapStart = Math.max(edge.p1.y, other.p1.y);
+          const overlapEnd = Math.min(edge.p2.y, other.p2.y);
+          if (overlapStart < overlapEnd) {
+            segments = subtractRange(segments, overlapStart, overlapEnd);
+          }
+        }
+        // Create walls for remaining segments
+        for (const [start, end] of segments) {
+          if (end > start) {
+            this.walls.push(new WallSegment(
+              new Vector3(edge.p1.x, start, 0),
+              new Vector3(edge.p1.x, end, 0),
+              edge.floor,
+              edge.ceil - edge.floor
+            ));
+          }
         }
       }
     }

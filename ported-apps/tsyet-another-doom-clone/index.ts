@@ -46,7 +46,18 @@ export { clamp, urandom, urandomVector, rotateXY, rotateXZ, rotateYZ };
 
 // Re-export from extracted modules
 export { Player } from './player';
-export { GameMap, MapPolygon, WallSegment, Wall, runTurtle } from './game-map';
+export {
+  GameMap,
+  MapPolygon,
+  WallSegment,
+  Wall,
+  runTurtle,
+  TurtleBuilder,
+  LevelInfo,
+  getLevelCount,
+  getLevelInfo,
+  getAllLevelInfos,
+} from './game-map';
 export { RaycastRenderer, RaycastHit } from './renderer';
 export { Enemy, EnemyState, EnemyType, IGameMap } from './enemy';
 export { WalkingEnemy } from './walking-enemy';
@@ -57,7 +68,7 @@ export { HitParticle, LightFlash, createWallHitParticles, createEnemyHitParticle
 
 // Import for local use
 import { Player } from './player';
-import { GameMap } from './game-map';
+import { GameMap, getLevelCount, getLevelInfo, LevelInfo } from './game-map';
 import { RaycastRenderer } from './renderer';
 import { Enemy } from './enemy';
 import { WalkingEnemy } from './walking-enemy';
@@ -114,6 +125,134 @@ export function rayLineIntersect(
 export type GameState = 'playing' | 'paused' | 'gameover' | 'won';
 type ChangeListener = () => void;
 
+// ============================================================================
+// Screen Shake System
+// ============================================================================
+
+/**
+ * ScreenShake - handles screen shake effects when shooting
+ * Uses damped oscillation for natural-feeling shake
+ */
+export class ScreenShake {
+  private intensity: number = 0;
+  private decay: number = 0.9;       // How fast shake decays (0-1)
+  private frequency: number = 25;    // Oscillation frequency
+  private time: number = 0;
+
+  // Current offset values
+  offsetX: number = 0;
+  offsetY: number = 0;
+  rotation: number = 0;
+
+  /**
+   * Trigger a new shake
+   * @param intensity Initial shake intensity (pixels)
+   */
+  shake(intensity: number = 3): void {
+    // Add to existing intensity for continuous fire
+    this.intensity = Math.min(this.intensity + intensity, 10);
+  }
+
+  /**
+   * Update shake state
+   * @param dt Delta time in milliseconds
+   */
+  update(dt: number): void {
+    if (this.intensity < 0.01) {
+      this.intensity = 0;
+      this.offsetX = 0;
+      this.offsetY = 0;
+      this.rotation = 0;
+      return;
+    }
+
+    this.time += dt;
+
+    // Damped oscillation
+    const shake = this.intensity * Math.exp(-this.time * 0.005);
+
+    // Random direction per frame for chaotic feel
+    const angle = this.time * this.frequency * 0.001;
+    this.offsetX = Math.sin(angle * 1.1) * shake;
+    this.offsetY = Math.cos(angle * 1.3) * shake;
+    this.rotation = Math.sin(angle * 0.7) * shake * 0.003;
+
+    // Decay intensity
+    this.intensity *= Math.pow(this.decay, dt / 16);
+  }
+
+  /**
+   * Get current shake offsets
+   */
+  getOffsets(): { x: number; y: number; rotation: number } {
+    return { x: this.offsetX, y: this.offsetY, rotation: this.rotation };
+  }
+}
+
+// ============================================================================
+// Wall Collision Detection (8 Rays)
+// ============================================================================
+
+/**
+ * Check collision using 8 rays cast from player position
+ * Returns adjusted position that doesn't collide with walls
+ *
+ * @param position Current player position
+ * @param newPosition Desired new position
+ * @param map Game map with walls
+ * @param collisionRadius Minimum distance from walls
+ * @returns Adjusted position that maintains distance from walls
+ */
+export function checkWallCollision(
+  position: Vector3,
+  newPosition: Vector3,
+  map: GameMap,
+  collisionRadius: number = 4
+): Vector3 {
+  // First check if the desired position has valid floor
+  const desiredFloor = map.getFloorHeight(newPosition);
+  if (desiredFloor < -50) {
+    // Can't move there, stay in place
+    return position.clone();
+  }
+
+  // Cast 8 rays in all directions from the NEW position
+  const numRays = 8;
+  let adjustedPos = newPosition.clone();
+
+  // Check each direction for nearby walls
+  for (let i = 0; i < numRays; i++) {
+    const angle = (i / numRays) * Math.PI * 2;
+    const rayDir = new Vector3(Math.cos(angle), Math.sin(angle), 0);
+
+    // Check against all walls
+    for (const wall of map.walls) {
+      const hit = rayLineIntersect(
+        new Vector3(adjustedPos.x, adjustedPos.y, 0),
+        rayDir,
+        wall.p1,
+        wall.p2
+      );
+
+      // If ray hits a wall within collision radius, push back
+      if (hit && hit[0] > 0 && hit[0] < collisionRadius) {
+        // Calculate push-back direction (opposite of ray)
+        const pushBack = collisionRadius - hit[0];
+        const pushVec = rayDir.multiplyScalar(pushBack);
+        const testPos = adjustedPos.sub(pushVec);
+
+        // Only apply push-back if the result is still on valid floor
+        const testFloor = map.getFloorHeight(testPos);
+        if (testFloor > -50) {
+          adjustedPos = testPos;
+        }
+      }
+    }
+  }
+
+  return adjustedPos;
+}
+
 export class DoomGame {
   map: GameMap;
   player: Player;
@@ -123,10 +262,12 @@ export class DoomGame {
   lightFlashes: LightFlash[] = [];   // Impact light effects
   chaingun: Chaingun;            // 3D gun model
   renderer: RaycastRenderer;
+  screenShake: ScreenShake;      // Screen shake effect
 
   gameState: GameState = 'playing';
   score: number = 0;
   keysHeld: Set<string> = new Set();
+  currentLevel: number = 0;      // Current level index
 
   // Visual feedback
   shootFlashFrames: number = 0;  // Frames remaining for muzzle flash effect
@@ -135,42 +276,84 @@ export class DoomGame {
   private changeListeners: ChangeListener[] = [];
   private lastTime: number = 0;
 
-  constructor(width: number, height: number) {
-    this.map = new GameMap();
-    // Start player inside region 0, away from walls
-    this.player = new Player(new Vector3(20, -15, 10));
+  constructor(width: number, height: number, levelIndex: number = 0) {
+    this.currentLevel = levelIndex;
+    this.map = new GameMap(levelIndex);
+    this.screenShake = new ScreenShake();
+
+    // Start player at level-defined spawn point
+    const levelInfo = getLevelInfo(levelIndex);
+    const startPos = levelInfo?.startPosition || new Vector3(20, -15, 10);
+    this.player = new Player(startPos.clone());
+
     this.chaingun = new Chaingun();
     this.renderer = new RaycastRenderer(width, height);
 
-    // Spawn some enemies
+    // Spawn enemies based on level spawn points
     this.spawnEnemies();
   }
 
   private spawnEnemies(): void {
-    // Spawn walking enemies far from player start (20, -15)
-    const walkingSpawnPoints = [
-      new Vector3(120, 80, 10),
-      new Vector3(-80, 60, 10),
-      new Vector3(150, -80, 10),
-    ];
+    const levelInfo = getLevelInfo(this.currentLevel);
+    if (!levelInfo) return;
 
-    for (const pos of walkingSpawnPoints) {
-      const enemy = new WalkingEnemy(pos, Math.random() * Math.PI * 2);
+    // Spawn walking enemies from level spawn points
+    for (const pos of levelInfo.enemySpawnPoints.walking) {
+      const enemy = new WalkingEnemy(pos.clone(), Math.random() * Math.PI * 2);
       this.enemies.push(enemy);
     }
 
-    // Spawn flying enemies (higher up, different locations)
-    const flyingSpawnPoints = [
-      new Vector3(-60, -100, 25),
-      new Vector3(180, 40, 30),
-      new Vector3(100, -50, 20),
-      new Vector3(-40, 80, 25),
-    ];
-
-    for (const pos of flyingSpawnPoints) {
-      const enemy = new FlyingEnemy(pos, Math.random() * Math.PI * 2);
+    // Spawn flying enemies from level spawn points
+    for (const pos of levelInfo.enemySpawnPoints.flying) {
+      const enemy = new FlyingEnemy(pos.clone(), Math.random() * Math.PI * 2);
       this.enemies.push(enemy);
     }
+  }
+
+  /**
+   * Load a specific level
+   */
+  loadLevel(levelIndex: number): void {
+    this.currentLevel = levelIndex % getLevelCount();
+    this.map.loadLevel(this.currentLevel);
+
+    const levelInfo = getLevelInfo(this.currentLevel);
+    const startPos = levelInfo?.startPosition || new Vector3(20, -15, 10);
+    this.player = new Player(startPos.clone());
+
+    this.enemies = [];
+    this.bodyParts = [];
+    this.hitParticles = [];
+    this.lightFlashes = [];
+    this.chaingun = new Chaingun();
+    this.gameState = 'playing';
+    this.score = 0;
+    this.keysHeld.clear();
+    this.playerMoving = false;
+
+    this.spawnEnemies();
+    this.notifyChange();
+  }
+
+  /**
+   * Advance to next level
+   */
+  nextLevel(): void {
+    this.loadLevel(this.currentLevel + 1);
+  }
+
+  /**
+   * Get current level info
+   */
+  getLevelInfo(): LevelInfo | null {
+    return getLevelInfo(this.currentLevel);
+  }
+
+  /**
+   * Get total number of levels
+   */
+  getTotalLevels(): number {
+    return getLevelCount();
   }
 
   resize(width: number, height: number): void {
@@ -196,6 +379,9 @@ export class DoomGame {
 
     // Update camera bob (smooth start/stop transitions)
     this.player.updateBob(dt, this.playerMoving);
+
+    // Update screen shake
+    this.screenShake.update(dt);
 
     // Update chaingun (bob, recoil, spin)
     this.chaingun.update(dt, this.playerMoving, false);
@@ -245,7 +431,12 @@ export class DoomGame {
   }
 
   private handleInput(dt: number): void {
-    const moveSpeed = dt / 10;
+    // Check if player is holding fire button
+    const isShooting = this.keysHeld.has(' ') || this.keysHeld.has('Space');
+
+    // Movement slowdown while shooting (50% speed reduction)
+    const shootingSlowdown = isShooting ? 0.5 : 1.0;
+    const moveSpeed = (dt / 10) * shootingSlowdown;
     const turnSpeed = dt / 300;
 
     // Rotation - Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
@@ -278,12 +469,24 @@ export class DoomGame {
     if (moveDir.lengthSquared() > 0) {
       this.playerMoving = true;
       moveDir = moveDir.normalize().multiplyScalar(moveSpeed);
-      const nextPos = this.player.position.add(moveDir);
+      const desiredPos = this.player.position.add(moveDir);
 
-      // Simple collision check - stay on floor
-      const floorHeight = this.map.getFloorHeight(nextPos);
+      // DEBUG: Log movement attempt
+      const beforePos = this.player.position.clone();
+
+      // Apply 8-ray wall collision detection
+      const adjustedPos = checkWallCollision(
+        this.player.position,
+        desiredPos,
+        this.map,
+        5  // Collision radius
+      );
+
+      // Check floor height at adjusted position
+      const floorHeight = this.map.getFloorHeight(adjustedPos);
+
       if (floorHeight > -50) {
-        this.player.position = nextPos;
+        this.player.position = adjustedPos;
         this.player.position.z = floorHeight + this.player.height;
       }
     } else {
@@ -292,7 +495,7 @@ export class DoomGame {
 
     // Shooting - space key sends "Space", but TypedRune sends ' '
     // Our normalizer doesn't lowercase "Space" (multi-char), but ' ' stays as ' '
-    if (this.keysHeld.has(' ') || this.keysHeld.has('Space')) {
+    if (isShooting) {
       this.shoot();
       this.keysHeld.delete(' ');
       this.keysHeld.delete('Space');
@@ -302,6 +505,9 @@ export class DoomGame {
   private shoot(): void {
     // Trigger muzzle flash visual feedback
     this.shootFlashFrames = 3;
+
+    // Trigger screen shake
+    this.screenShake.shake(4);
 
     // Trigger chaingun recoil and spin
     this.chaingun.update(0, this.playerMoving, true);
@@ -422,11 +628,47 @@ export class DoomGame {
       this.lightFlashes
     );
 
+    const w = this.renderer.width;
+    const h = this.renderer.height;
+
+    // Apply screen shake effect (shift entire image)
+    const shake = this.screenShake.getOffsets();
+    if (Math.abs(shake.x) > 0.1 || Math.abs(shake.y) > 0.1) {
+      // Create a copy of the buffer to read from
+      const original = new Uint8Array(buffer);
+
+      // Apply shake by shifting pixels
+      const shakeX = Math.round(shake.x);
+      const shakeY = Math.round(shake.y);
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          // Source pixel (with shake offset applied)
+          const srcX = x - shakeX;
+          const srcY = y - shakeY;
+
+          const dstIdx = (y * w + x) * 4;
+
+          if (srcX >= 0 && srcX < w && srcY >= 0 && srcY < h) {
+            const srcIdx = (srcY * w + srcX) * 4;
+            buffer[dstIdx] = original[srcIdx];
+            buffer[dstIdx + 1] = original[srcIdx + 1];
+            buffer[dstIdx + 2] = original[srcIdx + 2];
+            buffer[dstIdx + 3] = original[srcIdx + 3];
+          } else {
+            // Fill edge gaps with dark color
+            buffer[dstIdx] = 10;
+            buffer[dstIdx + 1] = 10;
+            buffer[dstIdx + 2] = 15;
+            buffer[dstIdx + 3] = 255;
+          }
+        }
+      }
+    }
+
     // Apply muzzle flash effect (yellow tint on screen edges)
     if (this.shootFlashFrames > 0) {
       this.shootFlashFrames--;
-      const w = this.renderer.width;
-      const h = this.renderer.height;
 
       // Draw yellow flash bars on left and right edges
       for (let y = 0; y < h; y++) {
@@ -466,18 +708,8 @@ export class DoomGame {
   }
 
   reset(): void {
-    this.player = new Player(new Vector3(20, -15, 10));
-    this.enemies = [];
-    this.bodyParts = [];  // Clear death particles
-    this.hitParticles = [];  // Clear hit sparks
-    this.lightFlashes = [];  // Clear light flashes
-    this.chaingun = new Chaingun();  // Reset gun state
-    this.spawnEnemies();
-    this.gameState = 'playing';
-    this.score = 0;
-    this.keysHeld.clear();
-    this.playerMoving = false;
-    this.notifyChange();
+    // Reset to current level
+    this.loadLevel(this.currentLevel);
   }
 
   subscribe(listener: ChangeListener): () => void {
@@ -521,17 +753,21 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
   let scoreLabel: Label;
   let healthLabel: Label;
   let statusLabel: Label;
+  let levelLabel: Label;
   let gameLoop: NodeJS.Timeout | null = null;
 
-  a.window({ title: 'Yet Another Doom Clone', width: 450, height: 420 }, (win) => {
+  a.window({ title: 'Yet Another Doom Clone', width: 480, height: 460 }, (win) => {
     win.setContent(() => {
       a.border({
         top: () => {
           a.vbox(() => {
             a.label('Yet Another Doom Clone').withId('title');
             a.hbox(() => {
+              levelLabel = a.label('Level 1: Training Ground').withId('levelLabel');
+            });
+            a.hbox(() => {
               scoreLabel = a.label('Score: 0').withId('scoreLabel');
-              healthLabel = a.label('Health: 5').withId('healthLabel');
+              healthLabel = a.label('Health: 100').withId('healthLabel');
               statusLabel = a.label('Playing').withId('statusLabel');
             });
           });
@@ -571,6 +807,19 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
                 }
                 await canvas.requestFocus();
               }).withId('pauseBtn');
+              a.button('Prev Level').onClick(async () => {
+                const prevLevel = (game.currentLevel - 1 + game.getTotalLevels()) % game.getTotalLevels();
+                game.loadLevel(prevLevel);
+                startGameLoop();
+                updateUI();
+                await canvas.requestFocus();
+              }).withId('prevLevelBtn');
+              a.button('Next Level').onClick(async () => {
+                game.nextLevel();
+                startGameLoop();
+                updateUI();
+                await canvas.requestFocus();
+              }).withId('nextLevelBtn');
             });
           });
         },
@@ -599,6 +848,12 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
       scoreLabel.setText(`Score: ${game.getScore()}`);
       healthLabel.setText(`Health: ${game.getHealth()}`);
 
+      // Update level info
+      const levelInfo = game.getLevelInfo();
+      if (levelInfo) {
+        levelLabel.setText(`Level ${game.currentLevel + 1}: ${levelInfo.name}`);
+      }
+
       const state = game.getGameState();
       if (state === 'gameover') {
         statusLabel.setText('Game Over!');
@@ -607,7 +862,8 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
           gameLoop = null;
         }
       } else if (state === 'won') {
-        statusLabel.setText('You Win!');
+        const hasNextLevel = game.currentLevel + 1 < game.getTotalLevels();
+        statusLabel.setText(hasNextLevel ? 'Level Complete! Press Next Level' : 'All Levels Complete!');
         if (gameLoop) {
           clearInterval(gameLoop);
           gameLoop = null;
