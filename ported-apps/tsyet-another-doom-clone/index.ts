@@ -53,6 +53,7 @@ export { WalkingEnemy } from './walking-enemy';
 export { FlyingEnemy } from './flying-enemy';
 export { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
 export { Chaingun, ChaingunGeometry, CHAINGUN_GEOMETRY } from './chaingun';
+export { HitParticle, LightFlash, createWallHitParticles, createEnemyHitParticles } from './hit-particle';
 
 // Import for local use
 import { Player } from './player';
@@ -63,6 +64,7 @@ import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
 import { BodyPart, createWalkingEnemyBodyParts, createFlyingEnemyBodyParts } from './body-part';
 import { Chaingun } from './chaingun';
+import { HitParticle, LightFlash, createWallHitParticles, createEnemyHitParticles } from './hit-particle';
 
 // ============================================================================
 // Constants
@@ -116,8 +118,10 @@ export class DoomGame {
   map: GameMap;
   player: Player;
   enemies: Enemy[] = [];
-  bodyParts: BodyPart[] = [];  // Death explosion particles
-  chaingun: Chaingun;          // 3D gun model
+  bodyParts: BodyPart[] = [];    // Death explosion particles
+  hitParticles: HitParticle[] = [];  // Bullet impact sparks
+  lightFlashes: LightFlash[] = [];   // Impact light effects
+  chaingun: Chaingun;            // 3D gun model
   renderer: RaycastRenderer;
 
   gameState: GameState = 'playing';
@@ -205,6 +209,20 @@ export class DoomGame {
     // Remove dead body parts
     this.bodyParts = this.bodyParts.filter((p) => !p.dead);
 
+    // Update hit particles (bullet impact sparks)
+    for (const particle of this.hitParticles) {
+      particle.update(dt, this.map);
+    }
+    // Remove dead hit particles
+    this.hitParticles = this.hitParticles.filter((p) => !p.dead);
+
+    // Update light flashes
+    for (const flash of this.lightFlashes) {
+      flash.update(dt);
+    }
+    // Remove dead flashes
+    this.lightFlashes = this.lightFlashes.filter((f) => !f.dead);
+
     // Check player-enemy collision (damage)
     for (const enemy of this.enemies) {
       if (!enemy.dead && enemy.distanceTo(this.player) < 10) {
@@ -285,12 +303,13 @@ export class DoomGame {
     // Trigger chaingun recoil and spin
     this.chaingun.update(0, this.playerMoving, true);
 
-    // Simple hitscan - find enemy in crosshair
+    // Hitscan - check what the bullet hits
     const forward = this.player.getForwardVector();
     const pos = this.player.position;
 
+    // Find closest enemy in crosshair
     let closestEnemy: Enemy | null = null;
-    let closestDist = Infinity;
+    let closestEnemyDist = Infinity;
 
     for (const enemy of this.enemies) {
       if (enemy.dead) continue;
@@ -301,16 +320,57 @@ export class DoomGame {
       const dot = toEnemy.normalize().dot(forward);
 
       // Within ~15 degree cone
-      if (dot > 0.95 && dist < closestDist && dist < this.renderer.maxRenderDistance) {
+      if (dot > 0.95 && dist < closestEnemyDist && dist < this.renderer.maxRenderDistance) {
         closestEnemy = enemy;
-        closestDist = dist;
+        closestEnemyDist = dist;
       }
     }
 
-    if (closestEnemy) {
+    // Find closest wall hit
+    let closestWallDist = Infinity;
+    let wallHitPos: Vector3 | null = null;
+    let wallNormal: Vector3 | null = null;
+
+    for (const wall of this.map.walls) {
+      const hit = rayLineIntersect(
+        new Vector3(pos.x, pos.y, 0),
+        forward,
+        wall.p1,
+        wall.p2
+      );
+      if (hit && hit[0] > 0.1 && hit[0] < closestWallDist) {
+        closestWallDist = hit[0];
+        // Calculate hit position
+        wallHitPos = pos.add(forward.multiplyScalar(hit[0]));
+        wallHitPos.z = pos.z;  // Keep at eye level
+        // Calculate wall normal (perpendicular to wall)
+        const wallDir = wall.p2.sub(wall.p1).normalize();
+        wallNormal = new Vector3(-wallDir.y, wallDir.x, 0);
+        // Make sure normal points toward player
+        if (wallNormal.dot(forward) > 0) {
+          wallNormal = wallNormal.multiplyScalar(-1);
+        }
+      }
+    }
+
+    // Determine what we hit (enemy or wall, whichever is closer)
+    if (closestEnemy && closestEnemyDist < closestWallDist) {
+      // Hit enemy
       const wasDead = closestEnemy.dead;
       closestEnemy.takeDamage(3);
       this.score += closestEnemy.dead ? 100 : 10;
+
+      // Spawn hit particles at enemy position
+      const impactDir = forward.clone();
+      const particles = createEnemyHitParticles(closestEnemy.position, impactDir, 15);
+      this.hitParticles.push(...particles);
+
+      // Spawn light flash
+      this.lightFlashes.push(new LightFlash(
+        closestEnemy.position,
+        [255, 100, 50],  // Orange flash for enemy hit
+        40
+      ));
 
       // Spawn death explosion when enemy dies
       if (closestEnemy.dead && !wasDead) {
@@ -318,6 +378,17 @@ export class DoomGame {
       }
 
       this.notifyChange();
+    } else if (wallHitPos && wallNormal) {
+      // Hit wall - spawn sparks
+      const particles = createWallHitParticles(wallHitPos, wallNormal, 12);
+      this.hitParticles.push(...particles);
+
+      // Spawn light flash at wall
+      this.lightFlashes.push(new LightFlash(
+        wallHitPos,
+        [255, 200, 100],  // Yellow flash for wall hit
+        30
+      ));
     }
   }
 
@@ -337,7 +408,16 @@ export class DoomGame {
   }
 
   render(buffer: Uint8Array): void {
-    this.renderer.render(buffer, this.player, this.map, this.enemies, this.bodyParts, this.chaingun);
+    this.renderer.render(
+      buffer,
+      this.player,
+      this.map,
+      this.enemies,
+      this.bodyParts,
+      this.chaingun,
+      this.hitParticles,
+      this.lightFlashes
+    );
 
     // Apply muzzle flash effect (yellow tint on screen edges)
     if (this.shootFlashFrames > 0) {
@@ -386,6 +466,8 @@ export class DoomGame {
     this.player = new Player(new Vector3(20, -15, 10));
     this.enemies = [];
     this.bodyParts = [];  // Clear death particles
+    this.hitParticles = [];  // Clear hit sparks
+    this.lightFlashes = [];  // Clear light flashes
     this.chaingun = new Chaingun();  // Reset gun state
     this.spawnEnemies();
     this.gameState = 'playing';

@@ -12,6 +12,7 @@ import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
 import { BodyPart } from './body-part';
 import { Chaingun, CHAINGUN_GEOMETRY } from './chaingun';
+import { HitParticle, LightFlash } from './hit-particle';
 
 /** Project vector to XY plane (set z to 0) */
 function noz(v: Vector3): Vector3 {
@@ -228,7 +229,9 @@ export class RaycastRenderer {
     map: GameMap,
     enemies: Enemy[],
     bodyParts: BodyPart[] = [],
-    chaingun?: Chaingun
+    chaingun?: Chaingun,
+    hitParticles: HitParticle[] = [],
+    lightFlashes: LightFlash[] = []
   ): void {
     // Clear depth buffer
     this.depthBuffer.fill(Infinity);
@@ -368,6 +371,12 @@ export class RaycastRenderer {
 
     // Render body parts (death particles)
     this.renderBodyParts(buffer, player, bodyParts);
+
+    // Render hit particles (bullet impact sparks)
+    this.renderHitParticles(buffer, player, hitParticles);
+
+    // Apply light flash effects (brightens area around impact)
+    this.applyLightFlashes(buffer, player, lightFlashes);
 
     // Render chaingun (weapon model)
     if (chaingun) {
@@ -674,6 +683,202 @@ export class RaycastRenderer {
         shade,
         distance
       );
+    }
+  }
+
+  /**
+   * Render hit particles (bullet impact sparks)
+   * Similar to body parts but smaller, brighter, and with glow effect
+   */
+  renderHitParticles(
+    buffer: Uint8Array,
+    player: Player,
+    hitParticles: HitParticle[]
+  ): void {
+    if (hitParticles.length === 0) return;
+
+    // Sort by distance (far to near)
+    const sortedParticles = hitParticles
+      .filter((p) => !p.dead)
+      .map((p) => ({
+        particle: p,
+        distance: noz(p.position).distanceTo(noz(player.position)),
+      }))
+      .sort((a, b) => b.distance - a.distance);
+
+    for (const { particle, distance } of sortedParticles) {
+      if (distance < 2 || distance > this.maxRenderDistance) continue;
+
+      // Calculate sprite screen position
+      const spriteDir = particle.position.sub(player.position);
+      const spriteAngle = Math.atan2(spriteDir.y, spriteDir.x);
+      let angleDiff = spriteAngle - player.theta;
+
+      // Normalize angle
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      // Check if in view
+      if (Math.abs(angleDiff) > this.fov / 2 + 0.3) continue;
+
+      // Calculate screen X position
+      const screenX = Math.floor((0.5 - angleDiff / this.fov) * this.width);
+
+      // Calculate screen Y based on height difference
+      const eyeZ = player.position.z;
+      const heightDiff = particle.position.z - eyeZ;
+      const centerY = this.height / 2;
+      const scale = this.height * 1.5;
+      const screenY = centerY - (heightDiff * scale) / distance;
+
+      // Calculate particle size based on distance (smaller than body parts)
+      const particleScale = (this.height * particle.size * 1.5) / distance;
+
+      // Apply brightness (fades over time)
+      const brightness = particle.brightness;
+
+      // Draw glowing spark
+      this.drawGlowingParticle(
+        buffer,
+        screenX,
+        screenY,
+        particleScale,
+        particle.color,
+        brightness,
+        distance
+      );
+    }
+  }
+
+  /**
+   * Draw a glowing particle (spark effect)
+   */
+  drawGlowingParticle(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    size: number,
+    color: [number, number, number],
+    brightness: number,
+    distance: number
+  ): void {
+    // Draw with glow effect (larger radius, fading edges)
+    const glowRadius = size * 2;
+    const startX = Math.floor(cx - glowRadius);
+    const endX = Math.ceil(cx + glowRadius);
+    const startY = Math.floor(cy - glowRadius);
+    const endY = Math.ceil(cy + glowRadius);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      if (distance >= this.depthBuffer[x]) continue;
+
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= glowRadius) {
+          // Intensity falls off with distance from center
+          const intensity = Math.pow(1 - dist / glowRadius, 2) * brightness;
+
+          if (intensity > 0.05) {
+            const idx = (y * this.width + x) * 4;
+            // Additive blending for glow effect
+            buffer[idx] = Math.min(255, buffer[idx] + Math.floor(color[0] * intensity));
+            buffer[idx + 1] = Math.min(255, buffer[idx + 1] + Math.floor(color[1] * intensity));
+            buffer[idx + 2] = Math.min(255, buffer[idx + 2] + Math.floor(color[2] * intensity));
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Apply light flash effects to the scene
+   * Creates a bright spot around impact points
+   */
+  applyLightFlashes(
+    buffer: Uint8Array,
+    player: Player,
+    lightFlashes: LightFlash[]
+  ): void {
+    for (const flash of lightFlashes) {
+      if (flash.dead) continue;
+
+      // Calculate screen position of flash
+      const spriteDir = flash.position.sub(player.position);
+      const distance = noz(spriteDir).length();
+
+      if (distance < 2 || distance > this.maxRenderDistance) continue;
+
+      const spriteAngle = Math.atan2(spriteDir.y, spriteDir.x);
+      let angleDiff = spriteAngle - player.theta;
+
+      // Normalize angle
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      // Check if in view
+      if (Math.abs(angleDiff) > this.fov / 2 + 0.5) continue;
+
+      // Calculate screen position
+      const screenX = Math.floor((0.5 - angleDiff / this.fov) * this.width);
+      const eyeZ = player.position.z;
+      const heightDiff = flash.position.z - eyeZ;
+      const centerY = this.height / 2;
+      const scale = this.height * 1.5;
+      const screenY = centerY - (heightDiff * scale) / distance;
+
+      // Flash radius on screen (inversely proportional to distance)
+      const flashRadius = (flash.radius * this.height) / distance;
+
+      // Apply bright flash
+      this.applyFlashEffect(
+        buffer,
+        screenX,
+        screenY,
+        flashRadius,
+        flash.color,
+        flash.intensity
+      );
+    }
+  }
+
+  /**
+   * Apply a flash effect (bright glow) at screen position
+   */
+  applyFlashEffect(
+    buffer: Uint8Array,
+    cx: number,
+    cy: number,
+    radius: number,
+    color: [number, number, number],
+    intensity: number
+  ): void {
+    const startX = Math.floor(cx - radius);
+    const endX = Math.ceil(cx + radius);
+    const startY = Math.floor(cy - radius);
+    const endY = Math.ceil(cy + radius);
+
+    for (let x = Math.max(0, startX); x < Math.min(this.width, endX); x++) {
+      for (let y = Math.max(0, startY); y < Math.min(this.height, endY); y++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= radius) {
+          // Intensity falls off smoothly from center
+          const falloff = Math.pow(1 - dist / radius, 1.5) * intensity;
+
+          if (falloff > 0.02) {
+            const idx = (y * this.width + x) * 4;
+            // Additive blending
+            buffer[idx] = Math.min(255, buffer[idx] + Math.floor(color[0] * falloff * 0.5));
+            buffer[idx + 1] = Math.min(255, buffer[idx + 1] + Math.floor(color[1] * falloff * 0.5));
+            buffer[idx + 2] = Math.min(255, buffer[idx + 2] + Math.floor(color[2] * falloff * 0.5));
+          }
+        }
+      }
     }
   }
 
