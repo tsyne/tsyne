@@ -13,6 +13,8 @@ import {
   createRoom,
   createWall,
   createSprite,
+  BoxRenderer,
+  CylinderRenderer,
 } from '../../src/raycaster';
 import { Vector3 } from '../../src/math3d';
 
@@ -442,6 +444,309 @@ describe('Raycaster', () => {
       const depthBuffer = raycaster.getDepthBuffer();
       // Should be maxDistance when no walls hit
       expect(depthBuffer[160]).toBe(100);
+    });
+  });
+
+  describe('Materials', () => {
+    it('should render procedural material', () => {
+      const raycaster = new Raycaster(10, 10, { enableFog: false });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      // Create a wall with procedural material
+      // Material returns red if u < 0.5, blue if u >= 0.5
+      const wall: RaycasterWall = {
+        p1: new Vector3(10, -10, 0),
+        p2: new Vector3(10, 10, 0),
+        floorHeight: 0,
+        ceilingHeight: 10,
+        color: [0, 0, 0], // Fallback
+        material: {
+          type: 'procedural',
+          sample: (u, v) => u < 0.5 ? [255, 0, 0] : [0, 0, 255]
+        }
+      };
+
+      raycaster.render(buffer, camera, [wall]);
+
+      // Left part of screen (Angle < 0 -> y < 0 -> u < 0.5) should be Red
+      const leftPixelIndex = (5 * 10 + 0) * 4; // Row 5, Col 0
+      
+      expect(buffer[leftPixelIndex]).toBeGreaterThan(200); // Red
+      expect(buffer[leftPixelIndex + 2]).toBeLessThan(50); // Not Blue
+
+      // Right part of screen (Angle > 0 -> y > 0 -> u > 0.5) should be Blue
+      const rightPixelIndex = (5 * 10 + 9) * 4; // Row 5, Col 9
+      expect(buffer[rightPixelIndex + 2]).toBeGreaterThan(200); // Blue
+      expect(buffer[rightPixelIndex]).toBeLessThan(50); // Not Red
+    });
+
+    it('should render texture material', () => {
+      const raycaster = new Raycaster(10, 10, { enableFog: false });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      // Create a texture (2x2 checkboard)
+      // Top-Left: Red, Top-Right: Blue
+      // Bottom-Left: Green, Bottom-Right: Yellow
+      const textureData = new Uint8Array([
+        255, 0, 0, 255,   0, 0, 255, 255, // Row 0
+        0, 255, 0, 255,   255, 255, 0, 255  // Row 1
+      ]);
+      raycaster.addTexture(1, { width: 2, height: 2, data: textureData });
+
+      const wall: RaycasterWall = {
+        p1: new Vector3(10, -10, 0),
+        p2: new Vector3(10, 10, 0),
+        floorHeight: 0,
+        ceilingHeight: 10,
+        color: [0, 0, 0],
+        material: {
+          type: 'texture',
+          textureId: 1
+        }
+      };
+
+      raycaster.render(buffer, camera, [wall]);
+
+      // Check Top-Left pixel (Row 2, Col 2) -> Red
+      // u < 0.5, v < 0.5 -> Top-Left texture pixel
+      const tlIndex = (2 * 10 + 2) * 4;
+      expect(buffer[tlIndex]).toBeGreaterThan(200); // Red
+      expect(buffer[tlIndex+1]).toBeLessThan(50); // Not Green
+      expect(buffer[tlIndex+2]).toBeLessThan(50); // Not Blue
+
+      // Check Bottom-Right pixel (Row 8, Col 8) -> Yellow (Red+Green)
+      // u > 0.5, v > 0.5 -> Bottom-Right texture pixel
+      const brIndex = (8 * 10 + 8) * 4;
+      expect(buffer[brIndex]).toBeGreaterThan(200); // Red
+      expect(buffer[brIndex+1]).toBeGreaterThan(200); // Green
+      expect(buffer[brIndex+2]).toBeLessThan(50); // Not Blue
+    });
+
+    it('should render textured floor', () => {
+      // Create a checkerboard floor
+      const raycaster = new Raycaster(10, 10, {
+        enableFog: false,
+        floorMaterial: {
+          type: 'procedural',
+          sample: (u, v) => (Math.floor(u * 2) + Math.floor(v * 2)) % 2 === 0 ? [0, 255, 0] : [255, 255, 255]
+        }
+      });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0.25, 0.25, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      raycaster.render(buffer, camera, []);
+
+      // Bottom row (y=9) is floor
+      // At some pixel it should be green, at another it might be white
+      let foundGreen = false;
+      for (let x = 0; x < 10; x++) {
+        const idx = (9 * 10 + x) * 4;
+        if (buffer[idx+1] === 255 && buffer[idx] === 0) {
+          foundGreen = true;
+          break;
+        }
+      }
+      expect(foundGreen).toBe(true);
+    });
+
+    it('should render procedural sprite', () => {
+      const raycaster = new Raycaster(10, 10, { enableFog: false });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      const sprite: RaycasterSprite = {
+        position: new Vector3(10, 0, 0),
+        width: 10,
+        height: 10,
+        color: [0, 0, 0],
+        material: {
+          type: 'procedural',
+          sample: (u, v) => u < 0.5 ? [255, 0, 0] : [0, 0, 255]
+        }
+      };
+
+      raycaster.render(buffer, camera, [], [sprite]);
+
+      // Sprite should be at screen center
+      // Left half of sprite (u < 0.5) should be Red
+      const leftPixelIndex = (5 * 10 + 3) * 4;
+      expect(buffer[leftPixelIndex]).toBeGreaterThan(200); // Red
+      expect(buffer[leftPixelIndex + 2]).toBeLessThan(50); // Not Blue
+
+      // Right half of sprite (u > 0.5) should be Blue
+      const rightPixelIndex = (5 * 10 + 7) * 4;
+      expect(buffer[rightPixelIndex + 2]).toBeGreaterThan(200); // Blue
+      expect(buffer[rightPixelIndex]).toBeLessThan(50); // Not Red
+    });
+
+    it('should render BoxRenderer object', () => {
+      const raycaster = new Raycaster(10, 10, { enableFog: false });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      const box = new BoxRenderer(
+        new Vector3(10, 0, 5),
+        new Vector3(2, 2, 2),
+        [255, 0, 255]
+      );
+
+      raycaster.render(buffer, camera, [], [], [box]);
+
+      // Box should be at center
+      const midIdx = (5 * 10 + 5) * 4;
+      expect(buffer[midIdx]).toBe(255); // R
+      expect(buffer[midIdx + 1]).toBe(0); // G
+      expect(buffer[midIdx + 2]).toBe(255); // B
+    });
+
+    it('should render CylinderRenderer object', () => {
+      const raycaster = new Raycaster(10, 10, { enableFog: false });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      const cylinder = new CylinderRenderer(
+        new Vector3(10, 0, 5),
+        2, // radius
+        4, // height
+        [0, 255, 255]
+      );
+
+      raycaster.render(buffer, camera, [], [], [cylinder]);
+
+      // Cylinder should be at center
+      const midIdx = (5 * 10 + 5) * 4;
+      expect(buffer[midIdx]).toBe(0); // R
+      expect(buffer[midIdx + 1]).toBe(255); // G
+      expect(buffer[midIdx + 2]).toBe(255); // B
+    });
+  });
+
+  describe('Camera', () => {
+    it('should apply pitch (vertical look)', () => {
+      const raycaster = new Raycaster(10, 10, {
+        ceilingColor: [255, 0, 0],
+        floorColor: [0, 255, 0],
+      });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      
+      // Look up significantly
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+        pitch: 0.5,
+      };
+
+      raycaster.render(buffer, camera, []);
+
+      // With pitch 0.5, horizon should move down
+      // middle row (5) was horizon, now should be ceiling (red)
+      const midPixelIndex = (5 * 10 + 5) * 4;
+      expect(buffer[midPixelIndex]).toBe(255); // Red (Ceiling)
+      expect(buffer[midPixelIndex + 1]).toBe(0);
+    });
+
+    it('should apply roll (leaning)', () => {
+      const raycaster = new Raycaster(10, 10, {
+        ceilingColor: [255, 0, 0],
+        floorColor: [0, 255, 0],
+      });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      
+      // Roll to the right
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+        roll: 0.5,
+      };
+
+      raycaster.render(buffer, camera, []);
+
+      // On the left side (x=0), roll 0.5 means rollOffset = (0 - 5) * 0.5 = -2.5
+      // Horizon moves UP (horizonY = 5 - 2.5 = 2.5)
+      // Row 4 on Left should be Floor (Green)
+      const leftPixelIndex = (4 * 10 + 0) * 4;
+      expect(buffer[leftPixelIndex + 1]).toBe(255); // Green (Floor)
+
+      // On the right side (x=9), roll 0.5 means rollOffset = (9 - 5) * 0.5 = +2.0
+      // Horizon moves DOWN (horizonY = 5 + 2 = 7)
+      // Row 4 on Right should be Ceiling (Red)
+      const rightPixelIndex = (4 * 10 + 9) * 4;
+      expect(buffer[rightPixelIndex]).toBe(255); // Red (Ceiling)
+    });
+  });
+
+  describe('Post-Processing', () => {
+    it('should apply overlayColor', () => {
+      const raycaster = new Raycaster(10, 10, {
+        ceilingColor: [0, 0, 255], // Blue background
+        overlayColor: [255, 0, 0, 128], // 50% Red overlay
+      });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      raycaster.render(buffer, camera, []);
+
+      // Result should be exactly [127, 0, 127] (Magenta) for a ceiling pixel
+      const idx = (2 * 10 + 5) * 4; // Row 2 is definitely ceiling
+      expect(buffer[idx]).toBeCloseTo(127, -1); // Red (from overlay)
+      expect(buffer[idx + 1]).toBe(0); // Green
+      expect(buffer[idx + 2]).toBeCloseTo(127, -1); // Blue (from background)
+    });
+
+    it('should apply renderOffset', () => {
+      const raycaster = new Raycaster(10, 10, {
+        ceilingColor: [255, 0, 0],
+        floorColor: [0, 255, 0],
+        renderOffset: [0, 2], // Shift down by 2 pixels
+      });
+      const buffer = new Uint8Array(10 * 10 * 4);
+      const camera: RaycasterCamera = {
+        position: new Vector3(0, 0, 0),
+        angle: 0,
+        height: 5,
+      };
+
+      raycaster.render(buffer, camera, []);
+
+      // Horizon was at y=5, now should be at y=7
+      // Pixel at y=6 was floor (green), now should be shifted down
+      // BUT WAIT, renderOffset shifts the whole image.
+      // If we shift down by 2, pixel at y=7 in buffer now contains what was at y=5.
+      // So y=6 in buffer should now be what was at y=4 (ceiling = red)
+      const idx = (6 * 10 + 5) * 4;
+      expect(buffer[idx]).toBe(255); // Red (shifted from ceiling)
     });
   });
 });
