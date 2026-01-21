@@ -77,14 +77,17 @@ export abstract class Enemy {
       // Update position based on whether grounded
       const floorHeight = map.getFloorHeight(nextPos);
       if (this.grounded) {
-        if (Math.abs(floorHeight - this.position.z + this.height) < 10) {
+        // Enemy Z represents their vertical center (for correct projection)
+        // Check step height tolerance using center position
+        const enemyCenterZ = floorHeight + this.height / 2;
+        if (Math.abs(enemyCenterZ - this.position.z) < 10) {
           this.position = nextPos;
-          this.position.z = floorHeight + this.height;
+          this.position.z = floorHeight + this.height / 2;
         }
       } else {
         // Flying enemies hover and follow player z loosely
         this.position = nextPos;
-        // Gently move toward player height
+        // Gently move toward player height (target their center at player eye level)
         const targetZ = Math.max(floorHeight + 15, playerPos.z - 5);
         this.position.z += (targetZ - this.position.z) * 0.02;
       }

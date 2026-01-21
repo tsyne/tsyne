@@ -127,6 +127,13 @@ export class DoomGame {
     // Spawn walking enemies from level spawn points
     for (const pos of levelInfo.enemySpawnPoints.walking) {
       const enemy = new WalkingEnemy(pos.clone(), Math.random() * Math.PI * 2);
+      
+      // Fix Z height: snap to floor + half height (center) to prevent levitation
+      const floorH = this.map.getFloorHeight(pos);
+      if (floorH > -50) {
+        enemy.position.z = floorH + enemy.height / 2;
+      }
+
       this.enemies.push(enemy);
     }
 
@@ -209,6 +216,8 @@ export class DoomGame {
 
     // Update screen shake
     this.screenShake.update(dt);
+    const shake = this.screenShake.getOffsets();
+    this.renderer.setRenderOffset(shake.x, shake.y);
 
     // Update chaingun (bob, recoil, spin)
     this.chaingun.update(dt, this.playerMoving, false);
@@ -453,40 +462,6 @@ export class DoomGame {
 
     const w = this.renderer.width;
     const h = this.renderer.height;
-
-    // Apply screen shake effect (shift entire image)
-    const shake = this.screenShake.getOffsets();
-    if (Math.abs(shake.x) > 0.1 || Math.abs(shake.y) > 0.1) {
-      // Create a copy of the buffer to read from
-      const original = new Uint8Array(buffer);
-
-      // Apply shake by shifting pixels
-      const shakeX = Math.round(shake.x);
-      const shakeY = Math.round(shake.y);
-
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const srcX = x - shakeX;
-          const srcY = y - shakeY;
-
-          const dstIdx = (y * w + x) * 4;
-
-          if (srcX >= 0 && srcX < w && srcY >= 0 && srcY < h) {
-            const srcIdx = (srcY * w + srcX) * 4;
-            buffer[dstIdx] = original[srcIdx];
-            buffer[dstIdx + 1] = original[srcIdx + 1];
-            buffer[dstIdx + 2] = original[srcIdx + 2];
-            buffer[dstIdx + 3] = original[srcIdx + 3];
-          } else {
-            // Fill edge gaps with dark color
-            buffer[dstIdx] = 10;
-            buffer[dstIdx + 1] = 10;
-            buffer[dstIdx + 2] = 15;
-            buffer[dstIdx + 3] = 255;
-          }
-        }
-      }
-    }
 
     // Apply muzzle flash effect
     if (this.shootFlashFrames > 0) {

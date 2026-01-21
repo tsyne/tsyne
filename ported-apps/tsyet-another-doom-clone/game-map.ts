@@ -562,12 +562,12 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'Training Ground',
       description: 'A simple arena to learn the controls',
-      startPosition: new Vector3(40, 40, 10),
+      startPosition: new Vector3(40, 40, 6),
       enemySpawnPoints: {
         walking: [
-          new Vector3(40, 150, 16),  // North room (floor=8)
+          new Vector3(40, 150, 0),  // North room (floor=8)
           new Vector3(150, 40, 0),   // East room (floor=-8)
-          new Vector3(-70, 40, 8),   // West room (floor=0)
+          new Vector3(-70, 40, 0),   // West room (floor=0)
         ],
         flying: [
           new Vector3(40, -70, 25),  // South room (floor=4)
@@ -581,12 +581,12 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'The Maze',
       description: 'Winding corridors with height variation',
-      startPosition: new Vector3(20, 20, 10),
+      startPosition: new Vector3(20, 20, 6),
       enemySpawnPoints: {
         walking: [
-          new Vector3(-80, 50, -6),
-          new Vector3(80, 60, 24),
-          new Vector3(0, -80, -6),
+          new Vector3(-80, 50, 0),
+          new Vector3(80, 60, 0),
+          new Vector3(0, -80, 0),
         ],
         flying: [
           new Vector3(-60, 80, 15),
@@ -601,13 +601,13 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'The Fortress',
       description: 'A large arena with defensive positions',
-      startPosition: new Vector3(20, -50, 10),
+      startPosition: new Vector3(20, -50, 6),
       enemySpawnPoints: {
         walking: [
-          new Vector3(20, 20, 8),
+          new Vector3(20, 20, 0),
           new Vector3(80, 20, 0),
-          new Vector3(-80, 20, 8),
-          new Vector3(20, 60, 20),
+          new Vector3(-80, 20, 0),
+          new Vector3(20, 60, 0),
         ],
         flying: [
           new Vector3(20, 40, 35),
@@ -622,12 +622,12 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'The Labyrinth',
       description: 'Tight corridors and hidden chambers',
-      startPosition: new Vector3(15, 15, 10),
+      startPosition: new Vector3(15, 15, 6),
       enemySpawnPoints: {
         walking: [
-          new Vector3(20, 100, 12),
-          new Vector3(100, 100, 8),
-          new Vector3(-100, 100, 16),
+          new Vector3(20, 100, 0),
+          new Vector3(100, 100, 0),
+          new Vector3(-100, 100, 0),
         ],
         flying: [
           new Vector3(70, 70, 20),
@@ -641,12 +641,12 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'The Pit',
       description: 'Descend into the depths',
-      startPosition: new Vector3(20, 20, 40),
+      startPosition: new Vector3(20, 20, 36),
       enemySpawnPoints: {
         walking: [
-          new Vector3(20, 60, -2),
-          new Vector3(50, 20, -2),
-          new Vector3(-50, 20, -2),
+          new Vector3(20, 60, 0),
+          new Vector3(50, 20, 0),
+          new Vector3(-50, 20, 0),
         ],
         flying: [
           new Vector3(20, 20, 40),

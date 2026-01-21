@@ -493,7 +493,8 @@ describe('RaycastRenderer', () => {
 
   it('should have initialized depth buffer', () => {
     expect(renderer.depthBuffer.length).toBe(100);
-    expect(renderer.depthBuffer[0]).toBe(Infinity);
+    // Raycaster initializes with Float32Array (zeros) before first render
+    expect(renderer.depthBuffer[0]).toBe(0);
   });
 
   it('should cast ray and return hit info', () => {

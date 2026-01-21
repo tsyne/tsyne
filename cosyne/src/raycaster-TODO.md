@@ -81,7 +81,7 @@ This plan outlines the steps to evolve the generic `cosyne/src/raycaster.ts` int
     *   Verify performance matches or exceeds the specialized renderer.
     *   Verify visual fidelity (no floor tearing, correct texture wrapping).
 
-14. **Migration:** [ ]
+14. **Migration:** [x]
     *   Refactor `ported-apps/tsyet-another-doom-clone` to import and use the shared raycaster.
-    *   (Note: Target directory not yet found in current codebase; migration pending discovery or creation of target app).
-    *   Delete the custom `renderer.ts` from the app.
+    *   (Completed: Migrated `renderer.ts` to use `cosyne` Raycaster, created `texture-gen.ts` and `game-renderables.ts`, and updated `doom-game.ts` to use built-in screen shake).
+    *   Delete the custom `renderer.ts` from the app (Refactored/Replaced instead of deleted).
