@@ -218,71 +218,65 @@ function buildLevel1(): number[] {
 /**
  * Level 2: The Maze
  * Complex interconnected corridors with varying heights
- * Note: Coordinate deltas must be in range [-56, +56] due to encoding limits
+ * Uses direct region definition for proper portal detection.
  */
+function buildLevel2Regions(): MapPolygon[] {
+  // Define rooms as [x1, y1, x2, y2, floorHeight, ceilHeight]
+  // Rooms connect by sharing exact edge coordinates
+  const rooms: [number, number, number, number, number, number][] = [
+    // Central hub room
+    [0, 0, 60, 60, 0, 35],
+
+    // === WEST PATH (descending) ===
+    // West corridor from hub - connects at x=0, y=20 to y=40
+    [-40, 20, 0, 40, -4, 30],
+    // West room 1 (slightly lower)
+    [-100, 10, -40, 50, -8, 28],
+    // Southwest descent corridor - connects at y=10, x=-80 to x=-60
+    [-80, -30, -60, 10, -12, 24],
+    // Underground chamber (lowest point)
+    [-110, -80, -30, -30, -16, 30],
+
+    // === EAST PATH (ascending) ===
+    // East corridor from hub - connects at x=60, y=20 to y=40
+    [60, 20, 100, 40, 4, 38],
+    // East room 1 (raised)
+    [100, 10, 160, 50, 8, 42],
+    // Northeast ascent corridor - connects at y=50, x=120 to x=140
+    [120, 50, 140, 90, 12, 46],
+    // High chamber (highest point)
+    [90, 90, 170, 150, 16, 55],
+
+    // === CONNECTING CORRIDOR (bridges high and low) ===
+    // Vertical corridor south of hub - connects at y=0, x=20 to x=40
+    [20, -40, 40, 0, 0, 35],
+    // Mid section going southwest
+    [-20, -80, 40, -40, -4, 32],
+    // Connect to underground chamber - connects at x=-30, y=-70 to y=-50
+    [-30, -70, 20, -50, -10, 28],
+
+    // === NORTH WING ===
+    // North corridor from hub - connects at y=60, x=20 to x=40
+    [20, 60, 40, 100, 2, 38],
+    // North room
+    [0, 100, 60, 150, 6, 45],
+  ];
+
+  return rooms.map(([x1, y1, x2, y2, floor, ceil]) => {
+    const vertices = [
+      new Vector3(x1, y1, 0),
+      new Vector3(x2, y1, 0),
+      new Vector3(x2, y2, 0),
+      new Vector3(x1, y2, 0),
+      new Vector3(x1, y1, 0),  // Close the polygon
+    ];
+    return createMapPolygon(vertices, floor, ceil);
+  });
+}
+
+// Legacy function - kept for API compatibility but no longer used
 function buildLevel2(): number[] {
-  const t = new TurtleBuilder();
-
-  // Entry hall
-  t.setFloor(0).setCeiling(35);
-  t.polygon([[40, 0], [0, 56], [-40, 0], [0, -56]]);
-
-  // Split into two paths
-  // Path A (left) - descending
-  t.backtrack(2);
-  t.setFloor(-4).setCeiling(30);
-  t.polygon([[-48, 0], [0, 30], [48, 0], [0, -30]]);
-
-  t.backtrack(2);
-  t.setFloor(-8).setCeiling(28);
-  t.polygon([[-40, 0], [0, 40], [40, 0], [0, -40]]);
-
-  // Lower corridor
-  t.backtrack(2);
-  t.setFloor(-12).setCeiling(24);
-  t.polygon([[-56, 0], [0, 24], [56, 0], [0, -24]]);
-
-  // Underground chamber
-  t.backtrack(2);
-  t.setFloor(-16).setCeiling(30);
-  t.polygon([[-48, 0], [0, 48], [48, 0], [0, -48]]);
-
-  // Return to entry, go right
-  t.backtrack(10);
-  t.goto([[40, 0]]);
-
-  // Path B (right) - ascending
-  t.setFloor(4).setCeiling(38);
-  t.polygon([[48, 0], [0, 30], [-48, 0], [0, -30]]);
-
-  t.backtrack(2);
-  t.setFloor(8).setCeiling(42);
-  t.polygon([[40, 0], [0, 40], [-40, 0], [0, -40]]);
-
-  // Upper corridor
-  t.backtrack(2);
-  t.setFloor(12).setCeiling(46);
-  t.polygon([[56, 0], [0, 24], [-56, 0], [0, -24]]);
-
-  // High chamber
-  t.backtrack(2);
-  t.setFloor(16).setCeiling(55);
-  t.polygon([[48, 0], [0, 48], [-48, 0], [0, -48]]);
-
-  // Connect high and low chambers with a long corridor
-  t.backtrack(2);
-  t.setFloor(8).setCeiling(40);
-  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
-
-  t.backtrack(2);
-  t.setFloor(0).setCeiling(35);
-  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
-
-  t.backtrack(2);
-  t.setFloor(-8).setCeiling(30);
-  t.polygon([[24, 0], [0, -56], [-24, 0], [0, 56]]);
-
-  return t.build();
+  return [];  // Level now uses buildLevel2Regions() directly
 }
 
 /**
@@ -581,17 +575,19 @@ const LEVEL_BUILDERS: Array<{
     info: {
       name: 'The Maze',
       description: 'Winding corridors with height variation',
-      startPosition: new Vector3(20, 20, 6),
+      startPosition: new Vector3(30, 30, 6),  // Central hub
       enemySpawnPoints: {
         walking: [
-          new Vector3(-80, 50, 0),
-          new Vector3(80, 60, 0),
-          new Vector3(0, -80, 0),
+          new Vector3(-70, 30, 0),   // West room 1 (floor=-8)
+          new Vector3(130, 30, 0),   // East room 1 (floor=8)
+          new Vector3(-70, -55, 0),  // Underground chamber (floor=-16)
+          new Vector3(130, 120, 0),  // High chamber (floor=16)
+          new Vector3(30, 125, 0),   // North room (floor=6)
         ],
         flying: [
-          new Vector3(-60, 80, 15),
-          new Vector3(80, 40, 30),
-          new Vector3(0, -60, 20),
+          new Vector3(30, 125, 30),  // North room
+          new Vector3(130, 120, 40), // High chamber
+          new Vector3(-70, -55, 10), // Underground chamber
         ],
       },
     },
@@ -727,9 +723,11 @@ export class GameMap implements IGameMap {
     this.currentLevel = levelIndex % LEVEL_BUILDERS.length;
     this.levelInfo = levelBuilder.info;
 
-    // Build level - level 1 uses direct region definition, others use turtle commands
+    // Build level - levels 1 and 2 use direct region definition, others use turtle commands
     if (this.currentLevel === 0) {
       this.regions = buildLevel1Regions();
+    } else if (this.currentLevel === 1) {
+      this.regions = buildLevel2Regions();
     } else {
       this.regions = runTurtle(levelBuilder.build());
     }

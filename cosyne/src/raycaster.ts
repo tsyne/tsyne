@@ -569,8 +569,10 @@ export class Raycaster {
 
     for (let x = 0; x < context.width; x++) {
       // Ray direction for this column
+      // Left edge (x=0) should be camera.angle + fov/2 (counterclockwise)
+      // Right edge (x=width) should be camera.angle - fov/2 (clockwise)
       const rayScreenPos = (x / context.width) - 0.5;
-      const rayAngle = context.camera.angle + rayScreenPos * this.fov;
+      const rayAngle = context.camera.angle - rayScreenPos * this.fov;
       const rayDirX = Math.cos(rayAngle);
       const rayDirY = Math.sin(rayAngle);
 
@@ -667,8 +669,10 @@ export class Raycaster {
   ): void {
     for (let x = 0; x < context.width; x++) {
       // Calculate ray angle for this column
+      // Left edge (x=0) should be camera.angle + fov/2 (counterclockwise)
+      // Right edge (x=width) should be camera.angle - fov/2 (clockwise)
       const rayScreenPos = (x / context.width) - 0.5; // -0.5 to 0.5
-      const rayAngle = context.camera.angle + rayScreenPos * this.fov;
+      const rayAngle = context.camera.angle - rayScreenPos * this.fov;
 
       // Cast ray
       const hit = this.castRay(context.camera.position, rayAngle, walls);
