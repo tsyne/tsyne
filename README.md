@@ -193,11 +193,11 @@ Tsyne's API is designed to be elegant and terse, inspired by other pseudo-declar
 
 **See [HISTORICAL.md](HISTORICAL.md) for the historical context and influences behind Tsyne's design.**
 
-### Calculator Example
+### "Calculator" as a pseudo-declarative right of passage
 
-Calculator example is important to me because I'm forver comparing to [this one written in Ruby and Shoes UI tech](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) by Alexanderlol on GitHub, and [this one for ChrysaLisp](https://github.com/vygr/ChrysaLisp/blob/master/apps/calculator/app.lisp) by Chris Hinsley).
+Calculator example is important to me because I'm forever comparing to [this one written in Ruby and Shoes UI tech](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) by Alexanderlol on GitHub, and [this one for ChrysaLisp](https://github.com/vygr/ChrysaLisp/blob/master/apps/desktop/calculator/app.lisp) by Chris Hinsley but an [older version has lower lines of code](https://github.com/vygr/ChrysaLisp/blob/13332c26bfa3888cebc2e01ab67eca1e7d0e2c9b/apps/calculator/app.lisp).
 
-### Calculator Variants
+### Our Calculator Variants
 
 | Calculator | Lines | Purpose | Pseudo-Declarative Adherence |
 |------------|-------|---------|------------------------------|
