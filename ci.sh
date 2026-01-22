@@ -326,12 +326,15 @@ FYNE_DIR="${BUILDKITE_BUILD_CHECKOUT_PATH}/../fyne"
 
 if [ -d "$FYNE_DIR" ]; then
   echo "Pulling latest from Fyne fork..."
-  cd "$FYNE_DIR" && git pull --ff-only
-  echo "Fyne updated ✓"
+  cd "$FYNE_DIR"
+  git fetch --all
+  git checkout -B tsyne_changes origin/tsyne_changes
+  git pull --ff-only
+  echo "Our fork of Fyne updated ✓"
 else
   echo "Fyne fork not found at $FYNE_DIR - cloning..."
-  git clone https://github.com/paul-hammant/fyne.git "$FYNE_DIR"
-  echo "Fyne cloned ✓"
+  git clone -b tsyne_changes https://github.com/tsyne/fyne.git "$FYNE_DIR"
+  echo "Our fork of Fyne cloned ✓"
 fi
 
 # ============================================================================
@@ -341,6 +344,7 @@ echo "--- :golang: Building Go bridge"
 
 # Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
+env GOPROXY=direct $GO_CMD mod tidy
 env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -o ../bin/tsyne-bridge .
 
 echo "Building Go shared library for FFI..."

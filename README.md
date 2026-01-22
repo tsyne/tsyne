@@ -22,50 +22,46 @@
 
 ## What is Tsyne?
 
-**Primarily**, Tsyne is an all-in-one markup and logic technology for building desktop applications on **Windows, Mac, and Linux** (including Chromebook). It brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/).
+**Primarily**, Tsyne is an all-in-one markup and logic technology for building desktop applications on **Windows, Mac, and Linux** (including Chromebook). Phones too (Android via an apk, and PostmarketOS - as a linux launcher, iOS - TODO). It brings the power of [Fyne](https://fyne.io/), a modern Go UI toolkit, to the TypeScript/Node.js ecosystem with an elegant, pseudo-declarative API that I've been [thinking about for 20+ years](https://paulhammant.com/ui-markup-nirvana/). Lisp is the holy grail here, and y'all should check out [Chris Hinsleys' ChrysaLisp](https://github.com/vygr/ChrysaLisp) for that, but I'm trying to work out how close we can get with TypeScript and without [S-expressions](https://en.wikipedia.org/wiki/S-expression).
 
 **Secondarily**, Tsyne comes bundled with:
-- **Selenium-alike testing technology** (TsyneTest) - A Playwright-inspired testing framework for headed/headless UI testing
-- **WYSIWYG designer** - A visual UI builder because I've been [thinking about that for nearly 30 years](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/) with a [Hackernews discussion](https://news.ycombinator.com/item?id=21828622)
-- **Tsyne Browser** - A dedicated browser for Tsyne pages, enabling server-driven desktop UIs
-
-**Thirdly**, there's future potential:
-- **Mobile platform possibility** - Tsyne could potentially become a third application-landscape platform alongside iOS and Android (noting that third platforms already exist: WebOS, KaiOS, HarmonyOS, etc.)
-- **iOS/Android deployment** - Tsyne apps may also be deployable to iOS and Android app stores (subject to their respective app store rules and review processes)
+- **Selenium-alike testing technology** (TsyneTest) - A Playwright-inspired testing framework for headed/headless UI testing. Cheekily, that wrap's Fyne's testing tech.
+- **WYSIWYG designer** - A visual UI builder because I've been [thinking about that for nearly 30 years](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/) with a [Hackernews discussion](https://news.ycombinator.com/item?id=21828622). I acknowledge that many would say that doesn't need resurrecting - especially in the LLM age.
+- **Tsyne Browser** - A dedicated browser for Tsyne pages, enabling server-driven "thin but fat" interactive experiences. Note: This browser doesn't speak HTML and regular browsers don't speak Tsyne. Browser experience backends enable server-driven desktop UIs where any backend language (Java, Ruby, Python, Go, Rust, Perl etc) can serve pages. Big topic, see [BROWSER_MODE doc](BROWSER_MODE.md)
 
 ## Why Tsyne?
 
 - **Elegant Syntax**: Pseudo-declarative, terse UI markup with closures or blocks depending on your point of view.
-- **Cross-Platform**: Build native apps for macOS, Windows, and Linux from a single codebase
-- **Type-Safe**: Full TypeScript support with complete type definitions
-- **Easy Integration**: Simple npm package that's quick to add to any Node.js project
-- **Powerful**: Full access to Fyne's rich widget library and layout system
-- **Testable**: Built-in testing framework (TsyneTest) with Playwright-like API for headed/headless testing
-- **Single-Script Apps**: Complete desktop apps in one file - no complex project structure needed (like [calculator](examples/calculator.ts), [tic-tac-toe](examples/tictactoe.ts), [stopwatch](examples/17-stopwatch.ts), [dice roller](examples/18-dice-roller.ts))
+- **Cross-Platform**: Build native standalone apps for macOS, Windows, and Linux from a single codebase
+- **New Platform**: The same apps can be ALSO be part of a Desktop (launcher on top of Mac/Win/Lin) or Phonetop or Tablettop (TODO).
+- **Type-Safe**: Full TypeScript support with complete type definitions. Sure sure, tranpilation happens unseen.
+- **Powerful**: Mostly full access to Fyne's rich widget library and layout system
+- **Testable**: Built-in testing framework (TsyneTest) with Selenium/Playwright-like API for headed/headless testing
+- **Many single-script apps**: Complete desktop apps in one file - no complex project structure needed (like [calculator](examples/calculator.ts), [tic-tac-toe](examples/tictactoe.ts), [stopwatch](examples/17-stopwatch.ts), [dice roller](examples/18-dice-roller.ts))
 - **Single-File Distribution**: Embed npm dependency declarations directly in source files (See [INLINE_DEPENDENCY_DECLARATIONS](docs/INLINE_DEPENDENCY_DECLARATIONS.md)) if using `tsyne.exe` in the PATH
-- **Browser Mode**: Load TypeScript pages from HTTP servers - enables server-driven desktop UIs where any backend language (Java, Ruby, Python, Go) can serve pages. Big topic, see BROWSER_MODE.md
 - **npm Ecosystem**: Use any of npm's 2M+ packages that don't require browser DOM - share validators, API clients, and business logic with your web apps
-- **Interpreted + Native**: TypeScript logic is interpreted for rapid iteration; rendering is compiled Go/Fyne for native performance (trade-off: requires Node.js runtime, not single binary distribution)
+- **Interpreted + Native**: TypeScript logic is interpreted for rapid iteration; rendering is compiled Go/Fyne for native performance. The trade-off is that requiring Node.js runtime, not single binary distribution. Well, if you want to go down that Tauri-esque road, its 100MB for "hello world"
 
 ## When Tsyne Is Not The Right Choice?
 
 Tsyne isn't the right choice for every project. Consider these limitations:
 
 - **Requires Node.js Runtime**: Pure Go/Fyne apps compile to single standalone binaries. Tsyne apps need Node.js installed, making distribution more complex.
-- **IPC Overhead**: The JSON-RPC bridge between TypeScript and Go adds latency compared to native Fyne. For performance-critical UIs with rapid updates, native Fyne may be better.
+- **IPC Overhead**: The JSON-RPC bridge between TypeScript and Go adds latency compared to native Fyne. For performance-critical UIs with rapid updates, native Fyne may be better.  First person shooters will be hard, though we have a Doom port already.
 - **Partial Fyne Coverage**: Tsyne wraps ~50% of Fyne's widget API (see [ROADMAP.md](docs/ROADMAP.md)). Canvas drawing, system tray, and some specialized widgets are not yet available.
-- **Fyne's Styling Limitations**: Per-widget color customization is limited by Fyne's architecture. Font styling works well, but colors require custom themes.
+- **Fyne's Styling Limitations**: Per-widget color customization is limited by Fyne's architecture. Font styling works well, but colors require custom themes.  Specifically, I don't think you can go wild with the equivalent of `style='...'`. I could be wrong though. 
 
 **When to use Fyne directly instead:**
 - Single-binary desktop distribution
 - Performance-critical real-time UIs
 - Full access to Fyne's complete widget library
+- Proper funded thing you're making to last a decade with features added continually, and Tsyne is still a big question mark.
 
 ## FAQ
 
 **Q: How does browser mode differ from regular mode?**
 
-Regular app mode creates standalone desktop applications. Browser mode loads TypeScript pages from HTTP servers dynamically, enabling server-driven UIs where the backend controls the UI (similar to traditional web apps but with native widgets). Pages are the main concept, URLs back/forward buttons exist. See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md).
+Regular app mode creates standalone desktop applications. Browser mode loads TypeScript pages from HTTP servers dynamically over HTTPS, enabling server-driven UIs where the backend controls the UI (similar to traditional web apps but with native widgets). Pages are the main concept, The browser's back and forward buttons have meaning. This skips the Web1.0 era and jumps straight into Web2.0 but nothing is stopping you from coding a traditional web1.0 experience if you really wanted to - but you'd likely be in the wrong technology if that's your design. See [docs/BROWSER_MODE.md](docs/BROWSER_MODE.md).
 
 **Q: Can Chrome, Firefox and Safari show browser-make pages?**
 
@@ -73,7 +69,7 @@ No, we have our own browser for that and yes we know that's a second-class exper
 
 **Q: Can I use npm packages in my Tsyne app?**
 
-Yes! Any npm package that doesn't require browser DOM APIs will work. This includes validators, API clients, date libraries, and business logic packages. Share code between your Tsyne desktop app and web frontend. Share code between your Tsyne desktop app and your server-side NodeJS web applications.
+Yes! Nearly any npm package that doesn't require browser DOM APIs will work. This includes validators, API clients, date libraries, and business logic packages. Share code between your Tsyne desktop app and web frontend. Share code between your Tsyne desktop app and your server-side NodeJS web applications.
 
 **Q: How does testing work?**
 
@@ -81,7 +77,7 @@ Tsyne provides two testing frameworks:
 - **TsyneTest** - For testing regular Tsyne apps/components ([docs/TESTING.md](docs/TESTING.md))
 - **TsyneBrowserTest** - For testing browser mode pages ([docs/BROWSER_TESTING.md](docs/BROWSER_TESTING.md))
 
-Both support headed and headless modes with aPIR inspired by Selenium/Playwright.
+Both support headed and headless modes with an API inspired by Selenium/Playwright.
 
 **Q: Can I style widgets with CSS?**
 
@@ -89,11 +85,11 @@ Sort of. Tsyne has a CSS-like styling system for fonts (family, size, style, wei
 
 **Q: Why TypeScript instead of Go for the UI logic?**
 
-TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.  For me (Paul) this was always about [pseudo-declarative UI markup languages that could be interpreted](https://paulhammant.com/categories#Pseudo-declarative_UIs) and the browser mode.
+TypeScript provides rapid iteration (no compile step), access to npm's 2M+ packages, and familiar syntax for web developers. The trade-off is requiring Node.js runtime vs single-binary distribution.  For me (Paul) this was always about [pseudo-declarative UI markup languages that could be interpreted](https://paulhammant.com/categories#Pseudo-declarative_UIs) and the browser mode. Also, Paul loves pseudo-declarative markups and that was easier to code in TypeScript than in Go.
 
 **Q: How do I debug my app?**
 
-Use standard Node.js debugging: `node --inspect` or your IDE's debugger. Console.log works normally. For UI issues, enable `TSYNE_HEADED=1` during testing to see the actual UI.
+Use standard Node.js debugging: `node --inspect` or your IDE's debugger. Console.log works normally. For UI issues, enable `TSYNE_HEADED=1` during testing to see the actual UI [REVIEW NEEDED].
 
 **Q: What percentage of Fyne is wrapped?**
 
@@ -107,6 +103,32 @@ Pages are TypeScript code with full access to Node.js APIs. Use `fetch()`, `axio
 
 No, this is tied to Fyne. Someone else can do a pure TypeScript pseudo-declarative markup that maybe can run in a regular browser somehow.
 
+**Q: Do apps have to be single scripts?**
+
+No, but demoing it is the price of admission for the long list of could-be 3rd phone operating systems. Be on the app, type in a single script "hello world" on the phone (like it is the 80's), save and press "run". I [whined about QML previously](https://paulhammant.com/2016/11/15/qmls-squandered-opportunity/)
+
+**Q: Are APIs stable?**
+
+No, anything can be renamed at any moment. If you're making apps right now, you're promising to keep up with the renames/refactorings as if you were co-located in the same repo
+
+**Q: What patterns are important?**
+
+Separation of Concerns, Inversion of Control (there's no DI container as such), Design for testability is better design anyway (a maxim),  We're agnoting on MVC, MVVM and all that. There is and should be some kernel-esqe separation for the joined together deployments on Phonetop and Desktop
+
+**Q: JavaScript and WASM?**
+
+Apps written in those? Probably, I've not tested or done any coding to specifically support that yet.
+
+**Q: What are your plans**
+
+This is a fun hobby. It's alpha quality and everything is changing the whole time right now. I really want to get it working smoothly on my Pixel 3a running Postmarket OS. And I mean look like it's taken over as it's the step/launcher/home. Obligatory guy at party meme: https://imgflip.com/i/ai2a1v. That said if Microsoft or Nokia want to give it another go call me - I am actually looking for work, and sick of the truly bizarre reasons for being declined.
+
+**Q: How much was made by AI**
+
+Nearly all of it. My 36 years of dev experience channeled into prompts. Claude Code mostly (CLI and Cloud/web). A little bit of Google's Jules.  A little more of Gemini 3 (and 2.5 before it), but the billing for that scares me versus Anthropic's). Some Codex and OpenAI via the pioneering Aider.chat. Its a struggle too, not a breeze. All of them have forgotten that I really like automated tests and need reminding - and other rules like "no fallback coding - hard fail or ask me." There are whole days of gaslighting by these tools.
+
+I am only going to engage in conversations about Tsyne on Sub-Reddits that think "use your brain not an AI" is to be dissuaded and won't encourage people to smack AI use. 
+
 ## Installation
 
 See **[docs/INSTALLATION.md](docs/INSTALLATION.md)** for complete installation instructions, including:
@@ -119,6 +141,8 @@ See **[docs/INSTALLATION.md](docs/INSTALLATION.md)** for complete installation i
 ## Quick Start
 
 ### TypeScript
+
+Warning: this code might be a little out of date. You'll get the intention though - pseudo-declarative for the win.
 
 ```typescript
 import { app } from 'tsyne';
@@ -136,45 +160,9 @@ app({ title: "Hello Tsyne" }, (app) => {
 });
 ```
 
-### JavaScript (CommonJS)
-
-```javascript
-const { app } = require('tsyne');
-
-app({ title: "Hello Tsyne" }, (app) => {
-  app.window({ title: "Hello Tsyne" }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        app.label("Welcome to Tsyne!");
-        app.button("Click Me").onClick(() => { console.log("Button clicked!"); });
-      });
-    });
-    win.show();
-  });
-});
-```
-
-### JavaScript (ES Modules)
-
-```javascript
-import { app } from 'tsyne';
-
-app({ title: "Hello Tsyne" }, (app) => {
-  app.window({ title: "Hello Tsyne" }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        app.label("Welcome to Tsyne!");
-        app.button("Click Me").onClick(() => { console.log("Button clicked!"); });
-      });
-    });
-    win.show();
-  });
-});
-```
-
 Tsyne works seamlessly with both TypeScript and JavaScript!
 
-## Single-File Distribution
+## Single-File Distribution even with deps
 
 This builds on single file applications that required Node.js running tsx. 
 
@@ -197,6 +185,8 @@ Dependencies auto-resolve to `~/.tsyne/packages/` at runtime. See [docs/INLINE_D
 
 **Dependency Resolution:** All apps share a single global cache (`~/.tsyne/packages/node_modules/`) with a centralized `package.json` and `package-lock.json`. npm handles version conflicts using its standard dependency resolution algorithm—the same way it resolves dependencies in any project. This means packages are reused across apps when versions are compatible, and npm installs multiple versions only when necessary to satisfy conflicting semver ranges.
 
+Well, this is still a workd in progress.
+
 ## Elegant Syntax
 
 Tsyne's API is designed to be elegant and terse, inspired by other pseudo-declarative markups. The syntax feels pseudo-declarative while retaining full imperative power:
@@ -207,95 +197,13 @@ Tsyne's API is designed to be elegant and terse, inspired by other pseudo-declar
 
 Calculator example is important to me because I'm forver comparing to [this one written in Ruby and Shoes UI tech](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) by Alexanderlol on GitHub, and [this one for ChrysaLisp](https://github.com/vygr/ChrysaLisp/blob/master/apps/calculator/app.lisp) by Chris Hinsley).
 
-```typescript
-// Calculator example demonstrating Tsyne's pseudo-declarative DSL
-import { app } from 'tsyne';
+TODO: LINK TO ALL THE CALC EXAMPLES HERE
 
-let display: any;
-let currentValue = "0";
-let operator: string | null = null;
-let previousValue = "0";
-
-function updateDisplay(value: string) {
-  currentValue = value;
-  if (display) display.setText(value);
-}
-
-function handleNumber(num: string) {
-  const newValue = currentValue === "0" ? num : currentValue + num;
-  updateDisplay(newValue);
-}
-
-function handleOperator(op: string) {
-  previousValue = currentValue;
-  operator = op;
-}
-
-function calculate() {
-  if (!operator) return;
-  const result = eval(`${parseFloat(previousValue)} ${operator} ${parseFloat(currentValue)}`);
-  updateDisplay(isFinite(result) ? result.toString() : "Error");
-  operator = null;
-}
-
-app({ title: "Calculator" }, (app) => {
-  app.window({ title: "Calculator" }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        display = app.label("0");
-
-        app.grid(4, () => {
-          [..."789"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
-          app.button("÷").onClick(() => handleOperator("/"));
-          [..."456"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
-          app.button("×").onClick(() => handleOperator("*"));
-          [..."123"].forEach(n => app.button(n).onClick(() => handleNumber(n)));
-          app.button("-").onClick(() => handleOperator("-"));
-          app.button("0").onClick(() => handleNumber("0"));
-          app.button("=").onClick(() => calculate());
-          app.button("+").onClick(() => handleOperator("+"));
-        });
-      });
-    });
-    win.show();
-  });
-});
-```
-
-See the complete runnable single-script calculator here: [examples/calculator.ts](examples/calculator.ts) - 69 substantive lines, monolithic pattern. See also its [test suite](examples/calculator.test.ts).
+1. See a complete runnable single-script calculator here: [examples/calculator.ts](examples/calculator.ts) - 69 substantive lines, monolithic pattern. See also its [test suite](examples/calculator.test.ts).
 
 See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
 
-### Counter Example
-
-```typescript
-import { app } from 'tsyne';
-
-let countLabel: any;
-let count = 0;
-
-function updateCounter() {
-  countLabel.setText(`Count: ${count}`);
-}
-
-app({ title: "Counter" }, (app) => {
-  app.window({ title: "Counter" }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        countLabel = app.label("Count: 0");
-
-        app.hbox(() => {
-          app.button("-").onClick(() => { count--; updateCounter(); });
-          app.button("Reset").onClick(() => { count = 0; updateCounter(); });
-          app.button("+").onClick(() => { count++; updateCounter(); });
-        });
-      });
-    });
-    win.show();
-  });
-});
-```
-See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
+TODO: INLINE LIST OF APPS WITH STATS
 
 ## Testing with TsyneTest
 
@@ -334,6 +242,8 @@ async function testCalculator() {
 }
 ```
 
+Of course, getByID(..) is always smarter.
+
 See a bigger list of test examples with screenshots here: [examples/README.md](examples/README.md)
 
 ### Test Modes
@@ -349,6 +259,8 @@ const tsyneTest = new TsyneTest({ headed: true });
 ```
 
 ### Locators and Assertions
+
+TODO slim this down.
 
 ```typescript
 // Find widgets by text
@@ -465,440 +377,13 @@ For the complete API reference, see **[docs/API_REFERENCE.md](docs/API_REFERENCE
 
 ## Theme Support
 
-Tsyne supports light and dark themes that automatically apply to all widgets in your application.
-
-### Setting the Theme
-
-```typescript
-import { app, setTheme } from 'tsyne';
-
-app({ title: 'My App' }, () => {
-  // Switch to dark theme
-  await setTheme('dark');
-
-  // Switch to light theme
-  await setTheme('light');
-
-  // Get current theme
-  const currentTheme = await getTheme(); // Returns 'dark' or 'light'
-});
-```
-
-### Using Theme with App Instance
-
-```typescript
-const myApp = app({ title: 'My App' }, () => {
-  // ... build your UI
-});
-
-// Set theme on app instance
-await myApp.setTheme('dark');
-
-// Get current theme
-const theme = await myApp.getTheme();
-```
-
-### Theme Features
-
-- **Automatic widget styling**: All widgets automatically adapt to the selected theme
-- **Light theme**: Bright background with dark text, suitable for well-lit environments
-- **Dark theme**: Dark background with light text, suitable for low-light environments
-- **Runtime switching**: Change themes dynamically without restarting the application
-- **Persistent across windows**: Theme applies to all windows in the application
-
-### Example: Theme Switcher
-
-```typescript
-import { app } from 'tsyne';
-
-let themeLabel: any;
-
-app({ title: 'Theme Demo' }, (app) => {
-  app.window({ title: 'Theme Demo' }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        themeLabel = app.label('Current Theme: Light');
-
-        app.button('Dark Theme').onClick(async () => {
-          const myApp = (win as any).ctx.bridge;
-          await myApp.send('setTheme', { theme: 'dark' });
-          themeLabel.setText('Current Theme: Dark');
-        });
-
-        app.button('Light Theme').onClick(async () => {
-          const myApp = (win as any).ctx.bridge;
-          await myApp.send('setTheme', { theme: 'light' });
-          themeLabel.setText('Current Theme: Light');
-        });
-      });
-    });
-
-    win.show();
-  });
-});
-```
+Tsyne supports light and dark themes that automatically apply to all widgets in your application. TODO link to Theme demo
 
 See `examples/theme.ts` for a complete theme demonstration with various widgets.
 
-## Widget Styling System
-
-Tsyne includes a CSS-like styling system, allowing you to separate presentation from structure. Define styles once in a stylesheet module, and they automatically apply to widgets based on their type.
-
-### Quick Start with Styling
-
-The styling system works similarly to CSS - define styles for widget types, and they're automatically applied when widgets are created.
-
-**Without styles** (`examples/form-unstyled.ts`):
-```typescript
-import { app } from 'tsyne';
-
-app({ title: 'Form Demo' }, (app) => {
-  app.window({ title: 'Form Demo' }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        app.label('Registration Form');
-        app.button('Submit').onClick(() => {});
-      });
-    });
-    win.show();
-  });
-});
-```
-
-**With styles** (`examples/form-styled.ts`):
-```typescript
-import { app } from 'tsyne';
-import './form-styles';  // ← Only difference: import stylesheet!
-
-app({ title: 'Form Demo' }, (app) => {
-  app.window({ title: 'Form Demo' }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        app.label('Registration Form');  // Automatically styled!
-        app.button('Submit').onClick(() => {});  // Automatically styled!
-      });
-    });
-    win.show();
-  });
-});
-```
-
-**Stylesheet** (`examples/form-styles.ts`):
-```typescript
-import { styles, FontFamily, FontStyle } from 'tsyne';
-
-styles({
-  root: {
-    font_family: FontFamily.SANS_SERIF,
-    font_size: 10
-  },
-  label: {
-    font_style: FontStyle.ITALIC,
-    font_size: 12
-  },
-  button: {
-    font_weight: 'bold'
-  },
-  entry: {
-    font_family: FontFamily.MONOSPACE
-  }
-});
-```
-
-### Style Properties
-
-The styling system supports the following properties:
-
-#### Font Properties
-- **`font_family`**: Font family - `FontFamily.SANS_SERIF`, `FontFamily.SERIF`, or `FontFamily.MONOSPACE`
-- **`font_style`**: Font style - `FontStyle.NORMAL`, `FontStyle.ITALIC`, `FontStyle.BOLD`, or `FontStyle.BOLD_ITALIC`
-- **`font_weight`**: Font weight - `'normal'` or `'bold'`
-- **`font_size`**: Font size in points (number)
-
-#### Color Properties (limited support)
-- **`color`**: Text color - hex number (`0xRRGGBB`) or CSS color string
-- **`background_color`**: Background color - hex number or CSS color string
-
-**Note**: Fyne has limitations on per-widget color customization. Font styling works reliably across widgets, but colors require custom themes or custom widget renderers. The styling system accepts color properties for future compatibility.
-
-### Widget Selectors
-
-Styles can be defined for these widget types:
-
-- **`root`**: Base styles applied to all widgets (unless overridden)
-- **`button`**: Button widgets
-- **`label`**: Label widgets
-- **`entry`**: Single-line text input widgets
-- **`multilineentry`**: Multi-line text area widgets
-- **`passwordentry`**: Password input widgets
-- **`checkbox`**: Checkbox widgets
-- **`select`**: Dropdown select widgets
-- **`slider`**: Slider widgets
-- **`radiogroup`**: Radio button groups
-- **`progressbar`**: Progress bar widgets
-- **`hyperlink`**: Hyperlink widgets
-- **`table`**: Table widgets
-- **`list`**: List widgets
-
-### Complete Styling Example
-
-Swiby-style approach with separate stylesheet:
-
-**styles.ts** (stylesheet module):
-```typescript
-import { styles, FontFamily, FontStyle } from 'tsyne';
-
-styles({
-  root: {
-    font_family: FontFamily.SANS_SERIF,
-    font_style: FontStyle.NORMAL,
-    font_size: 10
-  },
-  label: {
-    font_style: FontStyle.ITALIC,
-    font_size: 12,
-    color: 0xAA0000  // Red text
-  },
-  entry: {
-    font_family: FontFamily.MONOSPACE,
-    font_size: 12,
-    background_color: 0xFFFFC6  // Light yellow background
-  },
-  button: {
-    font_weight: 'bold'
-  }
-});
-```
-
-**main.ts** (application):
-```typescript
-import { app } from 'tsyne';
-import './styles';  // Import stylesheet - styles auto-apply!
-
-app({ title: 'Styled App' }, (app) => {
-  app.window({ title: 'Styled App' }, (win) => {
-    win.setContent(() => {
-      app.vbox(() => {
-        app.label('Enter your details:');
-        app.entry('Name');
-        app.entry('Email');
-        app.button('Submit').onClick(() => {});
-      });
-    });
-    win.show();
-  });
-});
-```
-
-### Style Inheritance
-
-Styles follow a cascading pattern:
-1. **Root styles** apply to all widgets
-2. **Widget-specific styles** override root styles
-3. Later style definitions override earlier ones
-
-```typescript
-styles({
-  root: {
-    font_size: 10,        // All widgets: 10pt
-    font_style: FontStyle.NORMAL
-  },
-  label: {
-    font_size: 12,        // Labels: 12pt (overrides root)
-    font_style: FontStyle.ITALIC  // Labels: italic (overrides root)
-  }
-});
-```
-
-### API Reference
-
-**`styles(definitions)`**
-Define styles for widget types.
-
-```typescript
-import { styles, FontStyle } from 'tsyne';
-
-styles({
-  label: { font_style: FontStyle.BOLD },
-  button: { font_weight: 'bold' }
-});
-```
-
-**`clearStyles()`**
-Clear all defined styles.
-
-```typescript
-import { clearStyles } from 'tsyne';
-
-clearStyles();
-```
-
-**`getStyleSheet()`**
-Get the global stylesheet instance.
-
-```typescript
-import { getStyleSheet } from 'tsyne';
-
-const sheet = getStyleSheet();
-const labelStyle = sheet?.getComputedStyle('label');
-```
-
-**See [HISTORICAL.md](HISTORICAL.md) for a discussion**
-
-### Limitations
-
-Due to Fyne's architecture:
-- **Color customization** is limited for standard widgets (requires custom themes or renderers)
-- **Font styles** (bold, italic, monospace) work well across widgets
-- **Font families** are limited to sans-serif, serif, and monospace
-- **Widget-specific styling** may have platform-specific variations
-
-For advanced color customization, consider using Fyne's theme system (see Theme Support section above).
-
-### Examples
-
-See these examples demonstrating the styling system:
-- **`examples/form-unstyled.ts`** - Form without any styling
-- **`examples/form-styled.ts`** - Same form with stylesheet applied
-- **`examples/form-styles.ts`** - Stylesheet module defining visual styles
-
-Run the examples to see the difference:
-```bash
-npm run build
-node examples/form-unstyled.js   # Without styles
-node examples/form-styled.js     # With styles
-```
-
-## Context Menus
-
-All Tsyne widgets support right-click context menus, enabling contextual actions based on what the user clicks.
-
-### Usage
-
-Use `widget.setContextMenu()` to add a context menu to any widget:
-
-```typescript
-const todoLabel = label('Buy potatoes');
-
-todoLabel.setContextMenu([
-  {
-    label: 'Mark Complete',
-    onSelected: () => {
-      console.log('Marked complete!');
-    }
-  },
-  {
-    label: 'Edit',
-    onSelected: () => {
-      console.log('Edit item');
-    }
-  },
-  { isSeparator: true },
-  {
-    label: 'Delete',
-    onSelected: () => {
-      console.log('Delete item');
-    }
-  }
-]);
-```
-
-### Menu Item Options
-
-```typescript
-interface ContextMenuItem {
-  label: string;           // Menu item text
-  onSelected: () => void;  // Callback when selected
-  disabled?: boolean;      // Gray out and disable item
-  checked?: boolean;       // Show checkmark
-  isSeparator?: boolean;   // Render as separator line
-}
-```
-
-### Examples
-
-**Todo List with Context Menus:**
-```typescript
-const items = ['Buy milk', 'Buy potatoes', 'Call dentist'];
-
-items.forEach(item => {
-  const itemLabel = label(`☐ ${item}`);
-
-  itemLabel.setContextMenu([
-    {
-      label: 'Mark Complete',
-      onSelected: () => markComplete(item)
-    },
-    {
-      label: 'Edit',
-      onSelected: () => editItem(item)
-    },
-    { isSeparator: true },
-    {
-      label: 'Delete',
-      onSelected: () => deleteItem(item)
-    }
-  ]);
-});
-```
-
-**Document Editor with Context Menu:**
-```typescript
-const textEntry = entry('Document text...');
-
-textEntry.setContextMenu([
-  {
-    label: 'Cut',
-    onSelected: () => clipboard.cut()
-  },
-  {
-    label: 'Copy',
-    onSelected: () => clipboard.copy()
-  },
-  {
-    label: 'Paste',
-    onSelected: () => clipboard.paste()
-  },
-  { isSeparator: true },
-  {
-    label: 'Select All',
-    onSelected: () => selectAll()
-  }
-]);
-```
-
-**Dynamic Menu Items:**
-```typescript
-const label = label('Status: Active');
-
-label.setContextMenu([
-  {
-    label: 'Enable Feature',
-    checked: featureEnabled,
-    onSelected: () => toggleFeature()
-  },
-  {
-    label: 'Admin Only',
-    disabled: !isAdmin,
-    onSelected: () => adminAction()
-  }
-]);
-```
-
-### Demo
-
-See **`examples/pages/context-menu-demo.ts`** for a complete todo list example with context menus.
-
-```bash
-npm run build
-node examples/server.js
-npx tsyne-browser http://localhost:3000/
-# Navigate to Context Menu Demo page and right-click on todo items
-```
-
 ## Browser Mode
 
-Tsyne includes a Swiby-inspired browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
+Tsyne includes a Swiby-inspired (and others) browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
 
 ```bash
 # Run the browser with a URL
@@ -1015,79 +500,9 @@ Tsyne supports standard UI architectural patterns:
 | **MVP** | Maximum testability, swappable views | [mvp-login.ts](examples/mvp-login.ts) |
 | **Data Binding** | Form inputs, real-time sync | [data-binding.ts](examples/data-binding.ts) |
 
-#### MVC Example
+TODO: do we really support data binding?
 
-```typescript
-// Model - Business logic
-class CounterModel extends Model {
-  private count = 0;
-  increment() { this.count++; this.notifyChanged(); }
-  getCount() { return this.count; }
-}
-
-// View - UI presentation
-class CounterView {
-  createUI(onIncrement: () => void) {
-    vbox(() => {
-      this.label = label('Count: 0');
-      button('Increment', onIncrement);
-    });
-  }
-}
-
-// Controller - Connects Model and View
-class CounterController {
-  constructor(private model: CounterModel, private view: CounterView) {
-    this.model.subscribe(() => this.updateView());
-  }
-  handleIncrement() { this.model.increment(); }
-}
-```
-
-#### MVVM Example
-
-```typescript
-// ViewModel with observable properties
-class TodoViewModel extends ViewModel {
-  todos = new ObservableState<TodoItem[]>([]);
-  newTodoText = new ObservableState('');
-
-  addTodo() {
-    this.model.addTodo(this.newTodoText.get());
-    this.newTodoText.set('');
-    this.updateFromModel();
-  }
-}
-
-// View binds to ViewModel
-class TodoView {
-  constructor(private viewModel: TodoViewModel) {
-    // Automatic UI updates when state changes
-    this.viewModel.todos.subscribe(() => this.updateUI());
-  }
-}
-```
-
-**See [docs/PATTERNS.md](docs/PATTERNS.md) for complete documentation on all architectural patterns, data binding, and state management.**
-
-### State Management Examples
-
-Check out these comprehensive examples:
-
-- **[data-binding.ts](examples/data-binding.ts)** - Two-way data binding with observable state
-- **[mvc-counter.ts](examples/mvc-counter.ts)** - Classic MVC pattern (like Swing)
-- **[mvvm-todo.ts](examples/mvvm-todo.ts)** - MVVM pattern with data binding
-- **[mvp-login.ts](examples/mvp-login.ts)** - MVP pattern with passive views
-- **[dialog-state.ts](examples/dialog-state.ts)** - Dialog state passing pattern
-
-Run the examples:
-
-```bash
-npm run build
-node examples/data-binding.js
-node examples/mvc-counter.js
-node examples/mvvm-todo.js
-```
+TODO links to examples.
 
 ## Architecture
 
@@ -1104,7 +519,7 @@ Tsyne uses a unique architecture to bridge TypeScript and Go:
 │   Tsyne Client       │
 │   (TypeScript)      │
 └──────────┬──────────┘
-           │ JSON-RPC via stdio
+           │ channel between two proesses
            ▼
 ┌─────────────────────┐
 │   Tsyne Bridge       │
@@ -1119,161 +534,12 @@ Tsyne uses a unique architecture to bridge TypeScript and Go:
 ```
 
 1. **Tsyne Client** (TypeScript): Provides the pseudo-declarative API and spawns the bridge process
-2. **Tsyne Bridge** (Go): Manages Fyne widgets and communicates via JSON messages over stdio
-3. **Message Protocol**: Bidirectional JSON-RPC for commands and events
+2. **Tsyne Bridge** (Go): Manages Fyne widgets and communicates via say Unix-domain sockets but it has alternates. Bidirectional
+3. **Message Protocol**: MsgPack  or other
 
 ## Examples
 
 > **100+ Examples Available!** See **[examples/README.md](examples/README.md)** for a comprehensive catalog of all examples organized by category, with direct links to source files and screenshots. Whether you're learning Tsyne basics or building complex applications, there's an example for you.
-
-### Basic Examples
-
-Check out the `examples/` directory:
-
-**Getting Started:**
-- `hello.ts` - Simple Hello World
-- `counter.ts` - Counter with increment/decrement
-- `calculator.ts` - Calculator with number pad
-- `form.ts` - Form with text inputs
-
-**Widget Examples:**
-- `input-widgets.ts` - MultiLineEntry, PasswordEntry, Separator, and Hyperlink widgets
-- `advanced-widgets.ts` - Card, Accordion, Form, and Center layout
-- `specialized-widgets.ts` - Tree, RichText, Image, Border, and GridWrap
-- `checkbox.ts` - Checkbox with state tracking and callbacks
-- `select.ts` - Dropdown select with multiple options
-- `slider.ts` - Slider controls for volume, brightness, etc.
-- `radiogroup.ts` - Radio button groups for mutually exclusive choices
-- `progressbar.ts` - Progress indicators for downloads and loading
-- `scroll.ts` - Scrollable container for long content
-- `grid.ts` - Grid layout calculator example
-- `split.ts` - Resizable horizontal and vertical split containers
-- `tabs.ts` - Tabbed interface for organizing content
-- `table.ts` - Data tables with headers and sortable rows
-- `list.ts` - Scrollable lists with selection callbacks
-
-**Dialog Examples:**
-- `dialogs-info.ts` - Information and error dialogs
-- `dialogs-confirm.ts` - Confirmation dialogs for critical actions
-- `dialogs-file.ts` - File open and save dialogs
-
-**Advanced UI Examples:**
-- `window-sizing.ts` - Window sizing, positioning, and fullscreen
-- `menu-bar.ts` - Application menu bars with File/Edit/Help menus
-- `toolbar.ts` - Toolbars with actions, separators, and spacers
-- `theme.ts` - Light and dark theme switching with widget showcase
-
-**Pattern Examples:**
-- `data-binding.ts` - Two-way data binding with observable state
-- `mvc-counter.ts` - Classic MVC pattern (like Swing)
-- `mvvm-todo.ts` - MVVM pattern with data binding
-- `mvp-login.ts` - MVP pattern with passive views
-- `dialog-state.ts` - Dialog state passing pattern
-
-**Styling Examples:**
-- `form-unstyled.ts` - Registration form without custom styling
-- `form-styled.ts` - Same form with Swiby-like stylesheet applied
-- `form-styles.ts` - Stylesheet module defining visual styles
-
-**Browser Examples:**
-- `run-browser.ts` - Example of creating a browser programmatically
-- `server.js` - Sample Node.js HTTP server serving multiple Tsyne TypeScript pages
-- `web-features.test.js` - Comprehensive browser testing examples
-- `widget-interactions.test.js` - Widget interaction testing examples
-
-Run an example:
-
-```bash
-npm run build
-node examples/calculator.js
-node examples/input-widgets.js
-node examples/advanced-widgets.js
-node examples/specialized-widgets.js
-node examples/checkbox.js
-node examples/select.js
-node examples/slider.js
-node examples/radiogroup.js
-node examples/progressbar.js
-node examples/scroll.js
-node examples/grid.js
-node examples/split.js
-node examples/tabs.js
-node examples/dialogs-info.js
-node examples/dialogs-confirm.js
-node examples/dialogs-file.js
-node examples/window-sizing.js
-node examples/menu-bar.js
-node examples/toolbar.js
-node examples/theme.js
-node examples/table.js
-node examples/list.js
-node examples/form-unstyled.js
-node examples/form-styled.js
-```
-
-### Test Applications - Two Architectural Patterns
-
-We provide **two calculator implementations** demonstrating different approaches:
-
-#### 1. Simple Calculator - Monolithic Pattern
-
-**Best for:** Learning, prototypes, demos < 200 lines
-
-```
-test-apps/calculator-simple/
-├── calculator.ts (150 lines - all in one file)
-├── calculator.test.ts (TsyneTest only)
-└── README.md
-```
-
-**Features:**
-- All code in one place
-- Simple and straightforward
-- Quick to prototype
-- TsyneTest integration tests only
-
-**Trade-offs:**
-- Cannot unit test logic separately
-- Slower test feedback (~3s)
-- Hard to maintain at scale
-
-```bash
-npm run run:calculator-simple
-npm run test:calculator-simple
-```
-
-#### 2. Advanced Calculator - Decomposed Pattern
-
-**Best for:** Production apps, teams, complex logic, TDD
-
-```
-test-apps/calculator-advanced/
-├── calculator-logic.ts (Pure business logic)
-├── calculator-logic.test.ts (34 Jest unit tests)
-├── calculator-ui.ts (UI presentation)
-├── calculator.test.ts (11 TsyneTest integration tests)
-└── README.md + TESTING-STRATEGY.md
-```
-
-**Features:**
-- Separated business logic and UI
-- Fast Jest unit tests (~100ms for 34 tests)
-- TDD-friendly development
-- Reusable logic (CLI, web, API)
-- Comprehensive test coverage (45 tests total)
-
-**Trade-offs:**
-- More files and boilerplate
-- Higher learning curve
-
-```bash
-npm run run:calculator          # Run the app
-npm run test:calculator         # Integration tests
-npm run test:calculator:logic   # Unit tests (fast!)
-npm test                        # All tests
-```
-
-**See [test-apps/README.md](test-apps/README.md) for detailed comparison and decision guide.**
 
 ## Architecture Patterns
 
@@ -1281,10 +547,10 @@ npm test                        # All tests
 
 Tsyne supports two architectural patterns for building applications:
 
-| Pattern | When to Use | Testing Approach |
-|---------|-------------|------------------|
-| **Monolithic** | Demos, prototypes, < 200 lines | TsyneTest integration tests only |
-| **Decomposed** | Production, teams, complex logic | Jest unit tests + TsyneTest integration |
+| Pattern | When to Use | Testing Approach                              |
+|---------|-------------|-----------------------------------------------|
+| **Monolithic** | Demos, prototypes, < 200 lines | TsyneTest integration tests only              |
+| **Decomposed** | Production, teams, complex logic | Jest unit tests + TsyneTest integration tests |
 
 **Monolithic Example:**
 ```typescript
@@ -1355,7 +621,7 @@ test('increment', () => {
 Tsyne follows these design principles:
 
 1. **Pseudo-declarative where possible**: UI structure is defined using nested function calls
-2. **Imperative when needed**: Full JavaScript for event handlers and state management
+2. **Imperative when needed**: Full TypeScript for event handlers and state management
 3. **Terse and elegant**: Minimal boilerplate, maximum expressiveness
 4. **Type-safe**: Complete TypeScript definitions for IDE support
 5. **Easy to use**: Simple npm install, straightforward API
@@ -1375,17 +641,17 @@ npm run build:bridge
 npm run build
 
 # Run an example
-node examples/hello.js
+./scripts/tsyne examples/hello.ts
 ```
 
 ## Requirements
 
-- **Node.js**: 16.0.0 or higher
-- **Go**: 1.21 or higher (for building the bridge)
+- **Node.js**: 22.0.0 or higher
+- **Go**: 1.24 or higher (for building the bridge) - we have our own fork for now (TODO)
 - **Platform-specific dependencies**:
   - macOS: Xcode command line tools
   - Linux: X11 development libraries
-  - Windows: MinGW-w64 (for CGO)
+  - Windows: MinGW-w64 (for CGO), or WSL2
 
 ## Contributing
 
@@ -1395,35 +661,17 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 MIT License - see [LICENSE](LICENSE) file for details
 
+Note some the apps in this repo are other licenses, including GPL. Another day that's stop us from
+zipping all into a single distribution, but for now we don't make a distribution (a binary that we 
+publish) so we don't have to worry too much.
+
 ## Credits and Acknowledgments
 
 ### Core Technology
 
 - **[Fyne](https://fyne.io/)** - The fantastic Go UI toolkit that powers Tsyne's native rendering
-  - Created by Andrew Williams and the Fyne.io team
+  - Created by Andrew Williams and the Fyne.io team - many local to me in Edinburgh
   - Provides cross-platform native widgets, Material Design theming, and excellent performance
-
-### Example Applications
-
-Several example applications in this repository are ports or adaptations from other projects:
-
-- **Chess** (`examples/chess/`) - Ported from [andydotxyz/chess](https://github.com/andydotxyz/chess)
-  - Original author: Andy Williams (andydotxyz)
-  - Adapted to Tsyne's TypeScript API with chess.js game engine
-
-- **Solitaire** (`examples/solitaire/`) - Ported from [fyne-io/solitaire](https://github.com/fyne-io/solitaire)
-  - Original authors: Fyne.io contributors
-  - Adapted to Tsyne with simplified drag-and-drop interactions
-
-- **Game of Life** (`examples/game-of-life/`) - Ported from [fyne-io/life](https://github.com/fyne-io/life)
-  - Original authors: Fyne.io contributors
-  - Conway's cellular automaton adapted to Tsyne's declarative API
-
-- **TodoMVC** (`examples/todomvc.ts`) - Inspired by [TodoMVC](https://todomvc.com/)
-  - Standard todo application specification
-  - Demonstrates state management and persistence patterns
-
-All ported applications maintain attribution to their original authors and licenses. See individual example directories for detailed attribution and licensing information.
 
 ### Inspirations and Design Influences
 
@@ -1431,7 +679,7 @@ Tsyne's design draws from several influential frameworks and patterns:
 
 - The Interface Builder before the current Interface Builder, written in Lisp.
 - Ruby Shoes - Created by _why_the_lucky_stiff - Pioneering elegant DSL design for desktop GUIs
-- Swiby - Ruby/Swing integration by jeanlazarou - CSS-like styling separate from UI structure
+- Swiby - Ruby/Swing integration by pal Jean Lazarou - CSS-like styling separate from UI structure
 - QML - Qt's declarative UI language - Seamless declarative/imperative integration
 
 **See [HISTORICAL.md](HISTORICAL.md) for detailed discussion of these influences and how they shaped Tsyne's design.**
@@ -1440,22 +688,11 @@ Special thanks to: Andrew Williams, colleagues and contributors - For Fyne UI to
 
 ## Tauri Mobile Packaging (Android/iOS)
 
-PhoneTop can be packaged as a Tauri mobile app using a web-renderer bridge mode.
+PhoneTop can be packaged as a Tauri mobile app using a web-renderer bridge mode.  TODO ... Android's APK route with nodejs-mobile might be a better route.
 
 ### Prerequisites
 
-```bash
-# Android SDK and NDK
-export ANDROID_HOME=~/Android/Sdk
-export NDK_HOME=~/Android/Sdk/ndk/26.1.10909125
-
-# Java 17 (Gradle requires JDK 17, not 25+)
-export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-
-# Rust Android targets
-rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-```
-
+TODO
 ### Building Android APK
 
 ```bash
