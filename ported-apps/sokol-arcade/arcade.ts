@@ -26,9 +26,9 @@
  * SOFTWARE.
  */
 
-import { FPSVoxelGame } from './fps-voxel';
-import { PacmanGame, Direction } from './pacman';
-import { Chip8 } from './chip8';
+import { FPSVoxelGame } from './fps-voxel/index';
+import { PacmanGame, Direction } from './pacman/index';
+import { Chip8 } from './chip8/index';
 
 export type GameType = 'launcher' | 'fps-voxel' | 'pacman' | 'chip8';
 

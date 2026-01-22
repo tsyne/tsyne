@@ -343,16 +343,15 @@ class Store {
 
 **Test Template:**
 - Aim for 40-50 Jest tests covering: CRUD (10), relationships (5-7), edge cases (5-7), observable (5), immutability (5)
-- Copy test to `core/src/__tests__/ported-apps/[app]/index.test.ts` with updated import path
-- Run: `pnpm test -- core/src/__tests__/ported-apps/[app]/index.test.ts`
+- Tests should always be co-located with the app's production code
+- Run: `pnpm test ported-apps/[app]/index.test.ts`
 
 **Files to Create:**
 1. `ported-apps/[app]/index.ts` (single file, 400-730 lines)
-2. `ported-apps/[app]/index.test.ts` (Jest tests)
+2. `ported-apps/[app]/index.test.ts` (Jest tests, co-located)
 3. `ported-apps/[app]/index.tsyne.test.ts` (tab navigation + screenshot)
 4. `ported-apps/[app]/README.md` (ASCII diagrams)
 5. `ported-apps/[app]/LICENSE` (MIT/Apache)
-6. `core/src/__tests__/ported-apps/[app]/index.test.ts` (copy with updated import)
 
 **See Also:** `/docs/pseudo-declarative-ui-composition.md` → "Lessons from Ported Apps" for detailed patterns
 

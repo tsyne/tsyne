@@ -2,7 +2,7 @@
  * Pacman Game - Jest Unit Tests
  */
 
-import { PacmanGame, Direction } from './pacman';
+import { PacmanGame, Direction } from './index';
 
 describe('PacmanGame', () => {
   let game: PacmanGame;

@@ -2,8 +2,8 @@
  * FPS Voxel Game - Jest Unit Tests
  */
 
-import { VoxelWorld, VoxelPlayer, FPSVoxelGame } from './fps-voxel';
-import { Vector3 } from '../../cosyne/src/math3d';
+import { VoxelWorld, VoxelPlayer, FPSVoxelGame } from './index';
+import { Vector3 } from '../../../cosyne/src/math3d';
 
 describe('VoxelWorld', () => {
   let world: VoxelWorld;

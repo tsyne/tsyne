@@ -6,7 +6,7 @@
  *
  * @see https://github.com/floooh/chipz
  *
- * Portions copyright (c) 2021 Andre Weissflog (floooh)
+ * Portions copyright (c) 2024 Andre Weissflog (floooh)
  * Portions copyright (c) 2025 Paul Hammant
  *
  * MIT License

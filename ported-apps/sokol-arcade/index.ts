@@ -20,14 +20,14 @@
  */
 
 // FPS Voxel game
-export { VoxelWorld, VoxelPlayer, FPSVoxelGame } from './fps-voxel';
+export { VoxelWorld, VoxelPlayer, FPSVoxelGame } from './fps-voxel/index';
 
 // Pacman game
-export { PacmanGame, Direction, GhostState } from './pacman';
-export type { Entity } from './pacman';
+export { PacmanGame, Direction, GhostState } from './pacman/index';
+export type { Entity } from './pacman/index';
 
 // Chip-8 emulator
-export { Chip8 } from './chip8';
+export { Chip8 } from './chip8/index';
 
 // Arcade store and launcher
 export { ArcadeStore, GAMES, buildSokolArcadeApp } from './arcade';

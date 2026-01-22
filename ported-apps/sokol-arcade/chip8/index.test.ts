@@ -2,7 +2,7 @@
  * Chip-8 Emulator - Jest Unit Tests
  */
 
-import { Chip8 } from './chip8';
+import { Chip8 } from './index';
 
 describe('Chip8', () => {
   let chip8: Chip8;
