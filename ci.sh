@@ -329,9 +329,9 @@ if [ -d "$FYNE_DIR" ]; then
   cd "$FYNE_DIR" && git pull --ff-only
   echo "Fyne updated ✓"
 else
-  echo "ERROR: Fyne fork not found at $FYNE_DIR"
-  echo "Clone it with: git clone <your-fyne-fork> $FYNE_DIR"
-  exit 1
+  echo "Fyne fork not found at $FYNE_DIR - cloning..."
+  git clone https://github.com/paul-hammant/fyne.git "$FYNE_DIR"
+  echo "Fyne cloned ✓"
 fi
 
 # ============================================================================
