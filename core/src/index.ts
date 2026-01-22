@@ -958,7 +958,6 @@ export { screenshotIfRequested } from './screenshot-helper';
 // Export app metadata utilities (for building desktop/phone/tablet environments)
 export {
   parseAppMetadata,
-  scanForApps,
   loadAppBuilder,
   loadContentBuilder,
   loadAppBuilderCached,
@@ -967,6 +966,9 @@ export {
   getCacheStats,
   getAppMetadata,
 } from './app-metadata';
+
+// Export the central app registry
+export { ALL_APPS } from '../../all-apps';
 export type { AppMetadata } from './app-metadata';
 
 // Export transpile cache utilities (for advanced caching control)

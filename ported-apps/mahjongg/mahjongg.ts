@@ -20,7 +20,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createMahjonggApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from '../../core/src';
@@ -849,22 +849,25 @@ export class MahjonggUI {
 /**
  * Create the Mahjongg app
  */
-export function createMahjonggApp(a: App): MahjonggUI {
+export function createMahjonggApp(a: App, windowWidth?: number, windowHeight?: number): MahjonggUI {
   const ui = new MahjonggUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (win: Window) => {
-    ui.setupWindow(win);
-
-    win.setContent(() => {
-      ui.buildContent();
-    });
-
-    win.show();
-    // Trigger initial render after UI is set up (needed for phonetop)
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

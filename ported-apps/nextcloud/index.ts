@@ -4,7 +4,8 @@
  * @tsyne-app:name NextCloud
  * @tsyne-app:icon confirm
  * @tsyne-app:category Network
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildNextCloudApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A cloud storage and file sync client ported from NextCloud iOS to Tsyne:
  * - File browser with folder navigation
@@ -304,10 +305,13 @@ export class NextCloudStore {
 // VIEW BUILDER
 // ============================================================================
 
-export function buildNextCloudApp(a: any): void {
+export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new NextCloudStore();
   let selectedTab: 'files' | 'sync' | 'shared' | 'account' = 'files';
   let currentPath: string = '/';
+  let win: any = null;
 
   let accountStatusLabel: any;
   let storageLabel: any;
@@ -349,9 +353,8 @@ export function buildNextCloudApp(a: any): void {
     }
   }
 
-  a.window({ title: 'NextCloud Desktop Client', width: 1100, height: 800 }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Header
         a.hbox(() => {
           a.label('☁️ NextCloud').withId('app-title');
@@ -647,20 +650,32 @@ export function buildNextCloudApp(a: any): void {
         });
       });
     });
+  };
 
-    // Subscribe to store changes
-    store.subscribe(async () => {
-      await updateStatusLabels();
-      await viewStack.refresh();
-    });
+  // Subscribe to store changes
+  store.subscribe(async () => {
+    await updateStatusLabels();
+    await viewStack.refresh();
+  });
 
-    // Initial setup
+  if (isEmbedded) {
+    buildContent();
     (async () => {
       await updateStatusLabels();
     })();
+  } else {
+    a.window({ title: 'NextCloud Desktop Client', width: 1100, height: 800 }, (w: any) => {
+      win = w;
+      win.setContent(buildContent);
 
-    win.show();
-  });
+      // Initial setup
+      (async () => {
+        await updateStatusLabels();
+      })();
+
+      win.show();
+    });
+  }
 }
 
 export default buildNextCloudApp;

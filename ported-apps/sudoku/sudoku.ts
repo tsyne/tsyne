@@ -23,7 +23,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createSudokuApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -814,22 +814,25 @@ export class SudokuUI {
 /**
  * Create the Sudoku app
  */
-export function createSudokuApp(a: App): SudokuUI {
+export function createSudokuApp(a: App, windowWidth?: number, windowHeight?: number): SudokuUI {
   const ui = new SudokuUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Sudoku', width: 450, height: 550 }, (win: Window) => {
-    ui.setupWindow(win);
-
-    win.setContent(() => {
-      ui.buildContent();
-    });
-
-    win.show();
-    // Trigger initial render after UI is set up (needed for phonetop)
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Sudoku', width: 450, height: 550 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

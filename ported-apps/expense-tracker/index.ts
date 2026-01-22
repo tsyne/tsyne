@@ -4,7 +4,8 @@
  * @tsyne-app:name Expense Tracker
  * @tsyne-app:icon confirm
  * @tsyne-app:category Finance
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildExpenseTrackerApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A personal finance tracker built in Tsyne showcasing:
  * - Expense tracking with categories
@@ -246,7 +247,9 @@ export class ExpenseStore {
 // VIEW BUILDER
 // ============================================================================
 
-export function buildExpenseTrackerApp(a: any): void {
+export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new ExpenseStore();
   let selectedTab: 'expenses' | 'budgets' | 'analytics' = 'expenses';
 
@@ -256,6 +259,7 @@ export function buildExpenseTrackerApp(a: any): void {
   let viewStack: any;
   let totalTodayLabel: any;
   let totalMonthLabel: any;
+  let win: any = null;
 
   async function updateSummaryLabels() {
     if (totalTodayLabel) {
@@ -266,9 +270,8 @@ export function buildExpenseTrackerApp(a: any): void {
     }
   }
 
-  a.window({ title: 'Expense Tracker', width: 1000, height: 750 }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Header with summary
         a.hbox(() => {
           a.vbox(() => {
@@ -512,20 +515,32 @@ export function buildExpenseTrackerApp(a: any): void {
         });
       });
     });
+  };
 
-    // Subscribe to store changes
-    store.subscribe(async () => {
-      await updateSummaryLabels();
-      await viewStack.refresh();
-    });
+  // Subscribe to store changes
+  store.subscribe(async () => {
+    await updateSummaryLabels();
+    await viewStack.refresh();
+  });
 
-    // Initial setup
+  if (isEmbedded) {
+    buildContent();
     (async () => {
       await updateSummaryLabels();
     })();
+  } else {
+    a.window({ title: 'Expense Tracker', width: 1000, height: 750 }, (w: any) => {
+      win = w;
+      win.setContent(buildContent);
 
-    win.show();
-  });
+      // Initial setup
+      (async () => {
+        await updateSummaryLabels();
+      })();
+
+      win.show();
+    });
+  }
 }
 
 export default buildExpenseTrackerApp;

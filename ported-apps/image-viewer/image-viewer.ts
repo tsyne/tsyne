@@ -2,7 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
 // @tsyne-app:category graphics
 // @tsyne-app:builder createImageViewerApp
-// @tsyne-app:args app,filePath
+// @tsyne-app:args app,filePath,windowWidth,windowHeight
 
 /**
  * Image Viewer for Tsyne with REAL Image Editing
@@ -634,23 +634,34 @@ class ImageViewerUI {
  * Based on: main.go
  * Returns the viewer instance for programmatic control (useful for testing)
  */
-export function createImageViewerApp(a: App, filePath?: string): ImageViewer {
+export function createImageViewerApp(a: App, filePath?: string, windowWidth?: number, windowHeight?: number): ImageViewer {
   const viewer = new ImageViewer();
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
-    const ui = new ImageViewerUI(a, viewer, win);
-    win.setContent(() => {
-      ui.buildUI();
-    });
-    win.show();
+  if (isEmbedded) {
+    const ui = new ImageViewerUI(a, viewer, null as any);
+    ui.buildUI();
 
-    // Auto-load if file path provided (e.g., from desktop file icon double-click)
     if (filePath) {
       viewer.loadImage(filePath).catch(err => {
         console.error('Failed to load image:', err);
       });
     }
-  });
+  } else {
+    a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
+      const ui = new ImageViewerUI(a, viewer, win);
+      win.setContent(() => {
+        ui.buildUI();
+      });
+      win.show();
+
+      if (filePath) {
+        viewer.loadImage(filePath).catch(err => {
+          console.error('Failed to load image:', err);
+        });
+      }
+    });
+  }
 
   return viewer;
 }

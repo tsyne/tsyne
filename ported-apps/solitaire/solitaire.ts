@@ -1096,7 +1096,7 @@ class SolitaireUI {
     });
   }
 
-  buildUI(win: Window): void {
+  buildUI(win: Window | null): void {
     this.window = win;
 
     // Get base64-rendered images
@@ -1296,35 +1296,26 @@ class SolitaireUI {
  */
 export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): SolitaireUI {
   const ui = new SolitaireUI(a, cardImageProvider);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  // Use provided window dimensions or fall back to layout scale detection
-  let width: number;
-  let height: number;
-
-  if (windowWidth && windowHeight) {
-    // PhoneTop provided dimensions - use them directly
-    width = windowWidth;
-    height = windowHeight;
-    console.log(`[Solitaire] Window: ${windowWidth}x${windowHeight}`);
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildUI(null);
   } else {
+    // Standalone/desktop mode: create a window
     // Determine window size - use phone-sized window when running on mobile
-    // Phone layout scale is set by phonetop (0.5 for portrait, 0.8 for landscape)
     const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
     const isMobile = layoutScale < 1.0;
+    const width = isMobile ? 1040 : 1000;
+    const height = isMobile ? 750 : 700;
 
-    // On mobile: use smaller dimensions that fit within phone screen
-    // Calculate based on 7 tableau columns + 4 foundation piles + draw area
-    // With 80px cards: 7*80 + 4*80 + 80 (draw) + padding ≈ 1040px (with scale 0.5 → ~520px)
-    width = isMobile ? 1040 : 1000;
-    height = isMobile ? 750 : 700;
-  }
-
-  a.window({ title: 'Solitaire', width, height }, (win: Window) => {
-    win.setContent(() => {
-      ui.buildUI(win);
+    a.window({ title: 'Solitaire', width, height }, (win: Window) => {
+      win.setContent(() => {
+        ui.buildUI(win);
+      });
+      win.show();
     });
-    win.show();
-  });
+  }
 
   return ui;
 }

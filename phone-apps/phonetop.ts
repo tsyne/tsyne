@@ -14,7 +14,8 @@ import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
 import { Label, Button, VBox } from '../core/src/widgets';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
+import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
+import { ALL_APPS } from '../all-apps';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { Inspector } from '../core/src/inspector';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
@@ -74,16 +75,6 @@ export interface StaticAppDefinition {
 
 // Phone options
 export interface PhoneTopOptions {
-  /** Directory to scan for apps (defaults to examples/) */
-  appDirectory?: string;
-  /** Base directory for relative paths (defaults to process.cwd()) */
-  baseDirectory?: string;
-  /** Directory for phone apps (defaults to phone-apps/) */
-  phoneAppsDirectory?: string;
-  /** Directory for native apps (defaults to native-apps/) */
-  nativeAppsDirectory?: string;
-  /** Directory for ported apps (defaults to ported-apps/) */
-  portedAppsDirectory?: string;
   /** Static apps to include (for Android/iOS where dynamic loading isn't available) */
   staticApps?: StaticAppDefinition[];
   /** Number of columns in the grid */
@@ -166,32 +157,13 @@ class PhoneTop {
   }
 
   /**
-   * Safely scan for apps, returning empty array if directory doesn't exist
+   * Load app metadata from a resolved file path, returning null if it fails
    */
-  private safeScanForApps(dir: string): AppMetadata[] {
+  private loadAppMetadata(filePath: string): AppMetadata | null {
     try {
-      if (!fs.existsSync(dir)) {
-        return [];
-      }
-      return scanForApps(dir);
-    } catch (err) {
-      console.error(`Error scanning directory ${dir}:`, err);
-      return [];
-    }
-  }
-
-  /**
-   * Safely scan for ported apps, returning empty array if directory doesn't exist
-   */
-  private safeScanPortedApps(dir: string): AppMetadata[] {
-    try {
-      if (!fs.existsSync(dir)) {
-        return [];
-      }
-      return scanPortedApps(dir);
-    } catch (err) {
-      console.error(`Error scanning ported apps directory ${dir}:`, err);
-      return [];
+      return parseAppMetadata(filePath);
+    } catch {
+      return null;
     }
   }
 
@@ -379,23 +351,20 @@ class PhoneTop {
   }
 
   /**
-   * Initialize the phone by scanning for apps and grouping into folders
+   * Initialize the phone by loading apps from registry and grouping into folders
    */
   async init() {
-    const baseDir = this.options.baseDirectory || process.cwd();
-    const appDir = this.options.appDirectory || path.join(baseDir, 'examples');
-    const portedAppsDir = this.options.portedAppsDirectory || path.join(baseDir, 'ported-apps');
-    const phoneAppsDir = this.options.phoneAppsDirectory || path.join(baseDir, 'phone-apps');
-    const nativeAppsDir = this.options.nativeAppsDirectory || path.join(baseDir, 'native-apps');
+    // Load metadata from all registered apps
+    const apps: AppMetadata[] = [];
+    for (const filePath of ALL_APPS) {
+      const metadata = this.loadAppMetadata(filePath);
+      if (metadata) {
+        apps.push(metadata);
+      }
+    }
+    apps.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Scan for apps (handle missing directories gracefully)
-    const exampleApps = this.safeScanForApps(appDir);
-    const portedApps = this.safeScanPortedApps(portedAppsDir);
-    const phoneApps = this.safeScanForApps(phoneAppsDir);
-    const nativeApps = this.safeScanForApps(nativeAppsDir);
-    const apps = [...exampleApps, ...portedApps, ...phoneApps, ...nativeApps].sort((a, b) => a.name.localeCompare(b.name));
-
-    // Prepare all app icons from scanned apps
+    // Prepare all app icons
     for (const metadata of apps) {
       const { resourceName } = await this.prepareIconResource(metadata);
       this.icons.push({

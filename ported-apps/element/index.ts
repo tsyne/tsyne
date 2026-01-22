@@ -4,7 +4,8 @@
  * @tsyne-app:name Element
  * @tsyne-app:icon message
  * @tsyne-app:category Communication
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildElementApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A open, secure, decentralized messenger ported from Element iOS to Tsyne:
  * - Real-time messaging via Matrix protocol
@@ -375,7 +376,9 @@ export class ElementStore {
 // APP BUILD FUNCTION
 // ============================================================================
 
-export function buildElementApp(a: any): void {
+export function buildElementApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new ElementStore();
 
   let selectedTab = 'rooms';
@@ -402,9 +405,8 @@ export function buildElementApp(a: any): void {
     }
   };
 
-  a.window({ title: 'Element - Secure Messenger' }, (win: any) => {
-    win.setContent(() => {
-      a.hbox(() => {
+  const buildContent = () => {
+    a.hbox(() => {
         // Sidebar
         a.vbox(() => {
           // User Profile
@@ -658,12 +660,20 @@ export function buildElementApp(a: any): void {
         }).withPadding(10);
       });
     });
+  };
 
-    store.subscribe(async () => {
-      await updateLabels();
-      await viewStack.refresh();
-    });
-
-    updateLabels();
+  store.subscribe(async () => {
+    await updateLabels();
+    await viewStack.refresh();
   });
+
+  if (isEmbedded) {
+    buildContent();
+    updateLabels();
+  } else {
+    a.window({ title: 'Element - Secure Messenger' }, (win: any) => {
+      win.setContent(buildContent);
+      updateLabels();
+    });
+  }
 }

@@ -13,7 +13,7 @@
  * @tsyne-app:name Dial Dashboard
  * @tsyne-app:icon radioButton
  * @tsyne-app:category Demos
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { cosyne, CosyneContext, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';

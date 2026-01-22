@@ -6,7 +6,7 @@
  * @tsyne-app:name Particles Advanced
  * @tsyne-app:icon chartIcon
  * @tsyne-app:category Animation
- * @tsyne-app:args (a: any) => void
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, refreshAllBindings } from '../../core/src/index';

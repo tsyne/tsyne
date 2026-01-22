@@ -17,7 +17,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createZipPuzzleApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -341,15 +341,21 @@ export class ZipPuzzleUI {
 // App Factory
 // ============================================================================
 
-export function createZipPuzzleApp(a: App): ZipPuzzleUI {
+export function createZipPuzzleApp(a: App, windowWidth?: number, windowHeight?: number): ZipPuzzleUI {
   const ui = new ZipPuzzleUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Zip Puzzle', width: 400, height: 450 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
+  if (isEmbedded) {
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    a.window({ title: 'Zip Puzzle', width: 400, height: 450 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

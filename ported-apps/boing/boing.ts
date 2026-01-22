@@ -2,7 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" fill="#CC0000" stroke="#FFFFFF"/><path d="M7 7L17 17M7 17L17 7M12 2v20M2 12h20" stroke="#FFFFFF" stroke-width="1.5"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createBoingApp
-// @tsyne-app:args app,resources
+// @tsyne-app:args app,resources,windowWidth,windowHeight
 
 /**
  * Boing Ball Demo for Tsyne
@@ -549,23 +549,28 @@ class BoingDemo {
 /**
  * Create the Boing app
  */
-export function createBoingApp(a: App, resources: IResourceManager): BoingDemo {
+export function createBoingApp(a: App, resources: IResourceManager, windowWidth?: number, windowHeight?: number): BoingDemo {
   const demo = new BoingDemo(a, resources);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   // Register cleanup
   a.registerCleanup(() => demo.cleanup());
 
-  a.window({ title: 'Boing Ball Demo', width: CANVAS_WIDTH + 16, height: CANVAS_HEIGHT + 40 }, (win: Window) => {
-    demo.setupWindow(win);
-
-    win.setContent(() => {
-      demo.buildContent();
-    });
-
-    win.show();
-    // Trigger initial render after UI is set up (needed for phonetop)
+  if (isEmbedded) {
+    demo.buildContent();
     setTimeout(() => demo.initialize(), 0);
-  });
+  } else {
+    a.window({ title: 'Boing Ball Demo', width: CANVAS_WIDTH + 16, height: CANVAS_HEIGHT + 40 }, (win: Window) => {
+      demo.setupWindow(win);
+
+      win.setContent(() => {
+        demo.buildContent();
+      });
+
+      win.show();
+      setTimeout(() => demo.initialize(), 0);
+    });
+  }
 
   return demo;
 }

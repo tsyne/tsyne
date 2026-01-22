@@ -4,7 +4,8 @@
  * @tsyne-app:name Wikipedia
  * @tsyne-app:icon book
  * @tsyne-app:category Reference
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildWikipediaApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * The free encyclopedia reader and discovery tool ported from Wikipedia iOS to Tsyne:
  * - Full-text search across millions of articles
@@ -447,7 +448,9 @@ export class WikipediaStore {
 // APP BUILD FUNCTION
 // ============================================================================
 
-export function buildWikipediaApp(a: any): void {
+export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new WikipediaStore();
 
   let selectedTab = 'search';
@@ -475,9 +478,8 @@ export function buildWikipediaApp(a: any): void {
     }
   };
 
-  a.window({ title: 'Wikipedia - The Free Encyclopedia' }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Header
         a.hbox(() => {
           a.label('📖 Wikipedia').withId('app-title').withBold();
@@ -706,13 +708,21 @@ export function buildWikipediaApp(a: any): void {
         });
       });
     });
+  };
 
-    // Observable subscription
-    store.subscribe(async () => {
-      await updateLabels();
-      await viewStack.refresh();
-    });
-
-    updateLabels();
+  // Observable subscription
+  store.subscribe(async () => {
+    await updateLabels();
+    await viewStack.refresh();
   });
+
+  if (isEmbedded) {
+    buildContent();
+    updateLabels();
+  } else {
+    a.window({ title: 'Wikipedia - The Free Encyclopedia' }, (win: any) => {
+      win.setContent(buildContent);
+      updateLabels();
+    });
+  }
 }

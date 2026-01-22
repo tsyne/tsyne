@@ -7,7 +7,8 @@
  * @tsyne-app:name Spherical Snake
  * @tsyne-app:icon home
  * @tsyne-app:category Games
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildSphericalSnakeApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';
@@ -488,9 +489,10 @@ export class SphericalSnake {
 // UI Layer
 // ============================================================================
 
-export function buildSphericalSnakeApp(a: App): void {
+export function buildSphericalSnakeApp(a: App, windowWidth?: number, windowHeight?: number): void {
   const game = new SphericalSnake();
   let canvasSize = { width: 450, height: 450 };
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   let canvas: TappableCanvasRaster;
   let scoreLabel: Label;
@@ -499,271 +501,233 @@ export function buildSphericalSnakeApp(a: App): void {
   let leftDown = false;
   let rightDown = false;
 
-  a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
-    win.setContent(() => {
-      a.border({
-        top: () => {
-          a.vbox(() => {
-            a.label('Spherical Snake').withId('title');
-            a.hbox(() => {
-              scoreLabel = a.label('Score: 0').withId('scoreLabel');
-              statusLabel = a.label('Playing').withId('statusLabel');
-            });
+  // Helper functions defined outside buildUIContent for access
+  function handleKeyDown(key: string): void {
+    if (key === 'Left') leftDown = true;
+    if (key === 'Right') rightDown = true;
+    game.setInputs(leftDown, rightDown);
+  }
+
+  function handleKeyUp(key: string): void {
+    if (key === 'Left') leftDown = false;
+    if (key === 'Right') rightDown = false;
+    game.setInputs(leftDown, rightDown);
+  }
+
+  async function renderFrame(): Promise<void> {
+    const buffer = new Uint8Array(canvasSize.width * canvasSize.height * 4);
+
+    for (let i = 0; i < buffer.length; i += 4) {
+      buffer[i] = 232;
+      buffer[i + 1] = 232;
+      buffer[i + 2] = 232;
+      buffer[i + 3] = 255;
+    }
+
+    const gridPoints = game.getProjectedGridPoints();
+    for (const point of gridPoints) {
+      const depthAlpha = Math.floor(point.alpha * 255);
+      drawPixel(buffer, point.x, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
+      drawPixel(buffer, point.x + 1, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
+      drawPixel(buffer, point.x, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
+      drawPixel(buffer, point.x + 1, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
+    }
+
+    const snakeNodes = game.getProjectedSnakeNodes();
+    for (let i = 0; i < snakeNodes.length; i++) {
+      const point = snakeNodes[i];
+      const depthColor = Math.floor(point.alpha * 255);
+      const fadeAlpha = Math.floor((1 - i / snakeNodes.length) * point.alpha * 255);
+      drawCircle(buffer, point.x, point.y, Math.max(3, Math.round(point.radius || 5)),
+        canvasSize.width, canvasSize.height, 120, 0, depthColor, fadeAlpha);
+    }
+
+    const pellet = game.getProjectedPellet();
+    const pelletDepthColor = Math.floor(pellet.alpha * 255);
+    drawCircle(buffer, pellet.x, pellet.y, Math.max(3, Math.round(pellet.radius || 5)),
+      canvasSize.width, canvasSize.height, 0, 0, pelletDepthColor, 255);
+
+    const horizonRadius = Math.round(canvasSize.width * 0.41);
+    drawCircleOutline(buffer, Math.round(canvasSize.width / 2), Math.round(canvasSize.height / 2),
+      horizonRadius, canvasSize.width, 0, 0, 0);
+
+    await canvas.setPixelBuffer(buffer);
+  }
+
+  function startGameLoop(): void {
+    if (gameLoop) clearInterval(gameLoop);
+    gameLoop = setInterval(async () => {
+      try {
+        game.tick();
+        await renderFrame();
+        updateUI();
+      } catch (err) {
+        console.error('[GAME] Error in game loop:', err);
+      }
+    }, 15);
+  }
+
+  function updateUI(): void {
+    scoreLabel.setText(`Score: ${game.getScore()}`);
+    const state = game.getGameState();
+    if (state === 'gameover') {
+      statusLabel.setText('Good game! Click New Game to play again');
+      if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+      }
+    } else {
+      statusLabel.setText('Playing');
+    }
+  }
+
+  const buildUIContent = () => {
+    a.border({
+      top: () => {
+        a.vbox(() => {
+          a.label('Spherical Snake').withId('title');
+          a.hbox(() => {
+            scoreLabel = a.label('Score: 0').withId('scoreLabel');
+            statusLabel = a.label('Playing').withId('statusLabel');
           });
-        },
-        center: () => {
-          // Stack: game canvas with direction buttons overlaid at bottom corners
-          a.stack(() => {
-            // Layer 1: Game canvas with aspect ratio
-            a.aspectRatio(1.0, () => {
-              canvas = a
-                .tappableCanvasRaster(canvasSize.width, canvasSize.height, {
-                  onKeyDown: (key: string) => handleKeyDown(key),
-                  onKeyUp: (key: string) => handleKeyUp(key)
-                })
-                .withId('gameCanvas');
-            });
+        });
+      },
+      center: () => {
+        a.stack(() => {
+          a.aspectRatio(1.0, () => {
+            canvas = a
+              .tappableCanvasRaster(canvasSize.width, canvasSize.height, {
+                onKeyDown: (key: string) => handleKeyDown(key),
+                onKeyUp: (key: string) => handleKeyUp(key)
+              })
+              .withId('gameCanvas');
+          });
 
-            // Layer 2: Direction buttons at bottom corners using TappableCanvasRaster
-            const arrowSize = 80;
-            const insetPercent = 0.10; // 10% inset from edges
-            a.border({
-              bottom: () => {
-                a.hbox(() => {
-                  // Left spacer (10% inset)
-                  a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
+          const arrowSize = 80;
+          const insetPercent = 0.10;
+          a.border({
+            bottom: () => {
+              a.hbox(() => {
+                a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
 
-                  // Left arrow button (SW corner)
-                  let leftArrowCanvas: TappableCanvasRaster;
-                  leftArrowCanvas = a
-                    .tappableCanvasRaster(arrowSize, arrowSize, {
-                      onTap: () => {
-                        leftDown = true;
-                        game.setInputs(leftDown, rightDown);
-                        setTimeout(() => {
-                          leftDown = false;
-                          game.setInputs(leftDown, rightDown);
-                        }, 100);
-                      },
-                      onDrag: () => {
-                        leftDown = true;
-                        game.setInputs(leftDown, rightDown);
-                      },
-                      onDragEnd: () => {
+                let leftArrowCanvas: TappableCanvasRaster;
+                leftArrowCanvas = a
+                  .tappableCanvasRaster(arrowSize, arrowSize, {
+                    onTap: () => {
+                      leftDown = true;
+                      game.setInputs(leftDown, rightDown);
+                      setTimeout(() => {
                         leftDown = false;
                         game.setInputs(leftDown, rightDown);
-                      }
-                    })
-                    .withId('leftBtn');
+                      }, 100);
+                    },
+                    onDrag: () => {
+                      leftDown = true;
+                      game.setInputs(leftDown, rightDown);
+                    },
+                    onDragEnd: () => {
+                      leftDown = false;
+                      game.setInputs(leftDown, rightDown);
+                    }
+                  })
+                  .withId('leftBtn');
 
-                  // Draw the left arrow after canvas is ready
-                  setTimeout(async () => {
-                    const buffer = new Uint8Array(arrowSize * arrowSize * 4);
-                    drawArrow(buffer, arrowSize, 'left');
-                    await leftArrowCanvas.setPixelBuffer(buffer);
-                  }, 200);
+                setTimeout(async () => {
+                  const buffer = new Uint8Array(arrowSize * arrowSize * 4);
+                  drawArrow(buffer, arrowSize, 'left');
+                  await leftArrowCanvas.setPixelBuffer(buffer);
+                }, 200);
 
-                  a.spacer();
+                a.spacer();
 
-                  // Right arrow button (SE corner)
-                  let rightArrowCanvas: TappableCanvasRaster;
-                  rightArrowCanvas = a
-                    .tappableCanvasRaster(arrowSize, arrowSize, {
-                      onTap: () => {
-                        rightDown = true;
-                        game.setInputs(leftDown, rightDown);
-                        setTimeout(() => {
-                          rightDown = false;
-                          game.setInputs(leftDown, rightDown);
-                        }, 100);
-                      },
-                      onDrag: () => {
-                        rightDown = true;
-                        game.setInputs(leftDown, rightDown);
-                      },
-                      onDragEnd: () => {
+                let rightArrowCanvas: TappableCanvasRaster;
+                rightArrowCanvas = a
+                  .tappableCanvasRaster(arrowSize, arrowSize, {
+                    onTap: () => {
+                      rightDown = true;
+                      game.setInputs(leftDown, rightDown);
+                      setTimeout(() => {
                         rightDown = false;
                         game.setInputs(leftDown, rightDown);
-                      }
-                    })
-                    .withId('rightBtn');
+                      }, 100);
+                    },
+                    onDrag: () => {
+                      rightDown = true;
+                      game.setInputs(leftDown, rightDown);
+                    },
+                    onDragEnd: () => {
+                      rightDown = false;
+                      game.setInputs(leftDown, rightDown);
+                    }
+                  })
+                  .withId('rightBtn');
 
-                  // Draw the right arrow after canvas is ready
-                  setTimeout(async () => {
-                    const buffer = new Uint8Array(arrowSize * arrowSize * 4);
-                    drawArrow(buffer, arrowSize, 'right');
-                    await rightArrowCanvas.setPixelBuffer(buffer);
-                  }, 200);
+                setTimeout(async () => {
+                  const buffer = new Uint8Array(arrowSize * arrowSize * 4);
+                  drawArrow(buffer, arrowSize, 'right');
+                  await rightArrowCanvas.setPixelBuffer(buffer);
+                }, 200);
 
-                  // Right spacer (10% inset)
-                  a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
-                });
-              }
-            });
+                a.label('').withMinSize(Math.round(canvasSize.width * insetPercent), 1);
+              });
+            }
           });
-        },
-        bottom: () => {
-          a.hbox(() => {
-            a.button('New Game').onClick(async () => {
-              game.reset();
+        });
+      },
+      bottom: () => {
+        a.hbox(() => {
+          a.button('New Game').onClick(async () => {
+            game.reset();
+            startGameLoop();
+            updateUI();
+            await canvas.requestFocus();
+          });
+          a.button('Pause').onClick(async () => {
+            if (gameLoop) {
+              clearInterval(gameLoop);
+              gameLoop = null;
+              statusLabel.setText('Paused');
+            } else {
               startGameLoop();
-              updateUI();
-              await canvas.requestFocus();
-            });
-            a.button('Pause').onClick(async () => {
-              if (gameLoop) {
-                clearInterval(gameLoop);
-                gameLoop = null;
-                statusLabel.setText('Paused');
-              } else {
-                startGameLoop();
-                statusLabel.setText('Playing');
-              }
-              await canvas.requestFocus();
-            });
+              statusLabel.setText('Playing');
+            }
+            await canvas.requestFocus();
           });
-        }
-      });
+        });
+      }
     });
+  };
 
-    win.show();
-
-    // Handle window resize - resize canvas buffer to match new size
-    const UI_HEIGHT = 130; // Approximate height of labels + buttons
-    win.onResize(async (newWidth: number, newHeight: number) => {
-      const availW = Math.max(100, newWidth - 20);
-      const availH = Math.max(100, newHeight - UI_HEIGHT);
-      // Use smaller dimension to keep canvas square
-      const size = Math.min(availW, availH);
-      canvasSize = { width: size, height: size };
-      game.setCanvasSize(size, size, size);
-      await canvas.resize(size, size);
-      await renderFrame();
-    });
-
-    function handleKeyDown(key: string): void {
-      // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
-      if (key === 'Left') leftDown = true;
-      if (key === 'Right') rightDown = true;
-      game.setInputs(leftDown, rightDown);
-    }
-
-    function handleKeyUp(key: string): void {
-      // Fyne sends "Left"/"Right", not "ArrowLeft"/"ArrowRight"
-      if (key === 'Left') leftDown = false;
-      if (key === 'Right') rightDown = false;
-      game.setInputs(leftDown, rightDown);
-    }
-
-    async function renderFrame(): Promise<void> {
-      const buffer = new Uint8Array(
-        canvasSize.width * canvasSize.height * 4
-      );
-
-      // Fill background (light gray like original)
-      for (let i = 0; i < buffer.length; i += 4) {
-        buffer[i] = 232; // R (#E8)
-        buffer[i + 1] = 232; // G (#E8)
-        buffer[i + 2] = 232; // B (#E8)
-        buffer[i + 3] = 255; // A
-      }
-
-      // Draw sphere grid (graticule - slightly larger dots)
-      const gridPoints = game.getProjectedGridPoints();
-      for (const point of gridPoints) {
-        const depthAlpha = Math.floor(point.alpha * 255);
-        // Draw 2x2 dot for visibility
-        drawPixel(buffer, point.x, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
-        drawPixel(buffer, point.x + 1, point.y, canvasSize.width, 0, 0, 0, depthAlpha);
-        drawPixel(buffer, point.x, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
-        drawPixel(buffer, point.x + 1, point.y + 1, canvasSize.width, 0, 0, 0, depthAlpha);
-      }
-
-      // Draw snake (reddish-purple with depth-based coloring)
-      const snakeNodes = game.getProjectedSnakeNodes();
-      for (let i = 0; i < snakeNodes.length; i++) {
-        const point = snakeNodes[i];
-        const depthColor = Math.floor(point.alpha * 255);
-        const fadeAlpha = Math.floor((1 - i / snakeNodes.length) * point.alpha * 255);
-        drawCircle(
-          buffer,
-          point.x,
-          point.y,
-          Math.max(3, Math.round(point.radius || 5)),
-          canvasSize.width,
-          canvasSize.height,
-          120,          // Red component (reddish)
-          0,            // Green
-          depthColor,   // Blue varies with depth (purple tint)
-          fadeAlpha
-        );
-      }
-
-      // Draw pellet (blue-purple with depth)
-      const pellet = game.getProjectedPellet();
-      const pelletDepthColor = Math.floor(pellet.alpha * 255);
-      drawCircle(
-        buffer,
-        pellet.x,
-        pellet.y,
-        Math.max(3, Math.round(pellet.radius || 5)),
-        canvasSize.width,
-        canvasSize.height,
-        0,                // Red
-        0,                // Green
-        pelletDepthColor, // Blue varies with depth
-        255
-      );
-
-      // Draw horizon circle (thin black outline at edge of sphere)
-      const horizonRadius = Math.round(canvasSize.width * 0.41); // ~0.58 * 0.71 scale factor
-      drawCircleOutline(
-        buffer,
-        Math.round(canvasSize.width / 2),
-        Math.round(canvasSize.height / 2),
-        horizonRadius,
-        canvasSize.width,
-        0, 0, 0 // Black
-      );
-
-      await canvas.setPixelBuffer(buffer);
-    }
-
-    function startGameLoop(): void {
-      if (gameLoop) clearInterval(gameLoop);
-
-      gameLoop = setInterval(async () => {
-        try {
-          game.tick();
-          await renderFrame();
-          updateUI();
-        } catch (err) {
-          console.error('[GAME] Error in game loop:', err);
-        }
-      }, 15); // 15ms ~ 67 FPS
-    }
-
-    function updateUI(): void {
-      scoreLabel.setText(`Score: ${game.getScore()}`);
-      const state = game.getGameState();
-      if (state === 'gameover') {
-        statusLabel.setText('Good game! Click New Game to play again');
-        if (gameLoop) {
-          clearInterval(gameLoop);
-          gameLoop = null;
-        }
-      } else {
-        statusLabel.setText('Playing');
-      }
-    }
-
-    // Request canvas focus and start game (deferred to let setContent complete)
+  if (isEmbedded) {
+    buildUIContent();
     setTimeout(async () => {
       await canvas.requestFocus();
       startGameLoop();
       await renderFrame();
     }, 100);
-  });
+  } else {
+    a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
+      win.setContent(buildUIContent);
+      win.show();
+
+      const UI_HEIGHT = 130;
+      win.onResize(async (newWidth: number, newHeight: number) => {
+        const availW = Math.max(100, newWidth - 20);
+        const availH = Math.max(100, newHeight - UI_HEIGHT);
+        const size = Math.min(availW, availH);
+        canvasSize = { width: size, height: size };
+        game.setCanvasSize(size, size, size);
+        await canvas.resize(size, size);
+        await renderFrame();
+      });
+
+      setTimeout(async () => {
+        await canvas.requestFocus();
+        startGameLoop();
+        await renderFrame();
+      }, 100);
+    });
+  }
 }
 
 // ============================================================================

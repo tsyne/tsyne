@@ -18,7 +18,8 @@ import { App } from './app';
 import { Window } from './window';
 import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from './widgets';
 import { ITsyneWindow } from './tsyne-window';
-import { scanForApps, scanPortedApps, AppMetadata } from './app-metadata';
+import { parseAppMetadata, AppMetadata } from './app-metadata';
+import { ALL_APPS } from '../../all-apps';
 import { initResvg } from './resvg-loader';
 import { Inspector } from './inspector';
 import * as path from 'path';
@@ -243,16 +244,19 @@ class Desktop implements IDesktopDebugHost {
       // Use pre-defined apps (for testing)
       apps = this.options.apps;
     } else {
-      // Scan directories for apps (relative to cwd, which is repo root when run via ./scripts/tsyne)
-      const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
-      const portedAppsDir = path.join(process.cwd(), 'ported-apps');
-      const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
-
-      const exampleApps = scanForApps(appDir);
-      const portedApps = scanPortedApps(portedAppsDir);
-      const phoneAppsFlat = scanForApps(phoneAppsDir);
-      const phoneAppsNested = scanPortedApps(phoneAppsDir);  // Also scan nested phone-apps like voice-assistant/
-      apps = [...exampleApps, ...portedApps, ...phoneAppsFlat, ...phoneAppsNested].sort((a, b) => a.name.localeCompare(b.name));
+      // Load metadata from all registered apps
+      apps = [];
+      for (const filePath of ALL_APPS) {
+        try {
+          const metadata = parseAppMetadata(filePath);
+          if (metadata) {
+            apps.push(metadata);
+          }
+        } catch {
+          // Silently skip apps that fail to load
+        }
+      }
+      apps.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     // Store for DesktopService

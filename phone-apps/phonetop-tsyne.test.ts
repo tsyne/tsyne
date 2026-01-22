@@ -7,9 +7,9 @@
 
 import { TsyneTest, TestContext } from '../core/src/index-test';
 import { buildPhoneTop, PhoneTop } from './phonetop';
-import { scanForApps, scanPortedApps, AppMetadata } from '../core/src/app-metadata';
+import { parseAppMetadata, AppMetadata } from '../core/src/app-metadata';
+import { ALL_APPS } from '../all-apps';
 import type { App } from '../core/src/app';
-import * as path from 'path';
 
 // Timeout for each app launch (ms)
 const APP_LAUNCH_TIMEOUT = 15000;
@@ -18,10 +18,18 @@ const PHONETOP_INIT_TIMEOUT = 30000;
 
 // Get the list of apps that will be loaded
 function getAppList(): AppMetadata[] {
-  const exampleApps = scanForApps(path.join(process.cwd(), 'examples'));
-  const portedApps = scanPortedApps(path.join(process.cwd(), 'ported-apps'));
-  const phoneApps = scanForApps(path.join(process.cwd(), 'phone-apps'));
-  return [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+  const apps: AppMetadata[] = [];
+  for (const filePath of ALL_APPS) {
+    try {
+      const metadata = parseAppMetadata(filePath);
+      if (metadata) {
+        apps.push(metadata);
+      }
+    } catch {
+      // Silently skip apps that fail to load
+    }
+  }
+  return apps.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Group apps by category

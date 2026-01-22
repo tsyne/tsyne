@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M12 18v4"/><path d="M8 22h8"/><path d="M7 8h10"/><path d="M7 12h6"/></svg>
 // @tsyne-app:category productivity
 // @tsyne-app:builder createSlydesApp
+// @tsyne-app:args app,windowWidth,windowHeight
 
 /**
  * Slydes - Markdown Presentation App for Tsyne
@@ -47,7 +48,8 @@ export interface SlydesUI {
  * @param a App instance
  * @returns UI controller interface
  */
-export function createSlydesApp(a: App): SlydesUI {
+export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: number): SlydesUI {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new SlideStore('# Slide 1\n\nWelcome to Slydes!\n\n---\n\n# Slide 2\n\nEdit the markdown on the left to create your presentation.');
 
   // Widget references for incremental updates
@@ -487,34 +489,9 @@ export function createSlydesApp(a: App): SlydesUI {
   }
 
   /**
-   * Build the main editor UI
+   * Build the content UI
    */
-  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
-    mainWindow = win;
-
-    // Build the main menu (will be updated when recent files load)
-    buildMainMenu(win);
-
-    // Load recent files asynchronously and update menu when ready
-    loadRecentFiles().then(() => {
-      // Rebuild menu with recent files
-      buildMainMenu(win);
-    }).catch(err => {
-      console.error('Failed to load recent files:', err);
-    });
-
-    // Set close intercept to check for unsaved changes
-    win.setCloseIntercept(async () => {
-      if (hasUnsavedChanges()) {
-        const save = await win.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before closing?');
-        if (save) {
-          await saveFile();
-        }
-      }
-      return true;
-    });
-
-    win.setContent(() => {
+  const buildContent = () => {
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
@@ -594,20 +571,45 @@ export function createSlydesApp(a: App): SlydesUI {
             });
           });
         }, 0.35);
-      });
     });
+  };
 
-    // Subscribe to store changes for reactive updates
-    store.subscribe(() => {
-      refreshPreview();
-      updateWindowTitle();
-    });
-
-    // Initial render
+  // Subscribe to store changes for reactive updates
+  store.subscribe(() => {
     refreshPreview();
-
-    win.show();
+    updateWindowTitle();
   });
+
+  if (isEmbedded) {
+    buildContent();
+    setTimeout(() => refreshPreview(), 0);
+  } else {
+    a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
+      mainWindow = win;
+
+      buildMainMenu(win);
+
+      loadRecentFiles().then(() => {
+        buildMainMenu(win);
+      }).catch(err => {
+        console.error('Failed to load recent files:', err);
+      });
+
+      win.setCloseIntercept(async () => {
+        if (hasUnsavedChanges()) {
+          const save = await win.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before closing?');
+          if (save) {
+            await saveFile();
+          }
+        }
+        return true;
+      });
+
+      win.setContent(buildContent);
+      refreshPreview();
+      win.show();
+    });
+  }
 
   return {
     getStore: () => store,

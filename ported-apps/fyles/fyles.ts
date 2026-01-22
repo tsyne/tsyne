@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2v11z"/></svg>
 // @tsyne-app:category utilities
 // @tsyne-app:builder createFylesApp
+// @tsyne-app:args app,initialDir,windowWidth,windowHeight
 
 /**
  * Fyles File Browser for Tsyne
@@ -116,6 +117,15 @@ class FylesMultiPanel {
     // Set window reference on all panels
     this.panels.forEach((panel) => panel.setWindow(win));
 
+    this.buildPanelLayout();
+  }
+
+  buildUIEmbedded(): void {
+    // In embedded mode, we don't have a window reference
+    this.buildPanelLayout();
+  }
+
+  private buildPanelLayout(): void {
     if (this.panels.length === 1) {
       // Single panel - simple layout
       this.panels[0].buildPanel();
@@ -660,6 +670,10 @@ class FylesUI {
   buildUI(win: Window): void {
     this.multiPanel.buildUI(win);
   }
+
+  buildUIEmbedded(): void {
+    this.multiPanel.buildUIEmbedded();
+  }
 }
 
 // ============================================================================
@@ -669,13 +683,18 @@ class FylesUI {
 /**
  * Create and run the Fyles application with a single panel (backwards compatible)
  */
-export function createFylesApp(a: App, initialDir?: string): FylesUI {
+export function createFylesApp(a: App, initialDir?: string, windowWidth?: number, windowHeight?: number): FylesUI {
   const ui = new FylesUI(a, initialDir);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Fyles - File Browser', width: 800, height: 600 }, (win) => {
-    ui.buildUI(win);
-    win.show();
-  });
+  if (isEmbedded) {
+    ui.buildUIEmbedded();
+  } else {
+    a.window({ title: 'Fyles - File Browser', width: 800, height: 600 }, (win) => {
+      ui.buildUI(win);
+      win.show();
+    });
+  }
 
   return ui;
 }

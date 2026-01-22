@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
 // @tsyne-app:category utilities
 // @tsyne-app:builder buildEdlinApp
+// @tsyne-app:args app,windowWidth,windowHeight
 
 /**
  * Edlin - A Line-Oriented Text Editor for Tsyne
@@ -158,13 +159,11 @@ export class EdlinApp {
   /**
    * Build the main content area with initial document
    */
-  private buildContent(): void {
-    if (!this.win) return;
-
+  buildContent(): void {
     // Create initial document
     const initialDoc = this.store.createDocument('New', 'Hello World\n\nStart typing here...');
 
-    this.win.setContent(() => {
+    const buildUI = () => {
       this.tabs = this.a.doctabs([
         {
           title: initialDoc.getTitle(),
@@ -172,14 +171,19 @@ export class EdlinApp {
         }
       ], {
         onClosed: (tabIndex: number, tabTitle: string) => {
-          // Find and close the document by title
           const doc = this.store.findDocumentByTitle(tabTitle);
           if (doc) {
             this.store.closeDocument(doc.getId());
           }
         }
       });
-    });
+    };
+
+    if (this.win) {
+      this.win.setContent(buildUI);
+    } else {
+      buildUI();
+    }
   }
 
   /**
@@ -393,9 +397,15 @@ export class EdlinApp {
 /**
  * Build the Edlin app (for phonetop and other integrations)
  */
-export function buildEdlinApp(a: App): void {
+export function buildEdlinApp(a: App, windowWidth?: number, windowHeight?: number): void {
   const edlin = new EdlinApp(a);
-  edlin.build();
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
+  if (isEmbedded) {
+    edlin.buildContent();
+  } else {
+    edlin.build();
+  }
 }
 
 /**

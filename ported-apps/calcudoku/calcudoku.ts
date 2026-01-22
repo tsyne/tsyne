@@ -19,7 +19,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createCalcudokuApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -525,15 +525,23 @@ export class CalcudokuUI {
 // App Factory
 // ============================================================================
 
-export function createCalcudokuApp(a: App): CalcudokuUI {
+export function createCalcudokuApp(a: App, windowWidth?: number, windowHeight?: number): CalcudokuUI {
   const ui = new CalcudokuUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Calcudoku', width: 400, height: 480 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Calcudoku', width: 400, height: 480 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

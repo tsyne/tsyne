@@ -2,6 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6" fill="currentColor"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><rect x="15" y="15" width="6" height="6" fill="currentColor"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createGameOfLifeApp
+// @tsyne-app:args app,windowWidth,windowHeight
 
 /**
  * Conway's Game of Life for Tsyne
@@ -1062,24 +1063,30 @@ class GameOfLifeUI {
  * Create the Game of Life app
  * Based on: main.go
  */
-export function createGameOfLifeApp(a: App): GameOfLifeUI {
+export function createGameOfLifeApp(a: App, windowWidth?: number, windowHeight?: number): GameOfLifeUI {
   const ui = new GameOfLifeUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   // Register cleanup callback to stop the game timer before shutdown
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
-    // Setup window synchronously (preferences load async in background)
-    ui.setupWindowSync(win);
+  if (isEmbedded) {
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
+      // Setup window synchronously (preferences load async in background)
+      ui.setupWindowSync(win);
 
-    // Set content
-    win.setContent(() => {
-      ui.buildContent();
+      // Set content
+      win.setContent(() => {
+        ui.buildContent();
+      });
+
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
     });
-
-    // Note: Don't call win.show() here - let app.run() handle it
-    // This ensures waitForPendingRequests() catches all widget registrations
-  });
+  }
 
   return ui;
 }

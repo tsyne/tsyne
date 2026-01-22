@@ -16,9 +16,10 @@
  * (at your option) any later version.
  *
  * @tsyne-app:name Yet Another Doom Clone
- * @tsyne-app:icon home
- * @tsyne-app:category Games
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.5L19 8l-7 3.5L5 8l7-3.5zM4 9.5l7 3.5v7l-7-3.5v-7zm16 0v7l-7 3.5v-7l7-3.5z"/></svg>
+ * @tsyne-app:category games
+ * @tsyne-app:builder buildYetAnotherDoomCloneApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';
@@ -67,15 +68,39 @@ export { HitParticle, LightFlash, createWallHitParticles, createEnemyHitParticle
 // Re-export from new physics and game modules
 export { ZERO, X_DIR, Y_DIR, Z_DIR, angleBetween, rayLineIntersect, checkWallCollision } from './physics';
 export { DoomGame, GameState, ScreenShake } from './doom-game';
+export { GameKeyboardController, buildGameKeyboard, buildExtendedGameKeyboard } from './game-keyboard';
 
 // Import for local use
 import { DoomGame } from './doom-game';
+import { GameKeyboardController, buildExtendedGameKeyboard } from './game-keyboard';
 
 // ============================================================================
 // Tsyne UI Layer
 // ============================================================================
 
-export function buildYetAnotherDoomCloneApp(a: App): void {
+/**
+ * Build the Doom game app
+ * @param a The Tsyne App instance
+ * @param windowWidth Optional window width from PhoneTop (if provided, runs in embedded mode)
+ * @param windowHeight Optional window height from PhoneTop
+ */
+export function buildYetAnotherDoomCloneApp(a: App, windowWidth?: number, windowHeight?: number): void {
+  // Determine if we're in PhoneTop mode (embedded) or standalone mode
+  const isPhoneTopMode = windowWidth !== undefined && windowHeight !== undefined;
+
+  if (isPhoneTopMode) {
+    // PhoneTop mode: build content directly without creating a window
+    buildDoomContent(a, windowWidth, windowHeight, true);
+  } else {
+    // Standalone mode: create a window
+    buildDoomStandalone(a);
+  }
+}
+
+/**
+ * Build standalone window version (desktop mode)
+ */
+function buildDoomStandalone(a: App): void {
   let canvasWidth = 400;
   let canvasHeight = 300;
   const game = new DoomGame(canvasWidth, canvasHeight);
@@ -167,7 +192,6 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
 
     win.onResize(async (w, h) => {
       // Deduct space for labels and buttons
-      // We use slightly more aggressive values to fill the space better
       const newWidth = Math.max(200, Math.floor(w - 20));
       const newHeight = Math.max(150, Math.floor(h - 160));
 
@@ -205,7 +229,6 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
       scoreLabel.setText(`Score: ${game.getScore()}`);
       healthLabel.setText(`Health: ${game.getHealth()}`);
 
-      // Update level info
       const levelInfo = game.getLevelInfo();
       if (levelInfo) {
         levelLabel.setText(`Level ${game.currentLevel + 1}: ${levelInfo.name}`);
@@ -230,17 +253,172 @@ export function buildYetAnotherDoomCloneApp(a: App): void {
       }
     }
 
-    // Subscribe to game changes
     game.subscribe(() => {
       updateUI();
     });
 
-    // Start game loop after a short delay
     setTimeout(async () => {
       await canvas.requestFocus();
       startGameLoop();
     }, 100);
   });
+}
+
+/**
+ * Build embedded content for PhoneTop mode
+ * Adapts canvas to available space and includes touch controls
+ */
+function buildDoomContent(a: App, windowWidth: number, windowHeight: number, showKeyboard: boolean): void {
+  // Calculate canvas size - leave room for HUD (~60px) and keyboard (~120px if shown)
+  const hudHeight = 60;
+  const keyboardHeight = showKeyboard ? 120 : 0;
+  const padding = 10;
+
+  let canvasWidth = Math.max(200, windowWidth - padding * 2);
+  let canvasHeight = Math.max(150, windowHeight - hudHeight - keyboardHeight - padding * 2);
+
+  // Maintain a reasonable aspect ratio (4:3 to 16:9)
+  const aspectRatio = canvasWidth / canvasHeight;
+  if (aspectRatio > 2) {
+    // Too wide, constrain width
+    canvasWidth = Math.floor(canvasHeight * 1.6);
+  } else if (aspectRatio < 1) {
+    // Too tall, constrain height
+    canvasHeight = Math.floor(canvasWidth * 0.75);
+  }
+
+  const game = new DoomGame(canvasWidth, canvasHeight);
+
+  let canvas: TappableCanvasRaster;
+  let scoreLabel: Label;
+  let healthLabel: Label;
+  let statusLabel: Label;
+  let gameLoop: NodeJS.Timeout | null = null;
+
+  // Create game keyboard controller
+  const keyboardController = new GameKeyboardController((key, pressed) => {
+    game.setKey(key, pressed);
+  });
+
+  // Main layout
+  a.vbox(() => {
+    // HUD row
+    a.hbox(() => {
+      scoreLabel = a.label('Score: 0').withId('scoreLabel');
+      a.spacer();
+      healthLabel = a.label('HP: 100').withId('healthLabel');
+      a.spacer();
+      statusLabel = a.label('Playing').withId('statusLabel');
+    });
+
+    // Game canvas (centered)
+    a.center(() => {
+      canvas = a
+        .tappableCanvasRaster(canvasWidth, canvasHeight, {
+          onKeyDown: (key: string) => {
+            if (game.getGameState() === 'won') {
+              if (game.currentLevel + 1 < game.getTotalLevels()) {
+                game.nextLevel();
+                startGameLoop();
+                updateUI();
+              }
+            } else {
+              game.setKey(key, true);
+            }
+          },
+          onKeyUp: (key: string) => {
+            game.setKey(key, false);
+          },
+        })
+        .withId('gameCanvas');
+    });
+
+    // Control buttons row
+    a.hbox(() => {
+      a.button('New').onClick(async () => {
+        game.reset();
+        startGameLoop();
+        updateUI();
+      }).withId('newGameBtn');
+      a.button('Pause').onClick(async () => {
+        if (gameLoop) {
+          clearInterval(gameLoop);
+          gameLoop = null;
+          statusLabel.setText('Paused');
+        } else {
+          startGameLoop();
+          statusLabel.setText('Playing');
+        }
+      }).withId('pauseBtn');
+      a.button('<<').onClick(async () => {
+        const prevLevel = (game.currentLevel - 1 + game.getTotalLevels()) % game.getTotalLevels();
+        game.loadLevel(prevLevel);
+        startGameLoop();
+        updateUI();
+      }).withId('prevLevelBtn');
+      a.button('>>').onClick(async () => {
+        game.nextLevel();
+        startGameLoop();
+        updateUI();
+      }).withId('nextLevelBtn');
+    });
+
+    // Game keyboard for touch controls
+    if (showKeyboard) {
+      a.separator();
+      buildExtendedGameKeyboard(a, keyboardController);
+    }
+  });
+
+  function startGameLoop(): void {
+    if (gameLoop) clearInterval(gameLoop);
+
+    gameLoop = setInterval(async () => {
+      try {
+        game.tick(Date.now());
+        const currentW = game.renderer.width;
+        const currentH = game.renderer.height;
+        const buffer = new Uint8Array(currentW * currentH * 4);
+        game.render(buffer);
+        await canvas.setPixelBuffer(buffer);
+        updateUI();
+      } catch (err) {
+        console.error('[DOOM] Game loop error:', err);
+      }
+    }, 33); // ~30 FPS
+  }
+
+  function updateUI(): void {
+    scoreLabel.setText(`Score: ${game.getScore()}`);
+    healthLabel.setText(`HP: ${game.getHealth()}`);
+
+    const state = game.getGameState();
+    if (state === 'gameover') {
+      statusLabel.setText('Game Over!');
+      if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+      }
+    } else if (state === 'won') {
+      const hasNextLevel = game.currentLevel + 1 < game.getTotalLevels();
+      statusLabel.setText(hasNextLevel ? 'Complete!' : 'You Win!');
+      if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+      }
+    } else if (state === 'playing') {
+      statusLabel.setText(`${game.getEnemiesAlive()} enemies`);
+    }
+  }
+
+  game.subscribe(() => {
+    updateUI();
+  });
+
+  // Start game loop after a short delay
+  setTimeout(async () => {
+    startGameLoop();
+  }, 100);
 }
 
 // Entry point

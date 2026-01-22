@@ -6,7 +6,7 @@
  * @tsyne-app:name Scales Demo
  * @tsyne-app:icon chartIcon
  * @tsyne-app:category Visualization
- * @tsyne-app:args (a: any) => void
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app } from '../../core/src/index';

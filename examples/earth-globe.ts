@@ -41,7 +41,7 @@ async function ensureTexture(texturePath: string): Promise<Buffer> {
 
 app(resolveTransport(), { title: 'Earth Globe' }, async (a) => {
   // Load Earth texture (download if not present)
-  const texturePath = path.join(__dirname, '../resources/earth_daymap.jpg');
+  const texturePath = path.join(__dirname, './earth_daymap.jpg');
   const textureData = await ensureTexture(texturePath);
   const textureBase64 = `data:image/jpeg;base64,${textureData.toString('base64')}`;
   await a.resources.registerResource('earth-texture', textureBase64);

@@ -4,7 +4,8 @@
  * @tsyne-app:name Aranet4 Monitor
  * @tsyne-app:icon confirm
  * @tsyne-app:category Utilities
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildAranetApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A real-time air quality monitor for Aranet4 sensors with Bluetooth connectivity.
  * Displays CO2, temperature, humidity, pressure, and battery level.
@@ -372,7 +373,9 @@ export class AranetStore {
 // UI BUILDER
 // ============================================================================
 
-export function buildAranetApp(a: any): void {
+export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new AranetStore();
   let mainWindow: any;
   let settingsWindow: any;
@@ -441,12 +444,8 @@ export function buildAranetApp(a: any): void {
     }
   }
 
-  // Main window
-  a.window({ title: 'Aranet4 Monitor', width: 500, height: 550 }, (win: any) => {
-    mainWindow = win;
-
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Device selector
         a.hbox(() => {
           a.label('Device:').withId('deviceLabel');
@@ -517,19 +516,32 @@ export function buildAranetApp(a: any): void {
             .withId('refreshBtn');
 
           settingsButton = a.button('Settings').onClick(() => {
-            showSettingsWindow();
+            if (!isEmbedded) {
+              showSettingsWindow();
+            }
           }).withId('settingsBtn');
         });
       });
     });
+  };
 
-    // Discover available devices on startup
-    (async () => {
-      await store.discoverDevices();
-    })();
+  // Discover available devices on startup
+  const initDevices = async () => {
+    await store.discoverDevices();
+  };
 
-    win.show();
-  });
+  if (isEmbedded) {
+    buildContent();
+    initDevices();
+  } else {
+    // Main window
+    a.window({ title: 'Aranet4 Monitor', width: 500, height: 550 }, (win: any) => {
+      mainWindow = win;
+      win.setContent(buildContent);
+      initDevices();
+      win.show();
+    });
+  }
 
   function showSettingsWindow(): void {
     if (settingsWindow) {

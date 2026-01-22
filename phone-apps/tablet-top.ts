@@ -15,7 +15,8 @@ import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
 import { Label, Button } from '../core/src/widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../core/src/tsyne-window';
-import { scanForApps, scanPortedApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { ALL_APPS } from '../all-apps';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { SandboxedApp } from '../core/src/sandboxed-app';
 import { Inspector, WidgetNode } from '../core/src/inspector';
@@ -39,8 +40,6 @@ const TABLET_LAYOUT_SCALE = 1.0;
 
 // Tablet options
 export interface TabletTopOptions {
-  /** Directory to scan for apps */
-  appDirectory?: string;
   /** Number of columns in the grid */
   columns?: number;
   /** Number of rows in the grid */
@@ -118,18 +117,22 @@ class TabletTop {
   }
 
   /**
-   * Initialize the tablet by scanning for apps
+   * Initialize the tablet by loading apps from registry
    */
   init() {
-    const appDir = this.options.appDirectory || path.join(process.cwd(), 'examples');
-    const portedAppsDir = path.join(process.cwd(), 'ported-apps');
-    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
-
-    // Scan for apps from all directories
-    const exampleApps = scanForApps(appDir);
-    const portedApps = scanPortedApps(portedAppsDir);
-    const phoneApps = scanForApps(phoneAppsDir);
-    const apps = [...exampleApps, ...portedApps, ...phoneApps].sort((a, b) => a.name.localeCompare(b.name));
+    // Load metadata from all registered apps
+    const apps: AppMetadata[] = [];
+    for (const filePath of ALL_APPS) {
+      try {
+        const metadata = parseAppMetadata(filePath);
+        if (metadata) {
+          apps.push(metadata);
+        }
+      } catch {
+        // Silently skip apps that fail to load
+      }
+    }
+    apps.sort((a, b) => a.name.localeCompare(b.name));
 
     // Position apps in grid across pages
     let page = 0;

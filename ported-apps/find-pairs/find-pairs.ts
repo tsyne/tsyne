@@ -20,7 +20,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createFindPairsApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -228,15 +228,21 @@ export class FindPairsUI {
 // App Factory
 // ============================================================================
 
-export function createFindPairsApp(a: App): FindPairsUI {
+export function createFindPairsApp(a: App, windowWidth?: number, windowHeight?: number): FindPairsUI {
   const ui = new FindPairsUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
+  if (isEmbedded) {
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

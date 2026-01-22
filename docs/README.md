@@ -30,6 +30,11 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 - **[BROWSER_TESTING.md](BROWSER_TESTING.md)** - Browser mode testing guide
 - **[WEB_FEATURE_MAPPING.md](WEB_FEATURE_MAPPING.md)** - How web features map to Tsyne equivalents
 
+### 🖼️ Window & Context
+
+- **[DESKTOP.md](DESKTOP.md)** - Desktop mode and MDI inner windows
+- **[WINDOW_ADAPTATION.md](WINDOW_ADAPTATION.md)** - Adapting apps to standalone, desktop, and phone contexts
+
 ### 🔧 Specialized Topics
 
 - **[SCREENSHOT_SUPPORT.md](SCREENSHOT_SUPPORT.md)** - Screenshot and image handling

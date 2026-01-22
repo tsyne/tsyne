@@ -2,7 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="12" rx="10" ry="4" stroke="#CC0000"/><ellipse cx="12" cy="12" rx="6" ry="10" stroke="#CC0000"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" stroke="#880000"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-60 12 12)" stroke="#880000"/></svg>
 // @tsyne-app:category demos
 // @tsyne-app:builder createTorusApp
-// @tsyne-app:args app
+// @tsyne-app:args app,windowWidth,windowHeight
 
 /**
  * Interactive 3D Torus Demo for Tsyne
@@ -254,7 +254,9 @@ export function renderTorusToBuffer(
 /**
  * Main app builder function
  */
-export function createTorusApp(a: App): void {
+export function createTorusApp(a: App, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new TorusStore();
   let animationTimer: ReturnType<typeof setTimeout> | null = null;
   let lastFrameTime = Date.now();
@@ -269,105 +271,112 @@ export function createTorusApp(a: App): void {
     center: { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 },
   });
 
-  a.window({ title: 'Interactive 3D Torus', width: 850, height: 680 }, (win: Window) => {
-    const buildContent = () => {
-      a.vbox(() => {
-        // Create the tappable canvas raster with drag support for rotation
-        raster = a.tappableCanvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT, {
-          onDrag: (x: number, y: number, deltaX: number, deltaY: number) => {
-            // Convert drag delta to rotation
-            const sensitivity = 0.01;
-            store.setRotation(
-              store.getState().rotationTheta + deltaX * sensitivity,
-              store.getState().rotationPhi + deltaY * sensitivity,
-              store.getState().rotationPsi
-            );
-          },
-          onTap: () => {
-            // Toggle auto-rotate on tap
-            store.toggleAutoRotate();
-          }
-        });
-
-        // Control buttons
-        a.hbox(() => {
-          a.button('Toggle Auto-Rotate').onClick(() => {
-            store.toggleAutoRotate();
-          }).withId('autoRotateBtn');
-
-          a.button('Reset View').onClick(() => {
-            store.resetView();
-          }).withId('resetBtn');
-
-          a.spacer();
-
-          a.label('Drag to rotate • Tap to toggle auto-rotate').withId('hintLabel');
-        });
-      });
-    };
-
-    win.setContent(buildContent);
-
-    // Render function - draws to pixel buffer and updates raster
-    const render = async () => {
-      if (!raster) return;
-
-      const state = store.getState();
-
-      // Update projection with current rotation
-      projection.setRotation({
-        theta: state.rotationTheta,
-        phi: state.rotationPhi,
-        psi: state.rotationPsi,
+  const buildContent = () => {
+    a.vbox(() => {
+      // Create the tappable canvas raster with drag support for rotation
+      raster = a.tappableCanvasRaster(CANVAS_WIDTH, CANVAS_HEIGHT, {
+        onDrag: (x: number, y: number, deltaX: number, deltaY: number) => {
+          // Convert drag delta to rotation
+          const sensitivity = 0.01;
+          store.setRotation(
+            store.getState().rotationTheta + deltaX * sensitivity,
+            store.getState().rotationPhi + deltaY * sensitivity,
+            store.getState().rotationPsi
+          );
+        },
+        onTap: () => {
+          // Toggle auto-rotate on tap
+          store.toggleAutoRotate();
+        }
       });
 
-      // Render torus to pixel buffer
-      renderTorusToBuffer(pixelBuffer, projection);
+      // Control buttons
+      a.hbox(() => {
+        a.button('Toggle Auto-Rotate').onClick(() => {
+          store.toggleAutoRotate();
+        }).withId('autoRotateBtn');
 
-      // Get the raw buffer data and send it efficiently
-      const rawData = pixelBuffer.getRawData();
-      await raster.setPixelBuffer(rawData);
-    };
+        a.button('Reset View').onClick(() => {
+          store.resetView();
+        }).withId('resetBtn');
 
-    // Animation loop
-    const animate = async () => {
-      const now = Date.now();
-      const dt = (now - lastFrameTime) / 1000;
-      lastFrameTime = now;
+        a.spacer();
 
-      const state = store.getState();
-      if (state.autoRotate) {
-        store.incrementRotation(
-          dt * AUTO_ROTATE_SPEED_THETA,
-          dt * AUTO_ROTATE_SPEED_PHI,
-          dt * AUTO_ROTATE_SPEED_PSI
-        );
-      }
+        a.label('Drag to rotate • Tap to toggle auto-rotate').withId('hintLabel');
+      });
+    });
+  };
 
-      await render();
+  // Render function - draws to pixel buffer and updates raster
+  const render = async () => {
+    if (!raster) return;
 
-      animationTimer = setTimeout(animate, 33);  // ~30fps for raster updates
-    };
+    const state = store.getState();
 
-    // Initial render
+    // Update projection with current rotation
+    projection.setRotation({
+      theta: state.rotationTheta,
+      phi: state.rotationPhi,
+      psi: state.rotationPsi,
+    });
+
+    // Render torus to pixel buffer
+    renderTorusToBuffer(pixelBuffer, projection);
+
+    // Get the raw buffer data and send it efficiently
+    const rawData = pixelBuffer.getRawData();
+    await raster.setPixelBuffer(rawData);
+  };
+
+  // Animation loop
+  const animate = async () => {
+    const now = Date.now();
+    const dt = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+
+    const state = store.getState();
+    if (state.autoRotate) {
+      store.incrementRotation(
+        dt * AUTO_ROTATE_SPEED_THETA,
+        dt * AUTO_ROTATE_SPEED_PHI,
+        dt * AUTO_ROTATE_SPEED_PSI
+      );
+    }
+
+    await render();
+
+    animationTimer = setTimeout(animate, 33);  // ~30fps for raster updates
+  };
+
+  // Start animation
+  const startAnimation = () => {
     setTimeout(async () => {
       await render();
-      // Start animation loop
       animate();
     }, 100);
+  };
 
-    // Cleanup on window close
-    const origClose = win.close.bind(win);
-    win.close = async () => {
-      if (animationTimer) {
-        clearTimeout(animationTimer);
-        animationTimer = null;
-      }
-      return origClose();
-    };
+  if (isEmbedded) {
+    buildContent();
+    startAnimation();
+  } else {
+    a.window({ title: 'Interactive 3D Torus', width: 850, height: 680 }, (win: Window) => {
+      win.setContent(buildContent);
 
-    win.show();
-  });
+      // Cleanup on window close
+      const origClose = win.close.bind(win);
+      win.close = async () => {
+        if (animationTimer) {
+          clearTimeout(animationTimer);
+          animationTimer = null;
+        }
+        return origClose();
+      };
+
+      win.show();
+      startAnimation();
+    });
+  }
 }
 
 // Standalone execution

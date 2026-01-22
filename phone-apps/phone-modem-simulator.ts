@@ -14,7 +14,8 @@
 import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
 import { Label } from '../core/src/widgets';
-import { scanForApps, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { ALL_APPS } from '../all-apps';
 import { SandboxedApp } from '../core/src/sandboxed-app';
 import * as path from 'path';
 
@@ -77,17 +78,20 @@ class PhoneModemSimulator {
   }
 
   async init(): Promise<void> {
-    const phoneAppsDir = path.join(process.cwd(), 'phone-apps');
-    const apps = scanForApps(phoneAppsDir);
-
-    for (const metadata of apps) {
-      this.apps.push({
-        metadata,
-        win: null,
-      });
+    // Load metadata from all registered apps (filter to phone-apps only)
+    for (const filePath of ALL_APPS) {
+      if (!filePath.includes('phone-apps')) continue;
+      try {
+        const metadata = parseAppMetadata(filePath);
+        if (metadata) {
+          this.apps.push({ metadata, win: null });
+        }
+      } catch {
+        // Silently skip apps that fail to load
+      }
     }
 
-    console.log(`PhoneTop: Found ${apps.length} phone apps`);
+    console.log(`PhoneTop: Found ${this.apps.length} phone apps`);
   }
 
   build(): void {

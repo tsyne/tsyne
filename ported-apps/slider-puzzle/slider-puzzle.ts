@@ -21,7 +21,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createSliderPuzzleApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -190,15 +190,23 @@ export class SliderPuzzleUI {
 // App Factory
 // ============================================================================
 
-export function createSliderPuzzleApp(a: App): SliderPuzzleUI {
+export function createSliderPuzzleApp(a: App, windowWidth?: number, windowHeight?: number): SliderPuzzleUI {
   const ui = new SliderPuzzleUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Slider Puzzle', width: 380, height: 450 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Slider Puzzle', width: 380, height: 450 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

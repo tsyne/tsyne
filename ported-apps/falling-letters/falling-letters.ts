@@ -21,7 +21,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createFallingLettersApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from '../../core/src';
@@ -837,18 +837,23 @@ export class FallingLettersUI {
 // App Factory
 // ============================================================================
 
-export function createFallingLettersApp(a: App): FallingLettersUI {
+export function createFallingLettersApp(a: App, windowWidth?: number, windowHeight?: number): FallingLettersUI {
   const ui = new FallingLettersUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  a.window({ title: 'Falling Letters', width: 350, height: 550 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
-    // Trigger initial render after UI is set up (needed for phonetop)
+  if (isEmbedded) {
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    a.window({ title: 'Falling Letters', width: 350, height: 550 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

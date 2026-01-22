@@ -13,7 +13,7 @@
  * @tsyne-app:name Draggable Chess
  * @tsyne-app:icon content-paste
  * @tsyne-app:category Demos
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src/index';

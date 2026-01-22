@@ -4,7 +4,8 @@
  * @tsyne-app:name Food Truck
  * @tsyne-app:icon confirm
  * @tsyne-app:category Utilities
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildFoodTruckApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A food truck order management system showcasing:
  * - Order tracking and status management
@@ -189,7 +190,9 @@ export class FoodTruckStore {
 // VIEW BUILDER
 // ============================================================================
 
-export function buildFoodTruckApp(a: any): void {
+export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new FoodTruckStore();
   let selectedView: 'orders' | 'sales' | 'weather' = 'orders';
 
@@ -221,9 +224,8 @@ export function buildFoodTruckApp(a: any): void {
     }
   }
 
-  a.window({ title: 'Food Truck Manager', width: 1100, height: 700 }, (win: any) => {
-    win.setContent(() => {
-      a.hbox(() => {
+  const buildContent = () => {
+    a.hbox(() => {
         // ===== SIDEBAR =====
         a.vbox(
           () => {
@@ -430,29 +432,40 @@ export function buildFoodTruckApp(a: any): void {
         });
       });
     });
+  };
 
-    async function showView(view: string) {
-      await viewStack.refresh();
-      if (view === 'sales') {
-        await salesContainer.setText(
-          `Total Sales: $${store.getTotalSales().toFixed(2)}`
-        );
-      }
+  async function showView(view: string) {
+    await viewStack.refresh();
+    if (view === 'sales') {
+      await salesContainer.setText(
+        `Total Sales: $${store.getTotalSales().toFixed(2)}`
+      );
     }
+  }
 
-    // Subscribe to store changes
-    store.subscribe(async () => {
-      await updateStatusSummary();
-      await viewStack.refresh();
-    });
+  // Subscribe to store changes
+  store.subscribe(async () => {
+    await updateStatusSummary();
+    await viewStack.refresh();
+  });
 
-    // Initial setup
+  if (isEmbedded) {
+    buildContent();
     (async () => {
       await updateStatusSummary();
     })();
+  } else {
+    a.window({ title: 'Food Truck Manager', width: 1100, height: 700 }, (win: any) => {
+      win.setContent(buildContent);
 
-    win.show();
-  });
+      // Initial setup
+      (async () => {
+        await updateStatusSummary();
+      })();
+
+      win.show();
+    });
+  }
 }
 
 export default buildFoodTruckApp;

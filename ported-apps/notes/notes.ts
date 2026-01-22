@@ -5,7 +5,7 @@
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
  * @tsyne-app:category utilities
  * @tsyne-app:builder buildNotesApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A simple notes application with:
  * - Note management (create, edit, delete)
@@ -196,7 +196,8 @@ export class NotesStore {
 // UI BUILDER
 // ============================================================================
 
-export function buildNotesApp(a: any) {
+export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: number) {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new NotesStore();
   const path = require('path');
   const fontPath = path.join(__dirname, 'GochiHand.ttf');
@@ -384,6 +385,17 @@ export function buildNotesApp(a: any) {
       }); // close max
     }); // close themeoverride
   };
+
+  if (isEmbedded) {
+    buildContent();
+    setTimeout(async () => {
+      await updateUI();
+    }, 0);
+    store.subscribe(async () => {
+      await updateUI();
+    });
+    return;
+  }
 
   return a.window({ title: 'Notes', width: 900, height: 600 }, (win: any) => {
     winRef = win;

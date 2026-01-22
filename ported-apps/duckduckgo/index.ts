@@ -4,7 +4,8 @@
  * @tsyne-app:name DuckDuckGo
  * @tsyne-app:icon search
  * @tsyne-app:category Internet
- * @tsyne-app:args (a: App) => void
+ * @tsyne-app:builder buildDuckDuckGoApp
+ * @tsyne-app:args app,windowWidth,windowHeight
  *
  * A privacy-focused search browser ported from DuckDuckGo iOS to Tsyne:
  * - Private search with no tracking
@@ -462,7 +463,9 @@ export class DuckDuckGoStore {
 // APP BUILD FUNCTION
 // ============================================================================
 
-export function buildDuckDuckGoApp(a: any): void {
+export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
+
   const store = new DuckDuckGoStore();
 
   let selectedTab = 'search';
@@ -492,9 +495,8 @@ export function buildDuckDuckGoApp(a: any): void {
     }
   };
 
-  a.window({ title: 'DuckDuckGo Privacy Browser' }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Header
         a.hbox(() => {
           a.label('🦆 DuckDuckGo').withId('app-title').withBold();
@@ -770,13 +772,21 @@ export function buildDuckDuckGoApp(a: any): void {
         });
       });
     });
+  };
 
-    // Observable subscription
-    store.subscribe(async () => {
-      await updateLabels();
-      await viewStack.refresh();
-    });
-
-    updateLabels();
+  // Observable subscription
+  store.subscribe(async () => {
+    await updateLabels();
+    await viewStack.refresh();
   });
+
+  if (isEmbedded) {
+    buildContent();
+    updateLabels();
+  } else {
+    a.window({ title: 'DuckDuckGo Privacy Browser' }, (win: any) => {
+      win.setContent(buildContent);
+      updateLabels();
+    });
+  }
 }

@@ -11,7 +11,8 @@
  * @tsyne-app:name GrandPerspective
  * @tsyne-app:icon storage
  * @tsyne-app:category Utilities
- * @tsyne-app:args (a: any) => void
+ * @tsyne-app:builder buildGrandPerspectiveApp
+ * @tsyne-app:args app,initialPath,windowWidth,windowHeight
  */
 
 import * as fs from 'fs';
@@ -497,7 +498,8 @@ function renderShadedRect(c: any, rect: TreemapRect, baseColor: string, isSelect
 // Main App
 // ============================================================================
 
-export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
+export function buildGrandPerspectiveApp(a: any, initialPath?: string, windowWidth?: number, windowHeight?: number): void {
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new GrandPerspectiveStore();
   let cosyneCtx: any = null;
   let eventRouter: EventRouter | null = null;
@@ -578,9 +580,8 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
     store.scanDirectory('/tmp').catch(() => {});
   });
 
-  a.window({ title: 'GrandPerspective', width: 1000, height: 700 }, (win: any) => {
-    win.setContent(() => {
-      a.vbox(() => {
+  const buildContent = () => {
+    a.vbox(() => {
         // Header with controls
         a.hbox(() => {
           a.label('Disk Usage Visualization').withId('title-label');
@@ -683,23 +684,29 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string): void {
             eventRouter = enableEventHandling(cosyneCtx, a, { width: 800, height: 600 });
           }
         });
-      });
     });
+  };
 
-    // Update info label when selection changes
-    const unsubscribe = store.subscribe(() => {
-      const state = store.getState();
-      const selected = state.allRects.find(r => r.id === state.selectedId);
-      if (selected) {
-        const sizeMB = (selected.size / 1024 / 1024).toFixed(2);
-        const type = selected.entry.isDirectory ? 'Folder' : 'File';
-        const infoText = `${type}: ${selected.entry.name} (${sizeMB} MB)`;
-        // Note: Can't directly update label without reference, would need widget refs
-      }
-    });
-
-    win.show();
+  // Update info label when selection changes
+  store.subscribe(() => {
+    const state = store.getState();
+    const selected = state.allRects.find(r => r.id === state.selectedId);
+    if (selected) {
+      const sizeMB = (selected.size / 1024 / 1024).toFixed(2);
+      const type = selected.entry.isDirectory ? 'Folder' : 'File';
+      const infoText = `${type}: ${selected.entry.name} (${sizeMB} MB)`;
+      // Note: Can't directly update label without reference, would need widget refs
+    }
   });
+
+  if (isEmbedded) {
+    buildContent();
+  } else {
+    a.window({ title: 'GrandPerspective', width: 1000, height: 700 }, (win: any) => {
+      win.setContent(buildContent);
+      win.show();
+    });
+  }
 }
 
 // Standalone execution

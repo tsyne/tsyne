@@ -19,7 +19,7 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createPegSolitaireApp
- * @tsyne-app:args app
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from '../../core/src';
@@ -278,15 +278,21 @@ export class PegSolitaireUI {
 // App Factory
 // ============================================================================
 
-export function createPegSolitaireApp(a: App): PegSolitaireUI {
+export function createPegSolitaireApp(a: App, windowWidth?: number, windowHeight?: number): PegSolitaireUI {
   const ui = new PegSolitaireUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  a.window({ title: 'Peg Solitaire', width: 380, height: 430 }, (win: Window) => {
-    ui.setupWindow(win);
-    win.setContent(() => ui.buildContent());
-    win.show();
+  if (isEmbedded) {
+    ui.buildContent();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else {
+    a.window({ title: 'Peg Solitaire', width: 380, height: 430 }, (win: Window) => {
+      ui.setupWindow(win);
+      win.setContent(() => ui.buildContent());
+      win.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }
