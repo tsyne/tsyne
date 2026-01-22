@@ -1961,9 +1961,10 @@ func NewBridge(testMode bool) *Bridge {
 // NewBridgeWithEmbeddedDriver creates a Bridge using the embedded driver for custom rendering.
 // This is only available on Android where Fyne renders to images that are displayed by the Android UI.
 // On desktop/web, this would need a different approach and isn't currently used.
-// Uses app.NewEmbedded() to create an app with embedded driver directly, avoiding JNI issues.
+// Uses app.SetEmbeddedDriver() to configure the app with embedded driver, avoiding JNI issues.
 func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
-	fyneApp := app.NewEmbedded(embeddedDriver)
+	fyneApp := app.New()
+	app.SetEmbeddedDriver(fyneApp, embeddedDriver)
 
 	// Create scalable theme with default font size
 	scalableTheme := NewScalableTheme(1.0)

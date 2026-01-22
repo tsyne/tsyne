@@ -197,9 +197,29 @@ Tsyne's API is designed to be elegant and terse, inspired by other pseudo-declar
 
 Calculator example is important to me because I'm forver comparing to [this one written in Ruby and Shoes UI tech](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) by Alexanderlol on GitHub, and [this one for ChrysaLisp](https://github.com/vygr/ChrysaLisp/blob/master/apps/calculator/app.lisp) by Chris Hinsley).
 
-TODO: LINK TO ALL THE CALC EXAMPLES HERE
+### Calculator Variants
 
-1. See a complete runnable single-script calculator here: [examples/calculator.ts](examples/calculator.ts) - 69 substantive lines, monolithic pattern. See also its [test suite](examples/calculator.test.ts).
+| Calculator | Lines | Purpose | Pseudo-Declarative Adherence |
+|------------|-------|---------|------------------------------|
+| [examples/smallest-calculator/smallest-calc.ts](examples/smallest-calculator/smallest-calc.ts) | 23 | Minimal viable calculator | **Excellent** - Pure nested builders, inline state, `for` loop for button grid |
+| [examples/calculator.ts](examples/calculator.ts) | 64 | Intro example | **Excellent** - Clean `vbox`/`grid` nesting, `forEach` for buttons, instance-local state |
+| [examples/15-tip-calculator.ts](examples/15-tip-calculator.ts) | 65 | Bill splitting | **Good** - Uses `vbox`/`hbox`, radiogroups, entry widgets; imperative `setText` updates |
+| [examples/calculator-accessible.ts](examples/calculator-accessible.ts) | 160 | Accessibility basics | **Good** - TTS toggle, `.accessibility()` chains; module-level state (not instance-local) |
+| [examples/full-calculator.ts](examples/full-calculator.ts) | 259 | Programmer's calc | **Excellent** - Multi-base (dec/hex/bin/oct), bitwise ops, helper functions for buttons |
+| [examples/calculator-fully-accessible.ts](examples/calculator-fully-accessible.ts) | 277 | Full a11y | **Good** - Comprehensive ARIA, keyboard hints; module-level state, complex style management |
+| [test-apps/calculator-advanced/calculator.ts](test-apps/calculator-advanced/calculator.ts) | 104 | Testing patterns (monolithic) | **Good** - IoC/DI with injected `App`, `hbox` rows (not grid); all logic inline |
+| [test-apps/calculator-advanced/calculator-ui.ts](test-apps/calculator-advanced/calculator-ui.ts) | 73+107 | Testing patterns (separated) | **Excellent** - UI delegates to `calculator-logic.ts`; enables fast Jest unit tests + TsyneTest integration |
+
+**Key pseudo-declarative patterns demonstrated:**
+- **Nested builders**: `a.window(() => a.vbox(() => a.grid(4, () => ...)))`
+- **Fluent chaining**: `a.button("7").onClick(...).withId(...).accessibility(...)`
+- **Programmatic generation**: `[..."789"].forEach(n => a.button(n).onClick(...))`
+- **Instance-local state**: State variables inside builder function, not module-level
+- **Imperative updates**: `display.setText(value)` for simple cases (Pattern 1 from [pseudo-declarative docs](docs/pseudo-declarative-ui-composition.md))
+
+**LoC target:** The [Ruby/Shoes calculator](https://raw.githubusercontent.com/Alexanderlol/GS-Calc/master/calc.rb) is 27 substantive lines. Our smallest-calc.ts achieves 23 lines - demonstrating that TypeScript + Tsyne can match or beat Ruby's famous terseness.
+
+1. See a complete runnable single-script calculator here: [examples/calculator.ts](examples/calculator.ts) - 108 lines, monolithic pattern. See also its [test suite](examples/calculator.test.ts).
 
 See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
 
@@ -383,7 +403,7 @@ See `examples/theme.ts` for a complete theme demonstration with various widgets.
 
 ## Browser Mode
 
-Tsyne includes a Swiby-inspired (and others) browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
+Tsyne includes a [Swiby-inspired](https://paulhammant.com/blog/google-app-engine-for-java-with-rich-ruby-clients.html) (and others) browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
 
 ```bash
 # Run the browser with a URL
