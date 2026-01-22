@@ -64,6 +64,7 @@ export interface WindowOptions {
   height?: number;
   fixedSize?: boolean;
   icon?: string;  // Resource name registered via ResourceManager
+  padded?: boolean;  // Whether to add padding around content (default true, set false for fullscreen)
 }
 
 /**
@@ -97,6 +98,9 @@ export class Window {
     }
     if (options.icon !== undefined) {
       payload.icon = options.icon;
+    }
+    if (options.padded !== undefined) {
+      payload.padded = options.padded;
     }
     // Pass inspector enabled state to Go side
     payload.inspectorEnabled = ctx.isInspectorEnabled();

@@ -7,7 +7,7 @@ OUTPUT := ../bin/tsyne-bridge
 ANDROID_OUT := ../../android-native/app/libs
 
 # Android NDK - set ANDROID_NDK_HOME or use default location
-ANDROID_NDK_HOME ?= $(HOME)/Android/Sdk/ndk/26.1.10909125
+ANDROID_NDK_HOME ?= $(HOME)/Android/Sdk/ndk/25.1.8937393
 NDK_TOOLCHAIN := $(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/linux-x86_64
 
 # Android API level (minimum supported)

@@ -118,6 +118,11 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 			win.SetFixedSize(true)
 		}
 
+		// Set padded if provided (default is true, set to false for fullscreen)
+		if padded, ok := msg.Payload["padded"].(bool); ok && !padded {
+			win.SetPadded(false)
+		}
+
 		// Set window icon if provided
 		if iconName, ok := msg.Payload["icon"].(string); ok {
 			b.mu.RLock()

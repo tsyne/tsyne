@@ -29,6 +29,7 @@ import {
   Icon,
   Image,
   Label,
+  LabelOptions,
   ProgressBar,
   ProgressBarInfinite,
   RichText,
@@ -111,7 +112,7 @@ import {
   // Types
   ThemeIconName,
 } from './widgets';
-export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions, CustomThemeOptions };
+export type { TextGridOptions, TextGridStyle, NavigationOptions, ThemeIconName, VBoxOptions, HBoxOptions, GridOptions, CustomThemeOptions, LabelOptions };
 import { initializeGlobals } from './globals';
 import { ResourceManager } from './resources';
 
@@ -451,20 +452,25 @@ export class App {
   /**
    * Create a text label.
    * @param text - Text to display
-   * @param className - Optional CSS class name
+   * @param classNameOrOptions - Optional CSS class name or LabelOptions object
    * @param alignment - Text alignment ('leading', 'center', 'trailing')
    * @param wrapping - Text wrapping mode ('off', 'break', 'word')
    * @param textStyle - Text styling options (bold, italic, monospace)
    * @returns Label widget
+   * @example
+   * // Old signature (still supported):
+   * a.label('Hello', undefined, 'center');
+   * // New options signature:
+   * a.label('Hello', { alignment: 'center', textSize: 'heading', onClick: () => {} });
    */
   label(
     text: string,
-    className?: string,
+    classNameOrOptions?: string | LabelOptions,
     alignment?: 'leading' | 'trailing' | 'center',
     wrapping?: 'off' | 'break' | 'word',
     textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }
   ): Label {
-    return new Label(this.ctx, text, className, alignment, wrapping, textStyle);
+    return new Label(this.ctx, text, classNameOrOptions, alignment, wrapping, textStyle);
   }
 
   /**

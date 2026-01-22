@@ -52,7 +52,11 @@ const PHONE_LAYOUT_SCALE_PORTRAIT = 0.5;
 const PHONE_LAYOUT_SCALE_LANDSCAPE = 0.8;  // Larger scale in landscape to use space better
 
 // Icon size for phone (slightly smaller than desktop's 80px)
-const ICON_SIZE = 64;
+// This is the base size - will be scaled up for high-DPI screens
+const ICON_SIZE_BASE = 64;
+
+// Default icon size (can be overridden via options)
+let ICON_SIZE = 64;
 
 // Default app icon (used when no icon is specified)
 const DEFAULT_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="6" r="1"/><circle cx="9" cy="6" r="1"/></svg>`;
@@ -83,6 +87,10 @@ export interface PhoneTopOptions {
   rows?: number;
   /** Port for remote debug server (disabled if not set) */
   debugPort?: number;
+  /** Use fullscreen mode (let driver determine size, for Android embedded mode) */
+  fullScreen?: boolean;
+  /** Icon scale factor (default 1.0, use 2.0-3.0 for high-DPI screens) */
+  iconScale?: number;
 }
 
 interface RunningApp {
@@ -124,6 +132,10 @@ class PhoneTop {
   private keyboardVisible: boolean = false;
   /** Keyboard container for show/hide */
   private keyboardContainer: VBox | null = null;
+  /** Main content container (rebuilt on navigation, keyboard stays) */
+  private contentContainer: VBox | null = null;
+  /** Whether keyboard has been built (only build once) */
+  private keyboardBuilt: boolean = false;
   /** Current window dimensions */
   private windowWidth: number = 540;
   private windowHeight: number = 960;
@@ -139,6 +151,10 @@ class PhoneTop {
   constructor(app: App, options: PhoneTopOptions = {}) {
     this.a = app;
     this.options = options;
+
+    // Apply icon scale for high-DPI screens (e.g., Android fullscreen)
+    const iconScale = options.iconScale || 1.0;
+    ICON_SIZE = Math.round(ICON_SIZE_BASE * iconScale);
 
     // Initialize with portrait defaults (will be updated on window creation)
     this.cols = options.columns || GRID_COLS_PORTRAIT;
@@ -901,8 +917,17 @@ class PhoneTop {
    * Build the phone UI
    */
   build() {
-    // Use phone-sized window (default portrait, but responsive to actual size)
-    this.a.window({ title: 'Tsyne Phone', width: 540, height: 960 }, (win) => {
+    // Use phone-sized window or fullscreen for embedded mode (Android)
+    const windowOpts: { title: string; width?: number; height?: number; padded?: boolean } = { title: 'Tsyne Phone' };
+    if (this.options.fullScreen) {
+      // Fullscreen mode: no padding, let driver determine size
+      windowOpts.padded = false;
+    } else {
+      // Default to phone-sized window (portrait)
+      windowOpts.width = 540;
+      windowOpts.height = 960;
+    }
+    this.a.window(windowOpts, (win) => {
       this.win = win as Window;
 
       // Set initial orientation based on requested dimensions
@@ -939,87 +964,15 @@ class PhoneTop {
         }
       ]);
 
-      this.rebuildContent();
-    });
-  }
-
-  /**
-   * Rebuild the content to show current page or open folder
-   */
-  private rebuildContent() {
-    if (!this.win) return;
-
-    this.win.setContent(() => {
-      // Main layout: app content fills center, keyboard at bottom (hidden by default)
-      this.a.border({
-        center: () => {
-          // Use border layout: grid fills center, controls at top/bottom
-          this.a.border({
-            top: this.openFolder ? () => {
-              // Folder header when a folder is open
-              const resourceName = this.folderIconCache.get(this.openFolder!.category);
-              this.a.vbox(() => {
-                this.a.center(() => {
-                  this.a.hbox(() => {
-                    if (resourceName) {
-                      this.a.image({ resource: resourceName, fillMode: 'original' });
-                    } else {
-                      this.a.label('📁');
-                    }
-                    this.a.label(` ${this.openFolder!.name}`);
-                    this.a.label(` (${this.openFolder!.apps.length} apps)`);
-                  });
-                });
-                this.a.separator();
-              });
-            } : undefined,
-            center: () => {
-              if (this.openFolder) {
-                // Show folder contents (paginated grid, same as home)
-                this.createFolderView(this.openFolder);
-              } else {
-                // App grid fills available space
-                this.createAppGrid();
-              }
-            },
-            bottom: () => {
-              if (this.openFolder) {
-                // Folder view: pagination controls (same style as home)
-                this.a.vbox(() => {
-                  // Page dots for folder (if multiple pages)
-                  if (this.folderTotalPages > 1) {
-                    this.createFolderPageIndicator();
-                  }
-
-                  // Navigation buttons
-                  this.a.hbox(() => {
-                    this.a.button('← Back').onClick(() => this.closeFolder());
-                    this.a.spacer();
-
-                    if (this.folderTotalPages > 1) {
-                      this.a.button('<').withId('folderPrev').onClick(() => this.previousFolderPage());
-                      this.a.button('>').withId('folderNext').onClick(() => this.nextFolderPage());
-                    }
-                  });
-                });
-              } else {
-                this.a.vbox(() => {
-                  // Page dots indicator (like iOS/Android)
-                  this.createPageIndicator();
-
-                  // Swipe navigation buttons
-                  this.a.hbox(() => {
-                    this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
-                    this.a.spacer();
-                    this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
-                  });
-                });
-              }
-            }
+      // Create persistent root structure ONCE - keyboard is built here and kept
+      win.setContent(() => {
+        this.a.vbox(() => {
+          // Content container - will be cleared and rebuilt on navigation
+          this.contentContainer = this.a.vbox(() => {
+            // Initial content will be added by rebuildContent()
           });
-        },
-        bottom: () => {
-          // Virtual keyboard (hidden by default, shown on Entry focus)
+
+          // Keyboard container - built ONCE and reused
           this.keyboardContainer = this.a.vbox(() => {
             this.a.separator();
             if (this.keyboardController) {
@@ -1027,6 +980,89 @@ class PhoneTop {
             }
           });
           this.keyboardContainer.hide();  // Start hidden
+          this.keyboardBuilt = true;
+        });
+      });
+
+      // Now populate the content container
+      this.rebuildContent();
+    });
+  }
+
+  /**
+   * Rebuild the content to show current page or open folder
+   * Uses persistent contentContainer - keyboard stays in place
+   */
+  private rebuildContent() {
+    if (!this.win || !this.contentContainer) return;
+
+    // Clear existing content but keep keyboard
+    this.contentContainer.removeAll();
+
+    // Add new content to the persistent container
+    this.contentContainer.add(() => {
+      // Use border layout: grid fills center, controls at top/bottom
+      this.a.border({
+        top: this.openFolder ? () => {
+          // Folder header when a folder is open
+          const resourceName = this.folderIconCache.get(this.openFolder!.category);
+          this.a.vbox(() => {
+            this.a.center(() => {
+              this.a.hbox(() => {
+                if (resourceName) {
+                  this.a.image({ resource: resourceName, fillMode: 'original' });
+                } else {
+                  this.a.label('📁');
+                }
+                this.a.label(` ${this.openFolder!.name}`);
+                this.a.label(` (${this.openFolder!.apps.length} apps)`);
+              });
+            });
+            this.a.separator();
+          });
+        } : undefined,
+        center: () => {
+          if (this.openFolder) {
+            // Show folder contents (paginated grid, same as home)
+            this.createFolderView(this.openFolder);
+          } else {
+            // App grid fills available space
+            this.createAppGrid();
+          }
+        },
+        bottom: () => {
+          if (this.openFolder) {
+            // Folder view: pagination controls (same style as home)
+            this.a.vbox(() => {
+              // Page dots for folder (if multiple pages)
+              if (this.folderTotalPages > 1) {
+                this.createFolderPageIndicator();
+              }
+
+              // Navigation buttons
+              this.a.hbox(() => {
+                this.a.button('← Back').onClick(() => this.closeFolder());
+                this.a.spacer();
+
+                if (this.folderTotalPages > 1) {
+                  this.a.button('<').withId('folderPrev').onClick(() => this.previousFolderPage());
+                  this.a.button('>').withId('folderNext').onClick(() => this.nextFolderPage());
+                }
+              });
+            });
+          } else {
+            this.a.vbox(() => {
+              // Page dots indicator (like iOS/Android)
+              this.createPageIndicator();
+
+              // Swipe navigation buttons
+              this.a.hbox(() => {
+                this.a.button('< Swipe Left').withId('swipeLeft').onClick(() => this.previousPage());
+                this.a.spacer();
+                this.a.button('Swipe Right >').withId('swipeRight').onClick(() => this.nextPage());
+              });
+            });
+          }
         }
       });
     });
@@ -1138,6 +1174,7 @@ class PhoneTop {
    */
   private createFolderIcon(folder: Folder) {
     const resourceName = this.folderIconCache.get(folder.category);
+    const openHandler = () => this.openFolderView(folder);
 
     // Use vbox with hbox+spacers for horizontal centering only
     // (center() would also center vertically, causing y-separation between icon and label)
@@ -1149,21 +1186,37 @@ class PhoneTop {
           this.a.image({
             resource: resourceName,
             fillMode: 'original',
-            onClick: () => this.openFolderView(folder)
+            onClick: openHandler
           }).withId(`folder-${folder.category}`);
         } else {
           // Fallback: button with folder emoji (shouldn't happen)
           this.a.button('📁')
             .withId(`folder-${folder.category}`)
-            .onClick(() => this.openFolderView(folder));
+            .onClick(openHandler);
         }
         this.a.spacer();
       });
 
-      // Folder name (centered, no word-wrap to avoid character breaks in narrow cells)
-      this.a.label(folder.name, undefined, 'center');
+      // Folder name - large text, centered, tappable (scale with icon size)
+      const textSize = Math.round(ICON_SIZE * 0.5);  // 50% of icon size
+      const displayName = this.truncateName(folder.name);
+      this.a.label(displayName, {
+        alignment: 'center',
+        textSize: textSize,
+        onClick: openHandler
+      });
       this.a.spacer();  // Push content to top of cell
     });
+  }
+
+  /**
+   * Truncate text to fit within grid cell (approximately)
+   * @param text Text to truncate
+   * @param maxChars Maximum characters before truncating
+   */
+  private truncateName(text: string, maxChars: number = 8): string {
+    if (text.length <= maxChars) return text;
+    return text.substring(0, maxChars - 1) + '…';
   }
 
   /**
@@ -1171,6 +1224,8 @@ class PhoneTop {
    * @param icon The grid icon to display
    */
   private createAppIcon(icon: GridIcon) {
+    const launchHandler = () => this.launchApp(icon.metadata);
+
     // Use vbox with hbox+spacers for horizontal centering only
     // (center() would also center vertically, causing y-separation between icon and label)
     this.a.vbox(() => {
@@ -1181,20 +1236,26 @@ class PhoneTop {
           this.a.image({
             resource: icon.resourceName,
             fillMode: 'original',
-            onClick: () => this.launchApp(icon.metadata)
+            onClick: launchHandler
           }).withId(`icon-${icon.metadata.name}`);
         } else {
           // Fallback: button with first letter
           const firstLetter = icon.metadata.name.charAt(0).toUpperCase();
           this.a.button(firstLetter)
             .withId(`icon-${icon.metadata.name}`)
-            .onClick(() => this.launchApp(icon.metadata));
+            .onClick(launchHandler);
         }
         this.a.spacer();
       });
 
-      // App name (centered, no word-wrap to avoid character breaks in narrow cells)
-      this.a.label(icon.metadata.name, undefined, 'center');
+      // App name - large text, centered, tappable (scale with icon size)
+      const textSize = Math.round(ICON_SIZE * 0.5);  // 50% of icon size
+      const displayName = this.truncateName(icon.metadata.name);
+      this.a.label(displayName, {
+        alignment: 'center',
+        textSize: textSize,
+        onClick: launchHandler
+      });
       this.a.spacer();  // Push content to top of cell
     });
   }
@@ -1419,9 +1480,10 @@ class PhoneTop {
 
   /**
    * Show app content with a back button header
+   * Uses persistent contentContainer - keyboard stays in place
    */
   private showAppContent(runningApp: RunningApp) {
-    if (!this.win) return;
+    if (!this.win || !this.contentContainer) return;
 
     const contentBuilder = runningApp.adapter.contentBuilder;
     if (!contentBuilder) return;
@@ -1435,14 +1497,18 @@ class PhoneTop {
     // Store original resources to restore after content build
     const originalResources = this.a.resources;
 
-    this.win.setContent(async () => {
+    // Clear content container (keyboard stays in outer vbox)
+    this.contentContainer.removeAll();
+
+    // Add app content to the persistent container
+    this.contentContainer.add(async () => {
       // Set up resource scope for app content
       (this.a as any).resources = runningApp.scopedResources;
       this.a.getContext().setResourceScope(runningApp.resourceScope);
       this.a.getContext().setLayoutScale(this.getLayoutScale());
 
-      // Create ONE top-level vbox to hold everything
-      const outerVbox = this.a.vbox(() => {
+      // Create vbox to hold app header + content
+      const appVbox = this.a.vbox(() => {
         // Header with back button, quit button, menu button, and app name
         this.a.hbox(() => {
           this.a.button('← Home').onClick(() => {
@@ -1507,10 +1573,10 @@ class PhoneTop {
         await contentBuilder();
         const appWidgetIds = this.a.getContext().popContainer();
 
-        // Add app widgets to the outer vbox
+        // Add app widgets to the app vbox
         for (const childId of appWidgetIds) {
           this.a.getContext().bridge.send('containerAdd', {
-            containerId: outerVbox.id,
+            containerId: appVbox.id,
             childId
           });
         }
@@ -1520,7 +1586,7 @@ class PhoneTop {
 
         // Show error message in the app area instead of crashing
         console.error(`[phonetop] App "${runningApp.metadata.name}" crashed:`, err);
-        outerVbox.add(() => {
+        appVbox.add(() => {
           this.a.vbox(() => {
             this.a.label(`App Error: ${runningApp.metadata.name}`);
             this.a.label(err instanceof Error ? err.message : String(err));
@@ -1531,17 +1597,6 @@ class PhoneTop {
           });
         });
       }
-
-      // Add keyboard (hidden by default)
-      outerVbox.add(() => {
-        this.keyboardContainer = this.a.vbox(() => {
-          this.a.separator();
-          if (this.keyboardController) {
-            buildKeyboard(this.a, this.keyboardController as any);
-          }
-        });
-        this.keyboardContainer.hide();
-      });
 
       // Restore original resources and layout scale
       (this.a as any).resources = originalResources;

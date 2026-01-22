@@ -704,7 +704,7 @@ func runGrpcMode(testMode bool) {
 
 	// 3. Create bridge
 	bridge := NewBridge(testMode)
-	bridge.grpcMode = true // Skip stdout writes in gRPC mode
+	bridge.transport = "grpc"
 	bridge.grpcEventChan = make(chan Event, 256) // Larger buffer for better throughput
 
 	// 4. Start gRPC server in background - server signals ready via channel
@@ -755,7 +755,7 @@ func runGrpcMode(testMode bool) {
 func runMsgpackUdsMode(testMode bool) {
 	// 1. Create bridge
 	bridge := NewBridge(testMode)
-	bridge.grpcMode = true // Reuse flag to skip stdout writes
+	bridge.transport = "msgpack"
 
 	// 2. Create and start MessagePack server
 	msgpackServer := NewMsgpackServer(bridge)

@@ -110,33 +110,74 @@ export class FileIcon extends Widget {
 }
 
 /**
+ * Options for creating a Label widget
+ */
+export interface LabelOptions {
+  /** CSS class name for styling */
+  className?: string;
+  /** Text alignment */
+  alignment?: 'leading' | 'trailing' | 'center';
+  /** Text wrapping mode */
+  wrapping?: 'off' | 'break' | 'word';
+  /** Text style options */
+  textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean };
+  /** Text size: named size ('heading', 'subheading', 'caption') or numeric pixel size */
+  textSize?: 'heading' | 'subheading' | 'caption' | number;
+  /** Click handler */
+  onClick?: () => void;
+}
+
+/**
  * Label widget
  */
 export class Label extends Widget {
-  constructor(ctx: Context, text: string, className?: string, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }) {
+  constructor(ctx: Context, text: string, classNameOrOptions?: string | LabelOptions, alignment?: 'leading' | 'trailing' | 'center', wrapping?: 'off' | 'break' | 'word', textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean }) {
     const id = ctx.generateId('label');
     super(ctx, id);
 
+    // Handle both old signature (className, alignment, wrapping, textStyle) and new options object
+    let options: LabelOptions = {};
+    if (typeof classNameOrOptions === 'object') {
+      options = classNameOrOptions;
+    } else {
+      options = {
+        className: classNameOrOptions,
+        alignment,
+        wrapping,
+        textStyle
+      };
+    }
+
     const payload: any = { id, text };
 
-    if (alignment) {
-      payload.alignment = alignment;
+    if (options.alignment) {
+      payload.alignment = options.alignment;
     }
 
-    if (wrapping) {
-      payload.wrapping = wrapping;
+    if (options.wrapping) {
+      payload.wrapping = options.wrapping;
     }
 
-    if (textStyle) {
-      payload.textStyle = textStyle;
+    if (options.textStyle) {
+      payload.textStyle = options.textStyle;
+    }
+
+    if (options.textSize) {
+      payload.textSize = options.textSize;
+    }
+
+    if (options.onClick) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, options.onClick);
     }
 
     ctx.bridge.send('createLabel', payload);
     ctx.addToCurrentContainer(id);
 
     // Apply styles from stylesheet (non-blocking) - try class names first, then fall back to 'label'
-    if (className) {
-      this.applyStyles(className).catch(() => {});
+    if (options.className) {
+      this.applyStyles(options.className).catch(() => {});
     } else {
       this.applyStyles('label').catch(() => {});
     }

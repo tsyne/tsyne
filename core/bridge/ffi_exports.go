@@ -42,7 +42,8 @@ func TsyneInit(headless C.int) C.int {
 	testMode := headless != 0
 
 	ffiBridge = NewBridge(testMode)
-	ffiBridge.grpcMode = true // Reuse flag to skip stdout writes
+	// FFI uses callback, not transport - but set this to avoid stdout writes
+	ffiBridge.transport = "ffi"
 
 	// Set up event forwarding
 	ffiBridge.SetEventCallback(func(event Event) {

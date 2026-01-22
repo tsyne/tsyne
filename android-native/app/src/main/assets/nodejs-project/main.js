@@ -75,7 +75,9 @@ async function startPhoneTOp() {
                 // Use buildPhoneTopAndroid which has all apps statically bundled
                 await phonetop.buildPhoneTopAndroid(a, {
                     baseDirectory: __dirname,
-                    debugPort: 9229
+                    debugPort: 9229,
+                    fullScreen: true,  // Use full screen on Android embedded mode
+                    iconScale: 1.5     // Scale icons for high-DPI screen (64px * 1.5 = 96px)
                 });
                 console.log('[Node.js] PhoneTop UI built with static apps!');
             });

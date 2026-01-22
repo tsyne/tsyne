@@ -181,7 +181,7 @@ type Bridge struct {
 	callbacks       map[string]string     // widget ID -> callback ID
 	contextMenus    map[string]*fyne.Menu // widget ID -> context menu
 	testMode        bool                  // true for headless testing
-	grpcMode        bool                  // true when running in gRPC mode (skip stdout writes)
+	transport       string                // "stdio" (default), "grpc", "msgpack", or "ffi"
 	grpcEventChan   chan Event            // channel for gRPC event streaming
 	mu              sync.RWMutex
 	writer          *json.Encoder
@@ -1961,8 +1961,9 @@ func NewBridge(testMode bool) *Bridge {
 // NewBridgeWithEmbeddedDriver creates a Bridge using the embedded driver for custom rendering.
 // This is only available on Android where Fyne renders to images that are displayed by the Android UI.
 // On desktop/web, this would need a different approach and isn't currently used.
+// Uses app.NewEmbedded() to create an app with embedded driver directly, avoiding JNI issues.
 func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
-	fyneApp := app.New()
+	fyneApp := app.NewEmbedded(embeddedDriver)
 
 	// Create scalable theme with default font size
 	scalableTheme := NewScalableTheme(1.0)
@@ -1993,67 +1994,57 @@ func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
 }
 
 func (b *Bridge) sendEvent(event Event) {
-	// Check for FFI callback first (highest priority)
+	// FFI direct call (highest priority)
 	if b.ffiEventCallback != nil {
 		b.ffiEventCallback(event)
 		return
 	}
 
-	// In gRPC mode, events are sent via the gRPC stream channel
-	if b.grpcMode {
-		// Check for MessagePack server first (msgpack-uds mode)
+	switch b.transport {
+	case "msgpack":
 		if b.msgpackServer != nil {
 			b.msgpackServer.SendEvent(event)
-			return
 		}
-		// Otherwise use gRPC channel
+	case "grpc":
 		if b.grpcEventChan != nil {
 			select {
 			case b.grpcEventChan <- event:
 				// Event sent successfully
 			default:
-				// Channel full or closed, log and drop
 				log.Printf("[SEND-EVENT-ERROR] gRPC event channel full, dropping event: %s", event.Type)
 			}
 		}
-		return
-	}
+	default: // "stdio" or empty
+		b.mu.Lock()
+		defer b.mu.Unlock()
 
-	// IPC Safeguard #2: Mutex protection for stdout writes
-	b.mu.Lock()
-	defer b.mu.Unlock()
+		jsonData, err := json.Marshal(event)
+		if err != nil {
+			log.Printf("[SEND-EVENT-ERROR] Error marshaling event: %v", err)
+			return
+		}
 
-	// Marshal to JSON
-	jsonData, err := json.Marshal(event)
-	if err != nil {
-		log.Printf("[SEND-EVENT-ERROR] Error marshaling event: %v", err)
-		return
-	}
-
-	// IPC Safeguard #3 & #4: Write with length-prefix framing and CRC32 validation
-	if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
-		log.Printf("[SEND-EVENT-ERROR] Error sending event: %v", err)
+		if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
+			log.Printf("[SEND-EVENT-ERROR] Error sending event: %v", err)
+		}
 	}
 }
 
 func (b *Bridge) sendResponse(resp Response) {
-	// In gRPC mode, responses are returned via gRPC, not stdout
-	if b.grpcMode {
+	// Only stdio transport uses this - grpc/msgpack return responses via their own mechanisms
+	if b.transport != "" && b.transport != "stdio" {
 		return
 	}
 
-	// IPC Safeguard #2: Mutex protection for stdout writes
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	// Marshal to JSON
 	jsonData, err := json.Marshal(resp)
 	if err != nil {
 		log.Printf("Error marshaling response: %v", err)
 		return
 	}
 
-	// IPC Safeguard #3 & #4: Write with length-prefix framing and CRC32 validation
 	if err := writeFramedMessage(os.Stdout, jsonData); err != nil {
 		log.Printf("Error sending response: %v", err)
 	}

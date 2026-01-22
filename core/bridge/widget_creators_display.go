@@ -28,6 +28,102 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	text := msg.Payload["text"].(string)
 
+	// Check for click callback
+	clickCallbackID, hasClickCallback := msg.Payload["callbackId"].(string)
+
+	// Determine alignment (used by multiple paths)
+	alignment := fyne.TextAlignLeading
+	if alignStr, ok := msg.Payload["alignment"].(string); ok {
+		switch alignStr {
+		case "center":
+			alignment = fyne.TextAlignCenter
+		case "trailing":
+			alignment = fyne.TextAlignTrailing
+		}
+	}
+
+	// Check if numeric textSize is specified - use canvas.Text with exact pixel size
+	if numericSize := toFloat32(msg.Payload["textSize"]); numericSize > 0 {
+		// Create canvas.Text with specified size
+		canvasText := canvas.NewText(text, theme.ForegroundColor())
+		canvasText.TextSize = numericSize
+		canvasText.Alignment = alignment
+
+		// Wrap in clickable container if callback provided
+		var widgetToStore fyne.CanvasObject = canvasText
+		if hasClickCallback {
+			callback := func() {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": clickCallbackID,
+					},
+				})
+			}
+			widgetToStore = NewClickableContainer(canvasText, callback)
+		}
+
+		b.mu.Lock()
+		b.widgets[widgetID] = widgetToStore
+		b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
+		b.mu.Unlock()
+
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+			Result:  map[string]interface{}{"widgetId": widgetID},
+		}
+	}
+
+	// Check if string textSize is specified - use RichText with named size
+	if textSizeStr, hasTextSize := msg.Payload["textSize"].(string); hasTextSize {
+		// Map size names to Fyne theme size names
+		sizeName := theme.SizeNameText // default
+		switch textSizeStr {
+		case "heading":
+			sizeName = theme.SizeNameHeadingText
+		case "subheading":
+			sizeName = theme.SizeNameSubHeadingText
+		case "caption":
+			sizeName = theme.SizeNameCaptionText
+		}
+
+		// Create RichText with specified size
+		rt := widget.NewRichText(&widget.TextSegment{
+			Text: text,
+			Style: widget.RichTextStyle{
+				Alignment: alignment,
+				SizeName:  sizeName,
+				TextStyle: fyne.TextStyle{},
+			},
+		})
+
+		// Wrap in clickable container if callback provided
+		var widgetToStore fyne.CanvasObject = rt
+		if hasClickCallback {
+			callback := func() {
+				b.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": clickCallbackID,
+					},
+				})
+			}
+			widgetToStore = NewClickableContainer(rt, callback)
+		}
+
+		b.mu.Lock()
+		b.widgets[widgetID] = widgetToStore
+		b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
+		b.mu.Unlock()
+
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+			Result:  map[string]interface{}{"widgetId": widgetID},
+		}
+	}
+
 	lbl := widget.NewLabel(text)
 
 	// Apply alignment if specified
@@ -67,8 +163,22 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 		}
 	}
 
+	// Wrap in clickable container if callback provided
+	var widgetToStore fyne.CanvasObject = lbl
+	if hasClickCallback {
+		callback := func() {
+			b.sendEvent(Event{
+				Type: "callback",
+				Data: map[string]interface{}{
+					"callbackId": clickCallbackID,
+				},
+			})
+		}
+		widgetToStore = NewClickableContainer(lbl, callback)
+	}
+
 	b.mu.Lock()
-	b.widgets[widgetID] = lbl
+	b.widgets[widgetID] = widgetToStore
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "label", Text: text}
 	b.mu.Unlock()
 

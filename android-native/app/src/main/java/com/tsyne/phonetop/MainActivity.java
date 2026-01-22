@@ -180,6 +180,12 @@ public class MainActivity extends Activity {
         }).start();
     }
 
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        Log.i(TAG, "Activity dispatchTouchEvent: action=" + ev.getActionMasked() + " x=" + ev.getX() + " y=" + ev.getY());
+        return super.dispatchTouchEvent(ev);
+    }
+
     private boolean wasAPKUpdated() {
         SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
         long lastUpdate = prefs.getLong("lastUpdateTime", 0);
@@ -266,6 +272,8 @@ public class MainActivity extends Activity {
             // Make sure we can receive touch events
             setFocusable(true);
             setFocusableInTouchMode(true);
+            setClickable(true);
+            Log.i(TAG, "TsyneRenderView created, touch enabled");
         }
 
         @Override
@@ -309,26 +317,15 @@ public class MainActivity extends Activity {
             pixels.rewind();
             frameBitmap.copyPixelsFromBuffer(pixels);
 
-            // Draw to surface
+            // Draw to surface at native size (1:1 pixels, no scaling)
             Canvas canvas = null;
             try {
                 canvas = getHolder().lockCanvas();
                 if (canvas != null) {
-                    // Scale to fill the surface
-                    float scaleX = (float) canvas.getWidth() / width;
-                    float scaleY = (float) canvas.getHeight() / height;
-                    float scale = Math.min(scaleX, scaleY);
-
-                    int destWidth = (int) (width * scale);
-                    int destHeight = (int) (height * scale);
-                    int destX = (canvas.getWidth() - destWidth) / 2;
-                    int destY = (canvas.getHeight() - destHeight) / 2;
-
-                    canvas.drawColor(0xFF000000); // Black background
-                    canvas.drawBitmap(frameBitmap,
-                            null,
-                            new android.graphics.Rect(destX, destY, destX + destWidth, destY + destHeight),
-                            paint);
+                    // Clear with black first
+                    canvas.drawColor(0xFF000000);
+                    // Draw bitmap at native size - no scaling to avoid distortion
+                    canvas.drawBitmap(frameBitmap, 0, 0, paint);
                 }
             } finally {
                 if (canvas != null) {
@@ -345,9 +342,12 @@ public class MainActivity extends Activity {
             float x = event.getX(pointerIndex);
             float y = event.getY(pointerIndex);
 
+            Log.i(TAG, "onTouchEvent: action=" + action + " x=" + x + " y=" + y);
+
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_POINTER_DOWN:
+                    Log.i(TAG, "Sending touch down to native");
                     sendTouchDown(x, y, pointerId);
                     return true;
 

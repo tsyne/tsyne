@@ -249,6 +249,20 @@ Java_com_tsyne_phonetop_MainActivity_getBridgeSocketPath(JNIEnv *env, jclass cla
 static void* embeddedBridgeThreadFunc(void* arg) {
     LOGI("Embedded bridge thread starting (%.0fx%.0f)", g_screenWidth, g_screenHeight);
 
+    // CRITICAL: Attach this thread to JNI BEFORE calling Go code
+    // Go/Fyne's app.New() needs JNI access for the Android driver
+    JNIEnv* env = NULL;
+    if (g_javaVM != NULL) {
+        if ((*g_javaVM)->AttachCurrentThread(g_javaVM, &env, NULL) != JNI_OK) {
+            LOGE("Failed to attach embedded bridge thread to JVM");
+            return NULL;
+        }
+        LOGI("Embedded bridge thread attached to JVM");
+    } else {
+        LOGE("JavaVM is NULL - cannot attach thread");
+        return NULL;
+    }
+
     // Set up the render callback first
     if (g_SetAndroidRenderCallback != NULL) {
         g_SetAndroidRenderCallback((void*)nativeRenderCallback);
@@ -260,6 +274,13 @@ static void* embeddedBridgeThreadFunc(void* arg) {
         int result = g_StartBridgeAndroidEmbedded(g_screenWidth, g_screenHeight, g_socketDir);
         LOGI("StartBridgeAndroidEmbedded returned: %d", result);
     }
+
+    // Detach thread when done (if bridge ever returns)
+    if (g_javaVM != NULL) {
+        (*g_javaVM)->DetachCurrentThread(g_javaVM);
+        LOGI("Embedded bridge thread detached from JVM");
+    }
+
     return NULL;
 }
 
@@ -336,6 +357,7 @@ Java_com_tsyne_phonetop_MainActivity_setScreenSize(JNIEnv *env, jclass clazz, jf
 // Touch event handling
 JNIEXPORT void JNICALL
 Java_com_tsyne_phonetop_MainActivity_sendTouchDown(JNIEnv *env, jclass clazz, jfloat x, jfloat y, jint pointerId) {
+    LOGI("sendTouchDown: x=%.0f y=%.0f id=%d func=%p", x, y, pointerId, g_SendAndroidTouchDown);
     if (g_SendAndroidTouchDown != NULL) {
         g_SendAndroidTouchDown(x, y, pointerId);
     }
