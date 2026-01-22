@@ -1242,6 +1242,8 @@ export function buildMyApp(a: App) {
 
 No special content builders or checks needed. Apps discovered by `scanForApps()` work in all contexts automatically.
 
+**See:** [docs/WINDOW_ADAPTATION.md](docs/WINDOW_ADAPTATION.md) for the full guide on adapting apps to different contexts, including PhoneTop embedding with `windowWidth, windowHeight` parameters and touch controls.
+
 ## Desktop Mode & App Sandboxing
 
 Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from `ported-apps/` and `examples/` directories.
