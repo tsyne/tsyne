@@ -32,6 +32,11 @@ import {
   GridItem,
   CATEGORY_CONFIG
 } from './phonetop-groups';
+import {
+  MockContactsService,
+  MockTelephonyService,
+  MockSMSService
+} from './services';
 
 // Grid configuration for phone (portrait orientation)
 const GRID_COLS_PORTRAIT = 3;
@@ -1373,11 +1378,20 @@ class PhoneTop {
       this.a.getContext().setLayoutScale(this.getLayoutScale());
 
       // Build argument map based on @tsyne-app:args metadata
+      // Mock services for phone apps that require telephony/contacts/SMS
+      const mockContacts = new MockContactsService();
+      const mockTelephony = new MockTelephonyService();
+      const mockSMS = new MockSMSService();
+
       const argMap: Record<string, any> = {
         'app': this.a,
         'resources': scopedResources,
         'windowWidth': this.windowWidth,
         'windowHeight': this.windowHeight,
+        'contacts': mockContacts,
+        'telephony': mockTelephony,
+        'modem': mockTelephony,  // alias for telephony
+        'sms': mockSMS,
       };
 
       // Map metadata.args to actual values (default is ['app'])
