@@ -5,11 +5,11 @@
  * This is a comprehensive smoke test that verifies all apps can at least start.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { buildPhoneTop, PhoneTop } from './phonetop';
-import { parseAppMetadata, AppMetadata } from '../core/src/app-metadata';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { buildPhoneTop, PhoneTop } from './index';
+import { parseAppMetadata, AppMetadata } from '../../core/src/app-metadata';
 import { ALL_APPS } from '../all-apps';
-import type { App } from '../core/src/app';
+import type { App } from '../../core/src/app';
 
 // Timeout for each app launch (ms)
 const APP_LAUNCH_TIMEOUT = 15000;

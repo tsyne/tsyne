@@ -12,7 +12,7 @@
 
 import { TsyneTest, TestContext } from '../core/src/index-test';
 import { buildTabletTop } from './tablet-top';
-import { buildPhoneTop } from './phonetop';
+import { buildPhoneTop } from '../launchers/phonetop/index';
 
 describe('TabletTop Integration Tests', () => {
   let tsyneTest: TsyneTest;

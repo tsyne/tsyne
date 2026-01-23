@@ -14,14 +14,14 @@
  * Or import and use: import { buildDesktop, Desktop } from 'tsyne';
  */
 
-import { App } from './app';
-import { Window } from './window';
-import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from './widgets';
-import { ITsyneWindow } from './tsyne-window';
-import { parseAppMetadata, AppMetadata } from './app-metadata';
-import { ALL_APPS } from '../../all-apps';
-import { initResvg } from './resvg-loader';
-import { Inspector } from './inspector';
+import { App } from '../../core/src/app';
+import { Window } from '../../core/src/window';
+import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from '../../core/src/widgets';
+import { ITsyneWindow } from '../../core/src/tsyne-window';
+import { parseAppMetadata, AppMetadata } from '../../core/src/app-metadata';
+import { ALL_APPS } from '../all-apps';
+import { initResvg } from '../../core/src/resvg-loader';
+import { Inspector } from '../../core/src/inspector';
 import * as path from 'path';
 
 // Import types and configuration from desktop_types

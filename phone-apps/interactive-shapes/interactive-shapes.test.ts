@@ -3,9 +3,9 @@
  * Verifies tap, drag, and hover interactions work correctly
  */
 
-import { TsyneTest } from '../tsyne-test';
-import { App } from '../app';
-import { cosyne, CosyneContext, enableEventHandling, refreshAllCosyneContexts } from '../../../cosyne/src';
+import { TsyneTest } from '../../core/src/tsyne-test';
+import { App } from '../../core/src/app';
+import { cosyne, CosyneContext, enableEventHandling, refreshAllCosyneContexts } from '../../cosyne/src';
 import * as fs from 'fs';
 import * as path from 'path';
 

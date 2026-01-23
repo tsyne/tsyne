@@ -5,8 +5,8 @@
  * Apps are grouped into folders by their @tsyne-app:category metadata.
  */
 
-import { App } from '../core/src/app';
-import { AppMetadata } from '../core/src/app-metadata';
+import { App } from '../../core/src/app';
+import { AppMetadata } from '../../core/src/app-metadata';
 import { Resvg } from '@resvg/resvg-wasm';
 
 // Grid position in the launcher

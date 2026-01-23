@@ -65,6 +65,7 @@ export {
   Icon,
   FileIcon,
   Label,
+  LabelOptions,
   Separator,
   Spacer,
   Hyperlink,

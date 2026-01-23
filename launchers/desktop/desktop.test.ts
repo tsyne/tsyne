@@ -11,9 +11,9 @@
  * - Visual debugging mode: TSYNE_HEADED=1 npx jest desktop.test.ts
  */
 
-import { TsyneTest, TestContext } from '../src/index-test';
-import { buildDesktop, DesktopOptions } from '../src/desktop';
-import { AppMetadata } from '../src/app-metadata';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { buildDesktop, DesktopOptions } from './index';
+import { AppMetadata } from '../../core/src/app-metadata';
 import * as path from 'path';
 
 // Mock calculator app for fast testing (avoids scanning directories)

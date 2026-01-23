@@ -15,7 +15,7 @@ import { App } from '../core/src/app';
 import { Window } from '../core/src/window';
 import { Label } from '../core/src/widgets';
 import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
-import { ALL_APPS } from '../all-apps';
+import { ALL_APPS } from '../launchers/all-apps';
 import { SandboxedApp } from '../core/src/sandboxed-app';
 import * as path from 'path';
 

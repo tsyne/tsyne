@@ -7,7 +7,7 @@
  */
 
 import { TsyneTest, TestContext, WidgetInfo } from '../core/src/index-test';
-import { buildPhoneTop } from './phonetop';
+import { buildPhoneTop } from '../launchers/phonetop/index';
 import type { App } from '../core/src/app';
 import * as fs from 'fs';
 import * as path from 'path';

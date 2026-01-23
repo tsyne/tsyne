@@ -16,7 +16,7 @@ import { Window } from '../core/src/window';
 import { Label, Button } from '../core/src/widgets';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../core/src/tsyne-window';
 import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
-import { ALL_APPS } from '../all-apps';
+import { ALL_APPS } from '../launchers/all-apps';
 import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
 import { SandboxedApp } from '../core/src/sandboxed-app';
 import { Inspector, WidgetNode } from '../core/src/inspector';

@@ -1,5 +1,5 @@
-import { TsyneTest, TestContext } from '../src/index-test';
-import { buildAmigaBoingApp } from '../../phone-apps/bouncing-ball/amiga-boing';
+import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { buildAmigaBoingApp } from './amiga-boing';
 
 describe('Amiga Boing Ball', () => {
   let tsyneTest: TsyneTest;

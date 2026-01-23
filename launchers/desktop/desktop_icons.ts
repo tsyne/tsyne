@@ -5,9 +5,9 @@
  */
 
 import * as path from 'path';
-import { App } from './app';
-import { AppMetadata } from './app-metadata';
-import { Resvg } from './resvg-loader';
+import { App } from '../../core/src/app';
+import { AppMetadata } from '../../core/src/app-metadata';
+import { Resvg } from '../../core/src/resvg-loader';
 import { ICON_SIZE, ICON_SPACING, ICON_POSITION_PREFIX } from './desktop_types';
 
 /**

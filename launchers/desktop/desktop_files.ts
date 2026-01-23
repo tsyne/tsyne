@@ -7,8 +7,8 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { Window } from './window';
-import { AppMetadata } from './app-metadata';
+import { Window } from '../../core/src/window';
+import { AppMetadata } from '../../core/src/app-metadata';
 import { FileIcon, ICON_SPACING, FILE_DROP_APPS } from './desktop_types';
 import { DesktopIconManager } from './desktop_icons';
 

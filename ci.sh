@@ -626,6 +626,37 @@ test_phone_app "weather" || true
 set -e  # Re-enable exit-on-error
 
 # ============================================================================
+# STEP 6.5: Launchers (Desktop, PhoneTop)
+# ============================================================================
+echo "--- :computer: Launchers - Install & Test"
+
+# Helper function to build and test a launcher
+test_launcher() {
+  local launcher_name=$1
+  local json_file="/tmp/launcher-${launcher_name}-test-results.json"
+  local launcher_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/launchers/${launcher_name}"
+
+  if [ ! -f "${launcher_dir}/jest.config.js" ]; then
+    echo "⚠️  ${launcher_name}: No jest.config.js - skipping tests"
+    return 0
+  fi
+
+  echo "--- :computer: Launcher: ${launcher_name}"
+  cd "${launcher_dir}"
+  timeout 300 npx jest --json --outputFile="$json_file" || {
+    capture_test_results "Launcher: ${launcher_name}" "$json_file"
+    return 1
+  }
+  capture_test_results "Launcher: ${launcher_name}" "$json_file"
+}
+
+# Test each launcher (continue even if some fail to collect all results)
+set +e  # Temporarily disable exit-on-error to collect all test results
+test_launcher "desktop" || true
+test_launcher "phonetop" || true
+set -e  # Re-enable exit-on-error
+
+# ============================================================================
 # STEP 7: Larger Apps Sub-Projects
 # ============================================================================
 echo "--- :rocket: Larger Apps - Install & Test"

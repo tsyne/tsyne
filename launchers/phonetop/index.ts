@@ -10,22 +10,22 @@
  * Run with: ./scripts/tsyne src/phonetop.ts
  */
 
-import { App } from '../core/src/app';
-import { Window } from '../core/src/window';
-import { Label, Button, VBox } from '../core/src/widgets';
-import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../core/src/tsyne-window';
-import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../core/src/app-metadata';
+import { App } from '../../core/src/app';
+import { Window } from '../../core/src/window';
+import { Label, Button, VBox } from '../../core/src/widgets';
+import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../../core/src/tsyne-window';
+import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../../core/src/app-metadata';
 import { ALL_APPS } from '../all-apps';
-import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
-import { Inspector } from '../core/src/inspector';
+import { ScopedResourceManager, ResourceManager } from '../../core/src/resources';
+import { Inspector } from '../../core/src/inspector';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as os from 'os';
-import { BridgeKeyboardController } from './keyboard/controller';
-import { buildKeyboard } from './keyboard/en-gb/keyboard';
+import { BridgeKeyboardController } from '../../phone-apps/keyboard/controller';
+import { buildKeyboard } from '../../phone-apps/keyboard/en-gb/keyboard';
 import {
   GridPosition,
   GridIcon,

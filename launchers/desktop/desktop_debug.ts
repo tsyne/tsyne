@@ -6,10 +6,10 @@
  */
 
 import * as http from 'http';
-import { App } from './app';
-import { Window } from './window';
-import { Inspector } from './inspector';
-import { AppMetadata } from './app-metadata';
+import { App } from '../../core/src/app';
+import { Window } from '../../core/src/window';
+import { Inspector } from '../../core/src/inspector';
+import { AppMetadata } from '../../core/src/app-metadata';
 import { DesktopIcon, OpenApp } from './desktop_types';
 
 /** Interface for desktop state access (implemented by Desktop class) */

@@ -10,12 +10,12 @@
  *   npx tsx phone-apps/generate-app-manifest.ts
  */
 
-import { App } from '../core/src/app';
-import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './phonetop';
+import { App } from '../../core/src/app';
+import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './index';
 import { allApps, getAppsForPlatform, GeneratedAppDefinition } from './all-apps.generated';
 
 // Re-export app and buildPhoneTop for the bundle
-export { app } from '../core/src/index';
+export { app } from '../../core/src/index';
 
 /**
  * Convert GeneratedAppDefinition to StaticAppDefinition
@@ -56,4 +56,4 @@ export async function buildPhoneTopAndroid(a: App, options?: PhoneTopOptions) {
 export { allApps, getAppsForPlatform } from './all-apps.generated';
 
 // Also re-export the original buildPhoneTop
-export { buildPhoneTop } from './phonetop';
+export { buildPhoneTop } from './index';

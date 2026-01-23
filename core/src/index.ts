@@ -967,8 +967,7 @@ export {
   getAppMetadata,
 } from './app-metadata';
 
-// Export the central app registry
-export { ALL_APPS } from '../../all-apps';
+// NOTE: ALL_APPS is now in 'launchers/all-apps.ts'
 export type { AppMetadata } from './app-metadata';
 
 // Export transpile cache utilities (for advanced caching control)
@@ -992,9 +991,8 @@ export {
 } from './tsyne-window';
 export type { ITsyneWindow, DesktopContext } from './tsyne-window';
 
-// Export Desktop environment
-export { buildDesktop, Desktop } from './desktop';
-export type { DesktopOptions } from './desktop';
+// NOTE: Desktop and Phonetop launchers are now in the 'launchers' module
+// Import from 'launchers/desktop' or 'launchers/phonetop' directly
 
 // Export Inspector for widget tree exploration
 export { Inspector } from './inspector';
