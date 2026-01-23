@@ -11,7 +11,7 @@
  */
 
 import { Cosyne3dContext } from './context3d';
-import { RenderTarget } from '../../core/src/graphics/platform';
+import { RenderTarget } from '../../core/dist/src/graphics/platform';
 import { renderToCanvas } from './renderer3d-canvas';
 import { renderToBuffer as bufferRenderToBuffer } from './renderer3d-buffer';
 

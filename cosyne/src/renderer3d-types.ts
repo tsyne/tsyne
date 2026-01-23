@@ -2,7 +2,7 @@
  * Type definitions for Renderer3D
  */
 
-import { RenderTarget } from '../../core/src/graphics/platform';
+import { RenderTarget } from '../../core/dist/src/graphics/platform';
 
 /**
  * A renderable item with depth information for canvas rendering

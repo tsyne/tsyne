@@ -18,13 +18,13 @@ import {
   RenderTarget,
   createRenderTarget,
   clearRenderTarget,
-} from '../../core/src/graphics/platform';
+} from '../../core/dist/src/graphics/platform';
 import {
   drawCircle as rasterDrawCircle,
   fillPolygon as rasterFillPolygon,
   parseColor as rasterParseColor,
   Color as RasterColor,
-} from '../../core/src/graphics/rasterizer';
+} from '../../core/dist/src/graphics/rasterizer';
 
 /**
  * Render a Cosyne3D context to a pixel buffer (software rendering)

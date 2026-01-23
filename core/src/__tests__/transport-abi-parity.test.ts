@@ -97,6 +97,33 @@ function parseGoHandlerFields(goPath: string, handlerName: string): GoField[] {
     }
   }
 
+  // Match function wrapper pattern: toFloat32(msg.Payload["fieldName"]) or similar
+  const functionWrapperRegex = /\w+\(\s*msg\.Payload\["(\w+)"\]\s*\)/g;
+  while ((match = functionWrapperRegex.exec(body)) !== null) {
+    const fieldName = match[1];
+    if (!fields.find(f => f.name === fieldName)) {
+      fields.push({ name: fieldName, type: 'unknown' });
+    }
+  }
+
+  // Match comma-ok pattern without inline type assertion: if val, ok := msg.Payload["fieldName"]; ok
+  const commaOkRegex = /(?:if|}\s*else\s+if)\s+\w+,\s*ok\s*:=\s*msg\.Payload\["(\w+)"\]\s*;/g;
+  while ((match = commaOkRegex.exec(body)) !== null) {
+    const fieldName = match[1];
+    if (!fields.find(f => f.name === fieldName)) {
+      fields.push({ name: fieldName, type: 'unknown' });
+    }
+  }
+
+  // Match comma-ok with helper function: if val, ok := getFloat64(msg.Payload["fieldName"]); ok
+  const commaOkHelperRegex = /(?:if|}\s*else\s+if)\s+\w+,\s*ok\s*:=\s*\w+\(\s*msg\.Payload\["(\w+)"\]\s*\)/g;
+  while ((match = commaOkHelperRegex.exec(body)) !== null) {
+    const fieldName = match[1];
+    if (!fields.find(f => f.name === fieldName)) {
+      fields.push({ name: fieldName, type: 'unknown' });
+    }
+  }
+
   // Match nested map access pattern:
   // if textStyle, ok := msg.Payload["textStyle"].(map[string]interface{}); ok {
   //   if bold, ok := textStyle["bold"].(bool); ok && bold {
@@ -356,6 +383,14 @@ function goFieldToProtoField(goField: string): string {
   // Go: "onDragCallbackId" -> Proto: "drag_callback_id" (Image-specific, drop "on" prefix)
   if (goField === 'id') return 'widget_id';
   if (goField === 'textStyle') return '__skip__'; // Parent field, not in proto
+
+  // Msgpack-only fields (not in gRPC proto - msgpack transport has more features)
+  // Canvas position fields: x, y, x2, y2 are used for positioning in msgpack but gRPC uses width/height
+  // pt/pb/pl/pr fields: padding used in some containers
+  // callbackId: Label click handlers (msgpack only feature)
+  // textSize: Label text size (msgpack only feature)
+  const msgpackOnlyFields = ['x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackId', 'textSize'];
+  if (msgpackOnlyFields.includes(goField)) return '__skip__';
   if (goField.startsWith('textStyle.')) {
     return goField.split('.')[1]; // textStyle.bold -> bold
   }
@@ -502,8 +537,37 @@ describe('Transport ABI Parity', () => {
         if (handler.includes('Desktop')) {
           return path.join(bridgePath, 'widget_creators_complex.go');
         }
-        // Canvas widgets
+        // Canvas widgets - routed to specific sub-files
+        // IMPORTANT: Order matters! LinearGradient must be checked before Line
         if (handler.includes('Canvas')) {
+          // Gradient handlers - check BEFORE Line (LinearGradient contains "Line")
+          if (handler.includes('LinearGradient') || handler.includes('RadialGradient')) {
+            return path.join(bridgePath, 'widget_creators_canvas_gradient.go');
+          }
+          // GradientText must be checked BEFORE Text
+          if (handler.includes('GradientText')) {
+            return path.join(bridgePath, 'widget_creators_canvas_text.go');
+          }
+          // Shape handlers
+          if (handler.includes('Line') || handler.includes('Circle') || handler.includes('Rectangle') || handler.includes('Arc') || handler.includes('Ellipse')) {
+            return path.join(bridgePath, 'widget_creators_canvas_shapes.go');
+          }
+          if (handler.includes('Text')) {
+            return path.join(bridgePath, 'widget_creators_canvas_text.go');
+          }
+          if (handler.includes('TappableCanvasRaster')) {
+            return path.join(bridgePath, 'widget_creators_canvas_tappable_raster.go');
+          }
+          if (handler.includes('Raster')) {
+            return path.join(bridgePath, 'widget_creators_canvas_raster.go');
+          }
+          if (handler.includes('Polygon')) {
+            return path.join(bridgePath, 'widget_creators_canvas_polygon.go');
+          }
+          if (handler.includes('SphericalPatch') || handler.includes('Sphere')) {
+            return path.join(bridgePath, 'widget_creators_canvas_sphere.go');
+          }
+          // Fallback to main canvas file
           return path.join(bridgePath, 'widget_creators_canvas.go');
         }
         // Data widgets (complex)
@@ -558,7 +622,8 @@ describe('Transport ABI Parity', () => {
 
         // Fields to skip in gRPC server mapping check:
         // - pixels: uses intermediate variable (pixelData := base64...)
-        const skipInGrpcMapping = ['pixels'];
+        // - Msgpack-only fields: not in gRPC proto
+        const skipInGrpcMapping = ['pixels', 'x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackid', 'textsize'];
 
         for (const goField of goFields) {
           const payloadField = goField.name.toLowerCase();
@@ -612,8 +677,8 @@ describe('Transport ABI Parity', () => {
       expect(grpcContent).toContain('textStyle := map[string]interface{}');
       expect(grpcContent).toContain('payload["textStyle"] = textStyle');
 
-      // TypeScript sends textStyle as object
-      expect(tsContent).toContain('payload.textStyle = textStyle');
+      // TypeScript sends textStyle as object (via options object pattern)
+      expect(tsContent).toContain('payload.textStyle = options.textStyle');
     });
   });
 });

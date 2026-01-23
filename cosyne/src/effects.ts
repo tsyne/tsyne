@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * Effects: Drop shadows, blur, glow, and visual enhancements
  * Inspired by CSS filters and SVG effects

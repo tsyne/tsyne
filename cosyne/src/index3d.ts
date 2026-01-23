@@ -189,7 +189,7 @@ export {
   RenderTarget,
   createRenderTarget,
   clearRenderTarget,
-} from '../../core/src/graphics/platform';
+} from '../../core/dist/src/graphics/platform';
 
 // Raycaster - 2.5D Software Rendering Engine
 export {

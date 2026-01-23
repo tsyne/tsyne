@@ -997,3 +997,71 @@ export type { ITsyneWindow, DesktopContext } from './tsyne-window';
 // Export Inspector for widget tree exploration
 export { Inspector } from './inspector';
 export type { WidgetNode } from './inspector';
+
+// Export graphics utilities (platform abstraction and software rasterizer)
+export {
+  // Platform abstraction - time/animation
+  now,
+  setNow,
+  restoreNow,
+  requestAnimationFrame,
+  cancelAnimationFrame,
+  frame,
+  // Platform abstraction - rendering
+  RenderTarget,
+  createRenderTarget,
+  clearRenderTarget,
+  setPixel,
+  blendPixel,
+  copyToCanvas,
+  // Platform abstraction - resources
+  resolveURL,
+  fetchResource,
+  FetchOptions,
+  FetchResponse,
+  // Platform abstraction - environment
+  getDevicePixelRatio,
+  getPrefersReducedMotion,
+  isBrowser,
+  isNodeJS,
+  TsyneCanvas,
+} from './graphics/platform';
+
+export {
+  // Rasterizer - colors
+  Color,
+  rgba,
+  rgb,
+  parseColor,
+  colorToHex,
+  interpolateColor,
+  withAlpha,
+  // Rasterizer - drawing
+  drawLine,
+  drawCircle,
+  fillPolygon,
+  strokePolygon,
+  fillRect,
+  strokeRect,
+  drawImage,
+  drawText,
+  // Rasterizer - heatmap
+  HeatmapPoint,
+  HeatmapOptions,
+  renderHeatmap,
+} from './graphics/rasterizer';
+
+export {
+  // Geometry
+  Point,
+  Vertex,
+  BoundingBox,
+  getBoundingBox,
+  pointInBoundingBox,
+  boundingBoxesIntersect,
+  pointToLineDistance,
+  lineSegmentsIntersect,
+  pointInPolygon,
+  polygonArea,
+  polygonCentroid,
+} from './graphics/geometry';
