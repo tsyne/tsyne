@@ -10,7 +10,7 @@
  */
 
 import * as path from 'path';
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildFullCalculator } from './full-calculator';
 
 describe('Full Calculator Tests', () => {

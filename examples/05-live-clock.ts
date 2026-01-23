@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Live clock that updates every 500ms
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Live Clock' }, (a) => {
   a.window({ title: 'Date & Time', width: 400, height: 100 }, (win) => {

@@ -9,7 +9,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/falling-letters/falling-letters.test.ts  # Capture screenshots
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createFallingLettersApp, FallingLettersUI } from './falling-letters';
 import * as path from 'path';
 import * as fs from 'fs';

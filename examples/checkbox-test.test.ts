@@ -2,7 +2,7 @@
  * Minimal checkbox test to isolate clicking behavior
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 
 describe('Checkbox Click Test', () => {
   let tsyneTest: TsyneTest;

@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Percentage clock showing time progress as percentage bars
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Percentage Clock' }, (a) => {
   a.window({ title: 'Percentage Clock', width: 300, height: 300 }, (win) => {

@@ -5,7 +5,7 @@
  * actions, separators, and spacers.
  */
 
-import { app, resolveTransport, window, vbox, label, entry, toolbar  } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry, toolbar  } from 'tsyne';
 
 let statusLabel: any;
 let textEntry: any;

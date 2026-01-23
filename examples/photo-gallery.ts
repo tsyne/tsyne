@@ -6,7 +6,7 @@
  *
  * Padded adds theme-aware padding around content.
  */
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 // Create a simple photo gallery with colored placeholder cards
 app(resolveTransport(), { title: 'Photo Gallery' }, (a) => {

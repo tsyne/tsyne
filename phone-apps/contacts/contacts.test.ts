@@ -28,7 +28,7 @@
  * Tests for Contacts App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createContactsApp } from './contacts';
 import { MockContactsService } from './contacts-service';
 

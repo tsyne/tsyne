@@ -16,7 +16,7 @@
  * Each slice is a UI element that can be styled, animated, or interacted with.
  */
 
-import { app, resolveTransport, App, Window  } from '../../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 import {
   AudioProcessor,
   WaveformData,

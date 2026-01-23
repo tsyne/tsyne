@@ -5,7 +5,7 @@
  * navigates to the URL (P2 feature from Browser_TODO.md).
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 
 describeBrowser('Browser Address Bar - Enter Key Navigation', () => {
   browserTest(

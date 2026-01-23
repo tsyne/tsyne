@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Feedback form with multiline entry, select dropdown, and dialog
 
-import { app, resolveTransport, dialog  } from '../core/src';
+import { app, resolveTransport, dialog  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Feedback' }, (a) => {
   a.window({ title: 'Feedback', width: 400, height: 300 }, (win) => {

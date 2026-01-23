@@ -13,7 +13,7 @@ import {
 
 describe('RoundTrip: Accessibility', () => {
   test('adding accessibility to button', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -35,7 +35,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -54,7 +54,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding accessibility to label', async () => {
-    const original = `import { app, window, vbox, label } from '../core/src';
+    const original = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -74,7 +74,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../core/src';
+    const expected = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -91,7 +91,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding accessibility with .withId() chaining', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -112,7 +112,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -129,7 +129,7 @@ app({ title: "Test" }, () => {
   });
 
   test('updating existing accessibility options', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -154,7 +154,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -173,7 +173,7 @@ app({ title: "Test" }, () => {
   });
 
   test('accessibility on container widgets', async () => {
-    const original = `import { app, window, vbox } from '../core/src';
+    const original = `import { app, window, vbox } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -196,7 +196,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox } from '../core/src';
+    const expected = `import { app, window, vbox } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -214,7 +214,7 @@ app({ title: "Test" }, () => {
   });
 
   test('accessibility with minimal options', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -233,7 +233,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -249,7 +249,7 @@ app({ title: "Test" }, () => {
   });
 
   test('verify metadata reflects accessibility before save', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -280,7 +280,7 @@ app({ title: "Test" }, () => {
   });
 
   test('multiple widgets with accessibility', async () => {
-    const original = `import { app, window, vbox, button, label } from '../core/src';
+    const original = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -308,7 +308,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button, label } from '../core/src';
+    const expected = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

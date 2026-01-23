@@ -15,8 +15,8 @@
  * - Amplitude control for wobble/bounce/pulse
  */
 
-import { app, resolveTransport } from '../core/src/index';
-import { CanvasSphere, SphereAnimationHandle } from '../core/src/widgets';
+import { app, resolveTransport } from 'tsyne';
+import { CanvasSphere, SphereAnimationHandle } from 'tsyne';
 
 interface AnimatedSphereState {
   sphere: CanvasSphere;

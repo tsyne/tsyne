@@ -409,7 +409,7 @@ function generateManifest(apps: ParsedAppMetadata[]): string {
 // Generated: ${new Date().toISOString()}
 // Apps: ${apps.length}
 
-import type { App } from '../core/src/app';
+import type { App } from 'tsyne';
 
 /** Platform types for targeting specific form factors */
 export type Platform = 'phone' | 'tablet' | 'desktop';

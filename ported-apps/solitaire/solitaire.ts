@@ -17,9 +17,9 @@
  * declarative API and uses a simplified interaction model.
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Resvg } from '@resvg/resvg-js';

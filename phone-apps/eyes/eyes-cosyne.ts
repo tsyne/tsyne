@@ -8,9 +8,9 @@
  * Cosyne: ~80 lines of declarative rendering
  */
 
-import { app, resolveTransport } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src';
 
 // Configuration

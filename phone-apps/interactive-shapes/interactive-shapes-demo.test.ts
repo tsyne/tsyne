@@ -3,8 +3,8 @@
  * This imports and uses buildInteractiveShapesApp directly
  */
 
-import { TsyneTest } from '../../core/src/tsyne-test';
-import { App } from '../../core/src/app';
+import { TsyneTest } from 'tsyne';
+import { App } from 'tsyne';
 import { buildInteractiveShapesApp } from './interactive-shapes-cosyne';
 import * as fs from 'fs';
 import * as path from 'path';

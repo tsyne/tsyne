@@ -1,4 +1,4 @@
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 /**
  * Hoverable Demo - Demonstrates the desktop.Hoverable interface

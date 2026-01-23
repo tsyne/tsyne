@@ -7,7 +7,7 @@
  * - Mixing native Tsyne UI with canvas graphics
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, easeInOutCubic } from '../../cosyne/src';
 
 interface CanvasState {

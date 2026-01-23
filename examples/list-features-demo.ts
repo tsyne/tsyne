@@ -1,4 +1,4 @@
-import { app, resolveTransport, Label, List  } from '../core/src/index';
+import { app, resolveTransport, Label, List  } from 'tsyne';
 
 /**
  * List Features Demo

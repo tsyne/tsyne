@@ -12,10 +12,10 @@
  *   TSYNE_HEADED=1 npm test ported-apps/pixeledit/pixeledit-effects.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { PixelEditor } from './pixeledit';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { Jimp } from 'jimp';
 import * as path from 'path';
 import * as fs from 'fs';

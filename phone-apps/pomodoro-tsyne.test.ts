@@ -3,9 +3,9 @@
  * Tests UI interactions and includes screenshot capture
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildPomodoroApp } from './pomodoro';
-import type { App } from '../core/src/app';
+import type { App } from 'tsyne';
 
 describe('Pomodoro Timer UI', () => {
   let tsyneTest: TsyneTest;

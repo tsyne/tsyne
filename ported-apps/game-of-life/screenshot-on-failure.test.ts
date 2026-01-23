@@ -2,7 +2,7 @@
  * Screenshot test to debug what's happening at point of failure
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createGameOfLifeApp } from './game-of-life';
 import * as path from 'path';
 

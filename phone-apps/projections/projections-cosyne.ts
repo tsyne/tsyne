@@ -6,7 +6,7 @@
  * - IsometricProjection: Isometric 3D blocks in 2D space
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, SphericalProjection, IsometricProjection } from '../../cosyne/src';
 
 export function buildProjectionsApp(a: App): void {

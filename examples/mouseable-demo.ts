@@ -1,4 +1,4 @@
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 /**
  * Mouseable Demo - Demonstrates the desktop.Mouseable interface

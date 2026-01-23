@@ -191,7 +191,8 @@ type Bridge struct {
 	toolbarItems    map[string]*ToolbarItemsMetadata // toolbar ID -> items metadata
 	toolbarActions  map[string]*widget.ToolbarAction // custom ID -> toolbar action
 	windowContent   map[string]string                // window ID -> current content widget ID
-	customIds       map[string]string                // custom ID -> widget ID (for test framework)
+	customIds         map[string]string                // custom ID -> widget ID (for test framework)
+	widgetToCustomId  map[string]string                // reverse: widget ID -> custom ID (for O(1) cleanup)
 	childToParent   map[string]string                // child ID -> parent ID
 	quitChan        chan bool                        // signal quit in test mode
 	resources       map[string][]byte                // resource name -> decoded image data
@@ -1947,8 +1948,9 @@ func NewBridge(testMode bool) *Bridge {
 		toolbarItems:    make(map[string]*ToolbarItemsMetadata),
 		toolbarActions:  make(map[string]*widget.ToolbarAction),
 		windowContent:   make(map[string]string),
-		customIds:       make(map[string]string),
-		childToParent:   make(map[string]string),
+		customIds:        make(map[string]string),
+		widgetToCustomId: make(map[string]string),
+		childToParent:    make(map[string]string),
 		quitChan:        make(chan bool, 1),
 		resources:       make(map[string][]byte),
 		scalableTheme:   scalableTheme,
@@ -1983,8 +1985,9 @@ func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
 		toolbarItems:    make(map[string]*ToolbarItemsMetadata),
 		toolbarActions:  make(map[string]*widget.ToolbarAction),
 		windowContent:   make(map[string]string),
-		customIds:       make(map[string]string),
-		childToParent:   make(map[string]string),
+		customIds:        make(map[string]string),
+		widgetToCustomId: make(map[string]string),
+		childToParent:    make(map[string]string),
 		quitChan:        make(chan bool, 1),
 		resources:       make(map[string][]byte),
 		scalableTheme:   scalableTheme,

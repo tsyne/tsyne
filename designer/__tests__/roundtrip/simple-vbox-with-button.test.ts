@@ -12,7 +12,7 @@ import {
 
 describe('RoundTrip: Simple vbox with button', () => {
   test('load and save with no edits', async () => {
-    const code = `import { app, window, vbox, button, label, styles } from '../core/src';
+    const code = `import { app, window, vbox, button, label, styles } from 'tsyne';
 
 // CSS Classes for styling widgets
 styles({
@@ -63,7 +63,7 @@ app({ title: "Hello Tsyne" }, () => {
   });
 
   test('adding .withId() to button', async () => {
-    const original = `import { app, window, vbox, button, label } from '../core/src';
+    const original = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -81,7 +81,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button, label } from '../core/src';
+    const expected = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -96,7 +96,7 @@ app({ title: "Test" }, () => {
   });
 
   test('renaming .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -113,7 +113,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -127,7 +127,7 @@ app({ title: "Test" }, () => {
   });
 
   test('removing .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -144,7 +144,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -158,7 +158,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to label widget', async () => {
-    const original = `import { app, window, vbox, label } from '../core/src';
+    const original = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -175,7 +175,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../core/src';
+    const expected = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -189,7 +189,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to vbox container', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -206,7 +206,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -220,7 +220,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() with special characters in ID', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -237,7 +237,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -251,7 +251,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to multiple widgets', async () => {
-    const original = `import { app, window, vbox, button, label } from '../core/src';
+    const original = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -274,7 +274,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button, label } from '../core/src';
+    const expected = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -289,7 +289,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding then immediately removing .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -317,7 +317,7 @@ app({ title: "Test" }, () => {
   });
 
   test('verify widget metadata is captured correctly', async () => {
-    const code = `import { app, window, vbox, button, label } from '../core/src';
+    const code = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

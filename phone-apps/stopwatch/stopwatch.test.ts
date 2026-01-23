@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path';
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createStopwatchApp } from './stopwatch';
 import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 

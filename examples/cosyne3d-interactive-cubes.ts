@@ -9,7 +9,7 @@
  * - Interactive camera controls (orbit and zoom)
  */
 
-import { app, resolveTransport } from '../core/src/index';
+import { app, resolveTransport } from 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts } from '../cosyne/src/index3d';
 
 // Cube state

@@ -5,7 +5,7 @@
  * for user notifications and error reporting.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Info/Error Dialogs Demo' }, () => {
   window({ title: 'Info and Error Dialogs', width: 400, height: 300 }, (win) => {

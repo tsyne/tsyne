@@ -4,9 +4,9 @@
  * Tests the complete UI interaction using fluent assertions
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createLitProgApp, LitProgUI } from './litprog';
-import type { App } from '../../core/src/app';
+import type { App } from 'tsyne';
 import * as path from 'path';
 
 describe('LitProg Functional Tests', () => {

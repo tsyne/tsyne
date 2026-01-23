@@ -15,12 +15,8 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
-import type { Label } from '../../core/src/widgets/display';
-import type { Center } from '../../core/src/widgets/containers';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, TappableCanvasRaster, Label, Center } from 'tsyne';
 import { palettes, paletteNames, mandelbrot } from '../fractal-utils';
 
 // Initial canvas dimensions - will resize with window

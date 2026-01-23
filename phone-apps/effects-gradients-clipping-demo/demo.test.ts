@@ -2,7 +2,7 @@
  * TsyneTest integration tests for SVG Graphics (Effects, Gradients, Clipping) Demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildSVGDemoApp } from './demo';
 
 describe('SVG Graphics Demo (Effects, Gradients, Clipping) - TsyneTest', () => {

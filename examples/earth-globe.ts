@@ -7,8 +7,8 @@
  * Based on NASA Blue Marble imagery
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

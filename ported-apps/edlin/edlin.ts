@@ -23,10 +23,10 @@
  * rather than the custom Go TextList widget.
  */
 
-import { app } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { DocTabs, MultiLineEntry } from '../../core/src/widgets';
+import { app } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { DocTabs, MultiLineEntry } from 'tsyne';
 import { EdlinStore, DocumentStore, createEdlinStore } from './edlin-store';
 import * as fs from 'fs';
 import * as path from 'path';

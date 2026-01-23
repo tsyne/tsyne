@@ -1,4 +1,4 @@
-import { browserTest } from '../core/src/index';
+import { browserTest } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -220,6 +220,39 @@ setInterval(() => { angle += 0.01; refreshAllCosyne3dContexts(); }, 16);
 
 **See:** `cosyne/README-3D.md` and `docs/COSYNE_3D.md` for full API reference.
 
+## Package Imports: Always Use `'tsyne'`
+
+**All app code should import from the `tsyne` package, never from relative paths like `../core/src`.**
+
+The `core/` directory is published as the `tsyne` npm package. Apps in `examples/`, `phone-apps/`, `ported-apps/`, `larger-apps/`, and `launchers/` should always use:
+
+```typescript
+// ✅ CORRECT - import from 'tsyne' package
+import { app, resolveTransport } from 'tsyne';
+import type { App, Window, Label, Button, VBox } from 'tsyne';
+import { TappableCanvasRaster, refreshAllBindings } from 'tsyne';
+
+// ❌ WRONG - never use relative imports to core/src
+import { app } from '../core/src/index';
+import type { Label } from '../../core/src/widgets/display';
+```
+
+**Exported from `tsyne`:**
+- All widgets: `Button`, `Label`, `Entry`, `VBox`, `HBox`, `Grid`, `Tabs`, etc.
+- Canvas primitives: `CanvasLine`, `CanvasCircle`, `CanvasRaster`, `TappableCanvasRaster`, etc.
+- Display extras: `ColorCell`, `Icon`, `FileIcon`, `TextGrid`
+- Animation: `EasingType`, `AnimateOptions`, `EasingFunction`, `cubicBezier`, `bezier`
+- App/Window: `App`, `Window`, `resolveTransport`, `app()`
+- State: `ObservableState`, `StateStore`, `TwoWayBinding`
+- Test utilities: `TsyneTest`, `TestContext`, `Locator`, `Expect`
+- Service interfaces: `IDesktopService`, `DesktopAppInfo`
+
+**Why this matters:**
+- Consistent imports across the codebase
+- Proper dependency resolution via pnpm workspaces
+- Clean separation between library code and app code
+- No broken paths when files move
+
 ## Intended End-User Code Style
 
 **Pseudo-declarative builder pattern:**

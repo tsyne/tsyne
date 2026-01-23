@@ -5,7 +5,7 @@
  * multi-document text editor interface.
  */
 
-import { app, resolveTransport, App, DocTabs  } from '../core/src';
+import { app, resolveTransport, App, DocTabs  } from 'tsyne';
 
 // Document state
 interface Document {

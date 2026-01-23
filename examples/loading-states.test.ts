@@ -1,6 +1,6 @@
 // Test for loading-states example - ProgressBarInfinite and Activity widgets
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { Activity } from '../core/src';
+import { TsyneTest, TestContext } from 'tsyne';
+import { Activity } from 'tsyne';
 import * as path from 'path';
 
 describe('Loading States - ProgressBarInfinite', () => {

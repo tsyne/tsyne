@@ -4,7 +4,7 @@
  * Demonstrates the checkbox widget with state tracking and interaction.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, checkbox, button, screenshotIfRequested  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, checkbox, button, screenshotIfRequested  } from 'tsyne';
 
 let termsCheckbox: any;
 let newsletterCheckbox: any;

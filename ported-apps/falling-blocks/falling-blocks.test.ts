@@ -9,7 +9,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/falling-blocks/falling-blocks.test.ts  # Capture screenshots
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createFallingBlocksApp, FallingBlocksUI } from './falling-blocks';
 import * as path from 'path';
 import * as fs from 'fs';

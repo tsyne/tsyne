@@ -5,7 +5,7 @@
  * from both memory and disk, and updates the UI appropriately.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

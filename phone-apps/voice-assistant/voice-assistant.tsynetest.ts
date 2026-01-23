@@ -10,7 +10,7 @@
  * Licensed under the Apache License, Version 2.0
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildVoiceAssistant } from './voice-assistant';
 
 describe('Voice Assistant UI Tests', () => {

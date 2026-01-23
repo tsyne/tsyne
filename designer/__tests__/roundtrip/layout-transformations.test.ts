@@ -16,7 +16,7 @@ import {
 describe('RoundTrip: Layout Transformations', () => {
   describe('Basic Layout Switching', () => {
     test('vbox to hbox transformation preserves children', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -48,7 +48,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('hbox to vbox transformation preserves children', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -82,7 +82,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Grid Layout Transformations', () => {
     test('vbox to grid preserves children', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -117,7 +117,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('grid to vbox preserves children and onClick handlers', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -149,7 +149,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('change grid column count', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -181,7 +181,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Complex Layout Transformations', () => {
     test('nested layout transformation preserves structure', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -214,7 +214,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('layout transformation preserves withId', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -244,7 +244,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('layout transformation preserves when() conditions', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -274,7 +274,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('layout transformation preserves style classes', async () => {
-      const original = `import { app, styles } from '../core/src';
+      const original = `import { app, styles } from 'tsyne';
 
 styles({
   primary: {
@@ -309,7 +309,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Special Layout Types', () => {
     test('vbox to scroll container transformation', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -338,7 +338,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('vbox to border layout transformation', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -366,7 +366,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('vbox to tabs transformation', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -395,7 +395,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Layout Transformation Edge Cases', () => {
     test('empty container layout transformation', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -419,7 +419,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('single child layout transformation', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

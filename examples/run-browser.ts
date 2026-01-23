@@ -4,7 +4,7 @@
  * Run: npm run build && npx tsx examples/run-browser.ts
  */
 
-import { createBrowser } from '../core/src';
+import { createBrowser } from 'tsyne';
 
 async function main() {
   console.log('Starting Tsyne Browser...');

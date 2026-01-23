@@ -9,7 +9,7 @@
  * Run: npx tsx examples/test-http-images.ts
  */
 
-import { createBrowser } from '../core/src';
+import { createBrowser } from 'tsyne';
 
 async function testHttpImages() {
   console.log('╔════════════════════════════════════════════════════════╗');

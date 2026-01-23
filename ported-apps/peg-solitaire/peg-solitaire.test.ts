@@ -2,7 +2,7 @@
  * Peg Solitaire Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createPegSolitaireApp } from './peg-solitaire';
 
 describe('Peg Solitaire UI', () => {

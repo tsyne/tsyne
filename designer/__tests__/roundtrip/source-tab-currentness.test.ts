@@ -19,7 +19,7 @@ import {
 
 describe('Source Tab Currentness', () => {
   test('updateProperty returns currentSource without comments', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -57,7 +57,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('updateProperty currentSource reflects multiple edits', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -93,7 +93,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('originalSource preserved while currentSource updates', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -126,7 +126,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('valid source passes linting on load', async () => {
-    const validSource = `import { app } from '../core/src';
+    const validSource = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -146,7 +146,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('invalid source logs lint errors but still loads', async () => {
-    const invalidSource = `import { app } from '../core/src';
+    const invalidSource = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

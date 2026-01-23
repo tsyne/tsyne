@@ -14,7 +14,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/prime-grid-visualizer/prime-grid-visualizer.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createPrimeGridAppStandalone } from './prime-grid-visualizer';
 import * as path from 'path';
 import * as fs from 'fs';

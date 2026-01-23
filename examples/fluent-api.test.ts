@@ -18,7 +18,7 @@ import {
   describeBrowser,
   runBrowserTests,
   TestPage
-} from '../core/src/tsyne-browser-test';
+} from 'tsyne';
 
 // Test pages
 const fluentTestPages: TestPage[] = [

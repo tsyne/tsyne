@@ -18,7 +18,7 @@ import {
 describe('RoundTrip: Widget Manipulation', () => {
   describe('Adding Widgets', () => {
     test('add button to empty vbox', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -41,7 +41,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('add label to vbox with existing widgets', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -67,7 +67,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('add nested container (hbox inside vbox)', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -95,7 +95,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Deleting Widgets', () => {
     test('delete single widget from container', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -121,7 +121,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('delete one of multiple widgets', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -150,7 +150,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('delete widget with onClick handler', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -181,7 +181,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('delete container deletes all children', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -213,7 +213,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Complex Manipulations', () => {
     test('add widget with withId already set', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -239,7 +239,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('delete and re-add widget', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -270,7 +270,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('add multiple widgets in sequence', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -312,7 +312,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Preserving Surrounding Code During Manipulation', () => {
     test('delete widget preserves other onClick handlers', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -356,7 +356,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('add widget preserves variables and state', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -390,7 +390,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test('delete widget preserves when() on other widgets', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

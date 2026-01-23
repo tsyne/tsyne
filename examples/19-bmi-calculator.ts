@@ -1,7 +1,7 @@
 // BMI Calculator - Calculate Body Mass Index with visual feedback
 // Demonstrates unit conversion, sliders, and conditional display
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'BMI Calculator' }, (a) => {
   a.window({ title: 'BMI Calculator', width: 400, height: 550 }, (win) => {

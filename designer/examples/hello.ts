@@ -1,4 +1,4 @@
-import { app } from '../../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Hello' }, (a) => {
   a.window({ title: 'Hello World' }, (win) => {

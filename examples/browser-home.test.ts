@@ -4,7 +4,7 @@
  * This test verifies that the browser Home button navigates to the configured home page.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 
 describeBrowser('Browser Home Button Navigation', () => {
   browserTest(

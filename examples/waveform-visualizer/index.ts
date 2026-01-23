@@ -25,7 +25,7 @@
  * - common.ts - Shared utilities
  */
 
-import { app, resolveTransport, App  } from '../../core/src';
+import { app, resolveTransport, App  } from 'tsyne';
 import { buildCanvasWaveformVisualizer } from './canvas';
 import { buildWidgetWaveformVisualizer } from './widget';
 import { registerCleanupHandlers } from './common';

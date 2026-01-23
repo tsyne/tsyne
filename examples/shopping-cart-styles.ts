@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, button, label, styles  } from '../core/src';
+import { app, resolveTransport, window, vbox, button, label, styles  } from 'tsyne';
 
 // Define custom CSS classes for your shopping cart UI
 styles({

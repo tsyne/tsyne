@@ -5,7 +5,7 @@
  * Full Enter key testing is done in browser tests where actual key presses can be simulated.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 
 describe('Entry onSubmit Tests', () => {
   let tsyneTest: TsyneTest;

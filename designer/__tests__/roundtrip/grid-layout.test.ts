@@ -12,7 +12,7 @@ import {
 
 describe('RoundTrip: Grid Layout', () => {
   test('load and save with no edits', async () => {
-    const code = `import { app, window, vbox, grid, label } from '../core/src';
+    const code = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -36,7 +36,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to grid container', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -56,7 +56,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -73,7 +73,7 @@ app({ title: "Test" }, () => {
   });
 
   test('renaming .withId() on grid', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -93,7 +93,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -110,7 +110,7 @@ app({ title: "Test" }, () => {
   });
 
   test('removing .withId() from grid', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -130,7 +130,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -147,7 +147,7 @@ app({ title: "Test" }, () => {
   });
 
   test('grid with 3 columns', async () => {
-    const original = `import { app, window, vbox, grid, button } from '../core/src';
+    const original = `import { app, window, vbox, grid, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -173,7 +173,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to labels in grid cells', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -202,7 +202,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -221,7 +221,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to buttons in 3-column grid', async () => {
-    const original = `import { app, window, vbox, grid, button } from '../core/src';
+    const original = `import { app, window, vbox, grid, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -248,7 +248,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, button } from '../core/src';
+    const expected = `import { app, window, vbox, grid, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -266,7 +266,7 @@ app({ title: "Test" }, () => {
   });
 
   test('nested vbox in grid cells', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -292,7 +292,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() to nested vbox in grid', async () => {
-    const original = `import { app, window, vbox, grid, label, button } from '../core/src';
+    const original = `import { app, window, vbox, grid, label, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -323,7 +323,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label, button } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -346,7 +346,7 @@ app({ title: "Test" }, () => {
   });
 
   test('multiple grids with different column counts', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -375,7 +375,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

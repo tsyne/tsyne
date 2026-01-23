@@ -6,7 +6,7 @@
  * @tsyne-app:category Security
  * @tsyne-app:args app,windowWidth,windowHeight
  */
-import { IApp } from '../core/src/sandboxed-app';
+import { IApp } from 'tsyne';
 
 export function buildSandboxBreakoutApp(a: IApp) {
   a.window({ title: 'Sandbox Breakout Test', width: 600, height: 800 }, (win) => {

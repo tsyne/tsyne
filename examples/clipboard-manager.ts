@@ -8,7 +8,7 @@
  * - Quick paste from history
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
   const clipboardHistory: string[] = [];

@@ -7,7 +7,7 @@
  * - Angle and color adjustments
  */
 
-import { app, resolveTransport, CanvasLinearGradient  } from '../core/src/index';
+import { app, resolveTransport, CanvasLinearGradient  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Gradient Picker' }, (a) => {
   let gradient: CanvasLinearGradient;

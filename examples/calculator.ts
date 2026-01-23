@@ -4,7 +4,7 @@
 // @tsyne-app:builder buildCalculator
 // @tsyne-app:count desktop-many
 
-import { app, resolveTransport, styles, FontStyle, App, Window, Label, getAppMetadata  } from '../core/src';
+import { app, resolveTransport, styles, FontStyle, App, Window, Label, getAppMetadata  } from 'tsyne';
 // In production: import { app, resolveTransport, styles, FontStyle, App, Window, Label, getAppMetadata  } from 'tsyne';
 
 // Calculator example demonstrating Tsyne's pseudo-declarative DSL

@@ -7,8 +7,7 @@
  * or a future version can add proper touch hold support via bridge events.
  */
 
-import type { App } from '../../core/src/app';
-import type { Button } from '../../core/src/widgets/inputs';
+import type { App, Button } from 'tsyne';
 
 export type OnKeyCallback = (key: string, pressed: boolean) => void;
 

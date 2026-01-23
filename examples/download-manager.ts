@@ -5,7 +5,7 @@
  * Shows both determinate and infinite progress dialogs.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, separator, ProgressDialog  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, separator, ProgressDialog  } from 'tsyne';
 
 interface Download {
   name: string;

@@ -3,7 +3,7 @@
  * Run with: pnpm tsx ported-apps/spherical-snake/capture-cosyne-screenshot.ts
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildPseudoDeclarativeSphericalSnakeApp } from './pseudo-declarative-spherical-snake';
 import * as path from 'path';
 

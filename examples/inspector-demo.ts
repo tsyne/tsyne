@@ -1,7 +1,7 @@
 /**
  * Inspector Demo - shows how to use the visual widget inspector
  */
-import { app, resolveTransport, Inspector  } from '../core/src';
+import { app, resolveTransport, Inspector  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Inspector Demo' }, async (a) => {
   // Create an Inspector instance

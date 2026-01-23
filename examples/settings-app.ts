@@ -8,7 +8,7 @@
  * - Settings categories with tabs
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Settings App' }, (a) => {
   let statusLabel: any;

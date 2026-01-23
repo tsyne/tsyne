@@ -8,8 +8,8 @@
  * Run with: npx jest examples/toolbar-isolation.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { App, Window } from '../core/src';
+import { TsyneTest, TestContext } from 'tsyne';
+import { App, Window } from 'tsyne';
 
 describe('Toolbar Button Visibility Tests', () => {
   let tsyneTest: TsyneTest;

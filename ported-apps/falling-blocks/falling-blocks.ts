@@ -26,11 +26,8 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets/display';
-import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
 // Constants

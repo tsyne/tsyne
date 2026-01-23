@@ -1,5 +1,5 @@
 // Test for canvas-primitives example - tests simplified factory methods
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Canvas Primitives - Simple Factory Methods', () => {

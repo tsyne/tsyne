@@ -4,7 +4,7 @@
  * Tests and validates nested coordinate transformations
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildTransformsApp } from './transforms-cosyne';
 
 describe('Transforms Demo (Phase 5)', () => {

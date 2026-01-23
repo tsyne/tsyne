@@ -4,7 +4,7 @@
  * Demonstrates MultiLineEntry, PasswordEntry, Separator, and Hyperlink widgets.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, multilineentry, passwordentry, separator, hyperlink  } from 'tsyne';
 
 let statusLabel: any;
 let multilineEntry: any;

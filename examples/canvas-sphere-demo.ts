@@ -7,8 +7,8 @@
  * Phase 4: Texture mapping (equirectangular)
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 
 app(resolveTransport(), { title: 'Canvas Sphere - All Phases' }, (a) => {
   a.window({ title: 'Canvas Sphere Demo - All Phases', width: 900, height: 1600 }, (win) => {

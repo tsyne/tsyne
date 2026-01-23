@@ -19,7 +19,7 @@ import { app, resolveTransport,
   ObservableState,
   ComputedState,
   ViewModel
- } from '../core/src';
+ } from 'tsyne';
 
 // ============================================================================
 // MODEL - Domain data

@@ -1,4 +1,4 @@
-import { app, resolveTransport, Label  } from '../core/src/index';
+import { app, resolveTransport, Label  } from 'tsyne';
 
 /**
  * RadioGroup Horizontal Layout Demo

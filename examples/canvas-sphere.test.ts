@@ -3,8 +3,8 @@
  * Tests all pattern types with TsyneTest
  */
 
-import { App } from '../core/src/index';
-import { TsyneTest } from '../core/src/index-test';
+import { App } from 'tsyne';
+import { TsyneTest } from 'tsyne';
 
 describe('Canvas Sphere Widget', () => {
   let tsyneTest: TsyneTest;

@@ -1,7 +1,7 @@
 // Test for DateEntry widget and event-form demo
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { App } from '../core/src';
+import { TsyneTest, TestContext } from 'tsyne';
+import { App } from 'tsyne';
 
 function createEventForm(a: App) {
   let eventNameEntry: any;

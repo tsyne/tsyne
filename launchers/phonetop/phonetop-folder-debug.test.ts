@@ -4,9 +4,9 @@
  * Opens the Games folder and dumps widget tree to debug scroll height issue.
  */
 
-import { TsyneTest, TestContext, WidgetInfo } from '../../core/src/index-test';
+import { TsyneTest, TestContext, WidgetInfo } from 'tsyne';
 import { buildPhoneTop } from './index';
-import type { App } from '../../core/src/app';
+import type { App } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

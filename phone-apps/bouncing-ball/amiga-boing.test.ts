@@ -1,4 +1,4 @@
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildAmigaBoingApp } from './amiga-boing';
 
 describe('Amiga Boing Ball', () => {

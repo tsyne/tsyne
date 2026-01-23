@@ -38,7 +38,7 @@
  * @tsyne-app:count one
  */
 
-import type { App } from '../../../core/src';
+import type { App } from 'tsyne';
 
 /**
  * Launch the postmarketOS bundled camera application

@@ -9,8 +9,8 @@
  * - Data visualization on spheres
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 
 app(resolveTransport(), { title: 'Canvas Sphere - Custom Patterns' }, (a) => {
   a.window({ title: 'Phase 9: Custom Pattern Functions', width: 500, height: 1600 }, (win) => {

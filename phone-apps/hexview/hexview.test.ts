@@ -2,7 +2,7 @@
  * HexView Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createHexViewApp, HexViewBuffer } from './hexview';
 import * as fs from 'fs';
 import * as path from 'path';

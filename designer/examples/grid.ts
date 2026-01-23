@@ -1,4 +1,4 @@
-import { app } from '../../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Grid Example' }, (a) => {
   a.window({ title: 'Grid Layout' }, (win) => {

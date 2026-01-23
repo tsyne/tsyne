@@ -25,7 +25,7 @@
 // @tsyne-app:builder createTodoApp
 // @tsyne-app:count one
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

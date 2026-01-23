@@ -66,7 +66,14 @@ import {
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
+  TappableCanvasRaster,
+  // Display extras
+  ColorCell,
 } from './widgets';
+// Animation types
+import { EasingType, AnimateOptions, EasingFunction, cubicBezier, bezier, getPointOnBezier } from './animation';
+// Service interfaces
+import { IDesktopService, DesktopAppInfo } from './services/interfaces';
 import { Window, WindowOptions, ProgressDialog } from './window';
 
 // Global context for the declarative API
@@ -861,6 +868,16 @@ export {
   CanvasText,
   CanvasRaster,
   CanvasLinearGradient,
+  TappableCanvasRaster,
+  ColorCell,
+  EasingType,
+  AnimateOptions,
+  EasingFunction,
+  cubicBezier,
+  bezier,
+  getPointOnBezier,
+  IDesktopService,
+  DesktopAppInfo,
   Clip,
   InnerWindow,
   MultipleWindows,
@@ -942,6 +959,12 @@ export {
   runBrowserTests,
 } from './tsyne-browser-test';
 export type { BrowserTestOptions, TestPage } from './tsyne-browser-test';
+
+// Export test utilities (TsyneTest for widget testing)
+export { TsyneTest, test, describe } from './tsyne-test';
+export { TestContext, Locator, Expect, waitTimeTracker } from './test';
+export type { TestOptions } from './tsyne-test';
+export type { WidgetInfo, WaitTimeRecord, TestWaitSummary } from './test';
 
 // Export browser compatibility globals
 export {

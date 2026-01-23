@@ -19,7 +19,7 @@
  * @tsyne-app:count desktop-many
  */
 
-import { app, resolveTransport, App, Window, Label, Button  } from '../core/src';
+import { app, resolveTransport, App, Window, Label, Button  } from 'tsyne';
 // In production: import { app, resolveTransport, App, Window, Label, Button  } from 'tsyne';
 
 type Base = 'dec' | 'hex' | 'bin' | 'oct';

@@ -19,12 +19,12 @@
  * Inspired by ChrysaLisp litprog.lisp (PR #301)
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets';
-import type { MultiLineEntry } from '../../core/src/widgets';
-import type { Select } from '../../core/src/widgets';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { Label } from 'tsyne';
+import type { MultiLineEntry } from 'tsyne';
+import type { Select } from 'tsyne';
 import { LitProgStore } from './store';
 import { SyntaxStyle, WeaveFormat } from './parser';
 import * as fs from 'fs';

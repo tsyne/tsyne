@@ -4,7 +4,7 @@
  * This test verifies that pages can set their titles which are displayed in the browser window title bar.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 
 describeBrowser('Browser Page Title Functionality', () => {
   browserTest(

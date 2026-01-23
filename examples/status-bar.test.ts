@@ -5,7 +5,7 @@
  * Full status bar testing with browser integration is done in browser-status-bar.test.ts
  */
 
-import { TsyneTest, TestContext, Label } from '../core/src/index-test';
+import { TsyneTest, TestContext, Label } from 'tsyne';
 
 describe('Status Bar Label Tests', () => {
   let tsyneTest: TsyneTest;

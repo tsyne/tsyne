@@ -64,13 +64,8 @@
  * - GIF (load/save) - legacy format
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { CanvasRectangle } from '../../core/src/widgets/canvas';
-import type { Label } from '../../core/src/widgets/display';
-import type { Button } from '../../core/src/widgets/inputs';
-import { TappableCanvasRaster } from '../../core/src/widgets/canvas';
+import { app, resolveTransport, TappableCanvasRaster } from 'tsyne';
+import type { App, Window, CanvasRectangle, Label, Button } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';

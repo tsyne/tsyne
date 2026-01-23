@@ -4,7 +4,7 @@
  * Tests and validates embedding Tsyne widgets in Cosyne canvas
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildForeignObjectsApp } from './foreign-objects-cosyne';
 
 describe('Foreign Objects Demo (Phase 5)', () => {

@@ -5,9 +5,9 @@
  * See LICENSE for copyright information.
  */
 
-import type { App } from '../../../core/src/app';
+import type { App } from 'tsyne';
 import { KeyboardController } from '../controller';
-import { styles, FontFamily } from '../../../core/src/styles';
+import { styles, FontFamily } from 'tsyne';
 
 export const locale = 'en-dvorak';
 export const name = 'English (Dvorak)';

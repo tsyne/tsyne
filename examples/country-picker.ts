@@ -5,7 +5,7 @@
  * a text entry with a dropdown menu. Users can type to filter options or
  * select from the dropdown list.
  */
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 // Sample list of countries
 const countries = [

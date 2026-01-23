@@ -5,10 +5,10 @@
  * Kent Beck approach: Test first, then implement.
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createSolitaireApp } from './solitaire';
 import { Game, Card, Suit } from './solitaire';
-import { App } from '../../core/src/app';
+import { App } from 'tsyne';
 
 describe('Hand Pile Click Tests', () => {
   let tsyneTest: TsyneTest;

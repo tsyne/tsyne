@@ -22,10 +22,8 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { ColorCell } from '../../core/src/widgets/display';
+import { app, resolveTransport } from 'tsyne';
+import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================
 // Constants

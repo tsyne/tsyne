@@ -1,5 +1,5 @@
 // Test for Dice Roller example
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Dice Roller Example', () => {

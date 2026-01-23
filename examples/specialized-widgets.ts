@@ -4,7 +4,7 @@
  * Demonstrates Tree, RichText, Image, Border layout, and GridWrap layout.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, tree, richtext, image, border, gridwrap  } from 'tsyne';
 
 let statusLabel: any;
 

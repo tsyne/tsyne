@@ -1,4 +1,4 @@
-import { TsyneTest } from '../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import * as path from 'path';
 
 describe.skip('RadioGroup Horizontal Demo', () => {

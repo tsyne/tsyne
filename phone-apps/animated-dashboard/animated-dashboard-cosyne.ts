@@ -8,7 +8,7 @@
  * - Data-driven animations
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutCubic, easeInOutSine } from '../../cosyne/src';
 
 interface MetricState {

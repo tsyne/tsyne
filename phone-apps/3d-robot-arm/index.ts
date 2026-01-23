@@ -15,7 +15,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from '../../core/src/index';
+import { app, resolveTransport } from 'tsyne';
 import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
 
 // Robot State (Reactive)

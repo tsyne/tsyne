@@ -5,7 +5,7 @@
  * perfect for calculator-style UIs and button grids.
  */
 
-import { app, window, vbox, label, button, grid } from '../core/src';
+import { app, window, vbox, label, button, grid } from 'tsyne';
 
 let displayLabel: any;
 let currentValue = '0';

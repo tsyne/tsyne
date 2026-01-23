@@ -19,7 +19,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/terminal/terminal.test.ts  # Capture screenshots
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { Terminal, TerminalUI, createTerminalApp } from './terminal';
 import * as path from 'path';
 

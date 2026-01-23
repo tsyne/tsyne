@@ -5,7 +5,7 @@
  * Both versions should behave identically from the user's perspective.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildDailyChecklistMVC } from './daily-checklist-mvc';
 import * as path from 'path';
 import * as fs from 'fs';

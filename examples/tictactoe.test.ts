@@ -5,7 +5,7 @@
  * For accessibility feature tests, see tictactoe-accessible.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildTicTacToe } from './tictactoe';
 import * as path from 'path';
 

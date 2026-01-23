@@ -24,11 +24,8 @@
  * core prime number calculation and visualization capabilities.
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { CanvasRaster } from '../../core/src/widgets/canvas';
-import type { Entry } from '../../core/src/widgets/inputs_text';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, CanvasRaster, Entry } from 'tsyne';
 
 // Color constants (RGB)
 const COLOR_PRIME = { r: 34, g: 197, b: 94 };        // Green

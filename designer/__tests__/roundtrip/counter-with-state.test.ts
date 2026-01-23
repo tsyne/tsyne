@@ -14,7 +14,7 @@ describe('RoundTrip: Counter with state', () => {
   test('load and save with no edits', async () => {
     const code = `// Simple counter example demonstrating state management
 
-import { app } from '../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter', width: 300, height: 150 }, (win) => {
@@ -59,7 +59,7 @@ app({ title: 'Counter' }, (a) => {
   });
 
   test('adding .withId() to multiple buttons', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
@@ -84,7 +84,7 @@ app({ title: 'Counter' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
@@ -103,7 +103,7 @@ app({ title: 'Counter' }, (a) => {
   });
 
   test('renaming .withId() on specific button', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
@@ -123,7 +123,7 @@ app({ title: 'Counter' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
@@ -140,7 +140,7 @@ app({ title: 'Counter' }, (a) => {
   });
 
   test('removing .withId() from one of many buttons', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
@@ -162,7 +162,7 @@ app({ title: 'Counter' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {

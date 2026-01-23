@@ -15,10 +15,8 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets/display';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, Label } from 'tsyne';
 import {
   IClockService,
   INotificationService,

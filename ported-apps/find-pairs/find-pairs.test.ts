@@ -2,7 +2,7 @@
  * Find Pairs Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createFindPairsApp } from './find-pairs';
 
 describe('Find Pairs UI', () => {

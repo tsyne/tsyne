@@ -10,8 +10,8 @@
  * - Works with all patterns and textures
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 
 app(resolveTransport(), { title: 'Canvas Sphere - Phase 5 Interactive' }, (a) => {
   a.window({ title: 'Canvas Sphere Interactive Demo - Phase 5', width: 1000, height: 900 }, (win) => {

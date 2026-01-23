@@ -7,12 +7,17 @@
     "test": "jest",
     "dev": "npx tsx telegram.ts"
   },
-  "keywords": ["telegram", "messaging", "chat"],
+  "keywords": [
+    "telegram",
+    "messaging",
+    "chat"
+  ],
   "author": "Portions copyright Development@bendingtherules.nl and portions copyright Paul Hammant 2025",
   "license": "GPL-3.0",
   "dependencies": {
     "qrcode": "^1.5.4",
-    "telegram": "^2.26.22"
+    "telegram": "^2.26.22",
+    "tsyne": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

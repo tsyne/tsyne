@@ -9,7 +9,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/sudoku/sudoku.test.ts  # Capture screenshots
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createSudokuApp, SudokuUI } from './sudoku';
 import * as path from 'path';
 import * as fs from 'fs';

@@ -142,12 +142,10 @@ func (b *Bridge) removeWidgetTree(widgetID string) {
 	delete(b.listData, widgetID)
 	delete(b.childToParent, widgetID)
 
-	// Also remove from customIDs map if it exists
-	for customID, id := range b.customIds {
-		if id == widgetID {
-			delete(b.customIds, customID)
-			break // Assuming one custom ID per widget ID
-		}
+	// Remove from customIds using O(1) reverse lookup (optimized GC)
+	if customID, exists := b.widgetToCustomId[widgetID]; exists {
+		delete(b.customIds, customID)
+		delete(b.widgetToCustomId, widgetID)
 	}
 }
 

@@ -9,7 +9,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from '../../core/src/index';
+import { app } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import {
   LinearGradient,

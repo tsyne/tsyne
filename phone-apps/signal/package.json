@@ -7,7 +7,12 @@
     "test": "jest",
     "dev": "npx tsx signal.ts"
   },
-  "keywords": ["signal", "messaging", "encrypted", "chat"],
+  "keywords": [
+    "signal",
+    "messaging",
+    "encrypted",
+    "chat"
+  ],
   "author": "Portions copyright Nico Hickman and portions copyright Paul Hammant 2025",
   "license": "GPL-3.0",
   "devDependencies": {
@@ -17,5 +22,8 @@
     "ts-jest": "^29.1.0",
     "tsx": "^3.14.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "tsyne": "workspace:*"
   }
 }

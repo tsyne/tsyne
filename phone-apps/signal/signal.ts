@@ -30,10 +30,10 @@
  * @tsyne-app:count single
  */
 
-import type { App } from '../../core/src';
-import type { Window } from '../../core/src';
-import type { Label } from '../../core/src';
-import type { VBox } from '../../core/src';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { Label } from 'tsyne';
+import type { VBox } from 'tsyne';
 import type { Conversation, Message } from './signal-service';
 import { ISignalService, MockSignalService } from './signal-service';
 

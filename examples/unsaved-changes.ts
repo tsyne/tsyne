@@ -1,7 +1,7 @@
 // Unsaved changes example demonstrating Window.setCloseIntercept
 // This example shows how to prompt the user before closing a window
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Unsaved Changes Demo' }, (a) => {
   a.window({ title: 'Document Editor', width: 500, height: 400 }, (win) => {

@@ -15,7 +15,7 @@
  * Based on the original edlin from https://github.com/bshofner/edlin
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createEdlinApp, createEdlinStore, EdlinApp } from './edlin';
 import * as path from 'path';
 import * as fs from 'fs';

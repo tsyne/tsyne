@@ -6,7 +6,7 @@
  *
  * Run: npx tsx examples/appointment-scheduler.ts
  */
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 // Sample appointments
 interface Appointment {

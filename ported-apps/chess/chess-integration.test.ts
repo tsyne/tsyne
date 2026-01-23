@@ -6,9 +6,9 @@
  * Target: ~1-2 seconds per test
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createChessApp } from './chess';
-import type { IResourceManager } from '../../core/src/resources';
+import type { IResourceManager } from 'tsyne';
 import * as path from 'path';
 
 describe('Chess Integration Tests', () => {

@@ -5,8 +5,8 @@
  * @tsyne-app:args app,win
  */
 
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 
 interface Session {
   id: string;

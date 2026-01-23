@@ -1,7 +1,7 @@
 // Tooltip and Popup Demo
 // Demonstrates the Popup widget for tooltips, popovers, and floating overlays
 
-import { app, resolveTransport, Popup  } from '../core/src';
+import { app, resolveTransport, Popup  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
   a.window({ title: 'Popup Demo', width: 600, height: 500 }, (win) => {

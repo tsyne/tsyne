@@ -4,7 +4,7 @@
  * Tests for UI interactions, theme switching, and note management in the UI
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildNotesApp } from './index';
 
 describe('Notes App - UI Tests', () => {

@@ -39,10 +39,10 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
-import type { App } from '../../core/src';
-import type { Window } from '../../core/src';
-import type { Label } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { Label } from 'tsyne';
 import { IContactsService, MockContactsService } from '../services';
 import { IModemManagerService, MockModemManagerService, CallState } from './modemmanager-service';
 

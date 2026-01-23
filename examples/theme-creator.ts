@@ -8,7 +8,7 @@
  * - Reset to default theme
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select, separator, setCustomTheme, clearCustomTheme, setTheme, CustomThemeColors  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select, separator, setCustomTheme, clearCustomTheme, setTheme, CustomThemeColors  } from 'tsyne';
 
 // Preset themes
 const presetThemes: Record<string, CustomThemeColors> = {

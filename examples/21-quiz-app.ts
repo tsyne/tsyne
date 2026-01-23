@@ -6,7 +6,7 @@
 // Quiz App - Interactive trivia quiz with scoring
 // Demonstrates complex state management, navigation, and conditional UI
 
-import { app, resolveTransport, App, Window  } from '../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 
 interface Question {
   question: string;

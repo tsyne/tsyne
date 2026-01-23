@@ -16,7 +16,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from '../../core/src/index';
+import { app, resolveTransport } from 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext } from '../../cosyne/src/index3d';
 import { Vector3 } from '../../cosyne/src/math3d';
 

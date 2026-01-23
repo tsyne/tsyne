@@ -14,7 +14,7 @@ import {
 
 describe('RoundTrip: Transformer Fixes', () => {
   test('basic round-trip without transformer', async () => {
-    const code = `import { app, window, vbox, button } from '../core/src';
+    const code = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -33,7 +33,7 @@ app({ title: "Test" }, () => {
   });
 
   test('adding .withId() produces expected output', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -50,7 +50,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -64,7 +64,7 @@ app({ title: "Test" }, () => {
   });
 
   test('multiple edits in sequence', async () => {
-    const original = `import { app, window, vbox, button, label } from '../core/src';
+    const original = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -85,7 +85,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button, label } from '../core/src';
+    const expected = `import { app, window, vbox, button, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -100,7 +100,7 @@ app({ title: "Test" }, () => {
   });
 
   test('nested containers with multiple IDs', async () => {
-    const original = `import { app, window, vbox, hbox, button } from '../core/src';
+    const original = `import { app, window, vbox, hbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -126,7 +126,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, hbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, hbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -143,7 +143,7 @@ app({ title: "Test" }, () => {
   });
 
   test('preserves widget order after edits', async () => {
-    const original = `import { app, window, vbox, label } from '../core/src';
+    const original = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -164,7 +164,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, label } from '../core/src';
+    const expected = `import { app, window, vbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -180,7 +180,7 @@ app({ title: "Test" }, () => {
   });
 
   test('complex nested structure with grid', async () => {
-    const original = `import { app, window, vbox, grid, label } from '../core/src';
+    const original = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -203,7 +203,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, grid, label } from '../core/src';
+    const expected = `import { app, window, vbox, grid, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

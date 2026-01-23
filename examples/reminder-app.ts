@@ -7,7 +7,7 @@
  * - Integration with system notification center
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 interface Reminder {
   id: number;

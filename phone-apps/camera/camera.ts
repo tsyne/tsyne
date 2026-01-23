@@ -38,11 +38,11 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  } from '../../core/src';
-import type { App } from '../../core/src';
-import type { Window } from '../../core/src';
-import type { Label } from '../../core/src';
-import type { VBox } from '../../core/src';
+import { app, resolveTransport, styles, FontStyle  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { Label } from 'tsyne';
+import type { VBox } from 'tsyne';
 import { ICameraService, MockCameraService, Photo } from './camera-service';
 
 // Define camera styles

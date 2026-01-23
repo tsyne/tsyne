@@ -8,7 +8,7 @@
  * - alert() and confirm() dialog functions
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Browser Globals Test' }, (a) => {
   a.window({ title: 'Browser Globals Test', width: 600, height: 500 }, (win) => {

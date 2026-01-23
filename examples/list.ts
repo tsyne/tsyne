@@ -5,7 +5,7 @@
  * selection callbacks and dynamic items.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, list  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, list  } from 'tsyne';
 
 let todoList: any;
 let statusLabel: any;

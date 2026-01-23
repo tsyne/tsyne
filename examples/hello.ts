@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, button, label, styles, screenshotIfRequested  } from '../core/src';
+import { app, resolveTransport, window, vbox, button, label, styles, screenshotIfRequested  } from 'tsyne';
 
 // CSS Classes for styling widgets
 styles({

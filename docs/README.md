@@ -19,9 +19,9 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 
 ### 📋 Planning & Roadmap
 
-- **[ROADMAP.md](ROADMAP.md)** - Feature roadmap and implementation status (~15% Fyne coverage)
+- **[ROADMAP.md](ROADMAP.md)** - Feature roadmap and implementation status
 - **[TODO.md](TODO.md)** - Technical debt and infrastructure improvements
-- **[STANDALONE_BINARY_ASSESSMENT.md](STANDALONE_BINARY_ASSESSMENT.md)** - Analysis of standalone binary approach (size, tradeoffs)
+- **[PLANS_FOR_BINARY.md](PLANS_FOR_BINARY.md)** - Analysis of standalone binary approach (size, tradeoffs)
 - **[PROS_AND_CONS.md](PROS_AND_CONS.md)** - Honest comparison with Electron/Tauri
 
 ### 🌐 Browser Mode
@@ -34,16 +34,24 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 
 - **[DESKTOP.md](DESKTOP.md)** - Desktop mode and MDI inner windows
 - **[WINDOW_ADAPTATION.md](WINDOW_ADAPTATION.md)** - Adapting apps to standalone, desktop, and phone contexts
+- **[fyne-stack-click-limitation.md](fyne-stack-click-limitation.md)** - Fyne Stack click handling and TsyneDesktopMDI solution
+
+### 🎨 Canvas & Graphics
+
+- **[COSYNE_3D.md](COSYNE_3D.md)** - Cosyne 3D graphics API reference
+- **[CANVAS_SPHERE.md](CANVAS_SPHERE.md)** - Canvas sphere widget documentation
+- **[cosyne_plan.md](cosyne_plan.md)** - Cosyne library design and concepts
+- **[pseudo-declarative-ui-composition.md](pseudo-declarative-ui-composition.md)** - UI composition patterns guide
 
 ### 🔧 Specialized Topics
 
-- **[SCREENSHOT_SUPPORT.md](SCREENSHOT_SUPPORT.md)** - Screenshot and image handling
+- **[SCREENSHOTS.md](SCREENSHOTS.md)** - Screenshot support and visual reference
 - **[STREAMING_CONTENT.md](STREAMING_CONTENT.md)** - Streaming content patterns
-- **[HTTP_IMAGE_FETCHING.md](HTTP_IMAGE_FETCHING.md)** - HTTP image loading
 - **[OVERLAYS_AND_LAYERS.md](OVERLAYS_AND_LAYERS.md)** - Overlay and layer management
 - **[INSPECTOR_DESIGN.md](INSPECTOR_DESIGN.md)** - Widget inspector design
 - **[FYNE_KEYBOARD_SHORTCUTS_REQUEST.md](FYNE_KEYBOARD_SHORTCUTS_REQUEST.md)** - Keyboard shortcuts implementation plan
-- **[SCREENSHOTS.md](SCREENSHOTS.md)** - Visual screenshots reference
+- **[ACCESSIBILITY.md](ACCESSIBILITY.md)** - Accessibility features
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Documentation Organization
 
@@ -62,10 +70,11 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 ### Specialized Documentation
 
 The remaining docs cover specific features or subsystems:
-- Browser mode (Browser_TODO.md, BROWSER_TESTING.md, WEB_FEATURE_MAPPING.md)
-- Screenshots and images (SCREENSHOT_SUPPORT.md, HTTP_IMAGE_FETCHING.md, SCREENSHOTS.md)
+- Browser mode (Browser_TODO.md, BROWSER_MODE.md, BROWSER_TESTING.md, WEB_FEATURE_MAPPING.md)
+- Canvas/Graphics (COSYNE_3D.md, CANVAS_SPHERE.md, cosyne_plan.md)
+- Desktop/Window (DESKTOP.md, WINDOW_ADAPTATION.md, fyne-stack-click-limitation.md)
 - Advanced features (OVERLAYS_AND_LAYERS.md, INSPECTOR_DESIGN.md, STREAMING_CONTENT.md)
-- Platform features (FYNE_KEYBOARD_SHORTCUTS_REQUEST.md)
+- Platform features (ACCESSIBILITY.md, FYNE_KEYBOARD_SHORTCUTS_REQUEST.md)
 
 ## Recently Removed Documentation
 
@@ -105,5 +114,5 @@ When adding new documentation:
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2026-01-23
 **Documentation Version:** 0.1.0

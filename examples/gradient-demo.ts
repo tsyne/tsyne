@@ -1,7 +1,7 @@
 // Demo: Gradient Comparison - Linear vs Radial
 // Shows the difference between linear and radial gradients
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Gradient Demo' }, (a) => {
   a.window({ title: 'Linear vs Radial Gradients', width: 600, height: 500 }, (win) => {

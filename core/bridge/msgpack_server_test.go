@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -293,5 +295,206 @@ func BenchmarkMsgpackRoundtrip(b *testing.B) {
 		encoded, _ := msgpack.Marshal(msg)
 		var decoded MsgpackMessage
 		msgpack.Unmarshal(encoded, &decoded)
+	}
+}
+
+// TestEncoderPool tests the pooled encoder functionality (#6 optimization)
+func TestEncoderPool(t *testing.T) {
+	server := &MsgpackServer{}
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	// Test encoding with pool
+	event := MsgpackEvent{
+		Type:     "clicked",
+		WidgetID: "button_1",
+		Data: map[string]interface{}{
+			"x": 100,
+			"y": 200,
+		},
+	}
+
+	encoded, err := server.encodeWithPool(event)
+	if err != nil {
+		t.Fatalf("Failed to encode with pool: %v", err)
+	}
+
+	// Verify we can decode it
+	var decoded MsgpackEvent
+	if err := msgpack.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatalf("Failed to decode pooled output: %v", err)
+	}
+
+	if decoded.Type != event.Type {
+		t.Errorf("Type mismatch: got %s, want %s", decoded.Type, event.Type)
+	}
+	if decoded.WidgetID != event.WidgetID {
+		t.Errorf("WidgetID mismatch: got %s, want %s", decoded.WidgetID, event.WidgetID)
+	}
+}
+
+// TestEncoderPoolConcurrency tests pooled encoder under concurrent load
+func TestEncoderPoolConcurrency(t *testing.T) {
+	server := &MsgpackServer{}
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	var wg sync.WaitGroup
+	errors := make(chan error, 100)
+
+	// Run 100 concurrent encodings
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			event := MsgpackEvent{
+				Type:     "test",
+				WidgetID: fmt.Sprintf("widget_%d", id),
+				Data:     map[string]interface{}{"id": id},
+			}
+
+			encoded, err := server.encodeWithPool(event)
+			if err != nil {
+				errors <- fmt.Errorf("encode error: %v", err)
+				return
+			}
+
+			var decoded MsgpackEvent
+			if err := msgpack.Unmarshal(encoded, &decoded); err != nil {
+				errors <- fmt.Errorf("decode error: %v", err)
+				return
+			}
+
+			if decoded.WidgetID != event.WidgetID {
+				errors <- fmt.Errorf("data corruption: got %s, want %s", decoded.WidgetID, event.WidgetID)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errors)
+
+	for err := range errors {
+		t.Error(err)
+	}
+}
+
+// TestBatchingDisabled tests that batching disabled sends immediately
+func TestBatchingDisabled(t *testing.T) {
+	server := &MsgpackServer{
+		batchEnabled: false,
+		batchFlushCh: make(chan struct{}, 1),
+	}
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	// With batching disabled, queue should be empty after SendEventBatched
+	event := Event{
+		Type:     "test",
+		WidgetID: "widget_1",
+	}
+
+	server.SendEventBatched(event)
+
+	// Queue should be empty (flushed immediately)
+	server.batchMu.Lock()
+	queueLen := len(server.batchQueue)
+	server.batchMu.Unlock()
+
+	if queueLen != 0 {
+		t.Errorf("Expected empty queue when batching disabled, got %d items", queueLen)
+	}
+}
+
+// TestBatchingEnabled tests that batching queues messages
+func TestBatchingEnabled(t *testing.T) {
+	server := &MsgpackServer{
+		batchEnabled: true,
+		batchWindow:  50 * time.Millisecond,
+		batchFlushCh: make(chan struct{}, 1),
+	}
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	// With batching enabled, messages should queue
+	for i := 0; i < 5; i++ {
+		event := Event{
+			Type:     "test",
+			WidgetID: fmt.Sprintf("widget_%d", i),
+		}
+		server.SendEventBatched(event)
+	}
+
+	// Queue should have 5 items
+	server.batchMu.Lock()
+	queueLen := len(server.batchQueue)
+	server.batchMu.Unlock()
+
+	if queueLen != 5 {
+		t.Errorf("Expected 5 items in queue, got %d", queueLen)
+	}
+
+	// Manual flush should empty the queue
+	server.FlushBatch()
+
+	server.batchMu.Lock()
+	queueLen = len(server.batchQueue)
+	server.batchMu.Unlock()
+
+	if queueLen != 0 {
+		t.Errorf("Expected empty queue after flush, got %d items", queueLen)
+	}
+}
+
+// BenchmarkEncoderPooled benchmarks pooled encoding vs direct encoding
+func BenchmarkEncoderPooled(b *testing.B) {
+	server := &MsgpackServer{}
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
+	event := MsgpackEvent{
+		Type:     "clicked",
+		WidgetID: "button_1",
+		Data: map[string]interface{}{
+			"x": 100,
+			"y": 200,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		server.encodeWithPool(event)
+	}
+}
+
+// BenchmarkEncoderDirect benchmarks direct msgpack.Marshal for comparison
+func BenchmarkEncoderDirect(b *testing.B) {
+	event := MsgpackEvent{
+		Type:     "clicked",
+		WidgetID: "button_1",
+		Data: map[string]interface{}{
+			"x": 100,
+			"y": 200,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		msgpack.Marshal(event)
 	}
 }

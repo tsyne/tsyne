@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "chess.js": "^1.4.0"
+    "chess.js": "^1.4.0",
+    "tsyne": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

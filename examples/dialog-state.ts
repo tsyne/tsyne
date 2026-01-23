@@ -10,7 +10,7 @@
  * 3. Using promises to handle async dialog results
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, entry, button, StateStore  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button, StateStore  } from 'tsyne';
 
 // ============================================================================
 // Dialog State Management

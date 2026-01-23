@@ -4,8 +4,8 @@
  * Manages the dock/launch bar's pinned apps - persistence, add/remove, reordering.
  */
 
-import { App } from '../../core/src/app';
-import { Window } from '../../core/src/window';
+import { App } from 'tsyne';
+import { Window } from 'tsyne';
 import { DOCK_APPS_KEY } from './desktop_types';
 
 /**

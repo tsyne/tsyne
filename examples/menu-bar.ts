@@ -5,7 +5,7 @@
  * File, Edit, and Help menus.
  */
 
-import { app, resolveTransport, window, vbox, label, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry  } from 'tsyne';
 
 let statusLabel: any;
 let textEntry: any;

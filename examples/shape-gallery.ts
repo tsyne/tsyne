@@ -1,7 +1,7 @@
 // Demo: Shape Gallery using CanvasPolygon primitives
 // Shows how to create various polygon shapes
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Shape Gallery' }, (a) => {
   a.window({ title: 'Polygon Shape Gallery', width: 600, height: 500 }, (win) => {

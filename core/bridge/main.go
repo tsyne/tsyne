@@ -405,6 +405,10 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleRegisterCustomId(msg)
 	case "registerTestId":
 		return b.handleRegisterTestId(msg)
+	case "clearAllCustomIds":
+		return b.handleClearAllCustomIds(msg)
+	case "getCustomIdStats":
+		return b.handleGetCustomIdStats(msg)
 	case "getParent":
 		return b.handleGetParent(msg)
 	case "setAccessibility":

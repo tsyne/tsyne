@@ -6,7 +6,7 @@
  *
  * Run: npx tsx examples/file-browser.ts
  */
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 // Sample file entries with different types
 const sampleFiles = [

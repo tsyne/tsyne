@@ -5,7 +5,7 @@
  * applying preset color schemes, and using the theme editor.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, progressbar, radiogroup, select  } from 'tsyne';
 
 let statusLabel: any;
 let themeLabel: any;

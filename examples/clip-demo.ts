@@ -10,7 +10,7 @@
  * - Right: Clipped content (text is cut off at boundaries)
  */
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Clip Demo' }, (a) => {
   a.window({ title: 'Clip Container Example', width: 600, height: 400 }, (win) => {

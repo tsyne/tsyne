@@ -5,7 +5,7 @@
  * keeping them synchronized automatically.
  */
 
-import { app, resolveTransport, window, vbox, label, entry, button, ObservableState, ComputedState  } from '../core/src';
+import { app, resolveTransport, window, vbox, label, entry, button, ObservableState, ComputedState  } from 'tsyne';
 
 // Create observable states
 const firstName = new ObservableState('John');

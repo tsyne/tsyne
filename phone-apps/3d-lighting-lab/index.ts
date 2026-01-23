@@ -16,7 +16,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from '../../core/src/index';
+import { app, resolveTransport } from 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
 import { Materials } from '../../cosyne/src/material';
 import { PointLight } from '../../cosyne/src/light';

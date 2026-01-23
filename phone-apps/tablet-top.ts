@@ -11,15 +11,15 @@
  * Run with: ./scripts/tsyne src/tablet-top.ts
  */
 
-import { App } from '../core/src/app';
-import { Window } from '../core/src/window';
-import { Label, Button } from '../core/src/widgets';
-import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../core/src/tsyne-window';
-import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { App } from 'tsyne';
+import { Window } from 'tsyne';
+import { Label, Button } from 'tsyne';
+import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from 'tsyne';
+import { parseAppMetadata, loadAppBuilder, AppMetadata } from 'tsyne';
 import { ALL_APPS } from '../launchers/all-apps';
-import { ScopedResourceManager, ResourceManager } from '../core/src/resources';
-import { SandboxedApp } from '../core/src/sandboxed-app';
-import { Inspector, WidgetNode } from '../core/src/inspector';
+import { ScopedResourceManager, ResourceManager } from 'tsyne';
+import { SandboxedApp } from 'tsyne';
+import { Inspector, WidgetNode } from 'tsyne';
 import * as path from 'path';
 import * as http from 'http';
 

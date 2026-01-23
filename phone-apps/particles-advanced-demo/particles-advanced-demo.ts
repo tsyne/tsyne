@@ -9,7 +9,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, refreshAllBindings } from '../../core/src/index';
+import { app, refreshAllBindings } from 'tsyne';
 import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
 import { ParticleSystem, Emitter } from '../../cosyne/src/particle-system';
 

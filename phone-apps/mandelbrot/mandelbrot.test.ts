@@ -2,7 +2,7 @@
  * Tests for Mandelbrot Explorer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createMandelbrotApp } from './mandelbrot';
 
 describe('Mandelbrot Explorer', () => {

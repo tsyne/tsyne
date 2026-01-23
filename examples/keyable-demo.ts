@@ -1,4 +1,4 @@
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 /**
  * Keyable Demo - Demonstrates the desktop.Keyable interface

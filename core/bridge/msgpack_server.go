@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -10,9 +11,16 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
+
+// encoderPoolItem holds a reusable encoder and buffer (#6 optimization)
+type encoderPoolItem struct {
+	enc *msgpack.Encoder
+	buf *bytes.Buffer
+}
 
 // MsgpackServer handles MessagePack over Unix Domain Socket communication
 type MsgpackServer struct {
@@ -21,7 +29,16 @@ type MsgpackServer struct {
 	listener   net.Listener
 	clients    sync.Map // map of client connections
 	mu         sync.Mutex
-	bufferPool sync.Pool // Pool for frame buffers to reduce allocations
+	bufferPool  sync.Pool // Pool for frame buffers to reduce allocations
+	encoderPool sync.Pool // Pool for msgpack encoders (#6 optimization)
+
+	// Message batching (#5 optimization)
+	batchEnabled  bool
+	batchWindow   time.Duration
+	batchMu       sync.Mutex
+	batchQueue    [][]byte       // Queued serialized messages
+	batchTimer    *time.Timer    // Flush timer
+	batchFlushCh  chan struct{}  // Signal to flush immediately
 }
 
 // MsgpackMessage represents a message in MessagePack format
@@ -62,8 +79,11 @@ func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
 	socketPath := filepath.Join(socketDir, fmt.Sprintf("tsyne-%d.sock", os.Getpid()))
 
 	server := &MsgpackServer{
-		bridge:     bridge,
-		socketPath: socketPath,
+		bridge:       bridge,
+		socketPath:   socketPath,
+		batchEnabled: false, // Batching disabled by default
+		batchWindow:  2 * time.Millisecond,
+		batchFlushCh: make(chan struct{}, 1),
 	}
 
 	// Initialize buffer pool with factory function
@@ -72,7 +92,35 @@ func NewMsgpackServer(bridge *Bridge) *MsgpackServer {
 		return make([]byte, 8192)
 	}
 
+	// Initialize encoder pool (#6 optimization)
+	server.encoderPool.New = func() interface{} {
+		buf := bytes.NewBuffer(make([]byte, 0, 4096))
+		enc := msgpack.NewEncoder(buf)
+		return &encoderPoolItem{enc: enc, buf: buf}
+	}
+
 	return server
+}
+
+// EnableBatching enables message batching with the specified window (#5 optimization)
+func (s *MsgpackServer) EnableBatching(window time.Duration) {
+	s.batchMu.Lock()
+	defer s.batchMu.Unlock()
+	s.batchEnabled = true
+	s.batchWindow = window
+}
+
+// DisableBatching disables message batching
+func (s *MsgpackServer) DisableBatching() {
+	s.batchMu.Lock()
+	defer s.batchMu.Unlock()
+	s.batchEnabled = false
+	if s.batchTimer != nil {
+		s.batchTimer.Stop()
+		s.batchTimer = nil
+	}
+	// Flush any pending messages
+	s.flushBatchLocked()
 }
 
 // Start starts the MessagePack UDS server
@@ -107,6 +155,8 @@ func (s *MsgpackServer) Close() {
 
 // SendEvent sends an event to all connected clients synchronously
 // This ensures events are delivered before the response that triggered them
+// Optimization #4: Pre-serialize once, single lock for all writes
+// Optimization #6: Use pooled encoder
 func (s *MsgpackServer) SendEvent(event Event) {
 	msgEvent := MsgpackEvent{
 		Type:     event.Type,
@@ -114,28 +164,54 @@ func (s *MsgpackServer) SendEvent(event Event) {
 		Data:     event.Data,
 	}
 
-	eventBuf, err := msgpack.Marshal(msgEvent)
+	// Use pooled encoder (#6 optimization)
+	eventBuf, err := s.encodeWithPool(msgEvent)
 	if err != nil {
 		return
 	}
 
-	// Acquire buffer from pool
+	// Acquire buffer from pool and create frame
 	frameBuf := s.getFrameBuffer(4 + len(eventBuf))
 	binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(eventBuf)))
 	copy(frameBuf[4:], eventBuf)
-
-	// Broadcast to all clients synchronously
 	frameSize := 4 + len(eventBuf)
+
+	// Collect all connections first (read phase - no lock contention)
+	var conns []net.Conn
 	s.clients.Range(func(key, value interface{}) bool {
-		conn := value.(net.Conn)
-		s.mu.Lock()
-		conn.Write(frameBuf[:frameSize])
-		s.mu.Unlock()
+		conns = append(conns, value.(net.Conn))
 		return true
 	})
 
+	// Single lock for all writes (#4 optimization)
+	// This reduces lock/unlock cycles from N to 1
+	s.mu.Lock()
+	for _, conn := range conns {
+		conn.Write(frameBuf[:frameSize])
+	}
+	s.mu.Unlock()
+
 	// Return buffer to pool after broadcast
 	s.putFrameBuffer(frameBuf)
+}
+
+// encodeWithPool uses a pooled encoder for better performance (#6 optimization)
+func (s *MsgpackServer) encodeWithPool(v interface{}) ([]byte, error) {
+	item := s.encoderPool.Get().(*encoderPoolItem)
+	defer func() {
+		item.buf.Reset()
+		s.encoderPool.Put(item)
+	}()
+
+	item.buf.Reset()
+	if err := item.enc.Encode(v); err != nil {
+		return nil, err
+	}
+
+	// Copy the buffer since we're returning it to the pool
+	result := make([]byte, item.buf.Len())
+	copy(result, item.buf.Bytes())
+	return result, nil
 }
 
 func (s *MsgpackServer) acceptConnections() {
@@ -196,8 +272,8 @@ func (s *MsgpackServer) handleClient(conn net.Conn) {
 		// Handle the message
 		response := s.handleMessage(msg)
 
-		// Encode response
-		respBuf, err := msgpack.Marshal(response)
+		// Encode response using pooled encoder (#6 optimization)
+		respBuf, err := s.encodeWithPool(response)
 		if err != nil {
 			log.Printf("[msgpack] Error encoding response: %v", err)
 			continue
@@ -254,5 +330,82 @@ func (s *MsgpackServer) putFrameBuffer(buf []byte) {
 	// Only pool buffers up to 16KB to avoid holding huge buffers
 	if cap(buf) <= 16384 {
 		s.bufferPool.Put(buf)
+	}
+}
+
+// flushBatchLocked flushes all queued batch messages (must hold batchMu)
+func (s *MsgpackServer) flushBatchLocked() {
+	if len(s.batchQueue) == 0 {
+		return
+	}
+
+	// Collect all connections
+	var conns []net.Conn
+	s.clients.Range(func(key, value interface{}) bool {
+		conns = append(conns, value.(net.Conn))
+		return true
+	})
+
+	// Single lock for all writes
+	s.mu.Lock()
+	for _, conn := range conns {
+		for _, frame := range s.batchQueue {
+			conn.Write(frame)
+		}
+	}
+	s.mu.Unlock()
+
+	// Clear queue
+	s.batchQueue = s.batchQueue[:0]
+}
+
+// FlushBatch immediately flushes any batched messages (#5 optimization)
+func (s *MsgpackServer) FlushBatch() {
+	s.batchMu.Lock()
+	defer s.batchMu.Unlock()
+	s.flushBatchLocked()
+}
+
+// SendEventBatched queues an event for batched sending (#5 optimization)
+// Use this for high-frequency background updates
+func (s *MsgpackServer) SendEventBatched(event Event) {
+	msgEvent := MsgpackEvent{
+		Type:     event.Type,
+		WidgetID: event.WidgetID,
+		Data:     event.Data,
+	}
+
+	// Use pooled encoder
+	eventBuf, err := s.encodeWithPool(msgEvent)
+	if err != nil {
+		return
+	}
+
+	// Create frame
+	frameBuf := make([]byte, 4+len(eventBuf))
+	binary.BigEndian.PutUint32(frameBuf[0:4], uint32(len(eventBuf)))
+	copy(frameBuf[4:], eventBuf)
+
+	s.batchMu.Lock()
+	defer s.batchMu.Unlock()
+
+	if !s.batchEnabled {
+		// Batching disabled, send immediately
+		s.batchQueue = append(s.batchQueue, frameBuf)
+		s.flushBatchLocked()
+		return
+	}
+
+	// Add to batch queue
+	s.batchQueue = append(s.batchQueue, frameBuf)
+
+	// Start or reset timer
+	if s.batchTimer == nil {
+		s.batchTimer = time.AfterFunc(s.batchWindow, func() {
+			s.batchMu.Lock()
+			defer s.batchMu.Unlock()
+			s.flushBatchLocked()
+			s.batchTimer = nil
+		})
 	}
 }

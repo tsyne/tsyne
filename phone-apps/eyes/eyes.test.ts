@@ -2,7 +2,7 @@
  * Eyes Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createEyesApp, Eyes } from './eyes';
 
 describe('Eyes Logic', () => {

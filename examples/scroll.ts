@@ -5,7 +5,7 @@
  * that doesn't fit in the visible area.
  */
 
-import { app, resolveTransport, window, vbox, label, button, scroll  } from '../core/src';
+import { app, resolveTransport, window, vbox, label, button, scroll  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Scroll Demo' }, () => {
   window({ title: 'Scroll Container Example', width: 400, height: 300 }, (win) => {

@@ -33,12 +33,12 @@
 // @tsyne-app:count many
 // @tsyne-app:args app, desktop
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { ITsyneWindow } from '../../core/src/tsyne-window';
-import type { TextGrid, TextGridStyle } from '../../core/src/widgets';
-import type { IDesktopService } from '../../core/src/services';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { ITsyneWindow } from 'tsyne';
+import type { TextGrid, TextGridStyle } from 'tsyne';
+import type { IDesktopService } from 'tsyne';
 import * as pty from 'node-pty';
 import type { IPty } from 'node-pty';
 import * as os from 'os';

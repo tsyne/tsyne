@@ -11,8 +11,8 @@
  * one for each face of the cube (+X, -X, +Y, -Y, +Z, -Z).
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

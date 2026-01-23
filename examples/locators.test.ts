@@ -8,7 +8,7 @@
  * 3. Practical examples of when to use each locator type
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 
 describe('Locator Tests - getById and find/findAll patterns', () => {
   let tsyneTest: TsyneTest;

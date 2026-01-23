@@ -35,9 +35,9 @@
  * - Background image detection (.background.png/jpg/svg)
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as os from 'os';
 import * as path from 'path';
 import { FylesStore } from './fyles-store';

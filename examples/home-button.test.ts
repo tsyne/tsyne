@@ -5,7 +5,7 @@
  * Full home navigation testing is done in browser-home.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 
 describe('Home Button Tests', () => {
   let tsyneTest: TsyneTest;

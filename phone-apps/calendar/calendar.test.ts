@@ -28,7 +28,7 @@
  * Tests for Calendar App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createCalendarApp } from './calendar';
 import { MockCalendarService } from './calendar-service';
 

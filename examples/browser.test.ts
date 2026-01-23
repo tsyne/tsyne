@@ -6,7 +6,7 @@
  * Run: npm run build && node examples/browser.test.js
  */
 
-import { browserTest, describeBrowser, runBrowserTests, TsyneBrowserTest } from '../core/src';
+import { browserTest, describeBrowser, runBrowserTests, TsyneBrowserTest } from 'tsyne';
 
 describeBrowser('Tsyne Browser Tests', () => {
   // Test 1: Basic page navigation

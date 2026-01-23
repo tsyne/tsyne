@@ -5,7 +5,7 @@
  * and user-driven file operations.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from 'tsyne';
 
 app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
   window({ title: 'File Open/Save Dialogs', width: 500, height: 400 }, (win) => {

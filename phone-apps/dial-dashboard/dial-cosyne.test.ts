@@ -1,8 +1,8 @@
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
 import { createDialDashboardApp } from './dial-cosyne';
-import { MsgpackBridgeConnection } from '../../core/src/msgpackbridge';
+import { MsgpackBridgeConnection } from 'tsyne';
 
 describe('Dial Dashboard', () => {
   let tsyneTest: TsyneTest;

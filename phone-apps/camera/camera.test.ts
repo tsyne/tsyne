@@ -28,7 +28,7 @@
  * Tests for Camera App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createCameraApp } from './camera';
 import { MockCameraService } from './camera-service';
 

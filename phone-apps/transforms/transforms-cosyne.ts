@@ -7,7 +7,7 @@
  * - Complex multi-level transformations
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts } from '../../cosyne/src';
 
 export function buildTransformsApp(a: App): void {

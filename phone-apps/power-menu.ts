@@ -13,9 +13,9 @@
  * @tsyne-app:platforms phone,tablet
  */
 
-import { app, resolveTransport } from '../core/src';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
+import { app, resolveTransport } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 

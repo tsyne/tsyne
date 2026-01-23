@@ -1,7 +1,7 @@
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildSnowflakeApp } from './index';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 
 describe('Snowflake App UI', () => {
   let tsyneTest: TsyneTest;

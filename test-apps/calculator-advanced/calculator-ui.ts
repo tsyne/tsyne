@@ -1,4 +1,4 @@
-import { app, resolveTransport, App  } from '../../../../../../../../../../../../../../../../../../../../core/src';
+import { app, resolveTransport, App  } from 'tsyne';
 import { CalculatorLogic } from './calculator-logic';
 import { styles, FontStyle } from '../../src/styles';
 

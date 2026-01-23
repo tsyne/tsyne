@@ -20,9 +20,9 @@
  * TsyneTest integration tests for Signal app UI
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createSignalApp } from './signal';
-import type { App } from '../../core/src';
+import type { App } from 'tsyne';
 
 describe('Signal App UI', () => {
   let tsyneTest: TsyneTest;

@@ -1,7 +1,7 @@
 // MDI (Multiple Document Interface) Demo
 // Demonstrates InnerWindow container for window-within-canvas patterns
 
-import { app, resolveTransport, InnerWindow  } from '../core/src';
+import { app, resolveTransport, InnerWindow  } from 'tsyne';
 
 app(resolveTransport(), { title: 'MDI Demo' }, (a) => {
   a.window({ title: 'MDI Demo - Multiple Document Interface', width: 800, height: 600 }, (win) => {

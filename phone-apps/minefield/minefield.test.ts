@@ -2,7 +2,7 @@
  * Minefield Game Tests
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import {
   createMinefieldApp,
   MinefieldGame,
@@ -11,7 +11,7 @@ import {
   EXPERT_SETTINGS,
   DIFFICULTY_PRESETS,
 } from './minefield';
-import type { App } from '../../core/src/app';
+import type { App } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -10,7 +10,7 @@
  * @description Draggable icons demo
  */
 
-import { app, resolveTransport, App  } from '../core/src';
+import { app, resolveTransport, App  } from 'tsyne';
 
 export async function build(a: App) {
   a.window({ title: 'Desktop Canvas Demo', width: 800, height: 600 }, (win) => {

@@ -15,8 +15,8 @@
  * @tsyne-app:count single
  */
 
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 
 interface Snowflake {
   id: string;

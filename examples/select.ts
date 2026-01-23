@@ -5,7 +5,7 @@
  * and dynamic interaction.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, select, button, screenshotIfRequested  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, select, button, screenshotIfRequested  } from 'tsyne';
 
 let colorSelect: any;
 let sizeSelect: any;

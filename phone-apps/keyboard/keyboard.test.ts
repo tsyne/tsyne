@@ -4,7 +4,7 @@
  * See LICENSE for copyright information.
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createTestHarness } from './controller';
 import { buildKeyboard as buildEnUS } from './en-us/keyboard';
 import { buildKeyboard as buildEnGB } from './en-gb/keyboard';

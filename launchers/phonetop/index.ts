@@ -10,14 +10,14 @@
  * Run with: ./scripts/tsyne src/phonetop.ts
  */
 
-import { App } from '../../core/src/app';
-import { Window } from '../../core/src/window';
-import { Label, Button, VBox } from '../../core/src/widgets';
-import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from '../../core/src/tsyne-window';
-import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from '../../core/src/app-metadata';
+import { App } from 'tsyne';
+import { Window } from 'tsyne';
+import { Label, Button, VBox } from 'tsyne';
+import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from 'tsyne';
+import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
-import { ScopedResourceManager, ResourceManager } from '../../core/src/resources';
-import { Inspector } from '../../core/src/inspector';
+import { ScopedResourceManager, ResourceManager } from 'tsyne';
+import { Inspector } from 'tsyne';
 import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import * as http from 'http';
 import * as fs from 'fs';
@@ -1676,7 +1676,7 @@ export async function buildPhoneTop(a: App, options?: PhoneTopOptions) {
 export { PhoneTop };
 
 // Re-export core app function for bundled usage
-export { app, resolveTransport } from '../core/src/index';
+export { app, resolveTransport } from 'tsyne';
 
 // Entry point
 if (require.main === module) {

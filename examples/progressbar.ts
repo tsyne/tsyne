@@ -5,7 +5,7 @@
  * for showing progress and loading states.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, progressbar  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, progressbar  } from 'tsyne';
 
 let downloadProgress: any;
 let uploadProgress: any;

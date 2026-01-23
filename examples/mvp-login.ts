@@ -10,7 +10,7 @@
  * All updates flow through the Presenter.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, entry, button  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button  } from 'tsyne';
 
 // ============================================================================
 // MODEL - Business logic and data

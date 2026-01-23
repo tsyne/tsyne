@@ -16,7 +16,7 @@
  * - Manipulate SVG content programmatically
  */
 
-import { app, resolveTransport  } from '../../core/src';
+import { app, resolveTransport  } from 'tsyne';
 import { renderSVGToBase64, createCompositeSVG } from './svg-renderer';
 import * as path from 'path';
 

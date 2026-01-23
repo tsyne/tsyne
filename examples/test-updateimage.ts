@@ -2,7 +2,7 @@
  * Test the new updateImage API with path and SVG
  */
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 import * as path from 'path';
 
 app(resolveTransport(), { title: 'UpdateImage API Test' }, async (a) => {

@@ -1,5 +1,5 @@
 // Test for canvas gradient text - verifies rainbow gradient text rendering
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Canvas Gradient Text', () => {

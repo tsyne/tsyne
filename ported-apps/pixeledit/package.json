@@ -15,6 +15,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "jimp": "^1.1.4"
+    "jimp": "^1.1.4",
+    "tsyne": "workspace:*"
   }
 }

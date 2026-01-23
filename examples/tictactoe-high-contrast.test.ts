@@ -9,7 +9,7 @@
  * - Testing style/class-based dynamic theming
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildTicTacToe } from './tictactoe-accessible';
 import * as path from 'path';
 

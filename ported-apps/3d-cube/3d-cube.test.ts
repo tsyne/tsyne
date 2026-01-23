@@ -9,7 +9,7 @@
  *   TAKE_SCREENSHOTS=1 npm test ported-apps/3d-cube/3d-cube.test.ts  # Capture screenshots
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { create3DCubeApp, CubeUI } from './3d-cube';
 import * as path from 'path';
 import * as fs from 'fs';

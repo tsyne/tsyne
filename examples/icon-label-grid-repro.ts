@@ -12,7 +12,7 @@
  * Run: npx tsx examples/icon-label-grid-repro.ts
  */
 
-import { app, resolveTransport, App } from '../core/src/index';
+import { app, resolveTransport, App } from 'tsyne';
 import * as path from 'path';
 
 // Mock folder apps with 80x80 SVG icons (matching desktop icon size)

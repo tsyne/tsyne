@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, grid, button, label, styles  } from '../core/src';
+import { app, resolveTransport, window, vbox, grid, button, label, styles  } from 'tsyne';
 
 // CSS Classes for styling
 styles({

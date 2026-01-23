@@ -15,7 +15,7 @@ import {
 
 describe('RoundTrip: Inline Code with Exact Assertions', () => {
   test('round-trip: simple button with no edits', async () => {
-    const code = `import { app, window, vbox, button } from '../core/src';
+    const code = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -35,7 +35,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: change button text', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -52,7 +52,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -67,7 +67,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: add .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -84,7 +84,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -98,7 +98,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: remove .withId()', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -115,7 +115,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -129,7 +129,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: multiple widgets', async () => {
-    const original = `import { app, window, vbox, label, button } from '../core/src';
+    const original = `import { app, window, vbox, label, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -149,7 +149,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: change property and add ID', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -167,7 +167,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -181,7 +181,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: nested containers', async () => {
-    const original = `import { app, window, vbox, hbox, label } from '../core/src';
+    const original = `import { app, window, vbox, hbox, label } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -203,7 +203,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: button with className', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -222,7 +222,7 @@ app({ title: "Test" }, () => {
   });
 
   test('round-trip: change className property', async () => {
-    const original = `import { app, window, vbox, button } from '../core/src';
+    const original = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {
@@ -239,7 +239,7 @@ app({ title: "Test" }, () => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app, window, vbox, button } from '../core/src';
+    const expected = `import { app, window, vbox, button } from 'tsyne';
 
 app({ title: "Test" }, () => {
   window({ title: "Test" }, () => {

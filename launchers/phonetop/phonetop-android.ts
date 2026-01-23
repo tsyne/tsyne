@@ -10,12 +10,12 @@
  *   npx tsx phone-apps/generate-app-manifest.ts
  */
 
-import { App } from '../../core/src/app';
+import { App } from 'tsyne';
 import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './index';
 import { allApps, getAppsForPlatform, GeneratedAppDefinition } from './all-apps.generated';
 
 // Re-export app and buildPhoneTop for the bundle
-export { app } from '../../core/src/index';
+export { app } from 'tsyne';
 
 /**
  * Convert GeneratedAppDefinition to StaticAppDefinition

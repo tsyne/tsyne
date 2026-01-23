@@ -2,8 +2,8 @@
  * Shared utilities for clock-related apps (clock, timer, stopwatch, alarms)
  */
 
-import { styles, FontStyle } from '../core/src';
-import type { CanvasLine } from '../core/src/widgets/canvas';
+import { styles, FontStyle } from 'tsyne';
+import type { CanvasLine } from 'tsyne';
 
 // Define shared clock styles
 styles({

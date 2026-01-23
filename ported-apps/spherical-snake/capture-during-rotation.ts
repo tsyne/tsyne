@@ -2,7 +2,7 @@
  * Capture screenshot while simulating key press
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildPseudoDeclarativeSphericalSnakeApp } from './pseudo-declarative-spherical-snake';
 import * as path from 'path';
 

@@ -1,7 +1,7 @@
 // Color Mixer - Interactive RGB color mixing with sliders
 // Demonstrates sliders, dynamic updates, and color visualization
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Color Mixer' }, (a) => {
   a.window({ title: 'RGB Color Mixer', width: 400, height: 300 }, (win) => {

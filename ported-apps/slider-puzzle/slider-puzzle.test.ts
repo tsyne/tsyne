@@ -2,7 +2,7 @@
  * Slider Puzzle Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createSliderPuzzleApp } from './slider-puzzle';
 
 describe('Slider Puzzle UI', () => {

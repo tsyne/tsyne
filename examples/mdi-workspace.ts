@@ -1,7 +1,7 @@
 // Demo: MDI Workspace using MultipleWindows container
 // Shows how to create a desktop-like workspace with floating inner windows
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
   a.window({ title: 'MDI Workspace', width: 800, height: 600 }, (win) => {

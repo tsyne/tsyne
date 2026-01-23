@@ -4,7 +4,7 @@
  * Run with: TSYNE_HEADED=1 pnpm test ported-apps/spherical-snake/pseudo-declarative-spherical-snake.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildPseudoDeclarativeSphericalSnakeApp } from './pseudo-declarative-spherical-snake';
 import * as fs from 'fs';
 import * as path from 'path';

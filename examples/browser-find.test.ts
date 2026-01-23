@@ -5,7 +5,7 @@
  * navigate through matches, and handle various edge cases.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 
 describeBrowser('Browser Find in Page', () => {
   browserTest(

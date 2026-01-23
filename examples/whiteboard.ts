@@ -7,7 +7,7 @@
  * - Dynamic line creation
  */
 
-import { app } from '../core/src/index';
+import { app } from 'tsyne';
 
 app({ title: 'Whiteboard' }, (a) => {
   // Store lines for the drawing

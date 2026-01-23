@@ -4,7 +4,7 @@
  * Demonstrates Card, Accordion, Form, and Center layout widgets.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, entry, button, card, accordion, form, center  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, entry, button, card, accordion, form, center  } from 'tsyne';
 
 let nameField: any;
 let emailField: any;

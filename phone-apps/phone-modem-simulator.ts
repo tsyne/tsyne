@@ -11,12 +11,12 @@
  * Run with: ./scripts/tsyne src/phone-modem-simulator.ts
  */
 
-import { App } from '../core/src/app';
-import { Window } from '../core/src/window';
-import { Label } from '../core/src/widgets';
-import { parseAppMetadata, loadAppBuilder, AppMetadata } from '../core/src/app-metadata';
+import { App } from 'tsyne';
+import { Window } from 'tsyne';
+import { Label } from 'tsyne';
+import { parseAppMetadata, loadAppBuilder, AppMetadata } from 'tsyne';
 import { ALL_APPS } from '../launchers/all-apps';
-import { SandboxedApp } from '../core/src/sandboxed-app';
+import { SandboxedApp } from 'tsyne';
 import * as path from 'path';
 
 // Import logging services

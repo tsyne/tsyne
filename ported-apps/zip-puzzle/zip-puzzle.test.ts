@@ -2,7 +2,7 @@
  * Zip Puzzle Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createZipPuzzleApp } from './zip-puzzle';
 
 describe('Zip Puzzle UI', () => {

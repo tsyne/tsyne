@@ -1,7 +1,7 @@
 // Event Form Demo - Demonstrates DateEntry widget for event creation
 // This example shows how to use the DateEntry widget for date selection
 
-import { app, resolveTransport, dialog  } from '../core/src';
+import { app, resolveTransport, dialog  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Event Form' }, (a) => {
   a.window({ title: 'Create Event', width: 450, height: 400 }, (win) => {

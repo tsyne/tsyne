@@ -15,7 +15,7 @@ describe('RoundTrip: Nested containers', () => {
     const code = `// Portions copyright Ryelang developers (Apache 2.0)
 // Demonstrates button interaction and spacer layout
 
-import { app } from '../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Button Demo' }, (a) => {
   a.window({ title: 'Button', width: 200, height: 100 }, (win) => {
@@ -43,7 +43,7 @@ app({ title: 'Button Demo' }, (a) => {
   });
 
   test('adding .withId() to container and widgets', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -67,7 +67,7 @@ app({ title: 'Test' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -85,7 +85,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('renaming .withId() on nested widgets', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -106,7 +106,7 @@ app({ title: 'Test' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -124,7 +124,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('removing .withId() from container', async () => {
-    const original = `import { app } from '../core/src';
+    const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -144,7 +144,7 @@ app({ title: 'Test' }, (a) => {
 
     const saveResult = await save('memory');
 
-    const expected = `import { app } from '../core/src';
+    const expected = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

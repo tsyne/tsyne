@@ -12,9 +12,9 @@
  * - Efficient diffing tracks which circles changed
  */
 
-import { app, resolveTransport } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, CosyneContext } from '../../cosyne/src';
 
 const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];

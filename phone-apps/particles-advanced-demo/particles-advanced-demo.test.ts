@@ -2,7 +2,7 @@
  * TsyneTest integration tests for Particles Advanced Demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildParticlesAdvancedApp } from './particles-advanced-demo';
 
 describe('Particles Advanced Demo - TsyneTest', () => {

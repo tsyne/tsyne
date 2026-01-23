@@ -2,7 +2,7 @@
  * Preferences demo test - verifies CheckGroup widget functionality
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 
 describe('Preferences (CheckGroup) Demo', () => {
   let tsyneTest: TsyneTest;

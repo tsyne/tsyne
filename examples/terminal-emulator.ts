@@ -9,7 +9,7 @@
  * - ANSI-style color support
  */
 
-import { App, TextGrid, TextGridStyle, resolveTransport } from '../core/src/index';
+import { App, TextGrid, TextGridStyle, resolveTransport } from 'tsyne';
 
 // Terminal state
 const COLS = 80;

@@ -9,9 +9,9 @@
  * Much simpler and faster than the original SVG→PNG conversion approach.
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Chess } from 'chess.js';

@@ -25,9 +25,9 @@
  * - Close intercept for running simulations
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as fs from 'fs';
 
 // Constants for preferences

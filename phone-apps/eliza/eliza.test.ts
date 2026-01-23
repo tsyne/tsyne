@@ -2,10 +2,10 @@
  * Tests for ELIZA Chatbot
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createElizaApp } from './eliza';
 import { elizaResponse, getInitialGreeting, isQuitCommand } from './eliza-engine';
-import type { App } from '../../core/src/app';
+import type { App } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

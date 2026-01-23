@@ -5,7 +5,7 @@
  * Users can filter commands by typing in the search box.
  */
 
-import { app, resolveTransport, App, MenuItem  } from '../core/src';
+import { app, resolveTransport, App, MenuItem  } from 'tsyne';
 
 // All available commands
 const allCommands: Array<{ label: string; action: string; category: string }> = [

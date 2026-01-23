@@ -24,7 +24,7 @@
  * @tsyne-app:count one
  */
 
-import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  } from '../core/src';
+import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

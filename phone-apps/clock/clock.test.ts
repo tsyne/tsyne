@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path';
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext, App } from 'tsyne';
 import { createClockApp } from './clock';
 import { MockClockService, MockNotificationService, DesktopAppLifecycle } from '../services';
 
@@ -27,7 +27,7 @@ describe('Clock App', () => {
   });
 
   test('should display time on Clock tab', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app: App) => {
       createClockApp(app, clock, notifications, lifecycle);
     });
 
@@ -39,7 +39,7 @@ describe('Clock App', () => {
   });
 
   test('should display date on Clock tab', async () => {
-    const testApp = await tsyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app: App) => {
       createClockApp(app, clock, notifications, lifecycle);
     });
 
@@ -54,7 +54,7 @@ describe('Clock App', () => {
     // Set a fixed time: 3:00 PM on Jan 15, 2025
     clock.setTime(new Date(2025, 0, 15, 15, 0, 0));
 
-    const testApp = await tsyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app: App) => {
       createClockApp(app, clock, notifications, lifecycle);
     });
 
@@ -73,7 +73,7 @@ describe('Clock App', () => {
     // Set a nice time for the screenshot: 10:10:30
     clock.setTime(new Date(2025, 0, 15, 10, 10, 30));
 
-    const testApp = await tsyneTest.createApp((app) => {
+    const testApp = await tsyneTest.createApp((app: App) => {
       createClockApp(app, clock, notifications, lifecycle);
     });
 

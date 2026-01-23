@@ -19,7 +19,7 @@
  * Tests for Telegram App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createTelegramApp } from './telegram';
 import { MockTelegramService } from './telegram-service';
 

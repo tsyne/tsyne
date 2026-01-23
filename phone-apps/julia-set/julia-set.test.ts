@@ -2,7 +2,7 @@
  * Tests for Julia Set Explorer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createJuliaSetApp } from './julia-set';
 import { julia } from '../fractal-utils';
 import * as fs from 'fs';

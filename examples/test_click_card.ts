@@ -3,9 +3,9 @@
  * Tests the ClickableContainer functionality
  */
 
-import { app } from '../core/src';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
+import { app } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as path from 'path';
 import { renderSVGToBase64 } from './solitaire/svg-renderer';
 

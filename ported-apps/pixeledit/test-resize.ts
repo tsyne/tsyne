@@ -1,7 +1,7 @@
 /**
  * Test canvas resize functionality
  */
-import { app, resolveTransport  } from '../../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Canvas Resize Test' }, async (a) => {
   await a.window({ title: 'Test', width: 400, height: 400 }, async (win) => {

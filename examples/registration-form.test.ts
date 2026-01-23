@@ -8,14 +8,14 @@
  *   TSYNE_HEADED=1 npm test examples/registration-form.test.ts  # Visual debugging
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createRegistrationFormApp } from './registration-form';
 import {
   validators,
   createFormValidator,
   ValidatedField,
   FormValidator
-} from '../core/src/validation';
+} from 'tsyne';
 
 describe('Validation Unit Tests', () => {
   describe('validators.required', () => {

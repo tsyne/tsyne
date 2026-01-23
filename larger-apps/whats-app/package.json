@@ -7,12 +7,18 @@
     "test": "jest",
     "dev": "npx tsx whatsapp.ts"
   },
-  "keywords": ["whatsapp", "messaging", "chat", "waha"],
+  "keywords": [
+    "whatsapp",
+    "messaging",
+    "chat",
+    "waha"
+  ],
   "author": "Paul Hammant 2025",
   "license": "GPL-3.0",
   "dependencies": {
     "@muhammedaksam/waha-node": "^2025.12.2-dev.1",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "tsyne": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

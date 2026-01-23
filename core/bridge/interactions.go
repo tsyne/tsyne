@@ -1132,7 +1132,13 @@ func (b *Bridge) handleRegisterCustomId(msg Message) Response {
 	customID := msg.Payload["customId"].(string)
 
 	b.mu.Lock()
+	// If this widget already has a custom ID, remove the old mapping
+	if oldCustomID, exists := b.widgetToCustomId[widgetID]; exists {
+		delete(b.customIds, oldCustomID)
+	}
+	// Set both forward and reverse mappings
 	b.customIds[customID] = widgetID
+	b.widgetToCustomId[widgetID] = customID
 	b.mu.Unlock()
 
 	return Response{
@@ -1157,6 +1163,40 @@ func (b *Bridge) handleRegisterTestId(msg Message) Response {
 	return Response{
 		ID:      msg.ID,
 		Success: true,
+	}
+}
+
+// handleClearAllCustomIds clears all custom ID mappings (for test framework cleanup)
+func (b *Bridge) handleClearAllCustomIds(msg Message) Response {
+	b.mu.Lock()
+	count := len(b.customIds)
+	b.customIds = make(map[string]string)
+	b.widgetToCustomId = make(map[string]string)
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"cleared": count},
+	}
+}
+
+// handleGetCustomIdStats returns statistics about the custom ID map (for debugging/monitoring)
+func (b *Bridge) handleGetCustomIdStats(msg Message) Response {
+	b.mu.RLock()
+	customIdCount := len(b.customIds)
+	reverseMapCount := len(b.widgetToCustomId)
+	widgetCount := len(b.widgets)
+	b.mu.RUnlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result: map[string]interface{}{
+			"customIdCount":   customIdCount,
+			"reverseMapCount": reverseMapCount,
+			"widgetCount":     widgetCount,
+		},
 	}
 }
 

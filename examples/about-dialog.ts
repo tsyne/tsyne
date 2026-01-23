@@ -1,7 +1,7 @@
 // About Dialog - Demonstrates custom dialogs with arbitrary content
 // This example shows how to use showCustom() and showCustomConfirm()
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 const APP_NAME = 'My Awesome App';
 const APP_VERSION = '1.0.0';

@@ -7,7 +7,7 @@
  * - Controller: Handles user input and updates the model
  */
 
-import { app, resolveTransport, window, vbox, label, button, hbox, Model  } from '../core/src';
+import { app, resolveTransport, window, vbox, label, button, hbox, Model  } from 'tsyne';
 
 // ============================================================================
 // MODEL - Holds data and business logic

@@ -8,7 +8,7 @@
  * due to OpenGL rendering requirements. See LLM.md for details.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';

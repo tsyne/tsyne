@@ -1,7 +1,7 @@
 // Portions copyright Ryelang developers (Apache 2.0)
 // Multiplication table demonstrating table widget with dynamic cell population
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Multiplication Table' }, (a) => {
   a.window({ title: 'Multiplication table', width: 330, height: 400 }, (win) => {

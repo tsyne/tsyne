@@ -46,9 +46,7 @@
  * @tsyne-app:args app
  */
 
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Label } from '../../core/src/widgets/display';
+import type { App, Window, Label } from 'tsyne';
 
 // ============================================================================
 // Data Models

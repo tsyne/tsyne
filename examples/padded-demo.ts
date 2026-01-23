@@ -1,7 +1,7 @@
 // Padded container demo - demonstrates container.NewPadded functionality
 // Shows the difference between padded and non-padded content
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Padded Demo' }, (a) => {
   a.window({ title: 'Padded Container Demo', width: 500, height: 400 }, (win) => {

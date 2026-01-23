@@ -10,7 +10,7 @@
  * to the system tray and continue running in the background.
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Background App' }, (a) => {
   let mainWindow: any;

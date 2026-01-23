@@ -1,6 +1,6 @@
 // Test for rename dialog example - demonstrates showEntryDialog
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { Label } from '../core/src';
+import { TsyneTest, TestContext } from 'tsyne';
+import { Label } from 'tsyne';
 import * as path from 'path';
 
 describe('Rename Dialog Example', () => {

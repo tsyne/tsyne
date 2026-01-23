@@ -1,4 +1,4 @@
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 /**
  * Stack Container Demo

@@ -2,7 +2,7 @@
  * Tests for Tricorn Fractal Explorer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createTricornApp } from './tricorn';
 import { tricorn } from '../fractal-utils';
 import * as fs from 'fs';

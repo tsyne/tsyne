@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, button, label, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, button, label, entry  } from 'tsyne';
 
 // Form example showing input handling
 let nameEntry: any;

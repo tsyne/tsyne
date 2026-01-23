@@ -52,7 +52,7 @@ function apiRequest(endpoint: string, data?: any): Promise<any> {
 
 describe('CSS Editor MVC Architecture', () => {
   test('Load returns currentStyles (model)', async () => {
-    const source = `import { app } from '../core/src';
+    const source = `import { app } from 'tsyne';
 
 const styles = {
   button1: { fontSize: 20, bold: true },
@@ -78,7 +78,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('Update-styles modifies model and persists', async () => {
-    const source = `import { app } from '../core/src';
+    const source = `import { app } from 'tsyne';
 
 const styles = {
   myButton: { fontSize: 16 }
@@ -152,7 +152,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('Model immutability during editing', async () => {
-    const source = `import { app } from '../core/src';
+    const source = `import { app } from 'tsyne';
 
 const styles = {
   original: { fontSize: 10 }
@@ -185,7 +185,7 @@ app({ title: 'Test' }, (a) => {
   });
 
   test('Save commits staging to model', async () => {
-    const source = `import { app } from '../core/src';
+    const source = `import { app } from 'tsyne';
 
 const styles = {
   testClass: { fontSize: 10 }

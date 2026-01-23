@@ -4,5 +4,8 @@
   "private": true,
   "scripts": {
     "test": "jest"
+  },
+  "dependencies": {
+    "tsyne": "workspace:*"
   }
 }

@@ -8,7 +8,7 @@
  * - canvas.Line for connections
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Diagram Editor' }, (a) => {
   let selectedShape = 'rectangle';

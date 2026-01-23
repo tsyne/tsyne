@@ -16,7 +16,7 @@
  * Based on the original QmlMahjongg from https://gitlab.com/alaskalinuxuser/QmlMahjongg
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createMahjonggApp, MahjonggUI } from './mahjongg';
 import * as path from 'path';
 import * as fs from 'fs';

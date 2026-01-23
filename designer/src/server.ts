@@ -53,7 +53,7 @@ function toSource(metadata: { widgets: any[] }, styles: Record<string, any> | nu
     imports.push('styles');
   }
 
-  lines.push(`import { ${imports.join(', ')} } from '../core/src';`);
+  lines.push(`import { ${imports.join(', ')} } from 'tsyne';`);
   lines.push('');
 
   // 2. Generate styles() call if present

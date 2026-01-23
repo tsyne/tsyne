@@ -8,7 +8,7 @@
  * - Multiple balls with different easing
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutBounce, easeInOutCubic, easeOutElastic } from '../../cosyne/src';
 
 interface BallState {

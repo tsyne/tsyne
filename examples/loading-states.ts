@@ -5,7 +5,7 @@
  * indeterminate progress during async operations.
  */
 
-import { app, resolveTransport, Activity  } from '../core/src';
+import { app, resolveTransport, Activity  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Loading States Demo' }, (a) => {
   a.window({ title: 'Loading States', width: 500, height: 550 }, (win) => {

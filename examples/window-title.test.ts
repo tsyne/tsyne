@@ -4,7 +4,7 @@
  * This test verifies that window titles can be set and updated.
  */
 
-import { TsyneTest, TestContext, Window } from '../core/src/index-test';
+import { TsyneTest, TestContext, Window } from 'tsyne';
 
 describe('Window Title Tests', () => {
   let tsyneTest: TsyneTest;

@@ -13,10 +13,8 @@
  * @tsyne-app:builder createEyesApp
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, TappableCanvasRaster } from 'tsyne';
 
 // Default configuration
 const DEFAULT_WIDTH = 400;

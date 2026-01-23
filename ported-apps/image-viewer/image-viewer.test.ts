@@ -16,7 +16,7 @@
  * Based on the original image viewer from https://github.com/Palexer/image-viewer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createImageViewerApp } from './image-viewer';
 import * as path from 'path';
 

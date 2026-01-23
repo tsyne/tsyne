@@ -1,4 +1,4 @@
-import { app, resolveTransport, App  } from '../../core/src';
+import { app, resolveTransport, App  } from 'tsyne';
 
 /**
  * Calculator application - Testable implementation

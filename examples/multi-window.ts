@@ -1,7 +1,7 @@
 // Multi-window example demonstrating multiple Window instances
 // This example shows how to create and manage multiple windows
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Multi-Window Demo' }, (a) => {
   let windowCount = 0;

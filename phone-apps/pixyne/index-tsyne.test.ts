@@ -3,10 +3,10 @@
  * Tests the photo manager UI interactions
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildPixyneApp } from './index';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 
 describe('Pixyne Photo Manager UI', () => {
   let tsyneTest: TsyneTest;

@@ -4,7 +4,7 @@
  * Tests both Jest unit tests and TsyneTest integration tests.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildDailyChecklist } from './daily-checklist';
 import * as path from 'path';
 import * as fs from 'fs';

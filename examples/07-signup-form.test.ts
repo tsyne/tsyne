@@ -1,5 +1,5 @@
 // Test for signup-form example
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Signup Form Example', () => {

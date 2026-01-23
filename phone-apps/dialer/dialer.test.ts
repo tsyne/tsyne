@@ -28,7 +28,7 @@
  * TsyneTest UI tests for Dialer app with ModemManager
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createDialerApp } from './dialer';
 import { MockContactsService } from '../services';
 import { MockModemManagerService } from './modemmanager-service';

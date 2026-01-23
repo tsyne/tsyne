@@ -2,7 +2,7 @@
  * Tests for Newton Fractal Explorer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createNewtonFractalApp } from './newton-fractal';
 import { newton } from '../fractal-utils';
 import * as fs from 'fs';

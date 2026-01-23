@@ -24,10 +24,10 @@
  * We've replaced it with Jimp, a well-maintained pure JavaScript library.
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { Image as ImageWidget, Slider } from '../../core/src/widgets';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
+import type { Image as ImageWidget, Slider } from 'tsyne';
 import { Jimp, type JimpInstance } from 'jimp';
 import * as fs from 'fs/promises';
 import * as path from 'path';

@@ -6,7 +6,7 @@
 // Tip Calculator - Calculate tips and split bills
 // Demonstrates entry widgets, radio groups, and real-time calculations
 
-import { app, resolveTransport, App, Window  } from '../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 
 export function buildTipCalculator(a: App) {
   a.window({ title: 'Tip Calculator', width: 400, height: 400 }, (win: Window) => {

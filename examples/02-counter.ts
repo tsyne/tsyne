@@ -5,7 +5,7 @@
 
 // Simple counter example demonstrating state management
 
-import { app, resolveTransport, App, Window  } from '../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 
 export function buildCounter(a: App) {
   a.window({ title: 'Counter', width: 300, height: 150 }, (win: Window) => {

@@ -1,5 +1,5 @@
-import { app } from '../../core/src';
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { app } from 'tsyne';
+import { TsyneTest, TestContext } from 'tsyne';
 import { Calculator } from './calculator';
 
 /**

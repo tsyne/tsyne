@@ -14,11 +14,8 @@
  * @tsyne-app:args app
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
-import type { Label } from '../../core/src/widgets/display';
+import { app, resolveTransport  } from 'tsyne';
+import type { App, Window, TappableCanvasRaster, Label } from 'tsyne';
 import { palettes, paletteNames, tricorn } from '../fractal-utils';
 
 const CANVAS_SIZE = 200;

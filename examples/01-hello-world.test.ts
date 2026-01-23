@@ -1,5 +1,5 @@
 // Test for hello world example
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Hello World Example', () => {

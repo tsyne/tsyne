@@ -8,7 +8,7 @@
  * - Move tasks between columns
  */
 
-import { app } from '../core/src/index';
+import { app } from 'tsyne';
 
 interface Task {
   id: string;

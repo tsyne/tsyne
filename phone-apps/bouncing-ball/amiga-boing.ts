@@ -6,7 +6,7 @@
  * Uses Phase 1 generalized sphere with pattern='checkered' for backward-compatible animation.
  */
 
-import { App } from '../../core/src';
+import { App } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
 
 const W = 600, H = 500;

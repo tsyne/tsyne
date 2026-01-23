@@ -6,7 +6,7 @@
  */
 
 // Re-export everything from core services
-export * from '../core/src/services';
+export * from 'tsyne';
 
 // Import types needed for phone-specific mocks
 import {
@@ -19,7 +19,7 @@ import {
   Thread,
   MessageListener,
   ServiceResult,
-} from '../core/src/services';
+} from 'tsyne';
 
 // ============================================================================
 // Mock Contacts Service (Phone-specific with sample data)

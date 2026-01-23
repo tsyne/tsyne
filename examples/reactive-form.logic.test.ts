@@ -14,7 +14,7 @@ import {
   NumberBinding,
   ComputedBinding,
   ListBinding
-} from '../core/src/binding';
+} from 'tsyne';
 
 describe('Data Binding Unit Tests', () => {
   describe('StringBinding', () => {

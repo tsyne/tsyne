@@ -2,7 +2,7 @@
  * TsyneTest integration tests for Markers Demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildMarkersDemoApp } from './markers-demo';
 
 describe('Markers Demo - TsyneTest', () => {

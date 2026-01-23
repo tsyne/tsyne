@@ -28,7 +28,7 @@
  * Tests for Music Player App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createMusicPlayerApp } from './music-player';
 import { MockMusicService } from './music-service';
 

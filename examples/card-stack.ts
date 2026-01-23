@@ -2,7 +2,7 @@
 // Card Stack Demo - demonstrates the Stack container for Z-layered overlapping UI
 // Stack container places widgets on top of each other like a deck of cards
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Card Stack Demo' }, (a) => {
   a.window({ title: 'Card Stack Demo', width: 600, height: 500 }, (win) => {

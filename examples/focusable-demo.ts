@@ -1,4 +1,4 @@
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 
 /**
  * Focusable Demo - Demonstrates the fyne.Focusable interface (required for Keyable)

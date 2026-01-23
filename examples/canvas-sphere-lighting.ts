@@ -8,8 +8,8 @@
  * - Adjustable ambient and diffuse intensities
  */
 
-import { app } from '../core/src/index';
-import { resolveTransport } from '../core/src/index';
+import { app } from 'tsyne';
+import { resolveTransport } from 'tsyne';
 
 app(resolveTransport(), { title: 'Canvas Sphere - Configurable Lighting' }, (a) => {
   a.window({ title: 'Phase 7: Configurable Lighting', width: 500, height: 1400 }, (win) => {

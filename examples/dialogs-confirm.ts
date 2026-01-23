@@ -5,7 +5,7 @@
  * (Yes/No) for critical actions requiring user consent.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from 'tsyne';
 
 let itemsToDelete: string[] = ['Document1.txt', 'Image.png', 'Video.mp4'];
 let statusLabel: any;

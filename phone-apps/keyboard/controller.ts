@@ -4,9 +4,8 @@
  * See LICENSE for copyright information.
  */
 
-import type { App } from '../../core/src/app';
-import type { Button, MultiLineEntry } from '../../core/src/widgets/inputs';
-import { refreshAllBindings } from '../../core/src/widgets/base';
+import type { App, Button, MultiLineEntry } from 'tsyne';
+import { refreshAllBindings } from 'tsyne';
 
 export type OnTextCallback = (char: string) => void;
 export type OnEnterCallback = () => void;

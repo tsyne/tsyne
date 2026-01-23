@@ -6,7 +6,7 @@
 // Dice Roller - Roll multiple dice with different sides
 // Demonstrates select widgets, dynamic results, and visual feedback
 
-import { app, resolveTransport, App, Window  } from '../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 
 export function buildDiceRoller(a: App) {
   a.window({ title: 'Dice Roller', width: 400, height: 500 }, (win: Window) => {

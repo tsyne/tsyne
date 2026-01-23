@@ -7,7 +7,7 @@
  * - Color palette selection
  */
 
-import { app, resolveTransport, CanvasRaster  } from '../core/src/index';
+import { app, resolveTransport, CanvasRaster  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
   const CANVAS_WIDTH = 32;

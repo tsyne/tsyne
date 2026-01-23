@@ -15,7 +15,7 @@
  * - Visual debugging mode: TSYNE_HEADED=1 npx jest animation-demo.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildAnimationDemo } from './animation-demo';
 
 describe('Animation Demo Tests', () => {

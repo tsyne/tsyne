@@ -28,7 +28,7 @@
  * Tests for Audio Recorder App
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createAudioRecorderApp } from './audio-recorder';
 import { MockRecordingService } from './recording-service';
 

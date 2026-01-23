@@ -5,7 +5,7 @@
  * different value ranges and use cases.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, slider, button, screenshotIfRequested  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, slider, button, screenshotIfRequested  } from 'tsyne';
 
 let volumeSlider: any;
 let brightnessSlider: any;

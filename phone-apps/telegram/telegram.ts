@@ -29,9 +29,9 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } from '../../core/src';
-import type { App } from '../../core/src';
-import type { Window } from '../../core/src';
+import { app, resolveTransport  } from 'tsyne';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { ITelegramService, MockTelegramService, TelegramChat, QrLoginResult, RealTelegramService, loadCredentialsFromEnv } from './telegram-service';
 import * as QRCode from 'qrcode';
 

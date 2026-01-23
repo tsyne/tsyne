@@ -4,13 +4,13 @@
  * Handles launching apps with proper sandboxing, service injection, and window management.
  */
 
-import { App } from '../../core/src/app';
-import { Window } from '../../core/src/window';
-import { DesktopMDI } from '../../core/src/widgets';
-import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from '../../core/src/tsyne-window';
-import { loadAppBuilder, AppMetadata } from '../../core/src/app-metadata';
-import { ScopedResourceManager, ResourceManager } from '../../core/src/resources';
-import { SandboxedApp } from '../../core/src/sandboxed-app';
+import { App } from 'tsyne';
+import { Window } from 'tsyne';
+import { DesktopMDI } from 'tsyne';
+import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from 'tsyne';
+import { loadAppBuilder, AppMetadata } from 'tsyne';
+import { ScopedResourceManager, ResourceManager } from 'tsyne';
+import { SandboxedApp } from 'tsyne';
 import { WindowMode, OpenApp } from './desktop_types';
 
 import {
@@ -23,7 +23,7 @@ import {
   NotAvailableTelephonyService,
   NotAvailableSMSService,
 } from './services';
-import { IDesktopService, DesktopAppInfo } from '../../core/src/services/interfaces';
+import type { IDesktopService, DesktopAppInfo } from 'tsyne';
 
 /**
  * Desktop service implementation for launching apps from within other apps.

@@ -10,7 +10,7 @@
  * - Widget-based state management
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 import { buildWidgetWaveformVisualizer } from './widget';
 

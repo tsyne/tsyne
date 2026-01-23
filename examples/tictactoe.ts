@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
 
 /**

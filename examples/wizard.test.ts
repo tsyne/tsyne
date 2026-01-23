@@ -5,8 +5,8 @@
  * stack-based navigation with back/forward controls.
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { App, Navigation } from '../core/src/index';
+import { TsyneTest, TestContext } from 'tsyne';
+import { App, Navigation } from 'tsyne';
 
 describe('Navigation Container', () => {
   let tsyneTest: TsyneTest;

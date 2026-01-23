@@ -1,7 +1,7 @@
 // Entry dialog demo - demonstrates showEntryDialog for quick text input
 // This example shows a list of files that can be renamed using the entry dialog
 
-import { app, resolveTransport, Label  } from '../core/src';
+import { app, resolveTransport, Label  } from 'tsyne';
 
 interface FileItem {
   id: number;

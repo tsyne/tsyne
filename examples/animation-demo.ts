@@ -15,8 +15,7 @@
  * Or headed: TSYNE_HEADED=1 npx tsx examples/animation-demo.ts
  */
 
-import { app, resolveTransport  } from '../core/src';
-import { CanvasCircle, CanvasLine, AnimateOptions } from '../core/src/widgets/canvas';
+import { app, resolveTransport, CanvasCircle, CanvasLine, AnimateOptions } from 'tsyne';
 
 // Main app
 export function buildAnimationDemo(a: any) {

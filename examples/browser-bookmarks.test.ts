@@ -5,7 +5,7 @@
  * and persist them across browser sessions.
  */
 
-import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from '../core/src/tsyne-browser-test';
+import { TsyneBrowserTest, browserTest, describeBrowser, runBrowserTests } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

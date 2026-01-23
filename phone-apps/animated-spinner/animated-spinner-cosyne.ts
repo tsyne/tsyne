@@ -7,8 +7,8 @@
  * - Fill color bindings for pulsing effect
  */
 
-import { App } from '../../core/src';
-import type { Window } from '../../core/src/window';
+import { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
 
 /**

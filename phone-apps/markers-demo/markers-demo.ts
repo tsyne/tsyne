@@ -9,7 +9,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from '../../core/src/index';
+import { app } from 'tsyne';
 import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
 import { CUSTOM_MARKERS } from '../../cosyne/src/markers';
 

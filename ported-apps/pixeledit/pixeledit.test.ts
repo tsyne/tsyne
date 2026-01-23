@@ -17,10 +17,10 @@
  * Based on the original pixeledit from https://github.com/fyne-io/pixeledit
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createPixelEditorApp, PixelEditor } from './pixeledit';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
 

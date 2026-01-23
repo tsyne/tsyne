@@ -2,7 +2,7 @@
  * TsyneTest integration tests for Scales Demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildScalesDemoApp } from './scales-demo';
 
 describe('Scales Demo - TsyneTest', () => {

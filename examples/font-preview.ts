@@ -8,7 +8,7 @@
  * - Preview sample text with custom fonts
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, slider, separator, select, setCustomFont, clearCustomFont, setFontScale, getAvailableFonts, multilineentry  } from 'tsyne';
 
 let statusLabel: any;
 let fontPathEntry: any;

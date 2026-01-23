@@ -27,12 +27,8 @@
  * have audio playback support.
  */
 
-import { app, resolveTransport } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { CanvasRaster } from '../../core/src/widgets/canvas';
-import type { Label } from '../../core/src/widgets/display';
-import type { IResourceManager } from '../../core/src/resources';
+import { app, resolveTransport } from 'tsyne';
+import type { App, Window, CanvasRaster, Label, IResourceManager } from 'tsyne';
 
 // Import sprite generation from sibling module
 // (The original ChrysaLisp app used proprietary .cpm image files;

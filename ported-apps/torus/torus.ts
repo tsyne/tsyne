@@ -24,10 +24,8 @@
  * Where R = major radius, r = minor radius, u,v ∈ [0, 2π]
  */
 
-import { app, resolveTransport } from '../../core/src';
-import type { App } from '../../core/src/app';
-import type { Window } from '../../core/src/window';
-import type { TappableCanvasRaster } from '../../core/src/widgets/canvas';
+import { app, resolveTransport } from 'tsyne';
+import type { App, Window, TappableCanvasRaster } from 'tsyne';
 import { TorusProjection, type Point3D } from './projections';
 import {
   generateTorusMesh,

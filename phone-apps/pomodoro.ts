@@ -17,10 +17,7 @@
  * @tsyne-app:count single
  */
 
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
-import type { Label } from '../core/src/widgets/display';
-import type { Button } from '../core/src/widgets/inputs';
+import type { App, Window, Label, Button } from 'tsyne';
 
 type SessionType = 'work' | 'break' | 'longBreak';
 

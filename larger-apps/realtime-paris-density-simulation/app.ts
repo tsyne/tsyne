@@ -3,7 +3,7 @@
 // @tsyne-app:builder buildParisDensity
 // Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
 
-import type { App, Window, Label } from '../../core/src';
+import type { App, Window, Label } from 'tsyne';
 import { generateDensityGrid, interpolateDensityGrids, DensityPoint, TimeOfWeek } from './simulation';
 import * as os from 'os';
 import * as path from 'path';
@@ -17,7 +17,7 @@ import {
   rgba,
   HeatmapPoint,
   Color
-} from '../../core/src/graphics';
+} from 'tsyne';
 
 // Import tile rendering for map background
 import {
@@ -25,7 +25,7 @@ import {
   TILE_SOURCES,
   MapViewport,
   TileSource
-} from '../../core/src/maps';
+} from 'tsyne';
 
 // Tile cache directory (7-day TTL per OSM policy)
 const TILE_CACHE_PATH = path.join(os.homedir(), '.tsyne', 'realtime-paris-density-simulation', 'map-cache');

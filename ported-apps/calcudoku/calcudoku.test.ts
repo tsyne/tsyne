@@ -2,7 +2,7 @@
  * Calcudoku Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createCalcudokuApp } from './calcudoku';
 
 describe('Calcudoku UI', () => {

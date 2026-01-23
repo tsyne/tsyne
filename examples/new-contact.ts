@@ -5,7 +5,7 @@
  * Shows how to use entry, password, multiline, select, and check field types.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, scroll, separator  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, scroll, separator  } from 'tsyne';
 
 interface Contact {
   firstName: string;

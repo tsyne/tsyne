@@ -1,5 +1,5 @@
 // Test for heatmap cosyne demo - captures screenshots for visual verification
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 
 describe('Heatmap Cosyne Demo', () => {

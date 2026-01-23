@@ -8,7 +8,7 @@
  * to all widgets based on their type.
  */
 
-import { styles, FontFamily, FontStyle } from '../core/src';
+import { styles, FontFamily, FontStyle } from 'tsyne';
 
 // Define styles for different widget types
 styles({

@@ -4,7 +4,7 @@
  * Demonstrates window sizing, positioning, and fullscreen features.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry  } from 'tsyne';
 
 let win1: any;
 let win2: any;

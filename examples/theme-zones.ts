@@ -7,7 +7,7 @@
  * Run with: npx tsx examples/theme-zones.ts
  */
 
-import { app, resolveTransport  } from '../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 
 app(resolveTransport(), { title: 'Theme Zones' }, (a) => {
   a.window({ title: 'Theme Zones Demo', width: 700, height: 500 }, (win) => {

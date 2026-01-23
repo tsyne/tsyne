@@ -2,7 +2,7 @@
  * TsyneTest integration tests for Line Chart Demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildLineChartDemoApp } from './line-chart-demo';
 
 describe('Line Chart Demo - TsyneTest', () => {

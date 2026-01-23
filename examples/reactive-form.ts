@@ -15,14 +15,14 @@
  *   npx tsx examples/reactive-form.ts
  */
 
-import { app, resolveTransport  } from '../core/src';
+import { app, resolveTransport  } from 'tsyne';
 import {
   StringBinding,
   BoolBinding,
   NumberBinding,
   ComputedBinding,
   createFormBindings
-} from '../core/src/binding';
+} from 'tsyne';
 
 // ============================================================================
 // Application Setup

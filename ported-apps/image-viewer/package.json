@@ -8,7 +8,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "jimp": "^1.6.0"
+    "jimp": "^1.6.0",
+    "tsyne": "workspace:*"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

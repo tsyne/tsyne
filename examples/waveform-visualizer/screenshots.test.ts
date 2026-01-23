@@ -3,7 +3,7 @@
  * Run with: TAKE_SCREENSHOTS=1 npm test -- examples/waveform-visualizer/screenshots.test.ts
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
 import { buildCanvasWaveformVisualizer } from './canvas';

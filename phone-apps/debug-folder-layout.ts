@@ -6,9 +6,9 @@
  * Run with: npx tsx phone-apps/debug-folder-layout.ts
  */
 
-import { TsyneTest, TestContext, WidgetInfo } from '../core/src/index-test';
+import { TsyneTest, TestContext, WidgetInfo } from 'tsyne';
 import { buildPhoneTop } from '../launchers/phonetop/index';
-import type { App } from '../core/src/app';
+import type { App } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 

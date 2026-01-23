@@ -6,8 +6,8 @@
  *
  * Run: npx tsx examples/icon-gallery.ts
  */
-import { app, resolveTransport  } from '../core/src/index';
-import { ThemeIconName } from '../core/src/app';
+import { app, resolveTransport  } from 'tsyne';
+import { ThemeIconName } from 'tsyne';
 
 // All available theme icon names organized by category
 const iconCategories: { [category: string]: ThemeIconName[] } = {

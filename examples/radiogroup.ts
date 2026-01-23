@@ -5,7 +5,7 @@
  * from a list of mutually exclusive choices.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, radiogroup, screenshotIfRequested  } from 'tsyne';
 
 let themeRadio: any;
 let languageRadio: any;

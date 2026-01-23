@@ -4,7 +4,7 @@
  * Tests and validates the SphericalProjection and IsometricProjection demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildProjectionsApp } from './projections-cosyne';
 
 describe('Projections Demo (Phase 4)', () => {

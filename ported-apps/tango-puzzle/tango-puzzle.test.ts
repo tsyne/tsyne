@@ -2,7 +2,7 @@
  * Tango Puzzle Integration Tests
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { createTangoPuzzleApp } from './tango-puzzle';
 
 describe('Tango Puzzle UI', () => {

@@ -11,7 +11,7 @@
  * - Canvas rendering efficiency
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import * as path from 'path';
 import { buildCanvasWaveformVisualizer } from './canvas';
 

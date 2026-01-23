@@ -16,7 +16,7 @@
  * Click/tap anywhere on the waveform to jump to that position.
  */
 
-import { app, resolveTransport, App, Window  } from '../../core/src';
+import { app, resolveTransport, App, Window  } from 'tsyne';
 import {
   AudioProcessor,
   WaveformData,

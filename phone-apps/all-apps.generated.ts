@@ -2,7 +2,7 @@
 // Generated: 2025-12-29T13:32:55.280Z
 // Apps: 56
 
-import type { App } from '../core/src/app';
+import type { App } from 'tsyne';
 
 /** Platform types for targeting specific form factors */
 export type Platform = 'phone' | 'tablet' | 'desktop';

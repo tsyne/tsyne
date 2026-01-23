@@ -5,7 +5,7 @@
  * Run: TSYNE_HEADED=1 TAKE_SCREENSHOTS=1 npm test examples/icon-label-grid-repro.test.ts
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildIconLabelGridRepro } from './icon-label-grid-repro';
 import * as path from 'path';
 import * as fs from 'fs';

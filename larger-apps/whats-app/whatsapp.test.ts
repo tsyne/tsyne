@@ -5,7 +5,7 @@
  * Licensed under GNU General Public License v3
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createWhatsAppApp } from './whatsapp';
 import { MockWhatsAppService } from './whatsapp-service';
 

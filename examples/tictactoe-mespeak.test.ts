@@ -4,7 +4,7 @@
  * Verifies that meSpeak TTS works correctly in the accessible tictactoe
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildTicTacToe } from './tictactoe-accessible';
 
 describe('meSpeak TTS Integration', () => {

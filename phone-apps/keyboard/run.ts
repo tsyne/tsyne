@@ -4,7 +4,7 @@
  * Locales: en-us, en-gb, en-dvorak, fr-fr, es-es
  */
 
-import { app, resolveTransport  } from '../../core/src/index';
+import { app, resolveTransport  } from 'tsyne';
 import { createTestHarness, resetTestHarnessState } from './controller';
 
 // Import all locale keyboards

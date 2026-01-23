@@ -2,7 +2,7 @@
  * Tests for Burning Ship Fractal Explorer
  */
 
-import { TsyneTest, TestContext } from '../../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { createBurningShipApp } from './burning-ship';
 import { burningShip } from '../fractal-utils';
 import * as fs from 'fs';

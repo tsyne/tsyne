@@ -1,6 +1,6 @@
 // Test for TextGrid widget / Terminal Emulator example
-import { TsyneTest, TestContext } from '../core/src/index-test';
-import { TextGrid } from '../core/src/index';
+import { TsyneTest, TestContext } from 'tsyne';
+import { TextGrid } from 'tsyne';
 import * as path from 'path';
 
 describe('TextGrid Widget', () => {

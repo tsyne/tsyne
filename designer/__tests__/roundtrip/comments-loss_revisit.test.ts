@@ -29,7 +29,7 @@ import {
 describe('RoundTrip: Comment Loss (_revisit_)', () => {
   describe('Inline Comments Lost', () => {
     test.skip('inline comment on widget line is lost on save', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -54,7 +54,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('inline comment preserved after property edit', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -79,7 +79,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('inline comment with special characters is lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -102,7 +102,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Block Comments Lost', () => {
     test.skip('block comment above widget is lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -128,7 +128,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('JSDoc comment is lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -156,7 +156,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('multi-line block comment is lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -186,7 +186,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Section Comments Lost', () => {
     test.skip('section divider comments are lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -218,7 +218,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('organizational comments are lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -248,7 +248,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Comments in onClick Handlers', () => {
     test.skip('comments inside onClick are lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -282,7 +282,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('TODO comments in onClick are lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -324,7 +324,7 @@ app({ title: 'Test' }, (a) => {
  * @version 1.0.0
  */
 
-import { app } from '../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -350,7 +350,7 @@ app({ title: 'Test' }, (a) => {
 // Licensed under MIT License
 // See LICENSE file for details
 
-import { app } from '../core/src';
+import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -374,7 +374,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Comments After Widget Manipulation', () => {
     test.skip('comments lost after adding withId', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -399,7 +399,7 @@ app({ title: 'Test' }, (a) => {
     });
 
     test.skip('comments lost after changing property', async () => {
-      const original = `import { app } from '../core/src';
+      const original = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
@@ -427,7 +427,7 @@ app({ title: 'Test' }, (a) => {
 
   describe('Disabled Code Comments', () => {
     test.skip('commented-out widget code is lost', async () => {
-      const code = `import { app } from '../core/src';
+      const code = `import { app } from 'tsyne';
 
 app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {

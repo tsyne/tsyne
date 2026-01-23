@@ -2,7 +2,7 @@
  * Tests for 3D Draggable Chess demo
  */
 
-import { TsyneTest } from '../../core/src/index-test';
+import { TsyneTest } from 'tsyne';
 import { buildDraggableChessApp } from './index';
 
 describe('3D Draggable Chess', () => {

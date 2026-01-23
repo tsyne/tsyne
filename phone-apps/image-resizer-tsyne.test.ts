@@ -3,10 +3,10 @@
  * Tests UI interactions and image resizing functionality
  */
 
-import { TsyneTest, TestContext } from '../core/src/index-test';
+import { TsyneTest, TestContext } from 'tsyne';
 import { buildImageResizerApp } from './image-resizer';
-import type { App } from '../core/src/app';
-import type { Window } from '../core/src/window';
+import type { App } from 'tsyne';
+import type { Window } from 'tsyne';
 
 describe('Image Resizer UI', () => {
   let tsyneTest: TsyneTest;

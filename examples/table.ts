@@ -5,7 +5,7 @@
  * headers and data rows.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, table  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, table  } from 'tsyne';
 
 let employeeTable: any;
 let statusLabel: any;

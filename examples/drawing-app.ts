@@ -5,7 +5,7 @@
  * Users can pick colors using the native color picker and paint on a grid canvas.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, separator  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, separator  } from 'tsyne';
 
 // Grid size for the canvas
 const GRID_COLS = 16;

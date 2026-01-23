@@ -5,7 +5,7 @@
  * into multiple switchable panels.
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, tabs  } from '../core/src';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, slider, tabs  } from 'tsyne';
 
 let statusLabel: any;
 

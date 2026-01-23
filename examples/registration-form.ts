@@ -16,9 +16,9 @@
  *   npx tsx examples/registration-form.ts
  */
 
-import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  } from '../core/src';
-import { validators, createFormValidator, FormValidator, ValidatedField } from '../core/src/validation';
-import { StringBinding } from '../core/src/binding';
+import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  } from 'tsyne';
+import { validators, createFormValidator, FormValidator, ValidatedField } from 'tsyne';
+import { StringBinding } from 'tsyne';
 
 // ============================================================================
 // Application Setup
