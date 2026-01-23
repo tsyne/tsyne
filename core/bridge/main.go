@@ -718,11 +718,13 @@ func runGrpcMode(testMode bool) {
 	// Wait for server to be ready (signaled from startGrpcServer after registration)
 	<-grpcReady
 
-	// 5. Send connection info to TypeScript via stdout
+	// 5. Send connection info with version handshake to TypeScript via stdout
 	initMsg := map[string]interface{}{
-		"grpcPort": port,
-		"token":    token,
-		"protocol": "grpc",
+		"grpcPort":        port,
+		"token":           token,
+		"protocol":        "grpc",
+		"protocolVersion": ProtocolVersion,
+		"bridgeVersion":   BridgeVersion,
 	}
 	jsonData, _ := json.Marshal(initMsg)
 	os.Stdout.Write(jsonData)
@@ -766,10 +768,12 @@ func runMsgpackUdsMode(testMode bool) {
 	// 3. Set up event forwarding from bridge to msgpack server
 	bridge.msgpackServer = msgpackServer
 
-	// 4. Send connection info to TypeScript via stdout
+	// 4. Send connection info with version handshake to TypeScript via stdout
 	initMsg := map[string]interface{}{
-		"socketPath": msgpackServer.GetSocketPath(),
-		"protocol":   "msgpack-uds",
+		"socketPath":      msgpackServer.GetSocketPath(),
+		"protocol":        "msgpack-uds",
+		"protocolVersion": ProtocolVersion,
+		"bridgeVersion":   BridgeVersion,
 	}
 	jsonData, _ := json.Marshal(initMsg)
 	os.Stdout.Write(jsonData)
@@ -851,11 +855,18 @@ func runStdioMode(testMode bool) {
 		}
 	}()
 
-	// Send ready signal to indicate bridge is ready to receive commands
+	// Send ready signal with handshake info to indicate bridge is ready
+	// The TypeScript side will validate protocol compatibility
+	handshake := NewHandshakeInfo(ProtocolVersion) // Assume TS uses same protocol for now
 	bridge.sendResponse(Response{
 		ID:      "ready",
 		Success: true,
-		Result:  map[string]interface{}{"status": "ready"},
+		Result: map[string]interface{}{
+			"status":        "ready",
+			"protocol":      handshake.Protocol,
+			"bridgeVersion": handshake.BridgeVersion,
+			"compatible":    handshake.Compatible,
+		},
 	})
 
 	// Run the Fyne app

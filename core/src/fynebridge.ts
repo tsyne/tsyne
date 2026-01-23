@@ -1,6 +1,7 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
 import * as crc32 from 'buffer-crc32';
+import { PROTOCOL_VERSION, TSYNE_VERSION, BridgeHandshake, isCompatibleHandshake } from './version';
 
 export interface Message {
   id: string;
@@ -209,8 +210,19 @@ export class BridgeConnection implements BridgeInterface {
   }
 
   private handleResponse(response: Response): void {
-    // Handle ready signal
+    // Handle ready signal with version handshake
     if (response.id === 'ready' && this.readyResolve) {
+      const result = response.result as BridgeHandshake | undefined;
+      if (result && result.protocol !== undefined) {
+        // Validate handshake
+        const compat = isCompatibleHandshake(result, PROTOCOL_VERSION);
+        if (!compat.compatible) {
+          console.error(`Bridge version mismatch: ${compat.reason}`);
+          console.error(`  TypeScript: tsyne ${TSYNE_VERSION}, protocol ${PROTOCOL_VERSION}`);
+          console.error(`  Bridge: ${result.bridgeVersion}, protocol ${result.protocol}`);
+          // Still resolve to allow graceful handling, but log the warning
+        }
+      }
       this.readyResolve();
       return;
     }

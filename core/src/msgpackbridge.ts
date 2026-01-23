@@ -3,10 +3,15 @@ import * as path from 'path';
 import * as net from 'net';
 import { encode, decode } from '@msgpack/msgpack';
 import { BridgeInterface } from './fynebridge';
+import { PROTOCOL_VERSION, TSYNE_VERSION, isCompatibleHandshake } from './version';
 
 export interface MsgpackConnectionInfo {
   socketPath: string;
   protocol: string;
+  /** Bridge protocol version (added in handshake) */
+  protocolVersion?: number;
+  /** Bridge version string */
+  bridgeVersion?: string;
 }
 
 export interface Event {
@@ -149,6 +154,24 @@ export class MsgpackBridgeConnection implements BridgeInterface {
           const info = JSON.parse(jsonLine) as MsgpackConnectionInfo;
           if (info.protocol === 'msgpack-uds') {
             this.connectionInfo = info;
+
+            // Validate protocol version if provided
+            if (info.protocolVersion !== undefined) {
+              const compat = isCompatibleHandshake(
+                {
+                  protocol: info.protocolVersion,
+                  bridgeVersion: info.bridgeVersion || 'unknown',
+                  compatible: true,
+                },
+                PROTOCOL_VERSION
+              );
+              if (!compat.compatible) {
+                console.error(`Bridge version mismatch: ${compat.reason}`);
+                console.error(`  TypeScript: tsyne ${TSYNE_VERSION}, protocol ${PROTOCOL_VERSION}`);
+                console.error(`  Bridge: ${info.bridgeVersion}, protocol ${info.protocolVersion}`);
+              }
+            }
+
             this.connectToSocket(info.socketPath);
           }
         } catch (err) {
