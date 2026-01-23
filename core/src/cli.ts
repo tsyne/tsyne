@@ -13,6 +13,7 @@
 
 import { PROTOCOL_VERSION, TSYNE_VERSION } from './version';
 import { checkAppVersion } from './app-version';
+import { processGrabDirectives, parseGrabDirectives } from './grab';
 import { spawn, execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -142,6 +143,21 @@ async function runApp(appPath: string, args: string[], ignoreVersion: boolean = 
     }
   }
 
+  // Process @grab directives
+  const grabResult = processGrabDirectives(absolutePath, { verbose: false });
+  if (grabResult.errors.length > 0) {
+    for (const err of grabResult.errors) {
+      logError(err);
+    }
+    return 1;
+  }
+
+  // Build NODE_PATH with @grab packages
+  let nodePath = process.env.NODE_PATH || '';
+  if (grabResult.nodePath) {
+    nodePath = grabResult.nodePath + (nodePath ? path.delimiter + nodePath : '');
+  }
+
   // Find tsx for running TypeScript
   const tsxPaths = [
     path.join(__dirname, '..', '..', '..', 'node_modules', '.bin', 'tsx'),
@@ -157,15 +173,19 @@ async function runApp(appPath: string, args: string[], ignoreVersion: boolean = 
     }
   }
 
+  // Common environment for running the app
+  const runEnv = {
+    ...process.env,
+    TSYNE_BRIDGE_PATH: findBridgePath() || undefined,
+    NODE_PATH: nodePath || undefined,
+  };
+
   if (!tsxPath) {
     // Fall back to npx
     log('Running with npx tsx...');
     const result = spawn('npx', ['tsx', absolutePath, ...args], {
       stdio: 'inherit',
-      env: {
-        ...process.env,
-        TSYNE_BRIDGE_PATH: findBridgePath() || undefined,
-      },
+      env: runEnv,
     });
 
     return new Promise((resolve) => {
@@ -177,15 +197,88 @@ async function runApp(appPath: string, args: string[], ignoreVersion: boolean = 
 
   const result = spawn(tsxPath, [absolutePath, ...args], {
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      TSYNE_BRIDGE_PATH: findBridgePath() || undefined,
-    },
+    env: runEnv,
   });
 
   return new Promise((resolve) => {
     result.on('close', (code) => resolve(code || 0));
   });
+}
+
+/**
+ * Build a Tsyne application for distribution
+ * Vendors all @grab dependencies into the output
+ */
+async function buildApp(appPath: string): Promise<number> {
+  const absolutePath = path.resolve(appPath);
+
+  if (!fs.existsSync(absolutePath)) {
+    logError(`File not found: ${appPath}`);
+    return 1;
+  }
+
+  log(`Analyzing ${path.basename(appPath)}...`);
+
+  // Parse @grab directives
+  const directives = parseGrabDirectives(absolutePath);
+
+  if (directives.length === 0) {
+    log('No @grab dependencies found');
+  } else {
+    log(`Found ${directives.length} @grab dependencies:`);
+    for (const d of directives) {
+      console.log(`  - ${d.package}@${d.version}`);
+    }
+  }
+
+  // Create output directory
+  const appName = path.basename(appPath, path.extname(appPath));
+  const outputDir = path.join(path.dirname(absolutePath), `${appName}-dist`);
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  log(`Building to ${outputDir}/...`);
+
+  // Install dependencies to output
+  if (directives.length > 0) {
+    const nodeModulesDir = path.join(outputDir, 'node_modules');
+    fs.mkdirSync(nodeModulesDir, { recursive: true });
+
+    // Create package.json for bundled deps
+    const pkgJson = {
+      name: `${appName}-bundled`,
+      version: '1.0.0',
+      private: true,
+      dependencies: {} as Record<string, string>,
+    };
+
+    for (const d of directives) {
+      pkgJson.dependencies[d.package] = d.version === 'latest' ? '*' : d.version;
+    }
+
+    fs.writeFileSync(path.join(outputDir, 'package.json'), JSON.stringify(pkgJson, null, 2));
+
+    log('Installing dependencies...');
+    try {
+      execSync('npm install --production', {
+        cwd: outputDir,
+        stdio: 'inherit',
+      });
+    } catch (err) {
+      logError('Failed to install dependencies');
+      return 1;
+    }
+  }
+
+  // Copy app source
+  // TODO: Bundle with esbuild for single-file output
+  fs.copyFileSync(absolutePath, path.join(outputDir, path.basename(appPath)));
+
+  log(`Build complete: ${outputDir}/`);
+  log('');
+  log('To run the built app:');
+  log(`  cd ${outputDir} && npx tsx ${path.basename(appPath)}`);
+
+  return 0;
 }
 
 /**
@@ -264,8 +357,13 @@ async function main(): Promise<void> {
       break;
 
     case 'build':
-      logError('build command coming soon');
-      process.exit(1);
+      if (!appPath) {
+        logError('No application file specified');
+        printUsage();
+        process.exit(1);
+      }
+      const buildCode = await buildApp(appPath);
+      process.exit(buildCode);
       break;
 
     case 'test':
