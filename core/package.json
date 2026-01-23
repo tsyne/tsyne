@@ -21,7 +21,9 @@
     "test:gui": "jest --config jest.config.gui.js",
     "test:coverage": "jest --coverage",
     "test:headed": "TSYNE_HEADED=1 jest",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "build:standalone": "../scripts/build-standalone.sh",
+    "build:standalone:all": "../scripts/build-standalone.sh --all"
   },
   "keywords": [
     "fyne",

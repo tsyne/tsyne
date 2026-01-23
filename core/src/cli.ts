@@ -12,8 +12,9 @@
  */
 
 import { PROTOCOL_VERSION, TSYNE_VERSION } from './version';
-import { checkAppVersion } from './app-version';
+import { checkAppVersion, getVersionRequirement, validateVersion } from './app-version';
 import { processGrabDirectives, parseGrabDirectives } from './grab';
+import { showVersionMismatchDialog, openUpdatePage } from './version-dialog';
 import { spawn, execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -114,6 +115,7 @@ Options:
   --version, -v       Show version information
   --help, -h          Show this help message
   --ignore-version    Skip version compatibility check (risky)
+  --gui-errors        Show errors in GUI dialogs (for standalone apps)
 
 Examples:
   tsyne app.ts              Run app.ts (infers 'run' command)
@@ -125,7 +127,13 @@ Examples:
 /**
  * Run a Tsyne application
  */
-async function runApp(appPath: string, args: string[], ignoreVersion: boolean = false): Promise<number> {
+async function runApp(
+  appPath: string,
+  args: string[],
+  options: { ignoreVersion?: boolean; guiErrors?: boolean } = {}
+): Promise<number> {
+  const { ignoreVersion = false, guiErrors = false } = options;
+
   // Resolve absolute path
   const absolutePath = path.resolve(appPath);
 
@@ -136,10 +144,28 @@ async function runApp(appPath: string, args: string[], ignoreVersion: boolean = 
 
   // Check version compatibility unless --ignore-version was passed
   if (!ignoreVersion) {
-    const versionError = checkAppVersion(absolutePath);
-    if (versionError) {
-      logError(versionError);
-      return 1;
+    const requirement = getVersionRequirement(absolutePath);
+    const validation = validateVersion(requirement);
+
+    if (!validation.valid) {
+      if (guiErrors) {
+        // Show GUI dialog for standalone/packaged apps
+        const result = await showVersionMismatchDialog(validation);
+        switch (result.action) {
+          case 'update':
+            openUpdatePage();
+            return 0;
+          case 'run-anyway':
+            // Continue running
+            break;
+          case 'cancel':
+            return 1;
+        }
+      } else {
+        // Show CLI error
+        logError(validation.message || 'Version mismatch');
+        return 1;
+      }
     }
   }
 
@@ -294,9 +320,14 @@ async function main(): Promise<void> {
 
   // Extract global flags
   let ignoreVersion = false;
+  let guiErrors = false;
   const args = rawArgs.filter((arg) => {
     if (arg === '--ignore-version') {
       ignoreVersion = true;
+      return false;
+    }
+    if (arg === '--gui-errors') {
+      guiErrors = true;
       return false;
     }
     return true;
@@ -347,7 +378,7 @@ async function main(): Promise<void> {
         printUsage();
         process.exit(1);
       }
-      const exitCode = await runApp(appPath, appArgs, ignoreVersion);
+      const exitCode = await runApp(appPath, appArgs, { ignoreVersion, guiErrors });
       process.exit(exitCode);
       break;
 
