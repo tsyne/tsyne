@@ -12,6 +12,7 @@
  */
 
 import { PROTOCOL_VERSION, TSYNE_VERSION } from './version';
+import { checkAppVersion } from './app-version';
 import { spawn, execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -109,8 +110,9 @@ Commands:
   test              Run tests (coming soon)
 
 Options:
-  --version, -v     Show version information
-  --help, -h        Show this help message
+  --version, -v       Show version information
+  --help, -h          Show this help message
+  --ignore-version    Skip version compatibility check (risky)
 
 Examples:
   tsyne app.ts              Run app.ts (infers 'run' command)
@@ -122,13 +124,22 @@ Examples:
 /**
  * Run a Tsyne application
  */
-async function runApp(appPath: string, args: string[]): Promise<number> {
+async function runApp(appPath: string, args: string[], ignoreVersion: boolean = false): Promise<number> {
   // Resolve absolute path
   const absolutePath = path.resolve(appPath);
 
   if (!fs.existsSync(absolutePath)) {
     logError(`File not found: ${appPath}`);
     return 1;
+  }
+
+  // Check version compatibility unless --ignore-version was passed
+  if (!ignoreVersion) {
+    const versionError = checkAppVersion(absolutePath);
+    if (versionError) {
+      logError(versionError);
+      return 1;
+    }
   }
 
   // Find tsx for running TypeScript
@@ -181,7 +192,22 @@ async function runApp(appPath: string, args: string[]): Promise<number> {
  * Main CLI entry point
  */
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
+
+  if (rawArgs.length === 0) {
+    printUsage();
+    process.exit(0);
+  }
+
+  // Extract global flags
+  let ignoreVersion = false;
+  const args = rawArgs.filter((arg) => {
+    if (arg === '--ignore-version') {
+      ignoreVersion = true;
+      return false;
+    }
+    return true;
+  });
 
   if (args.length === 0) {
     printUsage();
@@ -228,7 +254,7 @@ async function main(): Promise<void> {
         printUsage();
         process.exit(1);
       }
-      const exitCode = await runApp(appPath, appArgs);
+      const exitCode = await runApp(appPath, appArgs, ignoreVersion);
       process.exit(exitCode);
       break;
 
