@@ -1,7 +1,5 @@
 # Tsyne Designer - Status & Roadmap
 
-**Last Updated**: 2025-11-22
-
 ## Overview
 
 The Tsyne Designer is a WYSIWYG interface builder for Tsyne applications. Inspired by Action! (Denny Bollay, 1988), it uses an **execution-based approach** - running TypeScript code in a design context rather than parsing ASTs.

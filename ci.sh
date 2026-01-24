@@ -2,6 +2,45 @@
 set -e
 
 # ============================================================================
+# Command Line Options
+# ============================================================================
+SKIP_TESTS=false
+VERBOSE=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --skip-tests|--no-tests)
+      SKIP_TESTS=true
+      shift
+      ;;
+    --verbose|-v)
+      VERBOSE=true
+      shift
+      ;;
+    --help|-h)
+      echo "Usage: $0 [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --skip-tests, --no-tests  Skip all test execution (build only)"
+      echo "  --verbose, -v             Show verbose output"
+      echo "  --help, -h                Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$SKIP_TESTS" = true ]; then
+  echo "Mode: BUILD ONLY (tests skipped)"
+else
+  echo "Mode: BUILD + TEST"
+fi
+
+# ============================================================================
 # OS Detection
 # ============================================================================
 OS_TYPE="$(uname -s)"
@@ -362,44 +401,46 @@ cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
 pnpm install --ignore-scripts
 pnpm run build
 
-echo "--- :test_tube: Core - Unit Tests"
-# Check if headed mode is requested
-if [ "${TSYNE_HEADED}" = "1" ]; then
-  echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
-  export TSYNE_HEADED=1
-  # Use existing DISPLAY or default to :0 (Linux only)
-  if [ "$OS" = "linux" ]; then
-    export DISPLAY=${DISPLAY:-:0}
-  fi
-else
-  echo "Running in HEADLESS mode"
-  if [ "$OS" = "linux" ]; then
-    # Start Xvfb for headless GUI testing (if not already running)
-    if ! pgrep -x Xvfb > /dev/null; then
-      echo "Starting Xvfb..."
-      Xvfb :99 -screen 0 1024x768x24 &
-      XVFB_PID=$!
-      export DISPLAY=:99
-      sleep 2
-    else
-      echo "Xvfb already running ✓"
-      export DISPLAY=:99
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :test_tube: Core - Unit Tests"
+  # Check if headed mode is requested
+  if [ "${TSYNE_HEADED}" = "1" ]; then
+    echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
+    export TSYNE_HEADED=1
+    # Use existing DISPLAY or default to :0 (Linux only)
+    if [ "$OS" = "linux" ]; then
+      export DISPLAY=${DISPLAY:-:0}
     fi
-  elif [ "$OS" = "macos" ]; then
-    # macOS doesn't need Xvfb - Fyne can render headlessly
-    echo "macOS: No Xvfb needed ✓"
-  fi
-fi
-
-timeout 600 pnpm run test:unit --json --outputFile=/tmp/core-test-results.json || {
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Core unit tests timed out after 600 seconds"
   else
-    echo "❌ Core unit tests failed (exit code: $EXIT_CODE)"
+    echo "Running in HEADLESS mode"
+    if [ "$OS" = "linux" ]; then
+      # Start Xvfb for headless GUI testing (if not already running)
+      if ! pgrep -x Xvfb > /dev/null; then
+        echo "Starting Xvfb..."
+        Xvfb :99 -screen 0 1024x768x24 &
+        XVFB_PID=$!
+        export DISPLAY=:99
+        sleep 2
+      else
+        echo "Xvfb already running ✓"
+        export DISPLAY=:99
+      fi
+    elif [ "$OS" = "macos" ]; then
+      # macOS doesn't need Xvfb - Fyne can render headlessly
+      echo "macOS: No Xvfb needed ✓"
+    fi
   fi
-}
-capture_test_results "Core" "/tmp/core-test-results.json" || true
+
+  timeout 600 pnpm run test:unit --json --outputFile=/tmp/core-test-results.json || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Core unit tests timed out after 600 seconds"
+    else
+      echo "❌ Core unit tests failed (exit code: $EXIT_CODE)"
+    fi
+  }
+  capture_test_results "Core" "/tmp/core-test-results.json" || true
+fi
 
 # ============================================================================
 # STEP 2.5: Cosyne - Declarative Canvas Library
@@ -412,16 +453,18 @@ pnpm run build || {
   exit 1
 }
 
-echo "--- :test_tube: Cosyne - Unit Tests"
-timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Cosyne tests timed out after 120 seconds"
-  else
-    echo "❌ Cosyne tests failed (exit code: $EXIT_CODE)"
-  fi
-}
-capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :test_tube: Cosyne - Unit Tests"
+  timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Cosyne tests timed out after 120 seconds"
+    else
+      echo "❌ Cosyne tests failed (exit code: $EXIT_CODE)"
+    fi
+  }
+  capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
+fi
 
 # ============================================================================
 # STEP 3: Designer Sub-Project
@@ -435,27 +478,29 @@ if [ -f "package.json" ]; then
     exit 1
   }
 
-  echo "--- :test_tube: Designer - Unit Tests"
-  timeout 90 pnpm run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Designer unit tests timed out after 90 seconds"
-    else
-      echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
-    fi
-  }
-  capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
+  if [ "$SKIP_TESTS" = false ]; then
+    echo "--- :test_tube: Designer - Unit Tests"
+    timeout 90 pnpm run test:unit --json --outputFile=/tmp/designer-unit-test-results.json || {
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -eq 124 ]; then
+        echo "❌ Designer unit tests timed out after 90 seconds"
+      else
+        echo "❌ Designer unit tests failed (exit code: $EXIT_CODE)"
+      fi
+    }
+    capture_test_results "Designer: Unit" "/tmp/designer-unit-test-results.json" || true
 
-  echo "--- :test_tube: Designer - GUI Tests"
-  timeout 90 pnpm run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
-    EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "❌ Designer GUI tests timed out after 90 seconds"
-    else
-      echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
-    fi
-  }
-  capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
+    echo "--- :test_tube: Designer - GUI Tests"
+    timeout 90 pnpm run test:gui --json --outputFile=/tmp/designer-gui-test-results.json || {
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -eq 124 ]; then
+        echo "❌ Designer GUI tests timed out after 90 seconds"
+      else
+        echo "❌ Designer GUI tests failed (exit code: $EXIT_CODE)"
+      fi
+    }
+    capture_test_results "Designer: GUI" "/tmp/designer-gui-test-results.json" || true
+  fi
 else
   echo "⚠️  No package.json found in designer/ - skipping"
 fi
@@ -463,293 +508,305 @@ fi
 # ============================================================================
 # STEP 4: Examples Sub-Project
 # ============================================================================
-echo "--- :bulb: Examples - Install & Tests"
+echo "--- :bulb: Examples - Install"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
 pnpm install --ignore-scripts
 
-echo "--- :test_tube: Examples - Logic Tests"
-timeout 150 pnpm run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Examples logic tests timed out after 150 seconds"
-  else
-    echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
-  fi
-}
-capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :test_tube: Examples - Logic Tests"
+  timeout 150 pnpm run test:logic --json --outputFile=/tmp/examples-logic-test-results.json || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Examples logic tests timed out after 150 seconds"
+    else
+      echo "❌ Examples logic tests failed (exit code: $EXIT_CODE)"
+    fi
+  }
+  capture_test_results "Examples: Logic" "/tmp/examples-logic-test-results.json" || true
 
-echo "--- :test_tube: Examples - GUI Tests"
-timeout 150 pnpm run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -eq 124 ]; then
-    echo "❌ Examples GUI tests timed out after 150 seconds"
-  else
-    echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
-  fi
-}
-capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
+  echo "--- :test_tube: Examples - GUI Tests"
+  timeout 150 pnpm run test:gui --json --outputFile=/tmp/examples-gui-test-results.json || {
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 124 ]; then
+      echo "❌ Examples GUI tests timed out after 150 seconds"
+    else
+      echo "❌ Examples GUI tests failed (exit code: $EXIT_CODE)"
+    fi
+  }
+  capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
+fi
 
 # ============================================================================
 # STEP 5: Ported Apps Sub-Projects
 # ============================================================================
-echo "--- :package: Ported Apps - Install & Test"
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :package: Ported Apps - Install & Test"
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 
-# Install root ported-apps dependencies (shared by all apps)
-if [ -f "package.json" ]; then
-  echo "Installing ported-apps shared dependencies..."
-  pnpm install --ignore-scripts
-fi
-
-# Helper function to build and test a ported app
-test_ported_app() {
-  local app_name=$1
-  local bridge_mode=$2
-  local json_file="/tmp/ported-${app_name}-test-results.json"
-  echo "--- :package: Ported App: ${app_name}"
-  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
-  pnpm install --ignore-scripts
-  if [ -n "$bridge_mode" ]; then
-    echo "Using bridge mode: $bridge_mode"
-    TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || {
-      capture_test_results "Ported: ${app_name}" "$json_file"
-      return 1
-    }
-  else
-    timeout 300 pnpm test --json --outputFile="$json_file" || {
-      capture_test_results "Ported: ${app_name}" "$json_file"
-      return 1
-    }
+  # Install root ported-apps dependencies (shared by all apps)
+  if [ -f "package.json" ]; then
+    echo "Installing ported-apps shared dependencies..."
+    pnpm install --ignore-scripts
   fi
-  capture_test_results "Ported: ${app_name}" "$json_file"
-}
 
-# Test each ported app (continue even if some fail to collect all results)
-set +e  # Temporarily disable exit-on-error to collect all test results
+  # Helper function to build and test a ported app
+  test_ported_app() {
+    local app_name=$1
+    local bridge_mode=$2
+    local json_file="/tmp/ported-${app_name}-test-results.json"
+    echo "--- :package: Ported App: ${app_name}"
+    cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps/${app_name}
+    pnpm install --ignore-scripts
+    if [ -n "$bridge_mode" ]; then
+      echo "Using bridge mode: $bridge_mode"
+      TSYNE_BRIDGE_MODE=$bridge_mode timeout 300 pnpm test --json --outputFile="$json_file" || {
+        capture_test_results "Ported: ${app_name}" "$json_file"
+        return 1
+      }
+    else
+      timeout 300 pnpm test --json --outputFile="$json_file" || {
+        capture_test_results "Ported: ${app_name}" "$json_file"
+        return 1
+      }
+    fi
+    capture_test_results "Ported: ${app_name}" "$json_file"
+  }
 
-# Mobile/Web App Ports (7 apps: 314 Jest tests, 3,963 lines)
-test_ported_app "sample-food-truck" || true
-test_ported_app "expense-tracker" || true
-test_ported_app "nextcloud" || true
-test_ported_app "duckduckgo" || true
-test_ported_app "wikipedia" || true
-test_ported_app "element" || true
-test_ported_app "ebooks" || true
+  # Test each ported app (continue even if some fail to collect all results)
+  set +e  # Temporarily disable exit-on-error to collect all test results
 
-# Game/Utility Ports
-test_ported_app "3d-cube" || true
-test_ported_app "boing" || true
-test_ported_app "calcudoku" || true
-test_ported_app "chess" || true
-test_ported_app "falling-blocks" || true
-test_ported_app "falling-letters" || true
-test_ported_app "find-pairs" || true
-test_ported_app "fyles" || true
-test_ported_app "game-of-life" "msgpack-uds" || true
-test_ported_app "image-viewer" || true
-test_ported_app "mahjongg" || true
-test_ported_app "peg-solitaire" || true
-test_ported_app "pixeledit" || true
-test_ported_app "prime-grid-visualizer" || true
-test_ported_app "slydes" || true
-test_ported_app "solitaire" || true
-test_ported_app "slider-puzzle" || true
-test_ported_app "sudoku" || true
-test_ported_app "tango-puzzle" || true
-test_ported_app "terminal" || true
-test_ported_app "zip-puzzle" || true
+  # Mobile/Web App Ports (7 apps: 314 Jest tests, 3,963 lines)
+  test_ported_app "sample-food-truck" || true
+  test_ported_app "expense-tracker" || true
+  test_ported_app "nextcloud" || true
+  test_ported_app "duckduckgo" || true
+  test_ported_app "wikipedia" || true
+  test_ported_app "element" || true
+  test_ported_app "ebooks" || true
 
-set -e  # Re-enable exit-on-error
+  # Game/Utility Ports
+  test_ported_app "3d-cube" || true
+  test_ported_app "boing" || true
+  test_ported_app "calcudoku" || true
+  test_ported_app "chess" || true
+  test_ported_app "falling-blocks" || true
+  test_ported_app "falling-letters" || true
+  test_ported_app "find-pairs" || true
+  test_ported_app "fyles" || true
+  test_ported_app "game-of-life" "msgpack-uds" || true
+  test_ported_app "image-viewer" || true
+  test_ported_app "mahjongg" || true
+  test_ported_app "peg-solitaire" || true
+  test_ported_app "pixeledit" || true
+  test_ported_app "prime-grid-visualizer" || true
+  test_ported_app "slydes" || true
+  test_ported_app "solitaire" || true
+  test_ported_app "slider-puzzle" || true
+  test_ported_app "sudoku" || true
+  test_ported_app "tango-puzzle" || true
+  test_ported_app "terminal" || true
+  test_ported_app "zip-puzzle" || true
+
+  set -e  # Re-enable exit-on-error
+fi
 
 # ============================================================================
 # STEP 6: Phone Apps Sub-Projects
 # ============================================================================
-echo "--- :iphone: Phone Apps - Install & Test"
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :iphone: Phone Apps - Install & Test"
 
-# Helper function to build and test a phone app
-test_phone_app() {
-  local app_name=$1
-  local json_file="/tmp/phone-${app_name}-test-results.json"
-  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/phone-apps/${app_name}"
+  # Helper function to build and test a phone app
+  test_phone_app() {
+    local app_name=$1
+    local json_file="/tmp/phone-${app_name}-test-results.json"
+    local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/phone-apps/${app_name}"
 
-  if [ ! -f "${app_dir}/package.json" ]; then
-    echo "⚠️  ${app_name}: No package.json - skipping"
-    return 0
-  fi
+    if [ ! -f "${app_dir}/package.json" ]; then
+      echo "⚠️  ${app_name}: No package.json - skipping"
+      return 0
+    fi
 
-  echo "--- :iphone: Phone App: ${app_name}"
-  cd "${app_dir}"
-  pnpm install --ignore-scripts
-  timeout 300 pnpm test --json --outputFile="$json_file" || {
+    echo "--- :iphone: Phone App: ${app_name}"
+    cd "${app_dir}"
+    pnpm install --ignore-scripts
+    timeout 300 pnpm test --json --outputFile="$json_file" || {
+      capture_test_results "Phone: ${app_name}" "$json_file"
+      return 1
+    }
     capture_test_results "Phone: ${app_name}" "$json_file"
-    return 1
   }
-  capture_test_results "Phone: ${app_name}" "$json_file"
-}
 
-# Test each phone app (continue even if some fail to collect all results)
-set +e  # Temporarily disable exit-on-error to collect all test results
-test_phone_app "3d-clock" || true
-test_phone_app "3d-draggable-chess" || true
-test_phone_app "3d-lighting-lab" || true
-test_phone_app "3d-robot-arm" || true
-test_phone_app "animated-spinner" || true
-test_phone_app "gauge-dashboard" || true
-test_phone_app "heatmap-demo" || true
-test_phone_app "alarms" || true
-test_phone_app "audio-recorder" || true
-test_phone_app "burning-ship" || true
-test_phone_app "calendar" || true
-test_phone_app "camera" || true
-test_phone_app "clock" || true
-test_phone_app "contacts" || true
-test_phone_app "dialer" || true
-test_phone_app "eliza" || true
-test_phone_app "eyes" || true
-test_phone_app "hexview" || true
-test_phone_app "julia-set" || true
-test_phone_app "mandelbrot" || true
-test_phone_app "minefield" || true
-test_phone_app "music-player" || true
-test_phone_app "newton-fractal" || true
-test_phone_app "notes" || true
-test_phone_app "pixyne" || true
-test_phone_app "signal" || true
-test_phone_app "snowflake" || true
-test_phone_app "sonic3" || true
-test_phone_app "sshterm" || true
-test_phone_app "stopwatch" || true
-test_phone_app "telegram" || true
-test_phone_app "timer" || true
-test_phone_app "tricorn" || true
-test_phone_app "weather" || true
-set -e  # Re-enable exit-on-error
+  # Test each phone app (continue even if some fail to collect all results)
+  set +e  # Temporarily disable exit-on-error to collect all test results
+  test_phone_app "3d-clock" || true
+  test_phone_app "3d-draggable-chess" || true
+  test_phone_app "3d-lighting-lab" || true
+  test_phone_app "3d-robot-arm" || true
+  test_phone_app "animated-spinner" || true
+  test_phone_app "gauge-dashboard" || true
+  test_phone_app "heatmap-demo" || true
+  test_phone_app "alarms" || true
+  test_phone_app "audio-recorder" || true
+  test_phone_app "burning-ship" || true
+  test_phone_app "calendar" || true
+  test_phone_app "camera" || true
+  test_phone_app "clock" || true
+  test_phone_app "contacts" || true
+  test_phone_app "dialer" || true
+  test_phone_app "eliza" || true
+  test_phone_app "eyes" || true
+  test_phone_app "hexview" || true
+  test_phone_app "julia-set" || true
+  test_phone_app "mandelbrot" || true
+  test_phone_app "minefield" || true
+  test_phone_app "music-player" || true
+  test_phone_app "newton-fractal" || true
+  test_phone_app "notes" || true
+  test_phone_app "pixyne" || true
+  test_phone_app "signal" || true
+  test_phone_app "snowflake" || true
+  test_phone_app "sonic3" || true
+  test_phone_app "sshterm" || true
+  test_phone_app "stopwatch" || true
+  test_phone_app "telegram" || true
+  test_phone_app "timer" || true
+  test_phone_app "tricorn" || true
+  test_phone_app "weather" || true
+  set -e  # Re-enable exit-on-error
+fi
 
 # ============================================================================
 # STEP 6.5: Launchers (Desktop, PhoneTop)
 # ============================================================================
-echo "--- :computer: Launchers - Install & Test"
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :computer: Launchers - Install & Test"
 
-# Helper function to build and test a launcher
-test_launcher() {
-  local launcher_name=$1
-  local json_file="/tmp/launcher-${launcher_name}-test-results.json"
-  local launcher_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/launchers/${launcher_name}"
+  # Helper function to build and test a launcher
+  test_launcher() {
+    local launcher_name=$1
+    local json_file="/tmp/launcher-${launcher_name}-test-results.json"
+    local launcher_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/launchers/${launcher_name}"
 
-  if [ ! -f "${launcher_dir}/jest.config.js" ]; then
-    echo "⚠️  ${launcher_name}: No jest.config.js - skipping tests"
-    return 0
-  fi
+    if [ ! -f "${launcher_dir}/jest.config.js" ]; then
+      echo "⚠️  ${launcher_name}: No jest.config.js - skipping tests"
+      return 0
+    fi
 
-  echo "--- :computer: Launcher: ${launcher_name}"
-  cd "${launcher_dir}"
-  timeout 300 npx jest --json --outputFile="$json_file" || {
+    echo "--- :computer: Launcher: ${launcher_name}"
+    cd "${launcher_dir}"
+    timeout 300 npx jest --json --outputFile="$json_file" || {
+      capture_test_results "Launcher: ${launcher_name}" "$json_file"
+      return 1
+    }
     capture_test_results "Launcher: ${launcher_name}" "$json_file"
-    return 1
   }
-  capture_test_results "Launcher: ${launcher_name}" "$json_file"
-}
 
-# Test each launcher (continue even if some fail to collect all results)
-set +e  # Temporarily disable exit-on-error to collect all test results
-test_launcher "desktop" || true
-test_launcher "phonetop" || true
-set -e  # Re-enable exit-on-error
+  # Test each launcher (continue even if some fail to collect all results)
+  set +e  # Temporarily disable exit-on-error to collect all test results
+  test_launcher "desktop" || true
+  test_launcher "phonetop" || true
+  set -e  # Re-enable exit-on-error
+fi
 
 # ============================================================================
 # STEP 7: Larger Apps Sub-Projects
 # ============================================================================
-echo "--- :rocket: Larger Apps - Install & Test"
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :rocket: Larger Apps - Install & Test"
 
-# Helper function to build and test a larger app
-test_larger_app() {
-  local app_name=$1
-  local json_file="/tmp/larger-${app_name}-test-results.json"
-  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/larger-apps/${app_name}"
+  # Helper function to build and test a larger app
+  test_larger_app() {
+    local app_name=$1
+    local json_file="/tmp/larger-${app_name}-test-results.json"
+    local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/larger-apps/${app_name}"
 
-  if [ ! -f "${app_dir}/package.json" ]; then
-    echo "⚠️  ${app_name}: No package.json - skipping"
-    return 0
-  fi
+    if [ ! -f "${app_dir}/package.json" ]; then
+      echo "⚠️  ${app_name}: No package.json - skipping"
+      return 0
+    fi
 
-  echo "--- :rocket: Larger App: ${app_name}"
-  cd "${app_dir}"
-  pnpm install --ignore-scripts
-  timeout 300 pnpm test --json --outputFile="$json_file" || {
+    echo "--- :rocket: Larger App: ${app_name}"
+    cd "${app_dir}"
+    pnpm install --ignore-scripts
+    timeout 300 pnpm test --json --outputFile="$json_file" || {
+      capture_test_results "Larger: ${app_name}" "$json_file"
+      return 1
+    }
     capture_test_results "Larger: ${app_name}" "$json_file"
-    return 1
   }
-  capture_test_results "Larger: ${app_name}" "$json_file"
-}
 
-# Test each larger app (continue even if some fail to collect all results)
-set +e  # Temporarily disable exit-on-error to collect all test results
-test_larger_app "literate-programming" || true
-test_larger_app "realtime-paris-density-simulation" || true
-set -e  # Re-enable exit-on-error
+  # Test each larger app (continue even if some fail to collect all results)
+  set +e  # Temporarily disable exit-on-error to collect all test results
+  test_larger_app "literate-programming" || true
+  test_larger_app "realtime-paris-density-simulation" || true
+  set -e  # Re-enable exit-on-error
+fi
 
 # ============================================================================
 # STEP 8: Test Apps (Logic + GUI Tests)
 # ============================================================================
-echo "--- :test_tube: Test Apps - Tests"
+if [ "$SKIP_TESTS" = false ]; then
+  echo "--- :test_tube: Test Apps - Tests"
 
-# Helper function to test a test-app with logic tests (pure JS, no GUI)
-test_test_app_logic() {
-  local app_name=$1
-  local json_file="/tmp/test-app-${app_name}-logic-test-results.json"
-  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
+  # Helper function to test a test-app with logic tests (pure JS, no GUI)
+  test_test_app_logic() {
+    local app_name=$1
+    local json_file="/tmp/test-app-${app_name}-logic-test-results.json"
+    local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
 
-  if [ ! -d "${app_dir}" ]; then
-    echo "⚠️  ${app_name}: Directory not found - skipping"
-    return 0
-  fi
+    if [ ! -d "${app_dir}" ]; then
+      echo "⚠️  ${app_name}: Directory not found - skipping"
+      return 0
+    fi
 
-  echo "--- :test_tube: Test App: ${app_name} (Logic)"
-  cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
+    echo "--- :test_tube: Test App: ${app_name} (Logic)"
+    cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
-  # Run pure logic tests using roots override to include test-apps directory
-  timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
-    --json --outputFile="$json_file" || {
+    # Run pure logic tests using roots override to include test-apps directory
+    timeout 60 npx jest --roots="${app_dir}" --testMatch='**/*-logic.test.ts' \
+      --json --outputFile="$json_file" || {
+      capture_test_results "TestApp: ${app_name} Logic" "$json_file"
+      return 1
+    }
     capture_test_results "TestApp: ${app_name} Logic" "$json_file"
-    return 1
   }
-  capture_test_results "TestApp: ${app_name} Logic" "$json_file"
-}
 
-# Helper function to test a test-app with GUI tests (requires Tsyne bridge)
-test_test_app_gui() {
-  local app_name=$1
-  local json_file="/tmp/test-app-${app_name}-gui-test-results.json"
-  local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
+  # Helper function to test a test-app with GUI tests (requires Tsyne bridge)
+  test_test_app_gui() {
+    local app_name=$1
+    local json_file="/tmp/test-app-${app_name}-gui-test-results.json"
+    local app_dir="${BUILDKITE_BUILD_CHECKOUT_PATH}/test-apps/${app_name}"
 
-  if [ ! -d "${app_dir}" ]; then
-    echo "⚠️  ${app_name}: Directory not found - skipping"
-    return 0
-  fi
+    if [ ! -d "${app_dir}" ]; then
+      echo "⚠️  ${app_name}: Directory not found - skipping"
+      return 0
+    fi
 
-  # Check if calculator.test.ts exists (GUI test)
-  if [ ! -f "${app_dir}/calculator.test.ts" ]; then
-    echo "⚠️  ${app_name}: No GUI test found - skipping"
-    return 0
-  fi
+    # Check if calculator.test.ts exists (GUI test)
+    if [ ! -f "${app_dir}/calculator.test.ts" ]; then
+      echo "⚠️  ${app_name}: No GUI test found - skipping"
+      return 0
+    fi
 
-  echo "--- :test_tube: Test App: ${app_name} (GUI)"
-  cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
+    echo "--- :test_tube: Test App: ${app_name} (GUI)"
+    cd "${BUILDKITE_BUILD_CHECKOUT_PATH}/core"
 
-  # Run GUI tests using roots override
-  timeout 120 npx jest --roots="${app_dir}" --testMatch='**/calculator.test.ts' \
-    --json --outputFile="$json_file" || {
+    # Run GUI tests using roots override
+    timeout 120 npx jest --roots="${app_dir}" --testMatch='**/calculator.test.ts' \
+      --json --outputFile="$json_file" || {
+      capture_test_results "TestApp: ${app_name} GUI" "$json_file"
+      return 1
+    }
     capture_test_results "TestApp: ${app_name} GUI" "$json_file"
-    return 1
   }
-  capture_test_results "TestApp: ${app_name} GUI" "$json_file"
-}
 
-# Test each test-app (continue even if some fail to collect all results)
-set +e  # Temporarily disable exit-on-error to collect all test results
-test_test_app_logic "calculator-advanced" || true
-test_test_app_gui "calculator-advanced" || true
-set -e  # Re-enable exit-on-error
+  # Test each test-app (continue even if some fail to collect all results)
+  set +e  # Temporarily disable exit-on-error to collect all test results
+  test_test_app_logic "calculator-advanced" || true
+  test_test_app_gui "calculator-advanced" || true
+  set -e  # Re-enable exit-on-error
+fi
 
 # ============================================================================
 # STEP 9: Android Native Build (optional - requires Android SDK)
@@ -791,6 +848,8 @@ fi
 # ============================================================================
 # Print Test Summary (this will exit with failure code if tests failed)
 # ============================================================================
-print_test_summary
+if [ "$SKIP_TESTS" = false ]; then
+  print_test_summary
+fi
 
 echo "--- :white_check_mark: Build complete"

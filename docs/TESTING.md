@@ -1,353 +1,145 @@
-# TsyneTest - Testing Framework for Tsyne
-
-TsyneTest is a fluent, Playwright-inspired testing framework for Tsyne applications, providing both headed and headless testing modes.
-
-## Quick Start
-
-```typescript
-import { TsyneTest } from '../src/index-test';
-import { app, window, button, label } from 'tsyne';
-
-const tsyneTest = new TsyneTest({ headed: false });
-
-const testApp = tsyneTest.createApp((app) => {
-  window({ title: "Test App" }, () => {
-    vbox(() => {
-      label("Counter: 0").withId("counter");
-      button("Increment", () => { /* ... */ });
-    });
-  });
-});
-
-const ctx = tsyneTest.getContext();
-await testApp.run();
-
-// Fluent assertions
-await ctx.getById("counter").shouldBe("Counter: 0");
-await ctx.getByExactText("Increment").click();
-await ctx.getById("counter").within(500).shouldBe("Counter: 1");
-
-await tsyneTest.cleanup();
-```
-
-## Locators
-
-### Finding Widgets
-
-```typescript
-ctx.getById("submit-btn")       // By widget ID (fastest)
-ctx.getByExactText("Submit")    // Exact text match
-ctx.getByText("Counter:")       // Partial text match
-ctx.getByType("button")         // By widget type
-ctx.getByPlaceholder("Email")   // By placeholder text
-ctx.getByTestId("login-form")   // By test ID
-ctx.getByRole("textbox")        // By accessibility role
-ctx.getByLabel("Username")      // By accessibility label
-```
-
-### Locator Actions
-
-```typescript
-await ctx.getById("btn").click();           // Click
-await ctx.getById("btn").doubleClick();     // Double-click
-await ctx.getById("btn").rightClick();      // Right-click
-await ctx.getById("input").type("Hello");   // Type text
-await ctx.getById("input").submit();        // Submit entry
-await ctx.getById("slider").setValue(75);   // Set slider value
-await ctx.getById("widget").hover();        // Hover over widget
-await ctx.getById("item").drag(50, 0);      // Drag widget
-
-const text = await ctx.getById("label").getText();  // Get text
-const info = await ctx.getById("widget").getInfo(); // Get widget info
-```
-
-## Fluent Assertions
-
-TsyneTest provides fluent `should*` assertions that read naturally:
-
-### Text Assertions
-
-```typescript
-await ctx.getById("status").shouldBe("Success");
-await ctx.getById("message").shouldContain("welcome");
-await ctx.getById("email").shouldMatch(/^[\w]+@[\w]+\.[\w]+$/);
-await ctx.getById("error").shouldNotBe("Fatal");
-```
-
-### State Assertions
-
-```typescript
-await ctx.getById("checkbox").shouldBeChecked();
-await ctx.getById("checkbox").shouldNotBeChecked();
-await ctx.getById("submit").shouldBeEnabled();
-await ctx.getById("submit").shouldBeDisabled();
-await ctx.getById("slider").shouldHaveValue(50);
-await ctx.getById("dropdown").shouldHaveSelected("Option A");
-await ctx.getById("widget").shouldHaveType("button");
-```
-
-### Visibility & Existence Assertions
-
-```typescript
-await ctx.getById("modal").shouldBeVisible();
-await ctx.getById("modal").shouldNotBeVisible();
-await ctx.getById("widget").shouldExist();
-await ctx.getById("widget").shouldNotExist();
-```
-
-## Polling with within() and without()
-
-Use `within(ms)` to retry assertions until they pass or timeout:
-
-```typescript
-// Poll for up to 500ms until text equals "Success"
-await ctx.getById("status").within(500).shouldBe("Success");
-
-// Poll for up to 1000ms until element exists
-await ctx.getById("modal").within(1000).shouldExist();
-
-// Poll for up to 500ms until element is gone
-await ctx.getById("loading").without(500).shouldNotExist();
-```
-
-This is essential for testing async UI updates without arbitrary `wait()` calls.
-
-## List Item Assertions
-
-Access specific items in list widgets:
-
-```typescript
-// Assert specific list items
-await ctx.getById("playerList").item(0).shouldBe("Alice");
-await ctx.getById("playerList").item(1).shouldContain("Bob");
-await ctx.getById("emails").item(2).shouldMatch(/^[\w]+@/);
-
-// Get item text
-const name = await ctx.getById("playerList").item(0).getText();
-```
-
-## Legacy Expect-Style Assertions
-
-The `ctx.expect()` API is still available:
-
-```typescript
-await ctx.expect(ctx.getById("label")).toHaveText("Hello");
-await ctx.expect(ctx.getById("label")).toContainText("ell");
-await ctx.expect(ctx.getById("widget")).toBeVisible();
-await ctx.expect(ctx.getById("widget")).toExist();
-await ctx.expect(ctx.getByType("button")).toHaveCount(3);
-```
-
-## Test Context Methods
-
-```typescript
-// Wait utilities
-await ctx.wait(100);                              // Fixed wait
-await ctx.waitForCondition(async () => {          // Custom condition
-  return await ctx.hasText("Ready");
-}, { timeout: 5000, description: "ready state" });
-
-// Page inspection
-const widgets = await ctx.getAllWidgets();        // All widgets
-const texts = await ctx.getAllText();             // All text values
-const hasIt = await ctx.hasText("Success");       // Check for text
-await ctx.assertHasText("Welcome");               // Assert text exists
-
-// Data retrieval
-const listData = await ctx.getListData("myList"); // List items
-const tableData = await ctx.getTableData("myTable"); // Table rows
-
-// Navigation
-await ctx.scroll(0, 100);                         // Scroll canvas
-await ctx.focusNext();                            // Tab navigation
-await ctx.focusPrevious();                        // Shift+Tab
-
-// Screenshots
-await ctx.captureScreenshot("/tmp/screenshot.png");
-```
-
-## Widget IDs for Testing
-
-Add IDs to widgets for reliable test selectors:
-
-```typescript
-// In your app code
-button("Submit").withId("submit-btn");
-label("Status").withId("status-label");
-entry().withId("username-input");
-
-// In your test code
-await ctx.getById("submit-btn").click();
-await ctx.getById("status-label").shouldBe("Success");
-```
-
-Using `getById()` is faster than text-based lookups and more resilient to text changes.
-
-## Complete Example
-
-```typescript
-import { TsyneTest } from '../src/index-test';
-
-describe('Counter App', () => {
-  let tsyneTest: TsyneTest;
-  let ctx: TestContext;
-
-  beforeEach(async () => {
-    tsyneTest = new TsyneTest({ headed: false });
-
-    let count = 0;
-    const testApp = tsyneTest.createApp(() => {
-      window({ title: "Counter" }, () => {
-        vbox(() => {
-          label(`Count: ${count}`).withId("count");
-          hbox(() => {
-            button("-").withId("dec").onClick(() => {
-              count--;
-              ctx.getById("count").setText(`Count: ${count}`);
-            });
-            button("+").withId("inc").onClick(() => {
-              count++;
-              ctx.getById("count").setText(`Count: ${count}`);
-            });
-          });
-        });
-      });
-    });
-
-    ctx = tsyneTest.getContext();
-    await testApp.run();
-  });
-
-  afterEach(async () => {
-    await tsyneTest.cleanup();
-  });
-
-  test('should start at zero', async () => {
-    await ctx.getById("count").shouldBe("Count: 0");
-  });
-
-  test('should increment', async () => {
-    await ctx.getById("inc").click();
-    await ctx.getById("count").within(100).shouldBe("Count: 1");
-  });
-
-  test('should decrement', async () => {
-    await ctx.getById("dec").click();
-    await ctx.getById("count").within(100).shouldBe("Count: -1");
-  });
-});
-```
+# Tsyne Testing Guide
 
 ## Test Modes
 
+All Tsyne GUI tests support two modes:
+
 ### Headless Mode (Default)
+- Fast execution
+- No window displayed
+- Suitable for CI/CD
 
-```typescript
-const tsyneTest = new TsyneTest({ headed: false });
+### Headed Mode (Visual Debugging)
+- Shows actual window
+- Useful for debugging failing tests
+- Enabled with `TSYNE_HEADED=1`
+
+## Hierarchical Test Structure
+
+Tsyne uses a layered testing approach where each module has its own package.json and test configuration. Tests run in dependency order: Go build → core → designer → examples.
+
+### Test Execution Order
+
+```bash
+pnpm test                    # Runs all layers hierarchically
 ```
 
-- Faster execution
-- No display required
-- Perfect for CI/CD
+This executes:
+1. **Go Bridge Build** - Compiles tsyne-bridge (required by all other tests)
+2. **Core Tests** - Core Tsyne library tests
+3. **Designer Tests** - Visual designer tool tests
+4. **Examples Tests** - Example application tests
 
-### Headed Mode
+### Module Structure
 
-```typescript
-const tsyneTest = new TsyneTest({ headed: true });
+#### Core (`/core`)
+- **Package**: `core/package.json`
+- **Tests**: Core library unit and GUI tests
+- **Commands**:
+  - `pnpm run test` - Run all tests
+  - `pnpm run test:unit:fast` - Unit tests only (parallel)
+  - `pnpm run test:gui` - GUI tests only (serial, slower)
+
+#### Designer Submodule (`/designer`)
+- **Package**: `designer/package.json`
+- **Tests**: Designer tool unit, roundtrip, and E2E tests
+- **Commands**:
+  - `cd designer && pnpm test` - Run from designer directory
+  - `cd designer && pnpm run test:unit` - Unit tests only
+  - `cd designer && pnpm run test:roundtrip` - Roundtrip tests
+  - `cd designer && pnpm run test:e2e` - E2E tests
+
+#### Examples Submodule (`/examples`)
+- **Package**: `examples/package.json`
+- **Tests**: Example applications (logic + GUI tests)
+- **Commands**:
+  - `cd examples && pnpm test` - Run from examples directory
+  - `cd examples && pnpm run test:logic` - Logic tests only
+  - `cd examples && pnpm run test:gui` - GUI tests only (serial)
+
+### Dependencies Between Layers
+
+```
+Go Bridge (tsyne-bridge)
+    ↓
+Core (Tsyne core library)
+    ↓
+├── Designer (uses Tsyne)
+└── Examples (uses Tsyne)
 ```
 
-- Visual debugging
-- Watch tests execute
-- Verify appearance
+Each layer depends on the previous one being built/passing before it can run.
+
+## Test Categories
+
+### Unit Tests (Fast, Parallel)
+- No GUI windows
+- Can run in parallel
+- Fast feedback
+- Examples: Logic tests, pure functions, state management
+
+### GUI Tests (Slow, Serial)
+- Create Fyne windows
+- Must run serially (`maxWorkers: 1`) to avoid display conflicts
+- Slower but comprehensive
+- Examples: Widget interactions, visual tests, E2E scenarios
+
+## Configuration Files
+
+### Core
+- `jest.config.js` - Main config
+- `jest.config.unit.js` - Unit tests only
+- `jest.config.gui.js` - GUI tests only
+
+### Designer
+- `designer/jest.config.js` - Designer-specific configuration
+
+### Examples
+- `examples/jest.config.js` - Examples-specific configuration
+
+## Environment Variables
+
+| Variable | Values | Description |
+|----------|--------|-------------|
+| `TSYNE_HEADED` | `1` | Enable visual debugging mode (shows window) |
+
+## Running Tests
+
+### Full Test Suite
+```bash
+pnpm test
+```
+
+### Individual Layers
+```bash
+pnpm run build:bridge    # 1. Build Go bridge first
+cd core && pnpm test     # 2. Test core library
+cd designer && pnpm test # 3. Test designer
+cd examples && pnpm test # 4. Test examples
+```
+
+### Running Specific Tests
+```bash
+# Run a specific test file
+npx jest path/to/test.ts
+
+# Run tests matching a pattern
+npx jest -t "pattern"
+
+# Run with visual debugging
+TSYNE_HEADED=1 npx jest path/to/test.ts
+```
+
+## Debugging Tips
+
+1. **Use headed mode for debugging** - When a test fails, run it with `TSYNE_HEADED=1` to see what's happening
+2. **Run unit tests first** - Fast feedback on logic errors
+3. **Run GUI tests separately** - Slower, need serial execution
+4. **Use Jest's `-t` flag** - Run specific tests by name pattern
 
 ## Best Practices
 
-### 1. Use IDs for Reliable Selection
-
-```typescript
-// Good - fast and resilient
-await ctx.getById("submit-btn").click();
-
-// Less reliable - breaks if text changes
-await ctx.getByExactText("Submit").click();
-```
-
-### 2. Use within() Instead of wait()
-
-```typescript
-// Good - polls until ready
-await ctx.getById("status").within(500).shouldBe("Done");
-
-// Bad - arbitrary wait
-await ctx.wait(500);
-await ctx.getById("status").shouldBe("Done");
-```
-
-### 3. One Assertion Per Line
-
-```typescript
-// Good - clear what failed
-await ctx.getById("name").shouldBe("Alice");
-await ctx.getById("score").shouldBe("100");
-
-// Hard to debug
-await ctx.getById("name").shouldBe("Alice") && await ctx.getById("score").shouldBe("100");
-```
-
-### 4. Always Clean Up
-
-```typescript
-afterEach(async () => {
-  await tsyneTest.cleanup();
-});
-```
-
-## Custom Jest Matchers
-
-TsyneTest overrides Jest's built-in matchers with versions that provide accurate stack traces:
-
-- `toBe`, `toContain`, `toMatch`
-- `toBeTruthy`, `toBeFalsy`
-- `toBeGreaterThan`, `toBeLessThan`
-
-Custom matchers for UI testing:
-- `toBeChecked(expected)` - checkbox state
-- `toBeEnabled(expected)` - enabled/disabled state
-- `toExist(expected)` - widget existence
-
-## CI/CD Integration
-
-```yaml
-# .github/workflows/test.yml
-name: Test
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - uses: actions/setup-go@v4
-        with:
-          go-version: 1.21
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
-
-      - name: Build
-        run: npm run build
-
-      - name: Run tests
-        run: npm test
-```
-
-## See Also
-
-- [Examples](../examples/)
-- [Test Apps](../test-apps/)
-- [API Reference](API_REFERENCE.md)
+1. **Layer your tests** - Go → Core → Designer → Examples
+2. **Parallel where possible** - Unit tests can run in parallel
+3. **Serial for GUI** - Fyne windows must run one at a time
+4. **Use submodule isolation** - Each submodule manages own deps

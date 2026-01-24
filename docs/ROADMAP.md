@@ -60,6 +60,25 @@ Tsyne has `ModelBoundList` for reactive list rendering. Fyne's `data/binding` pa
 ### Low Priority (Consider on demand)
 3. **Full Data Binding** - Tsyne's `when()` and `ModelBoundList` may be sufficient
 
+### Minor (Polish items)
+
+**Widget Property Gaps:**
+- Label: Alignment, Wrapping, TextStyle properties
+- RichText: Wrapping, Scroll, ParseMarkdown
+- Select: Alignment, SetOptions method
+- RadioGroup: Horizontal property, SetOptions method
+
+**Widget Method Gaps:**
+- Table: OnSelected event, SetColumnWidths, UnselectAll
+- Tree: OnSelected event, OpenAllBranches, CloseAllBranches
+- Accordion: Open/Close individual items, OnOpen/OnClose events
+- Menu: SetMainMenu method
+
+**Event Gaps:**
+- Entry: onDoubleClick (Go bridge)
+- Image: onDrag/onDragEnd (Go bridge)
+- Various widgets: onFocus/onBlur events (Select, Checkbox, Slider, RadioGroup)
+
 ---
 
 ## What's Already Implemented
