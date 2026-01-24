@@ -33,3 +33,8 @@ func (c *DoubleTappableContainer) DoubleTapped(_ *fyne.PointEvent) {
 		c.onDoubleTapped()
 	}
 }
+
+// MinSize returns the minimum size of the double-tappable container (delegates to content)
+func (c *DoubleTappableContainer) MinSize() fyne.Size {
+	return c.content.MinSize()
+}

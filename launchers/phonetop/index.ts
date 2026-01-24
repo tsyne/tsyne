@@ -37,7 +37,8 @@ import {
   MockContactsService,
   MockTelephonyService,
   MockSMSService
-} from './services';
+} from '../../phone-apps/services';
+import { MockRecordingService } from '../../phone-apps/audio-recorder/recording-service';
 
 // Grid configuration for phone (portrait orientation)
 const GRID_COLS_PORTRAIT = 3;
@@ -840,8 +841,10 @@ class PhoneTop {
   /**
    * Find the deepest widget containing the given absolute coordinates.
    * Returns the most specific (deepest) visible widget at that point.
+   * If the deepest widget has a path-style ID (e.g., "root.0.0.1"), walks up
+   * the parent chain to find the nearest clickable ancestor with a bridge ID.
    */
-  private findWidgetAtPoint(node: any, x: number, y: number): any | null {
+  private findWidgetAtPoint(node: any, x: number, y: number, clickableParent?: any): any | null {
     // Check if point is within this widget's bounds
     const inBounds = node.visible !== false &&
       x >= node.absX &&
@@ -853,11 +856,17 @@ class PhoneTop {
       return null;
     }
 
+    // Track clickable parents (widgets with bridge-style IDs that can be clicked)
+    // Bridge IDs start with _ (e.g., "_image_xyz") vs path-style IDs (e.g., "root.0.0.1")
+    const isBridgeId = node.id && node.id.startsWith('_');
+    const isClickable = node.type === 'ClickableContainer' || node.type === 'Button' || node.type === 'TsyneButton';
+    const newClickableParent = (isBridgeId && isClickable) ? node : clickableParent;
+
     // Check children (depth-first) - return deepest match
     if (node.children && node.children.length > 0) {
       // Search in reverse order (last child is often on top)
       for (let i = node.children.length - 1; i >= 0; i--) {
-        const childMatch = this.findWidgetAtPoint(node.children[i], x, y);
+        const childMatch = this.findWidgetAtPoint(node.children[i], x, y, newClickableParent);
         if (childMatch) {
           return childMatch;
         }
@@ -865,6 +874,12 @@ class PhoneTop {
     }
 
     // No child contains the point, but this widget does
+    // If this widget has a path-style ID (not clickable), return the clickable parent instead
+    const hasPathStyleId = node.id && node.id.startsWith('root.');
+    if (hasPathStyleId && newClickableParent) {
+      return newClickableParent;
+    }
+
     return node;
   }
 
@@ -1408,10 +1423,11 @@ class PhoneTop {
       this.a.getContext().setLayoutScale(this.getLayoutScale());
 
       // Build argument map based on @tsyne-app:args metadata
-      // Mock services for phone apps that require telephony/contacts/SMS
+      // Mock services for phone apps that require telephony/contacts/SMS/recording
       const mockContacts = new MockContactsService();
       const mockTelephony = new MockTelephonyService();
       const mockSMS = new MockSMSService();
+      const mockRecording = new MockRecordingService();
 
       const argMap: Record<string, any> = {
         'app': this.a,
@@ -1422,6 +1438,7 @@ class PhoneTop {
         'telephony': mockTelephony,
         'modem': mockTelephony,  // alias for telephony
         'sms': mockSMS,
+        'recording': mockRecording,
       };
 
       // Map metadata.args to actual values (default is ['app'])
@@ -1680,7 +1697,7 @@ export { app, resolveTransport } from 'tsyne';
 
 // Entry point
 if (require.main === module) {
-  const { app, resolveTransport } = require('../core/src/index');
+  const { app, resolveTransport } = require('tsyne');
 
   // Check for debug port via environment variable
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;

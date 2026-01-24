@@ -1011,8 +1011,20 @@ export {
   isDesktopMode,
   getDesktopContext,
   InnerWindowAdapter,
+  enablePhoneMode,
+  disablePhoneMode,
+  isPhoneMode,
+  getPhoneContext,
+  StackPaneAdapter,
 } from './tsyne-window';
-export type { ITsyneWindow, DesktopContext } from './tsyne-window';
+export type { ITsyneWindow, DesktopContext, PhoneTopContext } from './tsyne-window';
+
+// Export resource management
+export { ResourceManager, ScopedResourceManager, NullResourceManager } from './resources';
+export type { IResourceManager } from './resources';
+
+// Export OS services (interfaces, mocks, and not-available implementations)
+export * from './services';
 
 // NOTE: Desktop and Phonetop launchers are now in the 'launchers' module
 // Import from 'launchers/desktop' or 'launchers/phonetop' directly

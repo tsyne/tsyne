@@ -1611,7 +1611,11 @@ export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: num
     win.setContent(() => ui.buildContent());
     win.show();
     // Trigger initial render after UI is set up (needed for phonetop)
-    setTimeout(() => ui.initialize(), 0);
+    // Using longer delay to test if timing affects Android embedded crash
+    setTimeout(() => {
+      console.log('[3DCube] Initializing after timeout');
+      ui.initialize();
+    }, 500);
   });
 
   return ui;

@@ -266,6 +266,13 @@ public class MainActivity extends Activity {
         private Paint paint = new Paint();
         private boolean surfaceReady = false;
 
+        // Scaling parameters for touch coordinate transformation
+        private float renderScale = 1.0f;
+        private float renderOffsetX = 0f;
+        private float renderOffsetY = 0f;
+        private int fyneWidth = 0;
+        private int fyneHeight = 0;
+
         public TsyneRenderView(Context context) {
             super(context);
             getHolder().addCallback(this);
@@ -322,10 +329,28 @@ public class MainActivity extends Activity {
             try {
                 canvas = getHolder().lockCanvas();
                 if (canvas != null) {
-                    // Clear with black first
-                    canvas.drawColor(0xFF000000);
-                    // Draw bitmap at native size - no scaling to avoid distortion
-                    canvas.drawBitmap(frameBitmap, 0, 0, paint);
+                    // Scale to fill the surface
+                    float scaleX = (float) canvas.getWidth() / width;
+                    float scaleY = (float) canvas.getHeight() / height;
+                    float scale = Math.min(scaleX, scaleY);
+
+                    int destWidth = (int) (width * scale);
+                    int destHeight = (int) (height * scale);
+                    int destX = (canvas.getWidth() - destWidth) / 2;
+                    int destY = (canvas.getHeight() - destHeight) / 2;
+
+                    // Save scaling parameters for touch coordinate transformation
+                    this.renderScale = scale;
+                    this.renderOffsetX = destX;
+                    this.renderOffsetY = destY;
+                    this.fyneWidth = width;
+                    this.fyneHeight = height;
+
+                    canvas.drawColor(0xFF000000); // Black background
+                    canvas.drawBitmap(frameBitmap,
+                            null,
+                            new android.graphics.Rect(destX, destY, destX + destWidth, destY + destHeight),
+                            paint);
                 }
             } finally {
                 if (canvas != null) {
@@ -334,38 +359,68 @@ public class MainActivity extends Activity {
             }
         }
 
+        /**
+         * Transform screen touch coordinates to Fyne coordinates
+         */
+        private float transformX(float screenX) {
+            if (renderScale == 0) return screenX;
+            float fyneX = (screenX - renderOffsetX) / renderScale;
+            // Clamp to valid range
+            return Math.max(0, Math.min(fyneX, fyneWidth));
+        }
+
+        private float transformY(float screenY) {
+            if (renderScale == 0) return screenY;
+            float fyneY = (screenY - renderOffsetY) / renderScale;
+            // Clamp to valid range
+            return Math.max(0, Math.min(fyneY, fyneHeight));
+        }
+
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             int action = event.getActionMasked();
             int pointerIndex = event.getActionIndex();
             int pointerId = event.getPointerId(pointerIndex);
-            float x = event.getX(pointerIndex);
-            float y = event.getY(pointerIndex);
 
-            Log.i(TAG, "onTouchEvent: action=" + action + " x=" + x + " y=" + y);
+            // Get raw coordinates before transformation
+            float rawX = event.getX(pointerIndex);
+            float rawY = event.getY(pointerIndex);
+
+            // Transform screen coordinates to Fyne coordinates
+            float x = transformX(rawX);
+            float y = transformY(rawY);
+
+            Log.i(TAG, "onTouchEvent: raw=(" + rawX + "," + rawY + ") transformed=(" + x + "," + y +
+                       ") scale=" + renderScale + " offset=(" + renderOffsetX + "," + renderOffsetY +
+                       ") fyneSize=(" + fyneWidth + "x" + fyneHeight + ")");
 
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    Log.i(TAG, "Sending touch down to native");
+                    Log.d(TAG, "Touch DOWN at fyne coords: " + x + "," + y);
                     sendTouchDown(x, y, pointerId);
                     return true;
 
                 case MotionEvent.ACTION_MOVE:
                     // Send move for all pointers
                     for (int i = 0; i < event.getPointerCount(); i++) {
-                        sendTouchMove(event.getX(i), event.getY(i), event.getPointerId(i));
+                        float mx = transformX(event.getX(i));
+                        float my = transformY(event.getY(i));
+                        sendTouchMove(mx, my, event.getPointerId(i));
                     }
                     return true;
 
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP:
+                    Log.d(TAG, "Touch UP at fyne coords: " + x + "," + y);
                     sendTouchUp(x, y, pointerId);
                     return true;
 
                 case MotionEvent.ACTION_CANCEL:
                     for (int i = 0; i < event.getPointerCount(); i++) {
-                        sendTouchUp(event.getX(i), event.getY(i), event.getPointerId(i));
+                        float cx = transformX(event.getX(i));
+                        float cy = transformY(event.getY(i));
+                        sendTouchUp(cx, cy, event.getPointerId(i));
                     }
                     return true;
             }

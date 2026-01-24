@@ -376,6 +376,11 @@ func (t *TappableContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(t.content)
 }
 
+// MinSize returns the minimum size of the tappable container (delegates to content)
+func (t *TappableContainer) MinSize() fyne.Size {
+	return t.content.MinSize()
+}
+
 // ClickableContainer wraps a canvas object to add single-click support
 type ClickableContainer struct {
 	widget.BaseWidget
@@ -408,6 +413,11 @@ func (c *ClickableContainer) Tapped(e *fyne.PointEvent) {
 // CreateRenderer for the clickable container
 func (c *ClickableContainer) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(c.content)
+}
+
+// MinSize returns the minimum size of the clickable container (delegates to content)
+func (c *ClickableContainer) MinSize() fyne.Size {
+	return c.content.MinSize()
 }
 
 // TappableWrapper wraps a widget and adds context menu support via right-click
@@ -1340,7 +1350,6 @@ func (d *TsyneDraggableIcon) MinSize() fyne.Size {
 
 // Tapped handles single tap/click - used for double-click detection
 func (d *TsyneDraggableIcon) Tapped(e *fyne.PointEvent) {
-	log.Printf("[TAP] Icon %s: Tapped() called", d.ID)
 	now := time.Now()
 	elapsed := now.Sub(d.lastTapTime)
 
@@ -1377,7 +1386,6 @@ func (d *TsyneDraggableIcon) Tapped(e *fyne.PointEvent) {
 
 // DoubleTapped handles double-click events (Fyne's native double-tap interface)
 func (d *TsyneDraggableIcon) DoubleTapped(e *fyne.PointEvent) {
-	log.Printf("[DOUBLE-TAP] Icon %s: DoubleTapped() called", d.ID)
 	if d.onDblClickCallbackId != "" && d.bridge != nil {
 		d.bridge.sendEvent(Event{
 			Type: "callback",
@@ -1977,7 +1985,8 @@ func NewBridgeWithEmbeddedDriver(embeddedDriver embedded.Driver) *Bridge {
 		widgets:         make(map[string]fyne.CanvasObject),
 		callbacks:       make(map[string]string),
 		contextMenus:    make(map[string]*fyne.Menu),
-		testMode:        false, // Embedded mode is not test mode
+		testMode:        false,    // Embedded mode is not test mode
+		transport:       "msgpack", // Use msgpack transport so events are sent via msgpackServer
 		writer:          json.NewEncoder(os.Stdout),
 		widgetMeta:      make(map[string]WidgetMetadata),
 		tableData:       make(map[string][][]string),

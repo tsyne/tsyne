@@ -12,7 +12,7 @@
 
 import { App } from 'tsyne';
 import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './index';
-import { allApps, getAppsForPlatform, GeneratedAppDefinition } from './all-apps.generated';
+import { allApps, getAppsForPlatform, GeneratedAppDefinition } from '../../phone-apps/all-apps.generated';
 
 // Re-export app and buildPhoneTop for the bundle
 export { app } from 'tsyne';
@@ -53,7 +53,7 @@ export async function buildPhoneTopAndroid(a: App, options?: PhoneTopOptions) {
 }
 
 // Export individual builders for potential direct use
-export { allApps, getAppsForPlatform } from './all-apps.generated';
+export { allApps, getAppsForPlatform } from '../../phone-apps/all-apps.generated';
 
 // Also re-export the original buildPhoneTop
 export { buildPhoneTop } from './index';

@@ -52,3 +52,8 @@ func (c *DraggableContainer) Tapped(_ *fyne.PointEvent) {
 		c.onClick()
 	}
 }
+
+// MinSize returns the minimum size of the draggable container (delegates to content)
+func (c *DraggableContainer) MinSize() fyne.Size {
+	return c.content.MinSize()
+}
