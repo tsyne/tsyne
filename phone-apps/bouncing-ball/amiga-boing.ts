@@ -7,7 +7,7 @@
  */
 
 import { App } from 'tsyne';
-import { cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
+import { cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 const W = 600, H = 500;
 const R = 96;  // Ball radius

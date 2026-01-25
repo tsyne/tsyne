@@ -4,6 +4,16 @@
   "description": "Declarative canvas grammar for Tsyne",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./index3d": {
+      "types": "./dist/index3d.d.ts",
+      "default": "./dist/index3d.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest",

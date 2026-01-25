@@ -10,8 +10,7 @@
  */
 
 import { app } from 'tsyne';
-import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
-import { CUSTOM_MARKERS } from '../../cosyne/src/markers';
+import { cosyne, clearAllCosyneContexts, CUSTOM_MARKERS } from 'cosyne';
 
 type DiagramType = 'flowchart' | 'graph' | 'state-machine' | 'network' | 'custom';
 

@@ -14,7 +14,7 @@
  * Portions copyright Spyware (lizard-demon) and portions copyright Paul Hammant 2025
  */
 
-import { Vector3, Matrix4, Box3, Ray, degToRad } from '../../cosyne/src/math3d';
+import { Vector3, Matrix4, Box3, Ray, degToRad } from 'cosyne';
 
 // ============================================================================
 // MATH UTILITIES

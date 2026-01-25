@@ -8,7 +8,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, easeInOutCubic } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, easeInOutCubic } from 'cosyne';
 
 interface CanvasState {
   circleX: number;

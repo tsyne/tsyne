@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "cosyne": "workspace:*",
     "tsyne": "workspace:*"
   },
   "devDependencies": {

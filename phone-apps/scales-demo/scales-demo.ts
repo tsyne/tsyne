@@ -10,15 +10,17 @@
  */
 
 import { app } from 'tsyne';
-import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
 import {
+  cosyne,
+  clearAllCosyneContexts,
   LinearScale,
   LogScale,
   SqrtScale,
   PowerScale,
   OrdinalScale,
-} from '../../cosyne/src/scales';
-import { Axis, GridLines } from '../../cosyne/src/axes';
+  Axis,
+  GridLines,
+} from 'cosyne';
 
 type ScaleType = 'linear' | 'log' | 'sqrt' | 'power' | 'ordinal';
 

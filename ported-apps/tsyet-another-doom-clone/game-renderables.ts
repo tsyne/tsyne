@@ -1,9 +1,9 @@
 import {
   RenderableObject,
   RaycasterRenderContext,
-  lerp
-} from '../../cosyne/src/raycaster';
-import { Vector3 } from '../../cosyne/src/math3d';
+  lerp,
+  Vector3,
+} from 'cosyne';
 import { WalkingEnemy } from './walking-enemy';
 import { FlyingEnemy } from './flying-enemy';
 import { BodyPart } from './body-part';

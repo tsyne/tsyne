@@ -31,7 +31,7 @@ import {
   rotateXY,
   rotateXZ,
   rotateYZ,
-} from '../../cosyne/src/math3d';
+} from 'cosyne';
 
 // ============================================================================
 // Re-exports from extracted modules

@@ -7,7 +7,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, SphericalProjection, IsometricProjection } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, SphericalProjection, IsometricProjection } from 'cosyne';
 
 export function buildProjectionsApp(a: App): void {
   a.canvasStack(() => {

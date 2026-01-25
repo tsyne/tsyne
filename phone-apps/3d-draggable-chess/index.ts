@@ -17,8 +17,7 @@
  */
 
 import { app, resolveTransport } from 'tsyne';
-import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext } from '../../cosyne/src/index3d';
-import { Vector3 } from '../../cosyne/src/math3d';
+import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext, Vector3 } from 'cosyne';
 
 // ==================== Types ====================
 

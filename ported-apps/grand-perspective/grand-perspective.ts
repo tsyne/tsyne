@@ -17,9 +17,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
-import { EventRouter } from '../../cosyne/src/events';
-import { enableEventHandling } from '../../cosyne/src/event-router-integration';
+import { cosyne, refreshAllCosyneContexts, EventRouter, enableEventHandling } from 'cosyne';
 
 // ============================================================================
 // Data Types

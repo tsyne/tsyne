@@ -10,11 +10,16 @@
  */
 
 import { app } from 'tsyne';
-import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
-import { LinearScale } from '../../cosyne/src/scales';
-import { Axis, GridLines } from '../../cosyne/src/axes';
-import { LineChart, MultiLineChart } from '../../cosyne/src/line-chart';
-import { ZoomPan } from '../../cosyne/src/zoom-pan';
+import {
+  cosyne,
+  clearAllCosyneContexts,
+  LinearScale,
+  Axis,
+  GridLines,
+  LineChart,
+  MultiLineChart,
+  ZoomPan,
+} from 'cosyne';
 
 type InterpolationType = 'linear' | 'step' | 'catmull-rom' | 'monotone';
 

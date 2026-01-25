@@ -41,7 +41,7 @@ A showcase demo for the Cosyne dial primitive - an interactive rotary knob contr
 ## Usage
 
 ```typescript
-import { cosyne } from '../../cosyne/src';
+import { cosyne } from 'cosyne';
 
 cosyne(app, (c) => {
   // Classic volume knob

@@ -1,4 +1,4 @@
-import { Vector3, rayLineIntersect2DV, angleBetweenYForward } from '../../cosyne/src/math3d';
+import { Vector3, rayLineIntersect2DV, angleBetweenYForward } from 'cosyne';
 import { GameMap } from './game-map';
 
 // ============================================================================

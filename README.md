@@ -286,49 +286,21 @@ const tsyneTest = new TsyneTest({ headed: true });
 
 ### Locators and Assertions
 
-TODO slim this down.
-
 ```typescript
-// Find widgets by text
-ctx.getByExactText("Submit")
-ctx.getByText("Counter:") // partial match
-ctx.getById("widget-id")   // by ID
-
-// Find by type
-ctx.getByType("button")
-ctx.getByType("label")
-ctx.getByType("entry")
+// Locators
+ctx.getById("widget-id")          // by ID (preferred)
+ctx.getByExactText("Submit")      // exact text match
+ctx.getByText("Counter:")         // partial match
+ctx.getByType("button")           // by widget type
 
 // Actions
 await locator.click()
 await locator.type("text")
-await locator.getText()
 
-// Fluent-Selenium Style API - Text Assertions
-await ctx.getByText("Submit").within(5000).click()  // Retry for 5 seconds
-await ctx.getByText("Loading...").without(3000)     // Wait for disappearance
-await ctx.getById("status").shouldBe("Success")     // Fluent assertion
-await ctx.getById("message").shouldContain("error") // Partial match
-await ctx.getById("email").shouldMatch(/^.+@.+$/)   // Regex match
-
-// Fluent-Selenium Style API - Property Assertions
-await ctx.getById("agree").shouldBeChecked()        // Checkbox state
-await ctx.getById("volume").shouldHaveValue(75)     // Slider/entry value
-await ctx.getById("submit").shouldBeEnabled()       // Enabled state
-await ctx.getById("myWidget").shouldHaveType("button") // Widget type
-await ctx.getById("modal").shouldBeVisible()        // Visibility
-
-// Assertions (Traditional style)
-await ctx.expect(locator).toHaveText("exact text")
-await ctx.expect(locator).toContainText("partial")
-await ctx.expect(locator).toBeVisible()
-await ctx.expect(locator).toExist()
-await ctx.expect(locator).toMatchText(/pattern/)
-
-// Negative assertions
-await ctx.expect(locator).toNotHaveText("wrong")
-await ctx.expect(locator).toNotBeVisible()
-await ctx.expect(locator).toNotExist()
+// Fluent assertions (Selenium-style)
+await ctx.getById("status").shouldBe("Success")
+await ctx.getByText("Submit").within(5000).click()  // retry with timeout
+await ctx.getByText("Loading...").without(3000)     // wait for disappearance
 ```
 
 ### Running Tests
@@ -403,13 +375,11 @@ For the complete API reference, see **[docs/API_REFERENCE.md](docs/API_REFERENCE
 
 ## Theme Support
 
-Tsyne supports light and dark themes that automatically apply to all widgets in your application. TODO link to Theme demo
-
-See `examples/theme.ts` for a complete theme demonstration with various widgets.
+Tsyne supports light and dark themes that automatically apply to all widgets. See [examples/theme.ts](examples/theme.ts) for a demo, or [examples/theme-creator.ts](examples/theme-creator.ts) for custom theme building.
 
 ## Browser Mode
 
-Tsyne includes a [Swiby-inspired](https://paulhammant.com/blog/google-app-engine-for-java-with-rich-ruby-clients.html) (and others) browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Sinatra, Flask, Express, etc.).
+Tsyne includes a [Swiby-inspired](https://paulhammant.com/blog/google-app-engine-for-java-with-rich-ruby-clients.html) (and others) browser system that loads **Tsyne TypeScript pages** from web servers dynamically, similar to how web browsers load HTML pages. This enables server-side page generation from any language (Spring, Rails, Sinatra, Flask, Loco, Express, etc.).
 
 ```bash
 # Run the browser with a URL
@@ -673,8 +643,9 @@ npm run build
 ## Requirements
 
 - **Node.js**: 22.0.0 or higher
-- **Go**: 1.24 or higher (for building the bridge) - we have our own fork for now (TODO)
-- **Platform-specific dependencies**:
+- **Go**: 1.24 or higher (for building the bridge)
+- **Fyne**: we have our own fork for now (TODO)
+- **Platform-specific dependencies for building**:
   - macOS: Xcode command line tools
   - Linux: X11 development libraries
   - Windows: MinGW-w64 (for CGO), or WSL2
@@ -687,8 +658,8 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 MIT License - see [LICENSE](LICENSE) file for details
 
-Note some the apps in this repo are other licenses, including GPL. Another day that's stop us from
-zipping all into a single distribution, but for now we don't make a distribution (a binary that we 
+Note some the apps in this repo are other licenses, including GPL. Another day that'll stop us from
+zipping all into a single distribution archive, but for now we don't make a distribution (a binary that we 
 publish) so we don't have to worry too much.
 
 ## Credits and Acknowledgments
@@ -701,49 +672,22 @@ publish) so we don't have to worry too much.
 
 ### Inspirations and Design Influences
 
-Tsyne's design draws from several influential frameworks and patterns:
+Tsyne's design draws from several influential pseudo-declarative frameworks and patterns:
 
-- The Interface Builder before the current Interface Builder, written in Lisp.
+- The [Interface Builder before the current Interface Builder](https://paulhammant.com/2013/03/28/interface-builders-alternative-lisp-timeline/), written in Lisp.
 - Ruby Shoes - Created by _why_the_lucky_stiff - Pioneering elegant DSL design for desktop GUIs
 - Swiby - Ruby/Swing integration by pal Jean Lazarou - CSS-like styling separate from UI structure
-- QML - Qt's declarative UI language - Seamless declarative/imperative integration
+- QML - Qt's declarative UI language - Seamless declarative/imperative integration. The inline JavaScript way more than the linked-to-C++ way.
 
 **See [HISTORICAL.md](HISTORICAL.md) for detailed discussion of these influences and how they shaped Tsyne's design.**
 
-Special thanks to: Andrew Williams, colleagues and contributors - For Fyne UI toolkit and example applications
+Special thanks to: Andrew Williams, colleagues and contributors - For Fyne UI toolkit and example applications.
 
-## Tauri Mobile Packaging (Android/iOS)
+## Mobile Packaging (Android/iOS)
 
-PhoneTop can be packaged as a Tauri mobile app using a web-renderer bridge mode.  TODO ... Android's APK route with nodejs-mobile might be a better route.
+PhoneTop can be packaged as an APK for Android deployment using nodejs-mobile (not regular Node.js). With Go+Fyne compiled for ARM, the minimal APK size is ~150MB.
 
-### Prerequisites
-
-TODO
-### Building Android APK
-
-```bash
-cd tauri-phonetop
-
-# Build for all 4 Android architectures (aarch64, armv7, i686, x86_64)
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
-ANDROID_HOME=~/Android/Sdk \
-NDK_HOME=~/Android/Sdk/ndk/26.1.10909125 \
-npx tauri android build
-```
-
-**Output:**
-- APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk`
-- AAB: `src-tauri/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab`
-
-### Architecture
-
-The Tauri mobile app uses a WebSocket-based renderer:
-
-```
-Tauri WebView ←→ WebSocket (ws://localhost:9876) ←→ Node.js + phonetop.ts
-```
-
-See `tauri-phonetop/README.md` for detailed architecture and running instructions.
+See `android-native/` for the Android build configuration.
 
 ## Documentation
 

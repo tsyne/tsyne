@@ -184,12 +184,8 @@ export {
   renderer3d,
 } from './renderer3d';
 
-// Re-export RenderTarget for buffer rendering
-export {
-  RenderTarget,
-  createRenderTarget,
-  clearRenderTarget,
-} from '../../core/dist/src/graphics/platform';
+// Note: RenderTarget, createRenderTarget, clearRenderTarget are exported from tsyne's graphics/platform
+// Apps should import them from 'tsyne' directly
 
 // Raycaster - 2.5D Software Rendering Engine
 export {

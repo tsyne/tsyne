@@ -9,11 +9,20 @@ import {
   cosyne3d,
   clearAllCosyne3dContexts,
   refreshAllCosyne3dContexts,
-} from '../cosyne/src/index3d';
-import { Vector3, Ray, Matrix4, Quaternion } from '../cosyne/src/math3d';
-import { Sphere3D, Box3D, Plane3D, Cylinder3D } from '../cosyne/src/primitives3d';
-import { Material, Materials } from '../cosyne/src/material';
-import { DirectionalLight, PointLight, AmbientLight } from '../cosyne/src/light';
+  Vector3,
+  Ray,
+  Matrix4,
+  Quaternion,
+  Sphere3D,
+  Box3D,
+  Plane3D,
+  Cylinder3D,
+  Material,
+  Materials,
+  DirectionalLight,
+  PointLight,
+  AmbientLight,
+} from 'cosyne';
 
 describe('Cosyne 3D Integration', () => {
   const mockApp = {};

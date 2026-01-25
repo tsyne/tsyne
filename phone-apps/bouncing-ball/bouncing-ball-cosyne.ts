@@ -9,7 +9,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutBounce, easeInOutCubic, easeOutElastic } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutBounce, easeInOutCubic, easeOutElastic } from 'cosyne';
 
 interface BallState {
   x: number;

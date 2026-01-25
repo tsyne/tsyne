@@ -8,7 +8,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts } from 'cosyne';
 
 export function buildTransformsApp(a: App): void {
   a.canvasStack(() => {

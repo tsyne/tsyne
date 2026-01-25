@@ -3,7 +3,7 @@
  * Based on original doom clone's Enemy class
  */
 
-import { Vector3 } from '../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 import { Enemy, EnemyType } from './enemy';
 
 export class WalkingEnemy extends Enemy {

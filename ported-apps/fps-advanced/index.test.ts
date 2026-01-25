@@ -21,7 +21,7 @@ import {
   DEFAULT_MAP,
   FPSStore,
 } from './index';
-import { Vector3 } from '../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 
 // ============================================================================
 // AABB TESTS

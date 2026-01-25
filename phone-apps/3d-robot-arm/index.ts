@@ -16,7 +16,7 @@
  */
 
 import { app, resolveTransport } from 'tsyne';
-import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
+import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from 'cosyne';
 
 // Robot State (Reactive)
 const robotState = {

@@ -10,13 +10,14 @@
  */
 
 import { app } from 'tsyne';
-import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src/index';
 import {
+  cosyne,
+  refreshAllCosyneContexts,
   LinearGradient,
   RadialGradient,
   PRESET_GRADIENTS,
   ClippingRegion,
-} from '../../cosyne/src/index';
+} from 'cosyne';
 
 type DemoTab = 'effects' | 'gradients' | 'clipping';
 

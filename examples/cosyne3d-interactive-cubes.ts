@@ -10,7 +10,7 @@
  */
 
 import { app, resolveTransport } from 'tsyne';
-import { cosyne3d, refreshAllCosyne3dContexts } from '../cosyne/src/index3d';
+import { cosyne3d, refreshAllCosyne3dContexts } from 'cosyne';
 
 // Cube state
 interface CubeState {

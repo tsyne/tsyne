@@ -2,7 +2,7 @@
  * Player class for Yet Another Doom Clone
  */
 
-import { Vector3 } from '../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 
 const ZERO = Vector3.zero();
 const Z_DIR = Vector3.forward();

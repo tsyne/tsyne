@@ -9,7 +9,7 @@
 
 import { App } from 'tsyne';
 import type { Window } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 /**
  * Observable state for spinner animation

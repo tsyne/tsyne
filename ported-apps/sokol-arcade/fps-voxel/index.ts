@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-import { Vector3 } from '../../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 
 export class VoxelWorld {
   blocks: boolean[] = new Array(4096).fill(false);

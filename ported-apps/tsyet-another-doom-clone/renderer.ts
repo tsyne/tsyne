@@ -6,9 +6,9 @@
 import {
   Raycaster,
   RaycasterWall,
-  RenderableObject
-} from '../../cosyne/src/raycaster';
-import { Vector3 } from '../../cosyne/src/math3d';
+  RenderableObject,
+  Vector3,
+} from 'cosyne';
 import { generateBrickTexture, generateTileTexture } from './texture-gen';
 import { Player } from './player';
 import { GameMap, WallSegment } from './game-map';

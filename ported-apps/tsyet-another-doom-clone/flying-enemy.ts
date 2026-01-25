@@ -3,7 +3,7 @@
  * Based on original doom clone's FlyingEnemy class
  */
 
-import { Vector3, urandom } from '../../cosyne/src/math3d';
+import { Vector3, urandom } from 'cosyne';
 import { Enemy, EnemyType, IGameMap } from './enemy';
 
 export class FlyingEnemy extends Enemy {

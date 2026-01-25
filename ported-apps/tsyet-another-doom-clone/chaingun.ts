@@ -11,7 +11,7 @@
  * - Spinning barrels when firing
  */
 
-import { Vector3 } from '../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 
 /**
  * Chaingun state and rendering

@@ -10,8 +10,7 @@
  */
 
 import { app, refreshAllBindings } from 'tsyne';
-import { cosyne, clearAllCosyneContexts } from '../../cosyne/src/index';
-import { ParticleSystem, Emitter } from '../../cosyne/src/particle-system';
+import { cosyne, clearAllCosyneContexts, ParticleSystem, Emitter } from 'cosyne';
 
 type EmitterType = 'fountain' | 'fireworks' | 'smoke' | 'explosion';
 

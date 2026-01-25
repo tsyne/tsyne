@@ -16,7 +16,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { cosyne, CosyneContext, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
+import { cosyne, CosyneContext, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 // ============================================================================
 // Types

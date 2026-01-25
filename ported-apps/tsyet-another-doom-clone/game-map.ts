@@ -3,7 +3,7 @@
  * Handles level loading, wall generation, and spatial queries
  */
 
-import { Vector3, urandom, isInRegion as isInPolygon } from '../../cosyne/src/math3d';
+import { Vector3, urandom, isInRegion as isInPolygon } from 'cosyne';
 import { IGameMap } from './enemy';
 
 const ZERO = Vector3.zero();

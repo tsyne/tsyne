@@ -2,7 +2,7 @@
  * Torus-specific projection for the torus demo
  */
 
-import type { Point3D, Point2D, RotationAngles, Projection } from '../../cosyne/src/projections';
+import type { Point3D, Point2D, RotationAngles, Projection } from 'cosyne';
 
 // Re-export types for convenience
 export type { Point3D, Point2D, RotationAngles, Projection };

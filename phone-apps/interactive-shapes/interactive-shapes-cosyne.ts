@@ -4,7 +4,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
 const pickRandom = (exclude: string) => COLORS.filter(c => c !== exclude)[Math.floor(Math.random() * 4)];

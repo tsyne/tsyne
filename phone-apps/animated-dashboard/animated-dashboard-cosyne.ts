@@ -9,7 +9,7 @@
  */
 
 import { App } from 'tsyne';
-import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutCubic, easeInOutSine } from '../../cosyne/src';
+import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutCubic, easeInOutSine } from 'cosyne';
 
 interface MetricState {
   value: number;

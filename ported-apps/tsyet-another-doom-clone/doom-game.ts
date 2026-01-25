@@ -1,4 +1,4 @@
-import { Vector3, urandom } from '../../cosyne/src/math3d';
+import { Vector3, urandom } from 'cosyne';
 import { Player } from './player';
 import { GameMap, getLevelCount, getLevelInfo, LevelInfo } from './game-map';
 import { RaycastRenderer } from './renderer';

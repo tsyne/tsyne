@@ -17,7 +17,7 @@
  */
 
 import { App, Label, TappableCanvasRaster, app, resolveTransport } from 'tsyne';
-import { cosyne, CosyneContext } from '../../cosyne/src';
+import { cosyne, CosyneContext } from 'cosyne';
 
 // ============================================================================
 // 3D Math Types & Utilities (shared with imperative version)

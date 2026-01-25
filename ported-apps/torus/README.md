@@ -112,7 +112,7 @@ import {
   generateTorusWireframe,
   calculateLambertianShade,
   getDefaultLightDirection,
-} from '../../cosyne/src';
+} from 'cosyne';
 
 // Create projection
 const proj = new TorusProjection({

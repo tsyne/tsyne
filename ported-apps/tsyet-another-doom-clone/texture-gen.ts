@@ -1,4 +1,4 @@
-import { RaycasterTexture } from '../../cosyne/src/raycaster';
+import { RaycasterTexture } from 'cosyne';
 
 // Brick texture size
 const BRICK_TEX_SIZE = 64;

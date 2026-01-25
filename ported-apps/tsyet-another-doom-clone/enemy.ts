@@ -2,7 +2,7 @@
  * Base Enemy class for Yet Another Doom Clone
  */
 
-import { Vector3, urandom } from '../../cosyne/src/math3d';
+import { Vector3, urandom } from 'cosyne';
 
 /** Project vector to XY plane (set z to 0) */
 function noz(v: Vector3): Vector3 {

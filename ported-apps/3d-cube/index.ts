@@ -19,7 +19,7 @@
 
 import { app, resolveTransport } from 'tsyne';
 import type { App, Window, Label } from 'tsyne';
-import { cosyne, refreshAllCosyneContexts, enableEventHandling, CosyneContext } from '../../cosyne/src/index';
+import { cosyne, refreshAllCosyneContexts, enableEventHandling, CosyneContext } from 'cosyne';
 import {
   RubiksCube,
   GestureController,

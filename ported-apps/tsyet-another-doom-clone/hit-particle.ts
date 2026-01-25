@@ -6,7 +6,7 @@
  * bullets hit walls or enemies, then fade away.
  */
 
-import { Vector3, urandom, urandomVector } from '../../cosyne/src/math3d';
+import { Vector3, urandom, urandomVector } from 'cosyne';
 import { IGameMap } from './enemy';
 
 /**

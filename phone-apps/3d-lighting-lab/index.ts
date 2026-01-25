@@ -17,9 +17,7 @@
  */
 
 import { app, resolveTransport } from 'tsyne';
-import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget } from '../../cosyne/src/index3d';
-import { Materials } from '../../cosyne/src/material';
-import { PointLight } from '../../cosyne/src/light';
+import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget, Materials, PointLight } from 'cosyne';
 
 // Lab state
 export const labState = {

@@ -3,7 +3,7 @@
  */
 
 import { VoxelWorld, VoxelPlayer, FPSVoxelGame } from './index';
-import { Vector3 } from '../../../cosyne/src/math3d';
+import { Vector3 } from 'cosyne';
 
 describe('VoxelWorld', () => {
   let world: VoxelWorld;

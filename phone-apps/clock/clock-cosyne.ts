@@ -11,7 +11,7 @@
 import { app, resolveTransport } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
-import { cosyne, refreshAllCosyneContexts } from '../../cosyne/src';
+import { cosyne, refreshAllCosyneContexts } from 'cosyne';
 import {
   CLOCK_SIZE,
   CLOCK_CENTER,

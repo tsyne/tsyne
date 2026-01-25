@@ -1,7 +1,7 @@
 {
-  "name": "tsyne-yet-another-doom-clone",
+  "name": "tsyne-torus",
   "version": "0.1.0",
-  "description": "Yet Another Doom Clone ported to Tsyne - A faithful port of Nicholas Carlini's js13k 2019 entry",
+  "description": "Torus visualization with projections",
   "private": true,
   "scripts": {
     "test": "jest",

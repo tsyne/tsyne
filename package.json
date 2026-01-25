@@ -15,8 +15,7 @@
     "test:examples": "pnpm -C examples run test",
     "test:all": "pnpm run test:core && pnpm run test:designer && pnpm run test:examples",
     "test:phone-apps": "pnpm -C phone-apps run test",
-    "clean": "pnpm -r clean && rm -rf pnpm-lock.yaml",
-    "install": "pnpm install"
+    "clean": "pnpm -r clean && rm -rf pnpm-lock.yaml"
   },
   "devDependencies": {
     "@img/sharp-wasm32": "^0.34.5",

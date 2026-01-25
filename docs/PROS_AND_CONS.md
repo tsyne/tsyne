@@ -10,7 +10,7 @@ This document provides an honest assessment of Tsyne's position in the JavaScrip
 
 | Aspect | Electron | Tauri | Tsyne |
 |--------|----------|-------|------|
-| **Bundle Size** | 100-300+ MB | 5-15 MB | ~10-20 MB |
+| **Bundle Size** | 100-300+ MB | 5-15 MB | ~15 MB (desktop), ~150 MB (Android APK) |
 | **Memory Usage** | High (Chromium + Node) | Medium (WebView) | Low (native widgets) |
 | **Startup Time** | Slower (browser engine) | Medium (WebView) | Fast (native) |
 | **UI Technology** | HTML/CSS/DOM | HTML/CSS/WebView | Native Fyne widgets |
@@ -163,7 +163,7 @@ No HTML/CSS/JSX boilerplate, just code.
 
 Three clean layers:
 1. TypeScript client (your code)
-2. Go bridge (JSON-RPC)
+2. Go bridge (MsgPack IPC)
 3. Fyne UI (native widgets)
 
 Easy to understand, debug, and extend.
@@ -199,8 +199,9 @@ Build once, deploy to:
 - **Infinite scrolling, virtual lists, carousels, modals, tooltips, etc.**
 
 **Tsyne has:**
-- 17+ widgets (Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Separator, Hyperlink, RichText, Image, Tree) - see [ROADMAP.md](ROADMAP.md)
+- 20+ widgets (Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Separator, Hyperlink, RichText, Image, Tree, etc.) - see [ROADMAP.md](ROADMAP.md)
 - Advanced layouts (VBox, HBox, Grid, Split, Tabs, Scroll, Center, Card, Accordion, Border, GridWrap)
+- Canvas/Cosyne for custom 2D graphics with reactive bindings
 - Toolbar and Menu support
 - CSS-like styling system (fonts, colors, text alignment)
 - No third-party component ecosystem
@@ -209,16 +210,17 @@ Build once, deploy to:
 
 ### ❌ Limited Widget Library
 
-**Current state (v0.1.0):**
-- ✅ 17+ widgets: Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Tree, etc.
+**Current state:**
+- ✅ 20+ widgets: Button, Label, Entry, MultiLineEntry, PasswordEntry, Checkbox, Select, Slider, ProgressBar, RadioGroup, Table, List, Form, Tree, etc.
 - ✅ Advanced layouts: VBox, HBox, Grid, Split, Tabs, Scroll, Center, Card, Accordion, Border, GridWrap
+- ✅ Canvas/Cosyne for custom 2D graphics with reactive bindings
 - ✅ Toolbar, Menu system, Context menus
 - ✅ CSS-like styling system
-- ❌ No: Canvas, File pickers, Custom animations, Advanced data visualization
+- ❌ No: File pickers, Advanced data visualization
 
 **See [ROADMAP.md](ROADMAP.md) for implementation plan.**
 
-**Coverage: ~40% of Fyne's features**
+**Coverage: ~50% of Fyne's features**
 
 For production apps with very complex UIs, you may still need additional widgets.
 
@@ -481,7 +483,7 @@ app(() => {
 | **Bundle Size** | 100-300 MB | 5-15 MB | 10-20 MB |
 | **Memory Usage** | High (100-500 MB) | Medium (50-150 MB) | Low (20-50 MB) |
 | **Startup Time** | Slow | Medium | Fast |
-| **UI Ecosystem** | Massive (React, Vue, etc.) | Massive (React, Vue, etc.) | Growing (17+ widgets) |
+| **UI Ecosystem** | Massive (React, Vue, etc.) | Massive (React, Vue, etc.) | Growing (20+ widgets + Cosyne canvas) |
 | **CSS Styling** | ✅ Full control | ✅ Full control | ⚠️ CSS-like system |
 | **Third-Party Libraries** | Thousands | Thousands | None |
 | **Reuse Web Code** | ✅ Yes | ✅ Yes | ❌ No |
@@ -537,7 +539,7 @@ Use this to decide if Tsyne is right for your project:
 
 1. **Electron Dominance**: Massive mindshare, ecosystem, job market
 2. **Web Knowledge**: Developers already know HTML/CSS/React
-3. **Limited Widgets**: Tsyne has 3 widgets vs unlimited web possibilities
+3. **Limited Widgets**: Tsyne has 20+ widgets vs unlimited web possibilities
 4. **No UI Component Ecosystem**: Can't use Material-UI, Ant Design, Chakra, etc.
 5. **New API to Learn**: Fyne widgets, not familiar web components
 6. **Small Community**: Few tutorials, examples, Stack Overflow answers
@@ -594,6 +596,5 @@ Use this to decide if Tsyne is right for your project:
 
 ---
 
-**Last Updated:** 2025-11-09
-**Current Version:** 0.1.0
+**Last Updated:** 2026-01
 **Target Audience:** JavaScript developers considering Tsyne for desktop apps

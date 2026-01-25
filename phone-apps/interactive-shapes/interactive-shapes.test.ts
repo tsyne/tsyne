@@ -5,7 +5,7 @@
 
 import { TsyneTest } from 'tsyne';
 import { App } from 'tsyne';
-import { cosyne, CosyneContext, enableEventHandling, refreshAllCosyneContexts } from '../../cosyne/src';
+import { cosyne, CosyneContext, enableEventHandling, refreshAllCosyneContexts } from 'cosyne';
 import * as fs from 'fs';
 import * as path from 'path';
 
