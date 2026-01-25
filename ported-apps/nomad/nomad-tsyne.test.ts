@@ -1,6 +1,6 @@
 /**
  * TsyneTest tests for Nomad App
- * Tests timezone UI interactions
+ * Tests timezone UI interactions with city cards
  */
 
 import { TsyneTest, TestContext } from 'tsyne';
@@ -16,7 +16,7 @@ describe('Nomad Timezone Manager UI', () => {
   beforeAll(async () => {
     tsyneTest = new TsyneTest({ headed: false });
     testApp = await tsyneTest.createApp((app: App) => {
-      app.window({ title: 'Nomad', width: 600, height: 800 }, (win: Window) => {
+      app.window({ title: 'Nomad', width: 340, height: 600 }, (win: Window) => {
         buildNomadApp(app, win);
       });
     });
@@ -26,54 +26,41 @@ describe('Nomad Timezone Manager UI', () => {
 
   afterAll(async () => {
     await tsyneTest.cleanup();
-  });
+  }, 10000);
 
-  test('should render initial UI with title', async () => {
-    // Verify title
-    const title = await ctx.getById('nomadTitle').getText();
-    expect(title).toBe('Nomad - Time Zone Manager');
+  test('should render initial UI with Edinburgh card (default city)', async () => {
+    // The app starts with Edinburgh as the default city
+    await ctx.getById('nomad-city-edinburgh').within(1000).shouldExist();
+    const cityName = await ctx.getById('nomad-city-edinburgh').getText();
+    expect(cityName).toBe('EDINBURGH');
   }, 30000);
 
-  test('should display add location section', async () => {
-    // Verify add location label
-    const addLabel = await ctx.getById('nomadAddLabel').getText();
-    expect(addLabel).toBe('Add Location');
-
-    // Verify common location buttons exist
-    await ctx.getById('nomad-add-utc').within(500).shouldExist();
-    await ctx.getById('nomad-add-london').within(500).shouldExist();
-    await ctx.getById('nomad-add-tokyo').within(500).shouldExist();
+  test('should display timezone info for Edinburgh', async () => {
+    const tzInfo = await ctx.getById('nomad-tz-edinburgh').getText();
+    // Should show "UNITED KINGDOM · GMT" or "UNITED KINGDOM · BST" depending on DST
+    expect(tzInfo).toMatch(/UNITED KINGDOM/);
   }, 30000);
 
-  test('should display sorting and format buttons', async () => {
-    // Verify sort button
-    const sortBtn = await ctx.getById('nomadSortBtn').getText();
-    expect(sortBtn).toMatch(/Sort by/);
-
-    // Verify format button
-    const formatBtn = await ctx.getById('nomadFormatBtn').getText();
-    expect(formatBtn).toMatch(/Hour/);
+  test('should have date picker button', async () => {
+    await ctx.getById('nomad-date-edinburgh').within(500).shouldExist();
+    const dateBtn = await ctx.getById('nomad-date-edinburgh').getText();
+    // Should show formatted date like "Mon 15 Jul 2024 ▾"
+    expect(dateBtn).toMatch(/\d{2}/); // Contains a date number
   }, 30000);
 
-  test('should display times section header', async () => {
-    // Verify times label
-    const timesLabel = await ctx.getById('nomadTimesLabel').getText();
-    expect(timesLabel).toBe('Current Times');
+  test('should have time picker dropdown', async () => {
+    await ctx.getById('nomad-time-edinburgh').within(500).shouldExist();
   }, 30000);
 
-  test('should show placeholder when no locations added', async () => {
-    // Verify placeholder text
-    const placeholder = await ctx.getById('nomadPlaceholder').getText();
-    expect(placeholder).toBe('Add a location to see times');
+  test('should have menu button for removing city', async () => {
+    await ctx.getById('nomad-menu-edinburgh').within(500).shouldExist();
+    const menuBtn = await ctx.getById('nomad-menu-edinburgh').getText();
+    expect(menuBtn).toBe('…');
   }, 30000);
 
-  test('should have all required UI elements', async () => {
-    // Check all main UI elements exist
-    await ctx.getById('nomadTitle').within(500).shouldExist();
-    await ctx.getById('nomadAddLabel').within(500).shouldExist();
-    await ctx.getById('nomadSortBtn').within(500).shouldExist();
-    await ctx.getById('nomadFormatBtn').within(500).shouldExist();
-    await ctx.getById('nomadTimesLabel').within(500).shouldExist();
-    await ctx.getById('nomadPlaceholder').within(500).shouldExist();
+  test('should have add icon', async () => {
+    await ctx.getById('nomad-add-icon').within(500).shouldExist();
+    const addIcon = await ctx.getById('nomad-add-icon').getText();
+    expect(addIcon).toBe('+');
   }, 30000);
 });

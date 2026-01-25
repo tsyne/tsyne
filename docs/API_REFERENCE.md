@@ -140,6 +140,19 @@ app({ title: "My App" }, (app) => {
   - `text`: Button label
   - `onClick`: Click handler (optional)
 
+- **`menuButton(text, builder)`**: Create a button that shows a popup menu when clicked
+  - `text`: Button label (e.g., '…' for ellipsis menu)
+  - `builder`: Function receiving MenuBuilder to add items
+  - Menu appears positioned below the button
+  - *Note: Nested/submenu items not yet supported*
+  ```typescript
+  a.menuButton('…', (menu) => {
+    menu.item('Delete', () => removeItem(id));
+    menu.item('Edit', () => editItem(id));
+    // Loops and conditionals work inside builder
+  });
+  ```
+
 - **`label(text)`**: Create a label
   - `text`: Label text
 

@@ -61,6 +61,79 @@ export class Button extends Widget {
 }
 
 /**
+ * Menu item for MenuButton popup menu (internal)
+ */
+export interface PopupMenuItem {
+  label: string;
+  onClick: () => void;
+}
+
+/**
+ * Builder for MenuButton menu items
+ * Allows declarative menu construction with loops and conditionals
+ */
+export class MenuBuilder {
+  private items: PopupMenuItem[] = [];
+
+  /**
+   * Add a menu item
+   * @param label - Display text for the menu item
+   * @param onClick - Callback when item is selected
+   */
+  item(label: string, onClick: () => void): this {
+    this.items.push({ label, onClick });
+    return this;
+  }
+
+  /** @internal Get collected items */
+  getItems(): PopupMenuItem[] {
+    return this.items;
+  }
+}
+
+/**
+ * MenuButton - a button that shows a popup menu when clicked
+ * The menu appears directly below the button, positioned automatically.
+ *
+ * @example
+ * a.menuButton('…', (menu) => {
+ *   menu.item('Delete', () => deleteItem());
+ *   menu.item('Edit', () => editItem());
+ * });
+ */
+export class MenuButton extends Widget {
+  constructor(ctx: Context, text: string, builder: (menu: MenuBuilder) => void, windowId: string) {
+    const id = ctx.generateId('menubutton');
+    super(ctx, id);
+
+    // Collect menu items via builder
+    const menuBuilder = new MenuBuilder();
+    builder(menuBuilder);
+    const menuItems = menuBuilder.getItems();
+
+    // Build menu items with callbacks
+    const items = menuItems.map((item) => {
+      const callbackId = ctx.generateId('callback');
+      ctx.bridge.registerEventHandler(callbackId, () => {
+        item.onClick();
+      });
+      return {
+        label: item.label,
+        callbackId
+      };
+    });
+
+    ctx.bridge.send('createMenuButton', {
+      id,
+      text,
+      windowId,
+      menuItems: items
+    });
+    ctx.addToCurrentContainer(id, this);
+  }
+}
+
+/**
  * Entry (text input) widget
  */
 export class Entry extends Widget {

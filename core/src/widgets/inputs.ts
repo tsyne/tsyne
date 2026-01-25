@@ -2,7 +2,7 @@
 // This improves transpilation speed and LLM token efficiency
 
 // Text/action input widgets
-export { Button, Entry, MultiLineEntry, PasswordEntry } from './inputs_text';
+export { Button, MenuButton, MenuBuilder, PopupMenuItem, Entry, MultiLineEntry, PasswordEntry } from './inputs_text';
 
 // Selection widgets
 export { Checkbox, Select, SelectEntry, RadioGroup, CheckGroup } from './inputs_selection';

@@ -574,6 +574,16 @@ export class Popup {
       y
     });
   }
+
+  /**
+   * Show the popup positioned below a widget (like a dropdown menu)
+   * @param widget The widget to position the popup relative to
+   */
+  async showAtWidget(widget: { getPosition(): Promise<{ absoluteX: number; absoluteY: number; height: number }> }): Promise<void> {
+    const pos = await widget.getPosition();
+    // Position popup below the widget
+    await this.showAt(pos.absoluteX, pos.absoluteY + pos.height);
+  }
 }
 
 /**

@@ -9,6 +9,8 @@ import { ITsyneWindow, createTsyneWindow, isDesktopMode, isPhoneMode } from './t
 import {
   // Inputs
   Button,
+  MenuButton,
+  MenuBuilder,
   Checkbox,
   CheckGroup,
   DateEntry,
@@ -450,6 +452,24 @@ export class App {
   }
 
   /**
+   * Create a button that shows a popup menu when clicked.
+   * The menu appears directly below the button.
+   * @param text - Button label text
+   * @param builder - Builder function that receives MenuBuilder to add items
+   * @returns MenuButton widget
+   * @example
+   * a.menuButton('…', (menu) => {
+   *   menu.item('Delete', () => deleteItem());
+   *   menu.item('Edit', () => editItem());
+   * });
+   */
+  menuButton(text: string, builder: (menu: MenuBuilder) => void): MenuButton {
+    // Need window ID for popup positioning - get from current window context
+    const windowId = this.ctx.getCurrentWindow() || '';
+    return new MenuButton(this.ctx, text, builder, windowId);
+  }
+
+  /**
    * Create a text label.
    * @param text - Text to display
    * @param classNameOrOptions - Optional CSS class name or LabelOptions object
@@ -759,6 +779,7 @@ export class App {
       | {
           path?: string;
           resource?: string;
+          url?: string;  // Remote URL for image
           fillMode?: 'contain' | 'stretch' | 'original';
           onClick?: () => void;
           onDrag?: (x: number, y: number) => void;

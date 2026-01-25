@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -409,11 +411,55 @@ func (b *Bridge) handleCreateImage(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	path, hasPath := msg.Payload["path"].(string)
 	resourceName, hasResource := msg.Payload["resource"].(string)
+	urlString, hasURL := msg.Payload["url"].(string)
 
 	var img *canvas.Image
 
-	// Check if using resource reference (new approach)
-	if hasResource && resourceName != "" {
+	// Check if using URL (remote image)
+	if hasURL && urlString != "" {
+		resp, err := http.Get(urlString)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to fetch URL: %v", err),
+			}
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("HTTP error: %d %s", resp.StatusCode, resp.Status),
+			}
+		}
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to read response body: %v", err),
+			}
+		}
+
+		decodedImg, _, err := image.Decode(bytes.NewReader(data))
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("Failed to decode image from URL: %v", err),
+			}
+		}
+
+		bounds := decodedImg.Bounds()
+		width, height := bounds.Dx(), bounds.Dy()
+
+		img = canvas.NewImageFromImage(decodedImg)
+		img.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+	} else if hasResource && resourceName != "" {
+		// Using resource reference
 		imageData, exists := b.getResource(resourceName)
 		if !exists {
 			return Response{

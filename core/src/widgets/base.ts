@@ -208,6 +208,24 @@ export abstract class Widget {
   }
 
   /**
+   * Get the position and size of this widget
+   * @returns Object with x, y, absoluteX, absoluteY, width, height
+   */
+  async getPosition(): Promise<{ x: number; y: number; absoluteX: number; absoluteY: number; width: number; height: number }> {
+    const info = await this.ctx.bridge.send('getWidgetInfo', {
+      widgetId: this.id
+    }) as { x: number; y: number; absoluteX: number; absoluteY: number; width: number; height: number };
+    return {
+      x: info.x || 0,
+      y: info.y || 0,
+      absoluteX: info.absoluteX || 0,
+      absoluteY: info.absoluteY || 0,
+      width: info.width || 0,
+      height: info.height || 0
+    };
+  }
+
+  /**
    * Register a custom ID for this widget (for test framework getById)
    * @param customId Custom ID to register
    * @returns this for method chaining

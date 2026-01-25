@@ -68,6 +68,82 @@ func (b *Bridge) handleCreateButton(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleCreateMenuButton(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	text := msg.Payload["text"].(string)
+	windowID := msg.Payload["windowId"].(string)
+
+	// Parse menu items
+	menuItemsRaw, _ := msg.Payload["menuItems"].([]interface{})
+
+	// Get the window canvas for showing the popup menu
+	b.mu.RLock()
+	win, windowExists := b.windows[windowID]
+	b.mu.RUnlock()
+
+	if !windowExists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Window not found",
+		}
+	}
+
+	// Build menu items with callbacks
+	var menuItems []*fyne.MenuItem
+	for i, item := range menuItemsRaw {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		label, _ := itemMap["label"].(string)
+		callbackId, _ := itemMap["callbackId"].(string)
+
+		// Capture index for closure
+		itemIndex := i
+		menuItem := fyne.NewMenuItem(label, func() {
+			if callbackId != "" {
+				b.sendEvent(Event{
+					Type:     "callback",
+					WidgetID: widgetID,
+					Data: map[string]interface{}{
+						"callbackId": callbackId,
+						"itemIndex":  itemIndex,
+					},
+				})
+			}
+		})
+		menuItems = append(menuItems, menuItem)
+	}
+
+	menu := fyne.NewMenu("", menuItems...)
+
+	// Create button that shows menu at its position when clicked
+	var btn *widget.Button
+	btn = widget.NewButton(text, func() {
+		// Get button's absolute position
+		position := b.app.Driver().AbsolutePositionForObject(btn)
+		position.Y += btn.Size().Height // Show below button
+
+		// Show popup menu at position
+		widget.ShowPopUpMenuAtPosition(menu, win.Canvas(), position)
+	})
+
+	// Set low importance for menu buttons (like original)
+	btn.Importance = widget.LowImportance
+
+	b.mu.Lock()
+	b.widgets[widgetID] = btn
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "menubutton", Text: text}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
 func (b *Bridge) handleCreateEntry(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	placeholder, _ := msg.Payload["placeholder"].(string)

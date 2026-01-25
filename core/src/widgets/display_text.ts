@@ -37,7 +37,7 @@ export class Image {
 
   constructor(
     ctx: Context,
-    pathOrOptions: string | { path?: string; resource?: string; fillMode?: 'contain' | 'stretch' | 'original'; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; },
+    pathOrOptions: string | { path?: string; resource?: string; url?: string; fillMode?: 'contain' | 'stretch' | 'original'; onClick?: () => void; onDrag?: (x: number, y: number) => void; onDragEnd?: (x: number, y: number) => void; },
     fillMode?: 'contain' | 'stretch' | 'original',
     onClick?: () => void,
     onDrag?: (x: number, y: number) => void,
@@ -65,7 +65,10 @@ export class Image {
       // New: options object
       const options = pathOrOptions;
 
-      if (options.resource) {
+      if (options.url) {
+        // Remote URL - pass directly to bridge
+        payload.url = options.url;
+      } else if (options.resource) {
         // Apply resource scoping if a scope is set (for multi-instance app isolation)
         payload.resource = ctx.scopeResourceName(options.resource);
       } else if (options.path) {

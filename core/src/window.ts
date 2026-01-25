@@ -549,11 +549,11 @@ export class Window {
 
     this.ctx.bridge.registerEventHandler(callbackId, async (_data: any) => {
       const allowClose = await callback();
-      // Send response back to Go bridge
+      // Send response back to Go bridge - ignore errors since bridge may be shutting down
       this.ctx.bridge.send('closeInterceptResponse', {
         windowId: this.id,
         allowClose
-      });
+      }).catch(() => {});
     });
 
     this.ctx.bridge.send('setWindowCloseIntercept', {
