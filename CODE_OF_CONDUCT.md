@@ -11,7 +11,7 @@ This is about TypeScript app development of Fyne.io applications. Try to find a 
 ## Be Mature
 
 - Use "I could be wrong, but..." when debating
-- Criticize things, not people: "Could we have tests, please?" vs "You should have written tests"
+- Criticize things, not people: "Could this have tests, please" vs "You should have written tests"
 - Assume good intentions
 - Value learning over being right
 
