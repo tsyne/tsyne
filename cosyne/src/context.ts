@@ -1099,6 +1099,8 @@ export function cosyne(app: any, builder: (context: CosyneContext) => void): Cos
   builder(context);
   // Render markers for all lines after builder completes
   context.renderLineMarkers();
+  // Immediately evaluate all bindings to ensure initial state is rendered correctly
+  context.refreshBindings();
   return context;
 }
 

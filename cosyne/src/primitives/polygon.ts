@@ -106,19 +106,20 @@ export class CosynePolygon extends Primitive<any> {
 
   protected applyFill(): void {
     if (this.underlying && this.fillColor !== undefined) {
-      if (this.underlying.updateFillColor) {
-        this.underlying.updateFillColor(this.fillColor);
+      if (this.underlying.update) {
+        this.underlying.update({ fillColor: this.fillColor });
       }
     }
   }
 
   protected applyStroke(): void {
     if (this.underlying && this.strokeColor !== undefined) {
-      if (this.underlying.updateStrokeColor) {
-        this.underlying.updateStrokeColor(this.strokeColor);
-      }
-      if (this.underlying.updateStrokeWidth && this.strokeWidth !== undefined) {
-        this.underlying.updateStrokeWidth(this.strokeWidth);
+      if (this.underlying.update) {
+        const updateData: any = { strokeColor: this.strokeColor };
+        if (this.strokeWidth !== undefined) {
+          updateData.strokeWidth = this.strokeWidth;
+        }
+        this.underlying.update(updateData);
       }
     }
   }
