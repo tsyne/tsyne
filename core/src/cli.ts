@@ -13,7 +13,7 @@
 
 import { PROTOCOL_VERSION, TSYNE_VERSION } from './version';
 import { checkAppVersion, getVersionRequirement, validateVersion } from './app-version';
-import { processGrabDirectives, parseGrabDirectives } from './grab';
+import { processGrabDirectives, parseGrabDirectives, listCachedPackages, clearCache, getGrabCacheDir } from './grab';
 import { showVersionMismatchDialog, openUpdatePage } from './version-dialog';
 import { spawn, execSync } from 'child_process';
 import * as path from 'path';
@@ -98,6 +98,14 @@ function printVersion(): void {
   console.log(`  node: ${getNodeVersion()}`);
 }
 
+function logSuccess(msg: string): void {
+  console.log(`${colors.green}[tsyne]${colors.reset} ${msg}`);
+}
+
+function logWarn(msg: string): void {
+  console.log(`${colors.yellow}[tsyne]${colors.reset} ${msg}`);
+}
+
 /**
  * Print usage information
  */
@@ -116,11 +124,17 @@ Options:
   --help, -h          Show this help message
   --ignore-version    Skip version compatibility check (risky)
   --gui-errors        Show errors in GUI dialogs (for standalone apps)
+  --dry-run           Show @grab dependencies without installing
+  --update            Force update all @grab dependencies
+  --offline           Run without installing (use cached only)
+  --list-cache        List all cached @grab packages
+  --clear-cache       Clear the @grab package cache
 
 Examples:
   tsyne app.ts              Run app.ts (infers 'run' command)
   tsyne run app.ts          Explicitly run app.ts
   tsyne --version           Show all component versions
+  tsyne --list-cache        Show cached packages
 `);
 }
 
@@ -130,9 +144,9 @@ Examples:
 async function runApp(
   appPath: string,
   args: string[],
-  options: { ignoreVersion?: boolean; guiErrors?: boolean } = {}
+  options: { ignoreVersion?: boolean; guiErrors?: boolean; dryRun?: boolean; update?: boolean; offline?: boolean } = {}
 ): Promise<number> {
-  const { ignoreVersion = false, guiErrors = false } = options;
+  const { ignoreVersion = false, guiErrors = false, dryRun = false, update = false, offline = false } = options;
 
   // Resolve absolute path
   const absolutePath = path.resolve(appPath);
@@ -169,8 +183,26 @@ async function runApp(
     }
   }
 
+  // Handle dry-run: just show dependencies and exit
+  if (dryRun) {
+    const directives = parseGrabDirectives(absolutePath);
+    if (directives.length === 0) {
+      log('No @grab dependencies found');
+    } else {
+      log(`Found ${directives.length} @grab dependencies:`);
+      for (const d of directives) {
+        console.log(`  - ${d.package}@${d.version}`);
+      }
+      log('Dry run - no packages will be installed');
+    }
+    return 0;
+  }
+
   // Process @grab directives
-  const grabResult = processGrabDirectives(absolutePath, { verbose: false });
+  if (offline) {
+    logWarn('Offline mode - using cached packages only');
+  }
+  const grabResult = processGrabDirectives(absolutePath, { verbose: false, update, offline });
   if (grabResult.errors.length > 0) {
     for (const err of grabResult.errors) {
       logError(err);
@@ -321,6 +353,10 @@ async function main(): Promise<void> {
   // Extract global flags
   let ignoreVersion = false;
   let guiErrors = false;
+  let dryRun = false;
+  let update = false;
+  let offline = false;
+
   const args = rawArgs.filter((arg) => {
     if (arg === '--ignore-version') {
       ignoreVersion = true;
@@ -328,6 +364,18 @@ async function main(): Promise<void> {
     }
     if (arg === '--gui-errors') {
       guiErrors = true;
+      return false;
+    }
+    if (arg === '--dry-run') {
+      dryRun = true;
+      return false;
+    }
+    if (arg === '--update') {
+      update = true;
+      return false;
+    }
+    if (arg === '--offline') {
+      offline = true;
       return false;
     }
     return true;
@@ -348,6 +396,26 @@ async function main(): Promise<void> {
 
   if (firstArg === '--help' || firstArg === '-h') {
     printUsage();
+    process.exit(0);
+  }
+
+  if (firstArg === '--list-cache') {
+    const packages = listCachedPackages();
+    if (packages.length === 0) {
+      log('Cache is empty');
+    } else {
+      log(`Packages in cache (${getGrabCacheDir()}):`);
+      for (const pkg of packages) {
+        console.log(`  - ${pkg.name}@${pkg.version}`);
+      }
+    }
+    process.exit(0);
+  }
+
+  if (firstArg === '--clear-cache') {
+    logWarn(`Clearing cache at ${getGrabCacheDir()}`);
+    clearCache();
+    logSuccess('Cache cleared');
     process.exit(0);
   }
 
@@ -378,7 +446,7 @@ async function main(): Promise<void> {
         printUsage();
         process.exit(1);
       }
-      const exitCode = await runApp(appPath, appArgs, { ignoreVersion, guiErrors });
+      const exitCode = await runApp(appPath, appArgs, { ignoreVersion, guiErrors, dryRun, update, offline });
       process.exit(exitCode);
       break;
 

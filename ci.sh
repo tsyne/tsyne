@@ -394,6 +394,19 @@ elif [ "$OS" = "macos" ]; then
 fi
 
 # ============================================================================
+# STEP 1.5: Test tsyne install and failure modes
+# ============================================================================
+echo "--- :package: Testing tsyne install"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
+./scripts/install.sh
+
+# Test failure modes
+echo "Testing tsyne failure modes..."
+./scripts/test-failure-modes.sh || {
+  echo "⚠️  Failure mode tests failed (non-fatal)"
+}
+
+# ============================================================================
 # STEP 2: Core (Tsyne Core Library)
 # ============================================================================
 echo "--- :nodejs: Core - Install & Build"

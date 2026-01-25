@@ -231,6 +231,68 @@ export function getGrabNodePath(cacheDir?: string): string {
 }
 
 /**
+ * List all packages in the @grab cache
+ */
+export function listCachedPackages(): Array<{ name: string; version: string }> {
+  const cacheDir = getGrabCacheDir();
+  const nodeModulesDir = path.join(cacheDir, 'node_modules');
+
+  if (!fs.existsSync(nodeModulesDir)) {
+    return [];
+  }
+
+  const packages: Array<{ name: string; version: string }> = [];
+  const entries = fs.readdirSync(nodeModulesDir);
+
+  for (const entry of entries) {
+    // Skip hidden files and .bin
+    if (entry.startsWith('.') || entry === '.bin') {
+      continue;
+    }
+
+    const pkgPath = path.join(nodeModulesDir, entry);
+
+    // Handle scoped packages (@org/pkg)
+    if (entry.startsWith('@')) {
+      const scopedEntries = fs.readdirSync(pkgPath);
+      for (const scopedEntry of scopedEntries) {
+        const scopedPkgJson = path.join(pkgPath, scopedEntry, 'package.json');
+        if (fs.existsSync(scopedPkgJson)) {
+          try {
+            const pkg = JSON.parse(fs.readFileSync(scopedPkgJson, 'utf-8'));
+            packages.push({ name: `${entry}/${scopedEntry}`, version: pkg.version || 'unknown' });
+          } catch {
+            packages.push({ name: `${entry}/${scopedEntry}`, version: 'unknown' });
+          }
+        }
+      }
+    } else {
+      const pkgJsonPath = path.join(pkgPath, 'package.json');
+      if (fs.existsSync(pkgJsonPath)) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+          packages.push({ name: entry, version: pkg.version || 'unknown' });
+        } catch {
+          packages.push({ name: entry, version: 'unknown' });
+        }
+      }
+    }
+  }
+
+  return packages;
+}
+
+/**
+ * Clear the @grab cache
+ */
+export function clearCache(): void {
+  const cacheDir = getGrabCacheDir();
+  if (fs.existsSync(cacheDir)) {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+  }
+}
+
+/**
  * Scan file and install all @grab dependencies
  * Returns the node_modules path to add to NODE_PATH
  */

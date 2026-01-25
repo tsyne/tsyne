@@ -1,325 +1,40 @@
 #!/bin/bash
-# tsyne - TypeScript native GUI runner with embedded dependency support
-
-# Timing for performance debugging (macOS compatible)
-# macOS date doesn't support %N, so test if the output is a valid number
-_test_date=$(date +%s%3N 2>/dev/null)
-if [[ "$_test_date" =~ ^[0-9]+$ ]]; then
-    TSYNE_START_TIME=$(date +%s%3N)
-    tsyne_elapsed() {
-        local now=$(date +%s%3N)
-        echo "$((now - TSYNE_START_TIME))ms"
-    }
-else
-    # macOS fallback - use seconds only
-    TSYNE_START_TIME=$(date +%s)
-    tsyne_elapsed() {
-        local now=$(date +%s)
-        echo "$((now - TSYNE_START_TIME))s"
-    }
-fi
+# tsyne - TypeScript native GUI runner
+#
+# This is a thin wrapper that sets up the environment and delegates to the TypeScript CLI.
+# All argument parsing, @grab handling, and app execution is done in TypeScript for
+# cross-platform compatibility (works on Linux, macOS, Windows/Git Bash, WSL).
 #
 # Usage: tsyne [options] <app.ts>
 #
-# Runs Tsyne TypeScript applications, automatically resolving @grab dependencies.
-#
-# Example:
-#   ./scripts/tsyne examples/weather-viewer-standalone.ts
-#
-# See docs/INLINE_DEPENDENCY_DECLARATIONS.md for full documentation.
+# See: tsyne --help for full options
 
 set -e
 
-# Get tsyne version from package.json
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TSYNE_SOURCE="$(dirname "$SCRIPT_DIR")"  # Where tsyne source lives (dev only)
-TSYNE_VERSION=$(grep '"version"' "$TSYNE_SOURCE/package.json" | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
-
-# Runtime directories - these are the production paths
-TSYNE_HOME="${TSYNE_HOME:-$HOME/.tsyne}"
-TSYNE_RUNTIME="$TSYNE_HOME/runtime/$TSYNE_VERSION"
-TSYNE_CACHE="$TSYNE_HOME/packages"
+TSYNE_SOURCE="$(dirname "$SCRIPT_DIR")"
 
 # Colors for output
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Flags
-DRY_RUN=false
-UPDATE=false
-OFFLINE=false
-LIST_CACHE=false
-CLEAR_CACHE=false
-VERBOSE=false
-
-usage() {
-    echo "Usage: $(basename "$0") [options] <app.ts>"
-    echo ""
-    echo "Grapes-alike TypeScript runner - auto-installs @grab dependencies"
-    echo ""
-    echo "Options:"
-    echo "  --dry-run     Show what would be installed without doing it"
-    echo "  --update      Force update all dependencies"
-    echo "  --offline     Run without installing (use cached only)"
-    echo "  --list-cache  List all cached packages"
-    echo "  --clear-cache Clear the package cache"
-    echo "  --verbose     Show detailed output"
-    echo "  --help        Show this help message"
-    echo ""
-    echo "Example:"
-    echo "  $(basename "$0") examples/weather-viewer-standalone.ts"
-    exit 0
-}
-
-log_info() {
-    echo -e "${BLUE}[tsyne]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[tsyne]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[tsyne]${NC} $1"
-}
+NC='\033[0m'
 
 log_error() {
     echo -e "${RED}[tsyne]${NC} $1"
 }
 
-# Parse command line arguments
-APP_ARGS=()
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --update)
-            UPDATE=true
-            shift
-            ;;
-        --offline)
-            OFFLINE=true
-            shift
-            ;;
-        --list-cache)
-            LIST_CACHE=true
-            shift
-            ;;
-        --clear-cache)
-            CLEAR_CACHE=true
-            shift
-            ;;
-        --verbose|-v)
-            VERBOSE=true
-            shift
-            ;;
-        --help|-h)
-            usage
-            ;;
-        -*)
-            log_error "Unknown option: $1"
-            usage
-            ;;
-        *)
-            SOURCE_FILE="$1"
-            shift
-            # Remaining args are for the app
-            APP_ARGS=("$@")
-            break
-            ;;
-    esac
-done
-
-# Handle cache operations
-if [ "$LIST_CACHE" = true ]; then
-    if [ -d "$TSYNE_CACHE/node_modules" ]; then
-        log_info "Packages in cache ($TSYNE_CACHE):"
-        ls -1 "$TSYNE_CACHE/node_modules" 2>/dev/null | grep -v "^\." | while read pkg; do
-            if [ -f "$TSYNE_CACHE/node_modules/$pkg/package.json" ]; then
-                version=$(grep '"version"' "$TSYNE_CACHE/node_modules/$pkg/package.json" | head -1 | sed -E 's/.*: *"([^"]+)".*/\1/')
-                echo "  - $pkg@$version"
-            else
-                echo "  - $pkg"
-            fi
-        done
-    else
-        log_info "Cache is empty"
-    fi
-    exit 0
-fi
-
-if [ "$CLEAR_CACHE" = true ]; then
-    log_warn "Clearing cache at $TSYNE_CACHE"
-    rm -rf "$TSYNE_CACHE"
-    log_success "Cache cleared"
-    exit 0
-fi
-
-# Require source file for running
-if [ -z "$SOURCE_FILE" ]; then
-    log_error "No source file specified"
-    usage
-fi
-
-if [ ! -f "$SOURCE_FILE" ]; then
-    log_error "File not found: $SOURCE_FILE"
+# Check for Node.js
+if ! command -v node &> /dev/null; then
+    log_error "Node.js is required but not found. Please install Node.js first."
     exit 1
 fi
 
-# Parse @Grab directives
-# Format: // @Grab('package@version')
-
-# Extract package@version strings, then split them
-# Pattern matches: // @Grab('package@version')
-GRAB_SPECS=$(grep '// @Grab' "$SOURCE_FILE" 2>/dev/null | sed -E "s/.*@Grab\('([^']+)'\).*/\1/" || true)
-
-if [ -z "$GRAB_SPECS" ]; then
-    if [ "$DRY_RUN" = true ]; then
-        exit 0
-    fi
-else
-    # Convert to arrays and split package@version
-    readarray -t SPECS <<< "$GRAB_SPECS"
-    PACKAGES=()
-    VERS=()
-    for spec in "${SPECS[@]}"; do
-        # Split on @ - package is before @, version is after
-        pkg="${spec%@*}"
-        ver="${spec#*@}"
-        PACKAGES+=("$pkg")
-        VERS+=("$ver")
-    done
-
-    log_info "Found ${#PACKAGES[@]} dependencies:"
-    for i in "${!PACKAGES[@]}"; do
-        echo "  - ${PACKAGES[$i]}@${VERS[$i]}"
-    done
-
-    if [ "$DRY_RUN" = true ]; then
-        log_info "Dry run - no packages will be installed"
-        exit 0
-    fi
-
-    if [ "$OFFLINE" = true ]; then
-        log_warn "Offline mode - using cached packages only"
-    else
-        # Ensure cache directory exists
-        mkdir -p "$TSYNE_CACHE"
-
-        # Initialize package.json if needed
-        if [ ! -f "$TSYNE_CACHE/package.json" ]; then
-            log_info "Initializing package cache..."
-            (cd "$TSYNE_CACHE" && npm init -y > /dev/null 2>&1)
-        fi
-
-        # Install each package
-        for i in "${!PACKAGES[@]}"; do
-            pkg="${PACKAGES[$i]}"
-            ver="${VERS[$i]}"
-            pkg_dir="$TSYNE_CACHE/node_modules/$pkg"
-
-            needs_install=false
-
-            if [ ! -d "$pkg_dir" ]; then
-                needs_install=true
-            elif [ "$UPDATE" = true ]; then
-                needs_install=true
-            fi
-
-            if [ "$needs_install" = true ]; then
-                log_info "Installing $pkg@$ver..."
-                if [ "$VERBOSE" = true ]; then
-                    (cd "$TSYNE_CACHE" && npm install "$pkg@$ver")
-                else
-                    (cd "$TSYNE_CACHE" && npm install "$pkg@$ver" > /dev/null 2>&1)
-                fi
-                log_success "Installed $pkg@$ver"
-            else
-                [ "$VERBOSE" = true ] && log_info "Using cached $pkg"
-            fi
-        done
-    fi
+# Find and set up bridge path
+BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
+if [ ! -f "$BRIDGE_PATH" ]; then
+    log_error "tsyne-bridge not found at $BRIDGE_PATH"
+    log_error "Run: pnpm run build:bridge"
+    exit 1
 fi
-
-# Detect if running from a dev checkout (has core/src/ directory with TypeScript)
-# In dev mode, use source directly; in production, use cached runtime
-IS_DEV_CHECKOUT=false
-if [ -d "$TSYNE_SOURCE/core/src" ] && [ -f "$TSYNE_SOURCE/core/src/index.ts" ]; then
-    IS_DEV_CHECKOUT=true
-fi
-
-if [ "$IS_DEV_CHECKOUT" = true ]; then
-    # DEV MODE: Use source directly, no caching
-    # This ensures changes are picked up immediately without manual cache clearing
-    [ "$VERBOSE" = true ] && log_info "Dev mode: using tsyne from $TSYNE_SOURCE/core"
-
-    # For dev, we need a directory structure where 'tsyne' can be resolved
-    # Create a minimal .tsyne-dev/ with symlink to core/ (the actual tsyne package)
-    TSYNE_DEV="$TSYNE_SOURCE/.tsyne-dev"
-    mkdir -p "$TSYNE_DEV"
-    # Always recreate symlink to ensure it points to core/
-    rm -f "$TSYNE_DEV/tsyne"
-    ln -s "$TSYNE_SOURCE/core" "$TSYNE_DEV/tsyne"
-
-    # Use source's core/bin/ for bridge
-    BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
-    if [ ! -f "$BRIDGE_PATH" ]; then
-        log_info "Building tsyne-bridge..."
-        (cd "$TSYNE_SOURCE/core/bridge" && make build)
-        log_success "Bridge built"
-    fi
-
-    # NODE_PATH for dev: symlink dir, core's node_modules, monorepo node_modules, @Grab cache
-    EFFECTIVE_NODE_PATH="$TSYNE_DEV:$TSYNE_SOURCE/core/node_modules:$TSYNE_SOURCE/node_modules:$TSYNE_CACHE/node_modules"
-else
-    # PRODUCTION MODE: Install to ~/.tsyne/runtime/<version>/
-    if [ ! -d "$TSYNE_RUNTIME/tsyne" ]; then
-        log_info "Installing tsyne runtime v$TSYNE_VERSION to $TSYNE_RUNTIME..."
-        mkdir -p "$TSYNE_RUNTIME/tsyne"
-        mkdir -p "$TSYNE_RUNTIME/node_modules"
-
-        # Copy tsyne package from core/ (dist + package.json)
-        cp -r "$TSYNE_SOURCE/core/dist" "$TSYNE_RUNTIME/tsyne/"
-        cp "$TSYNE_SOURCE/core/package.json" "$TSYNE_RUNTIME/tsyne/"
-
-        # Copy tsyne's own dependencies (from core/node_modules)
-        cp -r "$TSYNE_SOURCE/core/node_modules"/* "$TSYNE_RUNTIME/node_modules/" 2>/dev/null || true
-        # Also copy monorepo-level dependencies
-        cp -r "$TSYNE_SOURCE/node_modules"/* "$TSYNE_RUNTIME/node_modules/" 2>/dev/null || true
-
-        log_success "Tsyne runtime installed"
-    fi
-
-    # Use source's core/bin/ for bridge (same as dev mode)
-    BRIDGE_PATH="$TSYNE_SOURCE/core/bin/tsyne-bridge"
-    if [ ! -f "$BRIDGE_PATH" ]; then
-        if [ -d "$TSYNE_SOURCE/core/bridge" ]; then
-            log_info "Building tsyne-bridge..."
-            (cd "$TSYNE_SOURCE/core/bridge" && make build)
-            log_success "Bridge built"
-        else
-            log_error "tsyne-bridge not found and cannot build"
-            exit 1
-        fi
-    fi
-
-    # NODE_PATH for production: runtime, runtime's node_modules, @Grab cache
-    EFFECTIVE_NODE_PATH="$TSYNE_RUNTIME:$TSYNE_RUNTIME/node_modules:$TSYNE_CACHE/node_modules"
-fi
-
-# Run the application with NODE_PATH including our cache
-
-# Add any existing NODE_PATH
-if [ -n "$NODE_PATH" ]; then
-    EFFECTIVE_NODE_PATH="$EFFECTIVE_NODE_PATH:$NODE_PATH"
-fi
-
-# Export bridge path so tsyne can find it
 export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 
 # Check for stray bridge executables in wrong locations that could cause confusion during Tsyne's own development cycle
@@ -336,15 +51,24 @@ if [ -n "$STRAY_BRIDGES" ]; then
     exit 1
 fi
 
-# Run with tsx (fast esbuild-based) - use local install to avoid npx overhead
-echo "[TSYNE] script setup done: $(tsyne_elapsed)"
-echo "[TSYNE] launching tsx at $(date +%s)..."
+# Set up NODE_PATH so the app can find tsyne and cosyne
+# Dev mode: use source directories directly
+TSYNE_NODE_PATH="$TSYNE_SOURCE/core/dist/src"
+COSYNE_NODE_PATH="$TSYNE_SOURCE/cosyne/dist"
 
-# Prefer locally installed tsx, fall back to npx
-if [ -x "$TSYNE_SOURCE/node_modules/.bin/tsx" ]; then
-    NODE_PATH="$EFFECTIVE_NODE_PATH" \
-    "$TSYNE_SOURCE/node_modules/.bin/tsx" "$SOURCE_FILE" "${APP_ARGS[@]}"
-else
-    NODE_PATH="$EFFECTIVE_NODE_PATH" \
-    npx --prefer-offline tsx "$SOURCE_FILE" "${APP_ARGS[@]}"
+# Build NODE_PATH: tsyne, cosyne, core's node_modules, monorepo node_modules, existing NODE_PATH
+EFFECTIVE_NODE_PATH="$TSYNE_SOURCE:$TSYNE_SOURCE/core/node_modules:$TSYNE_SOURCE/node_modules"
+if [ -n "$NODE_PATH" ]; then
+    EFFECTIVE_NODE_PATH="$EFFECTIVE_NODE_PATH:$NODE_PATH"
 fi
+
+# Find the CLI entry point
+CLI_PATH="$TSYNE_SOURCE/core/dist/src/cli.js"
+if [ ! -f "$CLI_PATH" ]; then
+    log_error "CLI not found at $CLI_PATH"
+    log_error "Run: pnpm run build:core"
+    exit 1
+fi
+
+# Run the TypeScript CLI with all arguments
+NODE_PATH="$EFFECTIVE_NODE_PATH" node "$CLI_PATH" "$@"
