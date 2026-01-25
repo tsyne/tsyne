@@ -291,8 +291,11 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 		}
 	}
 
-	rect, ok := w.(*canvas.Rectangle)
-	if !ok {
+	// Handle both plain canvas.Rectangle and TappableCanvasRectangle
+	rect, isPlainRect := w.(*canvas.Rectangle)
+	tappableRect, isTappableRect := w.(*TappableCanvasRectangle)
+
+	if !isPlainRect && !isTappableRect {
 		return Response{
 			ID:      msg.ID,
 			Success: false,
@@ -301,53 +304,71 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 	}
 
 	fyne.DoAndWait(func() {
-		// Update position if provided
-		needsResize := false
-		var newPos fyne.Position
-		var newSize fyne.Size
-
-		if x, ok := getFloat64(msg.Payload["x"]); ok {
-			if y, ok := getFloat64(msg.Payload["y"]); ok {
-				newPos = fyne.NewPos(float32(x), float32(y))
-				rect.Move(newPos)
+		if isPlainRect {
+			// Update plain canvas.Rectangle
+			if x, ok := getFloat64(msg.Payload["x"]); ok {
+				if y, ok := getFloat64(msg.Payload["y"]); ok {
+					rect.Move(fyne.NewPos(float32(x), float32(y)))
+				}
 			}
-		}
 
-		// Update size via x2, y2
-		if x2, ok := getFloat64(msg.Payload["x2"]); ok {
-			if y2, ok := getFloat64(msg.Payload["y2"]); ok {
-				// Calculate size from current position and x2, y2
-				currentPos := rect.Position()
-				newSize = fyne.NewSize(float32(x2)-currentPos.X, float32(y2)-currentPos.Y)
-				needsResize = true
+			if x2, ok := getFloat64(msg.Payload["x2"]); ok {
+				if y2, ok := getFloat64(msg.Payload["y2"]); ok {
+					currentPos := rect.Position()
+					rect.Resize(fyne.NewSize(float32(x2)-currentPos.X, float32(y2)-currentPos.Y))
+				}
 			}
-		}
 
-		// Update fill color if provided
-		if fillHex, ok := msg.Payload["fillColor"].(string); ok {
-			rect.FillColor = parseHexColorSimple(fillHex)
-		}
+			if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+				rect.FillColor = parseHexColorSimple(fillHex)
+			}
 
-		// Update stroke color if provided
-		if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
-			rect.StrokeColor = parseHexColorSimple(strokeHex)
-		}
+			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+				rect.StrokeColor = parseHexColorSimple(strokeHex)
+			}
 
-		// Update stroke width if provided
-		if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
-			rect.StrokeWidth = float32(strokeWidth)
-		}
+			if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
+				rect.StrokeWidth = float32(strokeWidth)
+			}
 
-		// Update corner radius if provided
-		if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
-			rect.CornerRadius = float32(radius)
-		}
+			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
+				rect.CornerRadius = float32(radius)
+			}
 
-		if needsResize {
-			rect.Resize(newSize)
-		}
+			rect.Refresh()
+		} else if isTappableRect {
+			// Update TappableCanvasRectangle
+			if x, ok := getFloat64(msg.Payload["x"]); ok {
+				if y, ok := getFloat64(msg.Payload["y"]); ok {
+					tappableRect.Move(fyne.NewPos(float32(x), float32(y)))
+				}
+			}
 
-		rect.Refresh()
+			if x2, ok := getFloat64(msg.Payload["x2"]); ok {
+				if y2, ok := getFloat64(msg.Payload["y2"]); ok {
+					currentPos := tappableRect.Position()
+					tappableRect.Resize(fyne.NewSize(float32(x2)-currentPos.X, float32(y2)-currentPos.Y))
+				}
+			}
+
+			if fillHex, ok := msg.Payload["fillColor"].(string); ok {
+				tappableRect.SetFillColor(parseHexColorSimple(fillHex))
+			}
+
+			if strokeHex, ok := msg.Payload["strokeColor"].(string); ok {
+				tappableRect.SetStrokeColor(parseHexColorSimple(strokeHex))
+			}
+
+			if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
+				tappableRect.SetStrokeWidth(float32(strokeWidth))
+			}
+
+			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
+				tappableRect.SetCornerRadius(float32(radius))
+			}
+
+			tappableRect.Refresh()
+		}
 	})
 
 	return Response{

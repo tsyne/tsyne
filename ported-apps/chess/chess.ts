@@ -766,10 +766,9 @@ class ChessUI {
     this.isComputerThinking = false;
     this.currentStatus = 'White to move';
 
-    // TODO: Replace rebuildUI() with updateAllSquares() to fix test timing issues
-    // Currently using rebuildUI which destroys/recreates entire widget tree (slow, breaks tests)
-    // Should use updateAllSquares() to intelligently update just piece positions (fast, test-safe)
-    this.rebuildUI();
+    // Use updateAllSquares() instead of rebuildUI() to avoid destroying widget tree
+    // This keeps widget IDs stable so tests can find them after newGame()
+    await this.updateAllSquares();
     await this.updateStatus('New game started');
   }
 
