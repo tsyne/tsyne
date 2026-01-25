@@ -223,7 +223,13 @@ Calculator example is important to me because I'm forever comparing to [this one
 
 See a bigger list of examples with screenshots here: [examples/README.md](examples/README.md)
 
-TODO: INLINE LIST OF APPS WITH STATS
+### Notable Ported Apps
+
+| App | Lines | Pseudo-Declarative Adherence | Notes |
+|-----|-------|------------------------------|-------|
+| [ported-apps/3d-cube](ported-apps/3d-cube/) | 630 | **Excellent** - Observable store, `.bindFill()` reactivity, declarative loops | Cosyne 2D polygons, gesture-based rotation |
+| [ported-apps/fps-advanced](ported-apps/fps-advanced/) | 1856 | **Good** - Raycaster with Cosyne, clean separation | Software-rendered 3D, keyboard controls |
+| [ported-apps/tsyet-another-doom-clone](ported-apps/tsyet-another-doom-clone/) | 4904 | **Good** - Raycaster rendering, game loop pattern | JS13k port, sprite rendering |
 
 ## Testing with TsyneTest
 
