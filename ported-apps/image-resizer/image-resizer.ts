@@ -4,6 +4,9 @@
  * Batch or single image resizing application supporting multiple formats
  * with customizable width/height and aspect ratio preservation.
  *
+ * Ported from image-resizer (https://github.com/tiagomelo/image-resizer)
+ * Original by Tiago Melo, MIT License
+ *
  * Portions copyright original team and portions copyright Paul Hammant 2025
  * License: MIT
  *
@@ -15,12 +18,9 @@
  * @tsyne-app:count single
  */
 
-import type { App } from './app';
-import type { Window } from './window';
-import type { Label } from './widgets/display';
-import type { Entry } from './widgets/inputs';
+import type { App, Window, Label, Entry } from 'tsyne';
 
-interface ResizeJob {
+export interface ResizeJob {
   filePath: string;
   fileName: string;
   width: number;
@@ -31,7 +31,7 @@ interface ResizeJob {
   error?: string;
 }
 
-interface ResizeSettings {
+export interface ResizeSettings {
   width: number;
   height: number;
   maintainAspectRatio: boolean;
@@ -43,7 +43,7 @@ interface ResizeSettings {
 /**
  * Image Resizer UI class
  */
-class ImageResizerUI {
+export class ImageResizerUI {
   private window: Window | null = null;
   private jobs: ResizeJob[] = [];
   private settings: ResizeSettings = {
@@ -87,13 +87,13 @@ class ImageResizerUI {
     this.a.setPreference('resizer_quality', this.settings.quality.toString());
   }
 
-  private isValidImageFile(filePath: string): boolean {
+  isValidImageFile(filePath: string): boolean {
     const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff'];
     const ext = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
     return validExtensions.includes(ext);
   }
 
-  private calculateNewDimensions(origWidth: number, origHeight: number): { width: number; height: number } {
+  calculateNewDimensions(origWidth: number, origHeight: number): { width: number; height: number } {
     if (!this.settings.maintainAspectRatio) {
       return {
         width: this.settings.width,
@@ -359,7 +359,7 @@ export function buildImageResizerApp(a: App, win: Window): ImageResizerUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
+  const { app, resolveTransport } = require('tsyne');
   app(resolveTransport(), { title: 'Image Resizer', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Image Resizer', width: 900, height: 700 }, (win: Window) => {
       buildImageResizerApp(a, win);

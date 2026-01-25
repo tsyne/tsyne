@@ -4,8 +4,11 @@
  * A time conversion application for managing time across multiple timezones
  * and locations. Track current time in different cities and time zones.
  *
+ * Ported from Nomad (https://github.com/fynelabs/nomad)
+ * Original by Fyne Labs
+ *
  * Portions copyright original team and portions copyright Paul Hammant 2025
- * License: MIT
+ * License: BSD 3-Clause
  *
  * @tsyne-app:name Nomad
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
@@ -15,11 +18,9 @@
  * @tsyne-app:count single
  */
 
-import type { App } from './app';
-import type { Window } from './window';
-import type { Label } from './widgets/display';
+import type { App, Window, Label } from 'tsyne';
 
-interface TimeLocation {
+export interface TimeLocation {
   id: string;
   name: string;
   timezone: string;
@@ -27,14 +28,14 @@ interface TimeLocation {
   currentTime?: string;
 }
 
-interface NomadState {
+export interface NomadState {
   locations: TimeLocation[];
   sortByName: boolean;
   useFormat24h: boolean;
 }
 
 // Common timezones
-const COMMON_TIMEZONES: TimeLocation[] = [
+export const COMMON_TIMEZONES: TimeLocation[] = [
   { id: 'utc', name: 'UTC', timezone: 'UTC', offset: 0 },
   { id: 'london', name: 'London', timezone: 'Europe/London', offset: 0 },
   { id: 'paris', name: 'Paris', timezone: 'Europe/Paris', offset: 1 },
@@ -55,7 +56,7 @@ const COMMON_TIMEZONES: TimeLocation[] = [
 /**
  * Nomad Time Zone Manager UI
  */
-class NomadUI {
+export class NomadUI {
   private window: Window | null = null;
   private state: NomadState = {
     locations: [],
@@ -293,7 +294,7 @@ export function buildNomadApp(a: App, win: Window): NomadUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('./index');
+  const { app } = require('tsyne');
   app({ title: 'Nomad', width: 600, height: 800 }, (a: App) => {
     a.window({ title: 'Nomad - Time Zone Manager', width: 600, height: 800 }, (win: Window) => {
       buildNomadApp(a, win);

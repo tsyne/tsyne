@@ -261,78 +261,17 @@ export class AccessibilityManager {
       }
     }
 
-    // Use meSpeak for pure JS TTS (Node.js environment)
+    // Use say.js for native OS TTS (Node.js environment)
+    // Uses macOS 'say', Windows SAPI, or Linux espeak/festival
     try {
-      const meSpeak = require('mespeak');
+      const say = require('say');
 
-      // Load meSpeak voice data (required for speech synthesis)
-      // This is a pure JS solution that doesn't require any native dependencies
-      try {
-        meSpeak.loadConfig(require('mespeak/src/mespeak_config.json'));
-        meSpeak.loadVoice(require('mespeak/voices/en/en-us.json'));
-      } catch (loadError) {
-        // Voice already loaded or not available
-      }
-
-      // In Node.js, use raw output mode and pipe to speaker
-      // @ts-ignore - window is not defined in Node.js
-      if (typeof window === 'undefined') {
-        try {
-          const Speaker = require('speaker');
-
-          // Get raw WAV audio data from meSpeak
-          const wav = meSpeak.speak(text, {
-            speed: 175,  // Normal speaking rate
-            pitch: 50,   // Normal pitch
-            volume: 100, // Full volume
-            rawdata: 'buffer'  // Get raw audio buffer
-          });
-
-          if (wav) {
-            // Calculate duration based on audio length (44100 samples per second)
-            const duration = (wav.length - 44) / (22050 * 2); // 22050 Hz, 16-bit (2 bytes)
-
-            // Create speaker with WAV format (22050 Hz, 16-bit, mono)
-            const speaker = new Speaker({
-              channels: 1,
-              bitDepth: 16,
-              sampleRate: 22050
-            });
-
-            // Process next announcement when this one finishes
-            speaker.on('close', () => {
-              setTimeout(() => this.processNextAnnouncement(), 100);
-            });
-
-            // Write the WAV data (skip 44-byte WAV header)
-            speaker.write(Buffer.from(wav.slice(44)));
-            speaker.end();
-          } else {
-            // No audio generated, move to next
-            this.processNextAnnouncement();
-          }
-        } catch (speakerError) {
-          // Fall back to browser mode or fail silently
-          meSpeak.speak(text, {
-            speed: 175,
-            pitch: 50,
-            volume: 100
-          });
-          // Can't detect when browser mode finishes, so just wait a bit
-          setTimeout(() => this.processNextAnnouncement(), 2000);
-        }
-      } else {
-        // Browser environment - use normal mode
-        meSpeak.speak(text, {
-          speed: 175,
-          pitch: 50,
-          volume: 100
-        });
-        // Can't detect when it finishes, so just wait a bit
-        setTimeout(() => this.processNextAnnouncement(), 2000);
-      }
+      say.speak(text, null, 1.0, (err: any) => {
+        // Callback when speech finishes (or errors)
+        this.processNextAnnouncement();
+      });
     } catch (e) {
-      // Silently fail if meSpeak is not available
+      // Silently fail if say is not available
       this.processNextAnnouncement();
     }
 

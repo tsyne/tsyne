@@ -6,6 +6,9 @@
  * - 5 minute short breaks
  * - 15 minute long breaks after 4 sessions
  *
+ * Ported from Fynodoro (https://github.com/tomsquest/fynodoro)
+ * Original by Tom Schwartz, MIT License
+ *
  * Portions copyright original team and portions copyright Paul Hammant 2025
  * License: MIT
  *
@@ -17,14 +20,11 @@
  * @tsyne-app:count single
  */
 
-import type { App } from './app';
-import type { Window } from './window';
-import type { Label } from './widgets/display';
-import type { Button } from './widgets/inputs';
+import type { App, Window, Label, Button } from 'tsyne';
 
-type SessionType = 'work' | 'break' | 'longBreak';
+export type SessionType = 'work' | 'break' | 'longBreak';
 
-interface PomodoroState {
+export interface PomodoroState {
   sessionType: SessionType;
   timeRemaining: number; // in seconds
   totalTime: number; // in seconds
@@ -38,7 +38,7 @@ interface PomodoroState {
 /**
  * Pomodoro Timer UI and Logic
  */
-class PomodoroUI {
+export class PomodoroUI {
   private state: PomodoroState = {
     sessionType: 'work',
     timeRemaining: 25 * 60,
@@ -59,26 +59,18 @@ class PomodoroUI {
   private intervalId: NodeJS.Timeout | null = null;
 
   constructor(private a: App) {
-    // Initialize with defaults, actual loading happens in buildUI
+    this.loadSettings();
   }
 
   private loadSettings(): void {
-    // Load settings synchronously using defaults
     const workMin = this.a.getPreferenceInt('pomodoro_work', 25);
     const breakMin = this.a.getPreferenceInt('pomodoro_break', 5);
     const longBreakMin = this.a.getPreferenceInt('pomodoro_long_break', 15);
 
-    // Handle both sync and async returns
-    Promise.resolve(workMin).then((val) => {
-      this.state.workMinutes = val;
-    });
-    Promise.resolve(breakMin).then((val) => {
-      this.state.breakMinutes = val;
-    });
-    Promise.resolve(longBreakMin).then((val) => {
-      this.state.longBreakMinutes = val;
-      this.resetToNextSession();
-    });
+    this.state.workMinutes = workMin;
+    this.state.breakMinutes = breakMin;
+    this.state.longBreakMinutes = longBreakMin;
+    this.resetToNextSession();
   }
 
   private saveSettings(): void {
@@ -87,7 +79,7 @@ class PomodoroUI {
     this.a.setPreference('pomodoro_long_break', this.state.longBreakMinutes.toString());
   }
 
-  private formatTime(seconds: number): string {
+  formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -344,7 +336,7 @@ export function buildPomodoroApp(a: App): PomodoroUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
+  const { app, resolveTransport } = require('tsyne');
   app(resolveTransport(), { title: 'Pomodoro' }, (a: App) => {
     buildPomodoroApp(a);
   });

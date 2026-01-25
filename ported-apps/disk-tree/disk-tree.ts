@@ -5,7 +5,9 @@
  * subfolders and files. Select a folder and initiate the scan to see results
  * with real-time progress updates.
  *
- * Portions copyright original team and portions copyright Paul Hammant 2025
+ * Inspired by GrandPerspective (https://grandperspectiv.sourceforge.net/)
+ *
+ * Copyright Paul Hammant 2025
  * License: MIT
  *
  * @tsyne-app:name Disk Tree
@@ -16,14 +18,11 @@
  * @tsyne-app:count single
  */
 
-import type { App } from './app';
-import type { Window } from './window';
-import type { Label } from './widgets/display';
-import type { Button } from './widgets/inputs';
+import type { App, Window, Label, Button } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface DiskTreeNode {
+export interface DiskTreeNode {
   name: string;
   path: string;
   isDirectory: boolean;
@@ -32,7 +31,7 @@ interface DiskTreeNode {
   isLoading?: boolean;
 }
 
-interface ScanStats {
+export interface ScanStats {
   filesScanned: number;
   directoriesScanned: number;
   totalSize: number;
@@ -43,7 +42,7 @@ interface ScanStats {
 /**
  * Disk Tree UI class
  */
-class DiskTreeUI {
+export class DiskTreeUI {
   private window: Window | null = null;
   private root: DiskTreeNode | null = null;
   private stats: ScanStats = {
@@ -60,7 +59,7 @@ class DiskTreeUI {
 
   constructor(private a: App) {}
 
-  private formatBytes(bytes: number): string {
+  formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -313,10 +312,11 @@ export function buildDiskTreeApp(a: App, win: Window): DiskTreeUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
+  const { app, resolveTransport } = require('tsyne');
   app(resolveTransport(), { title: 'Disk Tree', width: 800, height: 600 }, (a: App) => {
     a.window({ title: 'Disk Tree', width: 800, height: 600 }, (win: Window) => {
       buildDiskTreeApp(a, win);
+      win.show();
     });
   });
 }
