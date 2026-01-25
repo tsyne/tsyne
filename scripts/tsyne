@@ -322,6 +322,20 @@ fi
 # Export bridge path so tsyne can find it
 export TSYNE_BRIDGE_PATH="$BRIDGE_PATH"
 
+# Check for stray bridge executables in wrong locations that could cause confusion during Tsyne's own development cycle
+STRAY_BRIDGES=""
+for stray_path in "$TSYNE_SOURCE/dist/bridge/bridge" "$TSYNE_SOURCE/cli/embed/runtime/tsyne/dist/bridge/bridge"; do
+    if [ -f "$stray_path" ]; then
+        STRAY_BRIDGES="$STRAY_BRIDGES\n  $stray_path"
+    fi
+done
+if [ -n "$STRAY_BRIDGES" ]; then
+    log_error "Found stray bridge executable(s) in wrong location(s):$STRAY_BRIDGES"
+    log_error "These may be stale and cause issues. Remove them with:"
+    log_error "  rm -f $TSYNE_SOURCE/dist/bridge/bridge $TSYNE_SOURCE/cli/embed/runtime/tsyne/dist/bridge/bridge"
+    exit 1
+fi
+
 # Run with tsx (fast esbuild-based) - use local install to avoid npx overhead
 echo "[TSYNE] script setup done: $(tsyne_elapsed)"
 echo "[TSYNE] launching tsx at $(date +%s)..."
