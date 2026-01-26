@@ -107,6 +107,8 @@ export interface PhoneTopOptions {
   fontSize?: number;
   /** Injected services - if not provided, uses mock services for desktop testing */
   services?: PhoneServices;
+  /** Use ImageButton for app icons (default true). Set false for older bridges without ImageButton support. */
+  useImageButton?: boolean;
 }
 
 interface RunningApp {
@@ -169,6 +171,8 @@ class PhoneTop {
   private isLandscape: boolean = false;
   /** Font size for UI text (default 14, larger for high-DPI) */
   private fontSize: number = 14;
+  /** Use ImageButton for icons (false for older bridges without ImageButton support) */
+  private useImageButton: boolean = true;
   /** Inspector for widget tree queries */
   private inspector: Inspector | null = null;
   /** Debug HTTP server */
@@ -193,6 +197,11 @@ class PhoneTop {
     // Set font size (larger for high-DPI phone screens)
     this.fontSize = options.fontSize || 14;
     console.log(`[phonetop] Font size: ${this.fontSize}px`);
+
+    // ImageButton support (default true, set false for older bridges)
+    this.useImageButton = options.useImageButton !== false;
+    console.log(`[phonetop] useImageButton: ${this.useImageButton}`);
+
     ICON_SIZE = Math.round(ICON_SIZE_BASE * iconScale);
 
     // Initialize with portrait defaults (will be updated on window creation)
@@ -1105,11 +1114,21 @@ class PhoneTop {
         this.sizedLabel(`Build: ${BUILD_TIMESTAMP}`, 'build-timestamp');
       },
       center: () => {
-        // Grid container - can be rebuilt on page change without affecting nav buttons
-        this.homeGridContainer = this.a.vbox(() => {
-          this.createAppGrid();
-          // Page dots indicator (part of scrollable area)
-          this.createPageIndicator();
+        // Use border layout so grid stays at top
+        // Border's "top" takes only what it needs, "center" absorbs remaining space
+        this.a.border({
+          top: () => {
+            // Grid container - the vbox that gets rebuilt on page change
+            this.homeGridContainer = this.a.vbox(() => {
+              this.createAppGrid();
+              // Page dots indicator (part of scrollable area)
+              this.createPageIndicator();
+            });
+          },
+          center: () => {
+            // Empty center absorbs vertical space - like Swing's BorderLayout
+            this.a.spacer();
+          }
         });
       },
       bottom: () => {
@@ -1304,17 +1323,17 @@ class PhoneTop {
     const resourceName = this.folderIconCache.get(folder.category);
 
     this.a.center(() => {
-      if (resourceName) {
-        // Use ImageButton for native tap handling (same as app icons)
+      if (resourceName && this.useImageButton) {
+        // Use ImageButton for native tap handling (when supported)
         this.a.imageButton({
           resource: resourceName,
           text: displayName,
-          textSize: Math.round(ICON_SIZE * 0.5)
+          textSize: this.fontSize
         })
           .withId(`folder-${folder.category}`)
           .onClick(() => this.openFolderView(folder));
       } else {
-        // Fallback: text button
+        // Fallback: text button (or when ImageButton not supported)
         this.a.button(`📁 ${displayName}`)
           .withId(`folder-${folder.category}`)
           .onClick(() => this.openFolderView(folder));
@@ -1334,17 +1353,17 @@ class PhoneTop {
 
   /**
    * Create an icon button for an app
-   * Uses ImageButton for reliable touch support on mobile.
+   * Uses ImageButton for reliable touch support on mobile (when useImageButton is true).
    * @param icon The grid icon to display
    */
   private createAppIcon(icon: GridIcon) {
     const launchHandler = () => this.launchApp(icon.metadata);
-    const textSize = Math.round(ICON_SIZE * 0.5);  // 50% of icon size
+    const textSize = this.fontSize;  // Use configured font size for labels
     const displayName = this.truncateName(icon.metadata.name);
 
-    // Use ImageButton for native button tap handling (fixes Android touch issues)
+    // Use ImageButton for native button tap handling (when supported)
     this.a.center(() => {
-      if (icon.resourceName) {
+      if (icon.resourceName && this.useImageButton) {
         this.a.imageButton({
           resource: icon.resourceName,
           text: displayName,
@@ -1353,7 +1372,7 @@ class PhoneTop {
           .withId(`icon-${icon.metadata.name}`)
           .onClick(launchHandler);
       } else {
-        // Fallback: regular button with first letter
+        // Fallback: regular button with first letter (or when ImageButton not supported)
         const firstLetter = icon.metadata.name.charAt(0).toUpperCase();
         this.a.button(`${firstLetter}\n${displayName}`)
           .withId(`icon-${icon.metadata.name}`)

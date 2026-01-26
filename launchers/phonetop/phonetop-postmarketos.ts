@@ -10,7 +10,8 @@
  */
 
 import { App } from 'tsyne';
-import { PhoneTopOptions, buildPhoneTop } from './index';
+import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './index';
+import { allApps, getAppsForPlatform, GeneratedAppDefinition } from '../../phone-apps/all-apps.generated';
 import {
   PhoneServices,
   MockContactsService,
@@ -20,6 +21,27 @@ import {
 
 // Re-export app for the bundle
 export { app } from 'tsyne';
+
+/**
+ * Convert GeneratedAppDefinition to StaticAppDefinition
+ */
+function toStaticAppDef(app: GeneratedAppDefinition): StaticAppDefinition {
+  return {
+    name: app.name,
+    builder: app.builder,
+    icon: app.icon,
+    category: app.category,
+    args: app.args,
+    count: app.count,
+  };
+}
+
+/**
+ * Get static app definitions for phone platform
+ */
+export function getPhoneApps(): StaticAppDefinition[] {
+  return getAppsForPlatform('phone').map(toStaticAppDef);
+}
 
 /**
  * Create services for PostmarketOS (composition root)
@@ -52,6 +74,7 @@ export async function buildPhoneTopPostmarketOS(a: App, options?: PhoneTopOption
 
   await buildPhoneTop(a, {
     ...options,
+    staticApps: getPhoneApps(),  // Pre-bundled static apps
     services,  // Inject services (IoC)
   });
 }

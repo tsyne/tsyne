@@ -21,7 +21,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-type PowerAction = 'lock' | 'suspend' | 'reboot' | 'shutdown';
+type PowerAction = 'lock' | 'suspend' | 'reboot' | 'shutdown' | 'fastboot';
 
 interface PowerOption {
   label: string;
@@ -60,6 +60,13 @@ const POWER_OPTIONS: PowerOption[] = [
     description: 'Power off the device',
     dangerous: true,
   },
+  {
+    label: 'Fastboot',
+    action: 'fastboot',
+    icon: '📲',
+    description: 'Reboot to bootloader',
+    dangerous: true,
+  },
 ];
 
 /**
@@ -75,23 +82,30 @@ async function executePowerAction(action: PowerAction): Promise<{ success: boole
       'gnome-screensaver-command -l',
     ],
     suspend: [
+      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Suspend boolean:true',
       'loginctl suspend',
       'systemctl suspend',
-      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Suspend boolean:true',
+      'doas pm-suspend',
     ],
     reboot: [
-      'dbus-send --session --type=method_call --dest=org.gnome.SessionManager /org/gnome/SessionManager org.gnome.SessionManager.Reboot',
+      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true',
       'loginctl reboot',
       'systemctl reboot',
-      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true',
+      'doas reboot',
       'reboot',
     ],
     shutdown: [
-      'dbus-send --session --type=method_call --dest=org.gnome.SessionManager /org/gnome/SessionManager org.gnome.SessionManager.Shutdown',
+      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.PowerOff boolean:true',
       'loginctl poweroff',
       'systemctl poweroff',
-      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.PowerOff boolean:true',
+      'doas poweroff',
       'poweroff',
+    ],
+    fastboot: [
+      'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true string:bootloader',
+      'loginctl reboot bootloader',
+      'doas reboot bootloader',
+      'reboot bootloader',
     ],
   };
 
@@ -123,45 +137,48 @@ class PowerMenuUI {
 
   buildUI(win: Window): void {
     this.window = win;
-    this.buildMainView();
-  }
 
-  private buildMainView(): void {
-    if (!this.window) return;
-
-    this.window.setContent(() => {
-      this.a.vbox(() => {
-        // Header
-        this.a.hbox(() => {
-          this.a.spacer();
-          this.a.label('Power Menu');
-          this.a.spacer();
-        });
-
-        this.a.separator();
+    // Build content directly (don't call setContent - that's done by the caller)
+    this.a.vbox(() => {
+      // Header
+      this.a.hbox(() => {
         this.a.spacer();
-
-        // Power options grid (2x2)
-        this.a.vbox(() => {
-          // First row: Lock, Suspend
-          this.a.hbox(() => {
-            this.buildPowerButton(POWER_OPTIONS[0]); // Lock
-            this.a.spacer();
-            this.buildPowerButton(POWER_OPTIONS[1]); // Suspend
-          });
-
-          this.a.spacer();
-
-          // Second row: Reboot, Shutdown
-          this.a.hbox(() => {
-            this.buildPowerButton(POWER_OPTIONS[2]); // Reboot
-            this.a.spacer();
-            this.buildPowerButton(POWER_OPTIONS[3]); // Shutdown
-          });
-        });
-
+        this.a.label('Power Menu');
         this.a.spacer();
       });
+
+      this.a.separator();
+      this.a.spacer();
+
+      // Power options grid
+      this.a.vbox(() => {
+        // First row: Lock, Suspend
+        this.a.hbox(() => {
+          this.buildPowerButton(POWER_OPTIONS[0]); // Lock
+          this.a.spacer();
+          this.buildPowerButton(POWER_OPTIONS[1]); // Suspend
+        });
+
+        this.a.spacer();
+
+        // Second row: Reboot, Shutdown
+        this.a.hbox(() => {
+          this.buildPowerButton(POWER_OPTIONS[2]); // Reboot
+          this.a.spacer();
+          this.buildPowerButton(POWER_OPTIONS[3]); // Shutdown
+        });
+
+        this.a.spacer();
+
+        // Third row: Fastboot (centered)
+        this.a.hbox(() => {
+          this.a.spacer();
+          this.buildPowerButton(POWER_OPTIONS[4]); // Fastboot
+          this.a.spacer();
+        });
+      });
+
+      this.a.spacer();
     });
   }
 
@@ -177,20 +194,34 @@ class PowerMenuUI {
   private async handleAction(option: PowerOption): Promise<void> {
     if (!this.window) return;
 
-    // Confirm dangerous actions
-    if (option.dangerous) {
-      const confirmed = await this.window.showConfirm(
-        option.label,
-        `Are you sure you want to ${option.action}?`
-      );
-      if (!confirmed) return;
+    // Confirm dangerous actions (if window supports dialogs)
+    if (option.dangerous && typeof this.window.showConfirm === 'function') {
+      try {
+        const confirmed = await this.window.showConfirm(
+          option.label,
+          `Are you sure you want to ${option.action}?`
+        );
+        if (!confirmed) return;
+      } catch {
+        // Dialog not supported (phone mode) - proceed without confirmation
+        console.log(`[Power] Confirmation dialog not available, proceeding with ${option.action}`);
+      }
     }
 
     // Execute the action
+    console.log(`[Power] Executing ${option.action}...`);
     const result = await executePowerAction(option.action);
 
     if (!result.success && result.error) {
-      await this.window.showAlert('Error', result.error);
+      console.error(`[Power] ${option.action} failed:`, result.error);
+      // Try to show alert if available, otherwise just log
+      if (typeof this.window.showAlert === 'function') {
+        try {
+          await this.window.showAlert('Error', result.error);
+        } catch {
+          // Alert not supported
+        }
+      }
     }
     // If successful, the action will take effect (screen locks, device reboots, etc.)
   }

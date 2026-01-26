@@ -1,0 +1,6 @@
+#!/bin/sh
+# X11 startup script for Pixel 3a XL
+# Install to: ~/.xinitrc
+
+xhost +local:
+exec i3

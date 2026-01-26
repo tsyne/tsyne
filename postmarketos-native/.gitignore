@@ -1,0 +1,7 @@
+# External dependencies (cloned/created by setup.sh)
+pmbootstrap/
+work/
+
+# Build artifacts
+*.log
+phonetop.bundle.js 

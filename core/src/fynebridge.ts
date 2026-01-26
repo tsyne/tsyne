@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
-import * as crc32 from 'buffer-crc32';
+import crc32 from 'buffer-crc32';
 import { PROTOCOL_VERSION, TSYNE_VERSION, BridgeHandshake, isCompatibleHandshake } from './version';
 
 export interface Message {

@@ -1,0 +1,45 @@
+# i3 config for Pixel 3a XL with PhoneTop
+# Install to: ~/.config/i3/config
+
+set $mod Mod4
+
+# Font for window titles
+font pango:monospace 12
+
+# Start phonetop on login
+exec --no-startup-id ~/start-phonetop.sh
+
+# Keybindings
+bindsym $mod+Return exec xterm
+bindsym $mod+Shift+q kill
+bindsym $mod+d exec dmenu_run
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3?' -B 'Yes' 'i3-msg exit'"
+
+# Focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Move
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# Workspaces
+bindsym $mod+1 workspace 1
+bindsym $mod+2 workspace 2
+bindsym $mod+3 workspace 3
+bindsym $mod+Shift+1 move container to workspace 1
+bindsym $mod+Shift+2 move container to workspace 2
+bindsym $mod+Shift+3 move container to workspace 3
+
+# Status bar
+bar {
+    status_command i3status
+    position bottom
+}
