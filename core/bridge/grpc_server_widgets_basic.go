@@ -21,8 +21,8 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 		"height": float64(req.Height),
 	}
 
-	// Handle source (inline data, resource reference, or file path)
-	// Go handler expects "path" for data URLs/file paths and "resource" for resource names
+	// Handle source (inline data, resource reference, file path, or URL)
+	// Go handler expects "path" for data URLs/file paths, "resource" for resource names, and "url" for remote URLs
 	switch src := req.Source.(type) {
 	case *pb.CreateImageRequest_InlineData:
 		// Convert bytes to base64 data URL - Go handler expects this in "path" field
@@ -31,6 +31,8 @@ func (s *grpcBridgeService) CreateImage(ctx context.Context, req *pb.CreateImage
 		payload["resource"] = src.ResourceName
 	case *pb.CreateImageRequest_Path:
 		payload["path"] = src.Path
+	case *pb.CreateImageRequest_Url:
+		payload["url"] = src.Url
 	}
 
 	// Convert fill mode enum to string format expected by handler

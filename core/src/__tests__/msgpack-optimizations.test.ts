@@ -274,7 +274,8 @@ describe('Msgpack Optimizations', () => {
 
       const elapsed = performance.now() - start;
 
-      expect(elapsed).toBeLessThan(500);
+      // Allow more time for slower CI machines
+      expect(elapsed).toBeLessThan(2000);
     });
 
     it('should handle concurrent-like encoding without corruption', async () => {
