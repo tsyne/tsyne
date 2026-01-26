@@ -464,8 +464,6 @@ export class DuckDuckGoStore {
 // ============================================================================
 
 export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new DuckDuckGoStore();
 
   let selectedTab = 'search';
@@ -780,13 +778,10 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
     await viewStack.refresh();
   });
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'DuckDuckGo Privacy Browser' }, (win: any) => {
+    win.setContent(buildContent);
+    win.show();
     updateLabels();
-  } else {
-    a.window({ title: 'DuckDuckGo Privacy Browser' }, (win: any) => {
-      win.setContent(buildContent);
-      updateLabels();
-    });
-  }
+  });
 }

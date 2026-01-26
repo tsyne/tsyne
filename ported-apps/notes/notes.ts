@@ -197,7 +197,6 @@ export class NotesStore {
 // ============================================================================
 
 export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: number) {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new NotesStore();
   const path = require('path');
   const fontPath = path.join(__dirname, 'GochiHand.ttf');
@@ -386,17 +385,7 @@ export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: numbe
     }); // close themeoverride
   };
 
-  if (isEmbedded) {
-    buildContent();
-    setTimeout(async () => {
-      await updateUI();
-    }, 0);
-    store.subscribe(async () => {
-      await updateUI();
-    });
-    return;
-  }
-
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
   return a.window({ title: 'Notes', width: 900, height: 600 }, (win: any) => {
     winRef = win;
     win.setContent(buildContent);

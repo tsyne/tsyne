@@ -228,19 +228,14 @@ export class FindPairsUI {
 
 export function createFindPairsApp(a: App, windowWidth?: number, windowHeight?: number): FindPairsUI {
   const ui = new FindPairsUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

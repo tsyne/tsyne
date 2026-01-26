@@ -248,8 +248,6 @@ export class ExpenseStore {
 // ============================================================================
 
 export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new ExpenseStore();
   let selectedTab: 'expenses' | 'budgets' | 'analytics' = 'expenses';
 
@@ -523,24 +521,18 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
     await viewStack.refresh();
   });
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Expense Tracker', width: 1000, height: 750 }, (w: any) => {
+    win = w;
+    win.setContent(buildContent);
+
+    // Initial setup
     (async () => {
       await updateSummaryLabels();
     })();
-  } else {
-    a.window({ title: 'Expense Tracker', width: 1000, height: 750 }, (w: any) => {
-      win = w;
-      win.setContent(buildContent);
 
-      // Initial setup
-      (async () => {
-        await updateSummaryLabels();
-      })();
-
-      win.show();
-    });
-  }
+    win.show();
+  });
 }
 
 export default buildExpenseTrackerApp;

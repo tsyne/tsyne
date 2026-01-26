@@ -341,19 +341,14 @@ export class ZipPuzzleUI {
 
 export function createZipPuzzleApp(a: App, windowWidth?: number, windowHeight?: number): ZipPuzzleUI {
   const ui = new ZipPuzzleUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Zip Puzzle', width: 400, height: 450 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Zip Puzzle', width: 400, height: 450 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

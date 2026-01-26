@@ -377,8 +377,6 @@ export class ElementStore {
 // ============================================================================
 
 export function buildElementApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new ElementStore();
 
   let selectedTab = 'rooms';
@@ -667,13 +665,10 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
     await viewStack.refresh();
   });
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Element - Secure Messenger' }, (win: any) => {
+    win.setContent(buildContent);
+    win.show();
     updateLabels();
-  } else {
-    a.window({ title: 'Element - Secure Messenger' }, (win: any) => {
-      win.setContent(buildContent);
-      updateLabels();
-    });
-  }
+  });
 }

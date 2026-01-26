@@ -306,8 +306,6 @@ export class NextCloudStore {
 // ============================================================================
 
 export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new NextCloudStore();
   let selectedTab: 'files' | 'sync' | 'shared' | 'account' = 'files';
   let currentPath: string = '/';
@@ -658,24 +656,18 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
     await viewStack.refresh();
   });
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'NextCloud Desktop Client', width: 1100, height: 800 }, (w: any) => {
+    win = w;
+    win.setContent(buildContent);
+
+    // Initial setup
     (async () => {
       await updateStatusLabels();
     })();
-  } else {
-    a.window({ title: 'NextCloud Desktop Client', width: 1100, height: 800 }, (w: any) => {
-      win = w;
-      win.setContent(buildContent);
 
-      // Initial setup
-      (async () => {
-        await updateStatusLabels();
-      })();
-
-      win.show();
-    });
-  }
+    win.show();
+  });
 }
 
 export default buildNextCloudApp;

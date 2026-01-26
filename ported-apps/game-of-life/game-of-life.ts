@@ -1065,28 +1065,23 @@ class GameOfLifeUI {
  */
 export function createGameOfLifeApp(a: App, windowWidth?: number, windowHeight?: number): GameOfLifeUI {
   const ui = new GameOfLifeUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   // Register cleanup callback to stop the game timer before shutdown
   a.registerCleanup(() => ui.cleanup());
 
-  if (isEmbedded) {
-    ui.buildContent();
-    setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
-      // Setup window synchronously (preferences load async in background)
-      ui.setupWindowSync(win);
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
+    // Setup window synchronously (preferences load async in background)
+    ui.setupWindowSync(win);
 
-      // Set content
-      win.setContent(() => {
-        ui.buildContent();
-      });
-
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
+    // Set content
+    win.setContent(() => {
+      ui.buildContent();
     });
-  }
+
+    win.show();
+    setTimeout(() => ui.initialize(), 0);
+  });
 
   return ui;
 }

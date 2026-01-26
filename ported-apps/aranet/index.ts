@@ -374,8 +374,6 @@ export class AranetStore {
 // ============================================================================
 
 export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new AranetStore();
   let mainWindow: any;
   let settingsWindow: any;
@@ -516,9 +514,7 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
             .withId('refreshBtn');
 
           settingsButton = a.button('Settings').onClick(() => {
-            if (!isEmbedded) {
-              showSettingsWindow();
-            }
+            showSettingsWindow();
           }).withId('settingsBtn');
         });
       });
@@ -530,18 +526,13 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
     await store.discoverDevices();
   };
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Aranet4 Monitor', width: 500, height: 550 }, (win: any) => {
+    mainWindow = win;
+    win.setContent(buildContent);
     initDevices();
-  } else {
-    // Main window
-    a.window({ title: 'Aranet4 Monitor', width: 500, height: 550 }, (win: any) => {
-      mainWindow = win;
-      win.setContent(buildContent);
-      initDevices();
-      win.show();
-    });
-  }
+    win.show();
+  });
 
   function showSettingsWindow(): void {
     if (settingsWindow) {

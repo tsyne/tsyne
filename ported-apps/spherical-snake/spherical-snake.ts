@@ -492,7 +492,6 @@ export class SphericalSnake {
 export function buildSphericalSnakeApp(a: App, windowWidth?: number, windowHeight?: number): void {
   const game = new SphericalSnake();
   let canvasSize = { width: 450, height: 450 };
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   let canvas: TappableCanvasRaster;
   let scoreLabel: Label;
@@ -698,36 +697,28 @@ export function buildSphericalSnakeApp(a: App, windowWidth?: number, windowHeigh
     });
   };
 
-  if (isEmbedded) {
-    buildUIContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
+    win.setContent(buildUIContent);
+    win.show();
+
+    const UI_HEIGHT = 130;
+    win.onResize(async (newWidth: number, newHeight: number) => {
+      const availW = Math.max(100, newWidth - 20);
+      const availH = Math.max(100, newHeight - UI_HEIGHT);
+      const size = Math.min(availW, availH);
+      canvasSize = { width: size, height: size };
+      game.setCanvasSize(size, size, size);
+      await canvas.resize(size, size);
+      await renderFrame();
+    });
+
     setTimeout(async () => {
       await canvas.requestFocus();
       startGameLoop();
       await renderFrame();
     }, 100);
-  } else {
-    a.window({ title: 'Spherical Snake', width: 500, height: 580 }, (win) => {
-      win.setContent(buildUIContent);
-      win.show();
-
-      const UI_HEIGHT = 130;
-      win.onResize(async (newWidth: number, newHeight: number) => {
-        const availW = Math.max(100, newWidth - 20);
-        const availH = Math.max(100, newHeight - UI_HEIGHT);
-        const size = Math.min(availW, availH);
-        canvasSize = { width: size, height: size };
-        game.setCanvasSize(size, size, size);
-        await canvas.resize(size, size);
-        await renderFrame();
-      });
-
-      setTimeout(async () => {
-        await canvas.requestFocus();
-        startGameLoop();
-        await renderFrame();
-      }, 100);
-    });
-  }
+  });
 }
 
 // ============================================================================

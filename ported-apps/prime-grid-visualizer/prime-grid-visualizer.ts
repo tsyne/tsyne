@@ -329,18 +329,13 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
  * Wrapper function that creates window internally - for use with test framework
  */
 export async function createPrimeGridAppStandalone(a: App, windowWidth?: number, windowHeight?: number): Promise<void> {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
-  if (isEmbedded) {
-    await createPrimeGridApp(a, null as any);
-  } else {
-    let capturedWin: Window | null = null;
-    a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (win: Window) => {
-      capturedWin = win;
-    });
-    if (capturedWin) {
-      await createPrimeGridApp(a, capturedWin);
-    }
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  let capturedWin: Window | null = null;
+  a.window({ title: 'Prime Grid Visualizer', width: 900, height: 900 }, (win: Window) => {
+    capturedWin = win;
+  });
+  if (capturedWin) {
+    await createPrimeGridApp(a, capturedWin);
   }
 }
 

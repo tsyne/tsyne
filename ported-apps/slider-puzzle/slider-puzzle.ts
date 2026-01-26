@@ -190,21 +190,14 @@ export class SliderPuzzleUI {
 
 export function createSliderPuzzleApp(a: App, windowWidth?: number, windowHeight?: number): SliderPuzzleUI {
   const ui = new SliderPuzzleUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    // PhoneTop/embedded mode: build content directly without a window
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Slider Puzzle', width: 380, height: 450 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    // Standalone/desktop mode: create a window
-    a.window({ title: 'Slider Puzzle', width: 380, height: 450 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

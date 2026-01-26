@@ -191,8 +191,6 @@ export class FoodTruckStore {
 // ============================================================================
 
 export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new FoodTruckStore();
   let selectedView: 'orders' | 'sales' | 'weather' = 'orders';
 
@@ -449,23 +447,17 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
     await viewStack.refresh();
   });
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Food Truck Manager', width: 1100, height: 700 }, (win: any) => {
+    win.setContent(buildContent);
+
+    // Initial setup
     (async () => {
       await updateStatusSummary();
     })();
-  } else {
-    a.window({ title: 'Food Truck Manager', width: 1100, height: 700 }, (win: any) => {
-      win.setContent(buildContent);
 
-      // Initial setup
-      (async () => {
-        await updateStatusSummary();
-      })();
-
-      win.show();
-    });
-  }
+    win.show();
+  });
 }
 
 export default buildFoodTruckApp;

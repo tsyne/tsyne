@@ -636,32 +636,21 @@ class ImageViewerUI {
  */
 export function createImageViewerApp(a: App, filePath?: string, windowWidth?: number, windowHeight?: number): ImageViewer {
   const viewer = new ImageViewer();
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    const ui = new ImageViewerUI(a, viewer, null as any);
-    ui.buildUI();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
+    const ui = new ImageViewerUI(a, viewer, win);
+    win.setContent(() => {
+      ui.buildUI();
+    });
+    win.show();
 
     if (filePath) {
       viewer.loadImage(filePath).catch(err => {
         console.error('Failed to load image:', err);
       });
     }
-  } else {
-    a.window({ title: 'Image Viewer with Real Editing (Jimp)', width: 1200 }, (win: Window) => {
-      const ui = new ImageViewerUI(a, viewer, win);
-      win.setContent(() => {
-        ui.buildUI();
-      });
-      win.show();
-
-      if (filePath) {
-        viewer.loadImage(filePath).catch(err => {
-          console.error('Failed to load image:', err);
-        });
-      }
-    });
-  }
+  });
 
   return viewer;
 }

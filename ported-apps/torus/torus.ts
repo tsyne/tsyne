@@ -253,8 +253,6 @@ export function renderTorusToBuffer(
  * Main app builder function
  */
 export function createTorusApp(a: App, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
-
   const store = new TorusStore();
   let animationTimer: ReturnType<typeof setTimeout> | null = null;
   let lastFrameTime = Date.now();
@@ -354,27 +352,24 @@ export function createTorusApp(a: App, windowWidth?: number, windowHeight?: numb
     }, 100);
   };
 
-  if (isEmbedded) {
-    buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  // Use app's default dimensions (PhoneTop ignores these via StackPaneAdapter)
+  a.window({ title: 'Interactive 3D Torus', width: 850, height: 680 }, (win: Window) => {
+    win.setContent(buildContent);
+
+    // Cleanup on window close
+    const origClose = win.close.bind(win);
+    win.close = async () => {
+      if (animationTimer) {
+        clearTimeout(animationTimer);
+        animationTimer = null;
+      }
+      return origClose();
+    };
+
+    win.show();
     startAnimation();
-  } else {
-    a.window({ title: 'Interactive 3D Torus', width: 850, height: 680 }, (win: Window) => {
-      win.setContent(buildContent);
-
-      // Cleanup on window close
-      const origClose = win.close.bind(win);
-      win.close = async () => {
-        if (animationTimer) {
-          clearTimeout(animationTimer);
-          animationTimer = null;
-        }
-        return origClose();
-      };
-
-      win.show();
-      startAnimation();
-    });
-  }
+  });
 }
 
 // Standalone execution

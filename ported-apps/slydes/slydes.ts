@@ -49,7 +49,6 @@ export interface SlydesUI {
  * @returns UI controller interface
  */
 export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: number): SlydesUI {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new SlideStore('# Slide 1\n\nWelcome to Slydes!\n\n---\n\n# Slide 2\n\nEdit the markdown on the left to create your presentation.');
 
   // Widget references for incremental updates
@@ -580,36 +579,32 @@ export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: num
     updateWindowTitle();
   });
 
-  if (isEmbedded) {
-    buildContent();
-    setTimeout(() => refreshPreview(), 0);
-  } else {
-    a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
-      mainWindow = win;
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Slydes - Markdown Presentation Editor', width: 1200, height: 800 }, (win) => {
+    mainWindow = win;
 
+    buildMainMenu(win);
+
+    loadRecentFiles().then(() => {
       buildMainMenu(win);
-
-      loadRecentFiles().then(() => {
-        buildMainMenu(win);
-      }).catch(err => {
-        console.error('Failed to load recent files:', err);
-      });
-
-      win.setCloseIntercept(async () => {
-        if (hasUnsavedChanges()) {
-          const save = await win.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before closing?');
-          if (save) {
-            await saveFile();
-          }
-        }
-        return true;
-      });
-
-      win.setContent(buildContent);
-      refreshPreview();
-      win.show();
+    }).catch(err => {
+      console.error('Failed to load recent files:', err);
     });
-  }
+
+    win.setCloseIntercept(async () => {
+      if (hasUnsavedChanges()) {
+        const save = await win.showConfirm('Unsaved Changes', 'You have unsaved changes. Do you want to save before closing?');
+        if (save) {
+          await saveFile();
+        }
+      }
+      return true;
+    });
+
+    win.setContent(buildContent);
+    refreshPreview();
+    win.show();
+  });
 
   return {
     getStore: () => store,

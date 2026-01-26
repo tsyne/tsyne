@@ -389,19 +389,14 @@ export class TangoPuzzleUI {
 
 export function createTangoPuzzleApp(a: App, windowWidth?: number, windowHeight?: number): TangoPuzzleUI {
   const ui = new TangoPuzzleUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Tango Puzzle', width: 420, height: 480 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Tango Puzzle', width: 420, height: 480 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

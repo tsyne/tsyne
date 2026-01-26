@@ -399,13 +399,9 @@ export class EdlinApp {
  */
 export function buildEdlinApp(a: App, windowWidth?: number, windowHeight?: number): void {
   const edlin = new EdlinApp(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    edlin.buildContent();
-  } else {
-    edlin.build();
-  }
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  edlin.build();
 }
 
 /**

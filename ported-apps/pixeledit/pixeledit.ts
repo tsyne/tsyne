@@ -5051,29 +5051,20 @@ class PixelEditor {
  */
 export function createPixelEditorApp(a: App, filePath?: string, windowWidth?: number, windowHeight?: number): PixelEditor {
   const editor = new PixelEditor(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    editor.buildUIEmbedded();
-    if (filePath) {
-      editor.loadFile(filePath).catch(err => {
-        console.error('Failed to load image:', err);
-      });
-    }
-  } else {
-    a.window({ title: 'Pixel Editor', width: 640, height: 480 }, (win: Window) => {
-      win.setContent(async () => {
-        await editor.buildUI(win);
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Pixel Editor', width: 640, height: 480 }, (win: Window) => {
+    win.setContent(async () => {
+      await editor.buildUI(win);
 
-        if (filePath) {
-          editor.loadFile(filePath).catch(err => {
-            console.error('Failed to load image:', err);
-          });
-        }
-      });
-      win.show();
+      if (filePath) {
+        editor.loadFile(filePath).catch(err => {
+          console.error('Failed to load image:', err);
+        });
+      }
     });
-  }
+    win.show();
+  });
 
   return editor;
 }

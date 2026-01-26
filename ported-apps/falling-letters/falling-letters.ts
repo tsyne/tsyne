@@ -836,21 +836,16 @@ export class FallingLettersUI {
 
 export function createFallingLettersApp(a: App, windowWidth?: number, windowHeight?: number): FallingLettersUI {
   const ui = new FallingLettersUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  if (isEmbedded) {
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Falling Letters', width: 350, height: 550 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Falling Letters', width: 350, height: 550 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

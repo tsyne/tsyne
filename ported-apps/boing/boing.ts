@@ -547,26 +547,21 @@ class BoingDemo {
  */
 export function createBoingApp(a: App, resources: IResourceManager, windowWidth?: number, windowHeight?: number): BoingDemo {
   const demo = new BoingDemo(a, resources);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   // Register cleanup
   a.registerCleanup(() => demo.cleanup());
 
-  if (isEmbedded) {
-    demo.buildContent();
-    setTimeout(() => demo.initialize(), 0);
-  } else {
-    a.window({ title: 'Boing Ball Demo', width: CANVAS_WIDTH + 16, height: CANVAS_HEIGHT + 40 }, (win: Window) => {
-      demo.setupWindow(win);
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Boing Ball Demo', width: CANVAS_WIDTH + 16, height: CANVAS_HEIGHT + 40 }, (win: Window) => {
+    demo.setupWindow(win);
 
-      win.setContent(() => {
-        demo.buildContent();
-      });
-
-      win.show();
-      setTimeout(() => demo.initialize(), 0);
+    win.setContent(() => {
+      demo.buildContent();
     });
-  }
+
+    win.show();
+    setTimeout(() => demo.initialize(), 0);
+  });
 
   return demo;
 }

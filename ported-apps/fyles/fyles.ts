@@ -685,16 +685,12 @@ class FylesUI {
  */
 export function createFylesApp(a: App, initialDir?: string, windowWidth?: number, windowHeight?: number): FylesUI {
   const ui = new FylesUI(a, initialDir);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    ui.buildUIEmbedded();
-  } else {
-    a.window({ title: 'Fyles - File Browser', width: 800, height: 600 }, (win) => {
-      ui.buildUI(win);
-      win.show();
-    });
-  }
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Fyles - File Browser', width: 800, height: 600 }, (win) => {
+    ui.buildUI(win);
+    win.show();
+  });
 
   return ui;
 }

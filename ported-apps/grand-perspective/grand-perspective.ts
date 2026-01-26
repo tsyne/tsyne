@@ -497,7 +497,6 @@ function renderShadedRect(c: any, rect: TreemapRect, baseColor: string, isSelect
 // ============================================================================
 
 export function buildGrandPerspectiveApp(a: any, initialPath?: string, windowWidth?: number, windowHeight?: number): void {
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
   const store = new GrandPerspectiveStore();
   let cosyneCtx: any = null;
   let eventRouter: EventRouter | null = null;
@@ -697,14 +696,11 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string, windowWid
     }
   });
 
-  if (isEmbedded) {
-    buildContent();
-  } else {
-    a.window({ title: 'GrandPerspective', width: 1000, height: 700 }, (win: any) => {
-      win.setContent(buildContent);
-      win.show();
-    });
-  }
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'GrandPerspective', width: 1000, height: 700 }, (win: any) => {
+    win.setContent(buildContent);
+    win.show();
+  });
 }
 
 // Standalone execution

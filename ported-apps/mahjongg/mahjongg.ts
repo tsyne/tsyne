@@ -848,23 +848,16 @@ export class MahjonggUI {
  */
 export function createMahjonggApp(a: App, windowWidth?: number, windowHeight?: number): MahjonggUI {
   const ui = new MahjonggUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  if (isEmbedded) {
-    // PhoneTop/embedded mode: build content directly without a window
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    // Standalone/desktop mode: create a window
-    a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

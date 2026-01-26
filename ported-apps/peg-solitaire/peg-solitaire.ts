@@ -278,19 +278,14 @@ export class PegSolitaireUI {
 
 export function createPegSolitaireApp(a: App, windowWidth?: number, windowHeight?: number): PegSolitaireUI {
   const ui = new PegSolitaireUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    ui.buildContent();
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Peg Solitaire', width: 380, height: 430 }, (win: Window) => {
+    ui.setupWindow(win);
+    win.setContent(() => ui.buildContent());
+    win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else {
-    a.window({ title: 'Peg Solitaire', width: 380, height: 430 }, (win: Window) => {
-      ui.setupWindow(win);
-      win.setContent(() => ui.buildContent());
-      win.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

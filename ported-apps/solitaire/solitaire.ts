@@ -1296,26 +1296,20 @@ class SolitaireUI {
  */
 export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): SolitaireUI {
   const ui = new SolitaireUI(a, cardImageProvider);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  if (isEmbedded) {
-    // PhoneTop/embedded mode: build content directly without a window
-    ui.buildUI(null);
-  } else {
-    // Standalone/desktop mode: create a window
-    // Determine window size - use phone-sized window when running on mobile
-    const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
-    const isMobile = layoutScale < 1.0;
-    const width = isMobile ? 1040 : 1000;
-    const height = isMobile ? 750 : 700;
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  // Determine window size - use phone-sized window when running on mobile
+  const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
+  const isMobile = layoutScale < 1.0;
+  const width = isMobile ? 1040 : 1000;
+  const height = isMobile ? 750 : 700;
 
-    a.window({ title: 'Solitaire', width, height }, (win: Window) => {
-      win.setContent(() => {
-        ui.buildUI(win);
-      });
-      win.show();
+  a.window({ title: 'Solitaire', width, height }, (win: Window) => {
+    win.setContent(() => {
+      ui.buildUI(win);
     });
-  }
+    win.show();
+  });
 
   return ui;
 }
