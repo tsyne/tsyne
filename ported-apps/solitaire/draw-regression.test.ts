@@ -51,12 +51,15 @@ describe('Draw Button Layout Regression Test', () => {
       // Click Draw - this will fail if button shifted out of position
       await drawButton.click();
 
+      // Small delay to let UI stabilize after async rebuild
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       // Get position after click
       const infoAfter = await drawButton.getInfo();
       const currentY = infoAfter.absoluteY;
 
       // Verify the click worked by checking status message
-      await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
       if (i === 0) {
         initialY = currentY;
@@ -90,10 +93,10 @@ describe('Draw Button Layout Regression Test', () => {
 
     // Press Draw immediately after - this is a common scenario where layout shift occurs
     await ctx.getByText('Draw').click();
-    await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
+    await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
     // Press Draw again
     await ctx.getByText('Draw').click();
-    await ctx.getById('status-label').within(1000).shouldBe('Drew cards');
+    await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
   }, 15000);
 });

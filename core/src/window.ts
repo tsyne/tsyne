@@ -211,6 +211,10 @@ export class Window {
 
     this.ctx.popWindow();
 
+    // Wait for all withId() registrations to complete before sending content
+    // This ensures getById() works immediately after setContent() returns
+    await this.ctx.waitForRegistrations();
+
     // Now ensure window creation has completed before sending to bridge
     await this.creationPromise;
 

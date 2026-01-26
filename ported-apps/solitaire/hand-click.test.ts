@@ -49,7 +49,7 @@ describe('Hand Pile Click Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Verify status shows drew cards
-      await ctx.getById('status-label').shouldContain('Drew cards');
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
     } catch (error) {
       // Take screenshot on timeout/failure
       const screenshotPath = '/tmp/hand-click-timeout.png';

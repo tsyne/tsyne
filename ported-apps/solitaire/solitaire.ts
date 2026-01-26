@@ -1088,10 +1088,10 @@ class SolitaireUI {
   /**
    * Rebuild the UI to reflect game state changes
    */
-  private rebuildUI(): void {
+  private async rebuildUI(): Promise<void> {
     if (!this.window) return;
 
-    this.window.setContent(() => {
+    await this.window.setContent(() => {
       this.buildUI(this.window!);
     });
   }

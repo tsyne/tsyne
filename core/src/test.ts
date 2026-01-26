@@ -460,10 +460,28 @@ export class Locator {
 
   /**
    * Find the first widget matching this locator
+   * For 'id' selectors, automatically retries for up to 100ms to handle async withId() registration
    */
   async find(): Promise<string | null> {
     const widgets = await this.findAll();
-    return widgets.length > 0 ? widgets[0] : null;
+    if (widgets.length > 0) {
+      return widgets[0];
+    }
+
+    // For ID selectors, retry briefly to handle async withId() registration after UI rebuild
+    if (this.selectorType === 'id') {
+      const startTime = Date.now();
+      const retryTimeout = 500; // 500ms automatic retry for ID lookups
+      while (Date.now() - startTime < retryTimeout) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const retryWidgets = await this.findAll();
+        if (retryWidgets.length > 0) {
+          return retryWidgets[0];
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

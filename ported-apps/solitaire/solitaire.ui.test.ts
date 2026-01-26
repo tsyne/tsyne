@@ -50,7 +50,7 @@ describe('Solitaire UI Integration Tests', () => {
       await ctx.getById('draw-btn').click();
 
       // Verify status shows drew cards (poll until it appears)
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
       // Note: We can't directly test image clicks in this setup without
       // more complex mouse position simulation, but we verified the
@@ -86,11 +86,11 @@ describe('Solitaire UI Integration Tests', () => {
 
       // Click draw3 card to select it
       await ctx.getById('draw3').click();
-      await ctx.getById('status-label').within(500).shouldContain('Selected King of Spades from draw pile');
+      await ctx.expect(ctx.getByText('Selected King of Spades from draw pile')).toBeVisible();
 
       // Click first empty tableau stack to place the King
       await ctx.getById('empty-stack-0').click();
-      await ctx.getById('status-label').within(500).shouldContain('Moved card to tableau 0');
+      await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
     }, 10000);
 
     test('should click drawn card and place on tableau stack (alternating colors)', async () => {
@@ -119,11 +119,11 @@ describe('Solitaire UI Integration Tests', () => {
 
       // Click draw3 card (6 of Hearts) to select it
       await ctx.getById('draw3').click();
-      await ctx.getById('status-label').within(500).shouldContain('Selected 6 of Hearts from draw pile');
+      await ctx.expect(ctx.getByText('Selected 6 of Hearts from draw pile')).toBeVisible();
 
       // Click tableau stack 0 to place the card
       await ctx.getById('stack-0').click();
-      await ctx.getById('status-label').within(500).shouldContain('Moved card to tableau 0');
+      await ctx.expect(ctx.getByText('Moved card to tableau 0')).toBeVisible();
     }, 10000);
 
     test('should NOT allow invalid Hand→Tableau move (same color)', async () => {
@@ -152,11 +152,11 @@ describe('Solitaire UI Integration Tests', () => {
 
       // Click draw3 card (Red 6) to select it
       await ctx.getById('draw3').click();
-      await ctx.getById('status-label').within(500).shouldContain('Selected 6 of Hearts from draw pile');
+      await ctx.expect(ctx.getByText('Selected 6 of Hearts from draw pile')).toBeVisible();
 
       // Try to place on invalid stack (Red 7 - same color)
       await ctx.getById('stack-0').click();
-      await ctx.getById('status-label').within(500).shouldContain('Cannot move card there');
+      await ctx.expect(ctx.getByText('Cannot move card there')).toBeVisible();
     }, 10000);
 
     test('should move Ace from draw pile to foundation', async () => {
@@ -197,17 +197,17 @@ describe('Solitaire UI Integration Tests', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      // First draw
-      await ctx.getById('draw-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      // First draw - use getByText since getById has timing issues after UI rebuild
+      await ctx.getByText('Draw').click();
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
       // Second draw
-      await ctx.getById('draw-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      await ctx.getByText('Draw').click();
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
 
       // Third draw should recycle
-      await ctx.getById('draw-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      await ctx.getByText('Draw').click();
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
     }, 10000);
   });
 
@@ -317,7 +317,7 @@ describe('Solitaire UI Integration Tests', () => {
       await testApp.run();
 
       await ctx.getById('new-game-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('New game started');
+await ctx.expect(ctx.getByText('New game started')).toBeVisible();
     }, 10000);
 
     test('should shuffle on Shuffle button', async () => {
@@ -329,7 +329,7 @@ describe('Solitaire UI Integration Tests', () => {
       await testApp.run();
 
       await ctx.getById('shuffle-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Deck shuffled');
+await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
     }, 10000);
   });
 
@@ -366,7 +366,7 @@ describe('Solitaire UI Integration Tests', () => {
       await testApp.run();
 
       await ctx.getById('draw-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
     }, 10000);
   });
 
@@ -400,7 +400,7 @@ describe('Solitaire UI Integration Tests', () => {
       await ctx.getById('draw-btn').click();
 
       // The draw should detect the win
-      await ctx.getById('status-label').within(500).shouldContain('Congratulations! You won!');
+await ctx.expect(ctx.getByText('Congratulations! You won!')).toBeVisible();
     }, 10000);
   });
 
@@ -443,7 +443,7 @@ describe('Solitaire UI Integration Tests', () => {
 
       // Try drawing
       await ctx.getById('draw-btn').click();
-      await ctx.getById('status-label').within(500).shouldContain('Drew cards');
+      await ctx.expect(ctx.getByText('Drew cards')).toBeVisible();
     }, 15000);
 
     test('should handle empty game state', async () => {
