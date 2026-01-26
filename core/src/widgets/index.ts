@@ -49,6 +49,7 @@ export {
   MenuButton,
   MenuBuilder,
   PopupMenuItem,
+  ImageButton,
   Entry,
   MultiLineEntry,
   PasswordEntry,

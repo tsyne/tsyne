@@ -1,10 +1,8 @@
 /**
  * Tsyne PhoneTop for Android
  *
- * This is an Android-specific entry point that uses the generated app manifest
- * instead of dynamically scanning the filesystem.
- *
- * Apps are filtered to only include phone-compatible ones.
+ * Composition root for Android APK builds.
+ * Creates stubbed services that show warnings for unavailable hardware features.
  *
  * To regenerate the app manifest:
  *   npx tsx phone-apps/generate-app-manifest.ts
@@ -13,6 +11,12 @@
 import { App } from 'tsyne';
 import { PhoneTopOptions, StaticAppDefinition, buildPhoneTop } from './index';
 import { allApps, getAppsForPlatform, GeneratedAppDefinition } from '../../phone-apps/all-apps.generated';
+import {
+  PhoneServices,
+  MockContactsService,
+  ApkStubbedTelephonyService,
+  ApkStubbedSMSService,
+} from '../../phone-apps/services';
 
 // Re-export app and buildPhoneTop for the bundle
 export { app } from 'tsyne';
@@ -43,12 +47,35 @@ export function getPhoneApps(): StaticAppDefinition[] {
  */
 export const staticAppDefs: StaticAppDefinition[] = allApps.map(toStaticAppDef);
 
-// Android-specific buildPhoneTop that uses generated app imports
+/**
+ * Create services for Android APK (composition root)
+ * Uses stubbed services that show warnings for unavailable hardware
+ */
+function createAndroidApkServices(showWarning: (feature: string) => void): PhoneServices {
+  return {
+    contacts: new MockContactsService(),  // Contacts could work via content provider later
+    telephony: new ApkStubbedTelephonyService(showWarning),
+    sms: new ApkStubbedSMSService(showWarning),
+  };
+}
+
+/**
+ * Build PhoneTop for Android APK (composition root)
+ */
 export async function buildPhoneTopAndroid(a: App, options?: PhoneTopOptions) {
-  // For Android, use phone-compatible apps from the generated manifest
+  // Create stubbed services with warning dialog
+  const services = createAndroidApkServices((feature: string) => {
+    a.dialog({
+      title: 'Feature Not Available',
+      message: `${feature} is not available in this APK build.\n\nHardware access requires native Android integration.`,
+      buttons: ['OK']
+    });
+  });
+
   await buildPhoneTop(a, {
     ...options,
     staticApps: getPhoneApps(),
+    services,  // Inject services (IoC)
   });
 }
 

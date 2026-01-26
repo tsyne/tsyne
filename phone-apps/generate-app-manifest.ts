@@ -2,9 +2,13 @@
 /**
  * App Manifest Generator
  *
- * Scans app directories and generates a static manifest file with all app
- * imports and metadata. This avoids runtime reflection/scanning and enables
- * static bundling for Android/iOS deployments.
+ * Reads the canonical app list from launchers/all-apps.ts and generates a
+ * static manifest file with all app imports and metadata. This avoids runtime
+ * reflection/scanning and enables static bundling for Android/iOS deployments.
+ *
+ * The source of truth for which apps exist is launchers/all-apps.ts (and its
+ * component files bsd-mit-apps.ts and gpl-apps.ts). This generator extracts
+ * the metadata from those files and creates the static imports needed for bundling.
  *
  * Usage:
  *   npx tsx phone-apps/generate-app-manifest.ts
@@ -26,6 +30,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { ALL_APPS } from '../launchers/all-apps';
 
 // Platform types
 export type Platform = 'phone' | 'tablet' | 'desktop';
@@ -42,16 +47,8 @@ interface ParsedAppMetadata {
   platforms: Platform[];
 }
 
-// Directories to scan (relative to project root)
-// Order matters: nested scanned first (preferred), flat scanned second
-const SCAN_DIRECTORIES = [
-  { path: 'phone-apps', type: 'nested' },         // phone-apps/*/name.ts (clock/, contacts/, etc.)
-  { path: 'ported-apps', type: 'nested' },        // ported-apps/*/name.ts
-  { path: 'phone-apps', type: 'flat' },           // phone-apps/*.ts (fallback for non-subdir apps)
-  { path: 'examples', type: 'flat' },             // examples/*.ts
-];
-
-// Apps to exclude (test files, utilities, non-bundleable apps, etc.)
+// Apps to exclude from the generated manifest (even if in ALL_APPS)
+// These are apps with bundling issues (native deps, missing packages, etc.)
 const EXCLUDE_PATTERNS = [
   /\.test\.ts$/,
   /\.d\.ts$/,
@@ -238,68 +235,6 @@ function shouldExclude(filePath: string): boolean {
 }
 
 /**
- * Scan a flat directory for apps
- */
-function scanFlatDirectory(dirPath: string): ParsedAppMetadata[] {
-  const apps: ParsedAppMetadata[] = [];
-  const fullPath = path.resolve(process.cwd(), dirPath);
-
-  if (!fs.existsSync(fullPath)) {
-    return apps;
-  }
-
-  const files = fs.readdirSync(fullPath);
-  for (const file of files) {
-    if (!file.endsWith('.ts')) continue;
-
-    const filePath = path.join(fullPath, file);
-    if (shouldExclude(filePath)) continue;
-
-    const stats = fs.statSync(filePath);
-    if (!stats.isFile()) continue;
-
-    const metadata = parseAppMetadata(filePath);
-    if (metadata) {
-      apps.push(metadata);
-    }
-  }
-
-  return apps;
-}
-
-/**
- * Scan nested directory (ported-apps style: subdir/subdir.ts)
- */
-function scanNestedDirectory(dirPath: string): ParsedAppMetadata[] {
-  const apps: ParsedAppMetadata[] = [];
-  const fullPath = path.resolve(process.cwd(), dirPath);
-
-  if (!fs.existsSync(fullPath)) {
-    return apps;
-  }
-
-  const subdirs = fs.readdirSync(fullPath);
-  for (const subdir of subdirs) {
-    const subdirPath = path.join(fullPath, subdir);
-    const stats = fs.statSync(subdirPath);
-
-    if (!stats.isDirectory()) continue;
-    if (shouldExclude(subdirPath)) continue;
-
-    // Look for subdir/subdir.ts
-    const mainFile = path.join(subdirPath, `${subdir}.ts`);
-    if (fs.existsSync(mainFile)) {
-      const metadata = parseAppMetadata(mainFile);
-      if (metadata) {
-        apps.push(metadata);
-      }
-    }
-  }
-
-  return apps;
-}
-
-/**
  * Generate import path relative to phone-apps/
  */
 function generateImportPath(filePath: string): string {
@@ -482,41 +417,46 @@ export function getCategories(): string[] {
  * Main entry point
  */
 function main() {
-  console.log('Scanning for apps...\n');
+  console.log('Reading apps from launchers/all-apps.ts...\n');
+  console.log(`  Found ${ALL_APPS.length} app paths in registry`);
 
   const allApps: ParsedAppMetadata[] = [];
-  const seenPaths = new Set<string>();
   const seenNames = new Set<string>();
+  let skipped = 0;
+  let excluded = 0;
 
-  for (const dir of SCAN_DIRECTORIES) {
-    console.log(`  Scanning ${dir.path}/ (${dir.type})...`);
-
-    let apps: ParsedAppMetadata[];
-    if (dir.type === 'nested') {
-      apps = scanNestedDirectory(dir.path);
-    } else {
-      apps = scanFlatDirectory(dir.path);
+  for (const filePath of ALL_APPS) {
+    // Check exclusion patterns
+    if (shouldExclude(filePath)) {
+      excluded++;
+      continue;
     }
 
-    // Dedupe by file path AND name (first scan wins)
-    let newApps = 0;
-    let skipped = 0;
-    for (const app of apps) {
-      if (seenPaths.has(app.filePath) || seenNames.has(app.name)) {
-        skipped++;
-        continue;
-      }
-      seenPaths.add(app.filePath);
-      seenNames.add(app.name);
-      allApps.push(app);
-      newApps++;
+    // Parse metadata from the file
+    const metadata = parseAppMetadata(filePath);
+    if (!metadata) {
+      console.log(`    Skipped (no metadata): ${path.basename(filePath)}`);
+      skipped++;
+      continue;
     }
 
-    console.log(`    Found ${newApps} apps${skipped > 0 ? ` (${skipped} duplicates skipped)` : ''}`);
+    // Dedupe by name (first wins)
+    if (seenNames.has(metadata.name)) {
+      console.log(`    Skipped (duplicate name): ${metadata.name}`);
+      skipped++;
+      continue;
+    }
+
+    seenNames.add(metadata.name);
+    allApps.push(metadata);
   }
 
   // Sort by name
   allApps.sort((a, b) => a.name.localeCompare(b.name));
+
+  console.log(`\n  Parsed: ${allApps.length} apps`);
+  if (skipped > 0) console.log(`  Skipped: ${skipped} (no metadata or duplicates)`);
+  if (excluded > 0) console.log(`  Excluded: ${excluded} (matched exclusion patterns)`);
 
   console.log(`\nTotal: ${allApps.length} apps\n`);
 

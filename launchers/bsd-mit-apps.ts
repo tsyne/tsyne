@@ -32,14 +32,36 @@ export const ALL_BSD_OR_MIT_APPS = [
   tryResolve('../ported-apps/wikipedia'),                 // MIT (Wikimedia Foundation port)
   tryResolve('../ported-apps/zip-puzzle/zip-puzzle'),     // MIT (Paul Hammant)
 
-  // phone-apps (all MIT unless noted)
-  tryResolve('../phone-apps/contacts'),
+  // phone-apps (all MIT - Tsyne project originals)
+  tryResolve('../phone-apps/alarms/alarms'),
+  tryResolve('../phone-apps/audio-recorder/audio-recorder'),
+  tryResolve('../phone-apps/battery/battery'),
+  tryResolve('../phone-apps/burning-ship/burning-ship'),
+  tryResolve('../phone-apps/calendar/calendar'),
+  tryResolve('../phone-apps/camera/camera'),
+  tryResolve('../phone-apps/clock/clock'),
+  tryResolve('../phone-apps/contacts/contacts'),
+  tryResolve('../phone-apps/dialer/dialer'),
   tryResolve('../phone-apps/disk-tree'),
+  tryResolve('../phone-apps/eliza/eliza'),
+  tryResolve('../phone-apps/eyes/eyes'),
+  tryResolve('../phone-apps/hexview/hexview'),
   tryResolve('../phone-apps/image-resizer'),
+  tryResolve('../phone-apps/julia-set/julia-set'),
+  tryResolve('../phone-apps/mandelbrot/mandelbrot'),
   tryResolve('../phone-apps/messages'),
+  tryResolve('../phone-apps/minefield/minefield'),
+  tryResolve('../phone-apps/music-player/music-player'),
+  tryResolve('../phone-apps/newton-fractal/newton-fractal'),
   tryResolve('../phone-apps/nomad'),
   tryResolve('../phone-apps/pomodoro'),
+  tryResolve('../phone-apps/power-menu'),
   tryResolve('../phone-apps/settings'),
+  tryResolve('../phone-apps/stopwatch/stopwatch'),
+  tryResolve('../phone-apps/timer/timer'),
+  tryResolve('../phone-apps/tricorn/tricorn'),
+  tryResolve('../phone-apps/voice-assistant/voice-assistant'),
+  tryResolve('../phone-apps/weather/weather'),
 
   // examples (all MIT)
   tryResolve('../examples/02-counter'),
@@ -49,6 +71,7 @@ export const ALL_BSD_OR_MIT_APPS = [
   tryResolve('../examples/18-dice-roller'),
   tryResolve('../examples/20-rock-paper-scissors'),
   tryResolve('../examples/21-quiz-app'),
+  tryResolve('../examples/animation-demo'),
   tryResolve('../examples/animation-elegant'),
   tryResolve('../examples/calculator'),
   tryResolve('../examples/daily-checklist-mvc'),

@@ -179,6 +179,14 @@ func (b *Bridge) handleContainerAdd(msg Message) Response {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
 			cont.Add(childObj)
+			// If container is already attached to a canvas, mark it dirty to trigger repaint.
+			// Without this, Add() on an already-displayed container won't visually update
+			// until something else (like mouse movement) triggers a repaint.
+			if canvas := fyne.CurrentApp().Driver().CanvasForObject(cont); canvas != nil {
+				if paint, ok := canvas.(interface{ SetDirty() }); ok {
+					paint.SetDirty()
+				}
+			}
 		})
 
 		b.mu.Lock()
@@ -217,7 +225,7 @@ func (b *Bridge) handleContainerRemoveAll(msg Message) Response {
 	if cont, ok := containerObj.(*fyne.Container); ok {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
-			cont.Objects = nil
+			cont.RemoveAll() // Use Fyne's RemoveAll which handles refresh internally
 		})
 
 		return Response{

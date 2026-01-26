@@ -158,6 +158,8 @@ func (s *MsgpackServer) Close() {
 // Optimization #4: Pre-serialize once, single lock for all writes
 // Optimization #6: Use pooled encoder
 func (s *MsgpackServer) SendEvent(event Event) {
+	log.Printf("[SendEvent] type=%s widgetId=%s callbackId=%v", event.Type, event.WidgetID, event.Data["callbackId"])
+
 	msgEvent := MsgpackEvent{
 		Type:     event.Type,
 		WidgetID: event.WidgetID,
@@ -167,6 +169,7 @@ func (s *MsgpackServer) SendEvent(event Event) {
 	// Use pooled encoder (#6 optimization)
 	eventBuf, err := s.encodeWithPool(msgEvent)
 	if err != nil {
+		log.Printf("[SendEvent] encode error: %v", err)
 		return
 	}
 
@@ -183,11 +186,18 @@ func (s *MsgpackServer) SendEvent(event Event) {
 		return true
 	})
 
+	log.Printf("[SendEvent] writing to %d clients", len(conns))
+
 	// Single lock for all writes (#4 optimization)
 	// This reduces lock/unlock cycles from N to 1
 	s.mu.Lock()
 	for _, conn := range conns {
-		conn.Write(frameBuf[:frameSize])
+		n, err := conn.Write(frameBuf[:frameSize])
+		if err != nil {
+			log.Printf("[SendEvent] write error: %v", err)
+		} else {
+			log.Printf("[SendEvent] wrote %d bytes", n)
+		}
 	}
 	s.mu.Unlock()
 

@@ -2,20 +2,41 @@ import { Context } from '../context';
 import { Widget } from './base';
 
 /**
+ * Button options
+ */
+export interface ButtonOptions {
+  /** CSS class name for styling */
+  className?: string;
+  /** Font size in pixels */
+  textSize?: number;
+}
+
+/**
  * Button widget
  */
 export class Button extends Widget {
-  constructor(ctx: Context, text: string, className?: string) {
+  constructor(ctx: Context, text: string, classNameOrOptions?: string | ButtonOptions) {
     const id = ctx.generateId('button');
     super(ctx, id);
 
+    // Handle both old signature (className string) and new options object
+    let options: ButtonOptions = {};
+    if (typeof classNameOrOptions === 'object') {
+      options = classNameOrOptions;
+    } else if (typeof classNameOrOptions === 'string') {
+      options = { className: classNameOrOptions };
+    }
+
     const payload: any = { id, text };
+    if (options.textSize) {
+      payload.textSize = options.textSize;
+    }
 
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id, this);
 
-    if (className) {
-      this.applyStyles(className).catch(() => {});
+    if (options.className) {
+      this.applyStyles(options.className).catch(() => {});
     } else {
       this.applyStyles('button').catch(() => {});
     }
@@ -130,6 +151,79 @@ export class MenuButton extends Widget {
       menuItems: items
     });
     ctx.addToCurrentContainer(id, this);
+  }
+}
+
+/**
+ * ImageButton widget - displays an image above text, with button-like tap handling.
+ * Use this instead of Image with onClick for reliable touch support on mobile.
+ */
+export class ImageButton extends Widget {
+  constructor(
+    ctx: Context,
+    options: {
+      resource?: string;
+      text?: string;
+      textSize?: number;
+    }
+  ) {
+    const id = ctx.generateId('imageButton');
+    super(ctx, id);
+
+    const payload: any = {
+      id,
+      text: options.text || '',
+    };
+
+    if (options.resource) {
+      // Apply resource scoping for multi-instance app isolation
+      payload.resource = ctx.scopeResourceName(options.resource);
+    }
+
+    if (options.textSize) {
+      payload.textSize = options.textSize;
+    }
+
+    ctx.bridge.send('createImageButton', payload);
+    ctx.addToCurrentContainer(id, this);
+  }
+
+  onClick(callback: (btn: ImageButton) => void | Promise<void>): this {
+    const callbackId = this.ctx.generateId('callback');
+
+    // Register callback, passing the button as argument
+    this.ctx.bridge.registerEventHandler(callbackId, async () => {
+      await callback(this);
+    });
+
+    // Tell the bridge to use this callback ID for this button
+    this.ctx.bridge.send('setWidgetCallback', {
+      widgetId: this.id,
+      callbackId
+    }).catch(() => {
+      // If send fails, the handler is still registered, just won't be triggered
+    });
+
+    return this;
+  }
+
+  async disable(): Promise<void> {
+    await this.ctx.bridge.send('disableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async enable(): Promise<void> {
+    await this.ctx.bridge.send('enableWidget', {
+      widgetId: this.id
+    });
+  }
+
+  async isEnabled(): Promise<boolean> {
+    const result = await this.ctx.bridge.send('isEnabled', {
+      widgetId: this.id
+    }) as { enabled: boolean };
+    return result.enabled;
   }
 }
 

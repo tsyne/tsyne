@@ -21,6 +21,9 @@ import {
   ServiceResult,
 } from 'tsyne';
 
+// Import CallState for modem compatibility
+import { CallState } from './dialer/modemmanager-service';
+
 // ============================================================================
 // Mock Contacts Service (Phone-specific with sample data)
 // ============================================================================
@@ -157,6 +160,78 @@ export class MockTelephonyService implements ITelephonyService {
 
   getCurrentCallNumber(): string | null {
     return this.currentNumber;
+  }
+
+  /**
+   * Get active calls (for modem compatibility)
+   * Returns current call if in progress, otherwise empty array
+   */
+  getActiveCalls(): CallState[] {
+    if (this.inCall && this.currentNumber) {
+      return [{
+        id: 'mock-call-1',
+        number: this.currentNumber,
+        state: 'connected',
+        direction: 'outgoing',
+        startTime: new Date(),
+      }];
+    }
+    return [];
+  }
+}
+
+// ============================================================================
+// APK Stubbed Telephony Service (for Android APK builds)
+// Shows warning dialogs when telephony features are accessed
+// ============================================================================
+
+export class ApkStubbedTelephonyService implements ITelephonyService {
+  private showWarning: (feature: string) => void;
+
+  /**
+   * Create an APK stubbed telephony service
+   * @param showWarning Callback to show a warning dialog (receives feature name)
+   */
+  constructor(showWarning: (feature: string) => void) {
+    this.showWarning = showWarning;
+  }
+
+  isAvailable(): boolean {
+    return false;  // Not available in APK builds
+  }
+
+  getUnavailableReason(): string {
+    return 'Telephony is not available in this APK build. Hardware modem access requires native Android integration.';
+  }
+
+  async dial(number: string): Promise<ServiceResult<boolean>> {
+    this.showWarning(`Dialing ${number}`);
+    return { available: false };
+  }
+
+  async hangup(): Promise<void> {
+    // No-op, no active calls possible
+  }
+
+  getCallLog(): CallLogEntry[] {
+    this.showWarning('Call Log');
+    return [];
+  }
+
+  clearCallLog(): void {
+    // No-op
+  }
+
+  isInCall(): boolean {
+    return false;
+  }
+
+  getCurrentCallNumber(): string | null {
+    return null;
+  }
+
+  getActiveCalls(): CallState[] {
+    return [];
   }
 }
 
@@ -331,4 +406,79 @@ export class MockSMSService implements ISMSService {
     }
     return false;
   }
+}
+
+// ============================================================================
+// APK Stubbed SMS Service (for Android APK builds)
+// Shows warning dialogs when SMS features are accessed
+// ============================================================================
+
+export class ApkStubbedSMSService implements ISMSService {
+  private showWarning: (feature: string) => void;
+
+  constructor(showWarning: (feature: string) => void) {
+    this.showWarning = showWarning;
+  }
+
+  isAvailable(): boolean {
+    return false;
+  }
+
+  getUnavailableReason(): string {
+    return 'SMS is not available in this APK build. Hardware SMS access requires native Android integration.';
+  }
+
+  async send(to: string, body: string): Promise<ServiceResult<Message>> {
+    this.showWarning(`Sending SMS to ${to}`);
+    return { available: false };
+  }
+
+  getMessages(): Message[] {
+    this.showWarning('SMS Messages');
+    return [];
+  }
+
+  getThreads(): Thread[] {
+    this.showWarning('SMS Threads');
+    return [];
+  }
+
+  getThread(threadId: string): Thread | null {
+    return null;
+  }
+
+  markAsRead(messageId: string): void {}
+
+  addListener(listener: MessageListener): void {}
+
+  removeListener(listener: MessageListener): void {}
+
+  deleteThread(threadId: string): boolean {
+    return false;
+  }
+
+  deleteMessage(messageId: string): boolean {
+    return false;
+  }
+}
+
+// ============================================================================
+// Service Types (for Inversion of Control / Dependency Injection)
+// ============================================================================
+
+/**
+ * Target platform type
+ */
+export type Platform = 'desktop' | 'postmarketos' | 'android-apk' | 'android-native';
+
+/**
+ * Phone services container (injected into PhoneTop via composition root)
+ *
+ * Each entry point (buildPhoneTop, buildPhoneTopAndroid, buildPhoneTopPostmarketOS)
+ * creates the appropriate service implementations and injects them.
+ */
+export interface PhoneServices {
+  contacts: IContactsService;
+  telephony: ITelephonyService;
+  sms: ISMSService;
 }

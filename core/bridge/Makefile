@@ -75,3 +75,15 @@ android-arm:
 # Clean Android builds
 clean-android:
 	rm -rf $(ANDROID_OUT)/arm64-v8a/libtsyne-bridge.* $(ANDROID_OUT)/armeabi-v7a/libtsyne-bridge.*
+
+# Build for Linux aarch64 (postmarketOS, Raspberry Pi, etc.)
+linux-arm64:
+	@mkdir -p ../bin
+	@echo "Building for Linux aarch64..."
+	CGO_ENABLED=1 \
+	GOOS=linux \
+	GOARCH=arm64 \
+	CC=aarch64-linux-gnu-gcc \
+	CXX=aarch64-linux-gnu-g++ \
+	go build -o ../bin/tsyne-bridge-linux-arm64 .
+	@echo "✓ Built: ../bin/tsyne-bridge-linux-arm64"

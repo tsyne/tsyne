@@ -20,8 +20,11 @@ local.properties
 # nodejs-mobile SDK (external dependency)
 /nodejs-mobile/
 
-# Generated bundle (rebuild with esbuild)
-/app/src/main/assets/nodejs-project/phonetop-bundle.js
+# Generated bundles (rebuild with esbuild)
+/app/src/main/assets/nodejs-project/*-bundle.js
+
+# Backup files
+/app/src/main/assets/nodejs-project/*-backup.js
 
 # Node modules in assets (install with npm)
 /app/src/main/assets/nodejs-project/node_modules/

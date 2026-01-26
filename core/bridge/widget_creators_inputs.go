@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"image/color"
 	"time"
 
@@ -135,6 +137,63 @@ func (b *Bridge) handleCreateMenuButton(msg Message) Response {
 	b.mu.Lock()
 	b.widgets[widgetID] = btn
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "menubutton", Text: text}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+// handleCreateImageButton creates an ImageButton widget (image above text, button-like tap handling)
+func (b *Bridge) handleCreateImageButton(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	text, _ := msg.Payload["text"].(string)
+	callbackID, hasCallback := msg.Payload["callbackId"].(string)
+	resourceName, hasResource := msg.Payload["resource"].(string)
+	textSize, _ := msg.Payload["textSize"].(float64)
+
+	// Load image from resource if provided
+	var img *canvas.Image
+	if hasResource && resourceName != "" {
+		imageData, exists := b.getResource(resourceName)
+		if exists {
+			decodedImg, _, err := image.Decode(bytes.NewReader(imageData))
+			if err == nil {
+				img = canvas.NewImageFromImage(decodedImg)
+				bounds := decodedImg.Bounds()
+				img.SetMinSize(fyne.NewSize(float32(bounds.Dx()), float32(bounds.Dy())))
+				img.FillMode = canvas.ImageFillOriginal
+			}
+		}
+	}
+
+	// Create the image button with callback lookup at tap time
+	btn := NewImageButton(img, text, func() {
+		b.mu.RLock()
+		storedCallbackID, hasStoredCallback := b.callbacks[widgetID]
+		b.mu.RUnlock()
+
+		if hasStoredCallback {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": storedCallbackID},
+			})
+		}
+	})
+
+	if textSize > 0 {
+		btn.TextSize = float32(textSize)
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = btn
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "imageButton", Text: text}
+	if hasCallback {
+		b.callbacks[widgetID] = callbackID
+	}
 	b.mu.Unlock()
 
 	return Response{

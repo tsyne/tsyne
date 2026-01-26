@@ -42,6 +42,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateButton(msg)
 	case "createMenuButton":
 		return b.handleCreateMenuButton(msg)
+	case "createImageButton":
+		return b.handleCreateImageButton(msg)
 	case "createLabel":
 		return b.handleCreateLabel(msg)
 	case "createColorCell":

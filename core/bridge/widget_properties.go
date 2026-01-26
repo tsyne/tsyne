@@ -139,6 +139,14 @@ func (b *Bridge) handleSetText(msg Message) Response {
 		case *widget.Check:
 			w.SetText(text)
 		}
+		// Mark canvas dirty to trigger repaint
+		// Without this, SetText on an already-displayed widget won't visually update
+		// until something else (like touch) triggers a repaint
+		if canvas := fyne.CurrentApp().Driver().CanvasForObject(actualWidget); canvas != nil {
+			if paint, ok := canvas.(interface{ SetDirty() }); ok {
+				paint.SetDirty()
+			}
+		}
 	})
 
 	// Check if widget type is supported

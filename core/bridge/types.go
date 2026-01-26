@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/embedded"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -418,6 +419,110 @@ func (c *ClickableContainer) CreateRenderer() fyne.WidgetRenderer {
 // MinSize returns the minimum size of the clickable container (delegates to content)
 func (c *ClickableContainer) MinSize() fyne.Size {
 	return c.content.MinSize()
+}
+
+// ImageButton is a button widget that displays an image above text.
+// It uses Fyne's native button tap handling for reliable touch support.
+type ImageButton struct {
+	widget.BaseWidget
+	Image    *canvas.Image
+	Text     string
+	TextSize float32
+	OnTapped func()
+
+	// Internal state
+	hovered bool
+	pressed bool
+}
+
+// NewImageButton creates a new image button with the given image and text
+func NewImageButton(img *canvas.Image, text string, tapped func()) *ImageButton {
+	b := &ImageButton{
+		Image:    img,
+		Text:     text,
+		OnTapped: tapped,
+	}
+	b.ExtendBaseWidget(b)
+	return b
+}
+
+// Tapped handles tap events - this is what makes it work like a button
+func (b *ImageButton) Tapped(e *fyne.PointEvent) {
+	if b.OnTapped != nil {
+		b.OnTapped()
+	}
+}
+
+// TappedSecondary handles secondary tap (right-click/long-press)
+func (b *ImageButton) TappedSecondary(e *fyne.PointEvent) {
+	// Could be extended for context menu support
+}
+
+// CreateRenderer creates the renderer for the image button
+func (b *ImageButton) CreateRenderer() fyne.WidgetRenderer {
+	return &imageButtonRenderer{button: b}
+}
+
+// imageButtonRenderer renders the ImageButton
+type imageButtonRenderer struct {
+	button    *ImageButton
+	container *fyne.Container
+	label     *canvas.Text
+}
+
+func (r *imageButtonRenderer) Layout(size fyne.Size) {
+	if r.container == nil {
+		r.buildUI()
+	}
+	r.container.Resize(size)
+}
+
+func (r *imageButtonRenderer) MinSize() fyne.Size {
+	if r.container == nil {
+		r.buildUI()
+	}
+	return r.container.MinSize()
+}
+
+func (r *imageButtonRenderer) Refresh() {
+	if r.container == nil {
+		r.buildUI()
+	}
+	if r.label != nil {
+		r.label.Text = r.button.Text
+		if r.button.TextSize > 0 {
+			r.label.TextSize = r.button.TextSize
+		}
+		r.label.Refresh()
+	}
+	r.container.Refresh()
+}
+
+func (r *imageButtonRenderer) Objects() []fyne.CanvasObject {
+	if r.container == nil {
+		r.buildUI()
+	}
+	return []fyne.CanvasObject{r.container}
+}
+
+func (r *imageButtonRenderer) Destroy() {}
+
+func (r *imageButtonRenderer) buildUI() {
+	// Create label for text
+	r.label = canvas.NewText(r.button.Text, theme.ForegroundColor())
+	r.label.Alignment = fyne.TextAlignCenter
+	if r.button.TextSize > 0 {
+		r.label.TextSize = r.button.TextSize
+	}
+
+	// Build vertical layout: image on top, text below
+	var objects []fyne.CanvasObject
+	if r.button.Image != nil {
+		objects = append(objects, r.button.Image)
+	}
+	objects = append(objects, r.label)
+
+	r.container = container.NewVBox(objects...)
 }
 
 // TappableWrapper wraps a widget and adds context menu support via right-click

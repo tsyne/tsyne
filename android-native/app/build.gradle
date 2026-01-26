@@ -2,6 +2,39 @@ plugins {
     id 'com.android.application'
 }
 
+// Task: Bundle TypeScript to JavaScript using esbuild
+// Creates phonetop-bundle.js with all dependencies inlined
+task bundleTypeScript(type: Exec) {
+    workingDir rootProject.projectDir.parentFile  // tsyne root
+    commandLine 'npx', 'esbuild',
+        './launchers/phonetop/phonetop-android.ts',
+        '--bundle', '--platform=node', '--target=node18',
+        '--outfile=android-native/app/src/main/assets/nodejs-project/phonetop-bundle.js',
+        '--external:@resvg/resvg-js', '--external:isolated-vm', '--external:koffi',
+        '--external:esbuild', '--external:sharp', '--external:better-sqlite3',
+        '--external:@img/sharp-*', '--external:*.node', '--format=cjs'
+}
+
+// Task: Build Go bridge for Android (arm64-v8a)
+task buildGoBridgeArm64(type: Exec) {
+    workingDir "${rootProject.projectDir.parentFile}/core/bridge"
+    commandLine 'make', 'android-arm64'
+}
+
+// Task: Build Go bridge for Android (armeabi-v7a)
+task buildGoBridgeArm(type: Exec) {
+    workingDir "${rootProject.projectDir.parentFile}/core/bridge"
+    commandLine 'make', 'android-arm'
+}
+
+// Combine both bridge builds
+task buildGoBridge {
+    dependsOn buildGoBridgeArm64, buildGoBridgeArm
+}
+
+// Run bundle and bridge builds before processing assets
+preBuild.dependsOn bundleTypeScript, buildGoBridge
+
 android {
     namespace 'com.tsyne.phonetop'
     compileSdk 34

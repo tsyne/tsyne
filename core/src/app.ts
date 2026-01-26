@@ -11,6 +11,7 @@ import {
   Button,
   MenuButton,
   MenuBuilder,
+  ImageButton,
   Checkbox,
   CheckGroup,
   DateEntry,
@@ -444,11 +445,26 @@ export class App {
   /**
    * Create a clickable button.
    * @param text - Button label
-   * @param className - Optional CSS class name for styling
+   * @param classNameOrOptions - Optional CSS class name or options object { className, textSize }
    * @returns Button widget
    */
-  button(text: string, className?: string): Button {
-    return new Button(this.ctx, text, className);
+  button(text: string, classNameOrOptions?: string | { className?: string; textSize?: number }): Button {
+    return new Button(this.ctx, text, classNameOrOptions);
+  }
+
+  /**
+   * Create an image button (image above text) with native button tap handling.
+   * Use this instead of image({ onClick }) for reliable touch support on mobile.
+   *
+   * @param options - Configuration: resource (image resource name), text, textSize
+   * @returns ImageButton widget with onClick() method
+   *
+   * @example
+   * a.imageButton({ resource: 'folder-icon', text: 'Documents' })
+   *   .onClick(() => openFolder());
+   */
+  imageButton(options: { resource?: string; text?: string; textSize?: number }): ImageButton {
+    return new ImageButton(this.ctx, options);
   }
 
   /**

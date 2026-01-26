@@ -521,3 +521,224 @@ export class ModemManagerService implements IModemManagerService {
     }
   }
 }
+
+// ============================================================================
+// SMS Service Interface for ModemManager
+// ============================================================================
+
+export interface SMSMessage {
+  path: string;           // DBus object path
+  number: string;         // Phone number
+  text: string;           // Message content
+  timestamp: Date;
+  state: 'received' | 'sent' | 'sending' | 'failed';
+  direction: 'incoming' | 'outgoing';
+}
+
+export interface IModemManagerSMSService {
+  // Initialization
+  initialize(): Promise<void>;
+  isAvailable(): boolean;
+
+  // Send SMS
+  sendSMS(number: string, text: string): Promise<boolean>;
+
+  // Receive SMS
+  getMessages(): Promise<SMSMessage[]>;
+  deleteMessage(path: string): Promise<boolean>;
+
+  // Listeners
+  onMessageReceived(callback: (message: SMSMessage) => void): () => void;
+}
+
+// ============================================================================
+// Real ModemManager SMS Service (PostmarketOS via D-Bus)
+// ============================================================================
+
+/**
+ * Real SMS implementation using ModemManager D-Bus interface.
+ *
+ * Uses org.freedesktop.ModemManager1.Modem.Messaging interface:
+ * - Methods: Create, Delete, List
+ * - Signals: Added, Deleted
+ *
+ * Note: Requires 'dbus' npm package and ModemManager to be running.
+ */
+export class ModemManagerSMSService implements IModemManagerSMSService {
+  private dbus: any;
+  private modemPath: string | null = null;
+  private messageListeners: Array<(message: SMSMessage) => void> = [];
+
+  constructor(dbusModule?: any) {
+    this.dbus = dbusModule || null;
+  }
+
+  async initialize(): Promise<void> {
+    try {
+      if (!this.dbus) {
+        try {
+          this.dbus = require('dbus');
+        } catch {
+          console.warn('[ModemManagerSMS] dbus module not available');
+          return;
+        }
+      }
+
+      const bus = this.dbus.systemBus();
+      const mmService = await bus.getService('org.freedesktop.ModemManager1');
+      const mmObject = await mmService.getObject('/org/freedesktop/ModemManager1');
+
+      // Find first modem with messaging capability
+      const modems = await mmObject.ObjectManager.GetManagedObjects();
+      for (const [path, interfaces] of Object.entries(modems) as [string, any][]) {
+        if (interfaces['org.freedesktop.ModemManager1.Modem.Messaging']) {
+          this.modemPath = path;
+          console.log(`[ModemManagerSMS] Found messaging modem at ${path}`);
+          break;
+        }
+      }
+
+      if (this.modemPath) {
+        await this.setupSignalListeners();
+      }
+    } catch (error) {
+      console.error(`[ModemManagerSMS] Failed to initialize: ${error}`);
+    }
+  }
+
+  isAvailable(): boolean {
+    return this.modemPath !== null;
+  }
+
+  private async setupSignalListeners(): Promise<void> {
+    // TODO: Listen for org.freedesktop.ModemManager1.Modem.Messaging.Added signal
+    // When a new SMS arrives, parse it and notify listeners
+    console.log('[ModemManagerSMS] TODO: Setup signal listeners for incoming SMS');
+  }
+
+  async sendSMS(number: string, text: string): Promise<boolean> {
+    if (!this.modemPath) {
+      console.error('[ModemManagerSMS] Modem not available');
+      return false;
+    }
+
+    try {
+      const bus = this.dbus.systemBus();
+      const mmService = await bus.getService('org.freedesktop.ModemManager1');
+      const modemObject = await mmService.getObject(this.modemPath);
+      const messaging = modemObject['org.freedesktop.ModemManager1.Modem.Messaging'];
+
+      // Create SMS object with properties
+      // See: https://www.freedesktop.org/software/ModemManager/doc/latest/ModemManager/gdbus-org.freedesktop.ModemManager1.Modem.Messaging.html
+      const smsProperties = {
+        'number': number,
+        'text': text,
+      };
+
+      const smsPath = await messaging.Create(smsProperties);
+      console.log(`[ModemManagerSMS] Created SMS at ${smsPath}`);
+
+      // Get the SMS object and send it
+      const smsObject = await mmService.getObject(smsPath);
+      const sms = smsObject['org.freedesktop.ModemManager1.Sms'];
+      await sms.Send();
+
+      console.log(`[ModemManagerSMS] Sent SMS to ${number}`);
+      return true;
+    } catch (error) {
+      console.error(`[ModemManagerSMS] Failed to send SMS: ${error}`);
+      return false;
+    }
+  }
+
+  async getMessages(): Promise<SMSMessage[]> {
+    if (!this.modemPath) {
+      return [];
+    }
+
+    try {
+      const bus = this.dbus.systemBus();
+      const mmService = await bus.getService('org.freedesktop.ModemManager1');
+      const modemObject = await mmService.getObject(this.modemPath);
+      const messaging = modemObject['org.freedesktop.ModemManager1.Modem.Messaging'];
+
+      const smsPaths: string[] = await messaging.List();
+      const messages: SMSMessage[] = [];
+
+      for (const smsPath of smsPaths) {
+        try {
+          const smsObject = await mmService.getObject(smsPath);
+          const sms = smsObject['org.freedesktop.ModemManager1.Sms'];
+
+          const number = await sms.Number;
+          const text = await sms.Text;
+          const timestamp = await sms.Timestamp;
+          const state = await sms.State;
+          const pduType = await sms.PduType;
+
+          messages.push({
+            path: smsPath,
+            number,
+            text,
+            timestamp: new Date(timestamp),
+            state: this.parseState(state),
+            direction: pduType === 1 ? 'incoming' : 'outgoing',
+          });
+        } catch (err) {
+          console.warn(`[ModemManagerSMS] Failed to read SMS at ${smsPath}: ${err}`);
+        }
+      }
+
+      return messages;
+    } catch (error) {
+      console.error(`[ModemManagerSMS] Failed to list messages: ${error}`);
+      return [];
+    }
+  }
+
+  async deleteMessage(path: string): Promise<boolean> {
+    if (!this.modemPath) {
+      return false;
+    }
+
+    try {
+      const bus = this.dbus.systemBus();
+      const mmService = await bus.getService('org.freedesktop.ModemManager1');
+      const modemObject = await mmService.getObject(this.modemPath);
+      const messaging = modemObject['org.freedesktop.ModemManager1.Modem.Messaging'];
+
+      await messaging.Delete(path);
+      console.log(`[ModemManagerSMS] Deleted SMS at ${path}`);
+      return true;
+    } catch (error) {
+      console.error(`[ModemManagerSMS] Failed to delete SMS: ${error}`);
+      return false;
+    }
+  }
+
+  onMessageReceived(callback: (message: SMSMessage) => void): () => void {
+    this.messageListeners.push(callback);
+    return () => {
+      const idx = this.messageListeners.indexOf(callback);
+      if (idx >= 0) this.messageListeners.splice(idx, 1);
+    };
+  }
+
+  private notifyMessageReceived(message: SMSMessage): void {
+    for (const listener of this.messageListeners) {
+      listener(message);
+    }
+  }
+
+  private parseState(state: number): 'received' | 'sent' | 'sending' | 'failed' {
+    // ModemManager SMS state codes
+    // MM_SMS_STATE_UNKNOWN = 0, STORED = 1, RECEIVING = 2, RECEIVED = 3,
+    // SENDING = 4, SENT = 5
+    switch (state) {
+      case 3: return 'received';
+      case 5: return 'sent';
+      case 4: return 'sending';
+      default: return 'received';
+    }
+  }
+}

@@ -45,7 +45,10 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 	}
 
 	// Check if numeric textSize is specified - use canvas.Text with exact pixel size
+	rawTextSize := msg.Payload["textSize"]
+	log.Printf("[createLabel] textSize raw value: %v (type: %T)", rawTextSize, rawTextSize)
 	if numericSize := toFloat32(msg.Payload["textSize"]); numericSize > 0 {
+		log.Printf("[createLabel] Creating label with textSize=%.0f: %s", numericSize, text)
 		// Create canvas.Text with specified size
 		canvasText := canvas.NewText(text, theme.ForegroundColor())
 		canvasText.TextSize = numericSize
