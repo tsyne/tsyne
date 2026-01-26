@@ -394,10 +394,16 @@ elif [ "$OS" = "macos" ]; then
 fi
 
 # ============================================================================
-# STEP 1.5: Test tsyne install and failure modes
+# STEP 1.5: Install root dependencies (needed for install.sh)
+# ============================================================================
+echo "--- :nodejs: Installing root dependencies"
+cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
+pnpm install --ignore-scripts
+
+# ============================================================================
+# STEP 1.6: Test tsyne install and failure modes
 # ============================================================================
 echo "--- :package: Testing tsyne install"
-cd ${BUILDKITE_BUILD_CHECKOUT_PATH}
 ./scripts/install.sh
 
 # Test failure modes
