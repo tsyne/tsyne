@@ -12,7 +12,7 @@
 
 import { App } from 'tsyne';
 import { Window } from 'tsyne';
-import { Label, Button, VBox } from 'tsyne';
+import { Label, Button, VBox, Max } from 'tsyne';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from 'tsyne';
 import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
@@ -152,14 +152,24 @@ class PhoneTop {
   private keyboardVisible: boolean = false;
   /** Keyboard container for show/hide */
   private keyboardContainer: VBox | null = null;
+  /** Home screen max wrapper (for expansion in stack) */
+  private homeMaxContainer: Max | null = null;
   /** Home screen container (built once, shown/hidden) */
   private homeContainer: VBox | null = null;
   /** Home screen grid container (rebuilt on page change) */
   private homeGridContainer: VBox | null = null;
-  /** Folder view container (built once per folder, shown/hidden) */
-  private folderContainer: VBox | null = null;
+  /** Folder view max wrapper (for expansion in stack) */
+  private folderMaxContainer: Max | null = null;
   /** Folder grid container (rebuilt on page change within folder) */
   private folderGridContainer: VBox | null = null;
+  /** Folder header icon (updated when folder changes) */
+  private folderHeaderIcon: any = null;
+  /** Folder header name label (updated when folder changes) */
+  private folderHeaderName: Label | null = null;
+  /** Folder header count label (updated when folder changes) */
+  private folderHeaderCount: Label | null = null;
+  /** App view max wrapper (for expansion in stack) */
+  private appMaxContainer: Max | null = null;
   /** App view container (for running apps) */
   private appContainer: VBox | null = null;
   /** Whether keyboard has been built (only build once) */
@@ -1063,37 +1073,45 @@ class PhoneTop {
       // Create persistent root structure ONCE - all containers built once, show/hide for navigation
       // CRITICAL: Using show/hide instead of removeAll/add prevents widgets from being
       // destroyed during their own tap callbacks, which was causing the "tap twice" bug
+      // Use border layout so stack expands to fill available space
+      // This ensures navigation buttons are at the actual bottom of the screen
       win.setContent(() => {
-        this.a.vbox(() => {
-          // Navigation stack: home, folder, and app views layered
-          this.a.stack(() => {
-            // Home screen - built ONCE, shown when no folder/app is open
-            this.homeContainer = this.a.vbox(() => {
-              this.buildHomeScreen();
-            });
+        this.a.border({
+          center: () => {
+            // Navigation stack: home, folder, and app views layered
+            // Each view is wrapped in max() so it expands to fill available space
+            this.a.stack(() => {
+              // Home screen - buildHomeScreen creates a border that expands in max
+              this.homeMaxContainer = this.a.max(() => {
+                this.buildHomeScreen();
+              });
 
-            // Folder view - populated when folder is opened
-            this.folderContainer = this.a.vbox(() => {
-              // Content added when folder is opened
-            });
-            this.folderContainer.hide();  // Start hidden
+              // Folder view - same pattern as home: structure built once
+              this.folderMaxContainer = this.a.max(() => {
+                this.buildFolderLayout();
+              });
+              this.folderMaxContainer.hide();  // Start hidden
 
-            // App view - populated when app is launched
-            this.appContainer = this.a.vbox(() => {
-              // Content added when app is launched
+              // App view - max wrapper ensures vbox expands to fill stack
+              this.appMaxContainer = this.a.max(() => {
+                this.appContainer = this.a.vbox(() => {
+                  // Content added when app is launched
+                });
+              });
+              this.appMaxContainer.hide();  // Start hidden
             });
-            this.appContainer.hide();  // Start hidden
-          });
-
-          // Keyboard container - built ONCE and reused
-          this.keyboardContainer = this.a.vbox(() => {
-            this.a.separator();
-            if (this.keyboardController) {
-              buildKeyboard(this.a, this.keyboardController as any);
-            }
-          });
-          this.keyboardContainer.hide();  // Start hidden
-          this.keyboardBuilt = true;
+          },
+          bottom: () => {
+            // Keyboard container - built ONCE and reused
+            this.keyboardContainer = this.a.vbox(() => {
+              this.a.separator();
+              if (this.keyboardController) {
+                buildKeyboard(this.a, this.keyboardController as any);
+              }
+            });
+            this.keyboardContainer.hide();  // Start hidden
+            this.keyboardBuilt = true;
+          }
         });
       });
     });
@@ -1114,8 +1132,8 @@ class PhoneTop {
         this.sizedLabel(`Build: ${BUILD_TIMESTAMP}`, 'build-timestamp');
       },
       center: () => {
-        // Use border layout so grid stays at top
-        // Border's "top" takes only what it needs, "center" absorbs remaining space
+        // Use border layout so grid stays at top, empty space below
+        // Border's "top" takes only what it needs, omitted center allows expansion
         this.a.border({
           top: () => {
             // Grid container - the vbox that gets rebuilt on page change
@@ -1124,11 +1142,8 @@ class PhoneTop {
               // Page dots indicator (part of scrollable area)
               this.createPageIndicator();
             });
-          },
-          center: () => {
-            // Empty center absorbs vertical space - like Swing's BorderLayout
-            this.a.spacer();
           }
+          // No center - nil/undefined allows border to expand properly
         });
       },
       bottom: () => {
@@ -1151,17 +1166,20 @@ class PhoneTop {
     this.openFolder = folder;
     this.folderCurrentPage = 0;
 
-    // Build folder content (rebuild each time since different folders)
-    if (this.folderContainer) {
-      this.folderContainer.removeAll();
-      this.folderContainer.add(() => {
-        this.buildFolderScreen(folder);
-      });
-    }
+    // Calculate pages for this folder
+    const totalApps = folder.apps.length;
+    this.folderTotalPages = Math.ceil(totalApps / this.appsPerPage);
+
+    // Update header labels
+    this.folderHeaderName?.setText(` ${folder.name}`);
+    this.folderHeaderCount?.setText(` (${totalApps} apps)`);
+
+    // Rebuild grid with this folder's apps
+    this.rebuildFolderGrid();
 
     // Hide home, show folder
-    this.homeContainer?.hide();
-    this.folderContainer?.show();
+    this.homeMaxContainer?.hide();
+    this.folderMaxContainer?.show();
   }
 
   /**
@@ -1173,58 +1191,53 @@ class PhoneTop {
     this.folderCurrentPage = 0;
 
     // Hide folder, show home (home was never destroyed!)
-    this.folderContainer?.hide();
-    this.homeContainer?.show();
+    this.folderMaxContainer?.hide();
+    this.homeMaxContainer?.show();
   }
 
   /**
-   * Build folder screen content
+   * Build folder layout structure (called once at startup)
    * Structure similar to home screen:
-   * - Header: folder name/icon (fixed)
-   * - folderGridContainer: app grid + page indicator (rebuilt on page change)
+   * - Header: folder icon/name/count (stored for updates)
+   * - folderGridContainer: app grid + page indicator (rebuilt on folder/page change)
    * - Navigation buttons: fixed (avoids destroying during tap)
    */
-  private buildFolderScreen(folder: Folder) {
-    const resourceName = this.folderIconCache.get(folder.category);
-
-    // Calculate total pages for this folder
-    const totalApps = folder.apps.length;
-    this.folderTotalPages = Math.ceil(totalApps / this.appsPerPage);
-
+  private buildFolderLayout() {
+    // Single border layout with header at top, everything else in center
+    // The center uses a nested border to position grid at top and buttons at bottom
     this.a.border({
       top: () => {
+        // Folder header - labels stored for updates
         this.a.vbox(() => {
           this.a.center(() => {
             this.a.hbox(() => {
-              if (resourceName) {
-                this.a.image({ resource: resourceName, fillMode: 'original' });
-              } else {
-                this.sizedLabel('📁');
-              }
-              this.sizedLabel(` ${folder.name}`);
-              this.sizedLabel(` (${folder.apps.length} apps)`);
+              this.sizedLabel('📁');  // Icon - not updated
+              this.folderHeaderName = this.a.label('Folder');
+              this.folderHeaderCount = this.a.label(' (0 apps)');
             });
           });
           this.a.separator();
         });
       },
       center: () => {
-        // Grid container - can be rebuilt on page change
-        this.folderGridContainer = this.a.vbox(() => {
-          this.createFolderView(folder);
-          if (this.folderTotalPages > 1) {
-            this.createFolderPageIndicator();
-          }
-        });
-      },
-      bottom: () => {
-        // Navigation buttons - FIXED, never rebuilt
-        this.a.hbox(() => {
-          this.sizedButton('← Back').onClick(() => this.closeFolder());
-          this.a.spacer();
-          if (this.folderTotalPages > 1) {
-            this.sizedButton('<', 'folderPrev').onClick(() => this.previousFolderPage());
-            this.sizedButton('>', 'folderNext').onClick(() => this.nextFolderPage());
+        // Nested border: grid at top, buttons at bottom
+        this.a.border({
+          top: () => {
+            // Grid container - rebuilt when folder changes or page changes
+            this.folderGridContainer = this.a.vbox(() => {
+              // Placeholder - content added when folder is opened
+              this.a.label('');
+            });
+          },
+          // No center - allows border to expand properly
+          bottom: () => {
+            // Navigation buttons at actual bottom
+            this.a.hbox(() => {
+              this.sizedButton('← Back').onClick(() => this.closeFolder());
+              this.a.spacer();
+              this.sizedButton('<', 'folderPrev').onClick(() => this.previousFolderPage());
+              this.sizedButton('>', 'folderNext').onClick(() => this.nextFolderPage());
+            });
           }
         });
       }
@@ -1624,15 +1637,15 @@ class PhoneTop {
 
     if (appId === null) {
       // Show home screen - hide other containers
-      this.appContainer?.hide();
-      this.folderContainer?.hide();
-      this.homeContainer?.show();
+      this.appMaxContainer?.hide();
+      this.folderMaxContainer?.hide();
+      this.homeMaxContainer?.show();
     } else {
       const runningApp = this.runningApps.get(appId);
       if (runningApp) {
         // Show app - hide home and folder containers
-        this.homeContainer?.hide();
-        this.folderContainer?.hide();
+        this.homeMaxContainer?.hide();
+        this.folderMaxContainer?.hide();
 
         // Note: showAppContent is async, catch errors to avoid silent failures
         this.showAppContent(runningApp).catch(err => {
@@ -1782,8 +1795,8 @@ class PhoneTop {
     this.a.getContext().setResourceScope(null);
     this.a.getContext().setLayoutScale(1.0);
 
-    // Show app container
-    this.appContainer.show();
+    // Show app container (via max wrapper)
+    this.appMaxContainer?.show();
   }
 
   /**
