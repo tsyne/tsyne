@@ -46,6 +46,7 @@ packages:
   - 'ported-apps/pixeledit'
   - 'ported-apps/pomodoro'
   - 'ported-apps/prime-grid-visualizer'
+  - 'ported-apps/script-schmiede-fractals'
   - 'ported-apps/slider-puzzle'
   - 'ported-apps/slydes'
   - 'ported-apps/sokol-arcade/fps-voxel'
