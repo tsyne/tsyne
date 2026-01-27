@@ -36,9 +36,6 @@ export interface ITsyneWindow {
   setIcon(resourceName: string): Promise<void>;
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void;
 
-  // Size - get current window dimensions
-  getSize(): { width: number; height: number };
-
   // Resize callback - fires when window/container size changes
   // No-op for StackPaneAdapter (phone screens don't resize)
   onResize(callback: (width: number, height: number) => void): this;
@@ -226,12 +223,6 @@ export class InnerWindowAdapter implements ITsyneWindow {
     this.closeInterceptCallback = callback;
   }
 
-  getSize(): { width: number; height: number } {
-    // InnerWindow size is managed by MDI container; return a default
-    // In practice, apps should use onResize to track size changes
-    return { width: 400, height: 300 };
-  }
-
   onResize(callback: (width: number, height: number) => void): this {
     this.resizeCallback = callback;
     // If innerWindow already exists, wire up the callback now
@@ -319,8 +310,6 @@ export class StackPaneAdapter implements ITsyneWindow {
   private parentWindow: Window;
   private _id: string;
   private _title: string;
-  private _width: number;
-  private _height: number;
   private _contentBuilder: (() => void) | null = null;
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
   private onShow?: (adapter: StackPaneAdapter) => void;
@@ -333,7 +322,7 @@ export class StackPaneAdapter implements ITsyneWindow {
   constructor(
     ctx: Context,
     parentWindow: Window,
-    options: WindowOptions & { width?: number; height?: number },
+    options: WindowOptions,
     callbacks: {
       onShow?: (adapter: StackPaneAdapter) => void;
       onClose?: (adapter: StackPaneAdapter) => void;
@@ -344,8 +333,6 @@ export class StackPaneAdapter implements ITsyneWindow {
     this.parentWindow = parentWindow;
     this._id = ctx.generateId('stackpane');
     this._title = options.title;
-    this._width = options.width ?? 540;
-    this._height = options.height ?? 960;
     this.onShow = callbacks.onShow;
     this.onClose = callbacks.onClose;
 
@@ -436,10 +423,6 @@ export class StackPaneAdapter implements ITsyneWindow {
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
     this.closeInterceptCallback = callback;
-  }
-
-  getSize(): { width: number; height: number } {
-    return { width: this._width, height: this._height };
   }
 
   onResize(_callback: (width: number, height: number) => void): this {

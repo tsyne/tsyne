@@ -48,6 +48,10 @@ service BridgeService {
   rpc CreateRadioGroup(CreateRadioGroupRequest) returns (Response);
   rpc CreateCheckGroup(CreateCheckGroupRequest) returns (Response);
   rpc CreateSelectEntry(CreateSelectEntryRequest) returns (Response);
+  rpc CreateCompletionEntry(CreateCompletionEntryRequest) returns (Response);
+  rpc SetCompletionEntryOptions(SetCompletionEntryOptionsRequest) returns (Response);
+  rpc ShowCompletion(ShowCompletionRequest) returns (Response);
+  rpc HideCompletion(HideCompletionRequest) returns (Response);
   rpc CreateDateEntry(CreateDateEntryRequest) returns (Response);
 
   // ============================================================================
@@ -952,6 +956,27 @@ message CreateSelectEntryRequest {
   string on_changed_callback_id = 4;
   string on_submitted_callback_id = 5;
   string on_selected_callback_id = 6;
+}
+
+message CreateCompletionEntryRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+  string placeholder = 3;
+  string on_changed_callback_id = 4;
+  string on_submitted_callback_id = 5;
+}
+
+message SetCompletionEntryOptionsRequest {
+  string widget_id = 1;
+  repeated string options = 2;
+}
+
+message ShowCompletionRequest {
+  string widget_id = 1;
+}
+
+message HideCompletionRequest {
+  string widget_id = 1;
 }
 
 message CreateDateEntryRequest {

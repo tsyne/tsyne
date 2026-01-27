@@ -20,7 +20,7 @@
  * @tsyne-app:count single
  */
 
-import type { App, Window, Label } from 'tsyne';
+import type { App, Window, Label, CompletionEntry } from 'tsyne';
 
 /**
  * City data with proper timezone support
@@ -469,26 +469,48 @@ export class NomadUI {
   }
 
   /**
-   * Build the search/add section
+   * Build the search/add section using CompletionEntry for autocomplete
+   * Matches the original nomad's xWidget.CompletionEntry behavior
    */
   private buildSearchSection(): void {
-    // Row with + icon and search dropdown
+    // Row with + icon and autocomplete search entry
     this.a.hbox(() => {
       this.a.label('+').withId('nomad-add-icon');
 
-      // Search dropdown to add cities
-      const addCitySelect = this.a.select(
-        ['ADD A PLACE', ...WORLD_CITIES.slice(0, 20).map((c) => `${c.name}, ${c.country}`)],
-        (selected) => {
-          if (selected !== 'ADD A PLACE') {
-            const match = WORLD_CITIES.find((c) => `${c.name}, ${c.country}` === selected);
-            if (match) {
-              this.addCity(match);
-            }
+      // Store reference for use in callbacks
+      let searchEntry: CompletionEntry;
+
+      // Autocomplete entry to search and add cities
+      searchEntry = this.a.completionEntry(
+        [], // Start with empty options - filtered dynamically
+        'ADD A PLACE',
+        async (text) => {
+          // Filter cities when text length >= 2
+          if (text.length < 2) {
+            await searchEntry.hideCompletion();
+            return;
+          }
+
+          const filtered = this.filterCities(text);
+          if (filtered.length === 0) {
+            await searchEntry.hideCompletion();
+            return;
+          }
+
+          // Update options with filtered city names
+          const options = filtered.map((c) => `${c.name}, ${c.country}`);
+          await searchEntry.setOptions(options);
+          await searchEntry.showCompletion();
+        },
+        async (text) => {
+          // On submit (Enter key), add the first matching city
+          const filtered = this.filterCities(text);
+          if (filtered.length > 0) {
+            this.addCity(filtered[0]);
+            await searchEntry.setText('');
           }
         }
       ).withId('nomad-add-city');
-      addCitySelect.setSelected('ADD A PLACE');
     });
   }
 

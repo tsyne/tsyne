@@ -1126,48 +1126,6 @@ func (b *Bridge) handleDesktopMDIAddIcon(msg Message) Response {
 	}
 }
 
-func (b *Bridge) handleDesktopMDIRemoveIcon(msg Message) Response {
-	desktopID := msg.Payload["desktopId"].(string)
-	iconID := msg.Payload["iconId"].(string)
-
-	b.mu.RLock()
-	desktopWidget, exists := b.widgets[desktopID]
-	b.mu.RUnlock()
-
-	if !exists {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Desktop MDI not found",
-		}
-	}
-
-	desktop, ok := desktopWidget.(*TsyneDesktopMDI)
-	if !ok {
-		return Response{
-			ID:      msg.ID,
-			Success: false,
-			Error:   "Widget is not a desktop MDI",
-		}
-	}
-
-	// Remove the icon from the desktop MDI
-	fyne.DoAndWait(func() {
-		desktop.RemoveIconByID(iconID)
-	})
-
-	// Remove from widget registry
-	b.mu.Lock()
-	delete(b.widgets, iconID)
-	delete(b.widgetMeta, iconID)
-	b.mu.Unlock()
-
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-	}
-}
-
 func (b *Bridge) handleDesktopMDIAddWindow(msg Message) Response {
 	containerID := msg.Payload["containerId"].(string)
 	windowID := msg.Payload["windowId"].(string)

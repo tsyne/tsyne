@@ -391,9 +391,19 @@ class Store {
 ## Widget Categories
 
 **Containers:** vbox, hbox, stack, scroll, grid, center, max, border, gridwrap, adaptivegrid, padded, split, tabs, doctabs, card, accordion, form, themeoverride, clip, innerwindow, navigation, popup, multiplewindows
-**Inputs:** button, menuButton, entry, multilineentry, passwordentry, checkbox, select, selectentry, radiogroup, checkgroup, slider, dateentry, calendar
+**Inputs:** button, menuButton, entry, multilineentry, passwordentry, checkbox, select, selectentry, completionEntry, radiogroup, checkgroup, slider, dateentry, calendar
 **Display:** label, hyperlink, separator, spacer, progressbar, progressbarInfinite, activity, image, richtext, table, list, tree, toolbar, menu, textgrid, icon, fileicon
 **Canvas:** canvasLine, canvasCircle, canvasRectangle, canvasText, canvasRaster, canvasLinearGradient, canvasArc, canvasPolygon, canvasRadialGradient
+
+**CompletionEntry** - Autocomplete entry (from fyne.io/x, ideal for searching large datasets):
+```typescript
+const cities = ['London', 'Paris', 'Tokyo', ...];
+const entry = a.completionEntry([], 'Search cities...', async (text) => {
+  const filtered = cities.filter(c => c.toLowerCase().startsWith(text.toLowerCase()));
+  await entry.setOptions(filtered);
+  filtered.length > 0 ? await entry.showCompletion() : await entry.hideCompletion();
+});
+```
 
 **MenuButton** - Button with popup menu (positioned below button):
 ```typescript

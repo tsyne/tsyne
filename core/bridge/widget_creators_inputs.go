@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	xWidget "fyne.io/x/fyne/widget"
 )
 
 // ============================================================================
@@ -786,5 +787,164 @@ func (b *Bridge) handleGetDate(msg Message) Response {
 		ID:      msg.ID,
 		Success: true,
 		Result:  map[string]interface{}{"date": dateStr},
+	}
+}
+
+// ============================================================================
+// CompletionEntry Widget (from fyne.io/x/fyne/widget)
+// An entry with autocomplete/completion dropdown that shows filtered options
+// ============================================================================
+
+func (b *Bridge) handleCreateCompletionEntry(msg Message) Response {
+	widgetID := msg.Payload["id"].(string)
+	optionsInterface, _ := msg.Payload["options"].([]interface{})
+	placeholder, _ := msg.Payload["placeholder"].(string)
+	onChangedCallbackID, hasOnChanged := msg.Payload["onChangedCallbackId"].(string)
+	onSubmittedCallbackID, hasOnSubmitted := msg.Payload["onSubmittedCallbackId"].(string)
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, opt := range optionsInterface {
+		options[i] = opt.(string)
+	}
+
+	completionEntry := xWidget.NewCompletionEntry(options)
+	completionEntry.SetPlaceHolder(placeholder)
+
+	if hasOnChanged {
+		completionEntry.OnChanged = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": onChangedCallbackID, "text": text},
+			})
+		}
+	}
+
+	if hasOnSubmitted {
+		completionEntry.OnSubmitted = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": onSubmittedCallbackID, "text": text},
+			})
+		}
+	}
+
+	b.mu.Lock()
+	b.widgets[widgetID] = completionEntry
+	b.widgetMeta[widgetID] = WidgetMetadata{Type: "completionentry", Text: "", Placeholder: placeholder}
+	if hasOnChanged {
+		b.callbacks[widgetID] = onChangedCallbackID
+	}
+	b.mu.Unlock()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+		Result:  map[string]interface{}{"widgetId": widgetID},
+	}
+}
+
+func (b *Bridge) handleSetCompletionEntryOptions(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	optionsInterface, _ := msg.Payload["options"].([]interface{})
+
+	// Convert []interface{} to []string
+	options := make([]string, len(optionsInterface))
+	for i, opt := range optionsInterface {
+		options[i] = opt.(string)
+	}
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	completionEntry, ok := w.(*xWidget.CompletionEntry)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a CompletionEntry",
+		}
+	}
+
+	completionEntry.SetOptions(options)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleShowCompletion(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	completionEntry, ok := w.(*xWidget.CompletionEntry)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a CompletionEntry",
+		}
+	}
+
+	completionEntry.ShowCompletion()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+func (b *Bridge) handleHideCompletion(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	completionEntry, ok := w.(*xWidget.CompletionEntry)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a CompletionEntry",
+		}
+	}
+
+	completionEntry.HideCompletion()
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
 	}
 }

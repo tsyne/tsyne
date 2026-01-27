@@ -56,6 +56,7 @@ export {
   Checkbox,
   Select,
   SelectEntry,
+  CompletionEntry,
   Slider,
   RadioGroup,
   CheckGroup,

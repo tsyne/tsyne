@@ -7,7 +7,7 @@
 
 import { App } from 'tsyne';
 import { AppMetadata } from 'tsyne';
-import { getSvgRasterizer } from 'tsyne';
+import { Resvg } from '@resvg/resvg-wasm';
 
 // Grid position in the launcher
 export interface GridPosition {
@@ -169,7 +169,7 @@ export class FolderManager {
 
       try {
         const resourceName = `phone-folder-${category}`;
-        const dataUri = await this.renderSvgToDataUri(config.icon, this.config.iconSize);
+        const dataUri = this.renderSvgToDataUri(config.icon, this.config.iconSize);
         await this.a.resources.registerResource(resourceName, dataUri);
         this.folderIconCache.set(category, resourceName);
       } catch (err) {
@@ -384,9 +384,8 @@ export class FolderManager {
   /**
    * Render an SVG string to a PNG data URI
    */
-  private async renderSvgToDataUri(svg: string, size: number): Promise<string> {
+  private renderSvgToDataUri(svg: string, size: number): string {
     const normalized = this.normalizeSvg(svg, size);
-    const Resvg = await getSvgRasterizer();
     const renderer = new Resvg(normalized, {
       fitTo: { mode: 'width', value: size },
       background: 'rgba(0,0,0,0)'

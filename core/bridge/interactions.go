@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
+	xWidget "fyne.io/x/fyne/widget"
 )
 
 func (b *Bridge) handleClickWidget(msg Message) Response {
@@ -456,6 +457,8 @@ func (b *Bridge) handleTypeText(msg Message) Response {
 		entry = e
 	} else if te, ok := obj.(*TsyneEntry); ok {
 		entry = &te.Entry
+	} else if ce, ok := obj.(*xWidget.CompletionEntry); ok {
+		entry = &ce.Entry
 	}
 
 	if entry != nil {
@@ -542,6 +545,20 @@ func (b *Bridge) handleSubmitEntry(msg Message) Response {
 			// Trigger the OnSubmitted callback
 			fyne.DoAndWait(func() {
 				te.OnSubmitted(te.Text)
+			})
+			return Response{
+				ID:      msg.ID,
+				Success: true,
+			}
+		}
+	}
+
+	// Check if it's a CompletionEntry widget with OnSubmitted callback
+	if ce, ok := obj.(*xWidget.CompletionEntry); ok {
+		if ce.OnSubmitted != nil {
+			// Trigger the OnSubmitted callback
+			fyne.DoAndWait(func() {
+				ce.OnSubmitted(ce.Text)
 			})
 			return Response{
 				ID:      msg.ID,

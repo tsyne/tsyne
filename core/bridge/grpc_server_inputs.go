@@ -136,6 +136,98 @@ func (s *grpcBridgeService) CreateSelectEntry(ctx context.Context, req *pb.Creat
 	}, nil
 }
 
+// CreateCompletionEntry creates a completion entry widget (autocomplete)
+func (s *grpcBridgeService) CreateCompletionEntry(ctx context.Context, req *pb.CreateCompletionEntryRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id":      req.WidgetId,
+		"options": req.Options,
+	}
+
+	if req.Placeholder != "" {
+		payload["placeholder"] = req.Placeholder
+	}
+	if req.OnChangedCallbackId != "" {
+		payload["onChangedCallbackId"] = req.OnChangedCallbackId
+	}
+	if req.OnSubmittedCallbackId != "" {
+		payload["onSubmittedCallbackId"] = req.OnSubmittedCallbackId
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "createCompletionEntry",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleCreateCompletionEntry(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// SetCompletionEntryOptions updates the options for a completion entry
+func (s *grpcBridgeService) SetCompletionEntryOptions(ctx context.Context, req *pb.SetCompletionEntryOptionsRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"widgetId": req.WidgetId,
+		"options":  req.Options,
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "setCompletionEntryOptions",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleSetCompletionEntryOptions(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// ShowCompletion shows the completion popup
+func (s *grpcBridgeService) ShowCompletion(ctx context.Context, req *pb.ShowCompletionRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"widgetId": req.WidgetId,
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "showCompletion",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleShowCompletion(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// HideCompletion hides the completion popup
+func (s *grpcBridgeService) HideCompletion(ctx context.Context, req *pb.HideCompletionRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"widgetId": req.WidgetId,
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "hideCompletion",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleHideCompletion(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // CreateDateEntry creates a date entry widget
 func (s *grpcBridgeService) CreateDateEntry(ctx context.Context, req *pb.CreateDateEntryRequest) (*pb.Response, error) {
 	payload := map[string]interface{}{

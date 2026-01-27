@@ -78,6 +78,14 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateSelectEntry(msg)
 	case "setSelectEntryOptions":
 		return b.handleSetSelectEntryOptions(msg)
+	case "createCompletionEntry":
+		return b.handleCreateCompletionEntry(msg)
+	case "setCompletionEntryOptions":
+		return b.handleSetCompletionEntryOptions(msg)
+	case "showCompletion":
+		return b.handleShowCompletion(msg)
+	case "hideCompletion":
+		return b.handleHideCompletion(msg)
 	case "createSlider":
 		return b.handleCreateSlider(msg)
 	case "createProgressBar":
@@ -294,8 +302,6 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleDesktopMDIAddWindow(msg)
 	case "desktopMDIRemoveWindow":
 		return b.handleDesktopMDIRemoveWindow(msg)
-	case "desktopMDIRemoveIcon":
-		return b.handleDesktopMDIRemoveIcon(msg)
 	case "createDateEntry":
 		return b.handleCreateDateEntry(msg)
 	case "setDate":

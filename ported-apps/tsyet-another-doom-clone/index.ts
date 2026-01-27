@@ -19,7 +19,7 @@
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.5L19 8l-7 3.5L5 8l7-3.5zM4 9.5l7 3.5v7l-7-3.5v-7zm16 0v7l-7 3.5v-7l7-3.5z"/></svg>
  * @tsyne-app:category games
  * @tsyne-app:builder buildYetAnotherDoomCloneApp
- * @tsyne-app:args app,window,windowWidth,windowHeight
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';

@@ -35,7 +35,7 @@ This is a **functional port** with both interactive gameplay and computer oppone
 ✅ **Implemented:**
 - Complete chess game engine (using chess.js library)
 - 8x8 board with proper square coloring
-- SVG piece rendering (using tsyne's cross-platform SVG rasterizer)
+- SVG piece rendering (using @resvg/resvg-js for PNG conversion)
 - Click-to-select and click-to-move interaction
 - Drag-and-drop piece movement
 - Selected square highlighting
@@ -69,7 +69,7 @@ main.go          → Main app entry point
 **TypeScript Implementation:**
 - `ChessUI` - Main UI class managing board state and rendering
 - `chess.js` - Third-party chess game engine (replaces notnil/chess)
-- tsyne's `getSvgRasterizer()` - Cross-platform SVG to PNG rendering
+- `@resvg/resvg-js` - SVG to PNG rendering for piece graphics
 - Image-based squares with embedded piece sprites
 - Click and drag event handlers for piece interaction
 - Computer move generation with configurable delay
@@ -274,7 +274,7 @@ Uses **chess.js** library for:
 
 ### Graphics Rendering
 
-Uses **tsyne's SVG rasterizer** (`getSvgRasterizer()`) for:
+Uses **@resvg/resvg-js** for:
 - SVG to PNG conversion
 - Piece image caching
 - Dynamic square composition
