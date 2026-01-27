@@ -808,31 +808,50 @@ func (b *Bridge) handleCreateCompletionEntry(msg Message) Response {
 		options[i] = opt.(string)
 	}
 
-	completionEntry := xWidget.NewCompletionEntry(options)
-	completionEntry.SetPlaceHolder(placeholder)
+	var completionEntry *xWidget.CompletionEntry
+	var widgetToStore fyne.CanvasObject
 
-	if hasOnChanged {
-		completionEntry.OnChanged = func(text string) {
-			b.sendEvent(Event{
-				Type:     "callback",
-				WidgetID: widgetID,
-				Data:     map[string]interface{}{"callbackId": onChangedCallbackID, "text": text},
-			})
-		}
-	}
+	// Create widget on Fyne main thread
+	fyne.DoAndWait(func() {
+		completionEntry = xWidget.NewCompletionEntry(options)
+		completionEntry.SetPlaceHolder(placeholder)
 
-	if hasOnSubmitted {
-		completionEntry.OnSubmitted = func(text string) {
-			b.sendEvent(Event{
-				Type:     "callback",
-				WidgetID: widgetID,
-				Data:     map[string]interface{}{"callbackId": onSubmittedCallbackID, "text": text},
-			})
+		if hasOnChanged {
+			completionEntry.OnChanged = func(text string) {
+				b.sendEvent(Event{
+					Type:     "callback",
+					WidgetID: widgetID,
+					Data:     map[string]interface{}{"callbackId": onChangedCallbackID, "text": text},
+				})
+			}
 		}
-	}
+
+		if hasOnSubmitted {
+			completionEntry.OnSubmitted = func(text string) {
+				b.sendEvent(Event{
+					Type:     "callback",
+					WidgetID: widgetID,
+					Data:     map[string]interface{}{"callbackId": onSubmittedCallbackID, "text": text},
+				})
+			}
+		}
+
+		widgetToStore = completionEntry
+
+		// Apply minWidth if provided - wrap in sized container
+		if minWidth, ok := getFloat64(msg.Payload["minWidth"]); ok && minWidth > 0 {
+			sizedRect := canvas.NewRectangle(color.Transparent)
+			sizedRect.SetMinSize(fyne.NewSize(float32(minWidth), completionEntry.MinSize().Height))
+			widgetToStore = container.NewMax(sizedRect, completionEntry)
+		}
+	})
 
 	b.mu.Lock()
-	b.widgets[widgetID] = completionEntry
+	b.widgets[widgetID] = widgetToStore
+	// Store the actual completionEntry separately if wrapped, for setText/getText etc.
+	if widgetToStore != completionEntry {
+		b.widgets[widgetID+"_entry"] = completionEntry
+	}
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "completionentry", Text: "", Placeholder: placeholder}
 	if hasOnChanged {
 		b.callbacks[widgetID] = onChangedCallbackID
@@ -858,6 +877,10 @@ func (b *Bridge) handleSetCompletionEntryOptions(msg Message) Response {
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
+	// Also check for wrapped entry
+	if !exists {
+		w, exists = b.widgets[widgetID+"_entry"]
+	}
 	b.mu.RUnlock()
 
 	if !exists {
@@ -877,7 +900,9 @@ func (b *Bridge) handleSetCompletionEntryOptions(msg Message) Response {
 		}
 	}
 
-	completionEntry.SetOptions(options)
+	fyne.DoAndWait(func() {
+		completionEntry.SetOptions(options)
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -890,6 +915,10 @@ func (b *Bridge) handleShowCompletion(msg Message) Response {
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
+	// Also check for wrapped entry
+	if !exists {
+		w, exists = b.widgets[widgetID+"_entry"]
+	}
 	b.mu.RUnlock()
 
 	if !exists {
@@ -909,7 +938,9 @@ func (b *Bridge) handleShowCompletion(msg Message) Response {
 		}
 	}
 
-	completionEntry.ShowCompletion()
+	fyne.DoAndWait(func() {
+		completionEntry.ShowCompletion()
+	})
 
 	return Response{
 		ID:      msg.ID,
@@ -922,6 +953,10 @@ func (b *Bridge) handleHideCompletion(msg Message) Response {
 
 	b.mu.RLock()
 	w, exists := b.widgets[widgetID]
+	// Also check for wrapped entry
+	if !exists {
+		w, exists = b.widgets[widgetID+"_entry"]
+	}
 	b.mu.RUnlock()
 
 	if !exists {
@@ -941,7 +976,9 @@ func (b *Bridge) handleHideCompletion(msg Message) Response {
 		}
 	}
 
-	completionEntry.HideCompletion()
+	fyne.DoAndWait(func() {
+		completionEntry.HideCompletion()
+	})
 
 	return Response{
 		ID:      msg.ID,

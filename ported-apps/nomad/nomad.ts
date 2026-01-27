@@ -473,44 +473,70 @@ export class NomadUI {
    * Matches the original nomad's xWidget.CompletionEntry behavior
    */
   private buildSearchSection(): void {
-    // Row with + icon and autocomplete search entry
-    this.a.hbox(() => {
-      this.a.label('+').withId('nomad-add-icon');
+    // Store reference for use in callbacks
+    let searchEntry: CompletionEntry;
+    // Track current filtered results for selection detection
+    let currentFiltered: City[] = [];
 
-      // Store reference for use in callbacks
-      let searchEntry: CompletionEntry;
+    // Use border layout so the completionEntry expands to fill available space
+    // (matching the original: container.NewBorder(nil, nil, add, nil, search))
+    this.a.border({
+      left: () => {
+        this.a.label('+').withId('nomad-add-icon');
+      },
+      center: () => {
+        // Autocomplete entry to search and add cities
+        searchEntry = this.a.completionEntry(
+          [], // Start with empty options - filtered dynamically
+          'ADD A PLACE',
+          async (text) => {
+            // Check if user selected from dropdown (text matches a full option)
+            const selectedCity = currentFiltered.find(
+              (c) => `${c.name}, ${c.country}` === text
+            );
+            if (selectedCity) {
+              // Clear entry BEFORE addCity() since addCity triggers refreshUI
+              // which destroys and recreates the widget
+              await searchEntry.setText('');
+              await searchEntry.hideCompletion();
+              currentFiltered = [];
+              this.addCity(selectedCity);
+              return;
+            }
 
-      // Autocomplete entry to search and add cities
-      searchEntry = this.a.completionEntry(
-        [], // Start with empty options - filtered dynamically
-        'ADD A PLACE',
-        async (text) => {
-          // Filter cities when text length >= 2
-          if (text.length < 2) {
-            await searchEntry.hideCompletion();
-            return;
+            // Filter cities when text length >= 2
+            if (text.length < 2) {
+              await searchEntry.hideCompletion();
+              currentFiltered = [];
+              return;
+            }
+
+            const filtered = this.filterCities(text);
+            currentFiltered = filtered;
+
+            if (filtered.length === 0) {
+              await searchEntry.hideCompletion();
+              return;
+            }
+
+            // Update options with filtered city names
+            const options = filtered.map((c) => `${c.name}, ${c.country}`);
+            await searchEntry.setOptions(options);
+            await searchEntry.showCompletion();
+          },
+          async (text) => {
+            // On submit (Enter key), add the first matching city
+            if (currentFiltered.length > 0) {
+              // Clear entry BEFORE addCity() since addCity triggers refreshUI
+              // which destroys and recreates the widget
+              await searchEntry.setText('');
+              const cityToAdd = currentFiltered[0];
+              currentFiltered = [];
+              this.addCity(cityToAdd);
+            }
           }
-
-          const filtered = this.filterCities(text);
-          if (filtered.length === 0) {
-            await searchEntry.hideCompletion();
-            return;
-          }
-
-          // Update options with filtered city names
-          const options = filtered.map((c) => `${c.name}, ${c.country}`);
-          await searchEntry.setOptions(options);
-          await searchEntry.showCompletion();
-        },
-        async (text) => {
-          // On submit (Enter key), add the first matching city
-          const filtered = this.filterCities(text);
-          if (filtered.length > 0) {
-            this.addCity(filtered[0]);
-            await searchEntry.setText('');
-          }
-        }
-      ).withId('nomad-add-city');
+        ).withId('nomad-add-city');
+      }
     });
   }
 

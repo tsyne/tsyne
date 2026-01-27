@@ -174,4 +174,151 @@ describe('CompletionEntry TsyneTest Integration', () => {
     // Hide completion
     await capturedEntry.hideCompletion();
   });
+
+  test('getText and setText work correctly', async () => {
+    let capturedEntry: any = null;
+
+    tsyneTest = new TsyneTest({ headed: false });
+    await tsyneTest.createApp((a) => {
+      a.window({ title: 'getText/setText Test' }, (win) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            capturedEntry = a.completionEntry(
+              ['Option 1', 'Option 2'],
+              'Enter text...'
+            ).withId('textEntry');
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = tsyneTest.getContext();
+    await ctx.expect(ctx.getById('textEntry')).toBeVisible();
+
+    // Initially empty
+    let text = await capturedEntry.getText();
+    expect(text).toBe('');
+
+    // Set text programmatically
+    await capturedEntry.setText('Hello World');
+    text = await capturedEntry.getText();
+    expect(text).toBe('Hello World');
+
+    // Clear text
+    await capturedEntry.setText('');
+    text = await capturedEntry.getText();
+    expect(text).toBe('');
+  });
+
+  test('onChanged receives correct text values', async () => {
+    const changedValues: string[] = [];
+    let capturedEntry: any = null;
+
+    tsyneTest = new TsyneTest({ headed: false });
+    await tsyneTest.createApp((a) => {
+      a.window({ title: 'onChanged Test' }, (win) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            capturedEntry = a.completionEntry(
+              [],
+              'Type here...',
+              (text) => {
+                changedValues.push(text);
+              }
+            ).withId('changedEntry');
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = tsyneTest.getContext();
+    await ctx.expect(ctx.getById('changedEntry')).toBeVisible();
+
+    // Type character by character
+    await ctx.getById('changedEntry').type('ab');
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Should have received incremental changes
+    expect(changedValues.length).toBeGreaterThan(0);
+    // Last value should be the full typed text
+    expect(changedValues[changedValues.length - 1]).toBe('ab');
+  });
+
+  test('onSubmitted fires on enter key', async () => {
+    let submittedText = '';
+    let capturedEntry: any = null;
+
+    tsyneTest = new TsyneTest({ headed: false });
+    await tsyneTest.createApp((a) => {
+      a.window({ title: 'onSubmitted Test' }, (win) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            capturedEntry = a.completionEntry(
+              [],
+              'Press enter to submit...',
+              undefined, // no onChanged
+              (text) => {
+                submittedText = text;
+              }
+            ).withId('submitEntry');
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = tsyneTest.getContext();
+    await ctx.expect(ctx.getById('submitEntry')).toBeVisible();
+
+    // Type and submit
+    await ctx.getById('submitEntry').type('test input');
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await ctx.getById('submitEntry').submit();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(submittedText).toBe('test input');
+  });
+
+  test('dropdown selection triggers onChanged with full option text', async () => {
+    const options = ['Apple', 'Apricot', 'Avocado'];
+    const changedValues: string[] = [];
+    let capturedEntry: any = null;
+
+    tsyneTest = new TsyneTest({ headed: false });
+    await tsyneTest.createApp((a) => {
+      a.window({ title: 'Selection Test' }, (win) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            capturedEntry = a.completionEntry(
+              options,
+              'Type to filter...',
+              (text) => {
+                changedValues.push(text);
+              }
+            ).withId('selectEntry');
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = tsyneTest.getContext();
+    await ctx.expect(ctx.getById('selectEntry')).toBeVisible();
+
+    // Type to filter
+    await ctx.getById('selectEntry').type('Ap');
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await capturedEntry.showCompletion();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Simulate selection by setting text to full option (this is what Fyne does)
+    await capturedEntry.setText('Apple');
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // The onChanged should have been called with the selection
+    // Note: setText triggers onChanged in Fyne's CompletionEntry
+    expect(changedValues).toContain('Apple');
+  });
 });
