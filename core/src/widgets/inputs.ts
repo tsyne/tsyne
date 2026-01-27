@@ -5,7 +5,7 @@
 export { Button, MenuButton, MenuBuilder, PopupMenuItem, ImageButton, Entry, MultiLineEntry, PasswordEntry } from './inputs_text';
 
 // Selection widgets
-export { Checkbox, Select, SelectEntry, RadioGroup, CheckGroup } from './inputs_selection';
+export { Checkbox, Select, SelectEntry, RadioGroup, CheckGroup, CompletionEntry } from './inputs_selection';
 
 // Range/date input widgets
 export { Slider, DateEntry, Calendar } from './inputs_range';

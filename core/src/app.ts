@@ -14,6 +14,7 @@ import {
   ImageButton,
   Checkbox,
   CheckGroup,
+  CompletionEntry,
   DateEntry,
   Entry,
   MultiLineEntry,
@@ -616,6 +617,47 @@ export class App {
     onSelected?: (selected: string) => void
   ): SelectEntry {
     return new SelectEntry(this.ctx, options, placeholder, onChanged, onSubmitted, onSelected);
+  }
+
+  /**
+   * Create a completion entry widget with autocomplete popup.
+   * Unlike selectentry which shows all options, this allows dynamic filtering
+   * and programmatic control of the completion popup. Perfect for searching
+   * large datasets (e.g., 40,000+ cities).
+   *
+   * @param options - Initial completion options (can be updated via setOptions)
+   * @param placeholder - Placeholder text when empty
+   * @param onChanged - Called on every text change (use to filter and update options)
+   * @param onSubmitted - Called when Enter is pressed
+   * @returns CompletionEntry widget
+   *
+   * @example
+   * ```typescript
+   * const cities = ['London', 'Paris', 'New York', 'Tokyo', ...];
+   * const entry = a.completionEntry([], 'Search cities...', async (text) => {
+   *   if (text.length < 2) {
+   *     await entry.hideCompletion();
+   *     return;
+   *   }
+   *   const filtered = cities.filter(c =>
+   *     c.toLowerCase().startsWith(text.toLowerCase())
+   *   );
+   *   await entry.setOptions(filtered.slice(0, 20));
+   *   if (filtered.length > 0) {
+   *     await entry.showCompletion();
+   *   } else {
+   *     await entry.hideCompletion();
+   *   }
+   * });
+   * ```
+   */
+  completionEntry(
+    options: string[],
+    placeholder?: string,
+    onChanged?: (text: string) => void,
+    onSubmitted?: (text: string) => void
+  ): CompletionEntry {
+    return new CompletionEntry(this.ctx, options, placeholder, onChanged, onSubmitted);
   }
 
   slider(

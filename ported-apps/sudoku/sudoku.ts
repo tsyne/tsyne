@@ -23,11 +23,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createSudokuApp
- * @tsyne-app:args app,window,windowWidth,windowHeight
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from 'tsyne';
-import type { App, Window, ITsyneWindow, Label, ColorCell } from 'tsyne';
+import type { App, Window, Label, ColorCell } from 'tsyne';
 
 // ============================================================================
 // Constants

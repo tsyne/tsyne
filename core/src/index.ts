@@ -8,6 +8,7 @@ import {
   MenuBuilder,
   Checkbox,
   CheckGroup,
+  CompletionEntry,
   DateEntry,
   Entry,
   MultiLineEntry,
@@ -841,6 +842,7 @@ export {
   Checkbox,
   Select,
   SelectEntry,
+  CompletionEntry,
   Slider,
   ProgressBar,
   ProgressBarInfinite,
@@ -1027,9 +1029,6 @@ export type { ITsyneWindow, DesktopContext, PhoneTopContext } from './tsyne-wind
 export { ResourceManager, ScopedResourceManager, NullResourceManager } from './resources';
 export type { IResourceManager } from './resources';
 
-// Export sandboxed app for running apps in isolated contexts
-export { SandboxedApp } from './sandboxed-app';
-
 // Export OS services (interfaces, mocks, and not-available implementations)
 export * from './services';
 
@@ -1107,6 +1106,3 @@ export {
   polygonArea,
   polygonCentroid,
 } from './graphics/geometry';
-
-// Export SVG rasterizer (cross-platform SVG to PNG conversion)
-export { getSvgRasterizer } from './resvg-loader';

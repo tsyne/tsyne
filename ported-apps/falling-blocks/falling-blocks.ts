@@ -23,11 +23,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createFallingBlocksApp
- * @tsyne-app:args app,window,windowWidth,windowHeight
+ * @tsyne-app:args app,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from 'tsyne';
-import type { App, Window, ITsyneWindow, Label, TappableCanvasRaster } from 'tsyne';
+import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
 // Constants
@@ -727,31 +727,18 @@ export class FallingBlocksUI {
 // App Factory
 // ============================================================================
 
-export function createFallingBlocksApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): FallingBlocksUI {
+export function createFallingBlocksApp(a: App, windowWidth?: number, windowHeight?: number): FallingBlocksUI {
   const ui = new FallingBlocksUI(a);
-  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  if (win) {
-    // PhoneTop/embedded mode with injected window
-    ui.setupWindow(win as Window);
+  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
+  a.window({ title: 'Falling Blocks', width: 350, height: 600 }, (win: Window) => {
+    ui.setupWindow(win);
     win.setContent(() => ui.buildContent());
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  } else if (isEmbedded) {
-    // PhoneTop/embedded mode: build content directly without a window
-    ui.buildContent();
-    setTimeout(() => ui.initialize(), 0);
-  } else {
-    // Standalone/desktop mode: create a window
-    a.window({ title: 'Falling Blocks', width: 350, height: 600 }, (w: Window) => {
-      ui.setupWindow(w);
-      w.setContent(() => ui.buildContent());
-      w.show();
-      setTimeout(() => ui.initialize(), 0);
-    });
-  }
+  });
 
   return ui;
 }

@@ -310,3 +310,98 @@ export class CheckGroup extends Widget {
     return result.selected;
   }
 }
+
+/**
+ * CompletionEntry widget - an entry with autocomplete/completion dropdown.
+ * Shows a popup with filtered options based on what the user types.
+ * Unlike SelectEntry which shows all options, CompletionEntry allows dynamic
+ * filtering and programmatic show/hide of the completion popup.
+ *
+ * Perfect for searching large datasets (e.g., 40,000+ cities).
+ */
+export class CompletionEntry extends Widget {
+  constructor(
+    ctx: Context,
+    options: string[],
+    placeholder?: string,
+    onChanged?: (text: string) => void,
+    onSubmitted?: (text: string) => void
+  ) {
+    const id = ctx.generateId('completionentry');
+    super(ctx, id);
+
+    const payload: Record<string, unknown> = { id, options, placeholder: placeholder || '' };
+
+    if (onChanged) {
+      const callbackId = ctx.generateId('callback');
+      payload.onChangedCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        const eventData = data as { text: string };
+        onChanged(eventData.text);
+      });
+    }
+
+    if (onSubmitted) {
+      const callbackId = ctx.generateId('callback');
+      payload.onSubmittedCallbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
+        const eventData = data as { text: string };
+        onSubmitted(eventData.text);
+      });
+    }
+
+    ctx.bridge.send('createCompletionEntry', payload);
+    ctx.addToCurrentContainer(id);
+  }
+
+  /**
+   * Set the text value of the entry
+   */
+  async setText(text: string): Promise<void> {
+    await this.ctx.bridge.send('setText', {
+      widgetId: this.id,
+      text
+    });
+  }
+
+  /**
+   * Get the current text value
+   */
+  async getText(): Promise<string> {
+    const result = await this.ctx.bridge.send('getText', {
+      widgetId: this.id
+    }) as { text: string };
+    return result.text;
+  }
+
+  /**
+   * Update the completion options dynamically.
+   * Call this in your onChanged handler to filter options based on user input.
+   */
+  async setOptions(options: string[]): Promise<void> {
+    await this.ctx.bridge.send('setCompletionEntryOptions', {
+      widgetId: this.id,
+      options
+    });
+  }
+
+  /**
+   * Show the completion popup with the current options.
+   * Typically called after filtering options in the onChanged handler.
+   */
+  async showCompletion(): Promise<void> {
+    await this.ctx.bridge.send('showCompletion', {
+      widgetId: this.id
+    });
+  }
+
+  /**
+   * Hide the completion popup.
+   * Typically called when there are no matching options or when a selection is made.
+   */
+  async hideCompletion(): Promise<void> {
+    await this.ctx.bridge.send('hideCompletion', {
+      widgetId: this.id
+    });
+  }
+}

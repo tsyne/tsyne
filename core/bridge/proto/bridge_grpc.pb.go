@@ -50,6 +50,10 @@ const (
 	BridgeService_CreateRadioGroup_FullMethodName            = "/bridge.BridgeService/CreateRadioGroup"
 	BridgeService_CreateCheckGroup_FullMethodName            = "/bridge.BridgeService/CreateCheckGroup"
 	BridgeService_CreateSelectEntry_FullMethodName           = "/bridge.BridgeService/CreateSelectEntry"
+	BridgeService_CreateCompletionEntry_FullMethodName       = "/bridge.BridgeService/CreateCompletionEntry"
+	BridgeService_SetCompletionEntryOptions_FullMethodName   = "/bridge.BridgeService/SetCompletionEntryOptions"
+	BridgeService_ShowCompletion_FullMethodName              = "/bridge.BridgeService/ShowCompletion"
+	BridgeService_HideCompletion_FullMethodName              = "/bridge.BridgeService/HideCompletion"
 	BridgeService_CreateDateEntry_FullMethodName             = "/bridge.BridgeService/CreateDateEntry"
 	BridgeService_CreateVBox_FullMethodName                  = "/bridge.BridgeService/CreateVBox"
 	BridgeService_CreateHBox_FullMethodName                  = "/bridge.BridgeService/CreateHBox"
@@ -300,6 +304,10 @@ type BridgeServiceClient interface {
 	CreateRadioGroup(ctx context.Context, in *CreateRadioGroupRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateCheckGroup(ctx context.Context, in *CreateCheckGroupRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateSelectEntry(ctx context.Context, in *CreateSelectEntryRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateCompletionEntry(ctx context.Context, in *CreateCompletionEntryRequest, opts ...grpc.CallOption) (*Response, error)
+	SetCompletionEntryOptions(ctx context.Context, in *SetCompletionEntryOptionsRequest, opts ...grpc.CallOption) (*Response, error)
+	ShowCompletion(ctx context.Context, in *ShowCompletionRequest, opts ...grpc.CallOption) (*Response, error)
+	HideCompletion(ctx context.Context, in *HideCompletionRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateDateEntry(ctx context.Context, in *CreateDateEntryRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Container creation
@@ -875,6 +883,46 @@ func (c *bridgeServiceClient) CreateSelectEntry(ctx context.Context, in *CreateS
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateSelectEntry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateCompletionEntry(ctx context.Context, in *CreateCompletionEntryRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateCompletionEntry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) SetCompletionEntryOptions(ctx context.Context, in *SetCompletionEntryOptionsRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_SetCompletionEntryOptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) ShowCompletion(ctx context.Context, in *ShowCompletionRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_ShowCompletion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) HideCompletion(ctx context.Context, in *HideCompletionRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_HideCompletion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2956,6 +3004,10 @@ type BridgeServiceServer interface {
 	CreateRadioGroup(context.Context, *CreateRadioGroupRequest) (*Response, error)
 	CreateCheckGroup(context.Context, *CreateCheckGroupRequest) (*Response, error)
 	CreateSelectEntry(context.Context, *CreateSelectEntryRequest) (*Response, error)
+	CreateCompletionEntry(context.Context, *CreateCompletionEntryRequest) (*Response, error)
+	SetCompletionEntryOptions(context.Context, *SetCompletionEntryOptionsRequest) (*Response, error)
+	ShowCompletion(context.Context, *ShowCompletionRequest) (*Response, error)
+	HideCompletion(context.Context, *HideCompletionRequest) (*Response, error)
 	CreateDateEntry(context.Context, *CreateDateEntryRequest) (*Response, error)
 	// ============================================================================
 	// Container creation
@@ -3319,6 +3371,18 @@ func (UnimplementedBridgeServiceServer) CreateCheckGroup(context.Context, *Creat
 }
 func (UnimplementedBridgeServiceServer) CreateSelectEntry(context.Context, *CreateSelectEntryRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateSelectEntry not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateCompletionEntry(context.Context, *CreateCompletionEntryRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCompletionEntry not implemented")
+}
+func (UnimplementedBridgeServiceServer) SetCompletionEntryOptions(context.Context, *SetCompletionEntryOptionsRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetCompletionEntryOptions not implemented")
+}
+func (UnimplementedBridgeServiceServer) ShowCompletion(context.Context, *ShowCompletionRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method ShowCompletion not implemented")
+}
+func (UnimplementedBridgeServiceServer) HideCompletion(context.Context, *HideCompletionRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method HideCompletion not implemented")
 }
 func (UnimplementedBridgeServiceServer) CreateDateEntry(context.Context, *CreateDateEntryRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateDateEntry not implemented")
@@ -4501,6 +4565,78 @@ func _BridgeService_CreateSelectEntry_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateSelectEntry(ctx, req.(*CreateSelectEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateCompletionEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCompletionEntryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateCompletionEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateCompletionEntry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateCompletionEntry(ctx, req.(*CreateCompletionEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_SetCompletionEntryOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetCompletionEntryOptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).SetCompletionEntryOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_SetCompletionEntryOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).SetCompletionEntryOptions(ctx, req.(*SetCompletionEntryOptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_ShowCompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowCompletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).ShowCompletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_ShowCompletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).ShowCompletion(ctx, req.(*ShowCompletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_HideCompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HideCompletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).HideCompletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_HideCompletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).HideCompletion(ctx, req.(*HideCompletionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8264,6 +8400,22 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSelectEntry",
 			Handler:    _BridgeService_CreateSelectEntry_Handler,
+		},
+		{
+			MethodName: "CreateCompletionEntry",
+			Handler:    _BridgeService_CreateCompletionEntry_Handler,
+		},
+		{
+			MethodName: "SetCompletionEntryOptions",
+			Handler:    _BridgeService_SetCompletionEntryOptions_Handler,
+		},
+		{
+			MethodName: "ShowCompletion",
+			Handler:    _BridgeService_ShowCompletion_Handler,
+		},
+		{
+			MethodName: "HideCompletion",
+			Handler:    _BridgeService_HideCompletion_Handler,
 		},
 		{
 			MethodName: "CreateDateEntry",

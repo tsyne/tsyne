@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
+	xWidget "fyne.io/x/fyne/widget"
 )
 
 func (b *Bridge) handleGetText(msg Message) Response {
@@ -48,6 +49,8 @@ func (b *Bridge) handleGetText(msg Message) Response {
 	case *TsyneEntry:
 		text = w.Text
 	case *widget.SelectEntry:
+		text = w.Text
+	case *xWidget.CompletionEntry:
 		text = w.Text
 	case *widget.Button:
 		text = w.Text
@@ -113,6 +116,8 @@ func (b *Bridge) handleSetText(msg Message) Response {
 			w.SetText(text)
 		case *widget.SelectEntry:
 			w.SetText(text)
+		case *xWidget.CompletionEntry:
+			w.SetText(text)
 		case *widget.Button:
 			w.SetText(text)
 		case *HoverableButton:
@@ -152,7 +157,7 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	// Check if widget type is supported
 	supported := false
 	switch actualWidget.(type) {
-	case *widget.Label, *widget.Entry, *TsyneEntry, *widget.SelectEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
+	case *widget.Label, *widget.Entry, *TsyneEntry, *widget.SelectEntry, *xWidget.CompletionEntry, *widget.Button, *HoverableButton, *HoverableWrapper, *TappableWrapper, *widget.Check:
 		supported = true
 	}
 
