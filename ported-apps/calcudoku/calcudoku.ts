@@ -19,11 +19,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createCalcudokuApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from 'tsyne';
-import type { App, Window, ColorCell } from 'tsyne';
+import type { App, Window, ITsyneWindow, ColorCell } from 'tsyne';
 
 // ============================================================================
 // Types & Constants
@@ -523,16 +523,29 @@ export class CalcudokuUI {
 // App Factory
 // ============================================================================
 
-export function createCalcudokuApp(a: App, windowWidth?: number, windowHeight?: number): CalcudokuUI {
+export function createCalcudokuApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): CalcudokuUI {
   const ui = new CalcudokuUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Calcudoku', width: 400, height: 480 }, (win: Window) => {
-    ui.setupWindow(win);
+  if (win) {
+    // PhoneTop/embedded mode with injected window
+    ui.setupWindow(win as Window);
     win.setContent(() => ui.buildContent());
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Calcudoku', width: 400, height: 480 }, (w: Window) => {
+      ui.setupWindow(w);
+      w.setContent(() => ui.buildContent());
+      w.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

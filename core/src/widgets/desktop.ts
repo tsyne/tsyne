@@ -476,4 +476,28 @@ export class DesktopMDI extends Widget {
       await icon.move(x, y);
     }
   }
+
+  /**
+   * Remove an icon from the desktop
+   */
+  async removeIcon(iconId: string): Promise<void> {
+    await this.ctx.bridge.send('desktopMDIRemoveIcon', {
+      desktopId: this.id,
+      iconId,
+    });
+    this.icons.delete(iconId);
+  }
+
+  /**
+   * Remove all icons from the desktop
+   */
+  async removeAllIcons(): Promise<void> {
+    for (const iconId of this.icons.keys()) {
+      await this.ctx.bridge.send('desktopMDIRemoveIcon', {
+        desktopId: this.id,
+        iconId,
+      });
+    }
+    this.icons.clear();
+  }
 }

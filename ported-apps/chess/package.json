@@ -8,7 +8,6 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
     "chess.js": "^1.4.0",
     "tsyne": "workspace:*"
   },

@@ -294,6 +294,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleDesktopMDIAddWindow(msg)
 	case "desktopMDIRemoveWindow":
 		return b.handleDesktopMDIRemoveWindow(msg)
+	case "desktopMDIRemoveIcon":
+		return b.handleDesktopMDIRemoveIcon(msg)
 	case "createDateEntry":
 		return b.handleCreateDateEntry(msg)
 	case "setDate":

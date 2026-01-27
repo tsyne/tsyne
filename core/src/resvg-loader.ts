@@ -1,58 +1,57 @@
 /**
- * Cross-platform resvg loader
+ * Cross-platform SVG rasterizer
  *
  * Uses native @resvg/resvg-js on x86_64 (prebuilt binaries available)
  * Falls back to @resvg/resvg-wasm on aarch64 (no prebuilt native binaries)
+ *
+ * Lazy initialization - just call getSvgRasterizer() and it handles everything.
  */
 
 import { arch } from 'os';
 
-// Both packages export the same Resvg class with identical API
-export let Resvg: any;
-let wasmInitialized = false;
-
 const architecture = arch();
-
-if (architecture === 'x64') {
-  // x86_64: use native bindings (faster, prebuilt available)
-  try {
-    const native = require('@resvg/resvg-js');
-    Resvg = native.Resvg;
-  } catch {
-    // Fallback to wasm if native fails
-    const wasm = require('@resvg/resvg-wasm');
-    Resvg = wasm.Resvg;
-  }
-} else {
-  // aarch64/arm64: use wasm (no prebuilt native binaries)
-  const wasm = require('@resvg/resvg-wasm');
-  Resvg = wasm.Resvg;
-}
+let _Rasterizer: any = null;
+let _initPromise: Promise<any> | null = null;
 
 /**
- * Initialize wasm if needed (must be called before using Resvg on wasm platforms)
+ * Get the SVG rasterizer class, initializing if needed.
+ * Returns a class with the Resvg API (constructor takes SVG string/buffer, .render().asPng()).
+ * Handles native vs wasm transparently.
  */
-export async function initResvg(): Promise<void> {
-  if (architecture === 'x64') {
-    // Native doesn't need initialization
-    return;
+export async function getSvgRasterizer(): Promise<any> {
+  if (_Rasterizer) {
+    return _Rasterizer;
   }
 
-  if (wasmInitialized) {
-    return;
+  // Avoid multiple concurrent initializations
+  if (_initPromise) {
+    return _initPromise;
   }
 
-  const { initWasm } = require('@resvg/resvg-wasm');
+  _initPromise = (async () => {
+    if (architecture === 'x64') {
+      // x86_64: use native bindings (faster, prebuilt available)
+      try {
+        _Rasterizer = require('@resvg/resvg-js').Resvg;
+      } catch {
+        // Fallback to wasm if native fails
+        await initWasm();
+      }
+    } else {
+      // aarch64/arm64: use wasm (no prebuilt native binaries)
+      await initWasm();
+    }
+    return _Rasterizer;
+  })();
+
+  return _initPromise;
+}
+
+async function initWasm(): Promise<void> {
+  const wasm = require('@resvg/resvg-wasm');
   const fs = require('fs');
-  const path = require('path');
-
-  // Find the wasm file in node_modules
-  const wasmPath = path.join(
-    __dirname,
-    '../../node_modules/@resvg/resvg-wasm/index_bg.wasm'
-  );
-
+  const wasmPath = require.resolve('@resvg/resvg-wasm/index_bg.wasm');
   const wasmBuffer = fs.readFileSync(wasmPath);
-  await initWasm(wasmBuffer);
-  wasmInitialized = true;
+  await wasm.initWasm(wasmBuffer);
+  _Rasterizer = wasm.Resvg;
 }

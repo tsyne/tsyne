@@ -17,11 +17,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createZipPuzzleApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from 'tsyne';
-import type { App, Window, ColorCell } from 'tsyne';
+import type { App, Window, ITsyneWindow, ColorCell } from 'tsyne';
 
 // ============================================================================
 // Types & Constants

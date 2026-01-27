@@ -2,7 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6" fill="currentColor"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><rect x="15" y="15" width="6" height="6" fill="currentColor"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createGameOfLifeApp
-// @tsyne-app:args app,windowWidth,windowHeight
+// @tsyne-app:args app,window,windowWidth,windowHeight
 
 /**
  * Conway's Game of Life for Tsyne
@@ -26,7 +26,7 @@
  */
 
 import { app, resolveTransport  } from 'tsyne';
-import type { App } from 'tsyne';
+import type { App, ITsyneWindow } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as fs from 'fs';
 
@@ -1063,25 +1063,38 @@ class GameOfLifeUI {
  * Create the Game of Life app
  * Based on: main.go
  */
-export function createGameOfLifeApp(a: App, windowWidth?: number, windowHeight?: number): GameOfLifeUI {
+export function createGameOfLifeApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): GameOfLifeUI {
   const ui = new GameOfLifeUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   // Register cleanup callback to stop the game timer before shutdown
   a.registerCleanup(() => ui.cleanup());
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Game of Life', width: 900, height: 700 }, (win: Window) => {
-    // Setup window synchronously (preferences load async in background)
-    ui.setupWindowSync(win);
-
-    // Set content
+  if (win) {
+    // PhoneTop/embedded mode with injected window
+    ui.setupWindowSync(win as Window);
     win.setContent(() => {
       ui.buildContent();
     });
-
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else if (isEmbedded) {
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    a.window({ title: 'Game of Life', width: 900, height: 700 }, (w: Window) => {
+      // Setup window synchronously (preferences load async in background)
+      ui.setupWindowSync(w);
+
+      // Set content
+      w.setContent(() => {
+        ui.buildContent();
+      });
+
+      w.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

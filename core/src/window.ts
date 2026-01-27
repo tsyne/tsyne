@@ -885,4 +885,16 @@ export class Window {
     });
     return this;
   }
+
+  /**
+   * Get the current window size.
+   * @returns Object with width and height properties
+   */
+  getSize(): { width: number; height: number } {
+    // For now, return cached size or default
+    // TODO: Could call bridge synchronously or cache from onResize
+    return this._cachedSize || { width: 800, height: 600 };
+  }
+
+  private _cachedSize?: { width: number; height: number };
 }

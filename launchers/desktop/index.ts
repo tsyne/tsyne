@@ -20,7 +20,6 @@ import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow 
 import { ITsyneWindow } from 'tsyne';
 import { parseAppMetadata, AppMetadata } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
-import { initResvg } from 'tsyne';
 import { Inspector } from 'tsyne';
 import * as path from 'path';
 
@@ -91,6 +90,14 @@ class Desktop implements IDesktopDebugHost {
   private appLauncher: AppLauncher;
   /** All available apps (for DesktopService) */
   private _appList: AppMetadata[] = [];
+  /** Search query for filtering icons */
+  private searchQuery: string = '';
+  /** Search entry widget */
+  private searchEntry: any = null;
+  /** Filtered icons from search */
+  private filteredIcons: DesktopIcon[] = [];
+  /** Filtered folders from search */
+  private filteredFolders: DesktopFolder[] = [];
 
   // IDesktopDebugHost implementation
   get win(): Window | null { return this._win; }
@@ -535,7 +542,11 @@ class Desktop implements IDesktopDebugHost {
       return;
     }
 
-    console.log(`Creating ${this.folders.length} folder icons and ${this._icons.length} app icons`);
+    // Use filtered lists when searching, otherwise full lists
+    const foldersToShow = this.searchQuery ? this.filteredFolders : this.folders;
+    const iconsToShow = this.searchQuery ? this.filteredIcons : this._icons;
+
+    console.log(`Creating ${foldersToShow.length} folder icons and ${iconsToShow.length} app icons`);
 
     // Color palette for icons
     const colors = [
@@ -544,8 +555,8 @@ class Desktop implements IDesktopDebugHost {
     ];
 
     // Add folder icons first
-    for (let i = 0; i < this.folders.length; i++) {
-      const folder = this.folders[i];
+    for (let i = 0; i < foldersToShow.length; i++) {
+      const folder = foldersToShow[i];
       const color = colors[i % colors.length];
 
       console.log(`Adding folder: ${folder.name} at (${folder.x}, ${folder.y}) with ${folder.apps.length} apps`);
@@ -578,9 +589,9 @@ class Desktop implements IDesktopDebugHost {
     }
 
     // Add app icons (uncategorized apps)
-    for (let i = 0; i < this._icons.length; i++) {
-      const icon = this._icons[i];
-      const color = colors[(i + this.folders.length) % colors.length];
+    for (let i = 0; i < iconsToShow.length; i++) {
+      const icon = iconsToShow[i];
+      const color = colors[(i + foldersToShow.length) % colors.length];
 
       console.log(`Adding icon: ${icon.metadata.name} at (${icon.x}, ${icon.y})`);
       const iconId = `icon-${icon.metadata.name.toLowerCase().replace(/\s+/g, '-')}`;
@@ -612,11 +623,12 @@ class Desktop implements IDesktopDebugHost {
       });
     }
 
-    // Add file icons (PNG files from ~/Desktop/)
-    const fileIcons = this.fileManager.getAll();
-    for (let i = 0; i < fileIcons.length; i++) {
-      const fileIcon = fileIcons[i];
-      const color = colors[(i + this.folders.length + this._icons.length) % colors.length];
+    // Add file icons (PNG files from ~/Desktop/) - only show when not searching
+    if (!this.searchQuery) {
+      const fileIcons = this.fileManager.getAll();
+      for (let i = 0; i < fileIcons.length; i++) {
+        const fileIcon = fileIcons[i];
+        const color = colors[(i + foldersToShow.length + iconsToShow.length) % colors.length];
 
       console.log(`Adding file icon: ${fileIcon.fileName} at (${fileIcon.x}, ${fileIcon.y})`);
       const iconId = this.fileManager.getIconId(fileIcon);
@@ -646,6 +658,7 @@ class Desktop implements IDesktopDebugHost {
           this.fileManager.showInfo(fileIcon, this._win);
         }
       });
+      }
     }
   }
 
@@ -981,6 +994,18 @@ class Desktop implements IDesktopDebugHost {
    */
   private createLaunchBar() {
     this.a.hbox(() => {
+      // Search box
+      this.searchEntry = this.a.entry(
+        'Search apps...',
+        undefined,  // onSubmit
+        120,        // minWidth
+        undefined,  // onDoubleClick
+        (text: string) => this.onSearchChanged(text)  // onChange
+      ).withId('desktop-search-entry');
+      this.a.button('X').withId('clear-search').onClick(() => this.clearSearch());
+
+      this.a.separator();
+
       // Show Desktop button
       this.a.button('Show Desktop').withId('showDesktopBtn').onClick(() => {
         // Hide all open windows
@@ -1039,6 +1064,100 @@ class Desktop implements IDesktopDebugHost {
   }
 
   /**
+   * Handle search text changes
+   * Filters icons/folders and rebuilds the desktop display
+   */
+  private onSearchChanged(query: string): void {
+    this.searchQuery = query.toLowerCase().trim();
+
+    if (!this.searchQuery) {
+      // No search - clear filtered lists
+      this.filteredIcons = [];
+      this.filteredFolders = [];
+    } else {
+      // Filter icons and folders
+      const results = this.filterBySearch(this.searchQuery);
+      this.filteredIcons = results.icons;
+      this.filteredFolders = results.folders;
+    }
+
+    // Rebuild desktop icons
+    this.rebuildDesktopIcons();
+  }
+
+  /**
+   * Filter icons and folders by search query with glob-style matching
+   */
+  private filterBySearch(query: string): { icons: DesktopIcon[]; folders: DesktopFolder[] } {
+    const pattern = this.queryToRegex(query);
+    const matchedIcons: DesktopIcon[] = [];
+    const matchedFolders: DesktopFolder[] = [];
+
+    // Filter uncategorized icons
+    for (const icon of this._icons) {
+      if (pattern.test(icon.metadata.name.toLowerCase())) {
+        matchedIcons.push(icon);
+      }
+    }
+
+    // Filter folders - include if folder name matches OR any app inside matches
+    for (const folder of this.folders) {
+      const folderMatches = pattern.test(folder.name.toLowerCase());
+      const matchingApps = folder.apps.filter(app =>
+        pattern.test(app.metadata.name.toLowerCase())
+      );
+
+      if (folderMatches || matchingApps.length > 0) {
+        if (matchingApps.length > 0 && matchingApps.length < folder.apps.length) {
+          // Partial match - create filtered folder with only matching apps
+          matchedFolders.push({
+            ...folder,
+            apps: matchingApps
+          });
+        } else {
+          // Full folder match
+          matchedFolders.push(folder);
+        }
+      }
+    }
+
+    return { icons: matchedIcons, folders: matchedFolders };
+  }
+
+  /**
+   * Convert glob-style pattern to regex (* -> .*, escape special chars)
+   */
+  private queryToRegex(query: string): RegExp {
+    const escaped = query.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    const pattern = escaped.replace(/\*/g, '.*');
+    return new RegExp(pattern, 'i');
+  }
+
+  /**
+   * Clear the search
+   */
+  private clearSearch(): void {
+    this.searchQuery = '';
+    this.searchEntry?.setText('');
+    this.filteredIcons = [];
+    this.filteredFolders = [];
+    this.rebuildDesktopIcons();
+  }
+
+  /**
+   * Rebuild the desktop icons (after search filter changes)
+   */
+  private rebuildDesktopIcons(): void {
+    if (!this.desktopMDI) return;
+
+    // Remove all existing icons
+    this.desktopMDI.removeAllIcons();
+
+    // Re-add icons (createDesktopIcons will use filtered lists when searching)
+    this.createDesktopIcons();
+  }
+
+  /**
    * Handle an inner window closing so the desktop can update state.
    */
   private handleWindowClosed(closedWindow: ITsyneWindow) {
@@ -1058,9 +1177,6 @@ class Desktop implements IDesktopDebugHost {
  * @param options - Optional desktop configuration
  */
 export async function buildDesktop(a: App, options?: DesktopOptions) {
-  // Initialize wasm on aarch64 platforms (no-op on x64)
-  await initResvg();
-
   const desktop = new Desktop(a, options);
   await desktop.init();
   desktop.build();
@@ -1071,8 +1187,8 @@ export { Desktop };
 // Entry point - only run when executed directly
 // Check if this module is the main entry point
 if (require.main === module) {
-  // Import the app function from index
-  const { app, resolveTransport  } = require('./index');
+  // Import the app function from tsyne
+  const { app, resolveTransport  } = require('tsyne');
 
   // Prevent unhandled promise rejections from crashing the desktop
   // This catches errors from apps that throw after their builder returns

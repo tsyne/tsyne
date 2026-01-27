@@ -7,7 +7,7 @@
 import * as path from 'path';
 import { App } from 'tsyne';
 import { AppMetadata } from 'tsyne';
-import { Resvg } from 'tsyne';
+import { getSvgRasterizer } from 'tsyne';
 import { ICON_SIZE, ICON_SPACING, ICON_POSITION_PREFIX } from './desktop_types';
 
 /**
@@ -34,8 +34,9 @@ export class DesktopIconManager {
   /**
    * Render an inline SVG into a PNG data URI for desktop icons
    */
-  renderSvgIconToDataUri(svg: string, size: number = ICON_SIZE): string {
+  async renderSvgIconToDataUri(svg: string, size: number = ICON_SIZE): Promise<string> {
     const normalized = this.normalizeSvg(svg, size);
+    const Resvg = await getSvgRasterizer();
     const renderer = new Resvg(normalized, {
       fitTo: {
         mode: 'width',
@@ -100,7 +101,7 @@ export class DesktopIconManager {
     }
 
     try {
-      const dataUri = this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
+      const dataUri = await this.renderSvgIconToDataUri(metadata.icon, ICON_SIZE);
       const baseName = path.basename(metadata.filePath, '.ts');
       const resourceName = `desktop-icon-${this.getIconKey(`${metadata.name}-${baseName}`)}`;
       await this.app.resources.registerResource(resourceName, dataUri);
@@ -124,14 +125,7 @@ export class DesktopIconManager {
     </svg>`;
 
     try {
-      const normalized = this.normalizeSvg(imageSvg, ICON_SIZE);
-      const renderer = new Resvg(normalized, {
-        fitTo: { mode: 'width', value: ICON_SIZE },
-        background: 'rgba(0,0,0,0)'
-      });
-      const png = renderer.render().asPng();
-      const buffer = Buffer.from(png);
-      const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
+      const dataUri = await this.renderSvgIconToDataUri(imageSvg, ICON_SIZE);
 
       const resourceName = `file-icon-image`;
       await this.app.resources.registerResource(resourceName, dataUri);
@@ -151,15 +145,7 @@ export class DesktopIconManager {
     }
 
     try {
-      const normalized = this.normalizeSvg(svg, ICON_SIZE);
-      const renderer = new Resvg(normalized, {
-        fitTo: { mode: 'width', value: ICON_SIZE },
-        background: 'rgba(0,0,0,0)'
-      });
-      const png = renderer.render().asPng();
-      const buffer = Buffer.from(png);
-      const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
-
+      const dataUri = await this.renderSvgIconToDataUri(svg, ICON_SIZE);
       const resourceName = `desktop-folder-${category}`;
       await this.app.resources.registerResource(resourceName, dataUri);
       this.folderIconCache.set(category, resourceName);

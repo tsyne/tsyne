@@ -20,11 +20,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createMahjonggApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from 'tsyne';
-import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
+import type { App, Window, ITsyneWindow, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
 // Constants
@@ -846,18 +846,31 @@ export class MahjonggUI {
 /**
  * Create the Mahjongg app
  */
-export function createMahjonggApp(a: App, windowWidth?: number, windowHeight?: number): MahjonggUI {
+export function createMahjonggApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): MahjonggUI {
   const ui = new MahjonggUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (win: Window) => {
-    ui.setupWindow(win);
+  if (win) {
+    // PhoneTop/embedded mode with injected window
+    ui.setupWindow(win as Window);
     win.setContent(() => ui.buildContent());
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    // Standalone/desktop mode: create a window
+    a.window({ title: 'Mahjongg Solitaire', width: 600, height: 550 }, (w: Window) => {
+      ui.setupWindow(w);
+      w.setContent(() => ui.buildContent());
+      w.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

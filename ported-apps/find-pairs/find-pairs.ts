@@ -20,11 +20,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createFindPairsApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window,windowWidth,windowHeight
  */
 
 import { app, resolveTransport } from 'tsyne';
-import type { App, Window, ColorCell } from 'tsyne';
+import type { App, Window, ITsyneWindow, ColorCell } from 'tsyne';
 
 // ============================================================================
 // Constants
@@ -226,16 +226,27 @@ export class FindPairsUI {
 // App Factory
 // ============================================================================
 
-export function createFindPairsApp(a: App, windowWidth?: number, windowHeight?: number): FindPairsUI {
+export function createFindPairsApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): FindPairsUI {
   const ui = new FindPairsUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Find Pairs', width: 560, height: 380 }, (win: Window) => {
-    ui.setupWindow(win);
+  if (win) {
+    // PhoneTop/embedded mode with injected window
+    ui.setupWindow(win as Window);
     win.setContent(() => ui.buildContent());
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else if (isEmbedded) {
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    a.window({ title: 'Find Pairs', width: 560, height: 380 }, (w: Window) => {
+      ui.setupWindow(w);
+      w.setContent(() => ui.buildContent());
+      w.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

@@ -21,11 +21,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder createFallingLettersApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window,windowWidth,windowHeight
  */
 
 import { app, resolveTransport  } from 'tsyne';
-import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
+import type { App, Window, ITsyneWindow, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
 // Constants
@@ -834,18 +834,29 @@ export class FallingLettersUI {
 // App Factory
 // ============================================================================
 
-export function createFallingLettersApp(a: App, windowWidth?: number, windowHeight?: number): FallingLettersUI {
+export function createFallingLettersApp(a: App, win?: ITsyneWindow | null, windowWidth?: number, windowHeight?: number): FallingLettersUI {
   const ui = new FallingLettersUI(a);
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
   a.registerCleanup(() => ui.cleanup());
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  a.window({ title: 'Falling Letters', width: 350, height: 550 }, (win: Window) => {
-    ui.setupWindow(win);
+  if (win) {
+    // PhoneTop/embedded mode with injected window
+    ui.setupWindow(win as Window);
     win.setContent(() => ui.buildContent());
     win.show();
     setTimeout(() => ui.initialize(), 0);
-  });
+  } else if (isEmbedded) {
+    ui.buildContent();
+    setTimeout(() => ui.initialize(), 0);
+  } else {
+    a.window({ title: 'Falling Letters', width: 350, height: 550 }, (w: Window) => {
+      ui.setupWindow(w);
+      w.setContent(() => ui.buildContent());
+      w.show();
+      setTimeout(() => ui.initialize(), 0);
+    });
+  }
 
   return ui;
 }

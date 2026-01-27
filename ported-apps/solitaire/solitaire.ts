@@ -2,7 +2,7 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 6v4"/><path d="M10 8h4"/><path d="M12 14l-3 4h6l-3-4z"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder createSolitaireApp
-// @tsyne-app:args app,windowWidth,windowHeight
+// @tsyne-app:args app,window,windowWidth,windowHeight
 
 /**
  * Solitaire Card Game for Tsyne
@@ -19,10 +19,10 @@
 
 import { app, resolveTransport  } from 'tsyne';
 import type { App } from 'tsyne';
-import type { Window } from 'tsyne';
+import type { Window, ITsyneWindow } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Resvg } from '@resvg/resvg-js';
+import { getSvgRasterizer } from 'tsyne';
 import { detectDropZone } from './drop-zone';
 
 // ============================================================================
@@ -67,7 +67,7 @@ let cardFacesCache: Map<string, string> | null = null;
  * @param height Target height (optional, maintains aspect ratio)
  * @returns Base64-encoded PNG data with data URI prefix
  */
-function renderSVGToBase64(svgPath: string, width?: number, height?: number): string {
+async function renderSVGToBase64(svgPath: string, width?: number, height?: number): Promise<string> {
   // Read SVG file
   const svgBuffer = fs.readFileSync(svgPath);
 
@@ -79,6 +79,7 @@ function renderSVGToBase64(svgPath: string, width?: number, height?: number): st
     },
   };
 
+  const Resvg = await getSvgRasterizer();
   const resvg = new Resvg(svgBuffer, opts);
   const pngData = resvg.render();
   const pngBuffer = pngData.asPng();
@@ -95,11 +96,11 @@ function renderSVGToBase64(svgPath: string, width?: number, height?: number): st
  * @param cardHeight Height to render cards at (default: 145)
  * @returns Map of filename to base64 PNG data
  */
-function preRenderAllCards(
+async function preRenderAllCards(
   facesDir: string,
   cardWidth: number = 200,
   cardHeight: number = 290
-): Map<string, string> {
+): Promise<Map<string, string>> {
   // Return cached cards if already rendered
   if (cardFacesCache) {
     return cardFacesCache;
@@ -112,7 +113,7 @@ function preRenderAllCards(
 
   for (const file of files) {
     const svgPath = path.join(facesDir, file);
-    const base64 = renderSVGToBase64(svgPath, cardWidth, cardHeight);
+    const base64 = await renderSVGToBase64(svgPath, cardWidth, cardHeight);
     renderedCards.set(file, base64);
   }
 
@@ -121,6 +122,9 @@ function preRenderAllCards(
 
   return renderedCards;
 }
+
+// Cached rasterizer class (initialized during SvgCardImageProvider.create())
+let _cachedRasterizer: any = null;
 
 /**
  * Create a composite image of multiple cards overlapping vertically
@@ -143,6 +147,10 @@ function createOverlappedCardsImage(
   // For a single card, just return it as-is
   if (cardImages.length === 1) {
     return cardImages[0];
+  }
+
+  if (!_cachedRasterizer) {
+    throw new Error('SVG rasterizer not initialized - call SvgCardImageProvider.create() first');
   }
 
   // Calculate total height: first card full height + remaining cards at offset
@@ -168,7 +176,7 @@ function createOverlappedCardsImage(
   const svgBuffer = Buffer.from(svgString, 'utf-8');
 
   // Render the composite SVG to PNG
-  const resvg = new Resvg(svgBuffer, {
+  const resvg = new _cachedRasterizer(svgBuffer, {
     fitTo: {
       mode: 'width',
       value: cardWidth,
@@ -189,12 +197,25 @@ function createOverlappedCardsImage(
 /**
  * Production card image provider that renders SVGs to PNG.
  * Expensive but produces real card images.
+ * Use SvgCardImageProvider.create() to instantiate (async initialization required).
  */
 export class SvgCardImageProvider implements CardImageProvider {
-  private renderedCards: Map<string, string>;
+  private renderedCards: Map<string, string> = new Map();
 
-  constructor(facesDir: string, cardWidth: number = 120, cardHeight: number = 174) {
-    this.renderedCards = preRenderAllCards(facesDir, cardWidth, cardHeight);
+  private constructor() {}
+
+  /**
+   * Create a new SvgCardImageProvider (async factory)
+   */
+  static async create(facesDir: string, cardWidth: number = 120, cardHeight: number = 174): Promise<SvgCardImageProvider> {
+    // Initialize the rasterizer if not already done
+    if (!_cachedRasterizer) {
+      _cachedRasterizer = await getSvgRasterizer();
+    }
+
+    const provider = new SvgCardImageProvider();
+    provider.renderedCards = await preRenderAllCards(facesDir, cardWidth, cardHeight);
+    return provider;
   }
 
   getCardImage(filename: string): string {
@@ -786,7 +807,7 @@ class SolitaireUI {
   private game: Game;
   private statusLabel: any = null;
   private currentStatus: string = 'New game started'; // Current status message preserved across rebuilds
-  private cardImageProvider: CardImageProvider;
+  private cardImageProvider!: CardImageProvider;
   private selectedCard: { type: 'draw' | 'stack' | 'build', index: number, cardIndex?: number } | null = null;
   private draggedCard: { type: 'draw' | 'stack' | 'build', index: number } | null = null;
   private window: Window | null = null;
@@ -804,33 +825,44 @@ class SolitaireUI {
   constructor(private a: App, cardImageProvider?: CardImageProvider) {
     this.game = new Game();
 
+    if (cardImageProvider) {
+      // Use injected provider (e.g., StubCardImageProvider for tests)
+      this.cardImageProvider = cardImageProvider;
+    }
+    // Otherwise, init() must be called to create the SvgCardImageProvider
+  }
+
+  /**
+   * Initialize async resources (SVG rasterizer, card images)
+   * Must be called before building UI if no cardImageProvider was injected
+   */
+  async init(): Promise<void> {
+    if (this.cardImageProvider) {
+      return; // Already have a provider (injected in constructor)
+    }
+
     // Calculate responsive card size based on layout scale
     // On mobile (scale 0.5): use smaller cards (80x116)
     // On desktop (scale 1.0): use full cards (120x174)
     const layoutScale = (this.a.getContext() as any).getLayoutScale?.() || 1.0;
     const isMobile = layoutScale < 1.0;
 
-    if (cardImageProvider) {
-      // Use injected provider (e.g., StubCardImageProvider for tests)
-      this.cardImageProvider = cardImageProvider;
-    } else {
-      // Default: use SVG renderer (production)
-      const possiblePaths = [
-        path.join(process.cwd(), 'faces'),
-        path.join(process.cwd(), 'examples/solitaire/faces'),
-        path.join(process.cwd(), '../examples/solitaire/faces'),
-        path.join(__dirname, 'faces')
-      ];
-      const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
+    // Default: use SVG renderer (production)
+    const possiblePaths = [
+      path.join(process.cwd(), 'faces'),
+      path.join(process.cwd(), 'examples/solitaire/faces'),
+      path.join(process.cwd(), '../examples/solitaire/faces'),
+      path.join(__dirname, 'faces')
+    ];
+    const facesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[3];
 
-      // Use smaller cards on mobile (2/3 of desktop size: 80x116)
-      if (isMobile) {
-        this.cardWidth = 80;
-        this.cardHeight = 116;
-      }
-
-      this.cardImageProvider = new SvgCardImageProvider(facesDir, this.cardWidth, this.cardHeight);
+    // Use smaller cards on mobile (2/3 of desktop size: 80x116)
+    if (isMobile) {
+      this.cardWidth = 80;
+      this.cardHeight = 116;
     }
+
+    this.cardImageProvider = await SvgCardImageProvider.create(facesDir, this.cardWidth, this.cardHeight);
   }
 
   /**
@@ -1294,22 +1326,29 @@ class SolitaireUI {
  * @param windowHeight - Optional window height from PhoneTop
  * @param cardImageProvider Optional card image provider (inject StubCardImageProvider for fast tests)
  */
-export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): SolitaireUI {
+export async function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: number, cardImageProvider?: CardImageProvider): Promise<SolitaireUI> {
   const ui = new SolitaireUI(a, cardImageProvider);
+  await ui.init();  // Initialize async resources (SVG rasterizer)
+  const isEmbedded = windowWidth !== undefined && windowHeight !== undefined;
 
-  // Always create a window - PhoneTop intercepts this to create a StackPaneAdapter
-  // Determine window size - use phone-sized window when running on mobile
-  const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
-  const isMobile = layoutScale < 1.0;
-  const width = isMobile ? 1040 : 1000;
-  const height = isMobile ? 750 : 700;
+  if (isEmbedded) {
+    // PhoneTop/embedded mode: build content directly without a window
+    ui.buildUI(null);
+  } else {
+    // Standalone/desktop mode: create a window
+    // Determine window size - use phone-sized window when running on mobile
+    const layoutScale = (a.getContext() as any).getLayoutScale?.() || 1.0;
+    const isMobile = layoutScale < 1.0;
+    const width = isMobile ? 1040 : 1000;
+    const height = isMobile ? 750 : 700;
 
-  a.window({ title: 'Solitaire', width, height }, (win: Window) => {
-    win.setContent(() => {
-      ui.buildUI(win);
+    a.window({ title: 'Solitaire', width, height }, (win: Window) => {
+      win.setContent(() => {
+        ui.buildUI(win);
+      });
+      win.show();
     });
-    win.show();
-  });
+  }
 
   return ui;
 }
@@ -1318,7 +1357,7 @@ export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: 
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Solitaire' }, (a: App) => {
-    createSolitaireApp(a);
+  app(resolveTransport(), { title: 'Solitaire' }, async (a: App) => {
+    await createSolitaireApp(a);
   });
 }

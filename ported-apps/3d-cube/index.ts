@@ -14,11 +14,11 @@
  * SVG
  * @tsyne-app:category games
  * @tsyne-app:builder create3DCubeApp
- * @tsyne-app:args app,windowWidth,windowHeight
+ * @tsyne-app:args app,window
  */
 
 import { app, resolveTransport } from 'tsyne';
-import type { App, Window, Label } from 'tsyne';
+import type { App, Window, Label, ITsyneWindow } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling, CosyneContext } from 'cosyne';
 import {
   RubiksCube,
@@ -185,12 +185,11 @@ export class CubeRenderer {
 // App Factory
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: number): { cube: RubiksCube } {
+export function create3DCubeApp(a: App, win: ITsyneWindow): { cube: RubiksCube } {
   const cube = new RubiksCube();
   const gestures = new GestureController(cube);
 
-  const width = windowWidth ?? 400;
-  const height = windowHeight ?? 550;
+  const { width, height } = win.getSize();
   const canvasSize = Math.min(width - 20, height - 150);
 
   const renderer = new CubeRenderer(cube, gestures, canvasSize);
@@ -207,32 +206,30 @@ export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: num
 
   cube.subscribe(updateLabels);
 
-  a.window({ title: '3D Cube', width, height }, (win: Window) => {
-    win.setContent(() => {
-      a.vbox(() => {
-        a.hbox(() => {
-          a.button('Reset').onClick(() => cube.reset()).withId('resetBtn');
-          a.button('Shuffle').onClick(() => cube.shuffle()).withId('shuffleBtn');
-          a.button('Solve').onClick(() => cube.solve()).withId('solveBtn');
-        });
+  win.setContent(() => {
+    a.vbox(() => {
+      a.hbox(() => {
+        a.button('Reset').onClick(() => cube.reset()).withId('resetBtn');
+        a.button('Shuffle').onClick(() => cube.shuffle()).withId('shuffleBtn');
+        a.button('Solve').onClick(() => cube.solve()).withId('solveBtn');
+      });
 
-        a.hbox(() => {
-          a.label('Moves: ');
-          moveLabel = a.label('0').withId('moveLabel');
-          a.label(' | ');
-          statusLabel = a.label('Solved!').withId('statusLabel');
-        });
+      a.hbox(() => {
+        a.label('Moves: ');
+        moveLabel = a.label('0').withId('moveLabel');
+        a.label(' | ');
+        statusLabel = a.label('Solved!').withId('statusLabel');
+      });
 
-        a.separator();
-        a.label('Swipe on cells to rotate rows/columns').withId('instructions');
+      a.separator();
+      a.label('Swipe on cells to rotate rows/columns').withId('instructions');
 
-        a.center(() => {
-          renderer.build(a);
-        });
+      a.center(() => {
+        renderer.build(a);
       });
     });
-    win.show();
   });
+  win.show();
 
   return { cube };
 }
@@ -243,7 +240,8 @@ export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: num
 
 if (require.main === module) {
   app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
-    create3DCubeApp(a);
-    await a.run();
+    a.window({ title: '3D Cube', width: 400, height: 550 }, (win: Window) => {
+      create3DCubeApp(a, win);
+    });
   });
 }

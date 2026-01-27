@@ -14,17 +14,17 @@
  * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="#333333"><path d="M19 22H5v-2h14v2zm-3-4H8l-1-4 2-1v-2c0-1 1-3 2-4l-1-2 1-1 1 1c1-1 2-1 3 0l1-1 1 1-1 2c1 1 2 3 2 4v2l2 1-1 4z"/></svg>
  * @tsyne-app:category games
  * @tsyne-app:builder createChessApp
- * @tsyne-app:args app,resources,windowWidth,windowHeight
+ * @tsyne-app:args app,resources,window,windowWidth,windowHeight
  * @tsyne-app:count many
  */
 
 import { app, resolveTransport  } from 'tsyne';
 import type { App } from 'tsyne';
-import type { Window } from 'tsyne';
+import type { Window, ITsyneWindow } from 'tsyne';
 import type { IResourceManager } from 'tsyne';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Resvg } from '@resvg/resvg-js';
+import { getSvgRasterizer } from 'tsyne';
 import { Chess } from 'chess.js';
 import type { Square, PieceSymbol, Color } from 'chess.js';
 
@@ -54,7 +54,7 @@ const scaledPiecesCache: Map<string, string> = new Map();
  * @param height Target height (optional, maintains aspect ratio)
  * @returns Base64-encoded PNG data with data URI prefix
  */
-function renderSVGToBase64(svgPath: string, width?: number, height?: number): string {
+async function renderSVGToBase64(svgPath: string, width?: number, height?: number): Promise<string> {
   // Check cache first
   const cacheKey = `${svgPath}:${width}:${height}`;
   if (imageCache.has(cacheKey)) {
@@ -72,6 +72,7 @@ function renderSVGToBase64(svgPath: string, width?: number, height?: number): st
     },
   };
 
+  const Resvg = await getSvgRasterizer();
   const resvg = new Resvg(svgBuffer, opts);
   const pngData = resvg.render();
   const pngBuffer = pngData.asPng();
@@ -92,10 +93,10 @@ function renderSVGToBase64(svgPath: string, width?: number, height?: number): st
  * @param pieceSize Size to render pieces at (default: 80)
  * @returns Map of filename to base64 PNG data
  */
-function preRenderAllPieces(
+async function preRenderAllPieces(
   piecesDir: string,
   pieceSize: number = 80
-): Map<string, string> {
+): Promise<Map<string, string>> {
   // Return cached pieces if already rendered
   if (pieceFacesCache) {
     return pieceFacesCache;
@@ -108,7 +109,7 @@ function preRenderAllPieces(
 
   for (const file of files) {
     const svgPath = path.join(piecesDir, file);
-    const base64 = renderSVGToBase64(svgPath, pieceSize, pieceSize);
+    const base64 = await renderSVGToBase64(svgPath, pieceSize, pieceSize);
     renderedPieces.set(file, base64);
   }
 
@@ -129,7 +130,7 @@ class ChessUI {
   private game: Chess;
   private statusLabel: any = null;
   private currentStatus: string = 'White to move';
-  private renderedPieces: Map<string, string>;
+  private renderedPieces: Map<string, string> = new Map();
   private selectedSquare: Square | null = null;
   private draggedSquare: Square | null = null;
   private window: Window | null = null;
@@ -161,7 +162,13 @@ class ChessUI {
     this.resources = resources;
     this.aiDelayMs = aiDelayMs;
     this.game = new Chess();
+  }
 
+  /**
+   * Initialize async resources (SVG rasterizer, pre-rendered pieces)
+   * Must be called before building UI
+   */
+  async init(): Promise<void> {
     // Pre-render all piece SVGs to PNG
     const possiblePaths = [
       path.join(process.cwd(), 'pieces'),
@@ -173,7 +180,7 @@ class ChessUI {
 
     const piecesDir = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[4];
 
-    this.renderedPieces = preRenderAllPieces(piecesDir, 80);
+    this.renderedPieces = await preRenderAllPieces(piecesDir, 80);
   }
 
   /**
@@ -201,8 +208,8 @@ class ChessUI {
     }
 
     // Register empty light and dark squares (100x100px)
-    const lightSquare = this.createSquareImage(this.LIGHT_SQUARE_COLOR);
-    const darkSquare = this.createSquareImage(this.DARK_SQUARE_COLOR);
+    const lightSquare = await this.createSquareImage(this.LIGHT_SQUARE_COLOR);
+    const darkSquare = await this.createSquareImage(this.DARK_SQUARE_COLOR);
 
     await this.resources.registerResource('chess-square-light', lightSquare);
     await this.resources.registerResource('chess-square-dark', darkSquare);
@@ -217,7 +224,7 @@ class ChessUI {
 
     for (const { color, type } of pieceTypes) {
       // Render piece at current scale (not from 80px cache)
-      const pieceImage = this.renderPieceAtScale(color, type);
+      const pieceImage = await this.renderPieceAtScale(color, type);
       const resourceName = `chess-piece-${color}-${type}`;
       await this.resources.registerResource(resourceName, pieceImage);
     }
@@ -254,7 +261,7 @@ class ChessUI {
    * Pieces are rendered at 80% of squareSize with 10% margin on each side
    * Results are cached globally by size+filename for performance
    */
-  private renderPieceAtScale(color: Color, piece: PieceSymbol): string {
+  private async renderPieceAtScale(color: Color, piece: PieceSymbol): Promise<string> {
     const colorName = color === 'w' ? 'white' : 'black';
     const pieceNames: Record<PieceSymbol, string> = {
       'k': 'King',
@@ -293,6 +300,7 @@ class ChessUI {
     }
 
     const svgBuffer = fs.readFileSync(svgPath);
+    const Resvg = await getSvgRasterizer();
     const resvg = new Resvg(svgBuffer, {
       fitTo: { mode: 'width', value: pieceSize }
     });
@@ -557,7 +565,7 @@ class ChessUI {
   /**
    * Create a colored square image at the scaled size
    */
-  private createSquareImage(color: string, pieceImage?: string): string {
+  private async createSquareImage(color: string, pieceImage?: string): Promise<string> {
     const size = this.squareSize;
     const pieceSize = Math.round(size * 0.8);  // Piece is 80% of square
     const pieceOffset = Math.round(size * 0.1);  // 10% margin
@@ -574,6 +582,7 @@ class ChessUI {
 
     // Render to PNG
     const svgBuffer = Buffer.from(svg, 'utf-8');
+    const Resvg = await getSvgRasterizer();
     const resvg = new Resvg(svgBuffer, {
       fitTo: {
         mode: 'width',
@@ -609,7 +618,7 @@ class ChessUI {
     if (this.selectedSquare === square) {
       squareColor = this.SELECTED_COLOR;
       // Create highlighted square image
-      const squareImage = this.createSquareImage(squareColor);
+      const squareImage = await this.createSquareImage(squareColor);
       await squareBackground.updateImage(squareImage);
     } else {
       // Use resource for normal square
@@ -670,6 +679,7 @@ class ChessUI {
   }
 
   buildUI(win: Window): void {
+    console.log('[Chess.buildUI] START');
     this.window = win;
 
     // Clear old widget references before rebuild
@@ -678,8 +688,10 @@ class ChessUI {
     this.pieceForegrounds.clear();
 
     const board = this.game.board();
+    console.log('[Chess.buildUI] Creating vbox');
 
     this.a.vbox(() => {
+      console.log('[Chess.buildUI] Inside vbox callback');
         // Status
         this.statusLabel = this.a.label(this.currentStatus);
 
@@ -700,18 +712,10 @@ class ChessUI {
             let pieceForeground: any;
 
             imageWidget = this.a.max(() => {
-              // Bottom layer: Square background
-              const squareColor = this.selectedSquare === square ? this.SELECTED_COLOR : this.getSquareColor(file, rank);
-
-              if (this.selectedSquare === square) {
-                // Highlighted square - need inline image
-                const squareImage = this.createSquareImage(squareColor);
-                squareBackground = this.a.image(squareImage, 'original').withId(`bg-${square}`);
-              } else {
-                // Normal square - use resource
-                const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
-                squareBackground = this.a.image({ resource: resourceName, fillMode: 'original' }).withId(`bg-${square}`);
-              }
+              // Bottom layer: Square background (always use resource at build time)
+              // Selection highlighting is handled by updateSquare() for incremental updates
+              const resourceName = isLight ? 'chess-square-dark' : 'chess-square-light';
+              squareBackground = this.a.image({ resource: resourceName, fillMode: 'original' }).withId(`bg-${square}`);
 
               // Top layer: Piece (if present)
               if (squareData) {
@@ -912,34 +916,35 @@ class ChessUI {
  * Create the chess app
  * @param a - The App instance
  * @param resources - Resource manager for registering chess piece images (IoC)
+ * @param win - Optional window instance (injected by PhoneTop/Desktop, or null for standalone)
  * @param windowWidth - Optional window width from PhoneTop
  * @param windowHeight - Optional window height from PhoneTop
  * @param aiDelayMs - AI response delay in ms (default 500, use lower for tests)
  */
-export async function createChessApp(a: App, resources: IResourceManager, windowWidth?: number, windowHeight?: number, aiDelayMs?: number): Promise<ChessUI> {
+export async function createChessApp(a: App, resources: IResourceManager, win: ITsyneWindow, windowWidth?: number, windowHeight?: number, aiDelayMs?: number): Promise<ChessUI> {
   const ui = new ChessUI(a, resources, aiDelayMs);
 
-  // If window dimensions provided, calculate optimal scale factor
-  // Chess board is 8x8 squares, plus some padding for status/controls
-  if (windowWidth && windowHeight) {
-    const overhead = 100; // Space for status bar, controls
-    const availableSize = Math.min(windowWidth - 20, windowHeight - overhead);
-    const optimalSquareSize = Math.floor(availableSize / 8);
-    // Set scale factor based on optimal size vs BASE_SQUARE_SIZE (100)
-    ui['scaleFactor'] = optimalSquareSize / 100;
-    console.log(`[Chess] Window: ${windowWidth}x${windowHeight}, square size: ${optimalSquareSize}`);
-  }
+  // Initialize async resources (SVG rasterizer)
+  await ui.init();
+
+  // Calculate optimal scale factor from window size
+  const { width, height } = win.getSize();
+  const w = windowWidth ?? width;
+  const h = windowHeight ?? height;
+  const overhead = 100; // Space for status bar, controls
+  const availableSize = Math.min(w - 20, h - overhead);
+  const optimalSquareSize = Math.floor(availableSize / 8);
+  ui['scaleFactor'] = optimalSquareSize / 100;
+  console.log(`[Chess] Window: ${w}x${h}, square size: ${optimalSquareSize}`);
 
   // Register chess resources before building UI
   await ui['registerChessResources']();
 
-  // No explicit size - window will size to fit content
-  a.window({ title: 'Chess' }, (win: Window) => {
-    win.setContent(() => {
-      ui.buildUI(win);
-    });
-    win.show();
+  // Use the injected window
+  win.setContent(() => {
+    ui.buildUI(win as Window);
   });
+  win.show();
 
   return ui;
 }
@@ -949,8 +954,10 @@ export async function createChessApp(a: App, resources: IResourceManager, window
  */
 if (require.main === module) {
   app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
-    // Standalone: create a dedicated resource manager (IoC - don't use a.resources)
+    // Standalone: create window and resource manager, then pass to builder
     const resources = a.createResourceManager();
-    await createChessApp(a, resources);
+    a.window({ title: 'Chess' }, async (win: Window) => {
+      await createChessApp(a, resources, win);
+    });
   });
 }

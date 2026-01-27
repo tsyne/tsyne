@@ -6,7 +6,7 @@ import { tryResolve } from './app-resolver';
 
 export const ALL_BSD_OR_MIT_APPS = [
   // ported-apps with MIT/BSD/Apache licenses
-  tryResolve('../ported-apps/3d-cube/3d-cube'),           // MIT (from Qt3DCube)
+  tryResolve('../ported-apps/3d-cube/index'),             // MIT (from Qt3DCube)
   tryResolve('../ported-apps/aranet'),                    // MIT (Aranet4MenuBar Contributors)
   tryResolve('../ported-apps/boing/boing'),               // MIT (ChrysaLisp port - MIT relicensed)
   tryResolve('../ported-apps/calcudoku/calcudoku'),       // MIT (Paul Hammant)

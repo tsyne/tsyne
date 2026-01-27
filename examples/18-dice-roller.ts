@@ -2,14 +2,15 @@
 // @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>
 // @tsyne-app:category games
 // @tsyne-app:builder buildDiceRoller
+// @tsyne-app:args app,window
 
 // Dice Roller - Roll multiple dice with different sides
 // Demonstrates select widgets, dynamic results, and visual feedback
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, App, ITsyneWindow } from 'tsyne';
 
-export function buildDiceRoller(a: App) {
-  a.window({ title: 'Dice Roller', width: 400, height: 500 }, (win: Window) => {
+export function buildDiceRoller(a: App, win?: ITsyneWindow | null) {
+  const buildUI = (w: ITsyneWindow) => {
     let numDice = 2;
     let numSides = 6;
     let results: number[] = [];
@@ -55,9 +56,9 @@ export function buildDiceRoller(a: App) {
     }
 
     function rebuildUI() {
-      win.setContent(() => {
+      w.setContent(() => {
         a.vbox(() => {
-          a.label('🎲 Dice Roller 🎲');
+          a.label('Dice Roller');
           a.separator();
 
           // Number of dice selector
@@ -87,7 +88,7 @@ export function buildDiceRoller(a: App) {
           a.separator();
 
           // Roll button
-          a.button('🎲 ROLL DICE 🎲').onClick(rollDice);
+          a.button('ROLL DICE').onClick(rollDice);
 
           a.separator();
 
@@ -119,11 +120,23 @@ export function buildDiceRoller(a: App) {
 
     // Initial UI
     rebuildUI();
-    win.show();
-  });
+    w.show();
+  };
+
+  if (win) {
+    // PhoneTop/embedded mode - window injected
+    buildUI(win);
+  } else {
+    // Standalone mode - create own window
+    a.window({ title: 'Dice Roller', width: 400, height: 500 }, (w) => {
+      buildUI(w);
+    });
+  }
 }
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Dice Roller' }, buildDiceRoller);
+  app(resolveTransport(), { title: 'Dice Roller' }, (a: App) => {
+    buildDiceRoller(a);
+  });
 }

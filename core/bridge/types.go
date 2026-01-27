@@ -1838,6 +1838,17 @@ func (dm *TsyneDesktopMDI) AddIcon(icon *TsyneDraggableIcon) {
 	})
 }
 
+// RemoveIconByID removes an icon from the desktop by its ID
+func (dm *TsyneDesktopMDI) RemoveIconByID(iconID string) {
+	for i, icon := range dm.icons {
+		if icon.ID == iconID {
+			dm.icons = append(dm.icons[:i], dm.icons[i+1:]...)
+			dm.Refresh()
+			return
+		}
+	}
+}
+
 // AddWindow adds an inner window to the MDI
 func (dm *TsyneDesktopMDI) AddWindow(win *container.InnerWindow) {
 	dm.setupWindowCallbacks(win)

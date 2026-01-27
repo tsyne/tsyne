@@ -28,8 +28,8 @@ describe('Solitaire UI Integration Tests', () => {
   describe('Draw Card Selection and Movement', () => {
     test('should select draw card after pressing Draw button', async () => {
       // Setup: Fixed game state with known cards in hand
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup hand with 3 cards
         ui.getGame().setupFixedState({
           handCards: [
@@ -67,8 +67,8 @@ describe('Solitaire UI Integration Tests', () => {
        * LIMITATION: Current test framework cannot directly click images without IDs.
        * This test uses logic verification instead of UI clicking.
        */
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: King of Spades in draw3 position (already drawn)
         ui.getGame().setupFixedState({
           draw3: new Card(13, Suit.Spades, true), // King can go on empty stack
@@ -98,8 +98,8 @@ describe('Solitaire UI Integration Tests', () => {
        * This test verifies placing a card from hand onto a tableau stack
        * that already has cards (must be alternating colors and descending values).
        */
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: Red 6 in draw3, Black 7 on tableau stack 0
         ui.getGame().setupFixedState({
           draw3: new Card(6, Suit.Hearts, true), // Red 6
@@ -131,8 +131,8 @@ describe('Solitaire UI Integration Tests', () => {
        * This test verifies that invalid moves are rejected.
        * Red 6 cannot go on Red 7 (same color).
        */
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: Red 6 in draw3, Red 7 on tableau stack 0
         ui.getGame().setupFixedState({
           draw3: new Card(6, Suit.Hearts, true), // Red 6
@@ -160,8 +160,8 @@ describe('Solitaire UI Integration Tests', () => {
     }, 10000);
 
     test('should move Ace from draw pile to foundation', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: Ace of Hearts in draw position
         ui.getGame().setupFixedState({
           draw3: new Card(1, Suit.Hearts, true)
@@ -179,8 +179,8 @@ describe('Solitaire UI Integration Tests', () => {
     }, 10000);
 
     test('should handle multiple draw cycles', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup hand with 6 cards
         ui.getGame().setupFixedState({
           handCards: [
@@ -213,8 +213,8 @@ describe('Solitaire UI Integration Tests', () => {
 
   describe('Tableau Selection and Movement', () => {
     test('should display tableau stacks correctly', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: King on empty stack
         ui.getGame().setupFixedState({
           stacks: [
@@ -237,8 +237,8 @@ describe('Solitaire UI Integration Tests', () => {
     }, 10000);
 
     test('should handle overlapped card display', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: Stack with multiple cards
         ui.getGame().setupFixedState({
           stacks: [
@@ -271,8 +271,8 @@ describe('Solitaire UI Integration Tests', () => {
 
   describe('Foundation Display', () => {
     test('should show empty foundations at start', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        await createSolitaireApp(app);
       });
 
       ctx = tsyneTest.getContext();
@@ -283,8 +283,8 @@ describe('Solitaire UI Integration Tests', () => {
     }, 10000);
 
     test('should display foundation with cards', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         // Setup: Foundation with Ace and 2
         ui.getGame().setupFixedState({
           builds: [
@@ -309,8 +309,8 @@ describe('Solitaire UI Integration Tests', () => {
 
   describe('Game Control Buttons', () => {
     test('should reset game on New Game button', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        await createSolitaireApp(app);
       });
 
       ctx = tsyneTest.getContext();
@@ -321,8 +321,8 @@ await ctx.expect(ctx.getByText('New game started')).toBeVisible();
     }, 10000);
 
     test('should shuffle on Shuffle button', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        await createSolitaireApp(app);
       });
 
       ctx = tsyneTest.getContext();
@@ -335,8 +335,8 @@ await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
 
   describe('Status Messages', () => {
     test('should show hand count', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         ui.getGame().setupFixedState({
           handCards: [
             new Card(5, Suit.Hearts),
@@ -355,8 +355,8 @@ await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
     }, 10000);
 
     test('should update status on draw', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
         ui.getGame().setupFixedState({
           handCards: [new Card(5, Suit.Hearts)]
         });
@@ -372,8 +372,8 @@ await ctx.expect(ctx.getByText('Deck shuffled')).toBeVisible();
 
   describe('Win Condition Display', () => {
     test('should show congratulations when game is won', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
 
         // Setup: All foundations complete
         const buildClubs: Card[] = [];
@@ -406,8 +406,8 @@ await ctx.expect(ctx.getByText('Congratulations! You won!')).toBeVisible();
 
   describe('Complex Game Scenarios', () => {
     test('should handle a realistic mid-game state', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
 
         // Setup: Realistic mid-game
         ui.getGame().setupFixedState({
@@ -447,8 +447,8 @@ await ctx.expect(ctx.getByText('Congratulations! You won!')).toBeVisible();
     }, 15000);
 
     test('should handle empty game state', async () => {
-      const testApp = await tsyneTest.createApp((app: App) => {
-        const ui = createSolitaireApp(app);
+      const testApp = await tsyneTest.createApp(async (app: App) => {
+        const ui = await createSolitaireApp(app);
 
         // Setup: Completely empty game
         ui.getGame().setupFixedState({
