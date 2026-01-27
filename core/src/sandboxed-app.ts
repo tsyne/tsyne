@@ -25,6 +25,7 @@ import {
   Accordion, Card, DocTabs, Form, InnerWindow, MultipleWindows,
   Navigation, Popup, Tabs, ThemeOverride,
   CanvasArc, CanvasCircle, CanvasLine, CanvasLinearGradient,
+  CanvasPath, CanvasPathOptions,
   CanvasPolygon, CanvasRadialGradient, CanvasRaster, CanvasRectangle, CanvasText,
   TappableCanvasRaster, TappableCanvasRasterOptions,
   DesktopCanvas, DesktopMDI,
@@ -120,6 +121,7 @@ export interface IApp {
   canvasLinearGradient(options?: { startColor?: string; endColor?: string; angle?: number; width?: number; height?: number }): CanvasLinearGradient;
   canvasArc(options?: { x?: number; y?: number; x2?: number; y2?: number; startAngle?: number; endAngle?: number; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasArc;
   canvasPolygon(options?: { points?: Array<{ x: number; y: number }>; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasPolygon;
+  canvasPath(options: CanvasPathOptions): CanvasPath;
   canvasRadialGradient(options?: { startColor?: string; endColor?: string; centerOffsetX?: number; centerOffsetY?: number; width?: number; height?: number }): CanvasRadialGradient;
 
   // Simple canvas aliases
@@ -475,6 +477,10 @@ export class SandboxedApp implements IApp {
 
   canvasPolygon(options?: { points?: Array<{ x: number; y: number }>; fillColor?: string; strokeColor?: string; strokeWidth?: number }): CanvasPolygon {
     return new CanvasPolygon(this.ctx, options);
+  }
+
+  canvasPath(options: CanvasPathOptions): CanvasPath {
+    return new CanvasPath(this.ctx, options);
   }
 
   canvasRadialGradient(options?: { startColor?: string; endColor?: string; centerOffsetX?: number; centerOffsetY?: number; width?: number; height?: number }): CanvasRadialGradient {

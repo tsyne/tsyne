@@ -209,6 +209,7 @@ type Bridge struct {
 	sphereData           map[string]*SphereData           // sphere ID -> sphere data (generalized)
 	sphereCustomBuffers  map[string]*image.RGBA           // sphere ID -> custom pattern buffer (Phase 9)
 	ellipseData          map[string]*EllipseData          // ellipse ID -> ellipse data
+	pathData             map[string]*PathRaster           // path widget ID -> path raster
 	customDialogs   map[string]interface{}           // dialog ID -> custom dialog instance
 	rasterSprites   map[string]*RasterSpriteSystem   // raster ID -> sprite system
 	msgpackServer   *MsgpackServer                   // MessagePack UDS server (when in msgpack-uds mode)

@@ -91,6 +91,8 @@ import {
   CanvasGaugeOptions,
   CanvasLine,
   CanvasLinearGradient,
+  CanvasPath,
+  CanvasPathOptions,
   CanvasPolygon,
   CanvasRadialGradient,
   CanvasSphericalPatch,
@@ -982,6 +984,31 @@ export class App {
     strokeWidth?: number;
   }): CanvasPolygon {
     return new CanvasPolygon(this.ctx, options);
+  }
+
+  /**
+   * Create an SVG-style path with true Bezier curve support
+   *
+   * Supports M (moveTo), L (lineTo), Q (quadratic Bezier), C (cubic Bezier), Z (close path)
+   * Uses the gg library on the Go side for smooth antialiased rendering.
+   *
+   * @example
+   * // Wave with smooth quadratic Bezier curves
+   * const path = a.canvasPath({
+   *   width: 400,
+   *   height: 200,
+   *   path: 'M 0,100 Q 50,50 100,100 Q 150,150 200,100',
+   *   strokeColor: '#4a90d9',
+   *   strokeWidth: 3,
+   *   lineCap: 'round',
+   *   lineJoin: 'round',
+   * });
+   *
+   * // Animate by updating the path string
+   * path.update({ path: newPathString });
+   */
+  canvasPath(options: CanvasPathOptions): CanvasPath {
+    return new CanvasPath(this.ctx, options);
   }
 
   /**

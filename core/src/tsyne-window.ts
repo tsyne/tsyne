@@ -13,9 +13,42 @@ import { Window, WindowOptions } from './window';
 import { InnerWindow, MultipleWindows, DesktopMDI } from './widgets';
 
 /**
+ * Minimal interface for render targets - used by apps that support both
+ * windowed and inline/embedded rendering.
+ */
+export interface IRenderTarget {
+  setContent(builder: () => void | Promise<void>): void | Promise<void>;
+  onClose?(cleanup: () => void): void;
+}
+
+/**
+ * Inline render target - for embedded/inline rendering without a window.
+ * Simply calls the content builder directly.
+ */
+export class InlineRenderTarget implements IRenderTarget {
+  setContent(builder: () => void | Promise<void>): void {
+    // Just call the builder directly - renders into current container context
+    builder();
+  }
+
+  onClose(_cleanup: () => void): void {
+    // No-op: inline content doesn't have a close event
+  }
+}
+
+/**
+ * Create a render target from an optional ITsyneWindow.
+ * If win is provided, returns it (ITsyneWindow extends IRenderTarget).
+ * If win is undefined, returns an InlineRenderTarget.
+ */
+export function asRenderTarget(win?: ITsyneWindow): IRenderTarget {
+  return win ?? new InlineRenderTarget();
+}
+
+/**
  * Common interface for both Window and InnerWindow
  */
-export interface ITsyneWindow {
+export interface ITsyneWindow extends IRenderTarget {
   readonly id: string;
 
   // Content management
@@ -60,6 +93,9 @@ export interface ITsyneWindow {
   // Clipboard - access host OS clipboard
   getClipboard(): Promise<string>;
   setClipboard(content: string): Promise<void>;
+
+  // Close callback - for cleanup when window closes
+  onClose(callback: () => void): void;
 }
 
 /**
@@ -80,6 +116,7 @@ export class InnerWindowAdapter implements ITsyneWindow {
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
   private onWindowClosed?: (window: ITsyneWindow) => void;
   private hasClosed = false;
+  private closeCallbacks: (() => void)[] = [];
   private menuDefinition?: Array<{
     label: string;
     items: Array<{ label: string; onClick?: () => void; isSeparator?: boolean }>;
@@ -223,6 +260,10 @@ export class InnerWindowAdapter implements ITsyneWindow {
     this.closeInterceptCallback = callback;
   }
 
+  onClose(callback: () => void): void {
+    this.closeCallbacks.push(callback);
+  }
+
   onResize(callback: (width: number, height: number) => void): this {
     this.resizeCallback = callback;
     // If innerWindow already exists, wire up the callback now
@@ -237,6 +278,10 @@ export class InnerWindowAdapter implements ITsyneWindow {
       return;
     }
     this.hasClosed = true;
+    // Call close callbacks before actually closing
+    for (const cb of this.closeCallbacks) {
+      cb();
+    }
     if (this.innerWindow) {
       await this.innerWindow.close();
     }
@@ -312,8 +357,9 @@ export class StackPaneAdapter implements ITsyneWindow {
   private _title: string;
   private _contentBuilder: (() => void) | null = null;
   private closeInterceptCallback?: () => Promise<boolean> | boolean;
-  private onShow?: (adapter: StackPaneAdapter) => void;
-  private onClose?: (adapter: StackPaneAdapter) => void;
+  private closeCallbacks: (() => void)[] = [];
+  private onShowCallback?: (adapter: StackPaneAdapter) => void;
+  private onCloseCallback?: (adapter: StackPaneAdapter) => void;
   private _menuDefinition: Array<{
     label: string;
     items: Array<{ label: string; onClick?: () => void; onSelected?: () => void; isSeparator?: boolean }>;
@@ -333,8 +379,8 @@ export class StackPaneAdapter implements ITsyneWindow {
     this.parentWindow = parentWindow;
     this._id = ctx.generateId('stackpane');
     this._title = options.title;
-    this.onShow = callbacks.onShow;
-    this.onClose = callbacks.onClose;
+    this.onShowCallback = callbacks.onShow;
+    this.onCloseCallback = callbacks.onClose;
 
     // If builder is provided, call it - it will typically call setContent()
     if (builder) {
@@ -343,8 +389,8 @@ export class StackPaneAdapter implements ITsyneWindow {
 
     // In phone mode, automatically notify that the adapter was created
     // (most apps don't explicitly call show())
-    if (this.onShow) {
-      this.onShow(this);
+    if (this.onShowCallback) {
+      this.onShowCallback(this);
     }
   }
 
@@ -381,8 +427,8 @@ export class StackPaneAdapter implements ITsyneWindow {
   }
 
   async show(): Promise<void> {
-    if (this.onShow) {
-      this.onShow(this);
+    if (this.onShowCallback) {
+      this.onShowCallback(this);
     }
   }
 
@@ -397,15 +443,19 @@ export class StackPaneAdapter implements ITsyneWindow {
         return;
       }
     }
-    if (this.onClose) {
-      this.onClose(this);
+    // Call close callbacks registered via onClose()
+    for (const cb of this.closeCallbacks) {
+      cb();
+    }
+    if (this.onCloseCallback) {
+      this.onCloseCallback(this);
     }
   }
 
   async bringToFront(): Promise<void> {
     // In phone mode, bringing to front means showing this app
-    if (this.onShow) {
-      this.onShow(this);
+    if (this.onShowCallback) {
+      this.onShowCallback(this);
     }
   }
 
@@ -423,6 +473,10 @@ export class StackPaneAdapter implements ITsyneWindow {
 
   setCloseIntercept(callback: () => Promise<boolean> | boolean): void {
     this.closeInterceptCallback = callback;
+  }
+
+  onClose(callback: () => void): void {
+    this.closeCallbacks.push(callback);
   }
 
   onResize(_callback: (width: number, height: number) => void): this {

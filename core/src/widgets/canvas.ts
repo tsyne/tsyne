@@ -1307,6 +1307,161 @@ export class CanvasPolygon {
 }
 
 /**
+ * Canvas Path - draws SVG-style paths with true Bezier curve support
+ *
+ * Supports M (moveTo), L (lineTo), Q (quadratic Bezier), C (cubic Bezier), Z (close path)
+ * Uses the gg library on the Go side for smooth antialiased rendering.
+ *
+ * @example
+ * // Wave pattern with quadratic Bezier curves
+ * const path = a.canvasPath({
+ *   width: 400,
+ *   height: 200,
+ *   path: 'M 0,100 Q 50,50 100,100 Q 150,150 200,100 Q 250,50 300,100 Q 350,150 400,100',
+ *   strokeColor: '#4a90d9',
+ *   strokeWidth: 3,
+ *   lineCap: 'round',
+ *   lineJoin: 'round',
+ * });
+ *
+ * // Animate the path
+ * setInterval(() => {
+ *   const newPath = generateWavePath(phase);
+ *   path.update({ path: newPath });
+ *   phase += 0.05;
+ * }, 16);
+ */
+export interface CanvasPathOptions {
+  width: number;
+  height: number;
+  path?: string;           // SVG-style path string
+  strokeColor?: string;    // Stroke color (hex)
+  strokeWidth?: number;    // Stroke width in pixels
+  fillColor?: string;      // Fill color (hex, or undefined for no fill)
+  lineCap?: 'butt' | 'round' | 'square';   // Line cap style
+  lineJoin?: 'round' | 'bevel';            // Line join style (no miter in gg library)
+}
+
+export class CanvasPath {
+  private ctx: Context;
+  public id: string;
+  private bindings: ReactiveBinding[] = [];
+  private _path: string = '';
+
+  constructor(ctx: Context, options: CanvasPathOptions) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvaspath');
+
+    const payload: any = {
+      id: this.id,
+      width: options.width,
+      height: options.height,
+    };
+
+    if (options.path) {
+      payload.path = options.path;
+      this._path = options.path;
+    }
+    if (options.strokeColor) payload.strokeColor = options.strokeColor;
+    if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
+    if (options.fillColor) payload.fillColor = options.fillColor;
+    if (options.lineCap) payload.lineCap = options.lineCap;
+    if (options.lineJoin) payload.lineJoin = options.lineJoin;
+
+    ctx.bridge.send('createCanvasPath', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  /**
+   * Update path properties
+   */
+  async update(options: {
+    path?: string;
+    strokeColor?: string;
+    strokeWidth?: number;
+    fillColor?: string;
+    lineCap?: 'butt' | 'round' | 'square';
+    lineJoin?: 'round' | 'bevel';
+  }): Promise<void> {
+    if (options.path !== undefined) {
+      this._path = options.path;
+    }
+    await this.ctx.bridge.send('updateCanvasPath', {
+      widgetId: this.id,
+      ...options
+    });
+  }
+
+  /**
+   * Get the current path string
+   */
+  getPath(): string {
+    return this._path;
+  }
+
+  /**
+   * Set the path string
+   */
+  async setPath(path: string): Promise<void> {
+    await this.update({ path });
+  }
+
+  /**
+   * Bind path to a reactive function
+   * Path updates automatically when refreshAllBindings() is called
+   */
+  bindPath(pathFn: () => string): this {
+    const binding = async () => {
+      await this.update({ path: pathFn() });
+    };
+
+    this.bindings.push(binding);
+    registerGlobalBinding(binding);
+    binding(); // Initial evaluation
+
+    return this;
+  }
+
+  /**
+   * Bind stroke color to a reactive function
+   */
+  bindStrokeColor(colorFn: () => string): this {
+    const binding = async () => {
+      await this.update({ strokeColor: colorFn() });
+    };
+
+    this.bindings.push(binding);
+    registerGlobalBinding(binding);
+    binding();
+
+    return this;
+  }
+
+  /**
+   * Refresh all reactive bindings on this path
+   */
+  async refreshBindings(): Promise<void> {
+    for (const binding of this.bindings) {
+      await binding();
+    }
+  }
+
+  /**
+   * Register a custom ID for this path (for test framework getById)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
+}
+
+/**
  * Canvas Radial Gradient - draws a gradient from center outward
  */
 export class CanvasRadialGradient {

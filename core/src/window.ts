@@ -77,6 +77,7 @@ export class Window {
   private contentSent: boolean = false; // Track if content has been sent to bridge
   private creationPromise: Promise<unknown>; // Track window creation for proper sequencing
   private setContentPromise: Promise<void> | null = null; // Track pending setContent() calls
+  private closeCallbacks: (() => void)[] = [];
 
   constructor(ctx: Context, options: WindowOptions, builder?: (win: Window) => void | Promise<void>) {
     this.ctx = ctx;
@@ -564,6 +565,16 @@ export class Window {
       windowId: this.id,
       callbackId
     });
+  }
+
+  /**
+   * Register a callback to be called when the window closes.
+   * Note: These callbacks are called when the window actually closes,
+   * after any close intercept logic has run and returned true.
+   * @param callback - Function called when window closes
+   */
+  onClose(callback: () => void): void {
+    this.closeCallbacks.push(callback);
   }
 
   /**

@@ -102,6 +102,8 @@ export {
   CanvasRaster,
   CanvasLinearGradient,
   CanvasArc,
+  CanvasPath,
+  CanvasPathOptions,
   CanvasPolygon,
   CanvasRadialGradient,
   CanvasSphericalPatch,

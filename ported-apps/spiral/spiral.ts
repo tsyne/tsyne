@@ -10,8 +10,8 @@
  * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
  */
 
-import { App } from 'tsyne';
-import type { Window, ITsyneWindow } from 'tsyne';
+import { App, asRenderTarget } from 'tsyne';
+import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 // Spiral configuration (matching original)
@@ -129,10 +129,11 @@ export class SpiralState {
 /**
  * Build the spiral demo app
  */
-export function buildSpiralApp(a: App, win?: Window | ITsyneWindow): () => void {
+export function buildSpiralApp(a: App, target: IRenderTarget): () => void {
   const state = new SpiralState();
+  let keepRunning = true;
 
-  const buildContent = () => {
+  target.setContent(() => {
     a.vbox(() => {
       a.label('Drag to rotate').withId('instructions');
 
@@ -185,21 +186,19 @@ export function buildSpiralApp(a: App, win?: Window | ITsyneWindow): () => void 
         enableEventHandling(ctx, a, { width: WIDTH, height: HEIGHT });
       });
     });
-  };
-
-  if (win) {
-    win.setContent(buildContent);
-  } else {
-    buildContent();
-  }
+  });
 
   // Animation loop - 60fps
-  const animationInterval = setInterval(() => {
-    state.step();
-    refreshAllCosyneContexts();
-  }, 16);
+  const animate = async () => {
+    while (keepRunning) {
+      state.step();
+      refreshAllCosyneContexts();
+      await new Promise(resolve => setTimeout(resolve, 16));
+    }
+  };
+  animate();
 
-  return () => clearInterval(animationInterval);
+  return () => { keepRunning = false; };
 }
 
 // Standalone execution
@@ -209,10 +208,11 @@ if (require.main === module) {
   const meta = getAppMetadata();
   app(resolveTransport(), { title: meta?.name ?? 'Spiral' }, (a: App) => {
     a.window({ title: 'Spiral', width: WIDTH + 40, height: HEIGHT + 80 }, (win: Window) => {
-      const cleanup = buildSpiralApp(a, win);
+      const target = asRenderTarget(win as ITsyneWindow);
+      const cleanup = buildSpiralApp(a, target);
       win.setCloseIntercept(() => {
         cleanup();
-        return true; // Allow window to close
+        return true;
       });
       win.show();
       screenshotIfRequested(win, 500);
@@ -222,10 +222,7 @@ if (require.main === module) {
 
 // PhoneTop embedded entry point
 export default function(a: App, win?: ITsyneWindow): void {
-  if (win) {
-    const cleanup = buildSpiralApp(a, win);
-    win.onClose(() => cleanup());
-  } else {
-    buildSpiralApp(a);
-  }
+  const target = asRenderTarget(win);
+  const cleanup = buildSpiralApp(a, target);
+  target.onClose?.(() => cleanup());
 }

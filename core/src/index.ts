@@ -66,6 +66,7 @@ import {
   CanvasCircle,
   CanvasLine,
   CanvasLinearGradient,
+  CanvasPath,
   CanvasRaster,
   CanvasRectangle,
   CanvasText,
@@ -1023,7 +1024,8 @@ export {
   getPhoneContext,
   StackPaneAdapter,
 } from './tsyne-window';
-export type { ITsyneWindow, DesktopContext, PhoneTopContext } from './tsyne-window';
+export type { ITsyneWindow, IRenderTarget, DesktopContext, PhoneTopContext } from './tsyne-window';
+export { asRenderTarget, InlineRenderTarget } from './tsyne-window';
 
 // Export resource management
 export { ResourceManager, ScopedResourceManager, NullResourceManager } from './resources';
