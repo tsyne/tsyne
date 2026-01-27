@@ -182,6 +182,11 @@ After blend modes work, consider:
 - [ ] **Custom shaders** - For advanced effects like Gaussian blur
 - [ ] **Upstream PR** - Propose `RenderHook` interface to Fyne project
 
+## Related Cosyne Feature Requests
+
+- [ ] **Animated SVG paths** - Support `bindPath()` on `CosynePath` to animate path strings (quadratic/cubic curves via `Q`/`C` commands). Currently wave2 demo uses 2x points with line segments to approximate curves. See [wave2.ts](../ported-apps/wave2/wave2.ts).
+- [ ] **Line caps/joins** - Canvas2D has `lineJoin: 'round'` and `lineCap: 'round'` for smoother line rendering. Would help line-segment approximations look better.
+
 ## References
 
 - [OpenGL Blend Functions](https://www.khronos.org/opengl/wiki/Blending)
