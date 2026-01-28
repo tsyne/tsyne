@@ -34,6 +34,8 @@
  * ModemManager D-Bus API reference: https://www.freedesktop.org/wiki/Software/ModemManager/
  */
 
+import { ServiceResult } from '../../phone-apps/services';
+
 export interface CallState {
   id: string;
   number: string;
@@ -60,7 +62,7 @@ export interface IModemManagerService {
   getModemInfo(): Promise<ModemInfo>;
 
   // Calling
-  dial(number: string): Promise<boolean>;
+  dial(number: string): Promise<ServiceResult<boolean>>;
   hangup(): Promise<void>;
   acceptCall(callId: string): Promise<boolean>;
   rejectCall(callId: string): Promise<boolean>;
@@ -109,7 +111,7 @@ export class MockModemManagerService implements IModemManagerService {
     };
   }
 
-  async dial(number: string): Promise<boolean> {
+  async dial(number: string): Promise<ServiceResult<boolean>> {
     console.log(`[MockModemManager] Dialing ${number}`);
 
     const call: CallState = {
@@ -132,7 +134,7 @@ export class MockModemManagerService implements IModemManagerService {
       }
     }, 1000);
 
-    return true;
+    return { available: true, value: true };
   }
 
   async hangup(): Promise<void> {
@@ -208,6 +210,64 @@ export class MockModemManagerService implements IModemManagerService {
     if (this.callDurationInterval) {
       clearInterval(this.callDurationInterval);
     }
+  }
+}
+
+/**
+ * Stub implementation for machines without modem hardware.
+ * Informs the user that the action would have placed a call if hardware were present.
+ */
+export class StubModemManagerService implements IModemManagerService {
+  isModemAvailable(): boolean {
+    return false;
+  }
+
+  async getModemInfo(): Promise<ModemInfo> {
+    return {
+      manufacturer: 'None',
+      model: 'None',
+      revision: '',
+      serialNumber: '',
+      imei: '',
+      imsi: '',
+      signalQuality: 0,
+      registrationState: 'unknown',
+    };
+  }
+
+  async dial(number: string): Promise<ServiceResult<boolean>> {
+    return { 
+      available: false, 
+      reason: "The system would have placed a call to " + number + ", but there is no phone hardware on this machine." 
+    };
+  }
+
+  async hangup(): Promise<void> {}
+
+  async acceptCall(callId: string): Promise<boolean> {
+    return false;
+  }
+
+  async rejectCall(callId: string): Promise<boolean> {
+    return false;
+  }
+
+  getActiveCalls(): CallState[] {
+    return [];
+  }
+
+  onCallStateChanged(callback: (calls: CallState[]) => void): () => void {
+    return () => {};
+  }
+
+  async sendDTMF(tone: string): Promise<void> {}
+
+  async getSignalQuality(): Promise<number> {
+    return 0;
+  }
+
+  async getNetworkOperatorName(): Promise<string> {
+    return 'No Hardware';
   }
 }
 
@@ -315,7 +375,7 @@ export class ModemManagerService implements IModemManagerService {
     }
   }
 
-  async dial(number: string): Promise<boolean> {
+  async dial(number: string): Promise<ServiceResult<boolean>> {
     if (!this.modemPath) {
       throw new Error('Modem not available');
     }
@@ -350,10 +410,10 @@ export class ModemManagerService implements IModemManagerService {
       const callInterface = callObject['org.freedesktop.ModemManager1.Call'];
       await callInterface.Start();
 
-      return true;
+      return { available: true, value: true };
     } catch (error) {
       console.error(`[ModemManager] Failed to dial: ${error}`);
-      return false;
+      return { available: true, value: false };
     }
   }
 

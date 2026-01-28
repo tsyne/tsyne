@@ -1013,11 +1013,48 @@ class Desktop implements IDesktopDebugHost {
 
       this.a.spacer();
 
-      // App launcher
-      this.a.button('All Apps').withId('allAppsBtn').onClick(() => {
-        console.log('Available apps:');
-        this._icons.forEach(i => console.log(`  - ${i.metadata.name}`));
-      });
+      // App Search
+      const allAppNames = this._appList.map(app => app.name).sort();
+
+      const searchEntry = this.a.completionEntry([], 'Search apps...', async (text) => {
+        if (!text) {
+          await searchEntry.hideCompletion();
+          return;
+        }
+
+        const filtered = allAppNames.filter(name =>
+          name.toLowerCase().includes(text.toLowerCase())
+        );
+
+        await searchEntry.setOptions(filtered);
+
+        if (filtered.length > 0) {
+          await searchEntry.showCompletion();
+        } else {
+          await searchEntry.hideCompletion();
+        }
+      }, (text) => {
+        // Launch on submit
+        const app = this._appList.find(a => a.name === text);
+        if (app) {
+          this.launchApp(app);
+          searchEntry.setText('');
+          searchEntry.hideCompletion();
+        }
+      }).withId('appSearch');
+
+      // Theme Toggle
+      this.a.button('🌗').onClick(async () => {
+        const current = await this.a.getTheme();
+        this.a.setTheme(current === 'light' ? 'dark' : 'light');
+      }).withId('themeToggle');
+
+      // Clock
+      const clockLabel = this.a.label(new Date().toLocaleTimeString());
+      const timer = setInterval(() => {
+        clockLabel.setText(new Date().toLocaleTimeString());
+      }, 1000);
+      this.a.registerCleanup(() => clearInterval(timer));
     });
   }
 

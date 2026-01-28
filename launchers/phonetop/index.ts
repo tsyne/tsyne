@@ -109,6 +109,8 @@ export interface PhoneTopOptions {
   services?: PhoneServices;
   /** Use ImageButton for app icons (default true). Set false for older bridges without ImageButton support. */
   useImageButton?: boolean;
+  /** Optional filter to exclude/include apps based on metadata */
+  appFilter?: (metadata: AppMetadata) => boolean;
 }
 
 interface RunningApp {
@@ -452,6 +454,9 @@ class PhoneTop {
     for (const filePath of ALL_APPS) {
       const metadata = this.loadAppMetadata(filePath);
       if (metadata) {
+        if (this.options.appFilter && !this.options.appFilter(metadata)) {
+          continue;
+        }
         apps.push(metadata);
       }
     }

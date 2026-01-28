@@ -2,11 +2,11 @@
  * Tsyne PhoneTop for PostmarketOS
  *
  * Composition root for PostmarketOS deployments.
- * Uses real ModemManager services via D-Bus for telephony and SMS.
+ * Uses ModemManager services via mmcli for telephony.
  *
  * Requires:
  * - ModemManager running on the system
- * - 'dbus' npm package
+ * - 'mmcli' command line tool
  */
 
 import { App } from 'tsyne';
@@ -15,9 +15,9 @@ import { allApps, getAppsForPlatform, GeneratedAppDefinition } from '../../phone
 import {
   PhoneServices,
   MockContactsService,
-  MockTelephonyService,
   MockSMSService,
 } from '../../phone-apps/services';
+import { MmcliModemManagerService } from '../../phone-apps/dialer/mmcli-service';
 
 // Re-export app for the bundle
 export { app } from 'tsyne';
@@ -46,23 +46,16 @@ export function getPhoneApps(): StaticAppDefinition[] {
 /**
  * Create services for PostmarketOS (composition root)
  *
- * Note: Apps that need real modem access (Phone, Messages) should
- * use ModemManagerService and ModemManagerSMSService directly via
- * the 'modem' arg, which provides the lower-level IModemManagerService.
- *
- * These ITelephonyService/ISMSService implementations are fallbacks
- * for apps that use the generic interface.
+ * Uses MmcliModemManagerService for telephony, which shells out to mmcli.
+ * This avoids native D-Bus bindings while providing real calling capability.
  */
 function createPostmarketOSServices(): PhoneServices {
-  // TODO: Create adapters that wrap ModemManagerService to implement ITelephonyService
-  // For now, use mocks as fallback - Phone app uses ModemManagerService directly
-  console.log('[PostmarketOS] Using mock services as ITelephonyService fallback');
-  console.log('[PostmarketOS] Phone/Messages apps should use ModemManagerService directly');
-
+  const mmcliService = new MmcliModemManagerService();
+  
   return {
     contacts: new MockContactsService(),  // TODO: PIM/EDS integration
-    telephony: new MockTelephonyService(), // Fallback - apps use ModemManagerService
-    sms: new MockSMSService(),             // Fallback - apps use ModemManagerSMSService
+    telephony: mmcliService, // Used as both ITelephonyService and IModemManagerService via alias
+    sms: new MockSMSService(), // TODO: Implement MmcliSMSService
   };
 }
 

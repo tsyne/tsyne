@@ -23,6 +23,7 @@ app({ title: 'My Desktop' }, (a) => {
 - **Multiple Windows**: Run multiple apps simultaneously, each in its own draggable window
 - **Shared Runtime**: All apps share the same Node.js instance for efficiency
 - **Launch Bar**: Quick access to running apps and system functions
+- **App Search**: Quickly find and launch apps using the search bar
 - **Zero Code Changes**: Apps work both standalone AND in desktop - no special exports needed!
 
 ## How It Works: TsyneWindow Abstraction

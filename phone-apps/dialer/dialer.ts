@@ -91,7 +91,7 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
     updateDisplay('');
   }
 
-  async function handleCall() {
+  async handleCall() {
     if (!currentNumber) return;
 
     if (isInCall) {
@@ -99,14 +99,17 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
       isInCall = false;
       if (statusLabel) statusLabel.setText('Call ended');
     } else {
-      const success = await modem.dial(currentNumber);
+      const result = await modem.dial(currentNumber);
+      const success = result.available && result.value;
+      
       if (success) {
         isInCall = true;
         const contact = contacts.search(currentNumber)[0];
         const name = contact?.name || currentNumber;
         if (statusLabel) statusLabel.setText(`Calling ${name}...`);
       } else {
-        if (statusLabel) statusLabel.setText('Call failed');
+        const reason = !result.available ? result.reason : 'Call failed';
+        if (statusLabel) statusLabel.setText(reason);
       }
     }
   }

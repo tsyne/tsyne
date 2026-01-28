@@ -101,6 +101,12 @@ refreshAllCosyneContexts();
 
 // Enable interactive events
 enableEventHandling(cosyneCtx, a, { width: 500, height: 500 });
+
+// Advanced: Mix Cosyne with standard canvas widgets in a stack
+a.canvasStack(() => {
+  cosyne(a, ...); // Background/Events
+  a.canvasPath(...); // Standard widgets on top
+});
 ```
 
 **Event handlers** (fluent, all return `this`):
@@ -1295,13 +1301,40 @@ export function buildMyApp(a: App) {
 }
 ```
 
-No special content builders or checks needed. Apps discovered by `scanForApps()` work in all contexts automatically.
+No special content builders or checks needed. Apps registered in the central `ALL_APPS` registry work in all contexts automatically.
+
+### Decoupled Content Pattern (IRenderTarget)
+
+For maximum reuse, ported apps often decouple content creation from window creation using `IRenderTarget` and `asRenderTarget()`:
+
+```typescript
+import { asRenderTarget, type IRenderTarget, screenshotIfRequested } from 'tsyne';
+
+// App logic only cares about setting content on a target
+export function buildMyApp(a: App, target: IRenderTarget) {
+  target.setContent(() => {
+    a.label('Hello World');
+  });
+}
+
+// Entry point handles the specific hosting context
+if (require.main === module) {
+  // Standalone: Create window -> cast to target
+  app(..., (a) => {
+    a.window(..., (win) => {
+      buildMyApp(a, asRenderTarget(win));
+      win.show();
+      screenshotIfRequested(win, 500); // Helper for CI screenshots
+    });
+  });
+}
+```
 
 **See:** [docs/WINDOW_ADAPTATION.md](docs/WINDOW_ADAPTATION.md) for the full guide on adapting apps to different contexts, including PhoneTop embedding with `windowWidth, windowHeight` parameters and touch controls.
 
 ## Desktop Mode & App Sandboxing
 
-Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from `ported-apps/` and `examples/` directories.
+Tsyne includes a **desktop environment** that can run multiple apps in inner windows, similar to a traditional desktop OS. Apps are discovered from the central registry in `launchers/all-apps.ts` (which includes `ported-apps/` and `examples/`).
 
 **Desktop Architecture:**
 ```
@@ -1387,7 +1420,7 @@ When apps run in desktop mode, they're isolated through:
    - No direct access to system APIs without explicit grants
 
 **Key Files:**
-- `src/desktop.ts` - Desktop environment, app discovery, launching
+- `launchers/desktop/index.ts` - Desktop environment, app discovery, launching
 - `src/context.ts` - Context and ScopedContext classes
 - `src/app-transformer.ts` - AST transformer for sandbox preparation (if using VM isolation)
 - `src/sandbox-runtime.ts` - Pluggable sandbox runtime (Node VM, isolated-vm)
@@ -1396,10 +1429,10 @@ When apps run in desktop mode, they're isolated through:
 
 ```bash
 # Run desktop environment
-npx tsx examples/desktop-demo.ts
+npx tsx launchers/desktop/index.ts
 
 # Or via the buildDesktop function
-import { buildDesktop } from './src/desktop';
+import { buildDesktop } from 'tsyne';
 app({ title: 'Tsyne Desktop' }, async (a) => {
   await buildDesktop(a);
 });

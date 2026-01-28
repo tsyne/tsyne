@@ -1,6 +1,6 @@
 # Wave2
 
-Ported from a CodePen by Hakim El Hattab.
+Ported from a CodePen by Hakim El Hattab. https://codepen.io/hakimel/pen/jrvaWM
 
 Animated sine wave lines with click-to-toggle color scheme (dark/light).
 
