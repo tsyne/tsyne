@@ -7,6 +7,7 @@ toolchain go1.24.7
 require (
 	fyne.io/fyne/v2 v2.7.0
 	fyne.io/x/fyne v0.0.0-20251214153509-fa68a7d234d5
+	github.com/fogleman/gg v1.3.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/golang/protobuf v1.5.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -18,7 +19,6 @@ require (
 	fyne.io/systray v1.12.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fyne-io/gl-js v0.2.0 // indirect

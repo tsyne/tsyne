@@ -4,28 +4,28 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                806      806        0        0  42|42|0
-Cosyne                              274      274        0        0    7|7|0
+Core                                907      907        0        0  47|47|0
+Cosyne                              926      926        0        0  22|21|1
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
-Ported: sample-food-truck           806      806        0        0  42|42|0
-Ported: expense-tracker             806      806        0        0  42|42|0
-Ported: nextcloud                   806      806        0        0  42|42|0
-Ported: duckduckgo                  806      806        0        0  42|42|0
-Ported: wikipedia                   806      806        0        0  42|42|0
-Ported: element                     806      806        0        0  42|42|0
-Ported: ebooks                      806      806        0        0  42|42|0
-Ported: 3d-cube                     392      392        0        0    3|3|0
-Ported: boing                       806      806        0        0  42|42|0
+Ported: sample-food-truck           907      907        0        0  47|47|0
+Ported: expense-tracker             907      907        0        0  47|47|0
+Ported: nextcloud                   907      907        0        0  47|47|0
+Ported: duckduckgo                  907      907        0        0  47|47|0
+Ported: wikipedia                   907      907        0        0  47|47|0
+Ported: element                     907      907        0        0  47|47|0
+Ported: ebooks                      907      907        0        0  47|47|0
+Ported: 3d-cube                     444      444        0        0    4|4|0
+Ported: boing                       907      907        0        0  47|47|0
 Ported: calcudoku                    46       46        0        0    2|2|0
-Ported: chess                         0        0        0        0    3|0|3
+Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
 Ported: falling-letters              39       39        0        0    1|1|0
 Ported: find-pairs                   35       35        0        0    2|2|0
-Ported: fyles                        89       86        0        3    5|5|0
+Ported: fyles                        89       85        0        4    5|5|0
 Ported: game-of-life                 11       11        0        0    3|3|0
-Ported: image-viewer                  0        0        0        0    1|0|1
+Ported: image-viewer                 17       13        0        4    1|1|0
 Ported: mahjongg                     47       47        0        0    2|2|0
 Ported: peg-solitaire                44       44        0        0    2|2|0
 Ported: pixeledit                   429      429        0        0 115|115|0
@@ -36,9 +36,16 @@ Ported: slider-puzzle                37       37        0        0    2|2|0
 Ported: sudoku                       27       27        0        0    2|2|0
 Ported: tango-puzzle                 35       35        0        0    2|2|0
 Ported: zip-puzzle                   35       35        0        0    2|2|0
-Phone: alarms                         4        4        0        0    1|1|0
+Phone: 3d-clock                       0        0        0        0    2|0|2
+Phone: 3d-draggable-chess             3        3        0        0    1|1|0
+Phone: 3d-lighting-lab                0        0        0        0    1|0|1
+Phone: 3d-robot-arm                   0        0        0        0    1|0|1
+Phone: animated-spinner               4        4        0        0    1|1|0
+Phone: gauge-dashboard                2        2        0        0    1|1|0
+Phone: heatmap-demo                   2        2        0        0    1|1|0
+Phone: alarms                         0        0        0        0    1|0|1
 Phone: burning-ship                   6        6        0        0    1|1|0
-Phone: clock                          4        4        0        0    1|1|0
+Phone: clock                          0        0        0        0    1|0|1
 Phone: eliza                         15       15        0        0    1|1|0
 Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
@@ -52,29 +59,29 @@ Phone: signal                        63       63        0        0    2|2|0
 Phone: snowflake                     12       12        0        0    2|2|0
 Phone: sonic3                         4        4        0        0    1|1|0
 Phone: sshterm                        5        5        0        0    1|1|0
-Phone: stopwatch                      6        6        0        0    1|1|0
+Phone: stopwatch                      0        0        0        0    1|0|1
 Phone: telegram                      32       32        0        0    1|1|0
-Phone: timer                          6        6        0        0    1|1|0
+Phone: timer                          0        0        0        0    1|0|1
 Phone: tricorn                        6        6        0        0    1|1|0
-Larger: literate-programming        102      102        0        0    3|3|0
+Launcher: desktop                    20       20        0        0    3|1|2
+Launcher: phonetop                    0        0        0        0    2|0|2
+Larger: literate-programming         81       81        0        0    3|2|1
 Larger: realtime-paris-density-simulation        0        0        0        0    2|0|2
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
-TestApp: calculator-advanced GUI       12       12        0        0    1|1|0
+TestApp: calculator-advanced GUI        0        0        0        0    1|0|1
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                              9615     9612        0        3      587
+TOTAL                             11283    11272        0       11      661
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  Warning: 3 tests are currently skipped
+⚠️  Warning: 11 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 138350ms (138.35s)
-Total ctx.wait() calls: 455
+Total wait time: 82100ms (82.10s)
+Total ctx.wait() calls: 276
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
-  Desktop Remote Control API Tests should switch between apps via /app/switchTo endpoint
-    └─ 7200ms (18 calls)
   Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
     └─ 4500ms (9 calls)
   Canvas Fill Color should draw vertical line from center downward
@@ -87,13 +94,15 @@ Top 10 tests by wait time:
     └─ 4500ms (9 calls)
   Canvas Fill Color should render multiple overlapping canvas elements like clock
     └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should click calculator button via /click endpoint using coordinates
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should click widget via /click endpoint
-    └─ 4500ms (9 calls)
-  Desktop Remote Control API Tests should get desktop state via /state endpoint
-    └─ 4500ms (9 calls)
+  Mandelbrot Explorer should reset view when clicking Reset
+    └─ 4000ms (4 calls)
+  Burning Ship Explorer should reset view
+    └─ 3000ms (4 calls)
+  Mandelbrot Explorer should zoom out when clicking Zoom Out button
+    └─ 3000ms (3 calls)
+  Burning Ship Explorer should zoom and take screenshot
+    └─ 2000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 9612 tests passed
+✅ SUCCESS: All 11272 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt
