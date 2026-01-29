@@ -17,6 +17,7 @@ export interface PrimitiveOptions {
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
+  blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   animationManager?: AnimationManager;
 }
 
@@ -53,6 +54,7 @@ export abstract class Primitive<TUnderlyingWidget> {
   protected fillColor: string | undefined;
   protected strokeColor: string | undefined;
   protected strokeWidth: number | undefined;
+  protected _blendMode: 'normal' | 'additive' | 'multiply' | 'screen' | undefined;
   protected alpha: number = 1.0;
   protected isPassthrough: boolean = false;
   protected positionBinding: Binding<PositionBinding> | undefined;
@@ -61,6 +63,7 @@ export abstract class Primitive<TUnderlyingWidget> {
   protected alphaBinding: Binding<number> | undefined;
   protected visibleBinding: Binding<boolean> | undefined;
   protected rotationBinding: Binding<RotationAngles> | undefined;
+  protected blendModeBinding: Binding<'normal' | 'additive' | 'multiply' | 'screen'> | undefined;
 
   // Event handlers
   protected onClickHandler: ((e: { x: number; y: number }) => void | Promise<void>) | undefined;
@@ -88,7 +91,7 @@ export abstract class Primitive<TUnderlyingWidget> {
   protected clipping: ClippingRegion = new ClippingRegion();
 
   constructor(
-    protected underlying: TUnderlyingWidget,
+    protected underlying: any,
     options?: PrimitiveOptions
   ) {
     if (options?.id) {
@@ -217,6 +220,14 @@ export abstract class Primitive<TUnderlyingWidget> {
   }
 
   /**
+   * Bind blend mode to a function
+   */
+  bindBlendMode(fn: BindingFunction<'normal' | 'additive' | 'multiply' | 'screen'>): this {
+    this.blendModeBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
    * Get the underlying Tsyne widget
    */
   getUnderlying(): TUnderlyingWidget {
@@ -233,7 +244,8 @@ export abstract class Primitive<TUnderlyingWidget> {
       this.strokeBinding ||
       this.alphaBinding ||
       this.visibleBinding ||
-      this.rotationBinding
+      this.rotationBinding ||
+      this.blendModeBinding
     );
   }
 
@@ -291,6 +303,13 @@ export abstract class Primitive<TUnderlyingWidget> {
    */
   getRotationBinding(): Binding<RotationAngles> | undefined {
     return this.rotationBinding;
+  }
+
+  /**
+   * Get blend mode binding if set
+   */
+  getBlendModeBinding(): Binding<'normal' | 'additive' | 'multiply' | 'screen'> | undefined {
+    return this.blendModeBinding;
   }
 
   /**
@@ -413,14 +432,10 @@ export abstract class Primitive<TUnderlyingWidget> {
     );
   }
 
-  // ==================== Effects API (NOT YET IMPLEMENTED) ====================
-  // These APIs are designed for a future Canvas2D-compatible renderer.
-  // Tsyne currently renders via Fyne native widgets which don't support these effects.
-  // The APIs exist so that when a software canvas renderer is added, existing code
-  // will work without changes. For now, calling these methods throws an error.
+  // ==================== Effects API ====================
 
   private static readonly EFFECTS_NOT_IMPLEMENTED_MSG =
-    'Effects (dropShadow, glow, blendMode, strokeDash) require a Canvas2D-compatible renderer. ' +
+    'Effects (dropShadow, glow, strokeDash) require a Canvas2D-compatible renderer. ' +
     'Tsyne currently uses Fyne native widgets which do not support these effects. ' +
     'This API exists for future compatibility when a software canvas renderer is added.';
 
@@ -467,11 +482,22 @@ export abstract class Primitive<TUnderlyingWidget> {
   }
 
   /**
-   * Set blend mode (e.g., 'multiply', 'screen', 'overlay')
-   * @throws Error - Not yet implemented for Fyne renderer
+   * Set blend mode (e.g., 'multiply', 'screen', 'additive')
+   * supported by patched Fyne renderer
    */
-  blendMode(_mode: string): this {
-    throw new Error(Primitive.EFFECTS_NOT_IMPLEMENTED_MSG);
+  blendMode(mode: 'normal' | 'additive' | 'multiply' | 'screen'): this {
+    this._blendMode = mode;
+    this.applyBlendMode();
+    return this;
+  }
+
+  /**
+   * Apply blend mode to underlying widget
+   */
+  protected applyBlendMode(): void {
+    if (this._blendMode && (this.underlying as any).update) {
+      (this.underlying as any).update({ blendMode: this._blendMode });
+    }
   }
 
   /**
@@ -728,6 +754,14 @@ export abstract class Primitive<TUnderlyingWidget> {
    * Update rotation from binding (implemented by subclasses)
    */
   abstract updateRotation(rotation: RotationAngles): void;
+
+  /**
+   * Update blend mode from binding
+   */
+  updateBlendMode(mode: 'normal' | 'additive' | 'multiply' | 'screen'): void {
+    this._blendMode = mode;
+    this.applyBlendMode();
+  }
 
   /**
    * Get hit tester for this primitive (for event handling)

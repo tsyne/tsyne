@@ -2,6 +2,7 @@ package main
 
 import (
 	"image/color"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -31,6 +32,12 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) Response {
 	// Set stroke width if provided
 	if strokeWidth, ok := msg.Payload["strokeWidth"]; ok {
 		line.StrokeWidth = toFloat32(strokeWidth)
+	}
+
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		log.Printf("[createCanvasLine] Setting blendMode=%s for line %s", blendMode, widgetID)
+		line.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	b.mu.Lock()
@@ -92,6 +99,12 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 			line.StrokeWidth = float32(strokeWidth)
 		}
 
+		// Update blend mode if provided
+		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+			log.Printf("[updateCanvasLine] Setting blendMode=%s for line %s", blendMode, widgetID)
+			line.SetBlendMode(parseBlendMode(blendMode))
+		}
+
 		line.Refresh()
 	})
 
@@ -119,6 +132,11 @@ func (b *Bridge) handleCreateCanvasCircle(msg Message) Response {
 	// Set stroke width if provided
 	if strokeWidth, ok := msg.Payload["strokeWidth"]; ok {
 		circle.StrokeWidth = toFloat32(strokeWidth)
+	}
+
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		circle.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	// Set position and size
@@ -197,6 +215,11 @@ func (b *Bridge) handleUpdateCanvasCircle(msg Message) Response {
 			circle.StrokeWidth = float32(strokeWidth)
 		}
 
+		// Update blend mode if provided
+		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+			circle.SetBlendMode(parseBlendMode(blendMode))
+		}
+
 		circle.Refresh()
 	})
 
@@ -224,6 +247,11 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 	// Set stroke width if provided
 	if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 		rect.StrokeWidth = float32(strokeWidth)
+	}
+
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		rect.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	// Set corner radius if provided
@@ -329,6 +357,10 @@ func (b *Bridge) handleUpdateCanvasRectangle(msg Message) Response {
 
 			if strokeWidth, ok := getFloat64(msg.Payload["strokeWidth"]); ok {
 				rect.StrokeWidth = float32(strokeWidth)
+			}
+
+			if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+				rect.SetBlendMode(parseBlendMode(blendMode))
 			}
 
 			if radius, ok := getFloat64(msg.Payload["cornerRadius"]); ok {
@@ -488,6 +520,11 @@ func (b *Bridge) handleCreateCanvasEllipse(msg Message) Response {
 	raster.Resize(fyne.NewSize(width, height))
 	raster.SetMinSize(fyne.NewSize(width, height))
 
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		raster.SetBlendMode(parseBlendMode(blendMode))
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = raster
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasellipse", Text: ""}
@@ -537,6 +574,11 @@ func (b *Bridge) handleUpdateCanvasEllipse(msg Message) Response {
 	b.mu.Unlock()
 
 	fyne.DoAndWait(func() {
+		// Update blend mode if provided
+		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+			raster.SetBlendMode(parseBlendMode(blendMode))
+		}
+
 		raster.Move(fyne.NewPos(newX, newY))
 		raster.Refresh()
 	})
@@ -694,6 +736,11 @@ func (b *Bridge) handleCreateCanvasArc(msg Message) Response {
 	raster.Resize(fyne.NewSize(width, height))
 	raster.SetMinSize(fyne.NewSize(width, height))
 
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		raster.SetBlendMode(parseBlendMode(blendMode))
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = raster
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasarc", Text: ""}
@@ -751,6 +798,11 @@ func (b *Bridge) handleUpdateCanvasArc(msg Message) Response {
 	b.mu.Unlock()
 
 	fyne.DoAndWait(func() {
+		// Update blend mode if provided
+		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+			raster.SetBlendMode(parseBlendMode(blendMode))
+		}
+
 		raster.Refresh()
 	})
 

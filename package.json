@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm run build:bridge && pnpm run build:core",
-    "build:bridge": "cd core/bridge && go build -o ../bin/tsyne-bridge .",
+    "build:bridge": "cd core/bridge && ./setup-fyne-fork.sh && go build -o ../bin/tsyne-bridge .",
     "build:core": "pnpm -C core run build",
     "build:designer": "pnpm -C designer run build",
     "build:all": "pnpm run build && pnpm run build:designer",
@@ -23,6 +23,7 @@
     "@types/node": "^20.0.0",
     "buffer-crc32": "^1.0.0",
     "jest-environment-node": "^29.7.0",
+    "pngjs": "^7.0.0",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
     "typescript": "^5.0.0"

@@ -892,7 +892,7 @@ export class App {
     y1: number,
     x2: number,
     y2: number,
-    options?: { strokeColor?: string; strokeWidth?: number }
+    options?: { strokeColor?: string; strokeWidth?: number; blendMode?: 'normal' | 'additive' | 'multiply' | 'screen' }
   ): CanvasLine {
     return new CanvasLine(this.ctx, x1, y1, x2, y2, options);
   }
@@ -905,6 +905,7 @@ export class App {
     fillColor?: string;
     strokeColor?: string;
     strokeWidth?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }): CanvasCircle {
     return new CanvasCircle(this.ctx, options);
   }
@@ -916,6 +917,7 @@ export class App {
     strokeColor?: string;
     strokeWidth?: number;
     cornerRadius?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
     onClick?: (x: number, y: number) => void;
   }): CanvasRectangle {
     return new CanvasRectangle(this.ctx, options);
@@ -930,6 +932,7 @@ export class App {
       italic?: boolean;
       monospace?: boolean;
       alignment?: 'leading' | 'center' | 'trailing';
+      blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
       x?: number;
       y?: number;
     }
@@ -940,9 +943,10 @@ export class App {
   canvasRaster(
     width: number,
     height: number,
-    pixels?: Array<[number, number, number, number]>
+    pixels?: Array<[number, number, number, number]>,
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'
   ): CanvasRaster {
-    return new CanvasRaster(this.ctx, width, height, pixels);
+    return new CanvasRaster(this.ctx, width, height, pixels, blendMode);
   }
 
   tappableCanvasRaster(

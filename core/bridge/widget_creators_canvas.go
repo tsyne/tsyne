@@ -16,12 +16,31 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+
+	"fyne.io/fyne/v2/canvas"
 )
 
 // EllipseData stores ellipse parameters for updates
 type EllipseData struct {
 	X, Y, Width, Height float32
 	FillColor           color.RGBA
+}
+
+// ============================================================================
+// Blend Mode Helper
+// ============================================================================
+
+func parseBlendMode(mode string) canvas.BlendMode {
+	switch strings.ToLower(mode) {
+	case "additive":
+		return canvas.BlendAdditive
+	case "multiply":
+		return canvas.BlendMultiply
+	case "screen":
+		return canvas.BlendScreen
+	default:
+		return canvas.BlendNormal
+	}
 }
 
 // ============================================================================

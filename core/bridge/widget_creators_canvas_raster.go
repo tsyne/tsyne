@@ -83,6 +83,11 @@ func (b *Bridge) handleCreateCanvasRaster(msg Message) Response {
 
 	raster.SetMinSize(fyne.NewSize(float32(width), float32(height)))
 
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		raster.SetBlendMode(parseBlendMode(blendMode))
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = raster
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasraster", Text: ""}
@@ -117,6 +122,11 @@ func (b *Bridge) handleUpdateCanvasRaster(msg Message) Response {
 			Success: false,
 			Error:   "Widget is not a raster",
 		}
+	}
+
+	// Update blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		raster.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	// Update individual pixels if provided
