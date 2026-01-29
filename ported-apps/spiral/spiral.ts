@@ -163,6 +163,7 @@ export function buildSpiralApp(a: App, target: IRenderTarget): () => void {
               strokeColor: '#ffffff',
               strokeWidth: 2,
             })
+              .blendMode('additive') // Glow effect (lighter)
               .bindEndpoint(() => {
                 const seg = state.getLineSegment(idx);
                 return { x1: seg.x1, y1: seg.y1, x2: seg.x2, y2: seg.y2 };

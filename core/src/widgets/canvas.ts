@@ -161,6 +161,7 @@ export class CanvasLine {
   constructor(ctx: Context, x1: number, y1: number, x2: number, y2: number, options?: {
     strokeColor?: string;
     strokeWidth?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvasline');
@@ -181,6 +182,9 @@ export class CanvasLine {
       payload.strokeWidth = options.strokeWidth;
       this._strokeWidth = options.strokeWidth;
     }
+    if (options?.blendMode) {
+      payload.blendMode = options.blendMode;
+    }
 
     ctx.bridge.send('createCanvasLine', payload);
     ctx.addToCurrentContainer(this.id);
@@ -191,6 +195,7 @@ export class CanvasLine {
     x2?: number; y2?: number;
     strokeColor?: string;
     strokeWidth?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }): void {
     // Track current values for animation
     if (options.x1 !== undefined) this._x1 = options.x1;
@@ -263,6 +268,7 @@ export class CanvasCircle {
     fillColor?: string;
     strokeColor?: string;
     strokeWidth?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }) {
     this.ctx = ctx;
     this.id = ctx.generateId('canvascircle');
@@ -277,6 +283,7 @@ export class CanvasCircle {
       if (options.fillColor) payload.fillColor = options.fillColor;
       if (options.strokeColor) payload.strokeColor = options.strokeColor;
       if (options.strokeWidth !== undefined) { payload.strokeWidth = options.strokeWidth; this._strokeWidth = options.strokeWidth; }
+      if (options.blendMode) payload.blendMode = options.blendMode;
     }
 
     ctx.bridge.send('createCanvasCircle', payload);
@@ -289,6 +296,7 @@ export class CanvasCircle {
     fillColor?: string;
     strokeColor?: string;
     strokeWidth?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }): Promise<void> {
     // Track current values for animation
     if (options.x !== undefined) this._x = options.x;
@@ -368,6 +376,7 @@ export class CanvasRectangle {
     strokeColor?: string;
     strokeWidth?: number;
     cornerRadius?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
     onClick?: (x: number, y: number) => void;
   }) {
     this.ctx = ctx;
@@ -387,6 +396,7 @@ export class CanvasRectangle {
       if (options.strokeColor) payload.strokeColor = options.strokeColor;
       if (options.strokeWidth !== undefined) payload.strokeWidth = options.strokeWidth;
       if (options.cornerRadius !== undefined) payload.cornerRadius = options.cornerRadius;
+      if (options.blendMode) payload.blendMode = options.blendMode;
     }
 
     // Use tappable version if onClick is provided
@@ -418,6 +428,7 @@ export class CanvasRectangle {
     strokeColor?: string;
     strokeWidth?: number;
     cornerRadius?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }): Promise<void> {
     await this.ctx.bridge.send('updateCanvasRectangle', {
       widgetId: this.id,
@@ -498,6 +509,7 @@ export class CanvasText {
     italic?: boolean;
     monospace?: boolean;
     alignment?: 'leading' | 'center' | 'trailing';
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
     x?: number;
     y?: number;
   }) {
@@ -513,6 +525,7 @@ export class CanvasText {
       if (options.italic !== undefined) payload.italic = options.italic;
       if (options.monospace !== undefined) payload.monospace = options.monospace;
       if (options.alignment) payload.alignment = options.alignment;
+      if (options.blendMode) payload.blendMode = options.blendMode;
       if (options.x !== undefined) payload.x = options.x;
       if (options.y !== undefined) payload.y = options.y;
     }
@@ -525,6 +538,7 @@ export class CanvasText {
     text?: string;
     color?: string;
     textSize?: number;
+    blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   }): Promise<void> {
     await this.ctx.bridge.send('updateCanvasText', {
       widgetId: this.id,
@@ -596,7 +610,7 @@ export class CanvasRaster {
   private _height: number;
   private _sprites: Map<string, Sprite> = new Map();
 
-  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>) {
+  constructor(ctx: Context, width: number, height: number, pixels?: Array<[number, number, number, number]>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen') {
     this.ctx = ctx;
     this.id = ctx.generateId('canvasraster');
     this._width = width;
@@ -606,6 +620,9 @@ export class CanvasRaster {
 
     if (pixels) {
       payload.pixels = pixels;
+    }
+    if (blendMode) {
+      payload.blendMode = blendMode;
     }
 
     ctx.bridge.send('createCanvasRaster', payload);
@@ -634,10 +651,11 @@ export class CanvasRaster {
    * Update individual pixels
    * @param updates Array of pixel updates {x, y, r, g, b, a}
    */
-  async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>): Promise<void> {
+  async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
     await this.ctx.bridge.send('updateCanvasRaster', {
       widgetId: this.id,
-      updates
+      updates,
+      blendMode
     });
   }
 
@@ -855,6 +873,7 @@ export class CanvasRaster {
  */
 export interface TappableCanvasRasterOptions {
   pixels?: Array<[number, number, number, number]>;
+  blendMode?: 'normal' | 'additive' | 'multiply' | 'screen';
   onTap?: (x: number, y: number) => void;
   onKeyDown?: (key: string) => void;
   onKeyUp?: (key: string) => void;
@@ -919,6 +938,10 @@ export class TappableCanvasRaster {
 
     if (pixels) {
       payload.pixels = pixels;
+    }
+
+    if (options.blendMode) {
+      payload.blendMode = options.blendMode;
     }
 
     // Set up keyboard callbacks
@@ -1008,10 +1031,11 @@ export class TappableCanvasRaster {
    * Update individual pixels
    * @param updates Array of pixel updates {x, y, r, g, b, a}
    */
-  async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>): Promise<void> {
+  async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
     await this.ctx.bridge.send('updateTappableCanvasRaster', {
       widgetId: this.id,
-      updates
+      updates,
+      blendMode
     });
   }
 
@@ -1051,12 +1075,13 @@ export class TappableCanvasRaster {
    * Buffer must be width * height * 4 bytes (RGBA for each pixel).
    * @param buffer Raw pixel data in RGBA format
    */
-  async setPixelBuffer(buffer: Uint8Array): Promise<void> {
+  async setPixelBuffer(buffer: Uint8Array, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
     // Convert Uint8Array to base64
     const base64 = Buffer.from(buffer).toString('base64');
     await this.ctx.bridge.send('setTappableCanvasBuffer', {
       widgetId: this.id,
-      buffer: base64
+      buffer: base64,
+      blendMode
     });
   }
 

@@ -63,6 +63,11 @@ func (b *Bridge) handleCreateCanvasText(msg Message) Response {
 		}
 	}
 
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		canvasText.SetBlendMode(parseBlendMode(blendMode))
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = canvasText
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvastext", Text: text}
@@ -120,6 +125,11 @@ func (b *Bridge) handleUpdateCanvasText(msg Message) Response {
 		// Update text size if provided
 		if textSize, ok := getFloat64(msg.Payload["textSize"]); ok {
 			canvasText.TextSize = float32(textSize)
+		}
+
+		// Update blend mode if provided
+		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+			canvasText.SetBlendMode(parseBlendMode(blendMode))
 		}
 
 		// Update position if provided

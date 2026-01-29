@@ -156,6 +156,11 @@ func (t *TappableCanvasRaster) SetPixel(x, y int, r, g, b, a uint8) {
 	})
 }
 
+// SetBlendMode sets the blend mode for the underlying raster
+func (t *TappableCanvasRaster) SetBlendMode(mode canvas.BlendMode) {
+	t.raster.SetBlendMode(mode)
+}
+
 // SetPixelNoRefresh sets a single pixel without triggering a refresh.
 // Call Refresh() after setting all pixels.
 func (t *TappableCanvasRaster) SetPixelNoRefresh(x, y int, r, g, b, a uint8) {

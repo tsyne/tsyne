@@ -123,6 +123,8 @@ export interface LabelOptions {
   textStyle?: { bold?: boolean; italic?: boolean; monospace?: boolean };
   /** Text size: named size ('heading', 'subheading', 'caption') or numeric pixel size */
   textSize?: 'heading' | 'subheading' | 'caption' | number;
+  /** Text color as hex string (e.g., '#ffffff') */
+  color?: string;
   /** Click handler */
   onClick?: () => void;
 }
@@ -164,6 +166,10 @@ export class Label extends Widget {
 
     if (options.textSize) {
       payload.textSize = options.textSize;
+    }
+
+    if (options.color) {
+      payload.color = options.color;
     }
 
     if (options.onClick) {

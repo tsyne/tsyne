@@ -77,6 +77,11 @@ func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 		tappable.SetPixels(pixelBytes)
 	}
 
+	// Set blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		tappable.SetBlendMode(parseBlendMode(blendMode))
+	}
+
 	b.mu.Lock()
 	b.widgets[widgetID] = tappable
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "tappablecanvasraster", Text: ""}
@@ -112,6 +117,11 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 			Success: false,
 			Error:   "Widget is not a tappable canvas raster",
 		}
+	}
+
+	// Update blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		tappable.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	// Handle pixel updates (format: [{x, y, r, g, b, a}, ...])
@@ -324,6 +334,11 @@ func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 			Success: false,
 			Error:   "Failed to decode pixel buffer: " + err.Error(),
 		}
+	}
+
+	// Update blend mode if provided
+	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
+		tappable.SetBlendMode(parseBlendMode(blendMode))
 	}
 
 	// Set all pixels at once

@@ -106,6 +106,7 @@ export class CosyneContext {
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
+      blendMode: options?.blendMode,
     });
 
     const primitive = new CosyneCircle(x, y, radius, underlying, {
@@ -129,6 +130,7 @@ export class CosyneContext {
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
+      blendMode: options?.blendMode,
     });
 
     const primitive = new CosyneRect(x, y, width, height, underlying, {
@@ -147,6 +149,7 @@ export class CosyneContext {
     const underlying = this.app.canvasLine(x1, y1, x2, y2, {
       strokeColor: options?.strokeColor || 'black',
       strokeWidth: options?.strokeWidth || 1,
+      blendMode: options?.blendMode,
     });
 
     const primitive = new CosyneLine(x1, y1, x2, y2, underlying, {
@@ -575,6 +578,13 @@ export class CosyneContext {
       if (alphaBinding) {
         const alpha = alphaBinding.evaluate();
         primitive.updateAlpha(alpha);
+      }
+
+      // Refresh blend mode bindings
+      const blendModeBinding = primitive.getBlendModeBinding();
+      if (blendModeBinding) {
+        const mode = blendModeBinding.evaluate();
+        primitive.updateBlendMode(mode);
       }
 
       // Refresh visibility bindings

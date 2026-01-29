@@ -1,195 +1,216 @@
-# TODO: OpenGL Blend Modes for Cosyne Canvas
+# WebGL-like Canvas Features via Fyne Augmentation
 
-## Problem
+Tsyne's Fyne fork patching enables WebGL-equivalent canvas features for desktop/mobile apps. This document tracks completed work and future OpenGL features to expose through our pseudo-declarative API.
 
-Fyne uses OpenGL for rendering but doesn't expose blend modes. This prevents effects like:
-- **Additive blending** (`GL_ONE, GL_ONE`) - lines/shapes "emit light", overlapping areas get brighter
-- **Multiply blending** - darkening composites
-- **Screen blending** - lightening composites
+## Completed
 
-Example use case: The spiral demo (ported from [hakimel's CodePen](https://codepen.io/hakimel/pen/QdWpRv)) uses `globalCompositeOperation = 'lighter'` for a glowing effect that we can't currently replicate.
+- [x] **Blend modes** - `normal`, `additive`, `multiply`, `screen`
+- [x] **Render hook injection** - AST patching of Fyne's painter.go
+- [x] **Safe GL callback pattern** - BlendFunc set after gl.Init() to prevent CGO crashes
+- [x] **draw.go patching** - Removed hardcoded BlendFunc overrides
+- [x] **Integration test** - Pixel-level verification of additive color mixing (R+G=Yellow, etc.)
+- [x] **Demo app** - `cosyne/demos/blend-mode-comparison.ts`
 
-## Solution: AST Patch + Minimal Hook (#1 + #4)
+## WebGL Feature Parity Roadmap
 
-Rather than forking all of Fyne, we:
-1. Use **AST transformation** to programmatically inject a small hook into Fyne's painter
-2. Keep all blend logic in **our code** (survives Fyne upgrades)
+<!--
+CLAUDE-HAIKU NOTES:
+- Each feature below maps to WebGL/Canvas2D APIs that web developers expect
+- Implementation follows the same pattern: patch Fyne fork, expose in bridge, add TS API
+- All features should work with Tsyne's pseudo-declarative composition style
+- Priority is based on common use in web canvas apps (games, visualizations, graphics editors)
+-->
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Fyne's painter.go (after patching)                     │
-├─────────────────────────────────────────────────────────┤
-│  func (p *painter) paint(obj CanvasObject) {            │
-│      renderhook.Before(obj)  // ← INJECTED             │
-│      defer renderhook.After(obj)  // ← INJECTED        │
-│      // ... existing Fyne code unchanged               │
-│  }                                                      │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Our renderhook package (bridge/renderhook/)            │
-├─────────────────────────────────────────────────────────┤
-│  func Before(obj CanvasObject) {                        │
-│      if b, ok := obj.(BlendModeSupport); ok {           │
-│          gl.BlendFunc(blendToGL(b.BlendMode()))         │
-│      }                                                  │
-│  }                                                      │
-│                                                         │
-│  func After(obj CanvasObject) {                         │
-│      gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) │
-│  }                                                      │
-└─────────────────────────────────────────────────────────┘
-```
+### Priority 1: Core Rendering (WebGL equivalents)
 
-## Getting Started
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Blend modes | `gl.blendFunc()` | `glBlendFunc` | ✅ Done |
+| Global alpha | `ctx.globalAlpha` | Per-vertex alpha or uniform | ⬜ TODO |
+| Line caps/joins | `ctx.lineCap`, `ctx.lineJoin` | Geometry generation | ⬜ TODO |
+| Dashed lines | `ctx.setLineDash()` | Geometry or shader | ⬜ TODO |
 
-Clone Fyne source locally to explore its internals:
+### Priority 2: Transforms (WebGL mat4 equivalents)
 
-```bash
-# Clone Fyne to /tmp for exploration
-git clone --depth 1 --branch v2.7.0 https://github.com/fyne-io/fyne.git /tmp/fyne
-
-# Find the exact paint function to patch
-grep -rn "func.*painter.*paint" /tmp/fyne/internal/driver/glfw/
-
-# Explore the painter structure
-cat /tmp/fyne/internal/driver/glfw/painter.go
-```
-
-This helps ground the AST transformation in Fyne's actual code structure.
-
-## Tasks
-
-### Phase 1: Infrastructure
-
-- [ ] **Create AST patch tool** (`core/bridge/tools/patch-fyne/main.go`)
-  - Parse Go source with `go/ast`, `go/parser`
-  - Find target function by name (not line number)
-  - Inject hook calls at function entry
-  - Output modified source to `./fyne-patched/`
-
-- [ ] **Define BlendMode types** (`core/bridge/blendmode.go`)
-  ```go
-  type BlendMode int
-  const (
-      BlendNormal BlendMode = iota
-      BlendAdditive    // GL_ONE, GL_ONE
-      BlendMultiply    // GL_DST_COLOR, GL_ZERO
-      BlendScreen      // GL_ONE, GL_ONE_MINUS_SRC_COLOR
-  )
-
-  type BlendModeSupport interface {
-      BlendMode() BlendMode
-  }
-  ```
-
-- [ ] **Create renderhook package** (`core/bridge/renderhook/`)
-  - `Before(obj)` - set GL blend state based on object's blend mode
-  - `After(obj)` - restore default blend state
-  - Must be safe for objects that don't support blend modes
-
-### Phase 2: Patch Integration
-
-- [ ] **Write declarative patch spec** (`core/bridge/tools/patch-fyne/patches/blend-hook.yaml`)
-  ```yaml
-  - file: internal/driver/glfw/painter.go
-    function: "(*painter).paint"
-    inject: before_body
-    code: |
-      renderhook.Before(obj)
-      defer renderhook.After(obj)
-    imports:
-      - "tsyne-bridge/renderhook"
-  ```
-
-- [ ] **AST transformer implementation**
-  - Parse YAML patch specs
-  - Find function in AST by receiver + name
-  - Inject statements at correct position
-  - Add imports if needed
-  - Write modified file preserving formatting
-
-- [ ] **Makefile integration**
-  ```makefile
-  FYNE_VERSION := v2.7.0
-
-  .PHONY: patch-fyne
-  patch-fyne:
-      go run ./tools/patch-fyne \
-          --fyne-version=$(FYNE_VERSION) \
-          --output=./fyne-patched
-
-  build: patch-fyne
-      go build -mod=mod .
-  ```
-
-- [ ] **go.mod replace directive**
-  ```go
-  replace fyne.io/fyne/v2/internal/driver/glfw => ./fyne-patched/internal/driver/glfw
-  ```
-
-### Phase 3: TypeScript/Cosyne API
-
-- [ ] **Extend canvas primitives in bridge** (`core/bridge/canvas.go`)
-  - Add `blendMode` field to TsyneLine, TsyneCircle, etc.
-  - Implement `BlendModeSupport` interface
-  - Handle blend mode in msgpack protocol
-
-- [ ] **TypeScript API** (`core/src/app.ts`)
-  ```typescript
-  a.canvasLine(x1, y1, x2, y2, {
-      strokeColor: '#fff',
-      blendMode: 'additive',  // NEW
+<!--
+CLAUDE-HAIKU: These transform the coordinate system before drawing.
+In Fyne, we'd need to manipulate the model-view matrix or inject transform uniforms.
+The pseudo-declarative API would look like:
+  c.transform({ rotate: 45, scale: 2, translate: [10, 20] }, () => {
+    c.rect(0, 0, 100, 100).fill('#ff0000');
   });
-  ```
+-->
 
-- [ ] **Cosyne primitive support** (`cosyne/src/primitives/base.ts`)
-  ```typescript
-  // Replace the throwing stub with working implementation
-  blendMode(mode: 'normal' | 'additive' | 'multiply' | 'screen'): this {
-      this._blendMode = mode;
-      this.applyBlendMode();
-      return this;
-  }
-  ```
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Rotation | `mat4.rotate()` | Model matrix uniform | ⬜ TODO |
+| Scale | `mat4.scale()` | Model matrix uniform | ⬜ TODO |
+| Translate | `mat4.translate()` | Model matrix uniform | ⬜ TODO |
+| Transform stack | `ctx.save()`/`ctx.restore()` | Push/pop matrix | ⬜ TODO |
+| Skew/shear | `ctx.transform()` | Custom matrix | ⬜ TODO |
 
-### Phase 4: Validation
+### Priority 3: Clipping & Masking
 
-- [ ] **Update spiral demo** (`ported-apps/spiral/spiral.ts`)
-  ```typescript
-  c.line(x1, y1, x2, y2, { strokeColor: '#fff' })
-      .blendMode('additive')  // Enables glow effect
-      .bindEndpoint(() => ...)
-  ```
+<!--
+CLAUDE-HAIKU: Clipping restricts drawing to a region.
+Fyne has basic scissor support but we need arbitrary path clipping.
+Options: stencil buffer, shader-based masking, or FBO compositing.
+Pseudo-declarative:
+  c.clip(clipPath, () => {
+    c.image(src, 0, 0);  // Only visible inside clipPath
+  });
+-->
 
-- [ ] **Test blend modes**
-  - Additive: overlapping white lines → brighter
-  - Multiply: overlapping colors → darker
-  - Screen: overlapping colors → lighter
-  - Normal: standard alpha compositing (default)
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Scissor rect | N/A (Fyne has this) | `glScissor` | ✅ Exists |
+| Arbitrary clip path | `ctx.clip()` | Stencil buffer | ⬜ TODO |
+| Compositing modes | `ctx.globalCompositeOperation` | Various blend modes | Partial |
 
-- [ ] **Document upgrade strategy** (`docs/fyne-patching.md`)
-  - How to update FYNE_VERSION
-  - What to check when Fyne releases new version
-  - How AST patching fails safely (build error, not runtime)
+### Priority 4: Shadows & Effects
 
-## Future Enhancements
+<!--
+CLAUDE-HAIKU: These require multi-pass rendering or FBOs.
+Shadow: render to offscreen buffer, blur, composite under main render.
+Blur: Gaussian blur shader on FBO texture.
+Glow: Similar to shadow but additive blend.
+These are more complex - may need custom shader programs.
+-->
 
-After blend modes work, consider:
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Drop shadow | `ctx.shadowBlur`, `ctx.shadowColor` | FBO + blur shader | ⬜ TODO |
+| Gaussian blur | Custom shader | FBO + separable blur | ⬜ TODO |
+| Glow effect | Custom shader | FBO + additive blend | ⬜ TODO |
 
-- [ ] **Shadow/blur effects** - Requires FBO (framebuffer object) rendering
-- [ ] **Custom shaders** - For advanced effects like Gaussian blur
-- [ ] **Upstream PR** - Propose `RenderHook` interface to Fyne project
+### Priority 5: Gradients & Patterns
 
-## Related Cosyne Feature Requests
+<!--
+CLAUDE-HAIKU: Fyne has basic gradient support but we may need to extend it.
+Linear/radial gradients need shader uniforms for stops and colors.
+Pattern fill requires texture sampling with repeat modes.
+-->
 
-- [ ] **Animated SVG paths** - Support `bindPath()` on `CosynePath` to animate path strings (quadratic/cubic curves via `Q`/`C` commands). Currently wave2 demo uses 2x points with line segments to approximate curves. See [wave2.ts](../ported-apps/wave2/wave2.ts).
-- [ ] **Line caps/joins** - Canvas2D has `lineJoin: 'round'` and `lineCap: 'round'` for smoother line rendering. Would help line-segment approximations look better.
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Linear gradient | `ctx.createLinearGradient()` | Shader uniform | Partial (Fyne) |
+| Radial gradient | `ctx.createRadialGradient()` | Shader uniform | Partial (Fyne) |
+| Pattern fill | `ctx.createPattern()` | Texture with GL_REPEAT | ⬜ TODO |
+| Conic gradient | CSS `conic-gradient` | Custom shader | ⬜ TODO |
+
+### Priority 6: Text Rendering
+
+<!--
+CLAUDE-HAIKU: Fyne's text rendering is basic.
+WebGL apps often use SDF (signed distance field) fonts for crisp scaling.
+Text stroke requires geometry generation or shader tricks.
+-->
+
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Text stroke | `ctx.strokeText()` | Geometry or shader | ⬜ TODO |
+| Text baseline | `ctx.textBaseline` | Layout calculation | ⬜ TODO |
+| Custom fonts | `ctx.font` | Font atlas texture | Partial (Fyne) |
+| SDF text | N/A (advanced) | SDF shader | ⬜ TODO |
+
+### Priority 7: Image Operations
+
+<!--
+CLAUDE-HAIKU: Pixel manipulation requires reading back from GPU or using compute shaders.
+getImageData equivalent needs glReadPixels or render-to-texture.
+putImageData needs texture upload.
+-->
+
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Image smoothing | `ctx.imageSmoothingEnabled` | GL_LINEAR/GL_NEAREST | ⬜ TODO |
+| Pixel read | `ctx.getImageData()` | `glReadPixels` | ⬜ TODO |
+| Pixel write | `ctx.putImageData()` | `glTexSubImage2D` | ⬜ TODO |
+
+### Priority 8: Advanced (WebGL2 / Compute)
+
+<!--
+CLAUDE-HAIKU: These are stretch goals requiring significant architecture.
+Custom shaders need GLSL compilation infrastructure.
+Instancing needs careful buffer management.
+Only pursue if there's strong user demand.
+-->
+
+| Feature | WebGL Equivalent | OpenGL Calls | Status |
+|---------|------------------|--------------|--------|
+| Custom shaders | GLSL programs | `glCreateShader` etc | ⬜ Future |
+| Instanced drawing | `gl.drawArraysInstanced()` | `glDrawArraysInstanced` | ⬜ Future |
+| Framebuffer objects | `gl.createFramebuffer()` | FBO API | ⬜ Future |
+
+## Pseudo-Declarative API Design
+
+All features should integrate with Tsyne's builder pattern:
+
+```typescript
+// Blend modes (implemented)
+c.rect(0, 0, 100, 100, { blendMode: 'additive' })
+  .fill('#ff0000');
+
+// Future: transforms
+c.transform({ rotate: 45, origin: [50, 50] }, () => {
+  c.rect(0, 0, 100, 100).fill('#00ff00');
+});
+
+// Future: clipping
+c.clip(() => c.circle(50, 50, 40), () => {
+  c.image(src, 0, 0, 100, 100);
+});
+
+// Future: shadows
+c.rect(10, 10, 80, 80, {
+  shadow: { blur: 10, color: '#000000', offsetX: 5, offsetY: 5 }
+}).fill('#ffffff');
+```
+
+## Architecture Notes
+
+<!--
+CLAUDE-HAIKU: Key implementation patterns established with blend modes:
+
+1. **Fyne fork patching** (`setup-fyne-fork.sh`):
+   - Copy Fyne source from Go module cache
+   - Inject fields/methods into canvas primitives
+   - Create internal packages (like `renderhook`)
+   - AST-patch painter.go for hook injection
+   - Patch draw.go to remove hardcoded overrides
+
+2. **Safe GL access**:
+   - Never call GL functions before gl.Init()
+   - Use callback pattern: store function pointer after Init
+   - Check for nil before calling GL functions
+
+3. **Bridge integration**:
+   - Add field to CreateCanvas* proto messages
+   - Parse in widget_creators_canvas*.go
+   - Pass to Fyne primitive constructor
+
+4. **TypeScript API**:
+   - Add option to widget factory method
+   - Type definitions in widgets/canvas.ts
+   - Cosyne wraps in fluent API
+
+5. **Testing**:
+   - Unit tests for color math / API
+   - Integration tests with TsyneTest screenshots
+   - Pixel sampling to verify GPU behavior
+-->
+
+The blend mode implementation established patterns for future features:
+
+1. **Fyne patching**: `setup-fyne-fork.sh` orchestrates all modifications
+2. **Render hooks**: `internal/renderhook/` provides pre/post paint callbacks
+3. **Safe GL**: Callback pattern prevents CGO crashes from early GL calls
+4. **Proto→Go→TS**: Field flows from proto message to bridge to TypeScript API
 
 ## References
 
-- [OpenGL Blend Functions](https://www.khronos.org/opengl/wiki/Blending)
-- [Go AST Package](https://pkg.go.dev/go/ast)
+- [WebGL Specification](https://www.khronos.org/registry/webgl/specs/latest/1.0/)
+- [Canvas 2D Context](https://html.spec.whatwg.org/multipage/canvas.html)
+- [OpenGL ES 2.0 Reference](https://www.khronos.org/opengles/sdk/docs/man/)
 - [Fyne Canvas Architecture](https://developer.fyne.io/canvas/)
-- [hakimel's Spiral CodePen](https://codepen.io/hakimel/pen/QdWpRv)
+- [Tsyne Pseudo-Declarative UI](/docs/pseudo-declarative-ui-composition.md)
