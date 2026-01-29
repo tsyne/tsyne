@@ -196,6 +196,23 @@ echo "[setup-fyne-fork] Patching draw.go to remove BlendFunc overrides..."
 sed -i 's/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/\/\/ PATCHED: removed BlendFunc override/g' "$FORK_DIR/internal/painter/gl/draw.go"
 sed -i 's/p\.ctx\.BlendFunc(one, oneMinusSrcAlpha)/\/\/ PATCHED: removed BlendFunc override/g' "$FORK_DIR/internal/painter/gl/draw.go"
 
+# 7b. Fix transparent color check in drawOblong - color.RGBA{0,0,0,0} != color.Transparent (which is Alpha16)
+echo "[setup-fyne-fork] Patching draw.go to fix transparent color check..."
+# Add helper function to check if a color is transparent by checking alpha
+sed -i '/^func (p \*painter) drawOblong/i\
+// isTransparent checks if a color is fully transparent (alpha == 0)\
+func isTransparent(c color.Color) bool {\
+	if c == nil {\
+		return true\
+	}\
+	_, _, _, a := c.RGBA()\
+	return a == 0\
+}\
+' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Replace the flawed check with our helper function
+sed -i 's/if (fill == color.Transparent || fill == nil) && (stroke == color.Transparent || stroke == nil || strokeWidth == 0) {/if isTransparent(fill) \&\& (isTransparent(stroke) || strokeWidth == 0) {/' "$FORK_DIR/internal/painter/gl/draw.go"
+
 # 8. Patch painter.go
 echo "[setup-fyne-fork] Patching painter.go..."
 cd "$BRIDGE_DIR"

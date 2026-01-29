@@ -337,6 +337,13 @@ export class Window {
    * @returns Promise<string | null> - folder path if selected, null if cancelled
    */
   async showFolderOpen(): Promise<string | null> {
+    // Check for mocked response in test harness
+    const testHarness = this.ctx.testHarness;
+    if (testHarness && testHarness.hasMockedFileDialog('folder')) {
+      const mockedResponse = testHarness.popMockedFileDialog('folder');
+      return mockedResponse === undefined ? null : mockedResponse;
+    }
+
     return new Promise((resolve) => {
       const callbackId = this.ctx.generateId('callback');
 

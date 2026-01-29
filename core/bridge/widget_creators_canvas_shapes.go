@@ -292,6 +292,9 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 		}
 	}
 
+	// Refresh to ensure initial properties are applied
+	rect.Refresh()
+
 	b.mu.Lock()
 	b.widgets[widgetID] = rect
 	b.widgetMeta[widgetID] = WidgetMetadata{Type: "canvasrectangle", Text: ""}

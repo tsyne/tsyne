@@ -55,6 +55,51 @@ export class CanvasStack {
     ctx.bridge.send('createCanvasStack', { id: this.id, childIds });
     ctx.addToCurrentContainer(this.id);
   }
+
+  /**
+   * Remove all children from the canvas stack
+   */
+  async removeAll(): Promise<void> {
+    await this.ctx.bridge.send('containerRemoveAll', {
+      containerId: this.id
+    });
+  }
+
+  /**
+   * Rebuild the canvas stack with new content
+   * @param builder Function that builds new children
+   */
+  async rebuild(builder: () => void): Promise<void> {
+    // Remove existing children
+    await this.removeAll();
+
+    // Build new children within this container's context
+    this.ctx.pushContainerById(this.id);
+    builder();
+    const childIds = this.ctx.popContainer();
+
+    // Add children to the existing container sequentially to preserve order
+    for (const childId of childIds) {
+      await this.ctx.bridge.send('containerAdd', {
+        containerId: this.id,
+        childId
+      });
+    }
+  }
+
+  /**
+   * Register a custom ID for this widget (for testing/debugging)
+   */
+  withId(customId: string): this {
+    const registrationPromise = this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).then(() => {}).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    this.ctx.trackRegistration(registrationPromise);
+    return this;
+  }
 }
 
 /**

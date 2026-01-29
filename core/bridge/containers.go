@@ -179,6 +179,11 @@ func (b *Bridge) handleContainerAdd(msg Message) Response {
 		// UI updates must happen on the main thread
 		fyne.DoAndWait(func() {
 			cont.Add(childObj)
+			// Refresh the child itself to ensure it's marked for rendering
+			// This is critical for dynamically added canvas objects
+			childObj.Refresh()
+			// Refresh the container to ensure layout is triggered
+			cont.Refresh()
 			// If container is already attached to a canvas, mark it dirty to trigger repaint.
 			// Without this, Add() on an already-displayed container won't visually update
 			// until something else (like mouse movement) triggers a repaint.
