@@ -12,7 +12,7 @@ export interface TestOptions {
  * Mocked file dialog response
  */
 export interface MockedFileDialog {
-  type: 'open' | 'save';
+  type: 'open' | 'save' | 'folder';
   response: string | null;  // file path or null for cancel
 }
 
@@ -36,13 +36,13 @@ export class TsyneTest {
 
   /**
    * Mock the next file dialog response.
-   * When showFileOpen or showFileSave is called, it will return this response
+   * When showFileOpen, showFileSave, or showFolderOpen is called, it will return this response
    * instead of showing the actual dialog.
    *
-   * @param type - 'open' for showFileOpen, 'save' for showFileSave
-   * @param response - file path to return, or null to simulate cancel
+   * @param type - 'open' for showFileOpen, 'save' for showFileSave, 'folder' for showFolderOpen
+   * @param response - file/folder path to return, or null to simulate cancel
    */
-  mockFileDialog(type: 'open' | 'save', response: string | null): void {
+  mockFileDialog(type: 'open' | 'save' | 'folder', response: string | null): void {
     this.mockedFileDialogs.push({ type, response });
   }
 
@@ -50,7 +50,7 @@ export class TsyneTest {
    * Get and remove the next mocked file dialog response for the given type.
    * Returns undefined if no mock is queued.
    */
-  popMockedFileDialog(type: 'open' | 'save'): string | null | undefined {
+  popMockedFileDialog(type: 'open' | 'save' | 'folder'): string | null | undefined {
     const index = this.mockedFileDialogs.findIndex(m => m.type === type);
     if (index === -1) {
       return undefined;
@@ -62,7 +62,7 @@ export class TsyneTest {
   /**
    * Check if there's a mocked response for the given dialog type
    */
-  hasMockedFileDialog(type: 'open' | 'save'): boolean {
+  hasMockedFileDialog(type: 'open' | 'save' | 'folder'): boolean {
     return this.mockedFileDialogs.some(m => m.type === type);
   }
 

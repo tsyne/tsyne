@@ -20,7 +20,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { cosyne, CosyneContext, enableEventHandling, refreshAllCosyneContexts, EventRouter } from 'cosyne';
+import { cosyneContext as cosyne, CosyneContext, enableEventHandling, EventRouter } from 'tsyne';
 
 // Type definitions for Tsyne (imported via the builder args pattern)
 type App = any;
@@ -162,6 +162,20 @@ export class DiskTreeStore {
     this.changeListeners.forEach(listener => listener());
   }
 
+  // Progress-only listeners (for status updates during scan without canvas rebuild)
+  private progressListeners: ChangeListener[] = [];
+
+  subscribeProgress(listener: ChangeListener): () => void {
+    this.progressListeners.push(listener);
+    return () => {
+      this.progressListeners = this.progressListeners.filter(l => l !== listener);
+    };
+  }
+
+  private notifyProgressOnly(): void {
+    this.progressListeners.forEach(listener => listener());
+  }
+
   // Generate unique ID
   private genId(): string {
     return `entry-${this.nextId++}`;
@@ -212,9 +226,10 @@ export class DiskTreeStore {
     this.state.scanProgress.directoriesScanned++;
     this.state.scanProgress.currentPath = dirPath;
 
-    // Yield to event loop periodically for UI updates
-    if (this.state.scanProgress.directoriesScanned % 100 === 0) {
-      this.notifyChange();
+    // Yield to event loop periodically for UI updates (status labels only)
+    // Throttle to every 500 dirs to reduce flicker - canvas only rebuilds on completion
+    if (this.state.scanProgress.directoriesScanned % 500 === 0) {
+      this.notifyProgressOnly();
       await new Promise(resolve => setImmediate(resolve));
     }
 
@@ -329,15 +344,17 @@ export class DiskTreeStore {
   }
 
   // ========== Selection ==========
+  // Note: These don't call notifyChange() to avoid triggering canvas rebuild
+  // The UI class handles updating labels directly
 
   setSelected(id: string | null): void {
     this.state.selectedId = id;
-    this.notifyChange();
+    // Don't notify - UI handles this directly
   }
 
   setHovered(id: string | null): void {
     this.state.hoveredId = id;
-    this.notifyChange();
+    // Don't notify - UI handles this directly
   }
 
   // ========== Color Scheme ==========
@@ -604,27 +621,30 @@ function getColorForRect(rect: TreemapRect, state: AppState, isHovered: boolean)
   }
 
   const { r, g, b } = hslToRgb(hue, saturation, lightness);
-  return `rgb(${r}, ${g}, ${b})`;
+  // Use hex format for better compatibility
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 function lightenColor(color: string, amount: number): string {
-  const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  // Parse hex color
+  const match = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   if (!match) return color;
 
-  const r = Math.min(255, parseInt(match[1]) + amount);
-  const g = Math.min(255, parseInt(match[2]) + amount);
-  const b = Math.min(255, parseInt(match[3]) + amount);
-  return `rgb(${r}, ${g}, ${b})`;
+  const r = Math.min(255, parseInt(match[1], 16) + amount);
+  const g = Math.min(255, parseInt(match[2], 16) + amount);
+  const b = Math.min(255, parseInt(match[3], 16) + amount);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 function darkenColor(color: string, amount: number): string {
-  const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  // Parse hex color
+  const match = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   if (!match) return color;
 
-  const r = Math.max(0, parseInt(match[1]) - amount);
-  const g = Math.max(0, parseInt(match[2]) - amount);
-  const b = Math.max(0, parseInt(match[3]) - amount);
-  return `rgb(${r}, ${g}, ${b})`;
+  const r = Math.max(0, parseInt(match[1], 16) - amount);
+  const g = Math.max(0, parseInt(match[2], 16) - amount);
+  const b = Math.max(0, parseInt(match[3], 16) - amount);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 // ============================================================================
@@ -652,12 +672,17 @@ export class DiskTreeUI {
   private window: Window | null = null;
   private cosyneCtx: CosyneContext | null = null;
   private eventRouter: EventRouter | null = null;
+  private canvasStack: any = null;  // Reference to the CanvasStack for rebuilding
 
   // Widget references
   private statusLabel: Label | null = null;
   private statsLabel: Label | null = null;
   private infoLabel: Label | null = null;
   private breadcrumbLabel: Label | null = null;
+
+  // Canvas dimensions
+  private canvasWidth = 800;
+  private canvasHeight = 500;
 
   constructor(private a: App) {
     this.store = new DiskTreeStore();
@@ -720,12 +745,46 @@ export class DiskTreeUI {
     }
   }
 
-  private async updateUI(): Promise<void> {
+  private async updateUI(rebuildCanvas: boolean = false): Promise<void> {
     this.updateStatusLabel();
     this.updateStatsLabel();
     this.updateInfoLabel();
     this.updateBreadcrumbLabel();
-    refreshAllCosyneContexts();
+    // Only rebuild canvas when treemap structure changes (scan, drill-down)
+    // Not on hover - that causes flickering
+    if (rebuildCanvas) {
+      await this.rebuildCanvas();
+    }
+  }
+
+  private rebuildInProgress = false;
+
+  private async rebuildCanvas(): Promise<void> {
+    if (!this.canvasStack) {
+      return;
+    }
+
+    // If a rebuild is already in progress, skip - the in-progress one will use latest state
+    if (this.rebuildInProgress) {
+      return;
+    }
+
+    this.rebuildInProgress = true;
+
+    try {
+      await this.canvasStack.rebuild(() => {
+        cosyne(this.a, (c: CosyneContext) => {
+          this.cosyneCtx = c;
+          this.eventRouter = enableEventHandling(c, this.a, {
+            width: this.canvasWidth,
+            height: this.canvasHeight,
+          });
+          this.renderTreemap(c);
+        });
+      });
+    } finally {
+      this.rebuildInProgress = false;
+    }
   }
 
   private renderShadedRect(
@@ -736,65 +795,39 @@ export class DiskTreeUI {
     isHovered: boolean
   ): void {
     const { x, y, width, height } = rect;
-    const bevel = Math.min(BEVEL_SIZE, width / 4, height / 4);
 
     if (width < 2 || height < 2) return;
 
-    // Skip bevels for very small rects
-    if (width < 8 || height < 8) {
-      c.rect(x, y, width, height)
-        .fill(baseColor)
-        .stroke(isSelected ? '#ff0000' : 'none', isSelected ? 2 : 0)
-        .withId(`rect-main-${rect.id}`);
-      return;
-    }
-
-    // Shadow edges (bottom & right) - darker
-    c.rect(x + bevel, y + height - bevel, width - bevel, bevel)
-      .fill(darkenColor(baseColor, 40))
-      .stroke('none', 0)
-      .withId(`rect-shadow-bottom-${rect.id}`);
-
-    c.rect(x + width - bevel, y + bevel, bevel, height - bevel * 2)
-      .fill(darkenColor(baseColor, 40))
-      .stroke('none', 0)
-      .withId(`rect-shadow-right-${rect.id}`);
-
-    // Highlight edges (top & left) - lighter
-    c.rect(x, y, width - bevel, bevel)
-      .fill(lightenColor(baseColor, 40))
-      .stroke('none', 0)
-      .withId(`rect-highlight-top-${rect.id}`);
-
-    c.rect(x, y + bevel, bevel, height - bevel * 2)
-      .fill(lightenColor(baseColor, 40))
-      .stroke('none', 0)
-      .withId(`rect-highlight-left-${rect.id}`);
-
-    // Main surface
-    const strokeColor = isSelected ? '#ff0000' : (isHovered ? '#ffffff' : 'none');
+    // Simple rect without bevels for debugging
+    const strokeColor = isSelected ? '#ff0000' : (isHovered ? '#ffffff' : undefined);
     const strokeWidth = isSelected ? 2 : (isHovered ? 1 : 0);
 
-    c.rect(x + bevel, y + bevel, width - bevel * 2, height - bevel * 2)
-      .fill(baseColor)
-      .stroke(strokeColor, strokeWidth)
-      .withId(`rect-main-${rect.id}`);
+    c.rect(x, y, width, height, {
+      fillColor: baseColor,
+      strokeColor,
+      strokeWidth,
+    }).withId(`rect-main-${rect.id}`);
   }
 
   private renderTreemap(c: CosyneContext): void {
     const state = this.store.getState();
 
+    console.log(`[renderTreemap] Rendering ${state.allRects.length} rects, colorScheme=${state.colorScheme}`);
+
     // Background
-    c.rect(0, 0, state.canvasWidth, state.canvasHeight)
-      .fill('#1a1a2e')
-      .stroke('none', 0)
-      .withId('background');
+    c.rect(0, 0, state.canvasWidth, state.canvasHeight, {
+      fillColor: '#1a1a2e',
+    }).withId('background');
 
     // Render all rectangles
-    for (const rect of state.allRects) {
+    for (let i = 0; i < state.allRects.length; i++) {
+      const rect = state.allRects[i];
       const isHovered = state.hoveredId === rect.id;
       const isSelected = state.selectedId === rect.id;
       const baseColor = getColorForRect(rect, state, isHovered);
+
+      // Debug: log all rects with full details
+      console.log(`[DiskTree] rect ${i}: ${rect.entry.name}, x=${rect.x.toFixed(1)}, y=${rect.y.toFixed(1)}, w=${rect.width.toFixed(1)}, h=${rect.height.toFixed(1)}, color=${baseColor}`);
 
       this.renderShadedRect(c, rect, baseColor, isSelected, isHovered);
 
@@ -819,27 +852,28 @@ export class DiskTreeUI {
       }
 
       // Invisible hit-test rectangle for events
-      const hitRect = c.rect(rect.x, rect.y, rect.width, rect.height)
-        .fill('transparent')
-        .stroke('none', 0)
-        .withId(`hit-${rect.id}`);
+      const hitRect = c.rect(rect.x, rect.y, rect.width, rect.height, {
+        fillColor: 'transparent',
+      }).withId(`hit-${rect.id}`);
 
       hitRect.onClick(() => {
         this.store.setSelected(rect.id);
         if (rect.entry.isDirectory) {
           this.store.drillDown(rect.id);
+          this.updateUI(true); // Rebuild for drill-down
+        } else {
+          this.updateUI(false); // Just update labels for selection
         }
-        this.updateUI();
       });
 
       hitRect.onMouseEnter(() => {
         this.store.setHovered(rect.id);
-        this.updateUI();
+        this.updateUI(false); // Don't rebuild on hover - prevents flickering
       });
 
       hitRect.onMouseLeave(() => {
         this.store.setHovered(null);
-        this.updateUI();
+        this.updateUI(false); // Don't rebuild on hover
       });
     }
 
@@ -847,12 +881,12 @@ export class DiskTreeUI {
     if (state.allRects.length === 0 && !state.scanProgress.isScanning) {
       if (state.rootEntry) {
         c.text(state.canvasWidth / 2 - 80, state.canvasHeight / 2, 'Empty folder')
-          .fill('#888888')
+          .fill('#ffffff')
           .stroke('none', 0)
           .withId('empty-message');
       } else {
         c.text(state.canvasWidth / 2 - 100, state.canvasHeight / 2, 'Click "Open Folder" to start')
-          .fill('#888888')
+          .fill('#ffffff')
           .stroke('none', 0)
           .withId('start-message');
       }
@@ -862,14 +896,8 @@ export class DiskTreeUI {
   buildUI(win: Window): void {
     this.window = win;
 
-    const canvasWidth = 800;
-    const canvasHeight = 500;
-    this.store.setCanvasSize(canvasWidth, canvasHeight);
-
-    // Subscribe to store changes
-    this.store.subscribe(() => {
-      this.updateUI();
-    });
+    // Note: subscriptions are set up AFTER canvasStack is created (below)
+    // to avoid triggering rebuilds before the canvas exists
 
     this.a.vbox(() => {
       // Title bar
@@ -903,14 +931,14 @@ export class DiskTreeUI {
         this.a.button('Up')
           .onClick(() => {
             this.store.drillUp();
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('upBtn');
 
         this.a.button('Root')
           .onClick(() => {
             this.store.goToRoot();
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('rootBtn');
 
@@ -922,28 +950,28 @@ export class DiskTreeUI {
         this.a.button('Type')
           .onClick(() => {
             this.store.setColorScheme('byType');
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('colorTypeBtn');
 
         this.a.button('Size')
           .onClick(() => {
             this.store.setColorScheme('bySize');
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('colorSizeBtn');
 
         this.a.button('Depth')
           .onClick(() => {
             this.store.setColorScheme('byDepth');
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('colorDepthBtn');
 
         this.a.button('Age')
           .onClick(() => {
             this.store.setColorScheme('byAge');
-            this.updateUI();
+            this.updateUI(true);
           })
           .withId('colorAgeBtn');
       });
@@ -956,17 +984,17 @@ export class DiskTreeUI {
 
       this.a.separator();
 
-      // Canvas for treemap
-      this.a.canvasStack(() => {
+      // Canvas for treemap - store reference for rebuilding
+      this.canvasStack = this.a.canvasStack(() => {
         cosyne(this.a, (c: CosyneContext) => {
           this.cosyneCtx = c;
           this.eventRouter = enableEventHandling(c, this.a, {
-            width: canvasWidth,
-            height: canvasHeight,
+            width: this.canvasWidth,
+            height: this.canvasHeight,
           });
           this.renderTreemap(c);
         });
-      }, canvasWidth, canvasHeight);
+      }, this.canvasWidth, this.canvasHeight);
 
       this.a.separator();
 
@@ -976,6 +1004,20 @@ export class DiskTreeUI {
         this.a.spacer();
         this.statsLabel = this.a.label('Files: 0 | Folders: 0 | Total: 0 B').withId('stats');
       });
+    });
+
+    // Set up subscriptions AFTER canvasStack exists to avoid premature rebuilds
+    this.store.setCanvasSize(this.canvasWidth, this.canvasHeight);
+
+    // Subscribe to store changes - rebuild canvas when structure changes
+    this.store.subscribe(() => {
+      this.updateUI(true);
+    });
+
+    // Subscribe to progress updates - labels only, no canvas rebuild
+    this.store.subscribeProgress(() => {
+      this.updateStatusLabel();
+      this.updateStatsLabel();
     });
   }
 
@@ -1005,10 +1047,18 @@ export function buildDiskTreeApp(a: App, win: Window): DiskTreeUI {
 
 if (require.main === module) {
   const { app, resolveTransport } = require('tsyne');
+  const initialFolder = process.argv[2]; // Optional folder path as first arg
+
   app(resolveTransport(), { title: 'Disk Tree', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Disk Tree', width: 900, height: 700 }, (win: Window) => {
-      buildDiskTreeApp(a, win);
+      const ui = buildDiskTreeApp(a, win);
       win.show();
+
+      // Auto-scan if folder provided via command line
+      if (initialFolder) {
+        console.log(`[DiskTree] Auto-scanning: ${initialFolder}`);
+        ui.getStore().scanDirectory(initialFolder);
+      }
     });
   });
 }

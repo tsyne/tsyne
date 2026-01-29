@@ -8,8 +8,8 @@ type AccessibilityManagerType = import('./accessibility').AccessibilityManager;
  * Interface for test harness that can mock dialogs
  */
 export interface TestHarness {
-  hasMockedFileDialog(type: 'open' | 'save'): boolean;
-  popMockedFileDialog(type: 'open' | 'save'): string | null | undefined;
+  hasMockedFileDialog(type: 'open' | 'save' | 'folder'): boolean;
+  popMockedFileDialog(type: 'open' | 'save' | 'folder'): string | null | undefined;
 }
 
 /**
@@ -187,6 +187,17 @@ export class Context {
   }
 
   pushContainer(): void {
+    this.containerStack.push([]);
+    this.widgetStack.push([]);
+  }
+
+  /**
+   * Push a container by ID - used when rebuilding existing containers
+   * The container ID is tracked so addToCurrentContainer knows where to add children
+   */
+  pushContainerById(containerId: string): void {
+    // Push an empty array to collect new children
+    // The containerId is used by containerAdd to know the target
     this.containerStack.push([]);
     this.widgetStack.push([]);
   }

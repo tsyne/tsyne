@@ -121,13 +121,14 @@ export class CosyneContext {
    * Create a rectangle primitive
    */
   rect(x: number, y: number, width: number, height: number, options?: RectOptions): CosyneRect {
+    const fillColor = options?.fillColor || 'black';
     // Create the underlying Tsyne canvas rectangle
     const underlying = this.app.canvasRectangle({
       x,
       y,
       x2: x + width,
       y2: y + height,
-      fillColor: options?.fillColor || 'black',
+      fillColor,
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
       blendMode: options?.blendMode,
