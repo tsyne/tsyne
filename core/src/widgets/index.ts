@@ -121,6 +121,8 @@ export {
   CanvasEllipseOptions,
   CanvasGauge,
   CanvasGaugeOptions,
+  CanvasShader,
+  CanvasShaderOptions,
   TappableCanvasRaster,
   TappableCanvasRasterOptions
 } from './canvas';

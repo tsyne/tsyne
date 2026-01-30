@@ -2647,3 +2647,139 @@ export class CanvasGauge {
     return this._value;
   }
 }
+
+// ============================================================================
+// Canvas Shader - GPU-accelerated GLSL fragment shader rendering
+// ============================================================================
+
+export interface CanvasShaderOptions {
+  /** Initial uniforms to set (name -> value) */
+  uniforms?: Record<string, number | number[]>;
+}
+
+/**
+ * GPU-accelerated canvas object that renders using a custom GLSL fragment shader.
+ *
+ * The fragment shader receives these built-in uniforms:
+ * - vec2 u_resolution: canvas size in pixels
+ * - float u_time: time in seconds since start
+ *
+ * Custom uniforms can be set via setUniform() or in constructor options.
+ *
+ * @example
+ * ```typescript
+ * const shader = new CanvasShader(ctx, 400, 300, `
+ *   void main() {
+ *     vec2 uv = gl_FragCoord.xy / u_resolution;
+ *     gl_FragColor = vec4(uv.x, uv.y, 0.5 + 0.5 * sin(u_time), 1.0);
+ *   }
+ * `);
+ *
+ * // Set custom uniforms
+ * shader.setUniform('u_zoom', 1.5);
+ * shader.setUniform('u_center', [0.0, 0.0]);
+ * ```
+ */
+export class CanvasShader {
+  private ctx: Context;
+  public id: string;
+  private _width: number;
+  private _height: number;
+  private _fragmentSource: string;
+  private _uniforms: Record<string, number | number[]>;
+
+  constructor(
+    ctx: Context,
+    width: number,
+    height: number,
+    fragmentSource: string,
+    options?: CanvasShaderOptions
+  ) {
+    this.ctx = ctx;
+    this.id = ctx.generateId('canvasshader');
+    this._width = width;
+    this._height = height;
+    this._fragmentSource = fragmentSource;
+    this._uniforms = options?.uniforms ?? {};
+
+    const payload: Record<string, unknown> = {
+      id: this.id,
+      width,
+      height,
+      fragmentSource,
+      uniforms: this._uniforms,
+    };
+
+    ctx.bridge.send('createCanvasShader', payload);
+    ctx.addToCurrentContainer(this.id);
+  }
+
+  get width(): number { return this._width; }
+  get height(): number { return this._height; }
+
+  /**
+   * Register a custom ID for this widget (for test framework getById)
+   * @param customId Custom ID to register
+   * @returns this for method chaining
+   */
+  withId(customId: string): this {
+    this.ctx.bridge.send('registerCustomId', {
+      widgetId: this.id,
+      customId
+    }).catch(err => {
+      console.error('Failed to register custom ID:', err);
+    });
+    return this;
+  }
+
+  /**
+   * Set a uniform value. Supported types:
+   * - number: float uniform
+   * - [n, m]: vec2 uniform
+   * - [x, y, z]: vec3 uniform
+   * - [r, g, b, a]: vec4 uniform
+   */
+  async setUniform(name: string, value: number | number[]): Promise<void> {
+    this._uniforms[name] = value;
+    await this.ctx.bridge.send('updateCanvasShader', {
+      widgetId: this.id,
+      uniforms: { [name]: value },
+    });
+  }
+
+  /**
+   * Set multiple uniforms at once
+   */
+  async setUniforms(uniforms: Record<string, number | number[]>): Promise<void> {
+    Object.assign(this._uniforms, uniforms);
+    await this.ctx.bridge.send('updateCanvasShader', {
+      widgetId: this.id,
+      uniforms,
+    });
+  }
+
+  /**
+   * Update the fragment shader source code
+   */
+  async setSource(fragmentSource: string): Promise<void> {
+    this._fragmentSource = fragmentSource;
+    await this.ctx.bridge.send('updateCanvasShader', {
+      widgetId: this.id,
+      fragmentSource,
+    });
+  }
+
+  /**
+   * Get current uniform values
+   */
+  getUniforms(): Record<string, number | number[]> {
+    return { ...this._uniforms };
+  }
+
+  /**
+   * Get current fragment source
+   */
+  getFragmentSource(): string {
+    return this._fragmentSource;
+  }
+}

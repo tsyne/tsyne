@@ -189,6 +189,78 @@ func (s *grpcBridgeService) CreateCanvasRaster(ctx context.Context, req *pb.Crea
 	}, nil
 }
 
+// CreateCanvasShader creates a shader canvas object for GPU-accelerated rendering
+func (s *grpcBridgeService) CreateCanvasShader(ctx context.Context, req *pb.CreateCanvasShaderRequest) (*pb.Response, error) {
+	// Convert uniforms from proto to map
+	uniforms := make(map[string]interface{})
+	for _, u := range req.Uniforms {
+		switch len(u.Values) {
+		case 1:
+			uniforms[u.Name] = float64(u.Values[0])
+		case 2:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1])}
+		case 3:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1]), float64(u.Values[2])}
+		case 4:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1]), float64(u.Values[2]), float64(u.Values[3])}
+		}
+	}
+
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "createCanvasShader",
+		Payload: map[string]interface{}{
+			"id":             req.WidgetId,
+			"width":          float64(req.Width),
+			"height":         float64(req.Height),
+			"fragmentSource": req.FragmentSource,
+			"uniforms":       uniforms,
+		},
+	}
+
+	resp := s.bridge.handleCreateCanvasShader(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// UpdateCanvasShader updates a shader canvas object
+func (s *grpcBridgeService) UpdateCanvasShader(ctx context.Context, req *pb.UpdateCanvasShaderRequest) (*pb.Response, error) {
+	// Convert uniforms from proto to map
+	uniforms := make(map[string]interface{})
+	for _, u := range req.Uniforms {
+		switch len(u.Values) {
+		case 1:
+			uniforms[u.Name] = float64(u.Values[0])
+		case 2:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1])}
+		case 3:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1]), float64(u.Values[2])}
+		case 4:
+			uniforms[u.Name] = []interface{}{float64(u.Values[0]), float64(u.Values[1]), float64(u.Values[2]), float64(u.Values[3])}
+		}
+	}
+
+	msg := Message{
+		ID:   req.WidgetId,
+		Type: "updateCanvasShader",
+		Payload: map[string]interface{}{
+			"widgetId":       req.WidgetId,
+			"fragmentSource": req.FragmentSource,
+			"uniforms":       uniforms,
+		},
+	}
+
+	resp := s.bridge.handleUpdateCanvasShader(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
 // CreateCanvasLinearGradient creates a linear gradient
 func (s *grpcBridgeService) CreateCanvasLinearGradient(ctx context.Context, req *pb.CreateCanvasLinearGradientRequest) (*pb.Response, error) {
 	msg := Message{

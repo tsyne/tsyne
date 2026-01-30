@@ -107,6 +107,8 @@ import {
   CanvasEllipseOptions,
   CanvasRaster,
   CanvasRectangle,
+  CanvasShader,
+  CanvasShaderOptions,
   CanvasText,
   TappableCanvasRaster,
   TappableCanvasRasterOptions,
@@ -955,6 +957,38 @@ export class App {
     options?: TappableCanvasRasterOptions
   ): TappableCanvasRaster {
     return new TappableCanvasRaster(this.ctx, width, height, options);
+  }
+
+  /**
+   * Create a GPU-accelerated canvas shader.
+   *
+   * The fragment shader receives built-in uniforms:
+   * - vec2 u_resolution: canvas size in pixels
+   * - float u_time: time in seconds since start
+   *
+   * @param width Canvas width in pixels
+   * @param height Canvas height in pixels
+   * @param fragmentSource GLSL fragment shader source code
+   * @param options Optional settings including initial uniforms
+   *
+   * @example
+   * ```typescript
+   * const shader = a.canvasShader(400, 300, `
+   *   void main() {
+   *     vec2 uv = gl_FragCoord.xy / u_resolution;
+   *     gl_FragColor = vec4(uv.x, uv.y, 0.5 + 0.5 * sin(u_time), 1.0);
+   *   }
+   * `);
+   * shader.setUniform('u_zoom', 2.0);
+   * ```
+   */
+  canvasShader(
+    width: number,
+    height: number,
+    fragmentSource: string,
+    options?: CanvasShaderOptions
+  ): CanvasShader {
+    return new CanvasShader(this.ctx, width, height, fragmentSource, options);
   }
 
   canvasLinearGradient(options?: {
