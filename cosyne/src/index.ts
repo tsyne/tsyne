@@ -130,6 +130,31 @@ export {
   type PathClip,
   type ClipPath,
 } from './clipping';
+export {
+  generateRadialSymmetry,
+  generateRadialLines,
+  generateRegularPolygon,
+  generateStar,
+  rotatePoint,
+  mirrorPointX,
+  mirrorPointY,
+  toRelative,
+  toAbsolute,
+  angleToPoint,
+  distanceToPoint,
+  polarToCartesian,
+  cartesianToPolar,
+  type RadialSymmetryOptions,
+} from './symmetry';
+export {
+  Trail,
+  ColorTrail,
+  MultiTrail,
+  trailColors,
+  type TrailPoint,
+  type TrailOptions,
+  type ColorTrailPoint,
+} from './trails';
 
 // Cosyne 3D exports
 export * from './index3d';
