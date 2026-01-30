@@ -321,6 +321,18 @@ npm run test:calculator:headed
 - **[test-apps/calculator-advanced/calculator.test.ts](test-apps/calculator-advanced/calculator.test.ts)** - Advanced calculator integration tests
 - **[test-apps/calculator-advanced/calculator-logic.test.ts](test-apps/calculator-advanced/calculator-logic.test.ts)** - Fast Jest unit tests for business logic
 
+### CosyneTest for Canvas Apps
+
+If you're using **Cosyne** (the declarative canvas library), import `CosyneTest` from the cosyne package instead:
+
+```typescript
+import { CosyneTest } from 'cosyne';
+
+const test = new CosyneTest({ headed: false });
+```
+
+`CosyneTest` extends `TsyneTest` with the same API, keeping your imports clean when working with cosyne apps.
+
 ## Browser Testing with TsyneBrowserTest
 
 Tsyne includes **TsyneBrowserTest**, a Playwright-inspired testing framework for testing Tsyne Browser pages. It automatically starts a test HTTP server and provides navigation helpers.

@@ -1212,7 +1212,7 @@ Fyne uses OpenGL for rendering, which requires GPU hardware acceleration. Xvfb p
 
 **For documentation purposes:** The repository's existing screenshots were captured on machines with real displays and show actual UI content. These can be referenced without needing to regenerate them.
 
-See `docs/SCREENSHOTS.md` for more details on screenshot troubleshooting.
+See `docs/VISUAL_TESTING.md` for more details on screenshot troubleshooting.
 
 ## Window Abstraction (ITsyneWindow)
 

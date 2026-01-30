@@ -113,6 +113,16 @@ func (s *grpcBridgeService) CreateLabel(ctx context.Context, req *pb.CreateLabel
 		payload["textStyle"] = textStyle
 	}
 
+	// Add color if specified (hex color string)
+	if req.Color != "" {
+		payload["color"] = req.Color
+	}
+
+	// Add text size if specified (> 0 means custom size)
+	if req.TextSize > 0 {
+		payload["textSize"] = float64(req.TextSize)
+	}
+
 	msg := Message{
 		ID:      req.WidgetId,
 		Type:    "createLabel",

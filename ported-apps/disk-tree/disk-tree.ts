@@ -20,7 +20,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { cosyneContext as cosyne, CosyneContext, enableEventHandling, EventRouter } from 'tsyne';
+import { cosyne, CosyneContext, enableEventHandling, EventRouter } from 'cosyne';
 
 // Type definitions for Tsyne (imported via the builder args pattern)
 type App = any;

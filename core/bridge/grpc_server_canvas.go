@@ -7,24 +7,43 @@ import (
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
 )
 
+// convertBlendMode converts proto BlendMode enum to string expected by handlers
+func convertBlendMode(mode pb.BlendMode) string {
+	switch mode {
+	case pb.BlendMode_BLEND_ADDITIVE:
+		return "additive"
+	case pb.BlendMode_BLEND_MULTIPLY:
+		return "multiply"
+	case pb.BlendMode_BLEND_SCREEN:
+		return "screen"
+	default:
+		return "" // BLEND_NORMAL - don't set, handler uses normal by default
+	}
+}
+
 // ============================================================================
 // Canvas primitives
 // ============================================================================
 
 // CreateCanvasLine creates a canvas line
 func (s *grpcBridgeService) CreateCanvasLine(ctx context.Context, req *pb.CreateCanvasLineRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id":          req.WidgetId,
+		"x1":          float64(req.X1),
+		"y1":          float64(req.Y1),
+		"x2":          float64(req.X2),
+		"y2":          float64(req.Y2),
+		"strokeColor": req.StrokeColor,
+		"strokeWidth": float64(req.StrokeWidth),
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createCanvasLine",
-		Payload: map[string]interface{}{
-			"id":          req.WidgetId,
-			"x1":          float64(req.X1),
-			"y1":          float64(req.Y1),
-			"x2":          float64(req.X2),
-			"y2":          float64(req.Y2),
-			"strokeColor": req.StrokeColor,
-			"strokeWidth": float64(req.StrokeWidth),
-		},
+		ID:      req.WidgetId,
+		Type:    "createCanvasLine",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateCanvasLine(msg)
@@ -37,19 +56,24 @@ func (s *grpcBridgeService) CreateCanvasLine(ctx context.Context, req *pb.Create
 
 // CreateCanvasCircle creates a canvas circle
 func (s *grpcBridgeService) CreateCanvasCircle(ctx context.Context, req *pb.CreateCanvasCircleRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id":          req.WidgetId,
+		"x":           float64(req.X),
+		"y":           float64(req.Y),
+		"x2":          float64(req.X2),
+		"y2":          float64(req.Y2),
+		"fillColor":   req.FillColor,
+		"strokeColor": req.StrokeColor,
+		"strokeWidth": float64(req.StrokeWidth),
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createCanvasCircle",
-		Payload: map[string]interface{}{
-			"id":          req.WidgetId,
-			"x":           float64(req.X),
-			"y":           float64(req.Y),
-			"x2":          float64(req.X2),
-			"y2":          float64(req.Y2),
-			"fillColor":   req.FillColor,
-			"strokeColor": req.StrokeColor,
-			"strokeWidth": float64(req.StrokeWidth),
-		},
+		ID:      req.WidgetId,
+		Type:    "createCanvasCircle",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateCanvasCircle(msg)
@@ -72,6 +96,9 @@ func (s *grpcBridgeService) CreateCanvasRectangle(ctx context.Context, req *pb.C
 	}
 	if req.CornerRadius != 0 {
 		payload["cornerRadius"] = float64(req.CornerRadius)
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
 	}
 
 	msg := Message{
@@ -115,6 +142,9 @@ func (s *grpcBridgeService) CreateCanvasText(ctx context.Context, req *pb.Create
 			payload["alignment"] = "trailing"
 		}
 	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
 
 	msg := Message{
 		ID:      req.WidgetId,
@@ -135,15 +165,20 @@ func (s *grpcBridgeService) CreateCanvasRaster(ctx context.Context, req *pb.Crea
 	// Convert pixels to base64
 	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
 
+	payload := map[string]interface{}{
+		"id":     req.WidgetId,
+		"width":  float64(req.Width),
+		"height": float64(req.Height),
+		"pixels": pixelData,
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createCanvasRaster",
-		Payload: map[string]interface{}{
-			"id":     req.WidgetId,
-			"width":  float64(req.Width),
-			"height": float64(req.Height),
-			"pixels": pixelData,
-		},
+		ID:      req.WidgetId,
+		Type:    "createCanvasRaster",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateCanvasRaster(msg)
@@ -203,21 +238,26 @@ func (s *grpcBridgeService) CreateCanvasRadialGradient(ctx context.Context, req 
 
 // CreateCanvasArc creates a canvas arc
 func (s *grpcBridgeService) CreateCanvasArc(ctx context.Context, req *pb.CreateCanvasArcRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id":          req.WidgetId,
+		"x":           float64(req.X),
+		"y":           float64(req.Y),
+		"x2":          float64(req.X2),
+		"y2":          float64(req.Y2),
+		"startAngle":  req.StartAngle,
+		"endAngle":    req.EndAngle,
+		"fillColor":   req.FillColor,
+		"strokeColor": req.StrokeColor,
+		"strokeWidth": float64(req.StrokeWidth),
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createCanvasArc",
-		Payload: map[string]interface{}{
-			"id":          req.WidgetId,
-			"x":           float64(req.X),
-			"y":           float64(req.Y),
-			"x2":          float64(req.X2),
-			"y2":          float64(req.Y2),
-			"startAngle":  req.StartAngle,
-			"endAngle":    req.EndAngle,
-			"fillColor":   req.FillColor,
-			"strokeColor": req.StrokeColor,
-			"strokeWidth": float64(req.StrokeWidth),
-		},
+		ID:      req.WidgetId,
+		Type:    "createCanvasArc",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateCanvasArc(msg)
@@ -262,21 +302,26 @@ func (s *grpcBridgeService) CreateCanvasPolygon(ctx context.Context, req *pb.Cre
 func (s *grpcBridgeService) CreateTappableCanvasRaster(ctx context.Context, req *pb.CreateTappableCanvasRasterRequest) (*pb.Response, error) {
 	pixelData := base64.StdEncoding.EncodeToString(req.Pixels)
 
+	payload := map[string]interface{}{
+		"id":                    req.WidgetId,
+		"width":                 float64(req.Width),
+		"height":                float64(req.Height),
+		"pixels":                pixelData,
+		"onKeyDownCallbackId":   req.OnKeyDownCallbackId,
+		"onKeyUpCallbackId":     req.OnKeyUpCallbackId,
+		"onScrollCallbackId":    req.OnScrollCallbackId,
+		"onMouseMoveCallbackId": req.OnMouseMoveCallbackId,
+		"onDragCallbackId":      req.DragCallbackId,
+		"onDragEndCallbackId":   req.DragEndCallbackId,
+	}
+	if blendMode := convertBlendMode(req.BlendMode); blendMode != "" {
+		payload["blendMode"] = blendMode
+	}
+
 	msg := Message{
-		ID:   req.WidgetId,
-		Type: "createTappableCanvasRaster",
-		Payload: map[string]interface{}{
-			"id":                     req.WidgetId,
-			"width":                  float64(req.Width),
-			"height":                 float64(req.Height),
-			"pixels":                 pixelData,
-			"onKeyDownCallbackId":    req.OnKeyDownCallbackId,
-			"onKeyUpCallbackId":      req.OnKeyUpCallbackId,
-			"onScrollCallbackId":     req.OnScrollCallbackId,
-			"onMouseMoveCallbackId":  req.OnMouseMoveCallbackId,
-			"onDragCallbackId":       req.DragCallbackId,
-			"onDragEndCallbackId":    req.DragEndCallbackId,
-		},
+		ID:      req.WidgetId,
+		Type:    "createTappableCanvasRaster",
+		Payload: payload,
 	}
 
 	resp := s.bridge.handleCreateTappableCanvasRaster(msg)

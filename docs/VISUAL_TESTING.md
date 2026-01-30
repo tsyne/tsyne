@@ -1,6 +1,6 @@
 # Screenshot Testing in Tsyne
 
-Tsyne supports automatic screenshot capture for debugging test failures in both `TsyneTest` and `TsyneBrowserTest`.
+Tsyne supports automatic screenshot capture for debugging test failures in `TsyneTest`, `TsyneBrowserTest`, and `CosyneTest`.
 
 ## Automatic Screenshot on Test Failure
 
@@ -53,6 +53,26 @@ await test.screenshot('./my-screenshot.png');
 const ctx = test.getContext();
 const label = await ctx.getByText('Nonexistent');
 // Test fails → screenshot automatically saved
+```
+
+### CosyneTest with Screenshots (Canvas Apps)
+
+For Cosyne canvas applications, use `CosyneTest` which extends `TsyneTest` with the same screenshot API:
+
+```typescript
+import { CosyneTest } from 'cosyne';
+
+// For visual canvas screenshots
+const test = new CosyneTest({ headed: true });
+
+await test.createApp((app) => {
+  // ... build cosyne canvas app ...
+});
+
+// Manual screenshot
+await test.screenshot('./canvas-state.png');
+
+// Automatic on test failure
 ```
 
 ### TsyneBrowserTest with Screenshots
@@ -153,6 +173,51 @@ Ensure you've created and shown at least one window before taking a screenshot.
 
 ### "Screenshot saved but I can't find it"
 Screenshots are saved relative to the current working directory in `./test-failures/`.
+
+## For LLM Assistants: Debugging Visual Issues
+
+When debugging visual problems (e.g., "rectangles are black instead of colored", "elements not appearing"), **use TsyneTest/CosyneTest with screenshots** rather than guessing or asking the user repeatedly.
+
+### Step-by-step approach:
+
+1. **Create a minimal reproduction test** that isolates the issue:
+   ```typescript
+   import { TsyneTest } from 'tsyne';
+
+   const test = new TsyneTest({ headed: true });
+   await test.createApp((app) => {
+     // Minimal code to reproduce the issue
+   });
+   await test.screenshot('/tmp/debug-1-initial.png');
+   ```
+
+2. **Use step-by-step screenshots** to narrow down where rendering breaks:
+   ```typescript
+   // Step 1: Just the background
+   await test.screenshot('/tmp/step1-background.png');
+
+   // Step 2: Add first element
+   await test.screenshot('/tmp/step2-first-element.png');
+
+   // Step 3: Add the problematic element
+   await test.screenshot('/tmp/step3-problem.png');
+   ```
+
+3. **Read the screenshots** using the Read tool to see what's actually rendered.
+
+4. **For interactive debugging**, simulate user actions:
+   ```typescript
+   const ctx = test.getContext();
+   await ctx.getById('showBtn').click();
+   await test.screenshot('/tmp/after-click.png');
+   ```
+
+### Key points:
+- **Don't use xdotool** - use TsyneTest's built-in interaction methods
+- **Take screenshots at each step** - don't assume what's rendering
+- **The user's display works** - if they say something looks wrong, believe them and investigate with screenshots
+- **Create isolation tests** - strip away complexity to find the root cause
+- **Prefer `.within()` over `ctx.wait()`** - instead of `await ctx.wait(500)`, use `await ctx.getById('x').within(500).shouldBe('value')` which polls intelligently and doesn't lengthen tests long term, more than is needed
 
 ## Examples
 

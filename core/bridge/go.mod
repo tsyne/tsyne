@@ -9,11 +9,11 @@ require (
 	fyne.io/x/fyne v0.0.0-20260128204654-7fd4ce591d29
 	github.com/fogleman/gg v1.3.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/golang/protobuf v1.5.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	golang.org/x/image v0.35.0
 	golang.org/x/tools v0.40.0
 	google.golang.org/grpc v1.76.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -48,7 +48,6 @@ require (
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250804133106-a7a43d27e69b // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
