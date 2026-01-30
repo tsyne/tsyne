@@ -9,9 +9,8 @@
  * Run with: ./scripts/tsyne cosyne/demos/hit-rect-test.ts
  */
 
-import { app, resolveTransport, App } from 'tsyne';
-import { CanvasStack } from 'tsyne';
-import { cosyneContext as cosyne, CosyneContext, enableEventHandling } from 'tsyne';
+import { app, resolveTransport, App, CanvasStack } from 'tsyne';
+import { cosyne, CosyneContext, enableEventHandling } from 'cosyne';
 
 app(resolveTransport(), { title: 'Hit Rect Test', width: 900, height: 600 }, (a: App) => {
   a.window({ title: 'Hit Rect Test', width: 900, height: 600 }, (win: any) => {

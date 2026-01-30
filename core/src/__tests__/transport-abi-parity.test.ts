@@ -388,8 +388,7 @@ function goFieldToProtoField(goField: string): string {
   // Canvas position fields: x, y, x2, y2 are used for positioning in msgpack but gRPC uses width/height
   // pt/pb/pl/pr fields: padding used in some containers
   // callbackId: Label click handlers (msgpack only feature)
-  // textSize: Label text size (msgpack only feature)
-  const msgpackOnlyFields = ['x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackId', 'textSize'];
+  const msgpackOnlyFields = ['x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackId'];
   if (msgpackOnlyFields.includes(goField)) return '__skip__';
   if (goField.startsWith('textStyle.')) {
     return goField.split('.')[1]; // textStyle.bold -> bold
@@ -623,7 +622,7 @@ describe('Transport ABI Parity', () => {
         // Fields to skip in gRPC server mapping check:
         // - pixels: uses intermediate variable (pixelData := base64...)
         // - Msgpack-only fields: not in gRPC proto
-        const skipInGrpcMapping = ['pixels', 'x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackid', 'textsize'];
+        const skipInGrpcMapping = ['pixels', 'x', 'y', 'x2', 'y2', 'pt', 'pb', 'pl', 'pr', 'callbackid'];
 
         for (const goField of goFields) {
           const payloadField = goField.name.toLowerCase();

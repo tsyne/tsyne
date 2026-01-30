@@ -133,3 +133,6 @@ export {
 
 // Cosyne 3D exports
 export * from './index3d';
+
+// Testing utilities
+export { CosyneTest, type CosyneTestOptions } from './cosyne-test';

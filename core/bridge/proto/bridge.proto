@@ -420,6 +420,14 @@ enum TextWrapping {
   TEXT_WRAP_WORD = 2;       // Wrap at word boundaries
 }
 
+// Blend modes for canvas primitives
+enum BlendMode {
+  BLEND_NORMAL = 0;         // Normal blending (default)
+  BLEND_ADDITIVE = 1;       // Additive blending
+  BLEND_MULTIPLY = 2;       // Multiply blending
+  BLEND_SCREEN = 3;         // Screen blending
+}
+
 message CreateLabelRequest {
   string widget_id = 1;
   string text = 2;
@@ -428,6 +436,8 @@ message CreateLabelRequest {
   bool italic = 5;
   bool monospace = 6;
   TextWrapping wrapping = 7;
+  string color = 8;         // hex color (e.g. "#ff0000")
+  float text_size = 9;      // text size in pixels (0 = default theme size)
 }
 
 // Button importance levels
@@ -1105,6 +1115,7 @@ message CreateCanvasLineRequest {
   float y2 = 5;
   string stroke_color = 6;  // hex color
   float stroke_width = 7;
+  BlendMode blend_mode = 8;
 }
 
 message CreateCanvasCircleRequest {
@@ -1116,6 +1127,7 @@ message CreateCanvasCircleRequest {
   string fill_color = 6;
   string stroke_color = 7;
   float stroke_width = 8;
+  BlendMode blend_mode = 9;
 }
 
 message CreateCanvasRectangleRequest {
@@ -1126,6 +1138,7 @@ message CreateCanvasRectangleRequest {
   string stroke_color = 5;
   float stroke_width = 6;
   float corner_radius = 7;
+  BlendMode blend_mode = 8;
 }
 
 message CreateCanvasTextRequest {
@@ -1137,6 +1150,7 @@ message CreateCanvasTextRequest {
   bool italic = 6;
   bool monospace = 7;
   TextAlignment alignment = 8;
+  BlendMode blend_mode = 9;
 }
 
 message PixelData {
@@ -1153,6 +1167,7 @@ message CreateCanvasRasterRequest {
   int32 width = 2;
   int32 height = 3;
   bytes pixels = 4;  // RGBA pixel data
+  BlendMode blend_mode = 5;
 }
 
 message CreateCanvasLinearGradientRequest {
@@ -1185,6 +1200,7 @@ message CreateCanvasArcRequest {
   string fill_color = 8;
   string stroke_color = 9;
   float stroke_width = 10;
+  BlendMode blend_mode = 11;
 }
 
 message PolygonPoint {
@@ -1211,6 +1227,7 @@ message CreateTappableCanvasRasterRequest {
   string on_mouse_move_callback_id = 8;
   string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (matches Image convention)
   string drag_end_callback_id = 10;    // no "on_" prefix for drag callbacks (matches Image convention)
+  BlendMode blend_mode = 11;
 }
 
 // Canvas update messages

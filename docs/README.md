@@ -45,7 +45,7 @@ Welcome to the Tsyne documentation directory. This README helps you navigate the
 
 ### 🔧 Specialized Topics
 
-- **[SCREENSHOTS.md](SCREENSHOTS.md)** - Screenshot support and visual reference
+- **[VISUAL_TESTING.md](VISUAL_TESTING.md)** - Visual testing modes, screenshots, headed vs headless
 - **[STREAMING_CONTENT.md](STREAMING_CONTENT.md)** - Streaming content patterns
 - **[OVERLAYS_AND_LAYERS.md](OVERLAYS_AND_LAYERS.md)** - Overlay and layer management
 - **[INSPECTOR_DESIGN.md](INSPECTOR_DESIGN.md)** - Widget inspector design

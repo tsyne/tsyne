@@ -1109,12 +1109,3 @@ export {
   polygonCentroid,
 } from './graphics/geometry';
 
-// Re-export cosyne for unified imports
-export * as cosyne from '../../cosyne/src';
-export {
-  cosyne as cosyneContext,
-  CosyneContext,
-  enableEventHandling,
-  disableEventHandling,
-  EventRouter,
-} from '../../cosyne/src';
