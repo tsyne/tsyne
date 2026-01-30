@@ -1,0 +1,17 @@
+{
+  "name": "tsyne-colordodge-kaleidoscope",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "tsyne": "workspace:*",
+    "cosyne": "workspace:*"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

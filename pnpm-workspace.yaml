@@ -28,6 +28,7 @@ packages:
   - 'ported-apps/3d-cube'
   - 'ported-apps/calcudoku'
   - 'ported-apps/chess'
+  - 'ported-apps/colordodge-kaleidoscope'
   - 'ported-apps/disk-tree'
   - 'ported-apps/edlin'
   - 'ported-apps/falling-blocks'
