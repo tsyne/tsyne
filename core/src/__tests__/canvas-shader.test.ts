@@ -128,10 +128,9 @@ describe('CanvasShader', () => {
       expect(widgetInfo.some((w: any) => w.type === 'canvasshader')).toBe(true);
 
       // Update uniform
-      if (shader) {
-        await shader.setUniform('u_brightness', 1.0);
-        expect(shader.getUniforms()['u_brightness']).toBe(1.0);
-      }
+      expect(shader).not.toBeNull();
+      await shader!.setUniform('u_brightness', 1.0);
+      expect(shader!.getUniforms()['u_brightness']).toBe(1.0);
     });
 
     it('should update multiple uniforms at once', async () => {
@@ -158,15 +157,14 @@ describe('CanvasShader', () => {
       ctx = tsyneTest.getContext();
       await testApp.run();
 
-      if (shader) {
-        await shader.setUniforms({
-          u_time: 1.5,
-          u_mouse: [0.25, 0.75]
-        });
-        const uniforms = shader.getUniforms();
-        expect(uniforms['u_time']).toBe(1.5);
-        expect(uniforms['u_mouse']).toEqual([0.25, 0.75]);
-      }
+      expect(shader).not.toBeNull();
+      await shader!.setUniforms({
+        u_time: 1.5,
+        u_mouse: [0.25, 0.75]
+      });
+      const uniforms = shader!.getUniforms();
+      expect(uniforms['u_time']).toBe(1.5);
+      expect(uniforms['u_mouse']).toEqual([0.25, 0.75]);
     });
   });
 

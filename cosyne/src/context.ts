@@ -46,6 +46,7 @@ export class CosyneContext {
   private animationManager: AnimationManager;
   private builder?: (context: CosyneContext) => void;
   private containerId?: string;
+  private container?: any;  // Reference to the CanvasStack container for removeAll()
 
   constructor(private app: any, options?: CosyneContextOptions) {
     this.bindingRegistry = new BindingRegistry();
@@ -67,22 +68,53 @@ export class CosyneContext {
   }
 
   /**
+   * Set the container reference (for removeAll on rebuild)
+   */
+  setContainer(container: any): void {
+    this.container = container;
+    if (container?.id) {
+      this.containerId = container.id;
+    }
+  }
+
+  /**
    * Clear all primitives and rebuild the context from scratch
    * Use this when state changes require creating different primitives
-   *
-   * NOTE: This method has limitations - it clears our tracking but doesn't
-   * remove the Fyne widgets from the container. For full rebuild, use
-   * win.setContent() to re-render the entire window content.
    */
   rebuild(): void {
     if (!this.builder) return;
+    if (!this.containerId || !this.app?.ctx?.bridge) {
+      // Can't rebuild without container reference
+      return;
+    }
+
+    // Clear existing Fyne widgets from the container
+    this.app.ctx.bridge.send('containerRemoveAll', { containerId: this.containerId });
 
     // Clear existing primitives from our tracking
     this.primitives.clear();
     this.allPrimitives = [];
 
+    // Push container onto stack so new widgets get collected
+    this.app.ctx.pushContainerById(this.containerId);
+
     // Re-run the builder to create new primitives
     this.builder(this);
+
+    // Pop container to get the new child IDs
+    const childIds = this.app.ctx.popContainer();
+
+    // Add each new child to the container
+    for (const childId of childIds) {
+      this.app.ctx.bridge.send('containerAdd', {
+        containerId: this.containerId,
+        childId
+      });
+    }
+
+    // Render markers for lines and refresh bindings (same as initial build)
+    this.renderLineMarkers();
+    this.refreshBindings();
   }
 
   /**
@@ -295,6 +327,38 @@ export class CosyneContext {
         }
       }
     }
+  }
+
+  /**
+   * Compute bounding box of an SVG path string
+   */
+  private computePathBounds(pathString: string): { width: number; height: number; minX: number; minY: number } {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    // Extract all numbers from path
+    const numbers = pathString.match(/-?\d+\.?\d*/g) || [];
+    for (let i = 0; i < numbers.length; i += 2) {
+      const x = parseFloat(numbers[i]);
+      const y = parseFloat(numbers[i + 1] || '0');
+      if (!isNaN(x) && !isNaN(y)) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (minX === Infinity) {
+      return { width: 0, height: 0, minX: 0, minY: 0 };
+    }
+
+    return {
+      width: maxX - minX,
+      height: maxY - minY,
+      minX,
+      minY,
+    };
   }
 
   /**
@@ -694,10 +758,17 @@ export class CosyneContext {
    */
   path(pathString: string, options?: any): CosynePath {
     // Create the underlying Tsyne canvas path
+    // CanvasPath requires width/height - use the max extent of the path coordinates
+    // since path commands use absolute coordinates
+    const bounds = this.computePathBounds(pathString);
+    // Use max coordinate + margin to ensure path fits, or explicit options
+    const width = options?.width || Math.max(bounds.minX + bounds.width + 10, 500);
+    const height = options?.height || Math.max(bounds.minY + bounds.height + 10, 500);
+
     const underlying = this.app.canvasPath({
-      pathString,
-      x: options?.x || 0,
-      y: options?.y || 0,
+      path: pathString,
+      width,
+      height,
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
@@ -1103,9 +1174,19 @@ export class CosyneContext {
 // Global registry of Cosyne contexts
 let contextRegistry: CosyneContext[] = [];
 
-export function cosyne(app: any, builder: (context: CosyneContext) => void): CosyneContext {
+export function cosyne(app: any, builder: (context: CosyneContext) => void, container?: any): CosyneContext {
   const context = new CosyneContext(app);
   context.setBuilder(builder);
+  if (container) {
+    context.setContainer(container);
+  }
+  // Get current container ID from context (set by CanvasStack constructor)
+  if (!container && app?.ctx?.getCurrentContainerId) {
+    const containerId = app.ctx.getCurrentContainerId();
+    if (containerId) {
+      context.setContainerId(containerId);
+    }
+  }
   registerCosyneContext(context);
   builder(context);
   // Render markers for all lines after builder completes

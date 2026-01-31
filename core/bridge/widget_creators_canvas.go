@@ -207,9 +207,34 @@ func absf(x float64) float64 {
 // Color Parsing Utilities
 // ============================================================================
 
-// parseHexColorSimple parses a hex color string (e.g., "#FF0000" or "FF0000") to color.Color
-// This is a simpler version that returns a default color on error, used by canvas primitives
+// parseHexColorSimple parses a color string to color.Color
+// Supports: hex (#RGB, #RRGGBB, #RRGGBBAA), rgb(), rgba(), hsl(), hsla(), and named colors
 func parseHexColorSimple(hexStr string) color.Color {
+	// Handle CSS hsl() and hsla() format
+	if strings.HasPrefix(hexStr, "hsl(") && strings.HasSuffix(hexStr, ")") {
+		inner := hexStr[4 : len(hexStr)-1]
+		parts := strings.Split(inner, ",")
+		if len(parts) == 3 {
+			h := parseHueComponent(strings.TrimSpace(parts[0]))
+			s := parsePercentComponent(strings.TrimSpace(parts[1]))
+			l := parsePercentComponent(strings.TrimSpace(parts[2]))
+			r, g, b := hslToRgb(h, s, l)
+			return color.RGBA{R: r, G: g, B: b, A: 255}
+		}
+	}
+	if strings.HasPrefix(hexStr, "hsla(") && strings.HasSuffix(hexStr, ")") {
+		inner := hexStr[5 : len(hexStr)-1]
+		parts := strings.Split(inner, ",")
+		if len(parts) == 4 {
+			h := parseHueComponent(strings.TrimSpace(parts[0]))
+			s := parsePercentComponent(strings.TrimSpace(parts[1]))
+			l := parsePercentComponent(strings.TrimSpace(parts[2]))
+			a := parseAlphaComponent(strings.TrimSpace(parts[3]))
+			r, g, b := hslToRgb(h, s, l)
+			return color.RGBA{R: r, G: g, B: b, A: a}
+		}
+	}
+
 	// Handle CSS rgb() and rgba() format
 	if strings.HasPrefix(hexStr, "rgb(") && strings.HasSuffix(hexStr, ")") {
 		inner := hexStr[4 : len(hexStr)-1]
@@ -312,4 +337,80 @@ func parseAlphaComponent(s string) uint8 {
 		return uint8(f)
 	}
 	return 255
+}
+
+// parseHueComponent parses an HSL hue value (0-360 degrees)
+func parseHueComponent(s string) float64 {
+	var val float64
+	fmt.Sscanf(s, "%f", &val)
+	// Normalize to 0-360
+	for val < 0 {
+		val += 360
+	}
+	for val >= 360 {
+		val -= 360
+	}
+	return val
+}
+
+// parsePercentComponent parses a percentage value (0-100% or 0-1)
+func parsePercentComponent(s string) float64 {
+	s = strings.TrimSuffix(s, "%")
+	var val float64
+	fmt.Sscanf(s, "%f", &val)
+	// If value > 1, assume it's a percentage (0-100)
+	if val > 1 {
+		val = val / 100.0
+	}
+	if val < 0 {
+		val = 0
+	}
+	if val > 1 {
+		val = 1
+	}
+	return val
+}
+
+// hslToRgb converts HSL (h: 0-360, s: 0-1, l: 0-1) to RGB (0-255)
+func hslToRgb(h, s, l float64) (uint8, uint8, uint8) {
+	// Normalize hue to 0-1
+	h = h / 360.0
+
+	var r, g, b float64
+	if s == 0 {
+		// Achromatic (gray)
+		r, g, b = l, l, l
+	} else {
+		var q float64
+		if l < 0.5 {
+			q = l * (1 + s)
+		} else {
+			q = l + s - l*s
+		}
+		p := 2*l - q
+		r = hueToRgb(p, q, h+1.0/3.0)
+		g = hueToRgb(p, q, h)
+		b = hueToRgb(p, q, h-1.0/3.0)
+	}
+	return uint8(r * 255), uint8(g * 255), uint8(b * 255)
+}
+
+// hueToRgb is a helper for HSL to RGB conversion
+func hueToRgb(p, q, t float64) float64 {
+	if t < 0 {
+		t += 1
+	}
+	if t > 1 {
+		t -= 1
+	}
+	if t < 1.0/6.0 {
+		return p + (q-p)*6*t
+	}
+	if t < 1.0/2.0 {
+		return q
+	}
+	if t < 2.0/3.0 {
+		return p + (q-p)*(2.0/3.0-t)*6
+	}
+	return p
 }

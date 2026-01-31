@@ -28,6 +28,7 @@ export class Context {
   private _resourceScope: string | null = null;
   private _layoutScale: number = 1.0;
   private _inspectorEnabled: boolean = true;
+  private _currentContainerId: string | null = null;  // Current container being built
 
   constructor(bridge: BridgeInterface, resourceMap?: Map<string, string>) {
     this.bridge = bridge;
@@ -229,6 +230,20 @@ export class Context {
 
   getCurrentContainer(): string[] | undefined {
     return this.containerStack[this.containerStack.length - 1];
+  }
+
+  /**
+   * Set the current container ID being built (for cosyne rebuild support)
+   */
+  setCurrentContainerId(containerId: string | null): void {
+    this._currentContainerId = containerId;
+  }
+
+  /**
+   * Get the current container ID being built
+   */
+  getCurrentContainerId(): string | null {
+    return this._currentContainerId;
   }
 
   /**

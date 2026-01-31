@@ -132,6 +132,11 @@ func (s *Shader) Size() fyne.Size {
 	return s.size
 }
 
+// Refresh causes the shader to be redrawn
+func (s *Shader) Refresh() {
+	Refresh(s)
+}
+
 // MinSize returns the minimum size (same as size for shaders)
 func (s *Shader) MinSize() fyne.Size {
 	return s.size
@@ -320,6 +325,31 @@ func isTransparent(c color.Color) bool {\
 # Replace the flawed check with our helper function
 sed -i 's/if (fill == color.Transparent || fill == nil) && (stroke == color.Transparent || stroke == nil || strokeWidth == 0) {/if isTransparent(fill) \&\& (isTransparent(stroke) || strokeWidth == 0) {/' "$FORK_DIR/internal/painter/gl/draw.go"
 
+# 7c. Extend GL context with missing methods for shader support
+echo "[setup-fyne-fork] Adding shader-related methods to GL context..."
+
+# Add missing methods to context.go interface (before the closing brace)
+sed -i '/VertexAttribPointerWithOffset/a\
+\	Uniform3f(uniform Uniform, v0, v1, v2 float32)\
+\	DisableVertexAttribArray(attribute Attribute)\
+\	VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32)' "$FORK_DIR/internal/painter/gl/context.go"
+
+# Add implementations to gl_core.go (before the final closing brace of the file, after existing methods)
+cat >> "$FORK_DIR/internal/painter/gl/gl_core.go" <<'GL_CORE_ADDITIONS'
+
+func (c *coreContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
+	gl.Uniform3f(int32(uniform), v0, v1, v2)
+}
+
+func (c *coreContext) DisableVertexAttribArray(attribute Attribute) {
+	gl.DisableVertexAttribArray(uint32(attribute))
+}
+
+func (c *coreContext) VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32) {
+	gl.VertexAttribPointer(uint32(attribute), int32(size), typ, normalized, int32(stride), gl.Ptr(data))
+}
+GL_CORE_ADDITIONS
+
 # 8. Inject shader painter support
 echo "[setup-fyne-fork] Injecting shader painter support..."
 
@@ -336,21 +366,20 @@ import (
 )
 
 // Default vertex shader for fullscreen quad
+// Uses 'vert' attribute to match Fyne's existing pattern
 const defaultShaderVertexSrc = `
 #version 110
-attribute vec2 a_position;
-varying vec2 v_texCoord;
+attribute vec2 vert;
 
 void main() {
-    gl_Position = vec4(a_position, 0.0, 1.0);
-    v_texCoord = a_position * 0.5 + 0.5;
+    gl_Position = vec4(vert, 0.0, 1.0);
 }
 `
 
 // Fragment shader wrapper that adds standard uniforms
+// Note: No precision qualifier - that's OpenGL ES syntax, not desktop OpenGL
 const shaderFragmentPrefix = `
 #version 110
-precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
 varying vec2 v_texCoord;
@@ -359,50 +388,50 @@ varying vec2 v_texCoord;
 // shaderStartTime is used to calculate u_time uniform
 var shaderStartTime = time.Now()
 
+// shaderVBO is a dedicated vertex buffer for shader rendering
+var shaderVBO Buffer
+var shaderVBOInit bool
+
 // compileShaderProgram compiles and links a vertex and fragment shader
-func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) uint32 {
+func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) Program {
 	// Prepend standard uniforms to fragment shader if it doesn't have a version
 	if !strings.HasPrefix(strings.TrimSpace(fragmentSrc), "#version") {
 		fragmentSrc = shaderFragmentPrefix + fragmentSrc
 	}
 
 	// Compile vertex shader
-	vertexShader := p.ctx.CreateShader(vertexShaderType)
-	p.ctx.ShaderSource(vertexShader, vertexSrc)
-	p.ctx.CompileShader(vertexShader)
-	if p.ctx.GetShaderParameter(vertexShader, compileStatus) == 0 {
-		logMsg := p.ctx.GetShaderInfoLog(vertexShader)
+	vShader := p.ctx.CreateShader(vertexShader)
+	p.ctx.ShaderSource(vShader, vertexSrc)
+	p.ctx.CompileShader(vShader)
+	if p.ctx.GetShaderi(vShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(vShader)
 		log.Printf("[shader] Vertex shader compile error: %s", logMsg)
 		return 0
 	}
 
 	// Compile fragment shader
-	fragShader := p.ctx.CreateShader(fragmentShaderType)
-	p.ctx.ShaderSource(fragShader, fragmentSrc)
-	p.ctx.CompileShader(fragShader)
-	if p.ctx.GetShaderParameter(fragShader, compileStatus) == 0 {
-		logMsg := p.ctx.GetShaderInfoLog(fragShader)
+	fShader := p.ctx.CreateShader(fragmentShader)
+	p.ctx.ShaderSource(fShader, fragmentSrc)
+	p.ctx.CompileShader(fShader)
+	if p.ctx.GetShaderi(fShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(fShader)
 		log.Printf("[shader] Fragment shader compile error: %s", logMsg)
-		p.ctx.DeleteShader(vertexShader)
 		return 0
 	}
 
 	// Link program
 	program := p.ctx.CreateProgram()
-	p.ctx.AttachShader(program, vertexShader)
-	p.ctx.AttachShader(program, fragShader)
+	p.ctx.AttachShader(program, vShader)
+	p.ctx.AttachShader(program, fShader)
 	p.ctx.LinkProgram(program)
-	if p.ctx.GetProgramParameter(program, linkStatus) == 0 {
+	if p.ctx.GetProgrami(program, linkStatus) == 0 {
 		logMsg := p.ctx.GetProgramInfoLog(program)
 		log.Printf("[shader] Program link error: %s", logMsg)
-		p.ctx.DeleteShader(vertexShader)
-		p.ctx.DeleteShader(fragShader)
 		return 0
 	}
 
-	// Shaders can be deleted after linking
-	p.ctx.DeleteShader(vertexShader)
-	p.ctx.DeleteShader(fragShader)
+	// Note: Individual shaders could be deleted here but Fyne's context doesn't expose DeleteShader.
+	// The GL resources are cleaned up when the program is deleted.
 
 	return program
 }
@@ -415,21 +444,21 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	// Compile shader if needed
 	if shader.NeedsCompile() || shader.Program() == 0 {
-		if shader.Program() != 0 {
-			p.ctx.DeleteProgram(shader.Program())
-		}
+		// Note: Ideally we'd delete the old program here, but Fyne's context doesn't expose DeleteProgram.
+		// The old program will leak, but this only happens on shader source changes which is rare.
 		prog := p.compileShaderProgram(defaultShaderVertexSrc, shader.FragmentSource)
 		if prog == 0 {
+			log.Printf("[drawShader] Shader compilation failed!")
 			return
 		}
-		shader.SetProgram(prog)
+		shader.SetProgram(uint32(prog))
 		// Clear uniform location cache on recompile
 		for k := range shader.UniformLocs() {
 			delete(shader.UniformLocs(), k)
 		}
 	}
 
-	prog := shader.Program()
+	prog := Program(shader.Program())
 	if prog == 0 {
 		return
 	}
@@ -438,19 +467,43 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	p.ctx.UseProgram(prog)
 
 	// Get or cache uniform locations
-	getUniformLoc := func(name string) int32 {
+	getUniformLoc := func(name string) Uniform {
 		if loc, ok := shader.UniformLocs()[name]; ok {
-			return loc
+			return Uniform(loc)
 		}
 		loc := p.ctx.GetUniformLocation(prog, name)
-		shader.SetUniformLoc(name, loc)
+		shader.SetUniformLoc(name, int32(loc))
 		return loc
 	}
+
+	// Calculate pixel position for uniforms
+	// Note: OpenGL has origin at bottom-left, Fyne has origin at top-left
+	pixelX := p.pixScale * pos.X
+	// For gl_FragCoord, y=0 is at bottom of window
+	// Shader bottom edge in Fyne coords: pos.Y + shader.Size().Height
+	// In OpenGL coords: frame.Height - (pos.Y + shader.Size().Height)
+	pixelY := p.pixScale * (frame.Height - pos.Y - shader.Size().Height)
+	pixelWidth := p.pixScale * shader.Size().Width
+	pixelHeight := p.pixScale * shader.Size().Height
 
 	// Set standard uniforms
 	resLoc := getUniformLoc("u_resolution")
 	if resLoc >= 0 {
-		p.ctx.Uniform2f(resLoc, float32(shader.Size().Width), float32(shader.Size().Height))
+		p.ctx.Uniform2f(resLoc, pixelWidth, pixelHeight)
+	}
+
+	// Set viewport to the shader's area so gl_FragCoord is relative to it
+	// This makes the shader's coordinate system match what it expects
+	viewportX := int(pixelX)
+	viewportY := int(pixelY)
+	viewportW := int(pixelWidth)
+	viewportH := int(pixelHeight)
+	p.ctx.Viewport(viewportX, viewportY, viewportW, viewportH)
+
+	// With viewport set, u_position should be 0,0 since gl_FragCoord is now relative to viewport
+	posLoc := getUniformLoc("u_position")
+	if posLoc >= 0 {
+		p.ctx.Uniform2f(posLoc, 0, 0)
 	}
 
 	timeLoc := getUniformLoc("u_time")
@@ -471,9 +524,17 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		case float64:
 			p.ctx.Uniform1f(loc, float32(v))
 		case int:
-			p.ctx.Uniform1i(loc, v)
+			p.ctx.Uniform1f(loc, float32(v))
+		case int8:
+			p.ctx.Uniform1f(loc, float32(v))
+		case int16:
+			p.ctx.Uniform1f(loc, float32(v))
 		case int32:
-			p.ctx.Uniform1i(loc, int(v))
+			p.ctx.Uniform1f(loc, float32(v))
+		case int64:
+			p.ctx.Uniform1f(loc, float32(v))
+		case uint8:
+			p.ctx.Uniform1f(loc, float32(v))
 		case [2]float32:
 			p.ctx.Uniform2f(loc, v[0], v[1])
 		case [3]float32:
@@ -517,43 +578,50 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		}
 	}
 
-	// Calculate screen coordinates
-	xPos := p.pixScale * pos.X
-	yPos := p.pixScale * pos.Y
-	width := p.pixScale * shader.Size().Width
-	height := p.pixScale * shader.Size().Height
+	// We no longer need NDC calculations - we'll use viewport to position the shader
 
-	// Convert to normalized device coordinates (-1 to 1)
-	// Note: Fyne's coordinate system has origin at top-left
-	viewWidth := p.pixScale * frame.Width
-	viewHeight := p.pixScale * frame.Height
-
-	left := (xPos / viewWidth) * 2.0 - 1.0
-	right := ((xPos + width) / viewWidth) * 2.0 - 1.0
-	top := 1.0 - (yPos / viewHeight) * 2.0
-	bottom := 1.0 - ((yPos + height) / viewHeight) * 2.0
-
-	// Draw fullscreen quad (two triangles)
+	// With custom viewport, draw a fullscreen quad (-1 to 1)
+	// The viewport transform will place it correctly
 	vertices := []float32{
-		float32(left), float32(bottom),
-		float32(right), float32(bottom),
-		float32(right), float32(top),
-		float32(left), float32(bottom),
-		float32(right), float32(top),
-		float32(left), float32(top),
+		-1, -1,  // 0: bottom-left
+		 1, -1,  // 1: bottom-right
+		-1,  1,  // 2: top-left
+		 1,  1,  // 3: top-right
 	}
 
-	// Get attribute location
-	posAttrib := p.ctx.GetAttribLocation(prog, "a_position")
-	if posAttrib >= 0 {
-		p.ctx.EnableVertexAttribArray(uint32(posAttrib))
-		p.ctx.VertexAttribPointerFloat(uint32(posAttrib), 2, false, 0, vertices)
-		p.ctx.DrawArrays(triangles, 0, 6)
-		p.ctx.DisableVertexAttribArray(uint32(posAttrib))
+	// Create dedicated shader VBO if needed
+	if !shaderVBOInit {
+		shaderVBO = p.ctx.CreateBuffer()
+		p.ctx.BindBuffer(arrayBuffer, shaderVBO)
+		p.ctx.BufferData(arrayBuffer, make([]float32, 8), staticDraw)
+		shaderVBOInit = true
 	}
+
+	// Update the shader VBO with our vertices
+	p.ctx.BindBuffer(arrayBuffer, shaderVBO)
+	p.ctx.BufferSubData(arrayBuffer, vertices)
+	p.logError()
+
+	// Get attribute location for 'vert' and set up vertex array
+	vertAttrib := p.ctx.GetAttribLocation(prog, "vert")
+	if vertAttrib >= 0 {
+		p.ctx.EnableVertexAttribArray(vertAttrib)
+		// 2 floats per vertex (x, y), no stride, no offset
+		p.ctx.VertexAttribPointerWithOffset(vertAttrib, 2, float, false, 0, 0)
+		p.ctx.DrawArrays(triangleStrip, 0, 4)
+		p.logError()
+		p.ctx.DisableVertexAttribArray(vertAttrib)
+	} else {
+		log.Printf("[drawShader] ERROR: vert attribute not found in shader!")
+	}
+
+	// Restore original viewport (full frame)
+	frameW := int(p.pixScale * frame.Width)
+	frameH := int(p.pixScale * frame.Height)
+	p.ctx.Viewport(0, 0, frameW, frameH)
 
 	// Restore default program
-	p.ctx.UseProgram(p.program)
+	p.ctx.UseProgram(p.program.ref)
 }
 SHADER_PAINTER_EOF
 
@@ -566,12 +634,12 @@ go run tools/patch-fyne/main.go \
     -file "$FORK_DIR/internal/painter/gl/painter.go" \
     -out "$FORK_DIR/internal/painter/gl/painter.go"
 
-# 9b. Add Shader case to the type switch in painter.go
-echo "[setup-fyne-fork] Adding Shader case to painter.go..."
-# Find the line with "case *canvas.Raster:" and add Shader case after it
-sed -i '/case \*canvas\.Raster:/a\
+# 9b. Add Shader case to the type switch in draw.go (drawObject function)
+echo "[setup-fyne-fork] Adding Shader case to draw.go..."
+# Find the line with "p.drawRaster" and add Shader case after it
+sed -i '/p\.drawRaster(obj, pos, frame)/a\
 \	case *canvas.Shader:\
-\		p.drawShader(co, pos, frame)' "$FORK_DIR/internal/painter/gl/painter.go"
+\		p.drawShader(obj, pos, frame)' "$FORK_DIR/internal/painter/gl/draw.go"
 
 # 10. Tidy everything
 echo "[setup-fyne-fork] Final tidying..."

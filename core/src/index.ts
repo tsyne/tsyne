@@ -69,6 +69,7 @@ import {
   CanvasPath,
   CanvasRaster,
   CanvasRectangle,
+  CanvasShader,
   CanvasText,
   TappableCanvasRaster,
   // Display extras
@@ -872,6 +873,7 @@ export {
   CanvasLine,
   CanvasCircle,
   CanvasRectangle,
+  CanvasShader,
   CanvasText,
   CanvasRaster,
   CanvasLinearGradient,
