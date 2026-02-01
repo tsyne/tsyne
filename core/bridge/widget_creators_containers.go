@@ -1432,7 +1432,6 @@ func (b *Bridge) handleCreateInnerWindow(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	title := msg.Payload["title"].(string)
 	contentID := msg.Payload["contentId"].(string)
-	log.Printf("[handleCreateInnerWindow] Creating InnerWindow id=%s title=%s contentId=%s", widgetID, title, contentID)
 
 	b.mu.RLock()
 	content, exists := b.widgets[contentID]

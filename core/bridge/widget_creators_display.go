@@ -48,8 +48,6 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 	colorHex, hasColor := msg.Payload["color"].(string)
 
 	// Check if numeric textSize is specified - use canvas.Text with exact pixel size
-	rawTextSize := msg.Payload["textSize"]
-	log.Printf("[createLabel] textSize raw value: %v (type: %T)", rawTextSize, rawTextSize)
 	numericSize := toFloat32(msg.Payload["textSize"])
 
 	// Use canvas.Text if we have a numeric size OR a custom color
@@ -57,7 +55,6 @@ func (b *Bridge) handleCreateLabel(msg Message) Response {
 		if numericSize <= 0 {
 			numericSize = theme.TextSize() // default text size
 		}
-		log.Printf("[createLabel] Creating label with textSize=%.0f: %s", numericSize, text)
 		// Create canvas.Text with specified size
 		textColor := theme.ForegroundColor()
 		if hasColor {

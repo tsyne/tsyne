@@ -286,6 +286,56 @@ app({ title: 'My App' }, (a) => {
 - Context tracks parent container automatically
 - Async operations return promises
 
+## Mental Shift: Fluent Methods vs Constructor Parameters
+
+**If coming from React/Vue/Angular:** Tsyne uses fluent methods (`.onClick()`, `.onSubmit()`, etc.) instead of constructor parameters.
+
+```typescript
+// ❌ Familiar but WRONG in Tsyne
+a.button('Add', onClick);           // Second param doesn't exist
+a.entry('search', onChange, 300);   // This won't wire the callback
+
+// ✅ Correct - fluent methods
+a.button('Add').onClick(onClick);
+a.entry('search').onSubmit(onChange).width(300);
+
+// ✅ All methods chain and return `this`
+a.button('Add')
+  .onClick(handler)
+  .when(() => isVisible)
+  .withId('addBtn');
+```
+
+**Why fluent methods?**
+1. **Composable** - build up widget configuration step by step
+2. **Consistent** - all methods follow the same pattern
+3. **Flexible** - add properties in any order
+4. **Type-safe** - each method returns the widget type, so IDE autocomplete works
+5. **Reusable** - can store references and configure later
+
+**Common widget methods:**
+```typescript
+// Event handlers (fluent, return `this`)
+a.button('...').onClick(handler)
+a.entry('...').onSubmit(handler)
+a.checkbox('...').onToggle(handler)
+a.slider().onChange(handler)
+
+// Properties (fluent, return `this`)
+a.label('text').when(() => isVisible)
+a.button('...').withId('myBtn')
+a.entry('...').width(300)
+
+// Direct calls (return Promise/values)
+await label.setText('New text')
+await button.requestFocus()
+const text = await entry.getText()
+```
+
+**Pattern:** Methods that modify the widget (`.onClick()`, `.when()`, `.withId()`) are fluent and chain. Methods that query or immediately act (`getText()`, `setText()`) are not fluent.
+
+**Inconsistency note:** Most widgets accept callbacks as constructor parameters (Entry accepts `onSubmit`, Checkbox accepts `onChanged`), but **Button is different** - it requires `.onClick()` fluent method. This is intentional to keep Button's constructor simple (just text + styling), but understand this may feel inconsistent. **Button will throw a helpful error if you try to pass a callback as a constructor argument.**
+
 ## Builder Lifecycle: Reentrant & Idempotent
 
 **Critical:** Tsyne operates under an OS-wide **Inversion of Control (IoC)** environment. The framework controls lifecycle, not the app. Builders must follow these rules:
@@ -963,6 +1013,45 @@ app.removePreference('username');
 app.showSource();              // Show current app source
 app.showSource('/path/to/file.ts');  // Show specific file
 ```
+
+## Container Expansion (VBox/HBox Layout)
+
+**The Problem:** Scroll containers collapse to one line in a vbox, even though scrolling works.
+
+```typescript
+// ❌ WRONG - scroll collapses
+a.vbox(() => {
+  a.label('Title');
+  a.scroll(a.vbox(many_items));  // ← collapses to 1 line
+  a.label('Footer');
+});
+```
+
+**Why:** Containers in vbox size to content. Inner vbox height = sum of items, scroll wraps it → one line visible.
+
+**Solution 1: `a.border()` with regions** (for top/center/bottom layout)
+```typescript
+// ✅ CORRECT - center expands
+a.border({
+  top: () => a.vbox(() => { a.label('Title'); a.separator(); }),
+  center: () => a.scroll(a.vbox(many_items)),  // ← expands to fill
+  bottom: () => a.vbox(() => { a.separator(); a.label('Footer'); })
+});
+```
+
+**Solution 2: `a.max()` wrapper** (for single expanding region)
+```typescript
+// ✅ Also correct
+a.vbox(() => {
+  a.label('Title');
+  a.max(a.scroll(a.vbox(many_items)));  // ← expands to fill
+  a.label('Footer');
+});
+```
+
+**Rule:** Only `border()` regions (`top`, `center`, `bottom`, `left`, `right`) and `max()` expand in a vbox/hbox. Everything else sizes to content.
+
+**See:** `examples/todomvc.ts`, `examples/daily-checklist.ts`, `cosyne/demos/index.ts`
 
 ## Container Widget Methods
 

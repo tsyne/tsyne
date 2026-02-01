@@ -102,20 +102,22 @@ export class CosynePath extends Primitive<any> {
   }
 
   protected applyFill(): void {
-    if (this.underlying && this.fillColor) {
-      if (this.underlying.updateFillColor) {
-        this.underlying.updateFillColor(this.fillColor);
-      }
+    if (this.underlying && this.fillColor && this.underlying.update) {
+      this.underlying.update({ fillColor: this.fillColor });
     }
   }
 
   protected applyStroke(): void {
-    if (this.underlying && this.strokeColor !== undefined) {
-      if (this.underlying.updateStrokeColor) {
-        this.underlying.updateStrokeColor(this.strokeColor);
+    if (this.underlying && this.underlying.update) {
+      const updates: Record<string, any> = {};
+      if (this.strokeColor !== undefined) {
+        updates.strokeColor = this.strokeColor;
       }
-      if (this.underlying.updateStrokeWidth && this.strokeWidth !== undefined) {
-        this.underlying.updateStrokeWidth(this.strokeWidth);
+      if (this.strokeWidth !== undefined) {
+        updates.strokeWidth = this.strokeWidth;
+      }
+      if (Object.keys(updates).length > 0) {
+        this.underlying.update(updates);
       }
     }
   }

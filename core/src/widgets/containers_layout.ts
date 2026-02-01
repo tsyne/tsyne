@@ -45,8 +45,15 @@ export class CanvasStack {
     // Push a new container context
     ctx.pushContainer();
 
+    // Set current container ID so cosyne can capture it for rebuild
+    const previousContainerId = ctx.getCurrentContainerId();
+    ctx.setCurrentContainerId(this.id);
+
     // Execute the builder function to collect children
     builder();
+
+    // Restore previous container ID
+    ctx.setCurrentContainerId(previousContainerId);
 
     // Pop the container and get the children
     const childIds = ctx.popContainer();

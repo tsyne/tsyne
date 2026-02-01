@@ -1,12 +1,29 @@
 # Pseudo-Declarative UI Composition in Tsyne
 
-Tsyne encourages a "pseudo-declarative" style of UI composition that combines the readability of declarative markup with the power and flexibility of a full programming language (TypeScript). This approach uses a fluent, builder-style API where UI components are nested within anonymous functions, creating a clear visual hierarchy in the code that mirrors the application's layout.
+Tsyne's pseudo-declarative style combines declarative UI readability with TypeScript's full programming power. A fluent builder API nests UI components within anonymous functions, creating code that visually mirrors the application's layout.
 
-This document draws lessons from key examples in the Tsyne repository to illustrate this style:
-- **`calculator.ts`**: A straightforward example of layout and direct event handling.
-- **`todomvc.ts`**: A more advanced showcase of state management and reactive data binding.
-- **`05-live-clock.ts`**: Demonstrates how to handle imperative updates for continuously changing data.
-- **`phone-apps/keyboard/`**: Shows how to generate complex, layered UIs programmatically, avoiding static config files.
+## Table of Contents
+
+1. [Core Concepts: The Builder Pattern](#core-concepts-the-builder-pattern)
+2. [Fluent Method Chaining](#fluent-method-chaining)
+3. [State Management Patterns](#state-management-and-ui-generation-patterns)
+4. [Reactive and Imperative Updates](#reactive-and-imperative-ui-updates)
+5. [Animation and Canvas Patterns](#animation-and-canvas-patterns) — NEW
+6. [GPU-Accelerated Rendering (CanvasShader)](#gpu-accelerated-rendering-canvasshader) — NEW
+7. [Lessons from Ported Apps](#lessons-from-ported-apps-7-complete-applications)
+8. [Best Practices](#best-practices)
+9. [Pattern Quick Reference](#pattern-quick-reference)
+10. [Related Resources](#related-resources)
+
+## Example Applications
+
+This document draws lessons from key examples and real-world applications:
+- **`calculator.ts`**: Simple layout with direct event handling
+- **`todomvc.ts`**: State management with reactive data binding
+- **`05-live-clock.ts`**: Imperative updates for continuously changing data
+- **`phone-apps/keyboard/`**: Programmatic UI generation avoiding static config files
+- **`ported-apps/ebooks/`**: Production app (730 lines, 61 tests) using Observable pattern
+- **`cosyne/demos/`**: 17 educational demos showing all patterns in action
 
 ## Core Concepts: The Builder Pattern
 
@@ -41,8 +58,8 @@ a.window({ title: "Calculator" }, (win: Window) => {
 
 Key takeaways:
 - **Hierarchy in Code**: The `vbox` is visually "inside" the `window`, and the `grid` is inside the `vbox`, just like in the final UI.
-- **Implicit Context**: You don't need to manually add children to their parents. The builder (`a`) tracks the current container (`vbox`, `grid`, etc.) and automatically adds newly created widgets to it.
-- **Readability**: The structure is immediately scannable. You can see the layout (a vertical box with a label and a grid) without needing to parse complex object literals or XML.
+- **Implicit Context**: Children automatically attach to their parent container. The builder (`a`) tracks the current context and automatically adds newly created widgets—no manual parenting needed.
+- **Readability**: The structure is immediately scannable. You see the layout (a vertical box with a label and a grid) without parsing complex object literals or XML.
 
 ## Fluent Method Chaining
 
@@ -68,22 +85,22 @@ This is highly readable and keeps the logic for a widget co-located with its def
 
 ### Example: Declarative Visibility in `todomvc.ts`
 
-The TodoMVC example uses `.when()` to show or hide a todo item based on the current filter (All, Active, Completed). The framework automatically re-evaluates this condition when the data changes.
+The TodoMVC example declaratively controls todo visibility with `.when()` based on the current filter (All, Active, Completed). The framework automatically re-evaluates this condition when the data changes.
 
 ```typescript
 // from examples/todomvc.ts
 
-// The hbox containing the todo item is only visible when `shouldShowTodo` returns true.
+// The hbox containing the todo item is visible when `shouldShowTodo` returns true.
 const todoHBox = a.hbox(() => {
   // ... checkbox, buttons, etc.
 }).when(shouldShowTodo);
 ```
 
-This fluent API avoids messy `if/else` blocks for managing UI state, leading to cleaner and more maintainable view code.
+This fluent API eliminates messy `if/else` blocks for managing UI state, resulting in cleaner, more maintainable view code.
 
 ## State Management and UI Generation Patterns
 
-A key principle of this style is the separation of UI definition from state management. The UI is declared once, and then it *reacts* to state changes.
+A key principle: UI and state are separate. UI is declared once; state changes trigger reactive updates.
 
 ### Pattern 1: Self-Contained State (`calculator.ts`)
 
@@ -140,7 +157,7 @@ This creates a predictable, one-way data flow that is easier to debug and scales
 
 ### Pattern 3: Programmatic UI Generation (`phone-apps/keyboard/`)
 
-For highly complex or repetitive UIs, Tsyne's programmatic nature offers a significant advantage over static markup languages. Instead of defining every button in a config file, you can generate the UI dynamically using loops, functions, and standard TypeScript logic. The on-screen keyboard is a perfect example.
+Complex, repetitive UIs are generated programmatically, not defined in static config files. Use loops, functions, and TypeScript logic—the on-screen keyboard exemplifies this approach.
 
 #### Dynamic Layout from Data
 
@@ -185,6 +202,318 @@ a.vbox(() => {
 ```
 
 When the controller's mode changes (e.g., `k.cycleMode()`), the framework automatically re-evaluates the `.when()` conditions. It hides the entire `vbox` for the old layer and shows the `vbox` for the new one. This is an extremely efficient and declarative way to manage complex UI states.
+
+## Animation and Canvas Patterns
+
+For time-based or frame-based updates, Tsyne supports animation loops that continuously redraw the UI.
+
+### Pattern 4: Animation Loop (Canvas and Cosyne)
+
+Animation is driven by a timer loop that increments state and triggers redraws via `refreshAllCosyneContexts()`:
+
+```typescript
+// from cosyne/demos/cosyne-animated-shapes.ts
+
+let time = 0;
+let animationSpeed = 1.0;
+
+a.canvasStack(() => {
+  cosyne(a, (c: CosyneContext) => {
+    // Drawing logic uses `time` to compute positions/angles
+    const angle = (time * 0.02) * animationSpeed;
+    const radius = 80 + Math.sin(time * 0.03) * 20;
+    // ... draw shapes based on time ...
+  });
+});
+
+// Timer-driven animation
+const animate = async () => {
+  while (true) {
+    time++;  // Increment animation state
+    refreshAllCosyneContexts();  // Trigger redraw
+    await new Promise(r => setTimeout(r, 16));  // ~60 FPS
+  }
+};
+setTimeout(animate, 100);  // Start after UI is ready
+```
+
+**Key Points:**
+- Time variable lives in outer scope (external to Cosyne)
+- `refreshAllCosyneContexts()` triggers all Cosyne canvases to redraw
+- Each redraw recalculates positions/angles based on current time
+- 16ms interval ≈ 60 FPS; adjust for desired frame rate
+- Animation logic is decoupled from UI definition
+
+**Examples:** Rotating shapes, particle systems, procedural patterns, live clocks
+
+### Pattern 5: Reactive Canvas Updates with `.bindTo()`
+
+For dynamic list animations, combine `.bindTo()` with time-based rendering:
+
+```typescript
+// Animated list that updates as data changes and time advances
+const animate = async () => {
+  while (true) {
+    time++;
+    await boundList.update();  // Re-renders with current time
+    refreshAllCosyneContexts();
+    await new Promise(r => setTimeout(r, 16));
+  }
+};
+```
+
+This pattern keeps data binding and animation separate—list updates trigger redraws, which incorporate time-based state.
+
+---
+
+## GPU-Accelerated Rendering (CanvasShader)
+
+For computationally intensive visuals, CanvasShader offloads work to the GPU via GLSL fragment shaders.
+
+### Overview: What is CanvasShader?
+
+`CanvasShader` is a canvas primitive that executes a custom GLSL fragment shader on the GPU. It enables real-time rendering of fractals, procedural generation, raymarching, and other GPU-friendly effects at 60+ FPS.
+
+**Key Concepts:**
+- **Fragment Shader**: GLSL code that computes pixel color based on position
+- **Uniforms**: Shader parameters (floats, vectors) updated from TypeScript
+- **u_time**: Built-in uniform (seconds since start) for animation
+- **u_resolution**: Canvas size in pixels for coordinate calculation
+- **Viewport**: Each shader has its own viewport for positioned rendering
+
+### Basic CanvasShader Usage
+
+```typescript
+// from cosyne/demos/shader-perlin-noise.ts
+
+const noiseShader = `
+#version 110  // Desktop OpenGL, no precision qualifiers
+
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_noiseType;
+
+float noise(vec3 p) {
+  // ... Perlin noise implementation ...
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  float n = noise(vec3(uv, u_time));
+  gl_FragColor = vec4(vec3(n), 1.0);
+}
+`;
+
+let shader: CanvasShader | null = null;
+
+a.canvasStack(() => {
+  shader = a.canvasShader(WIDTH, HEIGHT, noiseShader, {
+    uniforms: {
+      u_noiseType: 1,
+    }
+  });
+});
+
+// Update uniform reactively
+await shader.setUniform('u_noiseType', 2);
+
+// Or update multiple uniforms at once
+await shader.setUniforms({
+  u_noiseType: 2,
+  u_offset: [50, 100],
+});
+
+// Change shader source dynamically
+await shader.setSource(differentShader);
+```
+
+### CanvasShader Patterns
+
+#### Pattern A: Procedural Generation (Fractals, Noise)
+
+GPU-accelerated computation of mathematical patterns:
+
+```typescript
+// Mandelbrot fractal
+const mandelbrotShader = `
+#version 110
+uniform vec2 u_resolution;
+uniform vec2 u_center;
+uniform float u_zoom;
+uniform float u_maxIter;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec2 c = (uv - 0.5) * 3.0 / u_zoom + u_center;
+
+  vec2 z = vec2(0.0);
+  float iter = 0.0;
+
+  for (int i = 0; i < 256; i++) {
+    if (float(i) >= u_maxIter) break;
+    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+    if (length(z) > 2.0) break;
+    iter += 1.0;
+  }
+
+  float t = iter / u_maxIter;
+  gl_FragColor = vec4(vec3(t), 1.0);
+}
+`;
+```
+
+#### Pattern B: Raymarching (3D Rendering)
+
+Render 3D scenes using signed distance functions:
+
+```typescript
+// Simple sphere via raymarching
+const raymarchShader = `
+#version 110
+uniform vec2 u_resolution;
+
+float sdSphere(vec3 p, float r) {
+  return length(p) - r;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  vec3 ro = vec3(0.0, 0.0, 3.0);  // Camera position
+  vec3 rd = normalize(vec3(uv, -1.5));  // Ray direction
+
+  vec3 col = vec3(0.1);
+  float t = 0.0;
+
+  for (int i = 0; i < 64; i++) {
+    vec3 p = ro + rd * t;
+    float d = sdSphere(p, 1.0);
+    if (d < 0.001) {
+      col = vec3(0.8, 0.2, 0.2);  // Hit!
+      break;
+    }
+    t += d;
+    if (t > 10.0) break;
+  }
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+```
+
+#### Pattern C: Animated Shader Effects
+
+Use `u_time` for animation:
+
+```typescript
+// Animated plasma
+const plasmaShader = `
+#version 110
+uniform vec2 u_resolution;
+uniform float u_time;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+
+  float v = sin(uv.x * 10.0 + u_time);
+  v += sin(uv.y * 10.0 + u_time);
+  v += sin(length(uv) * 10.0 - u_time * 2.0);
+
+  vec3 col = vec3(
+    sin(v + 0.0) * 0.5 + 0.5,
+    sin(v + 2.094) * 0.5 + 0.5,
+    sin(v + 4.188) * 0.5 + 0.5
+  );
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+// Shader animates automatically via u_time
+shader = a.canvasShader(WIDTH, HEIGHT, plasmaShader, {});
+```
+
+#### Pattern D: Reactive Uniforms
+
+Change shader parameters in response to UI events:
+
+```typescript
+let shader: CanvasShader | null = null;
+let noiseType = 0;
+
+a.hbox(() => {
+  a.button('Simple').onClick(() => {
+    noiseType = 0;
+    shader?.setUniform('u_noiseType', noiseType);
+  });
+  a.button('FBM').onClick(() => {
+    noiseType = 1;
+    shader?.setUniform('u_noiseType', noiseType);
+  });
+});
+
+a.canvasStack(() => {
+  shader = a.canvasShader(WIDTH, HEIGHT, noiseShader, {
+    uniforms: { u_noiseType: noiseType }
+  });
+});
+```
+
+### CanvasShader API Reference
+
+| Method | Parameters | Purpose |
+|--------|-----------|---------|
+| `canvasShader(w, h, source, opts)` | width, height, GLSL source, options | Create shader canvas |
+| `setUniform(name, value)` | uniform name, value | Update single uniform |
+| `setUniforms(dict)` | object with name: value pairs | Update multiple uniforms |
+| `setSource(source)` | GLSL source code | Change shader dynamically |
+| `withId(id)` | string ID | Assign stable ID for testing |
+
+**Supported Uniform Types:**
+- `float`: `setUniform('u_scale', 2.5)`
+- `vec2`: `setUniform('u_pos', [10, 20])`
+- `vec3`: `setUniform('u_color', [1, 0, 0])`
+- `vec4`: `setUniform('u_color', [1, 0, 0, 0.5])`
+
+**GLSL Requirements:**
+- `#version 110` (desktop OpenGL 1.10)
+- NO `precision` qualifiers (those are OpenGL ES only)
+- NO `uniform int` (causes silent failures—use `uniform float` instead)
+
+### Performance Considerations
+
+- **GPU-based**: 100-1000x faster than CPU for complex computations
+- **60+ FPS**: Achievable on modern hardware with reasonable shader complexity
+- **Compile time**: First render includes shader compilation (~10ms)
+- **Memory**: Minimal; no vertex buffers needed for most effects
+- **Compatibility**: Requires desktop OpenGL (not WebGL/ES)
+
+### CanvasShader Debugging Tips
+
+```typescript
+// Check shader compilation errors
+// (printed to console during first render)
+
+// Test with simple shader first
+const testShader = `
+#version 110
+uniform vec2 u_resolution;
+void main() {
+  vec2 uv = gl_FragCoord.xy / u_resolution;
+  gl_FragColor = vec4(uv, 0.0, 1.0);  // Gradient
+}
+`;
+
+// Gradually add complexity to identify issues
+
+// Common mistakes:
+// ❌ #version 100 (WebGL syntax)
+// ❌ precision highp float; (OpenGL ES syntax)
+// ❌ uniform int (silent failure)
+// ✅ #version 110
+// ✅ uniform float u_palette; (use float for integers)
+```
+
+---
 
 ## Reactive and Imperative UI Updates
 
@@ -325,45 +654,33 @@ render: (item, index) => {
 
 Seven complete mobile/web applications have been successfully ported to Tsyne, demonstrating the effectiveness of the pseudo-declarative pattern at scale:
 
-### Tab-Based Navigation Pattern
+### Tab-Based Navigation
 
-**Apps using this pattern:** All 7 ported apps (Food Truck, Expense Tracker, NextCloud, DuckDuckGo, Wikipedia, Element, Ebook Reader)
-
-A common real-world pattern: multiple tabs where only the selected tab is visible. The pseudo-declarative approach using `.when()` and async refresh makes this elegant:
+Using `.when()` for declarative visibility across all 7 apps:
 
 ```typescript
 let selectedTab = 'library';
 
-// Each tab container uses .when() for declarative visibility
-const libraryView = a.vbox(() => {
-  // Library content
-}).when(() => selectedTab === 'library' && store.getBooks());
+a.vbox(() => { /* Library content */ })
+  .when(() => selectedTab === 'library');
 
-const readingView = a.vbox(() => {
-  // Reading content
-}).when(() => selectedTab === 'reading');
+a.vbox(() => { /* Reading content */ })
+  .when(() => selectedTab === 'reading');
 
-const favoritesView = a.vbox(() => {
-  // Favorites content
-}).when(() => selectedTab === 'favorites');
-
-// Tab buttons and observable updates
-store.subscribe(async () => {
-  await updateLabels();
-  await viewStack.refresh();  // Re-evaluates all .when() conditions
+a.button('📚 Library').onClick(async () => {
+  selectedTab = 'library';
+  await viewStack.refresh();  // Re-evaluate all .when()
 });
 
-a.button('📚 Library', async () => {
-  selectedTab = 'library';
-  await viewStack.refresh();
+store.subscribe(async () => {
+  await updateLabels();
+  await viewStack.refresh();  // Refresh on data changes
 });
 ```
 
-**Key insight:** Using `.when()` with `await refresh()` handles complex tab state elegantly without manual show/hide.
+### Observable Store Pattern
 
-### Observable Store + Reactive UI Pattern
-
-**Observable Pattern Consistency:** All 7 apps use identical observable pattern:
+All 7 apps use the same observable pattern for reactive updates:
 
 ```typescript
 class AppStore {
@@ -371,28 +688,18 @@ class AppStore {
 
   subscribe(listener: ChangeListener): () => void {
     this.changeListeners.push(listener);
-    return () => {
-      this.changeListeners = this.changeListeners.filter((l) => l !== listener);
-    };
+    return () => this.changeListeners = this.changeListeners.filter(l => l !== listener);
   }
 
   private notifyChange() {
-    this.changeListeners.forEach((listener) => listener());
+    this.changeListeners.forEach(listener => listener());
   }
 }
-```
 
-**Why this works:** The return value from `subscribe()` is an unsubscriber function. This is critical for cleanup:
-
-```typescript
-let unsubscribe: () => void;
-
-store.subscribe(async () => {
+// Subscribe returns unsubscriber for cleanup
+const unsubscribe = store.subscribe(async () => {
   await updateUI();
 });
-
-// When component unmounts or scope ends, cleanup:
-unsubscribe?.();
 ```
 
 ### Smart List Rendering with `.bindTo()` and `trackBy`
@@ -514,43 +821,109 @@ a.vbox(() => {})
   });
 ```
 
-## Best Practices
+## Pattern Quick Reference
 
-### Do
+Choose the right pattern for your use case:
 
-- Use `trackBy` for lists with stable IDs
-- Prefer `.bindText()` over `label.setText()` for reactive text
-- Use `.when()` for conditional visibility instead of manual show/hide
-- Keep render functions simple; move logic to store/model
-- Combine `.bindTo()` with property bindings for rich updates
-
-### Don't
-
-- Don't mix MVVM and MVC patterns in the same render function
-- Don't call async operations directly in binding functions
-- Don't forget `trackBy` for lists that change frequently
-- Don't use `.bindTo()` for static lists (use regular loops instead)
-
-## Conclusion
-
-Tsyne's pseudo-declarative style provides a flexible and powerful way to build user interfaces. By combining a declarative builder pattern for layout with fluent method chaining for configuration, you can create readable and maintainable UI code. The framework supports a range of patterns from simple self-contained state to observable stores and fully programmatic UI generation. With support for both reactive data binding and direct imperative updates, you have the tools to build dynamic and responsive applications efficiently.
-
-The 7 ported apps demonstrate that these patterns scale from small utilities (400 lines) to feature-rich applications (700+ lines), maintaining code clarity and testability throughout.
+| Pattern | Best For | Complexity | Examples |
+|---------|----------|-----------|----------|
+| **Self-Contained State** | Simple components | Low | Calculator, timer, form |
+| **Observable Store** | Shared state, multiple views | Medium | TodoMVC, ported apps |
+| **Programmatic UI** | Repetitive layouts | Medium | Keyboard, galleries |
+| **Canvas Animation** | Time-based updates | Medium | Animated shapes, clocks |
+| **CanvasShader (GPU)** | Computation-heavy visuals | High | Fractals, raymarching, noise |
 
 ---
 
-**Lessons for Future Ports**
+## Best Practices
 
-1. **Always use Observable pattern** - Consistent across all 7 apps, proven pattern for reactive updates
-2. **Use `.when()` + `await refresh()` for complex visibility** - More elegant than manual show/hide
-3. **Defensive copies are essential** - Tests depend on it, state synchronization requires it
-4. **Counter-based IDs, not timestamps** - Prevents collision issues in rapid-fire operations
-5. **Tab-based navigation scales well** - Cleaner than modal/stack patterns for most apps
-6. **Store subscriptions handle all view updates** - Never update UI directly in event handlers
-7. **61 tests is achievable for complex features** - Well-structured store makes comprehensive testing easy
+### Layout & Composition ✅
 
-**Resources**
-- See `/ported-apps/ebooks/` for the most recent and complete example (Ebook Reader, 730 lines, 61 Jest tests)
-- See `/ported-apps/wikipedia/` for complex data models with language/article management
-- See `/ported-apps/element/` for real-time messaging patterns with sessions
-- See `/ported-apps/duckduckgo/` for search/filter patterns with analytics tracking
+- Use `.withId()` on interactive elements for testing
+- Nest layout logically: `window` > `vbox` > `hbox` > widgets
+- Keep render functions focused; move complex logic to store
+- Use loops to generate repetitive UI (keyboard rows, galleries)
+
+### State Management ✅
+
+- Use Observable pattern for reactive updates across all 7 apps
+- **Defensive copy**: Return `[...items]` not `items`
+- Store is source of truth—never mutate shared state
+- Immutability enables proper change detection
+
+### Visibility & Interaction ✅
+
+- Use `.when()` for conditional visibility (not manual show/hide)
+- Use `.bindTo()` with `trackBy` for dynamic lists
+- Use `.bindText()` for reactive text (not `setText()` calls)
+- Use `.onClick()` for event handling (chainable fluent style)
+
+### Performance ✅
+
+- Use `.bindTo()` + `trackBy` for efficient list diffing
+- Use `CanvasShader` for expensive GPU computations
+- Use `.when()` for conditional rendering (entire subtrees)
+- Only refresh affected UI sections, not entire app
+
+### Testing ✅
+
+- Use `.withId()` to make elements queryable
+- Return unsubscriber from `store.subscribe()`
+- Verify immutability with `expect(arr1).not.toBe(arr2)`
+- Use counter-based IDs (`book-001`) not timestamps
+
+### Common Mistakes ❌
+
+- ❌ Mutating shared state directly
+- ❌ Calling `setText()` instead of using `.bindText()`
+- ❌ Forgetting `trackBy` on dynamic lists
+- ❌ Using timestamps for generated IDs (causes collisions)
+- ❌ Updating UI directly in event handlers (use store instead)
+- ❌ Mixing MVVM and MVC patterns in the same render function
+
+## Conclusion
+
+Tsyne's pseudo-declarative style combines declarative UI readability with TypeScript's full power. By using the builder pattern for layout and fluent chaining for configuration, you create readable, maintainable code. The framework supports multiple patterns—from simple self-contained state to observable stores, programmatic UI generation, canvas animation, and GPU-accelerated rendering. Both reactive data binding and imperative updates are supported, giving you flexibility for any scenario.
+
+The 7 ported apps (500-730 lines each, 40-61 tests) demonstrate these patterns scale effectively while maintaining code clarity and testability.
+
+---
+
+## Related Resources
+
+### Documentation
+- **[Cosyne Demos Catalog](../cosyne/DEMOS_CATALOG.md)** - 17 educational demos showing all patterns in action
+- **[OpenGL Integration Plan](../cosyne/OPENGL_INTEGRATION_PLAN.md)** - GPU rendering and shader patterns
+- **[Shader Fixes Guide](../cosyne/SHADER_FIXES.md)** - GLSL compatibility and optimization
+
+### Example Applications
+- **[Ebook Reader](../ported-apps/ebooks/)** - Production app (730 lines, 61 tests) using all patterns
+- **[Wikipedia](../ported-apps/wikipedia/)** - Complex data models with multi-level binding
+- **[Element Chat](../ported-apps/element/)** - Real-time messaging with subscriptions
+- **[Expense Tracker](../ported-apps/expense-tracker/)** - Nested lists and filtering
+
+### Educational Demos
+- **Cosyne Animated Shapes** - Animation loops with TypeScript drawing
+- **Raymarching Intro** - GPU 3D rendering basics
+- **Perlin Noise** - Procedural generation patterns
+- **Voronoi Diagrams** - Cellular pattern generation
+
+---
+
+**Key Lessons for Future Development**
+
+1. ✅ **Observable Pattern**: All 7 apps use identical subscription pattern—proven and scalable
+2. ✅ **Declarative Visibility**: Use `.when()` + `await refresh()` instead of manual show/hide
+3. ✅ **Defensive Copies**: Return `[...items]` not `items`—essential for state synchronization
+4. ✅ **Counter-based IDs**: Use `book-001`, `book-002` not `Date.now()`—prevents test collisions
+5. ✅ **Tab-based Navigation**: Cleaner than modal/stack patterns for most applications
+6. ✅ **Store-driven Updates**: Store subscriptions handle ALL view updates—never mutate UI directly
+7. ✅ **Comprehensive Testing**: 50-61 tests per app achievable with well-structured stores
+8. ✅ **Animation Loops**: Use timer-driven `refreshAllCosyneContexts()` for frame-based updates
+9. ✅ **GPU Rendering**: Use `CanvasShader` for computation-heavy visualizations (100-1000x faster)
+
+---
+
+## Summary
+
+Tsyne's pseudo-declarative approach elegantly combines markup-like readability with full TypeScript power. The framework provides clear patterns for every scenario—from simple state to complex distributed apps, animated graphics, and GPU-accelerated visuals. All patterns are proven across 7 production applications and 17+ educational demos. Start with the pattern that fits your use case and scale with confidence.

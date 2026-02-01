@@ -19,6 +19,17 @@ export class Button extends Widget {
     const id = ctx.generateId('button');
     super(ctx, id);
 
+    // Fast-fail: detect common mistake of passing callback as constructor arg
+    if (typeof classNameOrOptions === 'function') {
+      throw new Error(
+        `❌ Button constructor does not accept a callback as the third argument.\n\n` +
+        `You passed a function instead of className/options.\n\n` +
+        `WRONG: a.button('Label', handler)\n` +
+        `RIGHT: a.button('Label').onClick(handler)\n\n` +
+        `See LLM.md "Mental Shift: Fluent Methods vs Constructor Parameters" for details.`
+      );
+    }
+
     // Handle both old signature (className string) and new options object
     let options: ButtonOptions = {};
     if (typeof classNameOrOptions === 'object') {

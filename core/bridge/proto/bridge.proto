@@ -116,6 +116,7 @@ service BridgeService {
   rpc CreateCanvasArc(CreateCanvasArcRequest) returns (Response);
   rpc CreateCanvasPolygon(CreateCanvasPolygonRequest) returns (Response);
   rpc CreateTappableCanvasRaster(CreateTappableCanvasRasterRequest) returns (Response);
+  rpc CreateCanvasShader(CreateCanvasShaderRequest) returns (Response);
 
   // Canvas updates
   rpc UpdateCanvasLine(UpdateCanvasLineRequest) returns (Response);
@@ -132,6 +133,7 @@ service BridgeService {
   rpc UpdateTappableCanvasRaster(UpdateTappableCanvasRasterRequest) returns (Response);
   rpc SetTappableCanvasImage(SetTappableCanvasImageRequest) returns (Response);
   rpc SetTappableCanvasRect(SetTappableCanvasRectRequest) returns (Response);
+  rpc UpdateCanvasShader(UpdateCanvasShaderRequest) returns (Response);
 
   // Sprite system - efficient dirty-rectangle based animation
   rpc SaveRasterBackground(SaveRasterBackgroundRequest) returns (Response);
@@ -1228,6 +1230,26 @@ message CreateTappableCanvasRasterRequest {
   string drag_callback_id = 9;         // no "on_" prefix for drag callbacks (matches Image convention)
   string drag_end_callback_id = 10;    // no "on_" prefix for drag callbacks (matches Image convention)
   BlendMode blend_mode = 11;
+}
+
+// Shader uniform value (supports float, vec2, vec3, vec4)
+message ShaderUniform {
+  string name = 1;
+  repeated float values = 2;  // 1 element = float, 2 = vec2, 3 = vec3, 4 = vec4
+}
+
+message CreateCanvasShaderRequest {
+  string widget_id = 1;
+  float width = 2;
+  float height = 3;
+  string fragment_source = 4;  // GLSL fragment shader source
+  repeated ShaderUniform uniforms = 5;
+}
+
+message UpdateCanvasShaderRequest {
+  string widget_id = 1;
+  string fragment_source = 2;  // Optional: update shader source
+  repeated ShaderUniform uniforms = 3;  // Uniforms to set/update
 }
 
 // Canvas update messages

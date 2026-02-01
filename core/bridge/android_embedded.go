@@ -134,7 +134,6 @@ func (d *AndroidEmbeddedDriver) SetScreenSize(width, height float32) {
 
 // SendTouchDown sends a touch down event (called from JNI)
 func (d *AndroidEmbeddedDriver) SendTouchDown(x, y float32, id int) {
-	log.Printf("TouchDown: x=%.0f y=%.0f id=%d", x, y, id)
 	d.events <- &embedded.TouchDownEvent{
 		Position: fyne.NewPos(x, y),
 		ID:       id,
@@ -151,7 +150,6 @@ func (d *AndroidEmbeddedDriver) SendTouchMove(x, y float32, id int) {
 
 // SendTouchUp sends a touch up event (called from JNI)
 func (d *AndroidEmbeddedDriver) SendTouchUp(x, y float32, id int) {
-	log.Printf("TouchUp: x=%.0f y=%.0f id=%d", x, y, id)
 	d.events <- &embedded.TouchUpEvent{
 		Position: fyne.NewPos(x, y),
 		ID:       id,
@@ -217,12 +215,9 @@ func StartBridgeAndroidEmbedded(width, height C.float, socketDir *C.char) C.int 
 	log.SetPrefix("[tsyne-bridge] ")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	log.Printf("Starting Android embedded mode with screen size: %.0fx%.0f", float32(width), float32(height))
-
 	// Store the socket directory override
 	if socketDir != nil {
 		socketDirOverride = C.GoString(socketDir)
-		log.Printf("Socket directory set to: %s", socketDirOverride)
 	}
 
 	// Create the Android embedded driver

@@ -4,20 +4,23 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
-Core                                907      907        0        0  47|47|0
-Cosyne                              926      926        0        0  22|21|1
+Core                                915      915        0        0  49|49|0
+Cosyne                              972      970        2        0  34|33|1
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
-Ported: sample-food-truck           907      907        0        0  47|47|0
-Ported: expense-tracker             907      907        0        0  47|47|0
-Ported: nextcloud                   907      907        0        0  47|47|0
-Ported: duckduckgo                  907      907        0        0  47|47|0
-Ported: wikipedia                   907      907        0        0  47|47|0
-Ported: element                     907      907        0        0  47|47|0
-Ported: ebooks                      907      907        0        0  47|47|0
+Ported: sample-food-truck           915      915        0        0  49|49|0
+Ported: expense-tracker             915      915        0        0  49|49|0
+Ported: nextcloud                   915      915        0        0  49|49|0
+Ported: duckduckgo                  915      915        0        0  49|49|0
+Ported: wikipedia                   915      915        0        0  49|49|0
+Ported: element                     915      915        0        0  49|49|0
+Ported: ebooks                      915      915        0        0  49|49|0
+Ported: alteredqualia-cars           41       41        0        0    2|2|0
+Ported: colordodge-kaleidoscope       24       24        0        0    1|1|0
+Ported: script-schmiede-fractals       41       41        0        0    2|2|0
 Ported: 3d-cube                     444      444        0        0    4|4|0
-Ported: boing                       907      907        0        0  47|47|0
+Ported: boing                       915      915        0        0  49|49|0
 Ported: calcudoku                    46       46        0        0    2|2|0
 Ported: chess                        60       57        0        3    3|3|0
 Ported: falling-blocks               36       36        0        0    1|1|0
@@ -31,7 +34,7 @@ Ported: peg-solitaire                44       44        0        0    2|2|0
 Ported: pixeledit                   429      429        0        0 115|115|0
 Ported: prime-grid-visualizer        11       11        0        0    1|1|0
 Ported: slydes                       53       53        0        0    3|3|0
-Ported: solitaire                   140      140        0        0    8|8|0
+Ported: solitaire                   140      139        1        0    8|7|1
 Ported: slider-puzzle                37       37        0        0    2|2|0
 Ported: sudoku                       27       27        0        0    2|2|0
 Ported: tango-puzzle                 35       35        0        0    2|2|0
@@ -70,15 +73,15 @@ Larger: realtime-paris-density-simulation        0        0        0        0   
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI        0        0        0        0    1|0|1
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                             11283    11272        0       11      661
+TOTAL                             11507    11493        3       11      696
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 11 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 82100ms (82.10s)
-Total ctx.wait() calls: 276
+Total wait time: 77650ms (77.65s)
+Total ctx.wait() calls: 225
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
@@ -103,6 +106,6 @@ Top 10 tests by wait time:
   Burning Ship Explorer should zoom and take screenshot
     └─ 2000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 11272 tests passed
+❌ FAILED: 3 tests failed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

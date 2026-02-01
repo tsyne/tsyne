@@ -118,12 +118,13 @@ export class CosyneLine extends Primitive<any> {
 
   protected applyStroke(): void {
     if (this.underlying && this.strokeColor !== undefined) {
-      // Update stroke on underlying widget
-      if (this.underlying.updateStrokeColor) {
-        this.underlying.updateStrokeColor(this.strokeColor);
+      // Update stroke on underlying widget via update()
+      const updates: Record<string, any> = { strokeColor: this.strokeColor };
+      if (this.strokeWidth !== undefined) {
+        updates.strokeWidth = this.strokeWidth;
       }
-      if (this.underlying.updateStrokeWidth && this.strokeWidth !== undefined) {
-        this.underlying.updateStrokeWidth(this.strokeWidth);
+      if (this.underlying.update) {
+        this.underlying.update(updates);
       }
     }
   }

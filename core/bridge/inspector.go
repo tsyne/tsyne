@@ -359,14 +359,12 @@ func (insp *Inspector) removeHighlight() {
 // handleOpenInspector opens an inspector window for the specified window
 func (b *Bridge) handleOpenInspector(msg Message) Response {
 	windowID := msg.Payload["windowId"].(string)
-	log.Printf("[Inspector] Opening inspector for window: %s", windowID)
 
 	b.mu.RLock()
 	_, exists := b.windows[windowID]
 	b.mu.RUnlock()
 
 	if !exists {
-		log.Printf("[Inspector] Window not found: %s", windowID)
 		return Response{
 			ID:      msg.ID,
 			Success: false,
@@ -374,11 +372,9 @@ func (b *Bridge) handleOpenInspector(msg Message) Response {
 		}
 	}
 
-	log.Printf("[Inspector] Creating inspector window...")
 	fyne.DoAndWait(func() {
 		inspector := NewInspector(b, windowID)
 		inspector.Show()
-		log.Printf("[Inspector] Inspector window shown")
 	})
 
 	return Response{

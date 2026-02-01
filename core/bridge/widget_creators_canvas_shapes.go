@@ -36,7 +36,6 @@ func (b *Bridge) handleCreateCanvasLine(msg Message) Response {
 
 	// Set blend mode if provided
 	if blendMode, ok := msg.Payload["blendMode"].(string); ok {
-		log.Printf("[createCanvasLine] Setting blendMode=%s for line %s", blendMode, widgetID)
 		line.SetBlendMode(parseBlendMode(blendMode))
 	}
 
@@ -101,7 +100,6 @@ func (b *Bridge) handleUpdateCanvasLine(msg Message) Response {
 
 		// Update blend mode if provided
 		if blendMode, ok := msg.Payload["blendMode"].(string); ok {
-			log.Printf("[updateCanvasLine] Setting blendMode=%s for line %s", blendMode, widgetID)
 			line.SetBlendMode(parseBlendMode(blendMode))
 		}
 

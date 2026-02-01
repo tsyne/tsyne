@@ -603,6 +603,11 @@ if [ "$SKIP_TESTS" = false ]; then
   test_ported_app "element" || true
   test_ported_app "ebooks" || true
 
+  # New demo ports (3 apps)
+  test_ported_app "alteredqualia-cars" || true
+  test_ported_app "colordodge-kaleidoscope" || true
+  test_ported_app "script-schmiede-fractals" || true
+
   # Game/Utility Ports
   test_ported_app "3d-cube" || true
   test_ported_app "boing" || true
