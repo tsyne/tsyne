@@ -30,7 +30,8 @@
  * @tsyne-app:count single
  */
 
-import type { App, standaloneShutdownStrategy } from 'tsyne';
+import type { App } from 'tsyne';
+import { standaloneShutdownStrategy } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';
 import type { VBox } from 'tsyne';

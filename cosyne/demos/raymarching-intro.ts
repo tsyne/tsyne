@@ -12,6 +12,35 @@
 import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
+// Simple FPS counter for performance monitoring
+class FPSCounter {
+  private frames = 0;
+  private lastTime = Date.now();
+  private fps = 0;
+  private minFps = 999;
+  private maxFps = 0;
+
+  update(): number {
+    this.frames++;
+    const now = Date.now();
+    const elapsed = now - this.lastTime;
+
+    if (elapsed >= 500) {
+      this.fps = Math.round((this.frames * 1000) / elapsed);
+      this.minFps = Math.min(this.minFps, this.fps);
+      this.maxFps = Math.max(this.maxFps, this.fps);
+      this.frames = 0;
+      this.lastTime = now;
+    }
+
+    return this.fps;
+  }
+
+  getStats(): string {
+    return `FPS: ${this.fps} (min: ${this.minFps}, max: ${this.maxFps})`;
+  }
+}
+
 const WIDTH = 500;
 const HEIGHT = 500;
 
@@ -93,7 +122,8 @@ vec3 calcNormal(vec3 p) {
 }
 
 // Soft shadow
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
+    float k = 12.0;  // Balanced softness
     float res = 1.0;
     float t = mint;
     for (int i = 0; i < 32; i++) {
@@ -110,13 +140,13 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
 float calcAO(vec3 pos, vec3 nor) {
     float occ = 0.0;
     float sca = 1.0;
-    for (int i = 0; i < 5; i++) {
-        float h = 0.01 + 0.12 * float(i);
+    for (int i = 0; i < 8; i++) {  // Increased from 5 to 8 samples
+        float h = 0.02 + 0.08 * float(i);  // Standardized step size
         float d = sceneSDF(pos + h * nor);
         occ += (h - d) * sca;
         sca *= 0.95;
     }
-    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+    return clamp(1.0 - 2.5 * occ, 0.0, 1.0);  // Standardized multiplier
 }
 
 void main() {
@@ -151,7 +181,7 @@ void main() {
             float spe = pow(clamp(dot(nor, hal), 0.0, 1.0), 32.0);
 
             // Shadow
-            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 5.0, 16.0);
+            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 5.0);
 
             // Ambient occlusion
             float ao = calcAO(pos, nor);
@@ -193,7 +223,27 @@ function createRaymarchingDemo(a: App): void {
   ];
   let colorIdx = 3;
 
-  a.window({ title: 'Raymarching 3D Demo', width: WIDTH + 40, height: HEIGHT + 100 }, (win) => {
+  // FPS Counter
+  const fpsCounter = new FPSCounter();
+
+  // Light direction controls
+  let lightAngle = 30;      // Horizontal angle in degrees
+  let lightElevation = 45;  // Vertical angle in degrees
+  let statusLabel: any = null;
+  let fpsLabel: any = null;
+
+  const computeLightDir = (): [number, number, number] => {
+    const angleRad = (lightAngle * Math.PI) / 180;
+    const elevRad = (lightElevation * Math.PI) / 180;
+    const cosElev = Math.cos(elevRad);
+    return [
+      cosElev * Math.cos(angleRad),
+      Math.sin(elevRad),
+      cosElev * Math.sin(angleRad),
+    ];
+  };
+
+  a.window({ title: 'Raymarching 3D Demo', width: WIDTH + 40, height: HEIGHT + 220 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
         // Scene controls
@@ -236,21 +286,59 @@ function createRaymarchingDemo(a: App): void {
           });
         });
 
+        // Light direction controls
+        a.vbox(() => {
+          a.label('💡 Light Controls');
+
+          a.hbox(() => {
+            a.label('Horizontal:');
+            a.slider(0, 360, 5, lightAngle, (val) => {
+              lightAngle = val;
+              shader?.setUniform('u_lightDir', computeLightDir());
+            });
+            a.label(`${Math.round(lightAngle)}°`);
+          });
+
+          a.hbox(() => {
+            a.label('Elevation:');
+            a.slider(-90, 90, 5, lightElevation, (val) => {
+              lightElevation = val;
+              shader?.setUniform('u_lightDir', computeLightDir());
+            });
+            a.label(`${Math.round(lightElevation)}°`);
+          });
+        });
+
         // Shader canvas
         a.canvasStack(() => {
           shader = a.canvasShader(WIDTH, HEIGHT, raymarchingShader, {
             uniforms: {
               u_scene: scene,
-              u_lightDir: [0.5, 0.8, 0.6],
+              u_lightDir: computeLightDir(),
               u_baseColor: colors[colorIdx],
             }
           });
         });
 
-        a.label(`Scene: ${sceneNames[scene]} | GPU Raymarching`);
+        // Status label
+        statusLabel = a.label(`Scene: ${sceneNames[scene]} | Light: ${Math.round(lightAngle)}° horizontal, ${Math.round(lightElevation)}° elevation`);
         a.label('Shapes rotate automatically via u_time');
+
+        // FPS counter
+        fpsLabel = a.label('⏱️ FPS: 0');
       });
     });
+
+    // Update FPS counter periodically
+    let updateInterval: any = null;
+    const updateFPS = () => {
+      fpsCounter.update();
+      if (fpsLabel) {
+        fpsLabel.setText(`⏱️ ${fpsCounter.getStats()}`);
+      }
+      updateInterval = setTimeout(updateFPS, 500);
+    };
+    updateInterval = setTimeout(updateFPS, 500);
 
     win.show();
   });

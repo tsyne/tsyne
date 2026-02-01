@@ -6,11 +6,49 @@ set -e
 # ============================================================================
 SKIP_TESTS=false
 VERBOSE=false
+QUICK_MODE=false
+UNIT_ONLY=false
+BUILD_BRIDGE_ONLY=false
+
+# Track timing for sections
+declare -A SECTION_TIMES
+
+time_section() {
+  local name="$1"
+  local start_time=$(date +%s%N)
+  SECTION_TIMES[$name]=$start_time
+}
+
+report_section_time() {
+  local name="$1"
+  local start_time=${SECTION_TIMES[$name]:-0}
+  if [ "$start_time" -gt 0 ]; then
+    local end_time=$(date +%s%N)
+    local elapsed_ms=$(( (end_time - start_time) / 1000000 ))
+    local elapsed_s=$(echo "scale=2; $elapsed_ms / 1000" | bc)
+    echo "⏱️  ${name}: ${elapsed_s}s"
+  fi
+}
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --skip-tests|--no-tests)
       SKIP_TESTS=true
+      shift
+      ;;
+    --quick|-q)
+      QUICK_MODE=true
+      echo "Quick mode enabled - skipping heavy tests"
+      shift
+      ;;
+    --unit-only|-u)
+      UNIT_ONLY=true
+      echo "Unit tests only - skipping ported/phone apps"
+      shift
+      ;;
+    --bridge-only)
+      BUILD_BRIDGE_ONLY=true
+      echo "Building bridge only"
       shift
       ;;
     --verbose|-v)
@@ -22,6 +60,9 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --skip-tests, --no-tests  Skip all test execution (build only)"
+      echo "  --quick, -q               Quick mode: skip heavy ported app tests"
+      echo "  --unit-only, -u           Run only core/cosyne unit tests"
+      echo "  --bridge-only             Build Go bridge only, then exit"
       echo "  --verbose, -v             Show verbose output"
       echo "  --help, -h                Show this help message"
       exit 0
@@ -34,11 +75,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [ "$SKIP_TESTS" = true ]; then
-  echo "Mode: BUILD ONLY (tests skipped)"
-else
-  echo "Mode: BUILD + TEST"
-fi
+echo ""
+echo "Mode summary:"
+[ "$SKIP_TESTS" = true ] && echo "  ✓ Tests SKIPPED" || echo "  ✓ Tests ENABLED"
+[ "$QUICK_MODE" = true ] && echo "  ✓ Quick mode (fewer tests)"
+[ "$UNIT_ONLY" = true ] && echo "  ✓ Unit tests only"
+[ "$BUILD_BRIDGE_ONLY" = true ] && echo "  ✓ Bridge build only"
+echo ""
 
 # ============================================================================
 # OS Detection
@@ -380,6 +423,7 @@ fi
 # STEP 1: Go Bridge Build
 # ============================================================================
 echo "--- :golang: Building Go bridge"
+time_section "Go Bridge Build"
 
 # Build bridge - GOPROXY=direct fetches from VCS repos directly (bypasses Google's proxy)
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core/bridge
@@ -391,6 +435,14 @@ if [ "$OS" = "linux" ]; then
   env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -buildmode=c-shared -o ../bin/libtsyne.so .
 elif [ "$OS" = "macos" ]; then
   env CGO_ENABLED=1 GOPROXY=direct $GO_CMD build -buildmode=c-shared -o ../bin/libtsyne.dylib .
+fi
+
+report_section_time "Go Bridge Build"
+
+# Exit early if only building bridge
+if [ "$BUILD_BRIDGE_ONLY" = true ]; then
+  echo "--- :white_check_mark: Bridge build complete (--bridge-only mode)"
+  exit 0
 fi
 
 # ============================================================================
@@ -416,12 +468,15 @@ echo "Testing tsyne failure modes..."
 # STEP 2: Core (Tsyne Core Library)
 # ============================================================================
 echo "--- :nodejs: Core - Install & Build"
+time_section "Core Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/core
 pnpm install --ignore-scripts
 pnpm run build
+report_section_time "Core Build"
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Core - Unit Tests"
+  time_section "Core Tests"
   # Check if headed mode is requested
   if [ "${TSYNE_HEADED}" = "1" ]; then
     echo "Running in HEADED mode (using existing DISPLAY: ${DISPLAY:-:0})"
@@ -459,21 +514,25 @@ if [ "$SKIP_TESTS" = false ]; then
     fi
   }
   capture_test_results "Core" "/tmp/core-test-results.json" || true
+  report_section_time "Core Tests"
 fi
 
 # ============================================================================
 # STEP 2.5: Cosyne - Declarative Canvas Library
 # ============================================================================
 echo "--- :art: Cosyne - Install & Build"
+time_section "Cosyne Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/cosyne
 pnpm install --ignore-scripts
 pnpm run build || {
   echo "❌ Cosyne build failed"
   exit 1
 }
+report_section_time "Cosyne Build"
 
 if [ "$SKIP_TESTS" = false ]; then
   echo "--- :test_tube: Cosyne - Unit Tests"
+  time_section "Cosyne Tests"
   timeout 120 pnpm run test --json --outputFile=/tmp/cosyne-test-results.json || {
     EXIT_CODE=$?
     if [ $EXIT_CODE -eq 124 ]; then
@@ -483,12 +542,16 @@ if [ "$SKIP_TESTS" = false ]; then
     fi
   }
   capture_test_results "Cosyne" "/tmp/cosyne-test-results.json" || true
+  report_section_time "Cosyne Tests"
 fi
 
 # ============================================================================
 # STEP 3: Designer Sub-Project
 # ============================================================================
-echo "--- :art: Designer - Install & Build"
+if [ "$UNIT_ONLY" = true ]; then
+  echo "⏭️  Designer - Skipping (--unit-only mode)"
+else
+  echo "--- :art: Designer - Install & Build"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/designer
 if [ -f "package.json" ]; then
   pnpm install --ignore-scripts
@@ -523,11 +586,15 @@ if [ -f "package.json" ]; then
 else
   echo "⚠️  No package.json found in designer/ - skipping"
 fi
+fi
 
 # ============================================================================
 # STEP 4: Examples Sub-Project
 # ============================================================================
-echo "--- :bulb: Examples - Install"
+if [ "$UNIT_ONLY" = true ]; then
+  echo "⏭️  Examples - Skipping (--unit-only mode)"
+else
+  echo "--- :bulb: Examples - Install"
 cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/examples
 pnpm install --ignore-scripts
 
@@ -554,12 +621,18 @@ if [ "$SKIP_TESTS" = false ]; then
   }
   capture_test_results "Examples: GUI" "/tmp/examples-gui-test-results.json" || true
 fi
+fi
 
 # ============================================================================
 # STEP 5: Ported Apps Sub-Projects
 # ============================================================================
-if [ "$SKIP_TESTS" = false ]; then
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :package: Ported Apps - Install & Test"
+elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
+  echo "⏭️  Ported Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
+fi
+
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/ported-apps
 
   # Install root ported-apps dependencies (shared by all apps)
@@ -637,8 +710,13 @@ fi
 # ============================================================================
 # STEP 6: Phone Apps Sub-Projects
 # ============================================================================
-if [ "$SKIP_TESTS" = false ]; then
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :iphone: Phone Apps - Install & Test"
+elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
+  echo "⏭️  Phone Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
+fi
+
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
 
   # Helper function to build and test a phone app
   test_phone_app() {
@@ -703,8 +781,13 @@ fi
 # ============================================================================
 # STEP 6.5: Launchers (Desktop, PhoneTop)
 # ============================================================================
-if [ "$SKIP_TESTS" = false ]; then
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :computer: Launchers - Install & Test"
+elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
+  echo "⏭️  Launchers - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
+fi
+
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
 
   # Helper function to build and test a launcher
   test_launcher() {
@@ -736,8 +819,13 @@ fi
 # ============================================================================
 # STEP 7: Larger Apps Sub-Projects
 # ============================================================================
-if [ "$SKIP_TESTS" = false ]; then
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
   echo "--- :rocket: Larger Apps - Install & Test"
+elif [ "$UNIT_ONLY" = true ] || [ "$QUICK_MODE" = true ]; then
+  echo "⏭️  Larger Apps - Skipping ($([ "$UNIT_ONLY" = true ] && echo '--unit-only' || echo '--quick') mode)"
+fi
+
+if [ "$SKIP_TESTS" = false ] && [ "$UNIT_ONLY" = false ] && [ "$QUICK_MODE" = false ]; then
 
   # Helper function to build and test a larger app
   test_larger_app() {

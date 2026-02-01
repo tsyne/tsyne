@@ -5,7 +5,7 @@
 Section                           Tests   Passed   Failed  Skipped   Suites
 ────────────────────────────────────────────────────────────────────────────
 Core                                915      915        0        0  49|49|0
-Cosyne                              972      972        0        0  34|34|0
+Cosyne                             1059     1059        0        0  37|37|0
 Designer: Unit                       88       88        0        0    8|8|0
 Designer: GUI                         7        7        0        0    1|1|0
 Examples: Logic                      30       30        0        0    2|2|0
@@ -39,16 +39,16 @@ Ported: slider-puzzle                37       37        0        0    2|2|0
 Ported: sudoku                       27       27        0        0    2|2|0
 Ported: tango-puzzle                 35       35        0        0    2|2|0
 Ported: zip-puzzle                   35       35        0        0    2|2|0
-Phone: 3d-clock                       0        0        0        0    2|0|2
+Phone: 3d-clock                      26       26        0        0    2|2|0
 Phone: 3d-draggable-chess             0        0        0        0    1|0|1
 Phone: 3d-lighting-lab                0        0        0        0    1|0|1
 Phone: 3d-robot-arm                   0        0        0        0    1|0|1
 Phone: animated-spinner               4        4        0        0    1|1|0
 Phone: gauge-dashboard                2        2        0        0    1|1|0
 Phone: heatmap-demo                   2        2        0        0    1|1|0
-Phone: alarms                         0        0        0        0    1|0|1
+Phone: alarms                         4        4        0        0    1|1|0
 Phone: burning-ship                   6        6        0        0    1|1|0
-Phone: clock                          0        0        0        0    1|0|1
+Phone: clock                          4        4        0        0    1|1|0
 Phone: eliza                         15       15        0        0    1|1|0
 Phone: eyes                          12       12        0        0    1|1|0
 Phone: hexview                       20       20        0        0    1|1|0
@@ -62,50 +62,50 @@ Phone: signal                        37       37        0        0    2|1|1
 Phone: snowflake                     12       12        0        0    2|2|0
 Phone: sonic3                         4        4        0        0    1|1|0
 Phone: sshterm                        5        5        0        0    1|1|0
-Phone: stopwatch                      0        0        0        0    1|0|1
-Phone: telegram                       0        0        0        0    1|0|1
-Phone: timer                          0        0        0        0    1|0|1
+Phone: stopwatch                      6        6        0        0    1|1|0
+Phone: telegram                      32       32        0        0    1|1|0
+Phone: timer                          6        6        0        0    1|1|0
 Phone: tricorn                        6        6        0        0    1|1|0
 Launcher: desktop                    20       20        0        0    3|1|2
 Launcher: phonetop                    0        0        0        0    2|0|2
-Larger: literate-programming         81       81        0        0    3|2|1
-Larger: realtime-paris-density-simulation        0        0        0        0    2|0|2
+Larger: literate-programming        102      102        0        0    3|3|0
+Larger: realtime-paris-density-simulation        9        9        0        0    2|1|1
 TestApp: calculator-advanced Logic       38       38        0        0    1|1|0
 TestApp: calculator-advanced GUI        0        0        0        0    1|0|1
 ────────────────────────────────────────────────────────────────────────────
-TOTAL                             11446    11435        0       11      696
+TOTAL                             11641    11630        0       11      699
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  Warning: 11 tests are currently skipped
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⏱️  ctx.wait() TIME SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total wait time: 95950ms (95.95s)
-Total ctx.wait() calls: 345
+Total wait time: 85600ms (85.60s)
+Total ctx.wait() calls: 287
 ────────────────────────────────────────────────────────────────────────────
 Top 10 tests by wait time:
 ────────────────────────────────────────────────────────────────────────────
   Canvas Fill Color should draw line from specified x1,y1 NOT from (0,0)
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Canvas Fill Color should draw vertical line from center downward
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Canvas Fill Color should fill a circle with specified color
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Canvas Fill Color should fill a rectangle with specified color
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Canvas Fill Color should fill circle with light gray like clock face
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Canvas Fill Color should render multiple overlapping canvas elements like clock
-    └─ 6000ms (12 calls)
+    └─ 5000ms (10 calls)
   Mandelbrot Explorer should reset view when clicking Reset
     └─ 4000ms (4 calls)
   Burning Ship Explorer should reset view
     └─ 3000ms (4 calls)
   Mandelbrot Explorer should zoom out when clicking Zoom Out button
     └─ 3000ms (3 calls)
-  Widget Methods disable()/enable() - widget state
-    └─ 2600ms (26 calls)
+  Burning Ship Explorer should zoom and take screenshot
+    └─ 2000ms (2 calls)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ SUCCESS: All 11435 tests passed
+✅ SUCCESS: All 11630 tests passed
 
 Summary written to: .CI_TEST_RESULTS_SUMMARY.txt

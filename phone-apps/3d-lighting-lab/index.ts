@@ -351,5 +351,5 @@ export function buildLightingLabApp(a: any) {
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Cosyne 3D - Lighting Lab' }, buildLightingLabApp);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

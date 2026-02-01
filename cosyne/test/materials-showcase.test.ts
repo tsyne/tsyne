@@ -241,4 +241,88 @@ describe('Materials Showcase Tests', () => {
     await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'material-chrome.png'));
     expect(true).toBe(true);
   });
+
+  it('should render glass sphere with cyan tint', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Glass', width: 340, height: 300 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Glass Cyan');
+            a.canvasStack(() => {
+              a.canvasShader(300, 220, materialsShader, {
+                uniforms: {
+                  u_material: 3,
+                  u_baseColor: [0.2, 0.8, 0.9],
+                }
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'material-glass-cyan.png'));
+    expect(true).toBe(true);
+  });
+
+  it('should render emissive glowing sphere', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Emissive', width: 340, height: 300 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Emissive (Glowing)');
+            a.canvasStack(() => {
+              a.canvasShader(300, 220, materialsShader, {
+                uniforms: {
+                  u_material: 4,
+                  u_baseColor: [1.0, 0.5, 0.0],  // Orange glow
+                }
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'material-emissive-orange.png'));
+    expect(true).toBe(true);
+  });
+
+  it('should render multiple color variations', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Colors', width: 340, height: 300 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Metallic Purple');
+            a.canvasStack(() => {
+              a.canvasShader(300, 220, materialsShader, {
+                uniforms: {
+                  u_material: 1,  // Metallic
+                  u_baseColor: [0.6, 0.2, 0.8],  // Purple
+                }
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'material-metallic-purple.png'));
+    expect(true).toBe(true);
+  });
 });

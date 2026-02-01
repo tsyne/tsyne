@@ -400,5 +400,5 @@ export function buildDraggableChessApp(a: any) {
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Draggable Chess' }, buildDraggableChessApp);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

@@ -420,5 +420,5 @@ export function buildRobotArmApp(a: any) {
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Robot Arm' }, buildRobotArmApp);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

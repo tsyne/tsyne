@@ -912,7 +912,7 @@ export {
   TextGrid,
   Navigation,
 };
-export type { AppOptions, BridgeMode, WindowOptions, MenuItem, NavigationOptions };
+export type { AppOptions, BridgeMode, WindowOptions, MenuItem, NavigationOptions, TextGridStyle };
 
 // Export theming types
 export type { CustomThemeColors, FontTextStyle, FontInfo } from './app';

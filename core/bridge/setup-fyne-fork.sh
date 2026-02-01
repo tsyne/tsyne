@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# NOTE: This script embeds Go code into the Fyne fork to add GPU shader support.
+# The embedded Go source code is documented in setup-fyne-fork.go-code.txt for readability.
+# See that file for:
+#   - blend_mode.go: Blend mode type definitions
+#   - shader.go: Shader canvas primitive (~430 lines)
+#   - renderhook.go: Blend mode state management
+#   - shader_painter.go: GPU rendering implementation (~350 lines)
+
 # Configuration
 BRIDGE_DIR=$(dirname "$(realpath "$0")")
 FORK_DIR="$BRIDGE_DIR/fyne-fork"

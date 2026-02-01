@@ -12,6 +12,35 @@
 import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
+// Simple FPS counter for performance monitoring
+class FPSCounter {
+  private frames = 0;
+  private lastTime = Date.now();
+  private fps = 0;
+  private minFps = 999;
+  private maxFps = 0;
+
+  update(): number {
+    this.frames++;
+    const now = Date.now();
+    const elapsed = now - this.lastTime;
+
+    if (elapsed >= 500) {
+      this.fps = Math.round((this.frames * 1000) / elapsed);
+      this.minFps = Math.min(this.minFps, this.fps);
+      this.maxFps = Math.max(this.maxFps, this.fps);
+      this.frames = 0;
+      this.lastTime = now;
+    }
+
+    return this.fps;
+  }
+
+  getStats(): string {
+    return `FPS: ${this.fps} (min: ${this.minFps}, max: ${this.maxFps})`;
+  }
+}
+
 const WIDTH = 600;
 const HEIGHT = 400;
 
@@ -24,6 +53,8 @@ uniform float u_rotateY;
 uniform vec3 u_carColor;
 uniform float u_metallic;
 uniform float u_night;
+uniform vec3 u_cameraPos;     // Camera position
+uniform float u_cameraDistance; // Distance from car
 
 // SDF primitives
 float sdBox(vec3 p, vec3 b) {
@@ -174,10 +205,11 @@ vec3 calcNormal(vec3 p) {
     ));
 }
 
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
+    float k = 12.0;  // Balanced softness
     float res = 1.0;
     float t = mint;
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i < 32; i++) {  // Increased from 24 to 32 samples
         if (t >= maxt) break;
         float h = sceneSDF(ro + rd * t);
         if (h < 0.001) return 0.0;
@@ -190,13 +222,13 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
 float calcAO(vec3 pos, vec3 nor) {
     float occ = 0.0;
     float sca = 1.0;
-    for (int i = 0; i < 5; i++) {
-        float h = 0.01 + 0.1 * float(i);
+    for (int i = 0; i < 8; i++) {  // Increased from 5 to 8 samples
+        float h = 0.02 + 0.08 * float(i);  // Standardized step size
         float d = sceneSDF(pos + h * nor);
         occ += (h - d) * sca;
         sca *= 0.95;
     }
-    return clamp(1.0 - 2.0 * occ, 0.0, 1.0);
+    return clamp(1.0 - 2.5 * occ, 0.0, 1.0);  // Standardized multiplier
 }
 
 // Environment reflection (fake)
@@ -215,8 +247,8 @@ vec3 envMap(vec3 rd) {
 void main() {
     vec2 uv = (gl_FragCoord.xy - u_resolution * 0.5) / min(u_resolution.x, u_resolution.y) * 2.0;
 
-    // Camera
-    vec3 ro = vec3(4.0, 2.0, 4.0);
+    // Camera - use uniform position
+    vec3 ro = u_cameraPos;
     vec3 target = vec3(0.0, 0.3, 0.0);
     vec3 forward = normalize(target - ro);
     vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
@@ -246,7 +278,7 @@ void main() {
             if (u_night > 0.5) lig = normalize(vec3(-0.3, 0.5, 0.2));
 
             float dif = clamp(dot(nor, lig), 0.0, 1.0);
-            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 8.0, 8.0);
+            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 8.0);
             float ao = calcAO(pos, nor);
 
             // Fresnel
@@ -270,16 +302,35 @@ void main() {
                 matCol = vec3(0.1, 0.1, 0.1);
                 roughness = 0.9;
             } else if (matId < 3.25) {
-                // Headlights - bright
+                // Headlights
                 matCol = vec3(1.0, 1.0, 0.9);
                 if (u_night > 0.5) {
-                    // Glowing at night
-                    col = vec3(1.0, 1.0, 0.8);
+                    // Emissive headlights at night
+                    col = vec3(1.0, 0.95, 0.8) * 4.0;  // Bright warm white
+                    col += vec3(1.0, 0.9, 0.7) * fre * 3.0;  // Rim glow
+
+                    // Add glow halo
+                    float glowDist = sceneSDF(pos - rd * 0.1);
+                    float glow = exp(-abs(glowDist) * 3.0);
+                    col += vec3(0.8, 0.7, 0.4) * glow * 1.5;
+
                     break;
                 }
             } else if (matId < 3.75) {
-                // Taillights - red
+                // Taillights
                 matCol = vec3(0.8, 0.1, 0.1);
+                if (u_night > 0.5) {
+                    // Emissive red taillights at night
+                    col = vec3(0.9, 0.1, 0.05) * 3.0;
+                    col += vec3(0.8, 0.0, 0.0) * fre * 2.0;
+
+                    // Add red glow halo
+                    float glowDist = sceneSDF(pos - rd * 0.1);
+                    float glow = exp(-abs(glowDist) * 3.0);
+                    col += vec3(0.6, 0.0, 0.0) * glow;
+
+                    break;
+                }
             } else {
                 // Ground
                 float checker = mod(floor(pos.x * 2.0) + floor(pos.z * 2.0), 2.0);
@@ -325,6 +376,12 @@ function createCarDemo(a: App): void {
   let rotation = 0.5;
   let metallic = 0.7;
   let night = 0;
+  let cameraDistance = 4.0;
+  let cameraElevation = 2.0;
+
+  // FPS Counter
+  const fpsCounter = new FPSCounter();
+  let fpsLabel: any = null;
 
   const carColors: { name: string; color: [number, number, number] }[] = [
     { name: 'Red', color: [0.8, 0.1, 0.1] },
@@ -336,7 +393,7 @@ function createCarDemo(a: App): void {
   ];
   let colorIdx = 0;
 
-  a.window({ title: '3D Car (Raymarching)', width: WIDTH + 40, height: HEIGHT + 140 }, (win) => {
+  a.window({ title: '3D Car (Raymarching)', width: WIDTH + 40, height: HEIGHT + 260 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
         // Color selection
@@ -382,7 +439,10 @@ function createCarDemo(a: App): void {
           });
           a.button('Reset View').onClick(() => {
             rotation = 0.5;
+            cameraDistance = 4.0;
+            cameraElevation = 2.0;
             shader?.setUniform('u_rotateY', rotation);
+            updateCameraPosition();
           });
           a.button('Rotate >').onClick(() => {
             rotation += 0.3;
@@ -390,22 +450,75 @@ function createCarDemo(a: App): void {
           });
         });
 
+        // Camera controls
+        const updateCameraPosition = () => {
+          const camPos: [number, number, number] = [
+            cameraDistance * Math.cos(rotation),
+            cameraElevation,
+            cameraDistance * Math.sin(rotation),
+          ];
+          shader?.setUniform('u_cameraPos', camPos);
+        };
+
+        a.vbox(() => {
+          a.label('📷 Camera Controls');
+
+          a.hbox(() => {
+            a.label('Distance:');
+            a.slider(2, 8, 0.5, cameraDistance, (val) => {
+              cameraDistance = val;
+              updateCameraPosition();
+            });
+            a.label(`${cameraDistance.toFixed(1)}`);
+          });
+
+          a.hbox(() => {
+            a.label('Height:');
+            a.slider(0.5, 5, 0.5, cameraElevation, (val) => {
+              cameraElevation = val;
+              updateCameraPosition();
+            });
+            a.label(`${cameraElevation.toFixed(1)}`);
+          });
+        });
+
         // Shader canvas
         a.center(() => {
+          const camPos: [number, number, number] = [
+            cameraDistance * Math.cos(rotation),
+            cameraElevation,
+            cameraDistance * Math.sin(rotation),
+          ];
           shader = a.canvasShader(WIDTH, HEIGHT, carShader, {
             uniforms: {
               u_rotateY: rotation,
               u_carColor: carColors[colorIdx].color,
               u_metallic: metallic,
               u_night: night,
+              u_cameraPos: camPos,
+              u_cameraDistance: cameraDistance,
             }
           });
         });
 
         a.label('GPU Raymarched 3D Car - Pure GLSL, No Vertex Buffers');
         a.label('Soft shadows, ambient occlusion, fake reflections');
+
+        // FPS counter
+        fpsLabel = a.label('⏱️ FPS: 0');
       });
     });
+
+    // Update FPS counter periodically
+    let updateInterval: any = null;
+    const updateFPS = () => {
+      fpsCounter.update();
+      if (fpsLabel) {
+        fpsLabel.setText(`⏱️ ${fpsCounter.getStats()}`);
+      }
+      updateInterval = setTimeout(updateFPS, 500);
+    };
+    updateInterval = setTimeout(updateFPS, 500);
 
     win.show();
   });

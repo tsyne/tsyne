@@ -14,6 +14,35 @@
 import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
+// Simple FPS counter for performance monitoring
+class FPSCounter {
+  private frames = 0;
+  private lastTime = Date.now();
+  private fps = 0;
+  private minFps = 999;
+  private maxFps = 0;
+
+  update(): number {
+    this.frames++;
+    const now = Date.now();
+    const elapsed = now - this.lastTime;
+
+    if (elapsed >= 500) {
+      this.fps = Math.round((this.frames * 1000) / elapsed);
+      this.minFps = Math.min(this.minFps, this.fps);
+      this.maxFps = Math.max(this.maxFps, this.fps);
+      this.frames = 0;
+      this.lastTime = now;
+    }
+
+    return this.fps;
+  }
+
+  getStats(): string {
+    return `FPS: ${this.fps} (min: ${this.minFps}, max: ${this.maxFps})`;
+  }
+}
+
 const WIDTH = 600;
 const HEIGHT = 400;
 
@@ -24,6 +53,8 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform float u_material;  // 0=matte, 1=metallic, 2=chrome, 3=glass, 4=emissive
 uniform vec3 u_baseColor;
+uniform float u_roughness;  // 0.0 (mirror) to 1.0 (matte)
+uniform float u_metallic;   // 0.0 (non-metal) to 1.0 (full metal)
 
 // SDF primitives
 float sdSphere(vec3 p, float r) {
@@ -90,10 +121,11 @@ vec3 calcNormal(vec3 p) {
     ));
 }
 
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
+    float k = 12.0;  // Balanced softness
     float res = 1.0;
     float t = mint;
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i < 32; i++) {  // Increased from 24 to 32 samples
         if (t >= maxt) break;
         float h = sceneSDF(ro + rd * t);
         if (h < 0.001) return 0.0;
@@ -106,13 +138,13 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
 float calcAO(vec3 pos, vec3 nor) {
     float occ = 0.0;
     float sca = 1.0;
-    for (int i = 0; i < 5; i++) {
-        float h = 0.01 + 0.1 * float(i);
+    for (int i = 0; i < 8; i++) {  // Increased from 5 to 8 samples
+        float h = 0.02 + 0.08 * float(i);  // Standardized step size
         float d = sceneSDF(pos + h * nor);
         occ += (h - d) * sca;
         sca *= 0.95;
     }
-    return clamp(1.0 - 2.0 * occ, 0.0, 1.0);
+    return clamp(1.0 - 2.5 * occ, 0.0, 1.0);  // Standardized multiplier
 }
 
 // Environment map (gradient sky + horizon)
@@ -163,7 +195,7 @@ void main() {
             // Light
             vec3 lig = normalize(vec3(0.5, 0.8, 0.6));
             float dif = clamp(dot(nor, lig), 0.0, 1.0);
-            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 5.0, 16.0);
+            float sha = softShadow(pos + nor * 0.01, lig, 0.01, 5.0);
             float ao = calcAO(pos, nor);
 
             // Specular
@@ -178,37 +210,54 @@ void main() {
             vec3 envCol = envMap(ref);
 
             vec3 matCol = u_baseColor;
-            float roughness = 0.5;
-            float metallic = 0.0;
+            float roughness = u_roughness;  // Use uniform value
+            float metallic = u_metallic;    // Use uniform value
 
             if (hitMat < 0.5) {
-                // Main object - apply selected material
+                // Main object - apply selected material presets
                 if (u_material < 0.5) {
                     // Matte
                     roughness = 1.0;
                     metallic = 0.0;
                 } else if (u_material < 1.5) {
-                    // Metallic
-                    roughness = 0.3;
-                    metallic = 0.7;
+                    // Metallic - use slider values
+                    // roughness = u_roughness (already set above)
+                    // metallic = u_metallic (already set above)
                 } else if (u_material < 2.5) {
-                    // Chrome
+                    // Chrome - force high reflection
                     roughness = 0.05;
                     metallic = 1.0;
                     matCol = vec3(0.95);  // Chrome is mostly white
                 } else if (u_material < 3.5) {
-                    // Glass (simplified - just highly reflective with tint)
-                    roughness = 0.0;
-                    metallic = 0.2;
-                    matCol = vec3(0.9, 0.95, 1.0);
-                    fre = pow(1.0 - clamp(dot(nor, -rd), 0.0, 1.0), 2.0);
-                } else {
-                    // Emissive
-                    col = u_baseColor * 2.0;  // Bright glow
-                    col += u_baseColor * fre * 3.0;  // Extra rim glow
+                    // Glass with transparency and refraction
+                    float ior = 1.5;  // Index of refraction for glass
+                    vec3 refractDir = refract(rd, nor, 1.0 / ior);
+                    vec3 refractColor = envMap(refractDir);
+                    vec3 reflectColor = envMap(reflect(rd, nor));
 
-                    // Add pulsing
-                    col *= 0.8 + 0.2 * sin(u_time * 3.0);
+                    // Schlick Fresnel for glass
+                    float nDotV = abs(dot(nor, -rd));
+                    fre = pow(1.0 - nDotV, 5.0) * 0.9 + 0.1;
+
+                    // Blend refraction and reflection based on Fresnel
+                    col = mix(refractColor * u_baseColor, reflectColor, fre);
+                    break;
+                } else {
+                    // Emissive with volumetric glow
+                    // Sample distance field for glow halo
+                    float glowDist = sceneSDF(pos - rd * 0.1);
+                    float glow = exp(-abs(glowDist) * 5.0);
+
+                    // Bright emissive base
+                    col = u_baseColor * 3.0;
+                    // Add glow halo
+                    col += u_baseColor * glow * 2.0;
+                    // Enhanced rim lighting
+                    col += u_baseColor * fre * 4.0;
+
+                    // Improved pulsing with organic variation
+                    float pulse = 0.85 + 0.15 * sin(u_time * 3.0 + cos(u_time * 1.5) * 0.3);
+                    col *= pulse;
                     break;
                 }
             } else if (hitMat < 1.5) {
@@ -258,6 +307,11 @@ void main() {
 function createMaterialsDemo(a: App): void {
   let shader: CanvasShader | null = null;
   let material = 1;  // Start with metallic
+  let roughness = 0.3;  // Default for metallic
+  let metallic = 0.7;   // Default for metallic
+
+  // FPS Counter
+  const fpsCounter = new FPSCounter();
 
   const materials = [
     { name: 'Matte', id: 0 },
@@ -277,7 +331,9 @@ function createMaterialsDemo(a: App): void {
   ];
   let colorIdx = 0;
 
-  a.window({ title: 'Materials Showcase', width: WIDTH + 40, height: HEIGHT + 120 }, (win) => {
+  let fpsLabel: any = null;
+
+  a.window({ title: 'Materials Showcase', width: WIDTH + 40, height: HEIGHT + 220 }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
         // Material selection
@@ -302,20 +358,59 @@ function createMaterialsDemo(a: App): void {
           }
         });
 
+        // Material properties
+        a.vbox(() => {
+          a.label('🎨 Material Properties');
+
+          a.hbox(() => {
+            a.label('Roughness:');
+            a.slider(0, 1, 0.05, roughness, (val) => {
+              roughness = val;
+              shader?.setUniform('u_roughness', roughness);
+            });
+            a.label(`${(roughness * 100).toFixed(0)}%`);
+          });
+
+          a.hbox(() => {
+            a.label('Metallic:');
+            a.slider(0, 1, 0.05, metallic, (val) => {
+              metallic = val;
+              shader?.setUniform('u_metallic', metallic);
+            });
+            a.label(`${(metallic * 100).toFixed(0)}%`);
+          });
+        });
+
         // Shader canvas
         a.center(() => {
           shader = a.canvasShader(WIDTH, HEIGHT, materialsShader, {
             uniforms: {
               u_material: material,
               u_baseColor: colors[colorIdx].color,
+              u_roughness: roughness,
+              u_metallic: metallic,
             }
           });
         });
 
         a.label(`${materials[material].name} material | ${colors[colorIdx].name} color`);
         a.label('Object rotates automatically via u_time');
+
+        // FPS counter
+        fpsLabel = a.label('⏱️ FPS: 0');
       });
     });
+
+    // Update FPS counter periodically
+    let updateInterval: any = null;
+    const updateFPS = () => {
+      fpsCounter.update();
+      if (fpsLabel) {
+        fpsLabel.setText(`⏱️ ${fpsCounter.getStats()}`);
+      }
+      updateInterval = setTimeout(updateFPS, 500);
+    };
+    updateInterval = setTimeout(updateFPS, 500);
 
     win.show();
   });

@@ -327,4 +327,110 @@ describe('Raymarching 3D Tests', () => {
     await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'raymarch-car-blue.png'));
     expect(true).toBe(true);
   });
+
+  it('should render raymarched torus', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Raymarch Torus', width: 340, height: 360 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Raymarched Torus');
+            a.canvasStack(() => {
+              a.canvasShader(300, 300, testRaymarchShader, {
+                uniforms: { u_scene: 2 }  // Torus
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'raymarch-torus.png'));
+    expect(true).toBe(true);
+  });
+
+  it('should render combined scene with multiple shapes', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Combined Shapes', width: 340, height: 360 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Combined Shapes');
+            a.canvasStack(() => {
+              a.canvasShader(300, 300, testRaymarchShader, {
+                uniforms: { u_scene: 3 }  // Combined
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'raymarch-combined.png'));
+    expect(true).toBe(true);
+  });
+
+  it('should render silver car with metallic finish', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Silver Car', width: 440, height: 360 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Silver Car');
+            a.canvasStack(() => {
+              a.canvasShader(400, 300, testCarShader, {
+                uniforms: {
+                  u_rotateY: 0.0,
+                  u_carColor: [0.7, 0.7, 0.75],  // Silver
+                }
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'raymarch-car-silver.png'));
+    expect(true).toBe(true);
+  });
+
+  it('should render black car with matte finish', async () => {
+    cosyneTest = new CosyneTest({ headed: true });
+    const testApp = await cosyneTest.createApp((a: App) => {
+      a.window({ title: 'Black Car', width: 440, height: 360 }, (win: any) => {
+        win.setContent(() => {
+          a.vbox(() => {
+            a.label('Black Car');
+            a.canvasStack(() => {
+              a.canvasShader(400, 300, testCarShader, {
+                uniforms: {
+                  u_rotateY: 1.0,
+                  u_carColor: [0.05, 0.05, 0.05],  // Black
+                }
+              });
+            });
+          });
+        });
+        win.show();
+      });
+    });
+
+    ctx = cosyneTest.getContext();
+    await testApp.run();
+    await ctx.wait(500);
+    await ctx.captureScreenshot(path.join(SCREENSHOTS_DIR, 'raymarch-car-black.png'));
+    expect(true).toBe(true);
+  });
 });

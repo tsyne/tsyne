@@ -4,6 +4,7 @@
 // Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
 
 import type { App, Window, Label } from 'tsyne';
+import { standaloneShutdownStrategy, resolveTransport } from 'tsyne';
 import { generateDensityGrid, interpolateDensityGrids, DensityPoint, TimeOfWeek } from './simulation';
 import * as os from 'os';
 import * as path from 'path';
@@ -20,12 +21,13 @@ import {
 } from 'tsyne';
 
 // Import tile rendering for map background
-import {
-  TileMapRenderer,
-  TILE_SOURCES,
-  MapViewport,
-  TileSource
-} from 'tsyne';
+// TODO: TileMapRenderer, TILE_SOURCES, MapViewport, TileSource not yet exported from tsyne
+// import {
+//   TileMapRenderer,
+//   TILE_SOURCES,
+//   MapViewport,
+//   TileSource
+// } from 'tsyne';
 
 // Tile cache directory (7-day TTL per OSM policy)
 const TILE_CACHE_PATH = path.join(os.homedir(), '.tsyne', 'realtime-paris-density-simulation', 'map-cache');
@@ -835,8 +837,9 @@ export function buildParisDensity(a: App) {
 
 // Standalone execution for testing
 if (require.main === module) {
-  const { app, resolveTransport  } = require('../../core/src');
+  const { app } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Paris Density Simulation' }, (a: App) => {
     buildParisDensity(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }
