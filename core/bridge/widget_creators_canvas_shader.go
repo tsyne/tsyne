@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 )
@@ -73,6 +75,27 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 	if uniforms, ok := msg.Payload["uniforms"].(map[string]interface{}); ok {
 		for name, val := range uniforms {
 			shader.SetUniform(name, val)
+		}
+	}
+
+	// Update texture uniforms if provided
+	if textures, ok := msg.Payload["textures"].(map[string]interface{}); ok {
+		for name, val := range textures {
+			shader.SetTextureUniform(name, val)
+		}
+	}
+
+	// Update cubemap uniforms if provided
+	if cubemaps, ok := msg.Payload["cubemaps"].(map[string]interface{}); ok {
+		for name, faceVal := range cubemaps {
+			if faces, ok := faceVal.([]interface{}); ok && len(faces) == 6 {
+				var faceArray [6]interface{}
+				copy(faceArray[:], faces)
+				shader.SetCubemapUniform(name, faceArray)
+			} else {
+				// Try as map with face names
+				log.Printf("[createCanvasShader] WARNING: Invalid cubemap format for %s", name)
+			}
 		}
 	}
 
