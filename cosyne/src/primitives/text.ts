@@ -88,9 +88,8 @@ export class CosyneText extends Primitive<any> {
 
   protected applyFill(): void {
     if (this.underlying && this.fillColor) {
-      // CanvasText uses update({ color: ... }) not updateFillColor()
       if (this.underlying.update) {
-        this.underlying.update({ color: this.fillColor });
+        this.underlying.update({ fillColor: this.fillColor });
       }
     }
   }

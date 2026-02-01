@@ -659,5 +659,5 @@ export function createFractalsApp(a: App): void {
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Fractal Explorer' }, createFractalsApp);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

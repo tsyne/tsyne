@@ -638,5 +638,5 @@ export function createCarsApp(a: App): void {
 
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Cars Demo' }, createCarsApp);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

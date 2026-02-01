@@ -7,16 +7,7 @@
  * - Fill color bindings for pulsing effect
  */
 
-import { App } /**
- * Animated Spinner Demo - Cosyne
- *
- * Demonstrates continuous rotation animation using Cosyne
- * - Spinning circles around a central point
- * - Position bindings for orbital motion
- * - Fill color bindings for pulsing effect
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App, standaloneShutdownStrategy } from 'tsyne';
 import type { Window } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
