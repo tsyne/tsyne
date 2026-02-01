@@ -1,0 +1,455 @@
+Embedded Go Code for setup-fyne-fork.sh
+======================================
+
+This file contains the Go code that is injected into the Fyne fork by setup-fyne-fork.sh.
+Each section corresponds to a separate file in the fyne-fork directory.
+
+===============================================================================
+FILE: fyne-fork/canvas/blend_mode.go
+===============================================================================
+
+package canvas
+
+// BlendMode defines how a canvas primitive should be composited with the background.
+// Matches OpenGL blend functions.
+type BlendMode int
+
+const (
+	BlendNormal   BlendMode = iota // Standard alpha compositing
+	BlendAdditive                  // GL_ONE, GL_ONE (Lighten)
+	BlendMultiply                  // GL_DST_COLOR, GL_ZERO (Darken)
+	BlendScreen                    // GL_ONE, GL_ONE_MINUS_SRC_COLOR (Lighten)
+)
+
+===============================================================================
+FILE: fyne-fork/canvas/shader.go
+===============================================================================
+
+package canvas
+
+import (
+	"fyne.io/fyne/v2"
+)
+
+// Shader is a canvas object that renders using a custom GLSL vertex and fragment shader.
+// This enables GPU-accelerated effects like fractals, ray marching, 3D geometry, etc.
+type Shader struct {
+	baseObject
+	size            fyne.Size
+	VertexSource    string                 // GLSL vertex shader source code (optional)
+	FragmentSource  string                 // GLSL fragment shader source code
+	Uniforms        map[string]interface{} // Uniform values: float32, [2]float32, [3]float32, [4]float32
+	Textures        map[string]interface{} // Texture uniforms: image.Image, image.RGBA, etc.
+	Cubemaps        map[string][6]interface{} // Cubemap uniforms: [+X, -X, +Y, -Y, +Z, -Z]
+
+	// Vertex buffer data
+	Vertices        []float32              // Vertex data (positions, normals, texcoords, etc.)
+	Indices         []uint16               // Index buffer (for indexed drawing)
+	VertexFormat    string                 // Format descriptor: "pos3", "pos3_norm3", "pos3_norm3_uv2", etc.
+
+	// Internal state managed by the GL painter
+	program         uint32
+	needsCompile    bool
+	uniformLocs     map[string]int32
+	textureUnits    map[string]int    // Mapping of texture uniform names to GL texture units
+	textureCache    map[string]uint32 // Cache of GL texture IDs for regular textures
+	cubemapUnits    map[string]int    // Mapping of cubemap names to GL texture units
+	cubemapCache    map[string]uint32 // Cache of GL cubemap texture IDs
+	vbo             uint32                 // Vertex buffer object ID
+	ibo             uint32                 // Index buffer object ID
+	vertexCount     int                    // Number of vertices for rendering
+	indexCount      int                    // Number of indices (if using indexed drawing)
+}
+
+// NewShader creates a new shader canvas object with the given dimensions and fragment shader.
+// The fragment shader should output to gl_FragColor. Available uniforms:
+//   - vec2 u_resolution: canvas size in pixels
+//   - float u_time: time in seconds since start
+//   - vec2 u_mouse: mouse position (if provided via SetUniform)
+// Custom uniforms can be set via SetUniform.
+// Texture uniforms can be set via SetTextureUniform.
+// Cubemap uniforms can be set via SetCubemapUniform.
+// Vertex data can be set via SetVertices and SetIndices.
+func NewShader(width, height float32, fragmentSrc string) *Shader {
+	s := &Shader{
+		VertexSource:   "",
+		FragmentSource: fragmentSrc,
+		Uniforms:       make(map[string]interface{}),
+		Textures:       make(map[string]interface{}),
+		Cubemaps:       make(map[string][6]interface{}),
+		Vertices:       nil,
+		Indices:        nil,
+		VertexFormat:   "",
+		needsCompile:   true,
+		uniformLocs:    make(map[string]int32),
+		textureUnits:   make(map[string]int),
+		textureCache:   make(map[string]uint32),
+		cubemapUnits:   make(map[string]int),
+		cubemapCache:   make(map[string]uint32),
+		vbo:            0,
+		ibo:            0,
+		vertexCount:    0,
+		indexCount:     0,
+	}
+	s.size = fyne.NewSize(width, height)
+	return s
+}
+
+// Size returns the current size of the shader canvas
+func (s *Shader) Size() fyne.Size {
+	return s.size
+}
+
+// Refresh causes the shader to be redrawn
+func (s *Shader) Refresh() {
+	Refresh(s)
+}
+
+// MinSize returns the minimum size (same as size for shaders)
+func (s *Shader) MinSize() fyne.Size {
+	return s.size
+}
+
+// Resize changes the shader canvas size
+func (s *Shader) Resize(size fyne.Size) {
+	s.size = size
+	s.Refresh()
+}
+
+// SetMinSize sets the shader canvas size
+func (s *Shader) SetMinSize(size fyne.Size) {
+	s.size = size
+}
+
+// SetUniform sets a uniform value. Supported types:
+//   - float32 or float64 -> float uniform
+//   - [2]float32 or []float32 (len 2) -> vec2 uniform
+//   - [3]float32 or []float32 (len 3) -> vec3 uniform
+//   - [4]float32 or []float32 (len 4) -> vec4 uniform
+//   - int or int32 -> int uniform
+func (s *Shader) SetUniform(name string, value interface{}) {
+	s.Uniforms[name] = value
+	s.Refresh()
+}
+
+// SetTextureUniform sets a texture uniform value.
+// Supported types: image.Image, *image.RGBA, image.Uniform
+// The texture will be bound to an available texture unit.
+func (s *Shader) SetTextureUniform(name string, value interface{}) {
+	s.Textures[name] = value
+	s.Refresh()
+}
+
+// SetCubemapUniform sets a cubemap uniform value.
+// Takes 6 images for the cubemap faces: [+X, -X, +Y, -Y, +Z, -Z]
+// The cubemap will be bound to an available texture unit.
+func (s *Shader) SetCubemapUniform(name string, faces [6]interface{}) {
+	s.Cubemaps[name] = faces
+	s.Refresh()
+}
+
+// SetSource updates the fragment shader source and triggers recompilation
+func (s *Shader) SetSource(src string) {
+	s.FragmentSource = src
+	s.needsCompile = true
+	s.Refresh()
+}
+
+// Program returns the compiled GL program ID (for painter use)
+func (s *Shader) Program() uint32 {
+	return s.program
+}
+
+// SetProgram sets the compiled GL program ID (for painter use)
+func (s *Shader) SetProgram(p uint32) {
+	s.program = p
+	s.needsCompile = false
+}
+
+// NeedsCompile returns whether the shader needs (re)compilation
+func (s *Shader) NeedsCompile() bool {
+	return s.needsCompile
+}
+
+// UniformLocs returns the uniform location cache (for painter use)
+func (s *Shader) UniformLocs() map[string]int32 {
+	return s.uniformLocs
+}
+
+// SetUniformLoc caches a uniform location (for painter use)
+func (s *Shader) SetUniformLoc(name string, loc int32) {
+	s.uniformLocs[name] = loc
+}
+
+// GetTextures returns the texture uniforms map (for painter use)
+func (s *Shader) GetTextures() map[string]interface{} {
+	return s.Textures
+}
+
+// GetTextureUnits returns the texture unit mapping (for painter use)
+func (s *Shader) GetTextureUnits() map[string]int {
+	return s.textureUnits
+}
+
+// SetTextureUnit sets the GL texture unit for a uniform (for painter use)
+func (s *Shader) SetTextureUnit(name string, unit int) {
+	s.textureUnits[name] = unit
+}
+
+// GetTextureCache returns the cached GL texture IDs (for painter use)
+func (s *Shader) GetTextureCache() map[string]uint32 {
+	return s.textureCache
+}
+
+// SetTextureCache sets a cached GL texture ID (for painter use)
+func (s *Shader) SetTextureCache(name string, texID uint32) {
+	s.textureCache[name] = texID
+}
+
+// ClearTextureCache clears the texture cache (called on recompile)
+func (s *Shader) ClearTextureCache() {
+	for k := range s.textureCache {
+		delete(s.textureCache, k)
+	}
+	for k := range s.textureUnits {
+		delete(s.textureUnits, k)
+	}
+}
+
+// GetCubemaps returns the cubemap uniforms map (for painter use)
+func (s *Shader) GetCubemaps() map[string][6]interface{} {
+	return s.Cubemaps
+}
+
+// GetCubemapUnits returns the cubemap unit mapping (for painter use)
+func (s *Shader) GetCubemapUnits() map[string]int {
+	return s.cubemapUnits
+}
+
+// SetCubemapUnit sets the GL texture unit for a cubemap (for painter use)
+func (s *Shader) SetCubemapUnit(name string, unit int) {
+	s.cubemapUnits[name] = unit
+}
+
+// GetCubemapCache returns the cached GL cubemap IDs (for painter use)
+func (s *Shader) GetCubemapCache() map[string]uint32 {
+	return s.cubemapCache
+}
+
+// SetCubemapCache sets a cached GL cubemap ID (for painter use)
+func (s *Shader) SetCubemapCache(name string, texID uint32) {
+	s.cubemapCache[name] = texID
+}
+
+// ClearCubemapCache clears the cubemap cache (called on recompile)
+func (s *Shader) ClearCubemapCache() {
+	for k := range s.cubemapCache {
+		delete(s.cubemapCache, k)
+	}
+	for k := range s.cubemapUnits {
+		delete(s.cubemapUnits, k)
+	}
+}
+
+// SetVertices sets the vertex data for the shader.
+// format should be one of: "pos2", "pos3", "pos3_norm3", "pos3_norm3_uv2", "pos2_uv2"
+// or a custom format string describing the vertex layout.
+func (s *Shader) SetVertices(data []float32, format string) {
+	s.Vertices = data
+	s.VertexFormat = format
+	s.vertexCount = len(data) / s.attributeCountForFormat(format)
+	s.Refresh()
+}
+
+// SetIndices sets the index buffer for indexed drawing (glDrawElements).
+func (s *Shader) SetIndices(indices []uint16) {
+	s.Indices = indices
+	s.indexCount = len(indices)
+	s.Refresh()
+}
+
+// attributeCountForFormat returns the number of floats per vertex for a given format.
+func (s *Shader) attributeCountForFormat(format string) int {
+	switch format {
+	case "pos2":
+		return 2
+	case "pos3":
+		return 3
+	case "pos2_uv2":
+		return 4 // 2 pos + 2 uv
+	case "pos3_norm3":
+		return 6 // 3 pos + 3 norm
+	case "pos3_norm3_uv2":
+		return 8 // 3 pos + 3 norm + 2 uv
+	case "pos3_col4":
+		return 7 // 3 pos + 4 color
+	default:
+		return 0 // Unknown format
+	}
+}
+
+// GetVertices returns the vertex data.
+func (s *Shader) GetVertices() []float32 {
+	return s.Vertices
+}
+
+// GetIndices returns the index buffer.
+func (s *Shader) GetIndices() []uint16 {
+	return s.Indices
+}
+
+// GetVertexFormat returns the vertex format descriptor.
+func (s *Shader) GetVertexFormat() string {
+	return s.VertexFormat
+}
+
+// GetVertexCount returns the number of vertices.
+func (s *Shader) GetVertexCount() int {
+	return s.vertexCount
+}
+
+// GetIndexCount returns the number of indices.
+func (s *Shader) GetIndexCount() int {
+	return s.indexCount
+}
+
+// SetVBO sets the vertex buffer object ID (for painter use).
+func (s *Shader) SetVBO(vbo uint32) {
+	s.vbo = vbo
+}
+
+// GetVBO returns the vertex buffer object ID.
+func (s *Shader) GetVBO() uint32 {
+	return s.vbo
+}
+
+// SetIBO sets the index buffer object ID (for painter use).
+func (s *Shader) SetIBO(ibo uint32) {
+	s.ibo = ibo
+}
+
+// GetIBO returns the index buffer object ID.
+func (s *Shader) GetIBO() uint32 {
+	return s.ibo
+}
+
+===============================================================================
+FILE: fyne-fork/internal/renderhook/renderhook.go
+===============================================================================
+
+package renderhook
+
+import (
+	"log"
+	"sync/atomic"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+)
+
+// BlendModeSupport interface for objects that support custom blend modes.
+// Matches the implementation in canvas package primitives.
+type BlendModeSupport interface {
+	BlendMode() canvas.BlendMode
+}
+
+// BlendFuncSetter is the function signature for setting GL blend mode.
+// This is set by the painter after GL init to avoid CGO crashes.
+type BlendFuncSetter func(sfactor, dfactor uint32)
+
+// blendFunc is the setter function, only set after GL is initialized.
+var blendFunc BlendFuncSetter
+
+// debugLogOnce ensures we only log the first few blend mode changes
+var debugLogCount int32
+
+// SetBlendFunc sets the blend function implementation.
+// Call this after gl.Init() with gl.BlendFunc as the argument.
+func SetBlendFunc(fn BlendFuncSetter) {
+	log.Printf("[renderhook] SetBlendFunc called - GL blend function now available")
+	blendFunc = fn
+}
+
+// SetGLReady is called after GL is initialized.
+// For backwards compatibility with existing patch code.
+func SetGLReady() {
+	// The actual readiness is determined by blendFunc being set
+}
+
+// Before is called before painting a canvas object.
+// Only modifies GL state when blend mode is non-default and GL is ready.
+func Before(obj fyne.CanvasObject) {
+	// Early exit if blend function not set (GL not initialized)
+	if blendFunc == nil {
+		return
+	}
+	b, ok := obj.(BlendModeSupport)
+	if !ok {
+		return
+	}
+	mode := b.BlendMode()
+	// Only change GL state for non-default blend modes
+	switch mode {
+	case canvas.BlendAdditive:
+		if atomic.AddInt32(&debugLogCount, 1) <= 5 {
+			log.Printf("[renderhook] Before: Setting ADDITIVE blend mode for %T", obj)
+		}
+		blendFunc(0x1, 0x1) // GL_ONE, GL_ONE
+	case canvas.BlendMultiply:
+		blendFunc(0x0774, 0x0) // GL_DST_COLOR, GL_ZERO
+	case canvas.BlendScreen:
+		blendFunc(0x1, 0x0301) // GL_ONE, GL_ONE_MINUS_SRC_COLOR
+	// BlendNormal (0) - don't touch GL state, use Fyne's default
+	}
+}
+
+// After is called after painting a canvas object to restore default state.
+// Only restores when we actually changed the blend mode.
+func After(obj fyne.CanvasObject) {
+	// Early exit if blend function not set (GL not initialized)
+	if blendFunc == nil {
+		return
+	}
+	b, ok := obj.(BlendModeSupport)
+	if !ok {
+		return
+	}
+	mode := b.BlendMode()
+	// Only restore if we changed the blend mode
+	if mode != canvas.BlendNormal {
+		blendFunc(0x0302, 0x0303) // GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+	}
+}
+
+===============================================================================
+FILE: fyne-fork/internal/painter/gl/shader_painter.go
+===============================================================================
+
+NOTE: This file is very large (~350 lines). See the original setup-fyne-fork.sh
+lines 577-924 for the complete shader_painter.go implementation.
+
+Key sections:
+- compileShaderProgram: Compiles vertex and fragment shaders
+- drawShader: Main shader rendering function
+- Uniform handling for float, vec2, vec3, vec4, and array types
+- Texture and cubemap uniform support
+- Vertex buffer (VBO) and index buffer (IBO) management
+- Viewport and coordinate transformation
+
+===============================================================================
+REFERENCE
+===============================================================================
+
+These Go files are automatically injected into the Fyne fork by setup-fyne-fork.sh.
+The bash script reads from this .txt file and writes each section to the appropriate
+.go file during fork setup.
+
+Key Points:
+- blend_mode.go: Adds 4 blend modes (Normal, Additive, Multiply, Screen)
+- shader.go: Defines the Shader canvas primitive (~430 lines of methods)
+- renderhook.go: Provides Before/After hooks to manage blend mode state
+- shader_painter.go: Implements GPU rendering for shader objects (~350 lines)
+
+All these components work together to provide GPU-accelerated shader support
+within the Fyne framework, enabling raymarching, procedural generation, and
+other GPU effects.
