@@ -113,7 +113,7 @@ No, anything can be renamed at any moment. If you're making apps right now, you'
 
 **Q: What patterns are important?**
 
-Separation of Concerns, Inversion of Control (there's no DI container as such), Design for testability is better design anyway (a maxim),  We're agnoting on MVC, MVVM and all that. There is and should be some kernel-esqe separation for the joined together deployments on Phonetop and Desktop
+Separation of Concerns, Inversion of Control (there's no DI container as such), Design for testability is better design anyway (a maxim). We're agnostic on MVC, MVVM, MVP and all that - Tsyne provides building blocks, you choose the architecture. There is and should be some kernel-esqe separation for the joined together deployments on Phonetop and Desktop
 
 **Q: JavaScript and WASM?**
 
@@ -633,6 +633,8 @@ Tsyne follows these design principles:
 3. **Terse and elegant**: Minimal boilerplate, maximum expressiveness
 4. **Type-safe**: Complete TypeScript definitions for IDE support
 5. **Easy to use**: Simple npm install, straightforward API
+
+**Core design stance:** Tsyne consistently chose *explicit over magic*, *lightweight over feature-complete*, and *control over convenience*. This makes sense for native app development but differs from web framework philosophy. There's no compiler magic (like Svelte), no auto-tracking reactivity (like MobX), and no virtual DOM diffing (like React). You call `refreshAllCosyneContexts()` when you want updates. You manage your own state. The trade-off is more control and predictability at the cost of some verbosity.
 
 **See [HISTORICAL.md](HISTORICAL.md) for the frameworks and patterns that inspired Tsyne's design.**
 
