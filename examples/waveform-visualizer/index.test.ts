@@ -258,7 +258,7 @@ describe('AudioProcessor - Waveform Processing', () => {
   test('waveform downsampling to multiple resolutions', async () => {
     // This is indirectly tested through app initialization
     // The app calls downsampleWaveform internally
-    const testApp = new (await import('../../core/src/index-test')).TsyneTest({
+    const testApp = new TsyneTest({
       headed: false,
     });
 

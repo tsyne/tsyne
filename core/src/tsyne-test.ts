@@ -229,6 +229,14 @@ export class TsyneTest {
 
     await windows[0].screenshot(filePath);
   }
+
+  /**
+   * Close and cleanup the test environment
+   * Alias for cleanup() for convenience
+   */
+  async close(): Promise<void> {
+    await this.cleanup();
+  }
 }
 
 /**

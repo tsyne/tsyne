@@ -16,7 +16,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from 'cosyne';
+import { createRenderTarget, type RenderTarget } from 'tsyne';
+import { cosyne3d, renderer3d } from 'cosyne';
 
 // Robot State (Reactive)
 const robotState = {

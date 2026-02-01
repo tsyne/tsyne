@@ -9,8 +9,8 @@
  * - High-performance buffer rendering
  */
 
-import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from 'cosyne';
+import { app, resolveTransport, standaloneShutdownStrategy, createRenderTarget, type RenderTarget } from 'tsyne';
+import { cosyne3d, renderer3d } from 'cosyne';
 
 // ============================================================================
 // State

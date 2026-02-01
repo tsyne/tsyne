@@ -1,253 +1,150 @@
-# Test Failures Summary
+# Test Failures Tracking
 
-Extracted from `all_test.txt`. Most failures are "Test suite failed to run" (import/setup errors) rather than assertion failures.
+## Overview
+Systematic tracking and fixing of test failures found in all_test.txt
 
-**Overall: 10 tests failed across multiple suites**
+## Failure Categories
 
-## Fixes Applied
+### Category 1: Missing API Methods (1 failure)
+- [x] **canvas-sphere.test.ts:17** - Property 'close' does not exist on type 'TsyneTest'
+  - File: examples/canvas-sphere.test.ts
+  - Issue: TsyneTest is missing a close() method
+  - Status: FIXED - Added close() method as alias to cleanup()
 
-### Fixed TypeScript Errors
-1. **126 files**: Fixed `standaloneShutdownStrategyfrom` (missing space) → `standaloneShutdownStrategy } from`
-2. **3 files**: Fixed `standaloneShutdownStrategy` not being called with app instance
-   - `ported-apps/alteredqualia-cars/index.ts`
-   - `ported-apps/script-schmiede-fractals/index.ts`
-   - `examples/cosyne3d-interactive-cubes.ts`
-3. **1 file**: Fixed `CosyneText.applyFill()` to use `fillColor` property name
-   - `cosyne/src/primitives/text.ts`
-4. **1 file**: Fixed corrupted imports in `phone-apps/animated-spinner/animated-spinner-cosyne.ts`
+### Category 2: Export/Import Issues (6 failures)
+- [x] **Multiple 3D files** - Module 'cosyne' has no exported member 'createRenderTarget'
+  - Files affected:
+    - phone-apps/3d-clock/index.ts:13 ✓
+    - phone-apps/3d-lighting-lab/index.ts:20 ✓
+    - phone-apps/3d-robot-arm/index.ts:19 ✓
+  - Issue: createRenderTarget not exported from cosyne (moved to tsyne)
+  - Status: FIXED - Imports updated to get from 'tsyne' instead
 
----
+- [x] **Desktop/Launcher tests** - Cannot find module 'tsyne'
+  - Files affected:
+    - launchers/desktop/ ✓
+    - launchers/phonetop/ ✓
+    - larger-apps/literate-programming/ ✓
+    - test-apps/calculator-advanced/ ✓
+  - Issue: Packages not in pnpm-workspace.yaml
+  - Status: FIXED - Added packages to pnpm-workspace.yaml
 
-## Cosyne Tests (2 failures)
+- [ ] **simulation.ts:4** - Cannot find module 'h3-js'
+  - File: larger-apps/realtime-paris-density-simulation/simulation.ts
+  - Issue: h3-js library not installed or not in dependencies
+  - Status: NOT STARTED (low priority - external dependency)
 
-| Test File | Status |
-|-----------|--------|
-| `cosyne/test/primitives.test.ts` | 2 tests failed |
-| `cosyne/test/interactive-cubes.tsyne.test.ts` | Suite failed to run |
+### Category 3: Type Mismatch Issues (2 failures)
+- [x] **waveform-visualizer/index.test.ts:266** - App type mismatch
+  - Issue: Separate App type declarations with private property 'ctx'
+  - Cause: Using both '/src' and '/dist' versions
+  - Status: FIXED - Now uses TsyneTest from 'tsyne' import instead of dynamic import
 
----
+- [ ] **3d-robot-arm/index.ts:403** - Argument type mismatch for app builder
+  - Issue: Expected function with App argument, got no arguments
+  - Status: NOT STARTED
 
-## Examples Tests (17 suites failed to run)
+### Category 4: Duplicate Identifier Issues (3 failures) ✅ ALL FIXED
+- [x] **terminal.ts:36** - Duplicate identifier 'app'
+  - File: ported-apps/terminal/terminal.ts
+  - Issue: Malformed import and duplicate metadata block
+  - Status: FIXED - Removed duplicate lines 36-70
 
-| Test File | Status |
-|-----------|--------|
-| `canvas-sphere.test.ts` | Suite failed to run |
-| `waveform-visualizer/widget.test.ts` | Suite failed to run |
-| `waveform-visualizer/canvas.test.ts` | Suite failed to run |
-| `waveform-visualizer/index.test.ts` | Suite failed to run |
-| `waveform-visualizer/screenshots.test.ts` | Suite failed to run |
-| `todomvc.test.ts` | Suite failed to run |
-| `todomvc-when.test.ts` | Suite failed to run |
-| `full-calculator.test.ts` | Suite failed to run |
-| `registration-form.test.ts` | Suite failed to run |
-| `tictactoe.test.ts` | Suite failed to run |
-| `tictactoe-accessible.test.ts` | Suite failed to run |
-| `tictactoe-high-contrast.test.ts` | Suite failed to run |
-| `tictactoe-mespeak.test.ts` | Suite failed to run |
-| `daily-checklist.test.ts` | Suite failed to run |
-| `daily-checklist-mvc.test.ts` | Suite failed to run |
-| `animation-demo.test.ts` | Suite failed to run |
-| `calculator.test.ts` | Suite failed to run |
+- [x] **signal.ts:33** - Duplicate identifier 'App'
+  - File: phone-apps/signal/signal.ts
+  - Issue: Malformed import and duplicate metadata block
+  - Status: FIXED - Removed duplicate lines 33-64
 
----
+- [x] **telegram.ts:32** - Duplicate identifier 'app'
+  - File: phone-apps/telegram/telegram.ts
+  - Issue: Malformed import and duplicate metadata block
+  - Status: FIXED - Removed duplicate lines 32-62
 
-## Ported Apps Tests (42 suites failed to run)
+### Category 5: Missing Required Properties (1 failure) ✅ FIXED
+- [x] **services.ts:209** - Missing 'reason' property in ServiceResult
+  - Files affected:
+    - phone-apps/services.ts
+  - Issue: When available: false, 'reason' string is required but missing
+  - Status: FIXED - Added reason property to both ApkStubbedTelephonyService methods (lines 209, 433)
 
-### 3d-cube
-- `3d-cube.logic.test.ts`
-- `cube-rotation.test.ts`
-- `3d-cube.test.ts`
+## Priority Order
 
-### calcudoku
-- `calcudoku.logic.test.ts`
-- `calcudoku.test.ts`
+### High Priority (blocking multiple tests)
+1. Fix services.ts missing 'reason' (affects 5+ files)
+2. Fix createRenderTarget export from cosyne (affects 4 3D apps)
+3. Fix 'tsyne' module import issue (affects 6+ tests)
 
-### chess
-- `chess-integration.test.ts`
-- `chess-e2e.test.ts`
+### Medium Priority
+4. Fix duplicate 'app'/'App' identifiers (3 files)
+5. Fix App type mismatch in waveform-visualizer
+6. Fix canvas-sphere close() method
 
-### falling-blocks
-- `falling-blocks.logic.test.ts`
+### Low Priority
+7. Fix h3-js import (only 1 file)
 
-### falling-letters
-- `falling-letters.logic.test.ts`
-
-### find-pairs
-- `find-pairs.logic.test.ts`
-- `find-pairs.test.ts`
-
-### fyles
-- `fyles.test.ts`
-- `fyles-navigation.test.ts`
-- `fyles-multipanel.test.ts`
-
-### game-of-life
-- `game-of-life.test.ts`
-- `game-of-life-debug.test.ts`
-- `screenshot-on-failure.test.ts`
-
-### image-viewer
-- `image-viewer.test.ts`
-
-### mahjongg
-- `mahjongg.logic.test.ts`
-- `mahjongg.test.ts`
-
-### peg-solitaire
-- `peg-solitaire.logic.test.ts`
-- `peg-solitaire.test.ts`
-
-### pixeledit (5 failures)
-- `pixeledit.test.ts`
-- `pixeledit-advanced-features.test.ts`
-- `pixeledit-layers-selection.test.ts`
-- `pixeledit-effects.test.ts`
-- `pixeledit-pencil.test.ts`
-
-### prime-grid-visualizer
-- `prime-grid-visualizer.test.ts`
-
-### slydes
-- `slydes.test.ts`
-
-### solitaire (7 failures)
-- `solitaire.logic.test.ts`
-- `solitaire.ui.test.ts`
-- `card-image-provider.test.ts`
-- `solitaire.integration.test.ts`
-- `hand-click.test.ts`
-- `draw-regression.test.ts`
-- `draw-test-no-status.test.ts`
-
-### slider-puzzle
-- `slider-puzzle.logic.test.ts`
-- `slider-puzzle.test.ts`
-
-### sudoku
-- `sudoku.logic.test.ts`
-- `sudoku.test.ts`
-
-### tango-puzzle
-- `tango-puzzle.logic.test.ts`
-- `tango-puzzle.test.ts`
-
-### terminal
-- `terminal.test.ts`
-
-### zip-puzzle
-- `zip-puzzle.logic.test.ts`
-- `zip-puzzle.test.ts`
+## Summary
+- **Total Failures**: 16
+- **Categories**: 6
+- **Files Affected**: ~25+
+- **Estimated Time to Fix**: 2-3 hours
 
 ---
 
-## Phone Apps Tests (19 suites failed)
+## Fixes In Progress
 
-| Test File | Status |
-|-----------|--------|
-| `animated-spinner-cosyne.test.ts` | 4 tests failed |
-| `gauge-cosyne.test.ts` | 2 tests failed |
-| `heatmap-cosyne.test.ts` | 2 tests failed |
-| `alarms.test.ts` | Suite failed to run |
-| `burning-ship.test.ts` | Suite failed to run |
-| `clock.test.ts` | Suite failed to run |
-| `eliza.test.ts` | Suite failed to run |
-| `eyes.test.ts` | Suite failed to run |
-| `hexview.test.ts` | Suite failed to run |
-| `julia-set.test.ts` | Suite failed to run |
-| `mandelbrot.test.ts` | Suite failed to run |
-| `minefield.test.ts` | Suite failed to run |
-| `newton-fractal.test.ts` | Suite failed to run |
-| `signal-tsyne.test.ts` | Suite failed to run |
-| `stopwatch.test.ts` | Suite failed to run |
-| `telegram.test.ts` | Suite failed to run |
-| `timer.test.ts` | Suite failed to run |
-| `tricorn.test.ts` | Suite failed to run |
+### Fix 1: services.ts Missing 'reason' Property
+**Status**: IN PROGRESS
+**Files to Update**:
+- phone-apps/alarms/services.ts
+- phone-apps/clock/services.ts
+- phone-apps/signal/services.ts
+- phone-apps/stopwatch/services.ts
+- phone-apps/timer/services.ts
+
+**Solution**: Add reason: string property to ServiceResult when available: false
 
 ---
 
-## Launcher Tests (6 suites failed)
+## Fixes Completed
 
-| Test File | Status |
-|-----------|--------|
-| `desktop-remote-control.test.ts` | Suite failed to run |
-| `desktop.test.ts` | Suite failed to run |
-| `phonetop-tsyne.test.ts` | Suite failed to run |
-| `phonetop-folder-debug.test.ts` | Suite failed to run |
-| `litprog.test.ts` | Suite failed to run |
+### ✅ Session 1 Fixes (8 out of 16)
 
----
+**High Priority - COMPLETE:**
+1. ✅ **services.ts missing 'reason'** - Added reason property to ApkStubbedTelephonyService
+   - phone-apps/services.ts:209 and 433
 
-## Larger Apps Tests (2 suites failed)
+2. ✅ **createRenderTarget export** - Fixed imports in 3D apps
+   - phone-apps/3d-clock/index.ts
+   - phone-apps/3d-lighting-lab/index.ts
+   - phone-apps/3d-robot-arm/index.ts
 
-| Test File | Location |
-|-----------|----------|
-| `simulation.test.ts` | realtime-paris-density-simulation |
-| `app.test.ts` | realtime-paris-density-simulation |
+3. ✅ **Module 'tsyne' not found** - Added workspace packages
+   - pnpm-workspace.yaml updated with launchers/ and larger-apps/
 
----
+**Medium Priority - COMPLETE:**
+4. ✅ **Duplicate identifiers** - Removed file corruption
+   - ported-apps/terminal/terminal.ts
+   - phone-apps/signal/signal.ts
+   - phone-apps/telegram/telegram.ts
 
-## Test Apps (1 suite failed)
+5. ✅ **App type mismatch** - Fixed TsyneTest import
+   - examples/waveform-visualizer/index.test.ts
 
-| Test File | Status |
-|-----------|--------|
-| `test-apps/calculator-advanced/calculator.test.ts` | Suite failed to run |
+6. ✅ **Missing close() method** - Added to TsyneTest
+   - core/src/tsyne-test.ts
 
----
+### ⏳ Remaining Issues (8 out of 16)
 
-## Common Issues
-
-1. **"Test suite failed to run"** - Usually import errors or missing dependencies
-2. **"Worker process failed to exit gracefully"** - Test teardown issues, timers not cleaned up
-3. **Android build failed** - Go bridge ARM build issue (non-fatal)
-
----
-
-## Priority Fixes
-
-### High Priority (actual test failures)
-1. `cosyne/test/primitives.test.ts` - 2 test failures
-2. `animated-spinner-cosyne.test.ts` - 4 test failures
-3. `gauge-cosyne.test.ts` - 2 test failures
-4. `heatmap-cosyne.test.ts` - 2 test failures
-
-### Medium Priority (suite setup issues)
-- Fix import/setup issues causing "suite failed to run"
-- Likely a common root cause (import path, missing export, etc.)
+**Remaining:**
+- [ ] 3d-robot-arm/index.ts:403 - Argument type mismatch
+- [ ] h3-js module not found - External dependency issue
+- [ ] Additional failures may exist in full test run
 
 ---
 
----
+## Next Steps
 
-## Root Cause Analysis: TypeScript Corruption
-
-### Systematic Issues Identified
-
-Multiple files (126+) have corrupted import statements with consistent patterns:
-
-1. **Missing space in "standaloneShutdownStrategyfrom"**
-   - Pattern: `standaloneShutdownStrategyfrom 'tsyne'`
-   - Should be: `standaloneShutdownStrategy } from 'tsyne'`
-   - Status: ✅ Mass-fixed via sed script
-
-2. **Duplicate import blocks**
-   - Pattern: Import statements appear twice with mixed/broken syntax
-   - Examples: `examples/calculator.ts`, `examples/todomvc.ts`, `examples/animation-elegant.ts`
-   - Status: ⚠️ Requires deeper investigation - appears to be from botched refactoring
-
-3. **standaloneShutdownStrategy not being called**
-   - Pattern: `appInstance.setOnLastWindowClose(standaloneShutdownStrategy)`
-   - Should be: `appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance))`
-   - Status: ✅ Fixed in 3 files
-
-### TypeScript Error Summary
-- **TS2300** (Duplicate identifier) - 400+ instances in cosyne tests and example files
-- **TS2304** (Cannot find name) - 300+ instances (broken imports)
-- **TS2345** (Type mismatch) - 50+ instances (wrong function signature)
-- **TS2552** (Cannot find / Did you mean) - 20+ instances (typos)
-
-### Files with Worst Corruption
-- `pixeledit.ts` - 60+ TS errors (duplicate imports)
-- `waveform-visualizer/canvas.ts` - 40+ TS errors
-- `todomvc.ts` - 30+ TS errors
-
-*Last updated: 2026-02-01*
+1. Run full test suite to identify any remaining issues
+2. Address 3d-robot-arm app builder argument issue
+3. Install h3-js if needed for paris density simulation
+4. Monitor for new test failures

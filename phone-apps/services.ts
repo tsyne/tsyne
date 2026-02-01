@@ -206,7 +206,7 @@ export class ApkStubbedTelephonyService implements ITelephonyService {
 
   async dial(number: string): Promise<ServiceResult<boolean>> {
     this.showWarning(`Dialing ${number}`);
-    return { available: false };
+    return { available: false, reason: 'Telephony is not available in this APK build' };
   }
 
   async hangup(): Promise<void> {
@@ -430,7 +430,7 @@ export class ApkStubbedSMSService implements ISMSService {
 
   async send(to: string, body: string): Promise<ServiceResult<Message>> {
     this.showWarning(`Sending SMS to ${to}`);
-    return { available: false };
+    return { available: false, reason: 'SMS is not available in this APK build' };
   }
 
   getMessages(): Message[] {
