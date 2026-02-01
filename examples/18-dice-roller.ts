@@ -6,7 +6,15 @@
 // Dice Roller - Roll multiple dice with different sides
 // Demonstrates select widgets, dynamic results, and visual feedback
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, App, Window  } // @tsyne-app:name Dice Roller
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>
+// @tsyne-app:category games
+// @tsyne-app:builder buildDiceRoller
+
+// Dice Roller - Roll multiple dice with different sides
+// Demonstrates select widgets, dynamic results, and visual feedback
+
+import { app, resolveTransport, App, Window  , standaloneShutdownStrategyfrom 'tsyne';
 
 export function buildDiceRoller(a: App) {
   a.window({ title: 'Dice Roller', width: 400, height: 500 }, (win: Window) => {
@@ -125,5 +133,5 @@ export function buildDiceRoller(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Dice Roller' }, buildDiceRoller);
-}
+  const appInstance = app(resolveTransport(), { title: 'Dice Roller' }, buildDiceRoller);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

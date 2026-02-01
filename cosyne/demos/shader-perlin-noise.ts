@@ -10,7 +10,19 @@
  * Run: npx tsx cosyne/demos/shader-perlin-noise.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Perlin Noise Visualization - GPU Shader
+ *
+ * Demonstrates noise generation on GPU:
+ * - Single octave Perlin noise
+ * - Fractional Brownian motion (multiple octaves)
+ * - Noise-based displacement
+ * - Animated flow visualization
+ *
+ * Run: npx tsx cosyne/demos/shader-perlin-noise.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;
@@ -209,7 +221,7 @@ function createNoiseDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Perlin Noise' }, createNoiseDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Perlin Noise' }, createNoiseDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createNoiseDemo };

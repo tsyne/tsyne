@@ -39,7 +39,48 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  } from 'tsyne';
+import { app, resolveTransport, styles, FontStyle  } /*
+ * Copyright (c) 2025 Paul Hammant
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/**
+ * Weather App
+ *
+ * Displays current weather for the user's location.
+ * Uses free weather API (Open-Meteo, no API key required).
+ * Implements pseudo-declarative pattern following calculator.ts style.
+ *
+ * @tsyne-app:name Weather
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>
+ * @tsyne-app:category utilities
+ * @tsyne-app:builder createWeatherApp
+ * @tsyne-app:args app
+ * @tsyne-app:count single
+ */
+
+import { app, resolveTransport, styles, FontStyle  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';
@@ -305,7 +346,7 @@ export function createWeatherApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Weather' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Weather' }, (a: App) => {
     createWeatherApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

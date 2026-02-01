@@ -19,6 +19,7 @@ import (
 	"net"
 	"os"
 
+	"fyne.io/fyne/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	pb "github.com/paul-hammant/tsyne/bridge/proto"
@@ -823,7 +824,10 @@ func runMsgpackUdsMode(testMode bool) {
 		msgpackServer.Close()
 		log.Println("[msgpack-uds] Bridge shutting down...")
 		if !testMode {
-			bridge.app.Quit()
+			// Call Quit on the main Fyne thread to avoid threading violations
+			fyne.DoAndWait(func() {
+				bridge.app.Quit()
+			})
 		}
 		os.Exit(0)
 	}()

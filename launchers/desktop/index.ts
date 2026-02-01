@@ -18,7 +18,7 @@ import { App } from 'tsyne';
 import { Window } from 'tsyne';
 import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from 'tsyne';
 import { ITsyneWindow } from 'tsyne';
-import { parseAppMetadata, AppMetadata } from 'tsyne';
+import { parseAppMetadata, AppMetadata, resolveTransport, desktopShutdownStrategy } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
 import { initResvg } from 'tsyne';
 import { Inspector } from 'tsyne';
@@ -1108,8 +1108,10 @@ export { Desktop };
 // Entry point - only run when executed directly
 // Check if this module is the main entry point
 if (require.main === module) {
-  // Import the app function from index
-  const { app, resolveTransport  } = require('./index');
+  // Handle Ctrl-C gracefully
+  process.on('SIGINT', () => {
+    process.exit(0);
+  });
 
   // Prevent unhandled promise rejections from crashing the desktop
   // This catches errors from apps that throw after their builder returns
@@ -1121,7 +1123,8 @@ if (require.main === module) {
   // Check for debug port from environment
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
 
-  app(resolveTransport(), { title: 'Tsyne Desktop' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Tsyne Desktop' }, async (a: App) => {
     await buildDesktop(a, { debugPort });
   });
+  appInstance.setOnLastWindowClose(desktopShutdownStrategy(appInstance));
 }

@@ -1897,16 +1897,22 @@ function createDesktopServices(): PhoneServices {
 export { PhoneTop };
 
 // Re-export core app function for bundled usage
-export { app, resolveTransport } from 'tsyne';
+export { app, resolveTransport, phoneShutdownStrategy } from 'tsyne';
 
 // Entry point
 if (require.main === module) {
-  const { app, resolveTransport } = require('tsyne');
+  // Handle Ctrl-C gracefully
+  process.on('SIGINT', () => {
+    process.exit(0);
+  });
+
+  const { app, resolveTransport, phoneShutdownStrategy } = require('tsyne');
 
   // Check for debug port via environment variable
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
 
-  app(resolveTransport(), { title: 'App Launcher' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'App Launcher' }, async (a: App) => {
     await buildPhoneTop(a, { debugPort });
   });
+  appInstance.setOnLastWindowClose(phoneShutdownStrategy(appInstance));
 }

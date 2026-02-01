@@ -26,7 +26,35 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Sudoku App
+ *
+ * A faithful port of sudoku-app from https://gitlab.com/alaskalinuxuser/sudoku-app
+ * Based on Sudoku generator by Jani Hartikainen
+ * License: GPL-3.0
+ *
+ * Classic 9x9 Sudoku puzzle with multiple difficulty levels,
+ * hint system, and conflict detection.
+ *
+ * @tsyne-app:name Sudoku
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+ *   <rect x="2" y="2" width="20" height="20" rx="1" stroke="#333"/>
+ *   <line x1="8" y1="2" x2="8" y2="22" stroke="#333"/>
+ *   <line x1="16" y1="2" x2="16" y2="22" stroke="#333"/>
+ *   <line x1="2" y1="8" x2="22" y2="8" stroke="#333"/>
+ *   <line x1="2" y1="16" x2="22" y2="16" stroke="#333"/>
+ *   <text x="5" y="7" font-size="4" fill="#00008B">5</text>
+ *   <text x="11" y="14" font-size="4" fill="#00008B">7</text>
+ *   <text x="17" y="21" font-size="4" fill="#00008B">3</text>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createSudokuApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label, ColorCell } from 'tsyne';
 
 // ============================================================================
@@ -836,9 +864,9 @@ export { DIFFICULTY_LEVELS, GRID_SIZE, BOX_SIZE };
 // ============================================================================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Sudoku' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Sudoku' }, async (a: App) => {
     const ui = createSudokuApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

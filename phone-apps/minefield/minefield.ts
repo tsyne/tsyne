@@ -18,7 +18,27 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Minefield (Minesweeper) Game
+ *
+ * Ported from ChrysaLisp: https://github.com/vygr/ChrysaLisp/blob/master/apps/minefield/
+ * Original authors: ChrysaLisp contributors
+ * License: See original repository
+ *
+ * Classic Minesweeper game with adaptive sizing for phone/tablet/desktop.
+ *
+ * Copyright (c) 2025 Paul Hammant
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * @tsyne-app:name Minefield
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+ * @tsyne-app:category games
+ * @tsyne-app:builder createMinefieldApp
+ * @tsyne-app:args app
+ * @tsyne-app:count many
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label } from 'tsyne';
 
 // =============================================================================
@@ -551,8 +571,8 @@ export { MinefieldGame as Game };
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Minefield' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Minefield' }, async (a: App) => {
     createMinefieldApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
   });
 }

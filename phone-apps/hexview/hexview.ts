@@ -13,7 +13,22 @@
  * @tsyne-app:builder createHexViewApp
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Hexview - Hexadecimal File Viewer
+ *
+ * Ported from ChrysaLisp: https://github.com/vygr/ChrysaLisp/blob/master/apps/hexview/app.lisp
+ * Original authors: ChrysaLisp contributors
+ * License: See original repository
+ *
+ * A hex viewer application for examining file contents in hexadecimal format.
+ *
+ * @tsyne-app:name HexView
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h.01M15 16h.01"/></svg>
+ * @tsyne-app:category utilities
+ * @tsyne-app:builder createHexViewApp
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label } from 'tsyne';
 import * as fs from 'fs';
 
@@ -336,9 +351,9 @@ export function createHexViewApp(a: App): HexViewUI {
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'HexView' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'HexView' }, async (a: App) => {
     const ui = createHexViewApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
 
     // If a file argument is provided, load it
     const args = process.argv.slice(2);

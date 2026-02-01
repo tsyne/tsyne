@@ -7,7 +7,16 @@
  * - Mixing native Tsyne UI with canvas graphics
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Foreign Objects Demo - Cosyne Phase 5
+ *
+ * Demonstrates embedding Tsyne widgets inside Cosyne canvas
+ * - Button controls that trigger canvas animations
+ * - Text input that updates canvas content
+ * - Mixing native Tsyne UI with canvas graphics
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, easeInOutCubic } from 'cosyne';
 
 interface CanvasState {
@@ -170,7 +179,7 @@ export function buildForeignObjectsApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app } = require('../../core/src');
-  app(
+  const appInstance = app(
     {
       title: 'Foreign Objects Demo - Cosyne Phase 5',
       width: 600,
@@ -182,7 +191,7 @@ if (require.main === module) {
         (win: any) => {
           win.setContent(() => {
             buildForeignObjectsApp(a);
-          });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));          });
           win.show();
         }
       );

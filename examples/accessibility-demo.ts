@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } from 'tsyne';
+import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } from 'tsyne';
 
 /**
@@ -77,8 +77,8 @@ export function buildAccessibilityDemo(a: any) {
 
 // Run directly when executed as main script
 if (require.main === module) {
-  const myApp = app(resolveTransport(), { title: "Accessibility Demo" }, buildAccessibilityDemo);
-
+  const appInstance = app(resolveTransport(), { title: "Accessibility Demo" }, buildAccessibilityDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
   // Get the accessibility manager
   manager = getAccessibilityManager((myApp as any).ctx);
 

@@ -130,6 +130,8 @@ export interface AppOptions {
   title?: string;
   /** Enable/disable the Ctrl+Shift+I inspector shortcut (default: true) */
   inspector?: boolean;
+  /** Callback invoked when the last window closes. Determines if process should exit. */
+  onLastWindowClose?: () => void | Promise<void>;
 }
 
 /**
@@ -310,6 +312,7 @@ export class App {
   private bridge: BridgeInterface;
   public resources: ResourceManager;
   private cleanupCallbacks: Array<() => void | Promise<void>> = [];
+  private onLastWindowClose?: () => void | Promise<void>;
 
   constructor(bridgeMode: BridgeMode, options?: AppOptions, testMode: boolean = false) {
     // Initialize browser compatibility globals
@@ -320,6 +323,9 @@ export class App {
 
     this.ctx = new Context(this.bridge);
     this.resources = new ResourceManager(this.bridge);
+
+    // Store the onLastWindowClose callback
+    this.onLastWindowClose = options?.onLastWindowClose;
 
     // Set inspector enabled state (defaults to true if not specified)
     if (options?.inspector === false) {
@@ -368,6 +374,18 @@ export class App {
       await callback();
     }
     this.cleanupCallbacks = [];
+  }
+
+  /**
+   * Get the onLastWindowClose callback (if set)
+   * Called by the bridge when the last window closes
+   */
+  getOnLastWindowClose(): (() => void | Promise<void>) | undefined {
+    return this.onLastWindowClose;
+  }
+
+  setOnLastWindowClose(callback: (() => void | Promise<void>) | undefined): void {
+    this.onLastWindowClose = callback;
   }
 
   /**

@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"log"
 	"strings"
 
 	"fyne.io/fyne/v2"

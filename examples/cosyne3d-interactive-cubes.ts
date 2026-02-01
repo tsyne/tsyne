@@ -9,7 +9,18 @@
  * - Interactive camera controls (orbit and zoom)
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } #!/usr/bin/env npx tsx
+/**
+ * Cosyne 3D Demo: Interactive Cubes
+ *
+ * Demonstrates:
+ * - Box primitives with click handlers
+ * - Hover effects
+ * - Dynamic material changes via bindings
+ * - Interactive camera controls (orbit and zoom)
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts } from 'cosyne';
 
 // Cube state
@@ -206,5 +217,5 @@ export function buildInteractiveCubesApp(a: any) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, buildInteractiveCubesApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Cosyne 3D - Interactive Cubes' }, buildInteractiveCubesApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

@@ -16,7 +16,25 @@
  * @tsyne-app:args (a: App) => void
  */
 
-import { App, Label, TappableCanvasRaster, app, resolveTransport } from 'tsyne';
+import { App, Label, TappableCanvasRaster, app, resolveTransport } /**
+ * Pseudo-Declarative Spherical Snake
+ *
+ * Alternative implementation using Cosyne's declarative canvas grammar.
+ * Port of https://github.com/kevinAlbs/SphericalSnake to Tsyne + Cosyne.
+ *
+ * Key differences from imperative version (spherical-snake.ts):
+ * - Uses Cosyne primitives (circles, rects) instead of pixel buffer
+ * - Uses declarative bindings for position and color
+ * - Calls refreshBindings() in game loop instead of manual setPixelBuffer()
+ * - ~50% fewer lines of drawing code
+ *
+ * @tsyne-app:name Spherical Snake (Cosyne)
+ * @tsyne-app:icon home
+ * @tsyne-app:category Games
+ * @tsyne-app:args (a: App) => void
+ */
+
+import { App, Label, TappableCanvasRaster, app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import { cosyne, CosyneContext } from 'cosyne';
 
 // ============================================================================
@@ -921,9 +939,9 @@ function drawArrow(
 
 // Entry point
 if (require.main === module) {
-  app(
+  const appInstance = app(
     resolveTransport(),
     { title: 'Spherical Snake (Cosyne)' },
     buildPseudoDeclarativeSphericalSnakeApp
   );
-}
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

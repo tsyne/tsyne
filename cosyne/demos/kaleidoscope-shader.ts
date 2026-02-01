@@ -5,7 +5,14 @@
  * Move the mouse to shift the pattern, use buttons to change segments.
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Real Kaleidoscope Effect using GPU Shader
+ *
+ * This uses CanvasShader to do proper kaleidoscope mirroring on the GPU.
+ * Move the mouse to shift the pattern, use buttons to change segments.
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;
@@ -132,5 +139,5 @@ function createKaleidoscopeDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Kaleidoscope' }, createKaleidoscopeDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Kaleidoscope' }, createKaleidoscopeDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

@@ -24,7 +24,33 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Slider Puzzle
+ *
+ * 5x5 sliding tile puzzle. Click a tile adjacent to the blank to swap.
+ *
+ * Port of ChrysaLisp slider app by Chris Hinsley
+ * Original: https://github.com/vygr/ChrysaLisp/blob/master/apps/slider/app.lisp
+ * License: GPL-2.0
+ *
+ * @tsyne-app:name Slider Puzzle
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none">
+ *   <rect x="2" y="2" width="9" height="9" rx="1" fill="#4488CC" stroke="#333" stroke-width="0.5"/>
+ *   <rect x="13" y="2" width="9" height="9" rx="1" fill="#4488CC" stroke="#333" stroke-width="0.5"/>
+ *   <rect x="2" y="13" width="9" height="9" rx="1" fill="#4488CC" stroke="#333" stroke-width="0.5"/>
+ *   <rect x="13" y="13" width="9" height="9" rx="1" fill="#666" stroke="#333" stroke-width="0.5"/>
+ *   <text x="6.5" y="9" font-size="6" fill="#FFF" text-anchor="middle" font-weight="bold">A</text>
+ *   <text x="17.5" y="9" font-size="6" fill="#FFF" text-anchor="middle" font-weight="bold">B</text>
+ *   <text x="6.5" y="20" font-size="6" fill="#FFF" text-anchor="middle" font-weight="bold">C</text>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createSliderPuzzleApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================
@@ -210,9 +236,9 @@ export { GRID_W, GRID_H, TILE_COUNT, BLANK };
 // ============================================================================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Slider Puzzle' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Slider Puzzle' }, async (a: App) => {
     const ui = createSliderPuzzleApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

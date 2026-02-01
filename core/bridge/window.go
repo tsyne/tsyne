@@ -205,9 +205,8 @@ func (b *Bridge) handleCreateWindow(msg Message) Response {
 						})
 
 						if windowCount == 0 {
-							fyne.Do(func() {
-								b.app.Quit()
-							})
+							// Let TypeScript decide whether to exit the process
+							b.sendEvent(Event{Type: "lastWindowClosed"})
 						}
 					}
 				}()
@@ -516,9 +515,9 @@ func (b *Bridge) handleCloseWindow(msg Message) Response {
 
 	fyne.DoAndWait(func() {
 		win.Close()
-		// If no more windows, quit the application
+		// If no more windows, let TypeScript decide whether to exit the process
 		if windowCount == 0 {
-			b.app.Quit()
+			b.sendEvent(Event{Type: "lastWindowClosed"})
 		}
 	})
 

@@ -7,7 +7,16 @@
  * - Complex multi-level transformations
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Transforms Demo - Cosyne Phase 5
+ *
+ * Demonstrates nested coordinate transformations
+ * - Nested transforms: translate, rotate, scale
+ * - Geometric patterns with recursive transforms
+ * - Complex multi-level transformations
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts } from 'cosyne';
 
 export function buildTransformsApp(a: App): void {
@@ -187,7 +196,7 @@ export function buildTransformsApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app } = require('../../core/src');
-  app(
+  const appInstance = app(
     {
       title: 'Transforms Demo - Cosyne Phase 5',
       width: 600,
@@ -199,7 +208,7 @@ if (require.main === module) {
         (win: any) => {
           win.setContent(() => {
             buildTransformsApp(a);
-          });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));          });
           win.show();
         }
       );

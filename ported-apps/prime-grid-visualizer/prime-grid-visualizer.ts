@@ -24,7 +24,33 @@
  * core prime number calculation and visualization capabilities.
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } // @tsyne-app:name Prime Grid Visualizer
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="1"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="10" y1="6" x2="10" y2="18"/><line x1="14" y1="6" x2="14" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="2" y1="14" x2="22" y2="14"/><line x1="2" y1="18" x2="22" y2="18"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder createPrimeGridAppStandalone
+// @tsyne-app:args app,windowWidth,windowHeight
+
+/**
+ * Prime Grid Visualizer for Tsyne
+ *
+ * Ported from https://github.com/abhrankan-chakrabarti/prime-grid-visualizer
+ * Original author: Abhrankan Chakrabarti
+ * Portions copyright (c) Abhrankan Chakrabarti
+ * License: See original repository for license details
+ *
+ * This application visualizes prime numbers in a customizable grid layout.
+ * Features include:
+ * - Interactive grid visualization of primes and composites
+ * - Customizable parameters (max number, grid columns, cell size)
+ * - Statistics display (prime count, percentage)
+ * - Screenshot/export capability
+ *
+ * This Tsyne port adapts the original web-based visualization to work with
+ * Tsyne's TypeScript-to-Fyne bridge architecture while maintaining the same
+ * core prime number calculation and visualization capabilities.
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, CanvasRaster, Entry } from 'tsyne';
 
 // Color constants (RGB)
@@ -343,8 +369,8 @@ export async function createPrimeGridAppStandalone(a: App, windowWidth?: number,
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Prime Grid Visualizer' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Prime Grid Visualizer' }, async (a: App) => {
     await createPrimeGridAppStandalone(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
   });
 }

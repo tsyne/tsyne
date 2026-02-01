@@ -23,7 +23,32 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Mahjongg Solitaire App
+ *
+ * A faithful port of QmlMahjongg from https://gitlab.com/alaskalinuxuser/QmlMahjongg
+ * Original author: alaskalinuxuser (Brian D.)
+ * License: GPL-3.0
+ *
+ * A solitaire tile-matching game where players match pairs of identical tiles
+ * to remove them from a multi-layered pyramid layout. Tiles can only be selected
+ * if they are not blocked (no tile on top and at least one side free).
+ *
+ * @tsyne-app:name Mahjongg
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+ *   <rect x="2" y="4" width="8" height="10" rx="1" fill="#f5deb3" stroke="#8B4513"/>
+ *   <rect x="6" y="2" width="8" height="10" rx="1" fill="#ffe4c4" stroke="#8B4513"/>
+ *   <rect x="10" y="6" width="8" height="10" rx="1" fill="#faebd7" stroke="#8B4513"/>
+ *   <text x="10" y="13" font-size="6" fill="#8B4513">M</text>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createMahjonggApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
@@ -870,9 +895,9 @@ export { TILE_COLORS, TILE_LABELS, BOARD_CONFIG, TILE_WIDTH, TILE_HEIGHT };
 // ============================================================================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Mahjongg Solitaire' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Mahjongg Solitaire' }, async (a: App) => {
     const ui = createMahjonggApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

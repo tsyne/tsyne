@@ -9,7 +9,18 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from 'tsyne';
+import { app } #!/usr/bin/env tsyne
+
+/**
+ * Scales & Axes Demo
+ *
+ * @tsyne-app:name Scales Demo
+ * @tsyne-app:icon chartIcon
+ * @tsyne-app:category Visualization
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import {
   cosyne,
   clearAllCosyneContexts,
@@ -222,5 +233,5 @@ export function buildScalesDemoApp(a: any) {
 // Auto-run when executed directly
 if (require.main === module) {
   const { resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Scales Demo' }, buildScalesDemoApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Scales Demo' }, buildScalesDemoApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

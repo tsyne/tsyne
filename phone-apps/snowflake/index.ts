@@ -17,6 +17,7 @@
 
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
+import { resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 
 interface Snowflake {
   id: string;
@@ -264,10 +265,11 @@ export function buildSnowflakeApp(a: App, win: Window): SnowflakeUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
-  app(resolveTransport(), { title: 'Snowflake', width: 600, height: 800 }, (a: App) => {
+  const { app } = require('tsyne');
+  const appInstance = app(resolveTransport(), { title: 'Snowflake', width: 600, height: 800 }, (a: App) => {
     a.window({ title: 'Snowflake - Festive Visualization', width: 600, height: 800 }, (win: Window) => {
       buildSnowflakeApp(a, win);
     });
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

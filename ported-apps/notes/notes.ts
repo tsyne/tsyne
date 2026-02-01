@@ -1,3 +1,4 @@
+import { standaloneShutdownStrategy } from 'tsyne';
 /**
  * Notes App - Tsyne Port
  *
@@ -411,5 +412,5 @@ export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: numbe
 
 if (require.main === module) {
   const { app, resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Notes' }, buildNotesApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Notes' }, buildNotesApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

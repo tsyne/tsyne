@@ -16,7 +16,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts, Cosyne3dContext, Vector3 } from 'cosyne';
 
 // ==================== Types ====================
@@ -399,5 +399,6 @@ export function buildDraggableChessApp(a: any) {
 // ==================== Main ====================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Draggable Chess' }, buildDraggableChessApp);
+  const appInstance = app(resolveTransport(), { title: 'Draggable Chess' }, buildDraggableChessApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

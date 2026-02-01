@@ -21,7 +21,30 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * 3D Rubik's Cube
+ *
+ * A faithful port of Qt3DCube from https://github.com/EricStudley/Qt3DCube
+ * Original author: Eric Studley
+ * License: See original repository
+ *
+ * An interactive 3D Rubik's Cube with rotation, shuffle, and solve functionality.
+ * Rendered using isometric projection on a 2D canvas.
+ *
+ * @tsyne-app:name 3D Cube
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24">
+ *   <polygon points="2,7 2,17 12,22 12,12" fill="#228B22" stroke="#333" stroke-width="1"/>
+ *   <polygon points="22,7 12,12 12,22 22,17" fill="#DC143C" stroke="#333" stroke-width="1"/>
+ *   <polygon points="12,2 2,7 12,12 22,7" fill="#FFD700" stroke="#333" stroke-width="1"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder create3DCubeApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
@@ -1628,9 +1651,9 @@ export { Side, SIDE_COLORS, DEFAULT_CANVAS_SIZE, DEFAULT_CUBE_SIZE };
 if (require.main === module) {
   const startTime = Date.now();
   console.log(`[STARTUP] beginning at ${(Date.now() / 1000).toFixed(3)}...`);
-  app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
     console.log(`[STARTUP] app callback: ${Date.now() - startTime}ms`);
-    const ui = create3DCubeApp(a);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const ui = create3DCubeApp(a);
     console.log(`[STARTUP] UI created: ${Date.now() - startTime}ms`);
     await a.run();
     console.log(`[STARTUP] a.run() done: ${Date.now() - startTime}ms`);

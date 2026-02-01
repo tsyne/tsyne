@@ -9,7 +9,18 @@
  * Run: npx tsx cosyne/demos/raymarching-car.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Raymarching Car Demo
+ *
+ * A simple 3D car rendered via GLSL raymarching.
+ * Shows how complex shapes can be built from SDF primitives.
+ *
+ * This is a proof-of-concept for GPU-accelerated 3D in Tsyne.
+ *
+ * Run: npx tsx cosyne/demos/raymarching-car.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 600;
@@ -412,7 +423,7 @@ function createCarDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: '3D Car Demo' }, createCarDemo);
-}
+  const appInstance = app(resolveTransport(), { title: '3D Car Demo' }, createCarDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createCarDemo };

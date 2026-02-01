@@ -25,7 +25,7 @@
  * @tsyne-app:args app
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, TappableCanvasRaster, Label, Select } from 'tsyne';
 import {
   palettes,
@@ -658,5 +658,6 @@ export function createFractalsApp(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Fractal Explorer' }, createFractalsApp);
+  const appInstance = app(resolveTransport(), { title: 'Fractal Explorer' }, createFractalsApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

@@ -11,7 +11,20 @@
  * Run: npx tsx cosyne/demos/materials-showcase.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Materials Showcase Demo
+ *
+ * Demonstrates different material types rendered via raymarching:
+ * - Matte (diffuse only)
+ * - Metallic (reflective)
+ * - Chrome (highly reflective)
+ * - Glass (transparent, refractive)
+ * - Emissive (glowing)
+ *
+ * Run: npx tsx cosyne/demos/materials-showcase.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 600;
@@ -322,7 +335,7 @@ function createMaterialsDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Materials Showcase' }, createMaterialsDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Materials Showcase' }, createMaterialsDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createMaterialsDemo };

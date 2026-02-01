@@ -10,7 +10,19 @@
  * Run: npx tsx cosyne/demos/shader-reaction-diffusion.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Reaction-Diffusion Patterns - GPU Shader
+ *
+ * Implements Gray-Scott reaction-diffusion system.
+ * Creates organic patterns: spots, stripes, mazes, patterns.
+ *
+ * Note: This is a simplified visualization using noise.
+ * True RD would require multiple passes/texture feedback.
+ *
+ * Run: npx tsx cosyne/demos/shader-reaction-diffusion.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;
@@ -198,7 +210,7 @@ function createRDDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Reaction-Diffusion' }, createRDDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Reaction-Diffusion' }, createRDDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createRDDemo };

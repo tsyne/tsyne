@@ -13,7 +13,22 @@
  * Run with: TSYNE_HEADED=1 npx tsx examples/animation-elegant.ts
  */
 
-import { app, resolveTransport, CanvasCircle, CanvasLine, CanvasRectangle, EasingType, cubicBezier, bezier, EasingFunction, getPointOnBezier } from 'tsyne';
+import { app, resolveTransport, CanvasCircle, CanvasLine, CanvasRectangle, EasingType, cubicBezier, bezier, EasingFunction, getPointOnBezier } /**
+ * Elegant Animation Demo - QML meets D3
+ *
+ * @tsyne-app:name Elegant Animations
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><path d="M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+ * @tsyne-app:builder buildElegantDemo
+ *
+ * Demonstrates a terse, declarative animation API inspired by:
+ * - QML Behaviors (auto-animate on property change)
+ * - D3 transitions (chainable, data-driven)
+ * - Spring physics (natural motion)
+ *
+ * Run with: TSYNE_HEADED=1 npx tsx examples/animation-elegant.ts
+ */
+
+import { app, resolveTransport, CanvasCircle, CanvasLine, CanvasRectangle, EasingType, cubicBezier, bezier, EasingFunction, getPointOnBezier , standaloneShutdownStrategyfrom 'tsyne';
 
 // ============================================================================
 // Spring Physics Animation (QML SpringAnimation style)
@@ -788,7 +803,7 @@ export function buildElegantDemo(a: any) {
 
 // Run standalone
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Elegant Animations' }, async (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Elegant Animations' }, async (a) => {
     buildElegantDemo(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

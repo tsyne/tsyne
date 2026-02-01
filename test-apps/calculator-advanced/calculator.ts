@@ -1,4 +1,4 @@
-import { app, resolveTransport, App  } from 'tsyne';
+import { app, resolveTransport, App  } import { app, resolveTransport, App  , standaloneShutdownStrategyfrom 'tsyne';
 
 /**
  * Calculator application - Testable implementation
@@ -161,8 +161,8 @@ export class Calculator {
 // Main entry point for running the calculator
 // Demonstrates proper IoC: app instance is injected into builder
 if (require.main === module) {
-  app(resolveTransport(), { title: "Tsyne Calculator" }, (app) => {
+  const appInstance = app(resolveTransport(), { title: "Tsyne Calculator" }, (app) => {
     const calc = new Calculator(app);
-    calc.build();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    calc.build();
   });
 }

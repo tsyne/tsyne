@@ -8,7 +8,17 @@
  * and displays it in multiple configurations to test different sizing approaches.
  */
 
-import { app } from 'tsyne';
+import { app } /**
+ * Standalone test for canvas.Image display through TypeScript/Bridge
+ *
+ * This mirrors test_card_display.go to verify that images display correctly
+ * through the TypeScript -> Bridge -> Fyne pipeline.
+ *
+ * Creates a simple test card (red border, white background, black center)
+ * and displays it in multiple configurations to test different sizing approaches.
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';
@@ -34,9 +44,9 @@ function createTestCard(): string {
  * Main test app
  */
 if (require.main === module) {
-  app({ title: 'Card Display Test - TypeScript/Bridge' }, (a: App) => {
+  const appInstance = app({ title: 'Card Display Test - TypeScript/Bridge' }, (a: App) => {
     console.log('Creating test card image...');
-    const testCardData = createTestCard();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const testCardData = createTestCard();
     console.log(`Test card created: ${testCardData.substring(0, 50)}...`);
 
     a.window({ title: 'Card Display Test - TypeScript/Bridge', width: 900, height: 700 }, (win: Window) => {

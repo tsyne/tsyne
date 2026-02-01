@@ -245,6 +245,9 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.27
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.27)

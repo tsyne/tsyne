@@ -17,7 +17,26 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Timer App
+ *
+ * Countdown timer with quick-add buttons.
+ *
+ * @tsyne-app:name Timer
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="currentColor">
+ *   <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+ *   <path d="M12 9v4" stroke="currentColor" stroke-width="2"/>
+ *   <path d="M10 2h4" stroke="currentColor" stroke-width="2"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category utilities
+ * @tsyne-app:builder createTimerApp
+ * @tsyne-app:args app,clock,notifications,lifecycle
+ * @tsyne-app:count single
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label } from 'tsyne';
 import {
   IClockService,
@@ -155,9 +174,9 @@ export function createTimerApp(
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Timer' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Timer' }, (a: App) => {
     const clock = new MockClockService();
-    const notifications = new MockNotificationService();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const notifications = new MockNotificationService();
     const lifecycle = new StandaloneAppLifecycle(() => a.quit());
     createTimerApp(a, clock, notifications, lifecycle);
   });

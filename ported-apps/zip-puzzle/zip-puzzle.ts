@@ -20,7 +20,29 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Zip Puzzle
+ *
+ * Connect numbered dots in order while filling every cell.
+ * Draw a path from 1→2→3→... visiting each cell exactly once.
+ *
+ * @tsyne-app:name Zip Puzzle
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none">
+ *   <rect x="2" y="2" width="20" height="20" rx="2" fill="#f0f0f0" stroke="#ccc"/>
+ *   <circle cx="6" cy="6" r="3" fill="#222"/>
+ *   <text x="6" y="8" font-size="5" fill="#fff" text-anchor="middle">1</text>
+ *   <circle cx="18" cy="18" r="3" fill="#222"/>
+ *   <text x="18" y="20" font-size="5" fill="#fff" text-anchor="middle">2</text>
+ *   <path d="M6 6 L6 18 L18 18" stroke="#4c4" stroke-width="3" fill="none" stroke-linecap="round"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createZipPuzzleApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================
@@ -360,9 +382,9 @@ export const PUZZLE_COUNT = PUZZLES.length;
 // ============================================================================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Zip Puzzle' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Zip Puzzle' }, async (a: App) => {
     const ui = createZipPuzzleApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

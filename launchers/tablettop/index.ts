@@ -67,12 +67,13 @@ export async function buildTabletTop(a: App, options?: Partial<PhoneTopOptions>)
 
 // Entry point
 if (require.main === module) {
-  const { app, resolveTransport } = require('tsyne');
+  const { app, resolveTransport, standaloneShutdownStrategy } = require('tsyne');
 
   // Check for debug port via environment variable
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;
 
-  app(resolveTransport(), { title: 'Tsyne Tablet' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Tsyne Tablet' }, async (a: App) => {
     await buildTabletTop(a, { debugPort });
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

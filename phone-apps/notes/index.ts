@@ -17,6 +17,7 @@
 
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
+import { resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 
 interface Note {
   id: string;
@@ -273,10 +274,11 @@ export function buildNotesApp(a: App, win: Window): NotesUI {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('./index');
-  app(resolveTransport(), { title: 'Notes', width: 600, height: 800 }, (a: App) => {
+  const { app } = require('tsyne');
+  const appInstance = app(resolveTransport(), { title: 'Notes', width: 600, height: 800 }, (a: App) => {
     a.window({ title: 'Notes', width: 600, height: 800 }, (win: Window) => {
       buildNotesApp(a, win);
     });
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

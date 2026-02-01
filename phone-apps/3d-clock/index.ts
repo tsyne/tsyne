@@ -9,7 +9,7 @@
  * - High-performance buffer rendering
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from 'cosyne';
 
 // ============================================================================
@@ -194,5 +194,6 @@ export function buildClockApp(a: any) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: '3D Clock' }, buildClockApp);
+  const appInstance = app(resolveTransport(), { title: '3D Clock' }, buildClockApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

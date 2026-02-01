@@ -15,7 +15,24 @@
  *   npx tsx examples/reactive-form.ts
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Reactive Form Example
+ *
+ * Demonstrates Tsyne's data binding system with auto-syncing form fields.
+ * Shows how bindings automatically keep widgets and data in sync.
+ *
+ * Features demonstrated:
+ * - StringBinding for text fields
+ * - BoolBinding for checkboxes
+ * - NumberBinding for sliders
+ * - ComputedBinding for derived values
+ * - Two-way binding between widgets and data
+ *
+ * Usage:
+ *   npx tsx examples/reactive-form.ts
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import {
   StringBinding,
   BoolBinding,
@@ -218,7 +235,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
 
 // Only run if this is the main module
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Reactive Form Demo' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Reactive Form Demo' }, (a) => {
     createReactiveFormApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

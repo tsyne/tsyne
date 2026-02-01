@@ -9,7 +9,18 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from 'tsyne';
+import { app } #!/usr/bin/env tsyne
+
+/**
+ * Line Chart & Zoom/Pan Demo
+ *
+ * @tsyne-app:name Line Chart Demo
+ * @tsyne-app:icon chartIcon
+ * @tsyne-app:category Visualization
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import {
   cosyne,
   clearAllCosyneContexts,
@@ -229,5 +240,5 @@ export function buildLineChartDemoApp(a: any) {
 // Auto-run when executed directly
 if (require.main === module) {
   const { resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Line Chart Demo' }, buildLineChartDemoApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Line Chart Demo' }, buildLineChartDemoApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

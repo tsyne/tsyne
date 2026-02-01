@@ -9,7 +9,18 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from 'tsyne';
+import { app } #!/usr/bin/env tsyne
+
+/**
+ * Effects, Gradients, Clipping Demo
+ *
+ * @tsyne-app:name SVG Graphics Demo
+ * @tsyne-app:icon chartIcon
+ * @tsyne-app:category Visualization
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import {
   cosyne,
   refreshAllCosyneContexts,
@@ -504,5 +515,5 @@ function renderClipping(c: any, store: SVGDemoStore, width: number, height: numb
 // Auto-run when executed directly
 if (require.main === module) {
   const { resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'SVG Graphics Demo' }, buildSVGDemoApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'SVG Graphics Demo' }, buildSVGDemoApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

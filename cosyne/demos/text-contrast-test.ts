@@ -6,7 +6,15 @@
  * so we use side-by-side hbox layout instead.
  */
 
-import { App, asRenderTarget } from 'tsyne';
+import { App, asRenderTarget } /**
+ * Text Contrast Test - Verify canvas text is readable
+ * Also compares cosyne canvas text with classic Tsyne label/entry widgets
+ *
+ * NOTE: c.foreign() is not yet implemented for actual rendering,
+ * so we use side-by-side hbox layout instead.
+ */
+
+import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne } from '../src';
 
@@ -73,10 +81,10 @@ export function buildTextContrastDemo(a: App, target: IRenderTarget): void {
 
 if (require.main === module) {
   const { app, resolveTransport } = require('tsyne');
-  app(resolveTransport(), { title: 'Text Contrast Test' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Text Contrast Test' }, (a: App) => {
     a.window({ title: 'Text Contrast Test', width: 700, height: 350 }, (win: Window) => {
       const target = asRenderTarget(win as ITsyneWindow);
-      buildTextContrastDemo(a, target);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      buildTextContrastDemo(a, target);
       win.show();
     });
   });

@@ -11,7 +11,20 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';
+import { App, TappableCanvasRaster, Label, app, resolveTransport } /**
+ * Spherical Snake
+ *
+ * Snake game on a sphere with 3D perspective projection.
+ * Port of https://github.com/kevinAlbs/SphericalSnake to Tsyne.
+ *
+ * @tsyne-app:name Spherical Snake
+ * @tsyne-app:icon home
+ * @tsyne-app:category Games
+ * @tsyne-app:builder buildSphericalSnakeApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { App, TappableCanvasRaster, Label, app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 
 // ============================================================================
 // 3D Math Types & Utilities
@@ -857,5 +870,5 @@ function drawArrow(buffer: Uint8Array, size: number, direction: 'left' | 'right'
 
 // Entry point
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Spherical Snake' }, buildSphericalSnakeApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Spherical Snake' }, buildSphericalSnakeApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

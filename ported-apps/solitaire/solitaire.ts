@@ -17,7 +17,26 @@
  * declarative API and uses a simplified interaction model.
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } // @tsyne-app:name Solitaire
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 6v4"/><path d="M10 8h4"/><path d="M12 14l-3 4h6l-3-4z"/></svg>
+// @tsyne-app:category games
+// @tsyne-app:builder createSolitaireApp
+// @tsyne-app:args app,windowWidth,windowHeight
+
+/**
+ * Solitaire Card Game for Tsyne
+ *
+ * Ported from https://github.com/fyne-io/solitaire
+ * Original authors: Fyne.io contributors
+ * License: See original repository
+ *
+ * This is a simplified port to demonstrate card game capabilities in Tsyne.
+ * The original implementation uses Fyne's custom widgets for drag-and-drop
+ * card interactions. This version adapts the concepts to work with Tsyne's
+ * declarative API and uses a simplified interaction model.
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';
@@ -1318,7 +1337,7 @@ export function createSolitaireApp(a: App, windowWidth?: number, windowHeight?: 
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Solitaire' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Solitaire' }, (a: App) => {
     createSolitaireApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

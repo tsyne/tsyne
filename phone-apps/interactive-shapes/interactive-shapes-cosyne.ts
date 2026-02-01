@@ -3,7 +3,12 @@
  * Click to change color, drag to move, hover to highlight
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Interactive Shapes Demo - Cosyne Phase 8
+ * Click to change color, drag to move, hover to highlight
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
@@ -70,13 +75,13 @@ export function buildInteractiveShapesApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app, resolveTransport, screenshotIfRequested } = require('../../core/src');
-  app(resolveTransport(), { title: 'Interactive Shapes' }, (a: any) => {
+  const appInstance = app(resolveTransport(), { title: 'Interactive Shapes' }, (a: any) => {
     a.window(
       { title: 'Interactive Shapes Demo', width: 500, height: 450 },
       (win: any) => {
         win.setContent(() => {
           buildInteractiveShapesApp(a);
-        });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));        });
         win.show();
         screenshotIfRequested(win, 500);
       }

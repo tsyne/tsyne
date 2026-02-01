@@ -8,7 +8,17 @@
  * - Data-driven animations
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Animated Dashboard Demo - Cosyne Phase 9
+ *
+ * Demonstrates real-time animated data visualization
+ * - Animated bar chart with data binding
+ * - Animated progress indicators
+ * - Multi-property animations
+ * - Data-driven animations
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutCubic, easeInOutSine } from 'cosyne';
 
 interface MetricState {
@@ -137,7 +147,7 @@ export function buildAnimatedDashboardApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app } = require('../../core/src');
-  app(
+  const appInstance = app(
     {
       title: 'Animated Dashboard - Cosyne Phase 9',
       width: 600,
@@ -149,7 +159,7 @@ if (require.main === module) {
         (win: any) => {
           win.setContent(() => {
             buildAnimatedDashboardApp(a);
-          });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));          });
           win.show();
         }
       );

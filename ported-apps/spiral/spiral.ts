@@ -10,7 +10,19 @@
  * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
  */
 
-import { App, asRenderTarget } from 'tsyne';
+import { App, asRenderTarget } /**
+ * Spiral Canvas Demo - Cosyne
+ *
+ * Port of hakimel's spiral CodePen (https://codepen.io/hakimel/pen/QdWpRv)
+ * Pseudo-declarative canvas animation with drag-to-rotate interaction.
+ *
+ * @tsyne-app:name Spiral
+ * @tsyne-app:icon mediaVideo
+ * @tsyne-app:category fun
+ * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
+ */
+
+import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
@@ -207,10 +219,10 @@ if (require.main === module) {
   const { app, resolveTransport, getAppMetadata, screenshotIfRequested } = require('tsyne');
 
   const meta = getAppMetadata();
-  app(resolveTransport(), { title: meta?.name ?? 'Spiral' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: meta?.name ?? 'Spiral' }, (a: App) => {
     a.window({ title: 'Spiral', width: WIDTH + 40, height: HEIGHT + 80 }, (win: Window) => {
       const target = asRenderTarget(win as ITsyneWindow);
-      const cleanup = buildSpiralApp(a, target);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      const cleanup = buildSpiralApp(a, target);
       win.setCloseIntercept(() => {
         cleanup();
         return true;

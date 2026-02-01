@@ -14,7 +14,23 @@
  * - Programmatic UI generation
  */
 
-import { app, resolveTransport, screenshotIfRequested } from 'tsyne';
+import { app, resolveTransport, screenshotIfRequested } /**
+ * Gauge Dashboard - Cosyne Declarative Canvas Demo
+ *
+ * Demonstrates the gauge primitive with:
+ * - System metrics (CPU, Memory, Disk, Network) - standard bottom-facing
+ * - Different arc orientations (Top, Left, Right, 3/4 Circle, Full Circle)
+ * - Real-time updates at 30fps
+ * - Data-driven UI generation from config arrays
+ *
+ * Follows pseudo-declarative patterns:
+ * - Observable state class
+ * - Declarative bindings (.bindValue)
+ * - Fluent method chaining
+ * - Programmatic UI generation
+ */
+
+import { app, resolveTransport, screenshotIfRequested , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -248,10 +264,10 @@ export function createGaugeDashboardApp(a: App, win: Window) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Gauge Dashboard' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Gauge Dashboard' }, (a) => {
     a.window({ title: 'Gauge Dashboard', width: 500, height: 520 }, (win) => {
       createGaugeDashboardApp(a, win);
-      win.show();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
       screenshotIfRequested(win, 1000);
     });
   });

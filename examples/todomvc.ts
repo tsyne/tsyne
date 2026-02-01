@@ -25,7 +25,34 @@
 // @tsyne-app:builder createTodoApp
 // @tsyne-app:count one
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } /**
+ * TodoMVC Example Application
+ *
+ * A fully-functional TodoMVC implementation with:
+ * - Add/delete/toggle todos
+ * - Filter by All/Active/Completed
+ * - Clear completed todos
+ * - Persistent storage to filesystem
+ * - Comprehensive TsyneTest suite
+ *
+ * Usage:
+ *   npm run build && npm start examples/todomvc.ts [filepath]
+ *
+ * Arguments:
+ *   filepath - Optional path to save file (default: todos.json relative to exe)
+ *
+ * Testing:
+ *   Add to package.json scripts:
+ *   "test:todomvc": "jest examples/todomvc.test.ts"
+ */
+
+// @tsyne-app:name TodoMVC
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+// @tsyne-app:category productivity
+// @tsyne-app:builder createTodoApp
+// @tsyne-app:count one
+
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  , standaloneShutdownStrategyfrom 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -396,9 +423,9 @@ export function createTodoApp(a: any, storePath?: string) {
 
 if (require.main === module) {
   const filePath = process.argv.slice(2)[0];
-  app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
     createTodoApp(a, filePath);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }
 
 // ============================================================================

@@ -22,7 +22,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { App, TappableCanvasRaster, Label, app, resolveTransport } from 'tsyne';
+import { App, TappableCanvasRaster, Label, app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import {
   Vector3,
   clamp,
@@ -423,5 +423,6 @@ function buildDoomContent(a: App, windowWidth: number, windowHeight: number, sho
 
 // Entry point
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Yet Another Doom Clone' }, buildYetAnotherDoomCloneApp);
+  const appInstance = app(resolveTransport(), { title: 'Yet Another Doom Clone' }, buildYetAnotherDoomCloneApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

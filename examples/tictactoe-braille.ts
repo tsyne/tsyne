@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
@@ -366,8 +366,8 @@ export function buildBrailleTicTacToe(a: any) {
 
 // Run directly when executed as main script
 if (require.main === module) {
-  const myApp = app(resolveTransport(), { title: "Braille-Optimized Tic-Tac-Toe" }, buildBrailleTicTacToe);
-
+  const appInstance = app(resolveTransport(), { title: "Braille-Optimized Tic-Tac-Toe" }, buildBrailleTicTacToe);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
   // Get the accessibility manager
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);
 

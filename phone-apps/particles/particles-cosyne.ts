@@ -13,7 +13,7 @@
  * - Spawn new particles continuously
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -193,9 +193,13 @@ export function createParticlesApp(a: App, win: Window) {
 
 export async function createParticlesAppWithTransport() {
   const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Particles' });
-  createParticlesApp(a, win);
+  const appInstance = app(transport, { title: 'Particles' }, (a: App) => {
+    a.window({ title: 'Particles' }, (win: Window) => {
+      createParticlesApp(a, win);
+      win.show();
+    });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }
 
 if (require.main === module) {

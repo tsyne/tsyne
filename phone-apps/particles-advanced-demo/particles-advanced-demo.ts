@@ -9,7 +9,18 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, refreshAllBindings } from 'tsyne';
+import { app, refreshAllBindings } #!/usr/bin/env tsyne
+
+/**
+ * Particle System Advanced Demo
+ *
+ * @tsyne-app:name Particles Advanced
+ * @tsyne-app:icon chartIcon
+ * @tsyne-app:category Animation
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, refreshAllBindings , standaloneShutdownStrategyfrom 'tsyne';
 import { cosyne, clearAllCosyneContexts, ParticleSystem, Emitter } from 'cosyne';
 
 type EmitterType = 'fountain' | 'fireworks' | 'smoke' | 'explosion';
@@ -248,5 +259,5 @@ export function buildParticlesAdvancedApp(a: any) {
 // Auto-run when executed directly
 if (require.main === module) {
   const { resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Particles Advanced Demo' }, buildParticlesAdvancedApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Particles Advanced Demo' }, buildParticlesAdvancedApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

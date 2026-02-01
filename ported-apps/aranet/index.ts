@@ -628,10 +628,11 @@ export default buildAranetApp;
 // STANDALONE EXECUTION
 // ============================================================================
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Aranet4 Monitor' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Aranet4 Monitor' }, (a) => {
     buildAranetApp(a);
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

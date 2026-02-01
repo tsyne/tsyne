@@ -1,14 +1,17 @@
 /**
- * Cosyne Demos Launcher
+ * Tsyne Examples Launcher
  *
- * Dynamically discovers and launches all demo applications in this directory.
- * Run: npx tsx cosyne/demos/index.ts
+ * Dynamically discovers and launches all example applications in this directory.
+ * - Regular examples run with `npx tsx`
+ * - Test files run with `npm test` (jest)
+ *
+ * Run: npx tsx examples/index.ts
  */
 
 import { app, resolveTransport, createAppLauncher } from 'tsyne';
 
-// Create launcher for both demos and tests
-const createDemosLauncher = createAppLauncher('Cosyne Demos', __dirname, {
+// Create launcher for both examples and tests
+const createExamplesLauncher = createAppLauncher('Tsyne Examples', __dirname, {
   patterns: [
     {
       pattern: '*.ts',
@@ -34,7 +37,7 @@ const createDemosLauncher = createAppLauncher('Cosyne Demos', __dirname, {
     }
   ],
   exclude: ['index.ts', 'index.test.ts'],
-  instructions: 'Click any demo to launch in a new window.'
+  instructions: 'Click any example or test to launch in a new window.'
 });
 
 if (require.main === module) {
@@ -43,7 +46,7 @@ if (require.main === module) {
     process.exit(0);
   });
 
-  app(resolveTransport(), { title: 'Cosyne Demos Launcher' }, createDemosLauncher);
+  app(resolveTransport(), { title: 'Tsyne Examples Launcher' }, createExamplesLauncher);
 }
 
-export { createDemosLauncher };
+export { createExamplesLauncher };

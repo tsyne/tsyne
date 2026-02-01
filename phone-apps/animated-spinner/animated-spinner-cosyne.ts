@@ -7,7 +7,16 @@
  * - Fill color bindings for pulsing effect
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Animated Spinner Demo - Cosyne
+ *
+ * Demonstrates continuous rotation animation using Cosyne
+ * - Spinning circles around a central point
+ * - Position bindings for orbital motion
+ * - Fill color bindings for pulsing effect
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import type { Window } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
@@ -123,10 +132,10 @@ export function createAnimatedSpinnerApp(a: App, win: Window): () => void {
 // Standalone execution
 if (require.main === module) {
   const { app, resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Animated Spinner' }, (a: any) => {
+  const appInstance = app(resolveTransport(), { title: 'Animated Spinner' }, (a: any) => {
     a.window({ title: 'Animated Spinner', width: WIDTH, height: HEIGHT }, (win: any) => {
       createAnimatedSpinnerApp(a, win);
-      win.show();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
     });
   });
 }

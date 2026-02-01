@@ -25,6 +25,7 @@
  */
 
 import { App, asRenderTarget } from 'tsyne';
+import { resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
@@ -345,7 +346,8 @@ export function createKaleidoscopeApp(a: App): void {
 if (require.main === module) {
   const { app, resolveTransport, getAppMetadata } = require('tsyne');
   const meta = getAppMetadata();
-  app(resolveTransport(), { title: meta?.name ?? 'Kaleidoscope' }, createKaleidoscopeApp);
+  const appInstance = app(resolveTransport(), { title: meta?.name ?? 'Kaleidoscope' }, createKaleidoscopeApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }
 
 // PhoneTop embedded entry point

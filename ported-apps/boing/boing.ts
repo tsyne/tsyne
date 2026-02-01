@@ -27,7 +27,36 @@
  * have audio playback support.
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } // @tsyne-app:name Boing
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" fill="#CC0000" stroke="#FFFFFF"/><path d="M7 7L17 17M7 17L17 7M12 2v20M2 12h20" stroke="#FFFFFF" stroke-width="1.5"/></svg>
+// @tsyne-app:category games
+// @tsyne-app:builder createBoingApp
+// @tsyne-app:args app,resources,windowWidth,windowHeight
+
+/**
+ * Boing Ball Demo for Tsyne
+ *
+ * Ported from https://github.com/vygr/ChrysaLisp/blob/master/apps/boing/app.lisp
+ * Original author: Chris Hinsley (vygr)
+ * License: See ChrysaLisp repository
+ *
+ * This is a recreation of the classic Amiga Boing Ball demo, originally created
+ * by Dale Luck and R.J. Mical for the Amiga in 1984/1985. The demo was famous for
+ * showcasing the Amiga's graphics capabilities at CES 1984.
+ *
+ * Chris Hinsley created the ChrysaLisp version and previously did TaOS version in 1992.
+ *
+ * Features:
+ * - Classic red and white checkered rotating sphere
+ * - Smooth bouncing animation with gravity
+ * - Shadow that follows the ball
+ * - Grid background
+ *
+ * Note: Audio (boing sound) is not implemented as Tsyne doesn't currently
+ * have audio playback support.
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, CanvasRaster, Label, IResourceManager } from 'tsyne';
 
 // Import sprite generation from sibling module
@@ -573,9 +602,9 @@ export { BoingDemo, BallPhysics, PerformanceMonitor };
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Boing Ball Demo' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Boing Ball Demo' }, async (a: App) => {
     const demo = createBoingApp(a, a.resources);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await demo.initialize();
   });
 }

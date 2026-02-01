@@ -6,7 +6,15 @@
  * - IsometricProjection: Isometric 3D blocks in 2D space
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Projections Demo - Cosyne Phase 4
+ *
+ * Demonstrates 3D → 2D coordinate transforms
+ * - SphericalProjection: 3D globe with latitude/longitude
+ * - IsometricProjection: Isometric 3D blocks in 2D space
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, SphericalProjection, IsometricProjection } from 'cosyne';
 
 export function buildProjectionsApp(a: App): void {
@@ -154,7 +162,7 @@ export function buildProjectionsApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app } = require('../../core/src');
-  app(
+  const appInstance = app(
     {
       title: 'Projections Demo - Cosyne Phase 4',
       width: 600,
@@ -166,7 +174,7 @@ if (require.main === module) {
         (win: any) => {
           win.setContent(() => {
             buildProjectionsApp(a);
-          });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));          });
           win.show();
         }
       );

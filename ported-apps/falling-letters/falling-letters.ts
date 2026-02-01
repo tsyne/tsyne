@@ -24,7 +24,33 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Falling Letters Game
+ *
+ * A faithful port of Dropping Letters from https://gitlab.com/xixired/dropping-letters-modern
+ * Original authors: @sil (Stuart Langridge), fork by @xixired
+ * License: See original repository
+ *
+ * A word puzzle game where letters fall into columns and players
+ * select letters to form valid English words for points.
+ *
+ * @tsyne-app:name Falling Letters
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+ *   <rect x="2" y="2" width="5" height="20" fill="#1a5276" stroke="#333"/>
+ *   <rect x="9" y="6" width="5" height="16" fill="#2874a6" stroke="#333"/>
+ *   <rect x="16" y="4" width="5" height="18" fill="#3498db" stroke="#333"/>
+ *   <text x="3" y="8" font-size="4" fill="white" font-weight="bold">A</text>
+ *   <text x="10" y="12" font-size="4" fill="white" font-weight="bold">B</text>
+ *   <text x="17" y="10" font-size="4" fill="white" font-weight="bold">C</text>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createFallingLettersApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
@@ -855,9 +881,9 @@ export { LETTER_FREQUENCIES, LETTER_SCORES, WORD_LIST, NUM_COLUMNS, MAX_ROWS };
 
 // Standalone entry point
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Falling Letters' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Falling Letters' }, async (a: App) => {
     const ui = createFallingLettersApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

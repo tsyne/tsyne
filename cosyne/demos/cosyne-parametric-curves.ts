@@ -11,7 +11,20 @@
  * Run: npx tsx cosyne/demos/cosyne-parametric-curves.ts
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Parametric Curves Demo - Pure Cosyne
+ *
+ * Mathematical curves drawn with Cosyne:
+ * - Lissajous figures
+ * - Rose curves (rhodonea)
+ * - Butterfly curve
+ * - Epitrochoid
+ * - Spiral of Theodorus
+ *
+ * Run: npx tsx cosyne/demos/cosyne-parametric-curves.ts
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import {
   cosyne,
@@ -208,7 +221,7 @@ function createParametricDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Parametric Curves' }, createParametricDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Parametric Curves' }, createParametricDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createParametricDemo };

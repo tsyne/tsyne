@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
@@ -658,9 +658,9 @@ if (require.main === module) {
   // Create app and build the game UI
   // Note: buildTicTacToe creates its own isolated game context for each instance,
   // which prevents test isolation issues
-  const myApp = app(resolveTransport(), { title: "Accessible Tic-Tac-Toe" }, (a) => {
+  const appInstance = app(resolveTransport(), { title: "Accessible Tic-Tac-Toe" }, (a) => {
     buildTicTacToe(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 
   // Setup keyboard shortcuts
   setupKeyboardShortcuts();

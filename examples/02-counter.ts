@@ -5,7 +5,7 @@
 
 // Simple counter example demonstrating state management
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy, App, Window  } from 'tsyne';
 
 export function buildCounter(a: App) {
   a.window({ title: 'Counter', width: 300, height: 150 }, (win: Window) => {
@@ -43,5 +43,6 @@ export function buildCounter(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Counter' }, buildCounter);
+  const appInstance = app(resolveTransport(), { title: 'Counter' }, buildCounter);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

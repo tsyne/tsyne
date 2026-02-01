@@ -33,7 +33,42 @@
 // @tsyne-app:count many
 // @tsyne-app:args app, desktop
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Terminal Emulator for Tsyne
+ *
+ * Fully-featured port from https://github.com/fyne-io/terminal
+ * Original authors: Fyne.io contributors
+ * License: See original repository
+ *
+ * This implementation provides:
+ * - Real shell execution via node-pty (proper pseudo-terminal)
+ * - SIGWINCH handling for terminal resize
+ * - Full ANSI/VT100 escape sequence parsing
+ * - 8/16/256 color support
+ * - Cursor positioning and movement
+ * - Text attributes (bold, italic, underline, etc.)
+ * - Scroll regions and scrollback buffer
+ * - Mouse support (basic)
+ * - Text selection
+ * - Keyboard input handling with proper escape sequences
+ *
+ * Based on the original Fyne terminal structure:
+ * - term.go → Terminal class (main terminal state and PTY management)
+ * - escape.go → AnsiParser class (escape sequence parsing)
+ * - color.go → Color handling
+ * - input.go → Keyboard input handling
+ * - output.go → Output processing
+ * - render.go → TextGrid rendering
+ */
+
+// @tsyne-app:name Terminal
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><path d="M12 16h6"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder createTerminalApp
+// @tsyne-app:count many
+// @tsyne-app:args app, desktop
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { ITsyneWindow } from 'tsyne';
@@ -4073,7 +4108,7 @@ export function createTerminalApp(a: App, desktop?: IDesktopService): TerminalUI
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Tsyne Terminal' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Tsyne Terminal' }, (a: App) => {
     createTerminalApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

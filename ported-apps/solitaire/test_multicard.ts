@@ -2,14 +2,18 @@
  * Manual test to demonstrate multi-card sequence moves
  */
 
-import { app } from 'tsyne';
+import { app } /**
+ * Manual test to demonstrate multi-card sequence moves
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import { createSolitaireApp } from './solitaire';
 import { Game, Card, Suit } from './solitaire';
 
 if (require.main === module) {
-  app({ title: 'Multi-Card Move Test' }, (a) => {
+  const appInstance = app({ title: 'Multi-Card Move Test' }, (a) => {
     const ui = createSolitaireApp(a);
-
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
     // Set up a specific game state that demonstrates multi-card moves
     ui.getGame().setupFixedState({
       // Stack 0: King of Spades -> Queen of Hearts -> Jack of Clubs

@@ -6,6 +6,7 @@
  */
 
 import type { App } from 'tsyne';
+import { resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { Window } from 'tsyne';
 
 interface Archive {
@@ -56,9 +57,10 @@ export function buildSonic3App(a: App, win: Window): Sonic3UI {
 
 if (require.main === module) {
   const { app, resolveTransport  } = require('./index');
-  app(resolveTransport(), { title: 'Sonic3' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Sonic3' }, (a: App) => {
     a.window({ title: 'Sonic3', width: 600, height: 800 }, (win: Window) => {
       buildSonic3App(a, win);
     });
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

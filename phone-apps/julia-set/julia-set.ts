@@ -13,7 +13,22 @@
  * @tsyne-app:args app
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Julia Set Explorer
+ *
+ * Interactive Julia fractal with adjustable c parameter.
+ *
+ * Copyright (c) 2025 Paul Hammant
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * @tsyne-app:name Julia Set
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/></svg>
+ * @tsyne-app:category graphics
+ * @tsyne-app:builder createJuliaSetApp
+ * @tsyne-app:args app
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, TappableCanvasRaster, Label } from 'tsyne';
 import { palettes, paletteNames, julia } from '../fractal-utils';
 
@@ -284,5 +299,5 @@ export function createJuliaSetApp(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Julia Set Explorer' }, createJuliaSetApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Julia Set Explorer' }, createJuliaSetApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

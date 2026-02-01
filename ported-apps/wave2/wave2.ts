@@ -10,7 +10,19 @@
  * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
  */
 
-import { App, CanvasPath, refreshAllBindings, asRenderTarget } from 'tsyne';
+import { App, CanvasPath, refreshAllBindings, asRenderTarget } /**
+ * Wave2 Canvas Demo - Pseudo-Declarative Style
+ *
+ * Port of hakimel's wave CodePen using extracted utility functions
+ * and pseudo-declarative composition patterns.
+ *
+ * @tsyne-app:name Wave2
+ * @tsyne-app:icon mediaVideo
+ * @tsyne-app:category fun
+ * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
+ */
+
+import { App, CanvasPath, refreshAllBindings, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
@@ -178,10 +190,10 @@ if (require.main === module) {
   const { app, resolveTransport, getAppMetadata, screenshotIfRequested } = require('tsyne');
 
   const meta = getAppMetadata();
-  app(resolveTransport(), { title: meta?.name ?? 'Wave2' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: meta?.name ?? 'Wave2' }, (a: App) => {
     a.window({ title: 'Wave2', width: W + 40, height: H + 80 }, (win: Window) => {
       const target = asRenderTarget(win as ITsyneWindow);
-      const cleanup = buildWave2App(a, target);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      const cleanup = buildWave2App(a, target);
       win.setCloseIntercept(() => {
         cleanup();
         return true;

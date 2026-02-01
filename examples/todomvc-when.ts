@@ -21,7 +21,30 @@
  *   "test:todomvc-when": "jest examples/todomvc-when.test.ts"
  */
 
-import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  } /**
+ * TodoMVC Example Application (when() version)
+ *
+ * A fully-functional TodoMVC implementation with when() method:
+ * - Add/delete/toggle todos
+ * - Filter by All/Active/Completed using when() for declarative visibility
+ * - Clear completed todos
+ * - Persistent storage to filesystem
+ * - Comprehensive TsyneTest suite
+ *
+ * This version demonstrates the when() method added in the MVC refactor.
+ * Each todo item uses when(shouldShowTodo) for declarative visibility control.
+ *
+ * Usage:
+ *   npm run build && npm start examples/todomvc-when.ts [filepath]
+ *
+ * Arguments:
+ *   filepath - Optional path to save file (default: todos.json relative to exe)
+ *
+ * Testing:
+ *   "test:todomvc-when": "jest examples/todomvc-when.test.ts"
+ */
+
+import { app, resolveTransport, window, vbox, hbox, label, button, entry, checkbox, separator, Window  , standaloneShutdownStrategyfrom 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -446,9 +469,10 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const filePath = args[0];
 
-  app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'TodoMVC' }, (a) => {
     createTodoApp(a, filePath);
-  });
+
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }
 
 // ============================================================================

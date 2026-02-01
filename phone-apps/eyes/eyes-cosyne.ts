@@ -8,7 +8,7 @@
  * Cosyne: ~80 lines of declarative rendering
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -212,9 +212,13 @@ export function createEyesApp(a: App, win: Window) {
 
 export async function createEyesAppWithTransport() {
   const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Eyes' });
-  createEyesApp(a, win);
+  const appInstance = app(transport, { title: 'Eyes' }, (a: App) => {
+    a.window({ title: 'Eyes' }, (win: Window) => {
+      createEyesApp(a, win);
+      win.show();
+    });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }
 
 // Auto-run if this is the main module

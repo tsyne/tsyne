@@ -4,7 +4,13 @@
  * Tests whether font_size styling works on buttons and labels.
  */
 
-import { App, app, resolveTransport } from 'tsyne';
+import { App, app, resolveTransport } /**
+ * Font Size Test
+ *
+ * Tests whether font_size styling works on buttons and labels.
+ */
+
+import { App, app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 
 export function buildFontSizeTest(a: App): void {
   a.window({ title: 'Font Size Test', width: 600, height: 500 }, (win) => {
@@ -59,5 +65,5 @@ export function buildFontSizeTest(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Font Size Test' }, buildFontSizeTest);
-}
+  const appInstance = app(resolveTransport(), { title: 'Font Size Test' }, buildFontSizeTest);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

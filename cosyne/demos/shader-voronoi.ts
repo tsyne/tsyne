@@ -10,7 +10,19 @@
  * Run: npx tsx cosyne/demos/shader-voronoi.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Voronoi Diagrams - GPU Shader
+ *
+ * GPU-accelerated Voronoi diagram generation:
+ * - Voronoi cells
+ * - Voronoi edges (cracks/ridges)
+ * - Animated cell growth
+ * - Cell coloring based on distance
+ *
+ * Run: npx tsx cosyne/demos/shader-voronoi.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;
@@ -188,7 +200,7 @@ function createVoronoiDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Voronoi Diagrams' }, createVoronoiDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Voronoi Diagrams' }, createVoronoiDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createVoronoiDemo };

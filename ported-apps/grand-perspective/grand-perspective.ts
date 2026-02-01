@@ -1,3 +1,4 @@
+import { standaloneShutdownStrategy } from 'tsyne';
 /**
  * GrandPerspective for Tsyne - Disk Usage Visualization
  *
@@ -711,7 +712,8 @@ if (require.main === module) {
   // Usage: npx tsx grand-perspective.ts /path/to/directory
   const startDir = process.argv[2] || undefined;
 
-  app(resolveTransport(), { title: 'GrandPerspective' }, (a: any) => {
+  const appInstance = app(resolveTransport(), { title: 'GrandPerspective' }, (a: any) => {
     buildGrandPerspectiveApp(a, startDir);
-  });
+
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

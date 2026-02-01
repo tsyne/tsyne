@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
 
 /**
@@ -417,8 +417,9 @@ function setupKeyboardShortcuts() {
 if (require.main === module) {
   applyStyles();
 
-  const myApp = app(resolveTransport(), { title: "Fully Accessible Calculator" }, buildFullyAccessibleCalculator);
+  const appInstance = app(resolveTransport(), { title: "Fully Accessible Calculator" }, buildFullyAccessibleCalculator);
 
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
   // Get the accessibility manager
   accessibilityManager = getAccessibilityManager((myApp as any).ctx);
 

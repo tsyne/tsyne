@@ -22,7 +22,31 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Peg Solitaire
+ *
+ * English Cross peg solitaire. Jump pegs to remove them, aim for one peg in center.
+ *
+ * Port of ChrysaLisp solitaire app by Chris Hinsley
+ * Original: https://github.com/vygr/ChrysaLisp/blob/master/apps/solitaire/app.lisp
+ * License: GPL-2.0
+ *
+ * @tsyne-app:name Peg Solitaire
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none">
+ *   <circle cx="12" cy="6" r="3" fill="#666"/>
+ *   <circle cx="6" cy="12" r="3" fill="#888"/>
+ *   <circle cx="12" cy="12" r="3" fill="#444" stroke="#ff0" stroke-width="1"/>
+ *   <circle cx="18" cy="12" r="3" fill="#888"/>
+ *   <circle cx="12" cy="18" r="3" fill="#888"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createPegSolitaireApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================
@@ -297,9 +321,9 @@ export { GRID_SIZE, TILE_COUNT, CENTER };
 // ============================================================================
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Peg Solitaire' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Peg Solitaire' }, async (a: App) => {
     const ui = createPegSolitaireApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

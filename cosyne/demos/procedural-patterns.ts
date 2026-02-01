@@ -10,7 +10,19 @@
  * Run: npx tsx cosyne/demos/procedural-patterns.ts
  */
 
-import { app, resolveTransport, CanvasShader } from 'tsyne';
+import { app, resolveTransport, CanvasShader } /**
+ * Procedural Patterns Demo
+ *
+ * Demonstrates generating patterns via raymarching:
+ * - Checkerboard (UV-mapped patterns)
+ * - Stripes (animated)
+ * - Waves (displacement mapping)
+ * - Fractals (recursive patterns)
+ *
+ * Run: npx tsx cosyne/demos/procedural-patterns.ts
+ */
+
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;
@@ -229,7 +241,7 @@ function createPatternsDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Procedural Patterns' }, createPatternsDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Procedural Patterns' }, createPatternsDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createPatternsDemo };

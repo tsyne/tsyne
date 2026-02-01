@@ -3,7 +3,12 @@
  * Tests the ClickableContainer functionality
  */
 
-import { app } from 'tsyne';
+import { app } /**
+ * Simple test for clicking on a card image
+ * Tests the ClickableContainer functionality
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';
@@ -26,9 +31,9 @@ function createTestCard(): string {
  * Main test app
  */
 if (require.main === module) {
-  app({ title: 'Click Test - TypeScript/Bridge' }, (a: App) => {
+  const appInstance = app({ title: 'Click Test - TypeScript/Bridge' }, (a: App) => {
     console.log('Creating test card image...');
-    const testCardData = createTestCard();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const testCardData = createTestCard();
     console.log(`Test card created: ${testCardData.substring(0, 50)}...`);
 
     let clickCount = 0;

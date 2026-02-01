@@ -6,7 +6,15 @@
 // Stopwatch - Precise time tracking with lap times
 // Demonstrates timers, state management, and dynamic lists
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, App, Window  } // @tsyne-app:name Stopwatch
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="14" rx="2"/><g fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round"><path d="M4.5 10h1.5M4 11v2M6.5 11v2M4 14.5v2M6.5 14.5v2M4.5 17h1.5"/><path d="M8 10h1.5M7.5 11v2M9.5 11v2M7.5 14.5v2M9.5 14.5v2M8 17h1.5"/><circle cx="11" cy="12" r="0.4" fill="currentColor"/><circle cx="11" cy="15.5" r="0.4" fill="currentColor"/><path d="M12.5 10h1.5M12 11v2M14.5 11v2M12 14.5v2M14.5 14.5v2M12.5 17h1.5"/><path d="M16 10h1.5M15.5 11v2M18 11v2M15.5 14.5v2M18 14.5v2M16 17h1.5"/></g><circle cx="19" cy="4" r="1.5"/><path d="M19 2v1"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder buildStopwatch
+
+// Stopwatch - Precise time tracking with lap times
+// Demonstrates timers, state management, and dynamic lists
+
+import { app, resolveTransport, App, Window  , standaloneShutdownStrategyfrom 'tsyne';
 
 export function buildStopwatch(a: App) {
   a.window({ title: 'Stopwatch', width: 350, height: 450 }, (win: Window) => {
@@ -146,5 +154,5 @@ export function buildStopwatch(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Stopwatch' }, buildStopwatch);
-}
+  const appInstance = app(resolveTransport(), { title: 'Stopwatch' }, buildStopwatch);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

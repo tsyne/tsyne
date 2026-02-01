@@ -163,6 +163,19 @@ export function app(
     process.exit(0);
   });
 
+  // Register handler for lastWindowClosed event from bridge
+  // Allows custom shutdown logic per context (standalone, desktop, phonetop)
+  appInstance.getBridge().on('lastWindowClosed', async () => {
+    const onLastWindowClose = appInstance.getOnLastWindowClose();
+    if (onLastWindowClose) {
+      await onLastWindowClose();
+    } else {
+      // Default: eager shutdown for standalone mode
+      await appInstance.runCleanupCallbacks();
+      process.exit(0);
+    }
+  });
+
   // Handle both sync and async builders
   const builderResult = builder(appInstance);
 
@@ -1110,4 +1123,52 @@ export {
   polygonArea,
   polygonCentroid,
 } from './graphics/geometry';
+
+/**
+ * Shutdown strategy for standalone mode: immediately exit the process
+ * Used when a single app runs in isolation
+ */
+export function standaloneShutdownStrategy(app: App): () => void {
+  return async () => {
+    await app.runCleanupCallbacks();
+    process.exit(0);
+  };
+}
+
+/**
+ * Shutdown strategy for desktop mode: check if desktop is still active
+ * If desktop window is closing, exit process. If an app window is closing, just close the app.
+ */
+export function desktopShutdownStrategy(app: App): () => void {
+  return async () => {
+    const desktopCtx = getDesktopContext();
+    if (desktopCtx && desktopCtx.desktopApp) {
+      // Desktop is still active - just close this app, don't exit process
+      return;
+    }
+    // Desktop closing or not active - exit process
+    await app.runCleanupCallbacks();
+    process.exit(0);
+  };
+}
+
+/**
+ * Shutdown strategy for phone mode: delegate to PhoneTop launcher
+ * The launcher decides if the process should exit
+ */
+export function phoneShutdownStrategy(app: App): () => void {
+  return async () => {
+    const phoneCtx = getPhoneContext();
+    if (phoneCtx && phoneCtx.phoneApp) {
+      // Let PhoneTop handle app cleanup - don't exit process
+      return;
+    }
+    // PhoneTop not active - exit process
+    await app.runCleanupCallbacks();
+    process.exit(0);
+  };
+}
+
+// Export app launcher utility
+export { createAppLauncher, type LauncherOptions } from './index-launcher';
 

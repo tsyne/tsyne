@@ -12,7 +12,7 @@
  * - Smooth value transitions
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -182,9 +182,13 @@ export function createBarChartApp(a: App, win: Window) {
 
 export async function createBarChartAppWithTransport() {
   const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Bar Chart' });
-  createBarChartApp(a, win);
+  const appInstance = app(transport, { title: 'Bar Chart' }, (a: App) => {
+    a.window({ title: 'Bar Chart' }, (win: Window) => {
+      createBarChartApp(a, win);
+      win.show();
+    });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }
 
 if (require.main === module) {

@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label  } import { app, resolveTransport, window, vbox, hbox, grid, button, label  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
 
 /**
@@ -143,5 +143,5 @@ export function buildTicTacToe(a: any) {
 
 // Run the app if this file is executed directly
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Tic-Tac-Toe' }, buildTicTacToe);
-}
+  const appInstance = app(resolveTransport(), { title: 'Tic-Tac-Toe' }, buildTicTacToe);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

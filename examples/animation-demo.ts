@@ -15,7 +15,24 @@
  * Or headed: TSYNE_HEADED=1 npx tsx examples/animation-demo.ts
  */
 
-import { app, resolveTransport, CanvasCircle, CanvasLine, AnimateOptions } from 'tsyne';
+import { app, resolveTransport, CanvasCircle, CanvasLine, AnimateOptions } /**
+ * Animation Demo - Demonstrates Tsyne's built-in D3-style animation API
+ *
+ * @tsyne-app:name Animation Demo
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/><circle cx="5" cy="12" r="2" fill="currentColor"/></svg>
+ * @tsyne-app:builder buildAnimationDemo
+ *
+ * Shows various animation capabilities using the built-in .to() method:
+ * - Position animations (x, y, x2, y2)
+ * - Different easing functions (linear, inOut, elastic, bounce)
+ * - Chained animations
+ * - Animation callbacks
+ *
+ * Run with: npx tsx examples/animation-demo.ts
+ * Or headed: TSYNE_HEADED=1 npx tsx examples/animation-demo.ts
+ */
+
+import { app, resolveTransport, CanvasCircle, CanvasLine, AnimateOptions , standaloneShutdownStrategyfrom 'tsyne';
 
 // Main app
 export function buildAnimationDemo(a: any) {
@@ -270,7 +287,7 @@ export function buildAnimationDemo(a: any) {
 
 // Run standalone
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Animation Demo' }, async (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Animation Demo' }, async (a) => {
     buildAnimationDemo(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

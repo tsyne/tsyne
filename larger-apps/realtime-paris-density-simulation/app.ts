@@ -3,7 +3,12 @@
 // @tsyne-app:builder buildParisDensity
 // Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
 
-import type { App, Window, Label } from 'tsyne';
+import type { App, Window, Label } // @tsyne-app:name Paris Density
+// @tsyne-app:category visualization
+// @tsyne-app:builder buildParisDensity
+// Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
+
+import type { App, Window, Label , standaloneShutdownStrategyfrom 'tsyne';
 import { generateDensityGrid, interpolateDensityGrids, DensityPoint, TimeOfWeek } from './simulation';
 import * as os from 'os';
 import * as path from 'path';
@@ -836,7 +841,7 @@ export function buildParisDensity(a: App) {
 // Standalone execution for testing
 if (require.main === module) {
   const { app, resolveTransport  } = require('../../core/src');
-  app(resolveTransport(), { title: 'Paris Density Simulation' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Paris Density Simulation' }, (a: App) => {
     buildParisDensity(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

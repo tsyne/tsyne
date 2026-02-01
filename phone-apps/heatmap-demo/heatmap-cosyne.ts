@@ -11,7 +11,20 @@
  * - Real-time updates every 50ms
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Heatmap Demo - Data Visualization (Cosyne Version)
+ *
+ * Demonstrates heatmap primitive for visualizing 2D data.
+ * Color-mapped grid showing temperature/values over time.
+ *
+ * Features:
+ * - 8x8 heatmap with animated data values
+ * - Viridis color scheme: purple → green → yellow
+ * - Values oscillate based on position (sine wave patterns)
+ * - Real-time updates every 50ms
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -145,10 +158,10 @@ export function createHeatmapApp(a: App, win: Window) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Heatmap Demo' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Heatmap Demo' }, (a) => {
     a.window({ title: 'Heatmap Demo', width: 400, height: 450 }, (win) => {
       createHeatmapApp(a, win);
-      win.show();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
     });
   });
 }

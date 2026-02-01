@@ -8,7 +8,17 @@
  * - Multiple balls with different easing
  */
 
-import { App } from 'tsyne';
+import { App } /**
+ * Bouncing Ball Demo - Cosyne Phase 9
+ *
+ * Demonstrates physics-based animation patterns
+ * - Ball bouncing with gravity simulation
+ * - Easing functions for bouncy motion
+ * - Interactive - click to bounce
+ * - Multiple balls with different easing
+ */
+
+import { App , standaloneShutdownStrategyfrom 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutBounce, easeInOutCubic, easeOutElastic } from 'cosyne';
 
 interface BallState {
@@ -211,7 +221,7 @@ export function buildBouncingBallApp(a: App): void {
 // Standalone execution
 if (require.main === module) {
   const { app, resolveTransport } = require('../../core/src');
-  app(
+  const appInstance = app(
     resolveTransport(),
     { title: 'Bouncing Ball - Cosyne Phase 9' },
     (a: any) => {
@@ -220,7 +230,7 @@ if (require.main === module) {
         (win: any) => {
           win.setContent(() => {
             buildBouncingBallApp(a);
-          });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));          });
           win.show();
         }
       );

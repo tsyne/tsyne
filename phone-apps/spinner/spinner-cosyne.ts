@@ -12,7 +12,7 @@
  * - Clean, declarative animation syntax
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -105,9 +105,13 @@ export function createSpinnerApp(a: App, win: Window) {
 
 export async function createSpinnerAppWithTransport() {
   const transport = await resolveTransport();
-  const a = app(transport);
-  const win = a.window({ title: 'Spinner' });
-  createSpinnerApp(a, win);
+  const appInstance = app(transport, { title: 'Spinner' }, (a: App) => {
+    a.window({ title: 'Spinner' }, (win: Window) => {
+      createSpinnerApp(a, win);
+      win.show();
+    });
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }
 
 if (require.main === module) {

@@ -25,7 +25,7 @@
  * @tsyne-app:args app
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, TappableCanvasRaster } from 'tsyne';
 
 const CANVAS_WIDTH = 600;
@@ -637,5 +637,6 @@ export function createCarsApp(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Cars Demo' }, createCarsApp);
+  const appInstance = app(resolveTransport(), { title: 'Cars Demo' }, createCarsApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

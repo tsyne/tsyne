@@ -15,7 +15,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import { cosyne3d, renderer3d, createRenderTarget, RenderTarget } from 'cosyne';
 
 // Robot State (Reactive)
@@ -418,5 +418,6 @@ export function buildRobotArmApp(a: any) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Robot Arm' }, buildRobotArmApp);
+  const appInstance = app(resolveTransport(), { title: 'Robot Arm' }, buildRobotArmApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

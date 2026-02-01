@@ -24,7 +24,33 @@
  * We've replaced it with Jimp, a well-maintained pure JavaScript library.
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } // @tsyne-app:name Image Viewer
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+// @tsyne-app:category graphics
+// @tsyne-app:builder createImageViewerApp
+// @tsyne-app:args app,filePath,windowWidth,windowHeight
+
+/**
+ * Image Viewer for Tsyne with REAL Image Editing
+ *
+ * Ported from https://github.com/Palexer/image-viewer
+ * Original author: Palexer
+ * License: MIT (see original repository)
+ *
+ * This version uses Jimp (JavaScript Image Processing) to provide
+ * REAL image editing capabilities, replacing the original's GIFT library.
+ *
+ * Features:
+ * - Real image loading from files
+ * - Live brightness, contrast, saturation, and hue adjustments
+ * - Zoom functionality with real image resizing
+ * - Base64 image transfer to Fyne for display
+ *
+ * The original used GIFT (Go Image Filtering Toolkit), which is unmaintained.
+ * We've replaced it with Jimp, a well-maintained pure JavaScript library.
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Image as ImageWidget, Slider } from 'tsyne';
@@ -659,7 +685,7 @@ export function createImageViewerApp(a: App, filePath?: string, windowWidth?: nu
  * Main application entry point
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Image Viewer' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Image Viewer' }, (a: App) => {
     createImageViewerApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

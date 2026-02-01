@@ -19,7 +19,28 @@
  * @tsyne-app:count desktop-many
  */
 
-import { app, resolveTransport, App, Window, Label, Button  } from 'tsyne';
+import { app, resolveTransport, App, Window, Label, Button  } /**
+ * Full Calculator - Multi-base calculator with bitwise operations and memory
+ *
+ * Inspired by ChrysaLisp's calculator app.lisp
+ * Features: dec/hex/bin/oct bases, bitwise ops, memory functions
+ *
+ * @tsyne-app:name Full Calculator
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="currentColor">
+ *   <rect x="3" y="1" width="18" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+ *   <rect x="5" y="3" width="14" height="4" fill="currentColor" opacity="0.3"/>
+ *   <circle cx="7" cy="10" r="1.2"/><circle cx="12" cy="10" r="1.2"/><circle cx="17" cy="10" r="1.2"/>
+ *   <circle cx="7" cy="14" r="1.2"/><circle cx="12" cy="14" r="1.2"/><circle cx="17" cy="14" r="1.2"/>
+ *   <circle cx="7" cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="17" cy="18" r="1.2"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category utilities
+ * @tsyne-app:builder buildFullCalculator
+ * @tsyne-app:count desktop-many
+ */
+
+import { app, resolveTransport, App, Window, Label, Button  , standaloneShutdownStrategyfrom 'tsyne';
 // In production: import { app, resolveTransport, App, Window, Label, Button  } from 'tsyne';
 
 type Base = 'dec' | 'hex' | 'bin' | 'oct';
@@ -394,5 +415,5 @@ export function buildFullCalculator(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Full Calculator' }, buildFullCalculator);
-}
+  const appInstance = app(resolveTransport(), { title: 'Full Calculator' }, buildFullCalculator);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

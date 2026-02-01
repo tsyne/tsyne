@@ -6,7 +6,15 @@
 // Tip Calculator - Calculate tips and split bills
 // Demonstrates entry widgets, radio groups, and real-time calculations
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, App, Window  } // @tsyne-app:name Tip Calculator
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 12a3 3 0 100-6 3 3 0 000 6z"/><path d="M6 16h.01"/><path d="M18 16h.01"/><path d="M12 16v2"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder buildTipCalculator
+
+// Tip Calculator - Calculate tips and split bills
+// Demonstrates entry widgets, radio groups, and real-time calculations
+
+import { app, resolveTransport, App, Window  , standaloneShutdownStrategyfrom 'tsyne';
 
 export function buildTipCalculator(a: App) {
   a.window({ title: 'Tip Calculator', width: 400, height: 400 }, (win: Window) => {
@@ -104,5 +112,5 @@ export function buildTipCalculator(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Tip Calculator' }, buildTipCalculator);
-}
+  const appInstance = app(resolveTransport(), { title: 'Tip Calculator' }, buildTipCalculator);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

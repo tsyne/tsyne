@@ -18,7 +18,27 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Chess Game for Tsyne
+ *
+ * Ported from https://github.com/andydotxyz/chess
+ * Original author: Andy Williams
+ * License: See original repository
+ *
+ * This is a port to demonstrate chess game capabilities in Tsyne.
+ * Uses chess.js for game logic and SVG rendering for pieces.
+ */
+
+/*
+ * @tsyne-app:name Chess
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="#333333"><path d="M19 22H5v-2h14v2zm-3-4H8l-1-4 2-1v-2c0-1 1-3 2-4l-1-2 1-1 1 1c1-1 2-1 3 0l1-1 1 1-1 2c1 1 2 3 2 4v2l2 1-1 4z"/></svg>
+ * @tsyne-app:category games
+ * @tsyne-app:builder createChessApp
+ * @tsyne-app:args app,resources,windowWidth,windowHeight
+ * @tsyne-app:count many
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { IResourceManager } from 'tsyne';
@@ -948,9 +968,9 @@ export async function createChessApp(a: App, resources: IResourceManager, window
  * Main application entry point - standalone execution
  */
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Chess' }, async (a: App) => {
     // Standalone: create a dedicated resource manager (IoC - don't use a.resources)
     const resources = a.createResourceManager();
-    await createChessApp(a, resources);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await createChessApp(a, resources);
   });
 }

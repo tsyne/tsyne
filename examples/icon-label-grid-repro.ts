@@ -12,7 +12,21 @@
  * Run: npx tsx examples/icon-label-grid-repro.ts
  */
 
-import { app, resolveTransport, App } from 'tsyne';
+import { app, resolveTransport, App } /**
+ * Reproduction of the folder app icon problem
+ *
+ * The issue: In desktop folder windows, labels appear vertically detached from icons.
+ *
+ * ROOT CAUSE: When grid cells are larger than needed (due to cellSize or expansion),
+ * the layout of icon+label within the cell determines whether a gap appears.
+ *
+ * PROBLEM layout: vbox { center(icon), spacer, label } - creates huge gap
+ * CORRECT layout: vbox { hbox(spacer,icon,spacer), label, spacer } - keeps icon+label together
+ *
+ * Run: npx tsx examples/icon-label-grid-repro.ts
+ */
+
+import { app, resolveTransport, App , standaloneShutdownStrategyfrom 'tsyne';
 import * as path from 'path';
 
 // Mock folder apps with 80x80 SVG icons (matching desktop icon size)
@@ -85,5 +99,5 @@ export function buildIconLabelGridRepro(a: App) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Icon Label Grid Repro' }, buildIconLabelGridRepro);
-}
+  const appInstance = app(resolveTransport(), { title: 'Icon Label Grid Repro' }, buildIconLabelGridRepro);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

@@ -6,7 +6,15 @@
 // Password Generator - Generate secure random passwords
 // Demonstrates checkboxes, sliders, and string manipulation
 
-import { app, resolveTransport, App, Window  } from 'tsyne';
+import { app, resolveTransport, App, Window  } // @tsyne-app:name Password Generator
+// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+// @tsyne-app:category utilities
+// @tsyne-app:builder buildPasswordGenerator
+
+// Password Generator - Generate secure random passwords
+// Demonstrates checkboxes, sliders, and string manipulation
+
+import { app, resolveTransport, App, Window  , standaloneShutdownStrategyfrom 'tsyne';
 
 export function buildPasswordGenerator(a: App) {
   a.window({ title: 'Password Generator', width: 450, height: 500 }, (win: Window) => {
@@ -105,5 +113,5 @@ export function buildPasswordGenerator(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Password Generator' }, buildPasswordGenerator);
-}
+  const appInstance = app(resolveTransport(), { title: 'Password Generator' }, buildPasswordGenerator);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

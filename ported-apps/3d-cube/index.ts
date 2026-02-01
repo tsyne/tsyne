@@ -17,7 +17,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling, CosyneContext } from 'cosyne';
 import {
@@ -242,8 +242,9 @@ export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: num
 // ═══════════════════════════════════════════════════════════════════════════
 
 if (require.main === module) {
-  app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: '3D Cube' }, async (a: App) => {
     create3DCubeApp(a);
     await a.run();
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

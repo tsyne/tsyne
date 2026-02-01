@@ -8,7 +8,17 @@
  * This demonstrates the visual difference blend modes make.
  */
 
-import { App, asRenderTarget } from 'tsyne';
+import { App, asRenderTarget } /**
+ * Blend Mode Comparison - Side by Side
+ *
+ * Shows static overlapping lines:
+ * - Left: Normal blending (lines just overlap)
+ * - Right: Additive blending (overlaps get brighter)
+ *
+ * This demonstrates the visual difference blend modes make.
+ */
+
+import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, enableEventHandling } from '../src';
 
@@ -107,10 +117,11 @@ export function buildComparisonApp(a: App, target: IRenderTarget): void {
 if (require.main === module) {
   const { app, resolveTransport } = require('tsyne');
 
-  app(resolveTransport(), { title: 'Blend Mode Comparison' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Blend Mode Comparison' }, (a: App) => {
     a.window({ title: 'Blend Mode Comparison', width: TOTAL_WIDTH + 40, height: TOTAL_HEIGHT + 100 }, (win: Window) => {
       const target = asRenderTarget(win as ITsyneWindow);
-      buildComparisonApp(a, target);
+
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      buildComparisonApp(a, target);
       win.show();
     });
   });

@@ -24,7 +24,33 @@
  * @tsyne-app:count one
  */
 
-import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  } from 'tsyne';
+import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  } /**
+ * Daily Checklist (MVC Style)
+ *
+ * Same functionality as daily-checklist.ts but using pure 1978 MVC pattern.
+ *
+ * KEY DIFFERENCE FROM MVVM VERSION:
+ * - View is "dumb" - just declares bindings to Model
+ * - Render callback returns void (not widget references)
+ * - Uses bindFillColor() instead of manual update logic
+ * - No if(existing) check - framework handles widget lifecycle
+ * - refreshAllBindings() automatically updates all bound properties
+ *
+ * Compare with daily-checklist.ts (MVVM) to see the two approaches.
+ *
+ * @tsyne-app:name Daily Checklist MVC
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+ *   <path d="M9 11l3 3L22 4"/>
+ *   <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category productivity
+ * @tsyne-app:builder buildDailyChecklistMVC
+ * @tsyne-app:count one
+ */
+
+import { app, resolveTransport, App, Window, Label, MultiLineEntry, CanvasText  , standaloneShutdownStrategyfrom 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -334,5 +360,5 @@ export function buildDailyChecklistMVC(a: App) {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Daily Checklist (MVC)' }, buildDailyChecklistMVC);
-}
+  const appInstance = app(resolveTransport(), { title: 'Daily Checklist (MVC)' }, buildDailyChecklistMVC);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

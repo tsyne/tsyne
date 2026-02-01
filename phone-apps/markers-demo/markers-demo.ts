@@ -9,7 +9,18 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app } from 'tsyne';
+import { app } #!/usr/bin/env tsyne
+
+/**
+ * Line Markers Demo
+ *
+ * @tsyne-app:name Markers Demo
+ * @tsyne-app:icon chartIcon
+ * @tsyne-app:category Visualization
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app , standaloneShutdownStrategyfrom 'tsyne';
 import { cosyne, clearAllCosyneContexts, CUSTOM_MARKERS } from 'cosyne';
 
 type DiagramType = 'flowchart' | 'graph' | 'state-machine' | 'network' | 'custom';
@@ -507,5 +518,5 @@ function renderCustomMarkers(c: any, showLabels: boolean) {
 // Auto-run when executed directly
 if (require.main === module) {
   const { resolveTransport } = require('../../core/src');
-  app(resolveTransport(), { title: 'Markers Demo' }, buildMarkersDemoApp);
-}
+  const appInstance = app(resolveTransport(), { title: 'Markers Demo' }, buildMarkersDemoApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

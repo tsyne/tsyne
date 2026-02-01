@@ -16,7 +16,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
 import { cosyne3d, refreshAllCosyne3dContexts, renderer3d, createRenderTarget, RenderTarget, Materials, PointLight } from 'cosyne';
 
 // Lab state
@@ -349,5 +349,6 @@ export function buildLightingLabApp(a: any) {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Cosyne 3D - Lighting Lab' }, buildLightingLabApp);
+  const appInstance = app(resolveTransport(), { title: 'Cosyne 3D - Lighting Lab' }, buildLightingLabApp);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy);
 }

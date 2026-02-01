@@ -38,7 +38,47 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  } from 'tsyne';
+import { app, resolveTransport, styles, FontStyle  } /*
+ * Copyright (c) 2025 Paul Hammant
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/**
+ * Contacts App
+ *
+ * A contacts manager with list, search, add, edit, and delete capabilities.
+ * Implements pseudo-declarative pattern following calculator.ts style.
+ *
+ * @tsyne-app:name Contacts
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+ * @tsyne-app:category phone
+ * @tsyne-app:builder createContactsApp
+ * @tsyne-app:args app,contacts
+ * @tsyne-app:count single
+ */
+
+import { app, resolveTransport, styles, FontStyle  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';
@@ -279,8 +319,8 @@ export function createContactsApp(a: App, contacts: IContactsService): void {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Contacts' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Contacts' }, (a: App) => {
     const contactsService = new MockContactsService();
-    createContactsApp(a, contactsService);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    createContactsApp(a, contactsService);
   });
 }

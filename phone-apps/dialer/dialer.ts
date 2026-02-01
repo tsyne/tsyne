@@ -39,7 +39,48 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  } from 'tsyne';
+import { app, resolveTransport, styles, FontStyle  } /*
+ * Copyright (c) 2025 Paul Hammant
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/**
+ * Phone Dialer App
+ *
+ * A phone dialer with numeric keypad, call display, and recent calls.
+ * Uses ModemManager for cellular operations and ContactsService for caller ID.
+ * Implements pseudo-declarative pattern following calculator.ts style.
+ *
+ * @tsyne-app:name Phone
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+ * @tsyne-app:category phone
+ * @tsyne-app:builder createDialerApp
+ * @tsyne-app:args app,modem,contacts
+ * @tsyne-app:count single
+ */
+
+import { app, resolveTransport, styles, FontStyle  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';
@@ -202,9 +243,9 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Phone' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Phone' }, (a: App) => {
     const modem = new MockModemManagerService();
-    const contacts = new MockContactsService();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    const contacts = new MockContactsService();
     createDialerApp(a, modem, contacts);
   });
 }

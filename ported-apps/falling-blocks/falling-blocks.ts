@@ -26,7 +26,35 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /**
+ * Falling Blocks Game
+ *
+ * A faithful port of Falling Blocks from https://github.com/SanderKlootwijk/fallingblocks
+ * Original author: Sander Klootwijk
+ * License: GPL-3.0
+ *
+ * A Tetris-style falling blocks puzzle game where players stack
+ * falling tetromino pieces to complete and clear rows.
+ *
+ * @tsyne-app:name Falling Blocks
+ * @tsyne-app:icon <<SVG
+ * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+ *   <rect x="2" y="14" width="4" height="4" fill="#FF6B6B" stroke="#333"/>
+ *   <rect x="6" y="14" width="4" height="4" fill="#FF6B6B" stroke="#333"/>
+ *   <rect x="6" y="18" width="4" height="4" fill="#FF6B6B" stroke="#333"/>
+ *   <rect x="10" y="18" width="4" height="4" fill="#FF6B6B" stroke="#333"/>
+ *   <rect x="14" y="18" width="4" height="4" fill="#4ECDC4" stroke="#333"/>
+ *   <rect x="18" y="18" width="4" height="4" fill="#FFE66D" stroke="#333"/>
+ *   <rect x="10" y="6" width="4" height="4" fill="#4ECDC4" stroke="#333"/>
+ *   <rect x="10" y="10" width="4" height="4" fill="#4ECDC4" stroke="#333"/>
+ * </svg>
+ * SVG
+ * @tsyne-app:category games
+ * @tsyne-app:builder createFallingBlocksApp
+ * @tsyne-app:args app,windowWidth,windowHeight
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================
@@ -748,9 +776,9 @@ export { SHAPES, SHAPE_COLORS, BOARD_WIDTH, BOARD_HEIGHT };
 
 // Standalone entry point
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Falling Blocks' }, async (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Falling Blocks' }, async (a: App) => {
     const ui = createFallingBlocksApp(a);
-    await a.run();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
     await ui.initialize();
   });
 }

@@ -1,3 +1,4 @@
+import { standaloneShutdownStrategy } from 'tsyne';
 /**
  * Dial Dashboard - Cosyne Dial Showcase
  *
@@ -315,12 +316,13 @@ if (require.main === module) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { app, resolveTransport } = require('../../core/src/index');
 
-  app(resolveTransport(), { title: 'Dial Dashboard' }, (a: any) => {
+  const appInstance = app(resolveTransport(), { title: 'Dial Dashboard' }, (a: any) => {
     let cleanup: (() => void) | undefined;
 
     a.window({ title: 'Dial Dashboard', width: 540, height: 600 }, (win: any) => {
       cleanup = createDialDashboardApp(a, win);
-      win.show();
+
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
 
       // Clean up on window close
       win.setCloseIntercept(async () => {

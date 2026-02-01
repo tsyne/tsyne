@@ -29,7 +29,38 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } from 'tsyne';
+import { app, resolveTransport  } /*
+ * Portions copyright Development@bendingtherules.nl
+ * Portions copyright Paul Hammant 2025
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Telegram App
+ *
+ * A messaging application with chat list, message threads, and send functionality.
+ * Implements pseudo-declarative pattern for Tsyne platform.
+ *
+ * @tsyne-app:name Telegram
+ * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.597-.17 2.015l4.3 1.791 2.695 8.71c.213.64.915.967 1.51.744l3.44-1.777c.556-.287.802-.923.553-1.466L12.57 13.3l5.108-6.32c.592-.73-.128-1.751-1.013-1.263Z"/></svg>
+ * @tsyne-app:category communications
+ * @tsyne-app:builder createTelegramApp
+ * @tsyne-app:args app
+ * @tsyne-app:count single
+ */
+
+import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { ITelegramService, MockTelegramService, TelegramChat, QrLoginResult, RealTelegramService, loadCredentialsFromEnv } from './telegram-service';
@@ -533,8 +564,8 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
 
 // Standalone execution
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Telegram' }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Telegram' }, (a: App) => {
     // Let createTelegramApp auto-detect credentials from environment
     createTelegramApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

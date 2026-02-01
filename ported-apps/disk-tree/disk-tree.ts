@@ -1,3 +1,4 @@
+import { standaloneShutdownStrategy } from 'tsyne';
 /**
  * Disk Tree App - Treemap Visualization of Disk Usage
  *
@@ -1049,10 +1050,11 @@ if (require.main === module) {
   const { app, resolveTransport } = require('tsyne');
   const initialFolder = process.argv[2]; // Optional folder path as first arg
 
-  app(resolveTransport(), { title: 'Disk Tree', width: 900, height: 700 }, (a: App) => {
+  const appInstance = app(resolveTransport(), { title: 'Disk Tree', width: 900, height: 700 }, (a: App) => {
     a.window({ title: 'Disk Tree', width: 900, height: 700 }, (win: Window) => {
       const ui = buildDiskTreeApp(a, win);
-      win.show();
+
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
 
       // Auto-scan if folder provided via command line
       if (initialFolder) {

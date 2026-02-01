@@ -11,7 +11,20 @@
  * Run: npx tsx cosyne/demos/cosyne-animated-shapes.ts
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Animated Shapes Demo - Pure Cosyne (TypeScript)
+ *
+ * Demonstrates Cosyne drawing capabilities without shaders:
+ * - Animated polygons
+ * - Rotating patterns
+ * - Parametric curves
+ * - Interactive updates
+ * - Blend modes
+ *
+ * Run: npx tsx cosyne/demos/cosyne-animated-shapes.ts
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import {
   cosyne,
@@ -207,7 +220,7 @@ function createAnimatedShapesDemo(a: App): void {
 }
 
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Animated Shapes' }, createAnimatedShapesDemo);
-}
+  const appInstance = app(resolveTransport(), { title: 'Animated Shapes' }, createAnimatedShapesDemo);
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}
 
 export { createAnimatedShapesDemo };

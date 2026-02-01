@@ -16,7 +16,25 @@
  *   npx tsx examples/registration-form.ts
  */
 
-import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  } from 'tsyne';
+import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  } /**
+ * Registration Form Example
+ *
+ * Demonstrates Tsyne's validation system with a user sign-up form.
+ * Shows real-time validation feedback and form-level validation.
+ *
+ * Features demonstrated:
+ * - Built-in validators (required, email, minLength, etc.)
+ * - Password validation with strength requirements
+ * - Confirm password matching
+ * - Phone number validation
+ * - Form-level validation with error display
+ * - Submit button enabling/disabling based on validity
+ *
+ * Usage:
+ *   npx tsx examples/registration-form.ts
+ */
+
+import { app, resolveTransport, Entry, Label, Button, PasswordEntry, Window  , standaloneShutdownStrategyfrom 'tsyne';
 import { validators, createFormValidator, FormValidator, ValidatedField } from 'tsyne';
 import { StringBinding } from 'tsyne';
 
@@ -277,7 +295,7 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
 
 // Only run if this is the main module
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Registration Form' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Registration Form' }, (a) => {
     createRegistrationFormApp(a);
-  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
 }

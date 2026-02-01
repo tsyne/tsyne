@@ -8,7 +8,17 @@
  * Cosyne: ~70 lines of declarative rendering
  */
 
-import { app, resolveTransport } from 'tsyne';
+import { app, resolveTransport } /**
+ * Clock - Analog Clock with Declarative Hands (Cosyne Version)
+ *
+ * Ported from imperative clock hand binding to declarative Cosyne.
+ * Demonstrates bindEndpoint on lines following rotation.
+ *
+ * Original: ~200 lines of hand binding updates
+ * Cosyne: ~70 lines of declarative rendering
+ */
+
+import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';
@@ -127,10 +137,10 @@ export function createClockApp(a: App, win: Window) {
 
 // Auto-run if this is the main module
 if (require.main === module) {
-  app(resolveTransport(), { title: 'Clock' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Clock' }, (a) => {
     a.window({ title: 'Clock', width: 300, height: 350 }, (win) => {
       createClockApp(a, win);
-      win.show();
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));      win.show();
     });
   });
 }
