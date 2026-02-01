@@ -62,7 +62,7 @@ import type { App } /*
  * @tsyne-app:count single
  */
 
-import type { App , standaloneShutdownStrategyfrom 'tsyne';
+import type { App , standaloneShutdownStrategy } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';
 import type { VBox } from 'tsyne';

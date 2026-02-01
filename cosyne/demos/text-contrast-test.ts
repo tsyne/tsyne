@@ -6,15 +6,7 @@
  * so we use side-by-side hbox layout instead.
  */
 
-import { App, asRenderTarget } /**
- * Text Contrast Test - Verify canvas text is readable
- * Also compares cosyne canvas text with classic Tsyne label/entry widgets
- *
- * NOTE: c.foreign() is not yet implemented for actual rendering,
- * so we use side-by-side hbox layout instead.
- */
-
-import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
+import { App, asRenderTarget , standaloneShutdownStrategy } from 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne } from '../src';
 

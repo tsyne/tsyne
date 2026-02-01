@@ -20,7 +20,7 @@ import { app } #!/usr/bin/env tsyne
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app , standaloneShutdownStrategyfrom 'tsyne';
+import { app , standaloneShutdownStrategy } from 'tsyne';
 import {
   cosyne,
   clearAllCosyneContexts,

@@ -8,17 +8,7 @@
  * and displays it in multiple configurations to test different sizing approaches.
  */
 
-import { app } /**
- * Standalone test for canvas.Image display through TypeScript/Bridge
- *
- * This mirrors test_card_display.go to verify that images display correctly
- * through the TypeScript -> Bridge -> Fyne pipeline.
- *
- * Creates a simple test card (red border, white background, black center)
- * and displays it in multiple configurations to test different sizing approaches.
- */
-
-import { app , standaloneShutdownStrategyfrom 'tsyne';
+import { app , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';

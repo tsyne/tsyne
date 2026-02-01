@@ -9,18 +9,7 @@
  * Run: npx tsx cosyne/demos/raymarching-intro.ts
  */
 
-import { app, resolveTransport, CanvasShader } /**
- * Raymarching Introduction Demo
- *
- * Demonstrates GPU-based 3D rendering using raymarching (sphere tracing).
- * No vertex buffers needed - pure fragment shader magic.
- *
- * This is a stepping stone toward proper 3D rendering for the cars demo.
- *
- * Run: npx tsx cosyne/demos/raymarching-intro.ts
- */
-
-import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;

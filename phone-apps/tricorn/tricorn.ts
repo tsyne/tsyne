@@ -14,23 +14,7 @@
  * @tsyne-app:args app
  */
 
-import { app, resolveTransport  } /**
- * Tricorn (Mandelbar) Fractal Explorer
- *
- * The conjugate of the Mandelbrot set, creating distinctive
- * horn-like shapes and different symmetry.
- *
- * Copyright (c) 2025 Paul Hammant
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * @tsyne-app:name Tricorn
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
- * @tsyne-app:category graphics
- * @tsyne-app:builder createTricornApp
- * @tsyne-app:args app
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, TappableCanvasRaster, Label } from 'tsyne';
 import { palettes, paletteNames, tricorn } from '../fractal-utils';
 

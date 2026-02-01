@@ -10,19 +10,7 @@
  * Run: npx tsx cosyne/demos/sdf-operations.ts
  */
 
-import { app, resolveTransport, CanvasShader } /**
- * SDF Operations Demo
- *
- * Demonstrates combining shapes using SDF operations:
- * - Union (combine shapes)
- * - Subtraction (carve out shapes)
- * - Intersection (overlap)
- * - Smooth blending
- *
- * Run: npx tsx cosyne/demos/sdf-operations.ts
- */
-
-import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;

@@ -1,4 +1,4 @@
-import { app, resolveTransport, App  } import { app, resolveTransport, App  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, App  } import { app, resolveTransport, App  , standaloneShutdownStrategy } from 'tsyne';
 
 /**
  * Calculator application - Testable implementation

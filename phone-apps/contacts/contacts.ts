@@ -78,7 +78,7 @@ import { app, resolveTransport, styles, FontStyle  } /*
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport, styles, FontStyle  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, styles, FontStyle  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { Label } from 'tsyne';

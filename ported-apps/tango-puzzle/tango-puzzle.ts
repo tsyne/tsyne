@@ -19,28 +19,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } /**
- * Tango Puzzle
- *
- * Binary puzzle with suns and moons. Fill the grid following these rules:
- * - Each cell is either sun or moon
- * - No more than 2 consecutive same symbols in a row/column
- * - Each row and column has equal suns and moons
- *
- * @tsyne-app:name Tango Puzzle
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="none">
- *   <circle cx="8" cy="8" r="5" fill="#F5A623"/>
- *   <path d="M16 4a6 6 0 1 0 0 12 5 5 0 1 1 0-12z" fill="#4A90D9"/>
- *   <circle cx="16" cy="18" r="4" fill="#F5A623"/>
- * </svg>
- * SVG
- * @tsyne-app:category games
- * @tsyne-app:builder createTangoPuzzleApp
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================

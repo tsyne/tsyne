@@ -22,31 +22,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } /**
- * Calcudoku (KenKen)
- *
- * Fill the grid with 1-N where N is grid size.
- * Each row/column has each number exactly once.
- * Cages show a target and operation - cells must produce the target.
- *
- * @tsyne-app:name Calcudoku
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="none">
- *   <rect x="2" y="2" width="20" height="20" rx="1" fill="#fff" stroke="#333"/>
- *   <line x1="2" y1="12" x2="22" y2="12" stroke="#333"/>
- *   <line x1="12" y1="2" x2="12" y2="22" stroke="#333"/>
- *   <text x="5" y="9" font-size="5" fill="#333">6+</text>
- *   <text x="15" y="9" font-size="6" fill="#666">3</text>
- *   <text x="5" y="19" font-size="6" fill="#666">1</text>
- *   <text x="14" y="18" font-size="5" fill="#333">2−</text>
- * </svg>
- * SVG
- * @tsyne-app:category games
- * @tsyne-app:builder createCalcudokuApp
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================

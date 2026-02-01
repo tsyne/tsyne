@@ -18,27 +18,7 @@
  * @tsyne-app:count single
  */
 
-import type { App, Window, Label, Entry } /**
- * Image Resizer App - Resize images with custom dimensions
- *
- * Batch or single image resizing application supporting multiple formats
- * with customizable width/height and aspect ratio preservation.
- *
- * Ported from image-resizer (https://github.com/tiagomelo/image-resizer)
- * Original by Tiago Melo, MIT License
- *
- * Portions copyright original team and portions copyright Paul Hammant 2025
- * License: MIT
- *
- * @tsyne-app:name Image Resizer
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M21 12L15 6M3 21l6-6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
- * @tsyne-app:category Utilities
- * @tsyne-app:builder buildImageResizerApp
- * @tsyne-app:args app,win
- * @tsyne-app:count single
- */
-
-import type { App, Window, Label, Entry , standaloneShutdownStrategyfrom 'tsyne';
+import type { App, Window, Label, Entry , standaloneShutdownStrategy } from 'tsyne';
 
 export interface ResizeJob {
   filePath: string;

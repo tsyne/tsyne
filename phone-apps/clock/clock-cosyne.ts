@@ -8,17 +8,7 @@
  * Cosyne: ~70 lines of declarative rendering
  */
 
-import { app, resolveTransport } /**
- * Clock - Analog Clock with Declarative Hands (Cosyne Version)
- *
- * Ported from imperative clock hand binding to declarative Cosyne.
- * Demonstrates bindEndpoint on lines following rotation.
- *
- * Original: ~200 lines of hand binding updates
- * Cosyne: ~70 lines of declarative rendering
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';

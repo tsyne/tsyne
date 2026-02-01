@@ -15,24 +15,7 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport  } /**
- * Mandelbrot Set Explorer
- *
- * Interactive fractal viewer using CanvasRaster for pixel-level rendering.
- * Features zoom, pan, and color palette cycling.
- *
- * Copyright (c) 2025 Paul Hammant
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * @tsyne-app:name Mandelbrot
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="14" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="14" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
- * @tsyne-app:category graphics
- * @tsyne-app:builder createMandelbrotApp
- * @tsyne-app:args app
- * @tsyne-app:count many
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, TappableCanvasRaster, Label, Center } from 'tsyne';
 import { palettes, paletteNames, mandelbrot } from '../fractal-utils';
 

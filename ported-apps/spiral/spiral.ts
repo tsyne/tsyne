@@ -10,19 +10,7 @@
  * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
  */
 
-import { App, asRenderTarget } /**
- * Spiral Canvas Demo - Cosyne
- *
- * Port of hakimel's spiral CodePen (https://codepen.io/hakimel/pen/QdWpRv)
- * Pseudo-declarative canvas animation with drag-to-rotate interaction.
- *
- * @tsyne-app:name Spiral
- * @tsyne-app:icon mediaVideo
- * @tsyne-app:category fun
- * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
- */
-
-import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
+import { App, asRenderTarget , standaloneShutdownStrategy } from 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 

@@ -18,27 +18,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } /**
- * Alarms App
- *
- * Manage alarms - add, toggle, and delete.
- *
- * @tsyne-app:name Alarms
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="currentColor">
- *   <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
- *   <path d="M12 9v4l2 2" fill="none" stroke="currentColor" stroke-width="2"/>
- *   <path d="M5 3L2 6" stroke="currentColor" stroke-width="2"/>
- *   <path d="M19 3l3 3" stroke="currentColor" stroke-width="2"/>
- * </svg>
- * SVG
- * @tsyne-app:category utilities
- * @tsyne-app:builder createAlarmsApp
- * @tsyne-app:args app,clock,notifications,lifecycle
- * @tsyne-app:count single
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import {

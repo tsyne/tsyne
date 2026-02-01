@@ -3,12 +3,7 @@
  * Tests the DraggableContainer functionality
  */
 
-import { app } /**
- * Simple test for dragging a card image
- * Tests the DraggableContainer functionality
- */
-
-import { app , standaloneShutdownStrategyfrom 'tsyne';
+import { app , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';

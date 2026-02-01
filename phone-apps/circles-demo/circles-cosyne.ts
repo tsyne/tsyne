@@ -12,21 +12,7 @@
  * - Efficient diffing tracks which circles changed
  */
 
-import { app, resolveTransport } /**
- * Circles Demo - Dynamic Circle Collection (Cosyne Version)
- *
- * Demonstrates collection binding with add/remove/update.
- * Creates animated circles at random positions that move over time.
- * Shows efficient diffing: only updated circles are re-rendered.
- *
- * Features:
- * - Collection of 20 circles with unique IDs
- * - Circle positions update smoothly based on time + ID
- * - Add/remove circles with button clicks
- * - Efficient diffing tracks which circles changed
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, CosyneContext } from 'cosyne';

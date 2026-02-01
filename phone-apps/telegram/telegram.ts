@@ -60,7 +60,7 @@ import { app, resolveTransport  } /*
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { ITelegramService, MockTelegramService, TelegramChat, QrLoginResult, RealTelegramService, loadCredentialsFromEnv } from './telegram-service';

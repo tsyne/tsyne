@@ -20,29 +20,7 @@
  * @tsyne-app:count single
  */
 
-import type { App, Window, Label, Button } /**
- * Pomodoro Timer App
- *
- * A productivity timer implementing the Pomodoro Technique:
- * - 25 minute work (focus) sessions
- * - 5 minute short breaks
- * - 15 minute long breaks after 4 sessions
- *
- * Ported from Fynodoro (https://github.com/tomsquest/fynodoro)
- * Original by Tom Schwartz, MIT License
- *
- * Portions copyright original team and portions copyright Paul Hammant 2025
- * License: MIT
- *
- * @tsyne-app:name Pomodoro
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 6v6l4.5 2.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
- * @tsyne-app:category Utilities
- * @tsyne-app:builder buildPomodoroApp
- * @tsyne-app:args app
- * @tsyne-app:count single
- */
-
-import type { App, Window, Label, Button , standaloneShutdownStrategyfrom 'tsyne';
+import type { App, Window, Label, Button , standaloneShutdownStrategy } from 'tsyne';
 
 export type SessionType = 'work' | 'break' | 'longBreak';
 

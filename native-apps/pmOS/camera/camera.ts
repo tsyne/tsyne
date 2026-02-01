@@ -78,7 +78,7 @@ import type { App } /*
  * @tsyne-app:count one
  */
 
-import type { App , standaloneShutdownStrategyfrom 'tsyne';
+import type { App , standaloneShutdownStrategy } from 'tsyne';
 
 /**
  * Launch the postmarketOS bundled camera application

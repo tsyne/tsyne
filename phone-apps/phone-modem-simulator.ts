@@ -11,20 +11,7 @@
  * Run with: ./scripts/tsyne src/phone-modem-simulator.ts
  */
 
-import { App } /**
- * Tsyne Phone Modem Simulator
- *
- * A phone simulator environment for phone apps with hardware logging.
- * Features:
- * - Portrait phone interface with app grid
- * - "Modem Console" window showing human-readable hardware interactions
- * - Apps use LoggingServices that report what they'd do to real phone hardware
- * - Injects telephony, SMS, contacts, clock, notifications, storage, settings services
- *
- * Run with: ./scripts/tsyne src/phone-modem-simulator.ts
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { Window } from 'tsyne';
 import { Label } from 'tsyne';
 import { parseAppMetadata, loadAppBuilder, AppMetadata } from 'tsyne';

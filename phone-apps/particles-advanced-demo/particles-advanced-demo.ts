@@ -20,7 +20,7 @@ import { app, refreshAllBindings } #!/usr/bin/env tsyne
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, refreshAllBindings , standaloneShutdownStrategyfrom 'tsyne';
+import { app, refreshAllBindings , standaloneShutdownStrategy } from 'tsyne';
 import { cosyne, clearAllCosyneContexts, ParticleSystem, Emitter } from 'cosyne';
 
 type EmitterType = 'fountain' | 'fireworks' | 'smoke' | 'explosion';

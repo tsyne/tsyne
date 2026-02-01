@@ -7,16 +7,7 @@
  * Run: npx tsx cosyne/demos/trails-demo.ts
  */
 
-import { app, resolveTransport } /**
- * Trails Demo
- *
- * Demonstrates the trail system for creating animated trails
- * with fade effects, color trails, and multi-trail management.
- *
- * Run: npx tsx cosyne/demos/trails-demo.ts
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import {
   cosyne,

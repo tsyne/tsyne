@@ -12,21 +12,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport } /**
- * Messages App
- *
- * A messaging app with conversation threads and auto-reply simulation.
- * Uses SMSService for messaging and ContactsService for contact names.
- *
- * @tsyne-app:name Messages
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><path d="M7 9h10v2H7zm0-3h10v2H7z"/></svg>
- * @tsyne-app:category phone
- * @tsyne-app:builder createMessagesApp
- * @tsyne-app:args app,sms,contacts
- * @tsyne-app:count single
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Entry } from 'tsyne';
 import { ISMSService, MockSMSService, IContactsService, MockContactsService, Message, Thread } from './services';
 

@@ -11,20 +11,7 @@
  * Run: npx tsx cosyne/demos/cosyne-parametric-curves.ts
  */
 
-import { app, resolveTransport } /**
- * Parametric Curves Demo - Pure Cosyne
- *
- * Mathematical curves drawn with Cosyne:
- * - Lissajous figures
- * - Rose curves (rhodonea)
- * - Butterfly curve
- * - Epitrochoid
- * - Spiral of Theodorus
- *
- * Run: npx tsx cosyne/demos/cosyne-parametric-curves.ts
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import {
   cosyne,

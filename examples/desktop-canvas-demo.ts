@@ -10,19 +10,7 @@
  * @description Draggable icons demo
  */
 
-import { app, resolveTransport, App  } /**
- * Desktop Canvas Demo
- *
- * Demonstrates draggable icons with double-click support.
- * This solves Fyne's Stack click limitation by using a single
- * widget with absolute positioning.
- *
- * @tsyne-app
- * @name Desktop Canvas Demo
- * @description Draggable icons demo
- */
-
-import { app, resolveTransport, App  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, App  , standaloneShutdownStrategy } from 'tsyne';
 
 export async function build(a: App) {
   a.window({ title: 'Desktop Canvas Demo', width: 800, height: 600 }, (win) => {

@@ -6,15 +6,7 @@
  * Uses Phase 1 generalized sphere with pattern='checkered' for backward-compatible animation.
  */
 
-import { App } /**
- * Amiga Boing Ball - Tribute to the classic 1984 Amiga demo
- *
- * Background/grid use cosyne, ball uses core's canvasSphere widget with checkered pattern.
- * Rainbow "T" uses dynamic gradient text rendered with freetype.
- * Uses Phase 1 generalized sphere with pattern='checkered' for backward-compatible animation.
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 const W = 600, H = 500;

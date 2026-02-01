@@ -1,4 +1,4 @@
-import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  , standaloneShutdownStrategy } from 'tsyne';
 // In production: import { app, resolveTransport, window, vbox, button, label, enableAccessibility, disableAccessibility, getAccessibilityManager  } from 'tsyne';
 
 /**

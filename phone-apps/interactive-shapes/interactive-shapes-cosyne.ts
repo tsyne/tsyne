@@ -3,12 +3,7 @@
  * Click to change color, drag to move, hover to highlight
  */
 
-import { App } /**
- * Interactive Shapes Demo - Cosyne Phase 8
- * Click to change color, drag to move, hover to highlight
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 
 const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];

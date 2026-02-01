@@ -11,20 +11,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { App, TappableCanvasRaster, Label, app, resolveTransport } /**
- * Spherical Snake
- *
- * Snake game on a sphere with 3D perspective projection.
- * Port of https://github.com/kevinAlbs/SphericalSnake to Tsyne.
- *
- * @tsyne-app:name Spherical Snake
- * @tsyne-app:icon home
- * @tsyne-app:category Games
- * @tsyne-app:builder buildSphericalSnakeApp
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { App, TappableCanvasRaster, Label, app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { App, TappableCanvasRaster, Label, app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 
 // ============================================================================
 // 3D Math Types & Utilities

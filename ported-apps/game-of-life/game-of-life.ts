@@ -25,34 +25,7 @@
  * - Close intercept for running simulations
  */
 
-import { app, resolveTransport  } // @tsyne-app:name Game of Life
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6" fill="currentColor"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><rect x="15" y="15" width="6" height="6" fill="currentColor"/></svg>
-// @tsyne-app:category games
-// @tsyne-app:builder createGameOfLifeApp
-// @tsyne-app:args app,windowWidth,windowHeight
-
-/**
- * Conway's Game of Life for Tsyne
- *
- * Ported from https://github.com/fyne-io/life
- * Original authors: Fyne.io contributors
- * License: See original repository
- *
- * Conway's Game of Life is a cellular automaton devised by mathematician John Conway.
- * This is a simplified port to demonstrate simulation capabilities in Tsyne.
- * The original implementation uses Fyne's custom canvas widgets for rendering.
- * This version adapts the concepts to work with Tsyne's declarative API.
- *
- * Tsyne API features demonstrated:
- * - Main menu with File, View, Help operations
- * - File dialogs for pattern save/load
- * - Preferences for simulation speed
- * - Confirm dialogs for destructive operations
- * - About dialog
- * - Close intercept for running simulations
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as fs from 'fs';

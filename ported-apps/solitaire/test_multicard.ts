@@ -2,11 +2,7 @@
  * Manual test to demonstrate multi-card sequence moves
  */
 
-import { app } /**
- * Manual test to demonstrate multi-card sequence moves
- */
-
-import { app , standaloneShutdownStrategyfrom 'tsyne';
+import { app , standaloneShutdownStrategy } from 'tsyne';
 import { createSolitaireApp } from './solitaire';
 import { Game, Card, Suit } from './solitaire';
 

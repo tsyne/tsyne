@@ -8,17 +8,7 @@
  * This demonstrates the visual difference blend modes make.
  */
 
-import { App, asRenderTarget } /**
- * Blend Mode Comparison - Side by Side
- *
- * Shows static overlapping lines:
- * - Left: Normal blending (lines just overlap)
- * - Right: Additive blending (overlaps get brighter)
- *
- * This demonstrates the visual difference blend modes make.
- */
-
-import { App, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
+import { App, asRenderTarget , standaloneShutdownStrategy } from 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, enableEventHandling } from '../src';
 

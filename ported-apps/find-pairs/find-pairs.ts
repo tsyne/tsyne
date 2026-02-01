@@ -23,32 +23,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport } /**
- * Find Pairs
- *
- * Memory matching game. Find all matching pairs on a 10x5 grid.
- *
- * Port of ChrysaLisp pairs app by Chris Hinsley
- * Original: https://github.com/vygr/ChrysaLisp/blob/master/apps/pairs/app.lisp
- * License: GPL-2.0
- *
- * @tsyne-app:name Find Pairs
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="none">
- *   <rect x="2" y="2" width="9" height="9" rx="1" fill="#888" stroke="#333" stroke-width="0.5"/>
- *   <rect x="13" y="2" width="9" height="9" rx="1" fill="#4a4" stroke="#333" stroke-width="0.5"/>
- *   <rect x="2" y="13" width="9" height="9" rx="1" fill="#4a4" stroke="#333" stroke-width="0.5"/>
- *   <rect x="13" y="13" width="9" height="9" rx="1" fill="#888" stroke="#333" stroke-width="0.5"/>
- *   <text x="6.5" y="9" font-size="6" fill="#FFF" text-anchor="middle" font-weight="bold">A</text>
- *   <text x="6.5" y="20" font-size="6" fill="#FFF" text-anchor="middle" font-weight="bold">A</text>
- * </svg>
- * SVG
- * @tsyne-app:category games
- * @tsyne-app:builder createFindPairsApp
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, ColorCell } from 'tsyne';
 
 // ============================================================================

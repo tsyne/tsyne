@@ -20,29 +20,7 @@
  * @tsyne-app:count single
  */
 
-import type { App, Window, Label, CompletionEntry } /**
- * Nomad App - Time zone conversion and management
- *
- * A time conversion application for managing time across multiple timezones
- * and locations. Track current time in different cities and time zones.
- * Features beautiful city cards with background images, calendar date picker,
- * and time selection dropdowns.
- *
- * Ported from Nomad (https://github.com/fynelabs/nomad)
- * Original by Fyne Labs
- *
- * Portions copyright original team and portions copyright Paul Hammant 2025
- * License: BSD 3-Clause
- *
- * @tsyne-app:name Nomad
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
- * @tsyne-app:category Utilities
- * @tsyne-app:builder buildNomadApp
- * @tsyne-app:args app,win
- * @tsyne-app:count single
- */
-
-import type { App, Window, Label, CompletionEntry , standaloneShutdownStrategyfrom 'tsyne';
+import type { App, Window, Label, CompletionEntry , standaloneShutdownStrategy } from 'tsyne';
 
 /**
  * City data with proper timezone support

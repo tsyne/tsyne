@@ -10,19 +10,7 @@
  * Run: npx tsx cosyne/demos/lighting-modes.ts
  */
 
-import { app, resolveTransport, CanvasShader } /**
- * Lighting Modes Demo
- *
- * Demonstrates different lighting setups via raymarching:
- * - Frontal: Light from camera direction
- * - Side: Light from the side
- * - Back: Rim lighting (light from behind)
- * - Multi: Multiple light sources
- *
- * Run: npx tsx cosyne/demos/lighting-modes.ts
- */
-
-import { app, resolveTransport, CanvasShader , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, CanvasShader , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 
 const WIDTH = 500;

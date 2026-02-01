@@ -16,25 +16,7 @@
  * @tsyne-app:count many
  */
 
-import { app, resolveTransport  } /**
- * ELIZA - Classic Pattern Matching Chatbot
- *
- * A Tsyne port of Joseph Weizenbaum's 1966 ELIZA chatbot.
- * Simulates a Rogerian psychotherapist using pattern matching
- * and symbolic processing.
- *
- * Copyright (c) 2025 Paul Hammant
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * @tsyne-app:name ELIZA
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><circle cx="8" cy="10" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></svg>
- * @tsyne-app:category utilities
- * @tsyne-app:builder createElizaApp
- * @tsyne-app:args app
- * @tsyne-app:count many
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label, Entry, VBox } from 'tsyne';
 import { elizaResponse, getInitialGreeting, isQuitCommand } from './eliza-engine';
 

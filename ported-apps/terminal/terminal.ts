@@ -68,7 +68,7 @@ import { app, resolveTransport  } /**
 // @tsyne-app:count many
 // @tsyne-app:args app, desktop
 
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { ITsyneWindow } from 'tsyne';

@@ -19,28 +19,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport } /**
- * Battery Monitor App
- *
- * Displays detailed battery information including charge level,
- * charging status, health, temperature, and estimated time remaining.
- *
- * @tsyne-app:name Battery
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="currentColor">
- *   <rect x="2" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
- *   <rect x="20" y="9" width="2" height="6" fill="currentColor"/>
- *   <rect x="4" y="8" width="12" height="8" fill="currentColor" opacity="0.7"/>
- * </svg>
- * SVG
- * @tsyne-app:category utilities
- * @tsyne-app:platforms phone,tablet
- * @tsyne-app:builder createBatteryApp
- * @tsyne-app:args app,battery,lifecycle
- * @tsyne-app:count single
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label, ProgressBar } from 'tsyne';
 import {
   IBatteryService,

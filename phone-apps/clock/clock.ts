@@ -15,24 +15,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } /**
- * Clock App
- *
- * Displays analog and digital clock with current time and date.
- *
- * @tsyne-app:name Clock
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
- *   <polyline points="12 6 12 12 18 12" fill="none" stroke="currentColor" stroke-width="2"/>
- * </svg>
- * SVG
- * @tsyne-app:category utilities
- * @tsyne-app:builder createClockApp
- * @tsyne-app:args app,clock,notifications,lifecycle
- * @tsyne-app:count single
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label } from 'tsyne';
 import {
   IClockService,

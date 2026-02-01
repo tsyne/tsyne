@@ -7,16 +7,7 @@
  * - Mixing native Tsyne UI with canvas graphics
  */
 
-import { App } /**
- * Foreign Objects Demo - Cosyne Phase 5
- *
- * Demonstrates embedding Tsyne widgets inside Cosyne canvas
- * - Button controls that trigger canvas animations
- * - Text input that updates canvas content
- * - Mixing native Tsyne UI with canvas graphics
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, easeInOutCubic } from 'cosyne';
 
 interface CanvasState {

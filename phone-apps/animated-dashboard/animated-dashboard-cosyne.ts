@@ -8,17 +8,7 @@
  * - Data-driven animations
  */
 
-import { App } /**
- * Animated Dashboard Demo - Cosyne Phase 9
- *
- * Demonstrates real-time animated data visualization
- * - Animated bar chart with data binding
- * - Animated progress indicators
- * - Multi-property animations
- * - Data-driven animations
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutCubic, easeInOutSine } from 'cosyne';
 
 interface MetricState {

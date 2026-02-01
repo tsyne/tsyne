@@ -12,21 +12,7 @@
  * - Leaves at branch tips
  */
 
-import { app, resolveTransport } /**
- * Fractal Tree - Recursive Tree Generation (Cosyne Version)
- *
- * Demonstrates nested transforms for creating complex, recursive structures.
- * Generates a tree by recursively branching at angles and scaling down.
- *
- * Features:
- * - Recursive tree structure with 5 levels
- * - Each level thinner and shorter than parent
- * - Branches at ~30 degree angles
- * - Animated rotation for growth effect
- * - Leaves at branch tips
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import { cosyne, refreshAllCosyneContexts } from 'cosyne';

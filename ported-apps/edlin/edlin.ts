@@ -23,32 +23,7 @@
  * rather than the custom Go TextList widget.
  */
 
-import { app } // @tsyne-app:name Edlin
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-// @tsyne-app:category utilities
-// @tsyne-app:builder buildEdlinApp
-// @tsyne-app:args app,windowWidth,windowHeight
-
-/**
- * Edlin - A Line-Oriented Text Editor for Tsyne
- *
- * Ported from https://github.com/bshofner/edlin (Go/Fyne)
- * Original author: Bob Shofner
- * MIT License - https://opensource.org/license/mit/
- *
- * Features:
- * - Multi-tab document editing (DocTabs)
- * - File menu: New, Open, Save
- * - Edit menu: Undo, Redo, Cut, Copy, Paste, Select All
- * - Search/Replace with case-insensitive option
- * - Help dialogs with keyboard shortcuts
- * - Supports Unicode text including CJK characters
- *
- * TypeScript port uses Tsyne's MultilineEntry widget for text editing,
- * rather than the custom Go TextList widget.
- */
-
-import { app , standaloneShutdownStrategyfrom 'tsyne';
+import { app , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import type { DocTabs, MultiLineEntry } from 'tsyne';

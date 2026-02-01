@@ -64,73 +64,7 @@
  * - GIF (load/save) - legacy format
  */
 
-import { app, resolveTransport, TappableCanvasRaster } // @tsyne-app:name Pixel Editor
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" fill="currentColor"/><rect x="8" y="8" width="4" height="4" fill="currentColor"/><rect x="12" y="12" width="4" height="4" fill="currentColor"/><rect x="16" y="4" width="4" height="4"/><rect x="4" y="16" width="4" height="4"/><path d="M2 2h20v20H2z"/></svg>
-// @tsyne-app:category graphics
-// @tsyne-app:builder createPixelEditorApp
-// @tsyne-app:args app,filePath,windowWidth,windowHeight
-
-/**
- * Pixel Editor for Tsyne
- *
- * Ported from https://github.com/fyne-io/pixeledit
- * Original authors: Fyne.io contributors
- * License: See original repository
- *
- * This port demonstrates pixel editing capabilities in Tsyne, including:
- * - Main menu with File, Edit, Layer, Adjust, Effects, Channels, Transform operations
- * - File dialogs for Open/Save
- * - Recent files history (stored in preferences)
- * - Color picker for foreground/background color selection
- * - Power-of-2 zoom (100%, 200%, 400%, etc.)
- * - FG/BG color preview rectangles
- * - Undo/Redo system
- * - Multiple drawing tools (Pencil, Picker, Eraser, Bucket, Line, Rectangle, Circle, Select)
- * - Selection system with copy/cut/paste clipboard operations
- * - Multi-layer support with visibility, opacity, and compositing
- *
- * 35+ Image Effects:
- *
- * ADJUSTMENTS:
- * - Brightness, Contrast, Saturation, Gamma correction
- * - Auto Levels (normalize), Color Temperature, Tint
- *
- * COLOR EFFECTS:
- * - Grayscale, Sepia, Invert (negative)
- * - Posterize, Threshold, Solarize, Dither
- *
- * BLUR/SHARPEN:
- * - Box Blur, Sharpen (unsharp mask)
- *
- * ARTISTIC:
- * - Edge Detection (Sobel), Emboss
- * - Pixelate, Oil Paint, Pencil Sketch, Halftone
- *
- * FILM/PHOTO:
- * - Vignette, Film Grain, Vintage, Cross Process
- *
- * SPECIAL:
- * - Night Vision, Thermal/Heat Map
- * - Chromatic Aberration, Glitch, Color Splash
- *
- * CHANNELS:
- * - Red/Green/Blue channel isolation
- * - Channel swapping (RGB ↔ BGR, rotate channels)
- *
- * TRANSFORMS:
- * - Flip Horizontal/Vertical
- * - Rotate 90° CW, 90° CCW, 180°
- *
- * Supported Image Formats (via sharp):
- * - PNG (load/save)
- * - JPEG (load/save)
- * - WebP (load/save) - modern format with good compression
- * - AVIF (load/save) - next-gen format with excellent compression
- * - TIFF (load/save) - professional format
- * - GIF (load/save) - legacy format
- */
-
-import { app, resolveTransport, TappableCanvasRaster , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport, TappableCanvasRaster, standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, CanvasRectangle, Label, Button } from 'tsyne';
 import * as fs from 'fs';
 import * as path from 'path';

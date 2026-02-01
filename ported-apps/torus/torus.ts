@@ -24,33 +24,7 @@
  * Where R = major radius, r = minor radius, u,v ∈ [0, 2π]
  */
 
-import { app, resolveTransport } // @tsyne-app:name Torus
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="12" rx="10" ry="4" stroke="#CC0000"/><ellipse cx="12" cy="12" rx="6" ry="10" stroke="#CC0000"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" stroke="#880000"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-60 12 12)" stroke="#880000"/></svg>
-// @tsyne-app:category fun
-// @tsyne-app:builder createTorusApp
-// @tsyne-app:args app,window,windowWidth,windowHeight
-
-/**
- * Interactive 3D Torus Demo for Tsyne
- *
- * Demonstrates 3D-to-2D projection and software rendering using CanvasRaster.
- *
- * Features:
- * - Parametric torus wireframe rendering
- * - 3D to 2D perspective projection with rotation
- * - Continuous auto-animation
- * - Lambertian shading for depth perception
- * - Efficient pixel-based rendering (no widget tree rebuilds)
- *
- * Mathematical Background:
- * A torus is defined by parametric equations:
- *   x = (R + r·cos(v)) · cos(u)
- *   y = (R + r·cos(v)) · sin(u)
- *   z = r · sin(v)
- * Where R = major radius, r = minor radius, u,v ∈ [0, 2π]
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, TappableCanvasRaster, ITsyneWindow } from 'tsyne';
 import { TorusProjection, type Point3D } from './projections';
 import {

@@ -21,30 +21,7 @@
  * @tsyne-app:args app,windowWidth,windowHeight
  */
 
-import { app, resolveTransport  } /**
- * 3D Rubik's Cube
- *
- * A faithful port of Qt3DCube from https://github.com/EricStudley/Qt3DCube
- * Original author: Eric Studley
- * License: See original repository
- *
- * An interactive 3D Rubik's Cube with rotation, shuffle, and solve functionality.
- * Rendered using isometric projection on a 2D canvas.
- *
- * @tsyne-app:name 3D Cube
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24">
- *   <polygon points="2,7 2,17 12,22 12,12" fill="#228B22" stroke="#333" stroke-width="1"/>
- *   <polygon points="22,7 12,12 12,22 22,17" fill="#DC143C" stroke="#333" stroke-width="1"/>
- *   <polygon points="12,2 2,7 12,12 22,7" fill="#FFD700" stroke="#333" stroke-width="1"/>
- * </svg>
- * SVG
- * @tsyne-app:category games
- * @tsyne-app:builder create3DCubeApp
- * @tsyne-app:args app,windowWidth,windowHeight
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label, TappableCanvasRaster } from 'tsyne';
 
 // ============================================================================

@@ -19,28 +19,7 @@
  * @tsyne-app:count single
  */
 
-import { app, resolveTransport  } /**
- * Stopwatch App
- *
- * Stopwatch with analog dial display and lap recording.
- *
- * @tsyne-app:name Stopwatch
- * @tsyne-app:icon <<SVG
- * <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
- *   <circle cx="12" cy="13" r="8"/>
- *   <path d="M12 9v4l2 2"/>
- *   <path d="M12 5V3"/>
- *   <path d="M10 3h4"/>
- *   <path d="M18 7l1.5-1.5"/>
- * </svg>
- * SVG
- * @tsyne-app:category utilities
- * @tsyne-app:builder createStopwatchApp
- * @tsyne-app:args app,clock,notifications,lifecycle
- * @tsyne-app:count single
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, Label, Button, CanvasLine } from 'tsyne';
 import {
   IClockService,

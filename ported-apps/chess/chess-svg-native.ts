@@ -9,18 +9,7 @@
  * Much simpler and faster than the original SVG→PNG conversion approach.
  */
 
-import { app, resolveTransport  } /**
- * Chess Game for Tsyne (Simplified)
- *
- * Ported from https://github.com/andydotxyz/chess
- * Original author: Andy Williams
- * License: See original repository
- *
- * This version uses Fyne's native SVG support instead of runtime rendering.
- * Much simpler and faster than the original SVG→PNG conversion approach.
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as path from 'path';

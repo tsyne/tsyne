@@ -7,16 +7,7 @@
  * Run: npx tsx cosyne/demos/symmetry-demo.ts
  */
 
-import { app, resolveTransport } /**
- * Symmetry Shapes Demo
- *
- * Demonstrates generating regular polygons and star shapes
- * with adjustable number of sides/points.
- *
- * Run: npx tsx cosyne/demos/symmetry-demo.ts
- */
-
-import { app, resolveTransport , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import {
   cosyne,

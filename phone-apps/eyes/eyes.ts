@@ -13,22 +13,7 @@
  * @tsyne-app:builder createEyesApp
  */
 
-import { app, resolveTransport  } /**
- * Eyes - Animated Eyes Following Mouse
- *
- * Ported from ChrysaLisp: https://github.com/vygr/ChrysaLisp/blob/master/apps/eyes/app.lisp
- * Original authors: ChrysaLisp contributors
- * License: See original repository
- *
- * An animated eyes display that follows the mouse cursor.
- *
- * @tsyne-app:name Eyes
- * @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/></svg>
- * @tsyne-app:category fun
- * @tsyne-app:builder createEyesApp
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App, Window, TappableCanvasRaster } from 'tsyne';
 
 // Default configuration

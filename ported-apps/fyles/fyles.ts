@@ -35,44 +35,7 @@
  * - Background image detection (.background.png/jpg/svg)
  */
 
-import { app, resolveTransport  } // @tsyne-app:name File Browser
-// @tsyne-app:icon <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2v11z"/></svg>
-// @tsyne-app:category utilities
-// @tsyne-app:builder createFylesApp
-// @tsyne-app:args app,initialDir,windowWidth,windowHeight
-
-/**
- * Fyles File Browser for Tsyne
- *
- * Ported from https://github.com/FyshOS/fyles
- * Original authors: FyshOS contributors
- * License: See original repository
- *
- * A simple file browser with:
- * - Multi-panel view (multiple side-by-side file browsers)
- * - Directory navigation panel (left) with expandable tree view
- * - File grid view (right)
- * - Toolbar with home button, new folder, split panel, current path
- * - Hidden file filtering
- * - File/folder icons with fancy folder support
- * - Right-click context menus (Open, Copy path)
- * - New folder creation dialog
- * - Drag-and-drop file operations (move files by dragging to folders)
- * - Cross-panel drag-and-drop (drag from one panel, drop in another)
- * - Tree expansion state persistence (remembers expanded folders)
- * - Fancy folder backgrounds (fancyfs style metadata support)
- *
- * Implementation notes:
- * - Uses incremental updates like solitaire (no full rebuild on every change)
- * - Only rebuilds when directory changes
- * - Updates path label directly when just toggling hidden files
- * - Persists state to ~/.tsyne/fyles-state.json
- * - Multiple panels use hsplit for side-by-side layout
- * - Special folder icons for Home, Desktop, Documents, Downloads, Music, Pictures, Videos
- * - Background image detection (.background.png/jpg/svg)
- */
-
-import { app, resolveTransport  , standaloneShutdownStrategyfrom 'tsyne';
+import { app, resolveTransport  , standaloneShutdownStrategy } from 'tsyne';
 import type { App } from 'tsyne';
 import type { Window } from 'tsyne';
 import * as os from 'os';

@@ -10,19 +10,7 @@
  * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
  */
 
-import { App, CanvasPath, refreshAllBindings, asRenderTarget } /**
- * Wave2 Canvas Demo - Pseudo-Declarative Style
- *
- * Port of hakimel's wave CodePen using extracted utility functions
- * and pseudo-declarative composition patterns.
- *
- * @tsyne-app:name Wave2
- * @tsyne-app:icon mediaVideo
- * @tsyne-app:category fun
- * @tsyne-app:args (a: App, win?: ITsyneWindow) => void
- */
-
-import { App, CanvasPath, refreshAllBindings, asRenderTarget , standaloneShutdownStrategyfrom 'tsyne';
+import { App, CanvasPath, refreshAllBindings, asRenderTarget , standaloneShutdownStrategy } from 'tsyne';
 import type { Window, ITsyneWindow, IRenderTarget } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling } from 'cosyne';
 

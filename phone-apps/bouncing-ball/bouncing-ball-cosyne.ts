@@ -8,17 +8,7 @@
  * - Multiple balls with different easing
  */
 
-import { App } /**
- * Bouncing Ball Demo - Cosyne Phase 9
- *
- * Demonstrates physics-based animation patterns
- * - Ball bouncing with gravity simulation
- * - Easing functions for bouncy motion
- * - Interactive - click to bounce
- * - Multiple balls with different easing
- */
-
-import { App , standaloneShutdownStrategyfrom 'tsyne';
+import { App , standaloneShutdownStrategy } from 'tsyne';
 import { CosyneContext, cosyne, refreshAllCosyneContexts, enableEventHandling, easeOutBounce, easeInOutCubic, easeOutElastic } from 'cosyne';
 
 interface BallState {

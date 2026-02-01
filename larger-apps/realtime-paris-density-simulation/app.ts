@@ -3,12 +3,7 @@
 // @tsyne-app:builder buildParisDensity
 // Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
 
-import type { App, Window, Label } // @tsyne-app:name Paris Density
-// @tsyne-app:category visualization
-// @tsyne-app:builder buildParisDensity
-// Portions copyright Yvann Barbot and portions copyright Paul Hammant 2025
-
-import type { App, Window, Label , standaloneShutdownStrategyfrom 'tsyne';
+import type { App, Window, Label } from 'tsyne';
 import { generateDensityGrid, interpolateDensityGrids, DensityPoint, TimeOfWeek } from './simulation';
 import * as os from 'os';
 import * as path from 'path';
