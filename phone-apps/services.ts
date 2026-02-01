@@ -433,8 +433,8 @@ export class ApkStubbedSMSService implements ISMSService {
     return { available: false, reason: 'SMS is not available in this APK build' };
   }
 
-  getMessages(): Message[] {
-    this.showWarning('SMS Messages');
+  getMessages(threadId: string): Message[] {
+    this.showWarning(`SMS Messages for thread: ${threadId}`);
     return [];
   }
 
@@ -443,22 +443,26 @@ export class ApkStubbedSMSService implements ISMSService {
     return [];
   }
 
-  getThread(threadId: string): Thread | null {
-    return null;
-  }
-
-  markAsRead(messageId: string): void {}
-
-  addListener(listener: MessageListener): void {}
-
-  removeListener(listener: MessageListener): void {}
-
   deleteThread(threadId: string): boolean {
     return false;
   }
 
   deleteMessage(messageId: string): boolean {
     return false;
+  }
+
+  markThreadRead(threadId: string): void {
+    this.showWarning(`Mark thread as read: ${threadId}`);
+  }
+
+  onMessageReceived(listener: MessageListener): () => void {
+    this.showWarning('Message received listener registered');
+    // Return unsubscribe function (no-op in stub)
+    return () => {};
+  }
+
+  setAutoReply(enabled: boolean): void {
+    this.showWarning(`Auto-reply ${enabled ? 'enabled' : 'disabled'}`);
   }
 }
 
