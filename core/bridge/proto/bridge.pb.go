@@ -1237,6 +1237,7 @@ type CreateEntryRequest struct {
 	MinWidth                  float32                `protobuf:"fixed32,9,opt,name=min_width,json=minWidth,proto3" json:"min_width,omitempty"`                                                        // Minimum width for the entry
 	DoubleClickCallbackId     string                 `protobuf:"bytes,10,opt,name=double_click_callback_id,json=doubleClickCallbackId,proto3" json:"double_click_callback_id,omitempty"`              // Double-click callback
 	OnFocusCallbackId         string                 `protobuf:"bytes,11,opt,name=on_focus_callback_id,json=onFocusCallbackId,proto3" json:"on_focus_callback_id,omitempty"`                          // Focus gained/lost callback
+	Text                      string                 `protobuf:"bytes,12,opt,name=text,proto3" json:"text,omitempty"`                                                                                   // Initial text content
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1344,6 +1345,13 @@ func (x *CreateEntryRequest) GetDoubleClickCallbackId() string {
 func (x *CreateEntryRequest) GetOnFocusCallbackId() string {
 	if x != nil {
 		return x.OnFocusCallbackId
+	}
+	return ""
+}
+
+func (x *CreateEntryRequest) GetText() string {
+	if x != nil {
+		return x.Text
 	}
 	return ""
 }

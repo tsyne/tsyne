@@ -2782,4 +2782,46 @@ export class CanvasShader {
   getFragmentSource(): string {
     return this._fragmentSource;
   }
+
+  /**
+   * Set a heightmap texture uniform from a Float32Array.
+   * The heightmap will be converted to a grayscale texture where height is stored in the R channel.
+   * Use sampler2D in your shader: texture2D(u_heightmap, uv).r
+   *
+   * @param name Uniform name (e.g., 'u_heightmap')
+   * @param data Float32Array of height values (0-1 normalized or will be normalized)
+   * @param width Width of the heightmap
+   * @param height Height of the heightmap
+   */
+  async setHeightmapTexture(name: string, data: Float32Array, width: number, height: number): Promise<void> {
+    // Find min/max for normalization
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] < min) min = data[i];
+      if (data[i] > max) max = data[i];
+    }
+    const range = max - min || 1;
+
+    // Convert to RGBA image data (grayscale in RGB, alpha=255)
+    const rgba = new Uint8Array(width * height * 4);
+    for (let i = 0; i < data.length; i++) {
+      const normalized = (data[i] - min) / range;
+      const byte = Math.floor(normalized * 255);
+      rgba[i * 4 + 0] = byte; // R
+      rgba[i * 4 + 1] = byte; // G
+      rgba[i * 4 + 2] = byte; // B
+      rgba[i * 4 + 3] = 255;  // A
+    }
+
+    // Convert to base64
+    const base64 = Buffer.from(rgba).toString('base64');
+
+    await this.ctx.bridge.send('setShaderTextureUniform', {
+      widgetId: this.id,
+      uniformName: name,
+      imageData: base64,
+      width,
+      height,
+    });
+  }
 }

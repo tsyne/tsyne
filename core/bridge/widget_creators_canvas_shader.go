@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/base64"
+	"image"
+	"image/color"
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -103,6 +106,70 @@ func (b *Bridge) handleUpdateCanvasShader(msg Message) Response {
 	fyne.Do(func() {
 		shader.Refresh()
 	})
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
+// handleSetShaderTextureUniform sets a texture uniform from base64-encoded RGBA data
+func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	uniformName := msg.Payload["uniformName"].(string)
+	imageDataB64 := msg.Payload["imageData"].(string)
+	width := int(toFloat64(msg.Payload["width"]))
+	height := int(toFloat64(msg.Payload["height"]))
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Shader widget not found",
+		}
+	}
+
+	shader, ok := w.(*canvas.Shader)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a shader",
+		}
+	}
+
+	// Decode base64 image data
+	imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
+	if err != nil {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Failed to decode base64 image data: " + err.Error(),
+		}
+	}
+
+	// Create RGBA image from raw data
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			i := (y*width + x) * 4
+			if i+3 < len(imageData) {
+				img.SetRGBA(x, y, color.RGBA{
+					R: imageData[i],
+					G: imageData[i+1],
+					B: imageData[i+2],
+					A: imageData[i+3],
+				})
+			}
+		}
+	}
+
+	// Set texture uniform
+	shader.SetTextureUniform(uniformName, img)
 
 	return Response{
 		ID:      msg.ID,

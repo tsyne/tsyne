@@ -334,3 +334,249 @@ void main() {
     gl_FragColor = vec4(color, 1.0);
 }
 `;
+
+/**
+ * Heightmap-based terrain shader
+ * Reads terrain height from a texture uniform instead of procedural noise.
+ * Use with setHeightmapTexture() to pass dungeon/custom heightmaps.
+ *
+ * Uniforms:
+ * - u_heightmap: sampler2D texture containing height in R channel (0-1)
+ * - u_resolution: canvas size
+ * - u_time: animation time
+ * - u_heightMultiplier: vertical scale (default 20)
+ * - u_waterLevel: water threshold (0-1)
+ */
+export const heightmapTerrainShader = `
+#version 110
+
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform sampler2D u_heightmap;
+uniform float u_heightMultiplier;
+uniform float u_waterLevel;
+
+// Get height from texture
+float getHeight(vec2 pos) {
+    // Map world coords to UV (assuming terrain spans -50 to 50)
+    vec2 uv = (pos + 50.0) / 100.0;
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        return 0.0;
+    }
+    return texture2D(u_heightmap, uv).r * u_heightMultiplier;
+}
+
+// SDF for heightmap terrain
+float sdTerrain(vec3 p) {
+    float height = getHeight(p.xz);
+    return p.y - height;
+}
+
+// Normal calculation
+vec3 calculateNormal(vec3 p, float eps) {
+    vec2 e = vec2(eps, 0.0);
+    float d = sdTerrain(p);
+    float dx = sdTerrain(p + e.xyy) - d;
+    float dy = sdTerrain(p + e.yxy) - d;
+    float dz = sdTerrain(p + e.yyx) - d;
+    return normalize(vec3(dx, dy, dz));
+}
+
+// Material color based on height
+vec3 getMaterialColor(float height) {
+    float normalizedHeight = height / u_heightMultiplier;
+
+    if (normalizedHeight < u_waterLevel) {
+        return vec3(0.1, 0.3, 0.8); // Water - blue
+    } else if (normalizedHeight < u_waterLevel + 0.1) {
+        return vec3(0.8, 0.7, 0.4); // Beach - sand
+    } else if (normalizedHeight < 0.6) {
+        return vec3(0.2, 0.5, 0.2); // Grass - green
+    } else if (normalizedHeight < 0.8) {
+        return vec3(0.4, 0.35, 0.3); // Rock - brown
+    } else {
+        return vec3(0.9, 0.9, 0.95); // Snow - white
+    }
+}
+
+// Raymarch
+vec4 raymarch(vec3 ro, vec3 rd) {
+    float t = 0.0;
+    float maxT = 200.0;
+
+    for (int i = 0; i < 128; i++) {
+        vec3 p = ro + rd * t;
+        float d = sdTerrain(p);
+
+        if (d < 0.05) {
+            // Hit surface
+            vec3 normal = calculateNormal(p, 0.1);
+            float height = getHeight(p.xz);
+            vec3 color = getMaterialColor(height);
+
+            // Simple lighting
+            vec3 lightDir = normalize(vec3(0.5, 0.8, 0.3));
+            float diffuse = max(0.0, dot(normal, lightDir));
+            vec3 ambient = vec3(0.3, 0.3, 0.4);
+            vec3 finalColor = ambient + color * diffuse * 0.7;
+
+            return vec4(finalColor, 1.0);
+        }
+
+        if (t > maxT) break;
+        t += max(0.1, d * 0.5);
+    }
+
+    // Sky gradient
+    float sky = 0.5 + 0.5 * rd.y;
+    return vec4(mix(vec3(0.6, 0.8, 1.0), vec3(0.2, 0.4, 0.8), sky), 0.0);
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+    uv = (uv - 0.5) * 2.0;
+    uv.x *= u_resolution.x / u_resolution.y;
+
+    // Camera setup (orbiting view)
+    float camDist = 80.0;
+    vec3 camPos = vec3(
+        camDist * cos(u_time * 0.2),
+        30.0 + 10.0 * sin(u_time * 0.15),
+        camDist * sin(u_time * 0.2)
+    );
+    vec3 lookAt = vec3(0.0, 5.0, 0.0);
+    vec3 forward = normalize(lookAt - camPos);
+    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+    vec3 up = normalize(cross(forward, right));
+
+    vec3 rd = normalize(forward + uv.x * right + uv.y * up);
+
+    vec4 result = raymarch(camPos, rd);
+    gl_FragColor = result;
+}
+`;
+
+/**
+ * Dungeon-specific heightmap shader
+ * Optimized for viewing dungeon layouts with walls and floors.
+ * Uses closer camera and appropriate dungeon coloring.
+ *
+ * Uniforms:
+ * - u_heightmap: sampler2D texture (walls=1, floors=0)
+ * - u_resolution: canvas size
+ * - u_time: animation time
+ * - u_heightMultiplier: wall height scale (default 20)
+ */
+export const dungeonHeightmapShader = `
+#version 110
+
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform sampler2D u_heightmap;
+uniform float u_heightMultiplier;
+
+// Get height from texture
+float getHeight(vec2 pos) {
+    // Map world coords to UV (terrain spans -30 to 30 for closer view)
+    vec2 uv = (pos + 30.0) / 60.0;
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        return 0.0;
+    }
+    return texture2D(u_heightmap, uv).r * u_heightMultiplier;
+}
+
+// SDF for heightmap terrain
+float sdTerrain(vec3 p) {
+    float height = getHeight(p.xz);
+    return p.y - height;
+}
+
+// Normal calculation
+vec3 calculateNormal(vec3 p, float eps) {
+    vec2 e = vec2(eps, 0.0);
+    float d = sdTerrain(p);
+    float dx = sdTerrain(p + e.xyy) - d;
+    float dy = sdTerrain(p + e.yxy) - d;
+    float dz = sdTerrain(p + e.yyx) - d;
+    return normalize(vec3(dx, dy, dz));
+}
+
+// Dungeon material color - floors are stone, walls are darker stone
+vec3 getDungeonColor(float height) {
+    float normalizedHeight = height / u_heightMultiplier;
+
+    if (normalizedHeight < 0.1) {
+        // Floor - light gray stone with slight variation
+        return vec3(0.5, 0.48, 0.45);
+    } else if (normalizedHeight < 0.5) {
+        // Wall base - medium stone
+        return vec3(0.35, 0.32, 0.3);
+    } else {
+        // Wall top - darker stone
+        return vec3(0.25, 0.23, 0.22);
+    }
+}
+
+// Raymarch with dungeon-appropriate settings
+vec4 raymarch(vec3 ro, vec3 rd) {
+    float t = 0.0;
+    float maxT = 150.0;
+
+    for (int i = 0; i < 128; i++) {
+        vec3 p = ro + rd * t;
+        float d = sdTerrain(p);
+
+        if (d < 0.02) {
+            // Hit surface
+            vec3 normal = calculateNormal(p, 0.05);
+            float height = getHeight(p.xz);
+            vec3 color = getDungeonColor(height);
+
+            // Dungeon lighting - overhead with torch-like warmth
+            vec3 lightDir = normalize(vec3(0.3, 0.9, 0.2));
+            float diffuse = max(0.0, dot(normal, lightDir));
+
+            // Warm ambient for torch-lit dungeon feel
+            vec3 ambient = vec3(0.25, 0.2, 0.15);
+            vec3 lightColor = vec3(1.0, 0.9, 0.7); // Warm light
+            vec3 finalColor = ambient + color * diffuse * lightColor * 0.8;
+
+            // Add slight fog for depth
+            float fog = 1.0 - smoothstep(50.0, 100.0, t);
+            finalColor = mix(vec3(0.1, 0.1, 0.12), finalColor, fog);
+
+            return vec4(finalColor, 1.0);
+        }
+
+        if (t > maxT) break;
+        t += max(0.05, d * 0.4);
+    }
+
+    // Dark ceiling/void
+    return vec4(0.05, 0.05, 0.08, 0.0);
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+    uv = (uv - 0.5) * 2.0;
+    uv.x *= u_resolution.x / u_resolution.y;
+
+    // Camera setup - closer orbit for dungeon detail
+    float camDist = 45.0;
+    float camHeight = 35.0;
+    vec3 camPos = vec3(
+        camDist * cos(u_time * 0.15),
+        camHeight + 5.0 * sin(u_time * 0.1),
+        camDist * sin(u_time * 0.15)
+    );
+    vec3 lookAt = vec3(0.0, 0.0, 0.0);
+    vec3 forward = normalize(lookAt - camPos);
+    vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+    vec3 up = normalize(cross(forward, right));
+
+    vec3 rd = normalize(forward + uv.x * right + uv.y * up);
+
+    vec4 result = raymarch(camPos, rd);
+    gl_FragColor = result;
+}
+`;

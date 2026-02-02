@@ -207,6 +207,9 @@ func (s *grpcBridgeService) CreateEntry(ctx context.Context, req *pb.CreateEntry
 	if req.OnFocusCallbackId != "" {
 		payload["onFocusCallbackId"] = req.OnFocusCallbackId
 	}
+	if req.Text != "" {
+		payload["text"] = req.Text
+	}
 
 	msgType := "createEntry"
 	if req.Multiline {

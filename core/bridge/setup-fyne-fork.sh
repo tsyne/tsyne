@@ -992,7 +992,8 @@ sed -i 's/const DisableThreadChecks = false/const DisableThreadChecks = true/' "
 
 # 10b. Fix preferences EOF error (treat empty file same as missing)
 echo "[setup-fyne-fork] Patching preferences.go for EOF handling..."
-sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& err != io.EOF {/' "$FORK_DIR/app/preferences.go"
+# Use errors.Is for proper wrapped error checking
+sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& !errors.Is(err, io.EOF) {/' "$FORK_DIR/app/preferences.go"
 
 # 11. Tidy everything
 echo "[setup-fyne-fork] Final tidying..."

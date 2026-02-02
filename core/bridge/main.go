@@ -499,6 +499,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleCreateCanvasShader(msg)
 	case "updateCanvasShader":
 		return b.handleUpdateCanvasShader(msg)
+	case "setShaderTextureUniform":
+		return b.handleSetShaderTextureUniform(msg)
 	case "createCanvasLinearGradient":
 		return b.handleCreateCanvasLinearGradient(msg)
 	case "updateCanvasLine":

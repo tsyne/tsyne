@@ -186,5 +186,7 @@ export {
 export {
   defaultVertexShader,
   terrainFragmentShader,
+  heightmapTerrainShader,
+  dungeonHeightmapShader,
   simpleTerrainShader,
 } from './shader-terrain';
