@@ -101,6 +101,9 @@ cat > "$FORK_DIR/canvas/shader.go" <<'SHADER_EOF'
 package canvas
 
 import (
+	"sync"
+	"time"
+
 	"fyne.io/fyne/v2"
 )
 
@@ -112,6 +115,7 @@ type Shader struct {
 	VertexSource    string                 // GLSL vertex shader source code (optional)
 	FragmentSource  string                 // GLSL fragment shader source code
 	Uniforms        map[string]interface{} // Uniform values: float32, [2]float32, [3]float32, [4]float32
+	uniformsMu      sync.RWMutex           // Protects concurrent access to Uniforms map
 	Textures        map[string]interface{} // Texture uniforms: image.Image, image.RGBA, etc.
 	Cubemaps        map[string][6]interface{} // Cubemap uniforms: [+X, -X, +Y, -Y, +Z, -Z]
 
@@ -119,6 +123,10 @@ type Shader struct {
 	Vertices        []float32              // Vertex data (positions, normals, texcoords, etc.)
 	Indices         []uint16               // Index buffer (for indexed drawing)
 	VertexFormat    string                 // Format descriptor: "pos3", "pos3_norm3", "pos3_norm3_uv2", etc.
+
+	// Time tracking for u_time uniform (only updates on Refresh, not every paint pass)
+	startTime       time.Time              // When the shader was created
+	cachedTime      float32                // Cached u_time value, only updated on Refresh()
 
 	// Internal state managed by the GL painter
 	program         uint32
@@ -144,6 +152,7 @@ type Shader struct {
 // Cubemap uniforms can be set via SetCubemapUniform.
 // Vertex data can be set via SetVertices and SetIndices.
 func NewShader(width, height float32, fragmentSrc string) *Shader {
+	now := time.Now()
 	s := &Shader{
 		VertexSource:   "",
 		FragmentSource: fragmentSrc,
@@ -153,6 +162,8 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		Vertices:       nil,
 		Indices:        nil,
 		VertexFormat:   "",
+		startTime:      now,
+		cachedTime:     0, // Initial u_time is 0
 		needsCompile:   true,
 		uniformLocs:    make(map[string]int32),
 		textureUnits:   make(map[string]int),
@@ -173,9 +184,22 @@ func (s *Shader) Size() fyne.Size {
 	return s.size
 }
 
-// Refresh causes the shader to be redrawn
+// Refresh causes the shader to be redrawn and updates the cached u_time value.
+// This is the ONLY time u_time changes - it does NOT update on every paint pass.
+// This matches Fyne's texture caching behavior where widgets only regenerate on Refresh().
 func (s *Shader) Refresh() {
+	s.cachedTime = float32(time.Since(s.startTime).Seconds())
 	Refresh(s)
+}
+
+// CachedTime returns the cached u_time value (only updated on Refresh)
+func (s *Shader) CachedTime() float32 {
+	return s.cachedTime
+}
+
+// StartTime returns when the shader was created
+func (s *Shader) StartTime() time.Time {
+	return s.startTime
 }
 
 // MinSize returns the minimum size (same as size for shaders)
@@ -201,8 +225,22 @@ func (s *Shader) SetMinSize(size fyne.Size) {
 //   - [4]float32 or []float32 (len 4) -> vec4 uniform
 //   - int or int32 -> int uniform
 func (s *Shader) SetUniform(name string, value interface{}) {
+	s.uniformsMu.Lock()
 	s.Uniforms[name] = value
+	s.uniformsMu.Unlock()
 	s.Refresh()
+}
+
+// GetUniformsCopy returns a thread-safe copy of the uniforms map for iteration.
+// Use this in the painter to avoid concurrent map access.
+func (s *Shader) GetUniformsCopy() map[string]interface{} {
+	s.uniformsMu.RLock()
+	defer s.uniformsMu.RUnlock()
+	copy := make(map[string]interface{}, len(s.Uniforms))
+	for k, v := range s.Uniforms {
+		copy[k] = v
+	}
+	return copy
 }
 
 // SetTextureUniform sets a texture uniform value.
@@ -441,7 +479,6 @@ var debugLogCount int32
 // SetBlendFunc sets the blend function implementation.
 // Call this after gl.Init() with gl.BlendFunc as the argument.
 func SetBlendFunc(fn BlendFuncSetter) {
-	log.Printf("[renderhook] SetBlendFunc called - GL blend function now available")
 	blendFunc = fn
 }
 
@@ -588,7 +625,6 @@ package gl
 import (
 	"log"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -613,9 +649,6 @@ uniform vec2 u_resolution;
 uniform float u_time;
 varying vec2 v_texCoord;
 `
-
-// shaderStartTime is used to calculate u_time uniform
-var shaderStartTime = time.Now()
 
 // shaderVBO is a dedicated vertex buffer for shader rendering
 var shaderVBO Buffer
@@ -737,12 +770,13 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	timeLoc := getUniformLoc("u_time")
 	if timeLoc >= 0 {
-		elapsed := float32(time.Since(shaderStartTime).Seconds())
-		p.ctx.Uniform1f(timeLoc, elapsed)
+		// Use the shader's cached time - only updated when Refresh() is called
+		// This matches Fyne's texture caching behavior where widgets only update on explicit refresh
+		p.ctx.Uniform1f(timeLoc, shader.CachedTime())
 	}
 
-	// Set custom uniforms
-	for name, val := range shader.Uniforms {
+	// Set custom uniforms (use thread-safe copy to avoid concurrent map access)
+	for name, val := range shader.GetUniformsCopy() {
 		loc := getUniformLoc(name)
 		if loc < 0 {
 			continue
@@ -928,6 +962,11 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 
 	// Restore default program
 	p.ctx.UseProgram(p.program.ref)
+
+	// Re-enable default program vertex attribute arrays
+	// (shader's DisableVertexAttribArray may have disabled them if indices match)
+	p.ctx.EnableVertexAttribArray(p.program.attributes["vert"])
+	p.ctx.EnableVertexAttribArray(p.program.attributes["vertTexCoord"])
 }
 SHADER_PAINTER_EOF
 
@@ -947,7 +986,15 @@ sed -i '/p\.drawRaster(obj, pos, frame)/a\
 \	case *canvas.Shader:\
 \		p.drawShader(obj, pos, frame)' "$FORK_DIR/internal/painter/gl/draw.go"
 
-# 10. Tidy everything
+# 10. Disable Fyne thread safety warnings (we handle threading ourselves)
+echo "[setup-fyne-fork] Disabling thread safety warnings..."
+sed -i 's/const DisableThreadChecks = false/const DisableThreadChecks = true/' "$FORK_DIR/internal/build/migrated_notfynedo.go"
+
+# 10b. Fix preferences EOF error (treat empty file same as missing)
+echo "[setup-fyne-fork] Patching preferences.go for EOF handling..."
+sed -i 's/if err != nil && err != errEmptyPreferencesStore {/if err != nil \&\& err != errEmptyPreferencesStore \&\& err != io.EOF {/' "$FORK_DIR/app/preferences.go"
+
+# 11. Tidy everything
 echo "[setup-fyne-fork] Final tidying..."
 cd "$FORK_DIR"
 go mod tidy

@@ -51,6 +51,7 @@ export {
   PopupMenuItem,
   ImageButton,
   Entry,
+  EntryOptions,
   MultiLineEntry,
   PasswordEntry,
   Checkbox,

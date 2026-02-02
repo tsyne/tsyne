@@ -812,6 +812,107 @@ func NewHoverableButton(text string, tapped func(), bridge *Bridge, widgetID str
 }
 
 // ============================================================================
+// TsyneSlider - Slider with hover event support
+// ============================================================================
+
+// TsyneSlider extends widget.Slider to add hover event callbacks.
+// Similar to TsyneButton, it embeds the slider and implements desktop.Hoverable.
+type TsyneSlider struct {
+	widget.Slider
+	bridge   *Bridge
+	widgetID string
+
+	// Callback IDs for event dispatching to TypeScript
+	onMouseInCallbackId    string
+	onMouseOutCallbackId   string
+	onMouseMovedCallbackId string
+}
+
+// NewTsyneSlider creates a new TsyneSlider
+func NewTsyneSlider(min, max float64, bridge *Bridge, widgetID string) *TsyneSlider {
+	s := &TsyneSlider{
+		bridge:   bridge,
+		widgetID: widgetID,
+	}
+	s.Min = min
+	s.Max = max
+	s.ExtendBaseWidget(s)
+	return s
+}
+
+// --- desktop.Hoverable interface ---
+
+// MouseIn is called when the mouse pointer enters the slider
+func (s *TsyneSlider) MouseIn(e *desktop.MouseEvent) {
+
+	// Call parent's MouseIn to maintain slider hover behavior
+	s.Slider.MouseIn(e)
+
+	// Send callback event if registered
+	if s.onMouseInCallbackId != "" {
+		s.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": s.onMouseInCallbackId,
+				"position": map[string]interface{}{
+					"x": e.Position.X,
+					"y": e.Position.Y,
+				},
+			},
+		})
+	}
+
+	// Also send pointerEnter for accessibility announcements
+	s.bridge.sendEvent(Event{
+		Type:     "pointerEnter",
+		WidgetID: s.widgetID,
+	})
+}
+
+// MouseMoved is called when the mouse pointer moves over the slider
+func (s *TsyneSlider) MouseMoved(e *desktop.MouseEvent) {
+	// Call parent's MouseMoved
+	s.Slider.MouseMoved(e)
+
+	if s.onMouseMovedCallbackId == "" {
+		return
+	}
+	s.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": s.onMouseMovedCallbackId,
+			"position": map[string]interface{}{
+				"x": e.Position.X,
+				"y": e.Position.Y,
+			},
+		},
+	})
+}
+
+// MouseOut is called when the mouse pointer leaves the slider
+func (s *TsyneSlider) MouseOut() {
+
+	// Call parent's MouseOut to maintain slider hover behavior
+	s.Slider.MouseOut()
+
+	// Send callback event if registered
+	if s.onMouseOutCallbackId != "" {
+		s.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": s.onMouseOutCallbackId,
+			},
+		})
+	}
+
+	// Also send pointerExit for accessibility
+	s.bridge.sendEvent(Event{
+		Type:     "pointerExit",
+		WidgetID: s.widgetID,
+	})
+}
+
+// ============================================================================
 // TsyneEntry - Entry with focus callbacks for virtual keyboard support
 // ============================================================================
 
@@ -1192,6 +1293,11 @@ type HoverableWrapper struct {
 	widgetID        string
 	mouseInHandler  func(*desktop.MouseEvent)
 	mouseOutHandler func()
+
+	// Callback IDs for event dispatching to TypeScript
+	onMouseInCallbackId    string
+	onMouseOutCallbackId   string
+	onMouseMovedCallbackId string
 }
 
 // NewHoverableWrapper creates a new hoverable wrapper
@@ -1215,7 +1321,22 @@ func (h *HoverableWrapper) MouseIn(ev *desktop.MouseEvent) {
 	if h.mouseInHandler != nil {
 		h.mouseInHandler(ev)
 	}
-	// Send pointerEnter event to TypeScript
+
+	// Send callback event if registered
+	if h.onMouseInCallbackId != "" {
+		h.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": h.onMouseInCallbackId,
+				"position": map[string]interface{}{
+					"x": ev.Position.X,
+					"y": ev.Position.Y,
+				},
+			},
+		})
+	}
+
+	// Also send pointerEnter for accessibility announcements
 	h.bridge.sendEvent(Event{
 		Type:     "pointerEnter",
 		WidgetID: h.widgetID,
@@ -1227,7 +1348,18 @@ func (h *HoverableWrapper) MouseOut() {
 	if h.mouseOutHandler != nil {
 		h.mouseOutHandler()
 	}
-	// Send pointerExit event to TypeScript
+
+	// Send callback event if registered
+	if h.onMouseOutCallbackId != "" {
+		h.bridge.sendEvent(Event{
+			Type: "callback",
+			Data: map[string]interface{}{
+				"callbackId": h.onMouseOutCallbackId,
+			},
+		})
+	}
+
+	// Also send pointerExit for accessibility
 	h.bridge.sendEvent(Event{
 		Type:     "pointerExit",
 		WidgetID: h.widgetID,
@@ -1236,7 +1368,19 @@ func (h *HoverableWrapper) MouseOut() {
 
 // MouseMoved implements desktop.Hoverable - called when mouse moves within the widget
 func (h *HoverableWrapper) MouseMoved(ev *desktop.MouseEvent) {
-	// We don't need to handle mouse moved for basic hover support
+	if h.onMouseMovedCallbackId == "" {
+		return
+	}
+	h.bridge.sendEvent(Event{
+		Type: "callback",
+		Data: map[string]interface{}{
+			"callbackId": h.onMouseMovedCallbackId,
+			"position": map[string]interface{}{
+				"x": ev.Position.X,
+				"y": ev.Position.Y,
+			},
+		},
+	})
 }
 
 // SetMouseInHandler allows setting a custom mouse in handler

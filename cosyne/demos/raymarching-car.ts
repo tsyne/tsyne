@@ -465,7 +465,7 @@ function createCarDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Distance:');
-            a.slider(2, 8, 0.5, cameraDistance, (val) => {
+            a.slider(2, 8, cameraDistance, (val) => {
               cameraDistance = val;
               updateCameraPosition();
             });
@@ -474,7 +474,7 @@ function createCarDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Height:');
-            a.slider(0.5, 5, 0.5, cameraElevation, (val) => {
+            a.slider(0.5, 5, cameraElevation, (val) => {
               cameraElevation = val;
               updateCameraPosition();
             });

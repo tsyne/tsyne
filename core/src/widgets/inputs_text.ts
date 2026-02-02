@@ -12,6 +12,28 @@ export interface ButtonOptions {
 }
 
 /**
+ * Entry options for declarative configuration
+ */
+export interface EntryOptions {
+  /** Initial text value */
+  text?: string;
+  /** Placeholder text shown when empty */
+  placeholder?: string;
+  /** Callback when text changes */
+  onChange?: (text: string) => void;
+  /** Callback when Enter is pressed */
+  onSubmit?: (text: string) => void;
+  /** Minimum width in pixels */
+  minWidth?: number;
+  /** Callback on double-click */
+  onDoubleClick?: () => void;
+  /** Callback when cursor position changes */
+  onCursorChanged?: () => void;
+  /** Callback when focus changes */
+  onFocus?: (focused: boolean) => void;
+}
+
+/**
  * Button widget
  */
 export class Button extends Widget {
@@ -244,7 +266,7 @@ export class ImageButton extends Widget {
 export class Entry extends Widget {
   constructor(
     ctx: Context,
-    placeholder?: string,
+    placeholderOrOptions?: string | EntryOptions,
     onSubmit?: (text: string) => void,
     minWidth?: number,
     onDoubleClick?: () => void,
@@ -255,53 +277,74 @@ export class Entry extends Widget {
     const id = ctx.generateId('entry');
     super(ctx, id);
 
-    const payload: any = { id, placeholder: placeholder || '' };
+    // Normalize arguments: support both options object and positional args
+    let opts: EntryOptions;
+    if (typeof placeholderOrOptions === 'object' && placeholderOrOptions !== null) {
+      opts = placeholderOrOptions;
+    } else {
+      opts = {
+        placeholder: placeholderOrOptions,
+        onSubmit,
+        minWidth,
+        onDoubleClick,
+        onChange,
+        onCursorChanged,
+        onFocus,
+      };
+    }
 
-    if (onSubmit) {
+    const payload: any = { id, placeholder: opts.placeholder || '' };
+
+    // Set initial text if provided
+    if (opts.text) {
+      payload.text = opts.text;
+    }
+
+    if (opts.onSubmit) {
       const callbackId = ctx.generateId('callback');
       payload.callbackId = callbackId;
       ctx.bridge.registerEventHandler(callbackId, (data: unknown) => {
         const eventData = data as { text: string };
-        onSubmit(eventData.text);
+        opts.onSubmit!(eventData.text);
       });
     }
 
-    if (onDoubleClick) {
+    if (opts.onDoubleClick) {
       const doubleClickCallbackId = ctx.generateId('callback');
       payload.doubleClickCallbackId = doubleClickCallbackId;
       ctx.bridge.registerEventHandler(doubleClickCallbackId, () => {
-        onDoubleClick();
+        opts.onDoubleClick!();
       });
     }
 
-    if (onChange) {
+    if (opts.onChange) {
       const onChangeCallbackId = ctx.generateId('callback');
       payload.onChangeCallbackId = onChangeCallbackId;
       ctx.bridge.registerEventHandler(onChangeCallbackId, (data: unknown) => {
         const eventData = data as { text: string };
-        onChange(eventData.text);
+        opts.onChange!(eventData.text);
       });
     }
 
-    if (onCursorChanged) {
+    if (opts.onCursorChanged) {
       const cursorChangedCallbackId = ctx.generateId('callback');
       payload.onCursorChangedCallbackId = cursorChangedCallbackId;
       ctx.bridge.registerEventHandler(cursorChangedCallbackId, () => {
-        onCursorChanged();
+        opts.onCursorChanged!();
       });
     }
 
-    if (onFocus) {
+    if (opts.onFocus) {
       const onFocusCallbackId = ctx.generateId('callback');
       payload.onFocusCallbackId = onFocusCallbackId;
       ctx.bridge.registerEventHandler(onFocusCallbackId, (data: unknown) => {
         const eventData = data as { focused: boolean };
-        onFocus(eventData.focused);
+        opts.onFocus!(eventData.focused);
       });
     }
 
-    if (minWidth !== undefined) {
-      payload.minWidth = minWidth;
+    if (opts.minWidth !== undefined) {
+      payload.minWidth = opts.minWidth;
     }
 
     ctx.bridge.send('createEntry', payload);

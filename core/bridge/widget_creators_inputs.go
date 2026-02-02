@@ -218,6 +218,11 @@ func (b *Bridge) handleCreateEntry(msg Message) Response {
 	tsyneEntry.SetPlaceHolder(placeholder)
 	entry := &tsyneEntry.Entry
 
+	// Set initial text if provided
+	if text, ok := msg.Payload["text"].(string); ok && text != "" {
+		entry.SetText(text)
+	}
+
 	// Set onSubmit callback if provided (triggered on Enter key)
 	if callbackID, ok := msg.Payload["callbackId"].(string); ok {
 		entry.OnSubmitted = func(text string) {
@@ -522,6 +527,8 @@ func (b *Bridge) handleCreateSlider(msg Message) Response {
 	callbackID, hasCallback := msg.Payload["callbackId"].(string)
 
 	slider := widget.NewSlider(min, max)
+	// Auto-calculate step for fine-grained control (100 steps across range)
+	slider.Step = (max - min) / 100
 
 	// Set initial value if provided
 	if initialValue, ok := getFloat64(msg.Payload["value"]); ok {

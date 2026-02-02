@@ -171,6 +171,8 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleNavigationSetTitle(msg)
 	case "setText":
 		return b.handleSetText(msg)
+	case "setEntryOnChange":
+		return b.handleSetEntryOnChange(msg)
 	case "getText":
 		return b.handleGetText(msg)
 	case "setWidgetCallback":

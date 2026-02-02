@@ -1,4 +1,4 @@
-import { App, AppOptions, BridgeMode, resolveTransport } from './app';
+import { App, AppOptions, BridgeMode, resolveTransport, TextGridStyle } from './app';
 import { Context } from './context';
 import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from './tsyne-window';
 import {

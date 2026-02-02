@@ -282,10 +282,12 @@ func (b *Bridge) handleCreateCanvasRectangle(msg Message) Response {
 		rect.Resize(fyne.NewSize(x2Val-posX, y2Val-posY))
 	}
 
-	// Set minimum size if provided (alternative to x2, y2)
+	// Set size from width/height if provided (alternative to x2, y2)
 	if width, ok := getFloat64(msg.Payload["width"]); ok {
 		if height, ok := getFloat64(msg.Payload["height"]); ok {
-			rect.SetMinSize(fyne.NewSize(float32(width), float32(height)))
+			size := fyne.NewSize(float32(width), float32(height))
+			rect.SetMinSize(size)
+			rect.Resize(size)
 		}
 	}
 

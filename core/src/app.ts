@@ -17,6 +17,7 @@ import {
   CompletionEntry,
   DateEntry,
   Entry,
+  EntryOptions,
   MultiLineEntry,
   PasswordEntry,
   RadioGroup,
@@ -543,6 +544,21 @@ export class App {
    * @param onFocus - Called when focus state changes (focused: boolean)
    * @returns Entry widget
    */
+  /**
+   * Create a text input (Entry).
+   * @param options - Entry options object with text, placeholder, onChange, etc.
+   */
+  entry(options: EntryOptions): Entry;
+  /**
+   * Create a text input (Entry).
+   * @param placeholder - Placeholder text
+   * @param onSubmit - Callback when Enter is pressed
+   * @param minWidth - Minimum width in pixels
+   * @param onDoubleClick - Callback on double-click
+   * @param onChange - Callback when text changes
+   * @param onCursorChanged - Callback when cursor position changes
+   * @param onFocus - Callback when focus changes
+   */
   entry(
     placeholder?: string,
     onSubmit?: (text: string) => void,
@@ -551,8 +567,17 @@ export class App {
     onChange?: (text: string) => void,
     onCursorChanged?: () => void,
     onFocus?: (focused: boolean) => void
+  ): Entry;
+  entry(
+    placeholderOrOptions?: string | EntryOptions,
+    onSubmit?: (text: string) => void,
+    minWidth?: number,
+    onDoubleClick?: () => void,
+    onChange?: (text: string) => void,
+    onCursorChanged?: () => void,
+    onFocus?: (focused: boolean) => void
   ): Entry {
-    return new Entry(this.ctx, placeholder, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged, onFocus);
+    return new Entry(this.ctx, placeholderOrOptions, onSubmit, minWidth, onDoubleClick, onChange, onCursorChanged, onFocus);
   }
 
   /**

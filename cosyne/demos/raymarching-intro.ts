@@ -292,7 +292,7 @@ function createRaymarchingDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Horizontal:');
-            a.slider(0, 360, 5, lightAngle, (val) => {
+            a.slider(0, 360, lightAngle, (val) => {
               lightAngle = val;
               shader?.setUniform('u_lightDir', computeLightDir());
             });
@@ -301,7 +301,7 @@ function createRaymarchingDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Elevation:');
-            a.slider(-90, 90, 5, lightElevation, (val) => {
+            a.slider(-90, 90, lightElevation, (val) => {
               lightElevation = val;
               shader?.setUniform('u_lightDir', computeLightDir());
             });

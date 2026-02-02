@@ -161,3 +161,30 @@ export * from './index3d';
 
 // Testing utilities
 export { CosyneTest, type CosyneTestOptions } from './cosyne-test';
+
+// Procedural terrain generation library
+export {
+  hash,
+  perlin,
+  fbm,
+  generateTerrainHeightMap,
+  applyWaterLevel,
+  smoothTerrain,
+  getTerrainStats,
+  type TerrainStats,
+} from './noise';
+export {
+  BiomeType,
+  getBiomeType,
+  getTerrainColor,
+  getMaterial,
+  createTerrainColorMap,
+  heightMapToMesh,
+  type TerrainMaterial,
+  type TerrainMesh,
+} from './terrain-renderer';
+export {
+  defaultVertexShader,
+  terrainFragmentShader,
+  simpleTerrainShader,
+} from './shader-terrain';

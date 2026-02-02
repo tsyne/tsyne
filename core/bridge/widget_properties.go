@@ -183,6 +183,54 @@ func (b *Bridge) handleSetText(msg Message) Response {
 	}
 }
 
+func (b *Bridge) handleSetEntryOnChange(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	callbackID := msg.Payload["callbackId"].(string)
+
+	b.mu.RLock()
+	obj, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget not found",
+		}
+	}
+
+	// Handle different entry types
+	switch entry := obj.(type) {
+	case *widget.Entry:
+		entry.OnChanged = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": callbackID, "text": text},
+			})
+		}
+	case *TsyneEntry:
+		entry.OnChanged = func(text string) {
+			b.sendEvent(Event{
+				Type:     "callback",
+				WidgetID: widgetID,
+				Data:     map[string]interface{}{"callbackId": callbackID, "text": text},
+			})
+		}
+	default:
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not an Entry",
+		}
+	}
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}
+
 func (b *Bridge) handleGetChecked(msg Message) Response {
 	widgetID := msg.Payload["widgetId"].(string)
 
@@ -1507,6 +1555,25 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
 			Success: true,
 		}
 	}
+
+	// Check if already a TsyneSlider - if so, update its callback IDs
+	if tsyneSlider, alreadyTsyne := obj.(*TsyneSlider); alreadyTsyne {
+		// Update Hoverable callback IDs
+		if onMouseInCallbackId != "" {
+			tsyneSlider.onMouseInCallbackId = onMouseInCallbackId
+		}
+		if onMouseOutCallbackId != "" {
+			tsyneSlider.onMouseOutCallbackId = onMouseOutCallbackId
+		}
+		if onMouseMoveCallbackId != "" {
+			tsyneSlider.onMouseMovedCallbackId = onMouseMoveCallbackId
+		}
+		b.mu.Unlock()
+		return Response{
+			ID:      msg.ID,
+			Success: true,
+		}
+	}
 	if _, alreadyWrapped := obj.(*HoverableWrapper); alreadyWrapped {
 		b.mu.Unlock()
 		return Response{
@@ -1561,9 +1628,31 @@ func (b *Bridge) handleSetWidgetHoverable(msg Message) Response {
 		}
 
 		replacement = tsyneBtn
+	} else if slider, isSlider := obj.(*widget.Slider); isSlider {
+		// For sliders, create a TsyneSlider with appropriate callback IDs
+		tsyneSlider := NewTsyneSlider(slider.Min, slider.Max, b, widgetID)
+		tsyneSlider.Value = slider.Value
+		tsyneSlider.Step = slider.Step
+		tsyneSlider.Orientation = slider.Orientation
+		tsyneSlider.OnChanged = slider.OnChanged
+		tsyneSlider.OnChangeEnded = slider.OnChangeEnded
+
+		// Set Hoverable callback IDs
+		tsyneSlider.onMouseInCallbackId = onMouseInCallbackId
+		tsyneSlider.onMouseOutCallbackId = onMouseOutCallbackId
+		tsyneSlider.onMouseMovedCallbackId = onMouseMoveCallbackId
+
+		replacement = tsyneSlider
 	} else {
 		// For other widgets, use the wrapper approach
-		replacement = NewHoverableWrapper(obj, b, widgetID)
+		wrapper := NewHoverableWrapper(obj, b, widgetID)
+
+		// Set callback IDs on the wrapper
+		wrapper.onMouseInCallbackId = onMouseInCallbackId
+		wrapper.onMouseOutCallbackId = onMouseOutCallbackId
+		wrapper.onMouseMovedCallbackId = onMouseMoveCallbackId
+
+		replacement = wrapper
 	}
 
 	// Replace in widgets map

@@ -364,7 +364,7 @@ function createMaterialsDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Roughness:');
-            a.slider(0, 1, 0.05, roughness, (val) => {
+            a.slider(0, 1, roughness, (val) => {
               roughness = val;
               shader?.setUniform('u_roughness', roughness);
             });
@@ -373,7 +373,7 @@ function createMaterialsDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Metallic:');
-            a.slider(0, 1, 0.05, metallic, (val) => {
+            a.slider(0, 1, metallic, (val) => {
               metallic = val;
               shader?.setUniform('u_metallic', metallic);
             });
