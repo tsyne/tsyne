@@ -439,9 +439,9 @@ class PhoneTop {
   /**
    * Create a button with the configured font size
    */
-  private sizedButton(text: string, id?: string): Button {
-    const btn = this.a.button(text, { textSize: this.fontSize });
-    if (id) btn.withId(id);
+  private sizedButton(text: string, options?: { id?: string; onClick?: () => void | Promise<void> }): Button {
+    const btn = this.a.button(text, { textSize: this.fontSize, onClick: options?.onClick });
+    if (options?.id) btn.withId(options.id);
     return btn;
   }
 
@@ -1155,9 +1155,9 @@ class PhoneTop {
         // Navigation buttons - FIXED, never rebuilt
         // This prevents destroying buttons during their tap callbacks
         this.a.hbox(() => {
-          this.sizedButton('< Swipe Left', 'swipeLeft').onClick(() => this.previousPage());
+          this.sizedButton('< Swipe Left', { id: 'swipeLeft', onClick: () => this.previousPage() });
           this.a.spacer();
-          this.sizedButton('Swipe Right >', 'swipeRight').onClick(() => this.nextPage());
+          this.sizedButton('Swipe Right >', { id: 'swipeRight', onClick: () => this.nextPage() });
         });
       }
     });
@@ -1238,10 +1238,10 @@ class PhoneTop {
           bottom: () => {
             // Navigation buttons at actual bottom
             this.a.hbox(() => {
-              this.sizedButton('← Back').onClick(() => this.closeFolder());
+              this.sizedButton('← Back', { onClick: () => this.closeFolder() });
               this.a.spacer();
-              this.sizedButton('<', 'folderPrev').onClick(() => this.previousFolderPage());
-              this.sizedButton('>', 'folderNext').onClick(() => this.nextFolderPage());
+              this.sizedButton('<', { id: 'folderPrev', onClick: () => this.previousFolderPage() });
+              this.sizedButton('>', { id: 'folderNext', onClick: () => this.nextFolderPage() });
             });
           }
         });
@@ -1346,10 +1346,10 @@ class PhoneTop {
         this.a.imageButton({
           resource: resourceName,
           text: displayName,
-          textSize: this.fontSize
+          textSize: this.fontSize,
+          onClick: () => this.openFolderView(folder)
         })
-          .withId(`folder-${folder.category}`)
-          .onClick(() => this.openFolderView(folder));
+          .withId(`folder-${folder.category}`);
       } else {
         // Fallback: text button (or when ImageButton not supported)
         this.a.button(`📁 ${displayName}`, { onClick: () => this.openFolderView(folder) }).withId(`folder-${folder.category}`);
@@ -1383,10 +1383,10 @@ class PhoneTop {
         this.a.imageButton({
           resource: icon.resourceName,
           text: displayName,
-          textSize: textSize
+          textSize: textSize,
+          onClick: launchHandler
         })
-          .withId(`icon-${icon.metadata.name}`)
-          .onClick(launchHandler);
+          .withId(`icon-${icon.metadata.name}`);
       } else {
         // Fallback: regular button with first letter (or when ImageButton not supported)
         const firstLetter = icon.metadata.name.charAt(0).toUpperCase();
@@ -1703,19 +1703,19 @@ class PhoneTop {
       appVbox = this.a.vbox(() => {
         // Header with back button, quit button, menu button, and app name
         this.a.hbox(() => {
-          this.sizedButton('← Home').onClick(() => {
+          this.sizedButton('← Home', { onClick: () => {
             this.hideKeyboard();
             this.goHome();
-          });
-          this.sizedButton('✕ Quit').onClick(() => {
+          }});
+          this.sizedButton('✕ Quit', { onClick: () => {
             this.hideKeyboard();
             if (appId) this.quitApp(appId);
-          });
+          }});
 
           // Menu button if app has menus
           const menuDef = runningApp.adapter.menuDefinition;
           if (menuDef && menuDef.length > 0) {
-            this.sizedButton('☰').onClick(async () => {
+            this.sizedButton('☰', { onClick: async () => {
               // Build menu options for form dialog
               const allOptions: string[] = [];
               const allCallbacks: Map<string, () => void> = new Map();
@@ -1748,7 +1748,7 @@ class PhoneTop {
                   if (callback) callback();
                 }
               }
-            });
+            }});
           }
 
           this.a.spacer();
@@ -1784,9 +1784,9 @@ class PhoneTop {
           this.sizedLabel(`App Error: ${runningApp.metadata.name}`);
           this.sizedLabel(err instanceof Error ? err.message : String(err));
           this.a.spacer();
-          this.sizedButton('Close App').onClick(() => {
+          this.sizedButton('Close App', { onClick: () => {
             if (appId) this.quitApp(appId);
-          });
+          }});
         });
       });
     }

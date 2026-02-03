@@ -681,6 +681,84 @@ sed -i '/unsignedByte.*= gl.UNSIGNED_BYTE/a\
 \	textureCubeNegativeZ  = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z\
 \	rgba                  = gl.RGBA' "$FORK_DIR/internal/painter/gl/gl_core.go"
 
+# Add GL constants and methods to gl_es.go (OpenGL ES on non-mobile platforms)
+cat >> "$FORK_DIR/internal/painter/gl/gl_es.go" <<'GL_ES_ADDITIONS'
+
+func (c *esContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
+	gl.Uniform3f(int32(uniform), v0, v1, v2)
+}
+
+func (c *esContext) Uniform1i(uniform Uniform, v int32) {
+	gl.Uniform1i(int32(uniform), v)
+}
+
+func (c *esContext) DisableVertexAttribArray(attribute Attribute) {
+	gl.DisableVertexAttribArray(uint32(attribute))
+}
+
+func (c *esContext) VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32) {
+	gl.VertexAttribPointer(uint32(attribute), int32(size), typ, normalized, int32(stride), gl.Ptr(data))
+}
+
+func (c *esContext) DrawElements(mode uint32, count int32, typ uint32, offset int) {
+	gl.DrawElements(mode, count, typ, gl.PtrOffset(offset))
+}
+GL_ES_ADDITIONS
+
+# Add missing GL constants to gl_es.go
+sed -i '/unsignedByte.*= gl.UNSIGNED_BYTE/a\
+\	dynamicDraw           = gl.DYNAMIC_DRAW\
+\	elementArrayBuffer    = gl.ELEMENT_ARRAY_BUFFER\
+\	unsignedShort         = gl.UNSIGNED_SHORT\
+\	linear                = gl.LINEAR\
+\	textureCube           = gl.TEXTURE_CUBE_MAP\
+\	textureCubePositiveX  = gl.TEXTURE_CUBE_MAP_POSITIVE_X\
+\	textureCubeNegativeX  = gl.TEXTURE_CUBE_MAP_NEGATIVE_X\
+\	textureCubePositiveY  = gl.TEXTURE_CUBE_MAP_POSITIVE_Y\
+\	textureCubeNegativeY  = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y\
+\	textureCubePositiveZ  = gl.TEXTURE_CUBE_MAP_POSITIVE_Z\
+\	textureCubeNegativeZ  = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z\
+\	rgba                  = gl.RGBA' "$FORK_DIR/internal/painter/gl/gl_es.go"
+
+# Add GL constants and methods to gl_gomobile.go (Android/iOS mobile platforms)
+cat >> "$FORK_DIR/internal/painter/gl/gl_gomobile.go" <<'GL_GOMOBILE_ADDITIONS'
+
+func (c *mobileContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
+	c.glContext.Uniform3f(gl.Uniform(uniform), v0, v1, v2)
+}
+
+func (c *mobileContext) Uniform1i(uniform Uniform, v int32) {
+	c.glContext.Uniform1i(gl.Uniform(uniform), v)
+}
+
+func (c *mobileContext) DisableVertexAttribArray(attribute Attribute) {
+	c.glContext.DisableVertexAttribArray(gl.Attrib(attribute))
+}
+
+func (c *mobileContext) VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32) {
+	c.glContext.VertexAttribPointer(gl.Attrib(attribute), size, gl.Enum(typ), normalized, stride, data)
+}
+
+func (c *mobileContext) DrawElements(mode uint32, count int32, typ uint32, offset int) {
+	c.glContext.DrawElements(gl.Enum(mode), int(count), gl.Enum(typ), offset)
+}
+GL_GOMOBILE_ADDITIONS
+
+# Add missing GL constants to gl_gomobile.go
+sed -i '/unsignedByte.*= gl.UnsignedByte/a\
+\	dynamicDraw           = gl.DynamicDraw\
+\	elementArrayBuffer    = gl.ElementArrayBuffer\
+\	unsignedShort         = gl.UnsignedShort\
+\	linear                = gl.Linear\
+\	textureCube           = gl.TextureCubeMap\
+\	textureCubePositiveX  = gl.TextureCubeMapPositiveX\
+\	textureCubeNegativeX  = gl.TextureCubeMapNegativeX\
+\	textureCubePositiveY  = gl.TextureCubeMapPositiveY\
+\	textureCubeNegativeY  = gl.TextureCubeMapNegativeY\
+\	textureCubePositiveZ  = gl.TextureCubeMapPositiveZ\
+\	textureCubeNegativeZ  = gl.TextureCubeMapNegativeZ\
+\	rgba                  = gl.RGBA' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
+
 # 8. Inject shader painter support
 echo "[setup-fyne-fork] Injecting shader painter support..."
 

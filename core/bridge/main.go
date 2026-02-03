@@ -633,6 +633,15 @@ func (b *Bridge) handleMessage(msg Message) Response {
 		return b.handleTypeRune(msg)
 	case "typeKey":
 		return b.handleTypeKey(msg)
+	// WebGL/OpenGL operations
+	case "createGLCanvas":
+		return b.handleCreateGLCanvas(msg)
+	case "executeBatch":
+		return b.handleExecuteBatch(msg)
+	case "getParameter":
+		return b.handleGetParameter(msg)
+	case "getError":
+		return b.handleGetError(msg)
 	default:
 		return Response{
 			ID:      msg.ID,

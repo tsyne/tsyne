@@ -485,10 +485,9 @@ export class App {
    * @returns ImageButton widget with onClick() method
    *
    * @example
-   * a.imageButton({ resource: 'folder-icon', text: 'Documents' })
-   *   .onClick(() => openFolder());
+   * a.imageButton({ resource: 'folder-icon', text: 'Documents', onClick: () => openFolder() });
    */
-  imageButton(options: { resource?: string; text?: string; textSize?: number }): ImageButton {
+  imageButton(options: { resource?: string; text?: string; textSize?: number; onClick?: (btn: ImageButton) => void | Promise<void> }): ImageButton {
     return new ImageButton(this.ctx, options);
   }
 

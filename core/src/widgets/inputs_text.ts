@@ -191,6 +191,8 @@ export class ImageButton extends Widget {
       resource?: string;
       text?: string;
       textSize?: number;
+      /** Click handler - can also be set via fluent .onClick() */
+      onClick?: (btn: ImageButton) => void | Promise<void>;
     }
   ) {
     const id = ctx.generateId('imageButton');
@@ -208,6 +210,15 @@ export class ImageButton extends Widget {
 
     if (options.textSize) {
       payload.textSize = options.textSize;
+    }
+
+    // Handle onClick at instantiation time (consistent with Button)
+    if (options.onClick) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, async () => {
+        await options.onClick!(this);
+      });
     }
 
     ctx.bridge.send('createImageButton', payload);
