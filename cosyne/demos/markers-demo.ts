@@ -33,18 +33,18 @@ function createMarkersDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Marker Type:');
-            a.button('Arrows').onClick(() => {
+            a.button('Arrows', { onClick: () => {
               state.markerType = 'arrows';
               refreshAllCosyneContexts();
-            });
-            a.button('Shapes').onClick(() => {
+            } });
+            a.button('Shapes', { onClick: () => {
               state.markerType = 'shapes';
               refreshAllCosyneContexts();
-            });
-            a.button('Connectors').onClick(() => {
+            } });
+            a.button('Connectors', { onClick: () => {
               state.markerType = 'connectors';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           a.max(() => {

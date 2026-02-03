@@ -372,13 +372,13 @@ export function createTorusApp(a: App, win?: ITsyneWindow | null, windowWidth?: 
       bottom: () => {
         // Control buttons
         a.hbox(() => {
-          a.button('Toggle Auto-Rotate').onClick(() => {
+          a.button('Toggle Auto-Rotate', { onClick: () => {
             store.toggleAutoRotate();
-          }).withId('autoRotateBtn');
+          } }).withId('autoRotateBtn');
 
-          a.button('Reset View').onClick(() => {
+          a.button('Reset View', { onClick: () => {
             store.resetView();
-          }).withId('resetBtn');
+          } }).withId('resetBtn');
 
           a.spacer();
 

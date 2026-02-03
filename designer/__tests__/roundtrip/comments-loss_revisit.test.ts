@@ -36,7 +36,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Title'); // TODO: make this configurable
-        a.button('Click').onClick(() => {}); // FIXME: add validation
+        a.button('Click', { onClick: () => {} }); // FIXME: add validation
       });
     });
     win.show();
@@ -60,7 +60,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Old Text').onClick(() => {}); // Important: keep this handler
+        a.button('Old Text', { onClick: () => {} }); // Important: keep this handler
       });
     });
     win.show();
@@ -85,7 +85,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Submit').onClick(() => {}); // @author: John Doe <john@example.com>
+        a.button('Submit', { onClick: () => {} }); // @author: John Doe <john@example.com>
       });
     });
     win.show();
@@ -112,7 +112,7 @@ app({ title: 'Test' }, (a) => {
          * Primary action button
          * Triggers the main workflow
          */
-        a.button('Start').onClick(() => {});
+        a.button('Start', { onClick: () => {} });
       });
     });
     win.show();
@@ -138,9 +138,9 @@ app({ title: 'Test' }, (a) => {
          * @description Submit button for the form
          * @onClick Validates and submits the form data
          */
-        a.button('Submit').onClick(() => {
+        a.button('Submit', { onClick: () => {
           validateAndSubmit();
-        });
+        } });
       });
     });
     win.show();
@@ -197,8 +197,8 @@ app({ title: 'Test' }, (a) => {
         a.label('Subtitle');
 
         // ========== Actions Section ==========
-        a.button('Save').onClick(() => {});
-        a.button('Cancel').onClick(() => {});
+        a.button('Save', { onClick: () => {} });
+        a.button('Cancel', { onClick: () => {} });
 
         // ========== Footer Section ==========
         a.label('Status: OK');
@@ -229,8 +229,8 @@ app({ title: 'Test' }, (a) => {
         a.entry('Email', () => {});
 
         // Form actions
-        a.button('Submit').onClick(() => {});
-        a.button('Clear').onClick(() => {});
+        a.button('Submit', { onClick: () => {} });
+        a.button('Clear', { onClick: () => {} });
       });
     });
     win.show();
@@ -254,7 +254,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Process').onClick(async () => {
+        a.button('Process', { onClick: async () => {
           // Step 1: Validate input
           const isValid = validateInput();
 
@@ -265,7 +265,7 @@ app({ title: 'Test' }, (a) => {
 
           // Step 3: Show result
           showResult();
-        });
+        } });
       });
     });
     win.show();
@@ -288,7 +288,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Save').onClick(async () => {
+        a.button('Save', { onClick: async () => {
           // TODO: Add validation here
           const data = getData();
 
@@ -297,7 +297,7 @@ app({ title: 'Test' }, (a) => {
 
           // NOTE: Need to add success message
           console.log('Saved!');
-        });
+        } });
       });
     });
     win.show();
@@ -380,7 +380,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click').onClick(() => {}); // Important button
+        a.button('Click', { onClick: () => {} }); // Important button
       });
     });
     win.show();
@@ -406,7 +406,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         // User action button
-        a.button('Old').onClick(() => {});
+        a.button('Old', { onClick: () => {} });
       });
     });
     win.show();
@@ -434,7 +434,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Active');
-        // a.button('Disabled Feature').onClick(() => {});
+        // a.button('Disabled Feature', { onClick: () => {} });
         // a.label('Coming Soon');
       });
     });

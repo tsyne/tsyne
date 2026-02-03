@@ -583,27 +583,27 @@ export function buildGrandPerspectiveApp(a: any, initialPath?: string, windowWid
         // Header with controls
         a.hbox(() => {
           a.label('Disk Usage Visualization').withId('title-label');
-          a.button('Parent').onClick(() => {
+          a.button('Parent', { onClick: () => {
             store.drillUp();
             updateUI();
-          }).withId('parent-btn');
+          } }).withId('parent-btn');
 
           a.spacer();
 
-          a.button('by Size').onClick(() => {
+          a.button('by Size', { onClick: () => {
             store.setColorScheme('bySize');
             updateUI();
-          }).withId('color-size-btn');
+          } }).withId('color-size-btn');
 
-          a.button('by Depth').onClick(() => {
+          a.button('by Depth', { onClick: () => {
             store.setColorScheme('byDepth');
             updateUI();
-          }).withId('color-depth-btn');
+          } }).withId('color-depth-btn');
 
-          a.button('by Type').onClick(() => {
+          a.button('by Type', { onClick: () => {
             store.setColorScheme('byType');
             updateUI();
-          }).withId('color-type-btn');
+          } }).withId('color-type-btn');
         });
 
         // Info panel

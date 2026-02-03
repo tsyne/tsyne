@@ -56,11 +56,9 @@ export function enableEventHandling(
   const DRAG_THRESHOLD = 4; // Minimum pixels moved before processing drag event
 
   // Create TappableCanvasRaster for event capture
-  console.log(`[enableEventHandling] Creating TappableCanvasRaster ${options.width}x${options.height}`);
   const eventCanvas = app.tappableCanvasRaster(options.width, options.height, {
     onTap: async (x: number, y: number) => {
       // Tapped() is only called for quick tap (not drag)
-      console.log(`[EventRouter] onTap received at (${x}, ${y})`);
       registerHitTesters();
       await router.handleClick(getAllPrimitives(), x, y);
     },
@@ -82,7 +80,6 @@ export function enableEventHandling(
       if (!router.isDragging()) {
         // Start drag at the CURRENT position (where we are now)
         // The dial will calculate angle from this position
-        console.log(`[EventRouter] Drag starting at (${x}, ${y})`);
         router.handleDragStart(primitives, x, y);
         lastDragX = newX;
         lastDragY = newY;
@@ -104,7 +101,6 @@ export function enableEventHandling(
     },
     onDragEnd: () => {
       // Called when the user releases after dragging (Fyne's DragEnd event)
-      console.log(`[EventRouter] onDragEnd received`);
       router.handleDragEnd();
     },
   });

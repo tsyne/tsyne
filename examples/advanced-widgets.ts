@@ -30,9 +30,9 @@ app(resolveTransport(), { title: 'Advanced Widgets Demo' }, () => {
             label('Email: john@example.com');
             label('Role: Developer');
             label('');
-            button('View Full Profile').onClick(() => {
+            button('View Full Profile', { onClick: () => {
               statusLabel.setText('Viewing full profile...');
-            });
+            } });
           });
         });
 
@@ -74,12 +74,12 @@ app(resolveTransport(), { title: 'Advanced Widgets Demo' }, () => {
               vbox(() => {
                 label('Configuration options:');
                 label('');
-                button('Reset to Defaults').onClick(() => {
+                button('Reset to Defaults', { onClick: () => {
                   statusLabel.setText('Settings reset to defaults');
-                });
-                button('Export Settings').onClick(() => {
+                } });
+                button('Export Settings', { onClick: () => {
                   statusLabel.setText('Settings exported');
-                });
+                } });
               });
             }
           },
@@ -146,9 +146,9 @@ app(resolveTransport(), { title: 'Advanced Widgets Demo' }, () => {
           vbox(() => {
             label('This content is centered!');
             label('');
-            button('Centered Button').onClick(() => {
+            button('Centered Button', { onClick: () => {
               statusLabel.setText('Centered button clicked!');
-            });
+            } });
           });
         });
 

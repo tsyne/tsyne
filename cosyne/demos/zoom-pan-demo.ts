@@ -38,22 +38,22 @@ function createZoomPanDemo(a: App): void {
           a.label(`Zoom: ${state.zoom.toFixed(2)}x | Pan: (${state.offsetX.toFixed(0)}, ${state.offsetY.toFixed(0)})`);
 
           a.hbox(() => {
-            a.button('Reset').onClick(() => {
+            a.button('Reset', { onClick: () => {
               state.offsetX = 0;
               state.offsetY = 0;
               state.zoom = 1;
               refreshAllCosyneContexts();
-            });
+            } });
 
-            a.button('Zoom In').onClick(() => {
+            a.button('Zoom In', { onClick: () => {
               state.zoom *= 1.2;
               refreshAllCosyneContexts();
-            });
+            } });
 
-            a.button('Zoom Out').onClick(() => {
+            a.button('Zoom Out', { onClick: () => {
               state.zoom /= 1.2;
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           a.max(() => {

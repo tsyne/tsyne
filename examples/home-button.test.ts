@@ -27,9 +27,9 @@ describe('Home Button Tests', () => {
         win.setContent(() => {
           app.vbox(() => {
             // Create home button with house icon
-            app.button('🏠').onClick(() => {
+            app.button('🏠', { onClick: () => {
               homeClicked = true;
-            }).withId('home-button');
+            } }).withId('home-button');
 
             app.label('Home button test');
           });
@@ -58,10 +58,10 @@ describe('Home Button Tests', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.hbox(() => {
-              app.button('←').onClick(() => {}).withId('back-btn');
-              app.button('→').onClick(() => {}).withId('forward-btn');
-              app.button('⟳').onClick(() => {}).withId('reload-btn');
-              app.button('🏠').onClick(() => {}).withId('home-btn');
+              app.button('←', { onClick: () => {} }).withId('back-btn');
+              app.button('→', { onClick: () => {} }).withId('forward-btn');
+              app.button('⟳', { onClick: () => {} }).withId('reload-btn');
+              app.button('🏠', { onClick: () => {} }).withId('home-btn');
             });
 
             app.label('All navigation buttons');
@@ -88,9 +88,9 @@ describe('Home Button Tests', () => {
       app.window({ title: 'Button Click Test' }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('First').onClick(() => { clickOrder.push('first'); }).withId('btn1');
-            app.button('🏠').onClick(() => { clickOrder.push('home'); }).withId('home-btn');
-            app.button('Last').onClick(() => { clickOrder.push('last'); }).withId('btn2');
+            app.button('First', { onClick: () => { clickOrder.push('first'); } }).withId('btn1');
+            app.button('🏠', { onClick: () => { clickOrder.push('home'); } }).withId('home-btn');
+            app.button('Last', { onClick: () => { clickOrder.push('last'); } }).withId('btn2');
           });
         });
         win.show();

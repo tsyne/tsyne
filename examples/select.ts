@@ -59,28 +59,28 @@ app(resolveTransport(), { title: 'Select Demo' }, () => {
 
         // Action buttons
         hbox(() => {
-          button('Set Defaults').onClick(async () => {
+          button('Set Defaults', { onClick: async () => {
             await colorSelect.setSelected('Blue');
             await sizeSelect.setSelected('Medium');
             await countrySelect.setSelected('United States');
             updateResult();
-          });
+          } });
 
-          button('Clear Selections').onClick(async () => {
+          button('Clear Selections', { onClick: async () => {
             await colorSelect.setSelected('');
             await sizeSelect.setSelected('');
             await countrySelect.setSelected('');
             resultLabel.setText('Selections cleared');
-          });
+          } });
 
-          button('Get Values').onClick(async () => {
+          button('Get Values', { onClick: async () => {
             const color = await colorSelect.getSelected();
             const size = await sizeSelect.getSelected();
             const country = await countrySelect.getSelected();
 
             console.log('Current selections:', { color, size, country });
             updateResult();
-          });
+          } });
         });
       });
     });

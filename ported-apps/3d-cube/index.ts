@@ -211,9 +211,9 @@ export function create3DCubeApp(a: App, windowWidth?: number, windowHeight?: num
     win.setContent(() => {
       a.vbox(() => {
         a.hbox(() => {
-          a.button('Reset').onClick(() => cube.reset()).withId('resetBtn');
-          a.button('Shuffle').onClick(() => cube.shuffle()).withId('shuffleBtn');
-          a.button('Solve').onClick(() => cube.solve()).withId('solveBtn');
+          a.button('Reset', { onClick: () => cube.reset() }).withId('resetBtn');
+          a.button('Shuffle', { onClick: () => cube.shuffle() }).withId('shuffleBtn');
+          a.button('Solve', { onClick: () => cube.solve() }).withId('solveBtn');
         });
 
         a.hbox(() => {

@@ -1044,10 +1044,10 @@ class Desktop implements IDesktopDebugHost {
       }).withId('appSearch');
 
       // Theme Toggle
-      this.a.button('🌗').onClick(async () => {
+      this.a.button('🌗', { onClick: async () => {
         const current = await this.a.getTheme();
         this.a.setTheme(current === 'light' ? 'dark' : 'light');
-      }).withId('themeToggle');
+      } }).withId('themeToggle');
 
       // Clock
       const clockLabel = this.a.label(new Date().toLocaleTimeString());

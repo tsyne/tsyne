@@ -600,11 +600,11 @@ export function createCarsApp(a: App): void {
 
         // Controls row
         a.hbox(() => {
-          a.button('Camera 1').onClick(() => state.setCamera(0));
-          a.button('Camera 2').onClick(() => state.setCamera(1));
-          a.button('Camera 3').onClick(() => state.setCamera(2));
-          a.button('Day/Night').onClick(() => state.toggleNight());
-          a.button('Switch Car').onClick(() => state.switchCar());
+          a.button('Camera 1', { onClick: () => state.setCamera(0) });
+          a.button('Camera 2', { onClick: () => state.setCamera(1) });
+          a.button('Camera 3', { onClick: () => state.setCamera(2) });
+          a.button('Day/Night', { onClick: () => state.toggleNight() });
+          a.button('Switch Car', { onClick: () => state.switchCar() });
         });
 
         // Status

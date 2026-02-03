@@ -42,7 +42,7 @@ app(resolveTransport(), { title: 'Contact Manager' }, () => {
 
         // Toolbar buttons
         hbox(() => {
-          button('Add Contact').onClick(async () => {
+          button('Add Contact', { onClick: async () => {
             statusLabel.setText('Opening form...');
 
             const result = await win.showForm(
@@ -84,9 +84,9 @@ app(resolveTransport(), { title: 'Contact Manager' }, () => {
             } else {
               statusLabel.setText('Add contact cancelled');
             }
-          });
+          } });
 
-          button('Quick Add').onClick(async () => {
+          button('Quick Add', { onClick: async () => {
             // Simpler form with fewer fields
             const result = await win.showForm(
               'Quick Add Contact',
@@ -112,9 +112,9 @@ app(resolveTransport(), { title: 'Contact Manager' }, () => {
               updateContactList();
               statusLabel.setText(`Quick added: ${result.values.name}`);
             }
-          });
+          } });
 
-          button('Clear All').onClick(async () => {
+          button('Clear All', { onClick: async () => {
             if (contacts.length === 0) {
               await win.showInfo('Info', 'No contacts to clear.');
               return;
@@ -130,7 +130,7 @@ app(resolveTransport(), { title: 'Contact Manager' }, () => {
               updateContactList();
               statusLabel.setText('All contacts cleared');
             }
-          });
+          } });
         });
 
         separator();

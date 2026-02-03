@@ -134,10 +134,10 @@ class PhoneModemSimulator {
           // Bottom dock
           this.a.separator();
           this.a.hbox(() => {
-            this.a.button('📞').onClick(() => this.launchAppByName('Phone'));
-            this.a.button('💬').onClick(() => this.launchAppByName('Messages'));
-            this.a.button('⚙️').onClick(() => this.launchAppByName('Settings'));
-            this.a.button('📋').onClick(() => this.showModemConsole());
+            this.a.button('📞', { onClick: () => this.launchAppByName('Phone') });
+            this.a.button('💬', { onClick: () => this.launchAppByName('Messages') });
+            this.a.button('⚙️', { onClick: () => this.launchAppByName('Settings') });
+            this.a.button('📋', { onClick: () => this.showModemConsole() });
           });
         });
       });
@@ -251,13 +251,13 @@ class PhoneModemSimulator {
           this.a.hbox(() => {
             this.a.label('📡 Baseband Modem - Human Readable Mode');
             this.a.spacer();
-            this.a.button('Clear').onClick(() => {
+            this.a.button('Clear', { onClick: () => {
               modemLog.clear();
               this.modemLogLines = [];
               if (this.modemLogLabel) {
                 this.modemLogLabel.setText('(log cleared)');
               }
-            });
+            } });
           });
 
           this.a.separator();

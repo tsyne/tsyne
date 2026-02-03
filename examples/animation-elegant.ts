@@ -321,27 +321,27 @@ export function buildElegantDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Left').onClick(() => {
+                  a.button('Left', { onClick: () => {
                     springX.set(20);
-                  });
-                  a.button('Center').onClick(() => {
+                  } });
+                  a.button('Center', { onClick: () => {
                     springX.set(280);
                     springY.set(80);
-                  });
-                  a.button('Right').onClick(() => {
+                  } });
+                  a.button('Right', { onClick: () => {
                     springX.set(540);
-                  });
-                  a.button('Top').onClick(() => {
+                  } });
+                  a.button('Top', { onClick: () => {
                     springY.set(20);
-                  });
-                  a.button('Bottom').onClick(() => {
+                  } });
+                  a.button('Bottom', { onClick: () => {
                     springY.set(140);
-                  });
-                  a.button('Bounce!').onClick(() => {
+                  } });
+                  a.button('Bounce!', { onClick: () => {
                     springY.set(20);
                     setTimeout(() => springY.set(140), 150);
                     setTimeout(() => springY.set(80), 400);
-                  });
+                  } });
                 });
               });
             }
@@ -371,31 +371,31 @@ export function buildElegantDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Square Path').onClick(async () => {
+                  a.button('Square Path', { onClick: async () => {
                     await animate(chainCircle)
                       .to({ x: 520, x2: 560 }, 400).ease('inOut')
                       .to({ y: 140, y2: 180 }, 400).ease('inOut')
                       .to({ x: 20, x2: 60 }, 400).ease('inOut')
                       .to({ y: 80, y2: 120 }, 400).ease('inOut')
                       .run();
-                  });
+                  } });
 
-                  a.button('Bounce Across').onClick(async () => {
+                  a.button('Bounce Across', { onClick: async () => {
                     await animate(chainCircle)
                       .to({ x: 520, x2: 560 }, 800).ease('bounce')
                       .run();
-                  });
+                  } });
 
-                  a.button('Elastic Return').onClick(async () => {
+                  a.button('Elastic Return', { onClick: async () => {
                     await animate(chainCircle)
                       .to({ x: 520, x2: 560 }, 300).ease('linear')
                       .to({ x: 20, x2: 60 }, 600).ease('elastic')
                       .run();
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     chainCircle.update({ x: 20, y: 80, x2: 60, y2: 120 });
-                  });
+                  } });
                 });
               });
             }
@@ -431,14 +431,14 @@ export function buildElegantDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Race!').onClick(async () => {
+                  a.button('Race!', { onClick: async () => {
                     await parallel(
                       animate(parallelCircle1).to({ x: 520, x2: 560 }, 1000).ease('inOut').run(),
                       animate(parallelCircle2).to({ x: 520, x2: 560 }, 1200).ease('bounce').run()
                     );
-                  });
+                  } });
 
-                  a.button('Cross').onClick(async () => {
+                  a.button('Cross', { onClick: async () => {
                     await parallel(
                       animate(parallelCircle1)
                         .to({ x: 520, x2: 560 }, 500)
@@ -449,12 +449,12 @@ export function buildElegantDemo(a: any) {
                         .to({ y: 30, y2: 70 }, 500)
                         .run()
                     );
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     parallelCircle1.update({ x: 20, y: 30, x2: 60, y2: 70 });
                     parallelCircle2.update({ x: 20, y: 130, x2: 60, y2: 170 });
-                  });
+                  } });
                 });
               });
             }
@@ -487,30 +487,30 @@ export function buildElegantDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('ball.x = 520').onClick(() => {
+                  a.button('ball.x = 520', { onClick: () => {
                     ball.x = 520;
                     ball.x2 = 560;
-                  });
-                  a.button('ball.x = 20').onClick(() => {
+                  } });
+                  a.button('ball.x = 20', { onClick: () => {
                     ball.x = 20;
                     ball.x2 = 60;
-                  });
-                  a.button('ball.y = 140').onClick(() => {
+                  } });
+                  a.button('ball.y = 140', { onClick: () => {
                     ball.y = 140;
                     ball.y2 = 180;
-                  });
-                  a.button('ball.y = 20').onClick(() => {
+                  } });
+                  a.button('ball.y = 20', { onClick: () => {
                     ball.y = 20;
                     ball.y2 = 60;
-                  });
-                  a.button('Diagonal').onClick(() => {
+                  } });
+                  a.button('Diagonal', { onClick: () => {
                     ball.x = 520; ball.x2 = 560;
                     ball.y = 140; ball.y2 = 180;
-                  });
-                  a.button('Reset').onClick(() => {
+                  } });
+                  a.button('Reset', { onClick: () => {
                     ball.x = 20; ball.x2 = 60;
                     ball.y = 80; ball.y2 = 120;
-                  });
+                  } });
                 });
               });
             }
@@ -540,7 +540,7 @@ export function buildElegantDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Square Path').onClick(() => {
+                  a.button('Square Path', { onClick: () => {
                     timeline(timelineCircle, [
                       { at: 0,    props: { x: 20, x2: 60, y: 80, y2: 120 } },
                       { at: 400,  props: { x: 520, x2: 560 }, ease: 'inOut' },
@@ -548,17 +548,17 @@ export function buildElegantDemo(a: any) {
                       { at: 1200, props: { x: 20, x2: 60 }, ease: 'inOut' },
                       { at: 1600, props: { y: 80, y2: 120 }, ease: 'inOut' }
                     ]).play();
-                  });
+                  } });
 
-                  a.button('Bounce').onClick(() => {
+                  a.button('Bounce', { onClick: () => {
                     timeline(timelineCircle, [
                       { at: 0,   props: { y: 80, y2: 120 } },
                       { at: 300, props: { y: 160, y2: 200 }, ease: 'in' },
                       { at: 500, props: { y: 80, y2: 120 }, ease: 'bounce' }
                     ]).play();
-                  });
+                  } });
 
-                  a.button('Wave').onClick(() => {
+                  a.button('Wave', { onClick: () => {
                     timeline(timelineCircle, [
                       { at: 0,    props: { x: 20, x2: 60, y: 100, y2: 140 } },
                       { at: 200,  props: { x: 150, x2: 190, y: 40, y2: 80 }, ease: 'inOut' },
@@ -566,19 +566,19 @@ export function buildElegantDemo(a: any) {
                       { at: 600,  props: { x: 410, x2: 450, y: 40, y2: 80 }, ease: 'inOut' },
                       { at: 800,  props: { x: 540, x2: 580, y: 100, y2: 140 }, ease: 'inOut' }
                     ]).play();
-                  });
+                  } });
 
-                  a.button('Loop 3x').onClick(() => {
+                  a.button('Loop 3x', { onClick: () => {
                     timeline(timelineCircle, [
                       { at: 0,   props: { x: 20, x2: 60 } },
                       { at: 400, props: { x: 520, x2: 560 }, ease: 'inOut' },
                       { at: 800, props: { x: 20, x2: 60 }, ease: 'inOut' }
                     ]).loop(3);
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     timelineCircle.update({ x: 20, y: 80, x2: 60, y2: 120 });
-                  });
+                  } });
                 });
               });
             }
@@ -609,55 +609,55 @@ export function buildElegantDemo(a: any) {
 
                 a.hbox(() => {
                   // CSS standard easings
-                  a.button('ease').onClick(() => {
+                  a.button('ease', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.ease });
-                  });
-                  a.button('easeIn').onClick(() => {
+                  } });
+                  a.button('easeIn', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.easeIn });
-                  });
-                  a.button('easeOut').onClick(() => {
+                  } });
+                  a.button('easeOut', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.easeOut });
-                  });
-                  a.button('easeInOut').onClick(() => {
+                  } });
+                  a.button('easeInOut', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.easeInOut });
-                  });
+                  } });
                 });
 
                 a.hbox(() => {
                   // Material Design curves
-                  a.button('standard').onClick(() => {
+                  a.button('standard', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.standard });
-                  });
-                  a.button('decelerate').onClick(() => {
+                  } });
+                  a.button('decelerate', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.decelerate });
-                  });
-                  a.button('snappy').onClick(() => {
+                  } });
+                  a.button('snappy', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.snappy });
-                  });
+                  } });
                 });
 
                 a.hbox(() => {
                   // Dramatic curves
-                  a.button('overshoot').onClick(() => {
+                  a.button('overshoot', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.overshoot });
-                  });
-                  a.button('anticipate').onClick(() => {
+                  } });
+                  a.button('anticipate', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 1000, ease: bezier.anticipate });
-                  });
-                  a.button('outBack').onClick(() => {
+                  } });
+                  a.button('outBack', { onClick: () => {
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: bezier.outBack });
-                  });
+                  } });
                 });
 
                 a.hbox(() => {
                   // Custom bezier
-                  a.button('custom(0.7,0,0.3,1)').onClick(() => {
+                  a.button('custom(0.7,0,0.3,1)', { onClick: () => {
                     const custom = cubicBezier(0.7, 0, 0.3, 1);
                     bezierCircle.to({ x: 520, x2: 560 }, { ms: 800, ease: custom });
-                  });
-                  a.button('Reset').onClick(() => {
+                  } });
+                  a.button('Reset', { onClick: () => {
                     bezierCircle.update({ x: 20, y: 80, x2: 60, y2: 120 });
-                  });
+                  } });
                 });
               });
             }
@@ -723,25 +723,25 @@ export function buildElegantDemo(a: any) {
 
                 a.label('Animate on different curve types:');
                 a.hbox(() => {
-                  a.button('Linear (2pt)').onClick(() => {
+                  a.button('Linear (2pt)', { onClick: () => {
                     const points = [{x: 50, y: 100}, {x: 550, y: 100}];
                     animateOnPath(points);
-                  }).withId('bezier-linear-btn');
+                  } }).withId('bezier-linear-btn');
 
-                  a.button('Quadratic (3pt)').onClick(() => {
+                  a.button('Quadratic (3pt)', { onClick: () => {
                     const points = [{x: 50, y: 150}, {x: 300, y: 20}, {x: 550, y: 150}];
                     animateOnPath(points);
-                  }).withId('bezier-quadratic-btn');
+                  } }).withId('bezier-quadratic-btn');
 
-                  a.button('Cubic (4pt)').onClick(() => {
+                  a.button('Cubic (4pt)', { onClick: () => {
                     const points = [{ x: 50, y: 100 }, { x: 200, y: 20 }, { x: 400, y: 180 }, { x: 550, y: 100 }];
                     animateOnPath(points);
-                  }).withId('bezier-cubic-btn');
+                  } }).withId('bezier-cubic-btn');
 
-                  a.button('Quartic (5pt)').onClick(() => {
+                  a.button('Quartic (5pt)', { onClick: () => {
                     const points = [{ x: 50, y: 100 }, { x: 150, y: 20 }, { x: 300, y: 100 }, { x: 450, y: 180 }, { x: 550, y: 100 }];
                     animateOnPath(points);
-                  }).withId('bezier-quartic-btn');
+                  } }).withId('bezier-quartic-btn');
                 });
               });
             }

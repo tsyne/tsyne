@@ -35,23 +35,23 @@ app(resolveTransport(), { title: 'Input Widgets Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Get Text').onClick(async () => {
+          button('Get Text', { onClick: async () => {
             const text = await multilineEntry.getText();
             const lineCount = text.split('\n').length;
             const charCount = text.length;
             statusLabel.setText(`Text has ${lineCount} lines and ${charCount} characters`);
-          });
+          } });
 
-          button('Set Sample Text').onClick(async () => {
+          button('Set Sample Text', { onClick: async () => {
             const sampleText = 'Line 1: Sample notes\nLine 2: This demonstrates multi-line entry\nLine 3: You can edit this text\nLine 4: Press Get Text to see line and character counts';
             await multilineEntry.setText(sampleText);
             statusLabel.setText('Sample text set in multi-line entry');
-          });
+          } });
 
-          button('Clear').onClick(async () => {
+          button('Clear', { onClick: async () => {
             await multilineEntry.setText('');
             statusLabel.setText('Multi-line entry cleared');
-          });
+          } });
         });
 
         label('');
@@ -72,7 +72,7 @@ app(resolveTransport(), { title: 'Input Widgets Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Login').onClick(async () => {
+          button('Login', { onClick: async () => {
             const username = await usernameField.getText();
             const password = await passwordField.getText();
 
@@ -87,19 +87,19 @@ app(resolveTransport(), { title: 'Input Widgets Demo' }, () => {
             } else {
               statusLabel.setText('✗ Invalid credentials (try: admin / password123)');
             }
-          });
+          } });
 
-          button('Clear Form').onClick(async () => {
+          button('Clear Form', { onClick: async () => {
             await usernameField.setText('');
             await passwordField.setText('');
             statusLabel.setText('Login form cleared');
-          });
+          } });
 
-          button('Fill Demo').onClick(async () => {
+          button('Fill Demo', { onClick: async () => {
             await usernameField.setText('admin');
             await passwordField.setText('password123');
             statusLabel.setText('Demo credentials filled (admin / password123)');
-          });
+          } });
         });
 
         label('');

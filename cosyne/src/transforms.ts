@@ -94,6 +94,19 @@ export class TransformMatrix {
   }
 
   /**
+   * Get the scale factors from the transform
+   * Returns [scaleX, scaleY] extracted from the matrix
+   */
+  getScale(): [number, number] {
+    const m = this.matrix;
+    // For a transform matrix [a, b, tx, c, d, ty, ...]
+    // scaleX = sqrt(a² + c²), scaleY = sqrt(b² + d²)
+    const scaleX = Math.sqrt(m[0] * m[0] + m[3] * m[3]);
+    const scaleY = Math.sqrt(m[1] * m[1] + m[4] * m[4]);
+    return [scaleX, scaleY];
+  }
+
+  /**
    * Clone this transform
    */
   clone(): TransformMatrix {

@@ -39,9 +39,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Test Title', 'This is an info message');
-            });
+            } });
           });
           win.show();
         });
@@ -68,9 +68,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Dialog Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Error').onClick(async () => {
+            app.button('Show Error', { onClick: async () => {
               await win.showError('Error', 'Something went wrong');
-            });
+            } });
           });
           win.show();
         });
@@ -95,9 +95,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Dismiss Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Test', 'Click OK to dismiss');
-            });
+            } });
           });
           win.show();
         });
@@ -129,9 +129,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Fluent Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Hello', 'World');
-            });
+            } });
           });
           win.show();
         });
@@ -169,9 +169,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Info Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Success', 'Operation completed');
-            });
+            } });
           });
           win.show();
         });
@@ -190,9 +190,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Error Type Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Error').onClick(async () => {
+            app.button('Show Error', { onClick: async () => {
               await win.showError('Error', 'Operation failed');
-            });
+            } });
           });
           win.show();
         });
@@ -211,9 +211,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Contains Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Important', 'Please review the changes');
-            });
+            } });
           });
           win.show();
         });
@@ -232,12 +232,12 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Polling Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Delayed Dialog').onClick(async () => {
+            app.button('Delayed Dialog', { onClick: async () => {
               // Dialog appears after small delay
               setTimeout(async () => {
                 await win.showInfo('Delayed', 'This appeared after delay');
               }, 50);
-            });
+            } });
           });
           win.show();
         });
@@ -256,9 +256,9 @@ describe('Dialog Inspection', () => {
       const testApp = await tsyneTest.createApp((app) => {
         app.window({ title: 'Chain Test', width: 400, height: 300 }, (win) => {
           win.setContent(() => {
-            app.button('Show Info').onClick(async () => {
+            app.button('Show Info', { onClick: async () => {
               await win.showInfo('Chain Test', 'Will be dismissed');
-            });
+            } });
           });
           win.show();
         });

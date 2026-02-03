@@ -413,11 +413,11 @@ export class CalcudokuUI {
 
     this.a.vbox(() => {
       this.a.hbox(() => {
-        this.a.button('Reset').onClick(() => this.game.reset()).withId('resetBtn');
-        this.a.button('Solve').onClick(() => this.visibleSolve()).withId('solveBtn');
-        this.a.button('◀').onClick(() => { this.game.prevLevel(); this.updateDisplay(); }).withId('prevBtn');
+        this.a.button('Reset', { onClick: () => this.game.reset() }).withId('resetBtn');
+        this.a.button('Solve', { onClick: () => this.visibleSolve() }).withId('solveBtn');
+        this.a.button('◀', { onClick: () => { this.game.prevLevel(); this.updateDisplay(); } }).withId('prevBtn');
         this.levelLabel = this.a.label(`Level ${this.game.getLevel() + 1}/${this.game.getLevelCount()}`).withId('levelLabel');
-        this.a.button('▶').onClick(() => { this.game.nextLevel(); this.updateDisplay(); }).withId('nextBtn');
+        this.a.button('▶', { onClick: () => { this.game.nextLevel(); this.updateDisplay(); } }).withId('nextBtn');
       });
 
       this.a.separator();
@@ -448,9 +448,9 @@ export class CalcudokuUI {
       // Number buttons
       this.a.hbox(() => {
         for (let n = 1; n <= this.game.getSize(); n++) {
-          this.a.button(String(n)).onClick(() => this.game.setValue(n)).withId(`numBtn${n}`);
+          this.a.button(String(n), { onClick: () => this.game.setValue(n) }).withId(`numBtn${n}`);
         }
-        this.a.button('C').onClick(() => this.game.clearCell()).withId('clearBtn');
+        this.a.button('C', { onClick: () => this.game.clearCell() }).withId('clearBtn');
       });
 
       this.a.separator();

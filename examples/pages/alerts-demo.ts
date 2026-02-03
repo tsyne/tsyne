@@ -45,12 +45,12 @@ vbox(() => {
       label('Web: alert("Hello World")');
       label('');
 
-      button('Show Info Alert').onClick(() => {
+      button('Show Info Alert', { onClick: () => {
         // Note: In a real implementation, this would need window reference
         // For demo purposes, we log to console
         console.log('INFO ALERT: Hello from Tsyne Browser!');
         console.log('In a real app: window.showInfo("Alert", "Hello from Tsyne Browser!")');
-      });
+      } });
 
       label('');
       label('Implementation:');
@@ -65,10 +65,10 @@ vbox(() => {
       label('Web: alert("Error: Something went wrong")');
       label('');
 
-      button('Show Error Alert').onClick(() => {
+      button('Show Error Alert', { onClick: () => {
         console.log('ERROR ALERT: Something went wrong!');
         console.log('In a real app: window.showError("Error", "Something went wrong!")');
-      });
+      } });
 
       label('');
       label('Implementation:');
@@ -83,11 +83,11 @@ vbox(() => {
       label('Web: confirm("Are you sure?")');
       label('');
 
-      button('Show Confirm Dialog').onClick(() => {
+      button('Show Confirm Dialog', { onClick: () => {
         console.log('CONFIRM DIALOG: Are you sure you want to continue?');
         console.log('In a real app: const result = await window.showConfirm("Confirm", "Are you sure?")');
         console.log('Returns: true (OK) or false (Cancel)');
-      });
+      } });
 
       label('');
       label('Implementation:');
@@ -115,7 +115,7 @@ vbox(() => {
       hbox(() => {
         inputEntry = entry('Enter your name');
 
-        button('Submit').onClick(async () => {
+        button('Submit', { onClick: async () => {
           const value = await inputEntry.getText();
           console.log('Input value:', value);
 
@@ -123,7 +123,7 @@ vbox(() => {
             console.log('Processing:', value);
             // Navigate to result page or update UI
           }
-        });
+        } });
       });
 
       label('');
@@ -140,9 +140,9 @@ vbox(() => {
       label('For more control, create dedicated alert pages:');
       label('');
 
-      button('Navigate to Custom Alert Page').onClick(() => {
+      button('Navigate to Custom Alert Page', { onClick: () => {
         browserContext.changePage('/custom-alert?title=Warning&message=This+is+a+custom+alert');
-      });
+      } });
 
       label('');
       label('Custom alert page shows:');
@@ -158,10 +158,10 @@ vbox(() => {
       label('Instead of modal dialogs, show alerts in the page:');
       label('');
 
-      button('Show In-Page Alert').onClick(() => {
+      button('Show In-Page Alert', { onClick: () => {
         console.log('Would display alert in page content area');
         // In a real implementation, update page state to show alert
-      });
+      } });
 
       label('');
       label('┌────────────────────────────────────┐');
@@ -184,10 +184,10 @@ vbox(() => {
       label('Non-blocking notifications (like Android toasts):');
       label('');
 
-      button('Show Toast (Simulated)').onClick(() => {
+      button('Show Toast (Simulated)', { onClick: () => {
         console.log('TOAST: File saved successfully');
         console.log('Would show temporary notification at bottom of window');
-      });
+      } });
 
       label('');
       label('Toast notifications:');
@@ -273,7 +273,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });

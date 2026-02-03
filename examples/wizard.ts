@@ -52,7 +52,7 @@ function createStep1(a: App): VBox {
 
     a.separator();
 
-    a.button('Next: Choose Plan').onClick(() => {
+    a.button('Next: Choose Plan', { onClick: () => {
       // Save step 1 data
       nameEntry.getText().then(name => {
         wizardData.name = name;
@@ -63,7 +63,7 @@ function createStep1(a: App): VBox {
 
       // Navigate to step 2
       nav.push(() => createStep2(a), 'Step 2: Select Plan');
-    });
+    } });
   });
 }
 
@@ -84,11 +84,11 @@ function createStep2(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back').onClick(async () => {
+      a.button('Back', { onClick: async () => {
         await nav.back();
-      });
+      } });
 
-      a.button('Next: Select Features').onClick(() => {
+      a.button('Next: Select Features', { onClick: () => {
         // Get current plan selection
         planRadio.getSelected().then(plan => {
           wizardData.plan = plan;
@@ -96,7 +96,7 @@ function createStep2(a: App): VBox {
 
         // Navigate to step 3
         nav.push(() => createStep3(a), 'Step 3: Features');
-      });
+      } });
     });
   });
 }
@@ -138,14 +138,14 @@ function createStep3(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back').onClick(async () => {
+      a.button('Back', { onClick: async () => {
         await nav.back();
-      });
+      } });
 
-      a.button('Next: Payment').onClick(() => {
+      a.button('Next: Payment', { onClick: () => {
         // Navigate to step 4
         nav.push(() => createStep4(a), 'Step 4: Payment');
-      });
+      } });
     });
   });
 }
@@ -166,11 +166,11 @@ function createStep4(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back').onClick(async () => {
+      a.button('Back', { onClick: async () => {
         await nav.back();
-      });
+      } });
 
-      a.button('Review & Confirm').onClick(() => {
+      a.button('Review & Confirm', { onClick: () => {
         // Get payment method
         paymentSelect.getSelected().then(method => {
           wizardData.paymentMethod = method;
@@ -178,7 +178,7 @@ function createStep4(a: App): VBox {
 
         // Navigate to confirmation
         nav.push(() => createConfirmation(a), 'Confirmation');
-      });
+      } });
     });
   });
 }
@@ -197,14 +197,14 @@ function createConfirmation(a: App): VBox {
     a.separator();
 
     a.hbox(() => {
-      a.button('Back').onClick(async () => {
+      a.button('Back', { onClick: async () => {
         await nav.back();
-      });
+      } });
 
-      a.button('Complete Order').onClick(() => {
+      a.button('Complete Order', { onClick: () => {
         // Navigate to success
         nav.push(() => createSuccess(a), 'Order Complete');
-      });
+      } });
     });
   });
 }
@@ -220,7 +220,7 @@ function createSuccess(a: App): VBox {
 
     a.separator();
 
-    a.button('Start New Order').onClick(async () => {
+    a.button('Start New Order', { onClick: async () => {
       // Reset wizard data
       wizardData.name = '';
       wizardData.email = '';
@@ -233,7 +233,7 @@ function createSuccess(a: App): VBox {
       for (let i = 0; i < 5; i++) {
         await nav.back();
       }
-    });
+    } });
   });
 }
 

@@ -56,17 +56,17 @@ vbox(() => {
       label('');
 
       hbox(() => {
-        button('← Back').onClick(() => {
+        button('← Back', { onClick: () => {
           browserContext.back();
-        });
+        } });
 
-        button('Forward →').onClick(() => {
+        button('Forward →', { onClick: () => {
           browserContext.forward();
-        });
+        } });
 
-        button('⟳ Reload').onClick(() => {
+        button('⟳ Reload', { onClick: () => {
           browserContext.reload();
-        });
+        } });
       });
 
       label('');
@@ -85,7 +85,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });

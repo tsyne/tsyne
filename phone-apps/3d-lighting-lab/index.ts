@@ -230,62 +230,62 @@ export function buildLightingLabApp(a: any) {
 
           // Material selection
           a.label('Material:');
-          a.button('Gold').onClick(async () => {
+          a.button('Gold', { onClick: async () => {
             labState.material = 'gold';
             await renderFrame();
-          }).withId('btn-gold');
-          a.button('Plastic').onClick(async () => {
+          } }).withId('btn-gold');
+          a.button('Plastic', { onClick: async () => {
             labState.material = 'plastic';
             await renderFrame();
-          }).withId('btn-plastic');
-          a.button('Matte').onClick(async () => {
+          } }).withId('btn-plastic');
+          a.button('Matte', { onClick: async () => {
             labState.material = 'matte';
             await renderFrame();
-          }).withId('btn-matte');
+          } }).withId('btn-matte');
 
           a.separator();
 
           // Light color selection
           a.label('Light Color:');
-          a.button('White').onClick(async () => {
+          a.button('White', { onClick: async () => {
             labState.lightColor = '#ffffff';
             await renderFrame();
-          }).withId('btn-white');
-          a.button('Warm').onClick(async () => {
+          } }).withId('btn-white');
+          a.button('Warm', { onClick: async () => {
             labState.lightColor = '#ffcc77';
             await renderFrame();
-          }).withId('btn-warm');
-          a.button('Cool').onClick(async () => {
+          } }).withId('btn-warm');
+          a.button('Cool', { onClick: async () => {
             labState.lightColor = '#77aaff';
             await renderFrame();
-          }).withId('btn-cool');
-          a.button('Red').onClick(async () => {
+          } }).withId('btn-cool');
+          a.button('Red', { onClick: async () => {
             labState.lightColor = '#ff4444';
             await renderFrame();
-          }).withId('btn-red');
-          a.button('Green').onClick(async () => {
+          } }).withId('btn-red');
+          a.button('Green', { onClick: async () => {
             labState.lightColor = '#44ff44';
             await renderFrame();
-          }).withId('btn-green');
-          a.button('Blue').onClick(async () => {
+          } }).withId('btn-green');
+          a.button('Blue', { onClick: async () => {
             labState.lightColor = '#4444ff';
             await renderFrame();
-          }).withId('btn-blue');
+          } }).withId('btn-blue');
 
           a.separator();
 
           // Light animation controls
           a.label('Animation:');
           a.hbox(() => {
-            a.button('Slow').onClick(() => {
+            a.button('Slow', { onClick: () => {
               labState.lightOrbitSpeed = 0.01;
-            }).withId('btn-slow');
-            a.button('Fast').onClick(() => {
+            } }).withId('btn-slow');
+            a.button('Fast', { onClick: () => {
               labState.lightOrbitSpeed = 0.04;
-            }).withId('btn-fast');
-            a.button('Stop').onClick(() => {
+            } }).withId('btn-fast');
+            a.button('Stop', { onClick: () => {
               labState.lightOrbitSpeed = 0;
-            }).withId('btn-stop');
+            } }).withId('btn-stop');
           });
 
           a.separator();
@@ -293,29 +293,29 @@ export function buildLightingLabApp(a: any) {
           // Light height control
           a.label('Light Height:');
           a.hbox(() => {
-            a.button('Low').onClick(async () => {
+            a.button('Low', { onClick: async () => {
               labState.lightHeight = 3;
               await renderFrame();
-            }).withId('btn-low');
-            a.button('Mid').onClick(async () => {
+            } }).withId('btn-low');
+            a.button('Mid', { onClick: async () => {
               labState.lightHeight = 5;
               await renderFrame();
-            }).withId('btn-mid');
-            a.button('High').onClick(async () => {
+            } }).withId('btn-mid');
+            a.button('High', { onClick: async () => {
               labState.lightHeight = 8;
               await renderFrame();
-            }).withId('btn-high');
+            } }).withId('btn-high');
           });
 
           a.separator();
 
           // Reset button
-          a.button('Reset Camera').onClick(async () => {
+          a.button('Reset Camera', { onClick: async () => {
             cameraState.radius = 20;
             cameraState.theta = Math.PI / 4;
             cameraState.phi = Math.PI / 3;
             await renderFrame();
-          }).withId('btn-reset');
+          } }).withId('btn-reset');
 
           a.spacer();
 

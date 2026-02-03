@@ -53,7 +53,7 @@ app(resolveTransport(), { title: 'Event Form' }, (a) => {
 
         // Buttons
         a.hbox(() => {
-          a.button('Create Event').onClick(async () => {
+          a.button('Create Event', { onClick: async () => {
             const name = await eventNameEntry.getText();
             const startDate = await eventDateEntry.getDate();
             const endDate = await eventEndDateEntry.getDate();
@@ -82,23 +82,23 @@ app(resolveTransport(), { title: 'Event Form' }, (a) => {
             }
 
             dialog.showInformation(win, 'Event Created', summary);
-          });
+          } });
 
-          a.button('Set Today').onClick(async () => {
+          a.button('Set Today', { onClick: async () => {
             // Set today's date
             const today = new Date().toISOString().split('T')[0];
             await eventDateEntry.setDate(today);
             await eventEndDateEntry.setDate(today);
-          });
+          } });
 
-          a.button('Clear Dates').onClick(async () => {
+          a.button('Clear Dates', { onClick: async () => {
             await eventDateEntry.setDate('');
             await eventEndDateEntry.setDate('');
-          });
+          } });
 
-          a.button('Cancel').onClick(() => {
+          a.button('Cancel', { onClick: () => {
             win.close();
-          });
+          } });
         });
       });
     });

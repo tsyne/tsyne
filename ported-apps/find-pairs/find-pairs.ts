@@ -160,8 +160,8 @@ export class FindPairsUI {
   buildContent = (): void => {
     this.a.vbox(() => {
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.game.scramble()).withId('newGameBtn');
-        this.a.button('Peek').onClick(() => this.game.peek()).withId('peekBtn');
+        this.a.button('New Game', { onClick: () => this.game.scramble() }).withId('newGameBtn');
+        this.a.button('Peek', { onClick: () => this.game.peek() }).withId('peekBtn');
       });
 
       this.a.separator();

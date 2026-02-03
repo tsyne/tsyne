@@ -165,8 +165,8 @@ export class ElizaUI {
           this.a.vbox(() => {
             // Toolbar
             this.a.hbox(() => {
-              this.a.button('Clear').onClick(() => this.clearConversation()).withId('btn-clear');
-              this.a.button('Debug').onClick(() => this.toggleDebug()).withId('btn-debug');
+              this.a.button('Clear', { onClick: () => this.clearConversation() }).withId('btn-clear');
+              this.a.button('Debug', { onClick: () => this.toggleDebug() }).withId('btn-debug');
               this.a.spacer();
               this.statusLabel = this.a.label('Ready').withId('status');
             });
@@ -197,13 +197,13 @@ export class ElizaUI {
                 },
                 250
               ).withId('input');
-              this.a.button('Send').onClick(async () => {
+              this.a.button('Send', { onClick: async () => {
                 if (this.inputEntry) {
                   const text = await this.inputEntry.getText();
                   await this.sendMessage(text);
                   this.inputEntry.setText('');
                 }
-              }).withId('btn-send');
+              } }).withId('btn-send');
             });
 
             // Help text

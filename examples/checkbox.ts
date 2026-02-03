@@ -37,19 +37,19 @@ app(resolveTransport(), { title: 'Checkbox Demo' }, () => {
 
         // Action buttons
         hbox(() => {
-          button('Check All').onClick(async () => {
+          button('Check All', { onClick: async () => {
             await termsCheckbox.setChecked(true);
             await newsletterCheckbox.setChecked(true);
             updateStatus();
-          });
+          } });
 
-          button('Uncheck All').onClick(async () => {
+          button('Uncheck All', { onClick: async () => {
             await termsCheckbox.setChecked(false);
             await newsletterCheckbox.setChecked(false);
             updateStatus();
-          });
+          } });
 
-          button('Submit').onClick(async () => {
+          button('Submit', { onClick: async () => {
             const termsAccepted = await termsCheckbox.getChecked();
             const newsletterSubscribed = await newsletterCheckbox.getChecked();
 
@@ -60,7 +60,7 @@ app(resolveTransport(), { title: 'Checkbox Demo' }, () => {
             } else {
               statusLabel.setText('⚠ Please accept the terms first');
             }
-          });
+          } });
         });
       });
     });

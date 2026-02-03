@@ -340,10 +340,10 @@ function createMaterialsDemo(a: App): void {
         a.hbox(() => {
           a.label('Material: ');
           for (const mat of materials) {
-            a.button(mat.name).onClick(() => {
+            a.button(mat.name, { onClick: () => {
               material = mat.id;
               shader?.setUniform('u_material', material);
-            });
+            } });
           }
         });
 
@@ -351,10 +351,10 @@ function createMaterialsDemo(a: App): void {
         a.hbox(() => {
           a.label('Color: ');
           for (const cc of colors) {
-            a.button(cc.name).onClick(() => {
+            a.button(cc.name, { onClick: () => {
               colorIdx = colors.indexOf(cc);
               shader?.setUniform('u_baseColor', cc.color);
-            });
+            } });
           }
         });
 

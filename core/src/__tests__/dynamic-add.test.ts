@@ -48,17 +48,15 @@ describe('Dynamic container.Add() rendering', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.hbox(() => {
-              app.button('Show Rectangles')
-                .onClick(async () => {
+              app.button('Show Rectangles', { onClick: async () => {
                   showRects = true;
                   await render();
-                })
+                } })
                 .withId('showBtn');
-              app.button('Hide Rectangles')
-                .onClick(async () => {
+              app.button('Hide Rectangles', { onClick: async () => {
                   showRects = false;
                   await render();
-                })
+                } })
                 .withId('hideBtn');
             });
 

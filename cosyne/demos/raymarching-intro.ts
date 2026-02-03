@@ -248,42 +248,42 @@ function createRaymarchingDemo(a: App): void {
       a.vbox(() => {
         // Scene controls
         a.hbox(() => {
-          a.button('Sphere').onClick(() => {
+          a.button('Sphere', { onClick: () => {
             scene = 0;
             shader?.setUniform('u_scene', scene);
-          });
-          a.button('Box').onClick(() => {
+          } });
+          a.button('Box', { onClick: () => {
             scene = 1;
             shader?.setUniform('u_scene', scene);
-          });
-          a.button('Torus').onClick(() => {
+          } });
+          a.button('Torus', { onClick: () => {
             scene = 2;
             shader?.setUniform('u_scene', scene);
-          });
-          a.button('Combined').onClick(() => {
+          } });
+          a.button('Combined', { onClick: () => {
             scene = 3;
             shader?.setUniform('u_scene', scene);
-          });
+          } });
         });
 
         // Color controls
         a.hbox(() => {
-          a.button('Red').onClick(() => {
+          a.button('Red', { onClick: () => {
             colorIdx = 0;
             shader?.setUniform('u_baseColor', colors[colorIdx]);
-          });
-          a.button('Blue').onClick(() => {
+          } });
+          a.button('Blue', { onClick: () => {
             colorIdx = 1;
             shader?.setUniform('u_baseColor', colors[colorIdx]);
-          });
-          a.button('Green').onClick(() => {
+          } });
+          a.button('Green', { onClick: () => {
             colorIdx = 2;
             shader?.setUniform('u_baseColor', colors[colorIdx]);
-          });
-          a.button('Orange').onClick(() => {
+          } });
+          a.button('Orange', { onClick: () => {
             colorIdx = 3;
             shader?.setUniform('u_baseColor', colors[colorIdx]);
-          });
+          } });
         });
 
         // Light direction controls

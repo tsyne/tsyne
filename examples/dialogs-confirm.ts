@@ -32,7 +32,7 @@ app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
         label('');
 
         // Basic confirm
-        button('Simple Confirm').onClick(async () => {
+        button('Simple Confirm', { onClick: async () => {
           const confirmed = await win.showConfirm(
             'Confirm Action',
             'Are you sure you want to proceed?'
@@ -43,12 +43,12 @@ app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('User cancelled');
           }
-        });
+        } });
 
         label('');
 
         // Delete confirmation
-        button('Delete Item').onClick(async () => {
+        button('Delete Item', { onClick: async () => {
           if (itemsToDelete.length === 0) {
             await win.showInfo('No Items', 'There are no items to delete');
             return;
@@ -66,12 +66,12 @@ app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('Delete cancelled');
           }
-        });
+        } });
 
         label('');
 
         // Delete all confirmation
-        button('Delete All Items').onClick(async () => {
+        button('Delete All Items', { onClick: async () => {
           if (itemsToDelete.length === 0) {
             await win.showInfo('No Items', 'There are no items to delete');
             return;
@@ -90,12 +90,12 @@ app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('Delete all cancelled');
           }
-        });
+        } });
 
         label('');
 
         // Exit confirmation
-        button('Exit Application').onClick(async () => {
+        button('Exit Application', { onClick: async () => {
           const confirmed = await win.showConfirm(
             'Exit',
             'Are you sure you want to exit? Any unsaved changes will be lost.'
@@ -108,17 +108,17 @@ app(resolveTransport(), { title: 'Confirm Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('Exit cancelled');
           }
-        });
+        } });
 
         label('');
         label('');
 
         // Reset button
-        button('Reset Items').onClick(() => {
+        button('Reset Items', { onClick: () => {
           itemsToDelete = ['Document1.txt', 'Image.png', 'Video.mp4'];
           updateItemList();
           statusLabel.setText('Items reset');
-        });
+        } });
       });
     });
 

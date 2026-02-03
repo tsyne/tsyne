@@ -30,10 +30,10 @@ describe('Stopwatch Example', () => {
             app.separator();
 
             app.hbox(() => {
-              app.button('Start').onClick(() => {});
-              app.button('Stop').onClick(() => {});
-              app.button('Lap').onClick(() => {});
-              app.button('Reset').onClick(() => {});
+              app.button('Start', { onClick: () => {} });
+              app.button('Stop', { onClick: () => {} });
+              app.button('Lap', { onClick: () => {} });
+              app.button('Reset', { onClick: () => {} });
             });
 
             app.separator();
@@ -115,8 +115,8 @@ describe('Stopwatch Example', () => {
             timeLabel = app.label('00:00.00');
 
             app.hbox(() => {
-              app.button('Start').onClick(start);
-              app.button('Stop').onClick(stop);
+              app.button('Start', { onClick: start });
+              app.button('Stop', { onClick: stop });
             });
           });
         });
@@ -212,7 +212,7 @@ describe('Stopwatch Example', () => {
             timeLabel = app.label(formatTime(elapsedTime));
 
             app.hbox(() => {
-              app.button('Reset').onClick(reset);
+              app.button('Reset', { onClick: reset });
             });
           });
         });

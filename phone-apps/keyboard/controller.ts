@@ -500,12 +500,12 @@ export function createTestHarness(
           a.label('Mode:');
           a.label(harnessState.mode === 'verbose' ? '[Verbose]' : 'Verbose');
           a.label(harnessState.mode === 'real' ? '[Real]' : 'Real');
-          a.button('Toggle').onClick(() => {
+          a.button('Toggle', { onClick: () => {
             harnessState.mode = harnessState.mode === 'verbose' ? 'real' : 'verbose';
             if (rebuildFn) {
               rebuildFn();
             }
-          });
+          } });
         });
         a.label('Verbose=shows [keys], Real=actual cursor movement');
 

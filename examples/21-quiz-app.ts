@@ -93,7 +93,7 @@ export function buildQuizApp(a: App) {
 
           // Submit button
           if (!answered) {
-            a.button('Submit Answer').onClick(() => {
+            a.button('Submit Answer', { onClick: () => {
               if (selectedAnswer === -1) {
                 return; // No answer selected
               }
@@ -102,7 +102,7 @@ export function buildQuizApp(a: App) {
                 score++;
               }
               showResult();
-            });
+            } });
           }
         });
       });
@@ -146,14 +146,14 @@ export function buildQuizApp(a: App) {
 
           // Next button
           if (currentQuestion < questions.length - 1) {
-            a.button('Next Question').onClick(() => {
+            a.button('Next Question', { onClick: () => {
               currentQuestion++;
               answered = false;
               selectedAnswer = -1;
               showQuestion();
-            });
+            } });
           } else {
-            a.button('See Final Score').onClick(showFinalScore);
+            a.button('See Final Score', { onClick: showFinalScore });
           }
         });
       });
@@ -206,17 +206,17 @@ export function buildQuizApp(a: App) {
           a.separator();
 
           // Restart button
-          a.button('Play Again').onClick(() => {
+          a.button('Play Again', { onClick: () => {
             currentQuestion = 0;
             score = 0;
             answered = false;
             selectedAnswer = -1;
             showQuestion();
-          });
+          } });
 
-          a.button('Exit').onClick(() => {
+          a.button('Exit', { onClick: () => {
             process.exit(0);
-          });
+          } });
         });
       });
     }

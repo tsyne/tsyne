@@ -68,9 +68,9 @@ describe('MDI Demo - InnerWindow Container', () => {
               app.label('Window content');
             });
 
-            app.button('Change Title').onClick(async () => {
+            app.button('Change Title', { onClick: async () => {
               await innerWin.setTitle('Updated Title');
-            });
+            } });
           });
         });
         win.show();
@@ -102,9 +102,9 @@ describe('MDI Demo - InnerWindow Container', () => {
               closeCallbackFired = true;
             });
 
-            app.button('Close Window').onClick(async () => {
+            app.button('Close Window', { onClick: async () => {
               await innerWin.close();
-            });
+            } });
           });
         });
         win.show();
@@ -137,12 +137,12 @@ describe('MDI Demo - InnerWindow Container', () => {
             });
 
             app.hbox(() => {
-              app.button('Hide').onClick(async () => {
+              app.button('Hide', { onClick: async () => {
                 await innerWin.hide();
-              });
-              app.button('Show').onClick(async () => {
+              } });
+              app.button('Show', { onClick: async () => {
                 await innerWin.show();
-              });
+              } });
             });
           });
         });

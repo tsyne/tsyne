@@ -256,7 +256,7 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
             a.label('  Cell Size:').withId('labelCellSize');
             cellSizeEntry = a.entry('', undefined, 80).withId('inputCellSize') as Entry;
 
-            a.button('Generate').onClick(async () => {
+            a.button('Generate', { onClick: async () => {
               // Read current values from entry widgets
               const maxNText = await maxNEntry.getText();
               const columnsText = await columnsEntry.getText();
@@ -271,16 +271,16 @@ export async function createPrimeGridApp(a: App, win: Window): Promise<void> {
               if (newSize >= 5) state.cellSize = newSize;
 
               await generateGrid();
-            }).withId('btnGenerate');
+            } }).withId('btnGenerate');
           });
 
           // Row 2: Statistics
           statsLabel = a.label('Ready to generate...').withId('statsLabel');
 
           // Row 3: Export button
-          a.button('Export as Screenshot').onClick(() => {
+          a.button('Export as Screenshot', { onClick: () => {
             exportScreenshot();
-          }).withId('btnExport');
+          } }).withId('btnExport');
 
           // Legend
           a.hbox(() => {

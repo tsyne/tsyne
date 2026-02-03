@@ -203,7 +203,7 @@ function createPatternsDemo(a: App): void {
         a.hbox(() => {
           a.label('Pattern: ');
           for (const pat of patterns) {
-            a.button(pat).onClick(() => {
+            a.button(pat, { onClick: () => {
               pattern = patterns.indexOf(pat);
               // Defer setUniform to avoid thread safety issues
               // Try to update shader on next tick
@@ -216,7 +216,7 @@ function createPatternsDemo(a: App): void {
                   }
                 }
               });
-            });
+            } });
           }
         });
 

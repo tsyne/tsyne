@@ -46,6 +46,7 @@ export {
 // Input widgets
 export {
   Button,
+  ButtonOptions,
   MenuButton,
   MenuBuilder,
   PopupMenuItem,

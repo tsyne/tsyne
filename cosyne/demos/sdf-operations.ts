@@ -196,10 +196,10 @@ function createSDFDemo(a: App): void {
         a.hbox(() => {
           a.label('Operation: ');
           for (const op of ops) {
-            a.button(op).onClick(() => {
+            a.button(op, { onClick: () => {
               operation = ops.indexOf(op);
               shader?.setUniform('u_operation', operation);
-            });
+            } });
           }
         });
 

@@ -9,6 +9,8 @@ export interface ButtonOptions {
   className?: string;
   /** Font size in pixels */
   textSize?: number;
+  /** Click handler - can also be set via fluent .onClick() */
+  onClick?: (btn: Button) => void | Promise<void>;
 }
 
 /**
@@ -41,14 +43,14 @@ export class Button extends Widget {
     const id = ctx.generateId('button');
     super(ctx, id);
 
-    // Fast-fail: detect common mistake of passing callback as constructor arg
+    // Fast-fail: detect common mistake of passing bare callback as second arg
     if (typeof classNameOrOptions === 'function') {
       throw new Error(
-        `❌ Button constructor does not accept a callback as the third argument.\n\n` +
-        `You passed a function instead of className/options.\n\n` +
+        `❌ Button constructor does not accept a bare callback.\n\n` +
+        `You passed a function instead of an options object.\n\n` +
         `WRONG: a.button('Label', handler)\n` +
-        `RIGHT: a.button('Label').onClick(handler)\n\n` +
-        `See LLM.md "Mental Shift: Fluent Methods vs Constructor Parameters" for details.`
+        `RIGHT: a.button('Label', { onClick: handler })\n` +
+        `  or:  a.button('Label', { onClick: handler })\n`
       );
     }
 
@@ -65,6 +67,15 @@ export class Button extends Widget {
       payload.textSize = options.textSize;
     }
 
+    // Handle onClick at instantiation time (consistent with Entry, Checkbox, etc.)
+    if (options.onClick) {
+      const callbackId = ctx.generateId('callback');
+      payload.callbackId = callbackId;
+      ctx.bridge.registerEventHandler(callbackId, async () => {
+        await options.onClick!(this);
+      });
+    }
+
     ctx.bridge.send('createButton', payload);
     ctx.addToCurrentContainer(id, this);
 
@@ -75,24 +86,6 @@ export class Button extends Widget {
     }
   }
 
-  onClick(callback: (btn: Button) => void | Promise<void>): this {
-    const callbackId = this.ctx.generateId('callback');
-
-    // Register callback, passing the button as argument
-    this.ctx.bridge.registerEventHandler(callbackId, async () => {
-      await callback(this);
-    });
-
-    // Tell the bridge to use this callback ID for this button
-    this.ctx.bridge.send('setWidgetCallback', {
-      widgetId: this.id,
-      callbackId
-    }).catch(() => {
-      // If send fails, the handler is still registered, just won't be triggered
-    });
-
-    return this;
-  }
 
   async disable(): Promise<void> {
     await this.ctx.bridge.send('disableWidget', {

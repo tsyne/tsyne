@@ -9,6 +9,7 @@ import { ITsyneWindow, createTsyneWindow, isDesktopMode, isPhoneMode } from './t
 import {
   // Inputs
   Button,
+  ButtonOptions,
   MenuButton,
   MenuBuilder,
   ImageButton,
@@ -472,7 +473,7 @@ export class App {
    * @param classNameOrOptions - Optional CSS class name or options object { className, textSize }
    * @returns Button widget
    */
-  button(text: string, classNameOrOptions?: string | { className?: string; textSize?: number }): Button {
+  button(text: string, classNameOrOptions?: string | ButtonOptions): Button {
     return new Button(this.ctx, text, classNameOrOptions);
   }
 

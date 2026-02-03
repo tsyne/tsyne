@@ -137,7 +137,7 @@ export function buildInteractiveCubesApp(a: any) {
         a.hbox(() => {
           a.label(statusText);
           a.spacer();
-          a.button('Reset').onClick(() => {
+          a.button('Reset', { onClick: () => {
             console.log('Reset button clicked');
             for (const cube of cubes) {
               cube.selected = false;
@@ -151,7 +151,7 @@ export function buildInteractiveCubesApp(a: any) {
             statusText = 'Click a cube to select it';
             
             refreshAndRender();
-          });
+          } });
         });
 
         a.separator();

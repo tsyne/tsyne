@@ -211,3 +211,87 @@ func (s *grpcBridgeService) CreateCalendar(ctx context.Context, req *pb.CreateCa
 		Error:   resp.Error,
 	}, nil
 }
+
+// CreateColorCell creates a color cell widget (tappable cell with colored background and text)
+func (s *grpcBridgeService) CreateColorCell(ctx context.Context, req *pb.CreateColorCellRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"id": req.WidgetId,
+	}
+
+	if req.Width != 0 {
+		payload["width"] = float64(req.Width)
+	}
+	if req.Height != 0 {
+		payload["height"] = float64(req.Height)
+	}
+	if req.Text != "" {
+		payload["text"] = req.Text
+	}
+	if req.FillColor != "" {
+		payload["fillColor"] = req.FillColor
+	}
+	if req.TextColor != "" {
+		payload["textColor"] = req.TextColor
+	}
+	if req.BorderColor != "" {
+		payload["borderColor"] = req.BorderColor
+	}
+	if req.BorderWidth != 0 {
+		payload["borderWidth"] = float64(req.BorderWidth)
+	}
+	if req.CenterText {
+		payload["centerText"] = req.CenterText
+	}
+	if req.CallbackId != "" {
+		payload["callbackId"] = req.CallbackId
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "createColorCell",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleCreateColorCell(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}
+
+// UpdateColorCell updates a color cell widget's properties
+func (s *grpcBridgeService) UpdateColorCell(ctx context.Context, req *pb.UpdateColorCellRequest) (*pb.Response, error) {
+	payload := map[string]interface{}{
+		"widgetId": req.WidgetId,
+	}
+
+	if req.Text != "" {
+		payload["text"] = req.Text
+	}
+	if req.FillColor != "" {
+		payload["fillColor"] = req.FillColor
+	}
+	if req.TextColor != "" {
+		payload["textColor"] = req.TextColor
+	}
+	if req.BorderColor != "" {
+		payload["borderColor"] = req.BorderColor
+	}
+	if req.BorderWidth != 0 {
+		payload["borderWidth"] = float64(req.BorderWidth)
+	}
+
+	msg := Message{
+		ID:      req.WidgetId,
+		Type:    "updateColorCell",
+		Payload: payload,
+	}
+
+	resp := s.bridge.handleUpdateColorCell(msg)
+
+	return &pb.Response{
+		Success: resp.Success,
+		Error:   resp.Error,
+	}, nil
+}

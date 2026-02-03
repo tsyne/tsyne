@@ -43,16 +43,16 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
 
             // Color buttons
             palette.forEach((color, index) => {
-              a.button(`Color ${index + 1}`).onClick(() => {
+              a.button(`Color ${index + 1}`, { onClick: () => {
                 currentColor = color;
 // console.log(`Selected color: RGB(${color.r}, ${color.g}, ${color.b})`);
-              });
+              } });
             });
 
             a.separator();
             a.label('Tools', undefined, 'center', undefined, { bold: true });
             a.separator();
-            a.button('Fill All').onClick(async () => {
+            a.button('Fill All', { onClick: async () => {
               // Fill entire canvas with current color
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -67,8 +67,8 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
                 }
               }
               await raster.setPixels(updates);
-            });
-            a.button('Clear').onClick(async () => {
+            } });
+            a.button('Clear', { onClick: async () => {
               // Clear to white
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -77,8 +77,8 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
                 }
               }
               await raster.setPixels(updates);
-            });
-            a.button('Demo Pattern').onClick(async () => {
+            } });
+            a.button('Demo Pattern', { onClick: async () => {
               // Create a checkerboard pattern
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -94,8 +94,8 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
                 }
               }
               await raster.setPixels(updates);
-            });
-            a.button('Gradient').onClick(async () => {
+            } });
+            a.button('Gradient', { onClick: async () => {
               // Create a gradient pattern
               const updates = [];
               for (let y = 0; y < CANVAS_HEIGHT; y++) {
@@ -106,8 +106,8 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
                 }
               }
               await raster.setPixels(updates);
-            });
-            a.button('Smiley Face').onClick(async () => {
+            } });
+            a.button('Smiley Face', { onClick: async () => {
               // Draw a simple smiley face
               const updates = [];
               // Fill with yellow background
@@ -137,7 +137,7 @@ app(resolveTransport(), { title: 'Pixel Art Editor' }, (a) => {
                 updates.push({ x, y, r: 0, g: 0, b: 0, a: 255 });
               }
               await raster.setPixels(updates);
-            });
+            } });
           });
         },
         center: () => {

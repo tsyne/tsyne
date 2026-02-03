@@ -31,7 +31,7 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
         currentClipboardLabel = a.label('(click Refresh to see clipboard)');
 
         a.hbox(() => {
-          a.button('Refresh').onClick(async () => {
+          a.button('Refresh', { onClick: async () => {
             const content = await win.getClipboard();
             currentClipboardLabel.setText(content || '(empty)');
 
@@ -43,12 +43,12 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
               }
               updateHistoryList();
             }
-          });
+          } });
 
-          a.button('Clear Clipboard').onClick(async () => {
+          a.button('Clear Clipboard', { onClick: async () => {
             await win.setClipboard('');
             currentClipboardLabel.setText('(empty)');
-          });
+          } });
         });
 
         a.separator();
@@ -57,7 +57,7 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
         a.label('Copy Text:', undefined, 'leading', undefined, { bold: true });
         a.hbox(() => {
           inputEntry = a.entry('Enter text to copy...');
-          a.button('Copy').onClick(async () => {
+          a.button('Copy', { onClick: async () => {
             const text = await inputEntry.getText();
             if (text) {
               await win.setClipboard(text);
@@ -74,7 +74,7 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
 
               inputEntry.setText('');
             }
-          });
+          } });
         });
 
         a.separator();
@@ -82,25 +82,25 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
         // Quick copy buttons
         a.label('Quick Copy:', undefined, 'leading', undefined, { bold: true });
         a.hbox(() => {
-          a.button('Date').onClick(async () => {
+          a.button('Date', { onClick: async () => {
             const date = new Date().toLocaleDateString();
             await win.setClipboard(date);
             currentClipboardLabel.setText(date);
-          });
+          } });
 
-          a.button('Time').onClick(async () => {
+          a.button('Time', { onClick: async () => {
             const time = new Date().toLocaleTimeString();
             await win.setClipboard(time);
             currentClipboardLabel.setText(time);
-          });
+          } });
 
-          a.button('DateTime').onClick(async () => {
+          a.button('DateTime', { onClick: async () => {
             const datetime = new Date().toLocaleString();
             await win.setClipboard(datetime);
             currentClipboardLabel.setText(datetime);
-          });
+          } });
 
-          a.button('UUID').onClick(async () => {
+          a.button('UUID', { onClick: async () => {
             const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
               const r = Math.random() * 16 | 0;
               const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -108,7 +108,7 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
             });
             await win.setClipboard(uuid);
             currentClipboardLabel.setText(uuid);
-          });
+          } });
         });
 
         a.separator();
@@ -122,10 +122,10 @@ app(resolveTransport(), { title: 'Clipboard Manager' }, (a) => {
         });
 
         a.hbox(() => {
-          a.button('Clear History').onClick(() => {
+          a.button('Clear History', { onClick: () => {
             clipboardHistory.length = 0;
             updateHistoryList();
-          });
+          } });
         });
       });
     });

@@ -178,9 +178,9 @@ describe('Visual Regression Testing', () => {
         win.setContent(() => {
           app.vbox(() => {
             statusLabel = app.label('Initial State');
-            app.button('Change Text').onClick(() => {
+            app.button('Change Text', { onClick: () => {
               statusLabel.setText('Modified State - This is a longer text');
-            });
+            } });
           });
         });
         win.show();

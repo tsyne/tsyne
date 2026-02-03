@@ -78,7 +78,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });

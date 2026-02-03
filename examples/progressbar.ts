@@ -44,41 +44,41 @@ app(resolveTransport(), { title: 'ProgressBar Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Start Download').onClick(async () => {
+          button('Start Download', { onClick: async () => {
             statusLabel.setText('Downloading...');
             downloadValue = 0;
             simulateDownload();
-          });
+          } });
 
-          button('Start Upload').onClick(async () => {
+          button('Start Upload', { onClick: async () => {
             statusLabel.setText('Uploading...');
             uploadValue = 0;
             simulateUpload();
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Set 50%').onClick(async () => {
+          button('Set 50%', { onClick: async () => {
             await downloadProgress.setProgress(0.5);
             await uploadProgress.setProgress(0.5);
             statusLabel.setText('Progress set to 50%');
-          });
+          } });
 
-          button('Set 100%').onClick(async () => {
+          button('Set 100%', { onClick: async () => {
             await downloadProgress.setProgress(1.0);
             await uploadProgress.setProgress(1.0);
             statusLabel.setText('Complete!');
-          });
+          } });
 
-          button('Reset').onClick(async () => {
+          button('Reset', { onClick: async () => {
             await downloadProgress.setProgress(0);
             await uploadProgress.setProgress(0);
             downloadValue = 0;
             uploadValue = 0;
             statusLabel.setText('Reset to 0%');
-          });
+          } });
         });
       });
     });

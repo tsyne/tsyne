@@ -84,9 +84,9 @@ export function buildRockPaperScissors(a: App) {
         // Choice buttons
         a.label('Choose your weapon:');
         a.hbox(() => {
-          a.button('✊ Rock').onClick(() => play('Rock'));
-          a.button('✋ Paper').onClick(() => play('Paper'));
-          a.button('✌️ Scissors').onClick(() => play('Scissors'));
+          a.button('✊ Rock', { onClick: () => play('Rock') });
+          a.button('✋ Paper', { onClick: () => play('Paper') });
+          a.button('✌️ Scissors', { onClick: () => play('Scissors') });
         });
 
         a.separator();
@@ -118,7 +118,7 @@ export function buildRockPaperScissors(a: App) {
         a.separator();
 
         // Reset button
-        a.button('Reset Score').onClick(reset);
+        a.button('Reset Score', { onClick: reset });
       });
     });
 

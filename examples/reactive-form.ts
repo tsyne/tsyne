@@ -152,27 +152,27 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
         // Action Buttons
         a.hbox(() => {
           // Set Sample Data button
-          a.button('Fill Sample Data').onClick(() => {
+          a.button('Fill Sample Data', { onClick: () => {
             firstName.set('John');
             lastName.set('Doe');
             email.set('john.doe@example.com');
             age.set(30);
             newsletter.set(true);
             notifications.set(true);
-          });
+          } });
 
           // Clear Form button
-          a.button('Clear Form').onClick(() => {
+          a.button('Clear Form', { onClick: () => {
             firstName.set('');
             lastName.set('');
             email.set('');
             age.set(25);
             newsletter.set(false);
             notifications.set(true);
-          });
+          } });
 
           // Submit button
-          a.button('Submit').onClick(async () => {
+          a.button('Submit', { onClick: async () => {
             const data = {
               firstName: firstName.get(),
               lastName: lastName.get(),
@@ -183,7 +183,7 @@ export function createReactiveFormApp(appInstance: ReturnType<typeof app> extend
             };
             console.log('Form submitted:', data);
             win.showInfo('Form Submitted', `Thank you, ${fullName.get()}!`);
-          });
+          } });
         });
 
         a.separator();

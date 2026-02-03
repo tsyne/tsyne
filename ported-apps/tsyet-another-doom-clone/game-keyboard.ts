@@ -101,28 +101,28 @@ export function buildGameKeyboard(a: App, k: GameKeyboardController): void {
       // Left spacer
       a.label('');
       // Forward
-      a.button('^').onClick((b) => k.tap('w', b));
+      a.button('^', { onClick: (b) => k.tap('w', b) });
       // Middle spacers
       a.label('');
       a.label('');
       // Fire button
-      a.button('FIRE').onClick((b) => k.tap('Space', b)).withStyle({ importance: 'high' });
+      a.button('FIRE', { onClick: (b) => k.tap('Space', b) }).withStyle({ importance: 'high' });
     });
 
     // Bottom row: Left, Back, Right and Turn buttons
     a.hbox(() => {
       // Strafe left
-      a.button('<').onClick((b) => k.tap('a', b));
+      a.button('<', { onClick: (b) => k.tap('a', b) });
       // Backward
-      a.button('v').onClick((b) => k.tap('s', b));
+      a.button('v', { onClick: (b) => k.tap('s', b) });
       // Strafe right
-      a.button('>').onClick((b) => k.tap('d', b));
+      a.button('>', { onClick: (b) => k.tap('d', b) });
       // Spacer
       a.label('');
       // Turn left
-      a.button('<<').onClick((b) => k.tap('Left', b));
+      a.button('<<', { onClick: (b) => k.tap('Left', b) });
       // Turn right
-      a.button('>>').onClick((b) => k.tap('Right', b));
+      a.button('>>', { onClick: (b) => k.tap('Right', b) });
     });
   });
 }
@@ -143,31 +143,31 @@ export function buildExtendedGameKeyboard(a: App, k: GameKeyboardController): vo
     // Tap controls section
     a.hbox(() => {
       a.label('');
-      a.button('^').onClick((b) => k.tap('w', b));
+      a.button('^', { onClick: (b) => k.tap('w', b) });
       a.label('');
       a.label('');
-      a.button('FIRE').onClick((b) => k.tap('Space', b)).withStyle({ importance: 'high' });
+      a.button('FIRE', { onClick: (b) => k.tap('Space', b) }).withStyle({ importance: 'high' });
     });
 
     a.hbox(() => {
-      a.button('<').onClick((b) => k.tap('a', b));
-      a.button('v').onClick((b) => k.tap('s', b));
-      a.button('>').onClick((b) => k.tap('d', b));
+      a.button('<', { onClick: (b) => k.tap('a', b) });
+      a.button('v', { onClick: (b) => k.tap('s', b) });
+      a.button('>', { onClick: (b) => k.tap('d', b) });
       a.label('');
-      a.button('<<').onClick((b) => k.tap('Left', b));
-      a.button('>>').onClick((b) => k.tap('Right', b));
+      a.button('<<', { onClick: (b) => k.tap('Left', b) });
+      a.button('>>', { onClick: (b) => k.tap('Right', b) });
     });
 
     a.separator();
 
     // Toggle hold buttons for continuous movement
     a.hbox(() => {
-      a.button('FWD').onClick((b) => k.toggleHold('w', b));
-      a.button('BACK').onClick((b) => k.toggleHold('s', b));
-      a.button('STOP').onClick(() => k.releaseAll()).withStyle({ importance: 'warning' });
+      a.button('FWD', { onClick: (b) => k.toggleHold('w', b) });
+      a.button('BACK', { onClick: (b) => k.toggleHold('s', b) });
+      a.button('STOP', { onClick: () => k.releaseAll() }).withStyle({ importance: 'warning' });
       a.label('');
-      a.button('<TRN').onClick((b) => k.toggleHold('Left', b));
-      a.button('TRN>').onClick((b) => k.toggleHold('Right', b));
+      a.button('<TRN', { onClick: (b) => k.toggleHold('Left', b) });
+      a.button('TRN>', { onClick: (b) => k.toggleHold('Right', b) });
     });
   });
 }

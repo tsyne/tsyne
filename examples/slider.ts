@@ -53,34 +53,34 @@ app(resolveTransport(), { title: 'Slider Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Set Defaults').onClick(async () => {
+          button('Set Defaults', { onClick: async () => {
             await volumeSlider.setValue(50);
             await brightnessSlider.setValue(75);
             await temperatureSlider.setValue(20);
             volumeLabel.setText('Volume: 50%');
             brightnessLabel.setText('Brightness: 75%');
             temperatureLabel.setText('Temperature: 20.0°C');
-          });
+          } });
 
-          button('Mute/Dark').onClick(async () => {
+          button('Mute/Dark', { onClick: async () => {
             await volumeSlider.setValue(0);
             await brightnessSlider.setValue(0);
             volumeLabel.setText('Volume: 0%');
             brightnessLabel.setText('Brightness: 0%');
-          });
+          } });
 
-          button('Max').onClick(async () => {
+          button('Max', { onClick: async () => {
             await volumeSlider.setValue(100);
             await brightnessSlider.setValue(100);
             volumeLabel.setText('Volume: 100%');
             brightnessLabel.setText('Brightness: 100%');
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Get Values').onClick(async () => {
+          button('Get Values', { onClick: async () => {
             const volume = await volumeSlider.getValue();
             const brightness = await brightnessSlider.getValue();
             const temperature = await temperatureSlider.getValue();
@@ -96,7 +96,7 @@ app(resolveTransport(), { title: 'Slider Demo' }, () => {
               `Brightness: ${Math.round(brightness)}%\n` +
               `Temperature: ${temperature.toFixed(1)}°C`
             );
-          });
+          } });
         });
       });
     });

@@ -397,7 +397,7 @@ export function buildRobotArmApp(a: any) {
           a.spacer();
 
           // Reset Button
-          a.button('Reset').onClick(() => {
+          a.button('Reset', { onClick: () => {
             robotState.baseRotation = 0;
             robotState.shoulderAngle = -0.3;
             robotState.elbowAngle = 0.6;
@@ -406,7 +406,7 @@ export function buildRobotArmApp(a: any) {
             cameraState.theta = Math.PI / 4;
             cameraState.phi = Math.PI / 3;
             renderFrame();
-          }).withId('resetBtn');
+          } }).withId('resetBtn');
         });
       });
     });

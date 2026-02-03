@@ -20,20 +20,20 @@ export function buildCounter(a: App) {
         countLabel = a.label(`Count: ${count}`);
 
         a.hbox(() => {
-          a.button('Decrement').onClick(async () => {
+          a.button('Decrement', { onClick: async () => {
             count--;
             await countLabel.setText(`Count: ${count}`);
-          });
+          } });
 
-          a.button('Reset').onClick(async () => {
+          a.button('Reset', { onClick: async () => {
             count = 0;
             await countLabel.setText(`Count: ${count}`);
-          });
+          } });
 
-          a.button('Increment').onClick(async () => {
+          a.button('Increment', { onClick: async () => {
             count++;
             await countLabel.setText(`Count: ${count}`);
-          });
+          } });
         });
       });
     });

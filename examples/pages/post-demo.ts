@@ -31,7 +31,7 @@ vbox(() => {
       agreeCheckbox = checkbox('I agree to the terms and conditions');
       label('');
 
-      button('Submit Registration').onClick(async () => {
+      button('Submit Registration', { onClick: async () => {
         const name = await nameEntry.getText();
         const email = await emailEntry.getText();
         const agreed = await agreeCheckbox.getChecked();
@@ -64,7 +64,7 @@ vbox(() => {
         //   - Server would store submission
         //   - Success page would fetch from server
         browserContext.changePage('/post-success?name=' + encodeURIComponent(name));
-      });
+      } });
 
       label('');
       separator();
@@ -120,7 +120,7 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });

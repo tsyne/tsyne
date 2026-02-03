@@ -238,11 +238,48 @@ ctx.rect(0, 0, 100, 50)
 ### Transform Stack
 
 ```typescript
-ctx.transform({ translate: [100, 100], scale: 2 }, () => {
-  ctx.circle(0, 0, 25).fill('#ff6b6b');
-  ctx.circle(0, 0, 15).fill('#fff');
+ctx.transform({ translate: [100, 100], scale: [2, 2] }, (g) => {
+  g.circle(0, 0, 25).fill('#ff6b6b');
+  g.circle(0, 0, 15).fill('#fff');
 });
 ```
+
+### Group (Local Coordinate System)
+
+The `group(x, y, builder)` method creates a local coordinate system—children draw relative to the group origin. Similar to SVG's `<g transform="translate(x,y)">`:
+
+```typescript
+// Draw a labeled button at (200, 100)
+ctx.group(200, 100, (g) => {
+  // Children use coordinates relative to (200, 100)
+  g.rect(-40, -20, 80, 40, { fillColor: '#4ecdc4' });  // centered at group origin
+  g.text(-15, 5, 'Click', { fillColor: '#fff' });      // text inside button
+});
+
+// Equivalent to drawing at absolute coordinates:
+// ctx.rect(160, 80, 80, 40, { fillColor: '#4ecdc4' });
+// ctx.text(185, 105, 'Click', { fillColor: '#fff' });
+```
+
+**Nested Groups:**
+```typescript
+ctx.group(100, 100, (outer) => {
+  outer.circle(0, 0, 50, { fillColor: '#ff6b6b' });  // at (100, 100)
+
+  outer.group(30, 30, (inner) => {
+    inner.circle(0, 0, 20, { fillColor: '#fff' });  // at (130, 130)
+  });
+});
+```
+
+**With Rotation/Scale:**
+```typescript
+ctx.transform({ translate: [200, 200], rotate: Math.PI / 4 }, (g) => {
+  g.rect(-25, -25, 50, 50, { fillColor: '#ffd93d' });  // rotated 45° around (200, 200)
+});
+```
+
+**Demo:** `transform-group-showcase-nested-coordinates.ts`
 
 ---
 

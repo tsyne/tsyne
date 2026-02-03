@@ -69,29 +69,29 @@ app(resolveTransport(), { title: 'Canvas Sphere Animations' }, (a) => {
             // Controls
             a.vbox(() => {
               a.hbox(() => {
-                a.button('Start').onClick(() => {
+                a.button('Start', { onClick: () => {
                   if (spinState.handle) spinState.handle.stop();
                   spinState.handle = spinState.sphere.animate({
                     type: 'spin',
                     speed: spinState.speed,
                     axis: spinState.axis,
                   });
-                }).withId('spinStart');
+                } }).withId('spinStart');
 
-                a.button('Stop').onClick(() => {
+                a.button('Stop', { onClick: () => {
                   if (spinState.handle) {
                     spinState.handle.stop();
                     spinState.handle = null;
                   }
-                }).withId('spinStop');
+                } }).withId('spinStop');
 
-                a.button('Pause').onClick(() => {
+                a.button('Pause', { onClick: () => {
                   if (spinState.handle) spinState.handle.pause();
-                }).withId('spinPause');
+                } }).withId('spinPause');
 
-                a.button('Resume').onClick(() => {
+                a.button('Resume', { onClick: () => {
                   if (spinState.handle) spinState.handle.resume();
-                }).withId('spinResume');
+                } }).withId('spinResume');
               });
 
               a.label('Speed:');
@@ -153,7 +153,7 @@ app(resolveTransport(), { title: 'Canvas Sphere Animations' }, (a) => {
 
             a.vbox(() => {
               a.hbox(() => {
-                a.button('Start').onClick(() => {
+                a.button('Start', { onClick: () => {
                   if (wobbleState.handle) wobbleState.handle.stop();
                   wobbleState.handle = wobbleState.sphere.animate({
                     type: 'wobble',
@@ -161,22 +161,22 @@ app(resolveTransport(), { title: 'Canvas Sphere Animations' }, (a) => {
                     axis: wobbleState.axis,
                     amplitude: wobbleState.amplitude,
                   });
-                }).withId('wobbleStart');
+                } }).withId('wobbleStart');
 
-                a.button('Stop').onClick(() => {
+                a.button('Stop', { onClick: () => {
                   if (wobbleState.handle) {
                     wobbleState.handle.stop();
                     wobbleState.handle = null;
                   }
-                }).withId('wobbleStop');
+                } }).withId('wobbleStop');
 
-                a.button('Pause').onClick(() => {
+                a.button('Pause', { onClick: () => {
                   if (wobbleState.handle) wobbleState.handle.pause();
-                }).withId('wobblePause');
+                } }).withId('wobblePause');
 
-                a.button('Resume').onClick(() => {
+                a.button('Resume', { onClick: () => {
                   if (wobbleState.handle) wobbleState.handle.resume();
-                }).withId('wobbleResume');
+                } }).withId('wobbleResume');
               });
 
               a.label('Speed:');
@@ -227,29 +227,29 @@ app(resolveTransport(), { title: 'Canvas Sphere Animations' }, (a) => {
 
             a.vbox(() => {
               a.hbox(() => {
-                a.button('Start').onClick(() => {
+                a.button('Start', { onClick: () => {
                   if (bounceState.handle) bounceState.handle.stop();
                   bounceState.handle = bounceState.sphere.animate({
                     type: 'bounce',
                     speed: bounceState.speed,
                     amplitude: bounceState.amplitude,
                   });
-                }).withId('bounceStart');
+                } }).withId('bounceStart');
 
-                a.button('Stop').onClick(() => {
+                a.button('Stop', { onClick: () => {
                   if (bounceState.handle) {
                     bounceState.handle.stop();
                     bounceState.handle = null;
                   }
-                }).withId('bounceStop');
+                } }).withId('bounceStop');
 
-                a.button('Pause').onClick(() => {
+                a.button('Pause', { onClick: () => {
                   if (bounceState.handle) bounceState.handle.pause();
-                }).withId('bouncePause');
+                } }).withId('bouncePause');
 
-                a.button('Resume').onClick(() => {
+                a.button('Resume', { onClick: () => {
                   if (bounceState.handle) bounceState.handle.resume();
-                }).withId('bounceResume');
+                } }).withId('bounceResume');
               });
 
               a.label('Speed:');
@@ -293,29 +293,29 @@ app(resolveTransport(), { title: 'Canvas Sphere Animations' }, (a) => {
 
             a.vbox(() => {
               a.hbox(() => {
-                a.button('Start').onClick(() => {
+                a.button('Start', { onClick: () => {
                   if (pulseState.handle) pulseState.handle.stop();
                   pulseState.handle = pulseState.sphere.animate({
                     type: 'pulse',
                     speed: pulseState.speed,
                     amplitude: pulseState.amplitude,
                   });
-                }).withId('pulseStart');
+                } }).withId('pulseStart');
 
-                a.button('Stop').onClick(() => {
+                a.button('Stop', { onClick: () => {
                   if (pulseState.handle) {
                     pulseState.handle.stop();
                     pulseState.handle = null;
                   }
-                }).withId('pulseStop');
+                } }).withId('pulseStop');
 
-                a.button('Pause').onClick(() => {
+                a.button('Pause', { onClick: () => {
                   if (pulseState.handle) pulseState.handle.pause();
-                }).withId('pulsePause');
+                } }).withId('pulsePause');
 
-                a.button('Resume').onClick(() => {
+                a.button('Resume', { onClick: () => {
                   if (pulseState.handle) pulseState.handle.resume();
-                }).withId('pulseResume');
+                } }).withId('pulseResume');
               });
 
               a.label('Speed:');

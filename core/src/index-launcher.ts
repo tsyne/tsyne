@@ -254,8 +254,7 @@ export function createAppLauncher(
                     // Show action buttons for each pattern
                     for (const action of entry.actions) {
                       const buttonText = action.pattern.buttonFormat.replace('{name}', '');
-                      a.button(buttonText)
-                        .onClick(makeClickHandler(entry.baseName, action.filePath, action.pattern))
+                      a.button(buttonText, { onClick: makeClickHandler(entry.baseName, action.filePath, action.pattern) })
                         .withId(`app-btn-${entry.baseName}-${action.pattern.label}`);
                     }
                   });

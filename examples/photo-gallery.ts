@@ -51,9 +51,9 @@ app(resolveTransport(), { title: 'Photo Gallery' }, (a) => {
                   a.padded(() => {
                     a.vbox(() => {
                       // Placeholder for image (button with color name)
-                      a.button(`[${photo.color}]`).onClick(() => {
+                      a.button(`[${photo.color}]`, { onClick: () => {
                         console.log(`Viewing: ${photo.title}`);
-                      });
+                      } });
                       a.label(photo.title, undefined, 'center');
                     });
                   });

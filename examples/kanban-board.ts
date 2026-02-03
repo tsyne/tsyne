@@ -54,7 +54,7 @@ app({ title: 'Kanban Board' }, (a) => {
         a.hbox(() => {
           a.label('New Task:');
           newTaskEntry = a.entry('Enter task title');
-          a.button('Add to To Do').onClick(async () => {
+          a.button('Add to To Do', { onClick: async () => {
             const title = await newTaskEntry.getText();
             if (title) {
               const newTask: Task = {
@@ -66,7 +66,7 @@ app({ title: 'Kanban Board' }, (a) => {
               newTaskEntry.setText('');
               statusLabel.setText(`Added "${title}" to To Do`);
             }
-          });
+          } });
         });
 
         a.separator();
@@ -148,30 +148,30 @@ app({ title: 'Kanban Board' }, (a) => {
     // Action buttons
     a.hbox(() => {
       if (task.column !== 'todo') {
-        a.button('<').onClick(() => {
+        a.button('<', { onClick: () => {
           const columns: Array<'todo' | 'inprogress' | 'done'> = ['todo', 'inprogress', 'done'];
           const currentIdx = columns.indexOf(task.column);
           if (currentIdx > 0) {
             moveTask(task.id, columns[currentIdx - 1]);
           }
-        });
+        } });
       }
       if (task.column !== 'done') {
-        a.button('>').onClick(() => {
+        a.button('>', { onClick: () => {
           const columns: Array<'todo' | 'inprogress' | 'done'> = ['todo', 'inprogress', 'done'];
           const currentIdx = columns.indexOf(task.column);
           if (currentIdx < columns.length - 1) {
             moveTask(task.id, columns[currentIdx + 1]);
           }
-        });
+        } });
       }
-      a.button('X').onClick(() => {
+      a.button('X', { onClick: () => {
         const idx = tasks.findIndex(t => t.id === task.id);
         if (idx !== -1) {
           tasks.splice(idx, 1);
           statusLabel.setText(`Deleted "${task.title}"`);
         }
-      });
+      } });
     });
 
     return taskLabel;

@@ -370,7 +370,7 @@ export class FolderManager {
 
       // Navigation buttons
       this.a.hbox(() => {
-        this.a.button('← Back').onClick(() => this.close());
+        this.a.button('← Back', { onClick: () => this.close() });
         this.a.spacer();
 
         if (this.totalPages > 1) {

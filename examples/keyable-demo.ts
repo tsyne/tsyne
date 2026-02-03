@@ -38,9 +38,9 @@ app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
       a.label("(Click this button, then type!)");
 
       // Main keyboard input button
-      const inputBtn = a.button("[ Click here, then type! ]").onClick(() => {
+      const inputBtn = a.button("[ Click here, then type! ]", { onClick: () => {
         statusLabel.setText("Button clicked - now type on your keyboard!");
-      });
+      } });
 
       inputBtn.onKeyDown((event) => {
         const key = event.key;
@@ -97,9 +97,9 @@ app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
         posLabel = a.label("Position: (0, 0)");
       });
 
-      const arrowBtn = a.button("[ Use Arrow Keys ]").onClick(() => {
+      const arrowBtn = a.button("[ Use Arrow Keys ]", { onClick: () => {
         statusLabel.setText("Arrow button focused - use arrow keys!");
-      });
+      } });
 
       arrowBtn.onKeyDown((event) => {
         const key = event.key;
@@ -134,9 +134,9 @@ app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
       a.separator();
       a.label("Key Combination Detector:");
 
-      const comboBtn = a.button("[ Try key combos: Shift+A, Ctrl+S ]").onClick(() => {
+      const comboBtn = a.button("[ Try key combos: Shift+A, Ctrl+S ]", { onClick: () => {
         statusLabel.setText("Combo button focused - try modifier + key!");
-      });
+      } });
 
       comboBtn.onKeyDown((event) => {
         const key = event.key;
@@ -173,7 +173,7 @@ app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset All").onClick(() => {
+      a.button("Reset All", { onClick: () => {
         keyHistory = [];
         currentlyPressed.clear();
         keyPressCount = 0;
@@ -191,7 +191,7 @@ app(resolveTransport(), { title: "Keyable Demo" }, (a) => {
         comboBtn.setText("[ Try key combos: Shift+A, Ctrl+S ]");
 
         console.log("All keyboard tracking reset");
-      });
+      } });
 
       a.separator();
       a.label("Instructions:");

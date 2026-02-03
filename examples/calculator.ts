@@ -85,16 +85,16 @@ export function buildCalculator(a: App) {
 
         // Number pad and operators - 4x4 grid for even button sizing
         a.grid(4, () => {
-          [..."789"].forEach(n => a.button(n).onClick(() => handleNumber(n)));
-          a.button("÷").onClick(() => handleOperator("/"));
-          [..."456"].forEach(n => a.button(n).onClick(() => handleNumber(n)));
-          a.button("×").onClick(() => handleOperator("*"));
-          [..."123"].forEach(n => a.button(n).onClick(() => handleNumber(n)));
-          a.button("-").onClick(() => handleOperator("-"));
-          a.button("0").onClick(() => handleNumber("0"));
-          a.button("Clr").onClick(() => clear());
-          a.button("=").onClick(() => calculate());
-          a.button("+").onClick(() => handleOperator("+"));
+          [..."789"].forEach(n => a.button(n, { onClick: () => handleNumber(n) }));
+          a.button("÷", { onClick: () => handleOperator("/") });
+          [..."456"].forEach(n => a.button(n, { onClick: () => handleNumber(n) }));
+          a.button("×", { onClick: () => handleOperator("*") });
+          [..."123"].forEach(n => a.button(n, { onClick: () => handleNumber(n) }));
+          a.button("-", { onClick: () => handleOperator("-") });
+          a.button("0", { onClick: () => handleNumber("0") });
+          a.button("Clr", { onClick: () => clear() });
+          a.button("=", { onClick: () => calculate() });
+          a.button("+", { onClick: () => handleOperator("+") });
         });
       });
     });

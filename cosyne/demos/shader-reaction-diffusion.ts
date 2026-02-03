@@ -155,27 +155,27 @@ function createRDDemo(a: App): void {
         a.hbox(() => {
           a.label('Pattern: ');
           for (const p of patterns) {
-            a.button(p).onClick(() => {
+            a.button(p, { onClick: () => {
               pattern = patterns.indexOf(p);
               shader?.setUniform('u_pattern', pattern);
-            });
+            } });
           }
         });
 
         // Speed controls
         a.hbox(() => {
-          a.button('Slow').onClick(() => {
+          a.button('Slow', { onClick: () => {
             speed = 0.5;
             shader?.setUniform('u_speed', speed);
-          });
-          a.button('Normal').onClick(() => {
+          } });
+          a.button('Normal', { onClick: () => {
             speed = 1.0;
             shader?.setUniform('u_speed', speed);
-          });
-          a.button('Fast').onClick(() => {
+          } });
+          a.button('Fast', { onClick: () => {
             speed = 2.0;
             shader?.setUniform('u_speed', speed);
-          });
+          } });
         });
 
         // Canvas

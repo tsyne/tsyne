@@ -34,7 +34,7 @@ describe('Font Preview Example', () => {
             });
 
             app.hbox(() => {
-              app.button('Load Font').onClick(async () => {
+              app.button('Load Font', { onClick: async () => {
                 const fontPath = await fontPathEntry.getText();
                 try {
                   await app.setCustomFont(fontPath, 'regular');
@@ -42,30 +42,30 @@ describe('Font Preview Example', () => {
                 } catch (err: any) {
                   statusLabel.setText(`Error: ${err.message || 'Failed to load font'}`);
                 }
-              });
+              } });
 
-              app.button('Clear Fonts').onClick(async () => {
+              app.button('Clear Fonts', { onClick: async () => {
                 await app.clearCustomFont('all');
                 statusLabel.setText('Cleared all custom fonts');
-              });
+              } });
             });
 
             app.separator();
 
             app.label('Font Scale:');
             app.hbox(() => {
-              app.button('Small').onClick(async () => {
+              app.button('Small', { onClick: async () => {
                 await app.setFontScale(0.75);
                 statusLabel.setText('Font scale: 0.75x');
-              });
-              app.button('Normal').onClick(async () => {
+              } });
+              app.button('Normal', { onClick: async () => {
                 await app.setFontScale(1.0);
                 statusLabel.setText('Font scale: 1.0x');
-              });
-              app.button('Large').onClick(async () => {
+              } });
+              app.button('Large', { onClick: async () => {
                 await app.setFontScale(1.5);
                 statusLabel.setText('Font scale: 1.5x');
-              });
+              } });
             });
 
             app.separator();
@@ -131,12 +131,12 @@ describe('Font Preview Example', () => {
             app.label('Font Information');
             app.separator();
 
-            app.button('Get Font Info').onClick(async () => {
+            app.button('Get Font Info', { onClick: async () => {
               const fontInfo = await app.getAvailableFonts();
               const extensions = fontInfo.supportedExtensions.join(', ');
               const styles = fontInfo.styles.join(', ');
               infoLabel.setText(`Extensions: ${extensions} | Styles: ${styles}`);
-            });
+            } });
 
             app.separator();
             infoLabel = app.label('Click button to get font info');

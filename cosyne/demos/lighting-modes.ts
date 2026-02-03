@@ -175,10 +175,10 @@ function createLightingDemo(a: App): void {
         a.hbox(() => {
           a.label('Light: ');
           for (const mode of modes) {
-            a.button(mode).onClick(() => {
+            a.button(mode, { onClick: () => {
               lightMode = modes.indexOf(mode);
               shader?.setUniform('u_lightMode', lightMode);
-            });
+            } });
           }
         });
 
@@ -186,10 +186,10 @@ function createLightingDemo(a: App): void {
         a.hbox(() => {
           a.label('Color: ');
           for (const cc of colors) {
-            a.button(cc.name).onClick(() => {
+            a.button(cc.name, { onClick: () => {
               colorIdx = colors.indexOf(cc);
               shader?.setUniform('u_primColor', cc.color);
-            });
+            } });
           }
         });
 

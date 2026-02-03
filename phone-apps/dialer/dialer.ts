@@ -202,9 +202,9 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
 
         // Action buttons
         a.hbox(() => {
-          a.button('Clear').onClick(() => handleClear()).withId('btn-clear');
-          a.button('Call').onClick(() => handleCall()).withId('btn-call');
-          a.button('Del').onClick(() => handleBackspace()).withId('btn-del');
+          a.button('Clear', { onClick: () => handleClear() }).withId('btn-clear');
+          a.button('Call', { onClick: () => handleCall() }).withId('btn-call');
+          a.button('Del', { onClick: () => handleBackspace() }).withId('btn-del');
         });
 
         a.separator();

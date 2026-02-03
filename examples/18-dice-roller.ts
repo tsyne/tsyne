@@ -87,7 +87,7 @@ export function buildDiceRoller(a: App) {
           a.separator();
 
           // Roll button
-          a.button('🎲 ROLL DICE 🎲').onClick(rollDice);
+          a.button('🎲 ROLL DICE 🎲', { onClick: rollDice });
 
           a.separator();
 

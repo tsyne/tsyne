@@ -530,8 +530,8 @@ export class FallingLettersUI {
     this.a.vbox(() => {
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.startGame()).withId('newGameBtn');
-        this.a.button('Pause').onClick(() => this.game.togglePause()).withId('pauseBtn');
+        this.a.button('New Game', { onClick: () => this.startGame() }).withId('newGameBtn');
+        this.a.button('Pause', { onClick: () => this.game.togglePause() }).withId('pauseBtn');
       });
 
       // Score display
@@ -544,8 +544,8 @@ export class FallingLettersUI {
       this.a.hbox(() => {
         this.a.label('Word: ');
         this.wordLabel = this.a.label('').withId('wordLabel');
-        this.a.button('Submit').onClick(() => this.submitWord()).withId('submitBtn');
-        this.a.button('Clear').onClick(() => this.game.clearSelection()).withId('clearBtn');
+        this.a.button('Submit', { onClick: () => this.submitWord() }).withId('submitBtn');
+        this.a.button('Clear', { onClick: () => this.game.clearSelection() }).withId('clearBtn');
       });
 
       this.statusLabel = this.a.label('Press New Game to start').withId('statusLabel');

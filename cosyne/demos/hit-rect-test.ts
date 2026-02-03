@@ -61,10 +61,10 @@ app(resolveTransport(), { title: 'Hit Rect Test', width: 900, height: 600 }, (a:
     win.setContent(() => {
       a.vbox(() => {
         a.hbox(() => {
-          a.button('1: Rects Only').onClick(() => { mode = 1; render(); });
-          a.button('2: + Labels').onClick(() => { mode = 2; render(); });
-          a.button('3: + Hit Rects').onClick(() => { mode = 3; render(); });
-          a.button('Clear').onClick(() => { mode = 0; render(); });
+          a.button('1: Rects Only', { onClick: () => { mode = 1; render(); } });
+          a.button('2: + Labels', { onClick: () => { mode = 2; render(); } });
+          a.button('3: + Hit Rects', { onClick: () => { mode = 3; render(); } });
+          a.button('Clear', { onClick: () => { mode = 0; render(); } });
         });
 
         a.separator();

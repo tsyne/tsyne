@@ -54,34 +54,34 @@ function createTrailsDemo(a: App): void {
       a.vbox(() => {
         // Mode controls
         a.hbox(() => {
-          a.button('Single').onClick(() => { state.mode = 'single'; });
-          a.button('Color').onClick(() => { state.mode = 'color'; });
-          a.button('Multi').onClick(() => { state.mode = 'multi'; });
+          a.button('Single', { onClick: () => { state.mode = 'single'; } });
+          a.button('Color', { onClick: () => { state.mode = 'color'; } });
+          a.button('Multi', { onClick: () => { state.mode = 'multi'; } });
         });
 
         // Color mode controls (for color trail)
         a.hbox(() => {
-          a.button('Rainbow').onClick(() => {
+          a.button('Rainbow', { onClick: () => {
             state.colorMode = 'rainbow';
             colorTrail.setColorFunction(trailColors.rainbow);
-          });
-          a.button('Fire').onClick(() => {
+          } });
+          a.button('Fire', { onClick: () => {
             state.colorMode = 'fire';
             colorTrail.setColorFunction(trailColors.fire);
-          });
-          a.button('Ice').onClick(() => {
+          } });
+          a.button('Ice', { onClick: () => {
             state.colorMode = 'ice';
             colorTrail.setColorFunction(trailColors.ice);
-          });
-          a.button('Neon').onClick(() => {
+          } });
+          a.button('Neon', { onClick: () => {
             state.colorMode = 'neon';
             colorTrail.setColorFunction(trailColors.neon);
-          });
-          a.button('Clear').onClick(() => {
+          } });
+          a.button('Clear', { onClick: () => {
             singleTrail.clear();
             colorTrail.clear();
             multiTrail.clearAll();
-          });
+          } });
         });
 
         // Canvas

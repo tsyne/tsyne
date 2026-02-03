@@ -196,10 +196,10 @@ export function buildSokolArcadeApp(a: any): void {
               }
             }).withId('fps-canvas');
             a.hbox(() => {
-              a.button('Look L').onClick(() => store.fpsVoxel?.addMouseDelta(-30, 0));
-              a.button('Look R').onClick(() => store.fpsVoxel?.addMouseDelta(30, 0));
-              a.button('Look Up').onClick(() => store.fpsVoxel?.addMouseDelta(0, -20));
-              a.button('Look Dn').onClick(() => store.fpsVoxel?.addMouseDelta(0, 20));
+              a.button('Look L', { onClick: () => store.fpsVoxel?.addMouseDelta(-30, 0) });
+              a.button('Look R', { onClick: () => store.fpsVoxel?.addMouseDelta(30, 0) });
+              a.button('Look Up', { onClick: () => store.fpsVoxel?.addMouseDelta(0, -20) });
+              a.button('Look Dn', { onClick: () => store.fpsVoxel?.addMouseDelta(0, 20) });
             });
             a.label('WASD: Move | Space: Jump').withId('fps-help');
           }).when(() => store.currentGame === 'fps-voxel');
@@ -219,10 +219,10 @@ export function buildSokolArcadeApp(a: any): void {
               });
             });
             a.hbox(() => {
-              a.button('Up').onClick(() => store.pacman?.setDirection(Direction.Up)).withId('pm-up');
-              a.button('Down').onClick(() => store.pacman?.setDirection(Direction.Down)).withId('pm-down');
-              a.button('Left').onClick(() => store.pacman?.setDirection(Direction.Left)).withId('pm-left');
-              a.button('Right').onClick(() => store.pacman?.setDirection(Direction.Right)).withId('pm-right');
+              a.button('Up', { onClick: () => store.pacman?.setDirection(Direction.Up) }).withId('pm-up');
+              a.button('Down', { onClick: () => store.pacman?.setDirection(Direction.Down) }).withId('pm-down');
+              a.button('Left', { onClick: () => store.pacman?.setDirection(Direction.Left) }).withId('pm-left');
+              a.button('Right', { onClick: () => store.pacman?.setDirection(Direction.Right) }).withId('pm-right');
             });
           }).when(() => store.currentGame === 'pacman');
 
@@ -230,10 +230,10 @@ export function buildSokolArcadeApp(a: any): void {
           a.vbox(() => {
             canvas = a.tappableCanvasRaster(canvasWidth, canvasHeight, {}).withId('chip8-canvas');
             a.hbox(() => {
-              a.button('Reset').onClick(() => {
+              a.button('Reset', { onClick: () => {
                 store.chip8?.reset();
                 store.chip8?.loadDefaultProgram();
-              }).withId('c8-reset');
+              } }).withId('c8-reset');
               a.label('Bouncing Ball Demo').withId('c8-program');
             });
           }).when(() => store.currentGame === 'chip8');

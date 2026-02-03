@@ -93,15 +93,15 @@ function createKaleidoscopeDemo(a: App): void {
       a.vbox(() => {
         // Controls
         a.hbox(() => {
-          a.button('- Segments').onClick(() => {
+          a.button('- Segments', { onClick: () => {
             segments = Math.max(2, segments - 1);
             shader?.setUniform('u_segments', segments);
-          });
+          } });
           a.label(`Segments: ${segments}`);
-          a.button('+ Segments').onClick(() => {
+          a.button('+ Segments', { onClick: () => {
             segments = Math.min(24, segments + 1);
             shader?.setUniform('u_segments', segments);
-          });
+          } });
         });
 
         // Shader canvas

@@ -192,9 +192,9 @@ export function createCalendarApp(a: App, calendar: ICalendarService): void {
             a.label(timeStr).withId(`today-event-${index}-time`);
           });
           a.spacer();
-          a.button('✕').onClick(() => {
+          a.button('✕', { onClick: () => {
             calendar.deleteEvent(event.id);
-          }).withId(`today-event-${index}-delete`);
+          } }).withId(`today-event-${index}-delete`);
         });
       });
     }
@@ -214,9 +214,9 @@ export function createCalendarApp(a: App, calendar: ICalendarService): void {
             a.label(`${dateStr} - ${timeStr}`).withId(`upcoming-event-${index}-date`);
           });
           a.spacer();
-          a.button('✕').onClick(() => {
+          a.button('✕', { onClick: () => {
             calendar.deleteEvent(event.id);
-          }).withId(`upcoming-event-${index}-delete`);
+          } }).withId(`upcoming-event-${index}-delete`);
         });
       });
     }
@@ -242,23 +242,23 @@ export function createCalendarApp(a: App, calendar: ICalendarService): void {
 
         // Month navigation
         a.hbox(() => {
-          a.button('◀ Prev').onClick(() => {
+          a.button('◀ Prev', { onClick: () => {
             currentMonth = calendar.previousMonth();
             refreshCalendar();
-          }).withId('btn-prev-month');
+          } }).withId('btn-prev-month');
 
           monthDisplay = a.label('').withId('month-display');
 
-          a.button('Next ▶').onClick(() => {
+          a.button('Next ▶', { onClick: () => {
             currentMonth = calendar.nextMonth();
             refreshCalendar();
-          }).withId('btn-next-month');
+          } }).withId('btn-next-month');
         });
 
-        a.button('Today').onClick(() => {
+        a.button('Today', { onClick: () => {
           currentMonth = calendar.goToDate(calendar.getToday());
           refreshCalendar();
-        }).withId('btn-today');
+        } }).withId('btn-today');
 
         a.separator();
 
@@ -270,7 +270,7 @@ export function createCalendarApp(a: App, calendar: ICalendarService): void {
         a.separator();
 
         // New event button
-        a.button('+ New Event').onClick(() => {
+        a.button('+ New Event', { onClick: () => {
           // In a real app, this would open a form dialog
           const newEvent = calendar.addEvent({
             title: 'New Event',
@@ -281,7 +281,7 @@ export function createCalendarApp(a: App, calendar: ICalendarService): void {
             color: '#95E1D3',
           });
           refreshCalendar();
-        }).withId('btn-new-event');
+        } }).withId('btn-new-event');
 
         a.separator();
 

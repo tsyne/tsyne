@@ -85,15 +85,15 @@ app(resolveTransport(), { title: 'Tsyne Appointment Scheduler' }, (a) => {
 
           // Action buttons
           a.hbox(() => {
-            a.button('Add Appointment').onClick(() => {
+            a.button('Add Appointment', { onClick: () => {
               console.log(`Adding appointment for ${selectedDate}`);
-            });
-            a.button('View All').onClick(() => {
+            } });
+            a.button('View All', { onClick: () => {
               console.log('Viewing all appointments');
               appointments.forEach(apt => {
                 console.log(`  ${apt.date} ${apt.time}: ${apt.title}`);
               });
-            });
+            } });
           });
         });
       });

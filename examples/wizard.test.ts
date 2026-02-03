@@ -52,13 +52,13 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Page 1');
-              a.button('Go to Page 2').onClick(() => {
+              a.button('Go to Page 2', { onClick: () => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Page 2');
                   });
                 }, 'Second Page');
-              });
+              } });
             });
           }, { title: 'First Page' });
         });
@@ -88,16 +88,16 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Home');
-              a.button('Next').onClick(() => {
+              a.button('Next', { onClick: () => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Details');
-                    a.button('Go Back').onClick(async () => {
+                    a.button('Go Back', { onClick: async () => {
                       await nav.back();
-                    });
+                    } });
                   });
                 }, 'Details Page');
-              });
+              } });
             });
           }, { title: 'Home' });
         });
@@ -132,26 +132,26 @@ describe('Navigation Container', () => {
             a.vbox(() => {
               a.label('Step 1: Name');
               a.entry('Enter name');
-              a.button('Next Step').onClick(() => {
+              a.button('Next Step', { onClick: () => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Step 2: Email');
                     a.entry('Enter email');
                     a.hbox(() => {
-                      a.button('Previous').onClick(async () => {
+                      a.button('Previous', { onClick: async () => {
                         await nav.back();
-                      });
-                      a.button('Finish').onClick(() => {
+                      } });
+                      a.button('Finish', { onClick: () => {
                         nav.push(() => {
                           a.vbox(() => {
                             a.label('Complete!');
                           });
                         }, 'Done');
-                      });
+                      } });
                     });
                   });
                 }, 'Step 2');
-              });
+              } });
             });
           }, { title: 'Step 1' });
         });
@@ -194,16 +194,16 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Home');
-              a.button('Forward').onClick(() => {
+              a.button('Forward', { onClick: () => {
                 nav.push(() => {
                   a.vbox(() => {
                     a.label('Page 2');
-                    a.button('Back').onClick(async () => {
+                    a.button('Back', { onClick: async () => {
                       await nav.back();
-                    });
+                    } });
                   });
                 });
-              });
+              } });
             });
           }, {
             title: 'Home',
@@ -241,9 +241,9 @@ describe('Navigation Container', () => {
           nav = a.navigation(() => {
             a.vbox(() => {
               a.label('Content');
-              a.button('Change Title').onClick(async () => {
+              a.button('Change Title', { onClick: async () => {
                 await nav.setCurrentTitle('New Title');
-              });
+              } });
             });
           }, { title: 'Original Title' });
         });

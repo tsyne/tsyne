@@ -57,14 +57,14 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run').onClick(() => {
+                  a.button('Run', { onClick: () => {
                     console.log('Running inOut animation...');
                     inOutCircle.to({ x: 470, x2: 510 }, { ms: 1000, ease: 'inOut' });
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     inOutCircle.update({ x: 20, y: 55, x2: 60, y2: 95 });
-                  });
+                  } });
                 });
               });
             }
@@ -94,14 +94,14 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run').onClick(() => {
+                  a.button('Run', { onClick: () => {
                     console.log('Running linear animation...');
                     linearCircle.to({ x: 470, x2: 510 }, { ms: 1000, ease: 'linear' });
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     linearCircle.update({ x: 20, y: 55, x2: 60, y2: 95 });
-                  });
+                  } });
                 });
               });
             }
@@ -131,14 +131,14 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run').onClick(() => {
+                  a.button('Run', { onClick: () => {
                     console.log('Running elastic animation...');
                     elasticCircle.to({ x: 470, x2: 510 }, { ms: 1500, ease: 'elastic' });
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     elasticCircle.update({ x: 20, y: 55, x2: 60, y2: 95 });
-                  });
+                  } });
                 });
               });
             }
@@ -168,14 +168,14 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run').onClick(() => {
+                  a.button('Run', { onClick: () => {
                     console.log('Running bounce animation...');
                     bounceCircle.to({ x: 470, x2: 510 }, { ms: 1500, ease: 'bounce' });
-                  });
+                  } });
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     bounceCircle.update({ x: 20, y: 55, x2: 60, y2: 95 });
-                  });
+                  } });
                 });
               });
             }
@@ -204,18 +204,18 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run').onClick(() => {
+                  a.button('Run', { onClick: () => {
                     console.log('Running line animation...');
                     line1.to({ x2: 530 }, {
                       ms: 1000,
                       ease: 'inOut',
                       onEnd: () => console.log('Line animation complete!')
                     });
-                  }).withId('runAll');
+                  } }).withId('runAll');
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     line1.update({ x1: 20, y1: 75, x2: 60, y2: 75 });
-                  }).withId('reset');
+                  } }).withId('reset');
                 });
               });
             }
@@ -245,18 +245,18 @@ export function buildAnimationDemo(a: any) {
                 });
 
                 a.hbox(() => {
-                  a.button('Run Chain').onClick(() => {
+                  a.button('Run Chain', { onClick: () => {
                     console.log('Running chained animation...');
                     chainCircle
                       .to({ x: 470, x2: 510 }, 500)
                       .to({ y: 140, y2: 180 }, 500)
                       .to({ x: 20, x2: 60 }, 500)
                       .to({ y: 20, y2: 60 }, { ms: 500, onEnd: () => console.log('Chain complete!') });
-                  }).withId('chainDemo');
+                  } }).withId('chainDemo');
 
-                  a.button('Reset').onClick(() => {
+                  a.button('Reset', { onClick: () => {
                     chainCircle.update({ x: 20, y: 20, x2: 60, y2: 60 });
-                  });
+                  } });
                 });
               });
             }

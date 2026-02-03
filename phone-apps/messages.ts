@@ -82,7 +82,7 @@ class MessagesUI {
       this.a.hbox(() => {
         this.a.label('Messages');
         this.a.spacer();
-        this.a.button('New').onClick(() => this.handleNewMessage2()).withId('btn-new');
+        this.a.button('New', { onClick: () => this.handleNewMessage2() }).withId('btn-new');
       });
 
       this.a.separator();
@@ -158,7 +158,7 @@ class MessagesUI {
     this.a.vbox(() => {
       // Header with back button
       this.a.hbox(() => {
-        this.a.button('<').onClick(() => this.goBack()).withId('btn-back');
+        this.a.button('<', { onClick: () => this.goBack() }).withId('btn-back');
         this.a.label(contactName).withId('conversation-title');
         this.a.spacer();
       });
@@ -179,7 +179,7 @@ class MessagesUI {
       // Compose area
       this.a.hbox(() => {
         this.composeEntry = this.a.entry('Type a message...', () => {}, 250).withId('compose-entry') as Entry;
-        this.a.button('Send').onClick(() => this.sendMessage(contactNumber)).withId('btn-send');
+        this.a.button('Send', { onClick: () => this.sendMessage(contactNumber) }).withId('btn-send');
       });
     });
   }

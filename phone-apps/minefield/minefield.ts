@@ -510,7 +510,7 @@ export class MinefieldUI {
 
       // Bottom controls
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.newGame()).withId('newGameBtn');
+        this.a.button('New Game', { onClick: () => this.newGame() }).withId('newGameBtn');
         this.a.spacer();
         this.a.label('Long-press to flag', undefined, undefined, undefined, { italic: true });
       });

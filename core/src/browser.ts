@@ -435,30 +435,30 @@ export class Browser {
           border({
             left: () => {
               hbox(() => {
-                button('←').onClick(() => {
+                button('←', { onClick: () => {
                   this.back().catch(err => console.error('Back failed:', err));
-                });
+                } });
 
-                button('→').onClick(() => {
+                button('→', { onClick: () => {
                   this.forward().catch(err => console.error('Forward failed:', err));
-                });
+                } });
 
-                button('⟳').onClick(() => {
+                button('⟳', { onClick: () => {
                   this.reload().catch(err => console.error('Reload failed:', err));
-                });
+                } });
 
                 // Home button (only visible when homeUrl is configured)
                 if (this.homeUrl) {
-                  button('🏠').onClick(() => {
+                  button('🏠', { onClick: () => {
                     this.home().catch(err => console.error('Home failed:', err));
-                  });
+                  } });
                 }
 
                 // Stop button (only visible when loading)
                 if (this.loading) {
-                  this.stopButton = button('✕').onClick(() => {
+                  this.stopButton = button('✕', { onClick: () => {
                     this.stop();
-                  });
+                  } });
                 }
               });
             },
@@ -479,12 +479,12 @@ export class Browser {
                   this.loadingLabel = label('Loading...');
                 }
 
-                button('Go').onClick(async () => {
+                button('Go', { onClick: async () => {
                   if (this.addressBarEntry) {
                     const url = await this.addressBarEntry.getText();
                     await this.changePage(url);
                   }
-                });
+                } });
               });
             }
           });
@@ -1106,9 +1106,9 @@ export class Browser {
         label('');
 
         if (this.historyIndex > 0) {
-          button('Go Back').onClick(() => {
+          button('Go Back', { onClick: () => {
             this.back().catch(err => console.error('Back failed:', err));
-          });
+          } });
         }
       });
     };

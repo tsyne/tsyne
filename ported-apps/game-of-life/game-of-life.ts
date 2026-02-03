@@ -794,11 +794,11 @@ class GameOfLifeUI {
     this.a.vbox(() => {
       // Control buttons (using hbox instead of toolbar since toolbar doesn't render labels)
       this.a.hbox(() => {
-        this.a.button('Start').onClick(() => this.start()).withId('startBtn');
-        this.a.button('Pause').onClick(() => this.pause()).withId('pauseBtn');
-        this.a.button('Step').onClick(() => { this.step(); }).withId('stepBtn');
-        this.a.button('Reset').onClick(() => { this.reset(); }).withId('resetBtn');
-        this.a.button('Clear').onClick(() => this.clearWithConfirm()).withId('clearBtn');
+        this.a.button('Start', { onClick: () => this.start() }).withId('startBtn');
+        this.a.button('Pause', { onClick: () => this.pause() }).withId('pauseBtn');
+        this.a.button('Step', { onClick: () => { this.step(); } }).withId('stepBtn');
+        this.a.button('Reset', { onClick: () => { this.reset(); } }).withId('resetBtn');
+        this.a.button('Clear', { onClick: () => this.clearWithConfirm() }).withId('clearBtn');
       });
 
       // Status bar
@@ -821,11 +821,11 @@ class GameOfLifeUI {
       // Speed control
       this.a.hbox(() => {
         this.a.label('Speed:');
-        this.a.button('<<').onClick(() => this.changeSpeed(100));
-        this.a.button('<').onClick(() => this.changeSpeed(25));
-        this.a.button('⟲').onClick(() => this.resetSpeed());
-        this.a.button('>').onClick(() => this.changeSpeed(-25));
-        this.a.button('>>').onClick(() => this.changeSpeed(-100));
+        this.a.button('<<', { onClick: () => this.changeSpeed(100) });
+        this.a.button('<', { onClick: () => this.changeSpeed(25) });
+        this.a.button('⟲', { onClick: () => this.resetSpeed() });
+        this.a.button('>', { onClick: () => this.changeSpeed(-25) });
+        this.a.button('>>', { onClick: () => this.changeSpeed(-100) });
       });
 
       this.a.separator();

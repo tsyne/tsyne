@@ -524,7 +524,7 @@ export function buildTicTacToe(a: any) {
     a.vbox(() => {
       // Accessibility controls
       a.hbox(() => {
-        ctx.ttsToggle = a.button("TTS: OFF", "control").onClick(toggleTTSBound)
+        ctx.ttsToggle = a.button("TTS: OFF", { className: "control", onClick: toggleTTSBound })
           .withId('ttsToggle')
           .accessibility({
             label: "Text-to-Speech Toggle",
@@ -533,7 +533,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press T to toggle"
           });
 
-        ctx.contrastToggle = a.button("High Contrast: OFF", "control").onClick(toggleHighContrastBound)
+        ctx.contrastToggle = a.button("High Contrast: OFF", { className: "control", onClick: toggleHighContrastBound })
           .withId('contrastToggle')
           .accessibility({
             label: "High Contrast Mode",
@@ -542,7 +542,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press H to toggle"
           });
 
-        ctx.fontToggle = a.button("Font: A", "control").onClick(cycleFontSizeBound)
+        ctx.fontToggle = a.button("Font: A", { className: "control", onClick: cycleFontSizeBound })
           .withId('fontToggle')
           .accessibility({
             label: "Font Size",
@@ -567,7 +567,7 @@ export function buildTicTacToe(a: any) {
           const position = getCellDescription(i);
           const coords = getCellCoordinates(i);
 
-          const cellButton = a.button(" ", "cell").onClick(() => makeMoveBound(i))
+          const cellButton = a.button(" ", { className: "cell", onClick: () => makeMoveBound(i) })
             .withId(`cell${i}`)
             .accessibility({
               label: position,
@@ -587,7 +587,7 @@ export function buildTicTacToe(a: any) {
 
       // Game controls
       a.hbox(() => {
-        a.button("New Game").onClick(newGameBound)
+        a.button("New Game", { onClick: newGameBound })
           .withId('newGame')
           .accessibility({
             label: "New Game",
@@ -596,7 +596,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press N to start a new game"
           });
 
-        a.button("Undo").onClick(undoMoveBound)
+        a.button("Undo", { onClick: undoMoveBound })
           .withId('undo')
           .accessibility({
             label: "Undo Move",
@@ -605,7 +605,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press U to undo. Only available during gameplay."
           });
 
-        a.button("Hint").onClick(showHintBound)
+        a.button("Hint", { onClick: showHintBound })
           .withId('hint')
           .accessibility({
             label: "Get Hint",
@@ -614,7 +614,7 @@ export function buildTicTacToe(a: any) {
             hint: "Press ? for a hint"
           });
 
-        a.button("Show Source").onClick(() => a.showSource(__filename))
+        a.button("Show Source", { onClick: () => a.showSource(__filename) })
           .withId('showSource')
           .accessibility({
             label: "Show Source Code",

@@ -338,12 +338,12 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           a.hbox(() => {
             a.button('🔍').withId('btn-search');
             a.spacer();
-            a.button('🚪').onClick(() => {
+            a.button('🚪', { onClick: () => {
               telegramService.logout();
-            }).withId('btn-logout');
-            a.button('✏️').onClick(() => {
+            } }).withId('btn-logout');
+            a.button('✏️', { onClick: () => {
               showNewChatDialog();
-            }).withId('btn-new-chat');
+            } }).withId('btn-new-chat');
           });
 
           a.separator();

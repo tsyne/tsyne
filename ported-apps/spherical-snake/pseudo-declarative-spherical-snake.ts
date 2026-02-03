@@ -770,12 +770,12 @@ export function buildPseudoDeclarativeSphericalSnakeApp(a: App): void {
         },
         bottom: () => {
           a.hbox(() => {
-            a.button('New Game').onClick(async () => {
+            a.button('New Game', { onClick: async () => {
               game.reset();
               startGameLoop();
               updateUI();
-            });
-            a.button('Pause').onClick(() => {
+            } });
+            a.button('Pause', { onClick: () => {
               if (gameLoop) {
                 clearInterval(gameLoop);
                 gameLoop = null;
@@ -784,7 +784,7 @@ export function buildPseudoDeclarativeSphericalSnakeApp(a: App): void {
                 startGameLoop();
                 statusLabel.setText('Playing');
               }
-            });
+            } });
           });
         },
       });

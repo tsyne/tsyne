@@ -27,9 +27,9 @@ app(resolveTransport(), { title: 'Theme Zones' }, (a) => {
                 a.vbox(() => {
                   a.label('This area uses the dark theme');
                   a.separator();
-                  a.button('Dark Button').onClick(() => {
+                  a.button('Dark Button', { onClick: () => {
                     console.log('Dark button clicked');
-                  });
+                  } });
                   a.entry('Type here...');
                   a.checkbox('Dark Checkbox', (checked) => {
                     console.log('Dark checkbox:', checked);
@@ -48,9 +48,9 @@ app(resolveTransport(), { title: 'Theme Zones' }, (a) => {
                 a.vbox(() => {
                   a.label('This area uses the light theme');
                   a.separator();
-                  a.button('Light Button').onClick(() => {
+                  a.button('Light Button', { onClick: () => {
                     console.log('Light button clicked');
-                  });
+                  } });
                   a.entry('Type here...');
                   a.checkbox('Light Checkbox', (checked) => {
                     console.log('Light checkbox:', checked);

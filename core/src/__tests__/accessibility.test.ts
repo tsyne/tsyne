@@ -7,8 +7,7 @@ const createTestApp = (app: App) => {
     win.setContent(() => {
       app.vbox(() => {
         // Button with accessibility
-        app.button('Submit')
-          .onClick(() => {})
+        app.button('Submit', { onClick: () => {} })
           .withId('submitBtn')
           .accessibility({
             label: 'Submit Form',

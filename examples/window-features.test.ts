@@ -109,10 +109,10 @@ describe('Window Close', () => {
         win.setContent(() => {
           app.vbox(() => {
             app.label('Closeable Window Content');
-            app.button('Close Window').onClick(async () => {
+            app.button('Close Window', { onClick: async () => {
               await win.close();
               windowClosed = true;
-            });
+            } });
           });
         });
         win.show();

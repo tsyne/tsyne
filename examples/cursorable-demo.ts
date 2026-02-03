@@ -23,49 +23,49 @@ app(resolveTransport(), { title: "Cursorable Demo" }, (a) => {
       a.label("Standard Cursor Types:");
 
       // Default cursor
-      a.button("Default Cursor").onClick(() => {
+      a.button("Default Cursor", { onClick: () => {
         console.log("Default cursor button clicked");
-      }).setCursor('default')
+      } }).setCursor('default')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: default (normal arrow pointer)");
         });
 
       // Text cursor (I-beam)
-      a.button("Text Cursor (I-beam) - for text input").onClick(() => {
+      a.button("Text Cursor (I-beam) - for text input", { onClick: () => {
         console.log("Text cursor button clicked");
-      }).setCursor('text')
+      } }).setCursor('text')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: text (I-beam for text selection)");
         });
 
       // Crosshair cursor
-      a.button("Crosshair Cursor - for precision").onClick(() => {
+      a.button("Crosshair Cursor - for precision", { onClick: () => {
         console.log("Crosshair cursor button clicked");
-      }).setCursor('crosshair')
+      } }).setCursor('crosshair')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: crosshair (precision targeting)");
         });
 
       // Pointer cursor (hand)
-      a.button("Pointer Cursor (Hand) - for links").onClick(() => {
+      a.button("Pointer Cursor (Hand) - for links", { onClick: () => {
         console.log("Pointer cursor button clicked");
-      }).setCursor('pointer')
+      } }).setCursor('pointer')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: pointer (clickable link/button)");
         });
 
       // Horizontal resize cursor
-      a.button("H-Resize Cursor - horizontal resize").onClick(() => {
+      a.button("H-Resize Cursor - horizontal resize", { onClick: () => {
         console.log("H-Resize cursor button clicked");
-      }).setCursor('hResize')
+      } }).setCursor('hResize')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: hResize (drag left/right)");
         });
 
       // Vertical resize cursor
-      a.button("V-Resize Cursor - vertical resize").onClick(() => {
+      a.button("V-Resize Cursor - vertical resize", { onClick: () => {
         console.log("V-Resize cursor button clicked");
-      }).setCursor('vResize')
+      } }).setCursor('vResize')
         .onMouseIn(() => {
           statusLabel.setText("Current cursor: vResize (drag up/down)");
         });
@@ -76,41 +76,41 @@ app(resolveTransport(), { title: "Cursorable Demo" }, (a) => {
       // Simulated toolbar with contextual cursors
       a.hbox(() => {
         // Text tool
-        a.button("T").onClick(() => {
+        a.button("T", { onClick: () => {
           console.log("Text tool selected");
-        }).setCursor('text')
+        } }).setCursor('text')
           .onMouseIn(() => {
             statusLabel.setText("Text Tool - click to add text");
           });
 
         // Selection/pointer tool
-        a.button("S").onClick(() => {
+        a.button("S", { onClick: () => {
           console.log("Select tool selected");
-        }).setCursor('pointer')
+        } }).setCursor('pointer')
           .onMouseIn(() => {
             statusLabel.setText("Select Tool - click to select items");
           });
 
         // Precision/crosshair tool
-        a.button("+").onClick(() => {
+        a.button("+", { onClick: () => {
           console.log("Precision tool selected");
-        }).setCursor('crosshair')
+        } }).setCursor('crosshair')
           .onMouseIn(() => {
             statusLabel.setText("Precision Tool - for exact positioning");
           });
 
         // Width resize handle
-        a.button("|").onClick(() => {
+        a.button("|", { onClick: () => {
           console.log("Width handle dragged");
-        }).setCursor('hResize')
+        } }).setCursor('hResize')
           .onMouseIn(() => {
             statusLabel.setText("Resize Handle - drag to adjust width");
           });
 
         // Height resize handle
-        a.button("=").onClick(() => {
+        a.button("=", { onClick: () => {
           console.log("Height handle dragged");
-        }).setCursor('vResize')
+        } }).setCursor('vResize')
           .onMouseIn(() => {
             statusLabel.setText("Resize Handle - drag to adjust height");
           });
@@ -121,17 +121,17 @@ app(resolveTransport(), { title: "Cursorable Demo" }, (a) => {
 
       a.hbox(() => {
         // Left panel border
-        a.button("[ Left Border ]").onClick(() => {
+        a.button("[ Left Border ]", { onClick: () => {
           console.log("Resizing left panel");
-        }).setCursor('hResize')
+        } }).setCursor('hResize')
           .onMouseIn(() => {
             statusLabel.setText("Drag to resize left panel");
           });
 
         // Right panel border
-        a.button("[ Right Border ]").onClick(() => {
+        a.button("[ Right Border ]", { onClick: () => {
           console.log("Resizing right panel");
-        }).setCursor('hResize')
+        } }).setCursor('hResize')
           .onMouseIn(() => {
             statusLabel.setText("Drag to resize right panel");
           });
@@ -139,17 +139,17 @@ app(resolveTransport(), { title: "Cursorable Demo" }, (a) => {
 
       a.hbox(() => {
         // Top border
-        a.button("[ Top Border ]").onClick(() => {
+        a.button("[ Top Border ]", { onClick: () => {
           console.log("Resizing top panel");
-        }).setCursor('vResize')
+        } }).setCursor('vResize')
           .onMouseIn(() => {
             statusLabel.setText("Drag to resize top panel");
           });
 
         // Bottom border
-        a.button("[ Bottom Border ]").onClick(() => {
+        a.button("[ Bottom Border ]", { onClick: () => {
           console.log("Resizing bottom panel");
-        }).setCursor('vResize')
+        } }).setCursor('vResize')
           .onMouseIn(() => {
             statusLabel.setText("Drag to resize bottom panel");
           });

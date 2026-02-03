@@ -675,13 +675,13 @@ export function buildSphericalSnakeApp(a: App, windowWidth?: number, windowHeigh
       },
       bottom: () => {
         a.hbox(() => {
-          a.button('New Game').onClick(async () => {
+          a.button('New Game', { onClick: async () => {
             game.reset();
             startGameLoop();
             updateUI();
             await canvas.requestFocus();
-          });
-          a.button('Pause').onClick(async () => {
+          } });
+          a.button('Pause', { onClick: async () => {
             if (gameLoop) {
               clearInterval(gameLoop);
               gameLoop = null;
@@ -691,7 +691,7 @@ export function buildSphericalSnakeApp(a: App, windowWidth?: number, windowHeigh
               statusLabel.setText('Playing');
             }
             await canvas.requestFocus();
-          });
+          } });
         });
       }
     });

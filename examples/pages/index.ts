@@ -19,29 +19,29 @@ vbox(() => {
       label('=== Core Web/HTML Features ===');
       label('');
 
-      button('📝 Text Features (Paragraphs, Headings)').onClick(() => {
+      button('📝 Text Features (Paragraphs, Headings)', { onClick: () => {
         browserContext.changePage('/text-features');
-      });
+      } });
 
-      button('🔗 Hyperlinks & Navigation').onClick(() => {
+      button('🔗 Hyperlinks & Navigation', { onClick: () => {
         browserContext.changePage('/hyperlinks');
-      });
+      } });
 
-      button('📜 Scrolling Demo').onClick(() => {
+      button('📜 Scrolling Demo', { onClick: () => {
         browserContext.changePage('/scrolling');
-      });
+      } });
 
-      button('🖼️  Images').onClick(() => {
+      button('🖼️  Images', { onClick: () => {
         browserContext.changePage('/images');
-      });
+      } });
 
-      button('📊 Tables').onClick(() => {
+      button('📊 Tables', { onClick: () => {
         browserContext.changePage('/table-demo');
-      });
+      } });
 
-      button('📋 Lists').onClick(() => {
+      button('📋 Lists', { onClick: () => {
         browserContext.changePage('/list-demo');
-      });
+      } });
 
       label('');
       separator();
@@ -49,13 +49,13 @@ vbox(() => {
       label('=== Forms & User Input ===');
       label('');
 
-      button('📝 Form Demo (Inputs, Checkboxes, Selects)').onClick(() => {
+      button('📝 Form Demo (Inputs, Checkboxes, Selects)', { onClick: () => {
         browserContext.changePage('/form');
-      });
+      } });
 
-      button('📮 POST-Redirect-GET Pattern').onClick(() => {
+      button('📮 POST-Redirect-GET Pattern', { onClick: () => {
         browserContext.changePage('/post-demo');
-      });
+      } });
 
       label('');
       separator();
@@ -63,13 +63,13 @@ vbox(() => {
       label('=== Dynamic Features (AJAX / Web 2.0) ===');
       label('');
 
-      button('⚡ Dynamic Updates (AJAX-like)').onClick(() => {
+      button('⚡ Dynamic Updates (AJAX-like)', { onClick: () => {
         browserContext.changePage('/dynamic-demo');
-      });
+      } });
 
-      button('🔄 Session State Demo (Server-side)').onClick(() => {
+      button('🔄 Session State Demo (Server-side)', { onClick: () => {
         browserContext.changePage('/session-demo');
-      });
+      } });
 
       label('');
       separator();
@@ -77,13 +77,13 @@ vbox(() => {
       label('=== Advanced Web Features ===');
       label('');
 
-      button('# URL Fragments (Anchors)').onClick(() => {
+      button('# URL Fragments (Anchors)', { onClick: () => {
         browserContext.changePage('/url-fragments');
-      });
+      } });
 
-      button('⚠️  Alerts & Dialogs').onClick(() => {
+      button('⚠️  Alerts & Dialogs', { onClick: () => {
         browserContext.changePage('/alerts-demo');
-      });
+      } });
 
       label('');
       separator();
@@ -91,17 +91,17 @@ vbox(() => {
       label('=== Desktop UI Features (Beyond HTML) ===');
       label('');
 
-      button('🎨 Fyne-Specific Widgets').onClick(() => {
+      button('🎨 Fyne-Specific Widgets', { onClick: () => {
         browserContext.changePage('/fyne-widgets');
-      });
+      } });
 
-      button('🖱️  Context Menu Demo').onClick(() => {
+      button('🖱️  Context Menu Demo', { onClick: () => {
         browserContext.changePage('/context-menu-demo');
-      });
+      } });
 
-      button('📑 Menu Demo').onClick(() => {
+      button('📑 Menu Demo', { onClick: () => {
         browserContext.changePage('/menu-demo');
-      });
+      } });
 
       label('');
       separator();
@@ -109,13 +109,13 @@ vbox(() => {
       label('=== General ===');
       label('');
 
-      button('ℹ️  About').onClick(() => {
+      button('ℹ️  About', { onClick: () => {
         browserContext.changePage('/about');
-      });
+      } });
 
-      button('✉️  Contact').onClick(() => {
+      button('✉️  Contact', { onClick: () => {
         browserContext.changePage('/contact');
-      });
+      } });
 
       label('');
     });

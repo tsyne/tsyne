@@ -81,43 +81,43 @@ function createGradientsDemo(a: App): void {
           // Gradient type controls
           a.hbox(() => {
             a.label('Gradient Type:');
-            a.button('Horizontal').onClick(() => {
+            a.button('Horizontal', { onClick: () => {
               state.gradientType = 'linear-h';
               refreshAllCosyneContexts();
-            });
-            a.button('Vertical').onClick(() => {
+            } });
+            a.button('Vertical', { onClick: () => {
               state.gradientType = 'linear-v';
               refreshAllCosyneContexts();
-            });
-            a.button('Diagonal').onClick(() => {
+            } });
+            a.button('Diagonal', { onClick: () => {
               state.gradientType = 'linear-diag';
               refreshAllCosyneContexts();
-            });
-            a.button('Radial').onClick(() => {
+            } });
+            a.button('Radial', { onClick: () => {
               state.gradientType = 'radial';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           // Color scheme controls
           a.hbox(() => {
             a.label('Color Scheme:');
-            a.button('Sunset').onClick(() => {
+            a.button('Sunset', { onClick: () => {
               state.colorScheme = 'sunset';
               refreshAllCosyneContexts();
-            });
-            a.button('Ocean').onClick(() => {
+            } });
+            a.button('Ocean', { onClick: () => {
               state.colorScheme = 'ocean';
               refreshAllCosyneContexts();
-            });
-            a.button('Forest').onClick(() => {
+            } });
+            a.button('Forest', { onClick: () => {
               state.colorScheme = 'forest';
               refreshAllCosyneContexts();
-            });
-            a.button('Candy').onClick(() => {
+            } });
+            a.button('Candy', { onClick: () => {
               state.colorScheme = 'candy';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           // Animation toggle

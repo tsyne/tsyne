@@ -77,22 +77,22 @@ app(resolveTransport(), { title: 'Earth Globe' }, async (a) => {
 
         // Rotation controls
         a.hbox(() => {
-          a.button('Rotate Left').onClick(() => {
+          a.button('Rotate Left', { onClick: () => {
             rotation -= 0.3;
             globe.update({ rotationY: rotation });
-          });
+          } });
           a.spacer(10);
-          a.button('Rotate Right').onClick(() => {
+          a.button('Rotate Right', { onClick: () => {
             rotation += 0.3;
             globe.update({ rotationY: rotation });
-          });
+          } });
           a.spacer(10);
-          a.button('Auto Spin').onClick(() => {
+          a.button('Auto Spin', { onClick: () => {
             setInterval(() => {
               rotation += 0.02;
               globe.update({ rotationY: rotation });
             }, 50);
-          });
+          } });
         });
       });
     });

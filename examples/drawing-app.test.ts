@@ -58,22 +58,22 @@ describe('Drawing App Example', () => {
             currentColorLabel = app.label(currentColor);
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Pick Color').onClick(async () => {
+            app.button('Pick Color', { onClick: async () => {
               const result = await win.showColorPicker('Choose Color', currentColor);
               if (result) {
                 currentColor = result.hex;
                 currentColorLabel.setText(currentColor);
               }
-            });
+            } });
 
-            app.button('Clear').onClick(() => {
+            app.button('Clear', { onClick: () => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = null;
                 }
               }
               canvasLabel.setText(renderCanvas());
-            });
+            } });
           });
         });
         win.show();
@@ -130,23 +130,23 @@ describe('Drawing App Example', () => {
             app.label('Canvas Test');
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Fill All').onClick(() => {
+            app.button('Fill All', { onClick: () => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = '#000000';
                 }
               }
               canvasLabel.setText(renderCanvas());
-            });
+            } });
 
-            app.button('Clear').onClick(() => {
+            app.button('Clear', { onClick: () => {
               for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                   canvas[r][c] = null;
                 }
               }
               canvasLabel.setText(renderCanvas());
-            });
+            } });
           });
         });
         win.show();
@@ -186,20 +186,20 @@ describe('Drawing App Example', () => {
             colorLabel = app.label(currentColor);
 
             app.hbox(() => {
-              app.button('Red').onClick(() => {
+              app.button('Red', { onClick: () => {
                 currentColor = '#ff0000';
                 colorLabel.setText(currentColor);
-              });
+              } });
 
-              app.button('Green').onClick(() => {
+              app.button('Green', { onClick: () => {
                 currentColor = '#00ff00';
                 colorLabel.setText(currentColor);
-              });
+              } });
 
-              app.button('Blue').onClick(() => {
+              app.button('Blue', { onClick: () => {
                 currentColor = '#0000ff';
                 colorLabel.setText(currentColor);
-              });
+              } });
             });
           });
         });
@@ -271,14 +271,14 @@ describe('Drawing App Example', () => {
             paintedLabel = app.label('Painted: 0');
             canvasLabel = app.label(renderCanvas());
 
-            app.button('Paint Center').onClick(() => {
+            app.button('Paint Center', { onClick: () => {
               const centerRow = Math.floor(GRID_ROWS / 2);
               const centerCol = Math.floor(GRID_COLS / 2);
               canvas[centerRow][centerCol] = '#000000';
               paintedCount = countPainted();
               paintedLabel.setText(`Painted: ${paintedCount}`);
               canvasLabel.setText(renderCanvas());
-            });
+            } });
           });
         });
         win.show();

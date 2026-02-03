@@ -4,6 +4,7 @@ import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from '
 import {
   // Inputs
   Button,
+  ButtonOptions,
   MenuButton,
   MenuBuilder,
   Checkbox,
@@ -279,11 +280,11 @@ export function hbox(builder: () => void): HBox {
  * });
  * ```
  */
-export function button(text: string, className?: string): Button {
+export function button(text: string, classNameOrOptions?: string | ButtonOptions): Button {
   if (!globalContext) {
     throw new Error('button() must be called within an app context');
   }
-  return new Button(globalContext, text, className);
+  return new Button(globalContext, text, classNameOrOptions);
 }
 
 /**

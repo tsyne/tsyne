@@ -167,10 +167,10 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
         a.spacer();
         a.label(formatTime(track.duration))
           .withId(`track-${track.id}-duration`);
-        a.button('▶').onClick(() => {
+        a.button('▶', { onClick: () => {
           music.loadTracks([track, ...tracks.filter(t => t.id !== track.id)]);
           music.play();
-        }).withId(`track-${track.id}-btn`);
+        } }).withId(`track-${track.id}-btn`);
       });
     });
 
@@ -196,10 +196,10 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
 
         // Playback controls
         a.hbox(() => {
-          a.button('⏮ Prev').onClick(() => {
+          a.button('⏮ Prev', { onClick: () => {
             music.previous();
             updateTrackDisplay();
-          }).withId('btn-previous');
+          } }).withId('btn-previous');
 
           playButton = a.button('▶ Play')
             .onClick(() => {
@@ -212,10 +212,10 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
             })
             .withId('btn-play');
 
-          a.button('Next ⏭').onClick(() => {
+          a.button('Next ⏭', { onClick: () => {
             music.next();
             updateTrackDisplay();
-          }).withId('btn-next');
+          } }).withId('btn-next');
         });
 
         // Volume control
@@ -268,10 +268,10 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
             updatePlaylist();
           }, 250).withId('search-tracks');
 
-          a.button('Clear').onClick(() => {
+          a.button('Clear', { onClick: () => {
             searchQuery = '';
             updatePlaylist();
-          }).withId('btn-clear-search');
+          } }).withId('btn-clear-search');
         });
 
         // Track list

@@ -157,7 +157,7 @@ export class CosynePath extends Primitive<any> {
   private updateUnderlying(): void {
     if (this.underlying && this.underlying.update) {
       this.underlying.update({
-        d: this.pathString,
+        path: this.pathString,
         x: this.x,
         y: this.y,
       });

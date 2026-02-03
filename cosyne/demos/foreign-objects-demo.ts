@@ -155,19 +155,19 @@ function createForeignObjectsDemo(a: App): void {
 
           // Buttons below canvas
           a.hbox(() => {
-            a.button('Click Me').onClick(() => {
+            a.button('Click Me', { onClick: () => {
               state.buttonClicks++;
               refreshAllCosyneContexts();
-            }).withId('action-button');
+            } }).withId('action-button');
 
             a.spacer();
 
-            a.button('Reset').onClick(() => {
+            a.button('Reset', { onClick: () => {
               state.buttonClicks = 0;
               state.sliderValue = 50;
               state.textInput = '';
               refreshAllCosyneContexts();
-            }).withId('reset-button');
+            } }).withId('reset-button');
           });
         });
       });

@@ -299,12 +299,12 @@ export function createWeatherApp(a: App): void {
             }
           }, 300).withId('city-input');
 
-          a.button('Search').onClick(async () => {
+          a.button('Search', { onClick: async () => {
             const text = await cityEntry.getText();
             if (text.trim()) {
               loadWeatherByCity(text.trim());
             }
-          }).withId('search-btn');
+          } }).withId('search-btn');
         });
 
         a.separator();
@@ -324,11 +324,11 @@ export function createWeatherApp(a: App): void {
 
         // Refresh button
         a.hbox(() => {
-          a.button('Refresh').onClick(async () => {
+          a.button('Refresh', { onClick: async () => {
             // Try to get user's location or use default
             // For demo, using San Francisco coordinates
             await loadWeather(37.7749, -122.4194);
-          }).withId('refresh-btn');
+          } }).withId('refresh-btn');
 
           a.spacer();
 

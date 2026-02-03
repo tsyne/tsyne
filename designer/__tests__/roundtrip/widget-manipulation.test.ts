@@ -47,7 +47,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click').onClick(() => {});
+        a.button('Click', { onClick: () => {} });
       });
     });
     win.show();
@@ -101,7 +101,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Delete Me').onClick(() => {});
+        a.button('Delete Me', { onClick: () => {} });
       });
     });
     win.show();
@@ -128,7 +128,7 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Keep Me');
-        a.button('Delete Me').onClick(() => {});
+        a.button('Delete Me', { onClick: () => {} });
         a.label('Keep Me Too');
       });
     });
@@ -157,10 +157,10 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Title');
-        a.button('Delete').onClick(() => {
+        a.button('Delete', { onClick: () => {
           console.log('Important code!');
           performCriticalOperation();
-        });
+        } });
       });
     });
     win.show();
@@ -245,7 +245,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Original').onClick(() => {});
+        a.button('Original', { onClick: () => {} });
       });
     });
     win.show();
@@ -320,17 +320,17 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Keep').onClick(() => {
+        a.button('Keep', { onClick: () => {
           count++;
           console.log('Keep this handler!');
-        });
-        a.button('Delete').onClick(() => {
+        } });
+        a.button('Delete', { onClick: () => {
           console.log('Delete this');
-        });
-        a.button('Also Keep').onClick(() => {
+        } });
+        a.button('Also Keep', { onClick: () => {
           count--;
           console.log('Also keep this!');
-        });
+        } });
       });
     });
     win.show();

@@ -158,7 +158,7 @@ class TodoView {
       // Input area
       hbox(() => {
         this.inputEntry = entry('Enter a todo...');
-        button('Add').onClick(() => this.viewModel.addTodo());
+        button('Add', { onClick: () => this.viewModel.addTodo() });
       });
 
       label('');
@@ -174,7 +174,7 @@ class TodoView {
       label('');
 
       hbox(() => {
-        button('Clear Completed').onClick(() => this.viewModel.clearCompleted());
+        button('Clear Completed', { onClick: () => this.viewModel.clearCompleted() });
       });
     });
 

@@ -140,22 +140,22 @@ function createParametricDemo(a: App): void {
         a.hbox(() => {
           a.label('Curve: ');
           for (const curve of curves) {
-            a.button(curve.name).onClick(() => {
+            a.button(curve.name, { onClick: () => {
               curveType = curves.indexOf(curve);
               parameter = 1.0;
-            });
+            } });
           }
         });
 
         // Parameter controls
         a.hbox(() => {
-          a.button('Param -').onClick(() => {
+          a.button('Param -', { onClick: () => {
             parameter = Math.max(0.1, parameter - 0.2);
-          });
+          } });
           a.label(`${curves[curveType].param}: ${parameter.toFixed(1)}`);
-          a.button('Param +').onClick(() => {
+          a.button('Param +', { onClick: () => {
             parameter = Math.min(10, parameter + 0.2);
-          });
+          } });
         });
 
         // Canvas

@@ -22,9 +22,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click Me').onClick(() => {
+        a.button('Click Me', { onClick: () => {
           console.log('Button clicked!');
-        });
+        } });
       });
     });
     win.show();
@@ -47,13 +47,13 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Increment').onClick(() => {
+        a.button('Increment', { onClick: () => {
           count++;
           console.log('Count:', count);
           if (count > 10) {
             console.log('Count exceeded 10!');
           }
-        });
+        } });
       });
     });
     win.show();
@@ -74,11 +74,11 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Fetch Data').onClick(async () => {
+        a.button('Fetch Data', { onClick: async () => {
           const response = await fetch('https://api.example.com/data');
           const data = await response.json();
           console.log('Data:', data);
-        });
+        } });
       });
     });
     win.show();
@@ -103,10 +103,10 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         label = a.label('Count: 0');
-        a.button('Increment').onClick(async () => {
+        a.button('Increment', { onClick: async () => {
           counter++;
           await label.setText(\`Count: \${counter}\`);
-        });
+        } });
       });
     });
     win.show();
@@ -127,7 +127,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Calculate').onClick(() => {
+        a.button('Calculate', { onClick: () => {
           const x = Math.random();
           if (x < 0.33) {
             console.log('Low');
@@ -136,7 +136,7 @@ app({ title: 'Test' }, (a) => {
           } else {
             console.log('High');
           }
-        });
+        } });
       });
     });
     win.show();
@@ -157,7 +157,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Safe Operation').onClick(async () => {
+        a.button('Safe Operation', { onClick: async () => {
           try {
             const result = await riskyOperation();
             console.log('Success:', result);
@@ -165,7 +165,7 @@ app({ title: 'Test' }, (a) => {
             console.error('Error:', error);
             alert('Operation failed!');
           }
-        });
+        } });
       });
     });
     win.show();
@@ -188,11 +188,11 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Add Item').onClick(() => {
+        a.button('Add Item', { onClick: () => {
           const newItem = \`Item \${items.length + 1}\`;
           items.push(newItem);
           console.log('Items:', items);
-        });
+        } });
       });
     });
     win.show();
@@ -213,10 +213,10 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click').onClick(() => {
+        a.button('Click', { onClick: () => {
           console.log('Important business logic here!');
           performCriticalOperation();
-        });
+        } });
       });
     });
     win.show();
@@ -236,10 +236,10 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click').onClick(() => {
+        a.button('Click', { onClick: () => {
           console.log('Important business logic here!');
           performCriticalOperation();
-        }).withId('actionButton');
+        } }).withId('actionButton');
       });
     });
     win.show();
@@ -256,9 +256,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Old Text').onClick(() => {
+        a.button('Old Text', { onClick: () => {
           console.log('Handler code must survive!');
-        });
+        } });
       });
     });
     win.show();
@@ -278,9 +278,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('New Text').onClick(() => {
+        a.button('New Text', { onClick: () => {
           console.log('Handler code must survive!');
-        });
+        } });
       });
     });
     win.show();
@@ -297,21 +297,21 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Save').onClick(async () => {
+        a.button('Save', { onClick: async () => {
           await saveData();
           console.log('Data saved!');
-        });
+        } });
 
-        a.button('Load').onClick(async () => {
+        a.button('Load', { onClick: async () => {
           const data = await loadData();
           console.log('Data loaded:', data);
-        });
+        } });
 
-        a.button('Delete').onClick(() => {
+        a.button('Delete', { onClick: () => {
           if (confirm('Are you sure?')) {
             deleteAllData();
           }
-        });
+        } });
       });
     });
     win.show();
@@ -335,11 +335,11 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Fetch').onClick(async () => {
+        a.button('Fetch', { onClick: async () => {
           const url = \`\${baseUrl}/data?key=\${apiKey}\`;
           const response = await fetch(url);
           console.log('Response:', response);
-        });
+        } });
       });
     });
     win.show();
@@ -360,14 +360,14 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Process').onClick(async () => {
+        a.button('Process', { onClick: async () => {
           const { data, error } = await fetchData();
           if (error) {
             console.error('Error:', error);
           } else {
             console.log('Data:', data);
           }
-        });
+        } });
       });
     });
     win.show();

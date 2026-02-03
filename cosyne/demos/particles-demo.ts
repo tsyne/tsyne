@@ -135,19 +135,19 @@ function createParticlesDemo(a: App): void {
           // Mode controls
           a.hbox(() => {
             a.label('Emitter Mode:');
-            a.button('Burst').onClick(() => {
+            a.button('Burst', { onClick: () => {
               state.emitterMode = 'burst';
               emitBurst(state.emitterX, state.emitterY, 50);
               refreshAllCosyneContexts();
-            });
-            a.button('Continuous').onClick(() => {
+            } });
+            a.button('Continuous', { onClick: () => {
               state.emitterMode = 'continuous';
               refreshAllCosyneContexts();
-            });
-            a.button('Fountain').onClick(() => {
+            } });
+            a.button('Fountain', { onClick: () => {
               state.emitterMode = 'fountain';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           // Physics controls

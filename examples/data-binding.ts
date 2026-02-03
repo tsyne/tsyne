@@ -44,17 +44,17 @@ app(resolveTransport(), { title: 'Data Binding Demo' }, () => {
 
         // First name input
         const firstEntry = entry('First name');
-        button('Update First Name').onClick(async () => {
+        button('Update First Name', { onClick: async () => {
           const value = await firstEntry.getText();
           firstName.set(value);
-        });
+        } });
 
         // Last name input
         const lastEntry = entry('Last name');
-        button('Update Last Name').onClick(async () => {
+        button('Update Last Name', { onClick: async () => {
           const value = await lastEntry.getText();
           lastName.set(value);
-        });
+        } });
 
         label('');
         label('--- Current State ---');
@@ -67,15 +67,15 @@ app(resolveTransport(), { title: 'Data Binding Demo' }, () => {
         label('');
 
         // Buttons to manipulate state
-        button('Reset to Defaults').onClick(() => {
+        button('Reset to Defaults', { onClick: () => {
           firstName.set('John');
           lastName.set('Doe');
-        });
+        } });
 
-        button('Clear All').onClick(() => {
+        button('Clear All', { onClick: () => {
           firstName.set('');
           lastName.set('');
-        });
+        } });
       });
     });
 

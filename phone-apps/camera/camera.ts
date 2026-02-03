@@ -183,15 +183,15 @@ export function createCameraApp(a: App, camera: ICameraService): void {
       a.spacer();
 
       // Favorite button
-      a.button(photo.isFavorite ? '★' : '☆').onClick(() => {
+      a.button(photo.isFavorite ? '★' : '☆', { onClick: () => {
         camera.toggleFavorite(photo.id);
         updatePhotoList();
-      }).withId(`${idPrefix}-fav`);
+      } }).withId(`${idPrefix}-fav`);
 
       // Delete button
-      a.button('✕').onClick(() => {
+      a.button('✕', { onClick: () => {
         camera.deletePhoto(photo.id);
-      }).withId(`${idPrefix}-delete`);
+      } }).withId(`${idPrefix}-delete`);
     });
   }
 

@@ -292,14 +292,14 @@ export function buildFullCalculator(a: App) {
 
   // Helper to create digit button with tracking
   function digitButton(digit: string): Button {
-    const btn = a.button(digit).onClick(() => handleDigit(digit)).withId(`btn-${digit}`);
+    const btn = a.button(digit, { onClick: () => handleDigit(digit) }).withId(`btn-${digit}`);
     digitButtons.set(digit, btn);
     return btn;
   }
 
   // Helper to create operator button
   function opButton(label: string, op: string, id: string): Button {
-    return a.button(label).onClick(() => handleOperator(op)).withId(id);
+    return a.button(label, { onClick: () => handleOperator(op) }).withId(id);
   }
 
   a.window({ title: 'Full Calculator', width: 280, height: 480 }, (w: Window) => {
@@ -315,10 +315,10 @@ export function buildFullCalculator(a: App) {
 
         // Base selector
         a.hbox(() => {
-          a.button('DEC').onClick(() => setBase('dec')).withId('btn-dec');
-          a.button('HEX').onClick(() => setBase('hex')).withId('btn-hex');
-          a.button('BIN').onClick(() => setBase('bin')).withId('btn-bin');
-          a.button('OCT').onClick(() => setBase('oct')).withId('btn-oct');
+          a.button('DEC', { onClick: () => setBase('dec') }).withId('btn-dec');
+          a.button('HEX', { onClick: () => setBase('hex') }).withId('btn-hex');
+          a.button('BIN', { onClick: () => setBase('bin') }).withId('btn-bin');
+          a.button('OCT', { onClick: () => setBase('oct') }).withId('btn-oct');
         });
 
         a.separator();
@@ -331,22 +331,22 @@ export function buildFullCalculator(a: App) {
         // Button grid (4 columns, 9 rows) - matching ChrysaLisp layout
         a.grid(4, () => {
           // Row 1: Memory functions
-          a.button('MC').onClick(() => memoryClear()).withId('btn-mc');
-          a.button('MR').onClick(() => memoryRecall()).withId('btn-mr');
-          a.button('M-').onClick(() => memorySubtract()).withId('btn-msub');
-          a.button('M+').onClick(() => memoryAdd()).withId('btn-madd');
+          a.button('MC', { onClick: () => memoryClear() }).withId('btn-mc');
+          a.button('MR', { onClick: () => memoryRecall() }).withId('btn-mr');
+          a.button('M-', { onClick: () => memorySubtract() }).withId('btn-msub');
+          a.button('M+', { onClick: () => memoryAdd() }).withId('btn-madd');
 
           // Row 2: Bitwise logic
           opButton('AND', 'AND', 'btn-and');
           opButton('OR', 'OR', 'btn-or');
           opButton('XOR', 'XOR', 'btn-xor');
-          a.button('NOT').onClick(() => handleUnary('NOT')).withId('btn-not');
+          a.button('NOT', { onClick: () => handleUnary('NOT') }).withId('btn-not');
 
           // Row 3: Shifts and negation
           opButton('>>>', '>>>', 'btn-asr');
           opButton('>>', '>>', 'btn-shr');
           opButton('<<', '<<', 'btn-shl');
-          a.button('NEG').onClick(() => handleUnary('NEG')).withId('btn-neg');
+          a.button('NEG', { onClick: () => handleUnary('NEG') }).withId('btn-neg');
 
           // Row 4: D, E, F, %
           digitButton('D');
@@ -380,9 +380,9 @@ export function buildFullCalculator(a: App) {
 
           // Row 9: 0, CE, AC, =
           digitButton('0');
-          a.button('CE').onClick(() => clearEntry()).withId('btn-ce');
-          a.button('AC').onClick(() => allClear()).withId('btn-ac');
-          a.button('=').onClick(() => calculate()).withId('btn-eq');
+          a.button('CE', { onClick: () => clearEntry() }).withId('btn-ce');
+          a.button('AC', { onClick: () => allClear() }).withId('btn-ac');
+          a.button('=', { onClick: () => calculate() }).withId('btn-eq');
         });
       });
     });

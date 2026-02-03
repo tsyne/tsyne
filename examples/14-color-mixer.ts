@@ -62,7 +62,7 @@ app(resolveTransport(), { title: 'Color Mixer' }, (a) => {
         a.separator();
 
         a.hbox(() => {
-          a.button('Random Color').onClick(() => {
+          a.button('Random Color', { onClick: () => {
             red = Math.floor(Math.random() * 256);
             green = Math.floor(Math.random() * 256);
             blue = Math.floor(Math.random() * 256);
@@ -70,15 +70,15 @@ app(resolveTransport(), { title: 'Color Mixer' }, (a) => {
             greenLabel.setText(`Green: ${green}`);
             blueLabel.setText(`Blue: ${blue}`);
             updateColor();
-          });
+          } });
 
-          a.button('Reset').onClick(() => {
+          a.button('Reset', { onClick: () => {
             red = green = blue = 128;
             redLabel.setText(`Red: 128`);
             greenLabel.setText(`Green: 128`);
             blueLabel.setText(`Blue: 128`);
             updateColor();
-          });
+          } });
         });
       });
     });

@@ -10,6 +10,7 @@ import { HitTester, DefaultHitTesters } from '../events';
 export interface RectOptions extends PrimitiveOptions {
   width?: number;
   height?: number;
+  cornerRadius?: number;
 }
 
 /**

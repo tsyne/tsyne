@@ -423,26 +423,26 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
 
           // Main tabs
           a.vbox(() => {
-            a.button('💬 Rooms').onClick(async () => {
+            a.button('💬 Rooms', { onClick: async () => {
               selectedTab = 'rooms';
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            });
+            } });
 
-            a.button('👥 Direct Messages').onClick(async () => {
+            a.button('👥 Direct Messages', { onClick: async () => {
               selectedTab = 'directs';
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            });
+            } });
 
-            a.button('⚙️ Settings').onClick(async () => {
+            a.button('⚙️ Settings', { onClick: async () => {
               selectedTab = 'settings';
               currentRoom = null;
               await updateLabels();
               await viewStack.refresh();
-            });
+            } });
           });
 
           a.separator();
@@ -470,12 +470,12 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                         a.label(`👥 ${room.memberCount} | ${room.isEncrypted ? '🔐' : '🔓'}`).withSize(0.8);
                       });
                       a.spacer();
-                      a.button('→').onClick(async () => {
+                      a.button('→', { onClick: async () => {
                         currentRoom = room;
                         store.markRoomAsRead(room.id);
                         await updateLabels();
                         await viewStack.refresh();
-                      });
+                      } });
                     }).withPadding(5);
                   },
                   trackBy: (room: MatrixRoom) => room.id,
@@ -491,10 +491,10 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                 a.hbox(() => {
                   a.label(`${room.avatar} ${room.name}`).withBold();
                   a.spacer();
-                  a.button('← Back').onClick(async () => {
+                  a.button('← Back', { onClick: async () => {
                     currentRoom = null;
                     await viewStack.refresh();
-                  });
+                  } });
                 });
 
                 a.label(`${room.topic || 'No topic'}`).withSize(0.9);
@@ -517,14 +517,14 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                           a.label(`${new Date(msg.timestamp).toLocaleTimeString()}`).withSize(0.75);
                         });
                         a.spacer();
-                        a.button('😊').onClick(async () => {
+                        a.button('😊', { onClick: async () => {
                           store.addReaction(msg.id, '👍');
                           await viewStack.refresh();
-                        });
-                        a.button('✕').onClick(async () => {
+                        } });
+                        a.button('✕', { onClick: async () => {
                           store.deleteMessage(msg.id);
                           await viewStack.refresh();
-                        });
+                        } });
                       }).withPadding(5);
                     },
                     trackBy: (msg: MatrixMessage) => msg.id,
@@ -539,7 +539,7 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                     messageInputValue = value;
                   });
 
-                  a.button('Send').onClick(async () => {
+                  a.button('Send', { onClick: async () => {
                     if (messageInputValue.trim() && currentRoom) {
                       store.sendMessage(currentRoom.id, messageInputValue);
                       messageInputValue = '';
@@ -549,7 +549,7 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                       await updateLabels();
                       await viewStack.refresh();
                     }
-                  });
+                  } });
                 });
               })
                 .withPadding(10)
@@ -561,14 +561,14 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
               a.label('👥 Direct Messages').withId('directs-title').withBold();
 
               a.hbox(() => {
-                a.button('➕ New Chat').onClick(async () => {
+                a.button('➕ New Chat', { onClick: async () => {
                   const users = store.getUsers();
                   if (users.length > 0) {
                     store.createDirectChat(users[0]);
                     await updateLabels();
                     await viewStack.refresh();
                   }
-                });
+                } });
                 a.spacer();
                 a.label(`Total: ${store.getDirectChats().length}`);
               });
@@ -586,10 +586,10 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                         }
                       });
                       a.spacer();
-                      a.button('✕').onClick(async () => {
+                      a.button('✕', { onClick: async () => {
                         // Remove direct chat
                         await viewStack.refresh();
-                      });
+                      } });
                     }).withPadding(5);
                   },
                   trackBy: (chat: DirectChat) => chat.id,
@@ -642,10 +642,10 @@ export function buildElementApp(a: any, windowWidth?: number, windowHeight?: num
                       });
                       a.spacer();
                       if (!session.isCurrentDevice) {
-                        a.button('Remove').onClick(async () => {
+                        a.button('Remove', { onClick: async () => {
                           store.deleteSession(session.id);
                           await viewStack.refresh();
-                        });
+                        } });
                       }
                     }).withPadding(5);
                   },

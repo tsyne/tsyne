@@ -26,7 +26,7 @@ describe('Download Manager Example', () => {
           app.vbox(() => {
             app.label('Progress Dialog Test');
 
-            app.button('Show Progress').onClick(async () => {
+            app.button('Show Progress', { onClick: async () => {
               progressDialog = await win.showProgress(
                 'Processing',
                 'Processing your request...',
@@ -45,9 +45,9 @@ describe('Download Manager Example', () => {
               }
 
               await progressDialog.hide();
-            });
+            } });
 
-            app.button('Show Infinite Progress').onClick(async () => {
+            app.button('Show Infinite Progress', { onClick: async () => {
               progressDialog = await win.showProgress(
                 'Loading',
                 'Please wait...',
@@ -62,7 +62,7 @@ describe('Download Manager Example', () => {
               // Wait 500ms then hide
               await new Promise(resolve => setTimeout(resolve, 500));
               await progressDialog.hide();
-            });
+            } });
           });
         });
         win.show();
@@ -97,7 +97,7 @@ describe('Download Manager Example', () => {
           app.vbox(() => {
             app.label('Dialog Lifecycle Test');
 
-            app.button('Start').onClick(async () => {
+            app.button('Start', { onClick: async () => {
               progressDialog = await win.showProgress(
                 'Working',
                 'Doing work...',
@@ -112,7 +112,7 @@ describe('Download Manager Example', () => {
               // Hide dialog
               await progressDialog.hide();
               dialogHidden = true;
-            });
+            } });
           });
         });
         win.show();
@@ -151,20 +151,20 @@ describe('Download Manager Example', () => {
 
             queueLabel = app.label('Queue: empty');
 
-            app.button('Add Small').onClick(() => {
+            app.button('Add Small', { onClick: () => {
               downloadQueue.push('small.zip');
               queueLabel.setText(`Queue: ${downloadQueue.join(', ')}`);
-            });
+            } });
 
-            app.button('Add Large').onClick(() => {
+            app.button('Add Large', { onClick: () => {
               downloadQueue.push('large.iso');
               queueLabel.setText(`Queue: ${downloadQueue.join(', ')}`);
-            });
+            } });
 
-            app.button('Clear').onClick(() => {
+            app.button('Clear', { onClick: () => {
               downloadQueue = [];
               queueLabel.setText('Queue: empty');
-            });
+            } });
           });
         });
         win.show();

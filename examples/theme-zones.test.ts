@@ -92,15 +92,15 @@ describe('Theme Zones Demo', () => {
         win.setContent(() => {
           a.hbox(() => {
             a.themeoverride('dark', () => {
-              a.button('Dark Click').onClick(() => {
+              a.button('Dark Click', { onClick: () => {
                 darkClicked = true;
-              });
+              } });
             });
 
             a.themeoverride('light', () => {
-              a.button('Light Click').onClick(() => {
+              a.button('Light Click', { onClick: () => {
                 lightClicked = true;
-              });
+              } });
             });
           });
         });

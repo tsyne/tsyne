@@ -20,17 +20,17 @@ vbox(() => {
   label('This is a demo server with several test pages.');
   label('');
 
-  button('Go to Counter Demo').onClick(() => {
+  button('Go to Counter Demo', { onClick: () => {
     browserContext.changePage('/counter');
-  });
+  } });
 
-  button('Go to Form Demo').onClick(() => {
+  button('Go to Form Demo', { onClick: () => {
     browserContext.changePage('/form');
-  });
+  } });
 
-  button('Go to Navigation Demo').onClick(() => {
+  button('Go to Navigation Demo', { onClick: () => {
     browserContext.changePage('/nav');
-  });
+  } });
 
   label('');
   label('Current URL: ' + browserContext.currentUrl);
@@ -48,23 +48,23 @@ vbox(() => {
   label('');
 
   hbox(() => {
-    button('-').onClick(() => {
+    button('-', { onClick: () => {
       count--;
       countLabel.setText('Count: ' + count);
-    });
+    } });
 
     countLabel = label('Count: 0');
 
-    button('+').onClick(() => {
+    button('+', { onClick: () => {
       count++;
       countLabel.setText('Count: ' + count);
-    });
+    } });
   });
 
   label('');
-  button('← Back to Home').onClick(() => {
+  button('← Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
   `,
 
@@ -87,19 +87,19 @@ vbox(() => {
   emailEntry = entry('Enter your email');
 
   label('');
-  button('Submit').onClick(async () => {
+  button('Submit', { onClick: async () => {
     const name = await nameEntry.getText();
     const email = await emailEntry.getText();
     resultLabel.setText('Submitted: ' + name + ' (' + email + ')');
-  });
+  } });
 
   label('');
   resultLabel = label('');
 
   label('');
-  button('← Back to Home').onClick(() => {
+  button('← Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
   `,
 
@@ -112,17 +112,17 @@ vbox(() => {
   label('This page demonstrates browser navigation.');
   label('');
 
-  button('Go to Page 2').onClick(() => {
+  button('Go to Page 2', { onClick: () => {
     browserContext.changePage('/nav2');
-  });
+  } });
 
   label('');
   label('Try using the browser back/forward buttons!');
   label('');
 
-  button('← Back to Home').onClick(() => {
+  button('← Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
   `,
 
@@ -135,19 +135,19 @@ vbox(() => {
   label('You made it to page 2!');
   label('');
 
-  button('Go to Page 3').onClick(() => {
+  button('Go to Page 3', { onClick: () => {
     browserContext.changePage('/nav3');
-  });
+  } });
 
   label('');
-  button('← Back to Nav Home').onClick(() => {
+  button('← Back to Nav Home', { onClick: () => {
     browserContext.changePage('/nav');
-  });
+  } });
 
   label('');
-  button('← Back to Main Home').onClick(() => {
+  button('← Back to Main Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
   `,
 
@@ -160,14 +160,14 @@ vbox(() => {
   label('Final page! Use browser back/forward buttons.');
   label('');
 
-  button('← Back to Page 2').onClick(() => {
+  button('← Back to Page 2', { onClick: () => {
     browserContext.changePage('/nav2');
-  });
+  } });
 
   label('');
-  button('← Back to Main Home').onClick(() => {
+  button('← Back to Main Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
   `
 };
@@ -228,9 +228,9 @@ vbox(() => {
   label('');
   label('URL: ' + browserContext.currentUrl);
   label('');
-  button('← Back to Home').onClick(() => {
+  button('← Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
     `);
   }

@@ -35,22 +35,22 @@ function createClippingDemo(a: App): void {
           // Clipping type controls
           a.hbox(() => {
             a.label('Clipping Type:');
-            a.button('Circular').onClick(() => {
+            a.button('Circular', { onClick: () => {
               state.clipType = 'circular';
               refreshAllCosyneContexts();
-            });
-            a.button('Rectangular').onClick(() => {
+            } });
+            a.button('Rectangular', { onClick: () => {
               state.clipType = 'rectangular';
               refreshAllCosyneContexts();
-            });
-            a.button('Polygonal').onClick(() => {
+            } });
+            a.button('Polygonal', { onClick: () => {
               state.clipType = 'polygonal';
               refreshAllCosyneContexts();
-            });
-            a.button('Path').onClick(() => {
+            } });
+            a.button('Path', { onClick: () => {
               state.clipType = 'path';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           // Canvas area

@@ -407,9 +407,9 @@ export function createLitProgApp(a: App): LitProgUI {
         a.vbox(() => {
           // Toolbar
           a.hbox(() => {
-            a.button('New').onClick(() => newDocument('markdown')).withId('btn-new');
-            a.button('Open').onClick(() => openFile()).withId('btn-open');
-            a.button('Save').onClick(() => saveFile()).withId('btn-save');
+            a.button('New', { onClick: () => newDocument('markdown') }).withId('btn-new');
+            a.button('Open', { onClick: () => openFile() }).withId('btn-open');
+            a.button('Save', { onClick: () => saveFile() }).withId('btn-save');
 
             a.separator();
 
@@ -483,13 +483,13 @@ export function createLitProgApp(a: App): LitProgUI {
                   editorEntry = a.multilineentry(store.getSource()).withId('editor');
                 }).withMinSize(300, 400);
                 a.hbox(() => {
-                  a.button('Parse').onClick(async () => {
+                  a.button('Parse', { onClick: async () => {
                     if (editorEntry) {
                       const text = await editorEntry.getText();
                       store.setSource(text);
                       refreshPreview();
                     }
-                  }).withId('btn-parse');
+                  } }).withId('btn-parse');
                 });
               });
             },
@@ -504,14 +504,14 @@ export function createLitProgApp(a: App): LitProgUI {
                         'output-preview-label'
                       );
                       a.spacer();
-                      a.button('Tangle').onClick(() => {
+                      a.button('Tangle', { onClick: () => {
                         previewMode = 'tangle';
                         refreshPreview();
-                      }).withId('btn-tangle');
-                      a.button('Weave').onClick(() => {
+                      } }).withId('btn-tangle');
+                      a.button('Weave', { onClick: () => {
                         previewMode = 'weave';
                         refreshPreview();
-                      }).withId('btn-weave');
+                      } }).withId('btn-weave');
                     });
                     a.scroll(() => {
                       a.vbox(() => {
@@ -533,8 +533,8 @@ export function createLitProgApp(a: App): LitProgUI {
                         'chunks-label'
                       );
                       a.spacer();
-                      a.button('Prev').onClick(() => { store.previousChunk(); }).withId('btn-prev-chunk');
-                      a.button('Next').onClick(() => { store.nextChunk(); }).withId('btn-next-chunk');
+                      a.button('Prev', { onClick: () => { store.previousChunk(); } }).withId('btn-prev-chunk');
+                      a.button('Next', { onClick: () => { store.nextChunk(); } }).withId('btn-next-chunk');
                     });
 
                     currentChunkLabel = a

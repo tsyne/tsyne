@@ -35,9 +35,9 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                 label('logical sections that users can switch');
                 label('between without leaving the window.');
                 label('');
-                button('Click Me').onClick(() => {
+                button('Click Me', { onClick: () => {
                   statusLabel.setText('Home tab button clicked!');
-                });
+                } });
                 label('');
                 label('Perfect for:');
                 label('• Settings pages');
@@ -64,9 +64,9 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                   statusLabel.setText(`Notifications: ${checked ? 'ON' : 'OFF'}`);
                 });
                 label('');
-                button('Save Profile').onClick(() => {
+                button('Save Profile', { onClick: () => {
                   statusLabel.setText('Profile saved successfully!');
-                });
+                } });
               });
             }
           },
@@ -92,12 +92,12 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                 });
                 label('');
                 hbox(() => {
-                  button('Apply').onClick(() => {
+                  button('Apply', { onClick: () => {
                     statusLabel.setText('Settings applied');
-                  });
-                  button('Reset').onClick(() => {
+                  } });
+                  button('Reset', { onClick: () => {
                     statusLabel.setText('Settings reset to defaults');
-                  });
+                  } });
                 });
               });
             }
@@ -114,7 +114,7 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                 label('Cache size: 45 MB');
                 label('');
                 hbox(() => {
-                  button('Clear Cache').onClick(async () => {
+                  button('Clear Cache', { onClick: async () => {
                     const confirmed = await win.showConfirm(
                       'Clear Cache',
                       'Are you sure you want to clear the cache?'
@@ -123,16 +123,16 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                       statusLabel.setText('Cache cleared successfully');
                       await win.showInfo('Success', 'Cache has been cleared');
                     }
-                  });
-                  button('Export Data').onClick(() => {
+                  } });
+                  button('Export Data', { onClick: () => {
                     statusLabel.setText('Exporting data...');
-                  });
+                  } });
                 });
                 label('');
                 label('Last backup: 2 hours ago');
-                button('Backup Now').onClick(() => {
+                button('Backup Now', { onClick: () => {
                   statusLabel.setText('Creating backup...');
-                });
+                } });
               });
             }
           },
@@ -155,10 +155,10 @@ app(resolveTransport(), { title: 'Tabs Demo' }, () => {
                 label('✓ Type-safe API');
                 label('✓ Easy to use');
                 label('');
-                button('Visit Website').onClick(() => {
+                button('Visit Website', { onClick: () => {
                   statusLabel.setText('Opening website...');
                   console.log('https://github.com/paul-hammant/tsyne');
-                });
+                } });
               });
             }
           }

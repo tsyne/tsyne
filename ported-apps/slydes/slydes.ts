@@ -437,33 +437,33 @@ export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: num
 
           // Navigation controls
           a.hbox(() => {
-            a.button('Previous').onClick(() => {
+            a.button('Previous', { onClick: () => {
               if (store.previousSlide()) {
                 refreshPresentationSlide();
               }
-            }).withId('btn-prev');
+            } }).withId('btn-prev');
 
             statusLabel = a.label(`1 / ${store.getSlideCount()}`, undefined, undefined, undefined, undefined).withId('presentation-status');
 
-            a.button('Next').onClick(() => {
+            a.button('Next', { onClick: () => {
               if (store.nextSlide()) {
                 refreshPresentationSlide();
               }
-            }).withId('btn-next');
+            } }).withId('btn-next');
 
             if (fullscreen) {
-              a.button('Exit Fullscreen').onClick(() => {
+              a.button('Exit Fullscreen', { onClick: () => {
                 presentWin.setFullScreen(false);
-              }).withId('btn-exit-fullscreen');
+              } }).withId('btn-exit-fullscreen');
             } else {
-              a.button('Fullscreen').onClick(() => {
+              a.button('Fullscreen', { onClick: () => {
                 presentWin.setFullScreen(true);
-              }).withId('btn-fullscreen');
+              } }).withId('btn-fullscreen');
             }
 
-            a.button('Close').onClick(() => {
+            a.button('Close', { onClick: () => {
               presentWin.close();
-            }).withId('btn-close-presentation');
+            } }).withId('btn-close-presentation');
           });
         });
       });
@@ -494,33 +494,33 @@ export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: num
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
-          a.button('New').onClick(() => {
+          a.button('New', { onClick: () => {
             newPresentation();
-          }).withId('btn-new');
+          } }).withId('btn-new');
 
-          a.button('Open').onClick(() => {
+          a.button('Open', { onClick: () => {
             openFile();
-          }).withId('btn-open');
+          } }).withId('btn-open');
 
-          a.button('Save').onClick(() => {
+          a.button('Save', { onClick: () => {
             saveFile();
-          }).withId('btn-save');
+          } }).withId('btn-save');
 
           a.separator();
 
-          a.button('Add Slide').onClick(() => {
+          a.button('Add Slide', { onClick: () => {
             addSlide();
-          }).withId('btn-add-slide');
+          } }).withId('btn-add-slide');
 
           a.separator();
 
-          a.button('Present').onClick(() => {
+          a.button('Present', { onClick: () => {
             showPresentation();
-          }).withId('btn-present');
+          } }).withId('btn-present');
 
-          a.button('Fullscreen').onClick(() => {
+          a.button('Fullscreen', { onClick: () => {
             showPresentationFullscreen();
-          }).withId('btn-present-fullscreen');
+          } }).withId('btn-present-fullscreen');
 
           a.separator();
 
@@ -548,13 +548,13 @@ export function createSlydesApp(a: App, windowWidth?: number, windowHeight?: num
 
             // Navigation in preview
             a.hbox(() => {
-              a.button('◀ Prev').onClick(() => {
+              a.button('◀ Prev', { onClick: () => {
                 store.previousSlide();
-              }).withId('preview-prev');
+              } }).withId('preview-prev');
 
-              a.button('Next ▶').onClick(() => {
+              a.button('Next ▶', { onClick: () => {
                 store.nextSlide();
-              }).withId('preview-next');
+              } }).withId('preview-next');
             });
 
             a.separator();

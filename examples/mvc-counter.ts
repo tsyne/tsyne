@@ -89,12 +89,12 @@ class CounterView {
 
       // Control buttons
       hbox(() => {
-        button('Decrement').onClick(onDecrement);
-        button('Increment').onClick(onIncrement);
+        button('Decrement', { onClick: onDecrement });
+        button('Increment', { onClick: onIncrement });
       });
 
       label('');
-      button('Reset').onClick(onReset);
+      button('Reset', { onClick: onReset });
     });
   }
 

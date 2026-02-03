@@ -12,7 +12,7 @@ app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
       a.vbox(() => {
         // Toolbar
         a.hbox(() => {
-          a.button('New Document').onClick(async () => {
+          a.button('New Document', { onClick: async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Document ${windowCount}`,
@@ -21,9 +21,9 @@ app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
                   a.label(`Content of Document ${windowCount}`);
                   a.entry('Type something here...');
                   a.hbox(() => {
-                    a.button('Save').onClick(() => {
+                    a.button('Save', { onClick: () => {
                       win.showInfo('Saved', `Document ${windowCount} saved!`);
-                    });
+                    } });
                   });
                 });
               },
@@ -31,9 +31,9 @@ app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
 // console.log(`Document ${windowCount} closed`);
               }
             );
-          });
+          } });
 
-          a.button('New Image').onClick(async () => {
+          a.button('New Image', { onClick: async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Image ${windowCount}`,
@@ -48,9 +48,9 @@ app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
                 });
               }
             );
-          });
+          } });
 
-          a.button('New Chart').onClick(async () => {
+          a.button('New Chart', { onClick: async () => {
             windowCount++;
             mdiContainer.addWindow(
               `Chart ${windowCount}`,
@@ -68,7 +68,7 @@ app(resolveTransport(), { title: 'MDI Workspace Demo' }, (a) => {
                 });
               }
             );
-          });
+          } });
         });
 
         // MDI Container with initial windows

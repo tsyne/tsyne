@@ -236,14 +236,14 @@ vbox(() => {
       progressBar = progressbar(0.3);
 
       hbox(() => {
-        button('Start').onClick(() => {
+        button('Start', { onClick: () => {
           simulateProgress();
-        });
+        } });
 
-        button('Reset').onClick(() => {
+        button('Reset', { onClick: () => {
           progressValue = 0;
           progressBar.setProgress(0);
-        });
+        } });
       });
 
       label('');
@@ -329,9 +329,9 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
 
 // Simulate progress bar animation

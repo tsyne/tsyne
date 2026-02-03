@@ -29,7 +29,12 @@ fi
 if [ ! -d "$FYNE_SRC_DIR" ]; then
     echo "[setup-fyne-fork] Fyne source not found at $FYNE_SRC_DIR. Downloading..."
     cd "$BRIDGE_DIR"
+    # Temporarily comment out the replace directive so go get works
+    # (the fork doesn't exist yet, so the replace would fail)
+    sed -i 's|^replace fyne.io/fyne/v2|// SETUP_TEMP: replace fyne.io/fyne/v2|' go.mod
     go get "fyne.io/fyne/v2@$FYNE_VERSION"
+    # Restore the replace directive
+    sed -i 's|^// SETUP_TEMP: replace fyne.io/fyne/v2|replace fyne.io/fyne/v2|' go.mod
 fi
 
 echo "[setup-fyne-fork] Copying Fyne source from $FYNE_SRC_DIR..."
@@ -547,12 +552,67 @@ sed -i '/gl.Enable(gl.BLEND)/a\
 \	renderhook.SetBlendFunc(gl.BlendFunc)' "$FORK_DIR/internal/painter/gl/gl_es.go"
 sed -i 's|import (|import (\n\t"fyne.io/fyne/v2/internal/renderhook"|' "$FORK_DIR/internal/painter/gl/gl_es.go"
 
-# 7. Patch draw.go to remove hardcoded BlendFunc calls that override our blend mode
-echo "[setup-fyne-fork] Patching draw.go to remove BlendFunc overrides..."
-# Comment out all the BlendFunc calls in draw.go that reset to default alpha blending
-# These lines override our custom blend mode set in renderhook.Before()
-sed -i 's/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/\/\/ PATCHED: removed BlendFunc override/g' "$FORK_DIR/internal/painter/gl/draw.go"
-sed -i 's/p\.ctx\.BlendFunc(one, oneMinusSrcAlpha)/\/\/ PATCHED: removed BlendFunc override/g' "$FORK_DIR/internal/painter/gl/draw.go"
+# 7. Add blend mode support to draw functions
+echo "[setup-fyne-fork] Adding blend mode support to draw.go..."
+
+# Add helper function after the imports (before const edgeSoftness)
+cat > /tmp/blend_helper.go <<'BLEND_HELPER'
+// setBlendModeForObject sets the appropriate blend mode for a canvas object.
+// If the object has a custom blend mode, use that; otherwise use the default alpha blending.
+func (p *painter) setBlendModeForObject(obj fyne.CanvasObject) {
+	if blendable, ok := obj.(interface{ BlendMode() canvas.BlendMode }); ok {
+		switch blendable.BlendMode() {
+		case canvas.BlendAdditive:
+			p.ctx.BlendFunc(one, one)
+			return
+		case canvas.BlendMultiply:
+			p.ctx.BlendFunc(dstColor, zero)
+			return
+		case canvas.BlendScreen:
+			p.ctx.BlendFunc(one, oneMinusSrcColor)
+			return
+		}
+	}
+	// Default: standard alpha blending
+	p.ctx.BlendFunc(srcAlpha, oneMinusSrcAlpha)
+}
+
+BLEND_HELPER
+sed -i '/^const edgeSoftness/r /tmp/blend_helper.go' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Add missing GL constants to gl_core.go (one already exists, don't add it)
+sed -i '/oneMinusSrcAlpha.*= gl.ONE_MINUS_SRC_ALPHA/a\
+\	dstColor              = gl.DST_COLOR\
+\	zero                  = gl.ZERO\
+\	oneMinusSrcColor      = gl.ONE_MINUS_SRC_COLOR' "$FORK_DIR/internal/painter/gl/gl_core.go"
+
+# Patch drawCircle to use blend mode helper
+sed -i '/func (p \*painter) drawCircle/,/^func / {
+    s/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/p.setBlendModeForObject(circle)/
+}' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Patch drawLine to use blend mode helper
+sed -i '/func (p \*painter) drawLine/,/^func / {
+    s/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/p.setBlendModeForObject(line)/
+}' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Patch drawOblong (used by drawRectangle) to use blend mode helper
+sed -i '/func (p \*painter) drawOblong/,/^func / {
+    s/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/p.setBlendModeForObject(obj)/
+}' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Patch drawPolygon to use blend mode helper
+sed -i '/func (p \*painter) drawPolygon/,/^func / {
+    s/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/p.setBlendModeForObject(polygon)/
+}' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Patch drawArc to use blend mode helper
+sed -i '/func (p \*painter) drawArc/,/^func / {
+    s/p\.ctx\.BlendFunc(srcAlpha, oneMinusSrcAlpha)/p.setBlendModeForObject(arc)/
+}' "$FORK_DIR/internal/painter/gl/draw.go"
+
+# Note: drawTextureWithDetails uses BlendFunc(one, oneMinusSrcAlpha) which is different
+# We leave that one alone for now as it's for textures/images
 
 # 7b. Fix transparent color check in drawOblong - color.RGBA{0,0,0,0} != color.Transparent (which is Alpha16)
 echo "[setup-fyne-fork] Patching draw.go to fix transparent color check..."

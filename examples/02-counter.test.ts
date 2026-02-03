@@ -26,20 +26,20 @@ describe('Counter Example', () => {
             countLabel = app.label(`Count: ${count}`);
 
             app.hbox(() => {
-              app.button('Decrement').onClick(async () => {
+              app.button('Decrement', { onClick: async () => {
                 count--;
                 await countLabel.setText(`Count: ${count}`);
-              });
+              } });
 
-              app.button('Reset').onClick(async () => {
+              app.button('Reset', { onClick: async () => {
                 count = 0;
                 await countLabel.setText(`Count: ${count}`);
-              });
+              } });
 
-              app.button('Increment').onClick(async () => {
+              app.button('Increment', { onClick: async () => {
                 count++;
                 await countLabel.setText(`Count: ${count}`);
-              });
+              } });
             });
           });
         });

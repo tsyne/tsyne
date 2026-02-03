@@ -422,8 +422,8 @@ export class FallingBlocksUI {
     this.a.vbox(() => {
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.startGame()).withId('newGameBtn');
-        this.a.button('Pause').onClick(() => this.game.togglePause()).withId('pauseBtn');
+        this.a.button('New Game', { onClick: () => this.startGame() }).withId('newGameBtn');
+        this.a.button('Pause', { onClick: () => this.game.togglePause() }).withId('pauseBtn');
       });
 
       // Status bar
@@ -459,10 +459,10 @@ export class FallingBlocksUI {
 
       // Controls
       this.a.hbox(() => {
-        this.a.button('Left').onClick(() => this.game.moveLeft()).withId('leftBtn');
-        this.a.button('Rotate').onClick(() => this.game.rotate()).withId('rotateBtn');
-        this.a.button('Right').onClick(() => this.game.moveRight()).withId('rightBtn');
-        this.a.button('Drop').onClick(() => this.game.hardDrop()).withId('dropBtn');
+        this.a.button('Left', { onClick: () => this.game.moveLeft() }).withId('leftBtn');
+        this.a.button('Rotate', { onClick: () => this.game.rotate() }).withId('rotateBtn');
+        this.a.button('Right', { onClick: () => this.game.moveRight() }).withId('rightBtn');
+        this.a.button('Drop', { onClick: () => this.game.hardDrop() }).withId('dropBtn');
       });
 
       this.a.label('Arrow keys or WASD to move, Space to drop');

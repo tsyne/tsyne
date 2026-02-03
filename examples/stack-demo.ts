@@ -42,7 +42,7 @@ app(resolveTransport(), { title: 'Stack Container Demo' }, (a) => {
           a.vbox(() => {
             a.label('Main Content');
             a.label('This is the underlying content');
-            a.button('Action Button').onClick(() => console.log('Clicked'));
+            a.button('Action Button', { onClick: () => console.log('Clicked') });
           });
 
           // Overlay layer (top) - semi-transparent background with spinner

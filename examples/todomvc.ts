@@ -257,13 +257,13 @@ export function createTodoApp(a: any, storePath?: string) {
         // Pseudo-declarative event handler - just update model
         a.hbox(() => {
           newTodoEntry = a.entry('What needs to be done?', undefined, 400).withId('newTodoEntry');
-          a.button('Add').onClick(async () => {
+          a.button('Add', { onClick: async () => {
             const text = await newTodoEntry.getText();
             if (text && text.trim()) {
               await store.addTodo(text);
               await newTodoEntry.setText('');
             }
-          });
+          } });
         });
 
         a.spacer();
@@ -273,12 +273,12 @@ export function createTodoApp(a: any, storePath?: string) {
         a.label('Filter:');
         // Pseudo-declarative filters - just update model
         a.hbox(() => {
-          filterAllButton = a.button('[All]').onClick(async () => await store.setFilter('all'));
-          filterActiveButton = a.button('Active').onClick(async () => await store.setFilter('active'));
-          filterCompletedButton = a.button('Completed').onClick(async () => await store.setFilter('completed'));
-          a.button('Clear Completed').onClick(async () => {
+          filterAllButton = a.button('[All]', { onClick: async () => await store.setFilter('all') });
+          filterActiveButton = a.button('Active', { onClick: async () => await store.setFilter('active') });
+          filterCompletedButton = a.button('Completed', { onClick: async () => await store.setFilter('completed') });
+          a.button('Clear Completed', { onClick: async () => {
             if (store.getCompletedCount() > 0) await store.clearCompleted();
-          });
+          } });
         });
 
         a.spacer();
@@ -343,13 +343,13 @@ export function createTodoApp(a: any, storePath?: string) {
                 if (isEditing) await saveEdit();
               }, 300);
 
-              a.button('Edit').onClick(async () => {
+              a.button('Edit', { onClick: async () => {
                 if (!isEditing) await startEdit();
-              });
+              } });
 
-              a.button('Delete').onClick(async () => {
+              a.button('Delete', { onClick: async () => {
                 await store.deleteTodo(todo.id);
-              });
+              } });
             }).when(shouldShowTodo);
 
             (async () => {
@@ -367,8 +367,8 @@ export function createTodoApp(a: any, storePath?: string) {
 
         // Pseudo-declarative file operations - just update model
         a.hbox(() => {
-          a.button('Reload from File').onClick(async () => await store.load());
-          a.button('Save to File').onClick(async () => store.save());
+          a.button('Reload from File', { onClick: async () => await store.load() });
+          a.button('Save to File', { onClick: async () => store.save() });
         });
       });
     });

@@ -247,7 +247,7 @@ export class HexViewUI {
     this.a.vbox(() => {
       // Toolbar
       this.a.hbox(() => {
-        this.a.button('Open').onClick(() => this.openFile()).withId('openBtn');
+        this.a.button('Open', { onClick: () => this.openFile() }).withId('openBtn');
         this.a.spacer();
         this.fileLabel = this.a.label(
           this.buffer ? this.buffer.getFilePath() : 'No file loaded'
@@ -292,12 +292,12 @@ export class HexViewUI {
 
       // Navigation buttons
       this.a.hbox(() => {
-        this.a.button('Top').onClick(() => this.scrollToTop()).withId('topBtn');
-        this.a.button('Page Up').onClick(() => this.scrollUp(this.visibleRows)).withId('pageUpBtn');
-        this.a.button('Up').onClick(() => this.scrollUp()).withId('upBtn');
-        this.a.button('Down').onClick(() => this.scrollDown()).withId('downBtn');
-        this.a.button('Page Down').onClick(() => this.scrollDown(this.visibleRows)).withId('pageDownBtn');
-        this.a.button('Bottom').onClick(() => this.scrollToBottom()).withId('bottomBtn');
+        this.a.button('Top', { onClick: () => this.scrollToTop() }).withId('topBtn');
+        this.a.button('Page Up', { onClick: () => this.scrollUp(this.visibleRows) }).withId('pageUpBtn');
+        this.a.button('Up', { onClick: () => this.scrollUp() }).withId('upBtn');
+        this.a.button('Down', { onClick: () => this.scrollDown() }).withId('downBtn');
+        this.a.button('Page Down', { onClick: () => this.scrollDown(this.visibleRows) }).withId('pageDownBtn');
+        this.a.button('Bottom', { onClick: () => this.scrollToBottom() }).withId('bottomBtn');
       });
 
       this.a.separator();

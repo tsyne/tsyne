@@ -37,40 +37,40 @@ export function buildKeyboard(a: App, k: KeyboardController): void {
     a.vbox(() => {
       // ROW 1: ' , . P Y F G C R L
       a.hbox(() => {
-        a.button("'").onClick((b) => k.symbol("'", b));
-        a.button(',').onClick((b) => k.symbol(',', b));
-        a.button('.').onClick((b) => k.symbol('.', b));
+        a.button("'", { onClick: (b) => k.symbol("'", b) });
+        a.button(',', { onClick: (b) => k.symbol(',', b) });
+        a.button('.', { onClick: (b) => k.symbol('.', b) });
         for (const c of ['p', 'y', 'f', 'g', 'c', 'r', 'l']) {
-          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
-          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+          a.button(c, { onClick: (b) => k.key(c, b) }).when(isLower);
+          a.button(c.toUpperCase(), { onClick: (b) => k.key(c, b) }).when(isUpper);
         }
       });
 
       // ROW 2: A O E U I D H T N S
       a.hbox(() => {
         for (const c of ['a', 'o', 'e', 'u', 'i', 'd', 'h', 't', 'n', 's']) {
-          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
-          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+          a.button(c, { onClick: (b) => k.key(c, b) }).when(isLower);
+          a.button(c.toUpperCase(), { onClick: (b) => k.key(c, b) }).when(isUpper);
         }
       });
 
       // ROW 3: ⇪ Q J K X B M W V Z ⌫
       a.hbox(() => {
-        a.button('⇪').onClick(() => k.toggleShift());
+        a.button('⇪', { onClick: () => k.toggleShift() });
         for (const c of ['q', 'j', 'k', 'x', 'b', 'm', 'w', 'v', 'z']) {
-          a.button(c).onClick((b) => k.key(c, b)).when(isLower);
-          a.button(c.toUpperCase()).onClick((b) => k.key(c, b)).when(isUpper);
+          a.button(c, { onClick: (b) => k.key(c, b) }).when(isLower);
+          a.button(c.toUpperCase(), { onClick: (b) => k.key(c, b) }).when(isUpper);
         }
-        a.button('⌫').onClick((b) => k.backspace(b));
+        a.button('⌫', { onClick: (b) => k.backspace(b) });
       });
 
       // ROW 4: mode ―――――――― ↵
       a.hbox(() => {
-        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
-        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
-        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
-        a.button('――――――――').onClick((b) => k.space(b, '――――――――'));
-        a.button('↵').onClick((b) => k.enter(b));
+        a.button('123', { onClick: () => k.cycleMode() }).when(isAbc);
+        a.button('Fn', { onClick: () => k.cycleMode() }).when(isSymbols);
+        a.button('abc', { onClick: () => k.cycleMode() }).when(isFn);
+        a.button('――――――――', { onClick: (b) => k.space(b, '――――――――') });
+        a.button('↵', { onClick: (b) => k.enter(b) });
       });
     }).when(isAbc);
 
@@ -81,38 +81,38 @@ export function buildKeyboard(a: App, k: KeyboardController): void {
       // ROW 1: 1 2 3 4 5 6 7 8 9 0
       a.hbox(() => {
         for (const c of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']) {
-          a.button(c).onClick((b) => k.symbol(c, b));
+          a.button(c, { onClick: (b) => k.symbol(c, b) });
         }
       });
 
       // ROW 2: @ # $ % ^ & * ( ) ~
       a.hbox(() => {
         for (const c of ['@', '#', '$', '%', '^', '&', '*', '(', ')', '~']) {
-          a.button(c).onClick((b) => k.symbol(c, b));
+          a.button(c, { onClick: (b) => k.symbol(c, b) });
         }
       });
 
       // ROW 3: - + = _ " ' : ; ⌫
       a.hbox(() => {
         for (const c of ['-', '+', '=', '_', '"', "'", ':', ';']) {
-          a.button(c).onClick((b) => k.symbol(c, b));
+          a.button(c, { onClick: (b) => k.symbol(c, b) });
         }
-        a.button('⌫').onClick((b) => k.backspace(b));
+        a.button('⌫', { onClick: (b) => k.backspace(b) });
       });
 
       // ROW 4: mode / \ , ―――― . ! ? ↵
       a.hbox(() => {
-        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
-        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
-        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
+        a.button('123', { onClick: () => k.cycleMode() }).when(isAbc);
+        a.button('Fn', { onClick: () => k.cycleMode() }).when(isSymbols);
+        a.button('abc', { onClick: () => k.cycleMode() }).when(isFn);
         for (const c of ['/', '\\', ',']) {
-          a.button(c).onClick((b) => k.symbol(c, b));
+          a.button(c, { onClick: (b) => k.symbol(c, b) });
         }
-        a.button('――――').onClick((b) => k.space(b, '――――'));
+        a.button('――――', { onClick: (b) => k.space(b, '――――') });
         for (const c of ['.', '!', '?']) {
-          a.button(c).onClick((b) => k.symbol(c, b));
+          a.button(c, { onClick: (b) => k.symbol(c, b) });
         }
-        a.button('↵').onClick((b) => k.enter(b));
+        a.button('↵', { onClick: (b) => k.enter(b) });
       });
     }).when(isSymbols);
 
@@ -123,39 +123,39 @@ export function buildKeyboard(a: App, k: KeyboardController): void {
       // F-KEYS ROW 1: F1 F2 F3 F4 F5 F6
       a.hbox(() => {
         for (const n of [1, 2, 3, 4, 5, 6]) {
-          a.button(`F${n}`).onClick((b) => k.fkey(n, b));
+          a.button(`F${n}`, { onClick: (b) => k.fkey(n, b) });
         }
       });
 
       // F-KEYS ROW 2: F7 F8 F9 F10 F11 F12
       a.hbox(() => {
         for (const n of [7, 8, 9, 10, 11, 12]) {
-          a.button(`F${n}`).onClick((b) => k.fkey(n, b));
+          a.button(`F${n}`, { onClick: (b) => k.fkey(n, b) });
         }
       });
 
       // NAVIGATION: Esc Tab Ins Del Home End PgUp PgDn
       a.hbox(() => {
-        a.button('Esc').onClick((b) => k.escape(b));
-        a.button('Tab').onClick((b) => k.tab(b));
-        a.button('Ins').onClick((b) => k.insert(b));
-        a.button('Del').onClick((b) => k.delete(b));
-        a.button('Home').onClick((b) => k.home(b));
-        a.button('End').onClick((b) => k.end(b));
-        a.button('PgUp').onClick((b) => k.pageUp(b));
-        a.button('PgDn').onClick((b) => k.pageDown(b));
+        a.button('Esc', { onClick: (b) => k.escape(b) });
+        a.button('Tab', { onClick: (b) => k.tab(b) });
+        a.button('Ins', { onClick: (b) => k.insert(b) });
+        a.button('Del', { onClick: (b) => k.delete(b) });
+        a.button('Home', { onClick: (b) => k.home(b) });
+        a.button('End', { onClick: (b) => k.end(b) });
+        a.button('PgUp', { onClick: (b) => k.pageUp(b) });
+        a.button('PgDn', { onClick: (b) => k.pageDown(b) });
       });
 
       // CURSOR + MODE: abc ← ↑ ↓ → Ctrl
       a.hbox(() => {
-        a.button('123').onClick(() => k.cycleMode()).when(isAbc);
-        a.button('Fn').onClick(() => k.cycleMode()).when(isSymbols);
-        a.button('abc').onClick(() => k.cycleMode()).when(isFn);
-        a.button('←').onClick((b) => k.cursorLeft(b));
-        a.button('↑').onClick((b) => k.cursorUp(b));
-        a.button('↓').onClick((b) => k.cursorDown(b));
-        a.button('→').onClick((b) => k.cursorRight(b));
-        a.button('Ctrl').onClick(() => k.toggleCtrl());
+        a.button('123', { onClick: () => k.cycleMode() }).when(isAbc);
+        a.button('Fn', { onClick: () => k.cycleMode() }).when(isSymbols);
+        a.button('abc', { onClick: () => k.cycleMode() }).when(isFn);
+        a.button('←', { onClick: (b) => k.cursorLeft(b) });
+        a.button('↑', { onClick: (b) => k.cursorUp(b) });
+        a.button('↓', { onClick: (b) => k.cursorDown(b) });
+        a.button('→', { onClick: (b) => k.cursorRight(b) });
+        a.button('Ctrl', { onClick: () => k.toggleCtrl() });
       });
     }).when(isFn);
   });

@@ -32,7 +32,7 @@ app(resolveTransport(), { title: 'Rename Dialog Demo' }, (a) => {
             const label = a.label(file.name);
             fileLabels.set(file.id, label);
 
-            a.button('Rename').onClick(async () => {
+            a.button('Rename', { onClick: async () => {
               const newName = await win.showEntryDialog(
                 'Rename File',
                 `Enter new name for "${file.name}":`
@@ -46,7 +46,7 @@ app(resolveTransport(), { title: 'Rename Dialog Demo' }, (a) => {
               } else {
                 await statusLabel.setText('Rename cancelled');
               }
-            });
+            } });
           });
         }
 

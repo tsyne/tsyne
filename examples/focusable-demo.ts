@@ -36,9 +36,9 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
       const fields = ['Username', 'Email', 'Password', 'Confirm'];
 
       fields.forEach((field, index) => {
-        const btn = a.button(`[${index + 1}] ${field}`).onClick(() => {
+        const btn = a.button(`[${index + 1}] ${field}`, { onClick: () => {
 // console.log(`${field} button clicked`);
-        });
+        } });
 
         buttonLabels[field] = btn;
 
@@ -77,13 +77,13 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
       a.hbox(() => {
         // Programmatic focus buttons
         fields.forEach((field) => {
-          a.button(`Focus ${field}`).onClick(async () => {
+          a.button(`Focus ${field}`, { onClick: async () => {
             const btn = buttonLabels[field];
             if (btn) {
               await btn.focus();
 // console.log(`Programmatically focused: ${field}`);
             }
-          });
+          } });
         });
       });
 
@@ -93,9 +93,9 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
       // Visual focus ring simulation
       a.hbox(() => {
         for (let i = 1; i <= 4; i++) {
-          const ringBtn = a.button(`Tab ${i}`).onClick(() => {
+          const ringBtn = a.button(`Tab ${i}`, { onClick: () => {
 // console.log(`Tab ${i} activated`);
-          });
+          } });
 
           ringBtn.onFocusChange((event) => {
             if (event.focused) {
@@ -120,9 +120,9 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
 
       a.hbox(() => {
         targetSequence.forEach((letter) => {
-          const gameBtn = a.button(letter).onClick(() => {
+          const gameBtn = a.button(letter, { onClick: () => {
 // console.log(`Game button ${letter} clicked`);
-          });
+          } });
 
           gameBtn.onFocusChange((event) => {
             if (event.focused) {
@@ -148,7 +148,7 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
       a.separator();
 
       // Reset button
-      a.button("Reset Demo").onClick(() => {
+      a.button("Reset Demo", { onClick: () => {
         currentFocus = null;
         focusHistory = [];
         focusCount = 0;
@@ -165,7 +165,7 @@ app(resolveTransport(), { title: "Focusable Demo" }, (a) => {
         });
 
 // console.log("Focus demo reset");
-      });
+      } });
 
       a.separator();
       a.label("Instructions:");

@@ -25,10 +25,10 @@ vbox(() => {
   label('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   label('');
 
-  button('OK').onClick(() => {
+  button('OK', { onClick: () => {
     // Go back to previous page
     browserContext.back();
-  });
+  } });
 
   label('');
   separator();

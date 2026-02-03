@@ -161,11 +161,11 @@ describe('DocTabs - Text Editor Example', () => {
               { title: 'Initial Tab', builder: () => app.label('Initial content') }
             ]);
 
-            app.button('Add Tab').onClick(async () => {
+            app.button('Add Tab', { onClick: async () => {
               await docTabsRef.append('New Tab', () => {
                 appRef.label('Dynamically added content');
               });
-            });
+            } });
           });
         });
         win.show();
@@ -201,9 +201,9 @@ describe('DocTabs - Text Editor Example', () => {
               { title: 'Tab 3', builder: () => app.label('Content 3') }
             ]);
 
-            app.button('Remove First').onClick(async () => {
+            app.button('Remove First', { onClick: async () => {
               await docTabsRef.remove(0);
-            });
+            } });
           });
         });
         win.show();
@@ -238,9 +238,9 @@ describe('DocTabs - Text Editor Example', () => {
               { title: 'Tab C', builder: () => app.label('Content C') }
             ]);
 
-            app.button('Go to Tab C').onClick(async () => {
+            app.button('Go to Tab C', { onClick: async () => {
               await docTabsRef.select(2);
-            });
+            } });
           });
         });
         win.show();

@@ -179,7 +179,7 @@ app(resolveTransport(), { title: 'Weather Viewer' }, () => {
           CITIES.map((c) => c.name),
           onCityChange
         );
-        button('Refresh').onClick(refreshWeather);
+        button('Refresh', { onClick: refreshWeather });
       });
 
       separator();

@@ -514,7 +514,7 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
             searchInputValue = value;
           });
 
-          a.button('Search').onClick(async () => {
+          a.button('Search', { onClick: async () => {
             if (searchInputValue.trim()) {
               store.search(searchInputValue);
               searchInputValue = '';
@@ -524,37 +524,37 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
               await updateLabels();
               await viewStack.refresh();
             }
-          });
+          } });
 
-          a.button('Clear').onClick(async () => {
+          a.button('Clear', { onClick: async () => {
             searchInputValue = '';
             if (searchInput) {
               await searchInput.setText('');
             }
-          });
+          } });
         });
 
         // Tabs
         a.hbox(() => {
-          a.button('🔍 Search').onClick(async () => {
+          a.button('🔍 Search', { onClick: async () => {
             selectedTab = 'search';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('🛡️ Privacy').onClick(async () => {
+          a.button('🛡️ Privacy', { onClick: async () => {
             selectedTab = 'privacy';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('🔖 Bookmarks').onClick(async () => {
+          a.button('🔖 Bookmarks', { onClick: async () => {
             selectedTab = 'bookmarks';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('⚙️ Settings').onClick(async () => {
+          a.button('⚙️ Settings', { onClick: async () => {
             selectedTab = 'settings';
             await viewStack.refresh();
-          });
+          } });
         });
 
         a.separator();
@@ -566,11 +566,11 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
             a.label('📋 Search History').withId('search-title').withBold();
 
             a.hbox(() => {
-              a.button('🗑️ Clear History').onClick(async () => {
+              a.button('🗑️ Clear History', { onClick: async () => {
                 store.clearAllHistory();
                 await updateLabels();
                 await viewStack.refresh();
-              });
+              } });
 
               a.spacer();
 
@@ -587,10 +587,10 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
                       a.label(`${new Date(search.timestamp).toLocaleString()}`).withSize(0.9);
                     });
                     a.spacer();
-                    a.button('✕').onClick(async () => {
+                    a.button('✕', { onClick: async () => {
                       store.deleteSearchHistory(search.id);
                       await viewStack.refresh();
-                    });
+                    } });
                   }).withPadding(5);
                 },
                 trackBy: (search: SearchResult) => search.id,
@@ -651,7 +651,7 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
             a.label('🔖 Bookmarks').withId('bookmarks-title').withBold();
 
             a.hbox(() => {
-              a.button('➕ Add Bookmark').onClick(async () => {
+              a.button('➕ Add Bookmark', { onClick: async () => {
                 const result = await win.showForm({
                   title: 'Add Bookmark',
                   fields: [
@@ -670,7 +670,7 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
                   store.addBookmark(result.title, result.url, result.category);
                   await viewStack.refresh();
                 }
-              });
+              } });
 
               a.spacer();
 
@@ -687,10 +687,10 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
                       a.label(`${bookmark.category} | ${bookmark.url}`).withSize(0.85);
                     });
                     a.spacer();
-                    a.button('✕').onClick(async () => {
+                    a.button('✕', { onClick: async () => {
                       store.deleteBookmark(bookmark.id);
                       await viewStack.refresh();
-                    });
+                    } });
                   }).withPadding(5);
                 },
                 trackBy: (bookmark: Bookmark) => bookmark.id,
@@ -740,10 +740,10 @@ export function buildDuckDuckGoApp(a: any, windowWidth?: number, windowHeight?: 
             a.hbox(() => {
               a.label(`Theme: ${settings.theme}`);
               a.spacer();
-              a.button('Toggle Theme').onClick(async () => {
+              a.button('Toggle Theme', { onClick: async () => {
                 store.toggleTheme();
                 await viewStack.refresh();
-              });
+              } });
             });
 
             a.separator();

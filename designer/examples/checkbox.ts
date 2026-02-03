@@ -6,8 +6,8 @@ app({ title: 'Checkbox Example' }, (a) => {
       a.vbox(() => {
         a.label('Select options:');
         a.hbox(() => {
-          a.button('Check All').onClick(() => {});
-          a.button('Uncheck All').onClick(() => {});
+          a.button('Check All', { onClick: () => {} });
+          a.button('Uncheck All', { onClick: () => {} });
         });
         a.checkbox('Option 1', false).onChanged(() => {});
         a.checkbox('Option 2', true).onChanged(() => {});

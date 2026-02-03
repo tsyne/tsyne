@@ -11,12 +11,12 @@ app(resolveTransport(), { title: 'My calculator' }, (a) => {
       a.vbox(() => {
         a.hbox(() => {
           display = a.label(fmt(number), undefined, 'trailing', undefined, { monospace: true });
-          a.button('Clr').onClick(() => { number = 0; display.setText(fmt(number)); });
+          a.button('Clr', { onClick: () => { number = 0; display.setText(fmt(number)); } });
         });
 
         a.grid(4, () => {
           for (const btn of '7 8 9 + 4 5 6 - 1 2 3 / 0 . = *'.split(' ')) {
-            a.button(btn).onClick(() => {
+            a.button(btn, { onClick: () => {
               if (/[0-9]/.test(btn)) {
                 number = number * 10 + parseInt(btn);
               } else if (btn === '=') {
@@ -26,7 +26,7 @@ app(resolveTransport(), { title: 'My calculator' }, (a) => {
                 [previous, number, op] = [number, 0, btn];
               }
               display.setText(fmt(number));
-            });
+            } });
           }
         });
       });

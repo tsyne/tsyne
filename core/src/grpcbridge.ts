@@ -761,6 +761,34 @@ export class GrpcBridgeConnection implements BridgeInterface {
             date: payload.date || ''
           }
         };
+      case 'createColorCell':
+        return {
+          method: 'createColorCell',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            width: payload.width || 0,
+            height: payload.height || 0,
+            text: payload.text || '',
+            fillColor: payload.fillColor || '',
+            textColor: payload.textColor || '',
+            borderColor: payload.borderColor || '',
+            borderWidth: payload.borderWidth || 0,
+            centerText: payload.centerText ?? true,
+            callbackId: payload.callbackId || ''
+          }
+        };
+      case 'updateColorCell':
+        return {
+          method: 'updateColorCell',
+          request: {
+            widgetId: payload.widgetId,
+            text: payload.text || '',
+            fillColor: payload.fillColor || '',
+            textColor: payload.textColor || '',
+            borderColor: payload.borderColor || '',
+            borderWidth: payload.borderWidth || 0
+          }
+        };
 
       // Input widgets
       case 'createSlider':
@@ -807,6 +835,39 @@ export class GrpcBridgeConnection implements BridgeInterface {
             onChangedCallbackId: payload.onChangedCallbackId || '',
             onSubmittedCallbackId: payload.onSubmittedCallbackId || '',
             onSelectedCallbackId: payload.onSelectedCallbackId || ''
+          }
+        };
+      case 'createCompletionEntry':
+        return {
+          method: 'createCompletionEntry',
+          request: {
+            widgetId: payload.widgetId || payload.id,
+            options: payload.options || [],
+            placeholder: payload.placeholder || '',
+            onChangedCallbackId: payload.onChangedCallbackId || '',
+            onSubmittedCallbackId: payload.onSubmittedCallbackId || ''
+          }
+        };
+      case 'setCompletionEntryOptions':
+        return {
+          method: 'setCompletionEntryOptions',
+          request: {
+            widgetId: payload.widgetId,
+            options: payload.options || []
+          }
+        };
+      case 'showCompletion':
+        return {
+          method: 'showCompletion',
+          request: {
+            widgetId: payload.widgetId
+          }
+        };
+      case 'hideCompletion':
+        return {
+          method: 'hideCompletion',
+          request: {
+            widgetId: payload.widgetId
           }
         };
       case 'createDateEntry':

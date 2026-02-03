@@ -38,24 +38,24 @@ function createEventForm(a: App) {
 
         // Buttons
         a.hbox(() => {
-          a.button('Set Today').onClick(async () => {
+          a.button('Set Today', { onClick: async () => {
             const today = new Date().toISOString().split('T')[0];
             await eventDateEntry.setDate(today);
             await eventEndDateEntry.setDate(today);
             statusLabel.setText(`Dates set to: ${today}`);
-          });
+          } });
 
-          a.button('Get Dates').onClick(async () => {
+          a.button('Get Dates', { onClick: async () => {
             const startDate = await eventDateEntry.getDate();
             const endDate = await eventEndDateEntry.getDate();
             statusLabel.setText(`Start: ${startDate || 'not set'}, End: ${endDate || 'not set'}`);
-          });
+          } });
 
-          a.button('Clear').onClick(async () => {
+          a.button('Clear', { onClick: async () => {
             await eventDateEntry.setDate('');
             await eventEndDateEntry.setDate('');
             statusLabel.setText('Dates cleared');
-          });
+          } });
         });
       });
     });

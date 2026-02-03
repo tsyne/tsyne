@@ -90,10 +90,10 @@ export function buildStopwatch(a: App) {
 
           // Control buttons
           a.hbox(() => {
-            a.button('Start').onClick(start);
-            a.button('Stop').onClick(stop);
-            a.button('Lap').onClick(lap);
-            a.button('Reset').onClick(reset);
+            a.button('Start', { onClick: start });
+            a.button('Stop', { onClick: stop });
+            a.button('Lap', { onClick: lap });
+            a.button('Reset', { onClick: reset });
           });
 
           a.separator();
@@ -127,10 +127,10 @@ export function buildStopwatch(a: App) {
 
         // Control buttons
         a.hbox(() => {
-          a.button('Start').onClick(start);
-          a.button('Stop').onClick(stop);
-          a.button('Lap').onClick(lap);
-          a.button('Reset').onClick(reset);
+          a.button('Start', { onClick: start });
+          a.button('Stop', { onClick: stop });
+          a.button('Lap', { onClick: lap });
+          a.button('Reset', { onClick: reset });
         });
 
         a.separator();

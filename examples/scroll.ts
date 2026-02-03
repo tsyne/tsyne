@@ -29,9 +29,9 @@ app(resolveTransport(), { title: 'Scroll Demo' }, () => {
             label('');
             label('=== End of List ===');
             label('');
-            button('Button at Bottom').onClick(() => {
+            button('Button at Bottom', { onClick: () => {
               console.log('Bottom button clicked!');
-            });
+            } });
           });
         });
       });

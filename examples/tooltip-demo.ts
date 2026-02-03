@@ -24,7 +24,7 @@ app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
         // Section 1: Simple Tooltips
         a.label('--- Tooltips (appear on hover) ---');
         a.hbox(() => {
-          const btn1 = a.button('Hover Me!').onClick(() => {});
+          const btn1 = a.button('Hover Me!', { onClick: () => {} });
           btn1.onMouseIn(() => {
             tooltip1?.showAt(50, 150);
           });
@@ -32,7 +32,7 @@ app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
             tooltip1?.hide();
           });
 
-          const btn2 = a.button('Hover Here Too').onClick(() => {});
+          const btn2 = a.button('Hover Here Too', { onClick: () => {} });
           btn2.onMouseIn(() => {
             tooltip2?.showAt(200, 150);
           });
@@ -40,7 +40,7 @@ app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
             tooltip2?.hide();
           });
 
-          const btn3 = a.button('And Me!').onClick(() => {});
+          const btn3 = a.button('And Me!', { onClick: () => {} });
           btn3.onMouseIn(() => {
             tooltip3?.showAt(350, 150);
           });
@@ -54,22 +54,22 @@ app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
         // Section 2: Click Popover
         a.label('--- Popover (click to toggle) ---');
         let popoverVisible = false;
-        a.button('Click for Details').onClick(() => {
+        a.button('Click for Details', { onClick: () => {
           if (popoverVisible) {
             popover?.hide();
           } else {
             popover?.showAt(100, 280);
           }
           popoverVisible = !popoverVisible;
-        });
+        } });
 
         a.separator();
 
         // Section 3: Centered Modal-style Popup
         a.label('--- Modal Popup (centered) ---');
-        a.button('Show Modal').onClick(() => {
+        a.button('Show Modal', { onClick: () => {
           modalPopup?.show(); // Centered by default
-        });
+        } });
 
         a.separator();
         a.label('');
@@ -123,9 +123,9 @@ app(resolveTransport(), { title: 'Popup Demo' }, (a) => {
           a.label('Use this for important messages or');
           a.label('quick actions that need attention.');
           a.separator();
-          a.button('Close').onClick(() => {
+          a.button('Close', { onClick: () => {
             modalPopup?.hide();
-          });
+          } });
         });
       });
     });

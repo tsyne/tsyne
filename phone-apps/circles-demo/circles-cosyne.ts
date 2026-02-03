@@ -47,23 +47,23 @@ export function createCirclesApp(a: App, win: Window) {
       a.label('Circles Demo - Cosyne').withId('title');
 
       a.hbox(() => {
-        a.button('Add Circle').onClick(() => {
+        a.button('Add Circle', { onClick: () => {
           const idx = circleVisible.findIndex((v) => !v);
           if (idx !== -1) {
             circleVisible[idx] = true;
             refreshAllCosyneContexts();
             updateCount();
           }
-        });
+        } });
 
-        a.button('Remove Circle').onClick(() => {
+        a.button('Remove Circle', { onClick: () => {
           const idx = circleVisible.lastIndexOf(true);
           if (idx > 4) { // Keep at least 5
             circleVisible[idx] = false;
             refreshAllCosyneContexts();
             updateCount();
           }
-        });
+        } });
 
         countLabel = a.label('Circles: 10').withId('count-display');
       });

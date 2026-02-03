@@ -69,9 +69,9 @@ describe('Country Picker (SelectEntry) Example', () => {
 
             statusLabel = app.label('No country selected yet');
 
-            app.button('Show Selection').onClick(() => {
+            app.button('Show Selection', { onClick: () => {
               console.log(`Current selection: ${selectedCountry || submittedText || 'none'}`);
-            });
+            } });
           });
         });
         win.show();

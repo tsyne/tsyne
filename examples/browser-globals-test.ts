@@ -26,7 +26,7 @@ app(resolveTransport(), { title: 'Browser Globals Test' }, (a) => {
         a.separator();
 
         // Test localStorage
-        a.button('Test localStorage').onClick(() => {
+        a.button('Test localStorage', { onClick: () => {
           // Set some data
           localStorage.setItem('name', 'John Doe');
           localStorage.setItem('age', '30');
@@ -44,18 +44,18 @@ app(resolveTransport(), { title: 'Browser Globals Test' }, (a) => {
 // console.log('  length:', localStorage.length);
 
           alert(`localStorage contains:\nName: ${name}\nAge: ${age}\nCity: ${city}`);
-        });
+        } });
 
-        a.button('Clear localStorage').onClick(() => {
+        a.button('Clear localStorage', { onClick: () => {
           localStorage.clear();
 // console.log('localStorage cleared');
           alert('localStorage has been cleared');
-        });
+        } });
 
         a.separator();
 
         // Test sessionStorage
-        a.button('Test sessionStorage').onClick(() => {
+        a.button('Test sessionStorage', { onClick: () => {
           // Set some data
           sessionStorage.setItem('sessionId', '12345');
           sessionStorage.setItem('tempData', 'This will be lost when app closes');
@@ -70,37 +70,37 @@ app(resolveTransport(), { title: 'Browser Globals Test' }, (a) => {
 // console.log('  length:', sessionStorage.length);
 
           alert(`sessionStorage contains:\nSession ID: ${sessionId}\nTemp Data: ${tempData}`);
-        });
+        } });
 
-        a.button('Clear sessionStorage').onClick(() => {
+        a.button('Clear sessionStorage', { onClick: () => {
           sessionStorage.clear();
 // console.log('sessionStorage cleared');
           alert('sessionStorage has been cleared');
-        });
+        } });
 
         a.separator();
 
         // Test alert
-        a.button('Test alert()').onClick(() => {
+        a.button('Test alert()', { onClick: () => {
           alert('This is an alert dialog!');
-        });
+        } });
 
         // Test confirm
-        a.button('Test confirm()').onClick(async () => {
+        a.button('Test confirm()', { onClick: async () => {
           const result = await confirm('Do you want to continue?');
 // console.log('confirm() returned:', result);
           alert(`You clicked: ${result ? 'OK' : 'Cancel'}`);
-        });
+        } });
 
         a.separator();
 
         // Test storage persistence
-        a.button('Check localStorage persistence').onClick(() => {
+        a.button('Check localStorage persistence', { onClick: () => {
           const count = localStorage.getItem('launchCount');
           const newCount = count ? parseInt(count) + 1 : 1;
           localStorage.setItem('launchCount', newCount.toString());
           alert(`This app has been launched ${newCount} time(s).\n\nThis data persists across app restarts!`);
-        });
+        } });
       });
     });
 

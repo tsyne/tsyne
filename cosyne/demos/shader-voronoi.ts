@@ -149,24 +149,24 @@ function createVoronoiDemo(a: App): void {
         a.hbox(() => {
           a.label('Type: ');
           for (const type of types) {
-            a.button(type).onClick(() => {
+            a.button(type, { onClick: () => {
               voronoiType = types.indexOf(type);
               shader?.setUniform('u_voronoiType', voronoiType);
-            });
+            } });
           }
         });
 
         // Cell count controls
         a.hbox(() => {
-          a.button('Zoom Out').onClick(() => {
+          a.button('Zoom Out', { onClick: () => {
             cellCount = Math.max(2, cellCount - 2);
             shader?.setUniform('u_cellCount', cellCount);
-          });
+          } });
           a.label(`Cells: ${cellCount.toFixed(0)}`);
-          a.button('Zoom In').onClick(() => {
+          a.button('Zoom In', { onClick: () => {
             cellCount = Math.min(30, cellCount + 2);
             shader?.setUniform('u_cellCount', cellCount);
-          });
+          } });
         });
 
         // Canvas

@@ -179,20 +179,20 @@ export function createAudioRecorderApp(a: App, recording: IRecordingService): vo
         a.spacer();
 
         // Playback button
-        a.button('▶').onClick(() => {
+        a.button('▶', { onClick: () => {
           if (currentPlayingId === rec.id && recording.isPlaying()) {
             recording.pausePlayback();
           } else {
             recording.playRecording(rec.id);
             currentPlayingId = rec.id;
           }
-        }).withId(`rec-${rec.id}-play`);
+        } }).withId(`rec-${rec.id}-play`);
 
         // Delete button
-        a.button('🗑').onClick(() => {
+        a.button('🗑', { onClick: () => {
           recording.deleteRecording(rec.id);
           updateRecordingsList();
-        }).withId(`rec-${rec.id}-delete`);
+        } }).withId(`rec-${rec.id}-delete`);
       });
     });
 

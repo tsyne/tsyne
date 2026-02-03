@@ -42,6 +42,8 @@ const (
 	BridgeService_CreateIcon_FullMethodName                  = "/bridge.BridgeService/CreateIcon"
 	BridgeService_CreateFileIcon_FullMethodName              = "/bridge.BridgeService/CreateFileIcon"
 	BridgeService_CreateCalendar_FullMethodName              = "/bridge.BridgeService/CreateCalendar"
+	BridgeService_CreateColorCell_FullMethodName             = "/bridge.BridgeService/CreateColorCell"
+	BridgeService_UpdateColorCell_FullMethodName             = "/bridge.BridgeService/UpdateColorCell"
 	BridgeService_CreateButton_FullMethodName                = "/bridge.BridgeService/CreateButton"
 	BridgeService_CreateEntry_FullMethodName                 = "/bridge.BridgeService/CreateEntry"
 	BridgeService_CreateCheckbox_FullMethodName              = "/bridge.BridgeService/CreateCheckbox"
@@ -295,6 +297,8 @@ type BridgeServiceClient interface {
 	CreateIcon(ctx context.Context, in *CreateIconRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateFileIcon(ctx context.Context, in *CreateFileIconRequest, opts ...grpc.CallOption) (*Response, error)
 	CreateCalendar(ctx context.Context, in *CreateCalendarRequest, opts ...grpc.CallOption) (*Response, error)
+	CreateColorCell(ctx context.Context, in *CreateColorCellRequest, opts ...grpc.CallOption) (*Response, error)
+	UpdateColorCell(ctx context.Context, in *UpdateColorCellRequest, opts ...grpc.CallOption) (*Response, error)
 	// ============================================================================
 	// Input widget creation
 	// ============================================================================
@@ -807,6 +811,26 @@ func (c *bridgeServiceClient) CreateCalendar(ctx context.Context, in *CreateCale
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
 	err := c.cc.Invoke(ctx, BridgeService_CreateCalendar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) CreateColorCell(ctx context.Context, in *CreateColorCellRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_CreateColorCell_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bridgeServiceClient) UpdateColorCell(ctx context.Context, in *UpdateColorCellRequest, opts ...grpc.CallOption) (*Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Response)
+	err := c.cc.Invoke(ctx, BridgeService_UpdateColorCell_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -3017,6 +3041,8 @@ type BridgeServiceServer interface {
 	CreateIcon(context.Context, *CreateIconRequest) (*Response, error)
 	CreateFileIcon(context.Context, *CreateFileIconRequest) (*Response, error)
 	CreateCalendar(context.Context, *CreateCalendarRequest) (*Response, error)
+	CreateColorCell(context.Context, *CreateColorCellRequest) (*Response, error)
+	UpdateColorCell(context.Context, *UpdateColorCellRequest) (*Response, error)
 	// ============================================================================
 	// Input widget creation
 	// ============================================================================
@@ -3373,6 +3399,12 @@ func (UnimplementedBridgeServiceServer) CreateFileIcon(context.Context, *CreateF
 }
 func (UnimplementedBridgeServiceServer) CreateCalendar(context.Context, *CreateCalendarRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateCalendar not implemented")
+}
+func (UnimplementedBridgeServiceServer) CreateColorCell(context.Context, *CreateColorCellRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateColorCell not implemented")
+}
+func (UnimplementedBridgeServiceServer) UpdateColorCell(context.Context, *UpdateColorCellRequest) (*Response, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateColorCell not implemented")
 }
 func (UnimplementedBridgeServiceServer) CreateButton(context.Context, *CreateButtonRequest) (*Response, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateButton not implemented")
@@ -4453,6 +4485,42 @@ func _BridgeService_CreateCalendar_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BridgeServiceServer).CreateCalendar(ctx, req.(*CreateCalendarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_CreateColorCell_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateColorCellRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).CreateColorCell(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_CreateColorCell_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).CreateColorCell(ctx, req.(*CreateColorCellRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BridgeService_UpdateColorCell_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateColorCellRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BridgeServiceServer).UpdateColorCell(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BridgeService_UpdateColorCell_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BridgeServiceServer).UpdateColorCell(ctx, req.(*UpdateColorCellRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -8436,6 +8504,14 @@ var BridgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateCalendar",
 			Handler:    _BridgeService_CreateCalendar_Handler,
+		},
+		{
+			MethodName: "CreateColorCell",
+			Handler:    _BridgeService_CreateColorCell_Handler,
+		},
+		{
+			MethodName: "UpdateColorCell",
+			Handler:    _BridgeService_UpdateColorCell_Handler,
 		},
 		{
 			MethodName: "CreateButton",

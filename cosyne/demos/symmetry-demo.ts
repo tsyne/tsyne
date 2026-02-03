@@ -39,26 +39,26 @@ function createSymmetryDemo(a: App): void {
       a.vbox(() => {
         // Controls
         a.hbox(() => {
-          a.button('- Sides').onClick(() => {
+          a.button('- Sides', { onClick: () => {
             state.sides = Math.max(3, state.sides - 1);
             rebuildAllCosyneContexts();
-          });
+          } });
           a.label(`Sides: ${state.sides}`);
-          a.button('+ Sides').onClick(() => {
+          a.button('+ Sides', { onClick: () => {
             state.sides = Math.min(12, state.sides + 1);
             rebuildAllCosyneContexts();
-          });
+          } });
         });
 
         a.hbox(() => {
-          a.button('Polygon').onClick(() => {
+          a.button('Polygon', { onClick: () => {
             state.mode = 'polygon';
             rebuildAllCosyneContexts();
-          });
-          a.button('Star').onClick(() => {
+          } });
+          a.button('Star', { onClick: () => {
             state.mode = 'star';
             rebuildAllCosyneContexts();
-          });
+          } });
         });
 
         // Canvas

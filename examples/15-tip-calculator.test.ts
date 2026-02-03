@@ -66,21 +66,21 @@ describe('Tip Calculator Example', () => {
 
             app.label('Split Between:');
             app.hbox(() => {
-              app.button('-').onClick(() => {
+              app.button('-', { onClick: () => {
                 if (numPeople > 1) {
                   numPeople--;
                   peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
                   calculate();
                 }
-              });
+              } });
 
               const peopleLabel = app.label('1 person');
 
-              app.button('+').onClick(() => {
+              app.button('+', { onClick: () => {
                 numPeople++;
                 peopleLabel.setText(`${numPeople} people`);
                 calculate();
-              });
+              } });
             });
 
             app.separator();
@@ -93,12 +93,12 @@ describe('Tip Calculator Example', () => {
 
             app.separator();
 
-            app.button('Clear').onClick(() => {
+            app.button('Clear', { onClick: () => {
               billAmount = 0;
               tipPercent = 15;
               numPeople = 1;
               calculate();
-            });
+            } });
           });
         });
         win.show();
@@ -153,21 +153,21 @@ describe('Tip Calculator Example', () => {
             app.label('💵 Tip Calculator 💵');
 
             app.hbox(() => {
-              app.button('-').onClick(() => {
+              app.button('-', { onClick: () => {
                 if (numPeople > 1) {
                   numPeople--;
                   peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
                   calculate();
                 }
-              });
+              } });
 
               const peopleLabel = app.label('1 person');
 
-              app.button('+').onClick(() => {
+              app.button('+', { onClick: () => {
                 numPeople++;
                 peopleLabel.setText(`${numPeople} people`);
                 calculate();
-              });
+              } });
             });
 
             tipLabel = app.label('Tip Amount: $20.00');

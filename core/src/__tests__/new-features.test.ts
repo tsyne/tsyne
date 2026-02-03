@@ -95,7 +95,7 @@ describe('New Features', () => {
       const createTestApp = (app: App) => {
         app.window({ title: 'Dialog Test' }, async (win) => {
           win.setContent(() => {
-            app.button('Show Dialog').onClick(async () => {
+            app.button('Show Dialog', { onClick: async () => {
               const dialog = await win.showCustomWithoutButtons(
                 'Loading',
                 () => {
@@ -109,7 +109,7 @@ describe('New Features', () => {
                 await dialog.hide();
                 dialogHidden = true;
               }, 100);
-            });
+            } });
           });
           await win.show();
         });
@@ -135,7 +135,7 @@ describe('New Features', () => {
       const createTestApp = (app: App) => {
         app.window({ title: 'Content Dialog Test' }, async (win) => {
           win.setContent(() => {
-            app.button('Show Custom Dialog').onClick(async () => {
+            app.button('Show Custom Dialog', { onClick: async () => {
               const dialog = await win.showCustomWithoutButtons(
                 'Processing',
                 () => {
@@ -149,7 +149,7 @@ describe('New Features', () => {
               setTimeout(async () => {
                 await dialog.hide();
               }, 100);
-            });
+            } });
           });
           await win.show();
         });

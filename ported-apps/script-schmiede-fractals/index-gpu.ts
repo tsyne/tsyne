@@ -560,26 +560,26 @@ class FractalsGPUUI {
 
           // Zoom controls
           this.a.hbox(() => {
-            this.a.button('Zoom +').onClick(() => this.zoomIn());
-            this.a.button('Zoom -').onClick(() => this.zoomOut());
-            this.a.button('Reset').onClick(() => this.reset());
-            this.a.button('Palette').onClick(() => this.nextPalette());
+            this.a.button('Zoom +', { onClick: () => this.zoomIn() });
+            this.a.button('Zoom -', { onClick: () => this.zoomOut() });
+            this.a.button('Reset', { onClick: () => this.reset() });
+            this.a.button('Palette', { onClick: () => this.nextPalette() });
           });
 
           // Pan controls
           this.a.hbox(() => {
-            this.a.button('<').onClick(() => this.pan(-1, 0));
-            this.a.button('^').onClick(() => this.pan(0, -1));
-            this.a.button('v').onClick(() => this.pan(0, 1));
-            this.a.button('>').onClick(() => this.pan(1, 0));
+            this.a.button('<', { onClick: () => this.pan(-1, 0) });
+            this.a.button('^', { onClick: () => this.pan(0, -1) });
+            this.a.button('v', { onClick: () => this.pan(0, 1) });
+            this.a.button('>', { onClick: () => this.pan(1, 0) });
           });
 
           // Julia/Phoenix controls
           this.a.hbox(() => {
-            this.a.button('c.r-').onClick(() => this.adjustJuliaR(-0.05));
-            this.a.button('c.r+').onClick(() => this.adjustJuliaR(0.05));
-            this.a.button('c.i-').onClick(() => this.adjustJuliaI(-0.05));
-            this.a.button('c.i+').onClick(() => this.adjustJuliaI(0.05));
+            this.a.button('c.r-', { onClick: () => this.adjustJuliaR(-0.05) });
+            this.a.button('c.r+', { onClick: () => this.adjustJuliaR(0.05) });
+            this.a.button('c.i-', { onClick: () => this.adjustJuliaI(-0.05) });
+            this.a.button('c.i+', { onClick: () => this.adjustJuliaI(0.05) });
           });
 
           this.a.separator();

@@ -291,18 +291,18 @@ export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: numbe
           a.label('Notes', undefined, undefined, undefined, { bold: true }).withId('notes-title');
 
           a.hbox(() => {
-            a.button('+').onClick(async () => {
+            a.button('+', { onClick: async () => {
               store.addNote();
               await updateUI();
-            }).withId('add-note-btn');
+            } }).withId('add-note-btn');
 
-            a.button('-').onClick(async () => {
+            a.button('-', { onClick: async () => {
               const selectedId = store.getSelectedNoteId();
               if (selectedId && store.getNoteCount() > 1) {
                 store.deleteNote(selectedId);
                 await updateUI();
               }
-            }).withId('delete-note-btn');
+            } }).withId('delete-note-btn');
           });
 
           // Notes list with bindTo
@@ -312,10 +312,10 @@ export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: numbe
               const isSelected = store.getSelectedNoteId() === note.id;
               a.hbox(() => {
                 if (!isSelected) {
-                  a.button(note.title || '(untitled)').onClick(async () => {
+                  a.button(note.title || '(untitled)', { onClick: async () => {
                     store.selectNote(note.id);
                     await updateUI();
-                  }).withId(`note-btn-${note.id}`);
+                  } }).withId(`note-btn-${note.id}`);
                 } else {
                   a.label(`> ${note.title || '(untitled)'}`, undefined, undefined, undefined, { bold: true })
                     .withId(`note-label-${note.id}`);
@@ -347,33 +347,33 @@ export function buildNotesApp(a: any, windowWidth?: number, windowHeight?: numbe
           bottom: () => {
             a.vbox(() => {
               // Save button for content since multilineentry doesn't have onChange
-              a.button('Save Content').onClick(async () => {
+              a.button('Save Content', { onClick: async () => {
                 const selectedId = store.getSelectedNoteId();
                 if (selectedId && contentEntry) {
                   const text = await contentEntry.getText();
                   store.updateNoteContent(selectedId, text);
                 }
-              }).withId('save-content-btn');
+              } }).withId('save-content-btn');
 
               // Theme selector (sticky note light/dark) - rebuilds UI with new theme
               a.hbox(() => {
-                a.button('Light').onClick(async () => {
+                a.button('Light', { onClick: async () => {
                   store.setTheme('light');
                   // Rebuild content with new theme
                   if (winRef) {
                     winRef.setContent(buildContent);
                     await updateUI();
                   }
-                }).withId('light-theme-btn');
+                } }).withId('light-theme-btn');
 
-                a.button('Dark').onClick(async () => {
+                a.button('Dark', { onClick: async () => {
                   store.setTheme('dark');
                   // Rebuild content with new theme
                   if (winRef) {
                     winRef.setContent(buildContent);
                     await updateUI();
                   }
-                }).withId('dark-theme-btn');
+                } }).withId('dark-theme-btn');
               });
 
               // Status

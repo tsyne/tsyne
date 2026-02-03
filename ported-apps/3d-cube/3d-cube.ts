@@ -707,10 +707,10 @@ export class CubeUI {
     this.a.vbox(() => {
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('Reset').onClick(() => this.resetCube()).withId('resetBtn');
-        this.a.button('Shuffle').onClick(() => this.shuffleCube()).withId('shuffleBtn');
-        this.a.button('Solve').onClick(() => this.solveCube()).withId('solveBtn');
-        this.a.button('Labels').onClick(() => this.toggleLabels()).withId('labelsBtn');
+        this.a.button('Reset', { onClick: () => this.resetCube() }).withId('resetBtn');
+        this.a.button('Shuffle', { onClick: () => this.shuffleCube() }).withId('shuffleBtn');
+        this.a.button('Solve', { onClick: () => this.solveCube() }).withId('solveBtn');
+        this.a.button('Labels', { onClick: () => this.toggleLabels() }).withId('labelsBtn');
       });
 
       // Status display
@@ -726,20 +726,20 @@ export class CubeUI {
       // Rotation buttons
       this.a.label('Rotate (click face letter):');
       this.a.hbox(() => {
-        this.a.button('U').onClick(() => this.cube.rotateSide(Side.Up, true)).withId('rotateU');
-        this.a.button('U\'').onClick(() => this.cube.rotateSide(Side.Up, false)).withId('rotateUi');
-        this.a.button('F').onClick(() => this.cube.rotateSide(Side.Front, true)).withId('rotateF');
-        this.a.button('F\'').onClick(() => this.cube.rotateSide(Side.Front, false)).withId('rotateFi');
-        this.a.button('R').onClick(() => this.cube.rotateSide(Side.Right, true)).withId('rotateR');
-        this.a.button('R\'').onClick(() => this.cube.rotateSide(Side.Right, false)).withId('rotateRi');
+        this.a.button('U', { onClick: () => this.cube.rotateSide(Side.Up, true) }).withId('rotateU');
+        this.a.button('U\'', { onClick: () => this.cube.rotateSide(Side.Up, false) }).withId('rotateUi');
+        this.a.button('F', { onClick: () => this.cube.rotateSide(Side.Front, true) }).withId('rotateF');
+        this.a.button('F\'', { onClick: () => this.cube.rotateSide(Side.Front, false) }).withId('rotateFi');
+        this.a.button('R', { onClick: () => this.cube.rotateSide(Side.Right, true) }).withId('rotateR');
+        this.a.button('R\'', { onClick: () => this.cube.rotateSide(Side.Right, false) }).withId('rotateRi');
       });
       this.a.hbox(() => {
-        this.a.button('D').onClick(() => this.cube.rotateSide(Side.Down, true)).withId('rotateD');
-        this.a.button('D\'').onClick(() => this.cube.rotateSide(Side.Down, false)).withId('rotateDi');
-        this.a.button('B').onClick(() => this.cube.rotateSide(Side.Back, true)).withId('rotateB');
-        this.a.button('B\'').onClick(() => this.cube.rotateSide(Side.Back, false)).withId('rotateBi');
-        this.a.button('L').onClick(() => this.cube.rotateSide(Side.Left, true)).withId('rotateL');
-        this.a.button('L\'').onClick(() => this.cube.rotateSide(Side.Left, false)).withId('rotateLi');
+        this.a.button('D', { onClick: () => this.cube.rotateSide(Side.Down, true) }).withId('rotateD');
+        this.a.button('D\'', { onClick: () => this.cube.rotateSide(Side.Down, false) }).withId('rotateDi');
+        this.a.button('B', { onClick: () => this.cube.rotateSide(Side.Back, true) }).withId('rotateB');
+        this.a.button('B\'', { onClick: () => this.cube.rotateSide(Side.Back, false) }).withId('rotateBi');
+        this.a.button('L', { onClick: () => this.cube.rotateSide(Side.Left, true) }).withId('rotateL');
+        this.a.button('L\'', { onClick: () => this.cube.rotateSide(Side.Left, false) }).withId('rotateLi');
       });
 
       this.a.separator();

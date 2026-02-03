@@ -185,21 +185,21 @@ app(resolveTransport(), { title: 'Theme Demo' }, () => {
         // Basic theme switching
         label('Basic Theme Variant:');
         hbox(() => {
-          button('Dark').onClick(async () => {
+          button('Dark', { onClick: async () => {
             const myApp = (win as any).ctx.bridge;
             await myApp.send('setTheme', { theme: 'dark' });
             await myApp.send('clearCustomTheme', {});
             themeLabel.setText('Current Theme: Default Dark');
             statusLabel.setText('Switched to default dark theme');
-          });
+          } });
 
-          button('Light').onClick(async () => {
+          button('Light', { onClick: async () => {
             const myApp = (win as any).ctx.bridge;
             await myApp.send('setTheme', { theme: 'light' });
             await myApp.send('clearCustomTheme', {});
             themeLabel.setText('Current Theme: Default Light');
             statusLabel.setText('Switched to default light theme');
-          });
+          } });
         });
 
         label('');
@@ -233,9 +233,9 @@ app(resolveTransport(), { title: 'Theme Demo' }, () => {
 
         // Buttons
         hbox(() => {
-          button('Primary').onClick(() => statusLabel.setText('Primary clicked'));
-          button('Secondary').onClick(() => statusLabel.setText('Secondary clicked'));
-          button('Action').onClick(() => statusLabel.setText('Action clicked'));
+          button('Primary', { onClick: () => statusLabel.setText('Primary clicked') });
+          button('Secondary', { onClick: () => statusLabel.setText('Secondary clicked') });
+          button('Action', { onClick: () => statusLabel.setText('Action clicked') });
         });
 
         // Checkbox

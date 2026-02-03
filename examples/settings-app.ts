@@ -88,20 +88,20 @@ app(resolveTransport(), { title: 'Settings App' }, (a) => {
 
         // Action buttons
         a.hbox(() => {
-          a.button('Load Settings').onClick(async () => {
+          a.button('Load Settings', { onClick: async () => {
             await loadSettings();
             statusLabel.setText('Settings loaded!');
-          });
+          } });
 
-          a.button('Save Settings').onClick(async () => {
+          a.button('Save Settings', { onClick: async () => {
             await saveSettings();
             statusLabel.setText('Settings saved!');
-          });
+          } });
 
-          a.button('Reset to Defaults').onClick(async () => {
+          a.button('Reset to Defaults', { onClick: async () => {
             await resetSettings();
             statusLabel.setText('Settings reset to defaults!');
-          });
+          } });
         });
 
         a.separator();
@@ -114,7 +114,7 @@ app(resolveTransport(), { title: 'Settings App' }, (a) => {
         // Debug section
         a.label('Debug:', undefined, 'leading', undefined, { bold: true });
         a.hbox(() => {
-          a.button('Show Current Values').onClick(async () => {
+          a.button('Show Current Values', { onClick: async () => {
             const username = await a.getPreference('username', '');
             const email = await a.getPreference('email', '');
             const age = await a.getPreferenceInt('age', 0);
@@ -134,7 +134,7 @@ app(resolveTransport(), { title: 'Settings App' }, (a) => {
             ].join(' | ');
 
             statusLabel.setText(info);
-          });
+          } });
         });
       });
     });

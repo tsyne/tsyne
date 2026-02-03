@@ -57,13 +57,13 @@ app(resolveTransport(), { title: 'Shopping List' }, (a) => {
                   await checkbox.setChecked(item.checked);
                 })();
 
-                a.button('Delete').onClick(async () => {
+                a.button('Delete', { onClick: async () => {
                   const index = items.findIndex(i => i.id === item.id);
                   if (index !== -1) {
                     items.splice(index, 1);
                     boundList.update();
                   }
-                });
+                } });
               });
             },
 

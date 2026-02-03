@@ -691,7 +691,7 @@ export function buildParisDensity(a: App) {
               a.max(() => {
                 a.rectangle('#1a1a2e', 200, 40);
                 a.hbox(() => {
-                  hamburgerBtn = a.button('☰').onClick(() => {
+                  hamburgerBtn = a.button('☰', { onClick: () => {
                     panelCollapsed = !panelCollapsed;
                     if (panelContainer) {
                       if (panelCollapsed) {
@@ -700,7 +700,7 @@ export function buildParisDensity(a: App) {
                         panelContainer.show();
                       }
                     }
-                  }).withId('hamburgerBtn');
+                  } }).withId('hamburgerBtn');
                   a.label(' Paris Traffic');
                 });
               });
@@ -715,29 +715,29 @@ export function buildParisDensity(a: App) {
                     statsLabel = a.label('Points: --').withId('statsLabel');
 
                     a.hbox(() => {
-                      a.button('< Hour').onClick(() => prevHour()).withId('prevHourBtn');
-                      a.button('Hour >').onClick(() => nextHour()).withId('nextHourBtn');
+                      a.button('< Hour', { onClick: () => prevHour() }).withId('prevHourBtn');
+                      a.button('Hour >', { onClick: () => nextHour() }).withId('nextHourBtn');
                     });
                     a.hbox(() => {
-                      a.button('< Day').onClick(() => {
+                      a.button('< Day', { onClick: () => {
                         time.day = (time.day - 1 + 7) % 7;
                         progress = 0;
                         loadHourData(time.hour, time.day);
                         updateTimeLabel();
                         void renderDensityCanvas();
-                      }).withId('prevDayBtn');
-                      a.button('Day >').onClick(() => {
+                      } }).withId('prevDayBtn');
+                      a.button('Day >', { onClick: () => {
                         time.day = (time.day + 1) % 7;
                         progress = 0;
                         loadHourData(time.hour, time.day);
                         updateTimeLabel();
                         void renderDensityCanvas();
-                      }).withId('nextDayBtn');
+                      } }).withId('nextDayBtn');
                     });
 
                     a.hbox(() => {
-                      a.button('Play').onClick(() => startAnimation()).withId('playBtn');
-                      a.button('Stop').onClick(() => stopAnimation()).withId('pauseBtn');
+                      a.button('Play', { onClick: () => startAnimation() }).withId('playBtn');
+                      a.button('Stop', { onClick: () => stopAnimation() }).withId('pauseBtn');
                     });
 
                     a.label('— Heatmap —');
@@ -786,29 +786,29 @@ export function buildParisDensity(a: App) {
 
                     a.label('— Colors —');
                     a.hbox(() => {
-                      a.button('Vibrant').onClick(() => { settings.colorPreset = 'vibrant'; void renderDensityCanvas(); });
-                      a.button('Heat').onClick(() => { settings.colorPreset = 'heat'; void renderDensityCanvas(); });
+                      a.button('Vibrant', { onClick: () => { settings.colorPreset = 'vibrant'; void renderDensityCanvas(); } });
+                      a.button('Heat', { onClick: () => { settings.colorPreset = 'heat'; void renderDensityCanvas(); } });
                     });
                     a.hbox(() => {
-                      a.button('Cool').onClick(() => { settings.colorPreset = 'cool'; void renderDensityCanvas(); });
-                      a.button('Plasma').onClick(() => { settings.colorPreset = 'plasma'; void renderDensityCanvas(); });
+                      a.button('Cool', { onClick: () => { settings.colorPreset = 'cool'; void renderDensityCanvas(); } });
+                      a.button('Plasma', { onClick: () => { settings.colorPreset = 'plasma'; void renderDensityCanvas(); } });
                     });
                     a.hbox(() => {
-                      a.button('Fire').onClick(() => { settings.colorPreset = 'fire'; void renderDensityCanvas(); });
+                      a.button('Fire', { onClick: () => { settings.colorPreset = 'fire'; void renderDensityCanvas(); } });
                       a.spacer();
                     });
 
                     a.label('— Layers —');
                     a.hbox(() => {
-                      a.button('Glow').onClick(() => { settings.showGlow = !settings.showGlow; void renderDensityCanvas(); }).withId('glowToggle');
-                      a.button('Hotspots').onClick(() => { settings.showHotspots = !settings.showHotspots; void renderDensityCanvas(); }).withId('hotspotsToggle');
+                      a.button('Glow', { onClick: () => { settings.showGlow = !settings.showGlow; void renderDensityCanvas(); } }).withId('glowToggle');
+                      a.button('Hotspots', { onClick: () => { settings.showHotspots = !settings.showHotspots; void renderDensityCanvas(); } }).withId('hotspotsToggle');
                     });
 
-                    a.button('Reset View').onClick(() => {
+                    a.button('Reset View', { onClick: () => {
                       mapViewport.center = { ...PARIS_VIEW.center };
                       if (tileRenderer) { tileRenderer.clearCache(); }
                       void renderDensityCanvas();
-                    }).withId('resetViewBtn');
+                    } }).withId('resetViewBtn');
                   });
                 });
               });

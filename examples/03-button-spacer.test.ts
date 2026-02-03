@@ -24,9 +24,9 @@ describe('Button Spacer Example', () => {
           app.vbox(() => {
             label = app.label("I'm Waiting ...");
             app.label(''); // Spacer
-            app.button('Click here').onClick(async () => {
+            app.button('Click here', { onClick: async () => {
               await label.setText('Finally ...');
-            });
+            } });
           });
         });
         win.show();

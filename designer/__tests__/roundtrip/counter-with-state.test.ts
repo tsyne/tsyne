@@ -29,20 +29,20 @@ app({ title: 'Counter' }, (a) => {
         countLabel = a.label(\`Count: \${count}\`);
 
         a.hbox(() => {
-          a.button('Decrement').onClick(async () => {
+          a.button('Decrement', { onClick: async () => {
             count--;
             await countLabel.setText(\`Count: \${count}\`);
-          });
+          } });
 
-          a.button('Reset').onClick(async () => {
+          a.button('Reset', { onClick: async () => {
             count = 0;
             await countLabel.setText(\`Count: \${count}\`);
-          });
+          } });
 
-          a.button('Increment').onClick(async () => {
+          a.button('Increment', { onClick: async () => {
             count++;
             await countLabel.setText(\`Count: \${count}\`);
-          });
+          } });
         });
       });
     });
@@ -65,9 +65,9 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Decrement').onClick(async () => {});
-        a.button('Reset').onClick(async () => {});
-        a.button('Increment').onClick(async () => {});
+        a.button('Decrement', { onClick: async () => {} });
+        a.button('Reset', { onClick: async () => {} });
+        a.button('Increment', { onClick: async () => {} });
       });
     });
     win.show();
@@ -90,9 +90,9 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Decrement').onClick(async () => {}).withId('decrementBtn');
-        a.button('Reset').onClick(async () => {});
-        a.button('Increment').onClick(async () => {}).withId('incrementBtn');
+        a.button('Decrement', { onClick: async () => {} }).withId('decrementBtn');
+        a.button('Reset', { onClick: async () => {} });
+        a.button('Increment', { onClick: async () => {} }).withId('incrementBtn');
       });
     });
     win.show();
@@ -109,7 +109,7 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Reset').onClick(async () => {}).withId('resetButton');
+        a.button('Reset', { onClick: async () => {} }).withId('resetButton');
       });
     });
     win.show();
@@ -129,7 +129,7 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Reset').onClick(async () => {}).withId('clearButton');
+        a.button('Reset', { onClick: async () => {} }).withId('clearButton');
       });
     });
     win.show();
@@ -146,9 +146,9 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Decrement').onClick(async () => {}).withId('btn1');
-        a.button('Reset').onClick(async () => {}).withId('btn2');
-        a.button('Increment').onClick(async () => {}).withId('btn3');
+        a.button('Decrement', { onClick: async () => {} }).withId('btn1');
+        a.button('Reset', { onClick: async () => {} }).withId('btn2');
+        a.button('Increment', { onClick: async () => {} }).withId('btn3');
       });
     });
     win.show();
@@ -168,9 +168,9 @@ app({ title: 'Counter' }, (a) => {
   a.window({ title: 'Counter' }, (win) => {
     win.setContent(() => {
       a.hbox(() => {
-        a.button('Decrement').onClick(async () => {}).withId('btn1');
-        a.button('Reset').onClick(async () => {});
-        a.button('Increment').onClick(async () => {}).withId('btn3');
+        a.button('Decrement', { onClick: async () => {} }).withId('btn1');
+        a.button('Reset', { onClick: async () => {} });
+        a.button('Increment', { onClick: async () => {} }).withId('btn3');
       });
     });
     win.show();

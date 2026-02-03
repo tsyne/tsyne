@@ -32,12 +32,12 @@ describe('Feedback Form Example', () => {
             app.label('Tell us more:');
             messageEntry = app.multilineentry('Type your feedback here...');
 
-            app.button('Send').onClick(async () => {
+            app.button('Send', { onClick: async () => {
               const message = await messageEntry.getText();
               const mood = await moodSelect.getSelected();
 
               console.log(`Feedback Received - Mood: ${mood}, Message: ${message}`);
-            });
+            } });
           });
         });
         win.show();
@@ -78,12 +78,12 @@ describe('Feedback Form Example', () => {
             app.label('Tell us more:');
             messageEntry = app.multilineentry('Type your feedback here...');
 
-            app.button('Send').onClick(async () => {
+            app.button('Send', { onClick: async () => {
               const message = await messageEntry.getText();
               const mood = await moodSelect.getSelected();
 
               console.log(`Feedback Received - Mood: ${mood}, Message: ${message}`);
-            });
+            } });
           });
         });
         win.show();

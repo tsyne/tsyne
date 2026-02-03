@@ -7,9 +7,9 @@ app({ title: 'Grid Example' }, (a) => {
         a.label('Cell 1');
         a.label('Cell 2');
         a.label('Cell 3');
-        a.button('Button 1').onClick(() => {});
-        a.button('Button 2').onClick(() => {});
-        a.button('Button 3').onClick(() => {});
+        a.button('Button 1', { onClick: () => {} });
+        a.button('Button 2', { onClick: () => {} });
+        a.button('Button 3', { onClick: () => {} });
       });
     });
     win.show();

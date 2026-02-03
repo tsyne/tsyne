@@ -61,21 +61,21 @@ export function buildTipCalculator(a: App) {
         // Number of people
         a.label('Split Between:');
         a.hbox(() => {
-          a.button('-').onClick(() => {
+          a.button('-', { onClick: () => {
             if (numPeople > 1) {
               numPeople--;
               peopleLabel.setText(`${numPeople} ${numPeople === 1 ? 'person' : 'people'}`);
               calculate();
             }
-          });
+          } });
 
           const peopleLabel = a.label('1 person');
 
-          a.button('+').onClick(() => {
+          a.button('+', { onClick: () => {
             numPeople++;
             peopleLabel.setText(`${numPeople} people`);
             calculate();
-          });
+          } });
         });
 
         a.separator();
@@ -89,12 +89,12 @@ export function buildTipCalculator(a: App) {
 
         a.separator();
 
-        a.button('Clear').onClick(() => {
+        a.button('Clear', { onClick: () => {
           billAmount = 0;
           tipPercent = 15;
           numPeople = 1;
           calculate();
-        });
+        } });
       });
     });
 

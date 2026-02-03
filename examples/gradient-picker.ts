@@ -43,10 +43,10 @@ app(resolveTransport(), { title: 'Gradient Picker' }, (a) => {
             a.label('Start Color', undefined, 'center', undefined, { bold: true });
             a.separator();
             colors.forEach(color => {
-              a.button(color.name).onClick(async () => {
+              a.button(color.name, { onClick: async () => {
                 startColor = color.hex;
                 await gradient.update({ startColor });
-              });
+              } });
             });
           });
         },
@@ -55,10 +55,10 @@ app(resolveTransport(), { title: 'Gradient Picker' }, (a) => {
             a.label('End Color', undefined, 'center', undefined, { bold: true });
             a.separator();
             colors.forEach(color => {
-              a.button(color.name).onClick(async () => {
+              a.button(color.name, { onClick: async () => {
                 endColor = color.hex;
                 await gradient.update({ endColor });
-              });
+              } });
             });
           });
         },
@@ -76,47 +76,47 @@ app(resolveTransport(), { title: 'Gradient Picker' }, (a) => {
             a.separator();
             a.label('Angle Presets', undefined, 'center', undefined, { bold: true });
             a.hbox(() => {
-              a.button('0°').onClick(async () => { angle = 0; await gradient.update({ angle: 0 }); });
-              a.button('45°').onClick(async () => { angle = 45; await gradient.update({ angle: 45 }); });
-              a.button('90°').onClick(async () => { angle = 90; await gradient.update({ angle: 90 }); });
-              a.button('135°').onClick(async () => { angle = 135; await gradient.update({ angle: 135 }); });
-              a.button('180°').onClick(async () => { angle = 180; await gradient.update({ angle: 180 }); });
-              a.button('270°').onClick(async () => { angle = 270; await gradient.update({ angle: 270 }); });
+              a.button('0°', { onClick: async () => { angle = 0; await gradient.update({ angle: 0 }); } });
+              a.button('45°', { onClick: async () => { angle = 45; await gradient.update({ angle: 45 }); } });
+              a.button('90°', { onClick: async () => { angle = 90; await gradient.update({ angle: 90 }); } });
+              a.button('135°', { onClick: async () => { angle = 135; await gradient.update({ angle: 135 }); } });
+              a.button('180°', { onClick: async () => { angle = 180; await gradient.update({ angle: 180 }); } });
+              a.button('270°', { onClick: async () => { angle = 270; await gradient.update({ angle: 270 }); } });
             });
 
             a.separator();
             a.label('Preset Gradients', undefined, 'center', undefined, { bold: true });
             a.hbox(() => {
-              a.button('Sunset').onClick(async () => {
+              a.button('Sunset', { onClick: async () => {
                 startColor = '#FF4500';
                 endColor = '#FFD700';
                 angle = 180;
                 await gradient.update({ startColor, endColor, angle });
-              });
-              a.button('Ocean').onClick(async () => {
+              } });
+              a.button('Ocean', { onClick: async () => {
                 startColor = '#0077BE';
                 endColor = '#00CED1';
                 angle = 90;
                 await gradient.update({ startColor, endColor, angle });
-              });
-              a.button('Forest').onClick(async () => {
+              } });
+              a.button('Forest', { onClick: async () => {
                 startColor = '#228B22';
                 endColor = '#90EE90';
                 angle = 45;
                 await gradient.update({ startColor, endColor, angle });
-              });
-              a.button('Night').onClick(async () => {
+              } });
+              a.button('Night', { onClick: async () => {
                 startColor = '#191970';
                 endColor = '#000000';
                 angle = 270;
                 await gradient.update({ startColor, endColor, angle });
-              });
-              a.button('Fire').onClick(async () => {
+              } });
+              a.button('Fire', { onClick: async () => {
                 startColor = '#FF0000';
                 endColor = '#FFFF00';
                 angle = 0;
                 await gradient.update({ startColor, endColor, angle });
-              });
+              } });
             });
           });
         },

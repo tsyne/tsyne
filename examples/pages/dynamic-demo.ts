@@ -26,20 +26,20 @@ vbox(() => {
       displayLabel = label(`Count: ${counter}`);
 
       hbox(() => {
-        button('-').onClick(() => {
+        button('-', { onClick: () => {
           counter--;
           displayLabel.setText(`Count: ${counter}`);
-        });
+        } });
 
-        button('Reset').onClick(() => {
+        button('Reset', { onClick: () => {
           counter = 0;
           displayLabel.setText(`Count: ${counter}`);
-        });
+        } });
 
-        button('+').onClick(() => {
+        button('+', { onClick: () => {
           counter++;
           displayLabel.setText(`Count: ${counter}`);
-        });
+        } });
       });
 
       label('');
@@ -53,17 +53,17 @@ vbox(() => {
       newItemEntry = entry('New item name');
 
       hbox(() => {
-        button('Add Item').onClick(() => {
+        button('Add Item', { onClick: () => {
           addItem();
-        });
+        } });
 
-        button('Remove Last').onClick(() => {
+        button('Remove Last', { onClick: () => {
           removeLastItem();
-        });
+        } });
 
-        button('Clear All').onClick(() => {
+        button('Clear All', { onClick: () => {
           clearAllItems();
-        });
+        } });
       });
 
       label('');
@@ -122,9 +122,9 @@ vbox(() => {
   });
 
   separator();
-  button('Back to Home').onClick(() => {
+  button('Back to Home', { onClick: () => {
     browserContext.changePage('/');
-  });
+  } });
 });
 
 // Helper functions for list management

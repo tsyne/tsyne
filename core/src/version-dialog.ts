@@ -47,18 +47,18 @@ export async function showVersionMismatchDialog(
           spacer();
           hbox(() => {
             spacer();
-            button('Download Update').onClick(() => {
+            button('Download Update', { onClick: () => {
               win.close();
               doResolve({ action: 'update' });
-            });
-            button('Run Anyway').onClick(() => {
+            }});
+            button('Run Anyway', { onClick: () => {
               win.close();
               doResolve({ action: 'run-anyway' });
-            });
-            button('Cancel').onClick(() => {
+            }});
+            button('Cancel', { onClick: () => {
               win.close();
               doResolve({ action: 'cancel' });
-            });
+            }});
           });
         });
       });

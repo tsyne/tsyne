@@ -77,18 +77,18 @@ app(resolveTransport(), { title: 'Country Picker' }, (a) => {
         a.separator();
 
         // Button to show current selection
-        a.button('Show Selection').onClick(() => {
+        a.button('Show Selection', { onClick: () => {
           if (selectedCountry) {
             console.log(`Current selection: ${selectedCountry}`);
           } else {
             console.log('No country selected');
           }
-        });
+        } });
 
         // Exit button
-        a.button('Exit').onClick(() => {
+        a.button('Exit', { onClick: () => {
           process.exit(0);
-        });
+        } });
       });
     });
     win.show();

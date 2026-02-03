@@ -21,7 +21,7 @@ app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
         a.separator();
 
         // Button to show a simple About dialog
-        a.button('Show About Dialog').onClick(async () => {
+        a.button('Show About Dialog', { onClick: async () => {
           await win.showCustom('About ' + APP_NAME, () => {
             a.vbox(() => {
               a.center(() => {
@@ -37,10 +37,10 @@ app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
             });
           });
           await statusLabel.setText('About dialog was closed');
-        });
+        } });
 
         // Button to show a custom confirm dialog
-        a.button('Show License Agreement').onClick(async () => {
+        a.button('Show License Agreement', { onClick: async () => {
           const accepted = await win.showCustomConfirm(
             'License Agreement',
             () => {
@@ -71,10 +71,10 @@ app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
           } else {
             await statusLabel.setText('License agreement declined');
           }
-        });
+        } });
 
         // Button to show a feature dialog with rich content
-        a.button('Show Features').onClick(async () => {
+        a.button('Show Features', { onClick: async () => {
           await win.showCustom(
             'Features',
             () => {
@@ -106,12 +106,12 @@ app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
             { dismissText: 'Got it!' }
           );
           await statusLabel.setText('Features dialog closed');
-        });
+        } });
 
         a.separator();
 
         // Button to show a settings-like dialog
-        a.button('Edit Settings').onClick(async () => {
+        a.button('Edit Settings', { onClick: async () => {
           const confirmed = await win.showCustomConfirm(
             'Settings',
             () => {
@@ -137,7 +137,7 @@ app(resolveTransport(), { title: 'About Dialog Demo' }, (a) => {
           } else {
             await statusLabel.setText('Settings cancelled');
           }
-        });
+        } });
       });
     });
 

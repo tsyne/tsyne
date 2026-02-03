@@ -11,9 +11,9 @@ app(resolveTransport(), { title: 'Button Demo' }, (a) => {
       a.vbox(() => {
         label = a.label("I'm Waiting ...");
         a.label(''); // Spacer equivalent
-        a.button('Click here').onClick(async () => {
+        a.button('Click here', { onClick: async () => {
           await label.setText('Finally ...');
-        });
+        } });
       });
     });
     win.show();

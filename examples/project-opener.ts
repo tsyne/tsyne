@@ -29,7 +29,7 @@ app(resolveTransport(), { title: 'Project Opener' }, () => {
 
         // Open folder dialog
         hbox(() => {
-          button('Open Project Folder').onClick(async () => {
+          button('Open Project Folder', { onClick: async () => {
             statusLabel.setText('Opening folder dialog...');
 
             const folderPath = await win.showFolderOpen();
@@ -43,9 +43,9 @@ app(resolveTransport(), { title: 'Project Opener' }, () => {
             } else {
               statusLabel.setText('Folder selection cancelled');
             }
-          });
+          } });
 
-          button('Close Project').onClick(async () => {
+          button('Close Project', { onClick: async () => {
             if (currentProjectPath) {
               const confirmed = await win.showConfirm(
                 'Close Project',
@@ -61,7 +61,7 @@ app(resolveTransport(), { title: 'Project Opener' }, () => {
             } else {
               await win.showInfo('No Project', 'No project is currently open.');
             }
-          });
+          } });
         });
 
         label('');
@@ -69,25 +69,25 @@ app(resolveTransport(), { title: 'Project Opener' }, () => {
         label('');
 
         // Simulate recent projects list
-        button('  /home/user/my-project').onClick(async () => {
+        button('  /home/user/my-project', { onClick: async () => {
           currentProjectPath = '/home/user/my-project';
           statusLabel.setText('Project opened from recent!');
           projectPathLabel.setText('Path: /home/user/my-project');
           projectNameLabel.setText('Project: my-project');
-        });
+        } });
 
-        button('  /home/user/another-app').onClick(async () => {
+        button('  /home/user/another-app', { onClick: async () => {
           currentProjectPath = '/home/user/another-app';
           statusLabel.setText('Project opened from recent!');
           projectPathLabel.setText('Path: /home/user/another-app');
           projectNameLabel.setText('Project: another-app');
-        });
+        } });
 
         label('');
         label('');
 
         // Project info button
-        button('Show Project Info').onClick(async () => {
+        button('Show Project Info', { onClick: async () => {
           if (currentProjectPath) {
             await win.showInfo(
               'Project Information',
@@ -96,7 +96,7 @@ app(resolveTransport(), { title: 'Project Opener' }, () => {
           } else {
             await win.showError('Error', 'No project is currently open.');
           }
-        });
+        } });
       });
     });
 

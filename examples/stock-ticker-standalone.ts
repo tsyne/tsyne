@@ -141,7 +141,7 @@ app(resolveTransport(), { title: 'Stock Ticker' }, () => {
       hbox(() => {
         label('Symbol: ');
         select(SYMBOLS, onSymbolChange);
-        button('Refresh').onClick(refreshQuote);
+        button('Refresh', { onClick: refreshQuote });
       });
 
       separator();

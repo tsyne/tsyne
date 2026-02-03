@@ -166,28 +166,28 @@ function createNoiseDemo(a: App): void {
         a.hbox(() => {
           a.label('Type: ');
           for (const type of types) {
-            a.button(type).onClick(() => {
+            a.button(type, { onClick: () => {
               noiseType = types.indexOf(type);
               shader?.setUniform('u_noiseType', noiseType);
-            });
+            } });
           }
         });
 
         // Pan controls
         a.hbox(() => {
-          a.button('< Pan').onClick(() => {
+          a.button('< Pan', { onClick: () => {
             offsetX -= 50;
             shader?.setUniform('u_offset', [offsetX, offsetY]);
-          });
-          a.button('Reset View').onClick(() => {
+          } });
+          a.button('Reset View', { onClick: () => {
             offsetX = 0;
             offsetY = 0;
             shader?.setUniform('u_offset', [offsetX, offsetY]);
-          });
-          a.button('Pan >').onClick(() => {
+          } });
+          a.button('Pan >', { onClick: () => {
             offsetX += 50;
             shader?.setUniform('u_offset', [offsetX, offsetY]);
-          });
+          } });
         });
 
         // Canvas

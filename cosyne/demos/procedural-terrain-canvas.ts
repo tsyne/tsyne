@@ -68,10 +68,10 @@ function createTerrainCanvasApp(a: App): void {
                     });
                 });
 
-                a.button('Randomize').onClick(() => {
+                a.button('Randomize', { onClick: () => {
                     seed = Math.floor(Math.random() * 10000);
                     regenerateTerrain();
-                });
+                } });
 
                 // Canvas
                 a.canvasStack(() => {

@@ -183,8 +183,8 @@ export class PegSolitaireUI {
   buildContent = (): void => {
     this.a.vbox(() => {
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.game.reset()).withId('resetBtn');
-        this.a.button('Undo').onClick(() => this.game.undo()).withId('undoBtn');
+        this.a.button('New Game', { onClick: () => this.game.reset() }).withId('resetBtn');
+        this.a.button('Undo', { onClick: () => this.game.undo() }).withId('undoBtn');
       });
 
       this.a.separator();

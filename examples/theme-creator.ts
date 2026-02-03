@@ -130,39 +130,39 @@ app(resolveTransport(), { title: 'Theme Creator' }, () => {
 
             // Preset theme buttons
             hbox(() => {
-              button('Ocean').onClick(async () => {
+              button('Ocean', { onClick: async () => {
                 currentColors = { ...presetThemes.ocean };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Ocean theme');
-              });
-              button('Forest').onClick(async () => {
+              } });
+              button('Forest', { onClick: async () => {
                 currentColors = { ...presetThemes.forest };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Forest theme');
-              });
-              button('Sunset').onClick(async () => {
+              } });
+              button('Sunset', { onClick: async () => {
                 currentColors = { ...presetThemes.sunset };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Sunset theme');
-              });
+              } });
             });
 
             hbox(() => {
-              button('Purple').onClick(async () => {
+              button('Purple', { onClick: async () => {
                 currentColors = { ...presetThemes.purple };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Purple theme');
-              });
-              button('Monochrome').onClick(async () => {
+              } });
+              button('Monochrome', { onClick: async () => {
                 currentColors = { ...presetThemes.monochrome };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Monochrome theme');
-              });
-              button('Light').onClick(async () => {
+              } });
+              button('Light', { onClick: async () => {
                 currentColors = { ...presetThemes.light };
                 await setCustomTheme(currentColors);
                 statusLabel.setText('Applied Light theme');
-              });
+              } });
             });
 
             separator();
@@ -171,26 +171,26 @@ app(resolveTransport(), { title: 'Theme Creator' }, () => {
             // Built-in theme toggle
             label('Built-in Themes:');
             hbox(() => {
-              button('Dark Theme').onClick(async () => {
+              button('Dark Theme', { onClick: async () => {
                 await clearCustomTheme();
                 await setTheme('dark');
                 statusLabel.setText('Switched to built-in Dark theme');
-              });
-              button('Light Theme').onClick(async () => {
+              } });
+              button('Light Theme', { onClick: async () => {
                 await clearCustomTheme();
                 await setTheme('light');
                 statusLabel.setText('Switched to built-in Light theme');
-              });
+              } });
             });
 
             separator();
             label('');
 
             // Reset button
-            button('Reset to Default').onClick(async () => {
+            button('Reset to Default', { onClick: async () => {
               await clearCustomTheme();
               statusLabel.setText('Reset to default theme');
-            });
+            } });
           });
 
           separator();
@@ -206,9 +206,9 @@ app(resolveTransport(), { title: 'Theme Creator' }, () => {
 
             label('Buttons:');
             hbox(() => {
-              button('Primary').onClick(() => statusLabel.setText('Primary clicked'));
-              button('Secondary').onClick(() => statusLabel.setText('Secondary clicked'));
-              button('Action').onClick(() => statusLabel.setText('Action clicked'));
+              button('Primary', { onClick: () => statusLabel.setText('Primary clicked') });
+              button('Secondary', { onClick: () => statusLabel.setText('Secondary clicked') });
+              button('Action', { onClick: () => statusLabel.setText('Action clicked') });
             });
 
             label('');

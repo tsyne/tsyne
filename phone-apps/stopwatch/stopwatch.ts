@@ -189,8 +189,8 @@ export class StopwatchUI {
         this.swStartStopButton = this.a.button(this.stopwatchRunning ? 'Stop' : 'Start')
           .onClick(() => this.toggleStopwatch())
           .withId('stopwatch-startstop');
-        this.a.button('Lap').onClick(() => this.recordLap()).withId('stopwatch-lap');
-        this.a.button('Reset').onClick(() => this.resetStopwatch()).withId('stopwatch-reset');
+        this.a.button('Lap', { onClick: () => this.recordLap() }).withId('stopwatch-lap');
+        this.a.button('Reset', { onClick: () => this.resetStopwatch() }).withId('stopwatch-reset');
       });
 
       this.a.separator();

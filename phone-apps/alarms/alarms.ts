@@ -91,7 +91,7 @@ export class AlarmsUI {
           this.a.hbox(() => {
             this.a.label('Alarms');
             this.a.spacer();
-            this.a.button('+').onClick(() => this.handleAddAlarm()).withId('btn-add-alarm');
+            this.a.button('+', { onClick: () => this.handleAddAlarm() }).withId('btn-add-alarm');
           });
           this.a.separator();
         });
@@ -112,7 +112,7 @@ export class AlarmsUI {
                     this.a.label(alarm.label).withId(`alarm-${index}-label`);
                   });
                   this.a.spacer();
-                  this.a.button('Del').onClick(() => this.handleDeleteAlarm(alarm)).withId(`alarm-${index}-delete`);
+                  this.a.button('Del', { onClick: () => this.handleDeleteAlarm(alarm) }).withId(`alarm-${index}-delete`);
                 });
               });
             });

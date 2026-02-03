@@ -291,17 +291,19 @@ app({ title: 'My App' }, (a) => {
 **If coming from React/Vue/Angular:** Tsyne uses fluent methods (`.onClick()`, `.onSubmit()`, etc.) instead of constructor parameters.
 
 ```typescript
-// ❌ Familiar but WRONG in Tsyne
-a.button('Add', onClick);           // Second param doesn't exist
-a.entry('search', onChange, 300);   // This won't wire the callback
+// ❌ WRONG - bare callback as second parameter
+a.button('Add', onClick);           // Second param must be options object
 
-// ✅ Correct - fluent methods
+// ✅ Correct - use options object
+a.button('Add', { onClick });
+a.entry({ placeholder: 'search', onSubmit: onChange, minWidth: 300 });
+
+// ✅ Also correct - fluent methods
 a.button('Add').onClick(onClick);
 a.entry('search').onSubmit(onChange).width(300);
 
-// ✅ All methods chain and return `this`
-a.button('Add')
-  .onClick(handler)
+// ✅ Chaining works with both approaches
+a.button('Add', { onClick: handler })
   .when(() => isVisible)
   .withId('addBtn');
 ```
@@ -334,7 +336,18 @@ const text = await entry.getText()
 
 **Pattern:** Methods that modify the widget (`.onClick()`, `.when()`, `.withId()`) are fluent and chain. Methods that query or immediately act (`getText()`, `setText()`) are not fluent.
 
-**Inconsistency note:** Most widgets accept callbacks as constructor parameters (Entry accepts `onSubmit`, Checkbox accepts `onChanged`), but **Button is different** - it requires `.onClick()` fluent method. This is intentional to keep Button's constructor simple (just text + styling), but understand this may feel inconsistent. **Button will throw a helpful error if you try to pass a callback as a constructor argument.**
+**Consistent callback handling:** All input widgets accept callbacks at instantiation time via options objects:
+```typescript
+// Button - onClick in options
+a.button('Add', { onClick: handler })
+// or fluent method (still works)
+a.button('Add').onClick(handler)
+
+// Entry, Checkbox, Select, Slider - callbacks in constructor/options
+a.entry({ placeholder: 'Search', onSubmit: handler })
+a.checkbox('Enable', onChanged)
+a.select(options, onSelected)
+```
 
 ## Builder Lifecycle: Reentrant & Idempotent
 

@@ -286,11 +286,11 @@ export class TangoPuzzleUI {
 
     this.a.vbox(() => {
       this.a.hbox(() => {
-        this.a.button('Reset').onClick(() => this.game.reset()).withId('resetBtn');
-        this.a.button('Undo').onClick(() => this.game.undo()).withId('undoBtn');
-        this.a.button('◀').onClick(() => { this.game.prevLevel(); this.rebuildUI(); }).withId('prevBtn');
+        this.a.button('Reset', { onClick: () => this.game.reset() }).withId('resetBtn');
+        this.a.button('Undo', { onClick: () => this.game.undo() }).withId('undoBtn');
+        this.a.button('◀', { onClick: () => { this.game.prevLevel(); this.rebuildUI(); } }).withId('prevBtn');
         this.levelLabel = this.a.label(`Level ${this.game.getLevel() + 1}/${this.game.getLevelCount()}`).withId('levelLabel');
-        this.a.button('▶').onClick(() => { this.game.nextLevel(); this.rebuildUI(); }).withId('nextBtn');
+        this.a.button('▶', { onClick: () => { this.game.nextLevel(); this.rebuildUI(); } }).withId('nextBtn');
       });
 
       this.a.separator();

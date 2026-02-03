@@ -45,9 +45,9 @@ describe('Window Title Tests', () => {
         windowInstance = win;
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Change Title').onClick(() => {
+            app.button('Change Title', { onClick: () => {
               windowInstance.setTitle('New Title');
-            }).withId('change-title-btn');
+            } }).withId('change-title-btn');
           });
         });
         win.show();
@@ -74,10 +74,10 @@ describe('Window Title Tests', () => {
         windowInstance = win;
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Change Title Multiple Times').onClick(() => {
+            app.button('Change Title Multiple Times', { onClick: () => {
               clickCount++;
               windowInstance.setTitle(`Title ${clickCount}`);
-            }).withId('multi-title-btn');
+            } }).withId('multi-title-btn');
 
             app.label('Click count: 0').withId('count-label');
           });
@@ -108,9 +108,9 @@ describe('Window Title Tests', () => {
         windowInstance = win;
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Clear Title').onClick(() => {
+            app.button('Clear Title', { onClick: () => {
               windowInstance.setTitle('');
-            }).withId('clear-title-btn');
+            } }).withId('clear-title-btn');
           });
         });
         win.show();

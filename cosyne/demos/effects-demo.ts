@@ -34,7 +34,7 @@ function createEffectsDemo(a: App): void {
           a.hbox(() => {
             a.label('Effect Type:');
             ['Shadow', 'Glow', 'Text Shadow', 'Text Stroke', 'Combined'].forEach((label, idx) => {
-              a.button(label).onClick(() => {
+              a.button(label, { onClick: () => {
                 state.effectType = [
                   'shadow',
                   'glow',
@@ -43,7 +43,7 @@ function createEffectsDemo(a: App): void {
                   'combined',
                 ][idx] as typeof state.effectType;
                 refreshAllCosyneContexts();
-              });
+              } });
             });
           });
 

@@ -19,12 +19,12 @@ app(resolveTransport(), { title: 'MDI Demo' }, (a) => {
           a.separator();
           a.multilineentry(`Type content for document ${docNum} here...`);
           a.hbox(() => {
-            a.button('Save').onClick(() => {
+            a.button('Save', { onClick: () => {
 // console.log(`Saving document ${docNum}...`);
-            });
-            a.button('Close').onClick(() => {
+            } });
+            a.button('Close', { onClick: () => {
               innerWin.close();
-            });
+            } });
           });
         });
       }, () => {

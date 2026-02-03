@@ -4757,7 +4757,7 @@ class PixelEditor {
                 this.a.max(() => {
                   this.a.rectangle('#1a1a2e', 150, 36);
                   this.a.hbox(() => {
-                    this.a.button('☰').onClick(() => {
+                    this.a.button('☰', { onClick: () => {
                       this.panelCollapsed = !this.panelCollapsed;
                       if (this.panelContainer) {
                         if (this.panelCollapsed) {
@@ -4766,7 +4766,7 @@ class PixelEditor {
                           this.panelContainer.show();
                         }
                       }
-                    }).withId('hamburgerBtn');
+                    } }).withId('hamburgerBtn');
                     this.a.label(' Tools');
                   });
                 });
@@ -4884,8 +4884,8 @@ class PixelEditor {
               });
             });
             this.a.hbox(() => {
-              this.a.button('⇄').onClick(() => this.swapColors());
-              this.a.button('No Fill').onClick(() => this.clearFillColor());
+              this.a.button('⇄', { onClick: () => this.swapColors() });
+              this.a.button('No Fill', { onClick: () => this.clearFillColor() });
             });
           });
         }
@@ -4894,9 +4894,9 @@ class PixelEditor {
         title: 'Line Width',
         builder: () => {
           this.a.hbox(() => {
-            this.a.button('-').onClick(() => this.setLineWidth(this.lineWidth - 1));
+            this.a.button('-', { onClick: () => this.setLineWidth(this.lineWidth - 1) });
             this.lineWidthLabel = this.a.label(`${this.lineWidth}px`);
-            this.a.button('+').onClick(() => this.setLineWidth(this.lineWidth + 1));
+            this.a.button('+', { onClick: () => this.setLineWidth(this.lineWidth + 1) });
           });
         }
       }

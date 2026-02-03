@@ -77,19 +77,19 @@ app(resolveTransport(), { title: 'BMI Calculator' }, (a) => {
 
         // Unit toggle
         a.hbox(() => {
-          a.button(useMetric ? '✓ Metric' : 'Metric').onClick(() => {
+          a.button(useMetric ? '✓ Metric' : 'Metric', { onClick: () => {
             useMetric = true;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
-          });
+          } });
 
-          a.button(!useMetric ? '✓ Imperial' : 'Imperial').onClick(() => {
+          a.button(!useMetric ? '✓ Imperial' : 'Imperial', { onClick: () => {
             useMetric = false;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
-          });
+          } });
         });
 
         a.separator();
@@ -146,19 +146,19 @@ app(resolveTransport(), { title: 'BMI Calculator' }, (a) => {
 
         // Unit toggle
         a.hbox(() => {
-          a.button(useMetric ? '✓ Metric' : 'Metric').onClick(() => {
+          a.button(useMetric ? '✓ Metric' : 'Metric', { onClick: () => {
             useMetric = true;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
-          });
+          } });
 
-          a.button(!useMetric ? '✓ Imperial' : 'Imperial').onClick(() => {
+          a.button(!useMetric ? '✓ Imperial' : 'Imperial', { onClick: () => {
             useMetric = false;
             updateHeightDisplay();
             updateWeightDisplay();
             win.setContent(() => buildUI());
-          });
+          } });
         });
 
         a.separator();

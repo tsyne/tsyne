@@ -46,14 +46,14 @@ function createDataVisualizationDemo(a: App): void {
           a.hbox(() => {
             a.label('Visualization:');
             ['Heatmap', 'Gradient Map', 'Distribution'].forEach((label, idx) => {
-              a.button(label).onClick(() => {
+              a.button(label, { onClick: () => {
                 state.vizType = [
                   'heatmap',
                   'gradient-map',
                   'distribution',
                 ][idx] as typeof state.vizType;
                 refreshAllCosyneContexts();
-              });
+              } });
             });
           });
 

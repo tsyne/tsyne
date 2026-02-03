@@ -513,9 +513,9 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
             .when(() => store.getConnectionStatus() === ConnectionStatus.Connected)
             .withId('refreshBtn');
 
-          settingsButton = a.button('Settings').onClick(() => {
+          settingsButton = a.button('Settings', { onClick: () => {
             showSettingsWindow();
-          }).withId('settingsBtn');
+          } }).withId('settingsBtn');
         });
       });
     });

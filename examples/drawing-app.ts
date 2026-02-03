@@ -115,14 +115,14 @@ app(resolveTransport(), { title: 'Drawing App' }, () => {
           currentColorLabel = label(currentColor);
           colorPreviewLabel = label('  ██  ', undefined, undefined, undefined, { bold: true });
 
-          button('Pick Color').onClick(async () => {
+          button('Pick Color', { onClick: async () => {
             const result = await win.showColorPicker('Choose Drawing Color', currentColor);
             if (result) {
               currentColor = result.hex;
               currentColorLabel.setText(currentColor);
               colorPreviewLabel.setText(`  ██  (RGB: ${result.r}, ${result.g}, ${result.b})`);
             }
-          });
+          } });
         });
 
         separator();
@@ -162,27 +162,27 @@ app(resolveTransport(), { title: 'Drawing App' }, () => {
         label('Drawing Tools:');
         hbox(() => {
           // Paint buttons for different positions (simplified interaction)
-          button('Paint Center').onClick(() => {
+          button('Paint Center', { onClick: () => {
             paint(Math.floor(GRID_ROWS / 2), Math.floor(GRID_COLS / 2));
-          });
+          } });
 
-          button('Paint Random').onClick(() => {
+          button('Paint Random', { onClick: () => {
             const row = Math.floor(Math.random() * GRID_ROWS);
             const col = Math.floor(Math.random() * GRID_COLS);
             paint(row, col);
-          });
+          } });
 
-          button('Fill All').onClick(() => {
+          button('Fill All', { onClick: () => {
             fillCanvas();
-          });
+          } });
 
-          button('Random Pattern').onClick(() => {
+          button('Random Pattern', { onClick: () => {
             randomPattern();
-          });
+          } });
 
-          button('Clear').onClick(() => {
+          button('Clear', { onClick: () => {
             clearCanvas();
-          });
+          } });
         });
 
         separator();

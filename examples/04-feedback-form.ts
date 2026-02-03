@@ -19,7 +19,7 @@ app(resolveTransport(), { title: 'Feedback' }, (a) => {
         a.label('Tell us more:');
         messageEntry = a.multilineentry('Type your feedback here...');
 
-        a.button('Send').onClick(async () => {
+        a.button('Send', { onClick: async () => {
           const message = await messageEntry.getText();
           const mood = await moodSelect.getSelected();
 
@@ -28,7 +28,7 @@ app(resolveTransport(), { title: 'Feedback' }, (a) => {
             'Feedback Received',
             `Mood: ${mood}\n\nMessage: ${message}`
           );
-        });
+        } });
       });
     });
     win.show();

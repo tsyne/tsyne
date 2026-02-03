@@ -154,13 +154,13 @@ function buildDoomStandalone(a: App): void {
           a.vbox(() => {
             a.label('Controls: Arrow keys to move/turn, WASD to strafe, Space to shoot');
             a.hbox(() => {
-              a.button('New Game').onClick(async () => {
+              a.button('New Game', { onClick: async () => {
                 game.reset();
                 startGameLoop();
                 updateUI();
                 await canvas.requestFocus();
-              }).withId('newGameBtn');
-              a.button('Pause').onClick(async () => {
+              } }).withId('newGameBtn');
+              a.button('Pause', { onClick: async () => {
                 if (gameLoop) {
                   clearInterval(gameLoop);
                   gameLoop = null;
@@ -170,20 +170,20 @@ function buildDoomStandalone(a: App): void {
                   statusLabel.setText('Playing');
                 }
                 await canvas.requestFocus();
-              }).withId('pauseBtn');
-              a.button('Prev Level').onClick(async () => {
+              } }).withId('pauseBtn');
+              a.button('Prev Level', { onClick: async () => {
                 const prevLevel = (game.currentLevel - 1 + game.getTotalLevels()) % game.getTotalLevels();
                 game.loadLevel(prevLevel);
                 startGameLoop();
                 updateUI();
                 await canvas.requestFocus();
-              }).withId('prevLevelBtn');
-              a.button('Next Level').onClick(async () => {
+              } }).withId('prevLevelBtn');
+              a.button('Next Level', { onClick: async () => {
                 game.nextLevel();
                 startGameLoop();
                 updateUI();
                 await canvas.requestFocus();
-              }).withId('nextLevelBtn');
+              } }).withId('nextLevelBtn');
             });
           });
         },
@@ -335,12 +335,12 @@ function buildDoomContent(a: App, windowWidth: number, windowHeight: number, sho
 
     // Control buttons row
     a.hbox(() => {
-      a.button('New').onClick(async () => {
+      a.button('New', { onClick: async () => {
         game.reset();
         startGameLoop();
         updateUI();
-      }).withId('newGameBtn');
-      a.button('Pause').onClick(async () => {
+      } }).withId('newGameBtn');
+      a.button('Pause', { onClick: async () => {
         if (gameLoop) {
           clearInterval(gameLoop);
           gameLoop = null;
@@ -349,18 +349,18 @@ function buildDoomContent(a: App, windowWidth: number, windowHeight: number, sho
           startGameLoop();
           statusLabel.setText('Playing');
         }
-      }).withId('pauseBtn');
-      a.button('<<').onClick(async () => {
+      } }).withId('pauseBtn');
+      a.button('<<', { onClick: async () => {
         const prevLevel = (game.currentLevel - 1 + game.getTotalLevels()) % game.getTotalLevels();
         game.loadLevel(prevLevel);
         startGameLoop();
         updateUI();
-      }).withId('prevLevelBtn');
-      a.button('>>').onClick(async () => {
+      } }).withId('prevLevelBtn');
+      a.button('>>', { onClick: async () => {
         game.nextLevel();
         startGameLoop();
         updateUI();
-      }).withId('nextLevelBtn');
+      } }).withId('nextLevelBtn');
     });
 
     // Game keyboard for touch controls

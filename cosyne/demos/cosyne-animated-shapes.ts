@@ -37,17 +37,17 @@ function createAnimatedShapesDemo(a: App): void {
         a.hbox(() => {
           a.label('Shape: ');
           for (const name of shapeNames) {
-            a.button(name).onClick(() => {
+            a.button(name, { onClick: () => {
               shapeType = shapeNames.indexOf(name);
-            });
+            } });
           }
         });
 
         // Speed controls
         a.hbox(() => {
-          a.button('Speed: Slow').onClick(() => { animationSpeed = 0.5; });
-          a.button('Speed: Normal').onClick(() => { animationSpeed = 1.0; });
-          a.button('Speed: Fast').onClick(() => { animationSpeed = 2.0; });
+          a.button('Speed: Slow', { onClick: () => { animationSpeed = 0.5; } });
+          a.button('Speed: Normal', { onClick: () => { animationSpeed = 1.0; } });
+          a.button('Speed: Fast', { onClick: () => { animationSpeed = 2.0; } });
         });
 
         // Canvas

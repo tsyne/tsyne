@@ -64,18 +64,18 @@ function createProjectionsDemo(a: App): void {
 
           a.hbox(() => {
             a.label('Projection:');
-            a.button('Isometric').onClick(() => {
+            a.button('Isometric', { onClick: () => {
               state.projectionType = 'isometric';
               refreshAllCosyneContexts();
-            });
-            a.button('Spherical').onClick(() => {
+            } });
+            a.button('Spherical', { onClick: () => {
               state.projectionType = 'spherical';
               refreshAllCosyneContexts();
-            });
-            a.button('Perspective').onClick(() => {
+            } });
+            a.button('Perspective', { onClick: () => {
               state.projectionType = 'perspective';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           a.checkbox('Animate', (checked: boolean) => {

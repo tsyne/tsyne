@@ -100,18 +100,18 @@ export class TimerUI {
 
       // Quick add buttons
       this.a.hbox(() => {
-        this.a.button('+1m').onClick(() => this.addTimerMinutes(1)).withId('timer-add-1');
-        this.a.button('+5m').onClick(() => this.addTimerMinutes(5)).withId('timer-add-5');
-        this.a.button('+10m').onClick(() => this.addTimerMinutes(10)).withId('timer-add-10');
+        this.a.button('+1m', { onClick: () => this.addTimerMinutes(1) }).withId('timer-add-1');
+        this.a.button('+5m', { onClick: () => this.addTimerMinutes(5) }).withId('timer-add-5');
+        this.a.button('+10m', { onClick: () => this.addTimerMinutes(10) }).withId('timer-add-10');
       });
 
       this.a.separator();
 
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('Start').onClick(() => this.startTimer()).withId('timer-start');
-        this.a.button('Stop').onClick(() => this.stopTimer()).withId('timer-stop');
-        this.a.button('Reset').onClick(() => this.resetTimer()).withId('timer-reset');
+        this.a.button('Start', { onClick: () => this.startTimer() }).withId('timer-start');
+        this.a.button('Stop', { onClick: () => this.stopTimer() }).withId('timer-stop');
+        this.a.button('Reset', { onClick: () => this.resetTimer() }).withId('timer-reset');
       });
     });
   }

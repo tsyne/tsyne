@@ -233,7 +233,7 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
           // Action Buttons
           a.hbox(() => {
             // Submit Button
-            submitButton = a.button('Create Account').onClick(async () => {
+            submitButton = a.button('Create Account', { onClick: async () => {
               const isValid = await validateAllFields();
 
               if (isValid) {
@@ -252,12 +252,12 @@ export function createRegistrationFormApp(appInstance: ReturnType<typeof app> ex
                   'Please fix the errors in the form before submitting.'
                 );
               }
-            });
+            } });
 
             // Clear Button
-            a.button('Clear Form').onClick(() => {
+            a.button('Clear Form', { onClick: () => {
               clearForm();
-            });
+            } });
           });
 
           a.separator();

@@ -84,9 +84,9 @@ export function buildPasswordGenerator(a: App) {
         a.separator();
 
         // Generate button
-        a.button('🎲 Generate Password').onClick(() => {
+        a.button('🎲 Generate Password', { onClick: () => {
           generatePassword();
-        });
+        } });
 
         a.separator();
 

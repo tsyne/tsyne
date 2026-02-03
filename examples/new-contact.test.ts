@@ -29,17 +29,17 @@ describe('Contact Manager - showForm Dialog Demo', () => {
             app.separator();
 
             app.hbox(() => {
-              app.button('Add Contact').onClick(async () => {
+              app.button('Add Contact', { onClick: async () => {
                 statusLabel.setText('Add Contact clicked');
-              });
+              } });
 
-              app.button('Quick Add').onClick(async () => {
+              app.button('Quick Add', { onClick: async () => {
                 statusLabel.setText('Quick Add clicked');
-              });
+              } });
 
-              app.button('Clear All').onClick(async () => {
+              app.button('Clear All', { onClick: async () => {
                 statusLabel.setText('Clear All clicked');
-              });
+              } });
             });
 
             app.separator();
@@ -90,17 +90,17 @@ describe('Contact Manager - showForm Dialog Demo', () => {
             app.separator();
 
             app.hbox(() => {
-              app.button('Add Contact').onClick(async () => {
+              app.button('Add Contact', { onClick: async () => {
                 statusLabel.setText('Add Contact clicked');
-              });
+              } });
 
-              app.button('Quick Add').onClick(async () => {
+              app.button('Quick Add', { onClick: async () => {
                 statusLabel.setText('Quick Add clicked');
-              });
+              } });
 
-              app.button('Clear All').onClick(async () => {
+              app.button('Clear All', { onClick: async () => {
                 statusLabel.setText('Clear All clicked');
-              });
+              } });
             });
 
             app.separator();

@@ -28,32 +28,32 @@ app(resolveTransport(), { title: 'Info/Error Dialogs Demo' }, () => {
 
         // Info dialog buttons
         hbox(() => {
-          button('Show Info').onClick(async () => {
+          button('Show Info', { onClick: async () => {
             const message = await messageEntry.getText();
             await win.showInfo('Information', message);
             statusLabel.setText('Info dialog shown');
-          });
+          } });
 
-          button('Show Success').onClick(async () => {
+          button('Show Success', { onClick: async () => {
             await win.showInfo('Success', 'Operation completed successfully!');
             statusLabel.setText('Success dialog shown');
-          });
+          } });
         });
 
         label('');
 
         // Error dialog buttons
         hbox(() => {
-          button('Show Error').onClick(async () => {
+          button('Show Error', { onClick: async () => {
             const message = await messageEntry.getText();
             await win.showError('Error', message);
             statusLabel.setText('Error dialog shown');
-          });
+          } });
 
-          button('Show Warning').onClick(async () => {
+          button('Show Warning', { onClick: async () => {
             await win.showInfo('Warning', 'This action cannot be undone!');
             statusLabel.setText('Warning dialog shown');
-          });
+          } });
         });
 
         label('');
@@ -63,13 +63,13 @@ app(resolveTransport(), { title: 'Info/Error Dialogs Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Save Success').onClick(async () => {
+          button('Save Success', { onClick: async () => {
             await win.showInfo('Save Complete', 'Your document has been saved successfully.');
-          });
+          } });
 
-          button('Connection Error').onClick(async () => {
+          button('Connection Error', { onClick: async () => {
             await win.showError('Connection Failed', 'Unable to connect to server. Please check your network connection.');
-          });
+          } });
         });
       });
     });

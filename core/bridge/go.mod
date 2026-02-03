@@ -2,7 +2,7 @@ module github.com/paul-hammant/tsyne/bridge
 
 go 1.24.0
 
-toolchain go1.24.5
+toolchain go1.24.4
 
 require (
 	fyne.io/fyne/v2 v2.7.2

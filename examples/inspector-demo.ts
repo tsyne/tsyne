@@ -25,12 +25,12 @@ app(resolveTransport(), { title: 'Inspector Demo' }, async (a) => {
           a.padded(() => {
             a.vbox(() => {
               a.label('Column 1');
-              a.button('Button A').onClick(() => {
+              a.button('Button A', { onClick: () => {
                 console.log('Button A clicked');
-              }).withId('btn-a');
-              a.button('Button B').onClick(() => {
+              } }).withId('btn-a');
+              a.button('Button B', { onClick: () => {
                 console.log('Button B clicked');
-              }).withId('btn-b');
+              } }).withId('btn-b');
             });
           }, { pt: 10, pr: 20, pb: 10, pl: 20 }).withId('col1');
 
@@ -51,23 +51,23 @@ app(resolveTransport(), { title: 'Inspector Demo' }, async (a) => {
         // Inspector controls
         a.padded(() => {
           a.hbox(() => {
-            a.button('Open Inspector').onClick(async () => {
+            a.button('Open Inspector', { onClick: async () => {
               // Open the visual inspector for this window
               console.log('Open Inspector clicked, windowId:', mainWindowId);
               await inspector.openVisualInspector(mainWindowId);
               console.log('Inspector opened');
-            }).withId('open-inspector-btn');
+            } }).withId('open-inspector-btn');
 
-            a.button('Print Tree').onClick(async () => {
+            a.button('Print Tree', { onClick: async () => {
               // Get and print the tree to console
               const tree = await inspector.getWindowTree(mainWindowId);
               console.log('\n=== Widget Tree ===');
               inspector.print(tree);
               console.log(`Total widgets: ${inspector.count(tree)}`);
               console.log(`Tree depth: ${inspector.depth(tree)}`);
-            }).withId('print-tree-btn');
+            } }).withId('print-tree-btn');
 
-            a.button('Find Labels').onClick(async () => {
+            a.button('Find Labels', { onClick: async () => {
               // Find all labels in the tree
               const tree = await inspector.getWindowTree(mainWindowId);
               const labels = inspector.findByType(tree, 'label');
@@ -75,7 +75,7 @@ app(resolveTransport(), { title: 'Inspector Demo' }, async (a) => {
               labels.forEach(label => {
                 console.log(`  - ${label.text || '(no text)'} at (${label.x}, ${label.y})`);
               });
-            }).withId('find-labels-btn');
+            } }).withId('find-labels-btn');
           });
         }, { p: 10 });
       });

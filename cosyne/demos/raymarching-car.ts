@@ -400,54 +400,54 @@ function createCarDemo(a: App): void {
         a.hbox(() => {
           a.label('Color: ');
           for (const cc of carColors) {
-            a.button(cc.name).onClick(() => {
+            a.button(cc.name, { onClick: () => {
               colorIdx = carColors.indexOf(cc);
               shader?.setUniform('u_carColor', cc.color);
-            });
+            } });
           }
         });
 
         // Material controls
         a.hbox(() => {
-          a.button('Matte').onClick(() => {
+          a.button('Matte', { onClick: () => {
             metallic = 0.2;
             shader?.setUniform('u_metallic', metallic);
-          });
-          a.button('Metallic').onClick(() => {
+          } });
+          a.button('Metallic', { onClick: () => {
             metallic = 0.7;
             shader?.setUniform('u_metallic', metallic);
-          });
-          a.button('Chrome').onClick(() => {
+          } });
+          a.button('Chrome', { onClick: () => {
             metallic = 1.0;
             shader?.setUniform('u_metallic', metallic);
-          });
-          a.button('Day').onClick(() => {
+          } });
+          a.button('Day', { onClick: () => {
             night = 0;
             shader?.setUniform('u_night', night);
-          });
-          a.button('Night').onClick(() => {
+          } });
+          a.button('Night', { onClick: () => {
             night = 1;
             shader?.setUniform('u_night', night);
-          });
+          } });
         });
 
         // Rotation controls
         a.hbox(() => {
-          a.button('< Rotate').onClick(() => {
+          a.button('< Rotate', { onClick: () => {
             rotation -= 0.3;
             shader?.setUniform('u_rotateY', rotation);
-          });
-          a.button('Reset View').onClick(() => {
+          } });
+          a.button('Reset View', { onClick: () => {
             rotation = 0.5;
             cameraDistance = 4.0;
             cameraElevation = 2.0;
             shader?.setUniform('u_rotateY', rotation);
             updateCameraPosition();
-          });
-          a.button('Rotate >').onClick(() => {
+          } });
+          a.button('Rotate >', { onClick: () => {
             rotation += 0.3;
             shader?.setUniform('u_rotateY', rotation);
-          });
+          } });
         });
 
         // Camera controls

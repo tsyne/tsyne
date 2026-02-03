@@ -562,8 +562,8 @@ export class MahjonggUI {
     this.a.vbox(() => {
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.newGame()).withId('newGameBtn');
-        this.a.button('Hint').onClick(() => this.showHint()).withId('hintBtn');
+        this.a.button('New Game', { onClick: () => this.newGame() }).withId('newGameBtn');
+        this.a.button('Hint', { onClick: () => this.showHint() }).withId('hintBtn');
       });
 
       // Status bar

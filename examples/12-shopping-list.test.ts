@@ -46,13 +46,13 @@ describe('Shopping List Example', () => {
                   await checkbox.setChecked(item.checked);
                 })();
 
-                app.button('Delete').onClick(async () => {
+                app.button('Delete', { onClick: async () => {
                   const index = items.findIndex(i => i.id === item.id);
                   if (index !== -1) {
                     items.splice(index, 1);
                     renderList();
                   }
-                });
+                } });
               });
             });
           });
@@ -111,7 +111,7 @@ describe('Shopping List Example', () => {
                 app.checkbox(item.text, async (checked: boolean) => {
                   item.checked = checked;
                 });
-                app.button('Delete').onClick(() => {});
+                app.button('Delete', { onClick: () => {} });
               });
             });
           });

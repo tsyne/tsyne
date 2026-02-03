@@ -78,7 +78,7 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Edit Mode').onClick(() => {}).when(() => !isEditing).withId('editBtn');
+        a.button('Edit Mode', { onClick: () => {} }).when(() => !isEditing).withId('editBtn');
       });
     });
     win.show();
@@ -102,8 +102,8 @@ app({ title: 'Test' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Welcome').when(() => state.isLoggedIn);
-        a.button('Admin Panel').onClick(() => {}).when(() => state.isAdmin);
-        a.button('Login').onClick(() => {}).when(() => !state.isLoggedIn);
+        a.button('Admin Panel', { onClick: () => {} }).when(() => state.isAdmin);
+        a.button('Login', { onClick: () => {} }).when(() => !state.isLoggedIn);
       });
     });
     win.show();
@@ -133,7 +133,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Primary Action', "primary").onClick(() => {});
+        a.button('Primary Action', { className: "primary", onClick: () => {} });
       });
     });
     win.show();
@@ -172,7 +172,7 @@ app({ title: 'Test' }, (a) => {
       a.vbox(() => {
         a.label('Main Title', 'title');
         a.label('Subtitle Text', 'subtitle');
-        a.button('Delete', "danger").onClick(() => {});
+        a.button('Delete', { className: "danger", onClick: () => {} });
       });
     });
     win.show();
@@ -195,9 +195,9 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Submit').onClick(() => {
+        a.button('Submit', { onClick: () => {
           submitForm();
-        }).withId('submitBtn');
+        } }).withId('submitBtn');
       });
     });
     win.show();
@@ -334,7 +334,7 @@ app({ title: 'Test' }, (a) => {
         .each((todo) => {
           a.hbox(() => {
             a.checkbox(todo.text, () => {});
-            a.button('Delete').onClick(() => {});
+            a.button('Delete', { onClick: () => {} });
           });
         });
     });
@@ -366,10 +366,10 @@ app({ title: 'Test' }, (a) => {
 
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Submit', "primary").onClick(() => {
+        a.button('Submit', { className: "primary", onClick: () => {
           console.log('Submitting...');
           performSubmit();
-        }).when(() => isEnabled).withId('submitBtn');
+        } }).when(() => isEnabled).withId('submitBtn');
       });
     });
     win.show();
@@ -413,11 +413,11 @@ app({ title: 'Test' }, (a) => {
           formData.agree = checked;
         }).withId('agreeCheckbox');
 
-        a.button('Submit').onClick(async () => {
+        a.button('Submit', { onClick: async () => {
           if (formData.agree) {
             await submitForm(formData);
           }
-        }).when(() => formData.agree).withId('submitBtn');
+        } }).when(() => formData.agree).withId('submitBtn');
       });
     });
     win.show();

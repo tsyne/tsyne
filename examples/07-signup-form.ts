@@ -34,7 +34,7 @@ app(resolveTransport(), { title: 'Signup Form' }, (a) => {
           });
 
           a.label(''); // Spacer
-          signupButton = a.button('Sign up').onClick(async () => {
+          signupButton = a.button('Sign up', { onClick: async () => {
             const username = await usernameEntry.getText();
             const password = await passwordEntry.getText();
 
@@ -45,7 +45,7 @@ app(resolveTransport(), { title: 'Signup Form' }, (a) => {
                 `Welcome ${username}! You rock!`
               );
             }
-          });
+          } });
         });
       });
     });

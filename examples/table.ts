@@ -40,7 +40,7 @@ app(resolveTransport(), { title: 'Table Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Add Employee').onClick(async () => {
+          button('Add Employee', { onClick: async () => {
             const newId = (employees.length + 1).toString();
             const newEmployee = [
               newId,
@@ -51,9 +51,9 @@ app(resolveTransport(), { title: 'Table Demo' }, () => {
             employees.push(newEmployee);
             await employeeTable.updateData(employees);
             statusLabel.setText(`Employee Database - ${employees.length} records`);
-          });
+          } });
 
-          button('Remove Last').onClick(async () => {
+          button('Remove Last', { onClick: async () => {
             if (employees.length > 0) {
               employees.pop();
               await employeeTable.updateData(employees);
@@ -61,50 +61,50 @@ app(resolveTransport(), { title: 'Table Demo' }, () => {
             } else {
               statusLabel.setText('No employees to remove');
             }
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Sort by Name').onClick(async () => {
+          button('Sort by Name', { onClick: async () => {
             employees.sort((a, b) => a[1].localeCompare(b[1]));
             await employeeTable.updateData(employees);
             statusLabel.setText('Sorted by Name');
-          });
+          } });
 
-          button('Sort by Department').onClick(async () => {
+          button('Sort by Department', { onClick: async () => {
             employees.sort((a, b) => a[2].localeCompare(b[2]));
             await employeeTable.updateData(employees);
             statusLabel.setText('Sorted by Department');
-          });
+          } });
 
-          button('Sort by ID').onClick(async () => {
+          button('Sort by ID', { onClick: async () => {
             employees.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
             await employeeTable.updateData(employees);
             statusLabel.setText('Sorted by ID');
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Filter Engineering').onClick(async () => {
+          button('Filter Engineering', { onClick: async () => {
             const filtered = employees.filter(emp => emp[2] === 'Engineering');
             await employeeTable.updateData(filtered);
             statusLabel.setText(`Showing ${filtered.length} Engineering employees`);
-          });
+          } });
 
-          button('Show All').onClick(async () => {
+          button('Show All', { onClick: async () => {
             await employeeTable.updateData(employees);
             statusLabel.setText(`Employee Database - ${employees.length} records`);
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Load Sample Data').onClick(async () => {
+          button('Load Sample Data', { onClick: async () => {
             employees = [
               ['1', 'John Doe', 'Engineering', '$75,000'],
               ['2', 'Jane Smith', 'Marketing', '$65,000'],
@@ -119,13 +119,13 @@ app(resolveTransport(), { title: 'Table Demo' }, () => {
             ];
             await employeeTable.updateData(employees);
             statusLabel.setText(`Employee Database - ${employees.length} records`);
-          });
+          } });
 
-          button('Clear All').onClick(async () => {
+          button('Clear All', { onClick: async () => {
             employees = [];
             await employeeTable.updateData(employees);
             statusLabel.setText('Employee Database - 0 records');
-          });
+          } });
         });
       });
     });

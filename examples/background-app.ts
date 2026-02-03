@@ -30,14 +30,14 @@ app(resolveTransport(), { title: 'Background App' }, (a) => {
         a.separator();
 
         a.hbox(() => {
-          a.button('Hide to Tray').onClick(async () => {
+          a.button('Hide to Tray', { onClick: async () => {
             isHidden = true;
             await win.resize(0, 0); // Minimize by resizing
-          });
+          } });
 
-          a.button('Send Test Notification').onClick(async () => {
+          a.button('Send Test Notification', { onClick: async () => {
             await a.sendNotification('Background App', 'Hello from the background!');
-          });
+          } });
         });
 
         a.separator();

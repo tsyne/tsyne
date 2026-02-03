@@ -25,7 +25,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
         label('');
 
         // Open file dialog
-        button('Open File').onClick(async () => {
+        button('Open File', { onClick: async () => {
           statusLabel.setText('Opening file dialog...');
 
           const filePath = await win.showFileOpen();
@@ -37,7 +37,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('File open cancelled');
           }
-        });
+        } });
 
         label('');
 
@@ -50,7 +50,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Save File').onClick(async () => {
+          button('Save File', { onClick: async () => {
             const filename = await filenameEntry.getText();
             statusLabel.setText('Opening save dialog...');
 
@@ -63,9 +63,9 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
             } else {
               statusLabel.setText('File save cancelled');
             }
-          });
+          } });
 
-          button('Save As...').onClick(async () => {
+          button('Save As...', { onClick: async () => {
             const filename = currentFilePath
               ? currentFilePath.split('/').pop() || 'untitled.txt'
               : 'untitled.txt';
@@ -81,7 +81,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
             } else {
               statusLabel.setText('Save as cancelled');
             }
-          });
+          } });
         });
 
         label('');
@@ -91,7 +91,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
         label('Practical Workflow:');
         label('');
 
-        button('Open and Process').onClick(async () => {
+        button('Open and Process', { onClick: async () => {
           const filePath = await win.showFileOpen();
 
           if (filePath) {
@@ -106,11 +106,11 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
           } else {
             statusLabel.setText('Open cancelled');
           }
-        });
+        } });
 
         label('');
 
-        button('Create New Document').onClick(async () => {
+        button('Create New Document', { onClick: async () => {
           const confirmed = await win.showConfirm(
             'Create New',
             'This will clear the current document. Continue?'
@@ -122,11 +122,11 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
             filePathLabel.setText('File path: (unsaved)');
             await filenameEntry.setText('untitled.txt');
           }
-        });
+        } });
 
         label('');
 
-        button('Save Current Work').onClick(async () => {
+        button('Save Current Work', { onClick: async () => {
           if (currentFilePath) {
             // Save to existing path
             await win.showInfo('Saved', `Document saved to ${currentFilePath}`);
@@ -143,7 +143,7 @@ app(resolveTransport(), { title: 'File Dialogs Demo' }, () => {
               await win.showInfo('Success', `Document saved to ${filePath}`);
             }
           }
-        });
+        } });
       });
     });
 

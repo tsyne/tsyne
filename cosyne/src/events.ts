@@ -205,7 +205,8 @@ export class EventRouter {
       if (primitive.isPassthroughEnabled()) {
         continue;
       }
-      if (this.testHit(primitive, x, y)) {
+      const hit = this.testHit(primitive, x, y);
+      if (hit) {
         results.push(primitive);
       }
     }
@@ -262,7 +263,6 @@ export class EventRouter {
       const deltaY = y - this.dragState.currentY;
 
       const dragHandler = this.dragState.primitive.getDragHandler();
-      console.log(`[EventRouter.handleMouseMove] dragState exists, primitive=${(this.dragState.primitive as any)._id || this.dragState.primitive.constructor.name}, hasDragHandler=${!!dragHandler}, pos=(${x}, ${y}), delta=(${deltaX.toFixed(2)}, ${deltaY.toFixed(2)})`);
       if (dragHandler) {
         dragHandler({ x, y, deltaX, deltaY });
       }
@@ -290,20 +290,16 @@ export class EventRouter {
    * Handle drag start event
    */
   handleDragStart(primitives: Primitive<any>[], x: number, y: number): void {
-    console.log(`[EventRouter.handleDragStart] at (${x}, ${y}), testing ${primitives.length} primitives`);
     const topHit = this.hitTestTop(primitives, x, y);
-    console.log(`[EventRouter.handleDragStart] topHit: ${topHit ? (topHit as any)._id || topHit.constructor.name : 'null'}`);
 
     if (topHit) {
       const dragStartHandler = topHit.getDragStartHandler();
-      console.log(`[EventRouter.handleDragStart] has dragStartHandler: ${!!dragStartHandler}`);
       if (dragStartHandler) {
         dragStartHandler({ x, y });
       }
 
       // Only start drag if there's a drag handler or drag end handler
       const hasDragHandler = topHit.getDragHandler() || topHit.getDragEndHandler();
-      console.log(`[EventRouter.handleDragStart] has drag/dragEnd handler: ${!!hasDragHandler}`);
       if (hasDragHandler) {
         this.dragState = {
           primitive: topHit,
@@ -312,10 +308,7 @@ export class EventRouter {
           currentX: x,
           currentY: y,
         };
-        console.log(`[EventRouter.handleDragStart] dragState set`);
       }
-    } else {
-      console.log(`[EventRouter.handleDragStart] No hit at (${x}, ${y})`);
     }
   }
 

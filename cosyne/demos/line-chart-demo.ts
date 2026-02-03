@@ -62,22 +62,22 @@ function createLineChartDemo(a: App): void {
           // Controls
           a.hbox(() => {
             a.label('Interpolation:');
-            a.button('Linear').onClick(() => {
+            a.button('Linear', { onClick: () => {
               state.interpolationType = 'linear';
               refreshAllCosyneContexts();
-            });
-            a.button('Step').onClick(() => {
+            } });
+            a.button('Step', { onClick: () => {
               state.interpolationType = 'step';
               refreshAllCosyneContexts();
-            });
-            a.button('Catmull-Rom').onClick(() => {
+            } });
+            a.button('Catmull-Rom', { onClick: () => {
               state.interpolationType = 'catmull-rom';
               refreshAllCosyneContexts();
-            });
-            a.button('Monotone').onClick(() => {
+            } });
+            a.button('Monotone', { onClick: () => {
               state.interpolationType = 'monotone';
               refreshAllCosyneContexts();
-            });
+            } });
           });
 
           a.hbox(() => {

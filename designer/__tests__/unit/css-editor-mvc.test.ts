@@ -63,7 +63,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', "button1").onClick(() => {});
+        a.button('Click', { className: "button1", onClick: () => {} });
       });
     });
     win.show();
@@ -88,7 +88,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', "myButton").onClick(() => {});
+        a.button('Click', { className: "myButton", onClick: () => {} });
       });
     });
     win.show();
@@ -162,7 +162,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', "original").onClick(() => {});
+        a.button('Click', { className: "original", onClick: () => {} });
       });
     });
     win.show();
@@ -195,7 +195,7 @@ app({ title: 'Test' }, (a) => {
   a.window({ title: 'Test' }, (win) => {
     win.setContent(() => {
       a.vbox(() => {
-        a.button('Click', "testClass").onClick(() => {});
+        a.button('Click', { className: "testClass", onClick: () => {} });
       });
     });
     win.show();

@@ -20,9 +20,9 @@ app(resolveTransport(), { title: 'Split Container Demo' }, () => {
             label('This is the sidebar area');
             label('with navigation items.');
             label('');
-            button('Home').onClick(() => console.log('Home clicked'));
-            button('Settings').onClick(() => console.log('Settings clicked'));
-            button('About').onClick(() => console.log('About clicked'));
+            button('Home', { onClick: () => console.log('Home clicked') });
+            button('Settings', { onClick: () => console.log('Settings clicked') });
+            button('About', { onClick: () => console.log('About clicked') });
             label('');
             label('You can resize this');
             label('pane by dragging');
@@ -63,9 +63,9 @@ app(resolveTransport(), { title: 'Split Container Demo' }, () => {
                   label('');
                   entry('Enter text here...');
                   label('');
-                  button('Submit').onClick(() => {
+                  button('Submit', { onClick: () => {
                     console.log('Submit clicked');
-                  });
+                  } });
                   label('');
                   label('The horizontal split allows');
                   label('independent resizing of');

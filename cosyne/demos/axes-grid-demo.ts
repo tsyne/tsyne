@@ -40,14 +40,14 @@ function createAxesGridDemo(a: App): void {
           a.hbox(() => {
             a.label('Grid Density:');
             ['Coarse', 'Medium', 'Fine'].forEach((label, idx) => {
-              a.button(label).onClick(() => {
+              a.button(label, { onClick: () => {
                 state.gridDensity = [
                   'coarse',
                   'medium',
                   'fine',
                 ][idx] as typeof state.gridDensity;
                 refreshAllCosyneContexts();
-              });
+              } });
             });
           });
 

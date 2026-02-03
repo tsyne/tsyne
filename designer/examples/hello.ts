@@ -5,7 +5,7 @@ app({ title: 'Hello' }, (a) => {
     win.setContent(() => {
       a.vbox(() => {
         a.label('Hello, World!');
-        a.button('Click Me').onClick(() => console.log('clicked'));
+        a.button('Click Me', { onClick: () => console.log('clicked') });
       });
     });
     win.show();

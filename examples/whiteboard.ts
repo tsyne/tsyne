@@ -26,20 +26,20 @@ app({ title: 'Whiteboard' }, (a) => {
             a.label('Color: ');
             const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
             colors.forEach(color => {
-              a.button('  ').onClick(() => {
+              a.button('  ', { onClick: () => {
                 currentColor = color;
-              });
+              } });
             });
             a.separator();
             a.label('Width: ');
-            a.button('Thin').onClick(() => { strokeWidth = 1; });
-            a.button('Medium').onClick(() => { strokeWidth = 3; });
-            a.button('Thick').onClick(() => { strokeWidth = 5; });
+            a.button('Thin', { onClick: () => { strokeWidth = 1; } });
+            a.button('Medium', { onClick: () => { strokeWidth = 3; } });
+            a.button('Thick', { onClick: () => { strokeWidth = 5; } });
             a.separator();
-            a.button('Clear').onClick(() => {
+            a.button('Clear', { onClick: () => {
               // Clear would require container refresh - for demo purposes
               console.log('Clear drawing');
-            });
+            } });
           });
         },
         center: () => {

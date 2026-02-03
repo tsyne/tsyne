@@ -34,16 +34,16 @@ describe('Preferences (CheckGroup) Demo', () => {
               }
             );
             statusLabel = app.label('Selected: None');
-            app.button('Select All').onClick(async () => {
+            app.button('Select All', { onClick: async () => {
               await checkGroup.setSelected(['Option A', 'Option B', 'Option C']);
               const current = await checkGroup.getSelected();
               statusLabel?.setText(`Selected: ${current.join(', ')}`);
-            });
-            app.button('Clear All').onClick(async () => {
+            } });
+            app.button('Clear All', { onClick: async () => {
               await checkGroup.setSelected([]);
               const current = await checkGroup.getSelected();
               statusLabel?.setText(`Selected: ${current.join(', ') || 'None'}`);
-            });
+            } });
           });
         });
         win.show();
@@ -86,10 +86,10 @@ describe('Preferences (CheckGroup) Demo', () => {
               }
             );
             statusLabel = app.label('Selected: Email, Push');
-            app.button('Get Current').onClick(async () => {
+            app.button('Get Current', { onClick: async () => {
               const current = await checkGroup.getSelected();
               statusLabel?.setText(`Selected: ${current.join(', ') || 'None'}`);
-            });
+            } });
           });
         });
         win.show();
@@ -119,16 +119,16 @@ describe('Preferences (CheckGroup) Demo', () => {
               []
             );
             statusLabel = app.label('Status: Ready');
-            app.button('Enable Features 1 and 3').onClick(async () => {
+            app.button('Enable Features 1 and 3', { onClick: async () => {
               await checkGroup.setSelected(['Feature 1', 'Feature 3']);
               const current = await checkGroup.getSelected();
               statusLabel?.setText(`Enabled: ${current.join(', ')}`);
-            });
-            app.button('Disable All').onClick(async () => {
+            } });
+            app.button('Disable All', { onClick: async () => {
               await checkGroup.setSelected([]);
               const current = await checkGroup.getSelected();
               statusLabel?.setText(`Enabled: ${current.length === 0 ? 'None' : current.join(', ')}`);
-            });
+            } });
           });
         });
         win.show();

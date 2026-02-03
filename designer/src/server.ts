@@ -147,7 +147,7 @@ function generateWidget(widget: any, allWidgets: any[], lines: string[], indent:
     }
 
   } else if (type === 'button') {
-    // button(text, className?).onClick(...)
+    // button(text, { className: className?, onClick: ... })
     const text = props.text || '';
     const onClick = widget.eventHandlers?.onClick;
     const className = props.className;
@@ -668,7 +668,7 @@ const designer = {
 
   // Input widgets
   // Support both OLD API: button(text, onClick?, className?)
-  // and NEW API: button(text, className?).onClick(handler)
+  // and NEW API: button(text, { className: className?, onClick: handler })
   button(text: string, onClickOrClassName?: (() => void) | string, className?: string): any {
     // Detect which API is being used
     let actualClassName: string | undefined;
@@ -679,7 +679,7 @@ const designer = {
       onClickHandler = onClickOrClassName;
       actualClassName = className;
     } else if (typeof onClickOrClassName === 'string') {
-      // NEW API: button(text, className?).onClick(handler)
+      // NEW API: button(text, { className: className?, onClick: handler })
       actualClassName = onClickOrClassName;
     }
 
@@ -1476,7 +1476,7 @@ class SourceCodeEditor {
         return `${indentation}a.label("${properties.text || 'New Label'}");`;
 
       case 'button':
-        return `${indentation}a.button("${properties.text || 'New Button'}").onClick(() => {\n${indentation}  console.log("Button clicked");\n${indentation}});`;
+        return `${indentation}a.button("${properties.text || 'New Button'}", { onClick: () => {\n${indentation}  console.log("Button clicked");\n${indentation}} });`;
 
       case 'entry':
         return `${indentation}a.entry("${properties.placeholder || ''}");`;

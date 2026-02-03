@@ -36,6 +36,8 @@ service BridgeService {
   rpc CreateIcon(CreateIconRequest) returns (Response);
   rpc CreateFileIcon(CreateFileIconRequest) returns (Response);
   rpc CreateCalendar(CreateCalendarRequest) returns (Response);
+  rpc CreateColorCell(CreateColorCellRequest) returns (Response);
+  rpc UpdateColorCell(UpdateColorCellRequest) returns (Response);
 
   // ============================================================================
   // Input widget creation
@@ -931,6 +933,28 @@ message CreateCalendarRequest {
   string widget_id = 1;
   string callback_id = 2;  // OnChanged callback
   string date = 3;         // Initial date in "2006-01-02" format
+}
+
+message CreateColorCellRequest {
+  string widget_id = 1;
+  float width = 2;         // Width in pixels (default: 40)
+  float height = 3;        // Height in pixels (default: 40)
+  string text = 4;         // Text to display
+  string fill_color = 5;   // Background fill color (hex like '#ff0000')
+  string text_color = 6;   // Text color (hex)
+  string border_color = 7; // Border color (hex)
+  float border_width = 8;  // Border width in pixels (default: 1)
+  bool center_text = 9;    // Whether to center text (default: true)
+  string callback_id = 10; // Click callback
+}
+
+message UpdateColorCellRequest {
+  string widget_id = 1;
+  string text = 2;
+  string fill_color = 3;
+  string text_color = 4;
+  string border_color = 5;
+  float border_width = 6;
 }
 
 // ============================================================================

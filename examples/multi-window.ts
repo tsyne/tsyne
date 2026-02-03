@@ -19,7 +19,7 @@ app(resolveTransport(), { title: 'Multi-Window Demo' }, (a) => {
 
         statusLabel = a.label(`Open windows: ${windowCount + 1}`);
 
-        a.button('Open New Window').onClick(() => {
+        a.button('Open New Window', { onClick: () => {
           windowCount++;
           const winId = windowCount;
 
@@ -32,30 +32,30 @@ app(resolveTransport(), { title: 'Multi-Window Demo' }, (a) => {
                 a.label(`This is Window ${winId}`);
                 a.separator();
 
-                a.button('Show Info').onClick(() => {
+                a.button('Show Info', { onClick: () => {
                   newWin.showInfo('Window Info', `You are in Window ${winId}`);
-                });
+                } });
 
-                a.button('Close This Window').onClick(async () => {
+                a.button('Close This Window', { onClick: async () => {
                   await newWin.close();
                   statusLabel.setText(`Open windows: ${windows.length}`);
-                });
+                } });
               });
             });
 
             newWin.show();
             statusLabel.setText(`Open windows: ${windowCount + 1}`);
           });
-        });
+        } });
 
         a.separator();
 
-        a.button('Show All Windows Info').onClick(() => {
+        a.button('Show All Windows Info', { onClick: () => {
           mainWin.showInfo(
             'Windows Info',
             `Main window + ${windowCount} secondary windows created`
           );
-        });
+        } });
       });
     });
     mainWin.show();

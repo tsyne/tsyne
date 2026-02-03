@@ -307,11 +307,11 @@ export function createTodoApp(a: any, storePath?: string) {
 
           textEntry = a.entry('', ifEditingSaveEdit, 300);
 
-          a.button('Edit').onClick(ifNotEditingStartEdit);
+          a.button('Edit', { onClick: ifNotEditingStartEdit });
 
-          a.button('Delete').onClick(async () => {
+          a.button('Delete', { onClick: async () => {
             store.deleteTodo(todo.id);
-          });
+          } });
         });
       });
 
@@ -342,13 +342,13 @@ export function createTodoApp(a: any, storePath?: string) {
         // Pseudo-declarative event handler - just update model
         a.hbox(() => {
           newTodoEntry = a.entry('What needs to be done?', undefined, 400);
-          a.button('Add').onClick(async () => {
+          a.button('Add', { onClick: async () => {
             const text = await newTodoEntry.getText();
             if (text && text.trim()) {
               store.addTodo(text);
               await newTodoEntry.setText('');
             }
-          });
+          } });
         });
 
         a.label('');
@@ -358,12 +358,12 @@ export function createTodoApp(a: any, storePath?: string) {
         a.label('Filter:');
         // Pseudo-declarative filters - just update model
         a.hbox(() => {
-          filterAllButton = a.button('[All]').onClick(async () => store.setFilter('all'));
-          filterActiveButton = a.button('Active').onClick(async () => store.setFilter('active'));
-          filterCompletedButton = a.button('Completed').onClick(async () => store.setFilter('completed'));
-          a.button('Clear Completed').onClick(async () => {
+          filterAllButton = a.button('[All]', { onClick: async () => store.setFilter('all') });
+          filterActiveButton = a.button('Active', { onClick: async () => store.setFilter('active') });
+          filterCompletedButton = a.button('Completed', { onClick: async () => store.setFilter('completed') });
+          a.button('Clear Completed', { onClick: async () => {
             if (store.getCompletedCount() > 0) store.clearCompleted();
-          });
+          } });
         });
 
         a.label('');
@@ -379,8 +379,8 @@ export function createTodoApp(a: any, storePath?: string) {
 
         // Pseudo-declarative file operations - just update model
         a.hbox(() => {
-          a.button('Reload from File').onClick(async () => store.load());
-          a.button('Save to File').onClick(async () => store.save());
+          a.button('Reload from File', { onClick: async () => store.load() });
+          a.button('Save to File', { onClick: async () => store.save() });
         });
       });
     });

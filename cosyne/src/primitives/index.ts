@@ -1,5 +1,6 @@
 export { Primitive, PrimitiveOptions } from './base';
 export { CosyneCircle, CircleOptions } from './circle';
+export { CosyneEllipse, EllipseOptions } from './ellipse';
 export { CosyneRect, RectOptions } from './rect';
 export { CosyneLine, LineOptions, LineEndpoints } from './line';
 export { CosyneText, TextOptions } from './text';

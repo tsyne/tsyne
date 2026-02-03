@@ -61,21 +61,21 @@ app(resolveTransport(), { title: 'RadioGroup Demo' }, () => {
 
         // Control buttons
         hbox(() => {
-          button('Get Selections').onClick(async () => {
+          button('Get Selections', { onClick: async () => {
             const theme = await themeRadio.getSelected();
             const language = await languageRadio.getSelected();
             const size = await sizeRadio.getSelected();
             const message = `Theme: ${theme}, Language: ${language}, Size: ${size}`;
             statusLabel.setText(message);
             console.log(message);
-          });
+          } });
 
-          button('Reset to Defaults').onClick(async () => {
+          button('Reset to Defaults', { onClick: async () => {
             await themeRadio.setSelected('Light');
             await languageRadio.setSelected('English');
             await sizeRadio.setSelected('Medium');
             statusLabel.setText('Reset to defaults');
-          });
+          } });
         });
 
         label('');

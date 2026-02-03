@@ -117,19 +117,19 @@ class ProfileDialog {
 
           // Buttons
           hbox(() => {
-            button('Save').onClick(async () => {
+            button('Save', { onClick: async () => {
               const profile = await this.getProfileFromInputs();
               if (this.validateProfile(profile)) {
                 this.manager.confirm(profile);
                 // In a real app, we would close the window here
                 this.statusLabel.setText('✓ Saved! (Window would close)');
               }
-            });
+            } });
 
-            button('Cancel').onClick(() => {
+            button('Cancel', { onClick: () => {
               this.manager.cancel();
               this.statusLabel.setText('✗ Cancelled (Window would close)');
-            });
+            } });
           });
         });
       });
@@ -217,7 +217,7 @@ app(resolveTransport(), { title: 'Dialog State Demo' }, () => {
         label('');
 
         // Button to open dialog
-        button('Edit Profile (Open Dialog)').onClick(async () => {
+        button('Edit Profile (Open Dialog)', { onClick: async () => {
           // Get current profile from store
           const currentProfile = store.getState().userProfile;
 
@@ -234,12 +234,12 @@ app(resolveTransport(), { title: 'Dialog State Demo' }, () => {
               lastUpdate: new Date().toLocaleTimeString()
             }));
           }
-        });
+        } });
 
         label('');
 
         // Button to reset state
-        button('Reset Profile').onClick(() => {
+        button('Reset Profile', { onClick: () => {
           store.update(state => ({
             ...state,
             userProfile: {
@@ -249,7 +249,7 @@ app(resolveTransport(), { title: 'Dialog State Demo' }, () => {
             },
             lastUpdate: new Date().toLocaleTimeString()
           }));
-        });
+        } });
       });
     });
 

@@ -40,41 +40,41 @@ describe('Project Opener Example', () => {
             app.label('');
 
             app.hbox(() => {
-              app.button('Open Project Folder').onClick(async () => {
+              app.button('Open Project Folder', { onClick: async () => {
                 // In test mode, we can't test the native dialog
                 // But we verify the button exists
-              });
+              } });
 
-              app.button('Close Project').onClick(async () => {
+              app.button('Close Project', { onClick: async () => {
                 // Reset state
                 statusLabel.setText('Project closed');
                 projectPathLabel.setText('Path: (none)');
                 projectNameLabel.setText('Project: (none)');
-              });
+              } });
             });
 
             app.label('');
             app.label('Recent Projects:');
             app.label('');
 
-            app.button('  /home/user/my-project').onClick(async () => {
+            app.button('  /home/user/my-project', { onClick: async () => {
               statusLabel.setText('Project opened from recent!');
               projectPathLabel.setText('Path: /home/user/my-project');
               projectNameLabel.setText('Project: my-project');
-            });
+            } });
 
-            app.button('  /home/user/another-app').onClick(async () => {
+            app.button('  /home/user/another-app', { onClick: async () => {
               statusLabel.setText('Project opened from recent!');
               projectPathLabel.setText('Path: /home/user/another-app');
               projectNameLabel.setText('Project: another-app');
-            });
+            } });
 
             app.label('');
             app.label('');
 
-            app.button('Show Project Info').onClick(async () => {
+            app.button('Show Project Info', { onClick: async () => {
               // Would show info dialog
-            });
+            } });
           });
         });
         win.show();
@@ -122,29 +122,29 @@ describe('Project Opener Example', () => {
             app.label('');
 
             app.hbox(() => {
-              app.button('Open Project Folder').onClick(async () => {});
-              app.button('Close Project').onClick(async () => {
+              app.button('Open Project Folder', { onClick: async () => {} });
+              app.button('Close Project', { onClick: async () => {
                 statusLabel.setText('Project closed');
                 projectPathLabel.setText('Path: (none)');
                 projectNameLabel.setText('Project: (none)');
-              });
+              } });
             });
 
             app.label('');
             app.label('Recent Projects:');
             app.label('');
 
-            app.button('  /home/user/my-project').onClick(async () => {
+            app.button('  /home/user/my-project', { onClick: async () => {
               statusLabel.setText('Project opened from recent!');
               projectPathLabel.setText('Path: /home/user/my-project');
               projectNameLabel.setText('Project: my-project');
-            });
+            } });
 
-            app.button('  /home/user/another-app').onClick(async () => {
+            app.button('  /home/user/another-app', { onClick: async () => {
               statusLabel.setText('Project opened from recent!');
               projectPathLabel.setText('Path: /home/user/another-app');
               projectNameLabel.setText('Project: another-app');
-            });
+            } });
           });
         });
         win.show();

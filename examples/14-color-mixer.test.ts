@@ -70,7 +70,7 @@ describe('Color Mixer Example', () => {
             app.separator();
 
             app.hbox(() => {
-              app.button('Random Color').onClick(() => {
+              app.button('Random Color', { onClick: () => {
                 red = Math.floor(Math.random() * 256);
                 green = Math.floor(Math.random() * 256);
                 blue = Math.floor(Math.random() * 256);
@@ -78,15 +78,15 @@ describe('Color Mixer Example', () => {
                 greenLabel.setText(`Green: ${green}`);
                 blueLabel.setText(`Blue: ${blue}`);
                 updateColor();
-              });
+              } });
 
-              app.button('Reset').onClick(() => {
+              app.button('Reset', { onClick: () => {
                 red = green = blue = 128;
                 redLabel.setText(`Red: 128`);
                 greenLabel.setText(`Green: 128`);
                 blueLabel.setText(`Blue: 128`);
                 updateColor();
-              });
+              } });
             });
           });
         });
@@ -143,13 +143,13 @@ describe('Color Mixer Example', () => {
             const greenLabel = app.label('Green: 100');
             const blueLabel = app.label('Blue: 50');
 
-            app.button('Reset').onClick(() => {
+            app.button('Reset', { onClick: () => {
               red = green = blue = 128;
               redLabel.setText(`Red: 128`);
               greenLabel.setText(`Green: 128`);
               blueLabel.setText(`Blue: 128`);
               updateColor();
-            });
+            } });
           });
         });
         win.show();

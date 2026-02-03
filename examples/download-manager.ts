@@ -96,7 +96,7 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
         label('Add Downloads:');
 
         hbox(() => {
-          button('Small File (10 MB)').onClick(() => {
+          button('Small File (10 MB)', { onClick: () => {
             downloads.push({
               name: 'small-file.zip',
               size: 10,
@@ -105,9 +105,9 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             });
             updateDownloadList();
             statusLabel.setText('Added small-file.zip to queue');
-          });
+          } });
 
-          button('Medium File (100 MB)').onClick(() => {
+          button('Medium File (100 MB)', { onClick: () => {
             downloads.push({
               name: 'medium-file.zip',
               size: 100,
@@ -116,11 +116,11 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             });
             updateDownloadList();
             statusLabel.setText('Added medium-file.zip to queue');
-          });
+          } });
         });
 
         hbox(() => {
-          button('Large File (500 MB)').onClick(() => {
+          button('Large File (500 MB)', { onClick: () => {
             downloads.push({
               name: 'large-file.iso',
               size: 500,
@@ -129,9 +129,9 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             });
             updateDownloadList();
             statusLabel.setText('Added large-file.iso to queue');
-          });
+          } });
 
-          button('Huge File (2 GB)').onClick(() => {
+          button('Huge File (2 GB)', { onClick: () => {
             downloads.push({
               name: 'huge-file.iso',
               size: 2000,
@@ -140,14 +140,14 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             });
             updateDownloadList();
             statusLabel.setText('Added huge-file.iso to queue');
-          });
+          } });
         });
 
         separator();
 
         // Download action buttons
         hbox(() => {
-          button('Start Next Download').onClick(async () => {
+          button('Start Next Download', { onClick: async () => {
             const pending = downloads.find(d => d.status === 'pending');
             if (!pending) {
               await win.showInfo('No Downloads', 'No pending downloads in queue');
@@ -173,9 +173,9 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             await simulateDownload(pending, progressDialog, () => {
               statusLabel.setText(`Completed: ${pending.name}`);
             });
-          });
+          } });
 
-          button('Download All').onClick(async () => {
+          button('Download All', { onClick: async () => {
             const pendingDownloads = downloads.filter(d => d.status === 'pending');
             if (pendingDownloads.length === 0) {
               await win.showInfo('No Downloads', 'No pending downloads in queue');
@@ -212,13 +212,13 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
             const completed = downloads.filter(d => d.status === 'completed').length;
             const cancelled = downloads.filter(d => d.status === 'cancelled').length;
             statusLabel.setText(`Batch complete: ${completed} completed, ${cancelled} cancelled`);
-          });
+          } });
         });
 
         separator();
 
         // Infinite progress demo
-        button('Show Infinite Progress (3s)').onClick(async () => {
+        button('Show Infinite Progress (3s)', { onClick: async () => {
           statusLabel.setText('Processing...');
 
           const progressDialog = await win.showProgress(
@@ -237,16 +237,16 @@ app(resolveTransport(), { title: 'Download Manager' }, () => {
 
           await progressDialog.hide();
           statusLabel.setText('Processing complete!');
-        });
+        } });
 
         separator();
 
         // Clear downloads
-        button('Clear Queue').onClick(() => {
+        button('Clear Queue', { onClick: () => {
           downloads = [];
           updateDownloadList();
           statusLabel.setText('Download queue cleared');
-        });
+        } });
       });
     });
 

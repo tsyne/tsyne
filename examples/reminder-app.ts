@@ -42,7 +42,7 @@ app(resolveTransport(), { title: 'Reminder App' }, (a) => {
         });
 
         a.hbox(() => {
-          a.button('Add Reminder').onClick(async () => {
+          a.button('Add Reminder', { onClick: async () => {
             const title = await titleEntry.getText();
             const delayStr = await delayEntry.getText();
             const delay = parseInt(delayStr, 10) || 10;
@@ -75,15 +75,15 @@ app(resolveTransport(), { title: 'Reminder App' }, (a) => {
               // Show confirmation
               await a.sendNotification('Reminder Set', `"${title}" in ${delay} seconds`);
             }
-          });
+          } });
 
-          a.button('Send Now').onClick(async () => {
+          a.button('Send Now', { onClick: async () => {
             const title = await titleEntry.getText();
             if (title) {
               await a.sendNotification('Reminder', title);
               titleEntry.setText('');
             }
-          });
+          } });
         });
 
         a.separator();
@@ -96,7 +96,7 @@ app(resolveTransport(), { title: 'Reminder App' }, (a) => {
         a.separator();
 
         a.hbox(() => {
-          a.button('Clear All Reminders').onClick(() => {
+          a.button('Clear All Reminders', { onClick: () => {
             for (const reminder of reminders) {
               if (reminder.timeoutId) {
                 clearTimeout(reminder.timeoutId);
@@ -104,11 +104,11 @@ app(resolveTransport(), { title: 'Reminder App' }, (a) => {
             }
             reminders.length = 0;
             updateReminderList();
-          });
+          } });
 
-          a.button('Test Notification').onClick(async () => {
+          a.button('Test Notification', { onClick: async () => {
             await a.sendNotification('Test', 'This is a test notification!');
-          });
+          } });
         });
       });
     });

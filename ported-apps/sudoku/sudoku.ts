@@ -549,8 +549,8 @@ export class SudokuUI {
     this.a.vbox(() => {
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('New Game').onClick(() => this.newGame()).withId('newGameBtn');
-        this.a.button('Hint').onClick(() => this.game.revealHint()).withId('hintBtn');
+        this.a.button('New Game', { onClick: () => this.newGame() }).withId('newGameBtn');
+        this.a.button('Hint', { onClick: () => this.game.revealHint() }).withId('hintBtn');
       });
 
       // Status bar

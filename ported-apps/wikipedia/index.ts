@@ -497,7 +497,7 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
             searchInputValue = value;
           });
 
-          a.button('Search').onClick(async () => {
+          a.button('Search', { onClick: async () => {
             if (searchInputValue.trim()) {
               const results = store.search(searchInputValue);
               if (results.length > 0) {
@@ -510,30 +510,30 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
                 await viewStack.refresh();
               }
             }
-          });
+          } });
         });
 
         // Tabs
         a.hbox(() => {
-          a.button('🔍 Search').onClick(async () => {
+          a.button('🔍 Search', { onClick: async () => {
             selectedTab = 'search';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('✨ Explore').onClick(async () => {
+          a.button('✨ Explore', { onClick: async () => {
             selectedTab = 'explore';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('💾 Saved').onClick(async () => {
+          a.button('💾 Saved', { onClick: async () => {
             selectedTab = 'saved';
             await viewStack.refresh();
-          });
+          } });
 
-          a.button('📜 History').onClick(async () => {
+          a.button('📜 History', { onClick: async () => {
             selectedTab = 'history';
             await viewStack.refresh();
-          });
+          } });
         });
 
         a.separator();
@@ -545,11 +545,11 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('🔍 Search Results').withId('search-title').withBold();
 
             a.hbox(() => {
-              a.button('🗑️ Clear').onClick(async () => {
+              a.button('🗑️ Clear', { onClick: async () => {
                 store.clearSearchHistory();
                 await updateLabels();
                 await viewStack.refresh();
-              });
+              } });
 
               a.spacer();
 
@@ -569,14 +569,14 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
                       a.label(`${article.extract.substring(0, 80)}...`).withSize(0.8);
                     });
                     a.spacer();
-                    a.button('Save').onClick(async () => {
+                    a.button('Save', { onClick: async () => {
                       store.saveArticle(article);
                       await viewStack.refresh();
-                    });
-                    a.button('✕').onClick(async () => {
+                    } });
+                    a.button('✕', { onClick: async () => {
                       store.deleteFromSearchHistory(article.id);
                       await viewStack.refresh();
-                    });
+                    } });
                   }).withPadding(5);
                 },
                 trackBy: (article: Article) => article.id,
@@ -632,10 +632,10 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
                       a.label(`${item.summary.substring(0, 70)}...`).withSize(0.8);
                     });
                     a.spacer();
-                    a.button('✕').onClick(async () => {
+                    a.button('✕', { onClick: async () => {
                       store.removeSavedArticle(item.id);
                       await viewStack.refresh();
-                    });
+                    } });
                   }).withPadding(5);
                 },
                 trackBy: (item: ReadingListItem) => item.id,
@@ -683,10 +683,10 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
                       a.label(`${mins}m read | ${new Date(history.viewedAt).toLocaleTimeString()}`).withSize(0.85);
                     });
                     a.spacer();
-                    a.button('✕').onClick(async () => {
+                    a.button('✕', { onClick: async () => {
                       store.deleteFromReadingHistory(history.id);
                       await viewStack.refresh();
-                    });
+                    } });
                   }).withPadding(5);
                 },
                 trackBy: (history: ReadingHistory) => history.id,
@@ -694,11 +694,11 @@ export function buildWikipediaApp(a: any, windowWidth?: number, windowHeight?: n
 
             a.hbox(() => {
               a.spacer();
-              a.button('🗑️ Clear History').onClick(async () => {
+              a.button('🗑️ Clear History', { onClick: async () => {
                 store.clearReadingHistory();
                 await updateLabels();
                 await viewStack.refresh();
-              });
+              } });
             });
           })
             .withPadding(10)

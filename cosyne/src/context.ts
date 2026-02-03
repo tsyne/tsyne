@@ -7,6 +7,7 @@
 
 import { BindingRegistry, PositionBinding } from './binding';
 import { CosyneCircle, CircleOptions } from './primitives/circle';
+import { CosyneEllipse, EllipseOptions } from './primitives/ellipse';
 import { CosyneRect, RectOptions } from './primitives/rect';
 import { CosyneLine, LineOptions, LineEndpoints } from './primitives/line';
 import { CosyneText, TextOptions } from './primitives/text';
@@ -88,6 +89,10 @@ export class CosyneContext {
       return;
     }
 
+    // Get the event canvas ID before clearing (set by enableEventHandling)
+    const eventCanvas = (this as any)._eventCanvas;
+    const eventCanvasId = eventCanvas?.id;
+
     // Clear existing Fyne widgets from the container
     this.app.ctx.bridge.send('containerRemoveAll', { containerId: this.containerId });
 
@@ -112,6 +117,14 @@ export class CosyneContext {
       });
     }
 
+    // Re-add the event canvas on top (must be last for proper z-order)
+    if (eventCanvasId) {
+      this.app.ctx.bridge.send('containerAdd', {
+        containerId: this.containerId,
+        childId: eventCanvasId
+      });
+    }
+
     // Render markers for lines and refresh bindings (same as initial build)
     this.renderLineMarkers();
     this.refreshBindings();
@@ -125,23 +138,88 @@ export class CosyneContext {
   }
 
   /**
+   * Apply current transform stack to a point
+   */
+  private applyTransform(x: number, y: number): [number, number] {
+    return this.transformStack.current().transformPoint(x, y);
+  }
+
+  /**
+   * Create a group with a local coordinate system (translate only)
+   * Children use coordinates relative to (x, y)
+   */
+  group(x: number, y: number, builder: (ctx: CosyneContext) => void): this {
+    return this.transform({ translate: [x, y] }, builder);
+  }
+
+  /**
    * Create a circle primitive
    */
   circle(x: number, y: number, radius: number, options?: CircleOptions): CosyneCircle {
+    // Apply current transform to center point
+    const [tx, ty] = this.applyTransform(x, y);
+
+    // Apply scale to radius (for non-uniform scale, use average to create ellipse-like effect)
+    const [scaleX, scaleY] = this.transformStack.current().getScale();
+    const radiusX = radius * scaleX;
+    const radiusY = radius * scaleY;
+
     // Create the underlying Tsyne canvas circle
     // x, y is the CENTER of the circle, convert to bounding box for Fyne
+    // Using different radiusX/radiusY creates an ellipse for non-uniform scaling
     const underlying = this.app.canvasCircle({
-      x: x - radius,
-      y: y - radius,
-      x2: x + radius,
-      y2: y + radius,
+      x: tx - radiusX,
+      y: ty - radiusY,
+      x2: tx + radiusX,
+      y2: ty + radiusY,
       fillColor: options?.fillColor || 'black',
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
       blendMode: options?.blendMode,
     });
 
-    const primitive = new CosyneCircle(x, y, radius, underlying, {
+    // Store the average scaled radius for hit testing
+    const scaledRadius = (radiusX + radiusY) / 2;
+    const primitive = new CosyneCircle(tx, ty, scaledRadius, underlying, {
+      ...options,
+      animationManager: this.animationManager,
+    });
+    this.trackPrimitive(primitive);
+    return primitive;
+  }
+
+  /**
+   * Create an ellipse primitive
+   *
+   * Use ellipse() when you need independent x and y radii (non-uniform scaling).
+   * For uniform circles, use circle() instead.
+   *
+   * @param x - Center x coordinate
+   * @param y - Center y coordinate
+   * @param radiusX - Horizontal radius
+   * @param radiusY - Vertical radius
+   * @param options - Fill, stroke, and other options
+   */
+  ellipse(x: number, y: number, radiusX: number, radiusY: number, options?: EllipseOptions): CosyneEllipse {
+    // Apply current transform to center point
+    const [tx, ty] = this.applyTransform(x, y);
+
+    // Apply scale to radii
+    const [scaleX, scaleY] = this.transformStack.current().getScale();
+    const scaledRadiusX = radiusX * scaleX;
+    const scaledRadiusY = radiusY * scaleY;
+
+    // Create the underlying Tsyne canvas ellipse
+    // Tsyne expects top-left position + width/height, so convert from center + radii
+    const underlying = this.app.canvasEllipse({
+      x: tx - scaledRadiusX,
+      y: ty - scaledRadiusY,
+      width: scaledRadiusX * 2,
+      height: scaledRadiusY * 2,
+      fillColor: options?.fillColor || 'black',
+    });
+
+    const primitive = new CosyneEllipse(tx, ty, scaledRadiusX, scaledRadiusY, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -153,20 +231,29 @@ export class CosyneContext {
    * Create a rectangle primitive
    */
   rect(x: number, y: number, width: number, height: number, options?: RectOptions): CosyneRect {
+    // Apply current transform to position
+    const [tx, ty] = this.applyTransform(x, y);
+
+    // Apply scale to dimensions
+    const [scaleX, scaleY] = this.transformStack.current().getScale();
+    const scaledWidth = width * scaleX;
+    const scaledHeight = height * scaleY;
+
     const fillColor = options?.fillColor || 'black';
     // Create the underlying Tsyne canvas rectangle
     const underlying = this.app.canvasRectangle({
-      x,
-      y,
-      x2: x + width,
-      y2: y + height,
+      x: tx,
+      y: ty,
+      x2: tx + scaledWidth,
+      y2: ty + scaledHeight,
       fillColor,
       strokeColor: options?.strokeColor,
       strokeWidth: options?.strokeWidth || 1,
+      cornerRadius: options?.cornerRadius,
       blendMode: options?.blendMode,
     });
 
-    const primitive = new CosyneRect(x, y, width, height, underlying, {
+    const primitive = new CosyneRect(tx, ty, scaledWidth, scaledHeight, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -178,14 +265,18 @@ export class CosyneContext {
    * Create a line primitive
    */
   line(x1: number, y1: number, x2: number, y2: number, options?: LineOptions): CosyneLine {
+    // Apply current transform to both endpoints
+    const [tx1, ty1] = this.applyTransform(x1, y1);
+    const [tx2, ty2] = this.applyTransform(x2, y2);
+
     // Create the underlying Tsyne canvas line
-    const underlying = this.app.canvasLine(x1, y1, x2, y2, {
+    const underlying = this.app.canvasLine(tx1, ty1, tx2, ty2, {
       strokeColor: options?.strokeColor || 'black',
       strokeWidth: options?.strokeWidth || 1,
       blendMode: options?.blendMode,
     });
 
-    const primitive = new CosyneLine(x1, y1, x2, y2, underlying, {
+    const primitive = new CosyneLine(tx1, ty1, tx2, ty2, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -737,15 +828,18 @@ export class CosyneContext {
    * Create a text primitive at specified canvas coordinates
    */
   text(x: number, y: number, text: string, options?: any): CosyneText {
+    // Apply current transform to position
+    const [tx, ty] = this.applyTransform(x, y);
+
     // Create the underlying Tsyne canvas text with x,y positioning
     const underlying = this.app.canvasText(text, {
-      x,
-      y,
+      x: tx,
+      y: ty,
       color: options?.fillColor || 'black',
       textSize: options?.fontSize || 12,
     });
 
-    const primitive = new CosyneText(x, y, text, underlying, {
+    const primitive = new CosyneText(tx, ty, text, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -786,10 +880,13 @@ export class CosyneContext {
    * Create an arc primitive
    */
   arc(x: number, y: number, radius: number, options?: any): CosyneArc {
+    // Apply current transform to center
+    const [tx, ty] = this.applyTransform(x, y);
+
     // Create the underlying Tsyne canvas arc
     const underlying = this.app.canvasArc({
-      x,
-      y,
+      x: tx,
+      y: ty,
       radius,
       startAngle: options?.startAngle || 0,
       endAngle: options?.endAngle || Math.PI / 2,
@@ -798,7 +895,7 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneArc(x, y, radius, underlying, {
+    const primitive = new CosyneArc(tx, ty, radius, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -810,10 +907,13 @@ export class CosyneContext {
    * Create a wedge primitive
    */
   wedge(x: number, y: number, radius: number, options?: any): CosyneWedge {
+    // Apply current transform to center
+    const [tx, ty] = this.applyTransform(x, y);
+
     // Create the underlying Tsyne canvas wedge
     const underlying = this.app.canvasWedge({
-      x,
-      y,
+      x: tx,
+      y: ty,
       radius,
       startAngle: options?.startAngle || 0,
       endAngle: options?.endAngle || Math.PI / 2,
@@ -822,7 +922,7 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneWedge(x, y, radius, underlying, {
+    const primitive = new CosyneWedge(tx, ty, radius, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -834,9 +934,12 @@ export class CosyneContext {
    * Create a grid primitive (Phase 7)
    */
   grid(x: number, y: number, options?: GridOptions): CosyneGrid {
+    // Apply current transform to origin
+    const [tx, ty] = this.applyTransform(x, y);
+
     const underlying = this.app.canvasGrid({
-      x,
-      y,
+      x: tx,
+      y: ty,
       rows: options?.rows || 5,
       cols: options?.cols || 5,
       cellWidth: options?.cellWidth || 40,
@@ -845,7 +948,7 @@ export class CosyneContext {
       gridWidth: options?.gridWidth || 1,
     });
 
-    const primitive = new CosyneGrid(x, y, underlying, {
+    const primitive = new CosyneGrid(tx, ty, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -857,9 +960,12 @@ export class CosyneContext {
    * Create a heatmap primitive (Phase 7)
    */
   heatmap(x: number, y: number, options?: HeatmapOptions): CosyneHeatmap {
+    // Apply current transform to origin
+    const [tx, ty] = this.applyTransform(x, y);
+
     const underlying = this.app.canvasHeatmap({
-      x,
-      y,
+      x: tx,
+      y: ty,
       cellWidth: options?.cellWidth || 30,
       cellHeight: options?.cellHeight || 30,
       colorScheme: options?.colorScheme || 'viridis',
@@ -867,7 +973,7 @@ export class CosyneContext {
       maxValue: options?.maxValue || 1,
     });
 
-    const primitive = new CosyneHeatmap(x, y, underlying, {
+    const primitive = new CosyneHeatmap(tx, ty, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -879,8 +985,11 @@ export class CosyneContext {
    * Create a polygon primitive (Phase 7)
    */
   polygon(x: number, y: number, vertices: Point[], options?: PolygonOptions): CosynePolygon {
-    // Transform relative vertices to absolute points
-    const points = vertices.map(v => ({ x: x + v.x, y: y + v.y }));
+    // Apply current transform to origin
+    const [tx, ty] = this.applyTransform(x, y);
+
+    // Transform relative vertices to absolute points using transformed origin
+    const points = vertices.map(v => ({ x: tx + v.x, y: ty + v.y }));
     const underlying = this.app.canvasPolygon({
       points,
       fillColor: options?.fillColor || 'black',
@@ -888,7 +997,7 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosynePolygon(x, y, vertices, underlying, {
+    const primitive = new CosynePolygon(tx, ty, vertices, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -900,9 +1009,12 @@ export class CosyneContext {
    * Create a star primitive (Phase 7)
    */
   star(x: number, y: number, options?: StarOptions): CosyneStar {
+    // Apply current transform to center
+    const [tx, ty] = this.applyTransform(x, y);
+
     const underlying = this.app.canvasStar({
-      x,
-      y,
+      x: tx,
+      y: ty,
       points: options?.points || 5,
       innerRadius: options?.innerRadius || 10,
       outerRadius: options?.outerRadius || 20,
@@ -911,7 +1023,7 @@ export class CosyneContext {
       strokeWidth: options?.strokeWidth || 1,
     });
 
-    const primitive = new CosyneStar(x, y, underlying, {
+    const primitive = new CosyneStar(tx, ty, underlying, {
       ...options,
       animationManager: this.animationManager,
     });
@@ -924,6 +1036,9 @@ export class CosyneContext {
    * Note: x, y are stored for Cosyne but CanvasGauge auto-centers based on radius
    */
   gauge(x: number, y: number, options?: GaugeOptions): CosyneGauge {
+    // Apply current transform to position (stored on primitive, gauge auto-centers)
+    const [tx, ty] = this.applyTransform(x, y);
+
     const radius = options?.radius || 50;
     const underlying = this.app.canvasGauge({
       // Let CanvasGauge auto-center based on radius
@@ -940,7 +1055,7 @@ export class CosyneContext {
       endAngle: ((options?.endAngle ?? 315) * Math.PI) / 180,
     });
 
-    const primitive = new CosyneGauge(x, y, underlying, {
+    const primitive = new CosyneGauge(tx, ty, underlying, {
       ...options,
       animationManager: this.animationManager,
     });

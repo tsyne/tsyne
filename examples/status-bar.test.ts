@@ -54,9 +54,9 @@ describe('Status Bar Label Tests', () => {
           app.vbox(() => {
             app.label('Application');
 
-            app.button('Update Status').onClick(() => {
+            app.button('Update Status', { onClick: () => {
               statusLabel.setText('Loading...');
-            }).withId('update-btn');
+            } }).withId('update-btn');
 
             app.separator();
             statusLabel = app.label('Ready').withId('status-label');
@@ -88,7 +88,7 @@ describe('Status Bar Label Tests', () => {
       app.window({ title: 'Multiple Status Updates Test' }, (win) => {
         win.setContent(() => {
           app.vbox(() => {
-            app.button('Cycle Status').onClick(() => {
+            app.button('Cycle Status', { onClick: () => {
               if (currentStatus === 'Ready') {
                 currentStatus = 'Loading...';
                 statusLabel.setText('Loading...');
@@ -99,7 +99,7 @@ describe('Status Bar Label Tests', () => {
                 currentStatus = 'Ready';
                 statusLabel.setText('Ready');
               }
-            }).withId('cycle-btn');
+            } }).withId('cycle-btn');
 
             app.separator();
             statusLabel = app.label(currentStatus).withId('status-label');

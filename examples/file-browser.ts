@@ -51,7 +51,7 @@ app(resolveTransport(), { title: 'Tsyne File Browser' }, (a) => {
                 const fileIcon = a.fileicon(file.path);
 
                 // File name as clickable button
-                a.button(file.name).onClick(async () => {
+                a.button(file.name, { onClick: async () => {
                   // Deselect previous
                   selectedFile = file.path;
                   await fileIcon.setSelected(true);
@@ -60,7 +60,7 @@ app(resolveTransport(), { title: 'Tsyne File Browser' }, (a) => {
                   if (statusLabel) {
                     await statusLabel.setText(`Selected: ${file.name}`);
                   }
-                });
+                } });
               });
             }
           });
@@ -76,19 +76,19 @@ app(resolveTransport(), { title: 'Tsyne File Browser' }, (a) => {
 
         // Action buttons
         a.hbox(() => {
-          a.button('Open').onClick(() => {
+          a.button('Open', { onClick: () => {
             if (selectedFile) {
               console.log(`Opening: ${selectedFile}`);
             }
-          });
-          a.button('Delete').onClick(() => {
+          } });
+          a.button('Delete', { onClick: () => {
             if (selectedFile) {
               console.log(`Deleting: ${selectedFile}`);
             }
-          });
-          a.button('New Folder').onClick(() => {
+          } });
+          a.button('New Folder', { onClick: () => {
             console.log('Creating new folder...');
-          });
+          } });
         });
       });
     });

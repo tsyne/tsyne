@@ -142,8 +142,8 @@ export class SliderPuzzleUI {
   buildContent = (): void => {
     this.a.vbox(() => {
       this.a.hbox(() => {
-        this.a.button('Scramble').onClick(() => this.puzzle.scramble()).withId('scrambleBtn');
-        this.a.button('Solve').onClick(() => this.puzzle.solve()).withId('solveBtn');
+        this.a.button('Scramble', { onClick: () => this.puzzle.scramble() }).withId('scrambleBtn');
+        this.a.button('Solve', { onClick: () => this.puzzle.solve() }).withId('solveBtn');
       });
 
       this.a.separator();

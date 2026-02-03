@@ -35,7 +35,7 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Resize Window').onClick(async () => {
+          button('Resize Window', { onClick: async () => {
             const width = parseInt(await widthEntry.getText());
             const height = parseInt(await heightEntry.getText());
             if (!isNaN(width) && !isNaN(height)) {
@@ -44,14 +44,14 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
             } else {
               statusLabel.setText('Invalid width or height');
             }
-          });
+          } });
 
-          button('Reset Size').onClick(async () => {
+          button('Reset Size', { onClick: async () => {
             await win.resize(500, 400);
             await widthEntry.setText('500');
             await heightEntry.setText('400');
             statusLabel.setText('Window reset to: 500x400');
-          });
+          } });
         });
 
         label('');
@@ -62,38 +62,38 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Center Window').onClick(async () => {
+          button('Center Window', { onClick: async () => {
             await win.centerOnScreen();
             statusLabel.setText('Window centered on screen');
-          });
+          } });
 
-          button('Large Size').onClick(async () => {
+          button('Large Size', { onClick: async () => {
             await win.resize(800, 600);
             await win.centerOnScreen();
             await widthEntry.setText('800');
             await heightEntry.setText('600');
             statusLabel.setText('Window set to 800x600 and centered');
-          });
+          } });
         });
 
         label('');
 
         hbox(() => {
-          button('Small Size').onClick(async () => {
+          button('Small Size', { onClick: async () => {
             await win.resize(400, 300);
             await win.centerOnScreen();
             await widthEntry.setText('400');
             await heightEntry.setText('300');
             statusLabel.setText('Window set to 400x300 and centered');
-          });
+          } });
 
-          button('Compact Size').onClick(async () => {
+          button('Compact Size', { onClick: async () => {
             await win.resize(350, 250);
             await win.centerOnScreen();
             await widthEntry.setText('350');
             await heightEntry.setText('250');
             statusLabel.setText('Window set to 350x250 and centered');
-          });
+          } });
         });
 
         label('');
@@ -104,15 +104,15 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Enter Fullscreen').onClick(async () => {
+          button('Enter Fullscreen', { onClick: async () => {
             await win.setFullScreen(true);
             statusLabel.setText('Entered fullscreen mode');
-          });
+          } });
 
-          button('Exit Fullscreen').onClick(async () => {
+          button('Exit Fullscreen', { onClick: async () => {
             await win.setFullScreen(false);
             statusLabel.setText('Exited fullscreen mode');
-          });
+          } });
         });
 
         label('');
@@ -122,7 +122,7 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
         label('Multiple Windows:');
         label('');
 
-        button('Open Second Window').onClick(() => {
+        button('Open Second Window', { onClick: () => {
           if (!win2) {
             win2 = window({ title: 'Second Window', width: 400, height: 300 }, (secondWin) => {
               secondWin.setContent(() => {
@@ -131,18 +131,18 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
                   label('');
                   label('Size: 400x300');
                   label('');
-                  button('Center This Window').onClick(async () => {
+                  button('Center This Window', { onClick: async () => {
                     await secondWin.centerOnScreen();
-                  });
+                  } });
                   label('');
-                  button('Resize to 500x350').onClick(async () => {
+                  button('Resize to 500x350', { onClick: async () => {
                     await secondWin.resize(500, 350);
-                  });
+                  } });
                   label('');
-                  button('Close Window').onClick(() => {
+                  button('Close Window', { onClick: () => {
                     // Note: Closing windows programmatically requires additional bridge support
                     console.log('Window close requested');
-                  });
+                  } });
                 });
               });
               secondWin.show();
@@ -152,7 +152,7 @@ app(resolveTransport(), { title: 'Window Sizing Demo' }, () => {
           } else {
             statusLabel.setText('Second window already open');
           }
-        });
+        } });
       });
     });
 

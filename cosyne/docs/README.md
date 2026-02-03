@@ -396,7 +396,7 @@ This documentation (Phase 3.1 Sprint 4) covers the **GPU-accelerated raymarching
   - Performance characteristics and optimization techniques
   - All 12 Canvas 2D demos with running commands
 
-- ✅ **Canvas 2D Demos** - 12 working demos with co-located tests
+- ✅ **Canvas 2D Demos** - 13 working demos with co-located tests
   - `line-chart-demo.ts` - Multi-series data charts
   - `particles-demo.ts` - Physics simulation
   - `gradients-demo.ts` - Fill types and transitions
@@ -409,6 +409,7 @@ This documentation (Phase 3.1 Sprint 4) covers the **GPU-accelerated raymarching
   - `foreign-objects-demo.ts` - Widget embedding
   - `collections-demo.ts` - Efficient rendering
   - `data-visualization-demo.ts` - Heatmaps and histograms
+  - `transform-group-showcase-nested-coordinates.ts` - Local coordinate systems (SVG-like groups)
 
 ### Missing: System Architecture & Integration
 - [ ] **COSYNE_ARCHITECTURE.md** - Three-subsystem overview
@@ -463,8 +464,8 @@ This documentation (Phase 3.1 Sprint 4) covers the **GPU-accelerated raymarching
 | Phase | Component | Status | Lines | Demos |
 |-------|-----------|--------|-------|-------|
 | 3.1 S4 | Raymarching | ✅ Complete | 2,490 | 6 GPU |
-| 3.5 | Canvas 2D | ✅ Complete | 700+ | 12 Canvas |
-| **Total** | **All** | **16/19** | **3,190+** | **18** |
+| 3.5 | Canvas 2D | ✅ Complete | 700+ | 13 Canvas |
+| **Total** | **All** | **16/19** | **3,190+** | **19** |
 
 ---
 

@@ -37,7 +37,7 @@ app({ title: 'Form Demo' }, () => {
         label('');
 
         hbox(() => {
-          button('Submit').onClick(async () => {
+          button('Submit', { onClick: async () => {
             const name = await nameEntry.getText();
             const email = await emailEntry.getText();
             const phone = await phoneEntry.getText();
@@ -48,14 +48,14 @@ app({ title: 'Form Demo' }, () => {
             }
 
             statusLabel.setText(`Submitted: ${name} | ${email} | ${phone}`);
-          });
+          } });
 
-          button('Clear').onClick(async () => {
+          button('Clear', { onClick: async () => {
             await nameEntry.setText('');
             await emailEntry.setText('');
             await phoneEntry.setText('');
             statusLabel.setText('Form cleared');
-          });
+          } });
         });
 
         label('');
