@@ -729,6 +729,13 @@ export class CosyneContext {
         }
       }
 
+      // Refresh stroke width bindings
+      const strokeWidthBinding = primitive.getStrokeWidthBinding();
+      if (strokeWidthBinding) {
+        const width = strokeWidthBinding.evaluate();
+        primitive.updateStrokeWidth(width);
+      }
+
       // Refresh alpha bindings
       const alphaBinding = primitive.getAlphaBinding();
       if (alphaBinding) {

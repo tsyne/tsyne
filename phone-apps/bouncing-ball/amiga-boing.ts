@@ -93,7 +93,7 @@ export function buildAmigaBoingApp(a: App): void {
 }
 
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../core/src');
+  const { app, resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Amiga Boing' }, (a: any) => {
     a.window({ title: 'Boing! (1984)', width: W, height: H }, (win: any) => {
       win.setContent(() => buildAmigaBoingApp(a));

@@ -569,65 +569,41 @@ export class FractalsUI {
           // Control buttons - row 1
           this.a.hbox(() => {
             this.a
-              .button('Zoom +')
-              .withId('zoom-in')
-              .onClick(() => this.zoomIn());
+              .button('Zoom +', { onClick: () => this.zoomIn() }).withId('zoom-in');
             this.a
-              .button('Zoom -')
-              .withId('zoom-out')
-              .onClick(() => this.zoomOut());
+              .button('Zoom -', { onClick: () => this.zoomOut() }).withId('zoom-out');
             this.a
-              .button('Reset')
-              .withId('reset')
-              .onClick(() => this.reset());
+              .button('Reset', { onClick: () => this.reset() }).withId('reset');
           });
 
           // Control buttons - row 2 (pan)
           this.a.hbox(() => {
             this.a
-              .button('<')
-              .withId('pan-left')
-              .onClick(() => this.pan(-1, 0));
+              .button('<', { onClick: () => this.pan(-1, 0) }).withId('pan-left');
             this.a
-              .button('^')
-              .withId('pan-up')
-              .onClick(() => this.pan(0, -1));
+              .button('^', { onClick: () => this.pan(0, -1) }).withId('pan-up');
             this.a
-              .button('v')
-              .withId('pan-down')
-              .onClick(() => this.pan(0, 1));
+              .button('v', { onClick: () => this.pan(0, 1) }).withId('pan-down');
             this.a
-              .button('>')
-              .withId('pan-right')
-              .onClick(() => this.pan(1, 0));
+              .button('>', { onClick: () => this.pan(1, 0) }).withId('pan-right');
           });
 
           // Control buttons - row 3
           this.a.hbox(() => {
             this.a
-              .button('Palette')
-              .withId('next-palette')
-              .onClick(() => this.nextPalette());
+              .button('Palette', { onClick: () => this.nextPalette() }).withId('next-palette');
           });
 
           // Julia/Phoenix parameter controls (only shown for those fractals)
           this.a.hbox(() => {
             this.a
-              .button('c.r-')
-              .withId('julia-r-minus')
-              .onClick(() => this.adjustJuliaR(-0.05));
+              .button('c.r-', { onClick: () => this.adjustJuliaR(-0.05) }).withId('julia-r-minus');
             this.a
-              .button('c.r+')
-              .withId('julia-r-plus')
-              .onClick(() => this.adjustJuliaR(0.05));
+              .button('c.r+', { onClick: () => this.adjustJuliaR(0.05) }).withId('julia-r-plus');
             this.a
-              .button('c.i-')
-              .withId('julia-i-minus')
-              .onClick(() => this.adjustJuliaI(-0.05));
+              .button('c.i-', { onClick: () => this.adjustJuliaI(-0.05) }).withId('julia-i-minus');
             this.a
-              .button('c.i+')
-              .withId('julia-i-plus')
-              .onClick(() => this.adjustJuliaI(0.05));
+              .button('c.i+', { onClick: () => this.adjustJuliaI(0.05) }).withId('julia-i-plus');
           });
 
           // Instructions

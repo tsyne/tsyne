@@ -1,5 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label  } import { app, resolveTransport, window, vbox, hbox, grid, button, label  , standaloneShutdownStrategy } from 'tsyne';
-// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, standaloneShutdownStrategy } from 'tsyne';
 
 /**
  * Basic Tic-Tac-Toe

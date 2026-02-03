@@ -82,18 +82,9 @@ export function buildSVGDemoApp(a: any) {
 
         // Tab controls
         a.hbox(() => {
-          a.button('Effects')
-            .onClick(async () => store.selectTab('effects'))
-            .withId('tab-effects')
-            .when(() => store.selectedTab !== 'effects');
-          a.button('Gradients')
-            .onClick(async () => store.selectTab('gradients'))
-            .withId('tab-gradients')
-            .when(() => store.selectedTab !== 'gradients');
-          a.button('Clipping')
-            .onClick(async () => store.selectTab('clipping'))
-            .withId('tab-clipping')
-            .when(() => store.selectedTab !== 'clipping');
+          a.button('Effects', { onClick: async () => store.selectTab('effects') }).withId('tab-effects').when(() => store.selectedTab !== 'effects');
+          a.button('Gradients', { onClick: async () => store.selectTab('gradients') }).withId('tab-gradients').when(() => store.selectedTab !== 'gradients');
+          a.button('Clipping', { onClick: async () => store.selectTab('clipping') }).withId('tab-clipping').when(() => store.selectedTab !== 'clipping');
           tabLabel = a.label(`(${store.selectedTab})`).withId('tabLabel');
         });
 
@@ -127,32 +118,20 @@ export function buildSVGDemoApp(a: any) {
           a.hbox(() => {
             a.label('Effect:');
             (['shadow', 'glow', 'blend', 'dash'] as const).forEach((effect) => {
-              a.button(effect)
-                .onClick(async () => store.selectEffect(effect))
-                .withId(`effect-${effect}`)
-                .when(() => store.effectType !== effect);
+              a.button(effect, { onClick: async () => store.selectEffect(effect) }).withId(`effect-${effect}`).when(() => store.effectType !== effect);
             });
           });
         } else if (store.selectedTab === 'gradients') {
           a.hbox(() => {
             a.label('Gradient:');
-            a.button('Linear')
-              .onClick(async () => store.selectGradient('linear'))
-              .withId('grad-linear')
-              .when(() => store.gradientType !== 'linear');
-            a.button('Radial')
-              .onClick(async () => store.selectGradient('radial'))
-              .withId('grad-radial')
-              .when(() => store.gradientType !== 'radial');
+            a.button('Linear', { onClick: async () => store.selectGradient('linear') }).withId('grad-linear').when(() => store.gradientType !== 'linear');
+            a.button('Radial', { onClick: async () => store.selectGradient('radial') }).withId('grad-radial').when(() => store.gradientType !== 'radial');
           });
         } else if (store.selectedTab === 'clipping') {
           a.hbox(() => {
             a.label('Clip Shape:');
             (['circle', 'rect', 'polygon'] as const).forEach((clip) => {
-              a.button(clip)
-                .onClick(async () => store.selectClip(clip))
-                .withId(`clip-${clip}`)
-                .when(() => store.clipType !== clip);
+              a.button(clip, { onClick: async () => store.selectClip(clip) }).withId(`clip-${clip}`).when(() => store.clipType !== clip);
             });
           });
         }
@@ -514,6 +493,6 @@ function renderClipping(c: any, store: SVGDemoStore, width: number, height: numb
 
 // Auto-run when executed directly
 if (require.main === module) {
-  const { resolveTransport } = require('../../core/src');
+  const { resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'SVG Graphics Demo' }, buildSVGDemoApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

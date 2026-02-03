@@ -912,8 +912,7 @@ export class DiskTreeUI {
 
       // Control buttons
       this.a.hbox(() => {
-        this.a.button('Open Folder')
-          .onClick(async () => {
+        this.a.button('Open Folder', { onClick: async () => {
             const folderPath = await win.showFolderOpen();
             if (folderPath) {
               try {
@@ -926,55 +925,42 @@ export class DiskTreeUI {
                 await win.showError('Scan Error', `Failed to scan: ${String(e)}`);
               }
             }
-          })
-          .withId('openBtn');
+          } }).withId('openBtn');
 
-        this.a.button('Up')
-          .onClick(() => {
+        this.a.button('Up', { onClick: () => {
             this.store.drillUp();
             this.updateUI(true);
-          })
-          .withId('upBtn');
+          } }).withId('upBtn');
 
-        this.a.button('Root')
-          .onClick(() => {
+        this.a.button('Root', { onClick: () => {
             this.store.goToRoot();
             this.updateUI(true);
-          })
-          .withId('rootBtn');
+          } }).withId('rootBtn');
 
         this.a.spacer();
 
         // Color scheme buttons
         this.a.label('Color:');
 
-        this.a.button('Type')
-          .onClick(() => {
+        this.a.button('Type', { onClick: () => {
             this.store.setColorScheme('byType');
             this.updateUI(true);
-          })
-          .withId('colorTypeBtn');
+          } }).withId('colorTypeBtn');
 
-        this.a.button('Size')
-          .onClick(() => {
+        this.a.button('Size', { onClick: () => {
             this.store.setColorScheme('bySize');
             this.updateUI(true);
-          })
-          .withId('colorSizeBtn');
+          } }).withId('colorSizeBtn');
 
-        this.a.button('Depth')
-          .onClick(() => {
+        this.a.button('Depth', { onClick: () => {
             this.store.setColorScheme('byDepth');
             this.updateUI(true);
-          })
-          .withId('colorDepthBtn');
+          } }).withId('colorDepthBtn');
 
-        this.a.button('Age')
-          .onClick(() => {
+        this.a.button('Age', { onClick: () => {
             this.store.setColorScheme('byAge');
             this.updateUI(true);
-          })
-          .withId('colorAgeBtn');
+          } }).withId('colorAgeBtn');
       });
 
       // Breadcrumb navigation

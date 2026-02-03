@@ -173,22 +173,10 @@ export function buildParticlesAdvancedApp(a: any) {
 
       // Emitter type controls
       a.hbox(() => {
-        a.button('Fountain')
-          .onClick(async () => setEmitterType('fountain'))
-          .withId('btn-fountain')
-          .when(() => emitterType !== 'fountain');
-        a.button('Fireworks')
-          .onClick(async () => setEmitterType('fireworks'))
-          .withId('btn-fireworks')
-          .when(() => emitterType !== 'fireworks');
-        a.button('Smoke')
-          .onClick(async () => setEmitterType('smoke'))
-          .withId('btn-smoke')
-          .when(() => emitterType !== 'smoke');
-        a.button('Explosion')
-          .onClick(async () => setEmitterType('explosion'))
-          .withId('btn-explosion')
-          .when(() => emitterType !== 'explosion');
+        a.button('Fountain', { onClick: async () => setEmitterType('fountain') }).withId('btn-fountain').when(() => emitterType !== 'fountain');
+        a.button('Fireworks', { onClick: async () => setEmitterType('fireworks') }).withId('btn-fireworks').when(() => emitterType !== 'fireworks');
+        a.button('Smoke', { onClick: async () => setEmitterType('smoke') }).withId('btn-smoke').when(() => emitterType !== 'smoke');
+        a.button('Explosion', { onClick: async () => setEmitterType('explosion') }).withId('btn-explosion').when(() => emitterType !== 'explosion');
 
         a.label(`Type: ${emitterType}`).withId('emitterTypeLabel');
       });
@@ -197,14 +185,8 @@ export function buildParticlesAdvancedApp(a: any) {
       a.hbox(() => {
         a.label(`Particles: ${String(count).padStart(4, ' ')}`).withId('particleCountLabel');
         // Two separate buttons with .when() for declarative visibility
-        a.button('Start')
-          .onClick(async () => doStart())
-          .withId('startBtn')
-          .when(() => !isRunning);
-        a.button('Stop')
-          .onClick(async () => doStop())
-          .withId('stopBtn')
-          .when(() => isRunning);
+        a.button('Start', { onClick: async () => doStart() }).withId('startBtn').when(() => !isRunning);
+        a.button('Stop', { onClick: async () => doStop() }).withId('stopBtn').when(() => isRunning);
       });
 
       // Canvas
@@ -221,17 +203,14 @@ export function buildParticlesAdvancedApp(a: any) {
 
       // Action buttons
       a.hbox(() => {
-        a.button('Clear')
-          .onClick(async () => {
+        a.button('Clear', { onClick: async () => {
             ps.clear();
             currentEmitter = null;
             doStop();
             rebuildUI();
-          })
-          .withId('clearBtn');
+          } }).withId('clearBtn');
 
-        a.button('Create at Center')
-          .onClick(async () => {
+        a.button('Create at Center', { onClick: async () => {
             if (currentEmitter) {
               ps.removeEmitter(currentEmitter);
             }
@@ -240,8 +219,7 @@ export function buildParticlesAdvancedApp(a: any) {
             if (!isRunning) {
               doStart();
             }
-          })
-          .withId('createCenterBtn');
+          } }).withId('createCenterBtn');
       });
     });
   };
@@ -258,6 +236,6 @@ export function buildParticlesAdvancedApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  const { resolveTransport } = require('../../core/src');
+  const { resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Particles Advanced Demo' }, buildParticlesAdvancedApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

@@ -201,16 +201,14 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
             updateTrackDisplay();
           } }).withId('btn-previous');
 
-          playButton = a.button('▶ Play')
-            .onClick(() => {
+          playButton = a.button('▶ Play', { onClick: () => {
               const state = music.getPlaybackState();
               if (state === 'playing') {
                 music.pause();
               } else {
                 music.play();
               }
-            })
-            .withId('btn-play');
+            } }).withId('btn-play');
 
           a.button('Next ⏭', { onClick: () => {
             music.next();
@@ -231,21 +229,16 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
 
         // Shuffle and repeat buttons
         a.hbox(() => {
-          const shuffleBtn = a.button(music.getShuffle() ? '🔀 On' : '🔀 Off')
-            .onClick(() => {
+          const shuffleBtn = a.button(music.getShuffle() ? '🔀 On' : '🔀 Off', { onClick: () => {
               const newShuffle = !music.getShuffle();
               music.setShuffle(newShuffle);
               shuffleBtn.setText(newShuffle ? '🔀 On' : '🔀 Off');
-            })
-            .withId('btn-shuffle');
+            } }).withId('btn-shuffle');
 
           a.spacer();
 
-          const repeatBtn = a.button(
-            music.getRepeatMode() === 'none' ? '🔁 Off' :
-            music.getRepeatMode() === 'one' ? '🔁 One' : '🔁 All'
-          )
-            .onClick(() => {
+          const repeatBtn = a.button(music.getRepeatMode() === 'none' ? '🔁 Off' :
+            music.getRepeatMode() === 'one' ? '🔁 One' : '🔁 All', { onClick: () => {
               const modes: Array<'none' | 'one' | 'all'> = ['none', 'one', 'all'];
               const current = music.getRepeatMode();
               const idx = modes.indexOf(current);
@@ -255,8 +248,7 @@ export function createMusicPlayerApp(a: App, music: IMusicService): void {
                 next === 'none' ? '🔁 Off' :
                 next === 'one' ? '🔁 One' : '🔁 All'
               );
-            })
-            .withId('btn-repeat');
+            } }).withId('btn-repeat');
         });
 
         a.separator();

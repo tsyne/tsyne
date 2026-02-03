@@ -14,7 +14,7 @@
  * Or import and use: import { buildDesktop, Desktop } from 'tsyne';
  */
 
-import { App } from 'tsyne';
+import { App, app } from 'tsyne';
 import { Window } from 'tsyne';
 import { MultipleWindows, Label, Button, DesktopCanvas, DesktopMDI, InnerWindow } from 'tsyne';
 import { ITsyneWindow } from 'tsyne';
@@ -557,21 +557,21 @@ class Desktop implements IDesktopDebugHost {
         x: folder.x,
         y: folder.y,
         color,
-        onClick: (_iconId, _x, _y) => {
+        onClick: (_iconId: string, _x: number, _y: number) => {
           this.selectFolder(folder);
         },
-        onDoubleClick: (_iconId, _x, _y) => {
+        onDoubleClick: (_iconId: string, _x: number, _y: number) => {
           this.openFolderWindow(folder);
         },
-        onDragEnd: (_iconId, x, y) => {
+        onDragEnd: (_iconId: string, x: number, y: number) => {
           folder.x = x;
           folder.y = y;
           this.iconManager.saveIconPosition(`folder:${folder.category}`, x, y);
         },
-        onRightClick: (_iconId, _x, _y) => {
+        onRightClick: (_iconId: string, _x: number, _y: number) => {
           this.showFolderInfo(folder);
         },
-        onDropReceived: (droppedIconId) => {
+        onDropReceived: (droppedIconId: string) => {
           this.handleFolderDrop(folder, droppedIconId);
         }
       });
@@ -591,22 +591,22 @@ class Desktop implements IDesktopDebugHost {
         x: icon.x,
         y: icon.y,
         color,
-        onClick: (iconId, x, y) => {
+        onClick: (_iconId: string, _x: number, _y: number) => {
           this.selectIcon(icon);
         },
-        onDoubleClick: (iconId, x, y) => {
+        onDoubleClick: (_iconId: string, _x: number, _y: number) => {
           this.launchApp(icon.metadata);
         },
-        onDragEnd: (iconId, x, y) => {
+        onDragEnd: (_iconId: string, x: number, y: number) => {
           // Update stored position and persist to preferences
           icon.x = x;
           icon.y = y;
           this.iconManager.saveIconPosition(icon.metadata.name, x, y);
         },
-        onRightClick: (iconId, x, y) => {
+        onRightClick: (_iconId: string, _x: number, _y: number) => {
           this.showAppInfo(icon.metadata);
         },
-        onDropReceived: (droppedIconId) => {
+        onDropReceived: (droppedIconId: string) => {
           this.fileManager.handleDrop(icon.metadata, droppedIconId, this.getFileIconCallbacks());
         }
       });
@@ -627,22 +627,22 @@ class Desktop implements IDesktopDebugHost {
         x: fileIcon.x,
         y: fileIcon.y,
         color,
-        onClick: (_iconId, _x, _y) => {
+        onClick: (_iconId: string, _x: number, _y: number) => {
           this.selectedIcon = null;
           this.selectedFolder = null;
           this.fileManager.select(fileIcon);
         },
-        onDoubleClick: (_iconId, _x, _y) => {
+        onDoubleClick: (_iconId: string, _x: number, _y: number) => {
           this.fileManager.launchWithApp(fileIcon, this.getFileIconCallbacks());
         },
-        onDrag: async (_iconId, x, y, _dx, _dy) => {
+        onDrag: async (_iconId: string, x: number, y: number, _dx: number, _dy: number) => {
           // Log what's under the pointer during drag
           await this.logWidgetUnderPointer(x, y);
         },
-        onDragEnd: (_iconId, x, y) => {
+        onDragEnd: (_iconId: string, x: number, y: number) => {
           this.fileManager.savePosition(fileIcon, x, y);
         },
-        onRightClick: (_iconId, _x, _y) => {
+        onRightClick: (_iconId: string, _x: number, _y: number) => {
           this.fileManager.showInfo(fileIcon, this._win);
         }
       });
@@ -837,8 +837,7 @@ class Desktop implements IDesktopDebugHost {
                             onClick: () => this.launchApp(icon.metadata)
                           });
                         } else {
-                          this.a.button(this.getIconEmoji(icon.metadata.name))
-                            .onClick(() => this.launchApp(icon.metadata));
+                          this.a.button(this.getIconEmoji(icon.metadata.name), { onClick: () => this.launchApp(icon.metadata) });
                         }
                         this.a.spacer();
                       });
@@ -858,7 +857,7 @@ class Desktop implements IDesktopDebugHost {
         scroll.withMinSize(450, 300);
       },
       undefined, // onClose
-      async (droppedIconId, dropX, dropY) => {
+      async (droppedIconId: string, dropX: number, dropY: number) => {
         // Handle file drops on this folder window
         const fileIcon = this.fileManager.findById(droppedIconId);
         if (!fileIcon || !this._win) {
@@ -982,12 +981,12 @@ class Desktop implements IDesktopDebugHost {
   private createLaunchBar() {
     this.a.hbox(() => {
       // Show Desktop button
-      this.a.button('Show Desktop').withId('showDesktopBtn').onClick(() => {
+      this.a.button('Show Desktop', { onClick: () => {
         // Hide all open windows
         for (const [, openApp] of this._openApps) {
           openApp.tsyneWindow.hide();
         }
-      });
+      } }).withId('showDesktopBtn');
 
       this.a.separator();
 
@@ -999,9 +998,7 @@ class Desktop implements IDesktopDebugHost {
           if (icon) {
             // Get first letter as icon placeholder
             const firstLetter = appName.charAt(0).toUpperCase();
-            this.a.button(`[${firstLetter}] ${appName}`)
-              .withId(`dock-${this.iconManager.getIconKey(appName)}`)
-              .onClick(() => this.launchApp(icon.metadata));
+            this.a.button(`[${firstLetter}] ${appName}`, { onClick: () => this.launchApp(icon.metadata) }).withId(`dock-${this.iconManager.getIconKey(appName)}`);
           }
         }
         this.a.separator();

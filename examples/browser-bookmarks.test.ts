@@ -234,7 +234,7 @@ vbox(() => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Create second browser instance (simulates restart)
-      const { Browser } = require('../core/src/browser');
+      const { Browser } = require('tsyne');
       const browser2 = new Browser({ testMode: true });
 
       // Check bookmarks were loaded

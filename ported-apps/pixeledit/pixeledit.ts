@@ -4823,9 +4823,9 @@ class PixelEditor {
               const isSelected = tool === this.currentTool;
               const buttonLabel = isSelected ? `▶ ${tool.name}` : tool.name;
               const toolId = `tool-${tool.name.toLowerCase()}`;
-              const btn = this.a.button(buttonLabel).withId(toolId).onClick(() => {
+              const btn = this.a.button(buttonLabel, { onClick: () => {
                 this.setTool(tool);
-              });
+              } }).withId(toolId);
               this.toolButtons.set(tool.name, btn);
             }
           });
@@ -4836,9 +4836,9 @@ class PixelEditor {
         open: true,
         builder: () => {
           this.a.hbox(() => {
-            this.a.button('-').withId('zoom-out').onClick(() => this.zoomOut());
+            this.a.button('-', { onClick: () => this.zoomOut() }).withId('zoom-out');
             this.zoomLabel = this.a.label(`${this.zoom * 100}%`).withId('zoom-level');
-            this.a.button('+').withId('zoom-in').onClick(() => this.zoomIn());
+            this.a.button('+', { onClick: () => this.zoomIn() }).withId('zoom-in');
           });
         }
       },

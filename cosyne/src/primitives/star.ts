@@ -103,6 +103,11 @@ export class CosyneStar extends Primitive<any> {
     this.applyStroke();
   }
 
+  updateStrokeWidth(width: number): void {
+    this.strokeWidth = width;
+    this.applyStroke();
+  }
+
   updateAlpha(alpha: number): void {
     this.alpha = alpha;
   }

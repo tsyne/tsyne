@@ -122,7 +122,7 @@ export function createAnimatedSpinnerApp(a: App, win: Window): () => void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../core/src');
+  const { app, resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Animated Spinner' }, (a: any) => {
     a.window({ title: 'Animated Spinner', width: WIDTH, height: HEIGHT }, (win: any) => {
       createAnimatedSpinnerApp(a, win);

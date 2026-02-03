@@ -13,11 +13,11 @@ import { buildKeyboard as buildEsES } from './es-es/keyboard';
 import { buildKeyboard as buildEnDvorak } from './en-dvorak/keyboard';
 
 // Create locale-specific test harness factories (return void for setContent compatibility)
-const createEnUSTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnUS); };
-const createEnGBTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnGB); };
-const createFrFRTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildFrFR); };
-const createEsESTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEsES); };
-const createEnDvorakTestHarness = (app: import('../../core/src/app').App): void => { createTestHarness(app, buildEnDvorak); };
+const createEnUSTestHarness = (app: import('tsyne').App): void => { createTestHarness(app, buildEnUS); };
+const createEnGBTestHarness = (app: import('tsyne').App): void => { createTestHarness(app, buildEnGB); };
+const createFrFRTestHarness = (app: import('tsyne').App): void => { createTestHarness(app, buildFrFR); };
+const createEsESTestHarness = (app: import('tsyne').App): void => { createTestHarness(app, buildEsES); };
+const createEnDvorakTestHarness = (app: import('tsyne').App): void => { createTestHarness(app, buildEnDvorak); };
 
 describe('Virtual Keyboard', () => {
   let tsyneTest: TsyneTest;

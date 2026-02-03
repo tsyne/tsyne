@@ -125,10 +125,9 @@ async function spawnNativeCamera(a: App): Promise<void> {
         a.separator();
 
         a.center(() => {
-          a.button('← Close')
-            .onClick(() => {
+          a.button('← Close', { onClick: () => {
               win.close();
-            });
+            } });
         });
       });
     });
@@ -185,6 +184,6 @@ async function spawnNativeCamera(a: App): Promise<void> {
 
 // Standalone execution (for testing)
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../../core/src/index');
+  const { app, resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Camera (Native)' }, buildNativeCameraApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

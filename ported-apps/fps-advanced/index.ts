@@ -1032,9 +1032,7 @@ export function buildFPSAdvancedApp(a: any): void {
         a.hbox(() => {
           a.label('FPS Advanced - Quake-Style Movement Demo').withId('title');
           a.spacer();
-          a.button('Reset')
-            .withId('btn-reset')
-            .onClick(() => store.reset());
+          a.button('Reset', { onClick: () => store.reset() }).withId('btn-reset');
         });
 
         a.separator();
@@ -1077,21 +1075,13 @@ export function buildFPSAdvancedApp(a: any): void {
             a.separator();
 
             a.hbox(() => {
-              a.button('Look Left')
-                .withId('btn-look-left')
-                .onClick(() => store.addMouseDelta(-50, 0));
-              a.button('Look Right')
-                .withId('btn-look-right')
-                .onClick(() => store.addMouseDelta(50, 0));
+              a.button('Look Left', { onClick: () => store.addMouseDelta(-50, 0) }).withId('btn-look-left');
+              a.button('Look Right', { onClick: () => store.addMouseDelta(50, 0) }).withId('btn-look-right');
             });
 
             a.hbox(() => {
-              a.button('Look Up')
-                .withId('btn-look-up')
-                .onClick(() => store.addMouseDelta(0, -30));
-              a.button('Look Down')
-                .withId('btn-look-down')
-                .onClick(() => store.addMouseDelta(0, 30));
+              a.button('Look Up', { onClick: () => store.addMouseDelta(0, -30) }).withId('btn-look-up');
+              a.button('Look Down', { onClick: () => store.addMouseDelta(0, 30) }).withId('btn-look-down');
             });
           });
         });

@@ -60,6 +60,7 @@ export abstract class Primitive<TUnderlyingWidget> {
   protected positionBinding: Binding<PositionBinding> | undefined;
   protected fillBinding: Binding<string> | undefined;
   protected strokeBinding: Binding<string> | undefined;
+  protected strokeWidthBinding: Binding<number> | undefined;
   protected alphaBinding: Binding<number> | undefined;
   protected visibleBinding: Binding<boolean> | undefined;
   protected rotationBinding: Binding<RotationAngles> | undefined;
@@ -204,6 +205,14 @@ export abstract class Primitive<TUnderlyingWidget> {
   }
 
   /**
+   * Bind stroke width to a function
+   */
+  bindStrokeWidth(fn: BindingFunction<number>): this {
+    this.strokeWidthBinding = new Binding(fn);
+    return this;
+  }
+
+  /**
    * Bind alpha (opacity) to a function
    */
   bindAlpha(fn: BindingFunction<number>): this {
@@ -242,6 +251,7 @@ export abstract class Primitive<TUnderlyingWidget> {
       this.positionBinding ||
       this.fillBinding ||
       this.strokeBinding ||
+      this.strokeWidthBinding ||
       this.alphaBinding ||
       this.visibleBinding ||
       this.rotationBinding ||
@@ -275,6 +285,13 @@ export abstract class Primitive<TUnderlyingWidget> {
    */
   getStrokeBinding(): Binding<string> | undefined {
     return this.strokeBinding;
+  }
+
+  /**
+   * Get stroke width binding if set
+   */
+  getStrokeWidthBinding(): Binding<number> | undefined {
+    return this.strokeWidthBinding;
   }
 
   /**
@@ -744,6 +761,11 @@ export abstract class Primitive<TUnderlyingWidget> {
    * Update stroke color from binding (implemented by subclasses)
    */
   abstract updateStroke(color: string): void;
+
+  /**
+   * Update stroke width from binding (implemented by subclasses)
+   */
+  abstract updateStrokeWidth(width: number): void;
 
   /**
    * Update alpha from binding (implemented by subclasses)

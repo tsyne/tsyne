@@ -193,9 +193,7 @@ export function createDialerApp(a: App, modem: IModemManagerService, contacts: I
           ].forEach(row => {
             row.forEach(digit => {
               const id = digit === '*' ? 'star' : digit === '#' ? 'hash' : digit;
-              a.button(digit)
-                .onClick(() => handleDigit(digit))
-                .withId(`key-${id}`);
+              a.button(digit, { onClick: () => handleDigit(digit) }).withId(`key-${id}`);
             });
           });
         });

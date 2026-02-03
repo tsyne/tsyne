@@ -316,22 +316,22 @@ export class MandelbrotUI {
 
           // Control buttons - zoom
           a.hbox(() => {
-            a.button('Zoom In (+)').withId('zoom-in').onClick(() => this.zoomIn());
-            a.button('Zoom Out (-)').withId('zoom-out').onClick(() => this.zoomOut());
-            a.button('Reset').withId('reset').onClick(() => this.reset());
+            a.button('Zoom In (+)', { onClick: () => this.zoomIn() }).withId('zoom-in');
+            a.button('Zoom Out (-)', { onClick: () => this.zoomOut() }).withId('zoom-out');
+            a.button('Reset', { onClick: () => this.reset() }).withId('reset');
           });
 
           // Control buttons - pan
           a.hbox(() => {
-            a.button('← Left').withId('pan-left').onClick(() => this.pan(-1, 0));
-            a.button('↑ Up').withId('pan-up').onClick(() => this.pan(0, -1));
-            a.button('↓ Down').withId('pan-down').onClick(() => this.pan(0, 1));
-            a.button('→ Right').withId('pan-right').onClick(() => this.pan(1, 0));
+            a.button('← Left', { onClick: () => this.pan(-1, 0) }).withId('pan-left');
+            a.button('↑ Up', { onClick: () => this.pan(0, -1) }).withId('pan-up');
+            a.button('↓ Down', { onClick: () => this.pan(0, 1) }).withId('pan-down');
+            a.button('→ Right', { onClick: () => this.pan(1, 0) }).withId('pan-right');
           });
 
           // Palette button
           a.hbox(() => {
-            a.button('Next Palette').withId('next-palette').onClick(() => this.nextPalette());
+            a.button('Next Palette', { onClick: () => this.nextPalette() }).withId('next-palette');
           });
         });
       });

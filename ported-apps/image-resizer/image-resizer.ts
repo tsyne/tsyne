@@ -219,20 +219,16 @@ export class ImageResizerUI {
       // File selection section
       this.a.label('Images').withId('imageResizerFilesLabel');
       this.a.hbox(() => {
-        this.a.button('Add Image')
-          .onClick(async () => {
+        this.a.button('Add Image', { onClick: async () => {
             const filePath = await win.showFileOpen();
             if (filePath) {
               await this.addImageFile(filePath);
             }
-          })
-          .withId('imageResizerAddBtn');
+          } }).withId('imageResizerAddBtn');
 
         this.a.spacer();
 
-        this.a.button('Clear All')
-          .onClick(() => this.clearJobs())
-          .withId('imageResizerClearBtn');
+        this.a.button('Clear All', { onClick: () => this.clearJobs() }).withId('imageResizerClearBtn');
       });
 
       this.a.separator();
@@ -307,15 +303,11 @@ export class ImageResizerUI {
 
       // Action buttons
       this.a.hbox(() => {
-        this.a.button('Process All')
-          .onClick(async () => await this.processAllJobs())
-          .withId('imageResizerProcessBtn');
+        this.a.button('Process All', { onClick: async () => await this.processAllJobs() }).withId('imageResizerProcessBtn');
 
         this.a.spacer();
 
-        this.a.button('Reset')
-          .onClick(() => this.clearJobs())
-          .withId('imageResizerResetBtn');
+        this.a.button('Reset', { onClick: () => this.clearJobs() }).withId('imageResizerResetBtn');
       });
     });
 

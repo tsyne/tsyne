@@ -134,21 +134,17 @@ export function createSignalApp(a: App): void {
       a.spacer();
 
       a.hbox(() => {
-        a.button('→')
-          .onClick(() => {
+        a.button('→', { onClick: () => {
             currentConversationId = conv.id;
             currentConversationName = conv.participantName;
             updateCurrentViewLabel();
             updateMessages();
-          })
-          .withId(`conv-${conv.id}-open`);
+          } }).withId(`conv-${conv.id}-open`);
 
-        a.button('🗑')
-          .onClick(() => {
+        a.button('🗑', { onClick: () => {
             signal.deleteConversation(conv.id);
             updateConversationList();
-          })
-          .withId(`conv-${conv.id}-delete`);
+          } }).withId(`conv-${conv.id}-delete`);
       });
     });
   }
@@ -253,9 +249,7 @@ export function createSignalApp(a: App): void {
 
           a.spacer();
 
-          a.button('🔄')
-            .onClick(() => updateConversationList())
-            .withId('btn-refresh');
+          a.button('🔄', { onClick: () => updateConversationList() }).withId('btn-refresh');
         });
 
         a.separator();
@@ -284,9 +278,7 @@ export function createSignalApp(a: App): void {
             .entry('Type message...')
             .withId('message-input');
 
-          a.button('Send')
-            .onClick(() => sendMessage())
-            .withId('btn-send-message');
+          a.button('Send', { onClick: () => sendMessage() }).withId('btn-send-message');
         });
         a.label('').withId('input-area');  // Marker for input area
 
@@ -296,17 +288,13 @@ export function createSignalApp(a: App): void {
 
           a.spacer();
 
-          a.button('➕')
-            .onClick(() => showNewConversationDialog())
-            .withId('btn-new-conversation');
+          a.button('➕', { onClick: () => showNewConversationDialog() }).withId('btn-new-conversation');
 
-          a.button('←')
-            .onClick(() => {
+          a.button('←', { onClick: () => {
               currentConversationId = null;
               currentConversationName = null;
               updateCurrentViewLabel();
-            })
-            .withId('btn-back');
+            } }).withId('btn-back');
         });
         a.label('').withId('control-area');  // Marker for control area
       });
@@ -329,7 +317,7 @@ export function createSignalApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport  } = require('../../core/src');
+  const { app, resolveTransport  } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Signal' }, (a: any) => {
     createSignalApp(a);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });

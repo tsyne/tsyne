@@ -184,9 +184,7 @@ class PowerMenuUI {
 
   private buildPowerButton(option: PowerOption): void {
     this.a.vbox(() => {
-      this.a.button(`${option.icon} ${option.label}`)
-        .onClick(() => this.handleAction(option))
-        .withId(`btn-${option.action}`);
+      this.a.button(`${option.icon} ${option.label}`, { onClick: () => this.handleAction(option) }).withId(`btn-${option.action}`);
       this.a.label(option.description);
     });
   }

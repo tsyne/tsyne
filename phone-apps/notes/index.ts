@@ -169,9 +169,7 @@ class NotesUI {
           this.a.label('Notes').withId('notesTitle');
           this.a.spacer();
           this.a
-            .button('+ New')
-            .onClick(() => this.createNote())
-            .withId('notesAddBtn');
+            .button('+ New', { onClick: () => this.createNote() }).withId('notesAddBtn');
         });
 
         this.a.separator();
@@ -222,9 +220,7 @@ class NotesUI {
             this.a.spacer();
 
             this.a
-              .button('Delete')
-              .onClick(() => this.deleteNote(selectedNote.id))
-              .withId(`notes-delete-${selectedNote.id}`);
+              .button('Delete', { onClick: () => this.deleteNote(selectedNote.id) }).withId(`notes-delete-${selectedNote.id}`);
           });
 
           this.a.separator();

@@ -69,7 +69,7 @@ export function buildInteractiveShapesApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport, screenshotIfRequested } = require('../../core/src');
+  const { app, resolveTransport, screenshotIfRequested } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Interactive Shapes' }, (a: any) => {
     a.window(
       { title: 'Interactive Shapes Demo', width: 500, height: 450 },

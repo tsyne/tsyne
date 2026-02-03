@@ -212,8 +212,7 @@ export function createCameraApp(a: App, camera: ICameraService): void {
         a.separator();
 
         // Capture button (large)
-        a.button('● CAPTURE')
-          .onClick(async () => {
+        a.button('● CAPTURE', { onClick: async () => {
             if (isCapturing) return;
             isCapturing = true;
             if (statusLabel) statusLabel.setText('Capturing...');
@@ -229,8 +228,7 @@ export function createCameraApp(a: App, camera: ICameraService): void {
             setTimeout(() => {
               if (statusLabel) statusLabel.setText('Ready');
             }, 2000);
-          })
-          .withId('btn-capture');
+          } }).withId('btn-capture');
 
         // Status
         statusLabel = a.label('Ready').withId('camera-status');
@@ -241,31 +239,27 @@ export function createCameraApp(a: App, camera: ICameraService): void {
         a.hbox(() => {
           a.label('Resolution: ').withId('label-resolution');
           const settings = camera.getSettings();
-          const resBtn = a.button(settings.resolution.charAt(0).toUpperCase() + settings.resolution.slice(1))
-            .onClick(() => {
+          const resBtn = a.button(settings.resolution.charAt(0).toUpperCase() + settings.resolution.slice(1), { onClick: () => {
               const resolutions: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
               const current = settings.resolution;
               const idx = resolutions.indexOf(current);
               const next = resolutions[(idx + 1) % resolutions.length];
               camera.updateSettings({ resolution: next });
               resBtn.setText(next.charAt(0).toUpperCase() + next.slice(1));
-            })
-            .withId('btn-resolution');
+            } }).withId('btn-resolution');
         });
 
         a.hbox(() => {
           a.label('Flash: ').withId('label-flash');
           const settings = camera.getSettings();
-          const flashBtn = a.button(settings.flash.charAt(0).toUpperCase() + settings.flash.slice(1))
-            .onClick(() => {
+          const flashBtn = a.button(settings.flash.charAt(0).toUpperCase() + settings.flash.slice(1), { onClick: () => {
               const modes: Array<'off' | 'on' | 'auto'> = ['off', 'on', 'auto'];
               const current = settings.flash;
               const idx = modes.indexOf(current);
               const next = modes[(idx + 1) % modes.length];
               camera.updateSettings({ flash: next });
               flashBtn.setText(next.charAt(0).toUpperCase() + next.slice(1));
-            })
-            .withId('btn-flash');
+            } }).withId('btn-flash');
         });
 
         // Zoom slider
@@ -294,85 +288,71 @@ export function createCameraApp(a: App, camera: ICameraService): void {
         a.hbox(() => {
           a.label('White Balance: ').withId('label-white-balance');
           const settings = camera.getSettings();
-          const wbBtn = a.button(settings.whiteBalance)
-            .onClick(() => {
+          const wbBtn = a.button(settings.whiteBalance, { onClick: () => {
               const modes: Array<'auto' | 'daylight' | 'cloudy' | 'tungsten' | 'fluorescent'> = ['auto', 'daylight', 'cloudy', 'tungsten', 'fluorescent'];
               const current = settings.whiteBalance;
               const idx = modes.indexOf(current);
               const next = modes[(idx + 1) % modes.length];
               camera.updateSettings({ whiteBalance: next });
               wbBtn.setText(next);
-            })
-            .withId('btn-white-balance');
+            } }).withId('btn-white-balance');
         });
 
         // Filter selector
         a.hbox(() => {
           a.label('Filter: ').withId('label-filter');
           const settings = camera.getSettings();
-          const filterBtn = a.button(settings.filter)
-            .onClick(() => {
+          const filterBtn = a.button(settings.filter, { onClick: () => {
               const modes: Array<'none' | 'bw' | 'sepia' | 'cool' | 'warm'> = ['none', 'bw', 'sepia', 'cool', 'warm'];
               const current = settings.filter;
               const idx = modes.indexOf(current);
               const next = modes[(idx + 1) % modes.length];
               camera.updateSettings({ filter: next });
               filterBtn.setText(next);
-            })
-            .withId('btn-filter');
+            } }).withId('btn-filter');
         });
 
         // Timer selector
         a.hbox(() => {
           a.label('Timer: ').withId('label-timer');
           const settings = camera.getSettings();
-          const timerBtn = a.button(settings.timer === 0 ? 'Off' : `${settings.timer}s`)
-            .onClick(() => {
+          const timerBtn = a.button(settings.timer === 0 ? 'Off' : `${settings.timer}s`, { onClick: () => {
               const modes: number[] = [0, 3, 5, 10];
               const current = settings.timer;
               const idx = modes.indexOf(current);
               const next = modes[(idx + 1) % modes.length];
               camera.updateSettings({ timer: next });
               timerBtn.setText(next === 0 ? 'Off' : `${next}s`);
-            })
-            .withId('btn-timer');
+            } }).withId('btn-timer');
         });
 
         // Quick toggles row
         a.hbox(() => {
           const settings = camera.getSettings();
 
-          const hdrBtn = a.button(settings.hdr ? '📊 HDR' : '📊')
-            .onClick(() => {
+          const hdrBtn = a.button(settings.hdr ? '📊 HDR' : '📊', { onClick: () => {
               const newVal = !camera.getSettings().hdr;
               camera.updateSettings({ hdr: newVal });
               hdrBtn.setText(newVal ? '📊 HDR' : '📊');
-            })
-            .withId('btn-hdr');
+            } }).withId('btn-hdr');
 
-          const nightBtn = a.button(settings.nightMode ? '🌙 Night' : '🌙')
-            .onClick(() => {
+          const nightBtn = a.button(settings.nightMode ? '🌙 Night' : '🌙', { onClick: () => {
               const newVal = !camera.getSettings().nightMode;
               camera.updateSettings({ nightMode: newVal });
               nightBtn.setText(newVal ? '🌙 Night' : '🌙');
-            })
-            .withId('btn-night');
+            } }).withId('btn-night');
 
-          const gridBtn = a.button(settings.gridLines ? '◻ Grid' : '◻')
-            .onClick(() => {
+          const gridBtn = a.button(settings.gridLines ? '◻ Grid' : '◻', { onClick: () => {
               const newVal = !camera.getSettings().gridLines;
               camera.updateSettings({ gridLines: newVal });
               gridBtn.setText(newVal ? '◻ Grid' : '◻');
-            })
-            .withId('btn-grid');
+            } }).withId('btn-grid');
 
-          const burstBtn = a.button(settings.burstMode ? '⚡ Burst' : '⚡')
-            .onClick(() => {
+          const burstBtn = a.button(settings.burstMode ? '⚡ Burst' : '⚡', { onClick: () => {
               const newVal = !camera.getSettings().burstMode;
               camera.updateSettings({ burstMode: newVal });
               burstBtn.setText(newVal ? '⚡ Burst' : '⚡');
-            })
-            .withId('btn-burst');
+            } }).withId('btn-burst');
         });
 
         a.separator();
@@ -381,22 +361,18 @@ export function createCameraApp(a: App, camera: ICameraService): void {
         photoCountLabel = a.label('0 photos').withId('photo-count-display');
 
         a.hbox(() => {
-          a.button('Clear All')
-            .onClick(() => {
+          a.button('Clear All', { onClick: () => {
               camera.deleteAllPhotos();
               updatePhotoList();
               updateStats();
-            })
-            .withId('btn-clear-all');
+            } }).withId('btn-clear-all');
 
           a.spacer();
 
-          a.button('Refresh')
-            .onClick(() => {
+          a.button('Refresh', { onClick: () => {
               updatePhotoList();
               updateStats();
-            })
-            .withId('btn-refresh');
+            } }).withId('btn-refresh');
         });
 
         a.separator();

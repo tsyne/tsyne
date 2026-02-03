@@ -1,5 +1,7 @@
 import { App, AppOptions, BridgeMode, resolveTransport, TextGridStyle } from './app';
 import { Context } from './context';
+import { initResvg, Resvg } from './resvg-loader';
+import { SandboxedApp } from './sandboxed-app';
 import { isDesktopMode, getDesktopContext, isPhoneMode, getPhoneContext } from './tsyne-window';
 import {
   // Inputs
@@ -75,6 +77,14 @@ import {
   TappableCanvasRaster,
   // Display extras
   ColorCell,
+  // Desktop widgets (for launchers)
+  DesktopCanvas,
+  DesktopCanvasOptions,
+  DesktopIcon,
+  DesktopIconOptions,
+  DesktopMDI,
+  DesktopMDIOptions,
+  DesktopMDIIcon,
 } from './widgets';
 // Animation types
 import { EasingType, AnimateOptions, EasingFunction, cubicBezier, bezier, getPointOnBezier } from './animation';
@@ -912,6 +922,18 @@ export {
   DateEntry,
   TextGrid,
   Navigation,
+  // Desktop widgets
+  DesktopCanvas,
+  DesktopCanvasOptions,
+  DesktopIcon,
+  DesktopIconOptions,
+  DesktopMDI,
+  DesktopMDIOptions,
+  DesktopMDIIcon,
+  // Resvg for SVG rendering
+  initResvg,
+  Resvg,
+  SandboxedApp,
 };
 export type { AppOptions, BridgeMode, WindowOptions, MenuItem, NavigationOptions, TextGridStyle };
 

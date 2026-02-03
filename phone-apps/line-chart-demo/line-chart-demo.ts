@@ -111,10 +111,7 @@ export function buildLineChartDemoApp(a: any) {
       a.hbox(() => {
         a.label('Interpolation:');
         (['linear', 'step', 'catmull-rom', 'monotone'] as InterpolationType[]).forEach((type) => {
-          a.button(type.charAt(0).toUpperCase() + type.slice(1))
-            .onClick(async () => store.setInterpolation(type))
-            .withId(`interp-${type}`)
-            .when(() => store.interpolation !== type);
+          a.button(type.charAt(0).toUpperCase() + type.slice(1), { onClick: async () => store.setInterpolation(type) }).withId(`interp-${type}`).when(() => store.interpolation !== type);
         });
         a.label(`(${store.interpolation})`).withId('interpolationLabel');
       });
@@ -127,9 +124,7 @@ export function buildLineChartDemoApp(a: any) {
           .withId('multipleCheckbox');
         if (store.showMultiple) multipleCheckbox.setChecked(true);
 
-        a.button('Reset Zoom')
-          .onClick(async () => store.resetZoom())
-          .withId('resetZoomBtn');
+        a.button('Reset Zoom', { onClick: async () => store.resetZoom() }).withId('resetZoomBtn');
 
         // Show zoom level
         const zoomState = store.zoomPan.getState();
@@ -239,6 +234,6 @@ export function buildLineChartDemoApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  const { resolveTransport } = require('../../core/src');
+  const { resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Line Chart Demo' }, buildLineChartDemoApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

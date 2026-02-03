@@ -10,11 +10,11 @@
  * Run with: ./scripts/tsyne src/phonetop.ts
  */
 
-import { App } from 'tsyne';
+import { App, app } from 'tsyne';
 import { Window } from 'tsyne';
 import { Label, Button, VBox, Max } from 'tsyne';
 import { enablePhoneMode, disablePhoneMode, StackPaneAdapter } from 'tsyne';
-import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata } from 'tsyne';
+import { parseAppMetadata, loadAppBuilder, loadAppBuilderCached, AppMetadata, resolveTransport, phoneShutdownStrategy } from 'tsyne';
 import { ALL_APPS } from '../all-apps';
 import { ScopedResourceManager, ResourceManager } from 'tsyne';
 import { Inspector } from 'tsyne';
@@ -1352,9 +1352,7 @@ class PhoneTop {
           .onClick(() => this.openFolderView(folder));
       } else {
         // Fallback: text button (or when ImageButton not supported)
-        this.a.button(`📁 ${displayName}`)
-          .withId(`folder-${folder.category}`)
-          .onClick(() => this.openFolderView(folder));
+        this.a.button(`📁 ${displayName}`, { onClick: () => this.openFolderView(folder) }).withId(`folder-${folder.category}`);
       }
     });
   }
@@ -1392,9 +1390,7 @@ class PhoneTop {
       } else {
         // Fallback: regular button with first letter (or when ImageButton not supported)
         const firstLetter = icon.metadata.name.charAt(0).toUpperCase();
-        this.a.button(`${firstLetter}\n${displayName}`)
-          .withId(`icon-${icon.metadata.name}`)
-          .onClick(launchHandler);
+        this.a.button(`${firstLetter}\n${displayName}`, { onClick: launchHandler }).withId(`icon-${icon.metadata.name}`);
       }
     });
   }
@@ -1905,8 +1901,6 @@ if (require.main === module) {
   process.on('SIGINT', () => {
     process.exit(0);
   });
-
-  const { app, resolveTransport, phoneShutdownStrategy } = require('tsyne');
 
   // Check for debug port via environment variable
   const debugPort = process.env.TSYNE_DEBUG_PORT ? parseInt(process.env.TSYNE_DEBUG_PORT, 10) : undefined;

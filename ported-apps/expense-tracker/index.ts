@@ -286,24 +286,18 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
 
         // Tab navigation
         a.hbox(() => {
-          a.button('📊 Expenses')
-            .withId('tab-expenses')
-            .onClick(async () => {
+          a.button('📊 Expenses', { onClick: async () => {
               selectedTab = 'expenses';
               await viewStack.refresh();
-            });
-          a.button('💳 Budgets')
-            .withId('tab-budgets')
-            .onClick(async () => {
+            } }).withId('tab-expenses');
+          a.button('💳 Budgets', { onClick: async () => {
               selectedTab = 'budgets';
               await viewStack.refresh();
-            });
-          a.button('📈 Analytics')
-            .withId('tab-analytics')
-            .onClick(async () => {
+            } }).withId('tab-budgets');
+          a.button('📈 Analytics', { onClick: async () => {
               selectedTab = 'analytics';
               await viewStack.refresh();
-            });
+            } }).withId('tab-analytics');
         });
 
         a.separator();
@@ -315,9 +309,7 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
             a.label('Recent Expenses').withId('expenses-title');
 
             a.hbox(() => {
-              a.button('➕ Add Expense')
-                .withId('btn-add-expense')
-                .onClick(async () => {
+              a.button('➕ Add Expense', { onClick: async () => {
                   const result = await win.showForm('New Expense', [
                     { type: 'entry', label: 'Amount', key: 'amount' },
                     {
@@ -341,19 +333,19 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
                       );
                     }
                   }
-                });
+                } }).withId('btn-add-expense');
 
               a.spacer();
 
-              a.button('Today Only').withId('filter-today').onClick(async () => {
+              a.button('Today Only', { onClick: async () => {
                 const todayExpenses = store.getExpensesToday();
                 await win.showInfo('Today Expenses', `You have ${todayExpenses.length} expenses today`);
-              });
+              } }).withId('filter-today');
 
-              a.button('This Month').withId('filter-month').onClick(async () => {
+              a.button('This Month', { onClick: async () => {
                 const monthExpenses = store.getExpensesThisMonth();
                 await win.showInfo('Month Expenses', `You have ${monthExpenses.length} expenses this month`);
-              });
+              } }).withId('filter-month');
             });
 
             a.separator();
@@ -383,9 +375,7 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
                     a.label(`$${expense.amount.toFixed(2)}`, 'expense-amount').withId(
                       `exp-amount-${expense.id}`
                     );
-                    a.button('✕')
-                      .withId(`btn-delete-${expense.id}`)
-                      .onClick(() => store.deleteExpense(expense.id));
+                    a.button('✕', { onClick: () => store.deleteExpense(expense.id) }).withId(`btn-delete-${expense.id}`);
                   });
                 },
                 trackBy: (expense: Expense) => expense.id,
@@ -397,9 +387,7 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
             a.label('Budget Overview').withId('budgets-title');
 
             a.hbox(() => {
-              a.button('➕ New Budget')
-                .withId('btn-new-budget')
-                .onClick(async () => {
+              a.button('➕ New Budget', { onClick: async () => {
                   const result = await win.showForm('Set Budget', [
                     {
                       type: 'select',
@@ -416,7 +404,7 @@ export function buildExpenseTrackerApp(a: any, windowWidth?: number, windowHeigh
                       store.updateBudget(result.values.category, limit);
                     }
                   }
-                });
+                } }).withId('btn-new-budget');
             });
 
             a.separator();

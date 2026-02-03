@@ -1,15 +1,15 @@
 /**
- * Connect 4 - Tsyne Canvas Port
+ * Connect 4 - Imperative Style
  *
- * A two-player Connect 4 game rendered with Tsyne's canvas primitives.
+ * A two-player Connect 4 game using imperative UI rebuilds on state change.
  * Portions copyright Emiliano Carrillo 2018
  *
- * Run: npx tsx ported-apps/connect4/src/connect4-app.ts
+ * Run: npx tsx ported-apps/connect4/src/connect4-imperative.ts
  */
 
-import { app, resolveTransport, standaloneShutdownStrategy } from '../../../core/src/index';
-import type { App } from '../../../core/src/index';
-import { cosyne, enableEventHandling, type CosyneContext } from '../../../cosyne/src/index';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import type { App } from 'tsyne';
+import { cosyne, enableEventHandling, type CosyneContext } from 'cosyne';
 import {
   createGameState,
   makeMove,
@@ -19,7 +19,6 @@ import {
   COLS,
   ROWS,
   type GameState,
-  type Player,
 } from './game-logic';
 
 // Board colors
@@ -36,13 +35,11 @@ const BOARD_HEIGHT = ROWS * CELL_SIZE;
 
 interface AppState {
   game: GameState;
-  hoverColumn: number;
 }
 
-function createConnect4App(a: App): void {
+function createConnect4ImperativeApp(a: App): void {
   const state: AppState = {
     game: createGameState(),
-    hoverColumn: -1,
   };
 
   let currentWindow: any = null;
@@ -68,7 +65,6 @@ function createConnect4App(a: App): void {
    */
   function resetGame(): void {
     state.game = createGameState();
-    state.hoverColumn = -1;
     refreshUI();
   }
 
@@ -79,19 +75,6 @@ function createConnect4App(a: App): void {
     if (currentWindow) {
       currentWindow.setContent(renderContent);
     }
-  }
-
-  /**
-   * Get status message
-   */
-  function getStatusMessage(): string {
-    if (state.game.gameOver) {
-      if (state.game.winner) {
-        return `${getPlayerName(state.game.winner)} wins!`;
-      }
-      return "It's a draw!";
-    }
-    return `${getPlayerName(state.game.currentPlayer)}'s turn`;
   }
 
   /**
@@ -232,8 +215,8 @@ function createConnect4App(a: App): void {
 
 // Main entry point
 if (require.main === module) {
-  const appInstance = app(resolveTransport(), { title: 'Connect 4' }, createConnect4App);
+  const appInstance = app(resolveTransport(), { title: 'Connect 4' }, createConnect4ImperativeApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }
 
-export { createConnect4App };
+export { createConnect4ImperativeApp };

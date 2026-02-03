@@ -120,12 +120,9 @@ export function buildScalesDemoApp(a: any) {
       a.hbox(() => {
         a.label('Select Scale:').withId('scaleLabel');
         scaleTypes.forEach((scale) => {
-          a.button(scale.charAt(0).toUpperCase() + scale.slice(1))
-            .onClick(async () => {
+          a.button(scale.charAt(0).toUpperCase() + scale.slice(1), { onClick: async () => {
               store.selectScale(scale);
-            })
-            .withId(`scale-${scale}`)
-            .when(() => store.selectedScale !== scale);
+            } }).withId(`scale-${scale}`).when(() => store.selectedScale !== scale);
         });
         a.label(`Selected: ${store.selectedScale}`).withId('selectedScaleLabel');
       });
@@ -232,6 +229,6 @@ export function buildScalesDemoApp(a: any) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  const { resolveTransport } = require('../../core/src');
+  const { resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Scales Demo' }, buildScalesDemoApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

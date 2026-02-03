@@ -64,15 +64,10 @@ export function buildMarkersDemoApp(a: any) {
       a.hbox(() => {
         a.label('Select Diagram:');
         (['flowchart', 'graph', 'state-machine', 'network', 'custom'] as DiagramType[]).forEach((diagram) => {
-          a.button(
-            diagram
+          a.button(diagram
               .split('-')
               .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(' ')
-          )
-            .onClick(async () => store.selectDiagram(diagram))
-            .withId(`diagram-${diagram}`)
-            .when(() => store.selectedDiagram !== diagram);
+              .join(' '), { onClick: async () => store.selectDiagram(diagram) }).withId(`diagram-${diagram}`).when(() => store.selectedDiagram !== diagram);
         });
 
         a.label(`(${store.selectedDiagram})`).withId('diagramLabel');
@@ -517,6 +512,6 @@ function renderCustomMarkers(c: any, showLabels: boolean) {
 
 // Auto-run when executed directly
 if (require.main === module) {
-  const { resolveTransport } = require('../../core/src');
+  const { resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Markers Demo' }, buildMarkersDemoApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

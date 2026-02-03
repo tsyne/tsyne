@@ -272,15 +272,15 @@ export function buildDailyChecklistMVC(a: App) {
                   a.separator();
                   // Action buttons (Controller - forwards user actions to Model)
                   a.hbox(() => {
-                    a.button('Reset All').withId('resetBtn').onClick(async () => {
+                    a.button('Reset All', { onClick: async () => {
                       await store.resetAll();
-                    });
+                    } }).withId('resetBtn');
 
                     a.spacer();
 
-                    a.button('Edit List').withId('editBtn').onClick(async () => {
+                    a.button('Edit List', { onClick: async () => {
                       await enterEditMode();
-                    });
+                    } }).withId('editBtn');
                   });
                 });
               }
@@ -297,15 +297,15 @@ export function buildDailyChecklistMVC(a: App) {
               a.separator();
 
               a.hbox(() => {
-                a.button('Cancel').withId('cancelBtn').onClick(async () => {
+                a.button('Cancel', { onClick: async () => {
                   await exitEditMode(false);
-                });
+                } }).withId('cancelBtn');
 
                 a.spacer();
 
-                a.button('Save').withId('saveBtn').onClick(async () => {
+                a.button('Save', { onClick: async () => {
                   await exitEditMode(true);
-                });
+                } }).withId('saveBtn');
               });
             });
           });

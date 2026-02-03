@@ -443,12 +443,8 @@ export function createLitProgApp(a: App): LitProgUI {
 
             a.separator();
 
-            a.button('Export Code')
-              .onClick(() => exportTangled())
-              .withId('btn-export-code');
-            a.button('Export Docs')
-              .onClick(() => exportWoven())
-              .withId('btn-export-docs');
+            a.button('Export Code', { onClick: () => exportTangled() }).withId('btn-export-code');
+            a.button('Export Docs', { onClick: () => exportWoven() }).withId('btn-export-docs');
           });
 
           a.separator();

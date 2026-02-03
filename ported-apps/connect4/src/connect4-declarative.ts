@@ -7,10 +7,10 @@
  * Run: npx tsx ported-apps/connect4/src/connect4-declarative.ts
  */
 
-import { app, resolveTransport, standaloneShutdownStrategy } from '../../../core/src/index';
-import type { App } from '../../../core/src/index';
-import { cosyne, enableEventHandling, type CosyneContext } from '../../../cosyne/src/index';
-import type { CosyneCircle } from '../../../cosyne/src/index';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import type { App } from 'tsyne';
+import { cosyne, enableEventHandling } from 'cosyne';
+import type { CosyneContext, CosyneCircle } from 'cosyne';
 import {
   createGameState,
   makeMove,

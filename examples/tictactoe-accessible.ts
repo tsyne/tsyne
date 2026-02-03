@@ -1,5 +1,4 @@
-import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  , standaloneShutdownStrategy } from 'tsyne';
-// In production: import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager  } from 'tsyne';
+import { app, resolveTransport, window, vbox, hbox, grid, button, label, styles, FontStyle, getAccessibilityManager, standaloneShutdownStrategy } from 'tsyne';
 
 /**
  * Accessible Tic-Tac-Toe

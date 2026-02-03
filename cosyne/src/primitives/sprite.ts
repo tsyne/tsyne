@@ -108,6 +108,10 @@ export class CosyneSprite extends Primitive<any> {
     // Sprites don't have stroke
   }
 
+  updateStrokeWidth(width: number): void {
+    // Sprites don't have stroke width
+  }
+
   updateAlpha(alpha: number): void {
     this.alpha = alpha;
     if (this.underlying?.setAlpha) {

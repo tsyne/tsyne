@@ -171,9 +171,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
                 messageInputEntry = a.entry(loginState === 'logged_in' ? 'Type a message...' : 'Log in to send messages', undefined, 400)
                   .withId('message-input');
 
-                a.button('↩️')
-                  .onClick(() => sendMessage())
-                  .withId('btn-send');
+                a.button('↩️', { onClick: () => sendMessage() }).withId('btn-send');
               });
             });
           }
@@ -214,13 +212,11 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           a.separator();
 
           a.hbox(() => {
-            a.button('Use Phone Number')
-              .onClick(() => {
+            a.button('Use Phone Number', { onClick: () => {
                 telegramService.cancelQrLogin();
                 loginState = 'phone';
                 rebuildUI();
-              })
-              .withId('btn-use-phone');
+              } }).withId('btn-use-phone');
           });
 
           // Start QR login automatically
@@ -250,15 +246,12 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           loginErrorLabel = a.label('').withId('login-error');
 
           a.hbox(() => {
-            a.button('Back to QR')
-              .onClick(() => {
+            a.button('Back to QR', { onClick: () => {
                 loginState = 'qr';
                 rebuildUI();
-              })
-              .withId('btn-back-qr');
+              } }).withId('btn-back-qr');
 
-            a.button('Next')
-              .onClick(async () => {
+            a.button('Next', { onClick: async () => {
                 const phone = phoneInputEntry?.getText?.() || '';
                 if (!phone.trim()) {
                   loginErrorLabel?.setText?.('Please enter a phone number');
@@ -273,8 +266,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
                 } else {
                   loginErrorLabel?.setText?.(result.error || 'Login failed');
                 }
-              })
-              .withId('btn-next');
+              } }).withId('btn-next');
           });
         });
       } else if (loginState === 'code') {
@@ -291,15 +283,12 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
           loginErrorLabel = a.label('').withId('login-error');
 
           a.hbox(() => {
-            a.button('Back')
-              .onClick(() => {
+            a.button('Back', { onClick: () => {
                 loginState = 'phone';
                 rebuildUI();
-              })
-              .withId('btn-back');
+              } }).withId('btn-back');
 
-            a.button('Verify')
-              .onClick(async () => {
+            a.button('Verify', { onClick: async () => {
                 const code = codeInputEntry?.getText?.() || '';
                 if (!code.trim()) {
                   loginErrorLabel?.setText?.('Please enter the code');
@@ -314,8 +303,7 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
                 } else {
                   loginErrorLabel?.setText?.(result.error || 'Verification failed');
                 }
-              })
-              .withId('btn-verify');
+              } }).withId('btn-verify');
           });
         });
       }
@@ -381,13 +369,11 @@ export function createTelegramApp(a: App, telegram?: ITelegramService): void {
         a.label(displayName, undefined, 'leading', 'break').withId(`chat-${chat.id}-name`);
       },
       right: () => {
-        a.button('→')
-          .onClick(() => {
+        a.button('→', { onClick: () => {
             currentChatId = chat.id;
             telegramService.markChatAsRead(chat.id);
             showChatView(chat);
-          })
-          .withId(`chat-${chat.id}-open`);
+          } }).withId(`chat-${chat.id}-open`);
       }
     });
   }

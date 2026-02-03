@@ -482,7 +482,7 @@ vbox(() => {
         fs.unlinkSync(bookmarksFilePath);
         console.log('Cleared bookmarks file (keeping export file)');
       }
-      const { Browser } = require('../core/src/browser');
+      const { Browser } = require('tsyne');
       const browser2 = new Browser({ testMode: true });
 
       // Verify no bookmarks initially

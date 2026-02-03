@@ -219,8 +219,7 @@ export function createAudioRecorderApp(a: App, recording: IRecordingService): vo
 
         // Record control buttons
         a.hbox(() => {
-          recordButton = a.button('● Record')
-            .onClick(async () => {
+          recordButton = a.button('● Record', { onClick: async () => {
               const state = recording.getRecordingState();
               if (state === 'idle') {
                 await recording.startRecording('Recording');
@@ -233,18 +232,15 @@ export function createAudioRecorderApp(a: App, recording: IRecordingService): vo
               } else if (state === 'paused') {
                 await recording.resumeRecording();
               }
-            })
-            .withId('btn-record');
+            } }).withId('btn-record');
 
           a.spacer();
 
-          a.button('⏸ Pause')
-            .onClick(async () => {
+          a.button('⏸ Pause', { onClick: async () => {
               if (recording.getRecordingState() === 'recording') {
                 await recording.pauseRecording();
               }
-            })
-            .withId('btn-pause');
+            } }).withId('btn-pause');
         });
 
         a.separator();
@@ -253,16 +249,14 @@ export function createAudioRecorderApp(a: App, recording: IRecordingService): vo
         a.hbox(() => {
           a.label('Quality: ').withId('label-quality');
 
-          const qualityBtn = a.button(recording.getQuality().charAt(0).toUpperCase() + recording.getQuality().slice(1))
-            .onClick(() => {
+          const qualityBtn = a.button(recording.getQuality().charAt(0).toUpperCase() + recording.getQuality().slice(1), { onClick: () => {
               const qualities: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
               const current = recording.getQuality();
               const idx = qualities.indexOf(current);
               const next = qualities[(idx + 1) % qualities.length];
               recording.setQuality(next);
               qualityBtn.setText(next.charAt(0).toUpperCase() + next.slice(1));
-            })
-            .withId('btn-quality');
+            } }).withId('btn-quality');
         });
 
         a.separator();

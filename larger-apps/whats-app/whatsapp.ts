@@ -227,12 +227,10 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
           a.hbox(() => {
             a.label('WhatsApp').withId('whatsapp-title');
             a.spacer();
-            a.button('🚪')
-              .onClick(async () => {
+            a.button('🚪', { onClick: async () => {
                 await service.logout();
                 rebuildUI();
-              })
-              .withId('btn-logout');
+              } }).withId('btn-logout');
           });
 
           a.separator();
@@ -247,13 +245,11 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
               }, 200)
               .withId('search-input');
 
-            a.button('🔍')
-              .onClick(async () => {
+            a.button('🔍', { onClick: async () => {
                 const text = (await searchEntry?.getText?.()) || '';
                 searchQuery = text;
                 rebuildUI();
-              })
-              .withId('btn-search');
+              } }).withId('btn-search');
           });
 
           a.separator();
@@ -289,12 +285,10 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
 
   function buildFilterButton(label: string, filter: ChatFilter): void {
     const isActive = currentFilter === filter;
-    a.button(isActive ? `[${label}]` : label)
-      .onClick(() => {
+    a.button(isActive ? `[${label}]` : label, { onClick: () => {
         currentFilter = filter;
         rebuildUI();
-      })
-      .withId(`btn-filter-${filter}`);
+      } }).withId(`btn-filter-${filter}`);
   }
 
   function getFilteredChats(): WhatsAppChat[] {
@@ -348,15 +342,13 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
     });
 
     // Make the whole row clickable via a button overlay
-    a.button(isSelected ? '●' : '→')
-      .onClick(async () => {
+    a.button(isSelected ? '●' : '→', { onClick: async () => {
         currentChatId = chat.id;
         await service.markChatAsRead(chat.id);
         await service.loadMessages(chat.id);
         rebuildUI();
         scrollToBottom();
-      })
-      .withId(`chat-${chat.id}-open`);
+      } }).withId(`chat-${chat.id}-open`);
 
     a.separator();
   }
@@ -385,11 +377,9 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
               });
               a.spacer();
               // Chat actions
-              a.button('📋')
-                .onClick(() => {
+              a.button('📋', { onClick: () => {
                   // Could show chat info
-                })
-                .withId('btn-chat-info');
+                } }).withId('btn-chat-info');
             });
           } else {
             a.label('WhatsApp').withId('chat-title');
@@ -434,12 +424,10 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
                 );
                 a.label(truncateText(replyMsg.text, 50)).withId('reply-preview');
               });
-              a.button('✕')
-                .onClick(() => {
+              a.button('✕', { onClick: () => {
                   replyingToMessage = null;
                   rebuildUI();
-                })
-                .withId('btn-cancel-reply');
+                } }).withId('btn-cancel-reply');
             });
             a.separator();
           }
@@ -450,15 +438,11 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
               .entry(isLoggedIn ? 'Type a message...' : 'Log in to send messages', undefined, 400)
               .withId('message-input');
 
-            a.button('📎')
-              .onClick(() => {
+            a.button('📎', { onClick: () => {
                 // Could add attachment picker
-              })
-              .withId('btn-attach');
+              } }).withId('btn-attach');
 
-            a.button('↩️')
-              .onClick(() => sendMessage())
-              .withId('btn-send');
+            a.button('↩️', { onClick: () => sendMessage() }).withId('btn-send');
           });
         });
       },
@@ -505,20 +489,16 @@ export function createWhatsAppApp(a: App, whatsAppService?: IWhatsAppService): v
         // Quick actions (reply, react)
         if (!msg.isRevoked) {
           a.hbox(() => {
-            a.button('↩️')
-              .onClick(() => {
+            a.button('↩️', { onClick: () => {
                 replyingToMessage = msg;
                 rebuildUI();
-              })
-              .withId(`message-${msg.id}-reply-btn`);
+              } }).withId(`message-${msg.id}-reply-btn`);
 
-            a.button('👍')
-              .onClick(async () => {
+            a.button('👍', { onClick: async () => {
                 if (currentChatId) {
                   await service.reactToMessage(currentChatId, msg.id, '👍');
                 }
-              })
-              .withId(`message-${msg.id}-react-btn`);
+              } }).withId(`message-${msg.id}-react-btn`);
           }).when(() => msg.isOwn ? false : true); // Show actions for received messages
         }
       });

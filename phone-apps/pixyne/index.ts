@@ -171,9 +171,7 @@ class PixyneUI {
           this.a.label('Click "Load Samples" to add sample photos').withId('pixyneEmptyHint');
           this.a.spacer();
           this.a
-            .button('Load Sample Photos')
-            .onClick(() => this.addSamplePhotos())
-            .withId('pixyneLoadBtn');
+            .button('Load Sample Photos', { onClick: () => this.addSamplePhotos() }).withId('pixyneLoadBtn');
           this.a.spacer();
         });
       } else {
@@ -239,9 +237,7 @@ class PixyneUI {
               this.a.hbox(() => {
                 if (this.state.markedCount > 0) {
                   this.a
-                    .button(`Delete ${this.state.markedCount} Marked`)
-                    .onClick(() => this.deleteMarkedPhotos())
-                    .withId('pixyneDeleteBtn');
+                    .button(`Delete ${this.state.markedCount} Marked`, { onClick: () => this.deleteMarkedPhotos() }).withId('pixyneDeleteBtn');
                 }
 
                 this.a.spacer();

@@ -7,7 +7,7 @@
 
 import { TestContext } from 'tsyne';
 import type { App, CanvasShader } from 'tsyne';
-import { CosyneTest } from '../../cosyne/src';
+import { CosyneTest } from 'cosyne';
 import path from 'path';
 
 const WIDTH = 400;

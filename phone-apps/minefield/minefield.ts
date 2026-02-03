@@ -439,15 +439,11 @@ export class MinefieldUI {
     if (config.state === 'hidden') {
       // Hidden cell - clickable button
       this.a
-        .button('')
-        .onClick(() => this.handleCellClick(index, false))
-        .withId(`cell-${index}`);
+        .button('', { onClick: () => this.handleCellClick(index, false) }).withId(`cell-${index}`);
     } else if (config.state === 'flagged') {
       // Flagged cell - click to unflag
       this.a
-        .button(text)
-        .onClick(() => this.handleCellClick(index, true))
-        .withId(`cell-${index}`);
+        .button(text, { onClick: () => this.handleCellClick(index, true) }).withId(`cell-${index}`);
     } else {
       // Revealed cell - static label
       if (config.value === MINE) {
@@ -471,9 +467,7 @@ export class MinefieldUI {
         for (const [key, config] of Object.entries(DIFFICULTY_PRESETS)) {
           const isActive = key === this.currentDifficulty;
           this.a
-            .button(isActive ? `[${config.label}]` : config.label)
-            .onClick(() => this.selectDifficulty(key as Difficulty))
-            .withId(`${key}Btn`);
+            .button(isActive ? `[${config.label}]` : config.label, { onClick: () => this.selectDifficulty(key as Difficulty) }).withId(`${key}Btn`);
         }
       });
 

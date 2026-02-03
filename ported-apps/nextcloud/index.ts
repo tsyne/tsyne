@@ -364,34 +364,26 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
 
         // Tab Navigation
         a.hbox(() => {
-          a.button('📁 Files')
-            .withId('tab-files')
-            .onClick(async () => {
+          a.button('📁 Files', { onClick: async () => {
               selectedTab = 'files';
               currentPath = '/';
               await viewStack.refresh();
-            });
+            } }).withId('tab-files');
 
-          a.button('🔄 Sync')
-            .withId('tab-sync')
-            .onClick(async () => {
+          a.button('🔄 Sync', { onClick: async () => {
               selectedTab = 'sync';
               await viewStack.refresh();
-            });
+            } }).withId('tab-sync');
 
-          a.button('🔗 Shared')
-            .withId('tab-shared')
-            .onClick(async () => {
+          a.button('🔗 Shared', { onClick: async () => {
               selectedTab = 'shared';
               await viewStack.refresh();
-            });
+            } }).withId('tab-shared');
 
-          a.button('⚙️ Account')
-            .withId('tab-account')
-            .onClick(async () => {
+          a.button('⚙️ Account', { onClick: async () => {
               selectedTab = 'account';
               await viewStack.refresh();
-            });
+            } }).withId('tab-account');
         });
 
         a.separator();
@@ -414,33 +406,27 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('Files').withId('files-title');
 
             a.hbox(() => {
-              a.button('📤 Upload')
-                .withId('btn-upload')
-                .onClick(async () => {
+              a.button('📤 Upload', { onClick: async () => {
                   const file = await win.showFileOpen();
                   if (file) {
                     store.addSyncItem('document.pdf', 'upload');
                   }
-                });
+                } }).withId('btn-upload');
 
-              a.button('➕ New Folder')
-                .withId('btn-new-folder')
-                .onClick(async () => {
+              a.button('➕ New Folder', { onClick: async () => {
                   const result = await win.showEntryDialog('New Folder', 'Folder name:');
                   if (result) {
                     store.createFolder(currentPath, result);
                   }
-                });
+                } }).withId('btn-new-folder');
 
-              a.button('🔍 Search')
-                .withId('btn-search')
-                .onClick(async () => {
+              a.button('🔍 Search', { onClick: async () => {
                   const query = await win.showEntryDialog('Search', 'Search files:');
                   if (query) {
                     const results = store.searchFiles(query);
                     await win.showInfo('Search Results', `Found ${results.length} items`);
                   }
-                });
+                } }).withId('btn-search');
             });
 
             a.separator();
@@ -469,12 +455,8 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
                     );
 
                     if (!file.isFolder) {
-                      a.button('🔗')
-                        .withId(`btn-share-${file.id}`)
-                        .onClick(() => store.shareFile(file.id));
-                      a.button('🗑️')
-                        .withId(`btn-delete-${file.id}`)
-                        .onClick(() => store.deleteFile(file.id));
+                      a.button('🔗', { onClick: () => store.shareFile(file.id) }).withId(`btn-share-${file.id}`);
+                      a.button('🗑️', { onClick: () => store.deleteFile(file.id) }).withId(`btn-delete-${file.id}`);
                     }
                   });
                 },
@@ -487,25 +469,19 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('Sync Status').withId('sync-title');
 
             a.hbox(() => {
-              a.button('⬆️ Upload File')
-                .withId('btn-upload-sync')
-                .onClick(() => {
+              a.button('⬆️ Upload File', { onClick: () => {
                   store.addSyncItem('presentation.pptx', 'upload');
-                });
+                } }).withId('btn-upload-sync');
 
-              a.button('⬇️ Download File')
-                .withId('btn-download-sync')
-                .onClick(() => {
+              a.button('⬇️ Download File', { onClick: () => {
                   store.addSyncItem('archive.zip', 'download');
-                });
+                } }).withId('btn-download-sync');
 
               a.spacer();
 
-              a.button('🔄 Sync Now')
-                .withId('btn-sync-now')
-                .onClick(async () => {
+              a.button('🔄 Sync Now', { onClick: async () => {
                   store.addSyncItem('sync-all', 'sync');
-                });
+                } }).withId('btn-sync-now');
             });
 
             a.separator();
@@ -551,11 +527,9 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('Shared Files').withId('shared-title');
 
             a.hbox(() => {
-              a.button('🔄 Refresh')
-                .withId('btn-refresh-shared')
-                .onClick(async () => {
+              a.button('🔄 Refresh', { onClick: async () => {
                   await viewStack.refresh();
-                });
+                } }).withId('btn-refresh-shared');
             });
 
             a.separator();
@@ -575,9 +549,7 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
                     a.label(`${store.formatBytes(file.size)}`).withId(
                       `shared-size-${file.id}`
                     );
-                    a.button('🗑️')
-                      .withId(`btn-unshare-${file.id}`)
-                      .onClick(() => store.shareFile(file.id));
+                    a.button('🗑️', { onClick: () => store.shareFile(file.id) }).withId(`btn-unshare-${file.id}`);
                   });
                 },
                 trackBy: (file: CloudFile) => file.id,
@@ -612,9 +584,7 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
             a.separator();
 
             a.hbox(() => {
-              a.button('✅ Connect Account')
-                .withId('btn-connect')
-                .onClick(async () => {
+              a.button('✅ Connect Account', { onClick: async () => {
                   const result = await win.showForm('Connect to NextCloud', [
                     { type: 'entry', label: 'Server URL', key: 'server' },
                     { type: 'entry', label: 'Username', key: 'username' },
@@ -628,21 +598,17 @@ export function buildNextCloudApp(a: any, windowWidth?: number, windowHeight?: n
                       result.values.password
                     );
                   }
-                });
+                } }).withId('btn-connect');
 
-              a.button('❌ Disconnect')
-                .withId('btn-disconnect')
-                .onClick(() => {
+              a.button('❌ Disconnect', { onClick: () => {
                   store.disconnectAccount();
-                });
+                } }).withId('btn-disconnect');
 
               a.spacer();
 
-              a.button(account.syncEnabled ? 'Disable Sync' : 'Enable Sync')
-                .withId('btn-toggle-sync')
-                .onClick(() => {
+              a.button(account.syncEnabled ? 'Disable Sync' : 'Enable Sync', { onClick: () => {
                   store.toggleSync(!account.syncEnabled);
-                });
+                } }).withId('btn-toggle-sync');
             });
           }).when(() => selectedTab === 'account');
         });

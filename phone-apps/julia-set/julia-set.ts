@@ -252,19 +252,19 @@ export class JuliaSetUI {
             this.statusLabel = a.label('Loading...').withId('status');
           });
           a.hbox(() => {
-            a.button('Zoom +').withId('zoom-in').onClick(() => this.zoomIn());
-            a.button('Zoom -').withId('zoom-out').onClick(() => this.zoomOut());
-            a.button('Reset').withId('reset').onClick(() => this.reset());
+            a.button('Zoom +', { onClick: () => this.zoomIn() }).withId('zoom-in');
+            a.button('Zoom -', { onClick: () => this.zoomOut() }).withId('zoom-out');
+            a.button('Reset', { onClick: () => this.reset() }).withId('reset');
           });
           a.hbox(() => {
-            a.button('← Left').withId('pan-left').onClick(() => this.pan(-1, 0));
-            a.button('↑ Up').withId('pan-up').onClick(() => this.pan(0, -1));
-            a.button('↓ Down').withId('pan-down').onClick(() => this.pan(0, 1));
-            a.button('→ Right').withId('pan-right').onClick(() => this.pan(1, 0));
+            a.button('← Left', { onClick: () => this.pan(-1, 0) }).withId('pan-left');
+            a.button('↑ Up', { onClick: () => this.pan(0, -1) }).withId('pan-up');
+            a.button('↓ Down', { onClick: () => this.pan(0, 1) }).withId('pan-down');
+            a.button('→ Right', { onClick: () => this.pan(1, 0) }).withId('pan-right');
           });
           a.hbox(() => {
-            a.button('Next c').withId('next-preset').onClick(() => this.nextPreset());
-            a.button('Palette').withId('next-palette').onClick(() => this.nextPalette());
+            a.button('Next c', { onClick: () => this.nextPreset() }).withId('next-preset');
+            a.button('Palette', { onClick: () => this.nextPalette() }).withId('next-palette');
           });
         });
       });

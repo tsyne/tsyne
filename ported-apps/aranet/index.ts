@@ -451,12 +451,9 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
             // Device dropdown - create buttons for each available device
             a.hbox(() => {
               store.getAvailableDevices().forEach((device) => {
-                a.button(device.name)
-                  .onClick(() => {
+                a.button(device.name, { onClick: () => {
                     store.selectDevice(device.id);
-                  })
-                  .when(() => store.getSelectedDeviceId() !== device.id)
-                  .withId(`device-btn-${device.id}`);
+                  } }).when(() => store.getSelectedDeviceId() !== device.id).withId(`device-btn-${device.id}`);
 
                 a.label('✓')
                   .withId(`device-selected-${device.id}`)
@@ -492,26 +489,17 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
 
         // Control buttons
         a.hbox(() => {
-          a.button('Connect')
-            .onClick(async () => {
+          a.button('Connect', { onClick: async () => {
               await store.connect();
-            })
-            .when(() => store.getConnectionStatus() === ConnectionStatus.Disconnected)
-            .withId('connectBtn');
+            } }).when(() => store.getConnectionStatus() === ConnectionStatus.Disconnected).withId('connectBtn');
 
-          a.button('Disconnect')
-            .onClick(async () => {
+          a.button('Disconnect', { onClick: async () => {
               await store.disconnect();
-            })
-            .when(() => store.getConnectionStatus() !== ConnectionStatus.Disconnected)
-            .withId('disconnectBtn');
+            } }).when(() => store.getConnectionStatus() !== ConnectionStatus.Disconnected).withId('disconnectBtn');
 
-          refreshButton = a.button('Refresh')
-            .onClick(async () => {
+          refreshButton = a.button('Refresh', { onClick: async () => {
               await store.refreshReading();
-            })
-            .when(() => store.getConnectionStatus() === ConnectionStatus.Connected)
-            .withId('refreshBtn');
+            } }).when(() => store.getConnectionStatus() === ConnectionStatus.Connected).withId('refreshBtn');
 
           settingsButton = a.button('Settings', { onClick: () => {
             showSettingsWindow();
@@ -561,12 +549,9 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
           a.label('Alert Sound:').withId('alertSoundLabel');
           a.hbox(() => {
             for (const soundType of [AlertSoundType.Off, AlertSoundType.Gentle, AlertSoundType.Urgent]) {
-              a.button(soundType)
-                .onClick(() => {
+              a.button(soundType, { onClick: () => {
                   store.updateAlertSound(soundType);
-                })
-                .when(() => store.getSettings().alertSound !== soundType)
-                .withId(`sound-${soundType}`);
+                } }).when(() => store.getSettings().alertSound !== soundType).withId(`sound-${soundType}`);
 
               a.label('✓')
                 .withId(`soundSelected-${soundType}`)
@@ -587,33 +572,27 @@ export function buildAranetApp(a: any, windowWidth?: number, windowHeight?: numb
           // Refresh Interval Setting
           a.label('Refresh Interval (minutes):').withId('refreshIntervalLabel');
           a.hbox(() => {
-            a.button('-')
-              .onClick(() => {
+            a.button('-', { onClick: () => {
                 const current = store.getSettings().refreshInterval;
                 store.updateRefreshInterval(current - 1);
-              })
-              .withId('decreaseInterval');
+              } }).withId('decreaseInterval');
 
             a.label(store.getSettings().refreshInterval.toString())
               .withId('intervalValue');
 
-            a.button('+')
-              .onClick(() => {
+            a.button('+', { onClick: () => {
                 const current = store.getSettings().refreshInterval;
                 store.updateRefreshInterval(current + 1);
-              })
-              .withId('increaseInterval');
+              } }).withId('increaseInterval');
           });
 
           a.separator();
 
           // Close button
-          a.button('Close')
-            .onClick(() => {
+          a.button('Close', { onClick: () => {
               win.close();
               onClose();
-            })
-            .withId('closeSettingsBtn');
+            } }).withId('closeSettingsBtn');
         });
       });
 

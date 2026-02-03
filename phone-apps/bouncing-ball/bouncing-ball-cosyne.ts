@@ -210,7 +210,7 @@ export function buildBouncingBallApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../core/src');
+  const { app, resolveTransport } = require('tsyne');
   const appInstance = app(
     resolveTransport(),
     { title: 'Bouncing Ball - Cosyne Phase 9' },

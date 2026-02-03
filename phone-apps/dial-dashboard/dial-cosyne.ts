@@ -314,7 +314,7 @@ export function createDialDashboardApp(app: any, win: any): () => void {
 
 if (require.main === module) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { app, resolveTransport } = require('../../core/src/index');
+  const { app, resolveTransport } = require('tsyne');
 
   const appInstance = app(resolveTransport(), { title: 'Dial Dashboard' }, (a: any) => {
     let cleanup: (() => void) | undefined;

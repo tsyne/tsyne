@@ -9,10 +9,8 @@ import { Window } from 'tsyne';
 import { DesktopMDI } from 'tsyne';
 import { enableDesktopMode, disableDesktopMode, ITsyneWindow } from 'tsyne';
 import { loadAppBuilder, AppMetadata } from 'tsyne';
-import { ScopedResourceManager, ResourceManager } from 'tsyne';
-import { SandboxedApp } from 'tsyne';
+import { ScopedResourceManager, ResourceManager, SandboxedApp } from 'tsyne';
 import { WindowMode, OpenApp } from './desktop_types';
-
 import {
   MockClockService,
   MockNotificationService,
@@ -22,7 +20,7 @@ import {
   NotAvailableContactsService,
   NotAvailableTelephonyService,
   NotAvailableSMSService,
-} from './services';
+} from 'tsyne';
 import type { IDesktopService, DesktopAppInfo } from 'tsyne';
 
 /**

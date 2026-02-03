@@ -153,7 +153,7 @@ export function buildProjectionsApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('../../core/src');
+  const { app } = require('tsyne');
   const appInstance = app(
     {
       title: 'Projections Demo - Cosyne Phase 4',

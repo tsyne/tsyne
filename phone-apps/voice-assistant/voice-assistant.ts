@@ -506,10 +506,9 @@ export function buildVoiceAssistant(a: App): void {
           a.label('\u{1F916}').withId('header-icon');
           a.label('Voice Assistant').withId('header-title');
           a.spacer();
-          a.button('\u{1F5D1}').withId('clear-btn')
-            .onClick(async () => {
+          a.button('\u{1F5D1}', { onClick: async () => {
               store.clearHistory();
-            });
+            } }).withId('clear-btn');
         });
 
         a.separator();
@@ -550,35 +549,34 @@ export function buildVoiceAssistant(a: App): void {
         // Control bar
         a.hbox(() => {
           a.spacer();
-          micButton = a.button('\u{1F3A4} Listen').withId('mic-btn')
-            .onClick(async () => {
+          micButton = a.button('\u{1F3A4} Listen', { onClick: async () => {
               await store.toggleListening();
-            });
+            } }).withId('mic-btn');
           a.spacer();
         });
 
         // Quick commands
         a.hbox(() => {
-          a.button('Time').withId('quick-time').onClick(async () => {
+          a.button('Time', { onClick: async () => {
             store.addUserMessage('what is the time');
             const result = store.getCommandProcessor().process('what is the time');
             store.addAssistantMessage(result.response);
-          });
-          a.button('Date').withId('quick-date').onClick(async () => {
+          } }).withId('quick-time');
+          a.button('Date', { onClick: async () => {
             store.addUserMessage('what is the date');
             const result = store.getCommandProcessor().process('what is the date');
             store.addAssistantMessage(result.response);
-          });
-          a.button('Weather').withId('quick-weather').onClick(async () => {
+          } }).withId('quick-date');
+          a.button('Weather', { onClick: async () => {
             store.addUserMessage('weather today');
             const result = store.getCommandProcessor().process('weather today');
             store.addAssistantMessage(result.response);
-          });
-          a.button('Joke').withId('quick-joke').onClick(async () => {
+          } }).withId('quick-weather');
+          a.button('Joke', { onClick: async () => {
             store.addUserMessage('tell me a joke');
             const result = store.getCommandProcessor().process('tell me a joke');
             store.addAssistantMessage(result.response);
-          });
+          } }).withId('quick-joke');
         });
       });
     });

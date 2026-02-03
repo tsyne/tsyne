@@ -614,13 +614,9 @@ export class SudokuUI {
       // Number buttons (1-9)
       this.a.hbox(() => {
         for (let num = 1; num <= 9; num++) {
-          this.a.button(String(num))
-            .onClick(() => this.game.setValue(num))
-            .withId(`numBtn${num}`);
+          this.a.button(String(num), { onClick: () => this.game.setValue(num) }).withId(`numBtn${num}`);
         }
-        this.a.button('Clear')
-          .onClick(() => this.game.clearCell())
-          .withId('clearBtn');
+        this.a.button('Clear', { onClick: () => this.game.clearCell() }).withId('clearBtn');
       });
 
       // Instructions

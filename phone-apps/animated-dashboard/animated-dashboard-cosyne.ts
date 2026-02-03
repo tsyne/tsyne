@@ -136,7 +136,7 @@ export function buildAnimatedDashboardApp(a: App): void {
 
 // Standalone execution
 if (require.main === module) {
-  const { app } = require('../../core/src');
+  const { app } = require('tsyne');
   const appInstance = app(
     {
       title: 'Animated Dashboard - Cosyne Phase 9',

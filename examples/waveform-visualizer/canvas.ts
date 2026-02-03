@@ -236,17 +236,10 @@ export function buildCanvasWaveformVisualizer(a: App) {
           // Controls
           a.hbox(() => {
             playBtn = a
-              .button('▶ Play')
-              .onClick(() => play())
-              .withId('playBtn');
+              .button('▶ Play', { onClick: () => play() }).withId('playBtn');
             pauseBtn = a
-              .button('⏸ Pause')
-              .onClick(() => pause())
-              .withId('pauseBtn')
-              .when(() => false);
-            a.button('⏹ Stop')
-              .onClick(() => stop())
-              .withId('stopBtn');
+              .button('⏸ Pause', { onClick: () => pause() }).withId('pauseBtn').when(() => false);
+            a.button('⏹ Stop', { onClick: () => stop() }).withId('stopBtn');
           });
 
           // Time display

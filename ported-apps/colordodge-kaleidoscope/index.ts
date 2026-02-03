@@ -216,19 +216,19 @@ export function buildKaleidoscopeApp(a: App, target: IRenderTarget): () => void 
     a.vbox(() => {
       // Control row
       a.hbox(() => {
-        a.button('-').withId('seg-minus').onClick(() => {
+        a.button('-', { onClick: () => {
           state.setSegments(state.segments - 2);
-        });
+        } }).withId('seg-minus');
         a.label('Segments').withId('seg-label');
-        a.button('+').withId('seg-plus').onClick(() => {
+        a.button('+', { onClick: () => {
           state.setSegments(state.segments + 2);
-        });
-        a.button('Palette').withId('palette').onClick(() => {
+        } }).withId('seg-plus');
+        a.button('Palette', { onClick: () => {
           state.nextPalette();
-        });
-        a.button('Clear').withId('clear').onClick(() => {
+        } }).withId('palette');
+        a.button('Clear', { onClick: () => {
           state.clear();
-        });
+        } }).withId('clear');
       });
 
       // Canvas

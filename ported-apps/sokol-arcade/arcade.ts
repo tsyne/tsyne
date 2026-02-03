@@ -156,10 +156,7 @@ export function buildSokolArcadeApp(a: any): void {
         a.hbox(() => {
           a.label('Sokol Arcade').withId('title');
           a.spacer();
-          a.button('Back')
-            .withId('btn-back')
-            .onClick(() => store.backToLauncher())
-            .when(() => store.currentGame !== 'launcher');
+          a.button('Back', { onClick: () => store.backToLauncher() }).withId('btn-back').when(() => store.currentGame !== 'launcher');
         });
 
         a.separator();
@@ -172,9 +169,7 @@ export function buildSokolArcadeApp(a: any): void {
             a.hbox(() => {
               for (const game of GAMES) {
                 a.vbox(() => {
-                  a.button(game.icon)
-                    .withId(`btn-${game.id}`)
-                    .onClick(() => store.launchGame(game.id));
+                  a.button(game.icon, { onClick: () => store.launchGame(game.id) }).withId(`btn-${game.id}`);
                   a.label(game.name).withId(`label-${game.id}`);
                 });
               }

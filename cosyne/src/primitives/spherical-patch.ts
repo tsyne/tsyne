@@ -122,6 +122,10 @@ export class CosyneSphericalPatch extends Primitive<any> {
     this.strokeColor = color;
   }
 
+  updateStrokeWidth(width: number): void {
+    this.strokeWidth = width;
+  }
+
   updateAlpha(alpha: number): void {
     this.alpha = alpha;
   }

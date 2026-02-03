@@ -183,16 +183,12 @@ class SnowflakeUI {
         this.a.label(`Density: ${this.state.density}`).withId('snowflakeDensityLabel');
         this.a.hbox(() => {
           this.a
-            .button('-')
-            .onClick(() => this.setDensity(this.state.density - 10))
-            .withId('snowflakeDensityMinus');
+            .button('-', { onClick: () => this.setDensity(this.state.density - 10) }).withId('snowflakeDensityMinus');
 
           this.a.spacer();
 
           this.a
-            .button('+')
-            .onClick(() => this.setDensity(this.state.density + 10))
-            .withId('snowflakeDensityPlus');
+            .button('+', { onClick: () => this.setDensity(this.state.density + 10) }).withId('snowflakeDensityPlus');
         });
 
         this.a.separator();
@@ -200,16 +196,12 @@ class SnowflakeUI {
         this.a.label(`Speed: ${this.state.speed.toFixed(1)}x`).withId('snowflakeSpeedLabel');
         this.a.hbox(() => {
           this.a
-            .button('-')
-            .onClick(() => this.setSpeed(this.state.speed - 0.5))
-            .withId('snowflakeSpeedMinus');
+            .button('-', { onClick: () => this.setSpeed(this.state.speed - 0.5) }).withId('snowflakeSpeedMinus');
 
           this.a.spacer();
 
           this.a
-            .button('+')
-            .onClick(() => this.setSpeed(this.state.speed + 0.5))
-            .withId('snowflakeSpeedPlus');
+            .button('+', { onClick: () => this.setSpeed(this.state.speed + 0.5) }).withId('snowflakeSpeedPlus');
         });
       });
 

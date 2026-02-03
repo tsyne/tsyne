@@ -230,26 +230,20 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
             a.label('🚚 Food Truck').withId('app-title');
             a.separator();
 
-            a.button('Orders')
-              .withId('btn-orders')
-              .onClick(async () => {
+            a.button('Orders', { onClick: async () => {
                 selectedView = 'orders';
                 await showView('orders');
-              });
+              } }).withId('btn-orders');
 
-            a.button('Sales')
-              .withId('btn-sales')
-              .onClick(async () => {
+            a.button('Sales', { onClick: async () => {
                 selectedView = 'sales';
                 await showView('sales');
-              });
+              } }).withId('btn-sales');
 
-            a.button('Weather')
-              .withId('btn-weather')
-              .onClick(async () => {
+            a.button('Weather', { onClick: async () => {
                 selectedView = 'weather';
                 await showView('weather');
-              });
+              } }).withId('btn-weather');
 
             a.spacer();
             a.label('Status', 'sidebar-label');
@@ -268,22 +262,14 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
 
             a.hbox(() => {
               a.label('Quick Add:', 'quick-add-label');
-              a.button('Burger')
-                .withId('add-burger')
-                .onClick(() => store.addOrder([store.getMenuItems()[0]]));
-              a.button('Tacos')
-                .withId('add-tacos')
-                .onClick(() => store.addOrder([store.getMenuItems()[1]]));
-              a.button('Pizza')
-                .withId('add-pizza')
-                .onClick(() => store.addOrder([store.getMenuItems()[3]]));
-              a.button('Random')
-                .withId('add-random')
-                .onClick(() => {
+              a.button('Burger', { onClick: () => store.addOrder([store.getMenuItems()[0]]) }).withId('add-burger');
+              a.button('Tacos', { onClick: () => store.addOrder([store.getMenuItems()[1]]) }).withId('add-tacos');
+              a.button('Pizza', { onClick: () => store.addOrder([store.getMenuItems()[3]]) }).withId('add-pizza');
+              a.button('Random', { onClick: () => {
                   const items = store.getMenuItems();
                   const randomItem = items[Math.floor(Math.random() * items.length)];
                   store.addOrder([randomItem]);
-                });
+                } }).withId('add-random');
             });
 
             a.separator();
@@ -309,9 +295,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
                       );
                     });
                     a.spacer();
-                    a.button('Mark Ready')
-                      .withId(`btn-ready-${order.id}`)
-                      .onClick(() => store.markOrderReady(order.id));
+                    a.button('Mark Ready', { onClick: () => store.markOrderReady(order.id) }).withId(`btn-ready-${order.id}`);
                   });
                 },
                 trackBy: (order: Order) => order.id,
@@ -340,9 +324,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
                       );
                     });
                     a.spacer();
-                    a.button('Mark Complete')
-                      .withId(`btn-complete-${order.id}`)
-                      .onClick(() => store.markOrderCompleted(order.id));
+                    a.button('Mark Complete', { onClick: () => store.markOrderCompleted(order.id) }).withId(`btn-complete-${order.id}`);
                   });
                 },
                 trackBy: (order: Order) => order.id,
@@ -409,9 +391,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
 
             a.separator();
 
-            a.button('Update Weather')
-              .withId('btn-update-weather')
-              .onClick(() => {
+            a.button('Update Weather', { onClick: () => {
                 const conditions = [
                   { condition: 'Sunny', icon: '☀️', temp: 75 },
                   { condition: 'Cloudy', icon: '☁️', temp: 68 },
@@ -425,7 +405,7 @@ export function buildFoodTruckApp(a: any, windowWidth?: number, windowHeight?: n
                   condition: newCond.condition,
                   icon: newCond.icon,
                 });
-              });
+              } }).withId('btn-update-weather');
           }).when(() => selectedView === 'weather');
         });
       });

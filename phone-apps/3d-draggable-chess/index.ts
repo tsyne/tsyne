@@ -251,7 +251,7 @@ export function buildDraggableChessApp(a: any) {
           // Set initial checked state
           snapCheckbox.setChecked(snapToGrid);
 
-          a.button('Reset').withId('reset-btn').onClick(() => {
+          a.button('Reset', { onClick: () => {
             // Reset all piece positions
             objects[0].pos = [-3, 0.5, 3];
             objects[1].pos = [-1, 0.5, 3];
@@ -268,7 +268,7 @@ export function buildDraggableChessApp(a: any) {
             dragState.object = null;
             statusText = 'Board reset. Drag pieces to move them.';
             refreshAndRender();
-          });
+          } }).withId('reset-btn');
         });
 
         a.separator();

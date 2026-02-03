@@ -239,19 +239,13 @@ export class PomodoroUI {
 
       // Control buttons
       this.a.hbox(() => {
-        this.startButton = this.a.button('Start')
-          .onClick(() => this.toggleSession())
-          .withId('pomodoroStartBtn');
+        this.startButton = this.a.button('Start', { onClick: () => this.toggleSession() }).withId('pomodoroStartBtn');
 
         this.a.spacer();
 
-        this.a.button('Reset')
-          .onClick(() => this.reset())
-          .withId('pomodoroResetBtn');
+        this.a.button('Reset', { onClick: () => this.reset() }).withId('pomodoroResetBtn');
 
-        this.a.button('Skip')
-          .onClick(() => this.skipSession())
-          .withId('pomodoroSkipBtn');
+        this.a.button('Skip', { onClick: () => this.skipSession() }).withId('pomodoroSkipBtn');
       });
 
       this.a.spacer();

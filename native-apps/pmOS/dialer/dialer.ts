@@ -126,10 +126,9 @@ async function spawnNativeDialer(a: App): Promise<void> {
         a.separator();
 
         a.center(() => {
-          a.button('← Close')
-            .onClick(() => {
+          a.button('← Close', { onClick: () => {
               win.close();
-            });
+            } });
         });
       });
     });
@@ -186,6 +185,6 @@ async function spawnNativeDialer(a: App): Promise<void> {
 
 // Standalone execution (for testing)
 if (require.main === module) {
-  const { app, resolveTransport } = require('../../../core/src/index');
+  const { app, resolveTransport } = require('tsyne');
   const appInstance = app(resolveTransport(), { title: 'Dialer (Native)' }, buildNativeDialerApp);
   appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));}

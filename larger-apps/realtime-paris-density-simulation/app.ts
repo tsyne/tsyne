@@ -29,6 +29,32 @@ import {
 //   TileSource
 // } from 'tsyne';
 
+// Placeholder types until tsyne exports them
+interface TileSource {
+  urlTemplate: string;
+  attribution?: string;
+}
+
+interface MapViewport {
+  center: { lng: number; lat: number };
+  zoom: number;
+}
+
+// Placeholder class until tsyne exports it
+class TileMapRenderer {
+  constructor(_source: TileSource, _options?: { cachePath?: string }) {}
+  async renderToTarget(_target: RenderTarget, _viewport: MapViewport): Promise<void> {}
+}
+
+// Placeholder tile sources
+const TILE_SOURCES = {
+  osmRaster: (): TileSource => ({ urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' }),
+  mapboxLight: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/light-v10/tiles/{z}/{x}/{y}?access_token=${token}` }),
+  mapboxDark: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token=${token}` }),
+  mapboxStreets: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${token}` }),
+  mapboxSatellite: (token: string): TileSource => ({ urlTemplate: `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${token}` }),
+};
+
 // Tile cache directory (7-day TTL per OSM policy)
 const TILE_CACHE_PATH = path.join(os.homedir(), '.tsyne', 'realtime-paris-density-simulation', 'map-cache');
 

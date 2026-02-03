@@ -4,8 +4,7 @@
  * Types, interfaces, and constants used by the Tsyne Desktop Environment.
  */
 
-import { AppMetadata } from './app-metadata';
-import { ITsyneWindow } from './tsyne-window';
+import { AppMetadata, ITsyneWindow } from 'tsyne';
 
 // Desktop configuration constants
 export const ICON_SIZE = 80;

@@ -118,9 +118,7 @@ class PhoneModemSimulator {
               for (const app of this.apps) {
                 this.a.vbox(() => {
                   // App icon button
-                  this.a.button(this.getAppEmoji(app.metadata.name))
-                    .onClick(() => this.launchApp(app))
-                    .withId(`app-${app.metadata.name.toLowerCase().replace(/\s+/g, '-')}`);
+                  this.a.button(this.getAppEmoji(app.metadata.name), { onClick: () => this.launchApp(app) }).withId(`app-${app.metadata.name.toLowerCase().replace(/\s+/g, '-')}`);
 
                   // App name label
                   this.a.label(app.metadata.name);

@@ -163,11 +163,9 @@ export function createContactsApp(a: App, contacts: IContactsService): void {
           a.spacer();
 
           // Favorite button
-          a.button(contact.isFavorite ? '⭐' : '☆')
-            .onClick(() => {
+          a.button(contact.isFavorite ? '⭐' : '☆', { onClick: () => {
               contacts.updateContact(contact.id, { isFavorite: !contact.isFavorite });
-            })
-            .withId(`contact-${contact.id}-favorite`);
+            } }).withId(`contact-${contact.id}-favorite`);
         });
 
         // Phone
@@ -201,17 +199,13 @@ export function createContactsApp(a: App, contacts: IContactsService): void {
 
       // Action buttons
       a.hbox(() => {
-        a.button('✎')
-          .onClick(() => {
+        a.button('✎', { onClick: () => {
             showEditDialog(contact);
-          })
-          .withId(`contact-${contact.id}-edit`);
+          } }).withId(`contact-${contact.id}-edit`);
 
-        a.button('🗑')
-          .onClick(() => {
+        a.button('🗑', { onClick: () => {
             contacts.deleteContact(contact.id);
-          })
-          .withId(`contact-${contact.id}-delete`);
+          } }).withId(`contact-${contact.id}-delete`);
       });
     });
   }
@@ -279,9 +273,7 @@ export function createContactsApp(a: App, contacts: IContactsService): void {
 
           a.spacer();
 
-          a.button('➕')
-            .onClick(() => showAddDialog())
-            .withId('btn-add-contact');
+          a.button('➕', { onClick: () => showAddDialog() }).withId('btn-add-contact');
         });
 
         a.separator();

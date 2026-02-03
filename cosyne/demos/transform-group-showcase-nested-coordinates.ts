@@ -13,8 +13,8 @@
  * Run: npx tsx cosyne/demos/transform-group-showcase-nested-coordinates.ts
  */
 
-import { app, resolveTransport, standaloneShutdownStrategy } from '../../core/src/index';
-import type { App } from '../../core/src/index';
+import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
+import type { App } from 'tsyne';
 import { cosyne, type CosyneContext, refreshAllCosyneContexts, enableEventHandling } from '../src/index';
 
 const WIDTH = 500;

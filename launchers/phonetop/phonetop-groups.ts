@@ -267,9 +267,7 @@ export class FolderManager {
           }).withId(`folder-${folder.category}`);
         } else {
           // Fallback: button with folder emoji
-          this.a.button('📁')
-            .withId(`folder-${folder.category}`)
-            .onClick(() => this.open(folder));
+          this.a.button('📁', { onClick: () => this.open(folder) }).withId(`folder-${folder.category}`);
         }
 
         // Folder name (centered)
@@ -374,8 +372,8 @@ export class FolderManager {
         this.a.spacer();
 
         if (this.totalPages > 1) {
-          this.a.button('<').withId('folderPrev').onClick(() => this.previousPage());
-          this.a.button('>').withId('folderNext').onClick(() => this.nextPage());
+          this.a.button('<', { onClick: () => this.previousPage() }).withId('folderPrev');
+          this.a.button('>', { onClick: () => this.nextPage() }).withId('folderNext');
         }
       });
     });

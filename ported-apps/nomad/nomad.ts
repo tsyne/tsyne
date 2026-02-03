@@ -436,11 +436,9 @@ export class NomadUI {
             this.a.hbox(() => {
               // Date picker button
               this.a
-                .button(`${date} ▾`)
-                .onClick(() => {
+                .button(`${date} ▾`, { onClick: () => {
                   // Show calendar - for now just a simple date display
-                })
-                .withId(`nomad-date-${city.id}`);
+                } }).withId(`nomad-date-${city.id}`);
 
               this.a.spacer();
 

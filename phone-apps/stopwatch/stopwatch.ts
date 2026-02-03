@@ -186,9 +186,7 @@ export class StopwatchUI {
 
       // Control buttons - single Start/Stop toggle + Lap + Reset
       this.a.hbox(() => {
-        this.swStartStopButton = this.a.button(this.stopwatchRunning ? 'Stop' : 'Start')
-          .onClick(() => this.toggleStopwatch())
-          .withId('stopwatch-startstop');
+        this.swStartStopButton = this.a.button(this.stopwatchRunning ? 'Stop' : 'Start', { onClick: () => this.toggleStopwatch() }).withId('stopwatch-startstop');
         this.a.button('Lap', { onClick: () => this.recordLap() }).withId('stopwatch-lap');
         this.a.button('Reset', { onClick: () => this.resetStopwatch() }).withId('stopwatch-reset');
       });
