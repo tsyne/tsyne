@@ -491,7 +491,16 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 
 	// Use the fragment shader source if available
 	if program.fragSrc != "" {
-		canvas.ShaderObject.SetSource(program.fragSrc)
+		// Convert GLSL 300 ES to target language
+		// For now, use GLSL 110 for desktop. Could detect platform here.
+		convertedSource := ConvertShader(program.fragSrc, ShaderGLSL110)
+		canvas.ShaderObject.SetSource(convertedSource)
+
+		// Log any required extensions
+		extensions := DetectRequiredExtensions(program.fragSrc)
+		if len(extensions) > 0 {
+			log.Printf("Shader requires extensions: %v", extensions)
+		}
 	}
 
 	program.linked = true
