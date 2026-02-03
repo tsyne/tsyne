@@ -15,8 +15,7 @@
 // @tsyne-app:category graphics
 // @tsyne-app:builder buildCubemapDemo
 
-import { app, resolveTransport, App, Window } from 'tsyne';
-import { cosyne } from 'cosyne';
+import { app, resolveTransport, App, Window, CanvasShader, standaloneShutdownStrategy } from 'tsyne';
 
 // Fragment shader that demonstrates cubemap sampling
 const cubemapFragmentShader = `
@@ -89,6 +88,7 @@ function createCubemapWithGradients(width: number, height: number): [Uint8Clampe
 export function buildCubemapDemo(a: any) {
   let intensity = 1.0;
   let intensityLabel: any;
+  let shader: CanvasShader | null = null;
 
   a.window(
     { title: 'Cubemap Environment Demo', width: 800, height: 700 },
@@ -100,20 +100,26 @@ export function buildCubemapDemo(a: any) {
           a.separator();
 
           // Create the shader canvas with cubemap
-          const shaderCanvas = cosyne(800, 400, (c: any) => {
-            const shader = c.shader(cubemapFragmentShader);
+          a.canvasStack(() => {
+            shader = a.canvasShader(800, 400, cubemapFragmentShader, {
+              uniforms: {
+                u_intensity: intensity,
+              }
+            });
 
             // Create a simple cubemap with gradient faces
             // In a real app, these would be loaded from image files
             const [posX, negX, posY, negY, posZ, negZ] = createCubemapWithGradients(128, 128);
 
-            // Set cubemap uniform (if supported by bridge)
-            // shader.setCubemapUniform('u_envMap', [posX, negX, posY, negY, posZ, negZ]);
-
-            // For now, set intensity
-            shader.setUniform('u_intensity', intensity);
-
-            return shader;
+            // Set cubemap uniform with proper face data format
+            shader?.setCubemapUniform('u_envMap', [
+              { data: posX, width: 128, height: 128 },
+              { data: negX, width: 128, height: 128 },
+              { data: posY, width: 128, height: 128 },
+              { data: negY, width: 128, height: 128 },
+              { data: posZ, width: 128, height: 128 },
+              { data: negZ, width: 128, height: 128 },
+            ]);
           });
 
           a.spacer();
@@ -124,8 +130,7 @@ export function buildCubemapDemo(a: any) {
             a.slider(0, 2, intensity, (val: number) => {
               intensity = val;
               intensityLabel?.setText(`Intensity: ${intensity.toFixed(2)}`);
-              // Update shader uniform
-              // Would call shader.setUniform('u_intensity', intensity);
+              shader?.setUniform('u_intensity', intensity);
             });
             intensityLabel = a.label(`Intensity: ${intensity.toFixed(2)}`);
           });
@@ -164,4 +169,5 @@ if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Cubemap Environment Demo' }, (a: any) => {
     buildCubemapDemo(a);
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

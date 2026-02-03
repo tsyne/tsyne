@@ -176,3 +176,100 @@ func (b *Bridge) handleSetShaderTextureUniform(msg Message) Response {
 		Success: true,
 	}
 }
+
+// handleSetShaderCubemapUniform sets a cubemap uniform from 6 base64-encoded RGBA faces
+// Payload: { widgetId, uniformName, faces: [{ imageData, width, height }, ...] (6 faces) }
+// Face order: +X, -X, +Y, -Y, +Z, -Z
+func (b *Bridge) handleSetShaderCubemapUniform(msg Message) Response {
+	widgetID := msg.Payload["widgetId"].(string)
+	uniformName := msg.Payload["uniformName"].(string)
+	facesData, ok := msg.Payload["faces"].([]interface{})
+	if !ok || len(facesData) != 6 {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Cubemap requires exactly 6 faces",
+		}
+	}
+
+	b.mu.RLock()
+	w, exists := b.widgets[widgetID]
+	b.mu.RUnlock()
+
+	if !exists {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Shader widget not found",
+		}
+	}
+
+	shader, ok := w.(*canvas.Shader)
+	if !ok {
+		return Response{
+			ID:      msg.ID,
+			Success: false,
+			Error:   "Widget is not a shader",
+		}
+	}
+
+	// Parse and decode each face
+	var faceImages [6]interface{}
+	for i, faceData := range facesData {
+		face, ok := faceData.(map[string]interface{})
+		if !ok {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Invalid face data format",
+			}
+		}
+
+		imageDataB64, ok := face["imageData"].(string)
+		if !ok {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Missing imageData for face",
+			}
+		}
+		width := int(toFloat64(face["width"]))
+		height := int(toFloat64(face["height"]))
+
+		// Decode base64 image data
+		imageData, err := base64.StdEncoding.DecodeString(imageDataB64)
+		if err != nil {
+			return Response{
+				ID:      msg.ID,
+				Success: false,
+				Error:   "Failed to decode base64 image data for face " + string(rune('0'+i)) + ": " + err.Error(),
+			}
+		}
+
+		// Create RGBA image from raw data
+		img := image.NewRGBA(image.Rect(0, 0, width, height))
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				idx := (y*width + x) * 4
+				if idx+3 < len(imageData) {
+					img.SetRGBA(x, y, color.RGBA{
+						R: imageData[idx],
+						G: imageData[idx+1],
+						B: imageData[idx+2],
+						A: imageData[idx+3],
+					})
+				}
+			}
+		}
+
+		faceImages[i] = img
+	}
+
+	// Set cubemap uniform with all 6 faces
+	shader.SetCubemapUniform(uniformName, faceImages)
+
+	return Response{
+		ID:      msg.ID,
+		Success: true,
+	}
+}

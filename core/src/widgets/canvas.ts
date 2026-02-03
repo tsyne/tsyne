@@ -2824,4 +2824,37 @@ export class CanvasShader {
       height,
     });
   }
+
+  /**
+   * Set a cubemap uniform from 6 face images.
+   * Each face should be a Uint8Array or Uint8ClampedArray of RGBA pixel data.
+   * Face order: [+X, -X, +Y, -Y, +Z, -Z]
+   *
+   * @param name Uniform name (e.g., 'u_envMap')
+   * @param faces Array of 6 face data objects with width, height, and RGBA data
+   */
+  async setCubemapUniform(
+    name: string,
+    faces: Array<{ data: Uint8Array | Uint8ClampedArray; width: number; height: number }>
+  ): Promise<void> {
+    if (faces.length !== 6) {
+      throw new Error('Cubemap requires exactly 6 faces');
+    }
+
+    // Convert each face to base64
+    const facesPayload = faces.map((face, i) => {
+      const base64 = Buffer.from(face.data).toString('base64');
+      return {
+        imageData: base64,
+        width: face.width,
+        height: face.height,
+      };
+    });
+
+    await this.ctx.bridge.send('setShaderCubemapUniform', {
+      widgetId: this.id,
+      uniformName: name,
+      faces: facesPayload,
+    });
+  }
 }

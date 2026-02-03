@@ -637,6 +637,7 @@ echo "[setup-fyne-fork] Adding shader-related methods to GL context..."
 # Add missing methods to context.go interface (before the closing brace)
 sed -i '/VertexAttribPointerWithOffset/a\
 \	Uniform3f(uniform Uniform, v0, v1, v2 float32)\
+\	Uniform1i(uniform Uniform, v int32)\
 \	DisableVertexAttribArray(attribute Attribute)\
 \	VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32)\
 \	DrawElements(mode uint32, count int32, typ uint32, offset int)' "$FORK_DIR/internal/painter/gl/context.go"
@@ -646,6 +647,10 @@ cat >> "$FORK_DIR/internal/painter/gl/gl_core.go" <<'GL_CORE_ADDITIONS'
 
 func (c *coreContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
 	gl.Uniform3f(int32(uniform), v0, v1, v2)
+}
+
+func (c *coreContext) Uniform1i(uniform Uniform, v int32) {
+	gl.Uniform1i(int32(uniform), v)
 }
 
 func (c *coreContext) DisableVertexAttribArray(attribute Attribute) {
@@ -683,6 +688,8 @@ cat > "$FORK_DIR/internal/painter/gl/shader_painter.go" <<'SHADER_PAINTER_EOF'
 package gl
 
 import (
+	"image"
+	"image/draw"
 	"log"
 	"strings"
 
@@ -920,18 +927,76 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 
 	// Set cubemap uniforms (Phase 2.2)
-	// Note: Cubemap support requires uploading 6 faces to GL_TEXTURE_CUBE_MAP
-	// This is a placeholder - full implementation would be in bridge paint phase
-	for cubemapName := range shader.GetCubemaps() {
+	// Full cubemap texture upload and binding implementation
+	for cubemapName, faces := range shader.GetCubemaps() {
 		if textureUnit >= 8 {
 			log.Printf("[drawShader] Warning: too many textures+cubemaps (max 8), skipping %s", cubemapName)
 			break
 		}
+
+		// Get or create cubemap texture
+		cubemapTexID, cached := shader.GetCubemapCache()[cubemapName]
+		if !cached {
+			// Create new cubemap texture
+			tex := p.ctx.CreateTexture()
+			cubemapTexID = uint32(tex)
+			shader.SetCubemapCache(cubemapName, cubemapTexID)
+		}
+
+		// Activate texture unit and bind cubemap
+		p.ctx.ActiveTexture(texture0 + uint32(textureUnit))
+		p.ctx.BindTexture(textureCube, Texture(cubemapTexID))
+
+		// Upload faces if not cached (or always upload for now - caching optimization later)
+		if !cached {
+			// Set cubemap texture parameters
+			p.ctx.TexParameteri(textureCube, textureMinFilter, linear)
+			p.ctx.TexParameteri(textureCube, textureMagFilter, linear)
+			p.ctx.TexParameteri(textureCube, textureWrapS, clampToEdge)
+			p.ctx.TexParameteri(textureCube, textureWrapT, clampToEdge)
+
+			// Upload each of the 6 faces
+			faceTargets := []uint32{
+				textureCubePositiveX, // +X (right)
+				textureCubeNegativeX, // -X (left)
+				textureCubePositiveY, // +Y (up)
+				textureCubeNegativeY, // -Y (down)
+				textureCubePositiveZ, // +Z (front)
+				textureCubeNegativeZ, // -Z (back)
+			}
+
+			for i, faceTarget := range faceTargets {
+				faceData := faces[i]
+				if faceData == nil {
+					continue
+				}
+
+				// Convert face data to RGBA pixel data
+				rgba := p.cubemapFaceToRGBA(faceData)
+				if rgba == nil || len(rgba.Pix) == 0 {
+					log.Printf("[drawShader] Warning: empty face data for cubemap %s face %d", cubemapName, i)
+					continue
+				}
+
+				// Upload face to cubemap
+				p.ctx.TexImage2D(
+					faceTarget,
+					0,
+					rgba.Rect.Size().X,
+					rgba.Rect.Size().Y,
+					colorFormatRGBA,
+					unsignedByte,
+					rgba.Pix,
+				)
+			}
+			p.logError()
+		}
+
+		// Set samplerCube uniform to texture unit number
 		shader.SetCubemapUnit(cubemapName, textureUnit)
-		// Set samplerCube uniform to unit number (cubemap binding happens at bridge level)
 		samplerLoc := getUniformLoc(cubemapName)
 		if samplerLoc >= 0 {
-			p.ctx.Uniform1f(samplerLoc, float32(textureUnit))
+			p.ctx.Uniform1i(samplerLoc, int32(textureUnit))
 		}
 		textureUnit++
 	}
@@ -1027,6 +1092,63 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// (shader's DisableVertexAttribArray may have disabled them if indices match)
 	p.ctx.EnableVertexAttribArray(p.program.attributes["vert"])
 	p.ctx.EnableVertexAttribArray(p.program.attributes["vertTexCoord"])
+}
+
+// cubemapFaceToRGBA converts cubemap face data from interface{} to *image.RGBA
+// Supports: *image.RGBA, image.Image, map with width/height/data
+func (p *painter) cubemapFaceToRGBA(faceData interface{}) *image.RGBA {
+	switch face := faceData.(type) {
+	case *image.RGBA:
+		return face
+	case image.Image:
+		// Convert any image type to RGBA
+		bounds := face.Bounds()
+		rgba := image.NewRGBA(bounds)
+		draw.Draw(rgba, bounds, face, bounds.Min, draw.Src)
+		return rgba
+	case map[string]interface{}:
+		// Bridge format: {width, height, data} where data is []uint8 or base64
+		width, wok := face["width"].(float64)
+		height, hok := face["height"].(float64)
+		if !wok || !hok {
+			return nil
+		}
+		w, h := int(width), int(height)
+
+		// Try getting data as []byte directly or as []interface{}
+		var pixelData []uint8
+		switch d := face["data"].(type) {
+		case []uint8: // Note: []byte is an alias for []uint8
+			pixelData = d
+		case []interface{}:
+			pixelData = make([]uint8, len(d))
+			for i, v := range d {
+				switch b := v.(type) {
+				case float64:
+					pixelData[i] = uint8(b)
+				case int:
+					pixelData[i] = uint8(b)
+				case uint8:
+					pixelData[i] = b
+				}
+			}
+		default:
+			return nil
+		}
+
+		if len(pixelData) != w*h*4 {
+			return nil
+		}
+
+		rgba := &image.RGBA{
+			Pix:    pixelData,
+			Stride: w * 4,
+			Rect:   image.Rect(0, 0, w, h),
+		}
+		return rgba
+	default:
+		return nil
+	}
 }
 SHADER_PAINTER_EOF
 
