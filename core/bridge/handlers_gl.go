@@ -390,6 +390,8 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glClear(canvas, args)
 	case "clearColor":
 		return b.glClearColor(canvas, args)
+	case "colorMask":
+		return nil // Color mask state - handled implicitly
 	case "viewport":
 		return b.glViewport(canvas, args)
 	case "enable", "disable":
