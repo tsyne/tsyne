@@ -144,6 +144,12 @@ void main() {
 
 	glCanvases[canvasID] = glCanv
 
+	// If this is the first GL canvas, automatically create a window and display it
+	if len(glCanvases) == 1 && b.mainWindow != nil {
+		// Add the GL canvas to the window's content
+		b.mainWindow.SetContent(glContainer)
+	}
+
 	return Response{
 		Success: true,
 		Result: map[string]interface{}{
