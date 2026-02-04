@@ -144,10 +144,49 @@ void main() {
 
 	glCanvases[canvasID] = glCanv
 
-	// If this is the first GL canvas, automatically create a window and display it
-	if len(glCanvases) == 1 && b.mainWindow != nil {
-		// Add the GL canvas to the window's content
-		b.mainWindow.SetContent(glContainer)
+	// IoC: Get target window from message, or use first available window
+	windowID, _ := payload["windowId"].(string)
+	if windowID == "" {
+		// If no window specified, find the first window
+		b.mu.RLock()
+		for id := range b.windows {
+			windowID = id
+			break
+		}
+		b.mu.RUnlock()
+	}
+
+	// Add GL canvas to the specified window, or auto-create one if needed
+	if windowID != "" {
+		b.mu.RLock()
+		win, exists := b.windows[windowID]
+		b.mu.RUnlock()
+
+		if exists {
+			// Set on main thread to avoid Fyne threading issues
+			fyne.DoAndWait(func() {
+				win.SetContent(glContainer)
+			})
+		}
+	} else {
+		// No window exists and none specified - auto-create one for GL rendering
+		fyne.DoAndWait(func() {
+			// Create default GL rendering window
+			glWindow := b.app.NewWindow()
+			glWindow.SetTitle("Three.js Rendering")
+			glWindow.Resize(fyne.NewSize(float32(glCanv.Width), float32(glCanv.Height)))
+			glWindow.SetContent(glContainer)
+
+			// Register it in the windows map
+			b.mu.Lock()
+			if windowID == "" {
+				windowID = "gl_window_0"
+			}
+			b.windows[windowID] = glWindow
+			b.mu.Unlock()
+
+			glWindow.Show()
+		})
 	}
 
 	return Response{
