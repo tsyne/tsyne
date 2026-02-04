@@ -172,8 +172,7 @@ void main() {
 		// No window exists and none specified - auto-create one for GL rendering
 		fyne.DoAndWait(func() {
 			// Create default GL rendering window
-			glWindow := b.app.NewWindow()
-			glWindow.SetTitle("Three.js Rendering")
+			glWindow := b.app.NewWindow("Three.js Rendering")
 			glWindow.Resize(fyne.NewSize(float32(glCanv.Width), float32(glCanv.Height)))
 			glWindow.SetContent(glContainer)
 
