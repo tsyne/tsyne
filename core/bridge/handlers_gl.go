@@ -97,17 +97,22 @@ type GLCommand struct {
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) handleCreateGLCanvas(msg Message) Response {
+	log.Println("[GL] handleCreateGLCanvas called")
 	payload := msg.Payload
 
-	width, ok := payload["width"].(float64)
-	if !ok {
-		return Response{Error: "missing or invalid width"}
+	// Use toFloat32 helper to handle msgpack numeric encoding (int64, uint16, etc.)
+	widthVal, widthOk := payload["width"]
+	heightVal, heightOk := payload["height"]
+	if !widthOk || !heightOk {
+		log.Println("[GL] Error: missing width or height")
+		return Response{Error: "missing width or height"}
 	}
 
-	height, ok := payload["height"].(float64)
-	if !ok {
-		return Response{Error: "missing or invalid height"}
-	}
+	width := toFloat32(widthVal)
+	height := toFloat32(heightVal)
+
+	reqWindowID, _ := payload["windowId"].(string)
+	log.Printf("[GL] Creating GL canvas %dx%d for window: %s", int(width), int(height), reqWindowID)
 
 	glCanvasCounter++
 	canvasID := fmt.Sprintf("gl_canvas_%d", glCanvasCounter)
@@ -120,12 +125,12 @@ void main() {
 }
 `
 
-	shaderObject := canvas.NewShader(float32(width), float32(height), minimalShader)
+	shaderObject := canvas.NewShader(width, height, minimalShader)
 
 	// Wrap the shader in a container so it can be added to Fyne widget hierarchies
 	// The container will be added to the window's content
 	glContainer := container.NewWithoutLayout(shaderObject)
-	glContainer.Resize(fyne.NewSize(float32(width), float32(height)))
+	glContainer.Resize(fyne.NewSize(width, height))
 
 	glCanv := &GLCanvas{
 		ID:           canvasID,
@@ -188,6 +193,7 @@ void main() {
 		})
 	}
 
+	log.Printf("[GL] Successfully created GL canvas %s, returning response", canvasID)
 	return Response{
 		Success: true,
 		Result: map[string]interface{}{
