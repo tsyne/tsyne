@@ -1,0 +1,322 @@
+/**
+ * TsyneCanvas - Fake HTMLCanvasElement for Tsyne
+ *
+ * Implements a canvas-like interface that three.js expects.
+ * When getContext('webgl2') is called, returns our TsyneGLProxy instead of real WebGL.
+ */
+
+import { TsyneBridge } from './bridge';
+import { TsyneGLProxy } from './gl-proxy';
+
+export interface CanvasRenderingContext2DSettings {
+  alpha?: boolean;
+  depth?: boolean;
+  stencil?: boolean;
+  antialias?: boolean;
+  premultipliedAlpha?: boolean;
+  preserveDrawingBuffer?: boolean;
+}
+
+/**
+ * Fake HTMLCanvasElement
+ * Provides the canvas API that three.js expects
+ */
+export class TsyneCanvas {
+  // Canvas dimensions
+  width = 800;
+  height = 600;
+
+  // Style object (minimal)
+  style: Partial<CSSStyleDeclaration> = {
+    display: 'block',
+  };
+
+  // Class name (for CSS styling)
+  className = '';
+  id = '';
+
+  // Canvas ID on the bridge
+  private bridgeCanvasId: string | null = null;
+
+  // GL context (created lazily)
+  private glProxy: TsyneGLProxy | null = null;
+
+  // Event listeners
+  private eventListeners = new Map<string, Set<EventListener>>();
+
+  // Whether this canvas receives mouse events from the bridge
+  private interactive: boolean = false;
+
+  constructor(private bridge: TsyneBridge, options?: { interactive?: boolean }) {
+    this.generateCanvasId();
+    this.interactive = options?.interactive ?? false;
+  }
+
+  /**
+   * Generate a unique canvas ID
+   */
+  private generateCanvasId(): void {
+    this.id = `canvas-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get the canvas context
+   * Returns WebGL2-compatible proxy on 'webgl2' request
+   */
+  getContext(
+    contextType: string,
+    attributes?: CanvasRenderingContext2DSettings
+  ): TsyneGLProxy | null {
+    // Only support WebGL2
+    if (contextType !== 'webgl2' && contextType !== 'webgl') {
+      console.warn(`Unsupported context type: ${contextType}`);
+      return null;
+    }
+
+    // Return existing context if already created
+    if (this.glProxy) {
+      return this.glProxy;
+    }
+
+    // Create new GL proxy context
+    // Note: we don't actually create a bridge canvas here - that happens
+    // lazily when the first GL operation is performed
+    this.glProxy = new TsyneGLProxy(
+      this.bridge,
+      this,
+      attributes || {}
+    );
+
+    return this.glProxy;
+  }
+
+  /**
+   * Get bounding client rect
+   * Used by three.js for canvas position/size
+   */
+  getBoundingClientRect(): DOMRect {
+    return {
+      x: 0,
+      y: 0,
+      width: this.width,
+      height: this.height,
+      top: 0,
+      left: 0,
+      right: this.width,
+      bottom: this.height,
+      toJSON: () => ({
+        x: 0,
+        y: 0,
+        width: this.width,
+        height: this.height,
+        top: 0,
+        left: 0,
+        right: this.width,
+        bottom: this.height,
+      }),
+    };
+  }
+
+  /**
+   * Add an event listener
+   */
+  addEventListener(type: string, listener: EventListener, options?: any): void {
+    if (!this.eventListeners.has(type)) {
+      this.eventListeners.set(type, new Set());
+    }
+    this.eventListeners.get(type)!.add(listener);
+  }
+
+  /**
+   * Remove an event listener
+   */
+  removeEventListener(type: string, listener: EventListener, options?: any): void {
+    const listeners = this.eventListeners.get(type);
+    if (listeners) {
+      listeners.delete(listener);
+    }
+  }
+
+  /**
+   * Dispatch an event
+   */
+  dispatchEvent(event: Event): boolean {
+    const listeners = this.eventListeners.get(event.type);
+    if (listeners) {
+      for (const listener of listeners) {
+        try {
+          listener(event);
+        } catch (error) {
+          console.error(`Error in event listener for ${event.type}:`, error);
+        }
+      }
+    }
+    return true;
+  }
+
+  // Window ID to attach GL canvas to
+  private windowId: string = '';
+
+  /**
+   * Set the window ID for GL canvas creation
+   */
+  setWindowId(id: string): void {
+    this.windowId = id;
+  }
+
+  /**
+   * Get actual bridge canvas ID (created on first GL operation)
+   */
+  async getBridgeCanvasId(): Promise<string> {
+    if (!this.bridgeCanvasId) {
+      console.log(`[TsyneCanvas] Creating GL canvas ${this.width}x${this.height} in window: ${this.windowId}${this.interactive ? ' (interactive)' : ''}`);
+      try {
+        this.bridgeCanvasId = await this.bridge.createGLCanvas(this.width, this.height, this.windowId, this.interactive);
+        console.log(`[TsyneCanvas] GL canvas created successfully: ${this.bridgeCanvasId}`);
+
+        // Set up mouse event handlers if interactive
+        if (this.interactive) {
+          this.setupMouseEventHandlers();
+        }
+      } catch (error) {
+        console.error(`[TsyneCanvas] Failed to create GL canvas:`, error);
+        this.bridgeCanvasId = 'error_canvas';
+      }
+    }
+    return this.bridgeCanvasId;
+  }
+
+  /**
+   * Set up mouse event handlers that dispatch DOM events
+   */
+  private setupMouseEventHandlers(): void {
+    if (!this.bridgeCanvasId) return;
+
+    this.bridge.setMouseHandlers(this.bridgeCanvasId, {
+      onMouseMove: (x, y) => {
+        this.dispatchMouseEvent('mousemove', x, y);
+        this.dispatchMouseEvent('pointermove', x, y);
+      },
+      onMouseEnter: (x, y) => {
+        this.dispatchMouseEvent('mouseenter', x, y);
+        this.dispatchMouseEvent('pointerenter', x, y);
+      },
+      onMouseLeave: () => {
+        this.dispatchMouseEvent('mouseleave', 0, 0);
+        this.dispatchMouseEvent('pointerleave', 0, 0);
+      },
+    });
+  }
+
+  /**
+   * Dispatch a mouse event to registered listeners
+   * Public so gl-proxy can dispatch events from flush response
+   * Also dispatches the corresponding pointer event (e.g., mousemove -> pointermove)
+   */
+  dispatchMouseEvent(type: string, x: number, y: number): void {
+    // Create a fake MouseEvent-like object
+    const createEvent = (eventType: string) => ({
+      type: eventType,
+      clientX: x,
+      clientY: y,
+      offsetX: x,
+      offsetY: y,
+      pageX: x,
+      pageY: y,
+      screenX: x,
+      screenY: y,
+      button: 0,
+      buttons: 0,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      target: this,
+      currentTarget: this,
+      bubbles: true,
+      cancelable: true,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    } as unknown as MouseEvent);
+
+    // Dispatch the requested event
+    this.dispatchEvent(createEvent(type));
+
+    // Also dispatch the corresponding pointer event
+    // mousemove -> pointermove, mouseenter -> pointerenter, mouseleave -> pointerleave
+    const pointerType = type.replace('mouse', 'pointer');
+    if (pointerType !== type) {
+      this.dispatchEvent(createEvent(pointerType));
+    }
+  }
+
+  /**
+   * Enable or disable interactive mode
+   * Must be called before the canvas is created
+   */
+  setInteractive(interactive: boolean): void {
+    if (this.bridgeCanvasId) {
+      console.warn('[TsyneCanvas] setInteractive called after canvas was created - has no effect');
+      return;
+    }
+    this.interactive = interactive;
+  }
+
+  /**
+   * Check if canvas is in interactive mode
+   */
+  isInteractive(): boolean {
+    return this.interactive;
+  }
+
+  /**
+   * Set canvas size
+   */
+  setSize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    if (this.glProxy) {
+      this.glProxy.setSize(width, height);
+    }
+  }
+
+  /**
+   * Get the GL proxy (internal use)
+   */
+  getGLProxy(): TsyneGLProxy | null {
+    return this.glProxy;
+  }
+
+  // Standard canvas properties/methods (minimal stubs)
+
+  toDataURL(type?: string, quality?: number): string {
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  }
+
+  toBlob(callback: (blob: Blob | null) => void, type?: string, quality?: number): void {
+    // Return a 1x1 transparent PNG blob
+    const data = Buffer.from([
+      137, 80, 78, 71, 13, 10, 26, 10, // PNG signature
+      0, 0, 0, 13, // IHDR chunk size
+      73, 72, 68, 82, // IHDR
+      0, 0, 0, 1, 0, 0, 0, 1, // 1x1 image
+      8, 6, // 8-bit RGBA
+      0, 0, 0, 144, 87, 83, 222, // CRC
+      0, 0, 0, 10, // tRNS chunk size
+      116, 82, 78, 83, // tRNS
+      0, 255, 0, 0, 0, // transparent
+      242, 204, 204, 143, // CRC
+      0, 0, 0, 0, // IEND chunk size
+      73, 69, 78, 68, 174, 66, 96, 130 // IEND + CRC
+    ]);
+    const blob = new Blob([Buffer.from(data)], { type: type || 'image/png' });
+    setTimeout(() => callback(blob), 0);
+  }
+
+  getImageData(sx: number, sy: number, sw: number, sh: number): ImageData {
+    return new ImageData(sw, sh);
+  }
+
+  // Make canvas iterable over its properties (for three.js compatibility)
+  [Symbol.toStringTag] = 'HTMLCanvasElement';
+}

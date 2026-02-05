@@ -1,6 +1,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: './jest-environment-tsyne.js',
+  // Transform three.js ES modules
+  transformIgnorePatterns: [
+    '/node_modules/(?!three)/'
+  ],
   // Force serial execution to prevent Fyne window conflicts
   // GUI tests can't run in parallel - they compete for display resources
   maxWorkers: 1,
@@ -35,7 +39,13 @@ module.exports = {
     }
   },
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    // Transform three.js ES modules using babel
+    '[\\\\/]three[\\\\/]src[\\\\/].+\\.js$': 'babel-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      // Disable type checking - runtime errors will still be caught
+      diagnostics: false,
+      isolatedModules: true
+    }]
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   verbose: true

@@ -1,0 +1,48 @@
+
+func (c *mobileContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
+	c.glContext.Uniform3f(gl.Uniform(uniform), v0, v1, v2)
+}
+
+func (c *mobileContext) Uniform1i(uniform Uniform, v int32) {
+	c.glContext.Uniform1i(gl.Uniform(uniform), v)
+}
+
+func (c *mobileContext) UniformMatrix3fv(uniform Uniform, transpose bool, data []float32) {
+	c.glContext.UniformMatrix3fv(gl.Uniform(uniform), data)
+}
+
+func (c *mobileContext) UniformMatrix4fv(uniform Uniform, transpose bool, data []float32) {
+	c.glContext.UniformMatrix4fv(gl.Uniform(uniform), data)
+}
+
+func (c *mobileContext) DisableVertexAttribArray(attribute Attribute) {
+	c.glContext.DisableVertexAttribArray(gl.Attrib(attribute))
+}
+
+func (c *mobileContext) VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32) {
+	c.glContext.VertexAttribPointer(gl.Attrib(attribute), size, gl.Enum(typ), normalized, stride, data)
+}
+
+func (c *mobileContext) DrawElements(mode uint32, count int32, typ uint32, offset int) {
+	c.glContext.DrawElements(gl.Enum(mode), int(count), gl.Enum(typ), offset)
+}
+
+func (c *mobileContext) BufferDataUint16(target uint32, data []uint16, usage uint32) {
+	c.glContext.BufferData(gl.Enum(target), data, gl.Enum(usage))
+}
+
+func (c *mobileContext) DepthFunc(fn uint32) {
+	c.glContext.DepthFunc(gl.Enum(fn))
+}
+
+func (c *mobileContext) DepthMask(flag bool) {
+	c.glContext.DepthMask(flag)
+}
+
+func (c *mobileContext) CullFace(mode uint32) {
+	c.glContext.CullFace(gl.Enum(mode))
+}
+
+func (c *mobileContext) FrontFace(mode uint32) {
+	c.glContext.FrontFace(gl.Enum(mode))
+}

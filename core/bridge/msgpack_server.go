@@ -311,8 +311,10 @@ func (s *MsgpackServer) handleMessage(msg MsgpackMessage) MsgpackResponse {
 	resp := s.bridge.handleMessage(bridgeMsg)
 	timer.End()
 
+	// Use the request ID for the response (not resp.ID which may be empty)
+	// This ensures the TypeScript side can match the response to its pending request
 	return MsgpackResponse{
-		ID:      resp.ID,
+		ID:      msg.ID,
 		Success: resp.Success,
 		Result:  resp.Result,
 		Error:   resp.Error,

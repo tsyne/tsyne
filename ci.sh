@@ -546,6 +546,38 @@ if [ "$SKIP_TESTS" = false ]; then
 fi
 
 # ============================================================================
+# STEP 2.6: Tsyne-Three - Three.js Integration
+# ============================================================================
+if [ "$UNIT_ONLY" = true ]; then
+  echo "⏭️  Tsyne-Three - Skipping (--unit-only mode)"
+else
+  echo "--- :three: Tsyne-Three - Setup & Test"
+  time_section "Tsyne-Three Setup"
+  cd ${BUILDKITE_BUILD_CHECKOUT_PATH}/tsyne-three
+  pnpm install --ignore-scripts
+
+  # Setup three.js (clone and apply patch)
+  echo "Setting up three.js..."
+  ./setup-three.sh
+  report_section_time "Tsyne-Three Setup"
+
+  if [ "$SKIP_TESTS" = false ]; then
+    echo "--- :test_tube: Tsyne-Three - Tests"
+    time_section "Tsyne-Three Tests"
+    timeout 300 pnpm test --json --outputFile=/tmp/tsyne-three-test-results.json || {
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -eq 124 ]; then
+        echo "❌ Tsyne-Three tests timed out after 300 seconds"
+      else
+        echo "❌ Tsyne-Three tests failed (exit code: $EXIT_CODE)"
+      fi
+    }
+    capture_test_results "Tsyne-Three" "/tmp/tsyne-three-test-results.json" || true
+    report_section_time "Tsyne-Three Tests"
+  fi
+fi
+
+# ============================================================================
 # STEP 3: Designer Sub-Project
 # ============================================================================
 if [ "$UNIT_ONLY" = true ]; then

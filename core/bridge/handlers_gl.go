@@ -2,9 +2,14 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"log"
+	"math"
+	"os"
+	"strings"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -20,9 +25,11 @@ type GLCanvas struct {
 	Height int
 
 	// Fyne integration - these are the widgets used to display the GL canvas
-	FyneCanvas   fyne.Canvas      // The Fyne canvas for rendering
-	ShaderObject *canvas.Shader   // The underlying Fyne Shader primitive (set up by setup-fyne-fork.sh)
-	Container    fyne.CanvasObject // Container to hold the shader in the widget hierarchy
+	FyneCanvas        fyne.Canvas              // The Fyne canvas for rendering
+	ShaderObject      *canvas.Shader           // The underlying Fyne Shader primitive (set up by setup-fyne-fork.sh)
+	HoverableObject   *canvas.HoverableShader  // Optional: hoverable version for mouse events
+	Container         fyne.CanvasObject        // Container to hold the shader in the widget hierarchy
+	Interactive       bool                     // Whether this canvas receives mouse events
 
 	// GL object tracking (maps JS-side IDs to internal state)
 	programs       map[uint32]*shaderProgram
@@ -34,27 +41,57 @@ type GLCanvas struct {
 	currentBuffer  uint32
 	elementBuffer  uint32
 
-	// Vertex data accumulation
+	// Texture state
+	activeTextureUnit uint32                       // Currently active texture unit (0-31)
+	boundTextures     map[uint32]uint32            // Maps texture unit → bound texture ID
+	samplerUniforms   map[string]uint32            // Maps sampler uniform name → texture unit
+
+	// Attribute location tracking (maps location → attribute name)
+	attribLocations map[int32]string
+
+	// Attribute binding tracking (maps location → buffer/size at time of vertexAttribPointer)
+	attribBindings map[int32]struct {
+		bufferId uint32
+		size     int
+	}
+
+	// Vertex data accumulation (legacy)
 	vertexData  []float32
 	indexData   []uint16
 	vertexDirty bool
 	indexDirty  bool
+
+	// Mouse event buffer (accumulated between frames, drained on request)
+	pendingMouseEvents []MouseEvent
+	mouseEventMu       sync.Mutex
+}
+
+// MouseEvent represents a buffered mouse event
+type MouseEvent struct {
+	Type string  `json:"type"` // "mousemove", "mouseenter", "mouseleave"
+	X    float32 `json:"x"`
+	Y    float32 `json:"y"`
 }
 
 // shaderProgram represents a compiled shader program
 type shaderProgram struct {
-	id        uint32
-	vertexSrc string
-	fragSrc   string
-	linked    bool
+	id                 uint32
+	vertexSrc          string
+	fragSrc            string
+	convertedVertexSrc string // Converted to GLSL 110
+	convertedFragSrc   string // Converted to GLSL 110
+	linked             bool
 }
+
 
 // shaderBuffer represents vertex or index buffer data
 type shaderBuffer struct {
-	id        uint32
-	target    uint32
-	data      []float32
-	indexData []uint16
+	id            uint32
+	target        uint32
+	data          []float32
+	indexData     []uint16
+	attributeName string // The attribute this buffer is associated with (e.g., "position", "normal")
+	componentSize int    // Number of components per vertex (e.g., 3 for vec3)
 }
 
 // shaderTexture represents a texture
@@ -117,6 +154,9 @@ func (b *Bridge) handleCreateGLCanvas(msg Message) Response {
 	glCanvasCounter++
 	canvasID := fmt.Sprintf("gl_canvas_%d", glCanvasCounter)
 
+	// Check if this canvas needs mouse interactivity
+	interactive, _ := payload["interactive"].(bool)
+
 	// Create a Fyne Shader canvas (provided by setup-fyne-fork.sh)
 	// For now, we'll use a minimal fragment shader that clears to black
 	minimalShader := `
@@ -125,26 +165,61 @@ void main() {
 }
 `
 
-	shaderObject := canvas.NewShader(width, height, minimalShader)
+	var shaderObject *canvas.Shader
+	var hoverableObject *canvas.HoverableShader
+	var shaderContainer fyne.CanvasObject
+
+	if interactive {
+		// Create a hoverable shader for mouse events
+		hoverableObject = canvas.NewHoverableShader(width, height, minimalShader)
+		shaderObject = hoverableObject.Shader
+		shaderContainer = hoverableObject
+		log.Printf("[GL] Creating interactive GL canvas with mouse events")
+	} else {
+		// Create a regular shader (no mouse events)
+		shaderObject = canvas.NewShader(width, height, minimalShader)
+		shaderContainer = shaderObject
+	}
 
 	// Wrap the shader in a container so it can be added to Fyne widget hierarchies
 	// The container will be added to the window's content
-	glContainer := container.NewWithoutLayout(shaderObject)
-	glContainer.Resize(fyne.NewSize(width, height))
+	glContainer := container.NewWithoutLayout(shaderContainer)
+	// Resize must happen on main thread
+	fyne.DoAndWait(func() {
+		glContainer.Resize(fyne.NewSize(width, height))
+	})
 
 	glCanv := &GLCanvas{
-		ID:           canvasID,
-		Width:        int(width),
-		Height:       int(height),
-		ShaderObject: shaderObject,
-		Container:    glContainer,
-		programs:     make(map[uint32]*shaderProgram),
-		buffers:      make(map[uint32]*shaderBuffer),
-		textures:     make(map[uint32]*shaderTexture),
-		shaders:      make(map[uint32]*shaderSource),
-		uniformLocs:  make(map[uint32]*uniformInfo),
-		vertexData:   make([]float32, 0),
-		indexData:    make([]uint16, 0),
+		ID:              canvasID,
+		Width:           int(width),
+		Height:          int(height),
+		ShaderObject:    shaderObject,
+		HoverableObject: hoverableObject,
+		Container:       glContainer,
+		Interactive:     interactive,
+		programs:        make(map[uint32]*shaderProgram),
+		buffers:         make(map[uint32]*shaderBuffer),
+		textures:        make(map[uint32]*shaderTexture),
+		shaders:         make(map[uint32]*shaderSource),
+		uniformLocs:     make(map[uint32]*uniformInfo),
+		attribLocations: make(map[int32]string),
+		attribBindings:  make(map[int32]struct{ bufferId uint32; size int }),
+		vertexData:      make([]float32, 0),
+		indexData:       make([]uint16, 0),
+	}
+
+	// Set up mouse event callbacks for interactive canvases
+	if interactive && hoverableObject != nil {
+		hoverableObject.SetOnMouseMoved(func(x, y float32) {
+			// Send mouse move event back to JS via the bridge
+			b.sendMouseEvent(canvasID, "mousemove", x, y)
+		})
+		hoverableObject.SetOnMouseIn(func(x, y float32) {
+			b.sendMouseEvent(canvasID, "mouseenter", x, y)
+		})
+		hoverableObject.SetOnMouseOut(func() {
+			b.sendMouseEvent(canvasID, "mouseleave", 0, 0)
+		})
 	}
 
 	glCanvases[canvasID] = glCanv
@@ -226,6 +301,9 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 		return Response{Error: "missing or invalid commands"}
 	}
 
+	// Per-batch logging disabled for performance
+	// log.Printf("[GL] handleExecuteBatch: %d commands for canvas %s", len(commandsRaw), canvasID)
+
 	// Parse and execute each command
 	for _, cmdRaw := range commandsRaw {
 		cmdMap, ok := cmdRaw.(map[string]interface{})
@@ -250,19 +328,86 @@ func (b *Bridge) handleExecuteBatch(msg Message) Response {
 		}
 	}
 
-	// If we've accumulated vertex/index data, push it to the shader
-	if canvas.vertexDirty && len(canvas.vertexData) > 0 {
-		canvas.ShaderObject.SetVertices(canvas.vertexData, "pos3")
-		canvas.vertexDirty = false
+	// Push attribute buffers to the shader using the attribBindings map
+	// This maps attribute locations to buffer IDs with component sizes
+	attrCount := 0
+	// Per-batch logging disabled for performance
+	// log.Printf("[GL] Processing %d attrib bindings, %d buffers", len(canvas.attribBindings), len(canvas.buffers))
+
+	for location, binding := range canvas.attribBindings {
+		// Get the attribute name for this location
+		attrName, hasName := canvas.attribLocations[location]
+		if !hasName {
+			// Fallback to common attribute names
+			switch location {
+			case 0:
+				attrName = "position"
+			case 1:
+				attrName = "normal"
+			case 2:
+				attrName = "uv"
+			default:
+				attrName = fmt.Sprintf("attr_%d", location)
+			}
+		}
+
+		// Get the buffer data
+		buffer, exists := canvas.buffers[binding.bufferId]
+		if !exists {
+			// Warning log disabled for performance (can enable for debugging)
+			// log.Printf("[GL] WARNING: Buffer %d for attribute %s (loc %d) not found", binding.bufferId, attrName, location)
+			continue
+		}
+
+		if len(buffer.data) > 0 {
+			canvas.ShaderObject.SetAttributeBuffer(attrName, buffer.data, binding.size)
+			// Per-attribute logging disabled for performance
+			// log.Printf("[GL] Set attribute buffer %s: %d floats, size=%d (buffer %d, loc %d)",
+			//	attrName, len(buffer.data), binding.size, binding.bufferId, location)
+			attrCount++
+		} else {
+			// Warning log disabled for performance
+			// log.Printf("[GL] WARNING: Buffer %d has no data for attribute %s", binding.bufferId, attrName)
+		}
 	}
+
+	// Debug logging disabled for performance
+	_ = attrCount // Suppress unused warning
+	// if attrCount == 0 && len(canvas.attribBindings) == 0 {
+	//	log.Printf("[GL] WARNING: No attribute bindings! Buffers available: %d", len(canvas.buffers))
+	//	for bufId, buffer := range canvas.buffers {
+	//		log.Printf("[GL]   Buffer %d: data=%d floats", bufId, len(buffer.data))
+	//	}
+	// }
+
+	// Push index data if available
 	if canvas.indexDirty && len(canvas.indexData) > 0 {
 		canvas.ShaderObject.SetIndices(canvas.indexData)
 		canvas.indexDirty = false
 	}
 
-	// Refresh the shader to trigger rendering
-	canvas.ShaderObject.Refresh()
+	// Signal that we're about to paint and want to wait for completion
+	canvas.ShaderObject.BeginPaint()
 
+	// Refresh the shader to trigger rendering - must happen on main thread
+	// When using HoverableShader, refresh that instead of the embedded Shader
+	fyne.DoAndWait(func() {
+		if canvas.HoverableObject != nil {
+			canvas.HoverableObject.Refresh()
+		} else {
+			canvas.ShaderObject.Refresh()
+		}
+	})
+
+	// Wait for the actual GL paint to complete before returning
+	// This prevents the next frame from overwriting render commands before they're painted
+	canvas.ShaderObject.WaitForPaint()
+
+	// Include coalesced mouse events in response (no separate fetch needed)
+	events := drainMouseEvents(canvasID)
+	if len(events) > 0 {
+		return Response{Success: true, Result: map[string]interface{}{"mouseEvents": events}}
+	}
 	return Response{Success: true}
 }
 
@@ -330,6 +475,9 @@ func (b *Bridge) handleGetError(msg Message) Response {
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
+	// Per-command logging disabled for performance (was causing stutter)
+	// log.Printf("[GL] Executing command: %s", cmd)
+
 	switch cmd {
 	// Shader operations
 	case "createShader":
@@ -388,6 +536,10 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glActiveTexture(canvas, args)
 	case "texImage2D":
 		return b.glTexImage2D(canvas, args)
+	case "texSubImage2D":
+		return b.glTexSubImage2D(canvas, args)
+	case "texStorage2D":
+		return b.glTexStorage2D(canvas, args)
 	case "texParameteri", "texParameterf":
 		return nil // Handled by painter
 
@@ -396,24 +548,68 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glClear(canvas, args)
 	case "clearColor":
 		return b.glClearColor(canvas, args)
+	case "clearDepth", "clearStencil":
+		return nil // Depth/stencil clear - handled by painter
 	case "colorMask":
 		return nil // Color mask state - handled implicitly
 	case "viewport":
 		return b.glViewport(canvas, args)
 	case "enable", "disable":
 		return nil // State operations handled implicitly
+	case "depthFunc", "depthMask", "depthRange":
+		return nil // Depth operations - handled by painter
+	case "stencilFunc", "stencilOp", "stencilMask":
+		return nil // Stencil operations - handled by painter
+	case "frontFace", "cullFace":
+		return nil // Face culling - handled by painter
+	case "blendFunc", "blendFuncSeparate", "blendEquation", "blendEquationSeparate", "blendColor":
+		return nil // Blending - handled by painter
+	case "polygonOffset", "lineWidth":
+		return nil // Polygon/line state - handled by painter
+	case "pixelStorei":
+		return nil // Pixel storage - handled by painter
+	case "hint":
+		return nil // Hints - ignored
 
 	// Drawing operations
 	case "drawArrays":
 		return b.glDrawArrays(canvas, args)
 	case "drawElements":
 		return b.glDrawElements(canvas, args)
+	case "drawArraysInstanced", "drawElementsInstanced":
+		return nil // Instanced drawing - handled by painter
 
 	// Vertex attributes
 	case "enableVertexAttribArray", "disableVertexAttribArray":
 		return nil // Handled by painter
+	case "getAttribLocation":
+		return b.glGetAttribLocation(canvas, args)
 	case "vertexAttribPointer":
+		return b.glVertexAttribPointer(canvas, args)
+	case "vertexAttribDivisor":
 		return nil // Handled by painter
+
+	// Framebuffer operations
+	case "createFramebuffer", "deleteFramebuffer", "bindFramebuffer":
+		return nil // Framebuffer - handled by painter
+	case "framebufferTexture2D", "framebufferRenderbuffer", "checkFramebufferStatus":
+		return nil // Framebuffer attachments - handled by painter
+
+	// Renderbuffer operations
+	case "createRenderbuffer", "deleteRenderbuffer", "bindRenderbuffer", "renderbufferStorage":
+		return nil // Renderbuffer - handled by painter
+
+	// Vertex array operations
+	case "createVertexArray", "deleteVertexArray", "bindVertexArray":
+		return nil // VAO - handled by painter
+
+	// 3D texture operations
+	case "texImage3D", "texSubImage3D":
+		return nil // 3D textures - handled by painter
+
+	// Misc operations
+	case "generateMipmap", "scissor", "readPixels":
+		return nil // Misc - handled by painter
 
 	default:
 		return fmt.Errorf("unknown GL command: %s", cmd)
@@ -425,14 +621,16 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glCreateShader(canvas *GLCanvas, args map[string]interface{}) error {
-	shaderId, ok := args["shaderId"].(float64)
+	shaderIdVal, ok := args["shaderId"]
 	if !ok {
 		return fmt.Errorf("missing shaderId")
 	}
-	shaderType, ok := args["type"].(float64)
+	shaderTypeVal, ok := args["type"]
 	if !ok {
 		return fmt.Errorf("missing type")
 	}
+	shaderId := toFloat32(shaderIdVal)
+	shaderType := toFloat32(shaderTypeVal)
 
 	canvas.shaders[uint32(shaderId)] = &shaderSource{
 		id:  uint32(shaderId),
@@ -442,16 +640,17 @@ func (b *Bridge) glCreateShader(canvas *GLCanvas, args map[string]interface{}) e
 }
 
 func (b *Bridge) glDeleteShader(canvas *GLCanvas, args map[string]interface{}) error {
-	shaderId, ok := args["shaderId"].(float64)
+	shaderIdVal, ok := args["shaderId"]
 	if !ok {
 		return fmt.Errorf("missing shaderId")
 	}
+	shaderId := toFloat32(shaderIdVal)
 	delete(canvas.shaders, uint32(shaderId))
 	return nil
 }
 
 func (b *Bridge) glShaderSource(canvas *GLCanvas, args map[string]interface{}) error {
-	shaderId, ok := args["shaderId"].(float64)
+	shaderIdVal, ok := args["shaderId"]
 	if !ok {
 		return fmt.Errorf("missing shaderId")
 	}
@@ -459,11 +658,19 @@ func (b *Bridge) glShaderSource(canvas *GLCanvas, args map[string]interface{}) e
 	if !ok {
 		return fmt.Errorf("missing source")
 	}
+	shaderId := toFloat32(shaderIdVal)
 
 	shader, exists := canvas.shaders[uint32(shaderId)]
 	if !exists {
 		return fmt.Errorf("shader not found: %d", uint32(shaderId))
 	}
+
+	// Shader source logging disabled for performance (enable for debugging)
+	// preview := source
+	// if len(preview) > 500 {
+	//	preview = preview[:500]
+	// }
+	// log.Printf("[GL] shaderSource: id=%d, type=%d, preview:\n%s", uint32(shaderId), shader.typ, preview)
 
 	shader.source = source
 	return nil
@@ -475,10 +682,11 @@ func (b *Bridge) glCompileShader(canvas *GLCanvas, args map[string]interface{}) 
 }
 
 func (b *Bridge) glCreateProgram(canvas *GLCanvas, args map[string]interface{}) error {
-	programId, ok := args["programId"].(float64)
+	programIdVal, ok := args["programId"]
 	if !ok {
 		return fmt.Errorf("missing programId")
 	}
+	programId := toFloat32(programIdVal)
 
 	canvas.programs[uint32(programId)] = &shaderProgram{
 		id: uint32(programId),
@@ -487,23 +695,26 @@ func (b *Bridge) glCreateProgram(canvas *GLCanvas, args map[string]interface{}) 
 }
 
 func (b *Bridge) glDeleteProgram(canvas *GLCanvas, args map[string]interface{}) error {
-	programId, ok := args["programId"].(float64)
+	programIdVal, ok := args["programId"]
 	if !ok {
 		return fmt.Errorf("missing programId")
 	}
+	programId := toFloat32(programIdVal)
 	delete(canvas.programs, uint32(programId))
 	return nil
 }
 
 func (b *Bridge) glAttachShader(canvas *GLCanvas, args map[string]interface{}) error {
-	programId, ok := args["programId"].(float64)
+	programIdVal, ok := args["programId"]
 	if !ok {
 		return fmt.Errorf("missing programId")
 	}
-	shaderId, ok := args["shaderId"].(float64)
+	shaderIdVal, ok := args["shaderId"]
 	if !ok {
 		return fmt.Errorf("missing shaderId")
 	}
+	programId := toFloat32(programIdVal)
+	shaderId := toFloat32(shaderIdVal)
 
 	program, pExists := canvas.programs[uint32(programId)]
 	if !pExists {
@@ -531,28 +742,60 @@ func (b *Bridge) glDetachShader(canvas *GLCanvas, args map[string]interface{}) e
 }
 
 func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) error {
-	programId, ok := args["programId"].(float64)
+	programIdVal, ok := args["programId"]
 	if !ok {
 		return fmt.Errorf("missing programId")
 	}
+	programId := toFloat32(programIdVal)
 
 	program, exists := canvas.programs[uint32(programId)]
 	if !exists {
 		return fmt.Errorf("program not found: %d", uint32(programId))
 	}
 
-	// Use the fragment shader source if available
+	// Convert and store vertex shader source if available
+	if program.vertexSrc != "" {
+		// Convert GLSL 300 ES to GLSL 110 for desktop OpenGL
+		program.convertedVertexSrc = ConvertVertexShader(program.vertexSrc, ShaderGLSL110)
+
+		// Write vertex shader to tmp file for debugging (with program ID for uniqueness)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d.glsl", programId), program.vertexSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/vertex_shader_%d_converted.glsl", programId), program.convertedVertexSrc)
+
+		// Check for USE_COLOR in vertex shader
+		if strings.Contains(program.vertexSrc, "#define USE_COLOR") {
+			log.Printf("[GL-DEBUG] Program %d: HAS USE_COLOR defined in vertex shader", programId)
+		} else if strings.Contains(program.vertexSrc, "USE_COLOR") {
+			log.Printf("[GL-DEBUG] Program %d: Uses USE_COLOR but NOT defined (conditional will be false)", programId)
+		}
+	}
+
+	// Convert and store fragment shader source if available
 	if program.fragSrc != "" {
 		// Convert GLSL 300 ES to target language
-		// For now, use GLSL 110 for desktop. Could detect platform here.
-		convertedSource := ConvertShader(program.fragSrc, ShaderGLSL110)
-		canvas.ShaderObject.SetSource(convertedSource)
+		program.convertedFragSrc = ConvertFragmentShader(program.fragSrc, ShaderGLSL110)
 
-		// Log any required extensions
-		extensions := DetectRequiredExtensions(program.fragSrc)
-		if len(extensions) > 0 {
-			log.Printf("Shader requires extensions: %v", extensions)
+		// Write shader to tmp file for debugging
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d.glsl", programId), program.fragSrc)
+		_ = writeShaderDebugFile(fmt.Sprintf("/tmp/fragment_shader_%d_converted.glsl", programId), program.convertedFragSrc)
+
+		// Check for light defines in the original shader
+		hasLightDefines := false
+		lines := strings.Split(program.fragSrc, "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "NUM_DIR_LIGHTS") ||
+				strings.Contains(line, "NUM_POINT_LIGHTS") ||
+				strings.Contains(line, "NUM_SPOT_LIGHTS") ||
+				strings.Contains(line, "DirectionalLight") {
+				log.Printf("[GL-DEBUG] Light line: %s", line)
+				hasLightDefines = true
+			}
 		}
+		if !hasLightDefines {
+			log.Printf("[GL-DEBUG] WARNING: No NUM_DIR_LIGHTS/NUM_POINT_LIGHTS/NUM_SPOT_LIGHTS defines found in shader!")
+		}
+
+		log.Printf("[GL-DEBUG] Program %d: Fragment shader CONVERTED (%d bytes)", programId, len(program.convertedFragSrc))
 	}
 
 	program.linked = true
@@ -560,12 +803,87 @@ func (b *Bridge) glLinkProgram(canvas *GLCanvas, args map[string]interface{}) er
 }
 
 func (b *Bridge) glUseProgram(canvas *GLCanvas, args map[string]interface{}) error {
-	programId, ok := args["programId"].(float64)
+	programIdVal, ok := args["programId"]
 	if !ok {
 		return fmt.Errorf("missing programId")
 	}
+	programId := uint32(toFloat32(programIdVal))
 
-	canvas.currentProgram = uint32(programId)
+	// Only update shader sources if switching to a different program
+	if canvas.currentProgram != programId {
+		canvas.currentProgram = programId
+
+		// Look up the program and update shader sources on the canvas
+		// This triggers recompilation on the next draw
+		if program, exists := canvas.programs[programId]; exists && program.linked {
+			if program.convertedVertexSrc != "" {
+				canvas.ShaderObject.SetVertexSource(program.convertedVertexSrc)
+			}
+			if program.convertedFragSrc != "" {
+				canvas.ShaderObject.SetSource(program.convertedFragSrc)
+			}
+		}
+	}
+	return nil
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Vertex Attribute Operations
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) glGetAttribLocation(canvas *GLCanvas, args map[string]interface{}) error {
+	name, ok := args["name"].(string)
+	if !ok {
+		return fmt.Errorf("missing name")
+	}
+	locationVal, ok := args["location"]
+	if !ok {
+		return fmt.Errorf("missing location")
+	}
+	location := int32(toFloat32(locationVal))
+
+	// Store the mapping from location to attribute name
+	canvas.attribLocations[location] = name
+
+	// Also store on the shader object so the painter can use it
+	// (bypasses OpenGL's glGetAttribLocation which returns -1 for optimized-out attributes)
+	if canvas.ShaderObject != nil {
+		canvas.ShaderObject.SetAttributeLocation(name, location)
+	}
+	// log.Printf("[GL] getAttribLocation: name=%q -> location=%d", name, location)
+	return nil
+}
+
+func (b *Bridge) glVertexAttribPointer(canvas *GLCanvas, args map[string]interface{}) error {
+	locationVal, ok := args["location"]
+	if !ok {
+		// log.Printf("[GL] vertexAttribPointer: missing location arg, args=%v", args)
+		return nil // Location not provided, skip
+	}
+	location := int32(toFloat32(locationVal))
+
+	sizeVal, ok := args["size"]
+	if !ok {
+		// log.Printf("[GL] vertexAttribPointer: missing size arg")
+		return nil
+	}
+	size := int(toFloat32(sizeVal))
+
+	// log.Printf("[GL] vertexAttribPointer: loc=%d, size=%d, currentBuffer=%d",
+	//	location, size, canvas.currentBuffer)
+
+	// Store the binding: which buffer is bound to this attribute location
+	if canvas.currentBuffer > 0 {
+		canvas.attribBindings[location] = struct {
+			bufferId uint32
+			size     int
+		}{canvas.currentBuffer, size}
+		// log.Printf("[GL] vertexAttribPointer: bound location %d -> buffer %d, size %d", location, canvas.currentBuffer, size)
+	}
+	// else {
+	//	log.Printf("[GL] vertexAttribPointer: no currentBuffer bound!")
+	// }
+
 	return nil
 }
 
@@ -574,10 +892,11 @@ func (b *Bridge) glUseProgram(canvas *GLCanvas, args map[string]interface{}) err
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glCreateBuffer(canvas *GLCanvas, args map[string]interface{}) error {
-	bufferId, ok := args["bufferId"].(float64)
+	bufferIdVal, ok := args["bufferId"]
 	if !ok {
 		return fmt.Errorf("missing bufferId")
 	}
+	bufferId := toFloat32(bufferIdVal)
 
 	canvas.buffers[uint32(bufferId)] = &shaderBuffer{
 		id: uint32(bufferId),
@@ -586,26 +905,31 @@ func (b *Bridge) glCreateBuffer(canvas *GLCanvas, args map[string]interface{}) e
 }
 
 func (b *Bridge) glDeleteBuffer(canvas *GLCanvas, args map[string]interface{}) error {
-	bufferId, ok := args["bufferId"].(float64)
+	bufferIdVal, ok := args["bufferId"]
 	if !ok {
 		return fmt.Errorf("missing bufferId")
 	}
+	bufferId := toFloat32(bufferIdVal)
 	delete(canvas.buffers, uint32(bufferId))
 	return nil
 }
 
 func (b *Bridge) glBindBuffer(canvas *GLCanvas, args map[string]interface{}) error {
-	target, ok := args["target"].(float64)
+	targetVal, ok := args["target"]
 	if !ok {
 		return fmt.Errorf("missing target")
 	}
-	bufferId, ok := args["bufferId"].(float64)
+	bufferIdVal, ok := args["bufferId"]
 	if !ok {
 		return fmt.Errorf("missing bufferId")
 	}
+	target := toFloat32(targetVal)
+	bufferId := toFloat32(bufferIdVal)
 
+	// log.Printf("[GL] glBindBuffer: target=%d (0x%x), bufferId=%d", uint32(target), uint32(target), uint32(bufferId))
 	if uint32(target) == 0x8893 { // ELEMENT_ARRAY_BUFFER
 		canvas.elementBuffer = uint32(bufferId)
+		// log.Printf("[GL] bindBuffer: ELEMENT_ARRAY_BUFFER -> buffer %d", uint32(bufferId))
 	} else {
 		canvas.currentBuffer = uint32(bufferId)
 	}
@@ -624,22 +948,35 @@ func (b *Bridge) glBufferData(canvas *GLCanvas, args map[string]interface{}) err
 		return fmt.Errorf("failed to decode buffer data: %v", err)
 	}
 
-	// Convert bytes to float32 array for vertex data
-	floatData := make([]float32, len(data)/4)
-	for i := 0; i < len(floatData); i++ {
-		// Simple byte interpretation - would need proper unpacking in production
-		_ = floatData[i] // placeholder
-	}
-
 	if canvas.elementBuffer > 0 {
-		// Index buffer
+		// Index buffer - convert bytes to uint16
+		// log.Printf("[GL] bufferData: elementBuffer=%d, data size=%d bytes", canvas.elementBuffer, len(data))
 		if buffer, exists := canvas.buffers[canvas.elementBuffer]; exists {
-			buffer.indexData = make([]uint16, len(data)/2)
+			indexData := make([]uint16, len(data)/2)
+			for i := 0; i < len(indexData); i++ {
+				offset := i * 2
+				indexData[i] = uint16(data[offset]) | (uint16(data[offset+1]) << 8)
+			}
+			buffer.indexData = indexData
+			canvas.indexData = indexData
 			canvas.indexDirty = true
+			// log.Printf("[GL] bufferData: stored %d indices in canvas.indexData", len(indexData))
 		}
+		// else {
+		//	log.Printf("[GL] WARNING: elementBuffer %d not found in canvas.buffers", canvas.elementBuffer)
+		// }
 	} else if canvas.currentBuffer > 0 {
-		// Vertex buffer
+		// Vertex buffer - convert bytes to float32 (little-endian IEEE 754)
 		if buffer, exists := canvas.buffers[canvas.currentBuffer]; exists {
+			floatData := make([]float32, len(data)/4)
+			for i := 0; i < len(floatData); i++ {
+				offset := i * 4
+				bits := uint32(data[offset]) |
+					(uint32(data[offset+1]) << 8) |
+					(uint32(data[offset+2]) << 16) |
+					(uint32(data[offset+3]) << 24)
+				floatData[i] = math.Float32frombits(bits)
+			}
 			buffer.data = floatData
 			canvas.vertexData = append(canvas.vertexData, floatData...)
 			canvas.vertexDirty = true
@@ -659,54 +996,172 @@ func (b *Bridge) glBufferSubData(canvas *GLCanvas, args map[string]interface{}) 
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glUniformFloat(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	// Extract values based on command type
-	name := fmt.Sprintf("u_uniform_%v", args["locationId"])
+	// Get uniform name from args (sent from gl-proxy.ts)
+	name, _ := args["name"].(string)
+	if name == "" {
+		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
+	}
+	// log.Printf("[GL] %s: name=%s", cmd, name)
 
 	switch cmd {
 	case "uniform1f":
-		if x, ok := args["x"].(float64); ok {
-			canvas.ShaderObject.SetUniform(name, float32(x))
-		}
+		x := toFloat64(args["x"])
+		canvas.ShaderObject.QueueUniform(name, float32(x))
 	case "uniform2f":
-		if x, ok := args["x"].(float64); ok {
-			if y, ok := args["y"].(float64); ok {
-				canvas.ShaderObject.SetUniform(name, [2]float32{float32(x), float32(y)})
-			}
-		}
+		x := toFloat64(args["x"])
+		y := toFloat64(args["y"])
+		canvas.ShaderObject.QueueUniform(name, [2]float32{float32(x), float32(y)})
 	case "uniform3f":
-		if x, ok := args["x"].(float64); ok {
-			if y, ok := args["y"].(float64); ok {
-				if z, ok := args["z"].(float64); ok {
-					canvas.ShaderObject.SetUniform(name, [3]float32{float32(x), float32(y), float32(z)})
-				}
-			}
-		}
+		x := toFloat64(args["x"])
+		y := toFloat64(args["y"])
+		z := toFloat64(args["z"])
+		canvas.ShaderObject.QueueUniform(name, [3]float32{float32(x), float32(y), float32(z)})
 	case "uniform4f":
-		if x, ok := args["x"].(float64); ok {
-			if y, ok := args["y"].(float64); ok {
-				if z, ok := args["z"].(float64); ok {
-					if w, ok := args["w"].(float64); ok {
-						canvas.ShaderObject.SetUniform(name, [4]float32{float32(x), float32(y), float32(z), float32(w)})
-					}
-				}
-			}
-		}
+		x := toFloat64(args["x"])
+		y := toFloat64(args["y"])
+		z := toFloat64(args["z"])
+		w := toFloat64(args["w"])
+		canvas.ShaderObject.QueueUniform(name, [4]float32{float32(x), float32(y), float32(z), float32(w)})
 	}
 	return nil
 }
 
 func (b *Bridge) glUniformInt(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	// Similar to float uniforms but for integers
+	// Get uniform name from args
+	name, _ := args["name"].(string)
+	if name == "" {
+		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
+	}
+
+	switch cmd {
+	case "uniform1i":
+		x := toFloat64(args["x"])
+		textureUnit := uint32(x)
+		// log.Printf("[GL] uniform1i: name=%s value=%d", name, textureUnit)
+
+		// Check if this looks like a sampler uniform (common patterns)
+		lowerName := strings.ToLower(name)
+		isSampler := strings.Contains(lowerName, "map") ||
+			strings.Contains(lowerName, "texture") ||
+			strings.Contains(lowerName, "sampler") ||
+			strings.Contains(lowerName, "tex")
+
+		if isSampler {
+			// Track sampler → texture unit mapping
+			if canvas.samplerUniforms == nil {
+				canvas.samplerUniforms = make(map[string]uint32)
+			}
+			canvas.samplerUniforms[name] = textureUnit
+
+			// If we have a texture bound to this unit, set it on the shader
+			if canvas.boundTextures != nil {
+				textureId := canvas.boundTextures[textureUnit]
+				if textureId != 0 {
+					if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
+						canvas.ShaderObject.SetTextureUniform(name, texture.image)
+						// log.Printf("[GL] uniform1i: setting texture %s = unit %d (texId=%d, %dx%d)",
+						//	name, textureUnit, textureId,
+						//	texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
+					}
+				}
+			}
+		}
+
+		// Also queue as regular uniform (needed for non-texture int uniforms)
+		canvas.ShaderObject.QueueUniform(name, int32(x))
+	}
 	return nil
 }
 
 func (b *Bridge) glUniformFloatv(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	// Handle array uniforms
+	// Get uniform name from args
+	name, _ := args["name"].(string)
+	if name == "" {
+		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
+	}
+	// log.Printf("[GL] %s: name=%s", cmd, name)
+
+	// Decode base64 data
+	dataStr, ok := args["data"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(dataStr)
+	if err != nil {
+		return err
+	}
+
+	// Convert bytes to float32 slice
+	floatCount := len(decoded) / 4
+	floats := make([]float32, floatCount)
+	for i := 0; i < floatCount; i++ {
+		bits := binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4])
+		floats[i] = math.Float32frombits(bits)
+	}
+
+	// Set uniform based on type
+	switch cmd {
+	case "uniform1fv":
+		if len(floats) >= 1 {
+			canvas.ShaderObject.SetUniform(name, floats[0])
+		}
+	case "uniform2fv":
+		if len(floats) >= 2 {
+			canvas.ShaderObject.SetUniform(name, [2]float32{floats[0], floats[1]})
+		}
+	case "uniform3fv":
+		if len(floats) >= 3 {
+			canvas.ShaderObject.SetUniform(name, [3]float32{floats[0], floats[1], floats[2]})
+		}
+	case "uniform4fv":
+		if len(floats) >= 4 {
+			canvas.ShaderObject.SetUniform(name, [4]float32{floats[0], floats[1], floats[2], floats[3]})
+		}
+	}
 	return nil
 }
 
 func (b *Bridge) glUniformMatrix(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
-	// Handle matrix uniforms (2x2, 3x3, 4x4)
+	// Get uniform name from args
+	name, _ := args["name"].(string)
+	if name == "" {
+		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
+	}
+	// log.Printf("[GL] %s: name=%s", cmd, name)
+
+	// Decode base64 data
+	dataStr, ok := args["data"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(dataStr)
+	if err != nil {
+		return err
+	}
+
+	// Convert bytes to float32 slice
+	floatCount := len(decoded) / 4
+	floats := make([]float32, floatCount)
+	for i := 0; i < floatCount; i++ {
+		bits := binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4])
+		floats[i] = math.Float32frombits(bits)
+	}
+
+	// Queue matrix uniform
+	switch cmd {
+	case "uniformMatrix2fv":
+		if len(floats) >= 4 {
+			canvas.ShaderObject.QueueUniform(name, floats[:4])
+		}
+	case "uniformMatrix3fv":
+		if len(floats) >= 9 {
+			canvas.ShaderObject.QueueUniform(name, floats[:9])
+		}
+	case "uniformMatrix4fv":
+		if len(floats) >= 16 {
+			canvas.ShaderObject.QueueUniform(name, floats[:16])
+		}
+	}
 	return nil
 }
 
@@ -715,10 +1170,11 @@ func (b *Bridge) glUniformMatrix(canvas *GLCanvas, cmd string, args map[string]i
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glCreateTexture(canvas *GLCanvas, args map[string]interface{}) error {
-	textureId, ok := args["textureId"].(float64)
+	textureIdVal, ok := args["textureId"]
 	if !ok {
 		return fmt.Errorf("missing textureId")
 	}
+	textureId := toFloat32(textureIdVal)
 	canvas.textures[uint32(textureId)] = &shaderTexture{
 		id: uint32(textureId),
 	}
@@ -726,40 +1182,264 @@ func (b *Bridge) glCreateTexture(canvas *GLCanvas, args map[string]interface{}) 
 }
 
 func (b *Bridge) glDeleteTexture(canvas *GLCanvas, args map[string]interface{}) error {
-	textureId, ok := args["textureId"].(float64)
+	textureIdVal, ok := args["textureId"]
 	if !ok {
 		return fmt.Errorf("missing textureId")
 	}
+	textureId := toFloat32(textureIdVal)
 	delete(canvas.textures, uint32(textureId))
 	return nil
 }
 
 func (b *Bridge) glBindTexture(canvas *GLCanvas, args map[string]interface{}) error {
-	// Texture binding is implicit in SetTextureUniform
+	textureIdVal, ok := args["textureId"]
+	if !ok {
+		return fmt.Errorf("missing textureId")
+	}
+	textureId := uint32(toFloat32(textureIdVal))
+
+	// Initialize boundTextures map if needed
+	if canvas.boundTextures == nil {
+		canvas.boundTextures = make(map[uint32]uint32)
+	}
+
+	// Bind texture to the active texture unit
+	canvas.boundTextures[canvas.activeTextureUnit] = textureId
 	return nil
 }
 
 func (b *Bridge) glActiveTexture(canvas *GLCanvas, args map[string]interface{}) error {
-	// Active texture is managed by painter
+	textureVal, ok := args["texture"]
+	if !ok {
+		return fmt.Errorf("missing texture")
+	}
+	// texture is GL_TEXTURE0 + n, where n is the unit number
+	// GL_TEXTURE0 = 0x84C0 = 33984
+	textureEnum := uint32(toFloat32(textureVal))
+	canvas.activeTextureUnit = textureEnum - 33984 // GL_TEXTURE0
 	return nil
 }
 
 func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) error {
-	// Create a placeholder image for the texture
-	// In production, would decode the pixel data
-	width, _ := args["width"].(float64)
-	height, _ := args["height"].(float64)
+	w := int(toFloat32(args["width"]))
+	h := int(toFloat32(args["height"]))
+	format := toFloat32(args["format"])           // GL_RGBA, GL_RGB, etc.
+	internalformat := toFloat32(args["internalformat"])
+	pixelsStr, hasPixels := args["pixels"].(string)
 
-	img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
-	// Fill with black for now
-	for i := 0; i < img.Bounds().Dx()*img.Bounds().Dy(); i++ {
-		img.Pix[i*4] = 0
-		img.Pix[i*4+1] = 0
-		img.Pix[i*4+2] = 0
-		img.Pix[i*4+3] = 255
+	// Get the currently bound texture
+	if canvas.boundTextures == nil {
+		canvas.boundTextures = make(map[uint32]uint32)
+	}
+	textureId := canvas.boundTextures[canvas.activeTextureUnit]
+	if textureId == 0 {
+		// No texture bound, nothing to do
+		return nil
 	}
 
-	// Could track the texture, but for now we let Fyne handle it
+	texture, exists := canvas.textures[textureId]
+	if !exists {
+		return fmt.Errorf("texture %d not found", textureId)
+	}
+
+	// Create the image
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+
+	if hasPixels && pixelsStr != "" {
+		// Decode base64 pixel data
+		pixelData, err := base64.StdEncoding.DecodeString(pixelsStr)
+		if err != nil {
+			log.Printf("[GL] texImage2D: failed to decode base64 pixel data: %v", err)
+			return nil
+		}
+
+		// Interpret format (GL_RGBA = 6408, GL_RGB = 6407, GL_LUMINANCE = 6409, GL_ALPHA = 6406)
+		const (
+			GL_ALPHA     = 6406
+			GL_RGB       = 6407
+			GL_RGBA      = 6408
+			GL_LUMINANCE = 6409
+		)
+
+		formatEnum := uint32(format)
+		if formatEnum == 0 {
+			formatEnum = uint32(internalformat)
+		}
+
+		switch formatEnum {
+		case GL_RGBA:
+			// Direct copy - data is already RGBA
+			if len(pixelData) >= w*h*4 {
+				copy(img.Pix, pixelData[:w*h*4])
+			}
+		case GL_RGB:
+			// Convert RGB to RGBA
+			if len(pixelData) >= w*h*3 {
+				for i := 0; i < w*h; i++ {
+					img.Pix[i*4+0] = pixelData[i*3+0]
+					img.Pix[i*4+1] = pixelData[i*3+1]
+					img.Pix[i*4+2] = pixelData[i*3+2]
+					img.Pix[i*4+3] = 255
+				}
+			}
+		case GL_LUMINANCE:
+			// Convert luminance to RGBA (grayscale)
+			if len(pixelData) >= w*h {
+				for i := 0; i < w*h; i++ {
+					v := pixelData[i]
+					img.Pix[i*4+0] = v
+					img.Pix[i*4+1] = v
+					img.Pix[i*4+2] = v
+					img.Pix[i*4+3] = 255
+				}
+			}
+		case GL_ALPHA:
+			// Convert alpha to RGBA (white with varying alpha)
+			if len(pixelData) >= w*h {
+				for i := 0; i < w*h; i++ {
+					img.Pix[i*4+0] = 255
+					img.Pix[i*4+1] = 255
+					img.Pix[i*4+2] = 255
+					img.Pix[i*4+3] = pixelData[i]
+				}
+			}
+		default:
+			log.Printf("[GL] texImage2D: unknown format %d, treating as RGBA", formatEnum)
+			if len(pixelData) >= w*h*4 {
+				copy(img.Pix, pixelData[:w*h*4])
+			}
+		}
+	}
+
+	// Store the image in the texture
+	texture.image = img
+	log.Printf("[GL] texImage2D: stored %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
+
+	// Link sampler uniforms to this texture
+	// This handles the case where uniform1i is called before the texture is uploaded
+	for samplerName, unit := range canvas.samplerUniforms {
+		if canvas.boundTextures[unit] == textureId {
+			// This sampler uses the texture we just uploaded
+			canvas.ShaderObject.SetTextureUniform(samplerName, img)
+			log.Printf("[GL] texImage2D: linked sampler %s to texture %d (%dx%d)",
+				samplerName, textureId, w, h)
+		}
+	}
+
+	return nil
+}
+
+func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) error {
+	xoffset := int(toFloat32(args["xoffset"]))
+	yoffset := int(toFloat32(args["yoffset"]))
+	w := int(toFloat32(args["width"]))
+	h := int(toFloat32(args["height"]))
+	format := toFloat32(args["format"])
+	pixelsStr, hasPixels := args["pixels"].(string)
+
+	// Get the currently bound texture
+	if canvas.boundTextures == nil {
+		return nil
+	}
+	textureId := canvas.boundTextures[canvas.activeTextureUnit]
+	if textureId == 0 {
+		return nil
+	}
+
+	texture, exists := canvas.textures[textureId]
+	if !exists || texture.image == nil {
+		return nil
+	}
+
+	// Cast to *image.RGBA
+	rgba, ok := texture.image.(*image.RGBA)
+	if !ok {
+		return nil
+	}
+
+	if !hasPixels || pixelsStr == "" {
+		return nil
+	}
+
+	// Decode base64 pixel data
+	pixelData, err := base64.StdEncoding.DecodeString(pixelsStr)
+	if err != nil {
+		log.Printf("[GL] texSubImage2D: failed to decode pixel data: %v", err)
+		return nil
+	}
+
+	// GL format constants
+	const (
+		GL_RGB  = 6407
+		GL_RGBA = 6408
+	)
+
+	// Copy pixel data to sub-region
+	formatEnum := uint32(format)
+	stride := rgba.Stride
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			dstIdx := (yoffset+y)*stride + (xoffset+x)*4
+			if formatEnum == GL_RGBA {
+				srcIdx := (y*w + x) * 4
+				if srcIdx+3 < len(pixelData) && dstIdx+3 < len(rgba.Pix) {
+					rgba.Pix[dstIdx] = pixelData[srcIdx]
+					rgba.Pix[dstIdx+1] = pixelData[srcIdx+1]
+					rgba.Pix[dstIdx+2] = pixelData[srcIdx+2]
+					rgba.Pix[dstIdx+3] = pixelData[srcIdx+3]
+				}
+			} else if formatEnum == GL_RGB {
+				srcIdx := (y*w + x) * 3
+				if srcIdx+2 < len(pixelData) && dstIdx+3 < len(rgba.Pix) {
+					rgba.Pix[dstIdx] = pixelData[srcIdx]
+					rgba.Pix[dstIdx+1] = pixelData[srcIdx+1]
+					rgba.Pix[dstIdx+2] = pixelData[srcIdx+2]
+					rgba.Pix[dstIdx+3] = 255
+				}
+			}
+		}
+	}
+
+	log.Printf("[GL] texSubImage2D: updated %dx%d region at (%d,%d) in texture %d", w, h, xoffset, yoffset, textureId)
+
+	// Check if any sampler uniform uses this texture's unit and set the texture
+	// This handles the case where uniform1i is called before the texture is uploaded
+	for samplerName, unit := range canvas.samplerUniforms {
+		if canvas.boundTextures[unit] == textureId {
+			// This sampler uses the texture we just updated
+			if texture, exists := canvas.textures[textureId]; exists && texture.image != nil {
+				canvas.ShaderObject.SetTextureUniform(samplerName, texture.image)
+				log.Printf("[GL] texSubImage2D: linked sampler %s to texture %d (%dx%d)",
+					samplerName, textureId, texture.image.Bounds().Dx(), texture.image.Bounds().Dy())
+			}
+		}
+	}
+	return nil
+}
+
+func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) error {
+	// texStorage2D allocates immutable texture storage
+	// We pre-allocate the image.RGBA so texSubImage2D can update it
+	w := int(toFloat32(args["width"]))
+	h := int(toFloat32(args["height"]))
+
+	// Get the currently bound texture
+	if canvas.boundTextures == nil {
+		return nil
+	}
+	textureId := canvas.boundTextures[canvas.activeTextureUnit]
+	if textureId == 0 {
+		return nil
+	}
+
+	texture, exists := canvas.textures[textureId]
+	if !exists {
+		return nil
+	}
+
+	// Allocate the image
+	texture.image = image.NewRGBA(image.Rect(0, 0, w, h))
+	log.Printf("[GL] texStorage2D: allocated %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
 	return nil
 }
 
@@ -768,12 +1448,17 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glClear(canvas *GLCanvas, args map[string]interface{}) error {
-	// Clear is implicit - shader runs and outputs color
+	// Queue clear command
+	canvas.ShaderObject.QueueClear()
 	return nil
 }
 
 func (b *Bridge) glClearColor(canvas *GLCanvas, args map[string]interface{}) error {
-	// Set clear color via a uniform if needed
+	r := float32(toFloat64(args["red"]))
+	g := float32(toFloat64(args["green"]))
+	blue := float32(toFloat64(args["blue"]))
+	a := float32(toFloat64(args["alpha"]))
+	canvas.ShaderObject.SetClearColor(r, g, blue, a)
 	return nil
 }
 
@@ -787,12 +1472,20 @@ func (b *Bridge) glViewport(canvas *GLCanvas, args map[string]interface{}) error
 // ═══════════════════════════════════════════════════════════════
 
 func (b *Bridge) glDrawArrays(canvas *GLCanvas, args map[string]interface{}) error {
-	// Drawing happens on Refresh()
+	// Queue the draw call to be executed in order with uniforms
+	mode := uint32(toFloat64(args["mode"]))
+	first := int(toFloat64(args["first"]))
+	count := int(toFloat64(args["count"]))
+	canvas.ShaderObject.QueueDrawArrays(mode, first, count)
 	return nil
 }
 
 func (b *Bridge) glDrawElements(canvas *GLCanvas, args map[string]interface{}) error {
-	// Drawing happens on Refresh()
+	// Queue the draw call to be executed in order with uniforms
+	mode := uint32(toFloat64(args["mode"]))
+	count := int(toFloat64(args["count"]))
+	offset := int(toFloat64(args["offset"]))
+	canvas.ShaderObject.QueueDrawElements(mode, count, offset)
 	return nil
 }
 
@@ -825,4 +1518,66 @@ func getGLParameterValue(pname int) interface{} {
 	default:
 		return nil
 	}
+}
+
+// writeShaderDebugFile writes shader source to a file for debugging
+func writeShaderDebugFile(filename, content string) error {
+	return os.WriteFile(filename, []byte(content), 0644)
+}
+
+// sendMouseEvent buffers a mouse event for the given canvas
+// Events are accumulated and returned with the next executeBatch response
+func (b *Bridge) sendMouseEvent(canvasID string, eventType string, x, y float32) {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return
+	}
+
+	canvas.mouseEventMu.Lock()
+	defer canvas.mouseEventMu.Unlock()
+
+	// For mousemove, only keep the latest position (coalesce)
+	if eventType == "mousemove" && len(canvas.pendingMouseEvents) > 0 {
+		last := &canvas.pendingMouseEvents[len(canvas.pendingMouseEvents)-1]
+		if last.Type == "mousemove" {
+			// Update existing mousemove instead of adding new one
+			last.X = x
+			last.Y = y
+			return
+		}
+	}
+
+	canvas.pendingMouseEvents = append(canvas.pendingMouseEvents, MouseEvent{
+		Type: eventType,
+		X:    x,
+		Y:    y,
+	})
+}
+
+// drainMouseEvents returns and clears pending mouse events for a canvas
+func drainMouseEvents(canvasID string) []MouseEvent {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return nil
+	}
+
+	canvas.mouseEventMu.Lock()
+	defer canvas.mouseEventMu.Unlock()
+
+	events := canvas.pendingMouseEvents
+	canvas.pendingMouseEvents = nil
+	return events
+}
+
+// hasPendingMouseEvents checks if there are buffered mouse events
+func hasPendingMouseEvents(canvasID string) bool {
+	canvas, exists := glCanvases[canvasID]
+	if !exists {
+		return false
+	}
+
+	canvas.mouseEventMu.Lock()
+	defer canvas.mouseEventMu.Unlock()
+
+	return len(canvas.pendingMouseEvents) > 0
 }

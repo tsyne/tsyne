@@ -13,17 +13,125 @@ const (
 	ShaderGLSLES  ShaderTarget = "gles3"    // Mobile OpenGL ES 3.0
 )
 
+// ShaderType indicates whether a shader is vertex or fragment
+type ShaderType int
+
+const (
+	ShaderTypeAuto     ShaderType = iota // Auto-detect from source
+	ShaderTypeVertex                     // Explicitly a vertex shader
+	ShaderTypeFragment                   // Explicitly a fragment shader
+)
+
 // ConvertShader converts GLSL 300 ES to target shader language
 func ConvertShader(source string, target ShaderTarget) string {
+	return ConvertShaderWithType(source, target, ShaderTypeAuto)
+}
+
+// ConvertVertexShader converts a vertex shader from GLSL 300 ES to target language
+func ConvertVertexShader(source string, target ShaderTarget) string {
+	return ConvertShaderWithType(source, target, ShaderTypeVertex)
+}
+
+// ConvertFragmentShader converts a fragment shader from GLSL 300 ES to target language
+func ConvertFragmentShader(source string, target ShaderTarget) string {
+	return ConvertShaderWithType(source, target, ShaderTypeFragment)
+}
+
+// ConvertShaderWithType converts GLSL 300 ES to target shader language with explicit type
+func ConvertShaderWithType(source string, target ShaderTarget, shaderType ShaderType) string {
 	if target == ShaderGLSL110 {
-		return convertGLSL300toGLSL110(source)
+		return convertGLSL300toGLSL110WithType(source, shaderType)
 	}
 	return convertGLSL300toGLSLES(source)
 }
 
-// convertGLSL300toGLSL110 converts GLSL 300 ES to GLSL 110
+// convertGLSL300toGLSL110 converts GLSL 300 ES to GLSL 110 (auto-detect shader type)
 func convertGLSL300toGLSL110(source string) string {
+	return convertGLSL300toGLSL110WithType(source, ShaderTypeAuto)
+}
+
+// convertGLSL300toGLSL110WithType converts GLSL 300 ES to GLSL 110 with explicit type
+func convertGLSL300toGLSL110WithType(source string, shaderType ShaderType) string {
 	result := source
+
+	// Normalize line endings (handle Windows \r\n, Mac \r, Unix \n)
+	result = strings.ReplaceAll(result, "\r\n", "\n")
+	result = strings.ReplaceAll(result, "\r", "\n")
+
+	// Check if three.js has already added compatibility macros
+	// Three.js adds macros to convert GLSL 110 syntax TO GLSL 300 ES:
+	// - Vertex shader: #define attribute in, #define varying out
+	// - Fragment shader: #define varying in, #define gl_FragColor ...
+	hasThreeJSCompatMacros := strings.Contains(source, "#define attribute in") ||
+		strings.Contains(source, "#define varying out") ||
+		strings.Contains(source, "#define varying in") ||
+		strings.Contains(source, "#define texture2D texture") ||
+		strings.Contains(source, "#define textureCube texture") ||
+		strings.Contains(source, "#define gl_FragColor")
+
+	if hasThreeJSCompatMacros {
+		// Three.js shader has GLSL 300 ES compatibility macros
+		// We need to strip these and convert back to GLSL 110
+
+		// Remove version directive
+		versionRegex := regexp.MustCompile(`(?i)#version\s+300\s+es\s*\n?`)
+		result = versionRegex.ReplaceAllString(result, "")
+
+		// Remove entire precision statements (not supported in GLSL 110)
+		precisionRegex := regexp.MustCompile(`(?m)^[\t ]*precision\s+(highp|mediump|lowp)\s+\w+;\s*\n?`)
+		for precisionRegex.MatchString(result) {
+			result = precisionRegex.ReplaceAllString(result, "")
+		}
+
+		// Remove precision prefixes in other statements (e.g., "highp float x")
+		precisionPrefixRegex := regexp.MustCompile(`\b(highp|mediump|lowp)\s+`)
+		result = precisionPrefixRegex.ReplaceAllString(result, "")
+
+		// Remove ALL three.js compatibility macros - they're for GLSL 300 ES, not 110
+		// Vertex shader macros:
+		result = regexp.MustCompile(`#define attribute in\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define varying out\s*\n?`).ReplaceAllString(result, "")
+		// Fragment shader macros:
+		result = regexp.MustCompile(`#define varying in\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define texture2D texture\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define textureCube texture\s*\n?`).ReplaceAllString(result, "")
+		// Fragment output macros - remove completely and we'll convert the actual output
+		result = regexp.MustCompile(`#define gl_FragColor\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define gl_FragDepthEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		// GLSL extension macros (texture lod/proj variations)
+		result = regexp.MustCompile(`#define texture2DProj\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define texture2DLodEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define texture2DProjLodEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define textureCubeLodEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define texture2DGradEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define texture2DProjGradEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+		result = regexp.MustCompile(`#define textureCubeGradEXT\s+\w+\s*\n?`).ReplaceAllString(result, "")
+
+		// Remove GLSL 300 specific layout(...) declarations
+		result = regexp.MustCompile(`layout\s*\([^)]*\)\s*`).ReplaceAllString(result, "")
+
+		// Remove GLSL 300 out vec4 declarations (fragment output)
+		// These would have been: layout(location = 0) out vec4 pc_fragColor;
+		// After removing layout(), we have: out vec4 pc_fragColor;
+		outDeclRegex := regexp.MustCompile(`(?m)^[\t ]*out\s+vec4\s+(\w+)\s*;\s*\n?`)
+		outVarName := ""
+		matches := outDeclRegex.FindStringSubmatch(result)
+		if len(matches) > 1 {
+			outVarName = matches[1]
+		}
+		result = outDeclRegex.ReplaceAllString(result, "")
+
+		// Convert any uses of the output variable to gl_FragColor
+		if outVarName != "" && outVarName != "gl_FragColor" {
+			result = strings.ReplaceAll(result, outVarName, "gl_FragColor")
+		}
+
+		// Add GLSL 110 version header
+		result = "#version 110\n// Converted from GLSL 300 ES (three.js)\n" + result
+		return result
+	}
+
+	// Standard conversion path (for shaders without three.js macros)
 
 	// Remove version directive
 	versionRegex := regexp.MustCompile(`(?i)#version\s+300\s+es\s*`)
@@ -37,8 +145,16 @@ func convertGLSL300toGLSL110(source string) string {
 	precisionPrefixRegex := regexp.MustCompile(`\b(highp|mediump|lowp)\s+`)
 	result = precisionPrefixRegex.ReplaceAllString(result, "")
 
-	// Detect if vertex or fragment shader
-	isVertex := isVertexShader(source)
+	// Determine shader type
+	var isVertex bool
+	switch shaderType {
+	case ShaderTypeVertex:
+		isVertex = true
+	case ShaderTypeFragment:
+		isVertex = false
+	default:
+		isVertex = isVertexShader(source)
+	}
 
 	if isVertex {
 		// Vertex shader: in → attribute, out → varying
@@ -87,7 +203,8 @@ func convertGLSL300toGLSL110(source string) string {
 	// Add compatibility header if we made changes
 	header := ""
 	if !strings.Contains(source, "#version 110") && !strings.Contains(source, "#version 120") {
-		header = `// Converted from GLSL 300 ES to GLSL 110
+		header = `#version 110
+// Converted from GLSL 300 ES to GLSL 110
 #define texture texture2D
 #define textureCube textureCube
 #define textureLod texture2DLod

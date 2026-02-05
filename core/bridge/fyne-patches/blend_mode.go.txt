@@ -1,0 +1,12 @@
+package canvas
+
+// BlendMode defines how canvas objects blend with the background
+type BlendMode int
+
+// Blend mode constants
+const (
+	BlendNormal   BlendMode = iota // Normal alpha blending (default)
+	BlendAdditive                  // Additive blending (colors add together)
+	BlendMultiply                  // Multiply blending (colors multiply)
+	BlendScreen                    // Screen blending (inverse of multiply)
+)

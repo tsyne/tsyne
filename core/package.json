@@ -37,11 +37,13 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@babel/preset-env": "^7.29.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
     "@types/pngjs": "^6.0.5",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
+    "babel-jest": "^30.2.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",

@@ -1,0 +1,48 @@
+
+func (c *coreContext) Uniform3f(uniform Uniform, v0, v1, v2 float32) {
+	gl.Uniform3f(int32(uniform), v0, v1, v2)
+}
+
+func (c *coreContext) Uniform1i(uniform Uniform, v int32) {
+	gl.Uniform1i(int32(uniform), v)
+}
+
+func (c *coreContext) UniformMatrix3fv(uniform Uniform, transpose bool, data []float32) {
+	gl.UniformMatrix3fv(int32(uniform), 1, transpose, &data[0])
+}
+
+func (c *coreContext) UniformMatrix4fv(uniform Uniform, transpose bool, data []float32) {
+	gl.UniformMatrix4fv(int32(uniform), 1, transpose, &data[0])
+}
+
+func (c *coreContext) DisableVertexAttribArray(attribute Attribute) {
+	gl.DisableVertexAttribArray(uint32(attribute))
+}
+
+func (c *coreContext) VertexAttribPointer(attribute Attribute, size int, typ uint32, normalized bool, stride int, data []float32) {
+	gl.VertexAttribPointer(uint32(attribute), int32(size), typ, normalized, int32(stride), gl.Ptr(data))
+}
+
+func (c *coreContext) DrawElements(mode uint32, count int32, typ uint32, offset int) {
+	gl.DrawElements(mode, count, typ, gl.PtrOffset(offset))
+}
+
+func (c *coreContext) BufferDataUint16(target uint32, data []uint16, usage uint32) {
+	gl.BufferData(target, len(data)*2, gl.Ptr(data), usage)
+}
+
+func (c *coreContext) DepthFunc(fn uint32) {
+	gl.DepthFunc(fn)
+}
+
+func (c *coreContext) DepthMask(flag bool) {
+	gl.DepthMask(flag)
+}
+
+func (c *coreContext) CullFace(mode uint32) {
+	gl.CullFace(mode)
+}
+
+func (c *coreContext) FrontFace(mode uint32) {
+	gl.FrontFace(mode)
+}

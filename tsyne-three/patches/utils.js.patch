@@ -1,0 +1,25 @@
+--- a/src/utils.js
++++ b/src/utils.js
+@@ -139,10 +139,21 @@
+  * display style set to 'block', which is commonly used in three.js
+  * rendering contexts to avoid inline element spacing issues.
+  *
+- * @return {HTMLCanvasElement} A canvas element with display set to 'block'.
++ * When running in a Tsyne environment, this will create a TsyneCanvas
++ * that proxies WebGL calls to the Tsyne bridge instead of using browser WebGL.
++ *
++ * @return {HTMLCanvasElement|TsyneCanvas} A canvas element with display set to 'block'.
+  */
+ function createCanvasElement() {
+
++	// Check if we're in a Tsyne environment with injected globals
++	if ( typeof globalThis !== 'undefined' && globalThis.__tsyneCanvasFactory ) {
++
++		// Use Tsyne canvas factory to create a proxy canvas
++		return globalThis.__tsyneCanvasFactory();
++
++	}
++
+ 	const canvas = createElementNS( 'canvas' );
+ 	canvas.style.display = 'block';
+ 	return canvas;

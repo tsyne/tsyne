@@ -1,0 +1,26 @@
+package canvas
+
+// SetBlendMode sets the blend mode (currently a no-op, stored for future use)
+func (l *Line) SetBlendMode(mode BlendMode) {
+	// Blend mode not currently implemented for Line
+}
+
+// SetBlendMode sets the blend mode (currently a no-op, stored for future use)
+func (c *Circle) SetBlendMode(mode BlendMode) {
+	// Blend mode not currently implemented for Circle
+}
+
+// SetBlendMode sets the blend mode (currently a no-op, stored for future use)
+func (r *Rectangle) SetBlendMode(mode BlendMode) {
+	// Blend mode not currently implemented for Rectangle
+}
+
+// SetBlendMode sets the blend mode (currently a no-op, stored for future use)
+func (t *Text) SetBlendMode(mode BlendMode) {
+	// Blend mode not currently implemented for Text
+}
+
+// SetBlendMode sets the blend mode (currently a no-op, stored for future use)
+func (r *Raster) SetBlendMode(mode BlendMode) {
+	// Blend mode not currently implemented for Raster
+}

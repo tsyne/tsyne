@@ -1,0 +1,23 @@
+{
+  "name": "tsyne-three",
+  "version": "0.1.0",
+  "description": "Three.js integration for Tsyne - renders three.js through native OpenGL",
+  "main": "integration/index.ts",
+  "scripts": {
+    "setup": "./setup-three.sh",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "tsyne": "*"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.23.0",
+    "@types/jest": "^29.5.0",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": ["tsyne", "three.js", "webgl", "opengl"],
+  "license": "MIT"
+}

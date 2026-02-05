@@ -1,0 +1,710 @@
+package canvas
+
+import (
+	"sync"
+	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+)
+
+// AttributeBuffer holds data for a single vertex attribute
+type AttributeBuffer struct {
+	Data       []float32 // The actual vertex data
+	Size       int       // Number of components per vertex (2 for vec2, 3 for vec3, etc.)
+	VBO        uint32    // GL vertex buffer object ID (managed by painter)
+}
+
+// RenderCommand represents a single render operation (uniform set or draw call)
+// This allows immediate-mode GL patterns: set uniform → draw → set uniform → draw
+type RenderCommand struct {
+	Type      string      // "uniform", "drawElements", "drawArrays", "clear"
+	Name      string      // Uniform name (for uniform commands)
+	Value     interface{} // Uniform value or draw parameters
+}
+
+// DrawElementsParams holds parameters for a drawElements call
+type DrawElementsParams struct {
+	Mode             uint32
+	Count            int
+	Offset           int
+	AttributeBuffers map[string]*AttributeBuffer // Snapshot of attribute buffers at draw time
+	Indices          []uint16                    // Snapshot of index buffer at draw time
+}
+
+// DrawArraysParams holds parameters for a drawArrays call
+type DrawArraysParams struct {
+	Mode             uint32
+	First            int
+	Count            int
+	AttributeBuffers map[string]*AttributeBuffer // Snapshot of attribute buffers at draw time
+}
+
+// Shader is a canvas object that renders using a custom GLSL vertex and fragment shader.
+// This enables GPU-accelerated effects like fractals, ray marching, 3D geometry, etc.
+type Shader struct {
+	baseObject
+	size            fyne.Size
+	VertexSource    string                 // GLSL vertex shader source code (optional)
+	FragmentSource  string                 // GLSL fragment shader source code
+	Uniforms        map[string]interface{} // Uniform values: float32, [2]float32, [3]float32, [4]float32
+	uniformsMu      sync.RWMutex           // Protects concurrent access to Uniforms map
+	Textures        map[string]interface{} // Texture uniforms: image.Image, image.RGBA, etc.
+	Cubemaps        map[string][6]interface{} // Cubemap uniforms: [+X, -X, +Y, -Y, +Z, -Z]
+
+	// Vertex buffer data (legacy interleaved format)
+	Vertices        []float32              // Vertex data (positions, normals, texcoords, etc.)
+	Indices         []uint16               // Index buffer (for indexed drawing)
+	VertexFormat    string                 // Format descriptor: "pos3", "pos3_norm3", "pos3_norm3_uv2", etc.
+
+	// Separate attribute buffers (for three.js style rendering)
+	AttributeBuffers map[string]*AttributeBuffer // Map of attribute name → buffer data
+
+	// Time tracking for u_time uniform (only updates on Refresh, not every paint pass)
+	startTime       time.Time              // When the shader was created
+	cachedTime      float32                // Cached u_time value, only updated on Refresh()
+
+	// Internal state managed by the GL painter
+	program         uint32
+	needsCompile    bool
+	uniformLocs     map[string]int32
+	textureUnits    map[string]int    // Mapping of texture uniform names to GL texture units
+	textureCache    map[string]uint32 // Cache of GL texture IDs for regular textures
+	cubemapUnits    map[string]int    // Mapping of cubemap names to GL texture units
+	cubemapCache    map[string]uint32 // Cache of GL cubemap texture IDs
+	vbo             uint32                 // Vertex buffer object ID (legacy)
+	ibo             uint32                 // Index buffer object ID
+	vertexCount     int                    // Number of vertices for rendering
+	indexCount      int                    // Number of indices (if using indexed drawing)
+
+	// Render command queue for immediate-mode GL patterns
+	renderCommands  []RenderCommand
+	renderMu        sync.Mutex
+
+	// Paint synchronization - wait for Fyne to actually paint before next frame
+	paintDone       chan struct{}
+	paintPending    bool
+	paintMu         sync.Mutex
+
+	// Clear color for glClearColor
+	clearColor      [4]float32
+
+	// Attribute locations from JS side (bypasses OpenGL's glGetAttribLocation)
+	// This is needed because OpenGL optimizes out unused attributes, but we
+	// still need to bind the data to the expected locations
+	attributeLocations map[string]int32
+	attribLocMu        sync.RWMutex
+}
+
+// NewShader creates a new shader canvas object with the given dimensions and fragment shader.
+// The fragment shader should output to gl_FragColor. Available uniforms:
+//   - vec2 u_resolution: canvas size in pixels
+//   - float u_time: time in seconds since start
+//   - vec2 u_mouse: mouse position (if provided via SetUniform)
+// Custom uniforms can be set via SetUniform.
+// Texture uniforms can be set via SetTextureUniform.
+// Cubemap uniforms can be set via SetCubemapUniform.
+// Vertex data can be set via SetVertices and SetIndices.
+func NewShader(width, height float32, fragmentSrc string) *Shader {
+	now := time.Now()
+	s := &Shader{
+		VertexSource:     "",
+		FragmentSource:   fragmentSrc,
+		Uniforms:         make(map[string]interface{}),
+		Textures:         make(map[string]interface{}),
+		Cubemaps:         make(map[string][6]interface{}),
+		Vertices:         nil,
+		Indices:          nil,
+		VertexFormat:     "",
+		AttributeBuffers: make(map[string]*AttributeBuffer),
+		startTime:        now,
+		cachedTime:       0, // Initial u_time is 0
+		needsCompile:     true,
+		uniformLocs:      make(map[string]int32),
+		textureUnits:     make(map[string]int),
+		textureCache:     make(map[string]uint32),
+		cubemapUnits:     make(map[string]int),
+		cubemapCache:     make(map[string]uint32),
+		vbo:                0,
+		ibo:                0,
+		vertexCount:        0,
+		indexCount:         0,
+		attributeLocations: make(map[string]int32),
+	}
+	s.size = fyne.NewSize(width, height)
+	return s
+}
+
+// Size returns the current size of the shader canvas
+func (s *Shader) Size() fyne.Size {
+	return s.size
+}
+
+// Refresh causes the shader to be redrawn and updates the cached u_time value.
+// This is the ONLY time u_time changes - it does NOT update on every paint pass.
+// This matches Fyne's texture caching behavior where widgets only regenerate on Refresh().
+func (s *Shader) Refresh() {
+	s.cachedTime = float32(time.Since(s.startTime).Seconds())
+	Refresh(s)
+}
+
+// CachedTime returns the cached u_time value (only updated on Refresh)
+func (s *Shader) CachedTime() float32 {
+	return s.cachedTime
+}
+
+// StartTime returns when the shader was created
+func (s *Shader) StartTime() time.Time {
+	return s.startTime
+}
+
+// MinSize returns the minimum size (same as size for shaders)
+func (s *Shader) MinSize() fyne.Size {
+	return s.size
+}
+
+// Resize changes the shader canvas size
+func (s *Shader) Resize(size fyne.Size) {
+	s.size = size
+	s.Refresh()
+}
+
+// SetMinSize sets the shader canvas size
+func (s *Shader) SetMinSize(size fyne.Size) {
+	s.size = size
+}
+
+// SetUniform sets a uniform value. Supported types:
+//   - float32 or float64 -> float uniform
+//   - [2]float32 or []float32 (len 2) -> vec2 uniform
+//   - [3]float32 or []float32 (len 3) -> vec3 uniform
+//   - [4]float32 or []float32 (len 4) -> vec4 uniform
+//   - int or int32 -> int uniform
+func (s *Shader) SetUniform(name string, value interface{}) {
+	s.uniformsMu.Lock()
+	s.Uniforms[name] = value
+	s.uniformsMu.Unlock()
+	s.Refresh()
+}
+
+// GetUniformsCopy returns a thread-safe copy of the uniforms map for iteration.
+// Use this in the painter to avoid concurrent map access.
+func (s *Shader) GetUniformsCopy() map[string]interface{} {
+	s.uniformsMu.RLock()
+	defer s.uniformsMu.RUnlock()
+	copy := make(map[string]interface{}, len(s.Uniforms))
+	for k, v := range s.Uniforms {
+		copy[k] = v
+	}
+	return copy
+}
+
+// SetTextureUniform sets a texture uniform value.
+// Supported types: image.Image, *image.RGBA, image.Uniform
+// The texture will be bound to an available texture unit.
+// Note: Does NOT call Refresh() - caller should call Refresh() after all data is set up
+func (s *Shader) SetTextureUniform(name string, value interface{}) {
+	s.Textures[name] = value
+}
+
+// SetCubemapUniform sets a cubemap uniform value.
+// Takes 6 images for the cubemap faces: [+X, -X, +Y, -Y, +Z, -Z]
+// The cubemap will be bound to an available texture unit.
+func (s *Shader) SetCubemapUniform(name string, faces [6]interface{}) {
+	s.Cubemaps[name] = faces
+	s.Refresh()
+}
+
+// SetSource updates the fragment shader source and marks for recompilation
+// Note: Does NOT call Refresh() - caller should call Refresh() after all data is set up
+func (s *Shader) SetSource(src string) {
+	s.FragmentSource = src
+	s.needsCompile = true
+}
+
+// SetVertexSource updates the vertex shader source and marks for recompilation
+// Note: Does NOT call Refresh() - caller should call Refresh() after all data is set up
+func (s *Shader) SetVertexSource(src string) {
+	s.VertexSource = src
+	s.needsCompile = true
+}
+
+// Program returns the compiled GL program ID (for painter use)
+func (s *Shader) Program() uint32 {
+	return s.program
+}
+
+// SetProgram sets the compiled GL program ID (for painter use)
+func (s *Shader) SetProgram(p uint32) {
+	s.program = p
+	s.needsCompile = false
+}
+
+// NeedsCompile returns whether the shader needs (re)compilation
+func (s *Shader) NeedsCompile() bool {
+	return s.needsCompile
+}
+
+// UniformLocs returns the uniform location cache (for painter use)
+func (s *Shader) UniformLocs() map[string]int32 {
+	return s.uniformLocs
+}
+
+// SetUniformLoc caches a uniform location (for painter use)
+func (s *Shader) SetUniformLoc(name string, loc int32) {
+	s.uniformLocs[name] = loc
+}
+
+// GetTextures returns the texture uniforms map (for painter use)
+func (s *Shader) GetTextures() map[string]interface{} {
+	return s.Textures
+}
+
+// GetTextureUnits returns the texture unit mapping (for painter use)
+func (s *Shader) GetTextureUnits() map[string]int {
+	return s.textureUnits
+}
+
+// SetTextureUnit sets the GL texture unit for a uniform (for painter use)
+func (s *Shader) SetTextureUnit(name string, unit int) {
+	s.textureUnits[name] = unit
+}
+
+// GetTextureCache returns the cached GL texture IDs (for painter use)
+func (s *Shader) GetTextureCache() map[string]uint32 {
+	return s.textureCache
+}
+
+// SetTextureCache sets a cached GL texture ID (for painter use)
+func (s *Shader) SetTextureCache(name string, texID uint32) {
+	s.textureCache[name] = texID
+}
+
+// ClearTextureCache clears the texture cache (called on recompile)
+func (s *Shader) ClearTextureCache() {
+	for k := range s.textureCache {
+		delete(s.textureCache, k)
+	}
+	for k := range s.textureUnits {
+		delete(s.textureUnits, k)
+	}
+}
+
+// GetCubemaps returns the cubemap uniforms map (for painter use)
+func (s *Shader) GetCubemaps() map[string][6]interface{} {
+	return s.Cubemaps
+}
+
+// GetCubemapUnits returns the cubemap unit mapping (for painter use)
+func (s *Shader) GetCubemapUnits() map[string]int {
+	return s.cubemapUnits
+}
+
+// SetCubemapUnit sets the GL texture unit for a cubemap (for painter use)
+func (s *Shader) SetCubemapUnit(name string, unit int) {
+	s.cubemapUnits[name] = unit
+}
+
+// GetCubemapCache returns the cached GL cubemap IDs (for painter use)
+func (s *Shader) GetCubemapCache() map[string]uint32 {
+	return s.cubemapCache
+}
+
+// SetCubemapCache sets a cached GL cubemap ID (for painter use)
+func (s *Shader) SetCubemapCache(name string, texID uint32) {
+	s.cubemapCache[name] = texID
+}
+
+// ClearCubemapCache clears the cubemap cache (called on recompile)
+func (s *Shader) ClearCubemapCache() {
+	for k := range s.cubemapCache {
+		delete(s.cubemapCache, k)
+	}
+	for k := range s.cubemapUnits {
+		delete(s.cubemapUnits, k)
+	}
+}
+
+// SetVertices sets the vertex data for the shader.
+// format should be one of: "pos2", "pos3", "pos3_norm3", "pos3_norm3_uv2", "pos2_uv2"
+// or a custom format string describing the vertex layout.
+func (s *Shader) SetVertices(data []float32, format string) {
+	s.Vertices = data
+	s.VertexFormat = format
+	s.vertexCount = len(data) / s.attributeCountForFormat(format)
+	s.Refresh()
+}
+
+// SetIndices sets the index buffer for indexed drawing (glDrawElements).
+func (s *Shader) SetIndices(indices []uint16) {
+	s.Indices = indices
+	s.indexCount = len(indices)
+	s.Refresh()
+}
+
+// attributeCountForFormat returns the number of floats per vertex for a given format.
+func (s *Shader) attributeCountForFormat(format string) int {
+	switch format {
+	case "pos2":
+		return 2
+	case "pos3":
+		return 3
+	case "pos2_uv2":
+		return 4 // 2 pos + 2 uv
+	case "pos3_norm3":
+		return 6 // 3 pos + 3 norm
+	case "pos3_norm3_uv2":
+		return 8 // 3 pos + 3 norm + 2 uv
+	case "pos3_col4":
+		return 7 // 3 pos + 4 color
+	default:
+		return 0 // Unknown format
+	}
+}
+
+// GetVertices returns the vertex data.
+func (s *Shader) GetVertices() []float32 {
+	return s.Vertices
+}
+
+// GetIndices returns the index buffer.
+func (s *Shader) GetIndices() []uint16 {
+	return s.Indices
+}
+
+// GetVertexFormat returns the vertex format descriptor.
+func (s *Shader) GetVertexFormat() string {
+	return s.VertexFormat
+}
+
+// GetVertexCount returns the number of vertices.
+func (s *Shader) GetVertexCount() int {
+	return s.vertexCount
+}
+
+// GetIndexCount returns the number of indices.
+func (s *Shader) GetIndexCount() int {
+	return s.indexCount
+}
+
+// SetVBO sets the vertex buffer object ID (for painter use).
+func (s *Shader) SetVBO(vbo uint32) {
+	s.vbo = vbo
+}
+
+// GetVBO returns the vertex buffer object ID.
+func (s *Shader) GetVBO() uint32 {
+	return s.vbo
+}
+
+// SetIBO sets the index buffer object ID (for painter use).
+func (s *Shader) SetIBO(ibo uint32) {
+	s.ibo = ibo
+}
+
+// GetIBO returns the index buffer object ID.
+func (s *Shader) GetIBO() uint32 {
+	return s.ibo
+}
+
+// SetAttributeBuffer sets data for a named vertex attribute (e.g., "position", "normal", "uv").
+// size is the number of components per vertex (2 for vec2, 3 for vec3, 4 for vec4).
+func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
+	if s.AttributeBuffers == nil {
+		s.AttributeBuffers = make(map[string]*AttributeBuffer)
+	}
+	// Preserve existing VBO if we're just updating data
+	var vbo uint32
+	if existing, ok := s.AttributeBuffers[name]; ok {
+		vbo = existing.VBO
+	}
+	s.AttributeBuffers[name] = &AttributeBuffer{
+		Data: data,
+		Size: size,
+		VBO:  vbo,
+	}
+	// Update vertex count based on the number of vertices in this buffer
+	if size > 0 {
+		s.vertexCount = len(data) / size
+	}
+}
+
+// GetAttributeBuffer returns the buffer for a named attribute.
+func (s *Shader) GetAttributeBuffer(name string) *AttributeBuffer {
+	if s.AttributeBuffers == nil {
+		return nil
+	}
+	return s.AttributeBuffers[name]
+}
+
+// GetAttributeBuffers returns all attribute buffers.
+func (s *Shader) GetAttributeBuffers() map[string]*AttributeBuffer {
+	return s.AttributeBuffers
+}
+
+// HasAttributeBuffers returns true if separate attribute buffers are set.
+func (s *Shader) HasAttributeBuffers() bool {
+	return s.AttributeBuffers != nil && len(s.AttributeBuffers) > 0
+}
+
+// ClearAttributeBufferVBOs clears VBO IDs (called on recompile to force re-upload).
+func (s *Shader) ClearAttributeBufferVBOs() {
+	for _, buf := range s.AttributeBuffers {
+		buf.VBO = 0
+	}
+}
+
+// SetAttributeLocation stores the location for a named attribute.
+// This is set from the JS side and used instead of glGetAttribLocation
+// to avoid issues with shader optimization removing unused attributes.
+func (s *Shader) SetAttributeLocation(name string, location int32) {
+	s.attribLocMu.Lock()
+	defer s.attribLocMu.Unlock()
+	if s.attributeLocations == nil {
+		s.attributeLocations = make(map[string]int32)
+	}
+	s.attributeLocations[name] = location
+}
+
+// GetAttributeLocation returns the stored location for a named attribute.
+// Returns -1 if not found.
+func (s *Shader) GetAttributeLocation(name string) int32 {
+	s.attribLocMu.RLock()
+	defer s.attribLocMu.RUnlock()
+	if s.attributeLocations == nil {
+		return -1
+	}
+	loc, ok := s.attributeLocations[name]
+	if !ok {
+		return -1
+	}
+	return loc
+}
+
+// QueueRenderCommand adds a render command to the queue.
+// Commands are executed in order during the paint cycle.
+func (s *Shader) QueueRenderCommand(cmd RenderCommand) {
+	s.renderMu.Lock()
+	s.renderCommands = append(s.renderCommands, cmd)
+	s.renderMu.Unlock()
+}
+
+// QueueUniform queues a uniform set command.
+func (s *Shader) QueueUniform(name string, value interface{}) {
+	s.QueueRenderCommand(RenderCommand{
+		Type:  "uniform",
+		Name:  name,
+		Value: value,
+	})
+}
+
+// QueueDrawElements queues a drawElements call with a snapshot of current geometry.
+func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
+	// Capture snapshot of attribute buffers at draw time
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			// Deep copy the data
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data: dataCopy,
+				Size: buf.Size,
+				VBO:  buf.VBO,
+			}
+		}
+	}
+
+	// Deep copy indices
+	var indicesCopy []uint16
+	if len(s.Indices) > 0 {
+		indicesCopy = make([]uint16, len(s.Indices))
+		copy(indicesCopy, s.Indices)
+	}
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawElements",
+		Value: DrawElementsParams{
+			Mode:             mode,
+			Count:            count,
+			Offset:           offset,
+			AttributeBuffers: attrSnapshot,
+			Indices:          indicesCopy,
+		},
+	})
+}
+
+// QueueDrawArrays queues a drawArrays call with a snapshot of current geometry.
+func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
+	// Capture snapshot of attribute buffers at draw time
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			// Deep copy the data
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data: dataCopy,
+				Size: buf.Size,
+				VBO:  buf.VBO,
+			}
+		}
+	}
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawArrays",
+		Value: DrawArraysParams{
+			Mode:             mode,
+			First:            first,
+			Count:            count,
+			AttributeBuffers: attrSnapshot,
+		},
+	})
+}
+
+// QueueClear queues a clear command.
+func (s *Shader) QueueClear() {
+	s.QueueRenderCommand(RenderCommand{
+		Type: "clear",
+	})
+}
+
+// GetRenderCommands returns a copy of the render command queue and clears it.
+// This is called by the painter to execute commands.
+func (s *Shader) GetRenderCommands() []RenderCommand {
+	s.renderMu.Lock()
+	defer s.renderMu.Unlock()
+	cmds := s.renderCommands
+	s.renderCommands = nil
+	return cmds
+}
+
+// HasRenderCommands returns true if there are queued render commands.
+func (s *Shader) HasRenderCommands() bool {
+	s.renderMu.Lock()
+	defer s.renderMu.Unlock()
+	return len(s.renderCommands) > 0
+}
+
+// BeginPaint prepares for a paint cycle - must call WaitForPaint after Refresh.
+func (s *Shader) BeginPaint() {
+	s.paintMu.Lock()
+	defer s.paintMu.Unlock()
+	// Create a new channel for this paint cycle
+	s.paintDone = make(chan struct{})
+	s.paintPending = true
+}
+
+// SignalPaintDone is called by the painter after rendering completes.
+func (s *Shader) SignalPaintDone() {
+	s.paintMu.Lock()
+	defer s.paintMu.Unlock()
+	if s.paintPending && s.paintDone != nil {
+		close(s.paintDone)
+		s.paintPending = false
+	}
+}
+
+// WaitForPaint blocks until the paint cycle completes (with timeout).
+func (s *Shader) WaitForPaint() {
+	s.paintMu.Lock()
+	ch := s.paintDone
+	pending := s.paintPending
+	s.paintMu.Unlock()
+
+	if !pending || ch == nil {
+		return
+	}
+
+	// Wait with short timeout to avoid deadlock
+	select {
+	case <-ch:
+		// Paint completed
+	case <-time.After(16 * time.Millisecond):
+		// Timeout - roughly one frame at 60fps
+	}
+}
+
+// SetClearColor sets the clear color for glClear operations.
+func (s *Shader) SetClearColor(r, g, b, a float32) {
+	s.clearColor = [4]float32{r, g, b, a}
+}
+
+// GetClearColor returns the clear color.
+func (s *Shader) GetClearColor() [4]float32 {
+	return s.clearColor
+}
+
+// MouseEventCallback is a callback for mouse position events
+type MouseEventCallback func(x, y float32)
+
+// HoverableShader is a Shader that can receive mouse hover events.
+// Use this instead of Shader when you need mouse tracking (e.g., for raycasting).
+type HoverableShader struct {
+	*Shader
+	onMouseIn    MouseEventCallback
+	onMouseMoved MouseEventCallback
+	onMouseOut   func()
+	isHovered    bool
+}
+
+// NewHoverableShader creates a new hoverable shader canvas object.
+func NewHoverableShader(width, height float32, fragmentSrc string) *HoverableShader {
+	return &HoverableShader{
+		Shader:    NewShader(width, height, fragmentSrc),
+		isHovered: false,
+	}
+}
+
+// Refresh causes the shader to be redrawn.
+// This overrides the embedded Shader's Refresh to ensure the HoverableShader wrapper is refreshed.
+func (h *HoverableShader) Refresh() {
+	h.Shader.cachedTime = float32(time.Since(h.Shader.startTime).Seconds())
+	Refresh(h) // Refresh the HoverableShader, not the embedded Shader
+}
+
+// Verify HoverableShader implements desktop.Hoverable
+var _ desktop.Hoverable = (*HoverableShader)(nil)
+
+// MouseIn is called when the mouse enters the widget
+func (h *HoverableShader) MouseIn(event *desktop.MouseEvent) {
+	h.isHovered = true
+	if h.onMouseIn != nil {
+		h.onMouseIn(event.Position.X, event.Position.Y)
+	}
+}
+
+// MouseMoved is called when the mouse moves within the widget
+func (h *HoverableShader) MouseMoved(event *desktop.MouseEvent) {
+	if h.onMouseMoved != nil {
+		h.onMouseMoved(event.Position.X, event.Position.Y)
+	}
+}
+
+// MouseOut is called when the mouse leaves the widget
+func (h *HoverableShader) MouseOut() {
+	h.isHovered = false
+	if h.onMouseOut != nil {
+		h.onMouseOut()
+	}
+}
+
+// SetOnMouseIn sets the callback for mouse enter events
+func (h *HoverableShader) SetOnMouseIn(callback MouseEventCallback) {
+	h.onMouseIn = callback
+}
+
+// SetOnMouseMoved sets the callback for mouse move events
+func (h *HoverableShader) SetOnMouseMoved(callback MouseEventCallback) {
+	h.onMouseMoved = callback
+}
+
+// SetOnMouseOut sets the callback for mouse leave events
+func (h *HoverableShader) SetOnMouseOut(callback func()) {
+	h.onMouseOut = callback
+}
+
+// IsHovered returns whether the mouse is currently over the widget
+func (h *HoverableShader) IsHovered() bool {
+	return h.isHovered
+}

@@ -366,8 +366,7 @@ export function buildParisDensity(a: App) {
     const source = getTileSource(key, mapboxToken);
     if (source) {
       tileRenderer = new TileMapRenderer(source, {
-        maxCacheSize: 50,
-        fsCachePath: TILE_CACHE_PATH  // Cache tiles to disk (7-day TTL per OSM policy)
+        cachePath: TILE_CACHE_PATH  // Cache tiles to disk (7-day TTL per OSM policy)
       });
       currentTileSource = key;
       mapTilesLoaded = false;

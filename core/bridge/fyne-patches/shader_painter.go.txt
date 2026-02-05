@@ -1,0 +1,916 @@
+package gl
+
+import (
+	"image"
+	"image/draw"
+	"log"
+	"os"
+	"regexp"
+	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+)
+
+// shaderDebug controls verbose shader logging (set TSYNE_SHADER_DEBUG=1 to enable)
+var shaderDebug = os.Getenv("TSYNE_SHADER_DEBUG") == "1"
+
+// shaderAttribute represents a parsed vertex attribute declaration
+type shaderAttribute struct {
+	name     string
+	glslType string  // vec2, vec3, vec4, float, etc.
+	size     int     // number of floats (2 for vec2, 3 for vec3, etc.)
+}
+
+
+// Default vertex shader for fullscreen quad
+// Uses 'vert' attribute to match Fyne's existing pattern
+const defaultShaderVertexSrc = `
+#version 110
+attribute vec2 vert;
+
+void main() {
+    gl_Position = vec4(vert, 0.0, 1.0);
+}
+`
+
+// Fragment shader wrapper that adds standard uniforms
+// Note: No precision qualifier - that's OpenGL ES syntax, not desktop OpenGL
+const shaderFragmentPrefix = `
+#version 110
+uniform vec2 u_resolution;
+uniform float u_time;
+varying vec2 v_texCoord;
+`
+
+// shaderVBO is a dedicated vertex buffer for shader rendering
+var shaderVBO Buffer
+var shaderVBOInit bool
+
+// parseVertexAttributes extracts attribute declarations from a GLSL vertex shader
+// Returns a list of attributes with their names and sizes
+func parseVertexAttributes(vertexSrc string) []shaderAttribute {
+	var attrs []shaderAttribute
+
+	// Match: attribute <type> <name>;
+	// Handles: attribute vec2 vert; attribute vec3 position; etc.
+	attrRegex := regexp.MustCompile(`(?m)^\s*attribute\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
+
+	matches := attrRegex.FindAllStringSubmatch(vertexSrc, -1)
+	for _, match := range matches {
+		if len(match) >= 3 {
+			glslType := match[1]
+			name := match[2]
+			size := getTypeSize(glslType)
+			attrs = append(attrs, shaderAttribute{
+				name:     name,
+				glslType: glslType,
+				size:     size,
+			})
+		}
+	}
+
+	return attrs
+}
+
+// getTypeSize returns the number of float components for a GLSL type
+func getTypeSize(glslType string) int {
+	switch glslType {
+	case "float":
+		return 1
+	case "vec2":
+		return 2
+	case "vec3":
+		return 3
+	case "vec4":
+		return 4
+	case "mat2":
+		return 4  // 2x2 = 4 floats
+	case "mat3":
+		return 9  // 3x3 = 9 floats
+	case "mat4":
+		return 16 // 4x4 = 16 floats
+	default:
+		return 0
+	}
+}
+
+// compileShaderProgram compiles and links a vertex and fragment shader
+func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) Program {
+	// Prepend standard uniforms to fragment shader if it doesn't have a version
+	if !strings.HasPrefix(strings.TrimSpace(fragmentSrc), "#version") {
+		fragmentSrc = shaderFragmentPrefix + fragmentSrc
+	}
+
+	// Compile vertex shader
+	vShader := p.ctx.CreateShader(vertexShader)
+	p.ctx.ShaderSource(vShader, vertexSrc)
+	p.ctx.CompileShader(vShader)
+	if p.ctx.GetShaderi(vShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(vShader)
+		log.Printf("[shader] Vertex shader compile error: %s", logMsg)
+		return 0
+	}
+
+	// Compile fragment shader
+	fShader := p.ctx.CreateShader(fragmentShader)
+	p.ctx.ShaderSource(fShader, fragmentSrc)
+	p.ctx.CompileShader(fShader)
+	if p.ctx.GetShaderi(fShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(fShader)
+		log.Printf("[shader] Fragment shader compile error: %s", logMsg)
+		return 0
+	}
+
+	// Link program
+	program := p.ctx.CreateProgram()
+	p.ctx.AttachShader(program, vShader)
+	p.ctx.AttachShader(program, fShader)
+	p.ctx.LinkProgram(program)
+	if p.ctx.GetProgrami(program, linkStatus) == 0 {
+		logMsg := p.ctx.GetProgramInfoLog(program)
+		log.Printf("[shader] Program link error: %s", logMsg)
+		return 0
+	}
+
+	// Note: Individual shaders could be deleted here but Fyne's context doesn't expose DeleteShader.
+	// The GL resources are cleaned up when the program is deleted.
+
+	return program
+}
+
+// drawShader renders a Shader canvas object
+func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyne.Size) {
+	if shader.FragmentSource == "" {
+		return
+	}
+
+	// If shader has a custom vertex source (3D/geometry mode), wait for attribute data
+	// This prevents rendering a white rectangle before geometry data arrives
+	if shader.VertexSource != "" && !shader.HasAttributeBuffers() && shader.GetVertexCount() == 0 {
+		// Custom vertex shader but no geometry data yet - skip rendering
+		return
+	}
+
+	// Compile shader if needed
+	needsCompile := shader.NeedsCompile()
+	if needsCompile || shader.Program() == 0 {
+		log.Printf("[drawShader] RECOMPILING shader (needsCompile=%v, program=%d)", needsCompile, shader.Program())
+
+		// Use custom vertex shader if provided, otherwise use default fullscreen quad
+		vertexSrc := shader.VertexSource
+		if vertexSrc == "" {
+			vertexSrc = defaultShaderVertexSrc
+		}
+
+		// Log first 200 chars of vertex shader to see which one we're compiling
+		logSrc := vertexSrc
+		if len(logSrc) > 200 {
+			logSrc = logSrc[:200]
+		}
+		log.Printf("[drawShader] Vertex shader preview: %s", strings.ReplaceAll(logSrc, "\n", " "))
+
+		prog := p.compileShaderProgram(vertexSrc, shader.FragmentSource)
+		if prog == 0 {
+			log.Printf("[drawShader] Shader compilation failed!")
+			return
+		}
+		shader.SetProgram(uint32(prog))
+		// Clear uniform location cache on recompile
+		for k := range shader.UniformLocs() {
+			delete(shader.UniformLocs(), k)
+		}
+	}
+
+	prog := Program(shader.Program())
+	if prog == 0 {
+		return
+	}
+
+	// Save current program
+	p.ctx.UseProgram(prog)
+
+	// Get or cache uniform locations
+	getUniformLoc := func(name string) Uniform {
+		if loc, ok := shader.UniformLocs()[name]; ok {
+			return Uniform(loc)
+		}
+		loc := p.ctx.GetUniformLocation(prog, name)
+		shader.SetUniformLoc(name, int32(loc))
+		return loc
+	}
+
+	// Calculate pixel position for uniforms
+	// Note: OpenGL has origin at bottom-left, Fyne has origin at top-left
+	pixelX := p.pixScale * pos.X
+	// For gl_FragCoord, y=0 is at bottom of window
+	// Shader bottom edge in Fyne coords: pos.Y + shader.Size().Height
+	// In OpenGL coords: frame.Height - (pos.Y + shader.Size().Height)
+	pixelY := p.pixScale * (frame.Height - pos.Y - shader.Size().Height)
+	pixelWidth := p.pixScale * shader.Size().Width
+	pixelHeight := p.pixScale * shader.Size().Height
+
+	// Set standard uniforms
+	resLoc := getUniformLoc("u_resolution")
+	if resLoc >= 0 {
+		p.ctx.Uniform2f(resLoc, pixelWidth, pixelHeight)
+	}
+
+	// Set viewport to the shader's area so gl_FragCoord is relative to it
+	// This makes the shader's coordinate system match what it expects
+	viewportX := int(pixelX)
+	viewportY := int(pixelY)
+	viewportW := int(pixelWidth)
+	viewportH := int(pixelHeight)
+	p.ctx.Viewport(viewportX, viewportY, viewportW, viewportH)
+
+	// With viewport set, u_position should be 0,0 since gl_FragCoord is now relative to viewport
+	posLoc := getUniformLoc("u_position")
+	if posLoc >= 0 {
+		p.ctx.Uniform2f(posLoc, 0, 0)
+	}
+
+	timeLoc := getUniformLoc("u_time")
+	if timeLoc >= 0 {
+		// Use the shader's cached time - only updated when Refresh() is called
+		// This matches Fyne's texture caching behavior where widgets only update on explicit refresh
+		p.ctx.Uniform1f(timeLoc, shader.CachedTime())
+	}
+
+	// Helper function to set a uniform value
+	setUniform := func(name string, val interface{}) {
+		loc := getUniformLoc(name)
+		if loc < 0 {
+			return
+		}
+		switch v := val.(type) {
+		case float32:
+			p.ctx.Uniform1f(loc, v)
+		case float64:
+			p.ctx.Uniform1f(loc, float32(v))
+		case int:
+			p.ctx.Uniform1f(loc, float32(v))
+		case int8:
+			p.ctx.Uniform1f(loc, float32(v))
+		case int16:
+			p.ctx.Uniform1f(loc, float32(v))
+		case int32:
+			p.ctx.Uniform1i(loc, v)
+		case int64:
+			p.ctx.Uniform1f(loc, float32(v))
+		case uint8:
+			p.ctx.Uniform1f(loc, float32(v))
+		case [2]float32:
+			p.ctx.Uniform2f(loc, v[0], v[1])
+		case [3]float32:
+			p.ctx.Uniform3f(loc, v[0], v[1], v[2])
+		case [4]float32:
+			p.ctx.Uniform4f(loc, v[0], v[1], v[2], v[3])
+		case []float32:
+			switch len(v) {
+			case 1:
+				p.ctx.Uniform1f(loc, v[0])
+			case 2:
+				p.ctx.Uniform2f(loc, v[0], v[1])
+			case 3:
+				p.ctx.Uniform3f(loc, v[0], v[1], v[2])
+			case 4:
+				p.ctx.Uniform4f(loc, v[0], v[1], v[2], v[3])
+			case 9:
+				p.ctx.UniformMatrix3fv(loc, false, v)
+			case 16:
+				p.ctx.UniformMatrix4fv(loc, false, v)
+			}
+		case []interface{}:
+			floats := make([]float32, len(v))
+			for i, x := range v {
+				switch f := x.(type) {
+				case float64:
+					floats[i] = float32(f)
+				case float32:
+					floats[i] = f
+				case int:
+					floats[i] = float32(f)
+				}
+			}
+			switch len(floats) {
+			case 1:
+				p.ctx.Uniform1f(loc, floats[0])
+			case 2:
+				p.ctx.Uniform2f(loc, floats[0], floats[1])
+			case 3:
+				p.ctx.Uniform3f(loc, floats[0], floats[1], floats[2])
+			case 4:
+				p.ctx.Uniform4f(loc, floats[0], floats[1], floats[2], floats[3])
+			}
+		}
+	}
+
+	// Set texture uniforms (Phase 2.1)
+	// Upload texture data and bind to sampler uniforms
+	textureUnit := 0
+	for texName, texData := range shader.GetTextures() {
+		if textureUnit >= 4 {
+			log.Printf("[drawShader] Warning: too many textures (max 4 for regular textures), skipping %s", texName)
+			break
+		}
+
+		// Get or create GL texture
+		texID, cached := shader.GetTextureCache()[texName]
+		if !cached {
+			tex := p.ctx.CreateTexture()
+			texID = uint32(tex)
+			shader.SetTextureCache(texName, texID)
+		}
+
+		// Activate texture unit and bind texture
+		p.ctx.ActiveTexture(texture0 + uint32(textureUnit))
+		p.ctx.BindTexture(texture2D, Texture(texID))
+
+		// Upload texture data if not cached (or always upload for now)
+		if !cached {
+			// Set texture parameters
+			p.ctx.TexParameteri(texture2D, textureMinFilter, linear)
+			p.ctx.TexParameteri(texture2D, textureMagFilter, linear)
+			p.ctx.TexParameteri(texture2D, textureWrapS, clampToEdge)
+			p.ctx.TexParameteri(texture2D, textureWrapT, clampToEdge)
+
+			// Convert texture data to RGBA
+			rgba := p.textureToRGBA(texData)
+			if rgba != nil && len(rgba.Pix) > 0 {
+				p.ctx.TexImage2D(
+					texture2D,
+					0,
+					rgba.Rect.Size().X,
+					rgba.Rect.Size().Y,
+					colorFormatRGBA,
+					unsignedByte,
+					rgba.Pix,
+				)
+				log.Printf("[drawShader] Uploaded texture %s: %dx%d", texName, rgba.Rect.Dx(), rgba.Rect.Dy())
+			}
+		}
+
+		// Set sampler uniform to texture unit
+		shader.SetTextureUnit(texName, textureUnit)
+		samplerLoc := getUniformLoc(texName)
+		if samplerLoc >= 0 {
+			p.ctx.Uniform1i(samplerLoc, int32(textureUnit))
+		}
+		textureUnit++
+	}
+
+	// Set cubemap uniforms (Phase 2.2)
+	// Full cubemap texture upload and binding implementation
+	for cubemapName, faces := range shader.GetCubemaps() {
+		if textureUnit >= 8 {
+			log.Printf("[drawShader] Warning: too many textures+cubemaps (max 8), skipping %s", cubemapName)
+			break
+		}
+
+		// Get or create cubemap texture
+		cubemapTexID, cached := shader.GetCubemapCache()[cubemapName]
+		if !cached {
+			// Create new cubemap texture
+			tex := p.ctx.CreateTexture()
+			cubemapTexID = uint32(tex)
+			shader.SetCubemapCache(cubemapName, cubemapTexID)
+		}
+
+		// Activate texture unit and bind cubemap
+		p.ctx.ActiveTexture(texture0 + uint32(textureUnit))
+		p.ctx.BindTexture(textureCube, Texture(cubemapTexID))
+
+		// Upload faces if not cached (or always upload for now - caching optimization later)
+		if !cached {
+			// Set cubemap texture parameters
+			p.ctx.TexParameteri(textureCube, textureMinFilter, linear)
+			p.ctx.TexParameteri(textureCube, textureMagFilter, linear)
+			p.ctx.TexParameteri(textureCube, textureWrapS, clampToEdge)
+			p.ctx.TexParameteri(textureCube, textureWrapT, clampToEdge)
+
+			// Upload each of the 6 faces
+			faceTargets := []uint32{
+				textureCubePositiveX, // +X (right)
+				textureCubeNegativeX, // -X (left)
+				textureCubePositiveY, // +Y (up)
+				textureCubeNegativeY, // -Y (down)
+				textureCubePositiveZ, // +Z (front)
+				textureCubeNegativeZ, // -Z (back)
+			}
+
+			for i, faceTarget := range faceTargets {
+				faceData := faces[i]
+				if faceData == nil {
+					continue
+				}
+
+				// Convert face data to RGBA pixel data
+				rgba := p.cubemapFaceToRGBA(faceData)
+				if rgba == nil || len(rgba.Pix) == 0 {
+					log.Printf("[drawShader] Warning: empty face data for cubemap %s face %d", cubemapName, i)
+					continue
+				}
+
+				// Upload face to cubemap
+				p.ctx.TexImage2D(
+					faceTarget,
+					0,
+					rgba.Rect.Size().X,
+					rgba.Rect.Size().Y,
+					colorFormatRGBA,
+					unsignedByte,
+					rgba.Pix,
+				)
+			}
+			p.logError()
+		}
+
+		// Set samplerCube uniform to texture unit number
+		shader.SetCubemapUnit(cubemapName, textureUnit)
+		samplerLoc := getUniformLoc(cubemapName)
+		if samplerLoc >= 0 {
+			p.ctx.Uniform1i(samplerLoc, int32(textureUnit))
+		}
+		textureUnit++
+	}
+
+	// Parse vertex shader to find attributes dynamically
+	vertexSrc := shader.VertexSource
+	if vertexSrc == "" {
+		vertexSrc = defaultShaderVertexSrc
+	}
+	attrs := parseVertexAttributes(vertexSrc)
+	if shaderDebug {
+		log.Printf("[drawShader] Parsed %d attributes from vertex shader", len(attrs))
+		for _, a := range attrs {
+			log.Printf("[drawShader]   parsed attr: %s (%s, size=%d)", a.name, a.glslType, a.size)
+		}
+	}
+
+	// Track enabled attributes for cleanup
+	var enabledAttribs []Attribute
+
+	// Check if we have separate attribute buffers (three.js style)
+	useSeparateBuffers := shader.HasAttributeBuffers()
+	if shaderDebug {
+		log.Printf("[drawShader] useSeparateBuffers=%v, HasAttributeBuffers=%v", useSeparateBuffers, shader.HasAttributeBuffers())
+		if shader.AttributeBuffers != nil {
+			log.Printf("[drawShader] AttributeBuffers count: %d", len(shader.AttributeBuffers))
+			for name, buf := range shader.AttributeBuffers {
+				if buf != nil {
+					log.Printf("[drawShader]   attr %s: %d floats, size=%d", name, len(buf.Data), buf.Size)
+				}
+			}
+		}
+	}
+
+	var vertexCount int
+	indexCount := shader.GetIndexCount()
+	if shaderDebug {
+		log.Printf("[drawShader] indexCount=%d", indexCount)
+	}
+
+	// Get attribute buffers at function scope so they're accessible in command loop
+	attrBuffers := shader.GetAttributeBuffers()
+
+	if useSeparateBuffers {
+		// First, determine expected vertex count from position attribute
+		positionBuf := attrBuffers["position"]
+		expectedVertexCount := 0
+		if positionBuf != nil && positionBuf.Size > 0 && len(positionBuf.Data) > 0 {
+			expectedVertexCount = len(positionBuf.Data) / positionBuf.Size
+		}
+
+		// Use separate VBOs for each attribute (three.js style)
+		for _, attr := range attrs {
+			// Look for a buffer matching this attribute name
+			buf := attrBuffers[attr.name]
+			if buf == nil || len(buf.Data) == 0 {
+				if shaderDebug {
+					log.Printf("[drawShader] Skipping attr %s: no buffer data", attr.name)
+				}
+				continue
+			}
+
+			// Validate buffer vertex count matches position (skip mismatched buffers)
+			// This prevents using stale buffers from previous geometry
+			if buf.Size > 0 && expectedVertexCount > 0 && attr.name != "position" {
+				bufferVertexCount := len(buf.Data) / buf.Size
+				if bufferVertexCount != expectedVertexCount {
+					if shaderDebug {
+						log.Printf("[drawShader] Skipping attr %s: vertex count mismatch (buffer=%d, expected=%d)",
+							attr.name, bufferVertexCount, expectedVertexCount)
+					}
+					continue
+				}
+			}
+
+			// Get attribute location - first try stored location from JS side
+			// This bypasses OpenGL's glGetAttribLocation which returns -1 for optimized-out attributes
+			storedLoc := shader.GetAttributeLocation(attr.name)
+			var attribLoc Attribute
+			if storedLoc >= 0 {
+				attribLoc = Attribute(storedLoc)
+			} else {
+				// Fall back to OpenGL query (for legacy shaders without stored locations)
+				attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+			}
+			if shaderDebug {
+				log.Printf("[drawShader] GetAttribLocation(%s) = %d (stored or GL)", attr.name, attribLoc)
+			}
+			if attribLoc < 0 {
+				if shaderDebug {
+					log.Printf("[drawShader] Skipping attr %s: location < 0", attr.name)
+				}
+				continue
+			}
+
+			// Create VBO for this attribute if needed
+			if buf.VBO == 0 {
+				buf.VBO = uint32(p.ctx.CreateBuffer())
+				if shaderDebug {
+					log.Printf("[drawShader] Created VBO %d for attr %s", buf.VBO, attr.name)
+				}
+			}
+
+			// Bind and upload data for this attribute
+			p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
+			p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+			if shaderDebug {
+				log.Printf("[drawShader] Bound attr %s: VBO=%d, loc=%d, size=%d, count=%d",
+					attr.name, buf.VBO, attribLoc, buf.Size, len(buf.Data)/buf.Size)
+			}
+
+			// Enable and set up vertex attribute pointer
+			// Each attribute has its own tightly-packed buffer (stride=0)
+			p.ctx.EnableVertexAttribArray(attribLoc)
+			enabledAttribs = append(enabledAttribs, attribLoc)
+			p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+
+			// Calculate vertex count from position attribute (most reliable)
+			if attr.name == "position" && buf.Size > 0 {
+				vertexCount = len(buf.Data) / buf.Size
+			}
+		}
+	} else if shader.GetVertexCount() > 0 {
+		// Legacy interleaved vertex data
+		vertices := shader.GetVertices()
+		vertexCount = shader.GetVertexCount()
+
+		// Create VBO if needed
+		vbo := shader.GetVBO()
+		if vbo == 0 {
+			vbo = uint32(p.ctx.CreateBuffer())
+			shader.SetVBO(vbo)
+		}
+		p.ctx.BindBuffer(arrayBuffer, Buffer(vbo))
+		if len(vertices) > 0 {
+			p.ctx.BufferData(arrayBuffer, vertices, dynamicDraw)
+		}
+
+		// Calculate total stride and set up attributes
+		totalStride := 0
+		for _, attr := range attrs {
+			totalStride += attr.size
+		}
+
+		attrOffset := 0
+		for _, attr := range attrs {
+			// Try stored location first, fall back to GL query
+			storedLoc := shader.GetAttributeLocation(attr.name)
+			var attribLoc Attribute
+			if storedLoc >= 0 {
+				attribLoc = Attribute(storedLoc)
+			} else {
+				attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+			}
+			if attribLoc >= 0 {
+				p.ctx.EnableVertexAttribArray(attribLoc)
+				enabledAttribs = append(enabledAttribs, attribLoc)
+				strideBytes := 0
+				if len(attrs) > 1 {
+					strideBytes = totalStride * 4
+				}
+				p.ctx.VertexAttribPointerWithOffset(attribLoc, attr.size, float, false, strideBytes, attrOffset*4)
+			}
+			attrOffset += attr.size
+		}
+	} else {
+		// Default fullscreen quad
+		vertices := []float32{
+			-1, -1,  // 0: bottom-left
+			 1, -1,  // 1: bottom-right
+			-1,  1,  // 2: top-left
+			 1,  1,  // 3: top-right
+		}
+		vertexCount = 4
+
+		vbo := shader.GetVBO()
+		if vbo == 0 {
+			vbo = uint32(p.ctx.CreateBuffer())
+			shader.SetVBO(vbo)
+		}
+		p.ctx.BindBuffer(arrayBuffer, Buffer(vbo))
+		p.ctx.BufferData(arrayBuffer, vertices, dynamicDraw)
+
+		// Set up 'vert' attribute for fullscreen quad
+		storedVertLoc := shader.GetAttributeLocation("vert")
+		var vertAttrib Attribute
+		if storedVertLoc >= 0 {
+			vertAttrib = Attribute(storedVertLoc)
+		} else {
+			vertAttrib = p.ctx.GetAttribLocation(prog, "vert")
+		}
+		if vertAttrib >= 0 {
+			p.ctx.EnableVertexAttribArray(vertAttrib)
+			enabledAttribs = append(enabledAttribs, vertAttrib)
+			p.ctx.VertexAttribPointerWithOffset(vertAttrib, 2, float, false, 0, 0)
+		}
+	}
+
+	// Create and upload IBO if we have indices for indexed drawing
+	useIndexedDrawing := false
+	if indexCount > 0 && useSeparateBuffers {
+		indices := shader.GetIndices()
+		if len(indices) > 0 {
+			// Create IBO if needed
+			ibo := shader.GetIBO()
+			if ibo == 0 {
+				ibo = uint32(p.ctx.CreateBuffer())
+				shader.SetIBO(ibo)
+			}
+			p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
+			p.ctx.BufferDataUint16(elementArrayBuffer, indices, dynamicDraw)
+			useIndexedDrawing = true
+		}
+	}
+
+	p.logError()
+
+	if len(enabledAttribs) == 0 && shaderDebug {
+		log.Printf("[drawShader] WARNING: No vertex attributes bound!")
+	}
+
+	// Process render command queue (immediate-mode: set uniform → draw → set uniform → draw)
+	renderCommands := shader.GetRenderCommands()
+	if shaderDebug {
+		log.Printf("[drawShader] Got %d render commands", len(renderCommands))
+	}
+	if len(renderCommands) > 0 {
+		// Set up GL state for 3D rendering (three.js style)
+		p.ctx.Enable(depthTest)
+		p.ctx.DepthFunc(lequal)
+		p.ctx.DepthMask(true)
+		p.ctx.Enable(cullFace)
+		p.ctx.CullFace(backFace)
+		p.ctx.FrontFace(ccw)
+
+		// Execute commands in order (three.js immediate-mode style)
+		for _, cmd := range renderCommands {
+			switch cmd.Type {
+			case "uniform":
+				setUniform(cmd.Name, cmd.Value)
+			case "drawElements":
+				if params, ok := cmd.Value.(canvas.DrawElementsParams); ok {
+					if params.Count > 0 {
+						// Use captured geometry from the draw command if available
+						cmdAttrBuffers := params.AttributeBuffers
+						cmdIndices := params.Indices
+						if len(cmdAttrBuffers) > 0 {
+							// Re-upload geometry for this specific draw call
+							for _, attr := range attrs {
+								buf := cmdAttrBuffers[attr.name]
+								if buf == nil || len(buf.Data) == 0 {
+									continue
+								}
+								storedLoc := shader.GetAttributeLocation(attr.name)
+								var attribLoc Attribute
+								if storedLoc >= 0 {
+									attribLoc = Attribute(storedLoc)
+								} else {
+									attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+								}
+								if attribLoc < 0 {
+									continue
+								}
+								// Create VBO if needed
+								if buf.VBO == 0 {
+									buf.VBO = uint32(p.ctx.CreateBuffer())
+								}
+								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
+								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+								p.ctx.EnableVertexAttribArray(attribLoc)
+								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+							}
+						}
+						if len(cmdIndices) > 0 {
+							// Re-upload index buffer for this draw call
+							ibo := shader.GetIBO()
+							if ibo == 0 {
+								ibo = uint32(p.ctx.CreateBuffer())
+								shader.SetIBO(ibo)
+							}
+							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
+							p.ctx.BufferDataUint16(elementArrayBuffer, cmdIndices, dynamicDraw)
+							p.ctx.DrawElements(triangles, int32(params.Count), unsignedShort, params.Offset)
+						} else if useIndexedDrawing {
+							// Fall back to pre-uploaded indices
+							p.ctx.DrawElements(triangles, int32(params.Count), unsignedShort, params.Offset)
+						}
+					}
+				}
+			case "drawArrays":
+				if params, ok := cmd.Value.(canvas.DrawArraysParams); ok {
+					if params.Count > 0 {
+						// Use captured geometry from the draw command if available
+						cmdAttrBuffers := params.AttributeBuffers
+						if len(cmdAttrBuffers) > 0 {
+							// Re-upload geometry for this specific draw call
+							for _, attr := range attrs {
+								buf := cmdAttrBuffers[attr.name]
+								if buf == nil || len(buf.Data) == 0 {
+									continue
+								}
+								storedLoc := shader.GetAttributeLocation(attr.name)
+								var attribLoc Attribute
+								if storedLoc >= 0 {
+									attribLoc = Attribute(storedLoc)
+								} else {
+									attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+								}
+								if attribLoc < 0 {
+									continue
+								}
+								// Create VBO if needed
+								if buf.VBO == 0 {
+									buf.VBO = uint32(p.ctx.CreateBuffer())
+								}
+								p.ctx.BindBuffer(arrayBuffer, Buffer(buf.VBO))
+								p.ctx.BufferData(arrayBuffer, buf.Data, dynamicDraw)
+								p.ctx.EnableVertexAttribArray(attribLoc)
+								p.ctx.VertexAttribPointerWithOffset(attribLoc, buf.Size, float, false, 0, 0)
+							}
+						}
+						p.ctx.DrawArrays(params.Mode, params.First, params.Count)
+					}
+				}
+			case "clear":
+				cc := shader.GetClearColor()
+				p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+				p.ctx.Clear(colorBufferBit | depthBufferBit)
+			}
+		}
+
+		// Restore GL state
+		p.ctx.Disable(depthTest)
+		p.ctx.Disable(cullFace)
+	} else {
+		// Fallback: single draw (for simple shaders without command queue)
+		if useIndexedDrawing && indexCount > 0 {
+			p.ctx.DrawElements(triangles, int32(indexCount), unsignedShort, 0)
+		} else if vertexCount > 0 {
+			if useSeparateBuffers || shader.GetVertexCount() > 0 {
+				p.ctx.DrawArrays(triangles, 0, vertexCount)
+			} else {
+				p.ctx.DrawArrays(triangleStrip, 0, vertexCount)
+			}
+		}
+	}
+	p.logError()
+
+	// Disable enabled vertex attributes
+	for _, attrib := range enabledAttribs {
+		p.ctx.DisableVertexAttribArray(attrib)
+	}
+
+	// Restore original viewport (full frame)
+	frameW := int(p.pixScale * frame.Width)
+	frameH := int(p.pixScale * frame.Height)
+	p.ctx.Viewport(0, 0, frameW, frameH)
+
+	// Restore default program
+	p.ctx.UseProgram(p.program.ref)
+
+	// Re-enable default program vertex attribute arrays
+	// (shader's DisableVertexAttribArray may have disabled them if indices match)
+	p.ctx.EnableVertexAttribArray(p.program.attributes["vert"])
+	p.ctx.EnableVertexAttribArray(p.program.attributes["vertTexCoord"])
+
+	// Signal that paint is complete (for sync with JS frame loop)
+	shader.SignalPaintDone()
+}
+
+// cubemapFaceToRGBA converts cubemap face data from interface{} to *image.RGBA
+// Supports: *image.RGBA, image.Image, map with width/height/data
+func (p *painter) cubemapFaceToRGBA(faceData interface{}) *image.RGBA {
+	switch face := faceData.(type) {
+	case *image.RGBA:
+		return face
+	case image.Image:
+		// Convert any image type to RGBA
+		bounds := face.Bounds()
+		rgba := image.NewRGBA(bounds)
+		draw.Draw(rgba, bounds, face, bounds.Min, draw.Src)
+		return rgba
+	case map[string]interface{}:
+		// Bridge format: {width, height, data} where data is []uint8 or base64
+		width, wok := face["width"].(float64)
+		height, hok := face["height"].(float64)
+		if !wok || !hok {
+			return nil
+		}
+		w, h := int(width), int(height)
+
+		// Try getting data as []byte directly or as []interface{}
+		var pixelData []uint8
+		switch d := face["data"].(type) {
+		case []uint8: // Note: []byte is an alias for []uint8
+			pixelData = d
+		case []interface{}:
+			pixelData = make([]uint8, len(d))
+			for i, v := range d {
+				switch b := v.(type) {
+				case float64:
+					pixelData[i] = uint8(b)
+				case int:
+					pixelData[i] = uint8(b)
+				case uint8:
+					pixelData[i] = b
+				}
+			}
+		default:
+			return nil
+		}
+
+		if len(pixelData) != w*h*4 {
+			return nil
+		}
+
+		rgba := &image.RGBA{
+			Pix:    pixelData,
+			Stride: w * 4,
+			Rect:   image.Rect(0, 0, w, h),
+		}
+		return rgba
+	default:
+		return nil
+	}
+}
+
+// textureToRGBA converts texture data from interface{} to *image.RGBA
+// Supports: *image.RGBA, image.Image, map with width/height/data
+func (p *painter) textureToRGBA(texData interface{}) *image.RGBA {
+	switch tex := texData.(type) {
+	case *image.RGBA:
+		return tex
+	case image.Image:
+		// Convert any image type to RGBA
+		bounds := tex.Bounds()
+		rgba := image.NewRGBA(bounds)
+		draw.Draw(rgba, bounds, tex, bounds.Min, draw.Src)
+		return rgba
+	case map[string]interface{}:
+		// Bridge format: {width, height, data} where data is []uint8 or base64
+		width, wok := tex["width"].(float64)
+		height, hok := tex["height"].(float64)
+		if !wok || !hok {
+			return nil
+		}
+		w, h := int(width), int(height)
+
+		// Try getting data as []byte directly or as []interface{}
+		var pixelData []uint8
+		switch d := tex["data"].(type) {
+		case []uint8:
+			pixelData = d
+		case []interface{}:
+			pixelData = make([]uint8, len(d))
+			for i, v := range d {
+				switch b := v.(type) {
+				case float64:
+					pixelData[i] = uint8(b)
+				case int:
+					pixelData[i] = uint8(b)
+				case uint8:
+					pixelData[i] = b
+				}
+			}
+		default:
+			return nil
+		}
+
+		if len(pixelData) != w*h*4 {
+			return nil
+		}
+
+		rgba := &image.RGBA{
+			Pix:    pixelData,
+			Stride: w * 4,
+			Rect:   image.Rect(0, 0, w, h),
+		}
+		return rgba
+	default:
+		return nil
+	}
+}
