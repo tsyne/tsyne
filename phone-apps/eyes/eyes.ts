@@ -314,6 +314,7 @@ export function createEyesApp(a: App): EyesUI {
 if (require.main === module) {
   const appInstance = app(resolveTransport(), { title: 'Eyes' }, async (a: App) => {
     createEyesApp(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));    await a.run();
+    await a.run();
   });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

@@ -12,23 +12,34 @@ import (
 // Tappable Canvas Raster Handlers
 // ============================================================================
 
+// responseWithDrainedEvents creates a successful Response, piggybacking any buffered events.
+func responseWithDrainedEvents(msgID string, tappable *TappableCanvasRaster, extra map[string]interface{}) Response {
+	result := make(map[string]interface{})
+	for k, v := range extra {
+		result[k] = v
+	}
+	if events := tappable.drainEvents(); len(events) > 0 {
+		result["events"] = events
+	}
+	resp := Response{
+		ID:      msgID,
+		Success: true,
+	}
+	if len(result) > 0 {
+		resp.Result = result
+	}
+	return resp
+}
+
 func (b *Bridge) handleCreateTappableCanvasRaster(msg Message) Response {
 	widgetID := msg.Payload["id"].(string)
 	width := toInt(msg.Payload["width"])
 	height := toInt(msg.Payload["height"])
 
-	// Create the tappable raster with a tap callback
-	tappable := NewTappableCanvasRaster(width, height, func(x, y int) {
-		// Send tap event back to the TypeScript layer
-		b.sendEvent(Event{
-			Type:     "canvasRasterTapped",
-			WidgetID: widgetID,
-			Data: map[string]interface{}{
-				"x": x,
-				"y": y,
-			},
-		})
-	})
+	// Create the tappable raster (tap events are buffered internally via bufferEvent)
+	tappable := NewTappableCanvasRaster(width, height, nil)
+	tappable.widgetID = widgetID
+	tappable.bridge = b
 
 	// Set up keyboard callbacks if provided
 	onKeyDownCallbackId, _ := msg.Payload["onKeyDownCallbackId"].(string)
@@ -143,10 +154,7 @@ func (b *Bridge) handleUpdateTappableCanvasRaster(msg Message) Response {
 		tappable.RefreshCanvas()
 	}
 
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-	}
+	return responseWithDrainedEvents(msg.ID, tappable, nil)
 }
 
 // handleResizeTappableCanvasRaster resizes the pixel buffer of a tappable canvas raster
@@ -290,14 +298,10 @@ func (b *Bridge) handleSetTappableCanvasImage(msg Message) Response {
 	// Set all pixels at once
 	tappable.SetPixels(pixels)
 
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-		Result: map[string]interface{}{
-			"width":  width,
-			"height": height,
-		},
-	}
+	return responseWithDrainedEvents(msg.ID, tappable, map[string]interface{}{
+		"width":  width,
+		"height": height,
+	})
 }
 
 // handleSetTappableCanvasBuffer sets all pixels at once from a base64-encoded RGBA buffer
@@ -344,10 +348,7 @@ func (b *Bridge) handleSetTappableCanvasBuffer(msg Message) Response {
 	// Set all pixels at once
 	tappable.SetPixels(pixels)
 
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-	}
+	return responseWithDrainedEvents(msg.ID, tappable, nil)
 }
 
 // handleSetTappableCanvasRect sets a rectangular region of pixels from a base64-encoded RGBA buffer
@@ -393,8 +394,5 @@ func (b *Bridge) handleSetTappableCanvasRect(msg Message) Response {
 	// Set the rectangular region
 	tappable.SetPixelRect(x, y, rectWidth, rectHeight, pixels)
 
-	return Response{
-		ID:      msg.ID,
-		Success: true,
-	}
+	return responseWithDrainedEvents(msg.ID, tappable, nil)
 }

@@ -1028,15 +1028,51 @@ export class TappableCanvasRaster {
   get height(): number { return this._height; }
 
   /**
+   * Process piggybacked events from a pixel-operation response.
+   * Events ride on existing request/response traffic (zero extra IPC messages).
+   */
+  private processPiggybackedEvents(response: any): void {
+    const events = response?.events;
+    if (!events || !Array.isArray(events)) return;
+    for (const evt of events) {
+      const data = evt.data || evt.Data || {};
+      switch (evt.type || evt.Type) {
+        case 'mousemove':
+          this.onMouseMoveCallback?.(data.x, data.y);
+          break;
+        case 'keydown':
+          this.onKeyDownCallback?.(data.key);
+          break;
+        case 'keyup':
+          this.onKeyUpCallback?.(data.key);
+          break;
+        case 'scroll':
+          this.onScrollCallback?.(data.deltaX, data.deltaY, data.x, data.y);
+          break;
+        case 'drag':
+          this.onDragCallback?.(data.x, data.y, data.deltaX, data.deltaY);
+          break;
+        case 'dragend':
+          this.onDragEndCallback?.();
+          break;
+        case 'tap':
+          this.onTapCallback?.(data.x, data.y);
+          break;
+      }
+    }
+  }
+
+  /**
    * Update individual pixels
    * @param updates Array of pixel updates {x, y, r, g, b, a}
    */
   async setPixels(updates: Array<{x: number; y: number; r: number; g: number; b: number; a: number}>, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
-    await this.ctx.bridge.send('updateTappableCanvasRaster', {
+    const response = await this.ctx.bridge.send('updateTappableCanvasRaster', {
       widgetId: this.id,
       updates,
       blendMode
     });
+    this.processPiggybackedEvents(response);
   }
 
   /**
@@ -1078,11 +1114,12 @@ export class TappableCanvasRaster {
   async setPixelBuffer(buffer: Uint8Array, blendMode?: 'normal' | 'additive' | 'multiply' | 'screen'): Promise<void> {
     // Convert Uint8Array to base64
     const base64 = Buffer.from(buffer).toString('base64');
-    await this.ctx.bridge.send('setTappableCanvasBuffer', {
+    const response = await this.ctx.bridge.send('setTappableCanvasBuffer', {
       widgetId: this.id,
       buffer: base64,
       blendMode
     });
+    this.processPiggybackedEvents(response);
   }
 
   /**
@@ -1097,7 +1134,7 @@ export class TappableCanvasRaster {
    */
   async setPixelRect(x: number, y: number, rectWidth: number, rectHeight: number, buffer: Uint8Array): Promise<void> {
     const base64 = Buffer.from(buffer).toString('base64');
-    await this.ctx.bridge.send('setTappableCanvasRect', {
+    const response = await this.ctx.bridge.send('setTappableCanvasRect', {
       widgetId: this.id,
       x,
       y,
@@ -1105,6 +1142,7 @@ export class TappableCanvasRaster {
       height: rectHeight,
       buffer: base64
     });
+    this.processPiggybackedEvents(response);
   }
 
   /**
@@ -1155,10 +1193,11 @@ export class TappableCanvasRaster {
     const response = await this.ctx.bridge.send('setTappableCanvasImage', {
       widgetId: this.id,
       image: base64
-    }) as { result?: { width?: number; height?: number } };
+    }) as any;
+    this.processPiggybackedEvents(response);
     return {
-      width: response?.result?.width ?? this._width,
-      height: response?.result?.height ?? this._height
+      width: response?.width ?? this._width,
+      height: response?.height ?? this._height
     };
   }
 

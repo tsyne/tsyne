@@ -364,7 +364,9 @@ export function createMandelbrotApp(a: App): void {
 
 // Standalone entry point
 if (require.main === module) {
-  const appInstance = app(resolveTransport(), { title: 'Mandelbrot Explorer' }, (a) => {
+  const appInstance = app(resolveTransport(), { title: 'Mandelbrot Explorer' }, async (a) => {
     createMandelbrotApp(a);
-  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));  });
+    await a.run();
+  });
+  appInstance.setOnLastWindowClose(standaloneShutdownStrategy(appInstance));
 }

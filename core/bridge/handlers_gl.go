@@ -68,9 +68,10 @@ type GLCanvas struct {
 
 // MouseEvent represents a buffered mouse event
 type MouseEvent struct {
-	Type string  `json:"type"` // "mousemove", "mouseenter", "mouseleave"
-	X    float32 `json:"x"`
-	Y    float32 `json:"y"`
+	Type   string  `json:"type"`   // "mousemove", "mouseenter", "mouseleave", "mousedown", "mouseup"
+	X      float32 `json:"x"`
+	Y      float32 `json:"y"`
+	Button int     `json:"button"` // 0=left, 1=middle, 2=right (DOM convention)
 }
 
 // shaderProgram represents a compiled shader program
@@ -211,14 +212,22 @@ void main() {
 	// Set up mouse event callbacks for interactive canvases
 	if interactive && hoverableObject != nil {
 		hoverableObject.SetOnMouseMoved(func(x, y float32) {
-			// Send mouse move event back to JS via the bridge
-			b.sendMouseEvent(canvasID, "mousemove", x, y)
+			b.sendMouseEvent(canvasID, "mousemove", x, y, 0)
 		})
 		hoverableObject.SetOnMouseIn(func(x, y float32) {
-			b.sendMouseEvent(canvasID, "mouseenter", x, y)
+			b.sendMouseEvent(canvasID, "mouseenter", x, y, 0)
 		})
 		hoverableObject.SetOnMouseOut(func() {
-			b.sendMouseEvent(canvasID, "mouseleave", 0, 0)
+			b.sendMouseEvent(canvasID, "mouseleave", 0, 0, 0)
+		})
+		hoverableObject.SetOnMouseDown(func(x, y float32, button int) {
+			// Convert Fyne button (1=primary, 2=secondary, 4=tertiary) to DOM button (0=left, 2=right, 1=middle)
+			domButton := fyneButtonToDOM(button)
+			b.sendMouseEvent(canvasID, "mousedown", x, y, domButton)
+		})
+		hoverableObject.SetOnMouseUp(func(x, y float32, button int) {
+			domButton := fyneButtonToDOM(button)
+			b.sendMouseEvent(canvasID, "mouseup", x, y, domButton)
 		})
 	}
 
@@ -1525,9 +1534,24 @@ func writeShaderDebugFile(filename, content string) error {
 	return os.WriteFile(filename, []byte(content), 0644)
 }
 
+// fyneButtonToDOM converts Fyne mouse button constants (bitmask: 1=primary, 2=secondary, 4=tertiary)
+// to DOM MouseEvent.button values (0=left, 1=middle, 2=right)
+func fyneButtonToDOM(fyneButton int) int {
+	switch fyneButton {
+	case 1: // MouseButtonPrimary
+		return 0
+	case 2: // MouseButtonSecondary
+		return 2
+	case 4: // MouseButtonTertiary
+		return 1
+	default:
+		return 0
+	}
+}
+
 // sendMouseEvent buffers a mouse event for the given canvas
 // Events are accumulated and returned with the next executeBatch response
-func (b *Bridge) sendMouseEvent(canvasID string, eventType string, x, y float32) {
+func (b *Bridge) sendMouseEvent(canvasID string, eventType string, x, y float32, button int) {
 	canvas, exists := glCanvases[canvasID]
 	if !exists {
 		return
@@ -1548,9 +1572,10 @@ func (b *Bridge) sendMouseEvent(canvasID string, eventType string, x, y float32)
 	}
 
 	canvas.pendingMouseEvents = append(canvas.pendingMouseEvents, MouseEvent{
-		Type: eventType,
-		X:    x,
-		Y:    y,
+		Type:   eventType,
+		X:      x,
+		Y:      y,
+		Button: button,
 	})
 }
 

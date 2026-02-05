@@ -213,7 +213,7 @@ export class TsyneCanvas {
    * Public so gl-proxy can dispatch events from flush response
    * Also dispatches the corresponding pointer event (e.g., mousemove -> pointermove)
    */
-  dispatchMouseEvent(type: string, x: number, y: number): void {
+  dispatchMouseEvent(type: string, x: number, y: number, button: number = 0): void {
     // Create a fake MouseEvent-like object
     const createEvent = (eventType: string) => ({
       type: eventType,
@@ -225,8 +225,8 @@ export class TsyneCanvas {
       pageY: y,
       screenX: x,
       screenY: y,
-      button: 0,
-      buttons: 0,
+      button: button,
+      buttons: button === 0 ? 1 : (button === 2 ? 2 : 4),
       ctrlKey: false,
       shiftKey: false,
       altKey: false,
@@ -243,10 +243,15 @@ export class TsyneCanvas {
     this.dispatchEvent(createEvent(type));
 
     // Also dispatch the corresponding pointer event
-    // mousemove -> pointermove, mouseenter -> pointerenter, mouseleave -> pointerleave
+    // mousedown -> pointerdown, mouseup -> pointerup, mousemove -> pointermove, etc.
     const pointerType = type.replace('mouse', 'pointer');
     if (pointerType !== type) {
       this.dispatchEvent(createEvent(pointerType));
+    }
+
+    // Synthesize 'click' from mouseup (DOM behavior: click fires after mouseup on same target)
+    if (type === 'mouseup') {
+      this.dispatchEvent(createEvent('click'));
     }
   }
 

@@ -638,13 +638,19 @@ func (s *Shader) GetClearColor() [4]float32 {
 // MouseEventCallback is a callback for mouse position events
 type MouseEventCallback func(x, y float32)
 
-// HoverableShader is a Shader that can receive mouse hover events.
+// MouseButtonCallback is a callback for mouse button events (down/up)
+type MouseButtonCallback func(x, y float32, button int)
+
+// HoverableShader is a Shader that can receive mouse hover and click events.
 // Use this instead of Shader when you need mouse tracking (e.g., for raycasting).
+// Implements desktop.Hoverable and desktop.Mouseable.
 type HoverableShader struct {
 	*Shader
 	onMouseIn    MouseEventCallback
 	onMouseMoved MouseEventCallback
 	onMouseOut   func()
+	onMouseDown  MouseButtonCallback
+	onMouseUp    MouseButtonCallback
 	isHovered    bool
 }
 
@@ -663,8 +669,9 @@ func (h *HoverableShader) Refresh() {
 	Refresh(h) // Refresh the HoverableShader, not the embedded Shader
 }
 
-// Verify HoverableShader implements desktop.Hoverable
+// Verify HoverableShader implements desktop.Hoverable and desktop.Mouseable
 var _ desktop.Hoverable = (*HoverableShader)(nil)
+var _ desktop.Mouseable = (*HoverableShader)(nil)
 
 // MouseIn is called when the mouse enters the widget
 func (h *HoverableShader) MouseIn(event *desktop.MouseEvent) {
@@ -702,6 +709,30 @@ func (h *HoverableShader) SetOnMouseMoved(callback MouseEventCallback) {
 // SetOnMouseOut sets the callback for mouse leave events
 func (h *HoverableShader) SetOnMouseOut(callback func()) {
 	h.onMouseOut = callback
+}
+
+// MouseDown is called when a mouse button is pressed
+func (h *HoverableShader) MouseDown(event *desktop.MouseEvent) {
+	if h.onMouseDown != nil {
+		h.onMouseDown(event.Position.X, event.Position.Y, int(event.Button))
+	}
+}
+
+// MouseUp is called when a mouse button is released
+func (h *HoverableShader) MouseUp(event *desktop.MouseEvent) {
+	if h.onMouseUp != nil {
+		h.onMouseUp(event.Position.X, event.Position.Y, int(event.Button))
+	}
+}
+
+// SetOnMouseDown sets the callback for mouse button press events
+func (h *HoverableShader) SetOnMouseDown(callback MouseButtonCallback) {
+	h.onMouseDown = callback
+}
+
+// SetOnMouseUp sets the callback for mouse button release events
+func (h *HoverableShader) SetOnMouseUp(callback MouseButtonCallback) {
+	h.onMouseUp = callback
 }
 
 // IsHovered returns whether the mouse is currently over the widget

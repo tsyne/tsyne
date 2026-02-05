@@ -306,14 +306,15 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       const response = await this.bridge.executeBatch(canvasId, this.commandBuffer);
 
       // Process any mouse events piggybacked on the response
-      // Note: Go JSON uses capitalized field names (Type, X, Y)
+      // Note: Go JSON uses capitalized field names (Type, X, Y, Button)
       const mouseEvents = response?.mouseEvents || response?.Result?.mouseEvents;
       if (mouseEvents && Array.isArray(mouseEvents)) {
         for (const evt of mouseEvents) {
           const eventType = evt.Type || evt.type;
           const x = evt.X ?? evt.x;
           const y = evt.Y ?? evt.y;
-          this.canvas.dispatchMouseEvent(eventType, x, y);
+          const button = evt.Button ?? evt.button ?? 0;
+          this.canvas.dispatchMouseEvent(eventType, x, y, button);
         }
       }
     } catch (error) {

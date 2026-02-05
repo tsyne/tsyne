@@ -4,12 +4,22 @@ import (
 	"image"
 	"image/color"
 	"strings"
+	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
+
+// TappableEvent represents a buffered event for piggybacked delivery.
+// Events are buffered and drained onto pixel-operation responses.
+// If no response arrives within 16ms, events flush via sendEvent (push).
+type TappableEvent struct {
+	Type string                 `json:"type"`
+	Data map[string]interface{} `json:"data,omitempty"`
+}
 
 // TappableCanvasRaster is a canvas raster that can respond to taps, keyboard, scroll, and mouse events.
 // It implements fyne.Focusable, desktop.Keyable, fyne.Scrollable, and desktop.Hoverable for input handling.
@@ -40,7 +50,13 @@ type TappableCanvasRaster struct {
 	onDragCallbackId    string
 	onDragEndCallbackId string
 
-	bridge *Bridge
+	bridge   *Bridge
+	widgetID string
+
+	// Event buffering for piggybacked delivery
+	pendingEvents   []TappableEvent
+	pendingEventsMu sync.Mutex
+	drainTimer      *time.Timer
 }
 
 // Compile-time interface verification
@@ -225,11 +241,16 @@ func (t *TappableCanvasRaster) Tapped(ev *fyne.PointEvent) {
 		c.Focus(t)
 	}
 
-	if t.onTapped != nil {
-		// Convert the position to pixel coordinates
+	if t.widgetID != "" {
 		x := int(ev.Position.X)
 		y := int(ev.Position.Y)
-		t.onTapped(x, y)
+		t.bufferEvent(TappableEvent{
+			Type: "tap",
+			Data: map[string]interface{}{
+				"x": x,
+				"y": y,
+			},
+		})
 	}
 }
 
@@ -258,14 +279,13 @@ func (t *TappableCanvasRaster) FocusLost() {
 	t.focused = false
 
 	// Release all held keys
-	if t.onKeyUpCallbackId != "" && t.bridge != nil {
+	if t.onKeyUpCallbackId != "" {
 		for key, pressed := range t.keysPressed {
 			if pressed {
-				t.bridge.sendEvent(Event{
-					Type: "callback",
+				t.bufferEvent(TappableEvent{
+					Type: "keyup",
 					Data: map[string]interface{}{
-						"callbackId": t.onKeyUpCallbackId,
-						"key":        key,
+						"key": key,
 					},
 				})
 			}
@@ -298,11 +318,10 @@ func (t *TappableCanvasRaster) TypedRune(r rune) {
 	// Only send key-down if not already pressed (prevents duplicates from key repeat)
 	if !t.keysPressed[key] {
 		t.keysPressed[key] = true
-		t.bridge.sendEvent(Event{
-			Type: "callback",
+		t.bufferEvent(TappableEvent{
+			Type: "keydown",
 			Data: map[string]interface{}{
-				"callbackId": t.onKeyDownCallbackId,
-				"key":        key,
+				"key": key,
 			},
 		})
 	}
@@ -321,11 +340,10 @@ func (t *TappableCanvasRaster) TypedKey(e *fyne.KeyEvent) {
 	// Only send key-down if not already pressed (prevents duplicates from key repeat)
 	if !t.keysPressed[key] {
 		t.keysPressed[key] = true
-		t.bridge.sendEvent(Event{
-			Type: "callback",
+		t.bufferEvent(TappableEvent{
+			Type: "keydown",
 			Data: map[string]interface{}{
-				"callbackId": t.onKeyDownCallbackId,
-				"key":        key,
+				"key": key,
 			},
 		})
 	}
@@ -349,11 +367,10 @@ func (t *TappableCanvasRaster) KeyUp(e *fyne.KeyEvent) {
 	if t.onKeyUpCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
+	t.bufferEvent(TappableEvent{
+		Type: "keyup",
 		Data: map[string]interface{}{
-			"callbackId": t.onKeyUpCallbackId,
-			"key":        key,
+			"key": key,
 		},
 	})
 }
@@ -365,14 +382,13 @@ func (t *TappableCanvasRaster) Scrolled(e *fyne.ScrollEvent) {
 	if t.onScrollCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
+	t.bufferEvent(TappableEvent{
+		Type: "scroll",
 		Data: map[string]interface{}{
-			"callbackId": t.onScrollCallbackId,
-			"deltaX":     float64(e.Scrolled.DX),
-			"deltaY":     float64(e.Scrolled.DY),
-			"x":          float64(e.Position.X),
-			"y":          float64(e.Position.Y),
+			"deltaX": float64(e.Scrolled.DX),
+			"deltaY": float64(e.Scrolled.DY),
+			"x":      float64(e.Position.X),
+			"y":      float64(e.Position.Y),
 		},
 	})
 }
@@ -400,12 +416,11 @@ func (t *TappableCanvasRaster) MouseMoved(e *desktop.MouseEvent) {
 	if t.onMouseMoveCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
+	t.bufferEvent(TappableEvent{
+		Type: "mousemove",
 		Data: map[string]interface{}{
-			"callbackId": t.onMouseMoveCallbackId,
-			"x":          float64(e.Position.X),
-			"y":          float64(e.Position.Y),
+			"x": float64(e.Position.X),
+			"y": float64(e.Position.Y),
 		},
 	})
 }
@@ -423,14 +438,13 @@ func (t *TappableCanvasRaster) Dragged(e *fyne.DragEvent) {
 	if t.onDragCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
+	t.bufferEvent(TappableEvent{
+		Type: "drag",
 		Data: map[string]interface{}{
-			"callbackId": t.onDragCallbackId,
-			"x":          float64(e.Position.X),
-			"y":          float64(e.Position.Y),
-			"deltaX":     float64(e.Dragged.DX),
-			"deltaY":     float64(e.Dragged.DY),
+			"x":      float64(e.Position.X),
+			"y":      float64(e.Position.Y),
+			"deltaX": float64(e.Dragged.DX),
+			"deltaY": float64(e.Dragged.DY),
 		},
 	})
 }
@@ -440,11 +454,9 @@ func (t *TappableCanvasRaster) DragEnd() {
 	if t.onDragEndCallbackId == "" || t.bridge == nil {
 		return
 	}
-	t.bridge.sendEvent(Event{
-		Type: "callback",
-		Data: map[string]interface{}{
-			"callbackId": t.onDragEndCallbackId,
-		},
+	t.bufferEvent(TappableEvent{
+		Type: "dragend",
+		Data: map[string]interface{}{},
 	})
 }
 
@@ -453,6 +465,159 @@ func (t *TappableCanvasRaster) SetOnDragCallback(bridge *Bridge, dragId, dragEnd
 	t.bridge = bridge
 	t.onDragCallbackId = dragId
 	t.onDragEndCallbackId = dragEndId
+}
+
+// bufferEvent adds an event to the pending buffer with coalescing.
+// Events are drained on the next pixel-operation response (piggybacked delivery).
+// If no response arrives within 16ms, events flush via sendEvent (push fallback).
+func (t *TappableCanvasRaster) bufferEvent(event TappableEvent) {
+	t.pendingEventsMu.Lock()
+	defer t.pendingEventsMu.Unlock()
+
+	// Coalescing rules per event type
+	switch event.Type {
+	case "mousemove":
+		// Keep latest position only
+		for i := len(t.pendingEvents) - 1; i >= 0; i-- {
+			if t.pendingEvents[i].Type == "mousemove" {
+				t.pendingEvents[i] = event
+				t.resetDrainTimerLocked()
+				return
+			}
+		}
+	case "scroll":
+		// Sum deltas into existing scroll event
+		for i := len(t.pendingEvents) - 1; i >= 0; i-- {
+			if t.pendingEvents[i].Type == "scroll" {
+				existing := t.pendingEvents[i].Data
+				existing["deltaX"] = existing["deltaX"].(float64) + event.Data["deltaX"].(float64)
+				existing["deltaY"] = existing["deltaY"].(float64) + event.Data["deltaY"].(float64)
+				existing["x"] = event.Data["x"] // latest position
+				existing["y"] = event.Data["y"]
+				t.resetDrainTimerLocked()
+				return
+			}
+		}
+	}
+	// keydown, keyup, drag, dragend, tap: keep all (every event matters)
+
+	t.pendingEvents = append(t.pendingEvents, event)
+	t.resetDrainTimerLocked()
+}
+
+// resetDrainTimerLocked resets the fallback push timer. Must be called with pendingEventsMu held.
+func (t *TappableCanvasRaster) resetDrainTimerLocked() {
+	if t.drainTimer != nil {
+		t.drainTimer.Stop()
+	}
+	t.drainTimer = time.AfterFunc(16*time.Millisecond, func() {
+		t.flushViaPush()
+	})
+}
+
+// drainEvents returns and clears all buffered events. Called from pixel-operation handlers.
+func (t *TappableCanvasRaster) drainEvents() []TappableEvent {
+	t.pendingEventsMu.Lock()
+	defer t.pendingEventsMu.Unlock()
+
+	if t.drainTimer != nil {
+		t.drainTimer.Stop()
+		t.drainTimer = nil
+	}
+
+	events := t.pendingEvents
+	t.pendingEvents = nil
+	return events
+}
+
+// flushViaPush sends all buffered events via the push (sendEvent) path.
+// This is the timer fallback for when no pixel-operation response arrives.
+func (t *TappableCanvasRaster) flushViaPush() {
+	t.pendingEventsMu.Lock()
+	events := t.pendingEvents
+	t.pendingEvents = nil
+	t.pendingEventsMu.Unlock()
+
+	if t.bridge == nil || len(events) == 0 {
+		return
+	}
+
+	for _, evt := range events {
+		switch evt.Type {
+		case "mousemove":
+			if t.onMouseMoveCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onMouseMoveCallbackId,
+						"x":          evt.Data["x"],
+						"y":          evt.Data["y"],
+					},
+				})
+			}
+		case "keydown":
+			if t.onKeyDownCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onKeyDownCallbackId,
+						"key":        evt.Data["key"],
+					},
+				})
+			}
+		case "keyup":
+			if t.onKeyUpCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onKeyUpCallbackId,
+						"key":        evt.Data["key"],
+					},
+				})
+			}
+		case "scroll":
+			if t.onScrollCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onScrollCallbackId,
+						"deltaX":     evt.Data["deltaX"],
+						"deltaY":     evt.Data["deltaY"],
+						"x":          evt.Data["x"],
+						"y":          evt.Data["y"],
+					},
+				})
+			}
+		case "drag":
+			if t.onDragCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onDragCallbackId,
+						"x":          evt.Data["x"],
+						"y":          evt.Data["y"],
+						"deltaX":     evt.Data["deltaX"],
+						"deltaY":     evt.Data["deltaY"],
+					},
+				})
+			}
+		case "dragend":
+			if t.onDragEndCallbackId != "" {
+				t.bridge.sendEvent(Event{
+					Type: "callback",
+					Data: map[string]interface{}{
+						"callbackId": t.onDragEndCallbackId,
+					},
+				})
+			}
+		case "tap":
+			t.bridge.sendEvent(Event{
+				Type:     "canvasRasterTapped",
+				WidgetID: t.widgetID,
+				Data:     evt.Data,
+			})
+		}
+	}
 }
 
 // RequestFocus requests keyboard focus for this canvas
