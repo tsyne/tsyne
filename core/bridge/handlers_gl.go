@@ -830,18 +830,20 @@ func (b *Bridge) glUseProgram(canvas *GLCanvas, args map[string]interface{}) err
 	if program, exists := canvas.programs[programId]; exists && program.linked {
 		vertSrc := program.convertedVertexSrc
 		fragSrc := program.convertedFragSrc
-		// Update the shader object's sources only if they changed
-		if vertSrc != "" && vertSrc != canvas.ShaderObject.VertexSource {
-			canvas.ShaderObject.SetVertexSource(vertSrc)
+		// Use direct field assignment to avoid setting needsCompile=true,
+		// which would cause unnecessary recompilation every frame in
+		// multi-program scenes. The painter detects source changes via
+		// program cache lookup instead.
+		if vertSrc != "" {
+			canvas.ShaderObject.VertexSource = vertSrc
 		}
-		if fragSrc != "" && fragSrc != canvas.ShaderObject.FragmentSource {
-			canvas.ShaderObject.SetSource(fragSrc)
+		if fragSrc != "" {
+			canvas.ShaderObject.FragmentSource = fragSrc
 		}
-		// Queue useProgram render command only when switching between two real programs
-		// (prevProgram > 0 means we're switching FROM an actual program, not from initial state)
-		// The initial program is compiled at the top of drawShader; we only need useProgram
-		// for mid-frame program switches in multi-material scenes
-		if prevProgram > 0 && prevProgram != programId {
+		// Queue useProgram render command when switching programs
+		// This ensures the first program's objects use the correct shader,
+		// not the last program compiled at the top of drawShader
+		if prevProgram != programId {
 			canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
 				Type: "useProgram",
 				Value: canvasPkg.UseProgramParams{
@@ -1598,6 +1600,12 @@ func (b *Bridge) glDrawElements(canvas *GLCanvas, args map[string]interface{}) e
 	mode := uint32(toFloat64(args["mode"]))
 	count := int(toFloat64(args["count"]))
 	offset := int(toFloat64(args["offset"]))
+	// Push current attribute buffers and indices to shader before snapshotting
+	// so QueueDrawElements captures the correct geometry for THIS draw call
+	b.pushAttribBuffersToShader(canvas)
+	if len(canvas.indexData) > 0 {
+		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
+	}
 	canvas.ShaderObject.QueueDrawElements(mode, count, offset)
 	return nil
 }

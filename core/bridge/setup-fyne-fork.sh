@@ -107,7 +107,8 @@ sed -i '/float.*=.*gl\.FLOAT/a\
 \	linear                  = gl.LINEAR\
 \	dynamicDraw             = gl.DYNAMIC_DRAW\
 \	elementArrayBuffer      = gl.ELEMENT_ARRAY_BUFFER\
-\	unsignedShort           = gl.UNSIGNED_SHORT' "$FORK_DIR/internal/painter/gl/gl_core.go"
+\	unsignedShort           = gl.UNSIGNED_SHORT\
+\	programPointSize        = gl.VERTEX_PROGRAM_POINT_SIZE' "$FORK_DIR/internal/painter/gl/gl_core.go"
 
 cat "$PATCHES_DIR/gl_es_additions.go.txt" >> "$FORK_DIR/internal/painter/gl/gl_es.go"
 
@@ -131,7 +132,8 @@ sed -i '/float.*=.*gl\.FLOAT/a\
 \	linear                  = gl.LINEAR\
 \	dynamicDraw             = gl.DYNAMIC_DRAW\
 \	elementArrayBuffer      = gl.ELEMENT_ARRAY_BUFFER\
-\	unsignedShort           = gl.UNSIGNED_SHORT' "$FORK_DIR/internal/painter/gl/gl_es.go"
+\	unsignedShort           = gl.UNSIGNED_SHORT\
+\	programPointSize  uint32 = 0x8642' "$FORK_DIR/internal/painter/gl/gl_es.go"
 
 cat "$PATCHES_DIR/gl_gomobile_additions.go.txt" >> "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
@@ -155,7 +157,8 @@ sed -i '/float.*=.*gl\.Float/a\
 \	linear                  = gl.Linear\
 \	dynamicDraw             = gl.DynamicDraw\
 \	elementArrayBuffer      = gl.ElementArrayBuffer\
-\	unsignedShort           = gl.UnsignedShort' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
+\	unsignedShort           = gl.UnsignedShort\
+\	programPointSize  uint32 = 0x8642' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
 # 8. Inject shader painter (split across 3 files)
 echo "[setup-fyne-fork] Injecting shader painter support..."

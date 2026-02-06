@@ -58,15 +58,29 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 
 	// Compile shader if needed
+	// Check both needsCompile flag AND program cache to detect source changes.
+	// glUseProgram uses direct field assignment (no needsCompile) to avoid
+	// redundant recompilation in multi-program scenes. We detect the need to
+	// compile by checking if the current sources have a cached program.
+	vertexSrc := shader.VertexSource
+	if vertexSrc == "" {
+		vertexSrc = defaultShaderVertexSrc
+	}
+	cacheKey := vertexSrc + "|||" + shader.FragmentSource
+	cachedProg, hasCachedProg := shader.GetProgramCache()[cacheKey]
 	needsCompile := shader.NeedsCompile()
-	if needsCompile || shader.Program() == 0 {
-		log.Printf("[drawShader] RECOMPILING shader (needsCompile=%v, program=%d)", needsCompile, shader.Program())
 
-		// Use custom vertex shader if provided, otherwise use default fullscreen quad
-		vertexSrc := shader.VertexSource
-		if vertexSrc == "" {
-			vertexSrc = defaultShaderVertexSrc
+	if hasCachedProg && cachedProg != 0 && !needsCompile {
+		// Sources match a cached program - use it without recompiling
+		if shader.Program() != cachedProg {
+			shader.SetProgram(cachedProg)
+			// Clear uniform location cache when switching programs
+			for k := range shader.UniformLocs() {
+				delete(shader.UniformLocs(), k)
+			}
 		}
+	} else if needsCompile || shader.Program() == 0 || !hasCachedProg {
+		log.Printf("[drawShader] COMPILING shader (needsCompile=%v, program=%d, cached=%v)", needsCompile, shader.Program(), hasCachedProg)
 
 		// Log first 200 chars of vertex shader to see which one we're compiling
 		logSrc := vertexSrc
@@ -81,6 +95,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			return
 		}
 		shader.SetProgram(uint32(prog))
+		// Cache program so subsequent frames and useProgram commands get cache hits
+		shader.SetProgramCache(cacheKey, uint32(prog))
 		// Clear uniform location cache on recompile
 		for k := range shader.UniformLocs() {
 			delete(shader.UniformLocs(), k)
@@ -341,10 +357,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	}
 
 	// Parse vertex shader to find attributes dynamically
-	vertexSrc := shader.VertexSource
-	if vertexSrc == "" {
-		vertexSrc = defaultShaderVertexSrc
-	}
+	// (vertexSrc was already computed above for the compilation check)
 	attrs := parseVertexAttributes(vertexSrc)
 	if shaderDebug {
 		log.Printf("[drawShader] Parsed %d attributes from vertex shader", len(attrs))
@@ -570,6 +583,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		p.ctx.Enable(cullFace)
 		p.ctx.CullFace(backFace)
 		p.ctx.FrontFace(ccw)
+		p.ctx.Enable(programPointSize)
 
 		// Execute commands in order (three.js immediate-mode style)
 		for _, cmd := range renderCommands {
@@ -705,6 +719,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 		// Restore GL state
 		p.ctx.Disable(depthTest)
 		p.ctx.Disable(cullFace)
+		p.ctx.Disable(programPointSize)
 	} else {
 		// Fallback: single draw (for simple shaders without command queue)
 		if useIndexedDrawing && indexCount > 0 {
