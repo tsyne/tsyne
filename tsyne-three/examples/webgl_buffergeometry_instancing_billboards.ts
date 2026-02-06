@@ -12,8 +12,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 const vertexShader = `#version 300 es
 precision highp float;
@@ -91,21 +91,14 @@ export interface WebGLBufferGeometryInstancingBillboardsDemo {
 
 export async function buildWebGLBufferGeometryInstancingBillboards(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLBufferGeometryInstancingBillboardsParams = {}
 ): Promise<WebGLBufferGeometryInstancingBillboardsDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const particleCount = params.particleCount ?? 10000; // Reduced from 75k
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   const camera = new THREE.PerspectiveCamera(50, width / height, 1, 5000);
   camera.position.z = 1400;

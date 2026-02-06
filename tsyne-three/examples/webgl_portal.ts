@@ -13,7 +13,7 @@
  * - Animated bouncing icospheres
  *
  * Adaptations for Tsyne:
- * - Uses setupTsyneThreeJS for bridge initialization
+ * - Uses initThreeJS for bridge initialization
  * - Replaces DOM/document/window APIs with Tsyne equivalents
  * - No OrbitControls (non-interactive)
  * - Portal render-to-texture via WebGLRenderTarget
@@ -22,8 +22,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 import * as CameraUtils from '../../three/examples/jsm/utils/CameraUtils.js';
 
 // =============================================================================
@@ -46,25 +46,13 @@ export interface WebGLPortalDemo {
 
 export async function buildWebGLPortal(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLPortalParams = {}
 ): Promise<WebGLPortalDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   // ---------------------------------------------------------------------------
   // Scene setup

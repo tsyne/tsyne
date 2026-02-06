@@ -3,8 +3,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 export interface VertexColorsTestDemo {
   stop: () => void;
@@ -13,20 +13,13 @@ export interface VertexColorsTestDemo {
 
 export async function buildVertexColorsTest(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: { width?: number; height?: number } = {}
 ): Promise<VertexColorsTestDemo> {
   const width = params.width ?? 400;
   const height = params.height ?? 300;
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   // Scene setup
   const camera = new THREE.PerspectiveCamera(70, width / height, 0.1, 100);

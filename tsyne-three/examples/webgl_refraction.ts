@@ -11,7 +11,7 @@
  * - Animated sphere orbit
  *
  * Adaptations for Tsyne:
- * - Uses setupTsyneThreeJS for bridge initialization
+ * - Uses initThreeJS for bridge initialization
  * - Uses loadTexture for dudv map loading
  * - Imports Refractor and WaterRefractionShader from three.js addons
  * - No OrbitControls (non-interactive)
@@ -19,8 +19,8 @@
 
 import * as path from 'path';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 import { loadTexture } from '../integration/texture-loader';
 import { Refractor } from '../../three/examples/jsm/objects/Refractor.js';
 import { WaterRefractionShader } from '../../three/examples/jsm/shaders/WaterRefractionShader.js';
@@ -45,25 +45,13 @@ export interface WebGLRefractionDemo {
 
 export async function buildWebGLRefraction(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLRefractionParams = {}
 ): Promise<WebGLRefractionDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Scene setup

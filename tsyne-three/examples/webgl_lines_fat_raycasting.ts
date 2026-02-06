@@ -19,8 +19,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -42,27 +42,13 @@ export interface WebGLLinesFatRaycastingDemo {
 
 export async function buildWebGLLinesFatRaycasting(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLLinesFatRaycastingParams = {}
 ): Promise<WebGLLinesFatRaycastingDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-    interactive: true, // Enable mouse events for raycasting
-    coreBridge: bridge, // Pass core bridge to wire up event routing
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
 
   // Import Line2/LineMaterial/LineGeometry from examples/jsm/lines
   const { Line2 } = await import('../../three/examples/jsm/lines/Line2.js');

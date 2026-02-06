@@ -15,8 +15,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -39,27 +39,14 @@ export interface WebGLInstancingRaycastDemo {
 
 export async function buildWebGLInstancingRaycast(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLInstancingRaycastParams = {}
 ): Promise<WebGLInstancingRaycastDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const instanceCount = params.instanceCount ?? 500;
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-    interactive: true,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Scene setup

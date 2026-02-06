@@ -21,6 +21,7 @@
  *   // ... render loop
  */
 
+import type { App, ITsyneWindow } from 'tsyne';
 import { TsyneBridge } from './bridge';
 import { initTsyne, setGlobalBridge } from './three-integration';
 
@@ -124,7 +125,40 @@ export async function setupTsyneThreeJSFull(
   };
 }
 
+/**
+ * High-level helper that replaces the boilerplate in every example.
+ *
+ * Before:
+ *   const bridge = (a as any).getBridge();
+ *   const windowId = (win as any).id;
+ *   const sendFn = async (msg: any) => bridge.send(msg.type, msg.payload || {});
+ *   const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+ *
+ * After:
+ *   const { THREE } = await initThreeJS(a, win, { width, height });
+ */
+export async function initThreeJS(
+  a: App,
+  win: ITsyneWindow,
+  options: { width?: number; height?: number; interactive?: boolean } = {}
+): Promise<{
+  bridge: TsyneBridge;
+  THREE: any;
+  canvasId: string;
+}> {
+  const coreBridge = (a as any).getBridge();
+  const sendFn = async (msg: any) => coreBridge.send(msg.type, msg.payload || {});
+  return setupTsyneThreeJS(sendFn, {
+    width: options.width ?? 800,
+    height: options.height ?? 600,
+    windowId: win.id,
+    interactive: options.interactive ?? false,
+    coreBridge: options.interactive ? coreBridge : undefined,
+  });
+}
+
 export default {
   setupTsyneThreeJS,
   setupTsyneThreeJSFull,
+  initThreeJS,
 };

@@ -11,8 +11,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 // GLSL 300 ES shaders
 const vertexShader = `#version 300 es
@@ -64,20 +64,13 @@ export interface WebGLBufferGeometrySelectiveDrawDemo {
 
 export async function buildWebGLBufferGeometrySelectiveDraw(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLBufferGeometrySelectiveDrawParams = {}
 ): Promise<WebGLBufferGeometrySelectiveDrawDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 10);

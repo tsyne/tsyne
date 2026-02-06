@@ -18,8 +18,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -42,28 +42,14 @@ export interface WebGLInteractiveCubesDemo {
 
 export async function buildWebGLInteractiveCubes(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLInteractiveCubesParams = {}
 ): Promise<WebGLInteractiveCubesDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const cubeCount = params.cubeCount ?? 200; // Reduced for Tsyne performance (original: 2000)
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-    interactive: true, // Enable mouse events for raycasting
-    coreBridge: bridge, // Pass core bridge to wire up event routing
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
 
   // ─────────────────────────────────────────────────────────────────────────
   // Scene setup

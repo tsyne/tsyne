@@ -20,13 +20,13 @@
  * - Renders directly with renderer.render()
  * - Uses loadTexture helper for disk-based image loading (waternormals.jpg)
  * - Adds slow camera orbit for visual interest
- * - Uses setupTsyneThreeJS for three.js initialization
+ * - Uses initThreeJS for three.js initialization
  */
 
 import * as path from 'path';
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 import { loadTexture } from '../integration/texture-loader';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
@@ -58,25 +58,13 @@ export interface WebGLShadersOceanDemo {
  */
 export async function buildWebGLShadersOcean(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLShadersOceanParams = {}
 ): Promise<WebGLShadersOceanDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   // --------------------------------------------------------------------------
   // Renderer setup

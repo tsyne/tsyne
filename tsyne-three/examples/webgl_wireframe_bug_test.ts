@@ -7,8 +7,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 export interface WebGLWireframeBugTestParams {
   width?: number;
@@ -23,25 +23,14 @@ export interface WebGLWireframeBugTestDemo {
 
 export async function buildWebGLWireframeBugTest(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLWireframeBugTestParams = {}
 ): Promise<WebGLWireframeBugTestDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const useWireframe = params.useWireframe ?? false;
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   const camera = new THREE.PerspectiveCamera(70, width / height, 1, 1000);
   camera.position.set(100, 100, 100);

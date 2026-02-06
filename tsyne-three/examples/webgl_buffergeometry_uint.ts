@@ -12,8 +12,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 export interface WebGLBufferGeometryUintParams {
   width?: number;
@@ -28,21 +28,14 @@ export interface WebGLBufferGeometryUintDemo {
 
 export async function buildWebGLBufferGeometryUint(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLBufferGeometryUintParams = {}
 ): Promise<WebGLBufferGeometryUintDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const triangleCount = params.triangleCount ?? 50000; // Reduced from 500k for performance
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   const camera = new THREE.PerspectiveCamera(27, width / height, 1, 3500);
   camera.position.z = 2750;

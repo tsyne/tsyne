@@ -11,8 +11,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 export interface WebGLFurnaceTestParams {
   width?: number;
@@ -26,20 +26,13 @@ export interface WebGLFurnaceTestDemo {
 
 export async function buildWebGLFurnaceTest(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLFurnaceTestParams = {}
 ): Promise<WebGLFurnaceTestDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, { width, height, windowId });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
   camera.position.set(0, 0, 20);

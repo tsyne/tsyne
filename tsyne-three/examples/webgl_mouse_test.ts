@@ -9,27 +9,14 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
-export async function buildMouseTest(a: App, win: Window) {
+export async function buildMouseTest(a: App, win: ITsyneWindow) {
   const width = 400;
   const height = 300;
 
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE, canvasId } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-    interactive: true, // Enable mouse events
-    coreBridge: bridge, // Pass core bridge to wire up event routing
-  });
+  const { THREE, canvasId } = await initThreeJS(a, win, { width, height, interactive: true });
   console.log('[MOUSE TEST] Canvas ID:', canvasId);
 
   // Simple scene: one red cube

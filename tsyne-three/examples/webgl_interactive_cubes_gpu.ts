@@ -19,8 +19,8 @@
  */
 
 import { app, resolveTransport, standaloneShutdownStrategy } from 'tsyne';
-import type { App, Window } from 'tsyne';
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -43,28 +43,14 @@ export interface WebGLInteractiveCubesGpuDemo {
 
 export async function buildWebGLInteractiveCubesGpu(
   a: App,
-  win: Window,
+  win: ITsyneWindow,
   params: WebGLInteractiveCubesGpuParams = {}
 ): Promise<WebGLInteractiveCubesGpuDemo> {
   const width = params.width ?? 800;
   const height = params.height ?? 600;
   const cubeCount = params.cubeCount ?? 500; // Reduced for Tsyne performance (original: 5000)
 
-  // Set up three.js with Tsyne bridge
-  const bridge = (a as any).getBridge();
-  const windowId = (win as any).id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-    interactive: true,
-    coreBridge: bridge,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height, interactive: true });
 
   // Import BufferGeometryUtils
   const BufferGeometryUtils = await import('../../three/examples/jsm/utils/BufferGeometryUtils.js');

@@ -5,7 +5,8 @@
  * rendering through Tsyne's native OpenGL backend.
  */
 
-import { setupTsyneThreeJS } from '../integration/init';
+import type { App, ITsyneWindow } from 'tsyne';
+import { initThreeJS } from '../integration/init';
 
 export interface CubeDemo {
   stop: () => void;
@@ -15,25 +16,14 @@ export interface CubeDemo {
  * Create and run the cube demo in a Tsyne window
  */
 export async function createCubeDemo(
-  app: any,
-  win: any,
+  a: App,
+  win: ITsyneWindow,
   options: { width?: number; height?: number } = {}
 ): Promise<CubeDemo> {
   const width = options.width ?? 1024;
   const height = options.height ?? 768;
 
-  const bridge = app.getBridge();
-  const windowId = win.id;
-
-  const sendFn = async (msg: any) => {
-    return await bridge.send(msg.type, msg.payload || {});
-  };
-
-  const { THREE } = await setupTsyneThreeJS(sendFn, {
-    width,
-    height,
-    windowId,
-  });
+  const { THREE } = await initThreeJS(a, win, { width, height });
 
   console.log('[CubeDemo] Three.js initialized');
 
