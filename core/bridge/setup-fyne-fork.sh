@@ -4,8 +4,12 @@ set -e
 # NOTE: This script injects Go code into the Fyne fork to add GPU shader support.
 # The Go source code is stored in fyne-patches/*.go.txt files for easier editing.
 # Files:
-#   - fyne-patches/shader.go.txt: Shader canvas primitive
-#   - fyne-patches/shader_painter.go.txt: GPU rendering implementation
+#   - fyne-patches/shader.go.txt: Core Shader type, constructor, uniforms
+#   - fyne-patches/shader_buffers.go.txt: Geometry, textures, attribute buffers
+#   - fyne-patches/shader_hoverable.go.txt: HoverableShader + render command queue
+#   - fyne-patches/shader_painter.go.txt: drawShader main render function
+#   - fyne-patches/shader_painter_compile.go.txt: Shader compilation helpers
+#   - fyne-patches/shader_painter_texture.go.txt: Texture conversion helpers
 #   - fyne-patches/gl_*_additions.go.txt: GL context method additions
 #   - fyne-patches/blend_mode.go.txt: BlendMode type definition
 #   - fyne-patches/blend_mode_methods.go.txt: SetBlendMode methods for canvas types
@@ -46,9 +50,11 @@ echo "[setup-fyne-fork] Initial tidying of fork..."
 cd "$FORK_DIR"
 go mod tidy
 
-# 4. Inject Shader canvas primitive
+# 4. Inject Shader canvas primitive (split across 3 files)
 echo "[setup-fyne-fork] Injecting Shader canvas primitive..."
 cp "$PATCHES_DIR/shader.go.txt" "$FORK_DIR/canvas/shader.go"
+cp "$PATCHES_DIR/shader_buffers.go.txt" "$FORK_DIR/canvas/shader_buffers.go"
+cp "$PATCHES_DIR/shader_hoverable.go.txt" "$FORK_DIR/canvas/shader_hoverable.go"
 
 # 4b. Inject BlendMode type and methods
 echo "[setup-fyne-fork] Injecting BlendMode support..."
@@ -151,9 +157,11 @@ sed -i '/float.*=.*gl\.Float/a\
 \	elementArrayBuffer      = gl.ElementArrayBuffer\
 \	unsignedShort           = gl.UnsignedShort' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
-# 8. Inject shader painter
+# 8. Inject shader painter (split across 3 files)
 echo "[setup-fyne-fork] Injecting shader painter support..."
 cp "$PATCHES_DIR/shader_painter.go.txt" "$FORK_DIR/internal/painter/gl/shader_painter.go"
+cp "$PATCHES_DIR/shader_painter_compile.go.txt" "$FORK_DIR/internal/painter/gl/shader_painter_compile.go"
+cp "$PATCHES_DIR/shader_painter_texture.go.txt" "$FORK_DIR/internal/painter/gl/shader_painter_texture.go"
 
 # 9. Note: painter.go doesn't need additional imports - shader_painter.go has its own
 

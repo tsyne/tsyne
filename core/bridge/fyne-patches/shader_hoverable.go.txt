@@ -1,0 +1,266 @@
+package canvas
+
+import (
+	"time"
+
+	"fyne.io/fyne/v2/driver/desktop"
+)
+
+// QueueRenderCommand adds a render command to the queue.
+// Commands are executed in order during the paint cycle.
+func (s *Shader) QueueRenderCommand(cmd RenderCommand) {
+	s.renderMu.Lock()
+	s.renderCommands = append(s.renderCommands, cmd)
+	s.renderMu.Unlock()
+}
+
+// QueueUniform queues a uniform set command.
+func (s *Shader) QueueUniform(name string, value interface{}) {
+	s.QueueRenderCommand(RenderCommand{
+		Type:  "uniform",
+		Name:  name,
+		Value: value,
+	})
+}
+
+// QueueDrawElements queues a drawElements call with a snapshot of current geometry.
+func (s *Shader) QueueDrawElements(mode uint32, count int, offset int) {
+	// Capture snapshot of attribute buffers at draw time
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			// Deep copy the data
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data: dataCopy,
+				Size: buf.Size,
+				VBO:  buf.VBO,
+			}
+		}
+	}
+
+	// Deep copy indices
+	var indicesCopy []uint16
+	if len(s.Indices) > 0 {
+		indicesCopy = make([]uint16, len(s.Indices))
+		copy(indicesCopy, s.Indices)
+	}
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawElements",
+		Value: DrawElementsParams{
+			Mode:             mode,
+			Count:            count,
+			Offset:           offset,
+			AttributeBuffers: attrSnapshot,
+			Indices:          indicesCopy,
+		},
+	})
+}
+
+// QueueDrawArrays queues a drawArrays call with a snapshot of current geometry.
+func (s *Shader) QueueDrawArrays(mode uint32, first int, count int) {
+	// Capture snapshot of attribute buffers at draw time
+	attrSnapshot := make(map[string]*AttributeBuffer)
+	for name, buf := range s.AttributeBuffers {
+		if buf != nil && len(buf.Data) > 0 {
+			// Deep copy the data
+			dataCopy := make([]float32, len(buf.Data))
+			copy(dataCopy, buf.Data)
+			attrSnapshot[name] = &AttributeBuffer{
+				Data: dataCopy,
+				Size: buf.Size,
+				VBO:  buf.VBO,
+			}
+		}
+	}
+
+	s.QueueRenderCommand(RenderCommand{
+		Type: "drawArrays",
+		Value: DrawArraysParams{
+			Mode:             mode,
+			First:            first,
+			Count:            count,
+			AttributeBuffers: attrSnapshot,
+		},
+	})
+}
+
+// QueueClear queues a clear command.
+func (s *Shader) QueueClear() {
+	s.QueueRenderCommand(RenderCommand{
+		Type: "clear",
+	})
+}
+
+// GetRenderCommands returns a copy of the render command queue and clears it.
+// This is called by the painter to execute commands.
+func (s *Shader) GetRenderCommands() []RenderCommand {
+	s.renderMu.Lock()
+	defer s.renderMu.Unlock()
+	cmds := s.renderCommands
+	s.renderCommands = nil
+	return cmds
+}
+
+// HasRenderCommands returns true if there are queued render commands.
+func (s *Shader) HasRenderCommands() bool {
+	s.renderMu.Lock()
+	defer s.renderMu.Unlock()
+	return len(s.renderCommands) > 0
+}
+
+// BeginPaint prepares for a paint cycle - must call WaitForPaint after Refresh.
+func (s *Shader) BeginPaint() {
+	s.paintMu.Lock()
+	defer s.paintMu.Unlock()
+	// Create a new channel for this paint cycle
+	s.paintDone = make(chan struct{})
+	s.paintPending = true
+}
+
+// SignalPaintDone is called by the painter after rendering completes.
+func (s *Shader) SignalPaintDone() {
+	s.paintMu.Lock()
+	defer s.paintMu.Unlock()
+	if s.paintPending && s.paintDone != nil {
+		close(s.paintDone)
+		s.paintPending = false
+	}
+}
+
+// WaitForPaint blocks until the paint cycle completes (with timeout).
+func (s *Shader) WaitForPaint() {
+	s.paintMu.Lock()
+	ch := s.paintDone
+	pending := s.paintPending
+	s.paintMu.Unlock()
+
+	if !pending || ch == nil {
+		return
+	}
+
+	// Wait with short timeout to avoid deadlock
+	select {
+	case <-ch:
+		// Paint completed
+	case <-time.After(16 * time.Millisecond):
+		// Timeout - roughly one frame at 60fps
+	}
+}
+
+// SetClearColor sets the clear color for glClear operations.
+func (s *Shader) SetClearColor(r, g, b, a float32) {
+	s.clearColor = [4]float32{r, g, b, a}
+}
+
+// GetClearColor returns the clear color.
+func (s *Shader) GetClearColor() [4]float32 {
+	return s.clearColor
+}
+
+// MouseEventCallback is a callback for mouse position events
+type MouseEventCallback func(x, y float32)
+
+// MouseButtonCallback is a callback for mouse button events (down/up)
+type MouseButtonCallback func(x, y float32, button int)
+
+// HoverableShader is a Shader that can receive mouse hover and click events.
+// Use this instead of Shader when you need mouse tracking (e.g., for raycasting).
+// Implements desktop.Hoverable and desktop.Mouseable.
+type HoverableShader struct {
+	*Shader
+	onMouseIn    MouseEventCallback
+	onMouseMoved MouseEventCallback
+	onMouseOut   func()
+	onMouseDown  MouseButtonCallback
+	onMouseUp    MouseButtonCallback
+	isHovered    bool
+}
+
+// NewHoverableShader creates a new hoverable shader canvas object.
+func NewHoverableShader(width, height float32, fragmentSrc string) *HoverableShader {
+	return &HoverableShader{
+		Shader:    NewShader(width, height, fragmentSrc),
+		isHovered: false,
+	}
+}
+
+// Refresh causes the shader to be redrawn.
+// This overrides the embedded Shader's Refresh to ensure the HoverableShader wrapper is refreshed.
+func (h *HoverableShader) Refresh() {
+	h.Shader.cachedTime = float32(time.Since(h.Shader.startTime).Seconds())
+	Refresh(h) // Refresh the HoverableShader, not the embedded Shader
+}
+
+// Verify HoverableShader implements desktop.Hoverable and desktop.Mouseable
+var _ desktop.Hoverable = (*HoverableShader)(nil)
+var _ desktop.Mouseable = (*HoverableShader)(nil)
+
+// MouseIn is called when the mouse enters the widget
+func (h *HoverableShader) MouseIn(event *desktop.MouseEvent) {
+	h.isHovered = true
+	if h.onMouseIn != nil {
+		h.onMouseIn(event.Position.X, event.Position.Y)
+	}
+}
+
+// MouseMoved is called when the mouse moves within the widget
+func (h *HoverableShader) MouseMoved(event *desktop.MouseEvent) {
+	if h.onMouseMoved != nil {
+		h.onMouseMoved(event.Position.X, event.Position.Y)
+	}
+}
+
+// MouseOut is called when the mouse leaves the widget
+func (h *HoverableShader) MouseOut() {
+	h.isHovered = false
+	if h.onMouseOut != nil {
+		h.onMouseOut()
+	}
+}
+
+// SetOnMouseIn sets the callback for mouse enter events
+func (h *HoverableShader) SetOnMouseIn(callback MouseEventCallback) {
+	h.onMouseIn = callback
+}
+
+// SetOnMouseMoved sets the callback for mouse move events
+func (h *HoverableShader) SetOnMouseMoved(callback MouseEventCallback) {
+	h.onMouseMoved = callback
+}
+
+// SetOnMouseOut sets the callback for mouse leave events
+func (h *HoverableShader) SetOnMouseOut(callback func()) {
+	h.onMouseOut = callback
+}
+
+// MouseDown is called when a mouse button is pressed
+func (h *HoverableShader) MouseDown(event *desktop.MouseEvent) {
+	if h.onMouseDown != nil {
+		h.onMouseDown(event.Position.X, event.Position.Y, int(event.Button))
+	}
+}
+
+// MouseUp is called when a mouse button is released
+func (h *HoverableShader) MouseUp(event *desktop.MouseEvent) {
+	if h.onMouseUp != nil {
+		h.onMouseUp(event.Position.X, event.Position.Y, int(event.Button))
+	}
+}
+
+// SetOnMouseDown sets the callback for mouse button press events
+func (h *HoverableShader) SetOnMouseDown(callback MouseButtonCallback) {
+	h.onMouseDown = callback
+}
+
+// SetOnMouseUp sets the callback for mouse button release events
+func (h *HoverableShader) SetOnMouseUp(callback MouseButtonCallback) {
+	h.onMouseUp = callback
+}
+
+// IsHovered returns whether the mouse is currently over the widget
+func (h *HoverableShader) IsHovered() bool {
+	return h.isHovered
+}

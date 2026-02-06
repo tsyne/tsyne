@@ -1,0 +1,120 @@
+package gl
+
+import (
+	"image"
+	"image/draw"
+)
+
+// cubemapFaceToRGBA converts cubemap face data from interface{} to *image.RGBA
+// Supports: *image.RGBA, image.Image, map with width/height/data
+func (p *painter) cubemapFaceToRGBA(faceData interface{}) *image.RGBA {
+	switch face := faceData.(type) {
+	case *image.RGBA:
+		return face
+	case image.Image:
+		// Convert any image type to RGBA
+		bounds := face.Bounds()
+		rgba := image.NewRGBA(bounds)
+		draw.Draw(rgba, bounds, face, bounds.Min, draw.Src)
+		return rgba
+	case map[string]interface{}:
+		// Bridge format: {width, height, data} where data is []uint8 or base64
+		width, wok := face["width"].(float64)
+		height, hok := face["height"].(float64)
+		if !wok || !hok {
+			return nil
+		}
+		w, h := int(width), int(height)
+
+		// Try getting data as []byte directly or as []interface{}
+		var pixelData []uint8
+		switch d := face["data"].(type) {
+		case []uint8: // Note: []byte is an alias for []uint8
+			pixelData = d
+		case []interface{}:
+			pixelData = make([]uint8, len(d))
+			for i, v := range d {
+				switch b := v.(type) {
+				case float64:
+					pixelData[i] = uint8(b)
+				case int:
+					pixelData[i] = uint8(b)
+				case uint8:
+					pixelData[i] = b
+				}
+			}
+		default:
+			return nil
+		}
+
+		if len(pixelData) != w*h*4 {
+			return nil
+		}
+
+		rgba := &image.RGBA{
+			Pix:    pixelData,
+			Stride: w * 4,
+			Rect:   image.Rect(0, 0, w, h),
+		}
+		return rgba
+	default:
+		return nil
+	}
+}
+
+// textureToRGBA converts texture data from interface{} to *image.RGBA
+// Supports: *image.RGBA, image.Image, map with width/height/data
+func (p *painter) textureToRGBA(texData interface{}) *image.RGBA {
+	switch tex := texData.(type) {
+	case *image.RGBA:
+		return tex
+	case image.Image:
+		// Convert any image type to RGBA
+		bounds := tex.Bounds()
+		rgba := image.NewRGBA(bounds)
+		draw.Draw(rgba, bounds, tex, bounds.Min, draw.Src)
+		return rgba
+	case map[string]interface{}:
+		// Bridge format: {width, height, data} where data is []uint8 or base64
+		width, wok := tex["width"].(float64)
+		height, hok := tex["height"].(float64)
+		if !wok || !hok {
+			return nil
+		}
+		w, h := int(width), int(height)
+
+		// Try getting data as []byte directly or as []interface{}
+		var pixelData []uint8
+		switch d := tex["data"].(type) {
+		case []uint8:
+			pixelData = d
+		case []interface{}:
+			pixelData = make([]uint8, len(d))
+			for i, v := range d {
+				switch b := v.(type) {
+				case float64:
+					pixelData[i] = uint8(b)
+				case int:
+					pixelData[i] = uint8(b)
+				case uint8:
+					pixelData[i] = b
+				}
+			}
+		default:
+			return nil
+		}
+
+		if len(pixelData) != w*h*4 {
+			return nil
+		}
+
+		rgba := &image.RGBA{
+			Pix:    pixelData,
+			Stride: w * 4,
+			Rect:   image.Rect(0, 0, w, h),
+		}
+		return rgba
+	default:
+		return nil
+	}
+}

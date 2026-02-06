@@ -1,0 +1,99 @@
+package gl
+
+import (
+	"log"
+	"regexp"
+	"strings"
+)
+
+// parseVertexAttributes extracts attribute declarations from a GLSL vertex shader
+// Returns a list of attributes with their names and sizes
+func parseVertexAttributes(vertexSrc string) []shaderAttribute {
+	var attrs []shaderAttribute
+
+	// Match: attribute <type> <name>;
+	// Handles: attribute vec2 vert; attribute vec3 position; etc.
+	attrRegex := regexp.MustCompile(`(?m)^\s*(?:attribute|in)\s+(vec2|vec3|vec4|float|mat2|mat3|mat4)\s+(\w+)\s*;`)
+
+	matches := attrRegex.FindAllStringSubmatch(vertexSrc, -1)
+	for _, match := range matches {
+		if len(match) >= 3 {
+			glslType := match[1]
+			name := match[2]
+			size := getTypeSize(glslType)
+			attrs = append(attrs, shaderAttribute{
+				name:     name,
+				glslType: glslType,
+				size:     size,
+			})
+		}
+	}
+
+	return attrs
+}
+
+// getTypeSize returns the number of float components for a GLSL type
+func getTypeSize(glslType string) int {
+	switch glslType {
+	case "float":
+		return 1
+	case "vec2":
+		return 2
+	case "vec3":
+		return 3
+	case "vec4":
+		return 4
+	case "mat2":
+		return 4  // 2x2 = 4 floats
+	case "mat3":
+		return 9  // 3x3 = 9 floats
+	case "mat4":
+		return 16 // 4x4 = 16 floats
+	default:
+		return 0
+	}
+}
+
+// compileShaderProgram compiles and links a vertex and fragment shader
+func (p *painter) compileShaderProgram(vertexSrc, fragmentSrc string) Program {
+	// Prepend standard uniforms to fragment shader if it doesn't have a version
+	if !strings.HasPrefix(strings.TrimSpace(fragmentSrc), "#version") {
+		fragmentSrc = shaderFragmentPrefix + fragmentSrc
+	}
+
+	// Compile vertex shader
+	vShader := p.ctx.CreateShader(vertexShader)
+	p.ctx.ShaderSource(vShader, vertexSrc)
+	p.ctx.CompileShader(vShader)
+	if p.ctx.GetShaderi(vShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(vShader)
+		log.Printf("[shader] Vertex shader compile error: %s", logMsg)
+		return 0
+	}
+
+	// Compile fragment shader
+	fShader := p.ctx.CreateShader(fragmentShader)
+	p.ctx.ShaderSource(fShader, fragmentSrc)
+	p.ctx.CompileShader(fShader)
+	if p.ctx.GetShaderi(fShader, compileStatus) == 0 {
+		logMsg := p.ctx.GetShaderInfoLog(fShader)
+		log.Printf("[shader] Fragment shader compile error: %s", logMsg)
+		return 0
+	}
+
+	// Link program
+	program := p.ctx.CreateProgram()
+	p.ctx.AttachShader(program, vShader)
+	p.ctx.AttachShader(program, fShader)
+	p.ctx.LinkProgram(program)
+	if p.ctx.GetProgrami(program, linkStatus) == 0 {
+		logMsg := p.ctx.GetProgramInfoLog(program)
+		log.Printf("[shader] Program link error: %s", logMsg)
+		return 0
+	}
+
+	// Note: Individual shaders could be deleted here but Fyne's context doesn't expose DeleteShader.
+	// The GL resources are cleaned up when the program is deleted.
+
+	return program
+}

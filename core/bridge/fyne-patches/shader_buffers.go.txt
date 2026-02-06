@@ -1,0 +1,284 @@
+package canvas
+
+// SetTextureUniform sets a texture uniform value.
+// Supported types: image.Image, *image.RGBA, image.Uniform
+// The texture will be bound to an available texture unit.
+// Note: Does NOT call Refresh() - caller should call Refresh() after all data is set up
+func (s *Shader) SetTextureUniform(name string, value interface{}) {
+	s.Textures[name] = value
+	// Invalidate cache so the texture gets re-uploaded on next paint
+	delete(s.textureCache, name)
+}
+
+// SetCubemapUniform sets a cubemap uniform value.
+// Takes 6 images for the cubemap faces: [+X, -X, +Y, -Y, +Z, -Z]
+// The cubemap will be bound to an available texture unit.
+func (s *Shader) SetCubemapUniform(name string, faces [6]interface{}) {
+	s.Cubemaps[name] = faces
+	s.Refresh()
+}
+
+// GetTextures returns the texture uniforms map (for painter use)
+func (s *Shader) GetTextures() map[string]interface{} {
+	return s.Textures
+}
+
+// GetTextureUnits returns the texture unit mapping (for painter use)
+func (s *Shader) GetTextureUnits() map[string]int {
+	return s.textureUnits
+}
+
+// SetTextureUnit sets the GL texture unit for a uniform (for painter use)
+func (s *Shader) SetTextureUnit(name string, unit int) {
+	s.textureUnits[name] = unit
+}
+
+// GetTextureCache returns the cached GL texture IDs (for painter use)
+func (s *Shader) GetTextureCache() map[string]uint32 {
+	return s.textureCache
+}
+
+// SetTextureCache sets a cached GL texture ID (for painter use)
+func (s *Shader) SetTextureCache(name string, texID uint32) {
+	s.textureCache[name] = texID
+}
+
+// ClearTextureCache clears the texture cache (called on recompile)
+func (s *Shader) ClearTextureCache() {
+	for k := range s.textureCache {
+		delete(s.textureCache, k)
+	}
+	for k := range s.textureUnits {
+		delete(s.textureUnits, k)
+	}
+}
+
+// GetCubemaps returns the cubemap uniforms map (for painter use)
+func (s *Shader) GetCubemaps() map[string][6]interface{} {
+	return s.Cubemaps
+}
+
+// GetCubemapUnits returns the cubemap unit mapping (for painter use)
+func (s *Shader) GetCubemapUnits() map[string]int {
+	return s.cubemapUnits
+}
+
+// SetCubemapUnit sets the GL texture unit for a cubemap (for painter use)
+func (s *Shader) SetCubemapUnit(name string, unit int) {
+	s.cubemapUnits[name] = unit
+}
+
+// GetCubemapCache returns the cached GL cubemap IDs (for painter use)
+func (s *Shader) GetCubemapCache() map[string]uint32 {
+	return s.cubemapCache
+}
+
+// SetCubemapCache sets a cached GL cubemap ID (for painter use)
+func (s *Shader) SetCubemapCache(name string, texID uint32) {
+	s.cubemapCache[name] = texID
+}
+
+// ClearCubemapCache clears the cubemap cache (called on recompile)
+func (s *Shader) ClearCubemapCache() {
+	for k := range s.cubemapCache {
+		delete(s.cubemapCache, k)
+	}
+	for k := range s.cubemapUnits {
+		delete(s.cubemapUnits, k)
+	}
+}
+
+// SetVertices sets the vertex data for the shader.
+// format should be one of: "pos2", "pos3", "pos3_norm3", "pos3_norm3_uv2", "pos2_uv2"
+// or a custom format string describing the vertex layout.
+func (s *Shader) SetVertices(data []float32, format string) {
+	s.Vertices = data
+	s.VertexFormat = format
+	s.vertexCount = len(data) / s.attributeCountForFormat(format)
+	s.Refresh()
+}
+
+// SetIndices sets the index buffer for indexed drawing (glDrawElements).
+func (s *Shader) SetIndices(indices []uint16) {
+	s.Indices = indices
+	s.indexCount = len(indices)
+	s.Refresh()
+}
+
+// SetIndicesNoRefresh sets the index buffer without triggering a Refresh.
+// Use this when updating indices during command processing (before QueueDrawElements).
+func (s *Shader) SetIndicesNoRefresh(indices []uint16) {
+	s.Indices = indices
+	s.indexCount = len(indices)
+}
+
+// attributeCountForFormat returns the number of floats per vertex for a given format.
+func (s *Shader) attributeCountForFormat(format string) int {
+	switch format {
+	case "pos2":
+		return 2
+	case "pos3":
+		return 3
+	case "pos2_uv2":
+		return 4 // 2 pos + 2 uv
+	case "pos3_norm3":
+		return 6 // 3 pos + 3 norm
+	case "pos3_norm3_uv2":
+		return 8 // 3 pos + 3 norm + 2 uv
+	case "pos3_col4":
+		return 7 // 3 pos + 4 color
+	default:
+		return 0 // Unknown format
+	}
+}
+
+// GetVertices returns the vertex data.
+func (s *Shader) GetVertices() []float32 {
+	return s.Vertices
+}
+
+// GetIndices returns the index buffer.
+func (s *Shader) GetIndices() []uint16 {
+	return s.Indices
+}
+
+// GetVertexFormat returns the vertex format descriptor.
+func (s *Shader) GetVertexFormat() string {
+	return s.VertexFormat
+}
+
+// GetVertexCount returns the number of vertices.
+func (s *Shader) GetVertexCount() int {
+	return s.vertexCount
+}
+
+// GetIndexCount returns the number of indices.
+func (s *Shader) GetIndexCount() int {
+	return s.indexCount
+}
+
+// SetVBO sets the vertex buffer object ID (for painter use).
+func (s *Shader) SetVBO(vbo uint32) {
+	s.vbo = vbo
+}
+
+// GetVBO returns the vertex buffer object ID.
+func (s *Shader) GetVBO() uint32 {
+	return s.vbo
+}
+
+// SetIBO sets the index buffer object ID (for painter use).
+func (s *Shader) SetIBO(ibo uint32) {
+	s.ibo = ibo
+}
+
+// GetIBO returns the index buffer object ID.
+func (s *Shader) GetIBO() uint32 {
+	return s.ibo
+}
+
+// SetAttributeBuffer sets data for a named vertex attribute (e.g., "position", "normal", "uv").
+// size is the number of components per vertex (2 for vec2, 3 for vec3, 4 for vec4).
+func (s *Shader) SetAttributeBuffer(name string, data []float32, size int) {
+	if s.AttributeBuffers == nil {
+		s.AttributeBuffers = make(map[string]*AttributeBuffer)
+	}
+	// Preserve existing VBO if we're just updating data
+	var vbo uint32
+	if existing, ok := s.AttributeBuffers[name]; ok {
+		vbo = existing.VBO
+	}
+	s.AttributeBuffers[name] = &AttributeBuffer{
+		Data: data,
+		Size: size,
+		VBO:  vbo,
+	}
+	// Update vertex count based on the number of vertices in this buffer
+	if size > 0 {
+		s.vertexCount = len(data) / size
+	}
+}
+
+// GetAttributeBuffer returns the buffer for a named attribute.
+func (s *Shader) GetAttributeBuffer(name string) *AttributeBuffer {
+	if s.AttributeBuffers == nil {
+		return nil
+	}
+	return s.AttributeBuffers[name]
+}
+
+// GetAttributeBuffers returns all attribute buffers.
+func (s *Shader) GetAttributeBuffers() map[string]*AttributeBuffer {
+	return s.AttributeBuffers
+}
+
+// HasAttributeBuffers returns true if separate attribute buffers are set.
+func (s *Shader) HasAttributeBuffers() bool {
+	return s.AttributeBuffers != nil && len(s.AttributeBuffers) > 0
+}
+
+// ClearAttributeBufferVBOs clears VBO IDs (called on recompile to force re-upload).
+func (s *Shader) ClearAttributeBufferVBOs() {
+	for _, buf := range s.AttributeBuffers {
+		buf.VBO = 0
+	}
+}
+
+// SetAttributeLocation stores the location for a named attribute.
+// This is set from the JS side and used instead of glGetAttribLocation
+// to avoid issues with shader optimization removing unused attributes.
+func (s *Shader) SetAttributeLocation(name string, location int32) {
+	s.attribLocMu.Lock()
+	defer s.attribLocMu.Unlock()
+	if s.attributeLocations == nil {
+		s.attributeLocations = make(map[string]int32)
+	}
+	s.attributeLocations[name] = location
+}
+
+// GetAttributeLocation returns the stored location for a named attribute.
+// Returns -1 if not found.
+func (s *Shader) GetAttributeLocation(name string) int32 {
+	s.attribLocMu.RLock()
+	defer s.attribLocMu.RUnlock()
+	if s.attributeLocations == nil {
+		return -1
+	}
+	loc, ok := s.attributeLocations[name]
+	if !ok {
+		return -1
+	}
+	return loc
+}
+
+// GetProgramCache returns the program cache map (for painter use).
+func (s *Shader) GetProgramCache() map[string]uint32 {
+	return s.programCache
+}
+
+// SetProgramCache stores a compiled program in the cache (for painter use).
+func (s *Shader) SetProgramCache(key string, prog uint32) {
+	if s.programCache == nil {
+		s.programCache = make(map[string]uint32)
+	}
+	s.programCache[key] = prog
+}
+
+// AddPendingProgram queues shader sources for compilation by the painter.
+func (s *Shader) AddPendingProgram(vertexSrc, fragmentSrc string) {
+	s.pendingProgMu.Lock()
+	s.pendingPrograms = append(s.pendingPrograms, PendingProgram{
+		VertexSource:   vertexSrc,
+		FragmentSource: fragmentSrc,
+	})
+	s.pendingProgMu.Unlock()
+}
+
+// DrainPendingPrograms returns and clears pending programs for compilation.
+func (s *Shader) DrainPendingPrograms() []PendingProgram {
+	s.pendingProgMu.Lock()
+	defer s.pendingProgMu.Unlock()
+	progs := s.pendingPrograms
+	s.pendingPrograms = nil
+	return progs
+}
