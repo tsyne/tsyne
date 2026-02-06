@@ -80,7 +80,42 @@ sed -i '/Viewport(x, y, width, height int)/a\
 \	Uniform3f(uniform Uniform, v0, v1, v2 float32)\
 \	UniformMatrix3fv(uniform Uniform, transpose bool, value []float32)\
 \	UniformMatrix4fv(uniform Uniform, transpose bool, value []float32)\
-\	DisableVertexAttribArray(attribute Attribute)' "$FORK_DIR/internal/painter/gl/context.go"
+\	DisableVertexAttribArray(attribute Attribute)\
+\	CreateFramebuffer() Framebuffer\
+\	DeleteFramebuffer(fb Framebuffer)\
+\	BindFramebuffer(target uint32, fb Framebuffer)\
+\	FramebufferTexture2D(target, attachment, textarget uint32, texture Texture, level int)\
+\	CreateRenderbuffer() Renderbuffer\
+\	DeleteRenderbuffer(rb Renderbuffer)\
+\	BindRenderbuffer(target uint32, rb Renderbuffer)\
+\	RenderbufferStorage(target, internalformat uint32, width, height int)\
+\	FramebufferRenderbuffer(target, attachment, rbtarget uint32, rb Renderbuffer)\
+\	CheckFramebufferStatus(target uint32) uint32\
+\	ColorMask(r, g, b, a bool)\
+\	ClearDepthf(depth float32)\
+\	DrawBuffers(bufs []uint32)\
+\	TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32)' "$FORK_DIR/internal/painter/gl/context.go"
+
+# 6b. Add Framebuffer and Renderbuffer types to gl_core.go and gl_es.go
+echo "[setup-fyne-fork] Adding FBO types..."
+sed -i '/Uniform int32/a\
+\	// Framebuffer represents a GL framebuffer object\
+\	Framebuffer uint32\
+\	// Renderbuffer represents a GL renderbuffer object\
+\	Renderbuffer uint32' "$FORK_DIR/internal/painter/gl/gl_core.go"
+
+sed -i '/Uniform int32/a\
+\	// Framebuffer represents a GL framebuffer object\
+\	Framebuffer uint32\
+\	// Renderbuffer represents a GL renderbuffer object\
+\	Renderbuffer uint32' "$FORK_DIR/internal/painter/gl/gl_es.go"
+
+# For gomobile, add Framebuffer/Renderbuffer types (using gl types)
+sed -i '/Uniform gl.Uniform/a\
+\	// Framebuffer represents a GL framebuffer object\
+\	Framebuffer gl.Framebuffer\
+\	// Renderbuffer represents a GL renderbuffer object\
+\	Renderbuffer gl.Renderbuffer' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
 # 7. Add GL method implementations
 echo "[setup-fyne-fork] Adding GL method implementations..."
@@ -108,7 +143,19 @@ sed -i '/float.*=.*gl\.FLOAT/a\
 \	dynamicDraw             = gl.DYNAMIC_DRAW\
 \	elementArrayBuffer      = gl.ELEMENT_ARRAY_BUFFER\
 \	unsignedShort           = gl.UNSIGNED_SHORT\
-\	programPointSize        = gl.VERTEX_PROGRAM_POINT_SIZE' "$FORK_DIR/internal/painter/gl/gl_core.go"
+\	programPointSize        = gl.VERTEX_PROGRAM_POINT_SIZE\
+\	framebuffer             = gl.FRAMEBUFFER\
+\	drawFramebuffer         = gl.DRAW_FRAMEBUFFER\
+\	readFramebuffer         = gl.READ_FRAMEBUFFER\
+\	renderbuffer            = gl.RENDERBUFFER\
+\	colorAttachment0        = gl.COLOR_ATTACHMENT0\
+\	depthAttachment         = gl.DEPTH_ATTACHMENT\
+\	depthComponent    uint32 = 0x1902\
+\	depthComponent16  uint32 = 0x81A5\
+\	depthComponent24  uint32 = 0x81A6\
+\	framebufferComplete     = gl.FRAMEBUFFER_COMPLETE\
+\	nearest           int32  = gl.NEAREST\
+\	unsignedInt       uint32 = gl.UNSIGNED_INT' "$FORK_DIR/internal/painter/gl/gl_core.go"
 
 cat "$PATCHES_DIR/gl_es_additions.go.txt" >> "$FORK_DIR/internal/painter/gl/gl_es.go"
 
@@ -133,7 +180,19 @@ sed -i '/float.*=.*gl\.FLOAT/a\
 \	dynamicDraw             = gl.DYNAMIC_DRAW\
 \	elementArrayBuffer      = gl.ELEMENT_ARRAY_BUFFER\
 \	unsignedShort           = gl.UNSIGNED_SHORT\
-\	programPointSize  uint32 = 0x8642' "$FORK_DIR/internal/painter/gl/gl_es.go"
+\	programPointSize  uint32 = 0x8642\
+\	framebuffer       uint32 = 0x8D40\
+\	drawFramebuffer   uint32 = 0x8CA9\
+\	readFramebuffer   uint32 = 0x8CA8\
+\	renderbuffer      uint32 = 0x8D41\
+\	colorAttachment0  uint32 = 0x8CE0\
+\	depthAttachment   uint32 = 0x8D00\
+\	depthComponent    uint32 = 0x1902\
+\	depthComponent16  uint32 = 0x81A5\
+\	depthComponent24  uint32 = 0x81A6\
+\	framebufferComplete uint32 = 0x8CD5\
+\	nearest           int32  = 0x2600\
+\	unsignedInt       uint32 = 0x1405' "$FORK_DIR/internal/painter/gl/gl_es.go"
 
 cat "$PATCHES_DIR/gl_gomobile_additions.go.txt" >> "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
@@ -158,7 +217,19 @@ sed -i '/float.*=.*gl\.Float/a\
 \	dynamicDraw             = gl.DynamicDraw\
 \	elementArrayBuffer      = gl.ElementArrayBuffer\
 \	unsignedShort           = gl.UnsignedShort\
-\	programPointSize  uint32 = 0x8642' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
+\	programPointSize  uint32 = 0x8642\
+\	framebuffer       uint32 = 0x8D40\
+\	drawFramebuffer   uint32 = 0x8CA9\
+\	readFramebuffer   uint32 = 0x8CA8\
+\	renderbuffer      uint32 = 0x8D41\
+\	colorAttachment0  uint32 = 0x8CE0\
+\	depthAttachment   uint32 = 0x8D00\
+\	depthComponent    uint32 = 0x1902\
+\	depthComponent16  uint32 = 0x81A5\
+\	depthComponent24  uint32 = 0x81A6\
+\	framebufferComplete uint32 = 0x8CD5\
+\	nearest           int32  = 0x2600\
+\	unsignedInt       uint32 = 0x1405' "$FORK_DIR/internal/painter/gl/gl_gomobile.go"
 
 # 8. Inject shader painter (split across 3 files)
 echo "[setup-fyne-fork] Injecting shader painter support..."

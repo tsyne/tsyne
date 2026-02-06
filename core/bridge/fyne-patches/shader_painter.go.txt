@@ -1,8 +1,10 @@
 package gl
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -181,6 +183,10 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 			p.ctx.Uniform1f(loc, float32(v))
 		case uint8:
 			p.ctx.Uniform1f(loc, float32(v))
+		case []int32:
+			if len(v) >= 1 {
+				p.ctx.Uniform1i(loc, v[0])
+			}
 		case [2]float32:
 			p.ctx.Uniform2f(loc, v[0], v[1])
 		case [3]float32:
@@ -231,8 +237,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Upload texture data and bind to sampler uniforms
 	textureUnit := 0
 	for texName, texData := range shader.GetTextures() {
-		if textureUnit >= 4 {
-			log.Printf("[drawShader] Warning: too many textures (max 4 for regular textures), skipping %s", texName)
+		if textureUnit >= 8 {
+			log.Printf("[drawShader] Warning: too many textures (max 8 for regular textures), skipping %s", texName)
 			break
 		}
 
@@ -284,8 +290,8 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 	// Set cubemap uniforms (Phase 2.2)
 	// Full cubemap texture upload and binding implementation
 	for cubemapName, faces := range shader.GetCubemaps() {
-		if textureUnit >= 8 {
-			log.Printf("[drawShader] Warning: too many textures+cubemaps (max 8), skipping %s", cubemapName)
+		if textureUnit >= 16 {
+			log.Printf("[drawShader] Warning: too many textures+cubemaps (max 16), skipping %s", cubemapName)
 			break
 		}
 
@@ -424,18 +430,17 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 				}
 			}
 
-			// Get attribute location - first try stored location from JS side
-			// This bypasses OpenGL's glGetAttribLocation which returns -1 for optimized-out attributes
-			storedLoc := shader.GetAttributeLocation(attr.name)
-			var attribLoc Attribute
-			if storedLoc >= 0 {
-				attribLoc = Attribute(storedLoc)
-			} else {
-				// Fall back to OpenGL query (for legacy shaders without stored locations)
-				attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+			// Get attribute location - prefer GL query for the compiled program,
+			// fall back to JS-stored location only if GL returns -1 (optimized out)
+			attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+			if attribLoc < 0 {
+				storedLoc := shader.GetAttributeLocation(attr.name)
+				if storedLoc >= 0 {
+					attribLoc = Attribute(storedLoc)
+				}
 			}
 			if shaderDebug {
-				log.Printf("[drawShader] GetAttribLocation(%s) = %d (stored or GL)", attr.name, attribLoc)
+				log.Printf("[drawShader] GetAttribLocation(%s) = %d", attr.name, attribLoc)
 			}
 			if attribLoc < 0 {
 				if shaderDebug {
@@ -603,12 +608,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								if buf == nil || len(buf.Data) == 0 {
 									continue
 								}
-								storedLoc := shader.GetAttributeLocation(attr.name)
-								var attribLoc Attribute
-								if storedLoc >= 0 {
-									attribLoc = Attribute(storedLoc)
-								} else {
-									attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+								if attribLoc < 0 {
+									storedLoc := shader.GetAttributeLocation(attr.name)
+									if storedLoc >= 0 {
+										attribLoc = Attribute(storedLoc)
+									}
 								}
 								if attribLoc < 0 {
 									continue
@@ -632,7 +637,7 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 							}
 							p.ctx.BindBuffer(elementArrayBuffer, Buffer(ibo))
 							p.ctx.BufferDataUint16(elementArrayBuffer, cmdIndices, dynamicDraw)
-							p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
+									p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
 						} else if useIndexedDrawing {
 							// Fall back to pre-uploaded indices
 							p.ctx.DrawElements(params.Mode, int32(params.Count), unsignedShort, params.Offset)
@@ -651,12 +656,12 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 								if buf == nil || len(buf.Data) == 0 {
 									continue
 								}
-								storedLoc := shader.GetAttributeLocation(attr.name)
-								var attribLoc Attribute
-								if storedLoc >= 0 {
-									attribLoc = Attribute(storedLoc)
-								} else {
-									attribLoc = p.ctx.GetAttribLocation(prog, attr.name)
+								attribLoc := p.ctx.GetAttribLocation(prog, attr.name)
+								if attribLoc < 0 {
+									storedLoc := shader.GetAttributeLocation(attr.name)
+									if storedLoc >= 0 {
+										attribLoc = Attribute(storedLoc)
+									}
 								}
 								if attribLoc < 0 {
 									continue
@@ -674,10 +679,19 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						p.ctx.DrawArrays(params.Mode, params.First, params.Count)
 					}
 				}
+			case "clearColor":
+				if cc, ok := cmd.Value.([4]float32); ok {
+					p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+				}
 			case "clear":
-				cc := shader.GetClearColor()
-				p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
-				p.ctx.Clear(colorBufferBit | depthBufferBit)
+				if mask, ok := cmd.Value.(uint32); ok {
+					p.ctx.Clear(mask)
+				} else {
+					// Legacy path (QueueClear without mask)
+					cc := shader.GetClearColor()
+					p.ctx.ClearColor(cc[0], cc[1], cc[2], cc[3])
+					p.ctx.Clear(colorBufferBit | depthBufferBit)
+				}
 			case "enable":
 				if cap, ok := cmd.Value.(uint32); ok {
 					p.ctx.Enable(cap)
@@ -713,10 +727,177 @@ func (p *painter) drawShader(shader *canvas.Shader, pos fyne.Position, frame fyn
 						delete(shader.UniformLocs(), k)
 					}
 				}
+
+			// ═══ FBO render commands ═══
+			case "createFramebuffer":
+				jsId, _ := strconv.Atoi(cmd.Name)
+				fb := p.ctx.CreateFramebuffer()
+				shader.SetFBOCache(jsId, uint32(fb))
+				if shaderDebug {
+					log.Printf("[drawShader] createFramebuffer: js=%d -> gl=%d", jsId, fb)
+				}
+
+			case "deleteFramebuffer":
+				jsId, _ := strconv.Atoi(cmd.Name)
+				glId := shader.GetFBOCache(jsId)
+				if glId != 0 {
+					p.ctx.DeleteFramebuffer(Framebuffer(glId))
+					shader.DeleteFBOCache(jsId)
+				}
+
+			case "bindFramebuffer":
+				if params, ok := cmd.Value.(canvas.BindFramebufferParams); ok {
+					if params.FramebufferId == 0 {
+						p.ctx.BindFramebuffer(params.Target, Framebuffer(0))
+					} else {
+						glId := shader.GetFBOCache(params.FramebufferId)
+						p.ctx.BindFramebuffer(params.Target, Framebuffer(glId))
+					}
+				}
+
+			case "framebufferTexture2D":
+				if params, ok := cmd.Value.(canvas.FramebufferTexture2DParams); ok {
+					// Look up GL texture ID - check GPU tex cache first, then image-based textures
+					glTexId := shader.GetGPUTexCache(params.TextureId)
+					if glTexId == 0 {
+						// Try the image-based texture cache
+						for texName := range shader.GetTextures() {
+							if cached, ok := shader.GetTextureCache()[texName]; ok {
+								// This is a heuristic - we match by checking if the texture ID maps
+								// In practice, shadow map textures go through gpuTexCache
+								_ = cached
+							}
+						}
+					}
+					if glTexId != 0 {
+						p.ctx.FramebufferTexture2D(params.Target, params.Attachment, params.Textarget, Texture(glTexId), params.Level)
+					} else if shaderDebug {
+						log.Printf("[drawShader] framebufferTexture2D: texture %d not found in cache", params.TextureId)
+					}
+				}
+
+			case "createRenderbuffer":
+				jsId, _ := strconv.Atoi(cmd.Name)
+				rb := p.ctx.CreateRenderbuffer()
+				shader.SetRBOCache(jsId, uint32(rb))
+				if shaderDebug {
+					log.Printf("[drawShader] createRenderbuffer: js=%d -> gl=%d", jsId, rb)
+				}
+
+			case "deleteRenderbuffer":
+				jsId, _ := strconv.Atoi(cmd.Name)
+				glId := shader.GetRBOCache(jsId)
+				if glId != 0 {
+					p.ctx.DeleteRenderbuffer(Renderbuffer(glId))
+					shader.DeleteRBOCache(jsId)
+				}
+
+			case "bindRenderbuffer":
+				if params, ok := cmd.Value.(canvas.BindFramebufferParams); ok {
+					if params.FramebufferId == 0 {
+						p.ctx.BindRenderbuffer(params.Target, Renderbuffer(0))
+					} else {
+						glId := shader.GetRBOCache(params.FramebufferId)
+						p.ctx.BindRenderbuffer(params.Target, Renderbuffer(glId))
+					}
+				}
+
+			case "renderbufferStorage":
+				if params, ok := cmd.Value.(canvas.RenderbufferStorageParams); ok {
+					p.ctx.RenderbufferStorage(params.Target, params.Internalformat, params.Width, params.Height)
+				}
+
+			case "framebufferRenderbuffer":
+				if params, ok := cmd.Value.(canvas.FramebufferRenderbufferParams); ok {
+					glId := shader.GetRBOCache(params.RenderbufferId)
+					p.ctx.FramebufferRenderbuffer(params.Target, params.Attachment, params.RenderbufferTarget, Renderbuffer(glId))
+				}
+
+			case "viewport":
+				if params, ok := cmd.Value.(canvas.ViewportParams); ok {
+					p.ctx.Viewport(params.X, params.Y, params.Width, params.Height)
+				}
+
+			case "colorMask":
+				if params, ok := cmd.Value.(canvas.ColorMaskParams); ok {
+					p.ctx.ColorMask(params.R, params.G, params.B, params.A)
+				}
+
+			case "clearDepth":
+				if params, ok := cmd.Value.(canvas.ClearDepthParams); ok {
+					p.ctx.ClearDepthf(params.Depth)
+				}
+
+			case "drawBuffers":
+				if params, ok := cmd.Value.(canvas.DrawBuffersParams); ok {
+					p.ctx.DrawBuffers(params.Buffers)
+				}
+
+			case "texImage2D_gpu":
+				// GPU-only texture allocation (e.g., shadow maps with null pixels)
+				jsTexId, _ := strconv.Atoi(cmd.Name)
+				if params, ok := cmd.Value.(canvas.TexImage2DGPUParams); ok {
+					tex := p.ctx.CreateTexture()
+					p.ctx.BindTexture(params.Target, tex)
+					// Set appropriate filtering and wrapping
+					p.ctx.TexParameteri(params.Target, textureMinFilter, nearest)
+					p.ctx.TexParameteri(params.Target, textureMagFilter, nearest)
+					p.ctx.TexParameteri(params.Target, textureWrapS, clampToEdge)
+					p.ctx.TexParameteri(params.Target, textureWrapT, clampToEdge)
+					// Allocate texture storage without data
+					p.ctx.TexImage2DEmpty(params.Target, params.Level, params.Internalformat, params.Width, params.Height, params.Format, params.Type)
+					shader.SetGPUTexCache(jsTexId, uint32(tex))
+					if shaderDebug {
+						log.Printf("[drawShader] texImage2D_gpu: js=%d -> gl=%d (%dx%d, fmt=0x%x)", jsTexId, tex, params.Width, params.Height, params.Format)
+					}
+				}
+
+			case "texParameteri":
+				if params, ok := cmd.Value.(canvas.TexParameteriParams); ok {
+					p.ctx.TexParameteri(params.Target, params.Pname, params.Param)
+				}
+
+			case "activeTexture":
+				if texEnum, ok := cmd.Value.(uint32); ok {
+					p.ctx.ActiveTexture(texEnum)
+				}
+
+			case "bindTexture":
+				jsTexId, _ := strconv.Atoi(cmd.Name)
+				target, _ := cmd.Value.(uint32)
+				if jsTexId == 0 {
+					// Unbind
+					p.ctx.BindTexture(target, Texture(0))
+				} else {
+					// Check GPU texture cache first (shadow maps etc.)
+					if glId := shader.GetGPUTexCache(jsTexId); glId != 0 {
+						p.ctx.BindTexture(target, Texture(glId))
+					} else if glId := shader.GetTextureCache()[fmt.Sprintf("tex_%d", jsTexId)]; glId != 0 {
+						// Fall back to regular texture cache
+						p.ctx.BindTexture(target, Texture(glId))
+					}
+				}
+
+			case "depthFunc":
+				if fn, ok := cmd.Value.(uint32); ok {
+					p.ctx.DepthFunc(fn)
+				}
+
+			case "depthMask":
+				if flag, ok := cmd.Value.(bool); ok {
+					p.ctx.DepthMask(flag)
+				}
+
+			case "frontFace":
+				if mode, ok := cmd.Value.(uint32); ok {
+					p.ctx.FrontFace(mode)
+				}
 			}
 		}
 
 		// Restore GL state
+		p.ctx.BindFramebuffer(framebuffer, Framebuffer(0)) // Unbind any FBO
+		p.ctx.ColorMask(true, true, true, true) // Restore color mask
 		p.ctx.Disable(depthTest)
 		p.ctx.Disable(cullFace)
 		p.ctx.Disable(programPointSize)

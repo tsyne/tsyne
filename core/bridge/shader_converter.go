@@ -126,8 +126,10 @@ func convertGLSL300toGLSL110WithType(source string, shaderType ShaderType) strin
 			result = strings.ReplaceAll(result, outVarName, "gl_FragColor")
 		}
 
-		// Add GLSL 110 version header
-		result = "#version 110\n// Converted from GLSL 300 ES (three.js)\n" + result
+		// Use GLSL 130 which natively supports texture() for all sampler types
+		// including sampler2DShadow (needed for shadow mapping).
+		// GLSL 130 also supports varying/attribute keywords for backward compat.
+		result = "#version 130\n// Converted from GLSL 300 ES (three.js)\n" + result
 		return result
 	}
 

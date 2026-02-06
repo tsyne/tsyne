@@ -14,6 +14,10 @@ module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!three)/',
   ],
+  moduleNameMapper: {
+    '^three/examples/jsm/(.*)$': '<rootDir>/../three/examples/jsm/$1',
+    '^three$': '<rootDir>/../three/build/three.cjs',
+  },
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 30000,
 };

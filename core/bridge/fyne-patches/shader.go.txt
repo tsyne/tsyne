@@ -45,6 +45,75 @@ type DrawArraysParams struct {
 	AttributeBuffers map[string]*AttributeBuffer // Snapshot of attribute buffers at draw time
 }
 
+// BindFramebufferParams holds parameters for a bindFramebuffer command
+type BindFramebufferParams struct {
+	Target        uint32
+	FramebufferId int // JS-side ID (0 = default/unbind)
+}
+
+// FramebufferTexture2DParams holds parameters for a framebufferTexture2D command
+type FramebufferTexture2DParams struct {
+	Target     uint32
+	Attachment uint32
+	Textarget  uint32
+	TextureId  int // JS-side texture ID
+	Level      int
+}
+
+// RenderbufferStorageParams holds parameters for a renderbufferStorage command
+type RenderbufferStorageParams struct {
+	Target         uint32
+	Internalformat uint32
+	Width          int
+	Height         int
+}
+
+// FramebufferRenderbufferParams holds parameters for a framebufferRenderbuffer command
+type FramebufferRenderbufferParams struct {
+	Target             uint32
+	Attachment         uint32
+	RenderbufferTarget uint32
+	RenderbufferId     int
+}
+
+// ViewportParams holds parameters for a viewport command
+type ViewportParams struct {
+	X, Y, Width, Height int
+}
+
+// ColorMaskParams holds parameters for a colorMask command
+type ColorMaskParams struct {
+	R, G, B, A bool
+}
+
+// ClearDepthParams holds parameters for a clearDepth command
+type ClearDepthParams struct {
+	Depth float32
+}
+
+// DrawBuffersParams holds parameters for a drawBuffers command
+type DrawBuffersParams struct {
+	Buffers []uint32
+}
+
+// TexImage2DGPUParams holds parameters for a GPU-only texImage2D (null pixels)
+type TexImage2DGPUParams struct {
+	Target         uint32
+	Level          int
+	Internalformat uint32
+	Width          int
+	Height         int
+	Format         uint32
+	Type           uint32
+}
+
+// TexParameteriParams holds parameters for a texParameteri command
+type TexParameteriParams struct {
+	Target uint32
+	Pname  uint32
+	Param  int32
+}
+
 // Shader is a canvas object that renders using a custom GLSL vertex and fragment shader.
 // This enables GPU-accelerated effects like fractals, ray marching, 3D geometry, etc.
 type Shader struct {
@@ -107,6 +176,11 @@ type Shader struct {
 	// Pending program sources (set by useProgram command for painter to compile)
 	pendingPrograms []PendingProgram
 	pendingProgMu   sync.Mutex
+
+	// FBO support for shadow mapping / offscreen rendering
+	fboCache    map[int]uint32  // JS framebuffer ID → GL framebuffer ID
+	rboCache    map[int]uint32  // JS renderbuffer ID → GL renderbuffer ID
+	gpuTexCache map[int]uint32  // JS texture ID → GL texture ID (for GPU-only textures)
 }
 
 // PendingProgram holds shader sources queued for compilation by the painter
@@ -150,6 +224,9 @@ func NewShader(width, height float32, fragmentSrc string) *Shader {
 		indexCount:         0,
 		attributeLocations: make(map[string]int32),
 		programCache:       make(map[string]uint32),
+		fboCache:           make(map[int]uint32),
+		rboCache:           make(map[int]uint32),
+		gpuTexCache:        make(map[int]uint32),
 	}
 	s.size = fyne.NewSize(width, height)
 	return s

@@ -157,7 +157,7 @@ export async function buildWebGLMultipleElementsText(
     preferredWidth: width,
     preferredHeight: height,
     renderer,
-    camera,
+    camera: elements[0].camera,
   });
   renderer.setScissorTest(true);
 

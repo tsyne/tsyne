@@ -119,7 +119,7 @@ export async function buildWebGLMultipleCanvasesGrid(
     preferredWidth: width,
     preferredHeight: height,
     renderer,
-    camera,
+    camera: cameras[0],
   });
   renderer.setScissorTest(true);
 

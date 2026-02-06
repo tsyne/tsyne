@@ -46,3 +46,63 @@ func (c *mobileContext) CullFace(mode uint32) {
 func (c *mobileContext) FrontFace(mode uint32) {
 	c.glContext.FrontFace(gl.Enum(mode))
 }
+
+func (c *mobileContext) CreateFramebuffer() Framebuffer {
+	return Framebuffer(c.glContext.CreateFramebuffer())
+}
+
+func (c *mobileContext) DeleteFramebuffer(fb Framebuffer) {
+	c.glContext.DeleteFramebuffer(gl.Framebuffer(fb))
+}
+
+func (c *mobileContext) BindFramebuffer(target uint32, fb Framebuffer) {
+	c.glContext.BindFramebuffer(gl.Enum(target), gl.Framebuffer(fb))
+}
+
+func (c *mobileContext) FramebufferTexture2D(target, attachment, textarget uint32, texture Texture, level int) {
+	c.glContext.FramebufferTexture2D(gl.Enum(target), gl.Enum(attachment), gl.Enum(textarget), gl.Texture(texture), level)
+}
+
+func (c *mobileContext) CreateRenderbuffer() Renderbuffer {
+	return Renderbuffer(c.glContext.CreateRenderbuffer())
+}
+
+func (c *mobileContext) DeleteRenderbuffer(rb Renderbuffer) {
+	c.glContext.DeleteRenderbuffer(gl.Renderbuffer(rb))
+}
+
+func (c *mobileContext) BindRenderbuffer(target uint32, rb Renderbuffer) {
+	c.glContext.BindRenderbuffer(gl.Enum(target), gl.Renderbuffer(rb))
+}
+
+func (c *mobileContext) RenderbufferStorage(target, internalformat uint32, width, height int) {
+	c.glContext.RenderbufferStorage(gl.Enum(target), gl.Enum(internalformat), width, height)
+}
+
+func (c *mobileContext) FramebufferRenderbuffer(target, attachment, rbtarget uint32, rb Renderbuffer) {
+	c.glContext.FramebufferRenderbuffer(gl.Enum(target), gl.Enum(attachment), gl.Enum(rbtarget), gl.Renderbuffer(rb))
+}
+
+func (c *mobileContext) CheckFramebufferStatus(target uint32) uint32 {
+	return uint32(c.glContext.CheckFramebufferStatus(gl.Enum(target)))
+}
+
+func (c *mobileContext) ColorMask(r, g, b, a bool) {
+	c.glContext.ColorMask(r, g, b, a)
+}
+
+func (c *mobileContext) ClearDepthf(depth float32) {
+	c.glContext.ClearDepthf(depth)
+}
+
+func (c *mobileContext) DrawBuffers(bufs []uint32) {
+	enums := make([]gl.Enum, len(bufs))
+	for i, b := range bufs {
+		enums[i] = gl.Enum(b)
+	}
+	c.glContext.DrawBuffers(enums)
+}
+
+func (c *mobileContext) TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32) {
+	c.glContext.TexImage2D(gl.Enum(target), level, int(internalformat), width, height, gl.Enum(format), gl.Enum(typ), nil)
+}

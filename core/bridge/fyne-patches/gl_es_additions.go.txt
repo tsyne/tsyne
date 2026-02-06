@@ -46,3 +46,65 @@ func (c *esContext) CullFace(mode uint32) {
 func (c *esContext) FrontFace(mode uint32) {
 	gl.FrontFace(mode)
 }
+
+func (c *esContext) CreateFramebuffer() Framebuffer {
+	var fbo uint32
+	gl.GenFramebuffers(1, &fbo)
+	return Framebuffer(fbo)
+}
+
+func (c *esContext) DeleteFramebuffer(fb Framebuffer) {
+	id := uint32(fb)
+	gl.DeleteFramebuffers(1, &id)
+}
+
+func (c *esContext) BindFramebuffer(target uint32, fb Framebuffer) {
+	gl.BindFramebuffer(target, uint32(fb))
+}
+
+func (c *esContext) FramebufferTexture2D(target, attachment, textarget uint32, texture Texture, level int) {
+	gl.FramebufferTexture2D(target, attachment, textarget, uint32(texture), int32(level))
+}
+
+func (c *esContext) CreateRenderbuffer() Renderbuffer {
+	var rbo uint32
+	gl.GenRenderbuffers(1, &rbo)
+	return Renderbuffer(rbo)
+}
+
+func (c *esContext) DeleteRenderbuffer(rb Renderbuffer) {
+	id := uint32(rb)
+	gl.DeleteRenderbuffers(1, &id)
+}
+
+func (c *esContext) BindRenderbuffer(target uint32, rb Renderbuffer) {
+	gl.BindRenderbuffer(target, uint32(rb))
+}
+
+func (c *esContext) RenderbufferStorage(target, internalformat uint32, width, height int) {
+	gl.RenderbufferStorage(target, internalformat, int32(width), int32(height))
+}
+
+func (c *esContext) FramebufferRenderbuffer(target, attachment, rbtarget uint32, rb Renderbuffer) {
+	gl.FramebufferRenderbuffer(target, attachment, rbtarget, uint32(rb))
+}
+
+func (c *esContext) CheckFramebufferStatus(target uint32) uint32 {
+	return gl.CheckFramebufferStatus(target)
+}
+
+func (c *esContext) ColorMask(r, g, b, a bool) {
+	gl.ColorMask(r, g, b, a)
+}
+
+func (c *esContext) ClearDepthf(depth float32) {
+	gl.ClearDepthf(depth)
+}
+
+func (c *esContext) DrawBuffers(bufs []uint32) {
+	gl.DrawBuffers(int32(len(bufs)), &bufs[0])
+}
+
+func (c *esContext) TexImage2DEmpty(target uint32, level int, internalformat uint32, width, height int, format, typ uint32) {
+	gl.TexImage2D(target, int32(level), int32(internalformat), int32(width), int32(height), 0, format, typ, nil)
+}

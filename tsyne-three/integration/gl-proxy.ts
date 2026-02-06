@@ -49,6 +49,9 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private transformFeedbacks = new Map<number, { id: number }>();
   private samplers = new Map<number, { id: number }>();
   private uniformLocations = new Map<number, { name: string }>();
+  private uniformBlockIndices = new Map<string, number>();
+  private nextUniformBlockIndex = 0;
+  private syncs = new Map<number, { id: number }>();
 
   // ═══════════════════════════════════════════════════════════════
   // WebGL2 Constants
@@ -141,6 +144,12 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   readonly LUMINANCE_ALPHA = 0x190a;
   readonly DEPTH_COMPONENT = 0x1902;
   readonly DEPTH_STENCIL = 0x84f9;
+
+  // Framebuffer targets
+  readonly FRAMEBUFFER = 0x8d40;
+  readonly DRAW_FRAMEBUFFER = 0x8ca9;
+  readonly READ_FRAMEBUFFER = 0x8ca8;
+  readonly RENDERBUFFER = 0x8d41;
 
   // Framebuffer attachment points
   readonly COLOR_ATTACHMENT0 = 0x8ce0;
@@ -267,6 +276,92 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   readonly TEXTURE14 = 0x84ce;
   readonly TEXTURE15 = 0x84cf;
 
+  // Sized internal formats (for texStorage2D, renderbufferStorage, texImage2D)
+  readonly R8 = 0x8229;
+  readonly RGBA8 = 0x8058;
+  readonly RGBA4 = 0x8056;
+  readonly RGB5_A1 = 0x8057;
+  readonly RGB565 = 0x8d62;
+  readonly DEPTH_COMPONENT16 = 0x81a5;
+  readonly DEPTH_COMPONENT24 = 0x81a6;
+  readonly DEPTH_COMPONENT32F = 0x8cac;
+  readonly DEPTH24_STENCIL8 = 0x88f0;
+  readonly DEPTH32F_STENCIL8 = 0x8cad;
+
+  // Color attachments (for MRT)
+  readonly COLOR_ATTACHMENT1 = 0x8ce1;
+  readonly COLOR_ATTACHMENT2 = 0x8ce2;
+  readonly COLOR_ATTACHMENT3 = 0x8ce3;
+  readonly NONE = 0;
+  readonly BACK = 0x0405;
+
+  // Clear buffer bit masks
+  readonly COLOR_BUFFER_BIT = 0x00004000;
+  readonly DEPTH_BUFFER_BIT = 0x00000100;
+  readonly STENCIL_BUFFER_BIT = 0x00000400;
+
+  // Buffer enum values for clearBuffer* methods
+  readonly COLOR = 0x1800;
+  readonly DEPTH = 0x1801;
+  readonly STENCIL = 0x1802;
+
+  // Additional sized internal formats (WebGL2)
+  readonly R8I = 0x8231;
+  readonly R8UI = 0x8232;
+  readonly R16I = 0x8233;
+  readonly R16UI = 0x8234;
+  readonly R32I = 0x8235;
+  readonly R32UI = 0x8236;
+  readonly RG8I = 0x8237;
+  readonly RG8UI = 0x8238;
+  readonly RG16I = 0x8239;
+  readonly RG16UI = 0x823a;
+  readonly RG32I = 0x823b;
+  readonly RG32UI = 0x823c;
+  readonly RGBA8I = 0x8d8e;
+  readonly RGBA8UI = 0x8d7c;
+  readonly RGBA16I = 0x8d88;
+  readonly RGBA16UI = 0x8d76;
+  readonly RGBA32I = 0x8d82;
+  readonly RGBA32UI = 0x8d70;
+  readonly RGB8 = 0x8051;
+  readonly SRGB8 = 0x8c41;
+  readonly SRGB8_ALPHA8 = 0x8c43;
+  readonly R16F = 0x822d;
+  readonly RG16F = 0x822f;
+  readonly RGB16F = 0x881b;
+  readonly RGBA16F = 0x881a;
+  readonly R32F = 0x822e;
+  readonly RG32F = 0x8230;
+  readonly RGB32F = 0x8815;
+  readonly RGBA32F = 0x8814;
+  readonly R11F_G11F_B10F = 0x8c3a;
+  readonly RGB9_E5 = 0x8c3d;
+  readonly RGB10_A2 = 0x8059;
+  readonly RGB10_A2UI = 0x906f;
+  readonly RED_INTEGER = 0x8d94;
+  readonly RG_INTEGER = 0x8228;
+  readonly RGB_INTEGER = 0x8d98;
+  readonly RGBA_INTEGER = 0x8d99;
+
+  // UBO-related constants
+  readonly UNIFORM_BLOCK_BINDING = 0x8a3f;
+  readonly UNIFORM_BLOCK_DATA_SIZE = 0x8a40;
+  readonly UNIFORM_BLOCK_ACTIVE_UNIFORMS = 0x8a42;
+  readonly UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES = 0x8a43;
+  readonly UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER = 0x8a44;
+  readonly UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER = 0x8a46;
+  readonly INVALID_INDEX = 0xffffffff;
+
+  // Transform feedback constants
+  readonly INTERLEAVED_ATTRIBS = 0x8c8c;
+  readonly SEPARATE_ATTRIBS = 0x8c8d;
+  readonly TRANSFORM_FEEDBACK = 0x8e22;
+
+  // Cull face modes
+  readonly FRONT = 0x0404;
+  readonly FRONT_AND_BACK = 0x0408;
+
   // Extensions
   readonly UNSIGNED_INT_24_8 = 0x84fa;
   readonly HALF_FLOAT_OES = 0x8d61;
@@ -380,6 +475,31 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     }
 
     this.pushCommand('bindBuffer', { target, bufferId });
+  }
+
+  bindBufferBase(target: GLenum, index: GLuint, buffer: WebGLBuffer | null): void {
+    const bufferId = buffer ? (buffer as any).__tsyneId : 0;
+    this.pushCommand('bindBufferBase', { target, index, bufferId });
+  }
+
+  bindBufferRange(target: GLenum, index: GLuint, buffer: WebGLBuffer | null, offset: GLintptr, size: GLsizeiptr): void {
+    const bufferId = buffer ? (buffer as any).__tsyneId : 0;
+    this.pushCommand('bindBufferRange', { target, index, bufferId, offset, size });
+  }
+
+  copyBufferSubData(
+    readTarget: GLenum,
+    writeTarget: GLenum,
+    readOffset: GLintptr,
+    writeOffset: GLintptr,
+    size: GLsizeiptr
+  ): void {
+    this.pushCommand('copyBufferSubData', { readTarget, writeTarget, readOffset, writeOffset, size });
+  }
+
+  getBufferSubData(target: GLenum, srcByteOffset: GLintptr, dstBuffer: ArrayBufferView, dstOffset?: GLuint, length?: GLuint): void {
+    // This is a readback operation - for now, no-op since we can't synchronously return data
+    // The Go bridge would need to fill dstBuffer, which requires async support
   }
 
   bufferData(
@@ -795,6 +915,20 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
   private attribLocationMap = new Map<number, Map<string, number>>();
   private nextAttribLocation = 0;
 
+  bindAttribLocation(program: WebGLProgram, index: GLuint, name: string): void {
+    const programId = (program as any).__tsyneId;
+
+    // Update local tracking so getAttribLocation returns the correct value
+    let programAttribs = this.attribLocationMap.get(programId);
+    if (!programAttribs) {
+      programAttribs = new Map<string, number>();
+      this.attribLocationMap.set(programId, programAttribs);
+    }
+    programAttribs.set(name, index);
+
+    this.pushCommand('bindAttribLocation', { programId, index, name });
+  }
+
   getAttribLocation(program: WebGLProgram, name: string): GLint {
     const programId = (program as any).__tsyneId;
 
@@ -964,6 +1098,133 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     const locId = (location as any).__tsyneId;
     const encoded = encodeBufferData(data);
     this.pushCommand('uniformMatrix4fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // UNIFORM BUFFER OBJECT (UBO) OPERATIONS (WebGL2)
+  // ═══════════════════════════════════════════════════════════════
+
+  getUniformBlockIndex(program: WebGLProgram, uniformBlockName: string): GLuint {
+    // In real WebGL2 this returns the block index; we return a deterministic ID
+    // based on the name so that uniformBlockBinding can reference it
+    const programId = (program as any).__tsyneId;
+    const key = `${programId}:${uniformBlockName}`;
+    if (!this.uniformBlockIndices.has(key)) {
+      this.uniformBlockIndices.set(key, this.nextUniformBlockIndex++);
+    }
+    return this.uniformBlockIndices.get(key)!;
+  }
+
+  uniformBlockBinding(program: WebGLProgram, uniformBlockIndex: GLuint, uniformBlockBinding: GLuint): void {
+    const programId = (program as any).__tsyneId;
+    this.pushCommand('uniformBlockBinding', { programId, uniformBlockIndex, uniformBlockBinding });
+  }
+
+  getActiveUniformBlockParameter(program: WebGLProgram, uniformBlockIndex: GLuint, pname: GLenum): any {
+    // Would need sync call to bridge - return reasonable defaults
+    switch (pname) {
+      case 0x8a41: // UNIFORM_BLOCK_BINDING
+        return 0;
+      case 0x8a40: // UNIFORM_BLOCK_DATA_SIZE
+        return 256;
+      case 0x8a42: // UNIFORM_BLOCK_ACTIVE_UNIFORMS
+        return 0;
+      case 0x8a43: // UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
+        return new Uint32Array([]);
+      case 0x8a44: // UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER
+        return true;
+      case 0x8a46: // UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER
+        return true;
+      default:
+        return null;
+    }
+  }
+
+  getActiveUniformBlockName(program: WebGLProgram, uniformBlockIndex: GLuint): string | null {
+    // Would need sync call to bridge - return null for now
+    return null;
+  }
+
+  // WebGL2 unsigned int uniform methods
+  uniform1ui(location: WebGLUniformLocation, v0: GLuint): void {
+    const locId = (location as any).__tsyneId;
+    this.pushCommand('uniform1ui', { locationId: locId, name: this.getUniformName(locId), v0 });
+  }
+
+  uniform2ui(location: WebGLUniformLocation, v0: GLuint, v1: GLuint): void {
+    const locId = (location as any).__tsyneId;
+    this.pushCommand('uniform2ui', { locationId: locId, name: this.getUniformName(locId), v0, v1 });
+  }
+
+  uniform3ui(location: WebGLUniformLocation, v0: GLuint, v1: GLuint, v2: GLuint): void {
+    const locId = (location as any).__tsyneId;
+    this.pushCommand('uniform3ui', { locationId: locId, name: this.getUniformName(locId), v0, v1, v2 });
+  }
+
+  uniform4ui(location: WebGLUniformLocation, v0: GLuint, v1: GLuint, v2: GLuint, v3: GLuint): void {
+    const locId = (location as any).__tsyneId;
+    this.pushCommand('uniform4ui', { locationId: locId, name: this.getUniformName(locId), v0, v1, v2, v3 });
+  }
+
+  uniform1uiv(location: WebGLUniformLocation, data: Uint32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniform1uiv', { locationId: locId, name: this.getUniformName(locId), data: encoded });
+  }
+
+  uniform2uiv(location: WebGLUniformLocation, data: Uint32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniform2uiv', { locationId: locId, name: this.getUniformName(locId), data: encoded });
+  }
+
+  uniform3uiv(location: WebGLUniformLocation, data: Uint32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniform3uiv', { locationId: locId, name: this.getUniformName(locId), data: encoded });
+  }
+
+  uniform4uiv(location: WebGLUniformLocation, data: Uint32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniform4uiv', { locationId: locId, name: this.getUniformName(locId), data: encoded });
+  }
+
+  // WebGL2 matrix uniform methods (2x3, 2x4, 3x2, 3x4, 4x2, 4x3)
+  uniformMatrix2x3fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix2x3fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  uniformMatrix2x4fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix2x4fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  uniformMatrix3x2fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix3x2fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  uniformMatrix3x4fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix3x4fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  uniformMatrix4x2fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix4x2fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
+  }
+
+  uniformMatrix4x3fv(location: WebGLUniformLocation, transpose: GLboolean, data: Float32List): void {
+    const locId = (location as any).__tsyneId;
+    const encoded = encodeBufferData(data);
+    this.pushCommand('uniformMatrix4x3fv', { locationId: locId, name: this.getUniformName(locId), transpose, data: encoded });
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1170,6 +1431,89 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     });
   }
 
+  texStorage3D(
+    target: GLenum,
+    levels: GLsizei,
+    internalformat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei
+  ): void {
+    this.pushCommand('texStorage3D', {
+      target,
+      levels,
+      internalformat,
+      width,
+      height,
+      depth,
+    });
+  }
+
+  compressedTexImage2D(
+    target: GLenum,
+    level: GLint,
+    internalformat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+    border: GLint,
+    data: ArrayBufferView
+  ): void {
+    const encoded = encodeBufferData(data);
+    this.pushCommand('compressedTexImage2D', {
+      target, level, internalformat, width, height, border, data: encoded,
+    });
+  }
+
+  compressedTexSubImage2D(
+    target: GLenum,
+    level: GLint,
+    xoffset: GLint,
+    yoffset: GLint,
+    width: GLsizei,
+    height: GLsizei,
+    format: GLenum,
+    data: ArrayBufferView
+  ): void {
+    const encoded = encodeBufferData(data);
+    this.pushCommand('compressedTexSubImage2D', {
+      target, level, xoffset, yoffset, width, height, format, data: encoded,
+    });
+  }
+
+  compressedTexImage3D(
+    target: GLenum,
+    level: GLint,
+    internalformat: GLenum,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei,
+    border: GLint,
+    data: ArrayBufferView
+  ): void {
+    const encoded = encodeBufferData(data);
+    this.pushCommand('compressedTexImage3D', {
+      target, level, internalformat, width, height, depth, border, data: encoded,
+    });
+  }
+
+  compressedTexSubImage3D(
+    target: GLenum,
+    level: GLint,
+    xoffset: GLint,
+    yoffset: GLint,
+    zoffset: GLint,
+    width: GLsizei,
+    height: GLsizei,
+    depth: GLsizei,
+    format: GLenum,
+    data: ArrayBufferView
+  ): void {
+    const encoded = encodeBufferData(data);
+    this.pushCommand('compressedTexSubImage3D', {
+      target, level, xoffset, yoffset, zoffset, width, height, depth, format, data: encoded,
+    });
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // FRAMEBUFFER OPERATIONS
   // ═══════════════════════════════════════════════════════════════
@@ -1242,6 +1586,16 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     this.pushCommand('renderbufferStorage', { target, internalformat, width, height });
   }
 
+  renderbufferStorageMultisample(
+    target: GLenum,
+    samples: GLsizei,
+    internalformat: GLenum,
+    width: GLsizei,
+    height: GLsizei
+  ): void {
+    this.pushCommand('renderbufferStorageMultisample', { target, samples, internalformat, width, height });
+  }
+
   framebufferRenderbuffer(
     target: GLenum,
     attachment: GLenum,
@@ -1285,6 +1639,25 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       dstX0, dstY0, dstX1, dstY1,
       mask, filter,
     });
+  }
+
+  framebufferTextureLayer(
+    target: GLenum,
+    attachment: GLenum,
+    texture: WebGLTexture | null,
+    level: GLint,
+    layer: GLint
+  ): void {
+    const textureId = texture ? (texture as any).__tsyneId : 0;
+    this.pushCommand('framebufferTextureLayer', { target, attachment, textureId, level, layer });
+  }
+
+  invalidateFramebuffer(target: GLenum, attachments: GLenum[]): void {
+    this.pushCommand('invalidateFramebuffer', { target, attachments });
+  }
+
+  invalidateSubFramebuffer(target: GLenum, attachments: GLenum[], x: GLint, y: GLint, width: GLsizei, height: GLsizei): void {
+    this.pushCommand('invalidateSubFramebuffer', { target, attachments, x, y, width, height });
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1331,6 +1704,22 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
       size,
       type,
       normalized,
+      stride,
+      offset,
+    });
+  }
+
+  vertexAttribIPointer(
+    index: GLuint,
+    size: GLint,
+    type: GLenum,
+    stride: GLsizei,
+    offset: GLintptr
+  ): void {
+    this.pushCommand('vertexAttribIPointer', {
+      location: index,
+      size,
+      type,
       stride,
       offset,
     });
@@ -1440,6 +1829,26 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
 
   clearStencil(s: GLint): void {
     this.pushCommand('clearStencil', { s });
+  }
+
+  // WebGL2 clear buffer methods (for MRT / integer framebuffers)
+  clearBufferfv(buffer: GLenum, drawbuffer: GLint, values: Float32List, srcOffset?: GLuint): void {
+    const encoded = encodeBufferData(values);
+    this.pushCommand('clearBufferfv', { buffer, drawbuffer, values: encoded });
+  }
+
+  clearBufferiv(buffer: GLenum, drawbuffer: GLint, values: Int32List, srcOffset?: GLuint): void {
+    const encoded = encodeBufferData(values);
+    this.pushCommand('clearBufferiv', { buffer, drawbuffer, values: encoded });
+  }
+
+  clearBufferuiv(buffer: GLenum, drawbuffer: GLint, values: Uint32List, srcOffset?: GLuint): void {
+    const encoded = encodeBufferData(values);
+    this.pushCommand('clearBufferuiv', { buffer, drawbuffer, values: encoded });
+  }
+
+  clearBufferfi(buffer: GLenum, drawbuffer: GLint, depth: GLfloat, stencil: GLint): void {
+    this.pushCommand('clearBufferfi', { buffer, drawbuffer, depth, stencil });
   }
 
   viewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei): void {
@@ -1691,6 +2100,266 @@ export class TsyneGLProxy implements WebGL2RenderingContext {
     // Update canvas dimensions directly (don't call canvas.setSize to avoid recursion)
     this.canvas.width = width;
     this.canvas.height = height;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SYNC OBJECTS (WebGL2)
+  // ═══════════════════════════════════════════════════════════════
+
+  readonly SYNC_GPU_COMMANDS_COMPLETE = 0x9117;
+  readonly ALREADY_SIGNALED = 0x911a;
+  readonly TIMEOUT_EXPIRED = 0x911b;
+  readonly CONDITION_SATISFIED = 0x911c;
+  readonly WAIT_FAILED = 0x911d;
+  readonly SYNC_FLUSH_COMMANDS_BIT = 0x00000001;
+
+  fenceSync(condition: GLenum, flags: GLbitfield): WebGLSync | null {
+    const id = this.nextObjectId++;
+    this.syncs.set(id, { id });
+    this.pushCommand('fenceSync', { syncId: id, condition, flags });
+    return { __tsyneId: id } as any;
+  }
+
+  deleteSync(sync: WebGLSync | null): void {
+    if (!sync) return;
+    const id = (sync as any).__tsyneId;
+    this.syncs.delete(id);
+    this.pushCommand('deleteSync', { syncId: id });
+  }
+
+  clientWaitSync(sync: WebGLSync, flags: GLbitfield, timeout: GLuint64): GLenum {
+    // Cannot truly block in JS - return ALREADY_SIGNALED as optimistic stub
+    return this.ALREADY_SIGNALED;
+  }
+
+  waitSync(sync: WebGLSync, flags: GLbitfield, timeout: GLint64): void {
+    // Server-side wait - push command to bridge
+    const syncId = (sync as any).__tsyneId;
+    this.pushCommand('waitSync', { syncId, flags, timeout });
+  }
+
+  isSync(sync: WebGLSync | null): GLboolean {
+    if (!sync) return false;
+    const id = (sync as any).__tsyneId;
+    return this.syncs.has(id);
+  }
+
+  getSyncParameter(sync: WebGLSync, pname: GLenum): any {
+    // Would need sync call to bridge - return signaled for now
+    if (pname === 0x9114) { // SYNC_STATUS
+      return 0x9119; // SIGNALED
+    }
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MISCELLANEOUS WebGL2 METHODS
+  // ═══════════════════════════════════════════════════════════════
+
+  getFragDataLocation(program: WebGLProgram, name: string): GLint {
+    // Most programs use gl_FragColor / layout(location=0), return 0 as default
+    return 0;
+  }
+
+  // Sampler objects (WebGL2)
+  createSampler(): WebGLSampler | null {
+    const id = this.nextObjectId++;
+    this.samplers.set(id, { id });
+    this.pushCommand('createSampler', { samplerId: id });
+    return { __tsyneId: id } as any;
+  }
+
+  deleteSampler(sampler: WebGLSampler | null): void {
+    if (!sampler) return;
+    const id = (sampler as any).__tsyneId;
+    this.samplers.delete(id);
+    this.pushCommand('deleteSampler', { samplerId: id });
+  }
+
+  bindSampler(unit: GLuint, sampler: WebGLSampler | null): void {
+    const samplerId = sampler ? (sampler as any).__tsyneId : 0;
+    this.pushCommand('bindSampler', { unit, samplerId });
+  }
+
+  samplerParameteri(sampler: WebGLSampler, pname: GLenum, param: GLint): void {
+    const samplerId = (sampler as any).__tsyneId;
+    this.pushCommand('samplerParameteri', { samplerId, pname, param });
+  }
+
+  samplerParameterf(sampler: WebGLSampler, pname: GLenum, param: GLfloat): void {
+    const samplerId = (sampler as any).__tsyneId;
+    this.pushCommand('samplerParameterf', { samplerId, pname, param });
+  }
+
+  // Transform feedback (WebGL2)
+  createTransformFeedback(): WebGLTransformFeedback | null {
+    const id = this.nextObjectId++;
+    this.transformFeedbacks.set(id, { id });
+    this.pushCommand('createTransformFeedback', { tfId: id });
+    return { __tsyneId: id } as any;
+  }
+
+  deleteTransformFeedback(tf: WebGLTransformFeedback | null): void {
+    if (!tf) return;
+    const id = (tf as any).__tsyneId;
+    this.transformFeedbacks.delete(id);
+    this.pushCommand('deleteTransformFeedback', { tfId: id });
+  }
+
+  bindTransformFeedback(target: GLenum, tf: WebGLTransformFeedback | null): void {
+    const tfId = tf ? (tf as any).__tsyneId : 0;
+    this.pushCommand('bindTransformFeedback', { target, tfId });
+  }
+
+  beginTransformFeedback(primitiveMode: GLenum): void {
+    this.pushCommand('beginTransformFeedback', { primitiveMode });
+  }
+
+  endTransformFeedback(): void {
+    this.pushCommand('endTransformFeedback', {});
+  }
+
+  transformFeedbackVaryings(program: WebGLProgram, varyings: string[], bufferMode: GLenum): void {
+    const programId = (program as any).__tsyneId;
+    this.pushCommand('transformFeedbackVaryings', { programId, varyings, bufferMode });
+  }
+
+  getTransformFeedbackVarying(program: WebGLProgram, index: GLuint): WebGLActiveInfo | null {
+    // Would need sync call to bridge - return null for now
+    return null;
+  }
+
+  // Query objects (WebGL2)
+  createQuery(): WebGLQuery | null {
+    const id = this.nextObjectId++;
+    this.queries.set(id, { id });
+    this.pushCommand('createQuery', { queryId: id });
+    return { __tsyneId: id } as any;
+  }
+
+  deleteQuery(query: WebGLQuery | null): void {
+    if (!query) return;
+    const id = (query as any).__tsyneId;
+    this.queries.delete(id);
+    this.pushCommand('deleteQuery', { queryId: id });
+  }
+
+  beginQuery(target: GLenum, query: WebGLQuery): void {
+    const queryId = (query as any).__tsyneId;
+    this.pushCommand('beginQuery', { target, queryId });
+  }
+
+  endQuery(target: GLenum): void {
+    this.pushCommand('endQuery', { target });
+  }
+
+  getQueryParameter(query: WebGLQuery, pname: GLenum): any {
+    // Would need sync call to bridge - return reasonable defaults
+    if (pname === 0x8866) { // QUERY_RESULT
+      return 0;
+    }
+    if (pname === 0x8867) { // QUERY_RESULT_AVAILABLE
+      return true;
+    }
+    return null;
+  }
+
+  getQuery(target: GLenum, pname: GLenum): WebGLQuery | null {
+    return null;
+  }
+
+  isQuery(query: WebGLQuery | null): GLboolean {
+    if (!query) return false;
+    const id = (query as any).__tsyneId;
+    return this.queries.has(id);
+  }
+
+  // Additional WebGL1/2 state queries
+  getRenderbufferParameter(target: GLenum, pname: GLenum): any {
+    return null;
+  }
+
+  getTexParameter(target: GLenum, pname: GLenum): any {
+    return null;
+  }
+
+  getUniform(program: WebGLProgram, location: WebGLUniformLocation): any {
+    return null;
+  }
+
+  getVertexAttrib(index: GLuint, pname: GLenum): any {
+    return null;
+  }
+
+  getVertexAttribOffset(index: GLuint, pname: GLenum): GLintptr {
+    return 0;
+  }
+
+  isBuffer(buffer: WebGLBuffer | null): GLboolean {
+    if (!buffer) return false;
+    return this.buffers.has((buffer as any).__tsyneId);
+  }
+
+  isFramebuffer(framebuffer: WebGLFramebuffer | null): GLboolean {
+    if (!framebuffer) return false;
+    return this.framebuffers.has((framebuffer as any).__tsyneId);
+  }
+
+  isProgram(program: WebGLProgram | null): GLboolean {
+    if (!program) return false;
+    return this.programs.has((program as any).__tsyneId);
+  }
+
+  isRenderbuffer(renderbuffer: WebGLRenderbuffer | null): GLboolean {
+    if (!renderbuffer) return false;
+    return this.renderbuffers.has((renderbuffer as any).__tsyneId);
+  }
+
+  isShader(shader: WebGLShader | null): GLboolean {
+    if (!shader) return false;
+    return this.shaders.has((shader as any).__tsyneId);
+  }
+
+  isTexture(texture: WebGLTexture | null): GLboolean {
+    if (!texture) return false;
+    return this.textures.has((texture as any).__tsyneId);
+  }
+
+  isVertexArray(vertexArray: WebGLVertexArrayObject | null): GLboolean {
+    if (!vertexArray) return false;
+    return this.vertexArrays.has((vertexArray as any).__tsyneId);
+  }
+
+  isSampler(sampler: WebGLSampler | null): GLboolean {
+    if (!sampler) return false;
+    return this.samplers.has((sampler as any).__tsyneId);
+  }
+
+  isTransformFeedback(tf: WebGLTransformFeedback | null): GLboolean {
+    if (!tf) return false;
+    return this.transformFeedbacks.has((tf as any).__tsyneId);
+  }
+
+  // Stencil separate face operations
+  stencilFuncSeparate(face: GLenum, func: GLenum, ref: GLint, mask: GLuint): void {
+    this.pushCommand('stencilFuncSeparate', { face, func, ref, mask });
+  }
+
+  stencilOpSeparate(face: GLenum, sfail: GLenum, dpfail: GLenum, dppass: GLenum): void {
+    this.pushCommand('stencilOpSeparate', { face, sfail, dpfail, dppass });
+  }
+
+  stencilMaskSeparate(face: GLenum, mask: GLuint): void {
+    this.pushCommand('stencilMaskSeparate', { face, mask });
+  }
+
+  // WebGL2 getInternalformatParameter
+  getInternalformatParameter(target: GLenum, internalformat: GLenum, pname: GLenum): any {
+    // Return empty array for SAMPLES query
+    if (pname === 0x80a9) { // SAMPLES
+      return new Int32Array([4, 2]);
+    }
+    return null;
   }
 
   // Catch-all for unimplemented methods (prevents runtime errors)

@@ -593,6 +593,8 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glUniformFloat(canvas, cmd, args)
 	case "uniform1i", "uniform2i", "uniform3i", "uniform4i":
 		return b.glUniformInt(canvas, cmd, args)
+	case "uniform1iv", "uniform2iv", "uniform3iv", "uniform4iv":
+		return b.glUniformIntv(canvas, cmd, args)
 	case "uniform1fv", "uniform2fv", "uniform3fv", "uniform4fv":
 		return b.glUniformFloatv(canvas, cmd, args)
 	case "uniformMatrix2fv", "uniformMatrix3fv", "uniformMatrix4fv":
@@ -613,30 +615,33 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return b.glTexSubImage2D(canvas, args)
 	case "texStorage2D":
 		return b.glTexStorage2D(canvas, args)
-	case "texParameteri", "texParameterf":
-		return nil // Handled by painter
-
 	// State operations
 	case "clear":
 		return b.glClear(canvas, args)
 	case "clearColor":
 		return b.glClearColor(canvas, args)
-	case "clearDepth", "clearStencil":
-		return nil // Depth/stencil clear - handled by painter
+	case "clearDepth":
+		return b.glClearDepth(canvas, args)
+	case "clearStencil":
+		return nil // Stencil clear - not yet needed
 	case "colorMask":
-		return nil // Color mask state - handled implicitly
+		return b.glColorMask(canvas, args)
 	case "viewport":
 		return b.glViewport(canvas, args)
 	case "enable":
 		return b.glEnable(canvas, args)
 	case "disable":
 		return b.glDisable(canvas, args)
-	case "depthFunc", "depthMask", "depthRange":
-		return nil // Depth operations - handled by painter
+	case "depthFunc":
+		return b.glDepthFunc(canvas, args)
+	case "depthMask":
+		return b.glDepthMask(canvas, args)
+	case "depthRange":
+		return nil // Depth range - not yet needed
 	case "stencilFunc", "stencilOp", "stencilMask":
 		return nil // Stencil operations - handled by painter
 	case "frontFace":
-		return nil // Front face - handled by painter
+		return b.glFrontFace(canvas, args)
 	case "cullFace":
 		return b.glCullFace(canvas, args)
 	case "blendFunc":
@@ -669,14 +674,28 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 		return nil // Handled by painter
 
 	// Framebuffer operations
-	case "createFramebuffer", "deleteFramebuffer", "bindFramebuffer":
-		return nil // Framebuffer - handled by painter
-	case "framebufferTexture2D", "framebufferRenderbuffer", "checkFramebufferStatus":
-		return nil // Framebuffer attachments - handled by painter
+	case "createFramebuffer":
+		return b.glCreateFramebuffer(canvas, args)
+	case "deleteFramebuffer":
+		return b.glDeleteFramebuffer(canvas, args)
+	case "bindFramebuffer":
+		return b.glBindFramebuffer(canvas, args)
+	case "framebufferTexture2D":
+		return b.glFramebufferTexture2D(canvas, args)
+	case "framebufferRenderbuffer":
+		return b.glFramebufferRenderbuffer(canvas, args)
+	case "checkFramebufferStatus":
+		return nil // Returns hardcoded FRAMEBUFFER_COMPLETE from JS side
 
 	// Renderbuffer operations
-	case "createRenderbuffer", "deleteRenderbuffer", "bindRenderbuffer", "renderbufferStorage":
-		return nil // Renderbuffer - handled by painter
+	case "createRenderbuffer":
+		return b.glCreateRenderbuffer(canvas, args)
+	case "deleteRenderbuffer":
+		return b.glDeleteRenderbuffer(canvas, args)
+	case "bindRenderbuffer":
+		return b.glBindRenderbuffer(canvas, args)
+	case "renderbufferStorage":
+		return b.glRenderbufferStorage(canvas, args)
 
 	// Vertex array operations
 	case "createVertexArray", "deleteVertexArray", "bindVertexArray":
@@ -685,6 +704,18 @@ func (b *Bridge) executeGLCommand(canvas *GLCanvas, cmd string, args map[string]
 	// 3D texture operations
 	case "texImage3D", "texSubImage3D":
 		return nil // 3D textures - handled by painter
+
+	// Draw/read buffer operations
+	case "drawBuffers":
+		return b.glDrawBuffers(canvas, args)
+	case "readBuffer":
+		return nil // Read buffer selection - not yet needed
+	case "blitFramebuffer":
+		return nil // Framebuffer blit - not yet needed
+
+	// Texture parameter operations
+	case "texParameteri", "texParameterf":
+		return b.glTexParameteri(canvas, args)
 
 	// Misc operations
 	case "generateMipmap", "scissor", "readPixels":
@@ -1022,7 +1053,10 @@ func (b *Bridge) glBindBuffer(canvas *GLCanvas, args map[string]interface{}) err
 	// log.Printf("[GL] glBindBuffer: target=%d (0x%x), bufferId=%d", uint32(target), uint32(target), uint32(bufferId))
 	if uint32(target) == 0x8893 { // ELEMENT_ARRAY_BUFFER
 		canvas.elementBuffer = uint32(bufferId)
-		// log.Printf("[GL] bindBuffer: ELEMENT_ARRAY_BUFFER -> buffer %d", uint32(bufferId))
+		// Restore index data from the buffer's stored data (different geometry may have different indices)
+		if buf, exists := canvas.buffers[uint32(bufferId)]; exists && len(buf.indexData) > 0 {
+			canvas.indexData = buf.indexData
+		}
 	} else {
 		canvas.currentBuffer = uint32(bufferId)
 	}
@@ -1166,6 +1200,57 @@ func (b *Bridge) glUniformInt(canvas *GLCanvas, cmd string, args map[string]inte
 	return nil
 }
 
+func (b *Bridge) glUniformIntv(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
+	name, _ := args["name"].(string)
+	if name == "" {
+		name = fmt.Sprintf("u_uniform_%v", args["locationId"])
+	}
+
+	dataStr, ok := args["data"].(string)
+	if !ok {
+		return nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(dataStr)
+	if err != nil {
+		return err
+	}
+
+	// Convert bytes to int32 slice
+	intCount := len(decoded) / 4
+	ints := make([]int32, intCount)
+	for i := 0; i < intCount; i++ {
+		ints[i] = int32(binary.LittleEndian.Uint32(decoded[i*4 : (i+1)*4]))
+	}
+
+	// For uniform1iv, each element is a separate sampler/int value
+	// Three.js uses this for shadow map sampler arrays like spotShadowMap[0..N]
+	switch cmd {
+	case "uniform1iv":
+		if len(ints) == 1 {
+			canvas.ShaderObject.QueueUniform(name, ints[0])
+		} else {
+			// Array of ints - queue each element with array index
+			for i, v := range ints {
+				arrName := fmt.Sprintf("%s[%d]", name, i)
+				canvas.ShaderObject.QueueUniform(arrName, v)
+			}
+		}
+	case "uniform2iv":
+		if len(ints) >= 2 {
+			canvas.ShaderObject.QueueUniform(name, ints[:2])
+		}
+	case "uniform3iv":
+		if len(ints) >= 3 {
+			canvas.ShaderObject.QueueUniform(name, ints[:3])
+		}
+	case "uniform4iv":
+		if len(ints) >= 4 {
+			canvas.ShaderObject.QueueUniform(name, ints[:4])
+		}
+	}
+	return nil
+}
+
 func (b *Bridge) glUniformFloatv(canvas *GLCanvas, cmd string, args map[string]interface{}) error {
 	// Get uniform name from args
 	name, _ := args["name"].(string)
@@ -1290,6 +1375,7 @@ func (b *Bridge) glBindTexture(canvas *GLCanvas, args map[string]interface{}) er
 		return fmt.Errorf("missing textureId")
 	}
 	textureId := uint32(toFloat32(textureIdVal))
+	target := uint32(toFloat32(args["target"]))
 
 	// Initialize boundTextures map if needed
 	if canvas.boundTextures == nil {
@@ -1298,6 +1384,13 @@ func (b *Bridge) glBindTexture(canvas *GLCanvas, args map[string]interface{}) er
 
 	// Bind texture to the active texture unit
 	canvas.boundTextures[canvas.activeTextureUnit] = textureId
+
+	// Also forward as render command for GPU-only textures (shadow maps, etc.)
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "bindTexture",
+		Name: fmt.Sprintf("%d", textureId),
+		Value: target,
+	})
 	return nil
 }
 
@@ -1310,6 +1403,12 @@ func (b *Bridge) glActiveTexture(canvas *GLCanvas, args map[string]interface{}) 
 	// GL_TEXTURE0 = 0x84C0 = 33984
 	textureEnum := uint32(toFloat32(textureVal))
 	canvas.activeTextureUnit = textureEnum - 33984 // GL_TEXTURE0
+
+	// Forward as render command so painter can set active texture unit
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "activeTexture",
+		Value: textureEnum,
+	})
 	return nil
 }
 
@@ -1327,6 +1426,28 @@ func (b *Bridge) glTexImage2D(canvas *GLCanvas, args map[string]interface{}) err
 	textureId := canvas.boundTextures[canvas.activeTextureUnit]
 	if textureId == 0 {
 		// No texture bound, nothing to do
+		return nil
+	}
+
+	// Check for null pixels (GPU-only texture allocation, e.g., shadow maps)
+	// When pixels is nil/missing, we allocate a texture on the GPU without uploading data
+	if !hasPixels || pixelsStr == "" {
+		typeVal := uint32(toFloat32(args["type"]))
+		level := int(toFloat32(args["level"]))
+		canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+			Type: "texImage2D_gpu",
+			Name: fmt.Sprintf("%d", textureId),
+			Value: canvasPkg.TexImage2DGPUParams{
+				Target:         uint32(toFloat32(args["target"])),
+				Level:          level,
+				Internalformat: uint32(internalformat),
+				Width:          w,
+				Height:         h,
+				Format:         uint32(format),
+				Type:           typeVal,
+			},
+		})
+		log.Printf("[GL] texImage2D: GPU-only texture %d (%dx%d, format=0x%x, type=0x%x)", textureId, w, h, uint32(format), typeVal)
 		return nil
 	}
 
@@ -1512,9 +1633,9 @@ func (b *Bridge) glTexSubImage2D(canvas *GLCanvas, args map[string]interface{}) 
 
 func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) error {
 	// texStorage2D allocates immutable texture storage
-	// We pre-allocate the image.RGBA so texSubImage2D can update it
 	w := int(toFloat32(args["width"]))
 	h := int(toFloat32(args["height"]))
+	internalformat := uint32(toFloat32(args["internalformat"]))
 
 	// Get the currently bound texture
 	if canvas.boundTextures == nil {
@@ -1525,14 +1646,50 @@ func (b *Bridge) glTexStorage2D(canvas *GLCanvas, args map[string]interface{}) e
 		return nil
 	}
 
-	texture, exists := canvas.textures[textureId]
-	if !exists {
-		return nil
+	// Determine if this is a depth texture (GPU-only, no CPU-side image)
+	// Common depth internal formats: DEPTH_COMPONENT16 (0x81A5), DEPTH_COMPONENT24 (0x81A6),
+	// DEPTH_COMPONENT32F (0x8CAC), DEPTH24_STENCIL8 (0x88F0), DEPTH32F_STENCIL8 (0x8CAD)
+	isDepthFormat := internalformat == 0x81A5 || internalformat == 0x81A6 ||
+		internalformat == 0x8CAC || internalformat == 0x88F0 || internalformat == 0x8CAD ||
+		internalformat == 0x1902 // DEPTH_COMPONENT
+
+	// Queue GPU-only texture allocation for depth textures and other non-standard formats
+	// Also queue for regular textures since texStorage2D creates immutable storage
+	// that may be used as FBO attachment
+	target := uint32(toFloat32(args["target"]))
+
+	// Determine format and type from internal format for the GPU allocation
+	var format, typ uint32
+	if isDepthFormat {
+		format = 0x1902 // DEPTH_COMPONENT
+		typ = 0x1405    // UNSIGNED_INT
+	} else {
+		format = 0x1908 // RGBA
+		typ = 0x1401    // UNSIGNED_BYTE
 	}
 
-	// Allocate the image
-	texture.image = image.NewRGBA(image.Rect(0, 0, w, h))
-	log.Printf("[GL] texStorage2D: allocated %dx%d texture in id=%d (unit=%d)", w, h, textureId, canvas.activeTextureUnit)
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "texImage2D_gpu",
+		Name: fmt.Sprintf("%d", textureId),
+		Value: canvasPkg.TexImage2DGPUParams{
+			Target:         target,
+			Level:          0,
+			Internalformat: internalformat,
+			Width:          w,
+			Height:         h,
+			Format:         format,
+			Type:           typ,
+		},
+	})
+	log.Printf("[GL] texStorage2D: GPU texture %d (%dx%d, internalformat=0x%x)", textureId, w, h, internalformat)
+
+	// Also keep the CPU-side image for texSubImage2D updates (if not depth)
+	if !isDepthFormat {
+		texture, exists := canvas.textures[textureId]
+		if exists {
+			texture.image = image.NewRGBA(image.Rect(0, 0, w, h))
+		}
+	}
 	return nil
 }
 
@@ -1598,8 +1755,11 @@ func (b *Bridge) glBlendFunc(canvas *GLCanvas, args map[string]interface{}) erro
 }
 
 func (b *Bridge) glClear(canvas *GLCanvas, args map[string]interface{}) error {
-	// Queue clear command
-	canvas.ShaderObject.QueueClear()
+	mask := uint32(toFloat64(args["mask"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "clear",
+		Value: mask,
+	})
 	return nil
 }
 
@@ -1609,11 +1769,23 @@ func (b *Bridge) glClearColor(canvas *GLCanvas, args map[string]interface{}) err
 	blue := float32(toFloat64(args["blue"]))
 	a := float32(toFloat64(args["alpha"]))
 	canvas.ShaderObject.SetClearColor(r, g, blue, a)
+	// Also queue as render command so it's applied in order with other GL state
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "clearColor",
+		Value: [4]float32{r, g, blue, a},
+	})
 	return nil
 }
 
 func (b *Bridge) glViewport(canvas *GLCanvas, args map[string]interface{}) error {
-	// Viewport is implicit in canvas size
+	x := int(toFloat64(args["x"]))
+	y := int(toFloat64(args["y"]))
+	w := int(toFloat64(args["width"]))
+	h := int(toFloat64(args["height"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "viewport",
+		Value: canvasPkg.ViewportParams{X: x, Y: y, Width: w, Height: h},
+	})
 	return nil
 }
 
@@ -1671,6 +1843,242 @@ func (b *Bridge) glDrawElements(canvas *GLCanvas, args map[string]interface{}) e
 		canvas.ShaderObject.SetIndicesNoRefresh(canvas.indexData)
 	}
 	canvas.ShaderObject.QueueDrawElements(mode, count, offset)
+	return nil
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Framebuffer Operations
+// ═══════════════════════════════════════════════════════════════
+
+func (b *Bridge) glCreateFramebuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	fbIdVal, ok := args["framebufferId"]
+	if !ok {
+		return fmt.Errorf("missing framebufferId")
+	}
+	fbId := int(toFloat64(fbIdVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "createFramebuffer",
+		Name: fmt.Sprintf("%d", fbId),
+	})
+	return nil
+}
+
+func (b *Bridge) glDeleteFramebuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	fbIdVal, ok := args["framebufferId"]
+	if !ok {
+		return fmt.Errorf("missing framebufferId")
+	}
+	fbId := int(toFloat64(fbIdVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "deleteFramebuffer",
+		Name: fmt.Sprintf("%d", fbId),
+	})
+	return nil
+}
+
+func (b *Bridge) glBindFramebuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	targetVal, ok := args["target"]
+	if !ok {
+		return fmt.Errorf("missing target")
+	}
+	target := uint32(toFloat64(targetVal))
+	fbId := 0
+	if fbIdVal, ok := args["framebufferId"]; ok {
+		fbId = int(toFloat64(fbIdVal))
+	}
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "bindFramebuffer",
+		Value: canvasPkg.BindFramebufferParams{
+			Target:        target,
+			FramebufferId: fbId,
+		},
+	})
+	return nil
+}
+
+func (b *Bridge) glFramebufferTexture2D(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	attachment := uint32(toFloat64(args["attachment"]))
+	textarget := uint32(toFloat64(args["textarget"]))
+	textureId := int(toFloat64(args["textureId"]))
+	level := int(toFloat64(args["level"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "framebufferTexture2D",
+		Value: canvasPkg.FramebufferTexture2DParams{
+			Target:     target,
+			Attachment: attachment,
+			Textarget:  textarget,
+			TextureId:  textureId,
+			Level:      level,
+		},
+	})
+	return nil
+}
+
+func (b *Bridge) glFramebufferRenderbuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	attachment := uint32(toFloat64(args["attachment"]))
+	rbtarget := uint32(toFloat64(args["renderbuffertarget"]))
+	rbId := int(toFloat64(args["renderbufferId"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "framebufferRenderbuffer",
+		Value: canvasPkg.FramebufferRenderbufferParams{
+			Target:             target,
+			Attachment:         attachment,
+			RenderbufferTarget: rbtarget,
+			RenderbufferId:     rbId,
+		},
+	})
+	return nil
+}
+
+func (b *Bridge) glCreateRenderbuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	rbIdVal, ok := args["renderbufferId"]
+	if !ok {
+		return fmt.Errorf("missing renderbufferId")
+	}
+	rbId := int(toFloat64(rbIdVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "createRenderbuffer",
+		Name: fmt.Sprintf("%d", rbId),
+	})
+	return nil
+}
+
+func (b *Bridge) glDeleteRenderbuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	rbIdVal, ok := args["renderbufferId"]
+	if !ok {
+		return fmt.Errorf("missing renderbufferId")
+	}
+	rbId := int(toFloat64(rbIdVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "deleteRenderbuffer",
+		Name: fmt.Sprintf("%d", rbId),
+	})
+	return nil
+}
+
+func (b *Bridge) glBindRenderbuffer(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	rbId := 0
+	if rbIdVal, ok := args["renderbufferId"]; ok {
+		rbId = int(toFloat64(rbIdVal))
+	}
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "bindRenderbuffer",
+		Value: canvasPkg.BindFramebufferParams{
+			Target:        target,
+			FramebufferId: rbId, // Reuse same param type, field holds RBO id
+		},
+	})
+	return nil
+}
+
+func (b *Bridge) glRenderbufferStorage(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	internalformat := uint32(toFloat64(args["internalformat"]))
+	w := int(toFloat64(args["width"]))
+	h := int(toFloat64(args["height"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "renderbufferStorage",
+		Value: canvasPkg.RenderbufferStorageParams{
+			Target:         target,
+			Internalformat: internalformat,
+			Width:          w,
+			Height:         h,
+		},
+	})
+	return nil
+}
+
+func (b *Bridge) glColorMask(canvas *GLCanvas, args map[string]interface{}) error {
+	r, _ := args["red"].(bool)
+	g, _ := args["green"].(bool)
+	blue, _ := args["blue"].(bool)
+	a, _ := args["alpha"].(bool)
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "colorMask",
+		Value: canvasPkg.ColorMaskParams{R: r, G: g, B: blue, A: a},
+	})
+	return nil
+}
+
+func (b *Bridge) glClearDepth(canvas *GLCanvas, args map[string]interface{}) error {
+	depth := float32(toFloat64(args["depth"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "clearDepth",
+		Value: canvasPkg.ClearDepthParams{Depth: depth},
+	})
+	return nil
+}
+
+func (b *Bridge) glDrawBuffers(canvas *GLCanvas, args map[string]interface{}) error {
+	bufsRaw, ok := args["buffers"].([]interface{})
+	if !ok {
+		return nil
+	}
+	bufs := make([]uint32, len(bufsRaw))
+	for i, v := range bufsRaw {
+		bufs[i] = uint32(toFloat64(v))
+	}
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "drawBuffers",
+		Value: canvasPkg.DrawBuffersParams{Buffers: bufs},
+	})
+	return nil
+}
+
+func (b *Bridge) glDepthFunc(canvas *GLCanvas, args map[string]interface{}) error {
+	funcVal, ok := args["func"]
+	if !ok {
+		return nil
+	}
+	fn := uint32(toFloat64(funcVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "depthFunc",
+		Value: fn,
+	})
+	return nil
+}
+
+func (b *Bridge) glDepthMask(canvas *GLCanvas, args map[string]interface{}) error {
+	flagVal, ok := args["flag"]
+	if !ok {
+		return nil
+	}
+	flag, _ := flagVal.(bool)
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "depthMask",
+		Value: flag,
+	})
+	return nil
+}
+
+func (b *Bridge) glFrontFace(canvas *GLCanvas, args map[string]interface{}) error {
+	modeVal, ok := args["mode"]
+	if !ok {
+		return nil
+	}
+	mode := uint32(toFloat64(modeVal))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type:  "frontFace",
+		Value: mode,
+	})
+	return nil
+}
+
+func (b *Bridge) glTexParameteri(canvas *GLCanvas, args map[string]interface{}) error {
+	target := uint32(toFloat64(args["target"]))
+	pname := uint32(toFloat64(args["pname"]))
+	param := int32(toFloat64(args["param"]))
+	canvas.ShaderObject.QueueRenderCommand(canvasPkg.RenderCommand{
+		Type: "texParameteri",
+		Value: canvasPkg.TexParameteriParams{
+			Target: target,
+			Pname:  pname,
+			Param:  param,
+		},
+	})
 	return nil
 }
 

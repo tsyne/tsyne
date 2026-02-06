@@ -300,3 +300,50 @@ func (s *Shader) DrainPendingPrograms() []PendingProgram {
 	s.pendingPrograms = nil
 	return progs
 }
+
+// FBO cache accessors
+
+// GetFBOCache returns the GL framebuffer ID for a JS framebuffer ID.
+func (s *Shader) GetFBOCache(jsId int) uint32 {
+	return s.fboCache[jsId]
+}
+
+// SetFBOCache stores a GL framebuffer ID for a JS framebuffer ID.
+func (s *Shader) SetFBOCache(jsId int, glId uint32) {
+	s.fboCache[jsId] = glId
+}
+
+// DeleteFBOCache removes a framebuffer from the cache.
+func (s *Shader) DeleteFBOCache(jsId int) {
+	delete(s.fboCache, jsId)
+}
+
+// GetRBOCache returns the GL renderbuffer ID for a JS renderbuffer ID.
+func (s *Shader) GetRBOCache(jsId int) uint32 {
+	return s.rboCache[jsId]
+}
+
+// SetRBOCache stores a GL renderbuffer ID for a JS renderbuffer ID.
+func (s *Shader) SetRBOCache(jsId int, glId uint32) {
+	s.rboCache[jsId] = glId
+}
+
+// DeleteRBOCache removes a renderbuffer from the cache.
+func (s *Shader) DeleteRBOCache(jsId int) {
+	delete(s.rboCache, jsId)
+}
+
+// GetGPUTexCache returns the GL texture ID for a JS texture ID (GPU-only textures).
+func (s *Shader) GetGPUTexCache(jsId int) uint32 {
+	return s.gpuTexCache[jsId]
+}
+
+// SetGPUTexCache stores a GL texture ID for a JS texture ID (GPU-only textures).
+func (s *Shader) SetGPUTexCache(jsId int, glId uint32) {
+	s.gpuTexCache[jsId] = glId
+}
+
+// DeleteGPUTexCache removes a GPU texture from the cache.
+func (s *Shader) DeleteGPUTexCache(jsId int) {
+	delete(s.gpuTexCache, jsId)
+}

@@ -106,7 +106,7 @@ export async function buildWebGLMultipleCanvasesCircle(
     preferredWidth: width,
     preferredHeight: height,
     renderer,
-    camera,
+    camera: cameras[0].camera,
   });
   renderer.setScissorTest(true);
 
